@@ -1,0 +1,51 @@
+{
+	keys: [
+		{},  /* key 0, blanket */
+		{    /* key 1, specific channel and ops */
+			capability: JSON.stringify({
+				testchannel:['publish']
+			})
+		},
+		{   /* key 2, wildcard channel spec */
+			capability: JSON.stringify({
+				'*':['subscribe'],
+				'canpublish:*':['publish'],
+				'canpublish:andpresence':['presence', 'publish']
+			})
+		},
+		{   /* key 3,  wildcard ops spec */
+			capability: JSON.stringify({
+				'candoall':['*']
+			})
+		},
+		{   /* key 4, multiple resources */
+			capability: JSON.stringify({
+				channel0:['publish'],
+				channel1:['publish'],
+				channel2:['publish', 'subscribe'],
+				channel3:['subscribe'],
+				channel4:['presence', 'publish', 'subscribe'],
+				channel5:['presence'],
+				channel6:['*']
+			})
+		},
+		{   /* key 5, has wildcard clientId */
+			privileged: true,
+			capability: JSON.stringify({
+				channel0:['publish'],
+				channel1:['publish'],
+				channel2:['publish', 'subscribe'],
+				channel3:['subscribe'],
+				channel4:['presence', 'publish', 'subscribe'],
+				channel5:['presence'],
+				channel6:['*']
+			})
+		}
+	],
+	namespaces: [
+		{	/* persisted namespace, persisted */
+			id: 'persisted',
+			persisted: true
+		}
+	]
+}

@@ -1,0 +1,43 @@
+{
+	keys: [
+		{},  /* key 0, blanket */
+	],
+	namespaces: [
+		{	/* persisted namespace, persisted */
+			id: 'persisted',
+			persisted: true
+		}
+	],
+	channels: [
+		{	/* non-persisted */
+			name: 'restpresence_notpersisted',
+			presence: [
+				{	clientId: 'client_string', clientData: 'This is a string clientData payload' }
+			]
+		},
+		{	/* persisted */
+			name: 'persisted:restpresence_persisted',
+			presence: [
+				{	clientId: 'client_string_0', clientData: 'This is a string clientData payload' }
+			]
+		},
+		{	/* persisted */
+			name: 'persisted:restpresence_persisted',
+			presence: [
+				{	clientId: 'client_string_1', clientData: 'This is a string clientData payload' }
+			]
+		},
+		{	/* persisted */
+			name: 'persisted:restpresence_persisted',
+			presence: [
+				{	clientId: 'client_string_2', clientData: 'This is a string clientData payload' }
+			]
+		},
+		{	/* persisted */
+			name: 'persisted:restpresence_persisted',
+			presence: [
+				{	clientId: 'client_string_3', clientData: 'This is a string clientData payload' }
+			]
+		},
+	]
+}

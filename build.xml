@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="all" name="Jar for ably-java">
+	<property name="build.dir" value="build" />
+	<property name="classes.dir" value="${build.dir}/classes" />
+	<property name="classes-test.dir" value="${build.dir}/test/classes" />
+	<property name="lib.dir" value="libs" />
+	<property name="ant.dir" value="/usr/share/ant" />
+	
+	<path id="classpath">
+		<fileset dir="${lib.dir}" includes="**/*.jar" />
+	</path>
+
+	<path id="classpath-test">
+	    <path refid="classpath"/>
+	    <pathelement location="${classes.dir}"/>
+		<fileset dir="${ant.dir}" includes="lib/*.jar" />
+	</path>
+
+		<target name="clean">
+		<delete dir="${classes.dir}" />
+		<delete dir="${classes-test.dir}" />
+		<delete file="${build.dir}/ably.jar" />
+		<delete file="${build.dir}/ably-android.jar" />
+			</target>
+
+	<target name="compile">
+		<mkdir dir="${classes.dir}" />
+		<javac srcdir="src" destdir="${classes.dir}" classpathref="classpath"
+			includeantruntime="false" />
+	</target>
+
+	<target name="jre-jar" depends="compile">
+		<jar destfile="${build.dir}/ably.jar" filesonly="true">
+			<fileset dir="${classes.dir}" />
+			<zipfileset excludes="META-INF/**"
+				src="${lib.dir}/json-min.jar" />
+			<zipfileset excludes="META-INF/**"
+				src="${lib.dir}/java_websocket_client.jar" />
+			<zipfileset excludes="META-INF/**"
+				src="${lib.dir}/msgpack-0.0.1.jar" />
+			<zipfileset excludes="META-INF/**"
+				src="${lib.dir}/commons-codec-1.6.jar" />
+			<zipfileset excludes="META-INF/**"
+				src="${lib.dir}/commons-lang-2.6.jar" />
+			<zipfileset excludes="META-INF/**"
+				src="${lib.dir}/commons-logging-1.1.1.jar" />
+			<zipfileset excludes="META-INF/**"
+				src="${lib.dir}/httpclient-4.2.2.jar" />
+			<zipfileset excludes="META-INF/**"
+				src="${lib.dir}/httpcore-4.2.2.jar" />
+		</jar>
+	</target>
+
+	<target name="android-jar" depends="compile">
+		<jar destfile="${build.dir}/ably-android.jar" filesonly="true">
+			<fileset dir="${classes.dir}" />
+			<zipfileset excludes="META-INF/**"
+				src="${lib.dir}/java_websocket_client.jar" />
+			<zipfileset excludes="META-INF/**"
+				src="${lib.dir}/msgpack-0.0.1.jar" />
+		</jar>
+	</target>
+
+	<target name="compile-test" depends="compile">
+		<mkdir dir="${classes-test.dir}" />
+		<javac srcdir="test" destdir="${classes-test.dir}" classpathref="classpath-test"
+			includeantruntime="false" />
+	</target>
+
+	<target name="test-setup" depends="jre-jar, compile-test">
+	    <!-- this seems a bit convoluted but we can't (afaik) make the exec env variables
+	         conditional. So we check to see whether or not the ably.host property has
+	         been specified on the commandline, and set these variables, and in turn the
+	         env vars, conditionally on that -->
+	    <condition property="ably.ws.host" value="${ably.host}" else="staging-realtime.ably.io">
+	        <isset property="ably.host"/>
+	    </condition>
+	    <condition property="ably.host" else="sandbox-rest.ably.io">
+	        <isset property="ably.host"/>
+	    </condition>
+	    <condition property="ably.tls" value="true" else="false">
+	        <isset property="ably.tls"/>
+	    </condition>
+	</target>
+
+	<target name="test-realtime" depends="test-setup">
+	    <junit fork="yes" printsummary="on" showoutput="true" enabletestlistenerevents="true">
+		    <env key="ABLY_TLS" value="${ably.tls}"/>
+		    <env key="ABLY_HOST" value="${ably.host}"/>
+		 	<env key="ABLY_WS_HOST" value="${ably.ws.host}"/>
+		    <classpath>
+				<path location="${classes-test.dir}" />
+	    		<path refid="classpath-test"/>
+			</classpath>
+			<formatter type="plain"/>
+			<formatter classname="io.ably.test.util.InteractiveFormatter" usefile="false"/>
+			<test name="io.ably.test.realtime.RealtimeSuite"/>
+		</junit>
+	</target>
+
+	<target name="test-rest" depends="test-setup">
+	    <junit fork="yes" printsummary="on" showoutput="true" enabletestlistenerevents="true">
+		    <env key="ABLY_TLS" value="${ably.tls}"/>
+		    <env key="ABLY_HOST" value="${ably.host}"/>
+		 	<env key="ABLY_WS_HOST" value="${ably.ws.host}"/>
+		    <classpath>
+				<path location="${classes-test.dir}" />
+	    		<path refid="classpath-test"/>
+			</classpath>
+			<formatter type="plain"/>
+			<formatter classname="io.ably.test.util.InteractiveFormatter" usefile="false"/>
+			<test name="io.ably.test.rest.RestSuite"/>
+		</junit>
+	</target>
+
+	<target name="test" depends="test-rest, test-realtime"/>
+
+	<target name="all" depends="jre-jar, android-jar, compile-test" />
+
+</project>

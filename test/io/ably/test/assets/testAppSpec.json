@@ -1,0 +1,27 @@
+{
+	"keys": [
+		{},
+		{
+			"capability": "{\"testchannel\":[\"publish\"]}"
+		},
+		{
+			"capability": "{\"*\":[\"subscribe\"],\"canpublish:*\":[\"publish\"],\"canpublish:andpresence\":[\"presence\",\"publish\"]}"
+		},
+		{
+			"capability": "{\"candoall\":[\"*\"]}"
+		},
+		{
+			"capability": "{\"channel0\":[\"publish\"],\"channel1\":[\"publish\"],\"channel2\":[\"publish\",\"subscribe\"],\"channel3\":[\"subscribe\"],\"channel4\":[\"presence\",\"publish\",\"subscribe\"],\"channel5\":[\"presence\"],\"channel6\":[\"*\"]}"
+		},
+		{
+			"privileged": true,
+			"capability": "{\"channel0\":[\"publish\"],\"channel1\":[\"publish\"],\"channel2\":[\"publish\",\"subscribe\"],\"channel3\":[\"subscribe\"],\"channel4\":[\"presence\",\"publish\",\"subscribe\"],\"channel5\":[\"presence\"],\"channel6\":[\"*\"]}"
+		}
+	],
+	"namespaces": [
+		{
+			"id": "persisted",
+			"persisted": true
+		}
+	]
+}
