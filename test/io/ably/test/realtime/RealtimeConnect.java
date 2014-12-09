@@ -1,16 +1,16 @@
 package io.ably.test.realtime;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import io.ably.debug.DebugOptions;
 import io.ably.realtime.AblyRealtime;
 import io.ably.realtime.Connection.ConnectionState;
+import io.ably.test.realtime.Helpers.CompletionWaiter;
 import io.ably.test.realtime.Helpers.ConnectionWaiter;
-import io.ably.test.realtime.Helpers.HeartbeatWaiter;
 import io.ably.test.realtime.RealtimeSetup.TestVars;
 import io.ably.types.AblyException;
 import io.ably.types.Options;
-import io.ably.types.ProtocolMessage;
 
 import org.junit.Test;
 
@@ -73,16 +73,14 @@ public class RealtimeConnect {
 			TestVars testVars = RealtimeSetup.getTestVars();
 			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
 			testVars.fillInOptions(opts);
-			HeartbeatWaiter protocolListener = new HeartbeatWaiter();
-			opts.protocolListener = protocolListener;
+			CompletionWaiter heartbeatWaiter = new CompletionWaiter();
 			AblyRealtime ably = new AblyRealtime(opts);
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
-
 			connectionWaiter.waitFor(ConnectionState.connected);
 			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
-			ably.connection.connectionManager.send(new ProtocolMessage(ProtocolMessage.Action.HEARTBEAT), false, null);
-			protocolListener.waitFor();
-			assertEquals("Verify heartbeat occurred", protocolListener.heartbeatCount, 1);
+			ably.connection.ping(heartbeatWaiter);
+			heartbeatWaiter.waitFor();
+			assertTrue("Verify heartbeat occurred", heartbeatWaiter.success);
 			ably.close();
 			connectionWaiter.waitFor(ConnectionState.closed);
 			assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
@@ -104,16 +102,14 @@ public class RealtimeConnect {
 			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
 			testVars.fillInOptions(opts);
 			opts.useBinaryProtocol = false;
-			HeartbeatWaiter protocolListener = new HeartbeatWaiter();
-			opts.protocolListener = protocolListener;
+			CompletionWaiter heartbeatWaiter = new CompletionWaiter();
 			AblyRealtime ably = new AblyRealtime(opts);
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
-
 			connectionWaiter.waitFor(ConnectionState.connected);
 			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
-			ably.connection.connectionManager.send(new ProtocolMessage(ProtocolMessage.Action.HEARTBEAT), false, null);
-			protocolListener.waitFor();
-			assertEquals("Verify heartbeat occurred", protocolListener.heartbeatCount, 1);
+			ably.connection.ping(heartbeatWaiter);
+			heartbeatWaiter.waitFor();
+			assertTrue("Verify heartbeat occurred", heartbeatWaiter.success);
 			ably.close();
 			connectionWaiter.waitFor(ConnectionState.closed);
 			assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
@@ -134,7 +130,6 @@ public class RealtimeConnect {
 			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
 			AblyRealtime ably = new AblyRealtime(opts);
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
-
 			connectionWaiter.waitFor(ConnectionState.connected);
 			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
 			ably.close();
