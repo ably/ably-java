@@ -475,14 +475,6 @@ public class Channel {
 	 * @throws AblyException
 	 */
 	public PaginatedResult<Message> history(Param[] params) throws AblyException {
-		if(this.state == ChannelState.attached) {
-			if(!Param.containsKey(params, "live")) {
-				/* add the "attached=true" param to tell the system to look at the realtime history */
-				Param attached = new Param("live", "true");
-				if(params == null) params = new Param[]{ attached };
-				else params = Param.push(params, attached);
-			}
-		}
 		BodyHandler<Message> bodyHandler = MessageSerializer.getMessageResponseHandler(options);
 		return new PaginatedQuery<Message>(ably.http, basePath + "/history", HttpUtils.defaultGetHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
 	}

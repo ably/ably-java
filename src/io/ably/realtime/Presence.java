@@ -3,7 +3,6 @@ package io.ably.realtime;
 import io.ably.http.Http.BodyHandler;
 import io.ably.http.HttpUtils;
 import io.ably.http.PaginatedQuery;
-import io.ably.realtime.Channel.ChannelState;
 import io.ably.transport.ConnectionManager;
 import io.ably.types.AblyException;
 import io.ably.types.ErrorInfo;
@@ -244,14 +243,6 @@ public class Presence {
 	 * @throws AblyException
 	 */
 	public PaginatedResult<PresenceMessage> history(Param[] params) throws AblyException {
-		if(channel.state == ChannelState.attached) {
-			if(!Param.containsKey(params, "live")) {
-				/* add the "attached=true" param to tell the system to look at the realtime history */
-				Param attached = new Param("live", "true");
-				if(params == null) params = new Param[]{ attached };
-				else params = Param.push(params, attached);
-			}
-		}
 		AblyRealtime ably = channel.ably;
 		BodyHandler<PresenceMessage> bodyHandler = PresenceSerializer.getPresenceResponseHandler(channel.options);
 		return new PaginatedQuery<PresenceMessage>(ably.http, channel.basePath + "/presence/history", HttpUtils.defaultGetHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
