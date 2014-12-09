@@ -59,6 +59,14 @@ public class Connection implements ConnectionStateListener {
 	}
 
 	/**
+	 * Send a heartbeat message to the Ably service and await a response.
+	 * @param listener: a listener to be notified of the outcome of this message.
+	 */
+	public void ping(CompletionListener listener) {
+		connectionManager.ping(listener);
+	}
+
+	/**
 	 * Causes the connection to close, entering the closed state, from any state except
 	 * the failed state. Once closed, the library will not attempt to re-establish the
 	 * connection without a call to {@link #connect}.

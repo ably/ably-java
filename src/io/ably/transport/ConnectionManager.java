@@ -18,6 +18,7 @@ import io.ably.util.Log;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 
@@ -202,6 +203,39 @@ public class ConnectionManager extends Thread implements ConnectListener {
 		notify();
 	}
 
+	public void ping(final CompletionListener listener) {
+		if(state.state != ConnectionState.connected) {
+			listener.onError(new ErrorInfo("Unable to ping service; not connected", 40000, 400));
+			return;
+		}
+		Runnable waiter = new Runnable() {
+			public void run() {
+				boolean pending;
+				synchronized(heartbeatWaiters) {
+					pending = heartbeatWaiters.contains(this);
+					if(pending)
+						try { heartbeatWaiters.wait(HEARTBEAT_TIMEOUT); } catch(InterruptedException ie) {}
+
+					pending = heartbeatWaiters.remove(this);
+				}
+				if(pending)
+					listener.onError(new ErrorInfo("Timedout waiting for heartbeat response", 50000, 500));
+				else
+					listener.onSuccess();
+			}
+		};
+		synchronized(heartbeatWaiters) {
+			heartbeatWaiters.add(waiter);
+		}
+		try {
+			send(new ProtocolMessage(ProtocolMessage.Action.HEARTBEAT), false, null);
+		} catch (AblyException e) {
+			listener.onError(e.errorInfo);
+			return;
+		}
+		(new Thread(waiter)).start();
+	}
+
 	/***************************************
 	 * transport events/notifications
 	 ***************************************/
@@ -211,6 +245,7 @@ public class ConnectionManager extends Thread implements ConnectListener {
 			protocolListener.onRawMessage(message);
 		switch(message.action) {
 		case HEARTBEAT:
+			onHeartbeat(message);
 			break;
 		case ERROR:
 			ErrorInfo reason = message.error;
@@ -273,6 +308,13 @@ public class ConnectionManager extends Thread implements ConnectListener {
 
 	private void onNack(ProtocolMessage message) {
 		pendingMessages.nack(message.msgSerial, message.count, message.error);
+	}
+
+	private void onHeartbeat(ProtocolMessage message) {
+		synchronized(heartbeatWaiters) {
+			heartbeatWaiters.clear();
+			heartbeatWaiters.notifyAll();
+		}
 	}
 
 	/**************************
@@ -648,6 +690,7 @@ public class ConnectionManager extends Thread implements ConnectListener {
 	private final ITransport.Factory factory;
 	private final List<QueuedMessage> queuedMessages;
 	private final PendingMessageQueue pendingMessages;
+	private final HashSet<Object> heartbeatWaiters = new HashSet<Object>();
 
 	private StateInfo state;
 	private StateIndication indicatedState, requestedState;
@@ -661,4 +704,6 @@ public class ConnectionManager extends Thread implements ConnectListener {
 
 	/* for debug/test only */
 	private RawProtocolListener protocolListener;
+
+	private static final long HEARTBEAT_TIMEOUT = 5000L;
 }
