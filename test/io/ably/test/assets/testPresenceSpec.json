@@ -14,7 +14,7 @@
 			"presence": [
 				{
 					"clientId": "client_string",
-					"clientData": "This is a string clientData payload"
+					"data": "This is a string data payload"
 				}
 			]
 		},
@@ -23,7 +23,7 @@
 			"presence": [
 				{
 					"clientId": "client_string_0",
-					"clientData": "This is a string clientData payload"
+					"data": "This is a string data payload"
 				}
 			]
 		},
@@ -32,7 +32,7 @@
 			"presence": [
 				{
 					"clientId": "client_string_1",
-					"clientData": "This is a string clientData payload"
+					"data": "This is a string data payload"
 				}
 			]
 		},
@@ -41,7 +41,7 @@
 			"presence": [
 				{
 					"clientId": "client_string_2",
-					"clientData": "This is a string clientData payload"
+					"data": "This is a string data payload"
 				}
 			]
 		},
@@ -50,7 +50,7 @@
 			"presence": [
 				{
 					"clientId": "client_string_3",
-					"clientData": "This is a string clientData payload"
+					"data": "This is a string data payload"
 				}
 			]
 		}

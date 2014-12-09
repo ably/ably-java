@@ -12,31 +12,31 @@
 		{	/* non-persisted */
 			name: 'restpresence_notpersisted',
 			presence: [
-				{	clientId: 'client_string', clientData: 'This is a string clientData payload' }
+				{	clientId: 'client_string', data: 'This is a string data payload' }
 			]
 		},
 		{	/* persisted */
 			name: 'persisted:restpresence_persisted',
 			presence: [
-				{	clientId: 'client_string_0', clientData: 'This is a string clientData payload' }
+				{	clientId: 'client_string_0', data: 'This is a string data payload' }
 			]
 		},
 		{	/* persisted */
 			name: 'persisted:restpresence_persisted',
 			presence: [
-				{	clientId: 'client_string_1', clientData: 'This is a string clientData payload' }
+				{	clientId: 'client_string_1', data: 'This is a string data payload' }
 			]
 		},
 		{	/* persisted */
 			name: 'persisted:restpresence_persisted',
 			presence: [
-				{	clientId: 'client_string_2', clientData: 'This is a string clientData payload' }
+				{	clientId: 'client_string_2', data: 'This is a string data payload' }
 			]
 		},
 		{	/* persisted */
 			name: 'persisted:restpresence_persisted',
 			presence: [
-				{	clientId: 'client_string_3', clientData: 'This is a string clientData payload' }
+				{	clientId: 'client_string_3', data: 'This is a string data payload' }
 			]
 		},
 	]
