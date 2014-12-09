@@ -362,44 +362,6 @@ public class Helpers {
 	}
 
 	/**
-	 * A class that waits for connection heartbeat events.
-	 * @author paddy
-	 *
-	 */
-	static class HeartbeatWaiter implements RawProtocolListener {
-		public int heartbeatCount = 0;
-
-		/**
-		 * Public API
-		 */
-
-		/**
-		 * Wait for a single heartbeat.
-		 */
-		public synchronized void waitFor() { waitFor(1); }
-
-		/**
-		 * Wait for a given count of heartbeat messages.
-		 * @param count
-		 */
-		public synchronized void waitFor(int count) {
-			while(heartbeatCount < count)
-				try { wait(); } catch(InterruptedException e) {}
-		}
-
-		/**
-		 * RawProtocolListener interface
-		 */
-		@Override
-		public void onRawMessage(ProtocolMessage message) {
-			if(message.action == Action.HEARTBEAT) {
-				++heartbeatCount;
-				synchronized(this) { notify(); }
-			}
-		}
-	}
-
-	/**
 	 * A class that waits for raw protocol messages.
 	 *
 	 */
