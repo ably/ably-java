@@ -52,6 +52,7 @@ public class BaseMessage {
 			encoding = (String)json.opt("encoding");
 			data = (String)json.opt("data");
 			id = (String)json.opt("id");
+			clientId = (String)json.opt("clientId");
 		}
 	}
 
