@@ -69,7 +69,7 @@ public class RestPresence {
 			assertEquals("Expected 1 message", members.length, 1);
 
 			/* verify presence contents */
-			assertEquals("Expect client_string to be expected String", members[0].data, "This is a string data payload");
+			assertEquals("Expect data to be expected String", members[0].data, "This is a string data payload");
 		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("rest_getpresence_text: Unexpected exception");
@@ -96,14 +96,6 @@ public class RestPresence {
 			fail("rest_getpresence_binary: Unexpected exception");
 			return;
 		}
-	}
-
-	@Test
-	public void rest_presence_wait() {
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
 	}
 
 	/**

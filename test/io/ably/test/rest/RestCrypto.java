@@ -67,10 +67,7 @@ public class RestCrypto {
 			fail("channelpublish_text: Unexpected exception");
 			return;
 		}
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
+
 		/* get the history for this channel */
 		try {
 			PaginatedResult<Message> messages = publish0.history(null);
@@ -107,10 +104,7 @@ public class RestCrypto {
 			fail("channelpublish_binary: Unexpected exception");
 			return;
 		}
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
+
 		/* get the history for this channel */
 		try {
 			PaginatedResult<Message> messages = publish1.history(null);
@@ -158,10 +152,7 @@ public class RestCrypto {
 			fail("init0: Unexpected exception generating key");
 			return;
 		}
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
+
 		/* get the history for this channel */
 		try {
 			PaginatedResult<Message> messages = publish0.history(null);
@@ -210,10 +201,6 @@ public class RestCrypto {
 			return;
 		}
 
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
 		/* get the history for this channel */
 		try {
 			PaginatedResult<Message> messages = publish1.history(null);
@@ -257,10 +244,7 @@ public class RestCrypto {
 			fail("channelpublish_text: Unexpected exception");
 			return;
 		}
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
+
 		/* get the history for this channel */
 		try {
 			Channel rx_publish = ably_binary.channels.get("persisted:crypto_publish_text_binary", channelOpts);
@@ -305,10 +289,7 @@ public class RestCrypto {
 			fail("channelpublish_text: Unexpected exception");
 			return;
 		}
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
+
 		/* get the history for this channel */
 		try {
 			Channel rx_publish = ably_text.channels.get("persisted:crypto_publish_binary_text", channelOpts);
@@ -350,10 +331,7 @@ public class RestCrypto {
 			fail("channelpublish_text: Unexpected exception");
 			return;
 		}
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
+
 		/* get the history for this channel */
 		try {
 			ChannelOptions rx_channelOpts = new ChannelOptions() {{ encrypted = true; }};
@@ -384,10 +362,7 @@ public class RestCrypto {
 			fail("channelpublish_text: Unexpected exception");
 			return;
 		}
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
+
 		/* get the history for this channel */
 		try {
 			ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; }};
@@ -428,10 +403,7 @@ public class RestCrypto {
 			fail("channelpublish_text: Unexpected exception");
 			return;
 		}
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
+
 		/* get the history for this channel */
 		try {
 			Channel rx_publish = ably_text.channels.get("persisted:crypto_send_encrypted_unhandled");

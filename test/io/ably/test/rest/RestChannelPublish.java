@@ -56,10 +56,7 @@ public class RestChannelPublish {
 			fail("channelpublish_text: Unexpected exception");
 			return;
 		}
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
+
 		/* get the history for this channel */
 		try {
 			PaginatedResult<Message> messages = publish0.history(null);
@@ -93,10 +90,7 @@ public class RestChannelPublish {
 			fail("channelpublish_binary: Unexpected exception");
 			return;
 		}
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
+
 		/* get the history for this channel */
 		try {
 			PaginatedResult<Message> messages = publish1.history(null);

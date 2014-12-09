@@ -47,10 +47,7 @@ public class RestChannelHistory {
 			fail("channelhistory0: Unexpected exception");
 			return;
 		}
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
+
 		/* get the history for this channel */
 		try {
 			PaginatedResult<Message> messages = history0.history(null);
@@ -90,10 +87,7 @@ public class RestChannelHistory {
 			fail("channelhistory1: Unexpected exception");
 			return;
 		}
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
+
 		/* get the history for this channel */
 		try {
 			PaginatedResult<Message> messages = history1.history(new Param[] { new Param("direction", "forwards") });
@@ -129,10 +123,7 @@ public class RestChannelHistory {
 			fail("channelhistory2: Unexpected exception");
 			return;
 		}
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
+
 		/* get the history for this channel */
 		try {
 			PaginatedResult<Message> messages = history2.history(new Param[] { new Param("direction", "backwards") });
@@ -168,10 +159,7 @@ public class RestChannelHistory {
 			fail("channelhistory3: Unexpected exception");
 			return;
 		}
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
+
 		/* get the history for this channel */
 		try {
 			PaginatedResult<Message> messages = history3.history(new Param[] { new Param("direction", "forwards"), new Param("limit", "25") });
@@ -207,10 +195,7 @@ public class RestChannelHistory {
 			fail("channelhistory4: Unexpected exception");
 			return;
 		}
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
+
 		/* get the history for this channel */
 		try {
 			PaginatedResult<Message> messages = history4.history(new Param[] { new Param("direction", "backwards"), new Param("limit", "25") });
@@ -265,10 +250,7 @@ public class RestChannelHistory {
 			e.printStackTrace();
 			fail("channelhistory1: Unexpected exception");
 		}
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
+
 		/* get the history for this channel */
 		try {
 			PaginatedResult<Message> messages = history5.history(new Param[] {
@@ -327,10 +309,7 @@ public class RestChannelHistory {
 			e.printStackTrace();
 			fail("channelhistory6: Unexpected exception");
 		}
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
+
 		/* get the history for this channel */
 		try {
 			PaginatedResult<Message> messages = history6.history(new Param[] {
@@ -370,10 +349,6 @@ public class RestChannelHistory {
 			fail("channelhistory3: Unexpected exception");
 			return;
 		}
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
 
 		/* get the history for this channel */
 		try {
@@ -442,10 +417,6 @@ public class RestChannelHistory {
 			fail("channelhistory3: Unexpected exception");
 			return;
 		}
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
 
 		/* get the history for this channel */
 		try {
@@ -514,10 +485,6 @@ public class RestChannelHistory {
 			fail("channelhistory3: Unexpected exception");
 			return;
 		}
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
 
 		/* get the history for this channel */
 		try {
@@ -586,10 +553,6 @@ public class RestChannelHistory {
 			fail("channelhistory3: Unexpected exception");
 			return;
 		}
-		/* wait for the history to be persisted */
-		try {
-			Thread.sleep(16000);
-		} catch(InterruptedException ie) {}
 
 		/* get the history for this channel */
 		try {
