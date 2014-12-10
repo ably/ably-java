@@ -205,35 +205,38 @@ public class ConnectionManager extends Thread implements ConnectListener {
 
 	public void ping(final CompletionListener listener) {
 		if(state.state != ConnectionState.connected) {
-			listener.onError(new ErrorInfo("Unable to ping service; not connected", 40000, 400));
+			if(listener != null)
+				listener.onError(new ErrorInfo("Unable to ping service; not connected", 40000, 400));
 			return;
 		}
-		Runnable waiter = new Runnable() {
-			public void run() {
-				boolean pending;
-				synchronized(heartbeatWaiters) {
-					pending = heartbeatWaiters.contains(this);
+		if(listener != null) {
+			Runnable waiter = new Runnable() {
+				public void run() {
+					boolean pending;
+					synchronized(heartbeatWaiters) {
+						pending = heartbeatWaiters.contains(this);
+						if(pending)
+							try { heartbeatWaiters.wait(HEARTBEAT_TIMEOUT); } catch(InterruptedException ie) {}
+	
+						pending = heartbeatWaiters.remove(this);
+					}
 					if(pending)
-						try { heartbeatWaiters.wait(HEARTBEAT_TIMEOUT); } catch(InterruptedException ie) {}
-
-					pending = heartbeatWaiters.remove(this);
+						listener.onError(new ErrorInfo("Timedout waiting for heartbeat response", 50000, 500));
+					else
+						listener.onSuccess();
 				}
-				if(pending)
-					listener.onError(new ErrorInfo("Timedout waiting for heartbeat response", 50000, 500));
-				else
-					listener.onSuccess();
+			};
+			synchronized(heartbeatWaiters) {
+				heartbeatWaiters.add(waiter);
+				(new Thread(waiter)).start();
 			}
-		};
-		synchronized(heartbeatWaiters) {
-			heartbeatWaiters.add(waiter);
 		}
 		try {
 			send(new ProtocolMessage(ProtocolMessage.Action.HEARTBEAT), false, null);
 		} catch (AblyException e) {
-			listener.onError(e.errorInfo);
-			return;
+			if(listener != null)
+				listener.onError(e.errorInfo);
 		}
-		(new Thread(waiter)).start();
 	}
 
 	/***************************************
