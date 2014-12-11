@@ -11,17 +11,17 @@ import org.junit.runners.Suite.SuiteClasses;
 
 @RunWith(Suite.class)
 @SuiteClasses({
-//	RealtimeInit.class,
-//	RealtimeConnect.class,
-//	RealtimeConnectFail.class,
-//	RealtimeChannel.class,
-//	RealtimePresence.class,
-//	RealtimeMessage.class,
-//	RealtimeResume.class,
-//	RealtimeRecover.class,
-//	RealtimeCrypto.class,
-//	RealtimeCryptoMessage.class,
-//	RealtimeChannelHistory.class,
+	RealtimeInit.class,
+	RealtimeConnect.class,
+	RealtimeConnectFail.class,
+	RealtimeChannel.class,
+	RealtimePresence.class,
+	RealtimeMessage.class,
+	RealtimeResume.class,
+	RealtimeRecover.class,
+	RealtimeCrypto.class,
+	RealtimeCryptoMessage.class,
+	RealtimeChannelHistory.class,
 	RealtimePresenceHistory.class
 })
 public class RealtimeSuite {
