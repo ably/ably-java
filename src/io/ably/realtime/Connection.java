@@ -18,6 +18,7 @@ public class Connection implements ConnectionStateListener {
 		connected,
 		disconnected,
 		suspended,
+		closing,
 		closed,
 		failed;
 	}
@@ -73,7 +74,7 @@ public class Connection implements ConnectionStateListener {
 	 */
 	public void close() {
 		id = null;
-		connectionManager.requestState(ConnectionState.closed);
+		connectionManager.requestState(ConnectionState.closing);
 	}
 
 	/*****************

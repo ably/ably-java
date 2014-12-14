@@ -14,6 +14,7 @@ import io.ably.types.AblyException;
 import io.ably.types.ErrorInfo;
 import io.ably.types.Options;
 import io.ably.types.ProtocolMessage;
+import io.ably.types.ProtocolMessage.Action;
 import io.ably.util.Log;
 
 import java.util.ArrayList;
@@ -94,6 +95,7 @@ public class ConnectionManager extends Thread implements ConnectListener {
 		put(ConnectionState.connected, new StateInfo(ConnectionState.connected, false, true, false, false, 0, null));
 		put(ConnectionState.disconnected, new StateInfo(ConnectionState.disconnected, true, false, false, true, Defaults.disconnectTimeout, REASON_DISCONNECTED));
 		put(ConnectionState.suspended, new StateInfo(ConnectionState.suspended, false, false, false, true, Defaults.suspendedTimeout, REASON_SUSPENDED));
+		put(ConnectionState.closing, new StateInfo(ConnectionState.closing, false, false, false, false, Defaults.connectTimeout, REASON_CLOSED));
 		put(ConnectionState.closed, new StateInfo(ConnectionState.closed, false, false, true, false, 0, REASON_CLOSED));
 		put(ConnectionState.failed, new StateInfo(ConnectionState.failed, false, false, true, false, 0, REASON_FAILED));
 	}};
@@ -269,6 +271,9 @@ public class ConnectionManager extends Thread implements ConnectListener {
 		case DISCONNECTED:
 			onDisconnected(message);
 			break;
+		case CLOSED:
+			onClosed(message);
+			break;
 		case ACK:
 			onAck(message);
 			break;
@@ -296,8 +301,16 @@ public class ConnectionManager extends Thread implements ConnectListener {
 	}
 
 	private synchronized void onDisconnected(ProtocolMessage message) {
-		connection.id = null;
 		notifyState(new StateIndication(ConnectionState.disconnected, null));
+	}
+
+	private synchronized void onClosed(ProtocolMessage message) {
+		if(message.error != null) {
+			this.onError(message);
+		} else {
+			connection.id = null;
+			notifyState(new StateIndication(ConnectionState.closed, null));
+		}
 	}
 
 	private synchronized void onError(ProtocolMessage message) {
@@ -348,6 +361,10 @@ public class ConnectionManager extends Thread implements ConnectListener {
 		case connecting:
 			connectImpl(requestedState);
 			handled = true;
+			break;
+		case closing:
+			closeImpl(requestedState);
+			handled = true;
 		default:
 		}
 		if(!handled) {
@@ -360,11 +377,29 @@ public class ConnectionManager extends Thread implements ConnectListener {
 	private void handleStateChange(StateIndication stateChange) {
 		/* if we have had a disconnected state indication
 		 * from the transport then we have to decide whether
-		 * to transition to disconnected to suspended depending
+		 * to transition to closed, disconnected to suspended depending
 		 * on when we last had a successful connection */
-		if(state.state == ConnectionState.connecting && stateChange.state == ConnectionState.disconnected) {
-			stateChange = checkSuspend(stateChange);
-			pendingConnect = null;
+		if(stateChange.state == ConnectionState.disconnected) {
+			switch(state.state) {
+			case connecting:
+				stateChange = checkSuspend(stateChange);
+				pendingConnect = null;
+				break;
+			case closing:
+				/* this becomes a close event; if the indication we received
+				 * has a non-default disconnection reason, use that */
+				ErrorInfo closeReason = (stateChange.reason == REASON_DISCONNECTED) ? REASON_CLOSED : stateChange.reason;
+				stateChange = new StateIndication(ConnectionState.closed, closeReason);
+				break;
+			case closed:
+			case failed:
+				/* terminal states */
+				stateChange = null;
+				break;
+			case connected:
+			default:
+				break;
+			}
 		}
 		if(stateChange != null)
 			setState(stateChange);
@@ -444,7 +479,7 @@ public class ConnectionManager extends Thread implements ConnectListener {
 					}
 	
 					/* no indicated state or requested action, so the timer
-					 * expired while we were in the connecting state */
+					 * expired while we were in the connecting/closing state */
 					stateChange = checkSuspend(new StateIndication(ConnectionState.disconnected, REASON_TIMEDOUT));
 				}
 			}
@@ -503,6 +538,22 @@ public class ConnectionManager extends Thread implements ConnectListener {
 			throw new RuntimeException(msg, e);
 		}
 		transport.connect(this);
+	}
+
+	private void closeImpl(StateIndication request) {
+		/* enter the closing state */
+		notifyState(request);
+
+		/* send a close message on the transport, if any */
+		if(transport != null) {
+			try {
+				transport.send(new ProtocolMessage(Action.CLOSE));
+			} catch (AblyException e) {
+				transport.abort(e.errorInfo);
+			}
+			return;
+		}
+		notifyState(new StateIndication(ConnectionState.closed, null));
 	}
 
 	/**

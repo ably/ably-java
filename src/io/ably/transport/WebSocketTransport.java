@@ -84,7 +84,6 @@ public class WebSocketTransport implements ITransport {
 	public void close(boolean sendClose) {
 		synchronized(this) {
 			if(wsConnection != null) {
-				closing = true;
 				if(sendClose) {
 					try {
 						send(new ProtocolMessage(Action.CLOSE));
@@ -96,7 +95,6 @@ public class WebSocketTransport implements ITransport {
 				wsConnection = null;
 			}
 		}
-		connectionManager.notifyState(this, new StateIndication(ConnectionState.closed, ConnectionManager.REASON_CLOSED));
 	}
 
 	@Override
@@ -170,16 +168,11 @@ public class WebSocketTransport implements ITransport {
 			ConnectionState newState;
 			ErrorInfo reason;
 			switch(wsCode) {
-			case CLOSE_NORMAL:
-				if(closing) {
-					newState = ConnectionState.closed;
-					reason = ConnectionManager.REASON_CLOSED;
-					break;
-				}
 			case NEVER_CONNECTED:
 				newState = ConnectionState.disconnected;
 				reason = ConnectionManager.REASON_NEVER_CONNECTED;
 				break;
+			case CLOSE_NORMAL:
 			case BUGGYCLOSE:
 			case GOING_AWAY:
 			case ABNORMAL_CLOSE:
@@ -243,7 +236,6 @@ public class WebSocketTransport implements ITransport {
 	private String wsUri;
 	private ConnectListener connectListener;
 
-	private boolean closing;
 	private WsClient wsConnection;
 
 	private static final int NEVER_CONNECTED      =   -1;
