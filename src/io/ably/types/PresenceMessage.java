@@ -25,7 +25,7 @@ import org.msgpack.unpacker.Unpacker;
  * A class representing an individual presence update to be sent or received
  * via the Ably Realtime service.
  */
-public class PresenceMessage extends BaseMessage implements MessagePackable {
+public class PresenceMessage extends BaseMessage implements MessagePackable, Cloneable {
 
 	/**
 	 * Presence Action: the event signified by a PresenceMessage
@@ -33,6 +33,8 @@ public class PresenceMessage extends BaseMessage implements MessagePackable {
 	@Message
 	@OrdinalEnum
 	public enum Action {
+		ABSENT,
+		PRESENT,
 		ENTER,
 		LEAVE,
 		UPDATE;
@@ -253,6 +255,19 @@ public class PresenceMessage extends BaseMessage implements MessagePackable {
 		packer.write("action");
 		packer.write(action);
 		packer.writeMapEnd(true);
+	}
+
+	@Override
+	public Object clone() {
+		PresenceMessage result = new PresenceMessage();
+		result.id = id;
+		result.timestamp = timestamp;
+		result.clientId = clientId;
+		result.encoding = encoding;
+		result.data = data;
+		result.action = action;
+		result.memberId = memberId;
+		return result;
 	}
 
 	private static final MessagePack msgpack = new MessagePack();

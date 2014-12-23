@@ -37,19 +37,31 @@ public class ProtocolMessage implements MessagePackable {
 		DETACH,
 		DETACHED,
 		PRESENCE,
-		MESSAGE;
+		MESSAGE,
+		SYNC;
 
 		public int getValue() { return ordinal(); }
 		public static Action findByValue(int value) { return values()[value]; }
+	}
+
+	public enum Flag {
+		HAS_PRESENCE,
+		HAS_BACKLOG;
+
+		public int getValue() { return ordinal(); }
+		public static Flag findByValue(int value) { return values()[value]; }
 	}
 
 	public static ProtocolMessage fromJSON(JSONObject json) {
 		ProtocolMessage result = new ProtocolMessage();
 		if(json != null) {
 			result.action = Action.findByValue(json.optInt("action"));
+			result.flags = json.optInt("flags");
 			result.count = json.optInt("count");
 			if(json.has("error"))
 				result.error = new ErrorInfo(json.optJSONObject("error"));
+			if(json.has("id"))
+				result.id = json.optString("id");
 			if(json.has("channel"))
 				result.channel = json.optString("channel");
 			if(json.has("channelSerial"))
@@ -58,7 +70,6 @@ public class ProtocolMessage implements MessagePackable {
 				result.connectionId = json.optString("connectionId");
 			if(json.has("connectionSerial"))
 				result.connectionSerial = Long.valueOf(json.optLong("connectionSerial"));
-			result.msgSerial = json.optLong("msgSerial");
 			result.timestamp = json.optLong("timestamp");
 			if(json.has("messages"))
 				result.messages = MessageSerializer.readJSON(json.optJSONArray("messages"));
@@ -207,6 +218,8 @@ public class ProtocolMessage implements MessagePackable {
 
 			if(fieldName == "action") {
 				action = Action.findByValue(unpacker.readInt());
+			} else if(fieldName == "flags") {
+				flags = unpacker.readInt();
 			} else if(fieldName == "count") {
 				count = unpacker.readInt();
 			} else if(fieldName == "error") {
@@ -217,6 +230,8 @@ public class ProtocolMessage implements MessagePackable {
 				channel = unpacker.readString();
 			} else if(fieldName == "channelSerial") {
 				channelSerial = unpacker.readString();
+			} else if(fieldName == "memberId") {
+				memberId = unpacker.readString();
 			} else if(fieldName == "connectionId") {
 				connectionId = unpacker.readString();
 			} else if(fieldName == "connectionSerial") {
@@ -238,11 +253,13 @@ public class ProtocolMessage implements MessagePackable {
 	}
 
 	public Action action;
+	public int flags;
 	public int count;
 	public ErrorInfo error;
 	public String id;
 	public String channel;
 	public String channelSerial;
+	public String memberId;
 	public String connectionId;
 	public Long connectionSerial;
 	public Long msgSerial;

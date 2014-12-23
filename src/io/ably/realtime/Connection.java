@@ -47,6 +47,12 @@ public class Connection implements ConnectionStateListener {
 	public String id;
 
 	/**
+	 * A public identifier for this connection, used to identify
+	 * this member in presence events and message ids.
+	 */
+	public String memberId;
+
+	/**
 	 * The serial number of the last message to be received on this connection.
 	 */
 	public long serial;

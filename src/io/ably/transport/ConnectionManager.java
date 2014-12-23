@@ -293,6 +293,7 @@ public class ConnectionManager extends Thread implements ConnectListener {
 
 	private synchronized void onConnected(ProtocolMessage message) {
 		connection.id = message.connectionId;
+		connection.memberId = message.memberId;
 		if(message.connectionSerial != null)
 			connection.serial = message.connectionSerial.longValue();
 		msgSerial = 0;

@@ -15,7 +15,7 @@ import org.msgpack.packer.Packer;
 import org.msgpack.type.ValueType;
 import org.msgpack.unpacker.Unpacker;
 
-public class BaseMessage {
+public class BaseMessage implements Cloneable {
 	/**
 	 * A unique id for this message
 	 */
