@@ -181,7 +181,7 @@ public class Channel {
 		}
 	}
 
-	public void sync(final CompletionListener listener) throws AblyException {
+	public void sync() throws AblyException {
 		Log.v(TAG, "sync(); channel = " + name);
 		/* check preconditions */
 		switch(state) {
@@ -197,12 +197,8 @@ public class Channel {
 
 		/* send sync request */
 		ProtocolMessage syncMessage = new ProtocolMessage(Action.SYNC, this.name);
-		try {
-			connectionManager.send(syncMessage, true, null);
-		} catch(AblyException e) {
-			if(listener != null)
-				listener.onError(e.errorInfo);
-		}
+		syncMessage.channelSerial = syncChannelSerial;
+		connectionManager.send(syncMessage, true, null);
 	}
 
 	/***
@@ -233,6 +229,14 @@ public class Channel {
 		setState(ChannelState.failed, reason);
 		failQueuedMessages(reason);
 		presence.setDetached(reason);
+	}
+
+	public void setConnected() {
+		try {
+			sync();
+		} catch (AblyException e) {
+			Log.e(TAG, "setConnected(): Unable to sync; channel = " + name, e);
+		}
 	}
 
 	public void setSuspended(ErrorInfo reason) {
@@ -350,8 +354,8 @@ public class Channel {
 		this.listeners.onMessage(message.messages);
 	}
 
-	private void onPresence(ProtocolMessage message, boolean sync) {
-		Log.v(TAG, "onPresence(); channel = " + name + "; sync = " + sync);
+	private void onPresence(ProtocolMessage message, String syncChannelSerial) {
+		Log.v(TAG, "onPresence(); channel = " + name + "; syncChannelSerial = " + syncChannelSerial);
 		PresenceMessage[] messages = message.presence;
 		for(int i = 0; i < messages.length; i++) {
 			PresenceMessage msg = messages[i];
@@ -364,13 +368,13 @@ public class Channel {
 			if(msg.timestamp == 0) msg.timestamp = message.timestamp;
 			if(msg.id == null) msg.id = message.id + ':' + i;
 		}
-		presence.setPresence(messages, true, sync ? message.channelSerial : null);
+		presence.setPresence(messages, true, syncChannelSerial);
 	}
 
 	private void onSync(ProtocolMessage message) {
 		Log.v(TAG, "onSync(); channel = " + name);
 		if(message.presence != null)
-			onPresence(message, true);
+			onPresence(message, (syncChannelSerial = message.channelSerial));
 	}
 
 	private MessageMulticaster listeners = new MessageMulticaster();
@@ -547,7 +551,7 @@ public class Channel {
 			onMessage(msg);
 			break;
 		case PRESENCE:
-			onPresence(msg, false);
+			onPresence(msg, null);
 			break;
 		case SYNC:
 			onSync(msg);
@@ -564,4 +568,5 @@ public class Channel {
 	final AblyRealtime ably;
 	final String basePath;
 	ChannelOptions options;
+	String syncChannelSerial;
 }

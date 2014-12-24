@@ -107,10 +107,10 @@ public class Presence {
 				update = (PresenceMessage)update.clone();
 				update.action = PresenceMessage.Action.PRESENT;
 			case PRESENT:
-				presence.put(update);
+				broadcast &= presence.put(update);
 				break;
 			case LEAVE:
-				presence.remove(update);
+				broadcast &= presence.remove(update);
 				break;
 			}
 		}
@@ -401,9 +401,10 @@ public class Presence {
 		/**
 		 * Add or update the presence state for a member
 		 * @param item
-		 * @return
+		 * @return true if the given message represents a change;
+		 * false if the message is already superseded
 		 */
-		synchronized PresenceMessage put(PresenceMessage item) {
+		synchronized boolean put(PresenceMessage item) {
 			String key = memberKey(item);
 			/* we've seen this member, so do not remove it at the end of sync */
 			if(residualMembers != null)
@@ -413,13 +414,10 @@ public class Presence {
 			PresenceMessage existingItem = members.get(key);
 			if(existingItem != null && item.timestamp < existingItem.timestamp) {
 				/* no item supersedes a newer item with the same key */
-				if(existingItem.action == PresenceMessage.Action.ABSENT) {
-					/* if the preexisting item is ABSENT, return as if it wasn't there */
-					existingItem = null;					
-				}
-				return existingItem;
+				return false;
 			}
-			return members.put(key, item);
+			members.put(key, item);
+			return true;
 		}
 
 		/**
@@ -456,12 +454,12 @@ public class Presence {
 		 * @param item
 		 * @return
 		 */
-		synchronized PresenceMessage remove(PresenceMessage item) {
+		synchronized boolean remove(PresenceMessage item) {
 			String key = memberKey(item);
 			PresenceMessage existingItem = members.remove(key);
 			if(existingItem != null && existingItem.action == PresenceMessage.Action.ABSENT)
-				existingItem = null;
-			return existingItem;
+				return false;
+			return true;
 		}
 
 		/**
