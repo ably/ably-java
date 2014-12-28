@@ -88,7 +88,7 @@ public class RealtimeConnectFail {
 	}
 
 	/**
-	 * Verify that the connection enters the disconnected state, after attempting
+	 * Verify that the connection enters the suspended state, after multiple attempts
 	 * to connect to a non-existent ws host
 	 */
 	@Test
