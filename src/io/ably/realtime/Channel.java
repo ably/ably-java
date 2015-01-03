@@ -232,10 +232,12 @@ public class Channel {
 	}
 
 	public void setConnected() {
-		try {
-			sync();
-		} catch (AblyException e) {
-			Log.e(TAG, "setConnected(): Unable to sync; channel = " + name, e);
+		if(state == ChannelState.attached) {
+			try {
+				sync();
+			} catch (AblyException e) {
+				Log.e(TAG, "setConnected(): Unable to sync; channel = " + name, e);
+			}
 		}
 	}
 
