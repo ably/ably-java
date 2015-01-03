@@ -115,7 +115,7 @@ public class Presence {
 			}
 		}
 		/* if this is the last message in a sequence of sync updates, end the sync */
-		if(syncChannelSerial != null && syncCursor.length() <= 1)
+		if(syncChannelSerial == null || syncCursor.length() <= 1)
 			presence.endSync();
 
 		if(broadcast)
