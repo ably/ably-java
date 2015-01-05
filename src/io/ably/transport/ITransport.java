@@ -53,7 +53,7 @@ public interface ITransport {
 					paramList.add(new Param("connection_serial", connectionSerial));
 			} else if(options.recover != null) {
 				mode = Mode.RECOVER;
-				Pattern recoverSpec = Pattern.compile("^(\\w+):(\\w+)$");
+				Pattern recoverSpec = Pattern.compile("^(\\w+):(\\-?\\w+)$");
 				Matcher match = recoverSpec.matcher(options.recover);
 				if(match.matches()) {
 					paramList.add(new Param("recover", match.group(1)));
