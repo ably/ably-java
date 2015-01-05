@@ -58,6 +58,8 @@ public class ProtocolMessage implements MessagePackable {
 			result.action = Action.findByValue(json.optInt("action"));
 			result.flags = json.optInt("flags");
 			result.count = json.optInt("count");
+			if(json.has("msgSerial"))
+				result.msgSerial = Long.valueOf(json.optLong("msgSerial"));
 			if(json.has("error"))
 				result.error = new ErrorInfo(json.optJSONObject("error"));
 			if(json.has("id"))
