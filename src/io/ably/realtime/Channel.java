@@ -15,6 +15,7 @@ import io.ably.types.Param;
 import io.ably.types.PresenceMessage;
 import io.ably.types.ProtocolMessage;
 import io.ably.types.ProtocolMessage.Action;
+import io.ably.types.ProtocolMessage.Flag;
 import io.ably.util.Log;
 
 import java.util.ArrayList;
@@ -180,6 +181,26 @@ public class Channel {
 		}
 	}
 
+	public void sync() throws AblyException {
+		Log.v(TAG, "sync(); channel = " + name);
+		/* check preconditions */
+		switch(state) {
+			case initialised:
+			case detaching:
+			case detached:
+				throw new AblyException(new ErrorInfo("Unable to sync to channel; not attached", 40000));
+			default:
+		}
+		ConnectionManager connectionManager = ably.connection.connectionManager;
+		if(!connectionManager.isActive())
+			throw new AblyException(connectionManager.getStateErrorInfo());
+
+		/* send sync request */
+		ProtocolMessage syncMessage = new ProtocolMessage(Action.SYNC, this.name);
+		syncMessage.channelSerial = syncChannelSerial;
+		connectionManager.send(syncMessage, true, null);
+	}
+
 	/***
 	 * internal
 	 *
@@ -189,7 +210,9 @@ public class Channel {
 		attachSerial = message.channelSerial;
 		setState(ChannelState.attached, message.error);
 		sendQueuedMessages();
-		presence.setAttached(message.presence);
+		if((message.flags & ( 1 << Flag.HAS_PRESENCE.ordinal())) > 0)
+			presence.awaitSync();
+		presence.setAttached();
 	}
 
 	private void setDetached(ProtocolMessage message) {
@@ -206,6 +229,16 @@ public class Channel {
 		setState(ChannelState.failed, reason);
 		failQueuedMessages(reason);
 		presence.setDetached(reason);
+	}
+
+	public void setConnected() {
+		if(state == ChannelState.attached) {
+			try {
+				sync();
+			} catch (AblyException e) {
+				Log.e(TAG, "setConnected(): Unable to sync; channel = " + name, e);
+			}
+		}
 	}
 
 	public void setSuspended(ErrorInfo reason) {
@@ -323,8 +356,8 @@ public class Channel {
 		this.listeners.onMessage(message.messages);
 	}
 
-	private void onPresence(ProtocolMessage message) {
-		Log.v(TAG, "onPresence(); channel = " + name);
+	private void onPresence(ProtocolMessage message, String syncChannelSerial) {
+		Log.v(TAG, "onPresence(); channel = " + name + "; syncChannelSerial = " + syncChannelSerial);
 		PresenceMessage[] messages = message.presence;
 		for(int i = 0; i < messages.length; i++) {
 			PresenceMessage msg = messages[i];
@@ -337,7 +370,13 @@ public class Channel {
 			if(msg.timestamp == 0) msg.timestamp = message.timestamp;
 			if(msg.id == null) msg.id = message.id + ':' + i;
 		}
-		presence.setPresence(messages, true);
+		presence.setPresence(messages, true, syncChannelSerial);
+	}
+
+	private void onSync(ProtocolMessage message) {
+		Log.v(TAG, "onSync(); channel = " + name);
+		if(message.presence != null)
+			onPresence(message, (syncChannelSerial = message.channelSerial));
 	}
 
 	private MessageMulticaster listeners = new MessageMulticaster();
@@ -514,7 +553,10 @@ public class Channel {
 			onMessage(msg);
 			break;
 		case PRESENCE:
-			onPresence(msg);
+			onPresence(msg, null);
+			break;
+		case SYNC:
+			onSync(msg);
 			break;
 		case ERROR:
 			setFailed(msg);
@@ -528,4 +570,5 @@ public class Channel {
 	final AblyRealtime ably;
 	final String basePath;
 	ChannelOptions options;
+	String syncChannelSerial;
 }

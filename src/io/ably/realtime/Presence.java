@@ -13,9 +13,12 @@ import io.ably.types.PresenceSerializer;
 import io.ably.types.ProtocolMessage;
 import io.ably.util.Log;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A class that provides access to presence operations and state for the
@@ -32,8 +35,30 @@ public class Presence {
 	 * @return: the current present members.
 	 * @throws AblyException 
 	 */
-	public synchronized PresenceMessage[] get() {
-		return presence.values().toArray(new PresenceMessage[presence.size()]);
+	public synchronized PresenceMessage[] get()  {
+		Collection<PresenceMessage> values = presence.values();
+		return values.toArray(new PresenceMessage[values.size()]);
+	}
+
+	/**
+	 * Get the presence state for this Channel, optionally waiting for sync to complete.
+	 * @return: the current present members.
+	 * @throws AblyException 
+	 */
+	public synchronized PresenceMessage[] get(boolean wait) throws InterruptedException {
+		Collection<PresenceMessage> values = presence.values(wait);
+		return values.toArray(new PresenceMessage[values.size()]);
+	}
+
+	/**
+	 * Get the presence state for a given clientId
+	 * @param wait
+	 * @return
+	 * @throws InterruptedException
+	 */
+	public synchronized PresenceMessage[] get(String clientId, boolean wait) throws InterruptedException {
+		Collection<PresenceMessage> values = presence.getClient(clientId, wait);
+		return values.toArray(new PresenceMessage[values.size()]);
 	}
 
 	/**
@@ -66,20 +91,33 @@ public class Presence {
 	 * internal
 	 *
 	 */
-	void setPresence(PresenceMessage[] messages, boolean broadcast) {
-		synchronized(this) {
-			for(PresenceMessage update : messages) {
-				switch(update.action) {
-				case ENTER:
-				case UPDATE:
-					presence.put(update.clientId, update);
-					break;
-				case LEAVE:
-					presence.remove(update.clientId);
-					break;
-				}
+
+	void setPresence(PresenceMessage[] messages, boolean broadcast, String syncChannelSerial) {
+		Log.v(TAG, "setPresence(); channel = " + channel.name + "; broadcast = " + broadcast + "; syncChannelSerial = " + syncChannelSerial);
+		String syncCursor = null;
+		if(syncChannelSerial != null) {
+			syncCursor = syncChannelSerial.substring(syncChannelSerial.indexOf(':'));
+			if(syncCursor.length() > 1)
+				presence.startSync();
+		}
+		for(PresenceMessage update : messages) {
+			switch(update.action) {
+			case ENTER:
+			case UPDATE:
+				update = (PresenceMessage)update.clone();
+				update.action = PresenceMessage.Action.PRESENT;
+			case PRESENT:
+				broadcast &= presence.put(update);
+				break;
+			case LEAVE:
+				broadcast &= presence.remove(update);
+				break;
 			}
 		}
+		/* if this is the last message in a sequence of sync updates, end the sync */
+		if(syncChannelSerial == null || syncCursor.length() <= 1)
+			presence.endSync();
+
 		if(broadcast)
 			broadcastPresence(messages);
 	}
@@ -87,8 +125,6 @@ public class Presence {
 	private void broadcastPresence(PresenceMessage[] messages) {
 		this.listeners.onPresenceMessage(messages);
 	}
-
-	private final HashMap<String, PresenceMessage> presence = new HashMap<String, PresenceMessage>();
 
 	private final Multicaster listeners = new Multicaster();
 
@@ -314,10 +350,8 @@ public class Presence {
 	 * attach / detach
 	 ************************************/
 
-	void setAttached(PresenceMessage[] messages) {
+	void setAttached() {
 		sendQueuedMessages();
-		if(messages != null)
-			setPresence(messages, false);
 	}
 
 	void setDetached(ErrorInfo reason) {
@@ -329,16 +363,173 @@ public class Presence {
 	}
 
 	/************************************
+	 * sync
+	 ************************************/
+
+	void awaitSync() {
+		presence.startSync();
+	}
+
+	/**
+	 * A class encapsulating a map of the members of this presence channel,
+	 * indexed by a String key that is a combination of memberId and clientId.
+	 * This map synchronises the membership of the presence set by handling
+	 * sync messages from the service. Since sync messages can be out-of-order -
+	 * eg an ENTER sync event being received after that member has in fact left -
+	 * this map keeps "witness" entries, with ABSENT Action, to remember the
+	 * fact that a LEAVE event has been seen for a member. These entries are
+	 * cleared once the last set of updates of a sync sequence have been received.
+	 *
+	 */
+	private class PresenceMap {
+		/**
+		 * Get the current presence state for a given member key
+		 * @param key
+		 * @return
+		 */
+		synchronized Collection<PresenceMessage> getClient(String clientId, boolean wait) throws InterruptedException {
+			Collection<PresenceMessage> result = new HashSet<PresenceMessage>();
+			for(Iterator<Map.Entry<String, PresenceMessage>> it = members.entrySet().iterator(); it.hasNext();) {
+				PresenceMessage entry = it.next().getValue();
+				if(entry.clientId.equals(clientId) && entry.action != PresenceMessage.Action.ABSENT) {
+					result.add(entry);
+				}
+			}
+			return result;
+		}
+
+		/**
+		 * Add or update the presence state for a member
+		 * @param item
+		 * @return true if the given message represents a change;
+		 * false if the message is already superseded
+		 */
+		synchronized boolean put(PresenceMessage item) {
+			String key = memberKey(item);
+			/* we've seen this member, so do not remove it at the end of sync */
+			if(residualMembers != null)
+				residualMembers.remove(key);
+
+			/* compare the timestamp of the new item with any existing member (or ABSENT witness) */
+			PresenceMessage existingItem = members.get(key);
+			if(existingItem != null && item.timestamp < existingItem.timestamp) {
+				/* no item supersedes a newer item with the same key */
+				return false;
+			}
+			members.put(key, item);
+			return true;
+		}
+
+		/**
+		 * Get all members based on the current state (even if sync is in progress)
+		 * @return
+		 */
+		synchronized Collection<PresenceMessage> values() {
+			try { return values(false); } catch (InterruptedException e) { return null; }
+		}
+
+		/**
+		 * Get all members, optionally waiting if a sync is in progress.
+		 * @param wait
+		 * @return
+		 * @throws InterruptedException
+		 */
+		synchronized Collection<PresenceMessage> values(boolean wait) throws InterruptedException {
+			if(wait) {
+				while(syncInProgress) wait();
+			}
+			Set<PresenceMessage> result = new HashSet<PresenceMessage>();
+			result.addAll(members.values());
+			for(Iterator<PresenceMessage> it = result.iterator(); it.hasNext();) {
+				PresenceMessage entry = it.next();
+				if(entry.action == PresenceMessage.Action.ABSENT) {
+					it.remove();
+				}
+			}
+			return result;
+		}
+
+		/**
+		 * Remove a member.
+		 * @param item
+		 * @return
+		 */
+		synchronized boolean remove(PresenceMessage item) {
+			String key = memberKey(item);
+			PresenceMessage existingItem = members.remove(key);
+			if(existingItem != null && existingItem.action == PresenceMessage.Action.ABSENT)
+				return false;
+			return true;
+		}
+
+		/**
+		 * Start a sync sequence.
+		 * Note that this is called each time a sync message is received that is not
+		 * the last.
+		 */
+		synchronized void startSync() {
+			Log.v(TAG, "startSync(); channel = " + channel.name + "; syncInProgress = " + syncInProgress);
+			/* we might be called multiple times while a sync is in progress */
+			if(!syncInProgress) {
+				residualMembers = new HashSet<String>(members.keySet());
+				syncInProgress = true;
+			}
+		}
+
+		/**
+		 * Finish a sync sequence.
+		 */
+		synchronized void endSync() {
+			Log.v(TAG, "endSync(); channel = " + channel.name + "; syncInProgress = " + syncInProgress);
+			if(syncInProgress) {
+				/* we can now strip out the ABSENT members, as we have
+				 * received all of the out-of-order sync messages */
+				for(Iterator<Map.Entry<String, PresenceMessage>> it = members.entrySet().iterator(); it.hasNext();) {
+					Map.Entry<String, PresenceMessage> entry = it.next();
+					if(entry.getValue().action == PresenceMessage.Action.ABSENT) {
+						it.remove();
+					}
+				}
+				/* any members that were present at the start of the sync,
+				 * and have not been seen in sync, can be removed */
+				for(Iterator<String> it = residualMembers.iterator(); it.hasNext();) {
+					members.remove(it.next());
+				}
+				residualMembers = null;
+	
+				/* finish, notifying any waiters */
+				syncInProgress = false;
+			}
+			notifyAll();
+		}
+
+		/**
+		 * Get the member key for a given PresenceMessage.
+		 * @param message
+		 * @return
+		 */
+		private String memberKey(PresenceMessage message) {
+			return message.memberId + ':' + message.clientId;
+		}
+
+		private boolean syncInProgress;
+		private Collection<String> residualMembers;
+		private final HashMap<String, PresenceMessage> members = new HashMap<String, PresenceMessage>();
+	}
+
+	private final PresenceMap presence = new PresenceMap();
+
+	/************************************
 	 * general
 	 ************************************/
 
 	Presence(Channel channel) {
 		this.channel = channel;
-		clientId = channel.ably.options.clientId;
+		this.clientId = channel.ably.options.clientId;
 	}
 
 	private static final String TAG = Channel.class.getName();
 
-	private Channel channel;
-	private String clientId;
+	private final Channel channel;
+	private final String clientId;
 }

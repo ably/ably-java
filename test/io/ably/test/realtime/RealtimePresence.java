@@ -2,6 +2,8 @@ package io.ably.test.realtime;
 
 import static org.junit.Assert.*;
 
+import java.util.HashMap;
+
 import io.ably.realtime.AblyRealtime;
 import io.ably.realtime.Channel;
 import io.ably.realtime.Channel.ChannelState;
@@ -11,11 +13,14 @@ import io.ably.rest.Auth;
 import io.ably.rest.Auth.TokenParams;
 import io.ably.test.realtime.RealtimeSetup.TestVars;
 import io.ably.test.realtime.Helpers.ChannelWaiter;
+import io.ably.test.realtime.Helpers.CompletionSet;
 import io.ably.test.realtime.Helpers.CompletionWaiter;
 import io.ably.test.realtime.Helpers.ConnectionWaiter;
 import io.ably.test.realtime.Helpers.PresenceWaiter;
 import io.ably.types.AblyException;
 import io.ably.types.Options;
+import io.ably.types.PaginatedResult;
+import io.ably.types.Param;
 import io.ably.types.PresenceMessage;
 import io.ably.types.PresenceMessage.Action;
 
@@ -298,7 +303,7 @@ public class RealtimePresence {
 			/* get presence set and verify client present */
 			presenceWaiter.waitFor(testClientId1);
 			PresenceMessage[] presences = rtPresenceChannel.presence.get();
-			assertTrue("Verify expected client is in presence set", contains(presences, testClientId1, Action.ENTER));
+			assertTrue("Verify expected client is in presence set", contains(presences, testClientId1, Action.PRESENT));
 			
 		} catch(AblyException e) {
 			e.printStackTrace();
@@ -374,7 +379,7 @@ public class RealtimePresence {
 	 * connection, seeing existing member in message subsequent to second attach response
 	 */
 	@Test
-	public void attach_enter() {
+	public void attach_enter_simple() {
 		AblyRealtime clientAbly1 = null;
 		AblyRealtime clientAbly2 = null;
 		try {
@@ -419,12 +424,103 @@ public class RealtimePresence {
 			/* get channel and subscribe to presence */
 			Channel client2Channel = clientAbly2.channels.get(presenceChannelName);
 			PresenceWaiter client2Waiter = new PresenceWaiter(client2Channel);
-			client2Waiter.waitFor(testClientId1, Action.ENTER);
+			client2Waiter.waitFor(testClientId1, Action.PRESENT);
 
 			/* get presence set and verify client present */
 			PresenceMessage[] presences = client2Channel.presence.get();
-			assertTrue("Verify expected client is in presence set", contains(presences, testClientId1, Action.ENTER));
+			assertTrue("Verify expected client is in presence set", contains(presences, testClientId1, Action.PRESENT));
 			
+		} catch(AblyException e) {
+			e.printStackTrace();
+			fail("enter0: Unexpected exception running test");
+		} catch(Throwable t) {
+			t.printStackTrace();
+			fail("enter0: Unexpected exception running test");
+		} finally {
+			if(clientAbly1 != null)
+				clientAbly1.close();
+			if(clientAbly2 != null)
+				clientAbly2.close();
+		}
+	}
+
+	/**
+	 * Attach to channel, enter presence channel with large number of clientIds,
+	 * then initiate second connection, seeing existing members in sync subsequent
+	 * to second attach response
+	 */
+	@Test
+	public void attach_enter_multiple() {
+		AblyRealtime clientAbly1 = null;
+		AblyRealtime clientAbly2 = null;
+		int clientCount = 300;
+		long delay = 50L;
+		try {
+			/* subscribe for presence events in the anonymous connection */
+			new PresenceWaiter(rtPresenceChannel);
+			/* set up a connection with specific clientId */
+			Options client1Opts = new Options() {{
+				authToken = token1.id;
+				clientId = testClientId1;
+			}};
+			testVars.fillInOptions(client1Opts);
+			clientAbly1 = new AblyRealtime(client1Opts);
+
+			/* wait until connected */
+			(new ConnectionWaiter(clientAbly1.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", clientAbly1.connection.state, ConnectionState.connected);
+
+			/* get channel and attach */
+			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+			client1Channel.attach();
+			(new ChannelWaiter(client1Channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", client1Channel.state, ChannelState.attached);
+
+			/* let client1 enter the channel for multiple clients and wait for the success callback */
+			CompletionSet enterComplete = new CompletionSet();
+			for(int i = 0; i < clientCount; i++) {
+				client1Channel.presence.enterClient("client" + i, "Test data (attach_enter_multiple) " + i, enterComplete.add());
+				try { Thread.sleep(delay); } catch(InterruptedException e){}
+			}
+			enterComplete.waitFor();
+			assertTrue("Verify enter callback called on completion", enterComplete.errors.isEmpty());
+
+			/* set up a second connection with different clientId */
+			Options client2Opts = new Options() {{
+				authToken = token2.id;
+				clientId = testClientId2;
+			}};
+			testVars.fillInOptions(client2Opts);
+			clientAbly2 = new AblyRealtime(client2Opts);
+
+			/* wait until connected */
+			(new ConnectionWaiter(clientAbly2.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", clientAbly2.connection.state, ConnectionState.connected);
+
+			/* get channel */
+			Channel client2Channel = clientAbly2.channels.get(presenceChannelName);
+			client2Channel.attach();
+			(new ChannelWaiter(client2Channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", client2Channel.state, ChannelState.attached);
+
+			/* get presence set and verify client present */
+			HashMap<String, PresenceMessage> memberIndex = new HashMap<String, PresenceMessage>();
+			PresenceMessage[] members = client2Channel.presence.get(true);
+			assertNotNull("Expected non-null messages", members);
+			assertEquals("Expected " + clientCount + " messages", members.length, clientCount);
+
+			/* index received messages */
+			for(int i = 0; i < members.length; i++) {
+				PresenceMessage member = members[i];
+				memberIndex.put(member.clientId, member);
+			}
+
+			/* verify that all clientIds were received */
+			assertEquals("Expected " + clientCount + " members", memberIndex.size(), clientCount);
+			for(int i = 0; i < clientCount; i++) {
+				String clientId = "client" + i;
+				assertTrue("Expected client with id " + clientId, memberIndex.containsKey(clientId));
+			}
 		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("enter0: Unexpected exception running test");
@@ -486,8 +582,8 @@ public class RealtimePresence {
 
 			/* get presence set and verify clients present */
 			PresenceMessage[] presences = rtPresenceChannel.presence.get();
-			assertTrue("Verify expected clients are in presence set", contains(presences, testClientId1, Action.ENTER));
-			assertTrue("Verify expected clients are in presence set", contains(presences, testClientId2, Action.ENTER));
+			assertTrue("Verify expected clients are in presence set", contains(presences, testClientId1, Action.PRESENT));
+			assertTrue("Verify expected clients are in presence set", contains(presences, testClientId2, Action.PRESENT));
 			
 		} catch(AblyException e) {
 			e.printStackTrace();
@@ -538,7 +634,7 @@ public class RealtimePresence {
 
 			/* get presence set and verify client present */
 			PresenceMessage[] presences = restPresenceChannel.presence.get(null).asArray();
-			assertTrue("Verify expected client is in presence set", contains(presences, testClientId1, Action.ENTER));
+			assertTrue("Verify expected client is in presence set", contains(presences, testClientId1, Action.PRESENT));
 
 		} catch(AblyException e) {
 			e.printStackTrace();
@@ -651,8 +747,8 @@ public class RealtimePresence {
 
 			/* get presence set and verify client present */
 			PresenceMessage[] presences = restPresenceChannel.presence.get(null).asArray();
-			assertTrue("Verify expected clients are in presence set", contains(presences, testClientId1, Action.ENTER));
-			assertTrue("Verify expected clients are in presence set", contains(presences, testClientId2, Action.ENTER));
+			assertTrue("Verify expected clients are in presence set", contains(presences, testClientId1, Action.PRESENT));
+			assertTrue("Verify expected clients are in presence set", contains(presences, testClientId2, Action.PRESENT));
 
 		} catch(AblyException e) {
 			e.printStackTrace();
@@ -665,6 +761,92 @@ public class RealtimePresence {
 				clientAbly1.close();
 			if(clientAbly2 != null)
 				clientAbly2.close();
+		}
+	}
+
+	/**
+	 * Attach and enter channel multiple times on a single connection,
+	 * retrieving members using paginated rest get() */
+	@Test
+	public void rest_paginated_get() {
+		AblyRealtime clientAbly1 = null;
+		int clientCount = 30;
+		long delay = 100L;
+		try {
+			/* subscribe for presence events in the anonymous connection */
+			new PresenceWaiter(rtPresenceChannel);
+			/* set up a connection with specific clientId */
+			Options client1Opts = new Options() {{
+				authToken = token1.id;
+				clientId = testClientId1;
+			}};
+			testVars.fillInOptions(client1Opts);
+			clientAbly1 = new AblyRealtime(client1Opts);
+
+			/* get channel and attach */
+			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+
+			/* enter multiple clients */
+			CompletionSet enterComplete = new CompletionSet();
+			for(int i = 0; i < clientCount; i++) {
+				client1Channel.presence.enterClient("client" + i, "Test data (rest_paginated_get) " + i, enterComplete.add());
+				try { Thread.sleep(delay); } catch(InterruptedException e){}
+			}
+			enterComplete.waitFor();
+			assertTrue("Verify enter callback called on completion", enterComplete.errors.isEmpty());
+
+			/* get the presence for this channel */
+			HashMap<String, PresenceMessage> memberIndex = new HashMap<String, PresenceMessage>();
+			PaginatedResult<PresenceMessage> members = restPresenceChannel.presence.get(new Param[] { new Param("limit", "10") });
+			assertNotNull("Expected non-null messages", members);
+			assertEquals("Expected 10 messages", members.asArray().length, 10);
+
+			/* index received messages */
+			for(int i = 0; i < 10; i++) {
+				PresenceMessage member = members.asArray()[i];
+				memberIndex.put(member.clientId, member);
+			}
+
+			/* get next page */
+			members = restPresenceChannel.presence.get(members.getNext());
+			assertNotNull("Expected non-null messages", members);
+			assertEquals("Expected 10 messages", members.asArray().length, 10);
+
+			/* index received messages */
+			for(int i = 0; i < 10; i++) {
+				PresenceMessage member = members.asArray()[i];
+				memberIndex.put(member.clientId, member);
+			}
+
+			/* get next page */
+			members = restPresenceChannel.presence.get(members.getNext());
+			assertNotNull("Expected non-null messages", members);
+			assertEquals("Expected 10 messages", members.asArray().length, 10);
+
+			/* index received messages */
+			for(int i = 0; i < 10; i++) {
+				PresenceMessage member = members.asArray()[i];
+				memberIndex.put(member.clientId, member);
+			}
+
+			/* verify there is no next page */
+			assertNull("Expected null next page", members.getNext());
+
+			/* verify that all clientIds were received */
+			assertEquals("Expected " + clientCount + " members", memberIndex.size(), clientCount);
+			for(int i = 0; i < clientCount; i++) {
+				String clientId = "client" + i;
+				assertTrue("Expected client with id " + clientId, memberIndex.containsKey(clientId));
+			}
+		} catch(AblyException e) {
+			e.printStackTrace();
+			fail("enter0: Unexpected exception running test");
+		} catch(Throwable t) {
+			t.printStackTrace();
+			fail("enter0: Unexpected exception running test");
+		} finally {
+			if(clientAbly1 != null)
+				clientAbly1.close();
 		}
 	}
 

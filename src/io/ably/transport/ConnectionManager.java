@@ -171,9 +171,11 @@ public class ConnectionManager extends Thread implements ConnectListener {
 		connection.onConnectionStateChanged(change);
 
 		/* if now connected, send queued messages, etc */
-		if(state.sendEvents)
+		if(state.sendEvents) {
 			sendQueuedMessages();
-		else if(!state.queueEvents) {
+			for(Channel channel : ably.channels.values())
+				channel.setConnected();
+		} else if(!state.queueEvents) {
 			failQueuedMessages(state.defaultErrorInfo);
 			for(Channel channel : ably.channels.values())
 				channel.setSuspended(state.defaultErrorInfo);
@@ -293,6 +295,7 @@ public class ConnectionManager extends Thread implements ConnectListener {
 
 	private synchronized void onConnected(ProtocolMessage message) {
 		connection.id = message.connectionId;
+		connection.memberId = message.memberId;
 		if(message.connectionSerial != null)
 			connection.serial = message.connectionSerial.longValue();
 		msgSerial = 0;
