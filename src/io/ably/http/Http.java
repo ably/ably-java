@@ -1,6 +1,5 @@
 package io.ably.http;
 
-import io.ably.http.TokenAuth.TokenCredentials;
 import io.ably.realtime.AblyRealtime;
 import io.ably.realtime.Connection;
 import io.ably.realtime.Connection.ConnectionState;
@@ -28,8 +27,8 @@ import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -40,8 +39,8 @@ import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.AbstractHttpClient;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.message.BasicHeader;
@@ -104,33 +103,21 @@ public class Http {
 	public void setAuth(Auth auth) {
 		String prefScheme;
 		if(auth.getAuthMethod() == AuthMethod.basic) {
-			credentials = new UsernamePasswordCredentials(auth.getBasicCredentials());
-			authHeader = BasicScheme.authenticate(credentials,"US-ASCII",false);
+			credentialsProvider = new BasicCredentialsProvider();
+			credentialsProvider.setCredentials(authScope, new UsernamePasswordCredentials(auth.getBasicCredentials()));
 			prefScheme = "basic";
 		} else {
 			prefScheme = TokenAuth.SCHEME_NAME;
-			httpClient.getAuthSchemes().register(TokenAuth.SCHEME_NAME, new TokenAuth(ably.http, auth));
-			String token = auth.getTokenCredentials();
-			if(token != null) {
-				credentials = new TokenAuth.TokenCredentials(token);
-				authHeader = TokenAuth.authenticate(credentials,"US-ASCII",false);
-			}
+			TokenAuth tokenAuth = auth.getTokenAuth();
+			httpClient.getAuthSchemes().register(TokenAuth.SCHEME_NAME, tokenAuth);
+			credentialsProvider = tokenAuth;
 		}
 		httpClient.getParams().setParameter("http.auth.target-scheme-pref", Arrays.asList(new String[] { prefScheme }));
-		if(credentials != null)
-			httpClient.getCredentialsProvider().setCredentials(authScope, credentials);
+		httpClient.setCredentialsProvider(credentialsProvider);
 	}
 
-	public TokenCredentials setToken(String token) {
-		if(token != null) {
-			credentials = null;
-			authHeader = null;
-		} else {
-			credentials = new TokenAuth.TokenCredentials(token);
-			authHeader = TokenAuth.authenticate(credentials,"US-ASCII",false);
-			httpClient.getCredentialsProvider().setCredentials(authScope, credentials);
-		}
-		return (TokenCredentials)credentials;
+	public CredentialsProvider getCredentialsProvider() {
+		return credentialsProvider;
 	}
 
 	@SuppressWarnings("deprecation")
@@ -177,8 +164,6 @@ public class Http {
 		if(headers != null)
 			for(Param header : headers)
 				httpGet.addHeader(new BasicHeader(header.key, header.value));
-		if(authHeader != null)
-			httpGet.addHeader(authHeader);
 		try {
 			return getForHost(getPrefHost(), httpGet, handler);
 		} catch(HostFailedException bhe) {
@@ -221,8 +206,6 @@ public class Http {
 		if(headers != null)
 			for(Param header : headers)
 				httpPost.addHeader(new BasicHeader(header.key, header.value));
-		if(authHeader != null)
-			httpPost.addHeader(authHeader);
 		httpPost.setEntity(requestBody.getEntity());
 		try {
 			return postForHost(getPrefHost(), httpPost, handler);
@@ -253,8 +236,6 @@ public class Http {
 		if(headers != null)
 			for(Param header : headers)
 				httpDel.addHeader(new BasicHeader(header.key, header.value));
-		if(authHeader != null)
-			httpDel.addHeader(authHeader);
 		try {
 			return delForHost(getPrefHost(), httpDel, handler);
 		} catch(HostFailedException bhe) {
@@ -361,10 +342,9 @@ public class Http {
 	private AblyRest ably;
 	private String scheme;
 	private int port;
-	Credentials credentials;
 	private Map<String, HttpHost> httpHosts = new HashMap<String, HttpHost>();
 	private HttpContext localContext = new BasicHttpContext();
-	private Header authHeader;
+	private CredentialsProvider credentialsProvider;
 
 	AbstractHttpClient httpClient;
 	private boolean isDisposed;

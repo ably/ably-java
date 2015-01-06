@@ -2,6 +2,7 @@ package io.ably.rest;
 
 import io.ably.http.Http;
 import io.ably.http.Http.ResponseHandler;
+import io.ably.http.TokenAuth;
 import io.ably.types.AblyException;
 import io.ably.types.Capability;
 import io.ably.types.ErrorInfo;
@@ -349,22 +350,7 @@ public class Auth {
 	 * @param callback (err, tokenDetails)
 	 */
 	public TokenDetails authorise(AuthOptions options, TokenParams params, boolean force) throws AblyException {
-		if(tokenDetails != null) {
-			if(tokenDetails.expires == 0 || tokenDetails.expires > timestamp()) {
-				if(!force) {
-					Log.i("Auth.authorise()", "using cached token; expires = " + tokenDetails.expires);
-					return tokenDetails;
-				}
-			} else {
-				/* expired, so remove */
-				Log.i("Auth.authorise()", "deleting expired token");
-				this.tokenDetails = null;
-				ably.http.setToken(null);
-			}
-		}
-		tokenDetails = requestToken(options, params);
-		ably.http.setToken(tokenDetails.id);
-		return tokenDetails;
+		return tokenAuth.authorise(options, params, force);
 	}
 
 	/**
@@ -396,7 +382,10 @@ public class Auth {
 				Object authCallbackResponse = tokenOptions.authCallback.getTokenRequest(params);
 				if(authCallbackResponse instanceof TokenDetails)
 					return (TokenDetails)authCallbackResponse;
-				signedTokenRequest = (TokenParams)authCallbackResponse;
+				if(authCallbackResponse instanceof TokenParams)
+					signedTokenRequest = (TokenParams)authCallbackResponse;
+				else
+					throw new AblyException("Invalid authCallback response", 40000, 400);
 			} catch(AblyException e) {
 				/* the auth callback threw an error */
 				ErrorInfo errorInfo = e.errorInfo;
@@ -546,14 +535,6 @@ public class Auth {
 	}
 
 	/**
-	 * Get the credentials for Ably token auth, if available.
-	 * @return
-	 */
-	public String getTokenCredentials() {
-		return (method == AuthMethod.token && tokenDetails != null) ? tokenDetails.id : null;
-	}
-
-	/**
 	 * Get query params representing the current authentication method and credentials.
 	 * @return
 	 * @throws AblyException
@@ -566,11 +547,17 @@ public class Auth {
 			break;
 		case token:
 			authorise(null, null, false);
-			params = new Param[]{new Param("access_token", tokenDetails.id) };
+			params = new Param[]{new Param("access_token", tokenAuth.getTokenDetails().id) };
 			break;
 		}
 		return params;
 	}
+
+	public TokenAuth getTokenAuth() {
+		return tokenAuth;
+	}
+
+	public static long timestamp() { return (new Date().getTime()/1000L); }
 
 	/********************
 	 * internal
@@ -599,9 +586,11 @@ public class Auth {
 		}
 		/* using token auth, but decide the method */
 		this.method = AuthMethod.token;
+		this.tokenAuth = new TokenAuth(this);
 		if(authOptions.authToken != null) {
-			tokenDetails = new TokenDetails();
+			TokenDetails tokenDetails = new TokenDetails();
 			tokenDetails.id = authOptions.authToken;
+			tokenAuth.setTokenDetails(tokenDetails);
 		}
 		if(authOptions.authCallback != null) {
 			Log.i("Auth()", "using token auth with authCallback");
@@ -619,7 +608,6 @@ public class Auth {
 	}
 
 	private static String random() { return String.format("%016d", (long)(Math.random() * 1E16)); }
-	private static long timestamp() { return (new Date().getTime()/1000L); }
 	
 	private static final String hmac(String text, String key) {
 		try {
@@ -629,9 +617,9 @@ public class Auth {
 		} catch (GeneralSecurityException e) { Log.e("Auth.hmac", "Unexpected exception", e); return null; }
 	}
 
-	private AblyRest ably;
-	private AuthMethod method;
+	private final AblyRest ably;
+	private final AuthMethod method;
+	private final AuthOptions authOptions;
 	private String basicCredentials;
-	private AuthOptions authOptions;
-	private TokenDetails tokenDetails;
+	private TokenAuth tokenAuth;
 }
