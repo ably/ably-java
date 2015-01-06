@@ -80,8 +80,8 @@ public class RestAuth {
 			try {
 				ably.stats(null);
 			} catch(Throwable t) {}
-			assertTrue("Token callback not called", authinit2_cbCalled);
 			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
+			assertTrue("Token callback not called", authinit2_cbCalled);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("authinit2: Unexpected exception instantiating library");
@@ -380,6 +380,58 @@ public class RestAuth {
 				e.printStackTrace();
 				fail("auth_authURL_tokenrequest: Unexpected exception requesting token");
 			}
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_authURL_tokenrequest: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Verify authCallback called when token expires
+	 */
+	@Test
+	public void auth_authcallback_token_expire() {
+		try {
+			final TestVars testVars = RestSetup.getTestVars();
+			Options optsForToken = testVars.createOptions(testVars.keys[0].keyStr);
+			final AblyRest ablyForToken = new AblyRest(optsForToken);
+			TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, new TokenParams() {{ ttl = 2L; }});
+			assertNotNull("Expected token id", tokenDetails.id);
+
+			/* implement callback, using Ably instance with key */
+			final class TokenGenerator implements TokenCallback {
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					++cbCount;
+					return ablyForToken.auth.requestToken(null, params);
+				}
+				public int getCbCount() { return cbCount; }
+				private int cbCount = 0;
+			};
+
+			TokenGenerator authCallback = new TokenGenerator();
+
+			/* create Ably instance without key */
+			Options opts = testVars.createOptions();
+			opts.authToken = tokenDetails.id;
+			opts.authCallback = authCallback;
+			AblyRest ably = new AblyRest(opts);
+
+			/* wait until token expires */
+			try {
+				Thread.sleep(3000L);
+			} catch(InterruptedException ie) {}
+
+			/* make a request that relies on the token */
+			try {
+				ably.stats(new Param[] { new Param("by", "hour"), new Param("limit", "1") });
+			} catch (AblyException e) {
+				e.printStackTrace();
+				fail("auth_authURL_tokenrequest: Unexpected exception requesting token");
+			}
+
+			/* verify that the auth callback was called again */
+			assertEquals("Expected token generator to be called", 1, authCallback.getCbCount());
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("auth_authURL_tokenrequest: Unexpected exception instantiating library");
