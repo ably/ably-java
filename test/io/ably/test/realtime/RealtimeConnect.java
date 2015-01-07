@@ -11,6 +11,7 @@ import io.ably.test.realtime.Helpers.ConnectionWaiter;
 import io.ably.test.realtime.RealtimeSetup.TestVars;
 import io.ably.types.AblyException;
 import io.ably.types.Options;
+import io.ably.util.Log;
 
 import org.junit.Test;
 
@@ -71,7 +72,7 @@ public class RealtimeConnect {
 	public void connect_heartbeat_binary() {
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+			Options opts = new Options(testVars.keys[0].keyStr);
 			testVars.fillInOptions(opts);
 			CompletionWaiter heartbeatWaiter = new CompletionWaiter();
 			AblyRealtime ably = new AblyRealtime(opts);
@@ -99,7 +100,7 @@ public class RealtimeConnect {
 	public void connect_heartbeat_text() {
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+			Options opts = new Options(testVars.keys[0].keyStr);
 			testVars.fillInOptions(opts);
 			opts.useBinaryProtocol = false;
 			CompletionWaiter heartbeatWaiter = new CompletionWaiter();
