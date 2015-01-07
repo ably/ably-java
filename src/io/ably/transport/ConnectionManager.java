@@ -304,7 +304,7 @@ public class ConnectionManager extends Thread implements ConnectListener {
 	}
 
 	private synchronized void onDisconnected(ProtocolMessage message) {
-		notifyState(new StateIndication(ConnectionState.disconnected, null));
+		onTransportUnavailable(transport, null, message.error);
 	}
 
 	private synchronized void onClosed(ProtocolMessage message) {
@@ -400,6 +400,9 @@ public class ConnectionManager extends Thread implements ConnectListener {
 				stateChange = null;
 				break;
 			case connected:
+				/* we were connected, so retry immediately */
+				requestState(ConnectionState.connecting);
+				break;
 			default:
 				break;
 			}
@@ -438,7 +441,7 @@ public class ConnectionManager extends Thread implements ConnectListener {
 		}
 		boolean suspendMode = System.currentTimeMillis() > suspendTime;
 		ConnectionState expiredState = suspendMode ? ConnectionState.suspended : ConnectionState.disconnected;
-		return new StateIndication(expiredState, null);
+		return new StateIndication(expiredState, stateChange.reason);
 	}
 
 	private void tryWait(long timeout) {
@@ -498,6 +501,8 @@ public class ConnectionManager extends Thread implements ConnectListener {
 
 	@Override
 	public synchronized void onTransportUnavailable(ITransport transport, TransportParams params, ErrorInfo reason) {
+		transport = null;
+		ably.auth.onAuthError(reason);
 		notifyState(new StateIndication(ConnectionState.disconnected, reason));
 	}
 
