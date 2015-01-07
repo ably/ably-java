@@ -25,7 +25,7 @@ import org.json.JSONObject;
 
 /**
  * Token-generation and authentication operations for the Ably API.
- * See the ABLY Authentication documentation for details of the
+ * See the Ably Authentication documentation for details of the
  * authentication methods available.
  *
  */
@@ -555,6 +555,12 @@ public class Auth {
 
 	public TokenAuth getTokenAuth() {
 		return tokenAuth;
+	}
+
+	public void onAuthError(ErrorInfo err) {
+		/* we're only interested in token expiry errors */
+		if(err.code == 40140)
+			tokenAuth.clear();
 	}
 
 	public static long timestamp() { return (new Date().getTime()/1000L); }
