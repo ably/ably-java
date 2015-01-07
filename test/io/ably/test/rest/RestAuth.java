@@ -430,7 +430,7 @@ public class RestAuth {
 				fail("auth_authURL_tokenrequest: Unexpected exception requesting token");
 			}
 
-			/* verify that the auth callback was called again */
+			/* verify that the auth callback was called */
 			assertEquals("Expected token generator to be called", 1, authCallback.getCbCount());
 		} catch (AblyException e) {
 			e.printStackTrace();
