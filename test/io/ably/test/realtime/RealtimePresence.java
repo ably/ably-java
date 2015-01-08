@@ -41,18 +41,18 @@ public class RealtimePresence {
 	private static Channel rtPresenceChannel;
 	private static io.ably.rest.Channel restPresenceChannel;
 
-	private static boolean contains(PresenceMessage[] messages, String clientId) {
+	private static PresenceMessage contains(PresenceMessage[] messages, String clientId) {
 		for(PresenceMessage message : messages)
 			if(clientId.equals(message.clientId))
-				return true;
-		return false;
+				return message;
+		return null;
 	}
 
-	private boolean contains(PresenceMessage[] messages, String clientId, PresenceMessage.Action action) {
+	private PresenceMessage contains(PresenceMessage[] messages, String clientId, PresenceMessage.Action action) {
 		for(PresenceMessage message : messages)
 			if(clientId.equals(message.clientId) && action == message.action)
-				return true;
-		return false;
+				return message;
+		return null;
 	}
 
 	@BeforeClass
@@ -109,9 +109,11 @@ public class RealtimePresence {
 
 			/* let client1 enter the channel and wait for the entered event to be delivered */
 			CompletionWaiter enterComplete = new CompletionWaiter();
-			client1Channel.presence.enter("Test data (enter_simple)", enterComplete);
+			String enterString = "Test data (enter_simple)";
+			client1Channel.presence.enter(enterString, enterComplete);
 			presenceWaiter.waitFor(testClientId1, Action.ENTER);
-			assertTrue(presenceWaiter.contains(testClientId1, Action.ENTER));
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.ENTER));
+			assertEquals(presenceWaiter.receivedMessages.get(0).data, enterString);
 
 			/* verify enter callback called on completion */
 			enterComplete.waitFor();
@@ -154,9 +156,12 @@ public class RealtimePresence {
 
 			/* let client1 enter the channel and wait for the entered event to be delivered */
 			CompletionWaiter enterComplete = new CompletionWaiter();
-			client1Channel.presence.enter("Test data (enter_before_attach)", enterComplete);
+			String enterString = "Test data (enter_before_attach)";
+			client1Channel.presence.enter(enterString, enterComplete);
 			presenceWaiter.waitFor(testClientId1, Action.ENTER);
-			assertTrue(presenceWaiter.contains(testClientId1, Action.ENTER));
+			PresenceMessage expectedPresent = presenceWaiter.contains(testClientId1, clientAbly1.connection.memberId, Action.ENTER);
+			assertNotNull(expectedPresent);
+			assertEquals(expectedPresent.data, enterString);
 
 			/* verify enter callback called on completion */
 			enterComplete.waitFor();
@@ -195,9 +200,12 @@ public class RealtimePresence {
 
 			/* let client1 enter the channel and wait for the entered event to be delivered */
 			CompletionWaiter enterComplete = new CompletionWaiter();
-			client1Channel.presence.enter("Test data (enter_before_connect)", enterComplete);
+			String enterString = "Test data (enter_before_connect)";
+			client1Channel.presence.enter(enterString, enterComplete);
 			presenceWaiter.waitFor(testClientId1, Action.ENTER);
-			assertTrue(presenceWaiter.contains(testClientId1, Action.ENTER));
+			PresenceMessage expectedPresent = presenceWaiter.contains(testClientId1, clientAbly1.connection.memberId, Action.ENTER);
+			assertNotNull(expectedPresent);
+			assertEquals(expectedPresent.data, enterString);
 
 			/* verify enter callback called on completion */
 			enterComplete.waitFor();
@@ -236,9 +244,12 @@ public class RealtimePresence {
 
 			/* let client1 enter the channel and wait for the entered event to be delivered */
 			CompletionWaiter enterComplete = new CompletionWaiter();
-			client1Channel.presence.enter("Test data (enter_before_connect)", enterComplete);
+			String enterString = "Test data (enter_before_connect)";
+			client1Channel.presence.enter(enterString, enterComplete);
 			presenceWaiter.waitFor(testClientId1, Action.ENTER);
-			assertTrue(presenceWaiter.contains(testClientId1, Action.ENTER));
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.ENTER));
+			assertEquals(presenceWaiter.receivedMessages.get(0).data, enterString);
+			presenceWaiter.reset();
 
 			/* verify enter callback called on completion */
 			enterComplete.waitFor();
@@ -246,9 +257,11 @@ public class RealtimePresence {
 
 			/* let client1 leave the channel and wait for the leave event to be delivered */
 			CompletionWaiter leaveComplete = new CompletionWaiter();
-			client1Channel.presence.leave(leaveComplete);
+			String leaveString = "Test data (enter_before_connect), leaving";
+			client1Channel.presence.leave(leaveString, leaveComplete);
 			presenceWaiter.waitFor(testClientId1, Action.LEAVE);
-			assertTrue(presenceWaiter.contains(testClientId1, Action.LEAVE));
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.LEAVE));
+			assertEquals(presenceWaiter.receivedMessages.get(0).data, leaveString);
 
 			/* verify leave callback called on completion */
 			leaveComplete.waitFor();
@@ -296,14 +309,17 @@ public class RealtimePresence {
 
 			/* let client1 enter the channel and wait for the success callback */
 			CompletionWaiter enterComplete = new CompletionWaiter();
-			client1Channel.presence.enter("Test data (get_simple)", enterComplete);
+			String enterString = "Test data (get_simple)";
+			client1Channel.presence.enter(enterString, enterComplete);
 			enterComplete.waitFor();
 			assertTrue("Verify enter callback called on completion", enterComplete.success);
 
 			/* get presence set and verify client present */
 			presenceWaiter.waitFor(testClientId1);
 			PresenceMessage[] presences = rtPresenceChannel.presence.get();
-			assertTrue("Verify expected client is in presence set", contains(presences, testClientId1, Action.PRESENT));
+			PresenceMessage expectedPresent = contains(presences, testClientId1, Action.PRESENT);
+			assertNotNull("Verify expected client is in presence set", expectedPresent);
+			assertEquals(expectedPresent.data, enterString);
 			
 		} catch(AblyException e) {
 			e.printStackTrace();
@@ -360,7 +376,7 @@ public class RealtimePresence {
 
 			/* get presence set and verify client absent */
 			PresenceMessage[] presences = rtPresenceChannel.presence.get();
-			assertFalse("Verify expected client is in presence set", contains(presences, testClientId1));
+			assertNull("Verify expected client is in presence set", contains(presences, testClientId1));
 			
 		} catch(AblyException e) {
 			e.printStackTrace();
@@ -405,7 +421,8 @@ public class RealtimePresence {
 
 			/* let client1 enter the channel and wait for the success callback */
 			CompletionWaiter enterComplete = new CompletionWaiter();
-			client1Channel.presence.enter("Test data (attach_enter)", enterComplete);
+			String enterString = "Test data (attach_enter)";
+			client1Channel.presence.enter(enterString, enterComplete);
 			enterComplete.waitFor();
 			assertTrue("Verify enter callback called on completion", enterComplete.success);
 
@@ -428,7 +445,9 @@ public class RealtimePresence {
 
 			/* get presence set and verify client present */
 			PresenceMessage[] presences = client2Channel.presence.get();
-			assertTrue("Verify expected client is in presence set", contains(presences, testClientId1, Action.PRESENT));
+			PresenceMessage expectedPresent = contains(presences, testClientId1, Action.PRESENT);
+			assertNotNull("Verify expected client is in presence set", expectedPresent);
+			assertEquals(expectedPresent.data, enterString);
 			
 		} catch(AblyException e) {
 			e.printStackTrace();
@@ -557,7 +576,8 @@ public class RealtimePresence {
 			/* get channel and attach */
 			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
 			CompletionWaiter enter1Complete = new CompletionWaiter();
-			client1Channel.presence.enter("Test data (enter_multiple, clientId1)", enter1Complete);
+			String enterString1 = "Test data (enter_multiple, clientId1)";
+			client1Channel.presence.enter(enterString1, enter1Complete);
 			enter1Complete.waitFor();
 			assertTrue("Verify enter callback called on completion", enter1Complete.success);
 
@@ -572,7 +592,8 @@ public class RealtimePresence {
 			/* get channel and subscribe to presence */
 			Channel client2Channel = clientAbly2.channels.get(presenceChannelName);
 			CompletionWaiter enter2Complete = new CompletionWaiter();
-			client2Channel.presence.enter("Test data (enter_multiple, clientId2)", enter2Complete);
+			String enterString2 = "Test data (enter_multiple, clientId2)";
+			client2Channel.presence.enter(enterString2, enter2Complete);
 			enter2Complete.waitFor();
 			assertTrue("Verify enter callback called on completion", enter2Complete.success);
 
@@ -582,8 +603,12 @@ public class RealtimePresence {
 
 			/* get presence set and verify clients present */
 			PresenceMessage[] presences = rtPresenceChannel.presence.get();
-			assertTrue("Verify expected clients are in presence set", contains(presences, testClientId1, Action.PRESENT));
-			assertTrue("Verify expected clients are in presence set", contains(presences, testClientId2, Action.PRESENT));
+			PresenceMessage expectedPresent1 = contains(presences, testClientId1, Action.PRESENT);
+			PresenceMessage expectedPresent2 = contains(presences, testClientId2, Action.PRESENT);
+			assertNotNull("Verify expected clients are in presence set", expectedPresent1);
+			assertNotNull("Verify expected clients are in presence set", expectedPresent2);
+			assertEquals(expectedPresent1.data, enterString1);
+			assertEquals(expectedPresent2.data, enterString2);
 			
 		} catch(AblyException e) {
 			e.printStackTrace();
@@ -628,13 +653,16 @@ public class RealtimePresence {
 
 			/* let client1 enter the channel and wait for the success callback */
 			CompletionWaiter enterComplete = new CompletionWaiter();
-			client1Channel.presence.enter("Test data (get_simple)", enterComplete);
+			String enterString = "Test data (get_simple)";
+			client1Channel.presence.enter(enterString, enterComplete);
 			enterComplete.waitFor();
 			assertTrue("Verify enter callback called on completion", enterComplete.success);
 
 			/* get presence set and verify client present */
 			PresenceMessage[] presences = restPresenceChannel.presence.get(null).asArray();
-			assertTrue("Verify expected client is in presence set", contains(presences, testClientId1, Action.PRESENT));
+			PresenceMessage expectedPresent = contains(presences, testClientId1, Action.PRESENT);
+			assertNotNull("Verify expected client is in presence set", expectedPresent);
+			assertEquals(expectedPresent.data, enterString);
 
 		} catch(AblyException e) {
 			e.printStackTrace();
@@ -691,7 +719,7 @@ public class RealtimePresence {
 
 			/* get presence set and verify client absent */
 			PresenceMessage[] presences = restPresenceChannel.presence.get(null).asArray();
-			assertFalse("Verify expected client is in presence set", contains(presences, testClientId1));
+			assertNull("Verify expected client is in presence set", contains(presences, testClientId1));
 
 		} catch(AblyException e) {
 			e.printStackTrace();
@@ -726,7 +754,8 @@ public class RealtimePresence {
 			/* get channel and attach */
 			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
 			CompletionWaiter enter1Complete = new CompletionWaiter();
-			client1Channel.presence.enter("Test data (enter_multiple, clientId1)", enter1Complete);
+			String enterString1 = "Test data (enter_multiple, clientId1)";
+			client1Channel.presence.enter(enterString1, enter1Complete);
 			enter1Complete.waitFor();
 			assertTrue("Verify enter callback called on completion", enter1Complete.success);
 
@@ -741,14 +770,19 @@ public class RealtimePresence {
 			/* get channel and subscribe to presence */
 			Channel client2Channel = clientAbly2.channels.get(presenceChannelName);
 			CompletionWaiter enter2Complete = new CompletionWaiter();
-			client2Channel.presence.enter("Test data (enter_multiple, clientId2)", enter2Complete);
+			String enterString2 = "Test data (enter_multiple, clientId2)";
+			client2Channel.presence.enter(enterString2, enter2Complete);
 			enter2Complete.waitFor();
 			assertTrue("Verify enter callback called on completion", enter2Complete.success);
 
 			/* get presence set and verify client present */
 			PresenceMessage[] presences = restPresenceChannel.presence.get(null).asArray();
-			assertTrue("Verify expected clients are in presence set", contains(presences, testClientId1, Action.PRESENT));
-			assertTrue("Verify expected clients are in presence set", contains(presences, testClientId2, Action.PRESENT));
+			PresenceMessage expectedPresent1 = contains(presences, testClientId1, Action.PRESENT);
+			PresenceMessage expectedPresent2 = contains(presences, testClientId2, Action.PRESENT);
+			assertNotNull("Verify expected clients are in presence set", expectedPresent1);
+			assertNotNull("Verify expected clients are in presence set", expectedPresent2);
+			assertEquals(expectedPresent1.data, enterString1);
+			assertEquals(expectedPresent2.data, enterString2);
 
 		} catch(AblyException e) {
 			e.printStackTrace();
@@ -876,7 +910,7 @@ public class RealtimePresence {
 			CompletionWaiter enterComplete = new CompletionWaiter();
 			client1Channel.presence.enter("Test data (enter_before_connect)", enterComplete);
 			presenceWaiter.waitFor(testClientId1, Action.ENTER);
-			assertTrue(presenceWaiter.contains(testClientId1, Action.ENTER));
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.ENTER));
 
 			/* verify enter callback called on completion */
 			enterComplete.waitFor();
@@ -886,7 +920,7 @@ public class RealtimePresence {
 			clientAbly1.close();
 			requiresClose = false;
 			presenceWaiter.waitFor(testClientId1, Action.LEAVE);
-			assertTrue(presenceWaiter.contains(testClientId1, Action.LEAVE));
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.LEAVE));
 
 		} catch(AblyException e) {
 			e.printStackTrace();
