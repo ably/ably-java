@@ -193,7 +193,7 @@ public class Helpers {
 		 * @param clientId
 		 */
 		public synchronized void waitFor(String clientId) {
-			while(!contains(clientId))
+			while(contains(clientId) == null)
 				try { wait(); } catch(InterruptedException e) {}
 		}
 
@@ -204,7 +204,7 @@ public class Helpers {
 		 * @param action
 		 */
 		public synchronized void waitFor(String clientId, PresenceMessage.Action action) {
-			while(!contains(clientId, action))
+			while(contains(clientId, action) == null)
 				try { wait(); } catch(InterruptedException e) {}
 		}
 
@@ -231,17 +231,23 @@ public class Helpers {
 		/**
 		 * Internal
 		 */
-		boolean contains(String clientId) {
+		PresenceMessage contains(String clientId) {
 			for(PresenceMessage message : receivedMessages)
 				if(clientId.equals(message.clientId))
-					return true;
-			return false;
+					return message;
+			return null;
 		}
-		boolean contains(String clientId, PresenceMessage.Action action) {
+		PresenceMessage contains(String clientId, PresenceMessage.Action action) {
 			for(PresenceMessage message : receivedMessages)
 				if(clientId.equals(message.clientId) && action == message.action)
-					return true;
-			return false;
+					return message;
+			return null;
+		}
+		PresenceMessage contains(String clientId, String memberId, PresenceMessage.Action action) {
+			for(PresenceMessage message : receivedMessages)
+				if(clientId.equals(message.clientId) && memberId.equals(message.memberId) && action == message.action)
+					return message;
+			return null;
 		}
 	}
 
