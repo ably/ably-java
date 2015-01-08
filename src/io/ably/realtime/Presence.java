@@ -175,8 +175,18 @@ public class Presence {
 	 * @param listener: a listener to be notified on completion of the operation.
 	 * @throws AblyException
 	 */
+	public void leave(Object data, CompletionListener listener) throws AblyException {
+		leaveClient(clientId, data, listener);
+	}
+
+	/**
+	 * Leave this client from this channel. This client will be removed from the presence
+	 * set and presence subscribers will see a leave message for this client.
+	 * @param listener: a listener to be notified on completion of the operation.
+	 * @throws AblyException
+	 */
 	public void leave(CompletionListener listener) throws AblyException {
-		leaveClient(clientId, listener);
+		leaveClient(clientId, null, listener);
 	}
 
 	/**
@@ -218,12 +228,13 @@ public class Presence {
 	 * Leave a given client from this channel. This client will be removed from the
 	 * presence set and presence subscribers will see a leave message for this client.
 	 * @param clientId: the id of the client.
+	 * @param data: optional data (eg a status message) for this member.
 	 * @param listener: a listener to be notified on completion of the operation.
 	 * @throws AblyException
 	 */
-	public void leaveClient(String clientId, CompletionListener listener) throws AblyException {
+	public void leaveClient(String clientId, Object data, CompletionListener listener) throws AblyException {
 		Log.v(TAG, "leaveClient(); channel = " + channel.name + "; clientId = " + clientId);
-		updatePresence(new PresenceMessage(PresenceMessage.Action.LEAVE, clientId), listener);
+		updatePresence(new PresenceMessage(PresenceMessage.Action.LEAVE, clientId, data), listener);
 	}
 
 	/**
