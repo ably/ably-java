@@ -1,12 +1,18 @@
 package io.ably.test.realtime;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import io.ably.realtime.AblyRealtime;
 import io.ably.realtime.Connection.ConnectionState;
+import io.ably.rest.AblyRest;
+import io.ably.rest.Auth.TokenCallback;
+import io.ably.rest.Auth.TokenDetails;
+import io.ably.rest.Auth.TokenParams;
 import io.ably.test.realtime.Helpers.ConnectionWaiter;
 import io.ably.test.realtime.RealtimeSetup.TestVars;
+import io.ably.test.rest.RestSetup;
 import io.ably.types.AblyException;
 import io.ably.types.ErrorInfo;
 import io.ably.types.Options;
@@ -41,7 +47,7 @@ public class RealtimeConnectFail {
 
 	/**
 	 * Verify that the connection enters the failed state, after attempting
-	 * to connect with invalid app
+	 * to connect with invalid key
 	 */
 	@Test
 	public void connect_fail_authorized_error() {
@@ -104,6 +110,65 @@ public class RealtimeConnectFail {
 			assertEquals("Verify suspended state is reached", ConnectionState.suspended, ably.connection.state);
 			assertTrue("Verify multiple connect attempts", connectionWaiter.getCount(ConnectionState.connecting) > 1);
 			assertTrue("Verify multiple connect attempts", connectionWaiter.getCount(ConnectionState.disconnected) > 1);
+			ably.close();
+			connectionWaiter.waitFor(ConnectionState.closed);
+			assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Verify that the connection enters the disconnected state, after a token
+	 * used for successful connection expires
+	 */
+	@Test
+	public void connect_token_expire_disconnected() {
+		try {
+			final RestSetup.TestVars optsTestVars = RestSetup.getTestVars();
+			Options optsForToken = optsTestVars.createOptions(optsTestVars.keys[0].keyStr);
+			final AblyRest ablyForToken = new AblyRest(optsForToken);
+			TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, new TokenParams() {{ ttl = 2L; }});
+			assertNotNull("Expected token id", tokenDetails.id);
+
+			/* implement callback, using Ably instance with key */
+			final class TokenGenerator implements TokenCallback {
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					++cbCount;
+					return ablyForToken.auth.requestToken(null, params);
+				}
+				public int getCbCount() { return cbCount; }
+				private int cbCount = 0;
+			};
+
+			TokenGenerator authCallback = new TokenGenerator();
+
+			/* create Ably realtime instance without key */
+			final TestVars testVars = RealtimeSetup.getTestVars();
+			Options opts = testVars.createOptions();
+			opts.authToken = tokenDetails.id;
+			opts.authCallback = authCallback;
+			AblyRealtime ably = new AblyRealtime(opts);
+
+			/* wait for connected state */
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+			connectionWaiter.waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
+
+			/* wait for disconnected state (on token expiry) */
+			connectionWaiter.waitFor(ConnectionState.disconnected);
+			assertEquals("Verify disconnected state is reached", ConnectionState.disconnected, ably.connection.state);
+
+			/* wait for connected state (on token renewal) */
+			connectionWaiter.waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
+
+			/* verify that our token generator was called */
+			assertEquals("Expected token generator to be called", 1, authCallback.getCbCount());
+
+			/* end */
 			ably.close();
 			connectionWaiter.waitFor(ConnectionState.closed);
 			assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
