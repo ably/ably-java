@@ -1,6 +1,7 @@
 package io.ably.test.realtime;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -16,6 +17,7 @@ import io.ably.test.rest.RestSetup;
 import io.ably.types.AblyException;
 import io.ably.types.ErrorInfo;
 import io.ably.types.Options;
+import io.ably.util.Log;
 
 import org.junit.Test;
 
@@ -178,4 +180,55 @@ public class RealtimeConnectFail {
 		}
 	}
 
+	/**
+	 * Verify that the connection fails when attempting to recover with a
+	 * malformed connection id
+	 */
+	@Test
+	public void connect_invalid_recover_fail() {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = RealtimeSetup.getTestVars();
+			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			opts.recover = "not_a_valid:connection_id";
+			ably = new AblyRealtime(opts);
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+			ErrorInfo fail = connectionWaiter.waitFor(ConnectionState.failed);
+			assertEquals("Verify failed state is reached", ConnectionState.failed, ably.connection.state);
+			assertEquals("Verify correct error code is given", 40006, fail.code);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			ably.close();
+		}
+	}
+
+	/**
+	 * Verify that the connection creates a new connection but reports
+	 * a recovery error, when attempting to recover with an unknown
+	 * connection id
+	 */
+	@Test
+	public void connect_unknown_recover_fail() {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = RealtimeSetup.getTestVars();
+			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			String recoverConnectionId = "0123456789abcdef";
+			opts.recover = recoverConnectionId + ":0";
+			ably = new AblyRealtime(opts);
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+			ErrorInfo connectedError = connectionWaiter.waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
+			assertNotNull("Verify error is returned", connectedError);
+			assertEquals("Verify correct error code is given", 80008, connectedError.code);
+			assertFalse("Verify new connection id is assigned", recoverConnectionId.equals(ably.connection.id));
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			ably.close();
+		}
+	}
 }
