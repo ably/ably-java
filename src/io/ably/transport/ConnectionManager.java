@@ -256,11 +256,11 @@ public class ConnectionManager extends Thread implements ConnectListener {
 			break;
 		case ERROR:
 			ErrorInfo reason = message.error;
-			if(reason == null) {
+			if(reason == null)
 				Log.e(TAG, "onMessage(): ERROR message received (no error detail)");
-				return;
-			}
-			Log.e(TAG, "onMessage(): ERROR message received; message = " + reason.message + "; code = " + reason.code);
+			else
+				Log.e(TAG, "onMessage(): ERROR message received; message = " + reason.message + "; code = " + reason.code);
+
 			/* an error message may signify an error state in a channel, or in the connection */
 			if(message.channel != null)
 				onChannelMessage(message);
@@ -294,13 +294,23 @@ public class ConnectionManager extends Thread implements ConnectListener {
 	}
 
 	private synchronized void onConnected(ProtocolMessage message) {
+		/* if there was a (non-fatal) connection error
+		 * that invalidates an existing connection id, then
+		 * remove all channels attached to the previous id */
+		ErrorInfo error = message.error;
+		if(error != null && !message.connectionId.equals(connection.id))
+			ably.channels.suspendAll(error);
+
+		/* set the new connection id */
 		connection.id = message.connectionId;
 		connection.memberId = message.memberId;
 		if(message.connectionSerial != null)
 			connection.serial = message.connectionSerial.longValue();
 		msgSerial = 0;
+
+		/* indicated connected state */
 		setSuspendTime();
-		notifyState(new StateIndication(ConnectionState.connected, null));
+		notifyState(new StateIndication(ConnectionState.connected, error));
 	}
 
 	private synchronized void onDisconnected(ProtocolMessage message) {

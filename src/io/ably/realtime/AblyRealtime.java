@@ -1,11 +1,14 @@
 package io.ably.realtime;
 
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 import io.ably.rest.AblyRest;
 import io.ably.transport.ITransport;
 import io.ably.types.AblyException;
 import io.ably.types.ChannelOptions;
+import io.ably.types.ErrorInfo;
 import io.ably.types.Options;
 import io.ably.types.ProtocolMessage;
 import io.ably.util.Log;
@@ -120,6 +123,14 @@ public class AblyRealtime extends AblyRest {
 				return;
 			}
 			channel.onChannelMessage(msg);
+		}
+
+		public void suspendAll(ErrorInfo error) {
+			for(Iterator<Map.Entry<String, Channel>> it = entrySet().iterator(); it.hasNext(); ) {
+				Map.Entry<String, Channel> entry = it.next();
+				it.remove();
+				entry.getValue().setSuspended(error);
+			}
 		}
 	}
 
