@@ -223,7 +223,7 @@ public class RealtimeConnectFail {
 			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
 			assertNotNull("Verify error is returned", connectedError);
 			assertEquals("Verify correct error code is given", 80008, connectedError.code);
-			assertFalse("Verify new connection id is assigned", recoverConnectionId.equals(ably.connection.id));
+			assertFalse("Verify new connection id is assigned", recoverConnectionId.equals(ably.connection.key));
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");

@@ -187,7 +187,7 @@ public class ConnectionManager extends Thread implements ConnectListener {
 	}
 
 	public synchronized void requestState(StateIndication state) {
-		Log.v(TAG, "requestState(): requesting " + state.state + "; id = " + connection.id);
+		Log.v(TAG, "requestState(): requesting " + state.state + "; id = " + connection.key);
 		requestedState = state;
 		notify();
 	}
@@ -202,7 +202,7 @@ public class ConnectionManager extends Thread implements ConnectListener {
 	}
 
 	synchronized void notifyState(StateIndication state) {
-		Log.v(TAG, "notifyState(): notifying " + state.state + "; id = " + connection.id);
+		Log.v(TAG, "notifyState(): notifying " + state.state + "; id = " + connection.key);
 		indicatedState = state;
 		notify();
 	}
@@ -298,12 +298,12 @@ public class ConnectionManager extends Thread implements ConnectListener {
 		 * that invalidates an existing connection id, then
 		 * remove all channels attached to the previous id */
 		ErrorInfo error = message.error;
-		if(error != null && !message.connectionId.equals(connection.id))
+		if(error != null && !message.connectionKey.equals(connection.key))
 			ably.channels.suspendAll(error);
 
 		/* set the new connection id */
+		connection.key = message.connectionKey;
 		connection.id = message.connectionId;
-		connection.memberId = message.memberId;
 		if(message.connectionSerial != null)
 			connection.serial = message.connectionSerial.longValue();
 		msgSerial = 0;
@@ -321,13 +321,13 @@ public class ConnectionManager extends Thread implements ConnectListener {
 		if(message.error != null) {
 			this.onError(message);
 		} else {
-			connection.id = null;
+			connection.key = null;
 			notifyState(new StateIndication(ConnectionState.closed, null));
 		}
 	}
 
 	private synchronized void onError(ProtocolMessage message) {
-		connection.id = null;
+		connection.key = null;
 		notifyState(transport, new StateIndication(ConnectionState.failed, message.error));
 	}
 
@@ -521,7 +521,7 @@ public class ConnectionManager extends Thread implements ConnectListener {
 		ConnectParams(Options options, boolean fallback) {
 			this.options = options;
 			this.fallback = fallback;
-			this.connectionId = connection.id;
+			this.connectionKey = connection.key;
 			this.connectionSerial = String.valueOf(connection.serial);
 			String[] fallbackHosts;
 			if(fallback && (fallbackHosts = Defaults.getFallbackHosts(options)).length > 0) {

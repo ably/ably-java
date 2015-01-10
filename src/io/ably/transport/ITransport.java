@@ -36,7 +36,7 @@ public interface ITransport {
 		Options options;
 		String host;
 		int port;
-		String connectionId;
+		String connectionKey;
 		String connectionSerial;
 		Mode mode;
 
@@ -46,14 +46,14 @@ public interface ITransport {
 				paramList.add(new Param("format", "msgpack"));
 			if(!options.echoMessages)
 				paramList.add(new Param("echo", "false"));
-			if(connectionId != null) {
+			if(connectionKey != null) {
 				mode = Mode.RESUME;
-				paramList.add(new Param("resume", connectionId));
+				paramList.add(new Param("resume", connectionKey));
 				if(connectionSerial != null)
 					paramList.add(new Param("connection_serial", connectionSerial));
 			} else if(options.recover != null) {
 				mode = Mode.RECOVER;
-				Pattern recoverSpec = Pattern.compile("^(\\w+):(\\-?\\w+)$");
+				Pattern recoverSpec = Pattern.compile("^([\\w\\-]+):(\\-?\\w+)$");
 				Matcher match = recoverSpec.matcher(options.recover);
 				if(match.matches()) {
 					paramList.add(new Param("recover", match.group(1)));

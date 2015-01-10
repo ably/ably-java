@@ -159,7 +159,7 @@ public class RealtimePresence {
 			String enterString = "Test data (enter_before_attach)";
 			client1Channel.presence.enter(enterString, enterComplete);
 			presenceWaiter.waitFor(testClientId1, Action.ENTER);
-			PresenceMessage expectedPresent = presenceWaiter.contains(testClientId1, clientAbly1.connection.memberId, Action.ENTER);
+			PresenceMessage expectedPresent = presenceWaiter.contains(testClientId1, clientAbly1.connection.id, Action.ENTER);
 			assertNotNull(expectedPresent);
 			assertEquals(expectedPresent.data, enterString);
 
@@ -203,7 +203,7 @@ public class RealtimePresence {
 			String enterString = "Test data (enter_before_connect)";
 			client1Channel.presence.enter(enterString, enterComplete);
 			presenceWaiter.waitFor(testClientId1, Action.ENTER);
-			PresenceMessage expectedPresent = presenceWaiter.contains(testClientId1, clientAbly1.connection.memberId, Action.ENTER);
+			PresenceMessage expectedPresent = presenceWaiter.contains(testClientId1, clientAbly1.connection.id, Action.ENTER);
 			assertNotNull(expectedPresent);
 			assertEquals(expectedPresent.data, enterString);
 

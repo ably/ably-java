@@ -245,7 +245,7 @@ public class Helpers {
 		}
 		PresenceMessage contains(String clientId, String memberId, PresenceMessage.Action action) {
 			for(PresenceMessage message : receivedMessages)
-				if(clientId.equals(message.clientId) && memberId.equals(message.memberId) && action == message.action)
+				if(clientId.equals(message.clientId) && memberId.equals(message.connectionId) && action == message.action)
 					return message;
 			return null;
 		}

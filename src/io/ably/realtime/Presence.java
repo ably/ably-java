@@ -383,7 +383,7 @@ public class Presence {
 
 	/**
 	 * A class encapsulating a map of the members of this presence channel,
-	 * indexed by a String key that is a combination of memberId and clientId.
+	 * indexed by a String key that is a combination of connectionId and clientId.
 	 * This map synchronises the membership of the presence set by handling
 	 * sync messages from the service. Since sync messages can be out-of-order -
 	 * eg an ENTER sync event being received after that member has in fact left -
@@ -520,7 +520,7 @@ public class Presence {
 		 * @return
 		 */
 		private String memberKey(PresenceMessage message) {
-			return message.memberId + ':' + message.clientId;
+			return message.connectionId + ':' + message.clientId;
 		}
 
 		private boolean syncInProgress;

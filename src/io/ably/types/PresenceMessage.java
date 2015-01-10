@@ -49,7 +49,7 @@ public class PresenceMessage extends BaseMessage implements MessagePackable, Clo
 	 * A unique member identifier, disambiguating situations where a given
 	 * clientId is present on multiple connections simultaneously.
 	 */
-	public String memberId;
+	public String connectionId;
 
 	/**
 	 * Construct a PresenceMessage from a JSON-encoded response body
@@ -61,7 +61,7 @@ public class PresenceMessage extends BaseMessage implements MessagePackable, Clo
 		if(json != null) {
 			result.readJSON(json);
 			result.action = Action.findByValue(json.optInt("action"));
-			result.memberId = (String)json.opt("memberId");
+			result.connectionId = (String)json.opt("connectionId");
 		}
 		return result;
 	}
@@ -221,8 +221,8 @@ public class PresenceMessage extends BaseMessage implements MessagePackable, Clo
 		StringBuilder result = new StringBuilder("[PresenceMessage");
 		super.getDetails(result);
 		result.append(" action=").append(action.name());
-		if(memberId != null)
-			result.append(" memberId=").append(memberId);
+		if(connectionId != null)
+			result.append(" connectionId=").append(connectionId);
 		result.append(']');
 		return result.toString();
 	}
@@ -237,8 +237,8 @@ public class PresenceMessage extends BaseMessage implements MessagePackable, Clo
 			if(super.readField(unpacker, fieldName, fieldType)) continue;
 			if(fieldName == "action") {
 				action = Action.findByValue(unpacker.readInt());
-			} else if(fieldName == "memberId") {
-				memberId = unpacker.readString();
+			} else if(fieldName == "connectionId") {
+				connectionId = unpacker.readString();
 			} else {
 				System.out.println("Unexpected field: " + fieldName);
 				unpacker.skip();
@@ -266,7 +266,7 @@ public class PresenceMessage extends BaseMessage implements MessagePackable, Clo
 		result.encoding = encoding;
 		result.data = data;
 		result.action = action;
-		result.memberId = memberId;
+		result.connectionId = connectionId;
 		return result;
 	}
 

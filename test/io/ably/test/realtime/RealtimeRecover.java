@@ -77,7 +77,7 @@ public class RealtimeRecover {
 			 * NOTE this depends on knowledge of the internal structure
 			 * of the library, to simulate a dropped transport without
 			 * causing the connection itself to be disposed */
-			String recoverConnectionId = ablyRx.connection.id;
+			String recoverConnectionId = ablyRx.connection.key;
 			long recoverConnectionSerial = ablyRx.connection.serial;
 			ablyRx.connection.connectionManager.requestState(ConnectionState.failed);
 
@@ -156,7 +156,7 @@ public class RealtimeRecover {
 			assertEquals("Verify attached state reached for rx", channelRx.state, ChannelState.attached);
 
 			/* subscribe */
-			MessageWaiter messageWaiter =  new MessageWaiter(channelRx);
+			MessageWaiter messageWaiter = new MessageWaiter(channelRx);
 
 			/* publish first messages to the channel */
 			CompletionSet msgComplete1 = new CompletionSet();
@@ -177,7 +177,7 @@ public class RealtimeRecover {
 			 * NOTE this depends on knowledge of the internal structure
 			 * of the library, to simulate a dropped transport without
 			 * causing the connection itself to be disposed */
-			String recoverConnectionId = ablyRx.connection.id;
+			String recoverConnectionKey = ablyRx.connection.key;
 			long recoverConnectionSerial = ablyRx.connection.serial;
 			ablyRx.connection.connectionManager.requestState(ConnectionState.failed);
 
@@ -197,7 +197,7 @@ public class RealtimeRecover {
 
 			/* establish a new rx connection with recover string, and wait for connection */
 			Options recoverOpts = testVars.createOptions(testVars.keys[0].keyStr);
-			recoverOpts.recover = recoverConnectionId + ':' + String.valueOf(recoverConnectionSerial);
+			recoverOpts.recover = recoverConnectionKey + ':' + String.valueOf(recoverConnectionSerial);
 			ablyRxRecover = new AblyRealtime(recoverOpts);
 
 			/* subscribe to channel */

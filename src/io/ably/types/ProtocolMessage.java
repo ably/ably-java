@@ -68,8 +68,8 @@ public class ProtocolMessage implements MessagePackable {
 				result.channel = json.optString("channel");
 			if(json.has("channelSerial"))
 				result.channelSerial = json.optString("channelSerial");
-			if(json.has("connectionId"))
-				result.connectionId = json.optString("connectionId");
+			if(json.has("connectionKey"))
+				result.connectionKey = json.optString("connectionKey");
 			if(json.has("connectionSerial"))
 				result.connectionSerial = Long.valueOf(json.optLong("connectionSerial"));
 			result.timestamp = json.optLong("timestamp");
@@ -232,10 +232,10 @@ public class ProtocolMessage implements MessagePackable {
 				channel = unpacker.readString();
 			} else if(fieldName == "channelSerial") {
 				channelSerial = unpacker.readString();
-			} else if(fieldName == "memberId") {
-				memberId = unpacker.readString();
 			} else if(fieldName == "connectionId") {
 				connectionId = unpacker.readString();
+			} else if(fieldName == "connectionKey") {
+				connectionKey = unpacker.readString();
 			} else if(fieldName == "connectionSerial") {
 				connectionSerial = Long.valueOf(unpacker.readLong());
 			} else if(fieldName == "msgSerial") {
@@ -261,8 +261,8 @@ public class ProtocolMessage implements MessagePackable {
 	public String id;
 	public String channel;
 	public String channelSerial;
-	public String memberId;
 	public String connectionId;
+	public String connectionKey;
 	public Long connectionSerial;
 	public Long msgSerial;
 	public long timestamp;

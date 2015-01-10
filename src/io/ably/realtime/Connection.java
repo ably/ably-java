@@ -42,15 +42,15 @@ public class Connection implements ConnectionStateListener {
 	public ErrorInfo reason;
 
 	/**
-	 * The assigned connection id.
+	 * The assigned connection key.
 	 */
-	public String id;
+	public String key;
 
 	/**
 	 * A public identifier for this connection, used to identify
 	 * this member in presence events and message ids.
 	 */
-	public String memberId;
+	public String id;
 
 	/**
 	 * The serial number of the last message to be received on this connection.
@@ -79,7 +79,7 @@ public class Connection implements ConnectionStateListener {
 	 * connection without a call to {@link #connect}.
 	 */
 	public void close() {
-		id = null;
+		key = null;
 		connectionManager.requestState(ConnectionState.closing);
 	}
 
