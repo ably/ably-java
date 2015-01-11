@@ -345,6 +345,7 @@ public class Channel {
 				Log.e(TAG, "Unexpected exception decrypting message", e);
 			}
 			/* populate fields derived from protocol message */
+			if(msg.connectionId == null) msg.connectionId = message.connectionId;
 			if(msg.timestamp == 0) msg.timestamp = message.timestamp;
 			if(msg.id == null) msg.id = message.id + ':' + i;
 			/* broadcast */
@@ -367,6 +368,7 @@ public class Channel {
 				Log.e(TAG, "Unexpected exception decrypting message", e);
 			}
 			/* populate fields derived from protocol message */
+			if(msg.connectionId == null) msg.connectionId = message.connectionId;
 			if(msg.timestamp == 0) msg.timestamp = message.timestamp;
 			if(msg.id == null) msg.id = message.id + ':' + i;
 		}

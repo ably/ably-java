@@ -32,6 +32,11 @@ public class BaseMessage implements Cloneable {
 	public String clientId;
 
 	/**
+	 * The connection id of the publisher of this message
+	 */
+	public String connectionId;
+
+	/**
 	 * Any transformation applied to the data for this message
 	 */
 	public String encoding;
@@ -53,6 +58,7 @@ public class BaseMessage implements Cloneable {
 			data = (String)json.opt("data");
 			id = (String)json.opt("id");
 			clientId = (String)json.opt("clientId");
+			connectionId = (String)json.opt("connectionId");
 		}
 	}
 
@@ -66,6 +72,7 @@ public class BaseMessage implements Cloneable {
 		try {
 			if(timestamp > 0) json.put("timestamp", timestamp);
 			if(clientId != null) json.put("clientId", clientId);
+			if(connectionId != null) json.put("connectionId", clientId);
 			if(data != null) {
 				if(data instanceof byte[]) {
 					data = new String(Base64Coder.encode((byte[])data));
@@ -87,6 +94,8 @@ public class BaseMessage implements Cloneable {
 	public void getDetails(StringBuilder builder) {
 		if(clientId != null)
 			builder.append(" clientId=").append(clientId);
+		if(connectionId != null)
+			builder.append(" connectionId=").append(connectionId);
 		if(data != null)
 			builder.append(" data=").append(data);
 		if(encoding != null)
@@ -162,6 +171,8 @@ public class BaseMessage implements Cloneable {
 			id = unpacker.readString();
 		} else if(fieldName == "clientId") {
 			clientId = unpacker.readString();
+		} else if(fieldName == "connectionId") {
+			connectionId = unpacker.readString();
 		} else if(fieldName == "encoding") {
 			encoding = unpacker.readString();
 		} else if(fieldName == "data") {
@@ -179,6 +190,7 @@ public class BaseMessage implements Cloneable {
 		int fieldCount = 0;
 		if(timestamp > 0) ++fieldCount;
 		if(clientId != null) ++fieldCount;
+		if(connectionId != null) ++fieldCount;
 		if(encoding != null) ++fieldCount;
 		if(data != null) ++fieldCount;
 		return fieldCount;
@@ -192,6 +204,10 @@ public class BaseMessage implements Cloneable {
 		if(clientId != null) {
 			packer.write("clientId");
 			packer.write(clientId);
+		}
+		if(connectionId != null) {
+			packer.write("connectionId");
+			packer.write(connectionId);
 		}
 		if(encoding != null) {
 			packer.write("encoding");
