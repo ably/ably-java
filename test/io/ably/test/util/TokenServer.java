@@ -306,7 +306,7 @@ public class TokenServer {
 		if(map.containsKey("id"))
 			tokenParams.id = map.get("id");
 		if(map.containsKey("client_id"))
-			tokenParams.client_id = map.get("client_id");
+			tokenParams.clientId = map.get("client_id");
 		if(map.containsKey("timestamp"))
 			tokenParams.timestamp = Long.valueOf(map.get("timestamp"));
 		if(map.containsKey("ttl"))

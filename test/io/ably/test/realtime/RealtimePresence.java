@@ -63,8 +63,8 @@ public class RealtimePresence {
 		Options opts = new Options(testVars.keys[0].keyStr);
 		testVars.fillInOptions(opts);
 		rest = new AblyRest(opts);
-		token1 = rest.auth.requestToken(null, new TokenParams() {{ client_id = testClientId1; }});
-		token2 = rest.auth.requestToken(null, new TokenParams() {{ client_id = testClientId2; }});
+		token1 = rest.auth.requestToken(null, new TokenParams() {{ clientId = testClientId1; }});
+		token2 = rest.auth.requestToken(null, new TokenParams() {{ clientId = testClientId2; }});
 
 		/* get rest channel */
 		restPresenceChannel = rest.channels.get(presenceChannelName);

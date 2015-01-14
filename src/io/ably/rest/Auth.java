@@ -181,7 +181,7 @@ public class Auth {
 			details.expires = json.optLong("expires");
 			details.issuedAt = json.optLong("issued_at");
 			details.capability = json.has("capability") ? json.optString("capability") : null;
-			details.clientId = json.has("client_id") ? json.optString("client_id") : null;
+			details.clientId = json.has("clientId") ? json.optString("clientId") : null;
 			return details;
 		}
 
@@ -196,7 +196,7 @@ public class Auth {
 			json.put("expires", expires);
 			json.put("issued_at", issuedAt);
 			json.put("capability", capability);
-			json.put("client_id", clientId);
+			json.put("clientId", clientId);
 			return json;
 		}
 	}
@@ -230,7 +230,7 @@ public class Auth {
 		 * A clientId to associate with this token. The generated token
 		 * may be used to authenticate as this clientId.
 		 */
-		public String client_id;
+		public String clientId;
 
 		/**
 		 * The timestamp (in millis since the epoch) of this request.
@@ -262,7 +262,7 @@ public class Auth {
 			params.id = json.optString("id");
 			params.ttl = json.optLong("ttl");
 			params.capability = json.has("capability") ? json.optString("capability") : null;
-			params.client_id = json.has("client_id") ? json.optString("client_id") : null;
+			params.clientId = json.has("clientId") ? json.optString("clientId") : null;
 			params.timestamp = json.optLong("timestamp");
 			params.nonce = json.has("nonce") ? json.optString("nonce") : null;
 			params.mac = json.has("mac") ? json.optString("mac") : null;
@@ -278,7 +278,7 @@ public class Auth {
 				if(id != null) json.put("id", id);
 				if(ttl != 0) json.put("ttl", ttl);
 				if(capability != null) json.put("capability", capability);
-				if(client_id != null) json.put("client_id", client_id);
+				if(clientId != null) json.put("clientId", clientId);
 				if(timestamp != 0) json.put("timestamp", timestamp);
 				if(nonce != null) json.put("nonce", nonce);
 				if(mac != null) json.put("mac", mac);
@@ -297,7 +297,7 @@ public class Auth {
 			if(id != null) params.add(new Param("id", id));
 			if(ttl > 0) params.add(new Param("ttl", String.valueOf(ttl)));
 			if(capability != null) params.add(new Param("capability", capability));
-			if(client_id != null) params.add(new Param("client_id", client_id));
+			if(clientId != null) params.add(new Param("client_id", clientId));
 			if(timestamp > 0) params.add(new Param("timestamp", String.valueOf(timestamp)));
 			if(nonce != null) params.add(new Param("nonce", nonce));
 			if(mac != null) params.add(new Param("mac", mac));
@@ -367,8 +367,8 @@ public class Auth {
 
 		/* set up the request params */
 		if(params == null) params = new TokenParams();
-		if(params.client_id == null)
-			params.client_id = ably.clientId;
+		if(params.clientId == null)
+			params.clientId = ably.clientId;
 
 		if(params.capability != null)
 			params.capability = Capability.c14n(params.capability);
@@ -481,8 +481,8 @@ public class Auth {
 		String capabilityText = (params.capability == null) ? "" : params.capability;
 
 		/* clientId */
-		if (params.client_id == null) params.client_id = ably.clientId;
-		String clientIdText = (params.client_id == null) ? "" : params.client_id;
+		if (params.clientId == null) params.clientId = ably.clientId;
+		String clientIdText = (params.clientId == null) ? "" : params.clientId;
 
 		/* timestamp */
 		if(params.timestamp == 0) {

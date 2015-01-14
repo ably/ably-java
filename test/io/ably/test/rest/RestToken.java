@@ -155,13 +155,13 @@ public class RestToken {
 		try {
 			long requestTime = (timeOffset + System.currentTimeMillis())/1000;
 			TokenParams tokenParams = new TokenParams();
-			tokenParams.client_id = "test client id";
+			tokenParams.clientId = "test client id";
 			TokenDetails tokenDetails = ably.auth.requestToken(null, tokenParams);
 			assertNotNull("Expected token id", tokenDetails.id);
 			assertTrue("Unexpected issuedAt time", (tokenDetails.issuedAt >= (requestTime - 2)) && (tokenDetails.issuedAt <= (requestTime + 2)));
 			assertEquals("Unexpected expires time", tokenDetails.expires, tokenDetails.issuedAt + 60*60);
 			assertEquals("Unexpected capability", tokenDetails.capability, permitAll);
-			assertEquals("Unexpected clientId", tokenDetails.clientId, tokenParams.client_id);
+			assertEquals("Unexpected clientId", tokenDetails.clientId, tokenParams.clientId);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("authclientid0: Unexpected exception");
