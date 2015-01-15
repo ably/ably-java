@@ -68,6 +68,8 @@ public class ProtocolMessage implements MessagePackable {
 				result.channel = json.optString("channel");
 			if(json.has("channelSerial"))
 				result.channelSerial = json.optString("channelSerial");
+			if(json.has("connectionId"))
+				result.connectionId = json.optString("connectionId");
 			if(json.has("connectionKey"))
 				result.connectionKey = json.optString("connectionKey");
 			if(json.has("connectionSerial"))
