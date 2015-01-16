@@ -260,13 +260,279 @@ public class RealtimePresence {
 			String leaveString = "Test data (enter_before_connect), leaving";
 			client1Channel.presence.leave(leaveString, leaveComplete);
 			presenceWaiter.waitFor(testClientId1, Action.LEAVE);
-			assertNotNull(presenceWaiter.contains(testClientId1, Action.LEAVE));
-			assertEquals(presenceWaiter.receivedMessages.get(0).data, leaveString);
+			PresenceMessage expectedLeft = presenceWaiter.contains(testClientId1, clientAbly1.connection.id, Action.LEAVE);
+			assertNotNull(expectedLeft);
+			assertEquals(expectedLeft.data, leaveString);
 
 			/* verify leave callback called on completion */
 			leaveComplete.waitFor();
 			assertTrue("Verify leave callback called on completion", leaveComplete.success);
 
+		} catch(AblyException e) {
+			e.printStackTrace();
+			fail("enter0: Unexpected exception running test");
+		} catch(Throwable t) {
+			t.printStackTrace();
+			fail("enter0: Unexpected exception running test");
+		} finally {
+			if(clientAbly1 != null)
+				clientAbly1.close();
+		}
+	}
+
+	/**
+	 * Enter, then enter again, expecting update event
+	 */
+	@Test
+	public void enter_enter_simple() {
+		AblyRealtime clientAbly1 = null;
+		try {
+			/* subscribe for presence events in the anonymous connection */
+			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
+			/* set up a connection with specific clientId */
+			Options client1Opts = new Options() {{
+				authToken = token1.id;
+				clientId = testClientId1;
+			}};
+			testVars.fillInOptions(client1Opts);
+			clientAbly1 = new AblyRealtime(client1Opts);
+
+			/* get channel */
+			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+
+			/* let client1 enter the channel and wait for the entered event to be delivered */
+			CompletionWaiter enterComplete = new CompletionWaiter();
+			String enterString = "Test data (enter_enter_simple)";
+			client1Channel.presence.enter(enterString, enterComplete);
+			presenceWaiter.waitFor(testClientId1, Action.ENTER);
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.ENTER));
+			assertEquals(presenceWaiter.receivedMessages.get(0).data, enterString);
+			presenceWaiter.reset();
+
+			/* verify enter callback called on completion */
+			enterComplete.waitFor();
+			assertTrue("Verify enter callback called on completion", enterComplete.success);
+
+			/* let client1 reenter the channel and wait for the update event to be delivered */
+			CompletionWaiter reenterComplete = new CompletionWaiter();
+			String reenterString = "Test data (enter_enter_simple), reentering";
+			client1Channel.presence.enter(reenterString, reenterComplete);
+			presenceWaiter.waitFor(testClientId1, Action.UPDATE);
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.UPDATE));
+			assertEquals(presenceWaiter.receivedMessages.get(0).data, reenterString);
+
+			/* verify reenter callback called on completion */
+			reenterComplete.waitFor();
+			assertTrue("Verify reenter callback called on completion", reenterComplete.success);
+
+			/* let client1 leave the channel and wait for the leave event to be delivered */
+			CompletionWaiter leaveComplete = new CompletionWaiter();
+			String leaveString = "Test data (enter_enter_simple), leaving";
+			client1Channel.presence.leave(leaveString, leaveComplete);
+			presenceWaiter.waitFor(testClientId1, Action.LEAVE);
+			PresenceMessage expectedLeft = presenceWaiter.contains(testClientId1, clientAbly1.connection.id, Action.LEAVE);
+			assertNotNull(expectedLeft);
+			assertEquals(expectedLeft.data, leaveString);
+
+			/* verify leave callback called on completion */
+			leaveComplete.waitFor();
+			assertTrue("Verify leave callback called on completion", leaveComplete.success);
+		} catch(AblyException e) {
+			e.printStackTrace();
+			fail("enter0: Unexpected exception running test");
+		} catch(Throwable t) {
+			t.printStackTrace();
+			fail("enter0: Unexpected exception running test");
+		} finally {
+			if(clientAbly1 != null)
+				clientAbly1.close();
+		}
+	}
+
+	/**
+	 * Enter, then update, expecting update event
+	 */
+	@Test
+	public void enter_update_simple() {
+		AblyRealtime clientAbly1 = null;
+		try {
+			/* subscribe for presence events in the anonymous connection */
+			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
+			/* set up a connection with specific clientId */
+			Options client1Opts = new Options() {{
+				authToken = token1.id;
+				clientId = testClientId1;
+			}};
+			testVars.fillInOptions(client1Opts);
+			clientAbly1 = new AblyRealtime(client1Opts);
+
+			/* get channel */
+			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+
+			/* let client1 enter the channel and wait for the entered event to be delivered */
+			CompletionWaiter enterComplete = new CompletionWaiter();
+			String enterString = "Test data (enter_update_simple)";
+			client1Channel.presence.enter(enterString, enterComplete);
+			presenceWaiter.waitFor(testClientId1, Action.ENTER);
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.ENTER));
+			assertEquals(presenceWaiter.receivedMessages.get(0).data, enterString);
+			presenceWaiter.reset();
+
+			/* verify enter callback called on completion */
+			enterComplete.waitFor();
+			assertTrue("Verify enter callback called on completion", enterComplete.success);
+
+			/* let client1 update the channel and wait for the update event to be delivered */
+			CompletionWaiter updateComplete = new CompletionWaiter();
+			String reenterString = "Test data (enter_update_simple), updating";
+			client1Channel.presence.enter(reenterString, updateComplete);
+			presenceWaiter.waitFor(testClientId1, Action.UPDATE);
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.UPDATE));
+			assertEquals(presenceWaiter.receivedMessages.get(0).data, reenterString);
+
+			/* verify reenter callback called on completion */
+			updateComplete.waitFor();
+			assertTrue("Verify reenter callback called on completion", updateComplete.success);
+
+			/* let client1 leave the channel and wait for the leave event to be delivered */
+			CompletionWaiter leaveComplete = new CompletionWaiter();
+			String leaveString = "Test data (enter_update_simple), leaving";
+			client1Channel.presence.leave(leaveString, leaveComplete);
+			presenceWaiter.waitFor(testClientId1, Action.LEAVE);
+			PresenceMessage expectedLeft = presenceWaiter.contains(testClientId1, clientAbly1.connection.id, Action.LEAVE);
+			assertNotNull(expectedLeft);
+			assertEquals(expectedLeft.data, leaveString);
+
+			/* verify leave callback called on completion */
+			leaveComplete.waitFor();
+			assertTrue("Verify leave callback called on completion", leaveComplete.success);
+		} catch(AblyException e) {
+			e.printStackTrace();
+			fail("enter0: Unexpected exception running test");
+		} catch(Throwable t) {
+			t.printStackTrace();
+			fail("enter0: Unexpected exception running test");
+		} finally {
+			if(clientAbly1 != null)
+				clientAbly1.close();
+		}
+	}
+
+	/**
+	 * Enter, then update with null data, expecting previous data to be superseded
+	 */
+	@Test
+	public void enter_update_null() {
+		AblyRealtime clientAbly1 = null;
+		try {
+			/* subscribe for presence events in the anonymous connection */
+			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
+			/* set up a connection with specific clientId */
+			Options client1Opts = new Options() {{
+				authToken = token1.id;
+				clientId = testClientId1;
+			}};
+			testVars.fillInOptions(client1Opts);
+			client1Opts.useBinaryProtocol = false;
+			clientAbly1 = new AblyRealtime(client1Opts);
+
+			/* get channel */
+			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+
+			/* let client1 enter the channel and wait for the entered event to be delivered */
+			CompletionWaiter enterComplete = new CompletionWaiter();
+			String enterString = "Test data (enter_update_null)";
+			client1Channel.presence.enter(enterString, enterComplete);
+			presenceWaiter.waitFor(testClientId1, Action.ENTER);
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.ENTER));
+			assertEquals(presenceWaiter.receivedMessages.get(0).data, enterString);
+			presenceWaiter.reset();
+
+			/* verify enter callback called on completion */
+			enterComplete.waitFor();
+			assertTrue("Verify enter callback called on completion", enterComplete.success);
+
+			/* let client1 update the channel and wait for the update event to be delivered */
+			CompletionWaiter updateComplete = new CompletionWaiter();
+			String updateString = null;
+			client1Channel.presence.enter(updateString, updateComplete);
+			presenceWaiter.waitFor(testClientId1, Action.UPDATE);
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.UPDATE));
+			assertEquals(presenceWaiter.receivedMessages.get(0).data, updateString);
+
+			/* verify reenter callback called on completion */
+			updateComplete.waitFor();
+			assertTrue("Verify reenter callback called on completion", updateComplete.success);
+
+			/* let client1 leave the channel and wait for the leave event to be delivered */
+			CompletionWaiter leaveComplete = new CompletionWaiter();
+			String leaveString = "Test data (enter_update_null), leaving";
+			client1Channel.presence.leave(leaveString, leaveComplete);
+			presenceWaiter.waitFor(testClientId1, Action.LEAVE);
+			PresenceMessage expectedLeft = presenceWaiter.contains(testClientId1, clientAbly1.connection.id, Action.LEAVE);
+			assertNotNull(expectedLeft);
+			assertEquals(expectedLeft.data, leaveString);
+
+			/* verify leave callback called on completion */
+			leaveComplete.waitFor();
+			assertTrue("Verify leave callback called on completion", leaveComplete.success);
+		} catch(AblyException e) {
+			e.printStackTrace();
+			fail("enter0: Unexpected exception running test");
+		} catch(Throwable t) {
+			t.printStackTrace();
+			fail("enter0: Unexpected exception running test");
+		} finally {
+			if(clientAbly1 != null)
+				clientAbly1.close();
+		}
+	}
+
+	/**
+	 * Update without having first entered, expecting enter event
+	 */
+	@Test
+	public void update_noenter() {
+		AblyRealtime clientAbly1 = null;
+		try {
+			/* subscribe for presence events in the anonymous connection */
+			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
+			/* set up a connection with specific clientId */
+			Options client1Opts = new Options() {{
+				authToken = token1.id;
+				clientId = testClientId1;
+			}};
+			testVars.fillInOptions(client1Opts);
+			clientAbly1 = new AblyRealtime(client1Opts);
+
+			/* get channel */
+			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+
+			/* let client1 enter the channel and wait for the entered event to be delivered */
+			CompletionWaiter enterComplete = new CompletionWaiter();
+			String updateString = "Test data (update_noenter)";
+			client1Channel.presence.update(updateString, enterComplete);
+			presenceWaiter.waitFor(testClientId1, Action.ENTER);
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.ENTER));
+			assertEquals(presenceWaiter.receivedMessages.get(0).data, updateString);
+			presenceWaiter.reset();
+
+			/* verify enter callback called on completion */
+			enterComplete.waitFor();
+			assertTrue("Verify enter callback called on completion", enterComplete.success);
+
+			/* let client1 leave the channel and wait for the leave event to be delivered */
+			CompletionWaiter leaveComplete = new CompletionWaiter();
+			String leaveString = "Test data (update_noenter), leaving";
+			client1Channel.presence.leave(leaveString, leaveComplete);
+			presenceWaiter.waitFor(testClientId1, Action.LEAVE);
+			PresenceMessage expectedLeft = presenceWaiter.contains(testClientId1, clientAbly1.connection.id, Action.LEAVE);
+			assertNotNull(expectedLeft);
+			assertEquals(expectedLeft.data, leaveString);
+
+			/* verify leave callback called on completion */
+			leaveComplete.waitFor();
+			assertTrue("Verify leave callback called on completion", leaveComplete.success);
 		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("enter0: Unexpected exception running test");
