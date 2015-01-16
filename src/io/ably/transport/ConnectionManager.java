@@ -716,14 +716,24 @@ public class ConnectionManager extends Thread implements ConnectListener {
 			if(nackMessages != null) {
 				if(reason == null)
 					reason = new ErrorInfo("Unknown error", 500, 50000);
-				for(QueuedMessage msg : nackMessages)
-					if(msg.listener != null)
-						msg.listener.onError(reason);
+				for(QueuedMessage msg : nackMessages) {
+					try {
+						if(msg.listener != null)
+							msg.listener.onError(reason);
+					} catch(Throwable t) {
+						Log.e(TAG, "ack(): listener exception", t);
+					}
+				}
 			}
 			if(ackMessages != null) {
-				for(QueuedMessage msg : ackMessages)
-					if(msg.listener != null)
-						msg.listener.onSuccess();
+				for(QueuedMessage msg : ackMessages) {
+					try {
+						if(msg.listener != null)
+							msg.listener.onError(reason);
+					} catch(Throwable t) {
+						Log.e(TAG, "ack(): listener exception", t);
+					}
+				}
 			}
 		}
 
@@ -740,14 +750,19 @@ public class ConnectionManager extends Thread implements ConnectListener {
 				List<QueuedMessage> nackList = queue.subList(0, count);
 				nackMessages = nackList.toArray(new QueuedMessage[count]);
 				nackList.clear();
-				startSerial = serial;
+				startSerial += count;
 			}
 			if(nackMessages != null) {
 				if(reason == null)
 					reason = new ErrorInfo("Unknown error", 500, 50000);
-				for(QueuedMessage msg : nackMessages)
-					if(msg.listener != null)
-						msg.listener.onError(reason);
+				for(QueuedMessage msg : nackMessages) {
+					try {
+						if(msg.listener != null)
+							msg.listener.onError(reason);
+					} catch(Throwable t) {
+						Log.e(TAG, "nack(): listener exception", t);
+					}
+				}
 			}
 		}
 	}
