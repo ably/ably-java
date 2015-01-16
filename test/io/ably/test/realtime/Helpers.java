@@ -446,7 +446,7 @@ public class Helpers {
 			public void onSuccess() {
 				synchronized(CompletionSet.this) {
 					pending.remove(this);
-					CompletionSet.this.notify();
+					CompletionSet.this.notifyAll();
 				}
 			}
 			@Override
@@ -454,7 +454,7 @@ public class Helpers {
 				synchronized(CompletionSet.this) {
 					pending.remove(this);
 					errors.add(reason);
-					CompletionSet.this.notify();
+					CompletionSet.this.notifyAll();
 				}
 			}
 		}
@@ -474,9 +474,11 @@ public class Helpers {
 		 * Wait for all members to complete.
 		 * @return an array of errors.
 		 */
-		public synchronized ErrorInfo[] waitFor() {
-			while(pending.size() > 0)
-				try { wait(); } catch(InterruptedException e) {}
+		public ErrorInfo[] waitFor() {
+			synchronized(CompletionSet.this) {
+				while(pending.size() > 0)
+					try { CompletionSet.this.wait(); } catch(InterruptedException e) {}
+			}
 			return errors.toArray(new ErrorInfo[errors.size()]);
 		}
 	}
