@@ -31,7 +31,7 @@ public class Stats {
 		public static ConnectionTypes fromJSON(JSONObject json) {
 			ConnectionTypes result = null;
 			if(json != null) {
-				if(json.has("all")) {
+				if(json.keys().hasNext()) {
 					result = new ConnectionTypes();
 					result.all = ResourceCount.fromJSON(json.optJSONObject("all"));
 					result.plain = ResourceCount.fromJSON(json.optJSONObject("plain"));
@@ -52,7 +52,7 @@ public class Stats {
 		public static MessageCount fromJSON(JSONObject json) {
 			MessageCount result = null;
 			if(json != null) {
-				if(json.has("count")) {
+				if(json.keys().hasNext()) {
 					result = new MessageCount();
 					result.count = json.optDouble("count");
 					result.data = json.optDouble("data");
@@ -74,7 +74,7 @@ public class Stats {
 		public static MessageTypes fromJSON(JSONObject json) {
 			MessageTypes result = null;
 			if(json != null) {
-				if(json.has("all")) {
+				if(json.keys().hasNext()) {
 					result = new MessageTypes();
 					result.all = MessageCount.fromJSON(json.optJSONObject("all"));
 					result.messages = MessageCount.fromJSON(json.optJSONObject("messages"));
@@ -98,7 +98,7 @@ public class Stats {
 		public static MessageTraffic fromJSON(JSONObject json) {
 			MessageTraffic result = null;
 			if(json != null) {
-				if(json.has("all")) {
+				if(json.keys().hasNext()) {
 					result = new MessageTraffic();
 					result.all = MessageTypes.fromJSON(json.optJSONObject("all"));
 					result.realtime = MessageTypes.fromJSON(json.optJSONObject("realtime"));
@@ -122,7 +122,7 @@ public class Stats {
 		public static RequestCount fromJSON(JSONObject json) {
 			RequestCount result = null;
 			if(json != null) {
-				if(json.has("succeeded") || json.has("failed") || json.has("refused")) {
+				if(json.keys().hasNext()) {
 					result = new RequestCount();
 					result.succeeded = json.optDouble("succeeded");
 					result.failed = json.optDouble("failed");
@@ -146,7 +146,7 @@ public class Stats {
 		public static ResourceCount fromJSON(JSONObject json) {
 			ResourceCount result = null;
 			if(json != null) {
-				if(json.has("opened") || json.has("refused") || json.has("peak")) {
+				if(json.keys().hasNext()) {
 					result = new ResourceCount();
 					result.opened = json.optDouble("opened");
 					result.peak = json.optDouble("peak");
