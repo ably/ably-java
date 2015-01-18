@@ -20,15 +20,22 @@ import io.ably.http.Http.BodyHandler;
  */
 public class StatsReader  {
 
-	public static Stats[] readJSON(byte[] jsonBytes) throws AblyException {
+	public static Stats[] readJSON(String jsonText) throws AblyException {
 		try {
-			JSONArray json = new JSONArray(new String(jsonBytes, "UTF-8"));
+			JSONArray json = new JSONArray(jsonText);
 			int count = json.length();
 			Stats[] result = new Stats[count];
 			for(int i = 0; i < count; i++)
 				result[i] = Stats.fromJSON(json.optJSONObject(i));
 
 			return result;
+		} catch (JSONException e) {
+			throw AblyException.fromThrowable(e);
+		}
+	}
+	public static Stats[] readJSON(byte[] jsonBytes) throws AblyException {
+		try {
+			return readJSON(new String(jsonBytes, "UTF-8"));
 		} catch (JSONException e) {
 			throw AblyException.fromThrowable(e);
 		} catch (UnsupportedEncodingException e) {
