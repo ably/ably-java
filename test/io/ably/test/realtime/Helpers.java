@@ -71,14 +71,14 @@ public class Helpers {
 		public void onSuccess() {
 			synchronized(this) {
 				success = true;
-				notify();
+				notifyAll();
 			}
 		}
 		@Override
 		public void onError(ErrorInfo reason) {
 			synchronized(this) {
 				error = reason;
-				notify();
+				notifyAll();
 			}
 		}
 	}
