@@ -1,5 +1,9 @@
 package io.ably.types;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 import org.json.JSONObject;
 import org.msgpack.annotation.Message;
 
@@ -163,6 +167,7 @@ public class Stats {
 	public static Stats fromJSON(JSONObject json) {
 		Stats result = new Stats();
 		if(json != null) {
+			result.intervalId = json.optString("intervalId");
 			result.all = MessageTypes.fromJSON(json.optJSONObject("all"));
 			result.inbound = MessageTraffic.fromJSON(json.optJSONObject("inbound"));
 			result.outbound = MessageTraffic.fromJSON(json.optJSONObject("outbound"));
@@ -175,6 +180,33 @@ public class Stats {
 		return result;
 	}
 
+	public static enum Granularity {
+		MINUTE,
+		HOUR,
+		DAY,
+		MONTH
+	}
+
+	private static String[] intervalFormatString = new String[] {
+		"yyyy-MM-dd:hh:mm",
+		"yyyy-MM-dd:hh",
+		"yyyy-MM-dd",
+		"yyyy-MM"
+	};
+
+	public static String toIntervalId(long timestamp, Granularity granularity) {
+		String formatString = intervalFormatString[granularity.ordinal()];
+		return new SimpleDateFormat(formatString).format(new Date(timestamp));
+	}
+
+	public static long fromIntervalId(String intervalId) {
+		try {
+			String formatString = intervalFormatString[0].substring(0, intervalId.length());
+			return new SimpleDateFormat(formatString).parse(intervalId).getTime();
+		} catch (ParseException e) { return 0; }
+	}
+
+	public String intervalId;
 	public MessageTypes all;
 	public MessageTraffic inbound;
 	public MessageTraffic outbound;
