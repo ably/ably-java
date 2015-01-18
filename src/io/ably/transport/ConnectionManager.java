@@ -729,7 +729,7 @@ public class ConnectionManager extends Thread implements ConnectListener {
 				for(QueuedMessage msg : ackMessages) {
 					try {
 						if(msg.listener != null)
-							msg.listener.onError(reason);
+							msg.listener.onSuccess();
 					} catch(Throwable t) {
 						Log.e(TAG, "ack(): listener exception", t);
 					}
