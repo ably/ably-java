@@ -68,15 +68,13 @@ public class RestSetup {
 		if(host == null)
 			host = "sandbox-rest.ably.io";
 
+		tls = (tls_env == null) ? true : tls_env.booleanValue();
 		if(host.endsWith("rest.ably.io")) {
 			/* default to connecting to sandbox through load balancer */
-			tls = (tls_env == null) ? true : tls_env.booleanValue();
 			port = 80;
 			tlsPort = 443;
 		} else {
-			/* use the given host, assuming no load balancer;
-			 * and avoid TLS on localhost because of lack of valid certificate */
-			tls = (tls_env == null) ? !(host.equals("localhost")) : tls_env.booleanValue();
+			/* use the given host, assuming no load balancer */
 			port = 8080;
 			tlsPort = 8081;
 		}
