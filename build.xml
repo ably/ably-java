@@ -63,7 +63,7 @@
 	<target name="test-setup" depends="jre-jar, compile-test">
 		<!-- set properties if not already set on commandline -->
 		<property name="ably.host" value="sandbox-rest.ably.io" />
-		<property name="ably.host" value="${ably.host}" />
+		<property name="ably.ws.host" value="${ably.host}" />
 		<property name="ably.tls" value="true" />
 	</target>
 
