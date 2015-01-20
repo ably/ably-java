@@ -132,7 +132,7 @@ public class RestSetup {
 							result.port = port;
 							result.tlsPort = tlsPort;
 							result.tls = tls;
-							String appId = result.appId = appSpec.optString("id");
+							String appId = result.appId = appSpec.optString("appId");
 							JSONArray keys = appSpec.optJSONArray("keys");
 							int keyCount = keys.length();
 							result.keys = new Key[keyCount];
