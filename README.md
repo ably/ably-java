@@ -16,6 +16,8 @@ All IO is over HTTP and is blocking. The Apache HttpClient framework is used.
 
 JRE 6 or later is required.
 All dependencies are included as libraries in `libs`.
+Note that the [Java Unlimited JCE extensions](http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html)
+must be installed in the runtime environment.
 
 ## Building
 
