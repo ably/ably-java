@@ -70,7 +70,7 @@
 	</target>
 
 	<target name="test-realtime" depends="test-setup">
-		<junit fork="yes" printsummary="on" showoutput="true"
+		<junit fork="yes" printsummary="on" showoutput="true" failureProperty="test.failed"
 			enabletestlistenerevents="true">
 			<env key="ABLY_TLS" value="${ably.tls}" />
 			<env key="ABLY_HOST" value="${ably.host}" />
@@ -87,7 +87,7 @@
 	</target>
 
 	<target name="test-rest" depends="test-setup">
-		<junit fork="yes" printsummary="on" showoutput="true"
+		<junit fork="yes" printsummary="on" showoutput="true" failureProperty="test.failed"
 			enabletestlistenerevents="true">
 			<env key="ABLY_TLS" value="${ably.tls}" />
 			<env key="ABLY_HOST" value="${ably.host}" />
@@ -103,7 +103,11 @@
 		</junit>
 	</target>
 
-	<target name="test" depends="test-rest, test-realtime" />
+	<target name="test-finish" if="test.failed">
+		<fail message="JUnit test or tests failed." />
+	</target>
+
+	<target name="test" depends="test-rest, test-realtime, test-finish" />
 
 	<target name="all" depends="jre-jar, android-jar, compile-test" />
 
