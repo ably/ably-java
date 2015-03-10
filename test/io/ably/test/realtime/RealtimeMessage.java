@@ -374,10 +374,10 @@ public class RealtimeMessage {
 	}
 
 	@Test
-	public void multiple_send_binary_2000_2() {
-		int messageCount = 2000;
+	public void multiple_send_binary_1000_2() {
+		int messageCount = 1000;
 		long delay = 2L;
-		_multiple_send("multiple_send_binary_2000_2", true, messageCount, delay);
+		_multiple_send("multiple_send_binary_1000_2", true, messageCount, delay);
 	}
 
 	@Test
