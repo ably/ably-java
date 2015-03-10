@@ -10,8 +10,8 @@ public class Defaults {
 	public static final int PORT                = 80;
 	public static final int TLS_PORT            = 443;
 	public static final int connectTimeout      = 15000;
-	public static final int disconnectTimeout   = 10000;
-	public static final int suspendedTimeout    = 60000;
+	public static final int disconnectTimeout   = 30000;
+	public static final int suspendedTimeout    = 120000;
 	public static final int cometRecvTimeout    = 90000;
 	public static final int cometSendTimeout    = 10000;
 	public static final String[] transports     = new String[]{"web_socket", "comet"};
