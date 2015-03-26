@@ -93,8 +93,7 @@ public class Stats {
 		public MessageTypes all;
 		public MessageTypes realtime;
 		public MessageTypes rest;
-		public MessageTypes push;
-		public MessageTypes httpStream;
+		public MessageTypes webhook;
 		public static MessageTraffic fromJSON(JSONObject json) {
 			MessageTraffic result = null;
 			if(json != null) {
@@ -103,8 +102,7 @@ public class Stats {
 					result.all = MessageTypes.fromJSON(json.optJSONObject("all"));
 					result.realtime = MessageTypes.fromJSON(json.optJSONObject("realtime"));
 					result.rest = MessageTypes.fromJSON(json.optJSONObject("rest"));
-					result.push = MessageTypes.fromJSON(json.optJSONObject("push"));
-					result.httpStream = MessageTypes.fromJSON(json.optJSONObject("httpStream"));
+					result.webhook = MessageTypes.fromJSON(json.optJSONObject("webhook"));
 				}
 			}
 			return result;

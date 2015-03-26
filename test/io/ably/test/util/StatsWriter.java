@@ -68,8 +68,7 @@ public class StatsWriter {
 		if(ob.all != null) json.put("all", toJSON(ob.all));
 		if(ob.realtime != null) json.put("realtime", toJSON(ob.realtime));
 		if(ob.rest != null) json.put("rest", toJSON(ob.rest));
-		if(ob.push != null) json.put("push", toJSON(ob.push));
-		if(ob.httpStream != null) json.put("httpStream", toJSON(ob.httpStream));
+		if(ob.webhook != null) json.put("webhook", toJSON(ob.webhook));
 		return json;
 	}
 
