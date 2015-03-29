@@ -54,15 +54,13 @@ public class HttpUtils {
 		StringBuilder builder = new StringBuilder(path);
 		if(params != null && params.length > 0) {
 			boolean first = true;
-			try {
-				for(Param entry : params) {
-					builder.append(first ? '?' : '&');
-					first = false;
-					builder.append(entry.key);
-					builder.append('=');
-					builder.append(URLEncoder.encode(entry.value, "UTF-8"));
-				}
-			} catch (UnsupportedEncodingException e) {}
+			for(Param entry : params) {
+				builder.append(first ? '?' : '&');
+				first = false;
+				builder.append(entry.key);
+				builder.append('=');
+				builder.append(encodeURIComponent(entry.value));
+			}
 		}
 		return builder.toString();
 	}
@@ -70,12 +68,14 @@ public class HttpUtils {
 	public static String encodeURIComponent(String input) {
 		try {
 			return URLEncoder.encode(input, "UTF-8")
-			        .replaceAll("\\+", "%20")
-			        .replaceAll("\\%21", "!")
-			        .replaceAll("\\%27", "'")
-			        .replaceAll("\\%28", "(")
-			        .replaceAll("\\%29", ")")
-			        .replaceAll("\\%7E", "~");
+				.replaceAll(" ", "%20")
+				.replaceAll("!", "%21")
+				.replaceAll("'", "%27")
+				.replaceAll("\\(", "%28")
+				.replaceAll("\\)", "%29")
+				.replaceAll("\\+", "%2B")
+				.replaceAll("\\:", "%3A")
+				.replaceAll("~", "%7E");
 		} catch (UnsupportedEncodingException e) {}
 		return null;
 	}
