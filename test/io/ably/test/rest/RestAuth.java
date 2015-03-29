@@ -44,7 +44,6 @@ public class RestAuth {
 	@Test
 	public void authinit1() {
 		try {
-			TestVars testVars = RestSetup.getTestVars();
 			Options opts = new Options();
 			opts.authToken = "this_is_not_really_a_token";
 			AblyRest ably = new AblyRest(opts);
@@ -64,7 +63,6 @@ public class RestAuth {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
 			Options opts = new Options();
-			opts.keyId = testVars.keys[0].keyId;
 			opts.host = testVars.host;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
@@ -161,7 +159,6 @@ public class RestAuth {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
 			Options opts = new Options();
-			opts.keyId = testVars.keys[0].keyId;
 			opts.host = testVars.host;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
@@ -190,7 +187,6 @@ public class RestAuth {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
 			Options opts = new Options();
-			opts.keyId = testVars.keys[0].keyId;
 			opts.host = testVars.host;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
@@ -219,7 +215,6 @@ public class RestAuth {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
 			Options opts = new Options();
-			opts.keyId = testVars.keys[0].keyId;
 			opts.host = testVars.host;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
@@ -247,7 +242,6 @@ public class RestAuth {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
 			Options opts = new Options();
-			opts.keyId = testVars.keys[0].keyId;
 			opts.host = testVars.host;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
@@ -279,7 +273,6 @@ public class RestAuth {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
 			Options opts = new Options();
-			opts.keyId = testVars.keys[0].keyId;
 			opts.host = testVars.host;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
@@ -331,7 +324,6 @@ public class RestAuth {
 
 			/* create Ably instance without key */
 			Options opts = testVars.createOptions();
-			opts.keyId = testVars.keys[0].keyId;
 			opts.authCallback = authCallback;
 			AblyRest ably = new AblyRest(opts);
 
@@ -368,7 +360,6 @@ public class RestAuth {
 
 			/* create Ably instance without key */
 			Options opts = testVars.createOptions();
-			opts.keyId = testVars.keys[0].keyId;
 			opts.authCallback = authCallback;
 			AblyRest ably = new AblyRest(opts);
 
@@ -456,7 +447,6 @@ public class RestAuth {
 
 			/* create Ably instance without key */
 			Options opts = testVars.createOptions();
-			opts.keyId = testVars.keys[0].keyId;
 			opts.authCallback = authCallback;
 			AblyRest ably = new AblyRest(opts);
 

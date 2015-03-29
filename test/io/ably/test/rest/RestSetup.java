@@ -22,8 +22,8 @@ public class RestSetup {
 	private static final String defaultSpecFile = "test/io/ably/test/assets/testAppSpec.json";
 
 	public static class Key {
-		public String keyId;
-		public String keyValue;
+		public String keyName;
+		public String keySecret;
 		public String keyStr;
 		public String capability;
 	}
@@ -132,16 +132,16 @@ public class RestSetup {
 							result.port = port;
 							result.tlsPort = tlsPort;
 							result.tls = tls;
-							String appId = result.appId = appSpec.optString("appId");
+							result.appId = appSpec.optString("appId");
 							JSONArray keys = appSpec.optJSONArray("keys");
 							int keyCount = keys.length();
 							result.keys = new Key[keyCount];
 							for(int i = 0; i < keyCount; i++) {
 								JSONObject jsonKey = keys.optJSONObject(i);
 								Key key = result.keys[i] = new Key();
-								key.keyId = appId + '.' + jsonKey.optString("id");
-								key.keyValue = jsonKey.optString("value");
-								key.keyStr = key.keyId + ':' + key.keyValue;
+								key.keyName = jsonKey.optString("keyName");
+								key.keySecret = jsonKey.optString("keySecret");
+								key.keyStr = jsonKey.optString("keyStr");
 								key.capability = jsonKey.optString("capability");
 							}
 							return result;

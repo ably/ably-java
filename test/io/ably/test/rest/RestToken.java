@@ -195,8 +195,7 @@ public class RestToken {
 		try {
 			Key key = RestSetup.getTestVars().keys[1];
 			AuthOptions authOptions = new AuthOptions();
-			authOptions.keyId = key.keyId;
-			authOptions.keyValue = key.keyValue;
+			authOptions.key = key.keyStr;
 			TokenDetails tokenDetails = ably.auth.requestToken(authOptions, null);
 			assertNotNull("Expected token id", tokenDetails.id);
 			assertEquals("Unexpected capability", tokenDetails.capability, key.capability);

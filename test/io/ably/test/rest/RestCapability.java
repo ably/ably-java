@@ -35,8 +35,7 @@ public class RestCapability {
 		try {
 			Key key = RestSetup.getTestVars().keys[1];
 			AuthOptions authOptions = new AuthOptions();
-			authOptions.keyId = key.keyId;
-			authOptions.keyValue = key.keyValue;
+			authOptions.key = key.keyStr;
 			TokenDetails tokenDetails = ably.auth.requestToken(authOptions, null);
 			assertNotNull("Expected token id", tokenDetails.id);
 			assertEquals("Unexpected capability", tokenDetails.capability, key.capability);
@@ -54,8 +53,7 @@ public class RestCapability {
 		try {
 			Key key = RestSetup.getTestVars().keys[1];
 			AuthOptions authOptions = new AuthOptions();
-			authOptions.keyId = key.keyId;
-			authOptions.keyValue = key.keyValue;
+			authOptions.key = key.keyStr;
 			TokenParams tokenParams = new TokenParams();
 			tokenParams.capability = key.capability;
 			TokenDetails tokenDetails = ably.auth.requestToken(authOptions, tokenParams);
@@ -74,8 +72,7 @@ public class RestCapability {
 	public void authcapability2() {
 		Key key = RestSetup.getTestVars().keys[1];
 		AuthOptions authOptions = new AuthOptions();
-		authOptions.keyId = key.keyId;
-		authOptions.keyValue = key.keyValue;
+		authOptions.key = key.keyStr;
 		TokenParams tokenParams = new TokenParams();
 		Capability capability = new Capability();
 		capability.addResource("testchannel", "subscribe");
@@ -95,8 +92,7 @@ public class RestCapability {
 	public void authcapability3() {
 		Key key = RestSetup.getTestVars().keys[1];
 		AuthOptions authOptions = new AuthOptions();
-		authOptions.keyId = key.keyId;
-		authOptions.keyValue = key.keyValue;
+		authOptions.key = key.keyStr;
 		TokenParams tokenParams = new TokenParams();
 		Capability capability = new Capability();
 		capability.addResource("testchannelx", "publish");
@@ -117,8 +113,7 @@ public class RestCapability {
 		try {
 			Key key = RestSetup.getTestVars().keys[4];
 			AuthOptions authOptions = new AuthOptions();
-			authOptions.keyId = key.keyId;
-			authOptions.keyValue = key.keyValue;
+			authOptions.key = key.keyStr;
 			TokenParams tokenParams = new TokenParams();
 			Capability requestedCapability = new Capability();
 			requestedCapability.addResource("channel2", new String[]{"presence", "subscribe"});
@@ -142,8 +137,7 @@ public class RestCapability {
 		try {
 			Key key = RestSetup.getTestVars().keys[4];
 			AuthOptions authOptions = new AuthOptions();
-			authOptions.keyId = key.keyId;
-			authOptions.keyValue = key.keyValue;
+			authOptions.key = key.keyStr;
 			TokenParams tokenParams = new TokenParams();
 			Capability requestedCapability = new Capability();
 			requestedCapability.addResource("channel2", new String[]{"presence", "subscribe"});
@@ -168,8 +162,7 @@ public class RestCapability {
 		try {
 			Key key = RestSetup.getTestVars().keys[4];
 			AuthOptions authOptions = new AuthOptions();
-			authOptions.keyId = key.keyId;
-			authOptions.keyValue = key.keyValue;
+			authOptions.key = key.keyStr;
 			TokenParams tokenParams = new TokenParams();
 			Capability requestedCapability = new Capability();
 			requestedCapability.addResource("channel2", "*");
@@ -189,8 +182,7 @@ public class RestCapability {
 		try {
 			Key key = RestSetup.getTestVars().keys[4];
 			AuthOptions authOptions = new AuthOptions();
-			authOptions.keyId = key.keyId;
-			authOptions.keyValue = key.keyValue;
+			authOptions.key = key.keyStr;
 			TokenParams tokenParams = new TokenParams();
 			Capability requestedCapability = new Capability();
 			requestedCapability.addResource("channel6", new String[]{"publish", "subscribe"});
@@ -214,8 +206,7 @@ public class RestCapability {
 		try {
 			Key key = RestSetup.getTestVars().keys[2];
 			AuthOptions authOptions = new AuthOptions();
-			authOptions.keyId = key.keyId;
-			authOptions.keyValue = key.keyValue;
+			authOptions.key = key.keyStr;
 			TokenParams tokenParams = new TokenParams();
 			Capability requestedCapability = new Capability();
 			requestedCapability.addResource("cansubscribe", "subscribe");
@@ -233,8 +224,7 @@ public class RestCapability {
 		try {
 			Key key = RestSetup.getTestVars().keys[2];
 			AuthOptions authOptions = new AuthOptions();
-			authOptions.keyId = key.keyId;
-			authOptions.keyValue = key.keyValue;
+			authOptions.key = key.keyStr;
 			TokenParams tokenParams = new TokenParams();
 			Capability requestedCapability = new Capability();
 			requestedCapability.addResource("canpublish:check", "publish");
@@ -252,8 +242,7 @@ public class RestCapability {
 		try {
 			Key key = RestSetup.getTestVars().keys[2];
 			AuthOptions authOptions = new AuthOptions();
-			authOptions.keyId = key.keyId;
-			authOptions.keyValue = key.keyValue;
+			authOptions.key = key.keyStr;
 			TokenParams tokenParams = new TokenParams();
 			Capability requestedCapability = new Capability();
 			requestedCapability.addResource("cansubscribe:*", "subscribe");
