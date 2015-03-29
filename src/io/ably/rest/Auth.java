@@ -61,16 +61,9 @@ public class Auth {
 		public String authUrl;
 
 		/**
-		 * A keyId. This is used in instances where a full key or
-		 * token are not provided at initialisation.
+		 * Full Ably key string as obtained from dashboard.
 		 */
-		public String keyId;
-
-		/**
-		 * The secret keyValue for an Ably key associated with
-		 * this application.
-		 */
-		public String keyValue;
+		public String key;
 
 		/**
 		 * An authentication token issued for this application
@@ -110,14 +103,7 @@ public class Auth {
 		 * @throws AblyException
 		 */
 		public AuthOptions(String key) throws AblyException {
-			String[] keyParts = key.split("\\:", 0);
-			if(keyParts.length != 2) {
-				String msg = "invalid key parameter";
-				Log.e("Rest()", msg);
-				throw new AblyException(msg, 401, 40101);
-			}
-			keyId = keyParts[0];
-			keyValue = keyParts[1];
+			this.key = key;
 		}
 
 		/**
@@ -126,8 +112,7 @@ public class Auth {
 		public AuthOptions merge(AuthOptions defaults) {
 			if(authCallback == null) authCallback = defaults.authCallback;
 			if(authUrl == null) authUrl = defaults.authUrl;
-			if(keyId == null) keyId = defaults.keyId;
-			if(keyValue == null) keyValue = defaults.keyValue;
+			if(key == null) key = defaults.key;
 			if(authHeaders == null) authHeaders = defaults.authHeaders;
 			if(authParams == null) authParams = defaults.authParams;
 			queryTime = queryTime & defaults.queryTime;
@@ -207,7 +192,7 @@ public class Auth {
 	public static class TokenParams {
 
 		/**
-		 * The id of the key against which this request is made.
+		 * The keyName of the key against which this request is made.
 		 */
 		public String id;
 
@@ -430,7 +415,7 @@ public class Auth {
 			}
 			/* otherwise it's a signed token request */
 			signedTokenRequest = TokenParams.fromJSON(authUrlResponse);
-		} else if(tokenOptions.keyValue != null) {
+		} else if(tokenOptions.key != null) {
 			Log.i("Auth.requestToken()", "using token auth with client-side signing");
 			signedTokenRequest = createTokenRequest(tokenOptions, params);
 		} else {
@@ -465,14 +450,19 @@ public class Auth {
 		if(options == null) options = this.authOptions;
 		else options.merge(this.authOptions);
 
-		String keyId = options.keyId;
-		if(params.id == null)
-			params.id = keyId;
-		else if(!params.id.equals(keyId))
-			throw new AblyException("Incompatible keys specified", 401, 40102);
-		String keyValue = options.keyValue;
-		if(keyId == null || keyValue == null)
+		String key = options.key;
+		if(key == null)
 			throw new AblyException("No key specified", 401, 40101);
+
+		String[] keyParts = key.split(":");
+		if(keyParts.length != 2)
+			throw new AblyException("Invalid key specified", 401, 40101);
+
+		String keyName = keyParts[0], keySecret = keyParts[1];
+		if(params.id == null)
+			params.id = keyName;
+		else if(!params.id.equals(keyName))
+			throw new AblyException("Incompatible keys specified", 401, 40102);
 
 		/* expires */
 		String ttlText = (params.ttl == 0) ? "" : String.valueOf(params.ttl);
@@ -512,7 +502,7 @@ public class Auth {
 		 * specifies the mac; this is done by the library
 		 * However, this can be overridden by the client
 		 * simply for testing purposes. */
-		if(params.mac == null) params.mac = hmac(signText, keyValue);
+		if(params.mac == null) params.mac = hmac(signText, keySecret);
 
 		Log.i("Auth.getTokenRequest()", "generated signed request");
 		return params;
@@ -543,7 +533,7 @@ public class Auth {
 		Param[] params = null;
 		switch(method) {
 		case basic:
-			params = new Param[]{new Param("key_id", authOptions.keyId), new Param("key_value", authOptions.keyValue) };
+			params = new Param[]{new Param("key", authOptions.key) };
 			break;
 		case token:
 			authorise(null, null, false);
@@ -580,13 +570,13 @@ public class Auth {
 		authOptions = options;
 
 		/* decide default auth method */
-		if(authOptions.keyValue != null) {
+		if(authOptions.key != null) {
 			if(options.clientId == null) {
 				/* we have the key and do not need to authenticate the client,
 				 * so default to using basic auth */
 				Log.i("Auth()", "anonymous, using basic auth");
 				this.method = AuthMethod.basic;
-				basicCredentials = (authOptions.keyId + ':' + authOptions.keyValue);
+				basicCredentials = authOptions.key;
 				return;
 			}
 		}
@@ -602,7 +592,7 @@ public class Auth {
 			Log.i("Auth()", "using token auth with authCallback");
 		} else if(authOptions.authUrl != null) {
 			Log.i("Auth()", "using token auth with authUrl");
-		} else if(authOptions.keyValue != null) {
+		} else if(authOptions.key != null) {
 			Log.i("Auth()", "using token auth with client-side signing");
 		} else if(authOptions.authToken != null) {
 			Log.i("Auth()", "using token auth with supplied token only");
