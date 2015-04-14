@@ -91,7 +91,7 @@ public class RealtimePresence {
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
 			Options client1Opts = new Options() {{
-				authToken = token1.id;
+				token = token1.token;
 				clientId = testClientId1;
 			}};
 			testVars.fillInOptions(client1Opts);
@@ -141,7 +141,7 @@ public class RealtimePresence {
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
 			Options client1Opts = new Options() {{
-				authToken = token1.id;
+				token = token1.token;
 				clientId = testClientId1;
 			}};
 			testVars.fillInOptions(client1Opts);
@@ -189,7 +189,7 @@ public class RealtimePresence {
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
 			Options client1Opts = new Options() {{
-				authToken = token1.id;
+				token = token1.token;
 				clientId = testClientId1;
 			}};
 			testVars.fillInOptions(client1Opts);
@@ -233,7 +233,7 @@ public class RealtimePresence {
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
 			Options client1Opts = new Options() {{
-				authToken = token1.id;
+				token = token1.token;
 				clientId = testClientId1;
 			}};
 			testVars.fillInOptions(client1Opts);
@@ -291,7 +291,7 @@ public class RealtimePresence {
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
 			Options client1Opts = new Options() {{
-				authToken = token1.id;
+				token = token1.token;
 				clientId = testClientId1;
 			}};
 			testVars.fillInOptions(client1Opts);
@@ -360,7 +360,7 @@ public class RealtimePresence {
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
 			Options client1Opts = new Options() {{
-				authToken = token1.id;
+				token = token1.token;
 				clientId = testClientId1;
 			}};
 			testVars.fillInOptions(client1Opts);
@@ -429,7 +429,7 @@ public class RealtimePresence {
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
 			Options client1Opts = new Options() {{
-				authToken = token1.id;
+				token = token1.token;
 				clientId = testClientId1;
 			}};
 			testVars.fillInOptions(client1Opts);
@@ -499,7 +499,7 @@ public class RealtimePresence {
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
 			Options client1Opts = new Options() {{
-				authToken = token1.id;
+				token = token1.token;
 				clientId = testClientId1;
 			}};
 			testVars.fillInOptions(client1Opts);
@@ -557,7 +557,7 @@ public class RealtimePresence {
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
 			Options client1Opts = new Options() {{
-				authToken = token1.id;
+				token = token1.token;
 				clientId = testClientId1;
 			}};
 			testVars.fillInOptions(client1Opts);
@@ -614,7 +614,7 @@ public class RealtimePresence {
 
 			/* set up a connection with specific clientId */
 			Options client1Opts = new Options() {{
-				authToken = token1.id;
+				token = token1.token;
 				clientId = testClientId1;
 			}};
 			testVars.fillInOptions(client1Opts);
@@ -667,7 +667,7 @@ public class RealtimePresence {
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
 			Options client1Opts = new Options() {{
-				authToken = token1.id;
+				token = token1.token;
 				clientId = testClientId1;
 			}};
 			testVars.fillInOptions(client1Opts);
@@ -726,7 +726,7 @@ public class RealtimePresence {
 			new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
 			Options client1Opts = new Options() {{
-				authToken = token1.id;
+				token = token1.token;
 				clientId = testClientId1;
 			}};
 			testVars.fillInOptions(client1Opts);
@@ -751,7 +751,7 @@ public class RealtimePresence {
 
 			/* set up a second connection with different clientId */
 			Options client2Opts = new Options() {{
-				authToken = token2.id;
+				token = token2.token;
 				clientId = testClientId2;
 			}};
 			testVars.fillInOptions(client2Opts);
@@ -802,7 +802,7 @@ public class RealtimePresence {
 			new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
 			Options client1Opts = new Options() {{
-				authToken = token1.id;
+				token = token1.token;
 				clientId = testClientId1;
 			}};
 			testVars.fillInOptions(client1Opts);
@@ -829,7 +829,7 @@ public class RealtimePresence {
 
 			/* set up a second connection with different clientId */
 			Options client2Opts = new Options() {{
-				authToken = token2.id;
+				token = token2.token;
 				clientId = testClientId2;
 			}};
 			testVars.fillInOptions(client2Opts);
@@ -890,7 +890,7 @@ public class RealtimePresence {
 
 			/* set up a connection with specific clientId */
 			Options client1Opts = new Options() {{
-				authToken = token1.id;
+				token = token1.token;
 				clientId = testClientId1;
 			}};
 			testVars.fillInOptions(client1Opts);
@@ -906,7 +906,7 @@ public class RealtimePresence {
 
 			/* set up a second connection with different clientId */
 			Options client2Opts = new Options() {{
-				authToken = token2.id;
+				token = token2.token;
 				clientId = testClientId2;
 			}};
 			testVars.fillInOptions(client2Opts);
@@ -958,7 +958,7 @@ public class RealtimePresence {
 			new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
 			Options client1Opts = new Options() {{
-				authToken = token1.id;
+				token = token1.token;
 				clientId = testClientId1;
 			}};
 			testVars.fillInOptions(client1Opts);
@@ -1010,7 +1010,7 @@ public class RealtimePresence {
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
 			Options client1Opts = new Options() {{
-				authToken = token1.id;
+				token = token1.token;
 				clientId = testClientId1;
 			}};
 			testVars.fillInOptions(client1Opts);
@@ -1068,7 +1068,7 @@ public class RealtimePresence {
 			new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
 			Options client1Opts = new Options() {{
-				authToken = token1.id;
+				token = token1.token;
 				clientId = testClientId1;
 			}};
 			testVars.fillInOptions(client1Opts);
@@ -1084,7 +1084,7 @@ public class RealtimePresence {
 
 			/* set up a second connection with different clientId */
 			Options client2Opts = new Options() {{
-				authToken = token2.id;
+				token = token2.token;
 				clientId = testClientId2;
 			}};
 			testVars.fillInOptions(client2Opts);
@@ -1134,7 +1134,7 @@ public class RealtimePresence {
 			new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
 			Options client1Opts = new Options() {{
-				authToken = token1.id;
+				token = token1.token;
 				clientId = testClientId1;
 			}};
 			testVars.fillInOptions(client1Opts);
@@ -1219,7 +1219,7 @@ public class RealtimePresence {
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
 			Options client1Opts = new Options() {{
-				authToken = token1.id;
+				token = token1.token;
 				clientId = testClientId1;
 			}};
 			testVars.fillInOptions(client1Opts);

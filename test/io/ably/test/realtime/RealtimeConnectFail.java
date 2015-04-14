@@ -130,9 +130,10 @@ public class RealtimeConnectFail {
 		try {
 			final RestSetup.TestVars optsTestVars = RestSetup.getTestVars();
 			Options optsForToken = optsTestVars.createOptions(optsTestVars.keys[0].keyStr);
+			optsForToken.logLevel = Log.VERBOSE;
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
-			TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, new TokenParams() {{ ttl = 2L; }});
-			assertNotNull("Expected token id", tokenDetails.id);
+			TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, new TokenParams() {{ ttl = 2000L; }});
+			assertNotNull("Expected token value", tokenDetails.token);
 
 			/* implement callback, using Ably instance with key */
 			final class TokenGenerator implements TokenCallback {
@@ -150,8 +151,9 @@ public class RealtimeConnectFail {
 			/* create Ably realtime instance without key */
 			final TestVars testVars = RealtimeSetup.getTestVars();
 			Options opts = testVars.createOptions();
-			opts.authToken = tokenDetails.id;
+			opts.token = tokenDetails.token;
 			opts.authCallback = authCallback;
+			opts.logLevel = Log.VERBOSE;
 			AblyRealtime ably = new AblyRealtime(opts);
 
 			/* wait for connected state */

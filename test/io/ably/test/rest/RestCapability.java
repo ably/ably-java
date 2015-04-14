@@ -37,7 +37,7 @@ public class RestCapability {
 			AuthOptions authOptions = new AuthOptions();
 			authOptions.key = key.keyStr;
 			TokenDetails tokenDetails = ably.auth.requestToken(authOptions, null);
-			assertNotNull("Expected token id", tokenDetails.id);
+			assertNotNull("Expected token value", tokenDetails.token);
 			assertEquals("Unexpected capability", tokenDetails.capability, key.capability);
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -57,7 +57,7 @@ public class RestCapability {
 			TokenParams tokenParams = new TokenParams();
 			tokenParams.capability = key.capability;
 			TokenDetails tokenDetails = ably.auth.requestToken(authOptions, tokenParams);
-			assertNotNull("Expected token id", tokenDetails.id);
+			assertNotNull("Expected token value", tokenDetails.token);
 			assertEquals("Unexpected capability", tokenDetails.capability, key.capability);
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -121,7 +121,7 @@ public class RestCapability {
 			TokenDetails tokenDetails = ably.auth.requestToken(authOptions, tokenParams);
 			Capability expectedCapability = new Capability();
 			expectedCapability.addResource("channel2", "subscribe");
-			assertNotNull("Expected token id", tokenDetails.id);
+			assertNotNull("Expected token value", tokenDetails.token);
 			assertEquals("Unexpected capability", tokenDetails.capability, expectedCapability.toString());
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -146,7 +146,7 @@ public class RestCapability {
 			TokenDetails tokenDetails = ably.auth.requestToken(authOptions, tokenParams);
 			Capability expectedCapability = new Capability();
 			expectedCapability.addResource("channel2", "subscribe");
-			assertNotNull("Expected token id", tokenDetails.id);
+			assertNotNull("Expected token value", tokenDetails.token);
 			assertEquals("Unexpected capability", tokenDetails.capability, expectedCapability.toString());
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -170,7 +170,7 @@ public class RestCapability {
 			TokenDetails tokenDetails = ably.auth.requestToken(authOptions, tokenParams);
 			Capability expectedCapability = new Capability();
 			expectedCapability.addResource("channel2", new String[]{"publish", "subscribe"});
-			assertNotNull("Expected token id", tokenDetails.id);
+			assertNotNull("Expected token value", tokenDetails.token);
 			assertEquals("Unexpected capability", tokenDetails.capability, expectedCapability.toString());
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -190,7 +190,7 @@ public class RestCapability {
 			TokenDetails tokenDetails = ably.auth.requestToken(authOptions, tokenParams);
 			Capability expectedCapability = new Capability();
 			expectedCapability.addResource("channel6", new String[]{"publish", "subscribe"});
-			assertNotNull("Expected token id", tokenDetails.id);
+			assertNotNull("Expected token value", tokenDetails.token);
 			assertEquals("Unexpected capability", tokenDetails.capability, expectedCapability.toString());
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -212,7 +212,7 @@ public class RestCapability {
 			requestedCapability.addResource("cansubscribe", "subscribe");
 			tokenParams.capability = requestedCapability.toString();
 			TokenDetails tokenDetails = ably.auth.requestToken(authOptions, tokenParams);
-			assertNotNull("Expected token id", tokenDetails.id);
+			assertNotNull("Expected token value", tokenDetails.token);
 			assertEquals("Unexpected capability", tokenDetails.capability, requestedCapability.toString());
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -230,7 +230,7 @@ public class RestCapability {
 			requestedCapability.addResource("canpublish:check", "publish");
 			tokenParams.capability = requestedCapability.toString();
 			TokenDetails tokenDetails = ably.auth.requestToken(authOptions, tokenParams);
-			assertNotNull("Expected token id", tokenDetails.id);
+			assertNotNull("Expected token value", tokenDetails.token);
 			assertEquals("Unexpected capability", tokenDetails.capability, requestedCapability.toString());
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -248,7 +248,7 @@ public class RestCapability {
 			requestedCapability.addResource("cansubscribe:*", "subscribe");
 			tokenParams.capability = requestedCapability.toString();
 			TokenDetails tokenDetails = ably.auth.requestToken(authOptions, tokenParams);
-			assertNotNull("Expected token id", tokenDetails.id);
+			assertNotNull("Expected token value", tokenDetails.token);
 			assertEquals("Unexpected capability", tokenDetails.capability, requestedCapability.toString());
 		} catch (AblyException e) {
 			e.printStackTrace();

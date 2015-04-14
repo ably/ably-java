@@ -45,7 +45,7 @@ public class RestAuth {
 	public void authinit1() {
 		try {
 			Options opts = new Options();
-			opts.authToken = "this_is_not_really_a_token";
+			opts.token = "this_is_not_really_a_token";
 			AblyRest ably = new AblyRest(opts);
 			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
 		} catch (AblyException e) {
@@ -117,9 +117,9 @@ public class RestAuth {
 			optsForToken.tls = testVars.tls;
 			AblyRest ablyForToken = new AblyRest(optsForToken);
 			TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, null);
-			assertNotNull("Expected token id", tokenDetails.id);
+			assertNotNull("Expected token value", tokenDetails.token);
 			Options opts = new Options();
-			opts.authToken = tokenDetails.id;
+			opts.token = tokenDetails.token;
 			opts.host = testVars.host;
 			opts.port = testVars.port;
 			opts.tls = testVars.tls;
@@ -168,7 +168,7 @@ public class RestAuth {
 			/* make a call to trigger token request */
 			try {
 				TokenDetails tokenDetails = ably.auth.requestToken(null, null);
-				assertNotNull("Expected token id", tokenDetails.id);
+				assertNotNull("Expected token value", tokenDetails.token);
 			} catch (AblyException e) {
 				e.printStackTrace();
 				fail("auth_authURL_tokenrequest: Unexpected exception requesting token");
@@ -196,7 +196,7 @@ public class RestAuth {
 			/* make a call to trigger token request */
 			try {
 				TokenDetails tokenDetails = ably.auth.requestToken(null, null);
-				assertNotNull("Expected token id", tokenDetails.id);
+				assertNotNull("Expected token value", tokenDetails.token);
 			} catch (AblyException e) {
 				e.printStackTrace();
 				fail("auth_authURL_token: Unexpected exception requesting token");
@@ -330,7 +330,7 @@ public class RestAuth {
 			/* make a call to trigger token request */
 			try {
 				TokenDetails tokenDetails = ably.auth.requestToken(null, null);
-				assertNotNull("Expected token id", tokenDetails.id);
+				assertNotNull("Expected token value", tokenDetails.token);
 			} catch (AblyException e) {
 				e.printStackTrace();
 				fail("auth_authURL_tokenrequest: Unexpected exception requesting token");
@@ -366,7 +366,7 @@ public class RestAuth {
 			/* make a call to trigger token request */
 			try {
 				TokenDetails tokenDetails = ably.auth.requestToken(null, null);
-				assertNotNull("Expected token id", tokenDetails.id);
+				assertNotNull("Expected token value", tokenDetails.token);
 			} catch (AblyException e) {
 				e.printStackTrace();
 				fail("auth_authURL_tokenrequest: Unexpected exception requesting token");
@@ -386,8 +386,8 @@ public class RestAuth {
 			final TestVars testVars = RestSetup.getTestVars();
 			Options optsForToken = testVars.createOptions(testVars.keys[0].keyStr);
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
-			TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, new TokenParams() {{ ttl = 2L; }});
-			assertNotNull("Expected token id", tokenDetails.id);
+			TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, new TokenParams() {{ ttl = 2000L; }});
+			assertNotNull("Expected token value", tokenDetails.token);
 
 			/* implement callback, using Ably instance with key */
 			final class TokenGenerator implements TokenCallback {
@@ -404,7 +404,7 @@ public class RestAuth {
 
 			/* create Ably instance without key */
 			Options opts = testVars.createOptions();
-			opts.authToken = tokenDetails.id;
+			opts.token = tokenDetails.token;
 			opts.authCallback = authCallback;
 			AblyRest ably = new AblyRest(opts);
 

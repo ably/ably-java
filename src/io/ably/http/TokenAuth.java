@@ -184,7 +184,7 @@ public class TokenAuth extends RFC2617Scheme implements AuthSchemeFactory, Crede
 	public void setTokenDetails(TokenDetails tokenDetails) {
 		Log.i("TokenAuth.setTokenDetails()", "");
 		this.tokenDetails = tokenDetails;
-		this.tokenCredentials = new TokenCredentials(tokenDetails.id);
+		this.tokenCredentials = new TokenCredentials(tokenDetails.token);
 	}
 
 	public TokenDetails authorise(AuthOptions options, TokenParams params, boolean force) throws AblyException {

@@ -14,7 +14,6 @@ import io.ably.util.Log;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 
 import javax.crypto.Mac;
@@ -69,7 +68,13 @@ public class Auth {
 		 * An authentication token issued for this application
 		 * against a specific key and {@link TokenParams}
 		 */
-		public String authToken;
+		public String token;
+
+		/**
+		 * An authentication token issued for this application
+		 * against a specific key and {@link TokenParams}
+		 */
+		public TokenDetails tokenDetails;
 
 		/**
 		 * Headers to be included in any request made by the library
@@ -103,7 +108,10 @@ public class Auth {
 		 * @throws AblyException
 		 */
 		public AuthOptions(String key) throws AblyException {
-			this.key = key;
+			if(key.indexOf(':') > -1)
+				this.key = key;
+			else
+				this.token = key;
 		}
 
 		/**
@@ -130,7 +138,7 @@ public class Auth {
 		/**
 		 * The token itself
 		 */
-		public String id;
+		public String token;
 
 		/**
 		 * The time (in millis since the epoch) at which this token expires.
@@ -155,6 +163,9 @@ public class Auth {
 		 */
 		public String clientId;
 
+		public TokenDetails() {}
+		public TokenDetails(String token) { this.token = token; }
+
 		/**
 		 * Internal; convert a JSON response body to a TokenDetails.
 		 * @param json
@@ -162,7 +173,7 @@ public class Auth {
 		 */
 		public static TokenDetails fromJSON(JSONObject json) {
 			TokenDetails details = new TokenDetails();
-			details.id = json.optString("id");
+			details.token = json.optString("token");
 			details.expires = json.optLong("expires");
 			details.issuedAt = json.optLong("issued_at");
 			details.capability = json.has("capability") ? json.optString("capability") : null;
@@ -177,7 +188,7 @@ public class Auth {
 		 */
 		public JSONObject asJSON() throws JSONException {
 			JSONObject json = new JSONObject();
-			json.put("id", id);
+			json.put("token", token);
 			json.put("expires", expires);
 			json.put("issued_at", issuedAt);
 			json.put("capability", capability);
@@ -194,7 +205,7 @@ public class Auth {
 		/**
 		 * The keyName of the key against which this request is made.
 		 */
-		public String id;
+		public String keyName;
 
 		/**
 		 * Requested time to live for the token. If the token request
@@ -225,6 +236,36 @@ public class Auth {
 		public long timestamp;
 
 		/**
+		 * Internal; convert a TokenParams to a collection of Params
+		 * @return
+		 */
+		public List<Param> asParams() {
+			List<Param> params = new ArrayList<Param>();
+			if(keyName != null) params.add(new Param("key_name", keyName));
+			if(ttl > 0) params.add(new Param("ttl", String.valueOf(ttl)));
+			if(capability != null) params.add(new Param("capability", capability));
+			if(clientId != null) params.add(new Param("client_id", clientId));
+			if(timestamp > 0) params.add(new Param("timestamp", String.valueOf(timestamp)));
+			return params;
+		}
+	}
+
+	/**
+	 * A class providing parameters of a token request.
+	 */
+	public static class TokenRequest extends TokenParams {
+
+		TokenRequest() {}
+
+		TokenRequest(TokenParams params) {
+			this.keyName = params.keyName;
+			this.ttl = params.ttl;
+			this.capability = params.capability;
+			this.clientId = params.clientId;
+			this.timestamp = params.timestamp;
+		}
+
+		/**
 		 * An opaque nonce string of at least 16 characters to ensure
 		 * uniqueness of this request. Any subsequent request using the
 		 * same nonce will be rejected.
@@ -242,9 +283,9 @@ public class Auth {
 		 * @param json
 		 * @return
 		 */
-		public static TokenParams fromJSON(JSONObject json) {
-			TokenParams params = new TokenParams();
-			params.id = json.optString("id");
+		public static TokenRequest fromJSON(JSONObject json) {
+			TokenRequest params = new TokenRequest();
+			params.keyName = json.optString("keyName");
 			params.ttl = json.optLong("ttl");
 			params.capability = json.has("capability") ? json.optString("capability") : null;
 			params.clientId = json.has("clientId") ? json.optString("clientId") : null;
@@ -260,7 +301,7 @@ public class Auth {
 		public JSONObject asJSON() {
 			JSONObject json = new JSONObject();
 			try {
-				if(id != null) json.put("id", id);
+				if(keyName != null) json.put("keyName", keyName);
 				if(ttl != 0) json.put("ttl", ttl);
 				if(capability != null) json.put("capability", capability);
 				if(clientId != null) json.put("clientId", clientId);
@@ -271,22 +312,6 @@ public class Auth {
 			} catch (JSONException e) {
 				return null;
 			}
-		}
-
-		/**
-		 * Internal; convert a TokenParams to a collection of Params
-		 * @return
-		 */
-		public List<Param> asParams() {
-			List<Param> params = new ArrayList<Param>();
-			if(id != null) params.add(new Param("id", id));
-			if(ttl > 0) params.add(new Param("ttl", String.valueOf(ttl)));
-			if(capability != null) params.add(new Param("capability", capability));
-			if(clientId != null) params.add(new Param("client_id", clientId));
-			if(timestamp > 0) params.add(new Param("timestamp", String.valueOf(timestamp)));
-			if(nonce != null) params.add(new Param("nonce", nonce));
-			if(mac != null) params.add(new Param("mac", mac));
-			return params;
 		}
 	}
 
@@ -306,13 +331,10 @@ public class Auth {
 	 * where overridden with the options supplied in the call.
 	 * @param params
 	 * an object containing the request params:
-	 * - keyId:      (optional) the id of the key to use; if not specified, a key id
+	 * - key:        (optional) the key to use; if not specified, the key
 	 *               passed in constructing the Rest interface may be used
 	 *
-	 * - keyValue:   (optional) the secret of the key to use; if not specified, a key
-	 *               value passed in constructing the Rest interface may be used
-	 *
-	 * - ttl:        (optional) the requested life of any new token in seconds. If none
+	 * - ttl:        (optional) the requested life of any new token in ms. If none
 	 *               is specified a default of 1 hour is provided. The maximum lifetime
 	 *               is 24hours; any request exceeeding that lifetime will be rejected
 	 *               with an error.
@@ -323,7 +345,7 @@ public class Auth {
 	 *
 	 * - clientId:   (optional) a client Id to associate with the token
 	 *
-	 * - timestamp:  (optional) the time in seconds since the epoch. If none is specified,
+	 * - timestamp:  (optional) the time in ms since the epoch. If none is specified,
 	 *               the system will be queried for a time value to use.
 	 *
 	 * - queryTime   (optional) boolean indicating that the Ably system should be
@@ -359,16 +381,18 @@ public class Auth {
 			params.capability = Capability.c14n(params.capability);
 
 		/* get the signed token request */
-		TokenParams signedTokenRequest;
+		TokenRequest signedTokenRequest;
 		if(tokenOptions.authCallback != null) {
 			Log.i("Auth.requestToken()", "using token auth with auth_callback");
 			try {
 				/* the callback can return either a signed token request, or a TokenDetails */
 				Object authCallbackResponse = tokenOptions.authCallback.getTokenRequest(params);
+				if(authCallbackResponse instanceof String)
+					return new TokenDetails((String)authCallbackResponse);
 				if(authCallbackResponse instanceof TokenDetails)
 					return (TokenDetails)authCallbackResponse;
-				if(authCallbackResponse instanceof TokenParams)
-					signedTokenRequest = (TokenParams)authCallbackResponse;
+				if(authCallbackResponse instanceof TokenRequest)
+					signedTokenRequest = (TokenRequest)authCallbackResponse;
 				else
 					throw new AblyException("Invalid authCallback response", 40000, 400);
 			} catch(AblyException e) {
@@ -414,7 +438,7 @@ public class Auth {
 				return TokenDetails.fromJSON(authUrlResponse);
 			}
 			/* otherwise it's a signed token request */
-			signedTokenRequest = TokenParams.fromJSON(authUrlResponse);
+			signedTokenRequest = TokenRequest.fromJSON(authUrlResponse);
 		} else if(tokenOptions.key != null) {
 			Log.i("Auth.requestToken()", "using token auth with client-side signing");
 			signedTokenRequest = createTokenRequest(tokenOptions, params);
@@ -422,7 +446,7 @@ public class Auth {
 			throw new AblyException("Auth.requestToken(): options must include valid authentication parameters", 400, 40000);
 		}
 
-		String tokenPath = "/keys/" + signedTokenRequest.id + "/requestToken";
+		String tokenPath = "/keys/" + signedTokenRequest.keyName + "/requestToken";
 		return (TokenDetails)ably.http.post(tokenPath, tokenOptions.authHeaders, tokenOptions.authParams, new Http.JSONRequestBody(signedTokenRequest.asJSON().toString()), new ResponseHandler() {
 			@Override
 			public Object handleResponse(int statusCode, String contentType, String[] linkHeaders, byte[] body) throws AblyException {
@@ -432,7 +456,7 @@ public class Auth {
 				} catch (JSONException e) {
 					throw AblyException.fromThrowable(e);
 				}
-				return TokenDetails.fromJSON(json.optJSONObject("access_token"));
+				return TokenDetails.fromJSON(json);
 			}
 		});
 	}
@@ -446,9 +470,10 @@ public class Auth {
 	 * @return: the params augmented with the mac.
 	 * @throws AblyException
 	 */
-	public TokenParams createTokenRequest(AuthOptions options, TokenParams params) throws AblyException {
+	public TokenRequest createTokenRequest(AuthOptions options, TokenParams params) throws AblyException {
 		if(options == null) options = this.authOptions;
 		else options.merge(this.authOptions);
+		TokenRequest request = new TokenRequest(params);
 
 		String key = options.key;
 		if(key == null)
@@ -459,53 +484,44 @@ public class Auth {
 			throw new AblyException("Invalid key specified", 401, 40101);
 
 		String keyName = keyParts[0], keySecret = keyParts[1];
-		if(params.id == null)
-			params.id = keyName;
-		else if(!params.id.equals(keyName))
+		if(request.keyName == null)
+			request.keyName = keyName;
+		else if(!request.keyName.equals(keyName))
 			throw new AblyException("Incompatible keys specified", 401, 40102);
 
 		/* expires */
-		String ttlText = (params.ttl == 0) ? "" : String.valueOf(params.ttl);
+		String ttlText = (request.ttl == 0) ? "" : String.valueOf(request.ttl);
 
 		/* capability */
-		String capabilityText = (params.capability == null) ? "" : params.capability;
+		String capabilityText = (request.capability == null) ? "" : request.capability;
 
 		/* clientId */
-		if (params.clientId == null) params.clientId = ably.clientId;
-		String clientIdText = (params.clientId == null) ? "" : params.clientId;
+		if (request.clientId == null) request.clientId = ably.clientId;
+		String clientIdText = (request.clientId == null) ? "" : request.clientId;
 
 		/* timestamp */
-		if(params.timestamp == 0) {
+		if(request.timestamp == 0) {
 			if(options.queryTime)
-				params.timestamp = (long)(ably.time() / 1000);
+				request.timestamp = ably.time();
 			else
-				params.timestamp = timestamp();
+				request.timestamp = timestamp();
 		}
 
 		/* nonce */
-		/* NOTE: there is no expectation that the client
-		 * specifies the nonce; this is done by the library
-		 * However, this can be overridden by the client
-		 * simply for testing purposes. */
-		if(params.nonce == null) params.nonce = random();
+		request.nonce = random();
 
 		String signText
-		=	params.id + '\n'
+		=	request.keyName + '\n'
 		+	ttlText + '\n'
 		+	capabilityText + '\n'
 		+	clientIdText + '\n'
-		+	params.timestamp + '\n'
-		+	params.nonce + '\n';
+		+	request.timestamp + '\n'
+		+	request.nonce + '\n';
 
-		/* mac */
-		/* NOTE: there is no expectation that the client
-		 * specifies the mac; this is done by the library
-		 * However, this can be overridden by the client
-		 * simply for testing purposes. */
-		if(params.mac == null) params.mac = hmac(signText, keySecret);
+		request.mac = hmac(signText, keySecret);
 
 		Log.i("Auth.getTokenRequest()", "generated signed request");
-		return params;
+		return request;
 	}
 
 	/**
@@ -537,7 +553,7 @@ public class Auth {
 			break;
 		case token:
 			authorise(null, null, false);
-			params = new Param[]{new Param("access_token", tokenAuth.getTokenDetails().id) };
+			params = new Param[]{new Param("access_token", tokenAuth.getTokenDetails().token) };
 			break;
 		}
 		return params;
@@ -553,7 +569,7 @@ public class Auth {
 			tokenAuth.clear();
 	}
 
-	public static long timestamp() { return (new Date().getTime()/1000L); }
+	public static long timestamp() { return System.currentTimeMillis(); }
 
 	/********************
 	 * internal
@@ -583,18 +599,18 @@ public class Auth {
 		/* using token auth, but decide the method */
 		this.method = AuthMethod.token;
 		this.tokenAuth = new TokenAuth(this);
-		if(authOptions.authToken != null) {
-			TokenDetails tokenDetails = new TokenDetails();
-			tokenDetails.id = authOptions.authToken;
-			tokenAuth.setTokenDetails(tokenDetails);
-		}
+		if(authOptions.token != null)
+			authOptions.tokenDetails = new TokenDetails(authOptions.token);
+		if(authOptions.tokenDetails != null)
+			tokenAuth.setTokenDetails(authOptions.tokenDetails);
+
 		if(authOptions.authCallback != null) {
 			Log.i("Auth()", "using token auth with authCallback");
 		} else if(authOptions.authUrl != null) {
 			Log.i("Auth()", "using token auth with authUrl");
 		} else if(authOptions.key != null) {
 			Log.i("Auth()", "using token auth with client-side signing");
-		} else if(authOptions.authToken != null) {
+		} else if(authOptions.tokenDetails != null) {
 			Log.i("Auth()", "using token auth with supplied token only");
 		} else {
 			/* this is not a hard error - but any operation that requires

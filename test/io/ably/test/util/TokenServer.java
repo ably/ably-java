@@ -29,6 +29,7 @@ package io.ably.test.util;
 import io.ably.rest.AblyRest;
 import io.ably.rest.Auth.TokenDetails;
 import io.ably.rest.Auth.TokenParams;
+import io.ably.rest.Auth.TokenRequest;
 import io.ably.types.AblyException;
 
 import java.io.IOException;
@@ -150,7 +151,7 @@ public class TokenServer {
 			else if(target.startsWith("/get-token-request")) {
 				TokenParams tokenParams = params2TokenParams(params);
 				try {
-					TokenParams tokenRequest = ably.auth.createTokenRequest(null, tokenParams);
+					TokenRequest tokenRequest = ably.auth.createTokenRequest(null, tokenParams);
 					response.setStatusCode(HttpStatus.SC_OK);
 					response.setEntity(json2Entity(tokenRequest.asJSON()));
 				} catch (AblyException e) {
@@ -303,8 +304,8 @@ public class TokenServer {
 	private static TokenParams params2TokenParams(List<NameValuePair> params) {
 		HashMap<String, String> map = params2HashMap(params);
 		TokenParams tokenParams = new TokenParams();
-		if(map.containsKey("id"))
-			tokenParams.id = map.get("id");
+		if(map.containsKey("key_name"))
+			tokenParams.keyName = map.get("key_name");
 		if(map.containsKey("client_id"))
 			tokenParams.clientId = map.get("client_id");
 		if(map.containsKey("timestamp"))

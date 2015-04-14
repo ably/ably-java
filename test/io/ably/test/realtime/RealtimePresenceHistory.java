@@ -62,7 +62,7 @@ public class RealtimePresenceHistory {
 		try {
 			Options rtOpts = new Options();
 			testVars.fillInOptions(rtOpts);
-			rtOpts.authToken = token.id;
+			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
 
@@ -112,7 +112,7 @@ public class RealtimePresenceHistory {
 		try {
 			Options rtOpts = new Options();
 			testVars.fillInOptions(rtOpts);
-			rtOpts.authToken = token.id;
+			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			rtOpts.useBinaryProtocol = false;
 			ably = new AblyRealtime(rtOpts);
@@ -161,7 +161,7 @@ public class RealtimePresenceHistory {
 		try {
 			Options rtOpts = new Options();
 			testVars.fillInOptions(rtOpts);
-			rtOpts.authToken = token.id;
+			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
 
@@ -211,7 +211,7 @@ public class RealtimePresenceHistory {
 		try {
 			Options rtOpts = new Options();
 			testVars.fillInOptions(rtOpts);
-			rtOpts.authToken = token.id;
+			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			rtOpts.useBinaryProtocol = false;
 			ably = new AblyRealtime(rtOpts);
@@ -261,7 +261,7 @@ public class RealtimePresenceHistory {
 		AblyRealtime ably = null;
 		try {
 			Options rtOpts = testVars.createOptions();
-			rtOpts.authToken = token.id;
+			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
 
@@ -313,7 +313,7 @@ public class RealtimePresenceHistory {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
 			Options txOpts = testVars.createOptions();
-			txOpts.authToken = token.id;
+			txOpts.token = token.token;
 			txOpts.clientId = testClientId;
 			txAbly = new AblyRealtime(txOpts);
 
@@ -373,7 +373,7 @@ public class RealtimePresenceHistory {
 		AblyRealtime ably = null;
 		try {
 			Options rtOpts = testVars.createOptions();
-			rtOpts.authToken = token.id;
+			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
 			String channelName = "persisted:presencehistory_wait_binary_b";
@@ -426,7 +426,7 @@ public class RealtimePresenceHistory {
 		AblyRealtime ably = null;
 		try {
 			Options rtOpts = testVars.createOptions();
-			rtOpts.authToken = token.id;
+			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			rtOpts.useBinaryProtocol = false;
 			ably = new AblyRealtime(rtOpts);
@@ -480,7 +480,7 @@ public class RealtimePresenceHistory {
 		AblyRealtime ably = null;
 		try {
 			Options rtOpts = testVars.createOptions();
-			rtOpts.authToken = token.id;
+			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
 			String channelName = "persisted:presencehistory_wait_binary_f";
@@ -533,7 +533,7 @@ public class RealtimePresenceHistory {
 		AblyRealtime ably = null;
 		try {
 			Options rtOpts = testVars.createOptions();
-			rtOpts.authToken = token.id;
+			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
 			String channelName = "persisted:presencehistory_mixed_binary_b";
@@ -593,7 +593,7 @@ public class RealtimePresenceHistory {
 		AblyRealtime ably = null;
 		try {
 			Options rtOpts = testVars.createOptions();
-			rtOpts.authToken = token.id;
+			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
 			String channelName = "persisted:presencehistory_mixed_binary_f";
@@ -650,7 +650,7 @@ public class RealtimePresenceHistory {
 		AblyRealtime ably = null;
 		try {
 			Options rtOpts = testVars.createOptions();
-			rtOpts.authToken = token.id;
+			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
 			String channelName = "persisted:presencehistory_limit_f";
@@ -705,7 +705,7 @@ public class RealtimePresenceHistory {
 		AblyRealtime ably = null;
 		try {
 			Options rtOpts = testVars.createOptions();
-			rtOpts.authToken = token.id;
+			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
 			String channelName = "persisted:presencehistory_limit_b";
@@ -763,7 +763,7 @@ public class RealtimePresenceHistory {
 			/* first, publish some messages */
 			long intervalStart = 0, intervalEnd = 0;
 			Options rtOpts = testVars.createOptions();
-			rtOpts.authToken = token.id;
+			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
 			String channelName = "persisted:presencehistory_time_f";
@@ -830,7 +830,7 @@ public class RealtimePresenceHistory {
 			/* first, publish some messages */
 			long intervalStart = 0, intervalEnd = 0;
 			Options rtOpts = testVars.createOptions();
-			rtOpts.authToken = token.id;
+			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
 			String channelName = "persisted:presencehistory_time_b";
@@ -895,7 +895,7 @@ public class RealtimePresenceHistory {
 		AblyRealtime ably = null;
 		try {
 			Options rtOpts = testVars.createOptions();
-			rtOpts.authToken = token.id;
+			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
 			String channelName = "persisted:presencehistory_paginate_f";
@@ -968,7 +968,7 @@ public class RealtimePresenceHistory {
 		AblyRealtime ably = null;
 		try {
 			Options rtOpts = testVars.createOptions();
-			rtOpts.authToken = token.id;
+			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
 			String channelName = "persisted:presencehistory_paginate_b";
@@ -1041,7 +1041,7 @@ public class RealtimePresenceHistory {
 		AblyRealtime ably = null;
 		try {
 			Options rtOpts = testVars.createOptions();
-			rtOpts.authToken = token.id;
+			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
 			String channelName = "persisted:presencehistory_paginate_first_f";
@@ -1114,7 +1114,7 @@ public class RealtimePresenceHistory {
 		AblyRealtime ably = null;
 		try {
 			Options rtOpts = testVars.createOptions();
-			rtOpts.authToken = token.id;
+			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
 			String channelName = "persisted:presencehistory_paginate_first_b";
@@ -1190,7 +1190,7 @@ public class RealtimePresenceHistory {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
 			Options txOpts = testVars.createOptions();
-			txOpts.authToken = token.id;
+			txOpts.token = token.token;
 			txOpts.clientId = testClientId;
 			txAbly = new AblyRealtime(txOpts);
 
