@@ -9,7 +9,7 @@ import io.ably.realtime.AblyRealtime;
 import io.ably.test.realtime.RealtimeSetup.TestVars;
 import io.ably.transport.Defaults;
 import io.ably.types.AblyException;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 import io.ably.util.Log;
 import io.ably.util.Log.LogHandler;
 
@@ -42,7 +42,7 @@ public class RealtimeInit {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			ably = new AblyRealtime(new Options(testVars.keys[0].keyStr));
+			ably = new AblyRealtime(new ClientOptions(testVars.keys[0].keyStr));
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init1: Unexpected exception instantiating library");
@@ -59,7 +59,7 @@ public class RealtimeInit {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = new Options(testVars.keys[0].keyStr);
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -77,7 +77,7 @@ public class RealtimeInit {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = new Options(testVars.keys[0].keyStr);
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.host = "some.other.host";
 			ably = new AblyRealtime(opts);
 			assertEquals("Unexpected host mismatch", Defaults.getHost(opts), opts.host);
@@ -97,7 +97,7 @@ public class RealtimeInit {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = new Options(testVars.keys[0].keyStr);
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.port = 9998;
 			opts.tlsPort = 9999;
 			ably = new AblyRealtime(opts);
@@ -118,7 +118,7 @@ public class RealtimeInit {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = new Options(testVars.keys[0].keyStr);
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 			assertEquals("Unexpected port mismatch", Defaults.getPort(opts), Defaults.TLS_PORT);
 		} catch (AblyException e) {
@@ -137,7 +137,7 @@ public class RealtimeInit {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = new Options(testVars.keys[0].keyStr);
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.tls = false;
 			ably = new AblyRealtime(opts);
 			assertEquals("Unexpected scheme mismatch", Defaults.getPort(opts), Defaults.PORT);
@@ -158,7 +158,7 @@ public class RealtimeInit {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = new Options(testVars.keys[0].keyStr);
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.logHandler = new LogHandler() {
 				@Override
 				public void println(int severity, String tag, String msg, Throwable tr) {
@@ -186,7 +186,7 @@ public class RealtimeInit {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = new Options(testVars.keys[0].keyStr);
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.logHandler = new LogHandler() {
 				@Override
 				public void println(int severity, String tag, String msg, Throwable tr) {

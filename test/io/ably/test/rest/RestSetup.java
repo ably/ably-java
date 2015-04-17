@@ -5,7 +5,7 @@ import io.ably.http.Http.ResponseHandler;
 import io.ably.http.HttpUtils;
 import io.ably.rest.AblyRest;
 import io.ably.types.AblyException;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -36,17 +36,17 @@ public class RestSetup {
 		public int tlsPort;
 		public boolean tls;
 
-		public Options createOptions() {
-			Options opts = new Options();
+		public ClientOptions createOptions() {
+			ClientOptions opts = new ClientOptions();
 			fillInOptions(opts);
 			return opts;
 		}
-		public Options createOptions(String key) throws AblyException {
-			Options opts = new Options(key);
+		public ClientOptions createOptions(String key) throws AblyException {
+			ClientOptions opts = new ClientOptions(key);
 			fillInOptions(opts);
 			return opts;
 		}
-		public void fillInOptions(Options opts) {
+		public void fillInOptions(ClientOptions opts) {
 			opts.host = host;
 			opts.port = port;
 			opts.tlsPort = tlsPort;
@@ -89,7 +89,7 @@ public class RestSetup {
 		if(testVars == null) {
 			if(ably == null) {
 				try {
-					Options opts = new Options();
+					ClientOptions opts = new ClientOptions();
 					/* we need to provide an appId to keep the library happy,
 					 * but we are only instancing the library to use the http
 					 * convenience methods */
@@ -167,7 +167,7 @@ public class RestSetup {
 		TestVars testVars = testEnvironments.get(specFile);
 		if(testVars != null) {
 			try {
-				Options opts = new Options(testVars.keys[0].keyStr);
+				ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 				opts.host = host;
 				opts.port = port;
 				opts.tlsPort = tlsPort;

@@ -7,7 +7,7 @@ import io.ably.http.HttpUtils;
 import io.ably.rest.Channel;
 import io.ably.types.AblyException;
 import io.ably.types.ChannelOptions;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 import io.ably.types.PaginatedResult;
 import io.ably.types.Param;
 import io.ably.types.Stats;
@@ -24,7 +24,7 @@ import org.json.JSONException;
  */
 public class AblyRest {
 	
-	public final Options options;
+	public final ClientOptions options;
 	final String clientId;
 	public final Http http;
 
@@ -40,15 +40,15 @@ public class AblyRest {
 	 * @throws AblyException
 	 */
 	public AblyRest(String key) throws AblyException {
-		this(new Options(key));
+		this(new ClientOptions(key));
 	}
 
 	/**
 	 * Instance the Ably library with the given options.
-	 * @param options: see {@link io.ably.types.Options} for options
+	 * @param options: see {@link io.ably.types.ClientOptions} for options
 	 * @throws AblyException
 	 */
-	public AblyRest(Options options) throws AblyException {
+	public AblyRest(ClientOptions options) throws AblyException {
 		/* normalise options */
 		if(options == null) {
 			String msg = "no options provided";

@@ -8,7 +8,7 @@ import io.ably.rest.Channel;
 import io.ably.test.rest.RestSetup.TestVars;
 import io.ably.types.AblyException;
 import io.ably.types.Message;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 import io.ably.types.PaginatedResult;
 import io.ably.types.Param;
 
@@ -26,7 +26,7 @@ public class RestChannelHistory {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		TestVars testVars = RestSetup.getTestVars();
-		Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 		ably = new AblyRest(opts);
 		long timeFromService = ably.time();
 		timeOffset = timeFromService - System.currentTimeMillis();

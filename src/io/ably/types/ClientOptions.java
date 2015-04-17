@@ -8,12 +8,12 @@ import java.util.Map;
 /**
  * Options: Ably library options for REST and Realtime APIs
  */
-public class Options extends AuthOptions {
+public class ClientOptions extends AuthOptions {
 
 	/**
 	 * Default constructor
 	 */
-	public Options() {}
+	public ClientOptions() {}
 
 	/**
 	 * Construct an options with a single key string. The key string is obtained
@@ -21,7 +21,7 @@ public class Options extends AuthOptions {
 	 * @param key: the key string
 	 * @throws AblyException if the key is not in a valid format
 	 */
-	public Options(String key) throws AblyException { super(key); }
+	public ClientOptions(String key) throws AblyException { super(key); }
 
 	/**
 	 * The id of the client represented by this instance. The clientId is relevant

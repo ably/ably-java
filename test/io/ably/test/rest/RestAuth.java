@@ -15,7 +15,7 @@ import io.ably.rest.Auth.TokenParams;
 import io.ably.test.rest.RestSetup.TestVars;
 import io.ably.test.util.TokenServer;
 import io.ably.types.AblyException;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 import io.ably.types.Param;
 
 import org.json.JSONObject;
@@ -44,7 +44,7 @@ public class RestAuth {
 	@Test
 	public void authinit1() {
 		try {
-			Options opts = new Options();
+			ClientOptions opts = new ClientOptions();
 			opts.token = "this_is_not_really_a_token";
 			AblyRest ably = new AblyRest(opts);
 			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
@@ -62,7 +62,7 @@ public class RestAuth {
 	public void authinit2() {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
-			Options opts = new Options();
+			ClientOptions opts = new ClientOptions();
 			opts.host = testVars.host;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
@@ -93,7 +93,7 @@ public class RestAuth {
 	public void authinit3() {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
-			Options opts = new Options(testVars.keys[0].keyStr);
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.clientId = "testClientId";
 			AblyRest ably = new AblyRest(opts);
 			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
@@ -110,7 +110,7 @@ public class RestAuth {
 	public void authinit4() {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
-			Options optsForToken = new Options(testVars.keys[0].keyStr);
+			ClientOptions optsForToken = new ClientOptions(testVars.keys[0].keyStr);
 			optsForToken.host = testVars.host;
 			optsForToken.port = testVars.port;
 			optsForToken.tlsPort = testVars.tlsPort;
@@ -118,7 +118,7 @@ public class RestAuth {
 			AblyRest ablyForToken = new AblyRest(optsForToken);
 			TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, null);
 			assertNotNull("Expected token value", tokenDetails.token);
-			Options opts = new Options();
+			ClientOptions opts = new ClientOptions();
 			opts.token = tokenDetails.token;
 			opts.host = testVars.host;
 			opts.port = testVars.port;
@@ -138,7 +138,7 @@ public class RestAuth {
 	public void auth_start_tokenserver() {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			AblyRest ably = new AblyRest(opts);
 			tokenServer = new TokenServer(ably, 8982);
 			tokenServer.start();
@@ -158,7 +158,7 @@ public class RestAuth {
 	public void auth_authURL_tokenrequest() {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
-			Options opts = new Options();
+			ClientOptions opts = new ClientOptions();
 			opts.host = testVars.host;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
@@ -186,7 +186,7 @@ public class RestAuth {
 	public void auth_authURL_token() {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
-			Options opts = new Options();
+			ClientOptions opts = new ClientOptions();
 			opts.host = testVars.host;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
@@ -214,7 +214,7 @@ public class RestAuth {
 	public void auth_authURL_err() {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
-			Options opts = new Options();
+			ClientOptions opts = new ClientOptions();
 			opts.host = testVars.host;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
@@ -241,7 +241,7 @@ public class RestAuth {
 	public void auth_authURL_params() {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
-			Options opts = new Options();
+			ClientOptions opts = new ClientOptions();
 			opts.host = testVars.host;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
@@ -272,7 +272,7 @@ public class RestAuth {
 	public void auth_authURL_headers() {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
-			Options opts = new Options();
+			ClientOptions opts = new ClientOptions();
 			opts.host = testVars.host;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
@@ -323,7 +323,7 @@ public class RestAuth {
 			};
 
 			/* create Ably instance without key */
-			Options opts = testVars.createOptions();
+			ClientOptions opts = testVars.createOptions();
 			opts.authCallback = authCallback;
 			AblyRest ably = new AblyRest(opts);
 
@@ -359,7 +359,7 @@ public class RestAuth {
 			};
 
 			/* create Ably instance without key */
-			Options opts = testVars.createOptions();
+			ClientOptions opts = testVars.createOptions();
 			opts.authCallback = authCallback;
 			AblyRest ably = new AblyRest(opts);
 
@@ -384,7 +384,7 @@ public class RestAuth {
 	public void auth_authcallback_token_expire() {
 		try {
 			final TestVars testVars = RestSetup.getTestVars();
-			Options optsForToken = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions optsForToken = testVars.createOptions(testVars.keys[0].keyStr);
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
 			TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, new TokenParams() {{ ttl = 5000L; }});
 			assertNotNull("Expected token value", tokenDetails.token);
@@ -403,7 +403,7 @@ public class RestAuth {
 			TokenGenerator authCallback = new TokenGenerator();
 
 			/* create Ably instance without key */
-			Options opts = testVars.createOptions();
+			ClientOptions opts = testVars.createOptions();
 			opts.token = tokenDetails.token;
 			opts.authCallback = authCallback;
 			AblyRest ably = new AblyRest(opts);
@@ -446,7 +446,7 @@ public class RestAuth {
 			};
 
 			/* create Ably instance without key */
-			Options opts = testVars.createOptions();
+			ClientOptions opts = testVars.createOptions();
 			opts.authCallback = authCallback;
 			AblyRest ably = new AblyRest(opts);
 

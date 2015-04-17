@@ -10,7 +10,7 @@ import io.ably.test.realtime.Helpers.CompletionWaiter;
 import io.ably.test.realtime.Helpers.ConnectionWaiter;
 import io.ably.test.realtime.RealtimeSetup.TestVars;
 import io.ably.types.AblyException;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 import io.ably.util.Log;
 
 import org.junit.Test;
@@ -25,7 +25,7 @@ public class RealtimeConnect {
 	public void connect_binary() {
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			AblyRealtime ably = new AblyRealtime(opts);
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
@@ -48,7 +48,7 @@ public class RealtimeConnect {
 	public void connect_text() {
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			opts.useBinaryProtocol = false;
 			AblyRealtime ably = new AblyRealtime(opts);
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
@@ -72,7 +72,7 @@ public class RealtimeConnect {
 	public void connect_heartbeat_binary() {
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = new Options(testVars.keys[0].keyStr);
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			testVars.fillInOptions(opts);
 			CompletionWaiter heartbeatWaiter = new CompletionWaiter();
 			AblyRealtime ably = new AblyRealtime(opts);
@@ -100,7 +100,7 @@ public class RealtimeConnect {
 	public void connect_heartbeat_text() {
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = new Options(testVars.keys[0].keyStr);
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			testVars.fillInOptions(opts);
 			opts.useBinaryProtocol = false;
 			CompletionWaiter heartbeatWaiter = new CompletionWaiter();
@@ -128,7 +128,7 @@ public class RealtimeConnect {
 	public void connect_after_close() {
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			AblyRealtime ably = new AblyRealtime(opts);
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 			connectionWaiter.waitFor(ConnectionState.connected);

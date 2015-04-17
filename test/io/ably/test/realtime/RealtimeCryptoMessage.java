@@ -7,7 +7,7 @@ import io.ably.test.realtime.RealtimeSetup.TestVars;
 import io.ably.types.AblyException;
 import io.ably.types.ChannelOptions;
 import io.ably.types.Message;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 import io.ably.util.Base64Coder;
 import io.ably.util.Crypto;
 import io.ably.util.Crypto.CipherParams;
@@ -45,7 +45,7 @@ public class RealtimeCryptoMessage {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			byte[] key = Base64Coder.decode(testData128.optString("key"));
@@ -85,7 +85,7 @@ public class RealtimeCryptoMessage {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			byte[] key = Base64Coder.decode(testData256.optString("key"));
@@ -125,7 +125,7 @@ public class RealtimeCryptoMessage {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			byte[] key = Base64Coder.decode(testData128.optString("key"));
@@ -165,7 +165,7 @@ public class RealtimeCryptoMessage {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			byte[] key = Base64Coder.decode(testData256.optString("key"));

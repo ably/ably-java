@@ -6,7 +6,7 @@ import static org.junit.Assert.fail;
 import io.ably.rest.AblyRest;
 import io.ably.test.rest.RestSetup.TestVars;
 import io.ably.types.AblyException;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 
 import org.junit.Test;
 
@@ -19,7 +19,7 @@ public class RestTime {
 	public void time0() {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
-			Options opts = new Options(testVars.keys[0].keyStr);
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.host = testVars.host;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
@@ -41,7 +41,7 @@ public class RestTime {
 	public void time1() {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
-			Options opts = new Options();
+			ClientOptions opts = new ClientOptions();
 			opts.host = testVars.host;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
@@ -61,7 +61,7 @@ public class RestTime {
 	public void time2() {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
-			Options opts = new Options();
+			ClientOptions opts = new ClientOptions();
 			opts.host = "this.host.does.not.exist";
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;

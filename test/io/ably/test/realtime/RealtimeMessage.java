@@ -16,7 +16,7 @@ import io.ably.test.realtime.Helpers.MessageWaiter;
 import io.ably.test.realtime.RealtimeSetup.TestVars;
 import io.ably.types.AblyException;
 import io.ably.types.ErrorInfo;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 import io.ably.util.Log;
 
 public class RealtimeMessage {
@@ -32,7 +32,7 @@ public class RealtimeMessage {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* create a channel */
@@ -76,7 +76,7 @@ public class RealtimeMessage {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			opts.useBinaryProtocol = false;
 			ably = new AblyRealtime(opts);
 
@@ -123,7 +123,7 @@ public class RealtimeMessage {
 		AblyRealtime rxAbly = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			opts.echoMessages = false;
 			txAbly = new AblyRealtime(opts);
 			rxAbly = new AblyRealtime(opts);
@@ -183,7 +183,7 @@ public class RealtimeMessage {
 		AblyRealtime rxAbly = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			opts.echoMessages = false;
 			opts.useBinaryProtocol = false;
 			txAbly = new AblyRealtime(opts);
@@ -242,7 +242,7 @@ public class RealtimeMessage {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			opts.useBinaryProtocol = useBinaryProtocol;
 			ably = new AblyRealtime(opts);
 
@@ -290,7 +290,7 @@ public class RealtimeMessage {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			opts.useBinaryProtocol = useBinaryProtocol;
 			ably = new AblyRealtime(opts);
 
@@ -405,7 +405,7 @@ public class RealtimeMessage {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[4].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[4].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* create a channel; channel3 can subscribe but not publish

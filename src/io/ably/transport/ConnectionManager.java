@@ -12,7 +12,7 @@ import io.ably.transport.ITransport.ConnectListener;
 import io.ably.transport.ITransport.TransportParams;
 import io.ably.types.AblyException;
 import io.ably.types.ErrorInfo;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 import io.ably.types.ProtocolMessage;
 import io.ably.types.ProtocolMessage.Action;
 import io.ably.util.Log;
@@ -518,7 +518,7 @@ public class ConnectionManager extends Thread implements ConnectListener {
 
 	private class ConnectParams extends TransportParams {
 		private boolean fallback;
-		ConnectParams(Options options, boolean fallback) {
+		ConnectParams(ClientOptions options, boolean fallback) {
 			this.options = options;
 			this.fallback = fallback;
 			this.connectionKey = connection.key;
@@ -772,7 +772,7 @@ public class ConnectionManager extends Thread implements ConnectListener {
 	 ******************/
 
 	final AblyRealtime ably;
-	private final Options options;
+	private final ClientOptions options;
 	private final Connection connection;
 	private final ITransport.Factory factory;
 	private final List<QueuedMessage> queuedMessages;

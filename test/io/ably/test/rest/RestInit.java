@@ -9,7 +9,7 @@ import io.ably.rest.AblyRest;
 import io.ably.test.rest.RestSetup.TestVars;
 import io.ably.transport.Defaults;
 import io.ably.types.AblyException;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 import io.ably.util.Log;
 import io.ably.util.Log.LogHandler;
 
@@ -38,7 +38,7 @@ public class RestInit {
 	public void init_key_opts() {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
-			new AblyRest(new Options(testVars.keys[0].keyStr));
+			new AblyRest(new ClientOptions(testVars.keys[0].keyStr));
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init1: Unexpected exception instantiating library");
@@ -52,7 +52,7 @@ public class RestInit {
 	public void init_key() {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
-			Options opts = new Options(testVars.keys[0].keyStr);
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			new AblyRest(opts);
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -68,7 +68,7 @@ public class RestInit {
 	public void init_host() {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
-			Options opts = new Options(testVars.keys[0].keyStr);
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.host = "some.other.host";
 			AblyRest ably = new AblyRest(opts);
 			assertEquals("Unexpected host mismatch", Defaults.getHost(opts), opts.host);
@@ -86,7 +86,7 @@ public class RestInit {
 	public void init_port() {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
-			Options opts = new Options(testVars.keys[0].keyStr);
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.port = 9998;
 			opts.tlsPort = 9999;
 			AblyRest ably = new AblyRest(opts);
@@ -105,7 +105,7 @@ public class RestInit {
 	public void init_default_secure() {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
-			Options opts = new Options(testVars.keys[0].keyStr);
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			AblyRest ably = new AblyRest(opts);
 			assertEquals("Unexpected port mismatch", Defaults.getPort(opts), Defaults.TLS_PORT);
 		} catch (AblyException e) {
@@ -122,7 +122,7 @@ public class RestInit {
 	public void init_insecure() {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
-			Options opts = new Options(testVars.keys[0].keyStr);
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.tls = false;
 			AblyRest ably = new AblyRest(opts);
 			assertEquals("Unexpected scheme mismatch", Defaults.getPort(opts), Defaults.PORT);
@@ -140,7 +140,7 @@ public class RestInit {
 	public void init_log_handler() {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
-			Options opts = new Options(testVars.keys[0].keyStr);
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.logHandler = new LogHandler() {
 				@Override
 				public void println(int severity, String tag, String msg, Throwable tr) {
@@ -165,7 +165,7 @@ public class RestInit {
 	public void init_log_level() {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
-			Options opts = new Options(testVars.keys[0].keyStr);
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.logHandler = new LogHandler() {
 				@Override
 				public void println(int severity, String tag, String msg, Throwable tr) {

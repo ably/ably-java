@@ -2,7 +2,7 @@ package io.ably.transport;
 
 import io.ably.types.AblyException;
 import io.ably.types.ErrorInfo;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 import io.ably.types.Param;
 import io.ably.types.ProtocolMessage;
 import io.ably.util.Log;
@@ -33,7 +33,7 @@ public interface ITransport {
 	}
 
 	public static class TransportParams {
-		Options options;
+		ClientOptions options;
 		String host;
 		int port;
 		String connectionKey;

@@ -8,7 +8,7 @@ import io.ably.rest.Auth;
 import io.ably.rest.Auth.AuthMethod;
 import io.ably.transport.Defaults;
 import io.ably.types.AblyException;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 import io.ably.types.Param;
 import io.ably.util.Log;
 
@@ -121,7 +121,7 @@ public class Http {
 	}
 
 	@SuppressWarnings("deprecation")
-	public Http(AblyRest ably, Options options) {
+	public Http(AblyRest ably, ClientOptions options) {
 		this.ably = ably;
 		this.scheme = options.tls ? "https" : "http";
 		this.port = Defaults.getPort(options);

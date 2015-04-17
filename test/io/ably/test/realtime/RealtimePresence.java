@@ -18,7 +18,7 @@ import io.ably.test.realtime.Helpers.CompletionWaiter;
 import io.ably.test.realtime.Helpers.ConnectionWaiter;
 import io.ably.test.realtime.Helpers.PresenceWaiter;
 import io.ably.types.AblyException;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 import io.ably.types.PaginatedResult;
 import io.ably.types.Param;
 import io.ably.types.PresenceMessage;
@@ -60,7 +60,7 @@ public class RealtimePresence {
 		testVars = RealtimeSetup.getTestVars();
 
 		/* create tokens for specific clientIds */
-		Options opts = new Options(testVars.keys[0].keyStr);
+		ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 		testVars.fillInOptions(opts);
 		rest = new AblyRest(opts);
 		token1 = rest.auth.requestToken(null, new TokenParams() {{ clientId = testClientId1; }});
@@ -69,7 +69,7 @@ public class RealtimePresence {
 		/* get rest channel */
 		restPresenceChannel = rest.channels.get(presenceChannelName);
 
-		Options rtOpts = new Options(testVars.keys[0].keyStr);
+		ClientOptions rtOpts = new ClientOptions(testVars.keys[0].keyStr);
 		testVars.fillInOptions(rtOpts);
 		ably = new AblyRealtime(rtOpts);
 		(rtPresenceChannel = ably.channels.get(presenceChannelName)).attach();
@@ -90,7 +90,7 @@ public class RealtimePresence {
 			/* subscribe for presence events in the anonymous connection */
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
-			Options client1Opts = new Options() {{
+			ClientOptions client1Opts = new ClientOptions() {{
 				token = token1.token;
 				clientId = testClientId1;
 			}};
@@ -140,7 +140,7 @@ public class RealtimePresence {
 			/* subscribe for presence events in the anonymous connection */
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
-			Options client1Opts = new Options() {{
+			ClientOptions client1Opts = new ClientOptions() {{
 				token = token1.token;
 				clientId = testClientId1;
 			}};
@@ -188,7 +188,7 @@ public class RealtimePresence {
 			/* subscribe for presence events in the anonymous connection */
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
-			Options client1Opts = new Options() {{
+			ClientOptions client1Opts = new ClientOptions() {{
 				token = token1.token;
 				clientId = testClientId1;
 			}};
@@ -232,7 +232,7 @@ public class RealtimePresence {
 			/* subscribe for presence events in the anonymous connection */
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
-			Options client1Opts = new Options() {{
+			ClientOptions client1Opts = new ClientOptions() {{
 				token = token1.token;
 				clientId = testClientId1;
 			}};
@@ -290,7 +290,7 @@ public class RealtimePresence {
 			/* subscribe for presence events in the anonymous connection */
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
-			Options client1Opts = new Options() {{
+			ClientOptions client1Opts = new ClientOptions() {{
 				token = token1.token;
 				clientId = testClientId1;
 			}};
@@ -359,7 +359,7 @@ public class RealtimePresence {
 			/* subscribe for presence events in the anonymous connection */
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
-			Options client1Opts = new Options() {{
+			ClientOptions client1Opts = new ClientOptions() {{
 				token = token1.token;
 				clientId = testClientId1;
 			}};
@@ -428,7 +428,7 @@ public class RealtimePresence {
 			/* subscribe for presence events in the anonymous connection */
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
-			Options client1Opts = new Options() {{
+			ClientOptions client1Opts = new ClientOptions() {{
 				token = token1.token;
 				clientId = testClientId1;
 			}};
@@ -498,7 +498,7 @@ public class RealtimePresence {
 			/* subscribe for presence events in the anonymous connection */
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
-			Options client1Opts = new Options() {{
+			ClientOptions client1Opts = new ClientOptions() {{
 				token = token1.token;
 				clientId = testClientId1;
 			}};
@@ -556,7 +556,7 @@ public class RealtimePresence {
 			/* subscribe for presence events in the anonymous connection */
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
-			Options client1Opts = new Options() {{
+			ClientOptions client1Opts = new ClientOptions() {{
 				token = token1.token;
 				clientId = testClientId1;
 			}};
@@ -613,7 +613,7 @@ public class RealtimePresence {
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 
 			/* set up a connection with specific clientId */
-			Options client1Opts = new Options() {{
+			ClientOptions client1Opts = new ClientOptions() {{
 				token = token1.token;
 				clientId = testClientId1;
 			}};
@@ -666,7 +666,7 @@ public class RealtimePresence {
 			/* subscribe for presence events in the anonymous connection */
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
-			Options client1Opts = new Options() {{
+			ClientOptions client1Opts = new ClientOptions() {{
 				token = token1.token;
 				clientId = testClientId1;
 			}};
@@ -725,7 +725,7 @@ public class RealtimePresence {
 			/* subscribe for presence events in the anonymous connection */
 			new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
-			Options client1Opts = new Options() {{
+			ClientOptions client1Opts = new ClientOptions() {{
 				token = token1.token;
 				clientId = testClientId1;
 			}};
@@ -750,7 +750,7 @@ public class RealtimePresence {
 			assertTrue("Verify enter callback called on completion", enterComplete.success);
 
 			/* set up a second connection with different clientId */
-			Options client2Opts = new Options() {{
+			ClientOptions client2Opts = new ClientOptions() {{
 				token = token2.token;
 				clientId = testClientId2;
 			}};
@@ -801,7 +801,7 @@ public class RealtimePresence {
 			/* subscribe for presence events in the anonymous connection */
 			new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
-			Options client1Opts = new Options() {{
+			ClientOptions client1Opts = new ClientOptions() {{
 				token = token1.token;
 				clientId = testClientId1;
 			}};
@@ -828,7 +828,7 @@ public class RealtimePresence {
 			assertTrue("Verify enter callback called on completion", enterComplete.errors.isEmpty());
 
 			/* set up a second connection with different clientId */
-			Options client2Opts = new Options() {{
+			ClientOptions client2Opts = new ClientOptions() {{
 				token = token2.token;
 				clientId = testClientId2;
 			}};
@@ -889,7 +889,7 @@ public class RealtimePresence {
 			PresenceWaiter waiter = new PresenceWaiter(rtPresenceChannel);
 
 			/* set up a connection with specific clientId */
-			Options client1Opts = new Options() {{
+			ClientOptions client1Opts = new ClientOptions() {{
 				token = token1.token;
 				clientId = testClientId1;
 			}};
@@ -905,7 +905,7 @@ public class RealtimePresence {
 			assertTrue("Verify enter callback called on completion", enter1Complete.success);
 
 			/* set up a second connection with different clientId */
-			Options client2Opts = new Options() {{
+			ClientOptions client2Opts = new ClientOptions() {{
 				token = token2.token;
 				clientId = testClientId2;
 			}};
@@ -957,7 +957,7 @@ public class RealtimePresence {
 			/* subscribe for presence events in the anonymous connection */
 			new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
-			Options client1Opts = new Options() {{
+			ClientOptions client1Opts = new ClientOptions() {{
 				token = token1.token;
 				clientId = testClientId1;
 			}};
@@ -1009,7 +1009,7 @@ public class RealtimePresence {
 			/* subscribe for presence events in the anonymous connection */
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
-			Options client1Opts = new Options() {{
+			ClientOptions client1Opts = new ClientOptions() {{
 				token = token1.token;
 				clientId = testClientId1;
 			}};
@@ -1067,7 +1067,7 @@ public class RealtimePresence {
 			/* subscribe for presence events in the anonymous connection */
 			new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
-			Options client1Opts = new Options() {{
+			ClientOptions client1Opts = new ClientOptions() {{
 				token = token1.token;
 				clientId = testClientId1;
 			}};
@@ -1083,7 +1083,7 @@ public class RealtimePresence {
 			assertTrue("Verify enter callback called on completion", enter1Complete.success);
 
 			/* set up a second connection with different clientId */
-			Options client2Opts = new Options() {{
+			ClientOptions client2Opts = new ClientOptions() {{
 				token = token2.token;
 				clientId = testClientId2;
 			}};
@@ -1133,7 +1133,7 @@ public class RealtimePresence {
 			/* subscribe for presence events in the anonymous connection */
 			new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
-			Options client1Opts = new Options() {{
+			ClientOptions client1Opts = new ClientOptions() {{
 				token = token1.token;
 				clientId = testClientId1;
 			}};
@@ -1218,7 +1218,7 @@ public class RealtimePresence {
 			/* subscribe for presence events in the anonymous connection */
 			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
 			/* set up a connection with specific clientId */
-			Options client1Opts = new Options() {{
+			ClientOptions client1Opts = new ClientOptions() {{
 				token = token1.token;
 				clientId = testClientId1;
 			}};

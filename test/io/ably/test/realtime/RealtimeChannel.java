@@ -12,7 +12,7 @@ import io.ably.test.realtime.RealtimeSetup.TestVars;
 import io.ably.types.AblyException;
 import io.ably.types.ErrorInfo;
 import io.ably.types.Message;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 
 import org.junit.Test;
 
@@ -27,7 +27,7 @@ public class RealtimeChannel {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* wait until connected */
@@ -58,7 +58,7 @@ public class RealtimeChannel {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			opts.useBinaryProtocol = false;
 			ably = new AblyRealtime(opts);
 
@@ -90,7 +90,7 @@ public class RealtimeChannel {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* create a channel and attach */
@@ -117,7 +117,7 @@ public class RealtimeChannel {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			opts.useBinaryProtocol = false;
 			ably = new AblyRealtime(opts);
 
@@ -145,7 +145,7 @@ public class RealtimeChannel {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* create a channel and attach */
@@ -177,7 +177,7 @@ public class RealtimeChannel {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			opts.useBinaryProtocol = false;
 			ably = new AblyRealtime(opts);
 
@@ -210,7 +210,7 @@ public class RealtimeChannel {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* create a channel and attach */
@@ -246,7 +246,7 @@ public class RealtimeChannel {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* wait until connected */

@@ -9,7 +9,7 @@ import io.ably.transport.ITransport;
 import io.ably.types.AblyException;
 import io.ably.types.ChannelOptions;
 import io.ably.types.ErrorInfo;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 import io.ably.types.ProtocolMessage;
 import io.ably.util.Log;
 
@@ -38,15 +38,15 @@ public class AblyRealtime extends AblyRest {
 	 * @throws AblyException
 	 */
 	public AblyRealtime(String key) throws AblyException {
-		this(new Options(key));
+		this(new ClientOptions(key));
 	}
 
 	/**
 	 * Instance the Ably library with the given options.
-	 * @param options: see {@link io.ably.types.Options} for options
+	 * @param options: see {@link io.ably.types.ClientOptions} for options
 	 * @throws AblyException
 	 */
-	public AblyRealtime(Options options) throws AblyException {
+	public AblyRealtime(ClientOptions options) throws AblyException {
 		super(options);
 		channels = new Channels();
 		(connection = new Connection(this)).connect();

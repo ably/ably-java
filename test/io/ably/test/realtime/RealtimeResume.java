@@ -16,7 +16,7 @@ import io.ably.test.realtime.Helpers.MessageWaiter;
 import io.ably.test.realtime.RealtimeSetup.TestVars;
 import io.ably.types.AblyException;
 import io.ably.types.ErrorInfo;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 
 public class RealtimeResume {
 
@@ -37,7 +37,7 @@ public class RealtimeResume {
 		long delay = 200;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ablyRx = new AblyRealtime(opts);
 			ablyTx = new AblyRealtime(opts);
 
@@ -125,7 +125,7 @@ public class RealtimeResume {
 		long delay = 200;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ablyRx = new AblyRealtime(opts);
 			ablyTx = new AblyRealtime(opts);
 
@@ -208,7 +208,7 @@ public class RealtimeResume {
 		long delay = 200;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ablyRx = new AblyRealtime(opts);
 			ablyTx = new AblyRealtime(opts);
 
@@ -308,7 +308,7 @@ public class RealtimeResume {
 		long delay = 200;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ablyRx = new AblyRealtime(opts);
 			ablyTx = new AblyRealtime(opts);
 

@@ -6,7 +6,7 @@ import io.ably.http.TokenAuth;
 import io.ably.types.AblyException;
 import io.ably.types.Capability;
 import io.ably.types.ErrorInfo;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 import io.ably.types.Param;
 import io.ably.util.Base64Coder;
 import io.ably.util.Log;
@@ -581,7 +581,7 @@ public class Auth {
 	 * @param options
 	 * @throws AblyException
 	 */
-	Auth(AblyRest ably, Options options) throws AblyException {
+	Auth(AblyRest ably, ClientOptions options) throws AblyException {
 		this.ably = ably;
 		authOptions = options;
 

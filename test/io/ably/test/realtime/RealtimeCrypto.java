@@ -15,7 +15,7 @@ import io.ably.test.realtime.RealtimeSetup.TestVars;
 import io.ably.types.AblyException;
 import io.ably.types.ChannelOptions;
 import io.ably.types.ErrorInfo;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 import io.ably.util.Crypto;
 import io.ably.util.Crypto.CipherParams;
 
@@ -37,7 +37,7 @@ public class RealtimeCrypto {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* create a channel */
@@ -87,7 +87,7 @@ public class RealtimeCrypto {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			opts.useBinaryProtocol = false;
 			ably = new AblyRealtime(opts);
 
@@ -138,7 +138,7 @@ public class RealtimeCrypto {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* create a key */
@@ -197,7 +197,7 @@ public class RealtimeCrypto {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* create a key */
@@ -255,7 +255,7 @@ public class RealtimeCrypto {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			opts.useBinaryProtocol = useBinaryProtocol;
 			ably = new AblyRealtime(opts);
 
@@ -342,9 +342,9 @@ public class RealtimeCrypto {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options txOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions txOpts = testVars.createOptions(testVars.keys[0].keyStr);
 			txAbly = new AblyRealtime(txOpts);
-			Options rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
 			rxOpts.useBinaryProtocol = false;
 			rxAbly = new AblyRealtime(rxOpts);
 
@@ -403,10 +403,10 @@ public class RealtimeCrypto {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options txOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions txOpts = testVars.createOptions(testVars.keys[0].keyStr);
 			txOpts.useBinaryProtocol = false;
 			txAbly = new AblyRealtime(txOpts);
-			Options rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
 			rxAbly = new AblyRealtime(rxOpts);
 
 			/* create a key */
@@ -465,9 +465,9 @@ public class RealtimeCrypto {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options txOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions txOpts = testVars.createOptions(testVars.keys[0].keyStr);
 			txAbly = new AblyRealtime(txOpts);
-			Options rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
 			rxAbly = new AblyRealtime(rxOpts);
 
 			/* create a channel */
@@ -523,9 +523,9 @@ public class RealtimeCrypto {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options txOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions txOpts = testVars.createOptions(testVars.keys[0].keyStr);
 			txAbly = new AblyRealtime(txOpts);
-			Options rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
 			rxAbly = new AblyRealtime(rxOpts);
 
 			/* create a channel */
@@ -579,9 +579,9 @@ public class RealtimeCrypto {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options txOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions txOpts = testVars.createOptions(testVars.keys[0].keyStr);
 			txAbly = new AblyRealtime(txOpts);
-			Options rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
 			rxAbly = new AblyRealtime(rxOpts);
 
 			/* create a channel */
@@ -636,9 +636,9 @@ public class RealtimeCrypto {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options txOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions txOpts = testVars.createOptions(testVars.keys[0].keyStr);
 			txAbly = new AblyRealtime(txOpts);
-			Options rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
 			rxOpts.useBinaryProtocol = false;
 			rxAbly = new AblyRealtime(rxOpts);
 

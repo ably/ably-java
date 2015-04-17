@@ -9,7 +9,7 @@ import io.ably.rest.AblyRest;
 import io.ably.test.rest.RestSetup.TestVars;
 import io.ably.test.util.StatsWriter;
 import io.ably.types.AblyException;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 import io.ably.types.PaginatedResult;
 import io.ably.types.Param;
 import io.ably.types.Stats;
@@ -29,7 +29,7 @@ public class RestAppStats {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		TestVars testVars = RestSetup.getTestVars();
-		Options opts = new Options(testVars.keys[0].keyStr);
+		ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 		testVars.fillInOptions(opts);
 		ably = new AblyRest(opts);
 

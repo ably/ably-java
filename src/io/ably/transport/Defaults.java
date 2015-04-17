@@ -1,6 +1,6 @@
 package io.ably.transport;
 
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 
 public class Defaults {
 	public static final int protocolVersion     = 1;
@@ -17,7 +17,7 @@ public class Defaults {
 	public static final String[] transports     = new String[]{"web_socket", "comet"};
 	public static final String transport        = "io.ably.transport.WebSocketTransport$Factory";
 
-	public static String getHost(Options options) {
+	public static String getHost(ClientOptions options) {
 		String host;
 		host = options.host;
 		if(host == null)
@@ -25,7 +25,7 @@ public class Defaults {
 		return host;
 	}
 
-	public static String getHost(Options options, String host, boolean ws) {
+	public static String getHost(ClientOptions options, String host, boolean ws) {
 		if(host == null) {
 			host = options.host;
 			if(host == null)
@@ -41,13 +41,13 @@ public class Defaults {
 		return host;
 	}
 
-	public static int getPort(Options options) {
+	public static int getPort(ClientOptions options) {
 		return options.tls
 			? ((options.tlsPort != 0) ? options.tlsPort : Defaults.TLS_PORT)
 			: ((options.port != 0) ? options.port : Defaults.PORT);
 	}
 
-	public static String[] getFallbackHosts(Options options) {
+	public static String[] getFallbackHosts(ClientOptions options) {
 		return (options.host == null) ? Defaults.FALLBACK_HOSTS : null;
 	}
 }

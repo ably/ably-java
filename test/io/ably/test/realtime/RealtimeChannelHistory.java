@@ -14,7 +14,7 @@ import io.ably.test.realtime.Helpers.MessageWaiter;
 import io.ably.test.realtime.RealtimeSetup.TestVars;
 import io.ably.types.AblyException;
 import io.ably.types.Message;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 import io.ably.types.PaginatedResult;
 import io.ably.types.Param;
 
@@ -32,7 +32,7 @@ public class RealtimeChannelHistory {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		TestVars testVars = RealtimeSetup.getTestVars();
-		Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 		ably = new AblyRealtime(opts);
 		long timeFromService = ably.time();
 		timeOffset = timeFromService - System.currentTimeMillis();
@@ -48,7 +48,7 @@ public class RealtimeChannelHistory {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 			String channelName = "persisted:channelhistory_simple_binary";
 			String messageText = "Test message (channelhistory_simple_binary)";
@@ -95,7 +95,7 @@ public class RealtimeChannelHistory {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			opts.useBinaryProtocol = false;
 			ably = new AblyRealtime(opts);
 			String channelName = "persisted:channelhistory_simple_text";
@@ -141,7 +141,7 @@ public class RealtimeChannelHistory {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 			String channelName = "persisted:channelhistory_types_binary";
 
@@ -197,7 +197,7 @@ public class RealtimeChannelHistory {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			opts.useBinaryProtocol = false;
 			ably = new AblyRealtime(opts);
 			String channelName = "persisted:channelhistory_types_text";
@@ -254,7 +254,7 @@ public class RealtimeChannelHistory {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 			String channelName = "persisted:channelhistory_types_forward";
 
@@ -313,9 +313,9 @@ public class RealtimeChannelHistory {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options txOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions txOpts = testVars.createOptions(testVars.keys[0].keyStr);
 			txAbly = new AblyRealtime(txOpts);
-			Options rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
 			rxAbly = new AblyRealtime(rxOpts);
 			String channelName = "persisted:channelhistory_second_channel";
 	
@@ -371,7 +371,7 @@ public class RealtimeChannelHistory {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 			String channelName = "persisted:channelhistory_wait_binary_b";
 			String messageText = "Test message (channelhistory_wait_binary_b)";
@@ -423,7 +423,7 @@ public class RealtimeChannelHistory {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			opts.useBinaryProtocol = false;
 			ably = new AblyRealtime(opts);
 			String channelName = "persisted:channelhistory_wait_text_b";
@@ -476,7 +476,7 @@ public class RealtimeChannelHistory {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 			String channelName = "persisted:channelhistory_wait_binary_f";
 			String messageText = "Test message (channelhistory_wait_binary_f)";
@@ -528,7 +528,7 @@ public class RealtimeChannelHistory {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 			String channelName = "persisted:channelhistory_mixed_binary_b";
 			String messageText = "Test message (channelhistory_mixed_binary_b)";
@@ -591,7 +591,7 @@ public class RealtimeChannelHistory {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 			String channelName = "persisted:channelhistory_mixed_binary_f";
 			String messageText = "Test message (channelhistory_mixed_binary_f)";
@@ -651,7 +651,7 @@ public class RealtimeChannelHistory {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 			String channelName = "persisted:channelhistory_limit_f";
 
@@ -708,7 +708,7 @@ public class RealtimeChannelHistory {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 			String channelName = "persisted:channelhistory_limit_b";
 
@@ -769,7 +769,7 @@ public class RealtimeChannelHistory {
 			/* first, publish some messages */
 			long intervalStart = 0, intervalEnd = 0;
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 			String channelName = "persisted:channelhistory_time_f";
 	
@@ -841,7 +841,7 @@ public class RealtimeChannelHistory {
 			/* first, publish some messages */
 			long intervalStart = 0, intervalEnd = 0;
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 			String channelName = "persisted:channelhistory_time_b";
 	
@@ -911,7 +911,7 @@ public class RealtimeChannelHistory {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 			String channelName = "persisted:channelhistory_paginate_f";
 
@@ -1000,7 +1000,7 @@ public class RealtimeChannelHistory {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 			String channelName = "persisted:channelhistory_paginate_b";
 
@@ -1089,7 +1089,7 @@ public class RealtimeChannelHistory {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 			String channelName = "persisted:channelhistory_paginate_first_f";
 
@@ -1178,7 +1178,7 @@ public class RealtimeChannelHistory {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 			String channelName = "persisted:channelhistory_paginate_first_b";
 
@@ -1270,9 +1270,9 @@ public class RealtimeChannelHistory {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
-			Options txOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions txOpts = testVars.createOptions(testVars.keys[0].keyStr);
 			txAbly = new AblyRealtime(txOpts);
-			Options rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
 			rxAbly = new AblyRealtime(rxOpts);
 			String channelName = "persisted:channelhistory_from_attach";
 	

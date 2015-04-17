@@ -11,7 +11,7 @@ import io.ably.test.rest.RestSetup.Key;
 import io.ably.test.rest.RestSetup.TestVars;
 import io.ably.types.AblyException;
 import io.ably.types.Capability;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -23,7 +23,7 @@ public class RestCapability {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		TestVars testVars = RestSetup.getTestVars();
-		Options opts = testVars.createOptions(testVars.keys[0].keyStr);
+		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 		ably = new AblyRest(opts);
 	}
 

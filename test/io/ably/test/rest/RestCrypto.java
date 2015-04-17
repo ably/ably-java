@@ -10,7 +10,7 @@ import io.ably.test.rest.RestSetup.TestVars;
 import io.ably.types.AblyException;
 import io.ably.types.ChannelOptions;
 import io.ably.types.Message;
-import io.ably.types.Options;
+import io.ably.types.ClientOptions;
 import io.ably.types.PaginatedResult;
 import io.ably.util.Crypto;
 import io.ably.util.Crypto.CipherParams;
@@ -33,7 +33,7 @@ public class RestCrypto {
 	public static void setUpBeforeClass() throws Exception {
 		TestVars testVars = RestSetup.getTestVars();
 
-		Options opts_text = new Options(testVars.keys[0].keyStr);
+		ClientOptions opts_text = new ClientOptions(testVars.keys[0].keyStr);
 		opts_text.host = testVars.host;
 		opts_text.port = testVars.port;
 		opts_text.tlsPort = testVars.tlsPort;
@@ -41,7 +41,7 @@ public class RestCrypto {
 		opts_text.useBinaryProtocol = false;
 		ably_text = new AblyRest(opts_text);
 
-		Options opts_binary = new Options(testVars.keys[0].keyStr);
+		ClientOptions opts_binary = new ClientOptions(testVars.keys[0].keyStr);
 		opts_binary.host = testVars.host;
 		opts_binary.port = testVars.port;
 		opts_binary.tlsPort = testVars.tlsPort;
