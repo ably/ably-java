@@ -386,7 +386,7 @@ public class RestAuth {
 			final TestVars testVars = RestSetup.getTestVars();
 			Options optsForToken = testVars.createOptions(testVars.keys[0].keyStr);
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
-			TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, new TokenParams() {{ ttl = 4000L; }});
+			TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, new TokenParams() {{ ttl = 5000L; }});
 			assertNotNull("Expected token value", tokenDetails.token);
 
 			/* implement callback, using Ably instance with key */
@@ -410,7 +410,7 @@ public class RestAuth {
 
 			/* wait until token expires */
 			try {
-				Thread.sleep(5000L);
+				Thread.sleep(6000L);
 			} catch(InterruptedException ie) {}
 
 			/* make a request that relies on the token */
