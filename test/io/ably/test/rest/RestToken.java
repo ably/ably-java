@@ -189,10 +189,10 @@ public class RestToken {
 	public void authttl0() {
 		try {
 			TokenParams tokenParams = new TokenParams();
-			tokenParams.ttl = 100;
+			tokenParams.ttl = 100*1000;
 			TokenDetails tokenDetails = ably.auth.requestToken(null, tokenParams);
 			assertNotNull("Expected token value", tokenDetails.token);
-			assertEquals("Unexpected expires", tokenDetails.expires, tokenDetails.issuedAt + 100);
+			assertEquals("Unexpected expires", tokenDetails.expires, tokenDetails.issuedAt + 100*1000);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("authttl0: Unexpected exception");
