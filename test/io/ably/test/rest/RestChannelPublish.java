@@ -61,10 +61,10 @@ public class RestChannelPublish {
 		try {
 			PaginatedResult<Message> messages = publish0.history(null);
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 2 messages", messages.asArray().length, 2);
+			assertEquals("Expected 2 messages", messages.items().length, 2);
 			HashMap<String, Object> messageContents = new HashMap<String, Object>();
 			/* verify message contents */
-			for(Message message : messages.asArray())
+			for(Message message : messages.items())
 				messageContents.put(message.name, message.data);
 			assertEquals("Expect publish0 to be expected String", messageContents.get("publish0"), "This is a string message payload");
 			assertEquals("Expect publish1 to be expected byte[]", new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");
@@ -95,10 +95,10 @@ public class RestChannelPublish {
 		try {
 			PaginatedResult<Message> messages = publish1.history(null);
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 2 messages", messages.asArray().length, 2);
+			assertEquals("Expected 2 messages", messages.items().length, 2);
 			HashMap<String, Object> messageContents = new HashMap<String, Object>();
 			/* verify message contents */
-			for(Message message : messages.asArray())
+			for(Message message : messages.items())
 				messageContents.put(message.name, message.data);
 			assertEquals("Expect publish0 to be expected String", messageContents.get("publish0"), "This is a string message payload");
 			assertEquals("Expect publish1 to be expected byte[]", new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");

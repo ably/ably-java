@@ -1,19 +1,17 @@
 package io.ably.http;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import io.ably.http.Http.BodyHandler;
 import io.ably.http.Http.ResponseHandler;
 import io.ably.types.AblyException;
 import io.ably.types.PaginatedResult;
 import io.ably.types.Param;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * An object that encapsulates parameters of a REST query with a paginated response
@@ -69,21 +67,19 @@ public class PaginatedQuery<T> implements ResponseHandler {
 		}
 
 		@Override
-		public T[] asArray() { return contents; }
+		public T[] items() { return contents; }
 
 		@Override
-		public List<T> asList() { return Arrays.asList(contents); }
+		public PaginatedResult<T> first() throws AblyException { return getRel(relFirst); }
 
 		@Override
-		public Param[] getFirst() throws AblyException { return getRel(relFirst); }
+		public PaginatedResult<T> current() throws AblyException { return getRel(relCurrent); }
 
 		@Override
-		public Param[] getCurrent() throws AblyException { return getRel(relCurrent); }
+		public PaginatedResult<T> next() throws AblyException { return getRel(relNext); }
 
-		@Override
-		public Param[] getNext() throws AblyException { return getRel(relNext); }
-
-		private Param[] getRel(String linkUrl) throws AblyException {
+		@SuppressWarnings("unchecked")
+		private PaginatedResult<T> getRel(String linkUrl) throws AblyException {
 			if(linkUrl == null) return null;
 			/* we're expecting the format to be ./path-component?name=value&name=value... */
 			Matcher urlMatch = urlPattern.matcher(linkUrl);
@@ -96,12 +92,21 @@ public class PaginatedQuery<T> implements ResponseHandler {
 						params[i] = new Param(split[0], URLDecoder.decode(split[1], "UTF-8"));
 					}
 				} catch(UnsupportedEncodingException uee) {}
-				return params;
+				return (ResultPage)http.get(path, headers, params, PaginatedQuery.this);
 			}
 			throw new AblyException("Unexpected link URL format", 500, 50000);
 		}
 	
 		private String relFirst, relCurrent, relNext;
+
+		@Override
+		public boolean hasFirst() { return relFirst != null; }
+
+		@Override
+		public boolean hasCurrent() { return relCurrent != null; }
+
+		@Override
+		public boolean hasNext() { return relNext != null; }
 	}
 
 	@Override

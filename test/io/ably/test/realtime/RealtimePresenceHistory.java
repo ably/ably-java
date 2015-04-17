@@ -88,10 +88,10 @@ public class RealtimePresenceHistory {
 			/* get the presence history for this channel */
 			PaginatedResult<PresenceMessage> messages = channel.presence.history(null);
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 1 message", messages.asArray().length, 1);
+			assertEquals("Expected 1 message", messages.items().length, 1);
 
 			/* verify message contents */
-			assertEquals("Expect correct message text", messages.asArray()[0].data, messageText);
+			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("single_history_binary: Unexpected exception instantiating library");
@@ -139,10 +139,10 @@ public class RealtimePresenceHistory {
 			/* get the presence history for this channel */
 			PaginatedResult<PresenceMessage> messages = channel.presence.history(null);
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 1 message", messages.asArray().length, 1);
+			assertEquals("Expected 1 message", messages.items().length, 1);
 
 			/* verify message contents */
-			assertEquals("Expect correct message text", messages.asArray()[0].data, messageText);
+			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("presencehistory_simple_text: Unexpected exception instantiating library");
@@ -188,11 +188,11 @@ public class RealtimePresenceHistory {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> messages = channel.presence.history(null);
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 2 messages", messages.asArray().length, 2);
+			assertEquals("Expected 2 messages", messages.items().length, 2);
 
 			/* verify message contents and order */
-			assertEquals("Expect messages.asArray()[1] to be expected String", messages.asArray()[1].data, "This is a string message payload");
-			assertEquals("Expect messages.asArray()[0] to be expected byte[]", new String((byte[])messages.asArray()[0].data), "This is a byte[] message payload");
+			assertEquals("Expect messages.asArray()[1] to be expected String", messages.items()[1].data, "This is a string message payload");
+			assertEquals("Expect messages.asArray()[0] to be expected byte[]", new String((byte[])messages.items()[0].data), "This is a byte[] message payload");
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("presencehistory_types: Unexpected exception");
@@ -239,11 +239,11 @@ public class RealtimePresenceHistory {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> messages = channel.presence.history(null);
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 2 messages", messages.asArray().length, 2);
+			assertEquals("Expected 2 messages", messages.items().length, 2);
 
 			/* verify message contents and order */
-			assertEquals("Expect messages.asArray()[1] to be expected String", messages.asArray()[1].data, "This is a string message payload");
-			assertEquals("Expect messages.asArray()[0] to be expected byte[]", new String((byte[])messages.asArray()[0].data), "This is a byte[] message payload");
+			assertEquals("Expect messages.asArray()[1] to be expected String", messages.items()[1].data, "This is a string message payload");
+			assertEquals("Expect messages.asArray()[0] to be expected byte[]", new String((byte[])messages.items()[0].data), "This is a byte[] message payload");
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("presencehistory_types: Unexpected exception");
@@ -288,11 +288,11 @@ public class RealtimePresenceHistory {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> messages = channel.presence.history(new Param[]{new Param("direction", "forwards")});
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 2 messages", messages.asArray().length, 2);
+			assertEquals("Expected 2 messages", messages.items().length, 2);
 
 			/* verify message contents and order */
-			assertEquals("Expect messages.asArray()[0] to be expected String", messages.asArray()[0].data, "This is a string message payload");
-			assertEquals("Expect messages.asArray()[1] to be expected byte[]", new String((byte[])messages.asArray()[1].data), "This is a byte[] message payload");
+			assertEquals("Expect messages.asArray()[0] to be expected String", messages.items()[0].data, "This is a string message payload");
+			assertEquals("Expect messages.asArray()[1] to be expected byte[]", new String((byte[])messages.items()[1].data), "This is a byte[] message payload");
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("presencehistory_types: Unexpected exception");
@@ -347,10 +347,10 @@ public class RealtimePresenceHistory {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> messages = rxChannel.presence.history(null);
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 1 message", messages.asArray().length, 1);
+			assertEquals("Expected 1 message", messages.items().length, 1);
 
 			/* verify message contents */
-			assertEquals("Expect correct message text", messages.asArray()[0].data, messageText);
+			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
 	
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -403,10 +403,10 @@ public class RealtimePresenceHistory {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> messages = channel.presence.history(null);
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 1 message", messages.asArray().length, 1);
+			assertEquals("Expected 1 message", messages.items().length, 1);
 
 			/* verify message contents */
-			assertEquals("Expect correct message text", messages.asArray()[0].data, messageText);
+			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("single_history_binary: Unexpected exception instantiating library");
@@ -457,10 +457,10 @@ public class RealtimePresenceHistory {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> messages = channel.presence.history(null);
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 1 message", messages.asArray().length, 1);
+			assertEquals("Expected 1 message", messages.items().length, 1);
 
 			/* verify message contents */
-			assertEquals("Expect correct message text", messages.asArray()[0].data, messageText);
+			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("single_history_binary: Unexpected exception instantiating library");
@@ -510,10 +510,10 @@ public class RealtimePresenceHistory {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> messages = channel.presence.history(new Param[]{ new Param("direction", "forwards") });
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 1 message", messages.asArray().length, 1);
+			assertEquals("Expected 1 message", messages.items().length, 1);
 
 			/* verify message contents */
-			assertEquals("Expect correct message text", messages.asArray()[0].data, messageText);
+			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("presencehistory_wait_binary_f: Unexpected exception instantiating library");
@@ -567,11 +567,11 @@ public class RealtimePresenceHistory {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> messages = channel.presence.history(null);
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 2 messages", messages.asArray().length, 2);
+			assertEquals("Expected 2 messages", messages.items().length, 2);
 
 			/* verify message contents */
-			assertEquals("Expect correct message data", messages.asArray()[0].data, liveMessageText);
-			assertEquals("Expect correct message data", messages.asArray()[1].data, persistMessageText);
+			assertEquals("Expect correct message data", messages.items()[0].data, liveMessageText);
+			assertEquals("Expect correct message data", messages.items()[1].data, persistMessageText);
 
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -627,11 +627,11 @@ public class RealtimePresenceHistory {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> messages = channel.presence.history(new Param[]{ new Param("direction", "forwards") });
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 2 messages", messages.asArray().length, 2);
+			assertEquals("Expected 2 messages", messages.items().length, 2);
 
 			/* verify message contents */
-			assertEquals("Expect correct message data", messages.asArray()[0].data, persistMessageText);
-			assertEquals("Expect correct message data", messages.asArray()[1].data, liveMessageText);
+			assertEquals("Expect correct message data", messages.items()[0].data, persistMessageText);
+			assertEquals("Expect correct message data", messages.items()[1].data, liveMessageText);
 
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -682,11 +682,11 @@ public class RealtimePresenceHistory {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> messages = channel.presence.history(new Param[] { new Param("direction", "forwards"), new Param("limit", "25") });
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 25 messages", messages.asArray().length, 25);
+			assertEquals("Expected 25 messages", messages.items().length, 25);
 
 			/* verify message order */
 			for(int i = 0; i < 25; i++)
-				assertEquals("Expect correct message data", messages.asArray()[i].data, String.valueOf(i));
+				assertEquals("Expect correct message data", messages.items()[i].data, String.valueOf(i));
 
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -737,11 +737,11 @@ public class RealtimePresenceHistory {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> messages = channel.presence.history(new Param[] { new Param("direction", "backwards"), new Param("limit", "25") });
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 25 messages", messages.asArray().length, 25);
+			assertEquals("Expected 25 messages", messages.items().length, 25);
 
 			/* verify message order */
 			for(int i = 0; i < 25; i++)
-				assertEquals("Expect correct message data", messages.asArray()[i].data, String.valueOf(49 - i));
+				assertEquals("Expect correct message data", messages.items()[i].data, String.valueOf(49 - i));
 
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -802,11 +802,11 @@ public class RealtimePresenceHistory {
 				new Param("end", String.valueOf(intervalEnd + 500))
 			});
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 20 messages", messages.asArray().length, 20);
+			assertEquals("Expected 20 messages", messages.items().length, 20);
 
 			/* verify message order */
 			for(int i = 20; i < 40; i++)
-				assertEquals("Expect correct message data", messages.asArray()[i - 20].data, String.valueOf(i));
+				assertEquals("Expect correct message data", messages.items()[i - 20].data, String.valueOf(i));
 
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -869,11 +869,11 @@ public class RealtimePresenceHistory {
 				new Param("end", String.valueOf(intervalEnd + 500))
 			});
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 20 messages", messages.asArray().length, 20);
+			assertEquals("Expected 20 messages", messages.items().length, 20);
 
 			/* verify message order */
 			for(int i = 20; i < 40; i++)
-				assertEquals("Expect correct message data", messages.asArray()[i - 20].data, String.valueOf(59 - i));
+				assertEquals("Expect correct message data", messages.items()[i - 20].data, String.valueOf(59 - i));
 
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -927,29 +927,29 @@ public class RealtimePresenceHistory {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> messages = channel.presence.history(new Param[] { new Param("direction", "forwards"), new Param("limit", "10") });
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* verify message order */
 			for(int i = 0; i < 10; i++)
-				assertEquals("Expect correct message data", messages.asArray()[i].data, String.valueOf(i));
+				assertEquals("Expect correct message data", messages.items()[i].data, String.valueOf(i));
 
 			/* get next page */
-			messages = channel.presence.history(messages.getNext());
+			messages = messages.next();
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* verify message order */
 			for(int i = 0; i < 10; i++)
-				assertEquals("Expect correct message data", messages.asArray()[i].data, String.valueOf(i + 10));
+				assertEquals("Expect correct message data", messages.items()[i].data, String.valueOf(i + 10));
 
 			/* get next page */
-			messages = channel.presence.history(messages.getNext());
+			messages = messages.next();
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* verify message order */
 			for(int i = 0; i < 10; i++)
-				assertEquals("Expect correct message data", messages.asArray()[i].data, String.valueOf(i + 20));
+				assertEquals("Expect correct message data", messages.items()[i].data, String.valueOf(i + 20));
 
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -1000,29 +1000,29 @@ public class RealtimePresenceHistory {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> messages = channel.presence.history(new Param[] { new Param("direction", "backwards"), new Param("limit", "10") });
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* verify message order */
 			for(int i = 0; i < 10; i++)
-				assertEquals("Expect correct message data", messages.asArray()[i].data, String.valueOf(49 - i));
+				assertEquals("Expect correct message data", messages.items()[i].data, String.valueOf(49 - i));
 
 			/* get next page */
-			messages = channel.presence.history(messages.getNext());
+			messages = messages.next();
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* verify message order */
 			for(int i = 0; i < 10; i++)
-				assertEquals("Expect correct message data", messages.asArray()[i].data, String.valueOf(39 - i));
+				assertEquals("Expect correct message data", messages.items()[i].data, String.valueOf(39 - i));
 
 			/* get next page */
-			messages = channel.presence.history(messages.getNext());
+			messages = messages.next();
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* verify message order */
 			for(int i = 0; i < 10; i++)
-				assertEquals("Expect correct message data", messages.asArray()[i].data, String.valueOf(29 - i));
+				assertEquals("Expect correct message data", messages.items()[i].data, String.valueOf(29 - i));
 
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -1073,29 +1073,29 @@ public class RealtimePresenceHistory {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> messages = channel.presence.history(new Param[] { new Param("direction", "forwards"), new Param("limit", "10") });
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* verify message order */
 			for(int i = 0; i < 10; i++)
-				assertEquals("Expect correct message data", messages.asArray()[i].data, String.valueOf(i));
+				assertEquals("Expect correct message data", messages.items()[i].data, String.valueOf(i));
 
 			/* get next page */
-			messages = channel.presence.history(messages.getNext());
+			messages = messages.next();
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* verify message order */
 			for(int i = 0; i < 10; i++)
-				assertEquals("Expect correct message data", messages.asArray()[i].data, String.valueOf(i + 10));
+				assertEquals("Expect correct message data", messages.items()[i].data, String.valueOf(i + 10));
 
 			/* get first page */
-			messages = channel.presence.history(messages.getFirst());
+			messages = messages.first();
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* verify message order */
 			for(int i = 0; i < 10; i++)
-				assertEquals("Expect correct message data", messages.asArray()[i].data, String.valueOf(i));
+				assertEquals("Expect correct message data", messages.items()[i].data, String.valueOf(i));
 
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -1146,29 +1146,29 @@ public class RealtimePresenceHistory {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> messages = channel.presence.history(new Param[] { new Param("direction", "backwards"), new Param("limit", "10") });
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* verify message order */
 			for(int i = 0; i < 10; i++)
-				assertEquals("Expect correct message data", messages.asArray()[i].data, String.valueOf(49 - i));
+				assertEquals("Expect correct message data", messages.items()[i].data, String.valueOf(49 - i));
 
 			/* get next page */
-			messages = channel.presence.history(messages.getNext());
+			messages = messages.next();
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* verify message order */
 			for(int i = 0; i < 10; i++)
-				assertEquals("Expect correct message data", messages.asArray()[i].data, String.valueOf(39 - i));
+				assertEquals("Expect correct message data", messages.items()[i].data, String.valueOf(39 - i));
 
 			/* get first page */
-			messages = channel.presence.history(messages.getFirst());
+			messages = messages.first();
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* verify message order */
 			for(int i = 0; i < 10; i++)
-				assertEquals("Expect correct message data", messages.asArray()[i].data, String.valueOf(49 - i));
+				assertEquals("Expect correct message data", messages.items()[i].data, String.valueOf(49 - i));
 
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -1266,11 +1266,11 @@ public class RealtimePresenceHistory {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> messages = rxChannel.presence.history(new Param[] { new Param("from_serial", rxChannel.attachSerial)});
 			assertNotNull("Expected non-null messages", messages);
-			assertTrue("Expected at least one message", messages.asArray().length >= 1);
+			assertTrue("Expected at least one message", messages.items().length >= 1);
 
 			/* verify that the history and received messages meet */
 			int earliestReceivedOnConnection = Integer.valueOf((String)firstReceivedRealtimeMessage.data);
-			int latestReceivedInHistory = Integer.valueOf((String)messages.asArray()[0].data);
+			int latestReceivedInHistory = Integer.valueOf((String)messages.items()[0].data);
 			assertEquals("Verify that the history and received messages meet", earliestReceivedOnConnection, latestReceivedInHistory + 1);
 	
 		} catch (AblyException e) {

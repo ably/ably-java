@@ -982,7 +982,7 @@ public class RealtimePresence {
 			assertTrue("Verify enter callback called on completion", enterComplete.success);
 
 			/* get presence set and verify client present */
-			PresenceMessage[] presences = restPresenceChannel.presence.get(null).asArray();
+			PresenceMessage[] presences = restPresenceChannel.presence.get(null).items();
 			PresenceMessage expectedPresent = contains(presences, testClientId1, Action.PRESENT);
 			assertNotNull("Verify expected client is in presence set", expectedPresent);
 			assertEquals(expectedPresent.data, enterString);
@@ -1041,7 +1041,7 @@ public class RealtimePresence {
 			assertTrue("Verify leave callback called on completion", leaveComplete.success);
 
 			/* get presence set and verify client absent */
-			PresenceMessage[] presences = restPresenceChannel.presence.get(null).asArray();
+			PresenceMessage[] presences = restPresenceChannel.presence.get(null).items();
 			assertNull("Verify expected client is in presence set", contains(presences, testClientId1));
 
 		} catch(AblyException e) {
@@ -1099,7 +1099,7 @@ public class RealtimePresence {
 			assertTrue("Verify enter callback called on completion", enter2Complete.success);
 
 			/* get presence set and verify client present */
-			PresenceMessage[] presences = restPresenceChannel.presence.get(null).asArray();
+			PresenceMessage[] presences = restPresenceChannel.presence.get(null).items();
 			PresenceMessage expectedPresent1 = contains(presences, testClientId1, Action.PRESENT);
 			PresenceMessage expectedPresent2 = contains(presences, testClientId2, Action.PRESENT);
 			assertNotNull("Verify expected clients are in presence set", expectedPresent1);
@@ -1156,38 +1156,38 @@ public class RealtimePresence {
 			HashMap<String, PresenceMessage> memberIndex = new HashMap<String, PresenceMessage>();
 			PaginatedResult<PresenceMessage> members = restPresenceChannel.presence.get(new Param[] { new Param("limit", "10") });
 			assertNotNull("Expected non-null messages", members);
-			assertEquals("Expected 10 messages", members.asArray().length, 10);
+			assertEquals("Expected 10 messages", members.items().length, 10);
 
 			/* index received messages */
 			for(int i = 0; i < 10; i++) {
-				PresenceMessage member = members.asArray()[i];
+				PresenceMessage member = members.items()[i];
 				memberIndex.put(member.clientId, member);
 			}
 
 			/* get next page */
-			members = restPresenceChannel.presence.get(members.getNext());
+			members = members.next();
 			assertNotNull("Expected non-null messages", members);
-			assertEquals("Expected 10 messages", members.asArray().length, 10);
+			assertEquals("Expected 10 messages", members.items().length, 10);
 
 			/* index received messages */
 			for(int i = 0; i < 10; i++) {
-				PresenceMessage member = members.asArray()[i];
+				PresenceMessage member = members.items()[i];
 				memberIndex.put(member.clientId, member);
 			}
 
 			/* get next page */
-			members = restPresenceChannel.presence.get(members.getNext());
+			members = members.next();
 			assertNotNull("Expected non-null messages", members);
-			assertEquals("Expected 10 messages", members.asArray().length, 10);
+			assertEquals("Expected 10 messages", members.items().length, 10);
 
 			/* index received messages */
 			for(int i = 0; i < 10; i++) {
-				PresenceMessage member = members.asArray()[i];
+				PresenceMessage member = members.items()[i];
 				memberIndex.put(member.clientId, member);
 			}
 
 			/* verify there is no next page */
-			assertNull("Expected null next page", members.getNext());
+			assertFalse("Expected null next page", members.hasNext());
 
 			/* verify that all clientIds were received */
 			assertEquals("Expected " + clientCount + " members", memberIndex.size(), clientCount);

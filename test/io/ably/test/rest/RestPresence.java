@@ -64,7 +64,7 @@ public class RestPresence {
 		/* get channel */
 		Channel channel = ably_text.channels.get("restpresence_notpersisted");
 		try {
-			PresenceMessage[] members = channel.presence.get(null).asArray();
+			PresenceMessage[] members = channel.presence.get(null).items();
 			assertNotNull("Expected non-null messages", members);
 			assertEquals("Expected 1 message", members.length, 1);
 
@@ -85,7 +85,7 @@ public class RestPresence {
 		/* get channel */
 		Channel channel = ably_binary.channels.get("restpresence_notpersisted");
 		try {
-			PresenceMessage[] members = channel.presence.get(null).asArray();
+			PresenceMessage[] members = channel.presence.get(null).items();
 			assertNotNull("Expected non-null messages", members);
 			assertEquals("Expected 1 message", members.length, 1);
 
@@ -109,11 +109,11 @@ public class RestPresence {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> members = channel.presence.history(new Param[]{ new Param("direction", "forwards") });
 			assertNotNull("Expected non-null messages", members);
-			assertEquals("Expected 4 messages", members.asArray().length, 4);
+			assertEquals("Expected 4 messages", members.items().length, 4);
 
 			/* verify presence contents */
 			HashMap<String, Object> memberData = new HashMap<String, Object>();
-			for(PresenceMessage member : members.asArray())
+			for(PresenceMessage member : members.items())
 				memberData.put(member.clientId, member.data);
 			assertEquals("Expect client_string_0 to be expected String", memberData.get("client_string_0"), "This is a string data payload");
 		} catch(AblyException e) {
@@ -134,11 +134,11 @@ public class RestPresence {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> members = channel.presence.history(new Param[]{ new Param("direction", "forwards") });
 			assertNotNull("Expected non-null messages", members);
-			assertEquals("Expected 4 messages", members.asArray().length, 4);
+			assertEquals("Expected 4 messages", members.items().length, 4);
 
 			/* verify presence contents */
 			HashMap<String, Object> memberData = new HashMap<String, Object>();
-			for(PresenceMessage member : members.asArray())
+			for(PresenceMessage member : members.items())
 				memberData.put(member.clientId, member.data);
 			assertEquals("Expect client_string_0 to be expected String", memberData.get("client_string_0"), "This is a string data payload");
 		} catch(AblyException e) {
@@ -159,11 +159,11 @@ public class RestPresence {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> members = channel.presence.history(new Param[]{ new Param("direction", "forwards") });
 			assertNotNull("Expected non-null messages", members);
-			assertEquals("Expected 4 messages", members.asArray().length, 4);
+			assertEquals("Expected 4 messages", members.items().length, 4);
 
 			/* verify message order */
-			for(int i = 0; i < members.asArray().length; i++) {
-				PresenceMessage member = members.asArray()[i];
+			for(int i = 0; i < members.items().length; i++) {
+				PresenceMessage member = members.items()[i];
 				assertEquals("Verify expected member (" + i + ')', clientIds[i], member.clientId);
 			}
 		} catch(AblyException e) {
@@ -184,11 +184,11 @@ public class RestPresence {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> members = channel.presence.history(new Param[]{ new Param("direction", "backwards") });
 			assertNotNull("Expected non-null messages", members);
-			assertEquals("Expected 4 messages", members.asArray().length, 4);
+			assertEquals("Expected 4 messages", members.items().length, 4);
 
 			/* verify message order */
-			for(int i = 0; i < members.asArray().length; i++) {
-				PresenceMessage member = members.asArray()[i];
+			for(int i = 0; i < members.items().length; i++) {
+				PresenceMessage member = members.items()[i];
 				assertEquals("Verify expected member (" + i + ')', clientIds[3 - i], member.clientId);
 			}
 		} catch(AblyException e) {
@@ -209,11 +209,11 @@ public class RestPresence {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> members = channel.presence.history(new Param[]{ new Param("direction", "forwards"), new Param("limit", "2") });
 			assertNotNull("Expected non-null messages", members);
-			assertEquals("Expected 2 messages", members.asArray().length, 2);
+			assertEquals("Expected 2 messages", members.items().length, 2);
 
 			/* verify message order */
-			for(int i = 0; i < members.asArray().length; i++) {
-				PresenceMessage member = members.asArray()[i];
+			for(int i = 0; i < members.items().length; i++) {
+				PresenceMessage member = members.items()[i];
 				assertEquals("Verify expected member (" + i + ')', clientIds[i], member.clientId);
 			}
 		} catch(AblyException e) {
@@ -234,11 +234,11 @@ public class RestPresence {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> members = channel.presence.history(new Param[]{ new Param("direction", "backwards"), new Param("limit", "2") });
 			assertNotNull("Expected non-null messages", members);
-			assertEquals("Expected 2 messages", members.asArray().length, 2);
+			assertEquals("Expected 2 messages", members.items().length, 2);
 
 			/* verify message order */
-			for(int i = 0; i < members.asArray().length; i++) {
-				PresenceMessage member = members.asArray()[i];
+			for(int i = 0; i < members.items().length; i++) {
+				PresenceMessage member = members.items()[i];
 				assertEquals("Verify expected member (" + i + ')', clientIds[3 - i], member.clientId);
 			}
 		} catch(AblyException e) {
@@ -259,54 +259,50 @@ public class RestPresence {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> members = channel.presence.history(new Param[]{ new Param("direction", "forwards"), new Param("limit", "1") });
 			assertNotNull("Expected non-null messages", members);
-			assertEquals("Expected 1 message", members.asArray().length, 1);
+			assertEquals("Expected 1 message", members.items().length, 1);
 
 			/* verify message order */
-			for(int i = 0; i < members.asArray().length; i++) {
-				PresenceMessage member = members.asArray()[i];
+			for(int i = 0; i < members.items().length; i++) {
+				PresenceMessage member = members.items()[i];
 				assertEquals("Verify expected member (" + i + ')', clientIds[i], member.clientId);
 			}
 
 			/* get next page */
-			members = channel.presence.history(members.getNext());
+			members = members.next();
 			assertNotNull("Expected non-null messages", members);
-			assertEquals("Expected 1 message", members.asArray().length, 1);
+			assertEquals("Expected 1 message", members.items().length, 1);
 
 			/* verify message order */
-			for(int i = 0; i < members.asArray().length; i++) {
-				PresenceMessage member = members.asArray()[i];
+			for(int i = 0; i < members.items().length; i++) {
+				PresenceMessage member = members.items()[i];
 				assertEquals("Verify expected member (" + i + ')', clientIds[1 + i], member.clientId);
 			}
 
 			/* get next page */
-			members = channel.presence.history(members.getNext());
+			members = members.next();
 			assertNotNull("Expected non-null messages", members);
-			assertEquals("Expected 1 message", members.asArray().length, 1);
+			assertEquals("Expected 1 message", members.items().length, 1);
 
 			/* verify message order */
-			for(int i = 0; i < members.asArray().length; i++) {
-				PresenceMessage member = members.asArray()[i];
+			for(int i = 0; i < members.items().length; i++) {
+				PresenceMessage member = members.items()[i];
 				assertEquals("Verify expected member (" + i + ')', clientIds[2 + i], member.clientId);
 			}
 
 			/* get next page */
-			members = channel.presence.history(members.getNext());
+			members = members.next();
 			assertNotNull("Expected non-null messages", members);
-			assertEquals("Expected 1 message", members.asArray().length, 1);
+			assertEquals("Expected 1 message", members.items().length, 1);
 
 			/* verify message order */
-			for(int i = 0; i < members.asArray().length; i++) {
-				PresenceMessage member = members.asArray()[i];
+			for(int i = 0; i < members.items().length; i++) {
+				PresenceMessage member = members.items()[i];
 				assertEquals("Verify expected member (" + i + ')', clientIds[3 + i], member.clientId);
 			}
 
 			/* verify there are no further results */
-			Param[] next = members.getNext();
-			if(next != null) {
-				members = channel.presence.history(next);
-				if(members.asArray().length > 0)
-					fail("Expected no further members");
-			}
+			if(members.hasNext())
+				fail("Expected no further members");
 
 		} catch(AblyException e) {
 			e.printStackTrace();
@@ -326,54 +322,50 @@ public class RestPresence {
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> members = channel.presence.history(new Param[]{ new Param("direction", "backwards"), new Param("limit", "1") });
 			assertNotNull("Expected non-null messages", members);
-			assertEquals("Expected 1 message", members.asArray().length, 1);
+			assertEquals("Expected 1 message", members.items().length, 1);
 
 			/* verify message order */
-			for(int i = 0; i < members.asArray().length; i++) {
-				PresenceMessage member = members.asArray()[i];
+			for(int i = 0; i < members.items().length; i++) {
+				PresenceMessage member = members.items()[i];
 				assertEquals("Verify expected member (" + i + ')', clientIds[3 - i], member.clientId);
 			}
 
 			/* get next page */
-			members = channel.presence.history(members.getNext());
+			members = members.next();
 			assertNotNull("Expected non-null messages", members);
-			assertEquals("Expected 1 messages", members.asArray().length, 1);
+			assertEquals("Expected 1 messages", members.items().length, 1);
 
 			/* verify message order */
-			for(int i = 0; i < members.asArray().length; i++) {
-				PresenceMessage member = members.asArray()[i];
+			for(int i = 0; i < members.items().length; i++) {
+				PresenceMessage member = members.items()[i];
 				assertEquals("Verify expected member (" + i + ')', clientIds[2 - i], member.clientId);
 			}
 
 			/* get next page */
-			members = channel.presence.history(members.getNext());
+			members = members.next();
 			assertNotNull("Expected non-null messages", members);
-			assertEquals("Expected 1 message", members.asArray().length, 1);
+			assertEquals("Expected 1 message", members.items().length, 1);
 
 			/* verify message order */
-			for(int i = 0; i < members.asArray().length; i++) {
-				PresenceMessage member = members.asArray()[i];
+			for(int i = 0; i < members.items().length; i++) {
+				PresenceMessage member = members.items()[i];
 				assertEquals("Verify expected member (" + i + ')', clientIds[1 - i], member.clientId);
 			}
 
 			/* get next page */
-			members = channel.presence.history(members.getNext());
+			members = members.next();
 			assertNotNull("Expected non-null messages", members);
-			assertEquals("Expected 1 message", members.asArray().length, 1);
+			assertEquals("Expected 1 message", members.items().length, 1);
 
 			/* verify message order */
-			for(int i = 0; i < members.asArray().length; i++) {
-				PresenceMessage member = members.asArray()[i];
+			for(int i = 0; i < members.items().length; i++) {
+				PresenceMessage member = members.items()[i];
 				assertEquals("Verify expected member (" + i + ')', clientIds[0 - i], member.clientId);
 			}
 
 			/* verify there are no further results */
-			Param[] next = members.getNext();
-			if(next != null) {
-				members = channel.presence.history(next);
-				if(members.asArray().length > 0)
-					fail("Expected no further members");
-			}
+			if(members.hasNext())
+				fail("Expected no further members");
 
 		} catch(AblyException e) {
 			e.printStackTrace();

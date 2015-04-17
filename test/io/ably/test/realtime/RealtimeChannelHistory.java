@@ -72,10 +72,10 @@ public class RealtimeChannelHistory {
 			/* get the history for this channel */
 			PaginatedResult<Message> messages = channel.history(null);
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 1 message", messages.asArray().length, 1);
+			assertEquals("Expected 1 message", messages.items().length, 1);
 
 			/* verify message contents */
-			assertEquals("Expect correct message text", messages.asArray()[0].data, messageText);
+			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("single_history_binary: Unexpected exception instantiating library");
@@ -120,10 +120,10 @@ public class RealtimeChannelHistory {
 			/* get the history for this channel */
 			PaginatedResult<Message> messages = channel.history(null);
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 1 message", messages.asArray().length, 1);
+			assertEquals("Expected 1 message", messages.items().length, 1);
 
 			/* verify message contents */
-			assertEquals("Expect correct message text", messages.asArray()[0].data, messageText);
+			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("single_history_binary: Unexpected exception instantiating library");
@@ -165,11 +165,11 @@ public class RealtimeChannelHistory {
 			/* get the history for this channel */
 			PaginatedResult<Message> messages = channel.history(null);
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 2 messages", messages.asArray().length, 2);
+			assertEquals("Expected 2 messages", messages.items().length, 2);
 			HashMap<String, Message> messageContents = new HashMap<String, Message>();
 
 			/* verify message contents */
-			for(Message message : messages.asArray())
+			for(Message message : messages.items())
 				messageContents.put(message.name, message);
 			assertEquals("Expect history0 to be expected String", messageContents.get("history0").data, "This is a string message payload");
 			assertEquals("Expect history1 to be expected byte[]", new String((byte[])messageContents.get("history1").data), "This is a byte[] message payload");
@@ -179,7 +179,7 @@ public class RealtimeChannelHistory {
 				messageContents.get("history1"),
 				messageContents.get("history0")
 			};
-			Assert.assertArrayEquals("Expect messages in reverse order", messages.asArray(), expectedMessageHistory);
+			Assert.assertArrayEquals("Expect messages in reverse order", messages.items(), expectedMessageHistory);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("channelhistory_types: Unexpected exception");
@@ -222,11 +222,11 @@ public class RealtimeChannelHistory {
 			/* get the history for this channel */
 			PaginatedResult<Message> messages = channel.history(null);
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 2 messages", messages.asArray().length, 2);
+			assertEquals("Expected 2 messages", messages.items().length, 2);
 			HashMap<String, Message> messageContents = new HashMap<String, Message>();
 
 			/* verify message contents */
-			for(Message message : messages.asArray())
+			for(Message message : messages.items())
 				messageContents.put(message.name, message);
 			assertEquals("Expect history0 to be expected String", messageContents.get("history0").data, "This is a string message payload");
 			assertEquals("Expect history1 to be expected byte[]", new String((byte[])messageContents.get("history1").data), "This is a byte[] message payload");
@@ -236,7 +236,7 @@ public class RealtimeChannelHistory {
 				messageContents.get("history1"),
 				messageContents.get("history0")
 			};
-			Assert.assertArrayEquals("Expect messages in reverse order", messages.asArray(), expectedMessageHistory);
+			Assert.assertArrayEquals("Expect messages in reverse order", messages.items(), expectedMessageHistory);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("channelhistory_types: Unexpected exception");
@@ -278,11 +278,11 @@ public class RealtimeChannelHistory {
 			/* get the history for this channel */
 			PaginatedResult<Message> messages = channel.history(new Param[] { new Param("direction", "forwards") });
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 2 messages", messages.asArray().length, 2);
+			assertEquals("Expected 2 messages", messages.items().length, 2);
 			HashMap<String, Message> messageContents = new HashMap<String, Message>();
 
 			/* verify message contents */
-			for(Message message : messages.asArray())
+			for(Message message : messages.items())
 				messageContents.put(message.name, message);
 			assertEquals("Expect history0 to be expected String", messageContents.get("history0").data, "This is a string message payload");
 			assertEquals("Expect history1 to be expected byte[]", new String((byte[])messageContents.get("history1").data), "This is a byte[] message payload");
@@ -292,7 +292,7 @@ public class RealtimeChannelHistory {
 				messageContents.get("history0"),
 				messageContents.get("history1")
 			};
-			Assert.assertArrayEquals("Expect messages in sent order", messages.asArray(), expectedMessageHistory);
+			Assert.assertArrayEquals("Expect messages in sent order", messages.items(), expectedMessageHistory);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("channelhistory_types_forward: Unexpected exception");
@@ -345,10 +345,10 @@ public class RealtimeChannelHistory {
 			/* get the history for this channel */
 			PaginatedResult<Message> messages = rxChannel.history(null);
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 1 message", messages.asArray().length, 1);
+			assertEquals("Expected 1 message", messages.items().length, 1);
 
 			/* verify message contents */
-			assertEquals("Expect correct message text", messages.asArray()[0].data, messageText);
+			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
 	
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -400,10 +400,10 @@ public class RealtimeChannelHistory {
 			/* get the history for this channel */
 			PaginatedResult<Message> messages = channel.history(null);
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 1 message", messages.asArray().length, 1);
+			assertEquals("Expected 1 message", messages.items().length, 1);
 
 			/* verify message contents */
-			assertEquals("Expect correct message text", messages.asArray()[0].data, messageText);
+			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("single_history_binary: Unexpected exception instantiating library");
@@ -453,10 +453,10 @@ public class RealtimeChannelHistory {
 			/* get the history for this channel */
 			PaginatedResult<Message> messages = channel.history(null);
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 1 message", messages.asArray().length, 1);
+			assertEquals("Expected 1 message", messages.items().length, 1);
 
 			/* verify message contents */
-			assertEquals("Expect correct message text", messages.asArray()[0].data, messageText);
+			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("single_history_binary: Unexpected exception instantiating library");
@@ -505,10 +505,10 @@ public class RealtimeChannelHistory {
 			/* get the history for this channel */
 			PaginatedResult<Message> messages = channel.history(new Param[]{ new Param("direction", "forwards") });
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 1 message", messages.asArray().length, 1);
+			assertEquals("Expected 1 message", messages.items().length, 1);
 
 			/* verify message contents */
-			assertEquals("Expect correct message text", messages.asArray()[0].data, messageText);
+			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("single_history_binary: Unexpected exception instantiating library");
@@ -563,13 +563,13 @@ public class RealtimeChannelHistory {
 			/* get the history for this channel */
 			PaginatedResult<Message> messages = channel.history(null);
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 2 messages", messages.asArray().length, 2);
+			assertEquals("Expected 2 messages", messages.items().length, 2);
 
 			/* verify message contents */
-			assertEquals("Expect correct message event", messages.asArray()[0].name, liveEventName);
-			assertEquals("Expect correct message text", messages.asArray()[0].data, messageText);
-			assertEquals("Expect correct message event", messages.asArray()[1].name, persistEventName);
-			assertEquals("Expect correct message text", messages.asArray()[1].data, messageText);
+			assertEquals("Expect correct message event", messages.items()[0].name, liveEventName);
+			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
+			assertEquals("Expect correct message event", messages.items()[1].name, persistEventName);
+			assertEquals("Expect correct message text", messages.items()[1].data, messageText);
 
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -626,13 +626,13 @@ public class RealtimeChannelHistory {
 			/* get the history for this channel */
 			PaginatedResult<Message> messages = channel.history(new Param[]{ new Param("direction", "forwards") });
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 2 messages", messages.asArray().length, 2);
+			assertEquals("Expected 2 messages", messages.items().length, 2);
 
 			/* verify message contents */
-			assertEquals("Expect correct message event", messages.asArray()[0].name, persistEventName);
-			assertEquals("Expect correct message text", messages.asArray()[0].data, messageText);
-			assertEquals("Expect correct message event", messages.asArray()[1].name, liveEventName);
-			assertEquals("Expect correct message text", messages.asArray()[1].data, messageText);
+			assertEquals("Expect correct message event", messages.items()[0].name, persistEventName);
+			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
+			assertEquals("Expect correct message event", messages.items()[1].name, liveEventName);
+			assertEquals("Expect correct message text", messages.items()[1].data, messageText);
 
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -682,15 +682,15 @@ public class RealtimeChannelHistory {
 			/* get the history for this channel */
 			PaginatedResult<Message> messages = channel.history(new Param[] { new Param("direction", "forwards"), new Param("limit", "25") });
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 25 messages", messages.asArray().length, 25);
+			assertEquals("Expected 25 messages", messages.items().length, 25);
 			HashMap<String, Message> messageContents = new HashMap<String, Message>();
-			for(Message message : messages.asArray())
+			for(Message message : messages.items())
 				messageContents.put(message.name, message);
 			/* verify message order */
 			Message[] expectedMessageHistory = new Message[25];
 			for(int i = 0; i < 25; i++)
 				expectedMessageHistory[i] = messageContents.get("history" + i);
-			Assert.assertArrayEquals("Expect messages in forward order", messages.asArray(), expectedMessageHistory);
+			Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("channelhistory_limit_f: Unexpected exception");
@@ -739,16 +739,16 @@ public class RealtimeChannelHistory {
 			/* get the history for this channel */
 			PaginatedResult<Message> messages = channel.history(new Param[] { new Param("direction", "backwards"), new Param("limit", "25") });
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 25 messages", messages.asArray().length, 25);
+			assertEquals("Expected 25 messages", messages.items().length, 25);
 			HashMap<String, Message> messageContents = new HashMap<String, Message>();
-			for(Message message : messages.asArray())
+			for(Message message : messages.items())
 				messageContents.put(message.name, message);
 
 			/* verify message order */
 			Message[] expectedMessageHistory = new Message[25];
 			for(int i = 0; i < 25; i++)
 				expectedMessageHistory[i] = messageContents.get("history" + (49 - i));
-			Assert.assertArrayEquals("Expect messages in backward order", messages.asArray(), expectedMessageHistory);
+			Assert.assertArrayEquals("Expect messages in backward order", messages.items(), expectedMessageHistory);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("channelhistory_limit_b: Unexpected exception");
@@ -810,15 +810,15 @@ public class RealtimeChannelHistory {
 				new Param("end", String.valueOf(intervalEnd + 500))
 			});
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 20 messages", messages.asArray().length, 20);
+			assertEquals("Expected 20 messages", messages.items().length, 20);
 			HashMap<String, Message> messageContents = new HashMap<String, Message>();
-			for(Message message : messages.asArray())
+			for(Message message : messages.items())
 				messageContents.put(message.name, message);
 			/* verify message order */
 			Message[] expectedMessageHistory = new Message[20];
 			for(int i = 20; i < 40; i++)
 				expectedMessageHistory[i - 20] = messageContents.get("history" + i);
-			Assert.assertArrayEquals("Expect messages in forward order", messages.asArray(), expectedMessageHistory);
+			Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("channelhistory_time_f: Unexpected exception");
@@ -882,15 +882,15 @@ public class RealtimeChannelHistory {
 				new Param("end", String.valueOf(intervalEnd + 500))
 			});
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 20 messages", messages.asArray().length, 20);
+			assertEquals("Expected 20 messages", messages.items().length, 20);
 			HashMap<String, Message> messageContents = new HashMap<String, Message>();
-			for(Message message : messages.asArray())
+			for(Message message : messages.items())
 				messageContents.put(message.name, message);
 			/* verify message order */
 			Message[] expectedMessageHistory = new Message[20];
 			for(int i = 20; i < 40; i++)
 				expectedMessageHistory[i - 20] = messageContents.get("history" + (59 - i));
-			Assert.assertArrayEquals("Expect messages in backwards order", messages.asArray(), expectedMessageHistory);
+			Assert.assertArrayEquals("Expect messages in backwards order", messages.items(), expectedMessageHistory);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("channelhistory_time_b: Unexpected exception");
@@ -942,46 +942,46 @@ public class RealtimeChannelHistory {
 			/* get the history for this channel */
 			PaginatedResult<Message> messages = channel.history(new Param[] { new Param("direction", "forwards"), new Param("limit", "10") });
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* log all messages */
 			HashMap<String, Message> messageContents = new HashMap<String, Message>();
-			for(Message message : messages.asArray())
+			for(Message message : messages.items())
 				messageContents.put(message.name, message);
 
 			/* verify message order */
 			Message[] expectedMessageHistory = new Message[10];
 			for(int i = 0; i < 10; i++)
 				expectedMessageHistory[i] = messageContents.get("history" + i);
-			Assert.assertArrayEquals("Expect messages in forward order", messages.asArray(), expectedMessageHistory);
+			Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
 			/* get next page */
-			messages = channel.history(messages.getNext());
+			messages = messages.next();
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* log all messages */
-			for(Message message : messages.asArray())
+			for(Message message : messages.items())
 				messageContents.put(message.name, message);
 
 			/* verify message order */
 			for(int i = 0; i < 10; i++)
 				expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(i + 10));
-			Assert.assertArrayEquals("Expect messages in forward order", messages.asArray(), expectedMessageHistory);
+			Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
 			/* get next page */
-			messages = channel.history(messages.getNext());
+			messages = messages.next();
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* log all messages */
-			for(Message message : messages.asArray())
+			for(Message message : messages.items())
 				messageContents.put(message.name, message);
 
 			/* verify message order */
 			for(int i = 0; i < 10; i++)
 				expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(i + 20));
-			Assert.assertArrayEquals("Expect messages in forward order", messages.asArray(), expectedMessageHistory);
+			Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -1031,46 +1031,46 @@ public class RealtimeChannelHistory {
 			/* get the history for this channel */
 			PaginatedResult<Message> messages = channel.history(new Param[] { new Param("direction", "backwards"), new Param("limit", "10") });
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* log all messages */
 			HashMap<String, Message> messageContents = new HashMap<String, Message>();
-			for(Message message : messages.asArray())
+			for(Message message : messages.items())
 				messageContents.put(message.name, message);
 
 			/* verify message order */
 			Message[] expectedMessageHistory = new Message[10];
 			for(int i = 0; i < 10; i++)
 				expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(49 - i));
-			Assert.assertArrayEquals("Expect messages in forward order", messages.asArray(), expectedMessageHistory);
+			Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
 			/* get next page */
-			messages = channel.history(messages.getNext());
+			messages = messages.next();
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* log all messages */
-			for(Message message : messages.asArray())
+			for(Message message : messages.items())
 				messageContents.put(message.name, message);
 
 			/* verify message order */
 			for(int i = 0; i < 10; i++)
 				expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(39 - i));
-			Assert.assertArrayEquals("Expect messages in forward order", messages.asArray(), expectedMessageHistory);
+			Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
 			/* get next page */
-			messages = channel.history(messages.getNext());
+			messages = messages.next();
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* log all messages */
-			for(Message message : messages.asArray())
+			for(Message message : messages.items())
 				messageContents.put(message.name, message);
 
 			/* verify message order */
 			for(int i = 0; i < 10; i++)
 				expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(29 - i));
-			Assert.assertArrayEquals("Expect messages in forward order", messages.asArray(), expectedMessageHistory);
+			Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -1120,46 +1120,46 @@ public class RealtimeChannelHistory {
 			/* get the history for this channel */
 			PaginatedResult<Message> messages = channel.history(new Param[] { new Param("direction", "forwards"), new Param("limit", "10") });
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* log all messages */
 			HashMap<String, Message> messageContents = new HashMap<String, Message>();
-			for(Message message : messages.asArray())
+			for(Message message : messages.items())
 				messageContents.put(message.name, message);
 
 			/* verify message order */
 			Message[] expectedMessageHistory = new Message[10];
 			for(int i = 0; i < 10; i++)
 				expectedMessageHistory[i] = messageContents.get("history" + i);
-			Assert.assertArrayEquals("Expect messages in forward order", messages.asArray(), expectedMessageHistory);
+			Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
 			/* get next page */
-			messages = channel.history(messages.getNext());
+			messages = messages.next();
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* log all messages */
-			for(Message message : messages.asArray())
+			for(Message message : messages.items())
 				messageContents.put(message.name, message);
 
 			/* verify message order */
 			for(int i = 0; i < 10; i++)
 				expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(i + 10));
-			Assert.assertArrayEquals("Expect messages in forward order", messages.asArray(), expectedMessageHistory);
+			Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
 			/* get first page */
-			messages = channel.history(messages.getFirst());
+			messages = messages.first();
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* log all messages */
-			for(Message message : messages.asArray())
+			for(Message message : messages.items())
 				messageContents.put(message.name, message);
 
 			/* verify message order */
 			for(int i = 0; i < 10; i++)
 				expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(i));
-			Assert.assertArrayEquals("Expect messages in forward order", messages.asArray(), expectedMessageHistory);
+			Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -1209,46 +1209,46 @@ public class RealtimeChannelHistory {
 			/* get the history for this channel */
 			PaginatedResult<Message> messages = channel.history(new Param[] { new Param("direction", "backwards"), new Param("limit", "10") });
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* log all messages */
 			HashMap<String, Message> messageContents = new HashMap<String, Message>();
-			for(Message message : messages.asArray())
+			for(Message message : messages.items())
 				messageContents.put(message.name, message);
 
 			/* verify message order */
 			Message[] expectedMessageHistory = new Message[10];
 			for(int i = 0; i < 10; i++)
 				expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(49 - i));
-			Assert.assertArrayEquals("Expect messages in forward order", messages.asArray(), expectedMessageHistory);
+			Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
 			/* get next page */
-			messages = channel.history(messages.getNext());
+			messages = messages.next();
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* log all messages */
-			for(Message message : messages.asArray())
+			for(Message message : messages.items())
 				messageContents.put(message.name, message);
 
 			/* verify message order */
 			for(int i = 0; i < 10; i++)
 				expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(39 - i));
-			Assert.assertArrayEquals("Expect messages in forward order", messages.asArray(), expectedMessageHistory);
+			Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
 			/* get first page */
-			messages = channel.history(messages.getFirst());
+			messages = messages.first();
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.asArray().length, 10);
+			assertEquals("Expected 10 messages", messages.items().length, 10);
 
 			/* log all messages */
-			for(Message message : messages.asArray())
+			for(Message message : messages.items())
 				messageContents.put(message.name, message);
 
 			/* verify message order */
 			for(int i = 0; i < 10; i++)
 				expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(49 - i));
-			Assert.assertArrayEquals("Expect messages in forward order", messages.asArray(), expectedMessageHistory);
+			Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -1330,11 +1330,11 @@ public class RealtimeChannelHistory {
 			/* get the history for this channel */
 			PaginatedResult<Message> messages = rxChannel.history(new Param[] { new Param("from_serial", rxChannel.attachSerial)});
 			assertNotNull("Expected non-null messages", messages);
-			assertTrue("Expected at least one message", messages.asArray().length >= 1);
+			assertTrue("Expected at least one message", messages.items().length >= 1);
 
 			/* verify that the history and received messages meet */
 			int earliestReceivedOnConnection = Integer.valueOf((String)messageWaiter.receivedMessages.get(0).data).intValue();
-			int latestReceivedInHistory = Integer.valueOf((String)messages.asArray()[0].data).intValue();
+			int latestReceivedInHistory = Integer.valueOf((String)messages.items()[0].data).intValue();
 			assertEquals("Verify that the history and received messages meet", earliestReceivedOnConnection, latestReceivedInHistory + 1);
 
 		} catch (AblyException e) {
