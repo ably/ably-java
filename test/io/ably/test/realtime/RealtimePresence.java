@@ -6,8 +6,8 @@ import java.util.HashMap;
 
 import io.ably.realtime.AblyRealtime;
 import io.ably.realtime.Channel;
-import io.ably.realtime.Channel.ChannelState;
-import io.ably.realtime.Connection.ConnectionState;
+import io.ably.realtime.ChannelState;
+import io.ably.realtime.ConnectionState;
 import io.ably.rest.AblyRest;
 import io.ably.rest.Auth;
 import io.ably.rest.Auth.TokenParams;

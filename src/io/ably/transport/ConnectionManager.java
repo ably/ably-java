@@ -6,7 +6,8 @@ import io.ably.realtime.AblyRealtime;
 import io.ably.realtime.Channel;
 import io.ably.realtime.CompletionListener;
 import io.ably.realtime.Connection;
-import io.ably.realtime.Connection.ConnectionState;
+import io.ably.realtime.ConnectionState;
+import io.ably.realtime.ConnectionStateListener;
 import io.ably.realtime.ConnectionStateListener.ConnectionStateChange;
 import io.ably.transport.ITransport.ConnectListener;
 import io.ably.transport.ITransport.TransportParams;
@@ -159,11 +160,11 @@ public class ConnectionManager extends Thread implements ConnectListener {
 	
 	private void setState(StateIndication newState) {
 		Log.v(TAG, "setState(): setting " + newState.state);
-		ConnectionStateChange change;
+		ConnectionStateListener.ConnectionStateChange change;
 		StateInfo newStateInfo = states.get(newState.state);
 		synchronized(this) {
 			ErrorInfo reason = newState.reason; if(reason == null) reason = newStateInfo.defaultErrorInfo;
-			change = new ConnectionStateChange(state.state, newState.state, newStateInfo.timeout, reason);
+			change = new ConnectionStateListener.ConnectionStateChange(state.state, newState.state, newStateInfo.timeout, reason);
 			state = newStateInfo;
 		}
 

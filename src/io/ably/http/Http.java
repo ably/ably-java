@@ -2,7 +2,7 @@ package io.ably.http;
 
 import io.ably.realtime.AblyRealtime;
 import io.ably.realtime.Connection;
-import io.ably.realtime.Connection.ConnectionState;
+import io.ably.realtime.ConnectionState;
 import io.ably.rest.AblyRest;
 import io.ably.rest.Auth;
 import io.ably.rest.Auth.AuthMethod;

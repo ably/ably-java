@@ -5,7 +5,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import io.ably.debug.DebugOptions;
 import io.ably.realtime.AblyRealtime;
-import io.ably.realtime.Connection.ConnectionState;
+import io.ably.realtime.ConnectionState;
 import io.ably.test.realtime.Helpers.CompletionWaiter;
 import io.ably.test.realtime.Helpers.ConnectionWaiter;
 import io.ably.test.realtime.RealtimeSetup.TestVars;

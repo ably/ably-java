@@ -16,6 +16,7 @@ import io.ably.types.PresenceMessage;
 import io.ably.types.ProtocolMessage;
 import io.ably.types.ProtocolMessage.Action;
 import io.ably.types.ProtocolMessage.Flag;
+import io.ably.util.EventEmitter;
 import io.ably.util.Log;
 
 import java.util.ArrayList;
@@ -29,23 +30,11 @@ import java.util.List;
  * attachment to the channel.
  *
  */
-public class Channel {
+public class Channel implements EventEmitter<ChannelState, ChannelStateListener> {
 
 	/************************************
 	 * ChannelState and state management
 	 ************************************/
-
-	/**
-	 * Channel states. See Ably Realtime API documentation for more details.
-	 */
-	public enum ChannelState {
-		initialised,
-		attaching,
-		attached,
-		detaching,
-		detached,
-		failed
-	}
 
 	/**
 	 * The name of this channel.
@@ -77,25 +66,42 @@ public class Channel {
 	public String attachSerial;
 
 	/**
-	 * An interface whereby a client may be notified of state changes for a channel.
+	 * Register the given listener for all channel state changes
+	 * @param listener
 	 */
-	public interface ChannelStateListener {
-		public void onChannelStateChanged(ChannelState state, ErrorInfo reason);
+	@Override
+	public void on(ChannelStateListener listener) {
+		stateListeners.add(listener);
 	}
 
 	/**
-	 * A collection of listeners to be notified of state changes for this channel.
+	 * Remove a previously registered listener
+	 * @param listener
 	 */
-	public StateMulticaster stateListeners = new StateMulticaster();
+	@Override
+	public void off(ChannelStateListener listener) {
+		stateListeners.remove(listener);
+	}
 
-	public static class StateMulticaster extends io.ably.util.Multicaster<ChannelStateListener> implements ChannelStateListener {
-		@Override
-		public void onChannelStateChanged(ChannelState state, ErrorInfo reason) {
-			for(ChannelStateListener member : members)
-				try {
-					member.onChannelStateChanged(state, reason);
-				} catch(Throwable t) {}
-		}
+	/**
+	 * Register the given listener for a specific channel state event
+	 * @param state the channel state of interest
+	 * @param listener
+	 */
+	@Override
+	public void on(ChannelState state, ChannelStateListener listener) {
+		on(new ChannelStateListener.Filter(state, listener));
+	}
+
+	/**
+	 * Remove a previously registered state-specific listener
+	 * @param listener
+	 * @param state
+	 */
+	@Override
+	public void off(ChannelState state, ChannelStateListener listener) {
+		if(listener instanceof ChannelStateListener.Filter)
+			off(((ChannelStateListener.Filter)listener).listener);
 	}
 
 	/***
@@ -571,6 +577,7 @@ public class Channel {
 	private static final String TAG = Channel.class.getName();
 	final AblyRealtime ably;
 	final String basePath;
+	private final ChannelStateListener.Multicaster stateListeners = new ChannelStateListener.Multicaster();
 	ChannelOptions options;
 	String syncChannelSerial;
 }

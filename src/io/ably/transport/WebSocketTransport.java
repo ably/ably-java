@@ -1,7 +1,7 @@
 package io.ably.transport;
 
 import io.ably.http.HttpUtils;
-import io.ably.realtime.Connection.ConnectionState;
+import io.ably.realtime.ConnectionState;
 import io.ably.transport.ConnectionManager.StateIndication;
 import io.ably.types.AblyException;
 import io.ably.types.ErrorInfo;
