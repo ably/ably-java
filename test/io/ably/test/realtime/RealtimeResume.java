@@ -8,8 +8,8 @@ import org.junit.Test;
 
 import io.ably.realtime.AblyRealtime;
 import io.ably.realtime.Channel;
-import io.ably.realtime.Channel.ChannelState;
-import io.ably.realtime.Connection.ConnectionState;
+import io.ably.realtime.ChannelState;
+import io.ably.realtime.ConnectionState;
 import io.ably.test.realtime.Helpers.ChannelWaiter;
 import io.ably.test.realtime.Helpers.CompletionSet;
 import io.ably.test.realtime.Helpers.MessageWaiter;

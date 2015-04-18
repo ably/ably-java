@@ -2,10 +2,10 @@ package io.ably.test.realtime;
 
 import static org.junit.Assert.*;
 import io.ably.realtime.AblyRealtime;
-import io.ably.realtime.Connection.ConnectionState;
 import io.ably.realtime.Channel;
-import io.ably.realtime.Channel.ChannelState;
 import io.ably.realtime.Channel.MessageListener;
+import io.ably.realtime.ChannelState;
+import io.ably.realtime.ConnectionState;
 import io.ably.test.realtime.Helpers.ChannelWaiter;
 import io.ably.test.realtime.Helpers.ConnectionWaiter;
 import io.ably.test.realtime.RealtimeSetup.TestVars;

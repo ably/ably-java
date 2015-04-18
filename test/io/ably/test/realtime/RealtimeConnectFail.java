@@ -6,7 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import io.ably.realtime.AblyRealtime;
-import io.ably.realtime.Connection.ConnectionState;
+import io.ably.realtime.ConnectionState;
 import io.ably.rest.AblyRest;
 import io.ably.rest.Auth.TokenCallback;
 import io.ably.rest.Auth.TokenDetails;

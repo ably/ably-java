@@ -6,7 +6,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import io.ably.realtime.AblyRealtime;
 import io.ably.realtime.Channel;
-import io.ably.realtime.Channel.ChannelState;
+import io.ably.realtime.ChannelState;
 import io.ably.test.realtime.Helpers.ChannelWaiter;
 import io.ably.test.realtime.Helpers.CompletionSet;
 import io.ably.test.realtime.Helpers.CompletionWaiter;

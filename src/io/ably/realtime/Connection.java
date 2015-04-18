@@ -2,34 +2,13 @@ package io.ably.realtime;
 
 import io.ably.transport.ConnectionManager;
 import io.ably.types.ErrorInfo;
+import io.ably.util.EventEmitter;
 
 /**
  * A class representing the connection associated with an AblyRealtime instance.
  * The Connection object exposes the lifecycle and parameters of the realtime connection.
  */
-public class Connection implements ConnectionStateListener {
-
-	/**
-	 * Connection states. See Ably Realtime API documentation for more details.
-	 */
-	public enum ConnectionState {
-		initialized,
-		connecting,
-		connected,
-		disconnected,
-		suspended,
-		closing,
-		closed,
-		failed;
-	}
-
-	/**
-	 * The collection of state change listeners. Listeners can register
-	 * and deregister for state change events with
-	 * {@link io.ably.realtime.ConnectionStateListener.Multicaster#add}
-	 * and {@link io.ably.realtime.ConnectionStateListener.Multicaster#remove}
-	 */
-	public final ConnectionStateListener.Multicaster listeners;
+public class Connection implements EventEmitter<ConnectionState, ConnectionStateListener>, ConnectionStateListener {
 
 	/**
 	 * The current state of this Connection.
@@ -83,6 +62,45 @@ public class Connection implements ConnectionStateListener {
 		connectionManager.requestState(ConnectionState.closing);
 	}
 
+	/**
+	 * Register the given listener for all connection state changes
+	 * @param listener
+	 */
+	@Override
+	public void on(ConnectionStateListener listener) {
+		listeners.add(listener);
+	}
+
+	/**
+	 * Remove a previously registered listener
+	 * @param listener
+	 */
+	@Override
+	public void off(ConnectionStateListener listener) {
+		listeners.remove(listener);
+	}
+
+	/**
+	 * Register the given listener for a specific connection state event
+	 * @param state the connection state of interest
+	 * @param listener
+	 */
+	@Override
+	public void on(ConnectionState state, ConnectionStateListener listener) {
+		on(new ConnectionStateListener.Filter(state, listener));
+	}
+
+	/**
+	 * Remove a previously registered state-specific listener
+	 * @param listener
+	 * @param state
+	 */
+	@Override
+	public void off(ConnectionState state, ConnectionStateListener listener) {
+		if(listener instanceof ConnectionStateListener.Filter)
+			off(((ConnectionStateListener.Filter)listener).listener);
+	}
+
 	/*****************
 	 * internal
 	 *****************/
@@ -95,12 +113,14 @@ public class Connection implements ConnectionStateListener {
 	}
 
 	@Override
-	public void onConnectionStateChanged(ConnectionStateChange stateChange) {
+	public void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange stateChange) {
 		state = stateChange.current;
 		reason = stateChange.reason;
 		listeners.onConnectionStateChanged(stateChange);
 	}
 
 	final AblyRealtime ably;
+	private final ConnectionStateListener.Multicaster listeners;
 	public final ConnectionManager connectionManager;
+
 }

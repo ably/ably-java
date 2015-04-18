@@ -15,12 +15,12 @@ import org.json.JSONObject;
 
 import io.ably.debug.RawProtocolListener;
 import io.ably.realtime.Channel;
-import io.ably.realtime.Channel.ChannelState;
-import io.ably.realtime.Channel.ChannelStateListener;
 import io.ably.realtime.Channel.MessageListener;
+import io.ably.realtime.ChannelState;
+import io.ably.realtime.ChannelStateListener;
 import io.ably.realtime.CompletionListener;
 import io.ably.realtime.Connection;
-import io.ably.realtime.Connection.ConnectionState;
+import io.ably.realtime.ConnectionState;
 import io.ably.realtime.ConnectionStateListener;
 import io.ably.realtime.Presence.PresenceListener;
 import io.ably.types.AblyException;
@@ -265,7 +265,7 @@ public class Helpers {
 		public ConnectionWaiter(Connection connection) {
 			reset();
 			this.connection = connection;
-			connection.listeners.add(this);
+			connection.on(this);
 		}
 
 		/**
@@ -311,7 +311,7 @@ public class Helpers {
 		 * ConnectionStateListener interface
 		 */
 		@Override
-		public void onConnectionStateChanged(ConnectionStateChange state) {
+		public void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange state) {
 			synchronized(this) {
 				reason = state.reason;
 				Counter counter = stateCounts.get(state.current); if(counter == null) stateCounts.put(state.current, (counter = new Counter()));
@@ -340,7 +340,7 @@ public class Helpers {
 		 */
 		public ChannelWaiter(Channel channel) {
 			this.channel = channel;
-			channel.stateListeners.add(this);
+			channel.on(this);
 		}
 
 		/**
