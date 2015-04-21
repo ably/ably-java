@@ -148,7 +148,7 @@ public class Auth {
 		/**
 		 * The time (in millis since the epoch) at which this token was issued.
 		 */
-		public long issuedAt;
+		public long issued;
 
 		/**
 		 * The capability associated with this token. See the Ably Authentication
@@ -175,7 +175,7 @@ public class Auth {
 			TokenDetails details = new TokenDetails();
 			details.token = json.optString("token");
 			details.expires = json.optLong("expires");
-			details.issuedAt = json.optLong("issued_at");
+			details.issued = json.optLong("issued");
 			details.capability = json.has("capability") ? json.optString("capability") : null;
 			details.clientId = json.has("clientId") ? json.optString("clientId") : null;
 			return details;
@@ -190,7 +190,7 @@ public class Auth {
 			JSONObject json = new JSONObject();
 			json.put("token", token);
 			json.put("expires", expires);
-			json.put("issued_at", issuedAt);
+			json.put("issued", issued);
 			json.put("capability", capability);
 			json.put("clientId", clientId);
 			return json;
@@ -433,7 +433,7 @@ public class Auth {
 				if(errorInfo.statusCode == 0) errorInfo.statusCode = 401;
 				throw e;
 			}
-			if(authUrlResponse.has("issued_at")) {
+			if(authUrlResponse.has("issued")) {
 				/* we assume this is a token */
 				return TokenDetails.fromJSON(authUrlResponse);
 			}
