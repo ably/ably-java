@@ -30,7 +30,7 @@ import java.util.List;
  * attachment to the channel.
  *
  */
-public class Channel implements EventEmitter<ChannelState, ChannelStateListener> {
+public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 
 	/************************************
 	 * ChannelState and state management
@@ -65,45 +65,6 @@ public class Channel implements EventEmitter<ChannelState, ChannelStateListener>
 	 */
 	public String attachSerial;
 
-	/**
-	 * Register the given listener for all channel state changes
-	 * @param listener
-	 */
-	@Override
-	public void on(ChannelStateListener listener) {
-		stateListeners.add(listener);
-	}
-
-	/**
-	 * Remove a previously registered listener
-	 * @param listener
-	 */
-	@Override
-	public void off(ChannelStateListener listener) {
-		stateListeners.remove(listener);
-	}
-
-	/**
-	 * Register the given listener for a specific channel state event
-	 * @param state the channel state of interest
-	 * @param listener
-	 */
-	@Override
-	public void on(ChannelState state, ChannelStateListener listener) {
-		on(new ChannelStateListener.Filter(state, listener));
-	}
-
-	/**
-	 * Remove a previously registered state-specific listener
-	 * @param listener
-	 * @param state
-	 */
-	@Override
-	public void off(ChannelState state, ChannelStateListener listener) {
-		if(listener instanceof ChannelStateListener.Filter)
-			off(((ChannelStateListener.Filter)listener).listener);
-	}
-
 	/***
 	 * internal
 	 *
@@ -116,7 +77,7 @@ public class Channel implements EventEmitter<ChannelState, ChannelStateListener>
 		}
 
 		/* broadcast state change */
-		stateListeners.onChannelStateChanged(newState, reason);
+		emit(newState, reason);
 	}
 
 	/************************************
@@ -252,6 +213,11 @@ public class Channel implements EventEmitter<ChannelState, ChannelStateListener>
 		setState(ChannelState.detached, reason);
 		failQueuedMessages(reason);		
 		presence.setSuspended(reason);
+	}
+
+	@Override
+	protected void apply(ChannelStateListener listener, ChannelState state, Object... args) {
+		listener.onChannelStateChanged(state, (ErrorInfo)args[0]);
 	}
 
 	static ErrorInfo REASON_NOT_ATTACHED = new ErrorInfo("Channel not attached", 400, 90001);
@@ -577,7 +543,6 @@ public class Channel implements EventEmitter<ChannelState, ChannelStateListener>
 	private static final String TAG = Channel.class.getName();
 	final AblyRealtime ably;
 	final String basePath;
-	private final ChannelStateListener.Multicaster stateListeners = new ChannelStateListener.Multicaster();
 	ChannelOptions options;
 	String syncChannelSerial;
 }

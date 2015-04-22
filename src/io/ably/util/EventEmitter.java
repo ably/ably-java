@@ -1,5 +1,11 @@
 package io.ably.util;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
 /**
  * An interface exposing the ability to register listeners for a class of events
  * @author paddy
@@ -7,30 +13,89 @@ package io.ably.util;
  * @param <Event> an Enum containing the event names that listeners may be registered for
  * @param <Listener> the interface type of the listener
  */
-public interface EventEmitter<Event, Listener> {
+public abstract class EventEmitter<Event, Listener> {
 
 	/**
 	 * Register the given listener for all events
 	 * @param listener
 	 */
-	public void on(Listener listener);
+	public synchronized void on(Listener listener) {
+		listeners.add(listener);
+	}
 
 	/**
-	 * Remove a previously registered listener
+	 * Register the given listener for a single occurrence of any event
 	 * @param listener
 	 */
-	public void off(Listener listener);
+	public synchronized void once(Listener listener) {
+		filters.put(listener, new Filter(null, listener, true));
+	}
+
+	/**
+	 * Remove a previously registered listener irrespective of type
+	 * @param listener
+	 */
+	public synchronized void off(Listener listener) {
+		listeners.remove(listener);
+		filters.remove(listener);
+	}
 
 	/**
 	 * Register the given listener for a specific event
 	 * @param listener
 	 */
-	public void on(Event event, Listener listener);
+	public synchronized void on(Event event, Listener listener) {
+		filters.put(listener, new Filter(event, listener, false));
+	}
+
+	/**
+	 * Register the given listener for a single occurrence of a specific event
+	 * @param listener
+	 */
+	public synchronized void once(Event event, Listener listener) {
+		filters.put(listener, new Filter(event, listener, true));
+	}
 
 	/**
 	 * Remove a previously registered event-specific listener
 	 * @param listener
 	 * @param event
 	 */
-	public void off(Event event, Listener listener);
+	public synchronized void off(Event event, Listener listener) {
+		Filter filter = filters.get(listener);
+		if(filter != null && filter.event == event)
+			filters.remove(listener);
+	}
+
+	/**
+	 * Emit the given event (broadcasting to registered listeners)
+	 * @param event the Event
+	 * @param args the arguments to pass to listeners
+	 */
+	public synchronized void emit(Event event, Object... args) {
+		for(Iterator<Listener> it = listeners.iterator(); it.hasNext(); )
+			apply(it.next(), event, args);
+		for(Iterator<Map.Entry<Listener, Filter>> it = filters.entrySet().iterator(); it.hasNext(); )
+			if(it.next().getValue().apply(event, args))
+				it.remove();
+	}
+
+	protected abstract void apply(Listener listener, Event event, Object... args);
+
+	protected class Filter {
+		Filter(Event event, Listener listener, boolean once) { this.event = event; this.listener = listener; this.once = once; }
+		private Event event;
+		private Listener listener;
+		private boolean once;
+		protected boolean apply(Event event, Object... args) {
+			if(this.event == event || this.event == null) {
+				EventEmitter.this.apply(listener, event, args);
+				return once;
+			}
+			return false;
+		}
+	}
+
+	Map<Listener, Filter> filters = new HashMap<Listener, Filter>();
+	Set<Listener> listeners = new HashSet<Listener>();
 }

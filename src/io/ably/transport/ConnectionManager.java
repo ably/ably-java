@@ -8,7 +8,6 @@ import io.ably.realtime.CompletionListener;
 import io.ably.realtime.Connection;
 import io.ably.realtime.ConnectionState;
 import io.ably.realtime.ConnectionStateListener;
-import io.ably.realtime.ConnectionStateListener.ConnectionStateChange;
 import io.ably.transport.ITransport.ConnectListener;
 import io.ably.transport.ITransport.TransportParams;
 import io.ably.types.AblyException;
@@ -169,7 +168,7 @@ public class ConnectionManager extends Thread implements ConnectListener {
 		}
 
 		/* broadcast state change */
-		connection.onConnectionStateChanged(change);
+		connection.onConnectionStateChange(change);
 
 		/* if now connected, send queued messages, etc */
 		if(state.sendEvents) {
