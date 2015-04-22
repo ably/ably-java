@@ -3,7 +3,6 @@ package io.ably.test.realtime;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import io.ably.debug.DebugOptions;
 import io.ably.realtime.AblyRealtime;
 import io.ably.realtime.ConnectionState;
 import io.ably.test.realtime.Helpers.CompletionWaiter;
