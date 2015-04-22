@@ -86,4 +86,5 @@ public class Connection extends EventEmitter<ConnectionState, ConnectionStateLis
 
 	final AblyRealtime ably;
 	public final ConnectionManager connectionManager;
+
 }
