@@ -11,6 +11,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
 @RunWith(Suite.class)
 @SuiteClasses({
+	EmitterTest.class,
 	RealtimeInit.class,
 	RealtimeConnect.class,
 	RealtimeConnectFail.class,
