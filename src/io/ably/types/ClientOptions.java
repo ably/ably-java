@@ -58,13 +58,13 @@ public class ClientOptions extends AuthOptions {
 	/**
 	 * For development environments only; allows a non-default Ably host to be specified.
 	 */
-	public String host;
+	public String restHost;
 
 	/**
 	 * For development environments only; allows a non-default Ably host to be specified for
 	 * websocket connections.
 	 */
-	public String wsHost;
+	public String realtimeHost;
 
 	/**
 	 * For development environments only; allows a non-default Ably port to be specified.

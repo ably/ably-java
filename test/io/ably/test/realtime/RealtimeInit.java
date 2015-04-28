@@ -78,9 +78,9 @@ public class RealtimeInit {
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
 			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-			opts.host = "some.other.host";
+			opts.restHost = "some.other.host";
 			ably = new AblyRealtime(opts);
-			assertEquals("Unexpected host mismatch", Defaults.getHost(opts), opts.host);
+			assertEquals("Unexpected host mismatch", Defaults.getHost(opts), opts.restHost);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init4: Unexpected exception instantiating library");

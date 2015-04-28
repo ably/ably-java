@@ -47,7 +47,7 @@ public class RestSetup {
 			return opts;
 		}
 		public void fillInOptions(ClientOptions opts) {
-			opts.host = host;
+			opts.restHost = host;
 			opts.port = port;
 			opts.tlsPort = tlsPort;
 			opts.tls = tls;
@@ -93,7 +93,7 @@ public class RestSetup {
 					/* we need to provide an appId to keep the library happy,
 					 * but we are only instancing the library to use the http
 					 * convenience methods */
-					opts.host = host;
+					opts.restHost = host;
 					opts.port = port;
 					opts.tlsPort = tlsPort;
 					opts.tls = tls;
@@ -168,7 +168,7 @@ public class RestSetup {
 		if(testVars != null) {
 			try {
 				ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-				opts.host = host;
+				opts.restHost = host;
 				opts.port = port;
 				opts.tlsPort = tlsPort;
 				opts.tls = tls;

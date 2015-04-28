@@ -20,7 +20,7 @@ public class RestTime {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
 			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-			opts.host = testVars.host;
+			opts.restHost = testVars.host;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
 			opts.tls = testVars.tls;
@@ -42,7 +42,7 @@ public class RestTime {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
 			ClientOptions opts = new ClientOptions();
-			opts.host = testVars.host;
+			opts.restHost = testVars.host;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
 			opts.tls = testVars.tls;
@@ -62,7 +62,7 @@ public class RestTime {
 		try {
 			TestVars testVars = RestSetup.getTestVars();
 			ClientOptions opts = new ClientOptions();
-			opts.host = "this.host.does.not.exist";
+			opts.restHost = "this.host.does.not.exist";
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
 			AblyRest ably = new AblyRest(opts);

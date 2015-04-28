@@ -28,8 +28,8 @@ public class RealtimeSetup {
 	public static class TestVars {
 		public String appId;
 		public Key[] keys;
-		public String host;
-		public String wsHost;
+		public String restHost;
+		public String realtimeHost;
 		public int port;
 		public int tlsPort;
 		public boolean tls;
@@ -45,8 +45,8 @@ public class RealtimeSetup {
 			return opts;
 		}
 		public void fillInOptions(ClientOptions opts) {
-			opts.host = host;
-			opts.wsHost = wsHost;
+			opts.restHost = restHost;
+			opts.realtimeHost = realtimeHost;
 			opts.port = port;
 			opts.tlsPort = tlsPort;
 			opts.tls = tls;
@@ -91,7 +91,7 @@ public class RealtimeSetup {
 					/* we need to provide an appId to keep the library happy,
 					 * but we are only instancing the library to use the http
 					 * convenience methods */
-					opts.host = host;
+					opts.restHost = host;
 					opts.port = port;
 					opts.tlsPort = tlsPort;
 					opts.tls = tls;
@@ -126,8 +126,8 @@ public class RealtimeSetup {
 							appSpec = new JSONObject(new String(body));
 							appSpec.put("notes", "Test app; created by ably-java realtime tests; date = " + new Date().toString());
 							TestVars result = new TestVars();
-							result.host = host;
-							result.wsHost = wsHost;
+							result.restHost = host;
+							result.realtimeHost = wsHost;
 							result.port = port;
 							result.tlsPort = tlsPort;
 							result.tls = tls;
@@ -161,7 +161,7 @@ public class RealtimeSetup {
 		if(testVars != null) {
 			try {
 				ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-				opts.host = host;
+				opts.restHost = host;
 				opts.port = port;
 				opts.tlsPort = tlsPort;
 				opts.tls = tls;

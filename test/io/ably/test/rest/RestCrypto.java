@@ -34,7 +34,7 @@ public class RestCrypto {
 		TestVars testVars = RestSetup.getTestVars();
 
 		ClientOptions opts_text = new ClientOptions(testVars.keys[0].keyStr);
-		opts_text.host = testVars.host;
+		opts_text.restHost = testVars.host;
 		opts_text.port = testVars.port;
 		opts_text.tlsPort = testVars.tlsPort;
 		opts_text.tls = testVars.tls;
@@ -42,7 +42,7 @@ public class RestCrypto {
 		ably_text = new AblyRest(opts_text);
 
 		ClientOptions opts_binary = new ClientOptions(testVars.keys[0].keyStr);
-		opts_binary.host = testVars.host;
+		opts_binary.restHost = testVars.host;
 		opts_binary.port = testVars.port;
 		opts_binary.tlsPort = testVars.tlsPort;
 		opts_binary.tls = testVars.tls;

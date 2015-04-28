@@ -5,8 +5,8 @@ import io.ably.types.ClientOptions;
 public class Defaults {
 	public static final int protocolVersion     = 1;
 	public static final String[] FALLBACK_HOSTS = new String[] {"A.ably-realtime.com", "B.ably-realtime.com", "C.ably-realtime.com", "D.ably-realtime.com", "E.ably-realtime.com"};
-	public static final String HOST             = "rest.ably.io";
-	public static final String WS_HOST          = "realtime.ably.io";
+	public static final String REST_HOST        = "rest.ably.io";
+	public static final String REALTIME_HOST    = "realtime.ably.io";
 	public static final int PORT                = 80;
 	public static final int TLS_PORT            = 443;
 	public static final int connectTimeout      = 15000;
@@ -19,24 +19,24 @@ public class Defaults {
 
 	public static String getHost(ClientOptions options) {
 		String host;
-		host = options.host;
+		host = options.restHost;
 		if(host == null)
-			host = Defaults.HOST;
+			host = Defaults.REST_HOST;
 		return host;
 	}
 
 	public static String getHost(ClientOptions options, String host, boolean ws) {
 		if(host == null) {
-			host = options.host;
+			host = options.restHost;
 			if(host == null)
-				host = Defaults.HOST;
+				host = Defaults.REST_HOST;
 		}
 
 		if(ws) {
-			if(host == options.host && options.wsHost != null)
-				host = options.wsHost;
-			else if(host == Defaults.HOST)
-				host = Defaults.WS_HOST;
+			if(host == options.restHost && options.realtimeHost != null)
+				host = options.realtimeHost;
+			else if(host == Defaults.REST_HOST)
+				host = Defaults.REALTIME_HOST;
 		}
 		return host;
 	}
@@ -48,6 +48,6 @@ public class Defaults {
 	}
 
 	public static String[] getFallbackHosts(ClientOptions options) {
-		return (options.host == null) ? Defaults.FALLBACK_HOSTS : null;
+		return (options.restHost == null) ? Defaults.FALLBACK_HOSTS : null;
 	}
 }
