@@ -514,7 +514,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		state = ChannelState.initialised;
 		queuedMessages = new ArrayList<QueuedMessage>();
 	}
-	
+
 	void onChannelMessage(ProtocolMessage msg) {
 		switch(msg.action) {
 		case ATTACHED:
