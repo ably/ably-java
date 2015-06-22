@@ -77,6 +77,11 @@ public class ClientOptions extends AuthOptions {
 	public int tlsPort;
 
 	/**
+	 * If false, suppresses the automatic initiation of a connection when the library is instanced.
+	 */
+	public boolean autoConnect = true;
+
+	/**
 	 * If false, forces the library to use the JSON encoding for REST and Realtime operations,
 	 * instead of the default binary msgpack encoding.
 	 */

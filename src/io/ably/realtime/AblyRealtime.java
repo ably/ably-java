@@ -49,7 +49,8 @@ public class AblyRealtime extends AblyRest {
 	public AblyRealtime(ClientOptions options) throws AblyException {
 		super(options);
 		channels = new Channels();
-		(connection = new Connection(this)).connect();
+		connection = new Connection(this);
+		if(options.autoConnect) connection.connect();
 	}
 
 	/**
