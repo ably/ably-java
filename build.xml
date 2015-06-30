@@ -4,7 +4,6 @@
 	<property name="classes.dir" value="${build.dir}/classes" />
 	<property name="classes-test.dir" value="${build.dir}/test/classes" />
 	<property name="lib.dir" value="libs" />
-	<property name="ant.dir" value="/usr/share/ant" />
 
 	<path id="classpath">
 		<fileset dir="${lib.dir}" includes="**/*.jar" />
@@ -13,7 +12,7 @@
 	<path id="classpath-test">
 		<path refid="classpath" />
 		<pathelement location="${classes.dir}" />
-		<fileset dir="${ant.dir}" includes="lib/*.jar" />
+		<fileset dir="${ant.home}" includes="lib/*.jar" />
 	</path>
 
 	<target name="clean">
