@@ -1,0 +1,3 @@
+TEST*.txt
+build
+junit*.properties
