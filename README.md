@@ -43,7 +43,7 @@ There is also an ant target to run the unit tests:
 
 To run tests against a specific host, specify this as a property on the ant commandline:
 
-    ant test -Dably.host=localhost
+    ant test -Dably.host=custom.host.com
 
 Tests will run against staging by default.
 
@@ -64,7 +64,7 @@ To see what has changed in recent versions of Bundler, see the [CHANGELOG](CHANG
 1. Fork it
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Ensure you have added suitable tests and the test suite is passing(`bundle exec rspec`)
+4. Ensure you have added suitable tests and the test suite is passing(`ant test`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create a new Pull Request
 
