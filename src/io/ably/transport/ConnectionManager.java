@@ -298,7 +298,7 @@ public class ConnectionManager extends Thread implements ConnectListener {
 		 * that invalidates an existing connection id, then
 		 * remove all channels attached to the previous id */
 		ErrorInfo error = message.error;
-		if(error != null && !message.connectionKey.equals(connection.key))
+		if(error != null && !message.connectionId.equals(connection.id))
 			ably.channels.suspendAll(error);
 
 		/* set the new connection id */
