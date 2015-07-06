@@ -359,35 +359,35 @@ public class RealtimeMessage {
 		_multiple_send("multiple_send_binary_200_50", false, messageCount, delay);
 	}
 
-	//@Test
+	@Test
 	public void multiple_send_binary_1000_10() {
 		int messageCount = 1000;
 		long delay = 10L;
 		_multiple_send("multiple_send_binary_1000_10", true, messageCount, delay);
 	}
 
-	//@Test
+	@Test
 	public void multiple_send_binary_2000_5() {
 		int messageCount = 2000;
 		long delay = 5L;
 		_multiple_send("multiple_send_binary_2000_5", true, messageCount, delay);
 	}
 
-	//@Test
+	@Test
 	public void multiple_send_binary_1000_2() {
 		int messageCount = 1000;
 		long delay = 2L;
 		_multiple_send("multiple_send_binary_1000_2", true, messageCount, delay);
 	}
 
-	//@Test
+	@Test
 	public void multiple_send_binary_1000_1() {
 		int messageCount = 1000;
 		long delay = 1L;
 		_multiple_send("multiple_send_binary_1000_1", true, messageCount, delay);
 	}
 
-	//@Test
+	@Test
 	public void multiple_send_binary_1000_20_5() {
 		int messageCount = 1000;
 		int batchCount = 20;
