@@ -9,7 +9,7 @@ import io.ably.util.EventEmitter;
 
 import org.junit.Test;
 
-public class EmitterTest {
+public class EventEmitterTest {
 
 	private static enum MyEvents {
 		EVENT_0,
@@ -38,7 +38,7 @@ public class EmitterTest {
 		@Override
 		protected void apply(MyListener listener, final MyEvents ev, final Object... args) {
 			listener.onMyThingHappened(new MyEventPayload() {{ event = ev; message = (String)args[0]; }});
-		}		
+		}
 	}
 
 	/**
