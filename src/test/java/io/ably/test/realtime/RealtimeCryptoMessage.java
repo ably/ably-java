@@ -44,8 +44,9 @@ public class RealtimeCryptoMessage {
 
 			byte[] key = Base64Coder.decode(testData128.key);
 			byte[] iv = Base64Coder.decode(testData128.iv);
+			String algorithm = testData128.algorithm;
 
-			final CipherParams params = Crypto.getDefaultParams(key);
+			final CipherParams params = Crypto.getParams(algorithm, key);
 			params.ivSpec = new IvParameterSpec(iv);
 
 			CryptoTestItem[] items = testData128.items;
@@ -72,6 +73,9 @@ public class RealtimeCryptoMessage {
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
+		} catch (java.security.NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			fail("Unexpected Algorithm exception");
 		} finally {
 			if(ably != null)
 				ably.close();
@@ -94,8 +98,9 @@ public class RealtimeCryptoMessage {
 
 			byte[] key = Base64Coder.decode(testData256.key);
 			byte[] iv = Base64Coder.decode(testData256.iv);
+			String algorithm = testData256.algorithm;
 
-			final CipherParams params = Crypto.getDefaultParams(key);
+			final CipherParams params = Crypto.getParams(algorithm, key);
 			params.ivSpec = new IvParameterSpec(iv);
 
 			CryptoTestItem[] items = testData256.items;
@@ -122,6 +127,9 @@ public class RealtimeCryptoMessage {
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
+		} catch (java.security.NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			fail("Unexpected Algorithm exception");
 		} finally {
 			if(ably != null)
 				ably.close();
@@ -144,8 +152,9 @@ public class RealtimeCryptoMessage {
 
 			byte[] key = Base64Coder.decode(testData128.key);
 			byte[] iv = Base64Coder.decode(testData128.iv);
+			String algorithm = testData128.algorithm;
 
-			final CipherParams params = Crypto.getDefaultParams(key);
+			final CipherParams params = Crypto.getParams(algorithm, key);
 			params.ivSpec = new IvParameterSpec(iv);
 
 			CryptoTestItem[] items = testData128.items;
@@ -172,6 +181,9 @@ public class RealtimeCryptoMessage {
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
+		} catch (java.security.NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			fail("Unexpected Algorithm exception");
 		} finally {
 			if(ably != null)
 				ably.close();
@@ -194,8 +206,9 @@ public class RealtimeCryptoMessage {
 
 			byte[] key = Base64Coder.decode(testData256.key);
 			byte[] iv = Base64Coder.decode(testData256.iv);
+			String algorithm = testData256.algorithm;
 
-			final CipherParams params = Crypto.getDefaultParams(key);
+			final CipherParams params = Crypto.getParams(algorithm, key);
 			params.ivSpec = new IvParameterSpec(iv);
 
 			CryptoTestItem[] items = testData256.items;
@@ -222,6 +235,9 @@ public class RealtimeCryptoMessage {
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
+		} catch (java.security.NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			fail("Unexpected Algorithm exception");
 		} finally {
 			if(ably != null)
 				ably.close();

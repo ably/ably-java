@@ -18,9 +18,9 @@ import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Utility classes and interfaces for message payload encryption.
- * 
- * This class supports AES/CBC/PKCS5 with a default keylength of 128 bits
- * but supporting other keylengths. Other algorithms and chaining modes are
+ *
+ * This class supports AES/CBC/PKCS5 with a default key length of 128 bits
+ * but supporting other key lengths. Other algorithms and chaining modes are
  * not supported directly, but supportable by extending/implementing the base
  * classes and interfaces here.
  *
@@ -28,7 +28,7 @@ import javax.crypto.spec.SecretKeySpec;
  * is obtained from the default system SecureRandom. Future extensions of this
  * class might make the SecureRandom pluggable or at least seedable with
  * client-provided entropy.
- * 
+ *
  * Each message payload is encrypted with an IV in CBC mode, and the IV is
  * concatenated with the resulting raw ciphertext to construct the "ciphertext"
  * data passed to the recipient.
@@ -45,20 +45,20 @@ public class Crypto {
 	 *
 	 * algorithm is the name of the algorithm in the default system provider,
 	 * or the lower-cased version of it; eg "aes" or "AES".
-	 * 
+	 *
 	 * Clients may instance a CipherParams directly and populate it, or may
 	 * query the implementation to obtain a default system CipherParams.
 	 */
 	public static class CipherParams {
 		public final String algorithm;
-		public final int keylength;
+		public final int keyLength;
 		public final SecretKeySpec keySpec;
 		public IvParameterSpec ivSpec;
 
 		public CipherParams(String algorithm, byte[] key) throws NoSuchAlgorithmException {
 			if(algorithm == null) algorithm = DEFAULT_ALGORITHM;
 			this.algorithm = algorithm;
-			this.keylength = key.length * 8;
+			this.keyLength = key.length * 8;
 			this.keySpec = new SecretKeySpec(key, algorithm.toUpperCase());
 		}
 	}
@@ -79,7 +79,7 @@ public class Crypto {
 	 * padding and initialises a key based on the given key data. The cipher
 	 * key length is derived from the length of the given key data. An IV is
 	 * generated using the default system SecureRandom.
-	 * 
+	 *
 	 * Use this method of constructing CipherParams if initialising a Channel
 	 * with a client-provided key, or to obtain a system-generated key of a
 	 * non-default key length.
@@ -91,15 +91,15 @@ public class Crypto {
 		} catch (NoSuchAlgorithmException e) { return null; }
 	}
 
-	public static CipherParams getParams(String algorithm, int keylength) {
+	public static CipherParams getParams(String algorithm, int keyLength) {
 		if(algorithm == null) algorithm = DEFAULT_ALGORITHM;
 		try {
 			KeyGenerator keygen = KeyGenerator.getInstance(algorithm.toUpperCase());
-	        keygen.init(keylength);
+	        keygen.init(keyLength);
 	        byte[] key = keygen.generateKey().getEncoded();
 	        return getParams(algorithm, key);
 		} catch(NoSuchAlgorithmException e) { return null; }
-		
+
 	}
 
 	public static CipherParams getParams(String algorithm, byte[] key) throws NoSuchAlgorithmException {
@@ -158,7 +158,7 @@ public class Crypto {
 		private CBCCipher(CipherParams params) throws AblyException {
 			String transformation = params.algorithm.toUpperCase() + "/CBC/PKCS5Padding";
 			try {
-				algorithm = params.algorithm + '-' + params.keylength + "-cbc";
+				algorithm = params.algorithm + '-' + params.keyLength + "-cbc";
 				keySpec = params.keySpec;
 				encryptCipher = Cipher.getInstance(transformation);
 				encryptCipher.init(Cipher.ENCRYPT_MODE, params.keySpec, params.ivSpec);
