@@ -23,8 +23,8 @@ import org.junit.Test;
 
 public class RealtimeCryptoMessage {
 
-	private static final String testDataFile128 = "test/io/ably/test/assets/crypto-data-128.json";
-	private static final String testDataFile256 = "test/io/ably/test/assets/crypto-data-256.json";
+	private static final String testDataFile128 = "test/io/ably/test/assets/ably-common/test-resources/crypto-data-128.json";
+	private static final String testDataFile256 = "test/io/ably/test/assets/ably-common/test-resources/crypto-data-256.json";
 	private static JSONObject testData128;
 	private static JSONObject testData256;
 
