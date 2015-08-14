@@ -79,6 +79,8 @@ public class ProtocolMessage implements MessagePackable {
 				result.messages = MessageSerializer.readJSON(json.optJSONArray("messages"));
 			if(json.has("presence"))
 				result.presence = PresenceSerializer.readJSON(json.optJSONArray("presence"));
+			if(json.has("connectionDetails"))
+				result.connectionDetails = ConnectionDetails.readJSON(json.optJSONObject("connectionDetails"));
 		}
 		return result;
 	}
@@ -248,6 +250,8 @@ public class ProtocolMessage implements MessagePackable {
 				messages = MessageSerializer.readMsgpack(unpacker);
 			} else if(fieldName == "presence") {
 				presence = PresenceSerializer.readMsgpack(unpacker);
+			} else if(fieldName == "connectionDetails") {
+				connectionDetails = unpacker.read(ConnectionDetails.class);
 			} else {
 				System.out.println("Unexpected field: " + fieldName);
 				unpacker.skip();
@@ -270,6 +274,7 @@ public class ProtocolMessage implements MessagePackable {
 	public long timestamp;
 	public Message[] messages;
 	public PresenceMessage[] presence;
+	public ConnectionDetails connectionDetails;
 
 	private static final MessagePack msgpack = new MessagePack();;
 }
