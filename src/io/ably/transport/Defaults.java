@@ -14,7 +14,7 @@ public class Defaults {
 	public static final int suspendedTimeout    = 120000;
 	public static final int cometRecvTimeout    = 90000;
 	public static final int cometSendTimeout    = 10000;
-	public static final String[] transports     = new String[]{"web_socket", "comet"};
+	public static final String[] transports     = new String[]{"web_socket"};
 	public static final String transport        = "io.ably.transport.WebSocketTransport$Factory";
 
 	public static String getHost(ClientOptions options) {
