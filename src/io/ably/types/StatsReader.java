@@ -36,8 +36,6 @@ public class StatsReader  {
 	public static Stats[] readJSON(byte[] jsonBytes) throws AblyException {
 		try {
 			return readJSON(new String(jsonBytes, "UTF-8"));
-		} catch (JSONException e) {
-			throw AblyException.fromThrowable(e);
 		} catch (UnsupportedEncodingException e) {
 			throw AblyException.fromThrowable(e);
 		}
