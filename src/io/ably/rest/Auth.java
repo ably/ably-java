@@ -203,11 +203,6 @@ public class Auth {
 	public static class TokenParams {
 
 		/**
-		 * The keyName of the key against which this request is made.
-		 */
-		public String keyName;
-
-		/**
 		 * Requested time to live for the token. If the token request
 		 * is successful, the TTL of the returned token will be less
 		 * than or equal to this value depending on application settings
@@ -241,7 +236,6 @@ public class Auth {
 		 */
 		public List<Param> asParams() {
 			List<Param> params = new ArrayList<Param>();
-			if(keyName != null) params.add(new Param("key_name", keyName));
 			if(ttl > 0) params.add(new Param("ttl", String.valueOf(ttl)));
 			if(capability != null) params.add(new Param("capability", capability));
 			if(clientId != null) params.add(new Param("client_id", clientId));
@@ -258,12 +252,16 @@ public class Auth {
 		TokenRequest() {}
 
 		TokenRequest(TokenParams params) {
-			this.keyName = params.keyName;
 			this.ttl = params.ttl;
 			this.capability = params.capability;
 			this.clientId = params.clientId;
 			this.timestamp = params.timestamp;
 		}
+
+		/**
+		 * The keyName of the key against which this request is made.
+		 */
+		public String keyName;
 
 		/**
 		 * An opaque nonce string of at least 16 characters to ensure
