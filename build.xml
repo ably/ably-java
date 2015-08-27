@@ -25,6 +25,7 @@
 	<target name="compile">
 		<mkdir dir="${classes.dir}" />
 		<javac srcdir="src" destdir="${classes.dir}" classpathref="classpath"
+			source="1.6" target="1.6"
 			includeantruntime="false" />
 	</target>
 
@@ -56,6 +57,7 @@
 	<target name="compile-test" depends="compile">
 		<mkdir dir="${classes-test.dir}" />
 		<javac srcdir="test" destdir="${classes-test.dir}" classpathref="classpath-test"
+			source="1.6" target="1.6"
 			includeantruntime="false" />
 	</target>
 
