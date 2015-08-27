@@ -87,7 +87,7 @@ public class TokenAuth extends RFC2617Scheme implements AuthSchemeFactory, Crede
 		return false;
 	}
 
-	@Override
+	/* @Override annotation removed for compatibility with Android version of HTTPClient */
 	public Header authenticate(
 			Credentials credentials,
 			final HttpRequest request,

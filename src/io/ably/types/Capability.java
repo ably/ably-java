@@ -1,6 +1,8 @@
 package io.ably.types;
 
 
+import io.ably.util.JSONHelpers;
+
 import java.util.Arrays;
 
 import org.json.JSONArray;
@@ -57,7 +59,7 @@ public class Capability {
 	 */
 	public void addResource(String resource, String[] ops) {
 		try {
-			JSONArray jsonOps = new JSONArray(ops);
+			JSONArray jsonOps = JSONHelpers.newJSONArray(ops);
 			json.put(resource, jsonOps);
 			dirty = true;
 		} catch (JSONException e) {}
@@ -136,10 +138,12 @@ public class Capability {
 		int opCount = jsonOps.length();
 		for(int i = 0; i < opCount; i++)
 			if(jsonOps.optString(i).equals(op)) {
-				if(opCount == 1)
+				if(opCount == 1) {
 					json.remove(resource);
-				else
-					jsonOps.remove(i);
+				} else {
+					jsonOps = JSONHelpers.remove(jsonOps, i);
+					try { json.put(resource, jsonOps); } catch (JSONException e) {}
+				}
 				return;
 			}
 		/* removal doesn't break sort order, so dirty can remain false */
@@ -154,7 +158,7 @@ public class Capability {
 	 */
 	public String toString() {
 		if(dirty) {
-			String[] resources = JSONObject.getNames(json);
+			String[] resources = JSONHelpers.getNames(json);
 			Arrays.sort(resources);
 			if(resources.length == 0)
 				return "";
@@ -167,7 +171,7 @@ public class Capability {
 					for(int i = 0; i < count; i++)
 						ops[i] = jsonOps.optString(i);
 					Arrays.sort(ops);
-					c14nJson.put(resource, new JSONArray(ops));
+					c14nJson.put(resource, JSONHelpers.newJSONArray(ops));
 				}
 			} catch (JSONException e) {}
 			json = c14nJson;
