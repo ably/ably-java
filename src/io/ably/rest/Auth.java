@@ -9,6 +9,7 @@ import io.ably.types.ErrorInfo;
 import io.ably.types.ClientOptions;
 import io.ably.types.Param;
 import io.ably.util.Base64Coder;
+import io.ably.util.JSONHelpers;
 import io.ably.util.Log;
 
 import java.security.GeneralSecurityException;
@@ -173,11 +174,11 @@ public class Auth {
 		 */
 		public static TokenDetails fromJSON(JSONObject json) {
 			TokenDetails details = new TokenDetails();
-			details.token = json.optString("token");
+			details.token = JSONHelpers.getString(json, "token");
 			details.expires = json.optLong("expires");
 			details.issued = json.optLong("issued");
-			details.capability = json.has("capability") ? json.optString("capability") : null;
-			details.clientId = json.has("clientId") ? json.optString("clientId") : null;
+			details.capability = JSONHelpers.getString(json, "capability");
+			details.clientId = JSONHelpers.getString(json, "clientId");
 			return details;
 		}
 
@@ -285,11 +286,11 @@ public class Auth {
 			TokenRequest params = new TokenRequest();
 			params.keyName = json.optString("keyName");
 			params.ttl = json.optLong("ttl");
-			params.capability = json.has("capability") ? json.optString("capability") : null;
-			params.clientId = json.has("clientId") ? json.optString("clientId") : null;
+			params.capability = JSONHelpers.getString(json, "capability");
+			params.clientId = JSONHelpers.getString(json, "clientId");
 			params.timestamp = json.optLong("timestamp");
-			params.nonce = json.has("nonce") ? json.optString("nonce") : null;
-			params.mac = json.has("mac") ? json.optString("mac") : null;
+			params.nonce = JSONHelpers.getString(json, "nonce");
+			params.mac = JSONHelpers.getString(json, "mac");
 			return params;
 		}
 

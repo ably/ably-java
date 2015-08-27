@@ -36,4 +36,8 @@ public class JSONHelpers {
 		}
 		return result;
 	}
+
+	public static String getString(JSONObject json, String key) {
+		return json.isNull(key) ? null : json.optString(key);
+	}
 }
