@@ -22,13 +22,23 @@
 		<delete file="${build.dir}/ably-android.jar" />
 	</target>
 
-	<target name="compile">
-		<mkdir dir="${classes.dir}" />
-		<javac srcdir="src" destdir="${classes.dir}" classpathref="classpath"
-			includeantruntime="false" />
+	<macrodef name="compile">
+		<attribute name="srcdir" />
+		<attribute name="destdir" />
+		<attribute name="classpath" />
+		<attribute name="javac.target" default="${ant.java.version}" />
+		<sequential>
+			<mkdir dir="@{destdir}" />
+			<javac srcdir="@{srcdir}" destdir="@{destdir}" classpathref="@{classpath}" source="@{javac.target}" target="@{javac.target}"
+				includeantruntime="false" />
+		</sequential>
+	</macrodef>
+
+	<target name="jre-lib-compile">
+		<compile srcdir="src" destdir="${classes.dir}" classpath="classpath" />
 	</target>
 
-	<target name="jre-jar" depends="compile">
+	<target name="jre-jar" depends="jre-lib-compile">
 		<jar destfile="${build.dir}/ably.jar" filesonly="true">
 			<fileset dir="${classes.dir}" />
 			<zipfileset excludes="META-INF/**" src="${lib.dir}/json-min.jar" />
@@ -44,7 +54,11 @@
 		</jar>
 	</target>
 
-	<target name="android-jar" depends="compile">
+	<target name="android-lib-compile">
+		<compile srcdir="src" destdir="${classes.dir}" classpath="classpath" javac.target="1.6"/>
+	</target>
+
+	<target name="android-jar" depends="android-lib-compile">
 		<jar destfile="${build.dir}/ably-android.jar" filesonly="true">
 			<fileset dir="${classes.dir}" />
 			<zipfileset excludes="META-INF/**"
@@ -53,13 +67,15 @@
 		</jar>
 	</target>
 
-	<target name="compile-test" depends="compile">
-		<mkdir dir="${classes-test.dir}" />
-		<javac srcdir="test" destdir="${classes-test.dir}" classpathref="classpath-test"
-			includeantruntime="false" />
+	<target name="jre-test-compile">
+		<compile srcdir="test" destdir="${classes.test.dir}" classpath="classpath-test" />
 	</target>
 
-	<target name="test-setup" depends="jre-jar, compile-test">
+	<target name="android-test-compile">
+		<compile srcdir="test" destdir="${classes.test.dir}" classpath="classpath-test" javac.target="1.6"/>
+	</target>
+
+	<target name="test-setup" depends="jre-jar, jre-test-compile">
 		<!-- set properties if not already set on commandline -->
 		<condition property="ably.ws.host" value="${ably.host}" else="sandbox-realtime.ably.io">
 		    <isset property="ably.host"/>
@@ -108,6 +124,6 @@
 
 	<target name="test" depends="test-rest, test-realtime, test-finish" />
 
-	<target name="all" depends="jre-jar, android-jar, compile-test" />
+	<target name="all" depends="jre-jar, android-jar, jre-test-compile" />
 
 </project>
