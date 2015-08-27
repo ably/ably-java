@@ -192,12 +192,12 @@ public class RealtimeConnectFail {
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
 			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
-			opts.recover = "not_a_valid:connection_id";
+			opts.recover = "not_a_valid_connection_id:99";
 			ably = new AblyRealtime(opts);
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 			ErrorInfo fail = connectionWaiter.waitFor(ConnectionState.failed);
 			assertEquals("Verify failed state is reached", ConnectionState.failed, ably.connection.state);
-			assertEquals("Verify correct error code is given", 40006, fail.code);
+			assertEquals("Verify correct error code is given", 80018, fail.code);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
@@ -217,7 +217,7 @@ public class RealtimeConnectFail {
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
 			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
-			String recoverConnectionId = "0123456789abcdef";
+			String recoverConnectionId = "0123456789abcdef-99";
 			opts.recover = recoverConnectionId + ":0";
 			ably = new AblyRealtime(opts);
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);

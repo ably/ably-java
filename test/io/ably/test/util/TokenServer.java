@@ -304,8 +304,6 @@ public class TokenServer {
 	private static TokenParams params2TokenParams(List<NameValuePair> params) {
 		HashMap<String, String> map = params2HashMap(params);
 		TokenParams tokenParams = new TokenParams();
-		if(map.containsKey("key_name"))
-			tokenParams.keyName = map.get("key_name");
 		if(map.containsKey("client_id"))
 			tokenParams.clientId = map.get("client_id");
 		if(map.containsKey("timestamp"))
