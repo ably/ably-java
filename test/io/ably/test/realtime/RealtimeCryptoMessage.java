@@ -23,8 +23,8 @@ import org.junit.Test;
 
 public class RealtimeCryptoMessage {
 
-	private static final String testDataFile128 = "test/io/ably/test/assets/crypto-data-128.json";
-	private static final String testDataFile256 = "test/io/ably/test/assets/crypto-data-256.json";
+	private static final String testDataFile128 = "test/io/ably/test/assets/ably-common/test-resources/crypto-data-128.json";
+	private static final String testDataFile256 = "test/io/ably/test/assets/ably-common/test-resources/crypto-data-256.json";
 	private static JSONObject testData128;
 	private static JSONObject testData256;
 
@@ -50,8 +50,9 @@ public class RealtimeCryptoMessage {
 
 			byte[] key = Base64Coder.decode(testData128.optString("key"));
 			byte[] iv = Base64Coder.decode(testData128.optString("iv"));
+			String algorithm = testData128.optString("algorithm");
 
-			final CipherParams params = Crypto.getDefaultParams(key);
+			final CipherParams params = Crypto.getParams(algorithm, key);
 			params.ivSpec = new IvParameterSpec(iv);
 
 			JSONArray items = testData128.optJSONArray("items");
@@ -74,6 +75,9 @@ public class RealtimeCryptoMessage {
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
+		} catch (java.security.NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			fail("Unexpected Algorithm exception");
 		} finally {
 			if(ably != null)
 				ably.close();
@@ -90,8 +94,9 @@ public class RealtimeCryptoMessage {
 
 			byte[] key = Base64Coder.decode(testData256.optString("key"));
 			byte[] iv = Base64Coder.decode(testData256.optString("iv"));
+			String algorithm = testData256.optString("algorithm");
 
-			final CipherParams params = Crypto.getDefaultParams(key);
+			final CipherParams params = Crypto.getParams(algorithm, key);
 			params.ivSpec = new IvParameterSpec(iv);
 
 			JSONArray items = testData256.optJSONArray("items");
@@ -114,6 +119,9 @@ public class RealtimeCryptoMessage {
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
+		} catch (java.security.NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			fail("Unexpected Algorithm exception");
 		} finally {
 			if(ably != null)
 				ably.close();
@@ -130,8 +138,9 @@ public class RealtimeCryptoMessage {
 
 			byte[] key = Base64Coder.decode(testData128.optString("key"));
 			byte[] iv = Base64Coder.decode(testData128.optString("iv"));
+			String algorithm = testData128.optString("algorithm");
 
-			final CipherParams params = Crypto.getDefaultParams(key);
+			final CipherParams params = Crypto.getParams(algorithm, key);
 			params.ivSpec = new IvParameterSpec(iv);
 
 			JSONArray items = testData128.optJSONArray("items");
@@ -154,6 +163,9 @@ public class RealtimeCryptoMessage {
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
+		} catch (java.security.NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			fail("Unexpected Algorithm exception");
 		} finally {
 			if(ably != null)
 				ably.close();
@@ -170,8 +182,9 @@ public class RealtimeCryptoMessage {
 
 			byte[] key = Base64Coder.decode(testData256.optString("key"));
 			byte[] iv = Base64Coder.decode(testData256.optString("iv"));
+			String algorithm = testData256.optString("algorithm");
 
-			final CipherParams params = Crypto.getDefaultParams(key);
+			final CipherParams params = Crypto.getParams(algorithm, key);
 			params.ivSpec = new IvParameterSpec(iv);
 
 			JSONArray items = testData256.optJSONArray("items");
@@ -194,6 +207,9 @@ public class RealtimeCryptoMessage {
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
+		} catch (java.security.NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			fail("Unexpected Algorithm exception");
 		} finally {
 			if(ably != null)
 				ably.close();
