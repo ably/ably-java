@@ -17,7 +17,7 @@ import org.json.JSONObject;
 
 public class RealtimeSetup {
 
-	private static final String specFile = "test/io/ably/test/assets/testAppSpec.json";
+	private static final String specFile = "src/test/resources/assets/testAppSpec.json";
 
 	public static class Key {
 		public String keyName;

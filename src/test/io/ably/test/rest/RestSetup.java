@@ -19,7 +19,7 @@ import org.json.JSONObject;
 
 public class RestSetup {
 
-	private static final String defaultSpecFile = "test/io/ably/test/assets/testAppSpec.json";
+	private static final String defaultSpecFile = "src/test/resources/assets/testAppSpec.json";
 
 	public static class Key {
 		public String keyName;

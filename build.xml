@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <project default="all" name="Jar for ably-java">
 	<property name="build.dir" value="build" />
-	<property name="classes.dir" value="${build.dir}/classes" />
-	<property name="classes-test.dir" value="${build.dir}/test/classes" />
+	<property name="classes.main.dir" value="${build.dir}/main/classes" />
+	<property name="classes.test.dir" value="${build.dir}/test/classes" />
 	<property name="lib.dir" value="libs" />
 
 	<path id="classpath">
@@ -11,13 +11,13 @@
 
 	<path id="classpath-test">
 		<path refid="classpath" />
-		<pathelement location="${classes.dir}" />
+		<pathelement location="${classes.main.dir}" />
 		<fileset dir="${ant.home}" includes="lib/*.jar" />
 	</path>
 
 	<target name="clean">
-		<delete dir="${classes.dir}" />
-		<delete dir="${classes-test.dir}" />
+		<delete dir="${classes.main.dir}" />
+		<delete dir="${classes.test.dir}" />
 		<delete file="${build.dir}/ably.jar" />
 		<delete file="${build.dir}/ably-android.jar" />
 	</target>
@@ -35,12 +35,12 @@
 	</macrodef>
 
 	<target name="jre-lib-compile">
-		<compile srcdir="src" destdir="${classes.dir}" classpath="classpath" />
+		<compile srcdir="src/main" destdir="${classes.main.dir}" classpath="classpath" />
 	</target>
 
 	<target name="jre-jar" depends="jre-lib-compile">
 		<jar destfile="${build.dir}/ably.jar" filesonly="true">
-			<fileset dir="${classes.dir}" />
+			<fileset dir="${classes.main.dir}" />
 			<zipfileset excludes="META-INF/**" src="${lib.dir}/json-min.jar" />
 			<zipfileset excludes="META-INF/**"
 				src="${lib.dir}/java_websocket_client.jar" />
@@ -55,12 +55,12 @@
 	</target>
 
 	<target name="android-lib-compile">
-		<compile srcdir="src" destdir="${classes.dir}" classpath="classpath" javac.target="1.6"/>
+		<compile srcdir="src/main" destdir="${classes.main.dir}" classpath="classpath" javac.target="1.6"/>
 	</target>
 
 	<target name="android-jar" depends="android-lib-compile">
 		<jar destfile="${build.dir}/ably-android.jar" filesonly="true">
-			<fileset dir="${classes.dir}" />
+			<fileset dir="${classes.main.dir}" />
 			<zipfileset excludes="META-INF/**"
 				src="${lib.dir}/java_websocket_client.jar" />
 			<zipfileset excludes="META-INF/**" src="${lib.dir}/msgpack-0.0.1.jar" />
@@ -68,11 +68,11 @@
 	</target>
 
 	<target name="jre-test-compile">
-		<compile srcdir="test" destdir="${classes.test.dir}" classpath="classpath-test" />
+		<compile srcdir="src/test" destdir="${classes.test.dir}" classpath="classpath-test" />
 	</target>
 
 	<target name="android-test-compile">
-		<compile srcdir="test" destdir="${classes.test.dir}" classpath="classpath-test" javac.target="1.6"/>
+		<compile srcdir="src/test" destdir="${classes.test.dir}" classpath="classpath-test" javac.target="1.6"/>
 	</target>
 
 	<target name="test-setup" depends="jre-jar, jre-test-compile">
@@ -91,7 +91,7 @@
 			<env key="ABLY_HOST" value="${ably.host}" />
 			<env key="ABLY_WS_HOST" value="${ably.ws.host}" />
 			<classpath>
-				<path location="${classes-test.dir}" />
+				<path location="${classes.test.dir}" />
 				<path refid="classpath-test" />
 			</classpath>
 			<formatter type="plain" />
@@ -108,7 +108,7 @@
 			<env key="ABLY_HOST" value="${ably.host}" />
 			<env key="ABLY_WS_HOST" value="${ably.ws.host}" />
 			<classpath>
-				<path location="${classes-test.dir}" />
+				<path location="${classes.test.dir}" />
 				<path refid="classpath-test" />
 			</classpath>
 			<formatter type="plain" />
