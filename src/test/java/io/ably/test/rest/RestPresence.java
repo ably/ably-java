@@ -20,7 +20,7 @@ import org.junit.Test;
 
 public class RestPresence {
 
-	private static final String presenceSpecFile = "test/io/ably/test/assets/testPresenceSpec.json";
+	private static final String presenceSpecFile = "src/test/resources/assets/testPresenceSpec.json";
 	private static final String[] clientIds = new String[] {
 		"client_string_0",
 		"client_string_1",
