@@ -12,10 +12,8 @@
 	<classpathentry kind="lib" path="libs/commons-lang-2.6.jar"/>
 	<classpathentry kind="lib" path="/usr/share/java/ant-1.8.4/lib/ant.jar"/>
 	<classpathentry kind="lib" path="/usr/share/java/ant-1.8.4/lib/ant-junit.jar"/>
-	<classpathentry kind="lib" path="libs/json-min.jar"/>
 	<classpathentry kind="lib" path="libs/java_websocket_client.jar" sourcepath="/Users/paddy/data/work/dev/Java-WebSocket/src"/>
 	<classpathentry kind="lib" path="libs/commons-logging-1.1.1.jar"/>
-	<classpathentry kind="lib" path="libs/msgpack-0.0.1.jar" sourcepath="/Users/paddy/data/work/dev/msgpack-java/src"/>
 	<classpathentry kind="lib" path="libs/javassist-3.15.0-GA.jar"/>
 	<classpathentry kind="src" output="target/classes" path="src/main/java">
 		<attributes>
