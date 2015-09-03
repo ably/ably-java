@@ -5,8 +5,8 @@ import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
 
 import org.apache.http.StatusLine;
-import org.json.JSONException;
-import org.json.JSONObject;
+
+import io.ably.util.Serialisation;
 
 /**
  * An exception type encapsulating an Ably error code
@@ -47,9 +47,9 @@ public class AblyException extends Exception {
 	 */
 	public static AblyException fromJSON(String jsonText) throws AblyException {
 		try {
-			JSONObject json = (new JSONObject(jsonText)).optJSONObject("error");
-			return new AblyException(new ErrorInfo(json));
-		} catch (JSONException e) {
+			ErrorResponse errorResponse = (ErrorResponse)Serialisation.jsonObjectMapper.readValue(jsonText, ErrorResponse.class);
+			return new AblyException(errorResponse.error);
+		} catch (IOException e) {
 			throw new AblyException("Unexpected exception decoding server response: " + e, 500, 50000);
 		}
 	}
@@ -105,4 +105,8 @@ public class AblyException extends Exception {
 	}
 
 	public ErrorInfo errorInfo;
+
+	private static class ErrorResponse {
+		public ErrorInfo error;
+	}
 }

@@ -2,9 +2,6 @@ package io.ably.types;
 
 import java.io.IOException;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -14,6 +11,8 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+
+import io.ably.util.Serialisation;
 
 /**
  * A message sent and received over the Realtime protocol.
@@ -73,77 +72,33 @@ public class ProtocolMessage {
 		public static Flag findByValue(int value) { return values()[value]; }
 	}
 
-	public static ProtocolMessage fromJSON(String json) throws AblyException {
+	public static ProtocolMessage fromJSON(String packed) throws AblyException {
 		try {
-			return fromJSON(new JSONObject(json));
-		} catch(JSONException e) {
-			throw AblyException.fromThrowable(e);
-		}
-	}
-
-	public static ProtocolMessage fromJSON(JSONObject json) {
-		ProtocolMessage result = new ProtocolMessage();
-		if(json != null) {
-			result.action = Action.findByValue(json.optInt("action"));
-			result.flags = json.optInt("flags");
-			result.count = json.optInt("count");
-			if(json.has("msgSerial"))
-				result.msgSerial = Long.valueOf(json.optLong("msgSerial"));
-			if(json.has("error"))
-				result.error = new ErrorInfo(json.optJSONObject("error"));
-			if(json.has("id"))
-				result.id = json.optString("id");
-			if(json.has("channel"))
-				result.channel = json.optString("channel");
-			if(json.has("channelSerial"))
-				result.channelSerial = json.optString("channelSerial");
-			if(json.has("connectionId"))
-				result.connectionId = json.optString("connectionId");
-			if(json.has("connectionKey"))
-				result.connectionKey = json.optString("connectionKey");
-			if(json.has("connectionSerial"))
-				result.connectionSerial = Long.valueOf(json.optLong("connectionSerial"));
-			result.timestamp = json.optLong("timestamp");
-			if(json.has("messages"))
-				result.messages = MessageSerializer.readJSON(json.optJSONArray("messages"));
-			if(json.has("presence"))
-				result.presence = PresenceSerializer.readJSON(json.optJSONArray("presence"));
-			if(json.has("connectionDetails"))
-				result.connectionDetails = ConnectionDetails.readJSON(json.optJSONObject("connectionDetails"));
-		}
-		return result;
-	}
-
-	public static ProtocolMessage fromMsgpack(byte[] packed) throws AblyException {
-		try {
-			return BaseMessage.objectMapper.readValue(packed, ProtocolMessage.class);
+			return Serialisation.jsonObjectMapper.readValue(packed, ProtocolMessage.class);
 		} catch (IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}
 	}
 
-	private JSONObject toJSON() throws AblyException {
-		JSONObject json = new JSONObject();
+	public static ProtocolMessage fromMsgpack(byte[] packed) throws AblyException {
 		try {
-			json.put("action", action.getValue());
-			json.put("channel", channel);
-			json.put("msgSerial", msgSerial);
-			if(messages != null) json.put("messages", MessageSerializer.writeJSON(messages));
-			if(presence != null) json.put("presence", PresenceSerializer.writeJSON(presence));
-
-			return json;
-		} catch(JSONException e) {
-			throw new AblyException("Unexpected exception encoding message; err = " + e, 400, 40000);
+			return Serialisation.msgpackObjectMapper.readValue(packed, ProtocolMessage.class);
+		} catch (IOException ioe) {
+			throw AblyException.fromIOException(ioe);
 		}
 	}
 
-	public static String asJSON(ProtocolMessage message) throws AblyException {
-		return message.toJSON().toString();
+	public static byte[] asJSON(ProtocolMessage message) throws AblyException {
+		try {
+			return Serialisation.jsonObjectMapper.writeValueAsBytes(message);
+		} catch (IOException ioe) {
+			throw AblyException.fromIOException(ioe);
+		}
 	}
 
 	public static byte[] asMsgpack(ProtocolMessage message) throws AblyException {
 		try {
-			return BaseMessage.objectMapper.writeValueAsBytes(message);
+			return Serialisation.msgpackObjectMapper.writeValueAsBytes(message);
 		} catch (IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}
@@ -215,6 +170,7 @@ public class ProtocolMessage {
 		SimpleModule protocolModule = new SimpleModule("ProtocolMessage", new Version(1, 0, 0, null, null, null));
 		protocolModule.addSerializer(Action.class, new Action.Serializer());
 		protocolModule.addDeserializer(Action.class, new Action.Deserializer());
-		BaseMessage.objectMapper.registerModule(protocolModule);
+		Serialisation.msgpackObjectMapper.registerModule(protocolModule);
+		Serialisation.jsonObjectMapper.registerModule(protocolModule);
 	}
 }

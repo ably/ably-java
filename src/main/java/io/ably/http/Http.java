@@ -50,6 +50,9 @@ import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 /**
  * Http
  * Support class for HTTP REST operations supporting
@@ -74,6 +77,7 @@ public class Http {
 
 	public static class JSONRequestBody implements RequestBody {
 		public JSONRequestBody(String jsonText) { this.jsonText = jsonText; }
+		public JSONRequestBody(Object ob, ObjectMapper objectMapper) throws JsonProcessingException { this(objectMapper.writeValueAsString(ob)); }
 		@Override
 		public HttpEntity getEntity() throws AblyException {
 			AbstractHttpEntity entity = new ByteArrayEntity(jsonText.getBytes());

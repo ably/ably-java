@@ -5,34 +5,35 @@ import static org.junit.Assert.fail;
 import io.ably.realtime.AblyRealtime;
 import io.ably.test.realtime.RealtimeSetup.TestVars;
 import io.ably.types.AblyException;
+import io.ably.types.BaseMessage;
 import io.ably.types.ChannelOptions;
-import io.ably.types.Message;
 import io.ably.types.ClientOptions;
 import io.ably.util.Base64Coder;
 import io.ably.util.Crypto;
 import io.ably.util.Crypto.CipherParams;
+import io.ably.util.Serialisation;
 
 import java.io.IOException;
 
 import javax.crypto.spec.IvParameterSpec;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 public class RealtimeCryptoMessage {
 
-	private static final String testDataFile128 = "test/io/ably/test/assets/crypto-data-128.json";
-	private static final String testDataFile256 = "test/io/ably/test/assets/crypto-data-256.json";
-	private static JSONObject testData128;
-	private static JSONObject testData256;
+	private static final String testDataFile128 = "src/test/resources/assets/crypto-data-128.json";
+	private static final String testDataFile256 = "src/test/resources/assets/crypto-data-256.json";
+	private static CryptoTestData testData128;
+	private static CryptoTestData testData256;
 
 	@BeforeClass
 	public static void initTestData() {
 		try {
-			testData128 = Helpers.loadJSON(testDataFile128);
-			testData256 = Helpers.loadJSON(testDataFile256);
+			testData128 = (CryptoTestData)Helpers.loadJSON(testDataFile128, Serialisation.jsonObjectMapper, new TypeReference<CryptoTestData>(){});
+			testData256 = (CryptoTestData)Helpers.loadJSON(testDataFile256, Serialisation.jsonObjectMapper, new TypeReference<CryptoTestData>(){});
 		} catch(IOException ioe) {
 			System.err.println("Unable to read spec file: " + ioe);
 			ioe.printStackTrace();
@@ -48,26 +49,30 @@ public class RealtimeCryptoMessage {
 			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
-			byte[] key = Base64Coder.decode(testData128.optString("key"));
-			byte[] iv = Base64Coder.decode(testData128.optString("iv"));
+			byte[] key = Base64Coder.decode(testData128.key);
+			byte[] iv = Base64Coder.decode(testData128.iv);
 
 			final CipherParams params = Crypto.getDefaultParams(key);
 			params.ivSpec = new IvParameterSpec(iv);
 
-			JSONArray items = testData128.optJSONArray("items");
-			for(int i = 0; i < items.length(); i++) {
-				JSONObject item = items.optJSONObject(i);
+			CryptoTestItem[] items = testData128.items;
+			for(int i = 0; i < items.length; i++) {
+				CryptoTestItem item = items[i];
 
 				/* read messages from test data */
-				Message testMessage = Message.fromJSON(item.optJSONObject("encoded"));
-				Message encryptedMessage = Message.fromJSON(item.optJSONObject("encrypted"));
+				BaseMessage testMessage = item.encoded;
+				BaseMessage encryptedMessage = item.encrypted;
+
 				/* decode (ie remove any base64 encoding) */
 				testMessage.decode(null);
 				encryptedMessage.decode(null);
+
 				/* reset channel cipher, to ensure it uses the given iv */
 				ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
+
 				/* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
 				testMessage.encode(options);
+
 				/* compare */
 				assertTrue(Helpers.compareMessage(testMessage, encryptedMessage));
 			}
@@ -88,26 +93,30 @@ public class RealtimeCryptoMessage {
 			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
-			byte[] key = Base64Coder.decode(testData256.optString("key"));
-			byte[] iv = Base64Coder.decode(testData256.optString("iv"));
+			byte[] key = Base64Coder.decode(testData256.key);
+			byte[] iv = Base64Coder.decode(testData256.iv);
 
 			final CipherParams params = Crypto.getDefaultParams(key);
 			params.ivSpec = new IvParameterSpec(iv);
 
-			JSONArray items = testData256.optJSONArray("items");
-			for(int i = 0; i < items.length(); i++) {
-				JSONObject item = items.optJSONObject(i);
+			CryptoTestItem[] items = testData256.items;
+			for(int i = 0; i < items.length; i++) {
+				CryptoTestItem item = items[i];
 
 				/* read messages from test data */
-				Message testMessage = Message.fromJSON(item.optJSONObject("encoded"));
-				Message encryptedMessage = Message.fromJSON(item.optJSONObject("encrypted"));
+				BaseMessage testMessage = item.encoded;
+				BaseMessage encryptedMessage = item.encrypted;
+
 				/* decode (ie remove any base64 encoding) */
 				testMessage.decode(null);
 				encryptedMessage.decode(null);
+
 				/* reset channel cipher, to ensure it uses the given iv */
 				ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
+
 				/* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
 				testMessage.encode(options);
+
 				/* compare */
 				assertTrue(Helpers.compareMessage(testMessage, encryptedMessage));
 			}
@@ -128,26 +137,30 @@ public class RealtimeCryptoMessage {
 			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
-			byte[] key = Base64Coder.decode(testData128.optString("key"));
-			byte[] iv = Base64Coder.decode(testData128.optString("iv"));
+			byte[] key = Base64Coder.decode(testData128.key);
+			byte[] iv = Base64Coder.decode(testData128.iv);
 
 			final CipherParams params = Crypto.getDefaultParams(key);
 			params.ivSpec = new IvParameterSpec(iv);
 
-			JSONArray items = testData128.optJSONArray("items");
-			for(int i = 0; i < items.length(); i++) {
-				JSONObject item = items.optJSONObject(i);
+			CryptoTestItem[] items = testData128.items;
+			for(int i = 0; i < items.length; i++) {
+				CryptoTestItem item = items[i];
 
 				/* read messages from test data */
-				Message testMessage = Message.fromJSON(item.optJSONObject("encoded"));
-				Message encryptedMessage = Message.fromJSON(item.optJSONObject("encrypted"));
+				BaseMessage testMessage = item.encoded;
+				BaseMessage encryptedMessage = item.encrypted;
+
 				/* decode (ie remove any base64 encoding) */
 				testMessage.decode(null);
 				encryptedMessage.decode(null);
+
 				/* reset channel cipher, to ensure it uses the given iv */
 				ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
+
 				/* decrypt message; decode() also to handle data that is not already string or buffer */
 				encryptedMessage.decode(options);
+
 				/* compare */
 				assertTrue(Helpers.compareMessage(testMessage, encryptedMessage));
 			}
@@ -168,26 +181,30 @@ public class RealtimeCryptoMessage {
 			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
-			byte[] key = Base64Coder.decode(testData256.optString("key"));
-			byte[] iv = Base64Coder.decode(testData256.optString("iv"));
+			byte[] key = Base64Coder.decode(testData256.key);
+			byte[] iv = Base64Coder.decode(testData256.iv);
 
 			final CipherParams params = Crypto.getDefaultParams(key);
 			params.ivSpec = new IvParameterSpec(iv);
 
-			JSONArray items = testData256.optJSONArray("items");
-			for(int i = 0; i < items.length(); i++) {
-				JSONObject item = items.optJSONObject(i);
+			CryptoTestItem[] items = testData256.items;
+			for(int i = 0; i < items.length; i++) {
+				CryptoTestItem item = items[i];
 
 				/* read messages from test data */
-				Message testMessage = Message.fromJSON(item.optJSONObject("encoded"));
-				Message encryptedMessage = Message.fromJSON(item.optJSONObject("encrypted"));
+				BaseMessage testMessage = item.encoded;
+				BaseMessage encryptedMessage = item.encrypted;
+
 				/* decode (ie remove any base64 encoding) */
 				testMessage.decode(null);
 				encryptedMessage.decode(null);
+
 				/* reset channel cipher, to ensure it uses the given iv */
 				ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
+
 				/* decrypt message; decode() also to handle data that is not already string or buffer */
 				encryptedMessage.decode(options);
+
 				/* compare */
 				assertTrue(Helpers.compareMessage(testMessage, encryptedMessage));
 			}
@@ -198,5 +215,19 @@ public class RealtimeCryptoMessage {
 			if(ably != null)
 				ably.close();
 		}
+	}
+
+	static class CryptoTestData {
+		public String algorithm;
+		public String mode;
+		public int keyLength;
+		public String key;
+		public String iv;
+		public CryptoTestItem[] items;
+	}
+
+	static class CryptoTestItem {
+		public BaseMessage encoded;
+		public BaseMessage encrypted;
 	}
 }

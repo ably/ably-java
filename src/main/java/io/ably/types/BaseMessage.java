@@ -8,7 +8,6 @@ import java.util.regex.Pattern;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -17,7 +16,6 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -57,47 +55,6 @@ public class BaseMessage implements Cloneable {
 	@JsonSerialize(using = DataSerializer.class)
 	@JsonDeserialize(using = DataDeserializer.class)
 	public Object data;
-
-	/**
-	 * Construct a message from a JSON-encoded response body.
-	 * @param json: a JSONObject obtained by parsing the response text
-	 * @return
-	 */
-	protected void readJSON(JSONObject json) {
-		if(json != null) {
-			timestamp = json.optLong("timestamp");
-			encoding = (String)json.opt("encoding");
-			data = (String)json.opt("data");
-			id = (String)json.opt("id");
-			clientId = (String)json.opt("clientId");
-			connectionId = (String)json.opt("connectionId");
-		}
-	}
-
-	/**
-	 * Internal: obtain a JSONObject from a Message
-	 * @return
-	 * @throws AblyException
-	 */
-	JSONObject toJSON() throws AblyException {
-		JSONObject json = new JSONObject();
-		try {
-			if(timestamp > 0) json.put("timestamp", timestamp);
-			if(clientId != null) json.put("clientId", clientId);
-			if(connectionId != null) json.put("connectionId", clientId);
-			if(data != null) {
-				if(data instanceof byte[]) {
-					data = new String(Base64Coder.encode((byte[])data));
-					encoding = (encoding == null) ? "base64" : encoding + "/base64";
-				}
-				json.put("data", data);
-			}
-			if(encoding != null) json.put("encoding", encoding);
-			return json;
-		} catch(JSONException e) {
-			throw new AblyException("Unexpected exception encoding message; err = " + e, 400, 40000);
-		}
-	}
 
 	/**
 	 * Generate a String summary of this BaseMessage
@@ -206,6 +163,4 @@ public class BaseMessage implements Cloneable {
 			result.append(separator).append(elements[i]);
 		return result.toString();
 	}
-
-	static final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
 }

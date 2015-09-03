@@ -12,10 +12,10 @@ import io.ably.types.PaginatedResult;
 import io.ably.types.Param;
 import io.ably.types.Stats;
 import io.ably.types.StatsReader;
+import io.ably.util.Serialisation;
 import io.ably.util.Log;
 
-import org.json.JSONArray;
-import org.json.JSONException;
+import java.io.IOException;
 
 /**
  * AblyRest
@@ -97,8 +97,8 @@ public class AblyRest {
 			@Override
 			public Object handleResponse(int statusCode, String contentType, String[] linkHeaders, byte[] body) throws AblyException {
 				try {
-					 return (new JSONArray(new String(body))).optLong(0);
-				} catch (JSONException e) {
+					return (Long)Serialisation.jsonObjectMapper.readValue(body, Long[].class)[0];
+				} catch (IOException e) {
 					throw AblyException.fromThrowable(e);
 				}
 			}})).longValue();
@@ -115,4 +115,5 @@ public class AblyRest {
 	public PaginatedResult<Stats> stats(Param[] params) throws AblyException {
 		return new PaginatedQuery<Stats>(http, "/stats", HttpUtils.defaultGetHeaders(false), params, StatsReader.statsResponseHandler).get();
 	}
+
 }

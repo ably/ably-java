@@ -2,10 +2,6 @@ package io.ably.types;
 
 import java.io.IOException;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -18,6 +14,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import io.ably.http.Http;
 import io.ably.http.Http.RequestBody;
+import io.ably.util.Serialisation;
 
 /**
  * A class representing an individual presence update to be sent or received
@@ -60,30 +57,16 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
 	public Action action;
 
 	/**
-	 * Construct a PresenceMessage from a JSON-encoded response body
-	 * @param json: the JSONObject obtained by parsing the body text
+	 * Construct a PresenceMessage from a Msgpack-encoded response body
+	 * @param packed: the Msgpack buffer body text
 	 * @return
 	 */
-	public static PresenceMessage fromJSON(JSONObject json) {
-		PresenceMessage result = new PresenceMessage();
-		if(json != null) {
-			result.readJSON(json);
-			result.action = Action.findByValue(json.optInt("action"));
+	public static PresenceMessage fromJSON(String packed) throws AblyException {
+		try {
+			return Serialisation.jsonObjectMapper.readValue(packed, PresenceMessage.class);
+		} catch (IOException ioe) {
+			throw AblyException.fromIOException(ioe);
 		}
-		return result;
-	}
-
-	/**
-	 * Construct an array of PresenceMessages from a JSON-encoded response body
-	 * @param json: the JSONArray obtained by parsing the body text
-	 * @return
-	 */
-	public static PresenceMessage[] fromJSON(JSONArray json) {
-		int count = json.length();
-		PresenceMessage[] result = new PresenceMessage[count];
-		for(int i = 0; i < count; i++)
-			result[i] = PresenceMessage.fromJSON(json.optJSONObject(i));
-		return result;
 	}
 
 	/**
@@ -93,64 +76,24 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
 	 */
 	public static PresenceMessage fromMsgpack(byte[] packed) throws AblyException {
 		try {
-			return objectMapper.readValue(packed, PresenceMessage.class);
+			return Serialisation.msgpackObjectMapper.readValue(packed, PresenceMessage.class);
 		} catch (IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}
 	}
 
 	/**
-	 * Internal: obtain a JSONObject from a PresenceMessage
-	 * @return
-	 * @throws AblyException
-	 */
-	JSONObject toJSON() throws AblyException {
-		JSONObject json = super.toJSON();
-		try {
-			json.put("action", action.getValue());
-			return json;
-		} catch(JSONException e) {
-			throw new AblyException("Unexpected exception encoding message; err = " + e, 400, 40000);
-		}
-	}
-
-	/**
-	 * Internal: obtain a JSON-encoded request body from a PresenceMessage
+	 * Internal: obtain a JSON representation of a single Message
 	 * @param message
 	 * @return
 	 * @throws AblyException
 	 */
-	public static RequestBody asJSONRequest(PresenceMessage message) throws AblyException {
-		return new Http.JSONRequestBody(message.toJSON().toString());
-	}
-
-	/**
-	 * Internal: obtain a JSONArray from an array of PresenceMessages
-	 * @param messages
-	 * @return
-	 * @throws AblyException
-	 */
-	public static JSONArray asJSON(PresenceMessage[] messages) throws AblyException {
-		JSONArray json;
+	public static String asJSON(Message message) throws AblyException {
 		try {
-			json = new JSONArray();
-			for(int i = 0; i < messages.length; i++)
-				json.put(i, messages[i].toJSON());
-
-			return json;
-		} catch (JSONException e) {
-			throw AblyException.fromThrowable(e);
+			return Serialisation.jsonObjectMapper.writeValueAsString(message);
+		} catch (IOException ioe) {
+			throw AblyException.fromIOException(ioe);
 		}
-	}
-
-	/**
-	 * Internal: obtain a JSON-encoded request body from an array of PresenceMessages
-	 * @param messages
-	 * @return
-	 * @throws AblyException
-	 */
-	public static RequestBody asJSONRequest(PresenceMessage[] messages) throws AblyException {
-		return new Http.JSONRequestBody(asJSON(messages).toString());
 	}
 
 	/**
@@ -161,7 +104,7 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
 	 */
 	public static byte[] asMsgpack(Message message) throws AblyException {
 		try {
-			return objectMapper.writeValueAsBytes(message);
+			return Serialisation.msgpackObjectMapper.writeValueAsBytes(message);
 		} catch (IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}
@@ -185,7 +128,7 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
 	 */
 	public static RequestBody asMsgpackRequest(PresenceMessage[] messages) throws AblyException {
 		try {
-			return new Http.ByteArrayRequestBody(objectMapper.writeValueAsBytes(messages));
+			return new Http.ByteArrayRequestBody(Serialisation.msgpackObjectMapper.writeValueAsBytes(messages));
 		} catch(IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}
@@ -247,6 +190,6 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
 		SimpleModule presenceModule = new SimpleModule("PresenceMessage", new Version(1, 0, 0, null, null, null));
 		presenceModule.addSerializer(Action.class, new Action.Serializer());
 		presenceModule.addDeserializer(Action.class, new Action.Deserializer());
-		BaseMessage.objectMapper.registerModule(presenceModule);
+		Serialisation.msgpackObjectMapper.registerModule(presenceModule);
 	}
 }

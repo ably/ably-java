@@ -1,36 +1,28 @@
 package io.ably.test.rest;
 
-import io.ably.http.Http.JSONRequestBody;
-import io.ably.http.Http.ResponseHandler;
-import io.ably.http.HttpUtils;
-import io.ably.rest.AblyRest;
-import io.ably.types.AblyException;
-import io.ably.types.ClientOptions;
-
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+
+import io.ably.http.Http.JSONRequestBody;
+import io.ably.http.Http.ResponseHandler;
+import io.ably.http.HttpUtils;
+import io.ably.rest.AblyRest;
+import io.ably.test.common.Setup;
+import io.ably.test.realtime.Helpers;
+import io.ably.types.AblyException;
+import io.ably.types.ClientOptions;
+import io.ably.util.Serialisation;
 
 public class RestSetup {
 
 	private static final String defaultSpecFile = "src/test/resources/assets/testAppSpec.json";
 
-	public static class Key {
-		public String keyName;
-		public String keySecret;
-		public String keyStr;
-		public String capability;
-	}
-
-	public static class TestVars {
-		public String appId;
-		public Key[] keys;
+	public static class TestVars extends Setup.AppSpec {
 		public String host;
 		public int port;
 		public int tlsPort;
@@ -104,54 +96,37 @@ public class RestSetup {
 					System.exit(1);
 				}
 			}
-			String appSpecText = null;
+			Setup.AppSpec appSpec = null;
 			try {
-				FileInputStream fis = new FileInputStream(specFile);
-				try {
-					byte[] jsonBytes = new byte[fis.available()];
-					fis.read(jsonBytes);
-					appSpecText = new String(jsonBytes);
-				} finally {
-					fis.close();
-				}
+				appSpec = (Setup.AppSpec)Helpers.loadJSON(specFile, Serialisation.jsonObjectMapper, new TypeReference<Setup.AppSpec>(){});
+				appSpec.notes = "Test app; created by ably-java rest tests; date = " + new Date().toString();
 			} catch(IOException ioe) {
 				System.err.println("Unable to read spec file: " + ioe);
 				ioe.printStackTrace();
 				System.exit(1);
 			}
 			try {
-				testVars = (TestVars)ably.http.post("/apps", HttpUtils.defaultPostHeaders(false), null, new JSONRequestBody(appSpecText), new ResponseHandler() {
+				testVars = (TestVars)ably.http.post("/apps", HttpUtils.defaultPostHeaders(false), null, new JSONRequestBody(appSpec, Serialisation.jsonObjectMapper), new ResponseHandler() {
 					@Override
 					public Object handleResponse(int statusCode, String contentType, String[] headers, byte[] body) throws AblyException {
-						JSONObject appSpec;
 						try {
-							appSpec = new JSONObject(new String(body));
-							appSpec.put("notes", "Test app; created by ably-java rest tests; date = " + new Date().toString());
-							TestVars result = new TestVars();
+							TestVars result = (TestVars)Serialisation.jsonObjectMapper.readValue(body, TestVars.class);
 							result.host = host;
 							result.port = port;
 							result.tlsPort = tlsPort;
 							result.tls = tls;
-							result.appId = appSpec.optString("appId");
-							JSONArray keys = appSpec.optJSONArray("keys");
-							int keyCount = keys.length();
-							result.keys = new Key[keyCount];
-							for(int i = 0; i < keyCount; i++) {
-								JSONObject jsonKey = keys.optJSONObject(i);
-								Key key = result.keys[i] = new Key();
-								key.keyName = jsonKey.optString("keyName");
-								key.keySecret = jsonKey.optString("keySecret");
-								key.keyStr = jsonKey.optString("keyStr");
-								key.capability = jsonKey.optString("capability");
-							}
 							return result;
-						} catch (JSONException e) {
+						} catch (IOException e) {
 							throw new AblyException("Unexpected exception processing server response; err = " + e, 500, 50000);
 						}
 					}});
 			} catch (AblyException ae) {
 				System.err.println("Unable to create test app: " + ae);
 				ae.printStackTrace();
+				System.exit(1);
+			} catch (JsonProcessingException jpe) {
+				System.err.println("Unable to process app spec: " + jpe);
+				jpe.printStackTrace();
 				System.exit(1);
 			}
 		}

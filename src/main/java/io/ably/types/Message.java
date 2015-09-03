@@ -2,8 +2,7 @@ package io.ably.types;
 
 import java.io.IOException;
 
-import org.json.JSONException;
-import org.json.JSONObject;
+import io.ably.util.Serialisation;
 
 /**
  * A class representing an individual message to be sent or received
@@ -18,30 +17,14 @@ public class Message extends BaseMessage {
 
 	/**
 	 * Construct a message from a JSON-encoded response body.
-	 * @param json: a JSONObject obtained by parsing the response text
+	 * @param packed: the response data
 	 * @return
 	 */
-	public static Message fromJSON(JSONObject json) {
-		Message result = new Message();
-		if(json != null) {
-			result.readJSON(json);
-			result.name = (String)json.opt("name");
-		}
-		return result;
-	}
-
-	/**
-	 * Internal: obtain a JSONObject from a Message
-	 * @return
-	 * @throws AblyException
-	 */
-	JSONObject toJSON() throws AblyException {
-		JSONObject json = super.toJSON();
+	public static Message fromJSON(String packed) throws AblyException {
 		try {
-			if(name != null) json.put("name", name);
-			return json;
-		} catch(JSONException e) {
-			throw new AblyException("Unexpected exception encoding message; err = " + e, 400, 40000);
+			return Serialisation.jsonObjectMapper.readValue(packed, Message.class);
+		} catch (IOException ioe) {
+			throw AblyException.fromIOException(ioe);
 		}
 	}
 
@@ -52,7 +35,7 @@ public class Message extends BaseMessage {
 	 */
 	public static Message fromMsgpack(byte[] packed) throws AblyException {
 		try {
-			return objectMapper.readValue(packed, Message.class);
+			return Serialisation.msgpackObjectMapper.readValue(packed, Message.class);
 		} catch (IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}

@@ -3,14 +3,12 @@ package io.ably.types;
 import java.io.IOException;
 import java.util.List;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import io.ably.http.Http;
 import io.ably.http.Http.BodyHandler;
 import io.ably.http.Http.RequestBody;
+import io.ably.util.Serialisation;
 
 /**
  * MessageReader: internal
@@ -19,28 +17,21 @@ import io.ably.http.Http.RequestBody;
  */
 public class MessageSerializer {
 
-	public static Message[] readMsgpack(byte[] packed) throws AblyException {
+	public static Message[] readJSON(String packed) throws AblyException {
 		try {
-			List<Message> messages = BaseMessage.objectMapper.readValue(packed, typeReference);
+			List<Message> messages = Serialisation.jsonObjectMapper.readValue(packed, messageTypeReference);
 			return messages.toArray(new Message[messages.size()]);
 		} catch(IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}
 	}
 
-	public static Message[] readJSON(JSONArray json) {
-		int count = json.length();
-		Message[] result = new Message[count];
-			for(int i = 0; i < count; i++)
-				result[i] = Message.fromJSON(json.optJSONObject(i));
-			return result;
-	}
-
-	public static Message[] readJSON(String jsonText) throws AblyException {
+	public static Message[] readMsgpack(byte[] packed) throws AblyException {
 		try {
-			return readJSON(new JSONArray(jsonText));
-		} catch (JSONException e) {
-			throw AblyException.fromThrowable(e);
+			List<Message> messages = Serialisation.msgpackObjectMapper.readValue(packed, messageTypeReference);
+			return messages.toArray(new Message[messages.size()]);
+		} catch(IOException ioe) {
+			throw AblyException.fromIOException(ioe);
 		}
 	}
 
@@ -48,42 +39,41 @@ public class MessageSerializer {
 		return readJSON(new String(jsonBytes));
 	}
 
-	public static JSONArray writeJSON(Message[] messages) throws AblyException {
-		JSONArray json;
+	public static byte[] asMsgpack(Message message) throws AblyException {
 		try {
-			json = new JSONArray();
-			for(int i = 0; i < messages.length; i++)
-				json.put(i, messages[i].toJSON());
+			return Serialisation.msgpackObjectMapper.writeValueAsBytes(message);
+		} catch (IOException ioe) {
+			throw AblyException.fromIOException(ioe);
+		}
+	}
 
-			return json;
-		} catch (JSONException e) {
-			throw AblyException.fromThrowable(e);
+	public static String asJSON(Message message) throws AblyException {
+		try {
+			return Serialisation.jsonObjectMapper.writeValueAsString(message);
+		} catch (IOException ioe) {
+			throw AblyException.fromIOException(ioe);
 		}
 	}
 
 	public static RequestBody asJSONRequest(Message message) throws AblyException {
-		return new Http.JSONRequestBody(message.toJSON().toString());
-	}
-
-	public static RequestBody asJSONRequest(Message[] messages) throws AblyException {
-		return new Http.JSONRequestBody(writeJSON(messages).toString());
-	}
-
-	public static byte[] asMsgpack(Message message) throws AblyException {
-		try {
-			return BaseMessage.objectMapper.writeValueAsBytes(message);
-		} catch (IOException ioe) {
-			throw AblyException.fromIOException(ioe);
-		}
+		return asJSONRequest(new Message[] { message });
 	}
 
 	public static RequestBody asMsgpackRequest(Message message) throws AblyException {
 		return asMsgpackRequest(new Message[] { message });
 	}
 
+	public static RequestBody asJSONRequest(Message[] messages) throws AblyException {
+		try {
+			return new Http.ByteArrayRequestBody(Serialisation.jsonObjectMapper.writeValueAsBytes(messages));
+		} catch(IOException ioe) {
+			throw AblyException.fromIOException(ioe);
+		}
+	}
+
 	public static RequestBody asMsgpackRequest(Message[] messages) throws AblyException {
 		try {
-			return new Http.ByteArrayRequestBody(BaseMessage.objectMapper.writeValueAsBytes(messages));
+			return new Http.ByteArrayRequestBody(Serialisation.msgpackObjectMapper.writeValueAsBytes(messages));
 		} catch(IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}
@@ -114,6 +104,6 @@ public class MessageSerializer {
 	}
 
 	private static BodyHandler<Message> messageResponseHandler = new MessageBodyHandler(null);
-	private static final TypeReference<List<Message>> typeReference = new TypeReference<List<Message>>(){};
+	private static final TypeReference<List<Message>> messageTypeReference = new TypeReference<List<Message>>(){};
 
 }

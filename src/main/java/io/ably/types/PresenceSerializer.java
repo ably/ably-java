@@ -3,12 +3,10 @@ package io.ably.types;
 import java.io.IOException;
 import java.util.List;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import io.ably.http.Http.BodyHandler;
+import io.ably.util.Serialisation;
 
 /**
  * PresenceReader: internal
@@ -17,46 +15,26 @@ import io.ably.http.Http.BodyHandler;
  */
 public class PresenceSerializer {
 
-	public static PresenceMessage[] readMsgpack(byte[] packed) throws AblyException {
+	public static PresenceMessage[] readJSON(String packed) throws AblyException {
 		try {
-			List<PresenceMessage> messages = BaseMessage.objectMapper.readValue(packed, typeReference);
+			List<PresenceMessage> messages = Serialisation.jsonObjectMapper.readValue(packed, presenceTypeReference);
 			return messages.toArray(new PresenceMessage[messages.size()]);
 		} catch(IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}
 	}
 
-	public static PresenceMessage[] readJSON(JSONArray json) {
-		int count = json.length();
-		PresenceMessage[] result = new PresenceMessage[count];
-			for(int i = 0; i < count; i++)
-				result[i] = PresenceMessage.fromJSON(json.optJSONObject(i));
-			return result;
-	}
-
-	public static PresenceMessage[] readJSON(String jsonText) throws AblyException {
+	public static PresenceMessage[] readMsgpack(byte[] packed) throws AblyException {
 		try {
-			return readJSON(new JSONArray(jsonText));
-		} catch (JSONException e) {
-			throw AblyException.fromThrowable(e);
+			List<PresenceMessage> messages = Serialisation.msgpackObjectMapper.readValue(packed, presenceTypeReference);
+			return messages.toArray(new PresenceMessage[messages.size()]);
+		} catch(IOException ioe) {
+			throw AblyException.fromIOException(ioe);
 		}
 	}
 
 	public static PresenceMessage[] readJSON(byte[] jsonBytes) throws AblyException {
 		return readJSON(new String(jsonBytes));
-	}
-
-	public static JSONArray writeJSON(PresenceMessage[] messages) throws AblyException {
-		JSONArray json;
-		try {
-			json = new JSONArray();
-			for(int i = 0; i < messages.length; i++)
-				json.put(i, messages[i].toJSON());
-
-			return json;
-		} catch (JSONException e) {
-			throw AblyException.fromThrowable(e);
-		}
 	}
 
 	public static BodyHandler<PresenceMessage> getPresenceResponseHandler(ChannelOptions opts) {
@@ -83,5 +61,5 @@ public class PresenceSerializer {
 	};
 
 	private static PresenceBodyHandler presenceResponseHandler = new PresenceBodyHandler(null);
-	private static final TypeReference<List<PresenceMessage>> typeReference = new TypeReference<List<PresenceMessage>>(){};
+	private static final TypeReference<List<PresenceMessage>> presenceTypeReference = new TypeReference<List<PresenceMessage>>(){};
 }

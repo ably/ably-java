@@ -13,6 +13,9 @@ import java.util.Set;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.ably.debug.RawProtocolListener;
 import io.ably.realtime.Channel;
 import io.ably.realtime.Channel.MessageListener;
@@ -483,12 +486,12 @@ public class Helpers {
 		}
 	}
 
-	public static JSONObject loadJSON(String filename) throws IOException {
+	public static Object loadJSON(String filename, ObjectMapper objectMapper, TypeReference<?> typeReference) throws IOException {
 		FileInputStream fis = new FileInputStream(filename);
 		try {
 			byte[] jsonBytes = new byte[fis.available()];
 			fis.read(jsonBytes);
-			return new JSONObject(new String(jsonBytes));
+			return objectMapper.readValue(new String(jsonBytes), typeReference);
 		} finally {
 			fis.close();
 		}

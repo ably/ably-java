@@ -5,7 +5,7 @@ import io.ably.rest.AblyRest;
 import io.ably.rest.Auth.AuthOptions;
 import io.ably.rest.Auth.TokenDetails;
 import io.ably.rest.Auth.TokenParams;
-import io.ably.test.rest.RestSetup.Key;
+import io.ably.test.common.Setup.Key;
 import io.ably.test.rest.RestSetup.TestVars;
 import io.ably.types.AblyException;
 import io.ably.types.Capability;
