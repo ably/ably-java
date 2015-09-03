@@ -1,7 +1,7 @@
 {
 	"algorithm": "aes",
 	"mode": "cbc",
-	"keylength": 128,
+	"keyLength": 128,
 	"key": "WUP6u0K7MXI5Zeo0VppPwg==",
 	"iv": "HO4cYSP8LybPYBPZPHQOtg==",
 	"items": [
