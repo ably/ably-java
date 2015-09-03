@@ -1,8 +1,5 @@
 package io.ably.types;
 
-import io.ably.util.Base64Coder;
-import io.ably.util.Crypto.ChannelCipher;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.regex.Matcher;
@@ -11,9 +8,22 @@ import java.util.regex.Pattern;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.msgpack.packer.Packer;
-import org.msgpack.type.ValueType;
-import org.msgpack.unpacker.Unpacker;
+import org.msgpack.jackson.dataformat.MessagePackFactory;
+
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import io.ably.util.Base64Coder;
+import io.ably.util.Crypto.ChannelCipher;
 
 public class BaseMessage implements Cloneable {
 	/**
@@ -44,6 +54,8 @@ public class BaseMessage implements Cloneable {
 	/**
 	 * The message payload.
 	 */
+	@JsonSerialize(using = DataSerializer.class)
+	@JsonDeserialize(using = DataDeserializer.class)
 	public Object data;
 
 	/**
@@ -163,62 +175,26 @@ public class BaseMessage implements Cloneable {
 		}
 	}
 
-	public boolean readField(Unpacker unpacker, String fieldName, ValueType fieldType) throws IOException {
-		boolean result = true;
-		if(fieldName == "timestamp") {
-			timestamp = unpacker.readLong();
-		} else if(fieldName == "id") {
-			id = unpacker.readString();
-		} else if(fieldName == "clientId") {
-			clientId = unpacker.readString();
-		} else if(fieldName == "connectionId") {
-			connectionId = unpacker.readString();
-		} else if(fieldName == "encoding") {
-			encoding = unpacker.readString();
-		} else if(fieldName == "data") {
-			if(fieldType == ValueType.BIN)
-				data = unpacker.readByteArray();
-			else
-				data = unpacker.readString();
-		} else {
-			result = false;
+	public static class DataSerializer extends JsonSerializer<Object> {
+		@Override
+		public void serialize(Object data, JsonGenerator generator, SerializerProvider arg2)
+				throws IOException, JsonProcessingException {
+
+			if(data instanceof byte[]) {
+				byte[] dataBytes = (byte[])data;
+				generator.writeBinary(dataBytes);
+			} else {
+				generator.writeString(data.toString());
+			}
 		}
-		return result;
 	}
 
-	public int countFields() {
-		int fieldCount = 0;
-		if(timestamp > 0) ++fieldCount;
-		if(clientId != null) ++fieldCount;
-		if(connectionId != null) ++fieldCount;
-		if(encoding != null) ++fieldCount;
-		if(data != null) ++fieldCount;
-		return fieldCount;
-	}
+	public static class DataDeserializer extends JsonDeserializer<Object> {
+		@Override
+		public Object deserialize(JsonParser parser, DeserializationContext deserContext)
+				throws IOException, JsonProcessingException {
 
-	public void writeFields(Packer packer) throws IOException {
-		if(timestamp > 0) {
-			packer.write("timestamp");
-			packer.write(timestamp);
-		}
-		if(clientId != null) {
-			packer.write("clientId");
-			packer.write(clientId);
-		}
-		if(connectionId != null) {
-			packer.write("connectionId");
-			packer.write(connectionId);
-		}
-		if(encoding != null) {
-			packer.write("encoding");
-			packer.write(encoding);
-		}
-		if(data != null) {
-			packer.write("data");
-			if(data instanceof byte[])
-				packer.write((byte[])data);
-			else
-				packer.write(data.toString());
+			return (parser.getCurrentToken() == JsonToken.VALUE_STRING) ? parser.getText() : parser.getBinaryValue();
 		}
 	}
 
@@ -230,4 +206,6 @@ public class BaseMessage implements Cloneable {
 			result.append(separator).append(elements[i]);
 		return result.toString();
 	}
+
+	static final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
 }

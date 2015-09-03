@@ -1,22 +1,16 @@
 package io.ably.types;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import io.ably.http.Http;
 import io.ably.http.Http.BodyHandler;
 import io.ably.http.Http.RequestBody;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.msgpack.MessagePack;
-import org.msgpack.packer.Packer;
-import org.msgpack.template.ListTemplate;
-import org.msgpack.template.Template;
-import org.msgpack.unpacker.Unpacker;
 
 /**
  * MessageReader: internal
@@ -25,15 +19,10 @@ import org.msgpack.unpacker.Unpacker;
  */
 public class MessageSerializer {
 
-	static Message[] readMsgpack(Unpacker unpacker) throws IOException {
-		List<Message> msgList = unpacker.read(listTmpl);
-		return msgList.toArray(new Message[msgList.size()]);
-	}
-
 	public static Message[] readMsgpack(byte[] packed) throws AblyException {
 		try {
-			Unpacker unpacker = msgpack.createUnpacker(new ByteArrayInputStream(packed));
-			return readMsgpack(unpacker);
+			List<Message> messages = BaseMessage.objectMapper.readValue(packed, typeReference);
+			return messages.toArray(new Message[messages.size()]);
 		} catch(IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}
@@ -82,7 +71,7 @@ public class MessageSerializer {
 
 	public static byte[] asMsgpack(Message message) throws AblyException {
 		try {
-			return msgpack.write(message);
+			return BaseMessage.objectMapper.writeValueAsBytes(message);
 		} catch (IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}
@@ -94,10 +83,7 @@ public class MessageSerializer {
 
 	public static RequestBody asMsgpackRequest(Message[] messages) throws AblyException {
 		try {
-			ByteArrayOutputStream out = new ByteArrayOutputStream();
-			Packer packer = msgpack.createPacker(out);
-			listTmpl.write(packer, Arrays.asList(messages));
-			return new Http.ByteArrayRequestBody(out.toByteArray());
+			return new Http.ByteArrayRequestBody(BaseMessage.objectMapper.writeValueAsBytes(messages));
 		} catch(IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}
@@ -128,7 +114,6 @@ public class MessageSerializer {
 	}
 
 	private static BodyHandler<Message> messageResponseHandler = new MessageBodyHandler(null);
-	private static final MessagePack msgpack = new MessagePack();
-	private static final Template<List<Message>> listTmpl = new ListTemplate<Message>(msgpack.lookup(Message.class));
+	private static final TypeReference<List<Message>> typeReference = new TypeReference<List<Message>>(){};
 
 }

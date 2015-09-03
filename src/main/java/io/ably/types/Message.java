@@ -4,17 +4,12 @@ import java.io.IOException;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.msgpack.MessagePack;
-import org.msgpack.MessagePackable;
-import org.msgpack.packer.Packer;
-import org.msgpack.type.ValueType;
-import org.msgpack.unpacker.Unpacker;
 
 /**
  * A class representing an individual message to be sent or received
  * via the Ably Realtime service.
  */
-public class Message extends BaseMessage implements MessagePackable {
+public class Message extends BaseMessage {
 
 	/**
 	 * The event name, if available
@@ -57,7 +52,7 @@ public class Message extends BaseMessage implements MessagePackable {
 	 */
 	public static Message fromMsgpack(byte[] packed) throws AblyException {
 		try {
-			return msgpack.read(packed, Message.class);
+			return objectMapper.readValue(packed, Message.class);
 		} catch (IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}
@@ -100,37 +95,4 @@ public class Message extends BaseMessage implements MessagePackable {
 		result.append(']');
 		return result.toString();
 	}
-
-	@Override
-	public void readFrom(Unpacker unpacker) throws IOException {
-		int fieldCount = unpacker.readMapBegin();
-		for(int i = 0; i < fieldCount; i++) {
-			String fieldName = unpacker.readString().intern();
-			ValueType fieldType = unpacker.getNextType();
-			if(fieldType.equals(ValueType.NIL)) { --fieldCount; unpacker.readNil(); continue; }
-			if(super.readField(unpacker, fieldName, fieldType)) continue;
-			if(fieldName == "name") {
-				name = unpacker.readString();
-			} else {
-				System.out.println("Unexpected field: " + fieldName);
-				unpacker.skip();
-			}
-		}
-		unpacker.readMapEnd(true);
-	}
-
-	@Override
-	public void writeTo(Packer packer) throws IOException {
-		int fieldCount = countFields();
-		if(name != null) ++fieldCount;
-		packer.writeMapBegin(fieldCount);
-		super.writeFields(packer);
-		if(name != null) {
-			packer.write("name");
-			packer.write(name);
-		}
-		packer.writeMapEnd(true);
-	}
-
-	private static final MessagePack msgpack = new MessagePack();
 }

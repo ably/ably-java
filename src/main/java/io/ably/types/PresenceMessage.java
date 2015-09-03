@@ -1,37 +1,33 @@
 package io.ably.types;
 
-import io.ably.http.Http;
-import io.ably.http.Http.RequestBody;
-
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.msgpack.MessagePack;
-import org.msgpack.MessagePackable;
-import org.msgpack.annotation.Message;
-import org.msgpack.annotation.OrdinalEnum;
-import org.msgpack.packer.Packer;
-import org.msgpack.template.ListTemplate;
-import org.msgpack.template.Template;
-import org.msgpack.type.ValueType;
-import org.msgpack.unpacker.Unpacker;
+
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+
+import io.ably.http.Http;
+import io.ably.http.Http.RequestBody;
 
 /**
  * A class representing an individual presence update to be sent or received
  * via the Ably Realtime service.
  */
-public class PresenceMessage extends BaseMessage implements MessagePackable, Cloneable {
+public class PresenceMessage extends BaseMessage implements Cloneable {
 
 	/**
 	 * Presence Action: the event signified by a PresenceMessage
 	 */
-	@Message
-	@OrdinalEnum
 	public enum Action {
 		ABSENT,
 		PRESENT,
@@ -41,6 +37,24 @@ public class PresenceMessage extends BaseMessage implements MessagePackable, Clo
 
 		public int getValue() { return ordinal(); }
 		public static Action findByValue(int value) { return values()[value]; }
+
+		public static class Serializer extends JsonSerializer<Action> {
+			@Override
+			public void serialize(Action action, JsonGenerator generator, SerializerProvider arg2)
+					throws IOException, JsonProcessingException {
+
+				generator.writeNumber(action.getValue());
+			}
+		}
+
+		public static class Deserializer extends JsonDeserializer<Action> {
+			@Override
+			public Action deserialize(JsonParser parser, DeserializationContext deserContext)
+					throws IOException, JsonProcessingException {
+
+				return findByValue(parser.getIntValue());
+			}
+		}
 	}
 
 	public Action action;
@@ -79,7 +93,7 @@ public class PresenceMessage extends BaseMessage implements MessagePackable, Clo
 	 */
 	public static PresenceMessage fromMsgpack(byte[] packed) throws AblyException {
 		try {
-			return (new MessagePack()).read(packed, PresenceMessage.class);
+			return objectMapper.readValue(packed, PresenceMessage.class);
 		} catch (IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}
@@ -147,7 +161,7 @@ public class PresenceMessage extends BaseMessage implements MessagePackable, Clo
 	 */
 	public static byte[] asMsgpack(Message message) throws AblyException {
 		try {
-			return msgpack.write(message);
+			return objectMapper.writeValueAsBytes(message);
 		} catch (IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}
@@ -171,10 +185,7 @@ public class PresenceMessage extends BaseMessage implements MessagePackable, Clo
 	 */
 	public static RequestBody asMsgpackRequest(PresenceMessage[] messages) throws AblyException {
 		try {
-			ByteArrayOutputStream out = new ByteArrayOutputStream();
-			Packer packer = msgpack.createPacker(out);
-			listTmpl.write(packer, Arrays.asList(messages));
-			return new Http.ByteArrayRequestBody(out.toByteArray());
+			return new Http.ByteArrayRequestBody(objectMapper.writeValueAsBytes(messages));
 		} catch(IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}
@@ -219,34 +230,6 @@ public class PresenceMessage extends BaseMessage implements MessagePackable, Clo
 	}
 
 	@Override
-	public void readFrom(Unpacker unpacker) throws IOException {
-		int fieldCount = unpacker.readMapBegin();
-		for(int i = 0; i < fieldCount; i++) {
-			String fieldName = unpacker.readString().intern();
-			ValueType fieldType = unpacker.getNextType();
-			if(fieldType.equals(ValueType.NIL)) { --fieldCount; unpacker.readNil(); continue; }
-			if(super.readField(unpacker, fieldName, fieldType)) continue;
-			if(fieldName == "action") {
-				action = Action.findByValue(unpacker.readInt());
-			} else {
-				System.out.println("Unexpected field: " + fieldName);
-				unpacker.skip();
-			}
-		}
-		unpacker.readMapEnd(true);
-	}
-
-	@Override
-	public void writeTo(Packer packer) throws IOException {
-		int fieldCount = countFields() + 1; //action
-		packer.writeMapBegin(fieldCount);
-		super.writeFields(packer);
-		packer.write("action");
-		packer.write(action);
-		packer.writeMapEnd(true);
-	}
-
-	@Override
 	public Object clone() {
 		PresenceMessage result = new PresenceMessage();
 		result.id = id;
@@ -259,6 +242,11 @@ public class PresenceMessage extends BaseMessage implements MessagePackable, Clo
 		return result;
 	}
 
-	private static final MessagePack msgpack = new MessagePack();
-	private static final Template<List<PresenceMessage>> listTmpl = new ListTemplate<PresenceMessage>(msgpack.lookup(PresenceMessage.class));
+
+	static {
+		SimpleModule presenceModule = new SimpleModule("PresenceMessage", new Version(1, 0, 0, null, null, null));
+		presenceModule.addSerializer(Action.class, new Action.Serializer());
+		presenceModule.addDeserializer(Action.class, new Action.Deserializer());
+		BaseMessage.objectMapper.registerModule(presenceModule);
+	}
 }

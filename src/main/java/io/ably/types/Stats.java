@@ -5,7 +5,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import org.json.JSONObject;
-import org.msgpack.annotation.Message;
 
 /**
  * A class encapsulating a Stats datapoint.
@@ -16,14 +15,12 @@ import org.msgpack.annotation.Message;
  * This class also contains utility methods to convert from the different
  * formats used for REST responses.
  */
-@Message
 public class Stats {
 
 	/**
 	 * A breakdown of summary stats data for different (tls vs non-tls)
 	 * connection types.
 	 */
-	@Message
 	public static class ConnectionTypes {
 		public ResourceCount all;
 		public ResourceCount plain;
@@ -45,7 +42,6 @@ public class Stats {
 	/**
 	 * A datapoint for message volume (number of messages plus aggregate data size)
 	 */
-	@Message
 	public static class MessageCount {
 		public double count;
 		public double data;
@@ -66,7 +62,6 @@ public class Stats {
 	 * A breakdown of summary stats data for different (message vs presence)
 	 * message types.
 	 */
-	@Message
 	public static class MessageTypes {
 		public MessageCount all;
 		public MessageCount messages;
@@ -88,7 +83,6 @@ public class Stats {
 	/**
 	 * A breakdown of summary stats data for traffic over various transport types.
 	 */
-	@Message
 	public static class MessageTraffic {
 		public MessageTypes all;
 		public MessageTypes realtime;
@@ -112,7 +106,6 @@ public class Stats {
 	/**
 	 * Aggregate data for numbers of requests in a specific scope.
 	 */
-	@Message
 	public static class RequestCount {
 		public double succeeded;
 		public double failed;
@@ -134,7 +127,6 @@ public class Stats {
 	/**
 	 * Aggregate data for usage of a resource in a specific scope.
 	 */
-	@Message
 	public static class ResourceCount {
 		public double opened;
 		public double peak;

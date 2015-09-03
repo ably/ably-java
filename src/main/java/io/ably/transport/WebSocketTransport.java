@@ -8,8 +8,6 @@ import io.ably.types.ErrorInfo;
 import io.ably.types.Param;
 import io.ably.types.ProtocolMessage;
 import io.ably.types.ProtocolMessage.Action;
-import io.ably.types.ProtocolSerializer;
-//import io.ably.util.HexDump;
 import io.ably.util.Log;
 
 import java.net.URI;
@@ -112,9 +110,9 @@ public class WebSocketTransport implements ITransport {
 	public void send(ProtocolMessage msg) throws AblyException {
 		try {
 			if(channelBinaryMode)
-				wsConnection.send(ProtocolSerializer.toMsgpack(msg));
+				wsConnection.send(ProtocolMessage.asMsgpack(msg));
 			else
-				wsConnection.send(ProtocolSerializer.toJSON(msg));
+				wsConnection.send(ProtocolMessage.asJSON(msg));
 		} catch (Exception e) {
 			throw AblyException.fromThrowable(e);
 		}
@@ -146,7 +144,7 @@ public class WebSocketTransport implements ITransport {
 		@Override
 		public void onMessage(ByteBuffer blob) {
 			try {
-				connectionManager.onMessage(ProtocolSerializer.readMsgpack(blob.array()));
+				connectionManager.onMessage(ProtocolMessage.fromMsgpack(blob.array()));
 			} catch (AblyException e) {
 				String msg = "Unexpected exception processing received binary message";
 				Log.e(TAG, msg, e);
@@ -156,7 +154,7 @@ public class WebSocketTransport implements ITransport {
 		@Override
 		public void onMessage(String string) {
 			try {
-				connectionManager.onMessage(ProtocolSerializer.readJSON(string));
+				connectionManager.onMessage(ProtocolMessage.fromJSON(string));
 			} catch (AblyException e) {
 				String msg = "Unexpected exception processing received binary message";
 				Log.e(TAG, msg, e);

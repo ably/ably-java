@@ -2,15 +2,18 @@ package io.ably.types;
 
 import java.io.IOException;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import org.msgpack.MessagePack;
-import org.msgpack.MessagePackable;
-import org.msgpack.packer.Packer;
-import org.msgpack.type.ValueType;
-import org.msgpack.unpacker.Unpacker;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
 /**
  * A message sent and received over the Realtime protocol.
@@ -20,7 +23,7 @@ import org.msgpack.unpacker.Unpacker;
  * See the Ably client library developer documentation for further
  * details on the members of a ProtocolMessage.
  */
-public class ProtocolMessage implements MessagePackable {
+public class ProtocolMessage {
 	public enum Action {
 		HEARTBEAT,
 		ACK,
@@ -42,6 +45,24 @@ public class ProtocolMessage implements MessagePackable {
 
 		public int getValue() { return ordinal(); }
 		public static Action findByValue(int value) { return values()[value]; }
+
+		public static class Serializer extends JsonSerializer<Action> {
+			@Override
+			public void serialize(Action action, JsonGenerator generator, SerializerProvider arg2)
+					throws IOException, JsonProcessingException {
+
+				generator.writeNumber(action.getValue());
+			}
+		}
+
+		public static class Deserializer extends JsonDeserializer<Action> {
+			@Override
+			public Action deserialize(JsonParser parser, DeserializationContext deserContext)
+					throws IOException, JsonProcessingException {
+
+				return findByValue(parser.getIntValue());
+			}
+		}
 	}
 
 	public enum Flag {
@@ -50,6 +71,14 @@ public class ProtocolMessage implements MessagePackable {
 
 		public int getValue() { return ordinal(); }
 		public static Flag findByValue(int value) { return values()[value]; }
+	}
+
+	public static ProtocolMessage fromJSON(String json) throws AblyException {
+		try {
+			return fromJSON(new JSONObject(json));
+		} catch(JSONException e) {
+			throw AblyException.fromThrowable(e);
+		}
 	}
 
 	public static ProtocolMessage fromJSON(JSONObject json) {
@@ -87,7 +116,7 @@ public class ProtocolMessage implements MessagePackable {
 
 	public static ProtocolMessage fromMsgpack(byte[] packed) throws AblyException {
 		try {
-			return msgpack.read(packed, ProtocolMessage.class);
+			return BaseMessage.objectMapper.readValue(packed, ProtocolMessage.class);
 		} catch (IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}
@@ -108,26 +137,13 @@ public class ProtocolMessage implements MessagePackable {
 		}
 	}
 
-	public static JSONObject asJSON(ProtocolMessage message) throws AblyException {
-		return message.toJSON();
-	}
-
-	public static JSONArray asJSON(ProtocolMessage[] messages) throws AblyException {
-		JSONArray json;
-		try {
-			json = new JSONArray();
-			for(int i = 0; i < messages.length; i++)
-				json.put(i, messages[i].toJSON());
-
-			return json;
-		} catch (JSONException e) {
-			throw AblyException.fromThrowable(e);
-		}
+	public static String asJSON(ProtocolMessage message) throws AblyException {
+		return message.toJSON().toString();
 	}
 
 	public static byte[] asMsgpack(ProtocolMessage message) throws AblyException {
 		try {
-			return msgpack.write(message);
+			return BaseMessage.objectMapper.writeValueAsBytes(message);
 		} catch (IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}
@@ -179,87 +195,6 @@ public class ProtocolMessage implements MessagePackable {
 		this.channel = channel;
 	}
 
-	@Override
-	public void writeTo(Packer packer) throws IOException {
-		int fieldCount = 1; //action
-		if(channel != null) ++fieldCount;
-		if(msgSerial != null) ++fieldCount;
-		if(messages != null) ++fieldCount;
-		if(presence != null) ++fieldCount;
-		packer.writeMapBegin(fieldCount);
-		packer.write("action");
-		packer.write(action.getValue());
-		if(channel != null) {
-			packer.write("channel");
-			packer.write(channel);
-		}
-		if(msgSerial != null) {
-			packer.write("msgSerial");
-			packer.write(msgSerial.longValue());
-		}
-		if(messages != null) {
-			packer.write("messages");
-			packer.writeArrayBegin(messages.length);
-			for(Message msg : messages)
-				msg.writeTo(packer);
-			packer.writeArrayEnd(true);
-		}
-		if(presence != null) {
-			packer.write("presence");
-			packer.writeArrayBegin(presence.length);
-			for(PresenceMessage msg : presence)
-				msg.writeTo(packer);
-			packer.writeArrayEnd(true);
-		}
-		packer.writeMapEnd(true);
-	}
-
-	@Override
-	public void readFrom(Unpacker unpacker) throws IOException {
-		int fieldCount = unpacker.readMapBegin();
-		for(int i = 0; i < fieldCount; i++) {
-			String fieldName = unpacker.readString().intern();
-			ValueType fieldType = unpacker.getNextType();
-			if(fieldType.equals(ValueType.NIL)) { unpacker.readNil(); continue; }
-
-			if(fieldName == "action") {
-				action = Action.findByValue(unpacker.readInt());
-			} else if(fieldName == "flags") {
-				flags = unpacker.readInt();
-			} else if(fieldName == "count") {
-				count = unpacker.readInt();
-			} else if(fieldName == "error") {
-				error = unpacker.read(ErrorInfo.class);
-			} else if(fieldName == "id") {
-				id = unpacker.readString();
-			} else if(fieldName == "channel") {
-				channel = unpacker.readString();
-			} else if(fieldName == "channelSerial") {
-				channelSerial = unpacker.readString();
-			} else if(fieldName == "connectionId") {
-				connectionId = unpacker.readString();
-			} else if(fieldName == "connectionKey") {
-				connectionKey = unpacker.readString();
-			} else if(fieldName == "connectionSerial") {
-				connectionSerial = Long.valueOf(unpacker.readLong());
-			} else if(fieldName == "msgSerial") {
-				msgSerial = Long.valueOf(unpacker.readLong());
-			} else if(fieldName == "timestamp") {
-				timestamp = unpacker.readLong();
-			} else if(fieldName == "messages") {
-				messages = MessageSerializer.readMsgpack(unpacker);
-			} else if(fieldName == "presence") {
-				presence = PresenceSerializer.readMsgpack(unpacker);
-			} else if(fieldName == "connectionDetails") {
-				connectionDetails = unpacker.read(ConnectionDetails.class);
-			} else {
-				System.out.println("Unexpected field: " + fieldName);
-				unpacker.skip();
-			}
-		}
-		unpacker.readMapEnd(true);
-	}
-
 	public Action action;
 	public int flags;
 	public int count;
@@ -276,5 +211,10 @@ public class ProtocolMessage implements MessagePackable {
 	public PresenceMessage[] presence;
 	public ConnectionDetails connectionDetails;
 
-	private static final MessagePack msgpack = new MessagePack();;
+	static {
+		SimpleModule protocolModule = new SimpleModule("ProtocolMessage", new Version(1, 0, 0, null, null, null));
+		protocolModule.addSerializer(Action.class, new Action.Serializer());
+		protocolModule.addDeserializer(Action.class, new Action.Deserializer());
+		BaseMessage.objectMapper.registerModule(protocolModule);
+	}
 }

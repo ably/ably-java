@@ -1,18 +1,12 @@
 package io.ably.types;
 
-import java.io.IOException;
-
 import org.json.JSONObject;
-import org.msgpack.MessagePackable;
-import org.msgpack.packer.Packer;
-import org.msgpack.type.ValueType;
-import org.msgpack.unpacker.Unpacker;
 
 /**
  * An exception type encapsulating error information containing
  * an Ably-specific error code and generic status code.
  */
-public class ErrorInfo implements MessagePackable {
+public class ErrorInfo {
 
 	/**
 	 * Ably error code (see ably-common/protocol/errors.json)
@@ -84,39 +78,5 @@ public class ErrorInfo implements MessagePackable {
 
 	public JSONObject getRawJSON() {
 		return json;
-	}
-
-	@Override
-	public void writeTo(Packer packer) throws IOException {
-		packer.writeMapBegin(3);
-		packer.write("message");
-		packer.write(message);
-		packer.write("code");
-		packer.write(code);
-		packer.write("statusCode");
-		packer.write(statusCode);
-		packer.writeMapEnd(true);
-	}
-
-	@Override
-	public void readFrom(Unpacker unpacker) throws IOException {
-		int fieldCount = unpacker.readMapBegin();
-		for(int i = 0; i < fieldCount; i++) {
-			String fieldName = unpacker.readString().intern();
-			ValueType fieldType = unpacker.getNextType();
-			if(fieldType.equals(ValueType.NIL)) { unpacker.readNil(); continue; }
-
-			if(fieldName == "message") {
-				message = unpacker.readString();
-			} else if(fieldName == "code") {
-				code = unpacker.readInt();
-			} else if(fieldName == "statusCode") {
-				statusCode = unpacker.readInt();
-			} else {
-				System.out.println("Unexpected field: " + fieldName);
-				unpacker.skip();
-			}
-		}
-		unpacker.readMapEnd(true);
 	}
 }

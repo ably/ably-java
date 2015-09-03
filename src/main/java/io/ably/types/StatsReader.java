@@ -1,16 +1,15 @@
 package io.ably.types;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.msgpack.MessagePack;
-import org.msgpack.template.ListTemplate;
-import org.msgpack.template.Template;
-import org.msgpack.unpacker.Unpacker;
+import org.msgpack.jackson.dataformat.MessagePackFactory;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.ably.http.Http.BodyHandler;
 
@@ -43,8 +42,7 @@ public class StatsReader  {
 
 	public static Stats[] readMsgpack(byte[] packed) throws AblyException {
 		try {
-			Unpacker unpacker = msgpack.createUnpacker(new ByteArrayInputStream(packed));
-			List<Stats> stats = unpacker.read(listTmpl);
+			List<Stats> stats = objectMapper.readValue(packed, typeReference);
 			return stats.toArray(new Stats[stats.size()]);
 		} catch (IOException ioe) {
 			throw AblyException.fromIOException(ioe);
@@ -62,6 +60,6 @@ public class StatsReader  {
 		}
 	};
 
-	private static final MessagePack msgpack = new MessagePack();
-	private static final Template<List<Stats>> listTmpl = new ListTemplate<Stats>(msgpack.lookup(Stats.class));
+	private static final TypeReference<List<Stats>> typeReference = new TypeReference<List<Stats>>(){};
+	private static final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
 }

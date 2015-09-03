@@ -1,17 +1,14 @@
 package io.ably.types;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
 
-import io.ably.http.Http.BodyHandler;
-
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.msgpack.MessagePack;
-import org.msgpack.template.ListTemplate;
-import org.msgpack.template.Template;
-import org.msgpack.unpacker.Unpacker;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+
+import io.ably.http.Http.BodyHandler;
 
 /**
  * PresenceReader: internal
@@ -20,15 +17,10 @@ import org.msgpack.unpacker.Unpacker;
  */
 public class PresenceSerializer {
 
-	static PresenceMessage[] readMsgpack(Unpacker unpacker) throws IOException {
-		List<PresenceMessage> msgList = unpacker.read(listTmpl);
-		return msgList.toArray(new PresenceMessage[msgList.size()]);
-	}
-
 	public static PresenceMessage[] readMsgpack(byte[] packed) throws AblyException {
 		try {
-			Unpacker unpacker = msgpack.createUnpacker(new ByteArrayInputStream(packed));
-			return readMsgpack(unpacker);
+			List<PresenceMessage> messages = BaseMessage.objectMapper.readValue(packed, typeReference);
+			return messages.toArray(new PresenceMessage[messages.size()]);
 		} catch(IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}
@@ -91,6 +83,5 @@ public class PresenceSerializer {
 	};
 
 	private static PresenceBodyHandler presenceResponseHandler = new PresenceBodyHandler(null);
-	private static final MessagePack msgpack = new MessagePack();
-	private static final Template<List<PresenceMessage>> listTmpl = new ListTemplate<PresenceMessage>(msgpack.lookup(PresenceMessage.class));
+	private static final TypeReference<List<PresenceMessage>> typeReference = new TypeReference<List<PresenceMessage>>(){};
 }
