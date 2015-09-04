@@ -2,44 +2,23 @@ package io.ably.types;
 
 import java.io.IOException;
 
-import io.ably.util.Serialisation;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonGenerator;
 
 /**
  * A class representing an individual message to be sent or received
  * via the Ably Realtime service.
  */
+@JsonInclude(Include.NON_DEFAULT)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class Message extends BaseMessage {
 
 	/**
 	 * The event name, if available
 	 */
 	public String name;
-
-	/**
-	 * Construct a message from a JSON-encoded response body.
-	 * @param packed: the response data
-	 * @return
-	 */
-	public static Message fromJSON(String packed) throws AblyException {
-		try {
-			return Serialisation.jsonObjectMapper.readValue(packed, Message.class);
-		} catch (IOException ioe) {
-			throw AblyException.fromIOException(ioe);
-		}
-	}
-
-	/**
-	 * Construct a message from a Msgpack-encoded response body.
-	 * @param packed: the response data
-	 * @return
-	 */
-	public static Message fromMsgpack(byte[] packed) throws AblyException {
-		try {
-			return Serialisation.msgpackObjectMapper.readValue(packed, Message.class);
-		} catch (IOException ioe) {
-			throw AblyException.fromIOException(ioe);
-		}
-	}
 
 	/**
 	 * Default constructor
@@ -78,4 +57,12 @@ public class Message extends BaseMessage {
 		result.append(']');
 		return result.toString();
 	}
+
+	protected void serializeFields(JsonGenerator generator) throws IOException {
+		if(name != null) generator.writeStringField("name", name);
+		super.serializeFields(generator);
+	}
+
+	/* force initialisation of MessageSerializer */
+	static { new MessageSerializer(); }
 }

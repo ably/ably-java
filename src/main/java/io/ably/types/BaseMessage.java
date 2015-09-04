@@ -9,20 +9,15 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import io.ably.util.Base64Coder;
 import io.ably.util.Crypto.ChannelCipher;
+import io.ably.util.Serialisation;
 
+@JsonInclude(Include.NON_DEFAULT)
 public class BaseMessage implements Cloneable {
 	/**
 	 * A unique id for this message
@@ -52,8 +47,6 @@ public class BaseMessage implements Cloneable {
 	/**
 	 * The message payload.
 	 */
-	@JsonSerialize(using = DataSerializer.class)
-	@JsonDeserialize(using = DataDeserializer.class)
 	public Object data;
 
 	/**
@@ -132,27 +125,23 @@ public class BaseMessage implements Cloneable {
 		}
 	}
 
-	public static class DataSerializer extends JsonSerializer<Object> {
-		@Override
-		public void serialize(Object data, JsonGenerator generator, SerializerProvider arg2)
-				throws IOException, JsonProcessingException {
-
+	protected void serializeFields(JsonGenerator generator) throws IOException {
+		if(data != null) {
 			if(data instanceof byte[]) {
 				byte[] dataBytes = (byte[])data;
-				generator.writeBinary(dataBytes);
+				if(generator.getCodec() == Serialisation.jsonObjectMapper) {
+					generator.writeStringField("data", new String(Base64Coder.encode(dataBytes)));
+					encoding = (encoding == null) ? "base64" : encoding + "/base64";
+				} else {
+					generator.writeBinaryField("data", dataBytes);
+				}
 			} else {
-				generator.writeString(data.toString());
+				generator.writeStringField("data", data.toString());
 			}
+			if(encoding != null) generator.writeStringField("encoding", encoding);
 		}
-	}
-
-	public static class DataDeserializer extends JsonDeserializer<Object> {
-		@Override
-		public Object deserialize(JsonParser parser, DeserializationContext deserContext)
-				throws IOException, JsonProcessingException {
-
-			return (parser.getCurrentToken() == JsonToken.VALUE_STRING) ? parser.getText() : parser.getBinaryValue();
-		}
+		if(clientId != null) generator.writeStringField("clientId", clientId);
+		if(connectionId != null) generator.writeStringField("connectionId", connectionId);
 	}
 
 	/* trivial utilities for processing encoding string */

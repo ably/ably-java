@@ -105,8 +105,4 @@ public class AblyException extends Exception {
 	}
 
 	public ErrorInfo errorInfo;
-
-	private static class ErrorResponse {
-		public ErrorInfo error;
-	}
 }

@@ -31,6 +31,9 @@ import io.ably.rest.Auth.TokenDetails;
 import io.ably.rest.Auth.TokenParams;
 import io.ably.rest.Auth.TokenRequest;
 import io.ably.types.AblyException;
+import io.ably.types.ErrorInfo;
+import io.ably.types.ErrorResponse;
+import io.ably.util.Serialisation;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -99,6 +102,7 @@ public class TokenServer {
 		listenerThread.start();
 	}
 
+	@SuppressWarnings("deprecation")
 	public void stop() {
 		if(listenerThread != null) {
 			listenerThread.destroy();
@@ -281,24 +285,22 @@ public class TokenServer {
 		return map;
 	}
 
-	private static JSONObject params2Json(List<NameValuePair> params) {
-		JSONObject json = new JSONObject();
+	private static String params2Json(List<NameValuePair> params) {
+		StringBuilder builder = new StringBuilder();
 		for(NameValuePair nameValuePair : params) {
-			try {
-				json.put(nameValuePair.getName(), nameValuePair.getValue());
-			} catch (JSONException e) {}
+			if(builder.length() != 0) builder.append('&');
+			builder.append(nameValuePair.getName()).append('=').append(nameValuePair.getValue());
 		}
-		return json;
+		return builder.toString();
 	}
 
-	private static JSONObject headers2Json(Header[] headers) {
-		JSONObject json = new JSONObject();
+	private static String headers2Json(Header[] headers) {
+		StringBuilder builder = new StringBuilder();
 		for(Header header : headers) {
-			try {
-				json.put(header.getName(), header.getValue());
-			} catch (JSONException e) {}
+			if(builder.length() != 0) builder.append('&');
+			builder.append(header.getName()).append('=').append(header.getValue());
 		}
-		return json;
+		return builder.toString();
 	}
 
 	private static TokenParams params2TokenParams(List<NameValuePair> params) {
@@ -319,17 +321,13 @@ public class TokenServer {
 		return new StringEntity(json.toString(), ContentType.create("application/json", "UTF-8"));
 	}
 
-	private static HttpEntity error2Entity(int statusCode, JSONObject err) {
+	private static HttpEntity error2Entity(final int statusCode, final String errMessage) {
 		try {
-			if(err == null) err = new JSONObject();
-			err.put("statusCode", statusCode);
-
-			JSONObject json = new JSONObject();
-			json.put("error", err);
-
-			return new StringEntity(json.toString(), ContentType.create("application/json", "UTF-8"));
+			ErrorResponse err = new ErrorResponse();
+			err.error = new ErrorInfo(errMessage, statusCode, 0);
+			return new StringEntity(Serialisation.jsonObjectMapper.writeValueAsString(err), ContentType.create("application/json", "UTF-8"));
 		}
-		catch (JSONException e) {}
+		catch (IOException e) {}
 		return null;
 	}
 

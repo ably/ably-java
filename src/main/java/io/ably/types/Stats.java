@@ -4,6 +4,10 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
 /**
  * A class encapsulating a Stats datapoint.
  * Ably usage information, across an account or an individual app,
@@ -13,12 +17,16 @@ import java.util.Date;
  * This class also contains utility methods to convert from the different
  * formats used for REST responses.
  */
+@JsonInclude(Include.NON_DEFAULT)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class Stats {
 
 	/**
 	 * A breakdown of summary stats data for different (tls vs non-tls)
 	 * connection types.
 	 */
+	@JsonInclude(Include.NON_DEFAULT)
+	@JsonIgnoreProperties(ignoreUnknown=true)
 	public static class ConnectionTypes {
 		public ResourceCount all;
 		public ResourceCount plain;
@@ -28,6 +36,8 @@ public class Stats {
 	/**
 	 * A datapoint for message volume (number of messages plus aggregate data size)
 	 */
+	@JsonInclude(Include.NON_DEFAULT)
+	@JsonIgnoreProperties(ignoreUnknown=true)
 	public static class MessageCount {
 		public double count;
 		public double data;
@@ -37,6 +47,8 @@ public class Stats {
 	 * A breakdown of summary stats data for different (message vs presence)
 	 * message types.
 	 */
+	@JsonInclude(Include.NON_DEFAULT)
+	@JsonIgnoreProperties(ignoreUnknown=true)
 	public static class MessageTypes {
 		public MessageCount all;
 		public MessageCount messages;
@@ -46,6 +58,8 @@ public class Stats {
 	/**
 	 * A breakdown of summary stats data for traffic over various transport types.
 	 */
+	@JsonInclude(Include.NON_DEFAULT)
+	@JsonIgnoreProperties(ignoreUnknown=true)
 	public static class MessageTraffic {
 		public MessageTypes all;
 		public MessageTypes realtime;
@@ -56,6 +70,8 @@ public class Stats {
 	/**
 	 * Aggregate data for numbers of requests in a specific scope.
 	 */
+	@JsonInclude(Include.NON_DEFAULT)
+	@JsonIgnoreProperties(ignoreUnknown=true)
 	public static class RequestCount {
 		public double succeeded;
 		public double failed;
@@ -65,6 +81,8 @@ public class Stats {
 	/**
 	 * Aggregate data for usage of a resource in a specific scope.
 	 */
+	@JsonInclude(Include.NON_DEFAULT)
+	@JsonIgnoreProperties(ignoreUnknown=true)
 	public static class ResourceCount {
 		public double opened;
 		public double peak;
@@ -100,9 +118,7 @@ public class Stats {
 	}
 
 	public String intervalId;
-	public int count;
 	public String unit;
-	public String inProgress;
 	public MessageTypes all;
 	public MessageTraffic inbound;
 	public MessageTraffic outbound;

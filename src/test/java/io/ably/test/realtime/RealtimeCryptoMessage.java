@@ -5,9 +5,9 @@ import static org.junit.Assert.fail;
 import io.ably.realtime.AblyRealtime;
 import io.ably.test.realtime.RealtimeSetup.TestVars;
 import io.ably.types.AblyException;
-import io.ably.types.BaseMessage;
 import io.ably.types.ChannelOptions;
 import io.ably.types.ClientOptions;
+import io.ably.types.Message;
 import io.ably.util.Base64Coder;
 import io.ably.util.Crypto;
 import io.ably.util.Crypto.CipherParams;
@@ -17,7 +17,6 @@ import java.io.IOException;
 
 import javax.crypto.spec.IvParameterSpec;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -29,20 +28,14 @@ public class RealtimeCryptoMessage {
 	private static CryptoTestData testData128;
 	private static CryptoTestData testData256;
 
-	@BeforeClass
-	public static void initTestData() {
-		try {
-			testData128 = (CryptoTestData)Helpers.loadJSON(testDataFile128, Serialisation.jsonObjectMapper, new TypeReference<CryptoTestData>(){});
-			testData256 = (CryptoTestData)Helpers.loadJSON(testDataFile256, Serialisation.jsonObjectMapper, new TypeReference<CryptoTestData>(){});
-		} catch(IOException ioe) {
-			System.err.println("Unable to read spec file: " + ioe);
-			ioe.printStackTrace();
-			System.exit(1);
-		}
-	}
-
 	@Test
 	public void encrypt_message_128() {
+		try {
+			testData128 = (CryptoTestData)Helpers.loadJSON(testDataFile128, Serialisation.jsonObjectMapper, new TypeReference<CryptoTestData>(){});
+		} catch (IOException e1) {
+			fail();
+			return;
+		}
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
@@ -60,8 +53,8 @@ public class RealtimeCryptoMessage {
 				CryptoTestItem item = items[i];
 
 				/* read messages from test data */
-				BaseMessage testMessage = item.encoded;
-				BaseMessage encryptedMessage = item.encrypted;
+				Message testMessage = item.encoded;
+				Message encryptedMessage = item.encrypted;
 
 				/* decode (ie remove any base64 encoding) */
 				testMessage.decode(null);
@@ -87,6 +80,12 @@ public class RealtimeCryptoMessage {
 
 	@Test
 	public void encrypt_message_256() {
+		try {
+			testData256 = (CryptoTestData)Helpers.loadJSON(testDataFile256, Serialisation.jsonObjectMapper, new TypeReference<CryptoTestData>(){});
+		} catch (IOException e1) {
+			fail();
+			return;
+		}
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
@@ -104,8 +103,8 @@ public class RealtimeCryptoMessage {
 				CryptoTestItem item = items[i];
 
 				/* read messages from test data */
-				BaseMessage testMessage = item.encoded;
-				BaseMessage encryptedMessage = item.encrypted;
+				Message testMessage = item.encoded;
+				Message encryptedMessage = item.encrypted;
 
 				/* decode (ie remove any base64 encoding) */
 				testMessage.decode(null);
@@ -131,6 +130,12 @@ public class RealtimeCryptoMessage {
 
 	@Test
 	public void decrypt_message_128() {
+		try {
+			testData128 = (CryptoTestData)Helpers.loadJSON(testDataFile128, Serialisation.jsonObjectMapper, new TypeReference<CryptoTestData>(){});
+		} catch (IOException e1) {
+			fail();
+			return;
+		}
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
@@ -148,8 +153,8 @@ public class RealtimeCryptoMessage {
 				CryptoTestItem item = items[i];
 
 				/* read messages from test data */
-				BaseMessage testMessage = item.encoded;
-				BaseMessage encryptedMessage = item.encrypted;
+				Message testMessage = item.encoded;
+				Message encryptedMessage = item.encrypted;
 
 				/* decode (ie remove any base64 encoding) */
 				testMessage.decode(null);
@@ -175,6 +180,12 @@ public class RealtimeCryptoMessage {
 
 	@Test
 	public void decrypt_message_256() {
+		try {
+			testData256 = (CryptoTestData)Helpers.loadJSON(testDataFile256, Serialisation.jsonObjectMapper, new TypeReference<CryptoTestData>(){});
+		} catch (IOException e1) {
+			fail();
+			return;
+		}
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = RealtimeSetup.getTestVars();
@@ -192,8 +203,8 @@ public class RealtimeCryptoMessage {
 				CryptoTestItem item = items[i];
 
 				/* read messages from test data */
-				BaseMessage testMessage = item.encoded;
-				BaseMessage encryptedMessage = item.encrypted;
+				Message testMessage = item.encoded;
+				Message encryptedMessage = item.encrypted;
 
 				/* decode (ie remove any base64 encoding) */
 				testMessage.decode(null);
@@ -227,7 +238,7 @@ public class RealtimeCryptoMessage {
 	}
 
 	static class CryptoTestItem {
-		public BaseMessage encoded;
-		public BaseMessage encrypted;
+		public Message encoded;
+		public Message encrypted;
 	}
 }

@@ -433,7 +433,7 @@ public class RealtimePresence {
 				clientId = testClientId1;
 			}};
 			testVars.fillInOptions(client1Opts);
-			client1Opts.useBinaryProtocol = false;
+			client1Opts.useBinaryProtocol = true;
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* get channel */

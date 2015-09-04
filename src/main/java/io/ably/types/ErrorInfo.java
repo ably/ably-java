@@ -1,11 +1,15 @@
 package io.ably.types;
 
-import org.json.JSONObject;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 /**
  * An exception type encapsulating error information containing
  * an Ably-specific error code and generic status code.
  */
+@JsonInclude(Include.NON_DEFAULT)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class ErrorInfo {
 
 	/**
@@ -22,11 +26,6 @@ public class ErrorInfo {
 	 * Additional message information, where available
 	 */
 	public String message;
-
-	/**
-	 * Full JSON of error, when obtained from JSON error response
-	 */
-	private JSONObject json;
 
 	/**
 	 * Public no-argument constructor for msgpack
@@ -54,16 +53,6 @@ public class ErrorInfo {
 		this.statusCode = statusCode;
 	}
 
-	/**
-	 * Construct an ErrorInfo from a JSON-encoded error response body
-	 * or ProtocolMessage
-	 * @param json
-	 */
-	public ErrorInfo(JSONObject json) {
-		this((json.has("message") ? json.optString("message") : null), json.optInt("statusCode"), json.optInt("code"));
-		this.json = json;
-	}
-
 	public String toString() {
 		StringBuilder result = new StringBuilder("[ErrorInfo");
 		if(message != null)
@@ -74,9 +63,5 @@ public class ErrorInfo {
 			result.append(" statusCode = ").append(statusCode);
 		result.append(']');
 		return result.toString();
-	}
-
-	public JSONObject getRawJSON() {
-		return json;
 	}
 }

@@ -2,24 +2,17 @@ package io.ably.types;
 
 import java.io.IOException;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.Version;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-
-import io.ably.http.Http;
-import io.ably.http.Http.RequestBody;
-import io.ably.util.Serialisation;
 
 /**
  * A class representing an individual presence update to be sent or received
  * via the Ably Realtime service.
  */
+@JsonInclude(Include.NON_DEFAULT)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class PresenceMessage extends BaseMessage implements Cloneable {
 
 	/**
@@ -34,105 +27,9 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
 
 		public int getValue() { return ordinal(); }
 		public static Action findByValue(int value) { return values()[value]; }
-
-		public static class Serializer extends JsonSerializer<Action> {
-			@Override
-			public void serialize(Action action, JsonGenerator generator, SerializerProvider arg2)
-					throws IOException, JsonProcessingException {
-
-				generator.writeNumber(action.getValue());
-			}
-		}
-
-		public static class Deserializer extends JsonDeserializer<Action> {
-			@Override
-			public Action deserialize(JsonParser parser, DeserializationContext deserContext)
-					throws IOException, JsonProcessingException {
-
-				return findByValue(parser.getIntValue());
-			}
-		}
 	}
 
 	public Action action;
-
-	/**
-	 * Construct a PresenceMessage from a Msgpack-encoded response body
-	 * @param packed: the Msgpack buffer body text
-	 * @return
-	 */
-	public static PresenceMessage fromJSON(String packed) throws AblyException {
-		try {
-			return Serialisation.jsonObjectMapper.readValue(packed, PresenceMessage.class);
-		} catch (IOException ioe) {
-			throw AblyException.fromIOException(ioe);
-		}
-	}
-
-	/**
-	 * Construct a PresenceMessage from a Msgpack-encoded response body
-	 * @param packed: the Msgpack buffer body text
-	 * @return
-	 */
-	public static PresenceMessage fromMsgpack(byte[] packed) throws AblyException {
-		try {
-			return Serialisation.msgpackObjectMapper.readValue(packed, PresenceMessage.class);
-		} catch (IOException ioe) {
-			throw AblyException.fromIOException(ioe);
-		}
-	}
-
-	/**
-	 * Internal: obtain a JSON representation of a single Message
-	 * @param message
-	 * @return
-	 * @throws AblyException
-	 */
-	public static String asJSON(Message message) throws AblyException {
-		try {
-			return Serialisation.jsonObjectMapper.writeValueAsString(message);
-		} catch (IOException ioe) {
-			throw AblyException.fromIOException(ioe);
-		}
-	}
-
-	/**
-	 * Internal: obtain a Msgpack representation of a single Message
-	 * @param message
-	 * @return
-	 * @throws AblyException
-	 */
-	public static byte[] asMsgpack(Message message) throws AblyException {
-		try {
-			return Serialisation.msgpackObjectMapper.writeValueAsBytes(message);
-		} catch (IOException ioe) {
-			throw AblyException.fromIOException(ioe);
-		}
-	}
-
-	/**
-	 * Internal: obtain a Msgpack-encoded request body from a Message
-	 * @param message
-	 * @return
-	 * @throws AblyException
-	 */
-	public static RequestBody asMsgpackRequest(PresenceMessage message) throws AblyException {
-		return asMsgpackRequest(new PresenceMessage[] { message });
-	}
-
-	/**
-	 * Internal: obtain a Msgpack-encoded request body from an array of Messages
-	 * @param messages
-	 * @return
-	 * @throws AblyException
-	 */
-	public static RequestBody asMsgpackRequest(PresenceMessage[] messages) throws AblyException {
-		try {
-			return new Http.ByteArrayRequestBody(Serialisation.msgpackObjectMapper.writeValueAsBytes(messages));
-		} catch(IOException ioe) {
-			throw AblyException.fromIOException(ioe);
-		}
-	}
 
 	/**
 	 * Default constructor
@@ -185,11 +82,11 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
 		return result;
 	}
 
-
-	static {
-		SimpleModule presenceModule = new SimpleModule("PresenceMessage", new Version(1, 0, 0, null, null, null));
-		presenceModule.addSerializer(Action.class, new Action.Serializer());
-		presenceModule.addDeserializer(Action.class, new Action.Deserializer());
-		Serialisation.msgpackObjectMapper.registerModule(presenceModule);
+	protected void serializeFields(JsonGenerator generator) throws IOException {
+		generator.writeNumberField("action", action.getValue());
+		super.serializeFields(generator);
 	}
+
+	/* force initialisation of PresenceSerializer */
+	static { new PresenceSerializer(); }
 }

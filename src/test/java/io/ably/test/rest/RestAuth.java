@@ -18,7 +18,6 @@ import io.ably.types.AblyException;
 import io.ably.types.ClientOptions;
 import io.ably.types.Param;
 
-import org.json.JSONObject;
 import org.junit.Test;
 
 public class RestAuth {
@@ -255,9 +254,7 @@ public class RestAuth {
 				fail("auth_authURL_params: Unexpected success requesting token");
 			} catch (AblyException e) {
 				assertEquals("Expected forwarded error code", e.errorInfo.code, 40170);
-				JSONObject jsonParams = e.errorInfo.getRawJSON();
-				assertTrue("Expected JSON error info", jsonParams != null);
-				assertEquals("Expected echoed param", "test-value", jsonParams.optString("test-param"));
+				assertTrue("Expected echoed header", e.errorInfo.message.indexOf("test-param=test-value") != -1);
 			}
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -286,9 +283,7 @@ public class RestAuth {
 				fail("auth_authURL_headers: Unexpected success requesting token");
 			} catch (AblyException e) {
 				assertEquals("Expected forwarded error code", e.errorInfo.code, 40170);
-				JSONObject jsonParams = e.errorInfo.getRawJSON();
-				assertTrue("Expected JSON error info", jsonParams != null);
-				assertEquals("Expected echoed header", "test-value", jsonParams.optString("test-header"));
+				assertTrue("Expected echoed header", e.errorInfo.message.indexOf("test-header=test-value") != -1);
 			}
 		} catch (AblyException e) {
 			e.printStackTrace();

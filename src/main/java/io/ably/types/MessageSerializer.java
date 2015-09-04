@@ -3,7 +3,13 @@ package io.ably.types;
 import java.io.IOException;
 import java.util.List;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import io.ably.http.Http;
 import io.ably.http.Http.BodyHandler;
@@ -15,9 +21,9 @@ import io.ably.util.Serialisation;
  * Utility class to convert response bodies in different formats to Message
  * and Message arrays.
  */
-public class MessageSerializer {
+public class MessageSerializer extends JsonSerializer<Message> {
 
-	public static Message[] readJSON(String packed) throws AblyException {
+	public static Message[] readJSON(byte[] packed) throws AblyException {
 		try {
 			List<Message> messages = Serialisation.jsonObjectMapper.readValue(packed, messageTypeReference);
 			return messages.toArray(new Message[messages.size()]);
@@ -31,26 +37,6 @@ public class MessageSerializer {
 			List<Message> messages = Serialisation.msgpackObjectMapper.readValue(packed, messageTypeReference);
 			return messages.toArray(new Message[messages.size()]);
 		} catch(IOException ioe) {
-			throw AblyException.fromIOException(ioe);
-		}
-	}
-
-	public static Message[] readJSON(byte[] jsonBytes) throws AblyException {
-		return readJSON(new String(jsonBytes));
-	}
-
-	public static byte[] asMsgpack(Message message) throws AblyException {
-		try {
-			return Serialisation.msgpackObjectMapper.writeValueAsBytes(message);
-		} catch (IOException ioe) {
-			throw AblyException.fromIOException(ioe);
-		}
-	}
-
-	public static String asJSON(Message message) throws AblyException {
-		try {
-			return Serialisation.jsonObjectMapper.writeValueAsString(message);
-		} catch (IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}
 	}
@@ -106,4 +92,19 @@ public class MessageSerializer {
 	private static BodyHandler<Message> messageResponseHandler = new MessageBodyHandler(null);
 	private static final TypeReference<List<Message>> messageTypeReference = new TypeReference<List<Message>>(){};
 
+	@Override
+	public void serialize(Message msg, JsonGenerator generator, SerializerProvider provider)
+			throws IOException, JsonProcessingException {
+
+		generator.writeStartObject();
+		msg.serializeFields(generator);
+		generator.writeEndObject();
+	}
+
+	static {
+		SimpleModule messageModule = new SimpleModule("Message", new Version(1, 0, 0, null, null, null));
+		messageModule.addSerializer(Message.class, new MessageSerializer());
+		Serialisation.jsonObjectMapper.registerModule(messageModule);
+		Serialisation.msgpackObjectMapper.registerModule(messageModule);
+	}
 }
