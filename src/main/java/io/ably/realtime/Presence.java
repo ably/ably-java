@@ -112,6 +112,7 @@ public class Presence {
 			case LEAVE:
 				broadcast &= presence.remove(update);
 				break;
+			case ABSENT:
 			}
 		}
 		/* if this is the last message in a sequence of sync updates, end the sync */
