@@ -1,12 +1,59 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<parent>
+		<groupId>org.sonatype.oss</groupId>
+		<artifactId>oss-parent</artifactId>
+		<version>7</version>
+	</parent>
+
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>ably-java-maven</groupId>
-	<artifactId>ably-java-maven</artifactId>
+	<groupId>io.ably</groupId>
+	<artifactId>ably-java</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>Ably java client library</name>
-	<description>A Java Realtime and REST client library for [Ably.io](https://www.ably.io), the realtime messaging service.</description>
 	<url>https://github.com/ably/ably-java</url>
+
+	<description>
+		A Java Realtime and REST client library for [Ably.io](https://www.ably.io), the realtime messaging service.
+	</description>
+
+	<scm>
+		<url>scm:git:git@github.com:ably/ably-java</url>
+		<connection>scm:git:git@github.com:ably/ably-java</connection>
+		<developerConnection>scm:git:git@github.com:ably/ably-java</developerConnection>
+	</scm>
+
+	<licenses>
+		<license>
+			<name>Apache 2</name>
+			<url>https://raw.github.com/ably/ably-java/master/LICENSE</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<organization>
+		<name>Ably</name>
+		<url>http://ably.io</url>
+	</organization>
+
+	<issueManagement>
+		<system>Github</system>
+		<url>https://github.com/ably/ably-java/issues</url>
+	</issueManagement>
+
+	<repositories>
+		<repository>
+			<id>java-websocket-mvn-repo</id>
+			<url>https://raw.github.com/paddybyers/Java-WebSocket/mvn-repo/</url>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</snapshots>
+		</repository>
+	</repositories>
+
+	<packaging>jar</packaging>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.msgpack</groupId>
@@ -27,6 +74,19 @@
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>
 			<version>4.5</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.java-websocket</groupId>
+			<artifactId>Java-WebSocket</artifactId>
+			<version>1.3.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.11</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 	<build>
