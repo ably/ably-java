@@ -38,27 +38,27 @@ public class RestInit {
 	 */
 	@Test
 	public void init_null_key_string() {
-	  try {
-	    String key = null;
-	    new AblyRest(key);
-	    fail("init_null_key_string: Expected AblyException to be thrown when instantiating library with null key");
-	  } catch (AblyException e) {}
+		try {
+			String key = null;
+			new AblyRest(key);
+			fail("init_null_key_string: Expected AblyException to be thrown when instantiating library with null key");
+		} catch (AblyException e) {}
 	}
 
 	/**
-  * Init library with a key in options (RSC1)
-  */
-  @Test
-  public void init_key_opts() {
-    try {
-        String sampleKey = "sample:key";
-        ClientOptions opts = new ClientOptions(sampleKey);
-        new AblyRest(opts);
-      } catch (AblyException e) {
-        e.printStackTrace();
-        fail("init_key_opts: Unexpected exception instantiating library");
-      }
-  }
+	 * Init library with a key in options (RSC1)
+	 */
+	@Test
+	public void init_key_opts() {
+		try {
+			String sampleKey = "sample:key";
+			ClientOptions opts = new ClientOptions(sampleKey);
+			new AblyRest(opts);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init_key_opts: Unexpected exception instantiating library");
+		}
+	}
 	
 	/**
 	 * Init library with a null key in options (RSC1)
@@ -67,8 +67,8 @@ public class RestInit {
 	public void init_null_key_opts() {
 		try {
 			ClientOptions opts = new ClientOptions(null);
-      new AblyRest(opts);
-      fail("init_null_key_opts: Expected AblyException to be thrown when instantiating library with null key in options");
+			new AblyRest(opts);
+			fail("init_null_key_opts: Expected AblyException to be thrown when instantiating library with null key in options");
 		} catch (AblyException e) {}
 	}
 
@@ -199,29 +199,29 @@ public class RestInit {
 	 */
 	@Test
 	public void init_default_log_level() {
-	  try {
-	    String sampleKey = "sample:key";
-	    ClientOptions opts = new ClientOptions(sampleKey);
-	    assertTrue("The default logLevel is not WARN", opts.logLevel == Log.WARN);
-	  } catch (AblyException e) {
-	    e.printStackTrace();
-	    fail("init_default_log_level: Unexpected exception instantiating library");
-	  }
+		try {
+			String sampleKey = "sample:key";
+			ClientOptions opts = new ClientOptions(sampleKey);
+			assertTrue("The default logLevel is not WARN", opts.logLevel == Log.WARN);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init_default_log_level: Unexpected exception instantiating library");
+		}
 	}
 	
 	/**
-   * Check that the logger outputs to System.out by default (RSC2)
-   */
-  @Test
-  public void init_default_log_output_stream() {
-    ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-    PrintStream defaultOs = System.out;
-    try {
-      System.setOut(new PrintStream(outContent));
-      Log.w(null, "hello");
-      assertEquals("hello", outContent.toString());
-    } finally {
-      System.setOut(defaultOs);
-    }
-  }
+	 * Check that the logger outputs to System.out by default (RSC2)
+	 */
+	@Test
+	public void init_default_log_output_stream() {
+		ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+		PrintStream defaultOs = System.out;
+		try {
+			System.setOut(new PrintStream(outContent));
+			Log.w(null, "hello");
+			assertEquals("hello", outContent.toString());
+		} finally {
+			System.setOut(defaultOs);
+		}
+	}
 }
