@@ -1,0 +1,3 @@
+[submodule "deps/ably-common"]
+	path = deps/ably-common
+	url = git@github.com:ably/ably-common.git
