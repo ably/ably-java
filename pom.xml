@@ -100,6 +100,24 @@
 					<target>1.6</target>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.18.1</version>
+				<configuration>
+					<includes>
+						<include>io/ably/test/realtime/RealtimeSuite.java</include>
+						<include>io/ably/test/rest/RestSuite.java</include>
+					</includes>
+					<environmentVariables>
+						<ABLY_TLS>true</ABLY_TLS>
+						<ABLY_HOST>sandbox-rest.ably.io</ABLY_HOST>
+						<ABLY_WS_HOST>sandbox-realtime.ably.io</ABLY_WS_HOST>
+					</environmentVariables>
+					<forkCount>0</forkCount>
+					<useFile>false</useFile>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 </project>
