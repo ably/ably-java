@@ -47,32 +47,38 @@ public class RealtimeSetup {
 
 	private static AblyRest ably;
 	private static TestVars testVars;
-	private static Boolean tls_env;
+	private static String environment;
 	private static String host;
 	private static String wsHost;
 	private static int port;
 	private static int tlsPort;
-	private static boolean tls;
 
 	static {
-		tls_env = new Boolean(System.getenv("ABLY_TLS"));
-		host = System.getenv("ABLY_HOST");
-		if(host == null)
-			host = "sandbox-rest.ably.io";
-
-		tls = (tls_env == null) ? true : tls_env.booleanValue();
-		if(host.endsWith("rest.ably.io")) {
-			/* default to connecting to staging or production through load balancer */
-			port = 80;
-			tlsPort = 443;
+		host = System.getenv("ABLY_REST_HOST");
+		if(host != null) {
+			wsHost = System.getenv("ABLY_REALTIME_HOST");
+			if(wsHost == null)
+				wsHost = host;
 		} else {
-			/* use the given host, assuming no load balancer */
+			environment = System.getenv("ABLY_ENV");
+			if(environment == null)
+				environment = "sandbox";
+
+			host = environment + "-rest.ably.io";
+			wsHost = environment + "-realtime.ably.io";
+		}
+
+		if(System.getenv("ABLY_PORT") != null) {
+			port = Integer.valueOf(System.getenv("ABLY_PORT"));
+			tlsPort = Integer.valueOf(System.getenv("ABLY_TLS_PORT"));
+		} else if(host.contains("local")) {
 			port = 8080;
 			tlsPort = 8081;
+		} else {
+			/* default to connecting to sandbox or production through load balancer */
+			port = 80;
+			tlsPort = 443;
 		}
-		wsHost = System.getenv("ABLY_WS_HOST");
-		if(wsHost == null)
-			wsHost = "sandbox-realtime.ably.io";
 	}
 
 	public static synchronized TestVars getTestVars() {
@@ -86,7 +92,7 @@ public class RealtimeSetup {
 					opts.restHost = host;
 					opts.port = port;
 					opts.tlsPort = tlsPort;
-					opts.tls = tls;
+					opts.tls = true;
 					ably = new AblyRest(opts);
 				} catch(AblyException e) {
 					System.err.println("Unable to instance AblyRest: " + e);
@@ -114,7 +120,7 @@ public class RealtimeSetup {
 							result.realtimeHost = wsHost;
 							result.port = port;
 							result.tlsPort = tlsPort;
-							result.tls = tls;
+							result.tls = true;
 							return result;
 						} catch (IOException e) {
 							throw new AblyException("Unexpected exception processing server response; err = " + e, 500, 50000);
@@ -140,7 +146,7 @@ public class RealtimeSetup {
 				opts.restHost = host;
 				opts.port = port;
 				opts.tlsPort = tlsPort;
-				opts.tls = tls;
+				opts.tls = true;
 				ably = new AblyRest(opts);
 				ably.http.del("/apps/" + testVars.appId, HttpUtils.defaultGetHeaders(false), null, null);
 			} catch (AblyException ae) {

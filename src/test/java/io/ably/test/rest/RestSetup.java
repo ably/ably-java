@@ -48,27 +48,31 @@ public class RestSetup {
 
 	private static AblyRest ably;
 	private static Map<String, TestVars> testEnvironments = new HashMap<String, TestVars>();
-	private static Boolean tls_env;
+	private static String environment;
 	private static String host;
 	private static int port;
 	private static int tlsPort;
-	private static boolean tls;
 
 	static {
-		tls_env = new Boolean(System.getenv("ABLY_TLS"));
-		host = System.getenv("ABLY_HOST");
-		if(host == null)
-			host = "sandbox-rest.ably.io";
+		host = System.getenv("ABLY_REST_HOST");
+		if(host == null) {
+			environment = System.getenv("ABLY_ENV");
+			if(environment == null)
+				environment = "sandbox";
 
-		tls = (tls_env == null) ? true : tls_env.booleanValue();
-		if(host.endsWith("rest.ably.io")) {
-			/* default to connecting to sandbox through load balancer */
-			port = 80;
-			tlsPort = 443;
-		} else {
-			/* use the given host, assuming no load balancer */
+			host = environment + "-rest.ably.io";
+		}
+
+		if(System.getenv("ABLY_PORT") != null) {
+			port = Integer.valueOf(System.getenv("ABLY_PORT"));
+			tlsPort = Integer.valueOf(System.getenv("ABLY_TLS_PORT"));
+		} else if(host.contains("local")) {
 			port = 8080;
 			tlsPort = 8081;
+		} else {
+			/* default to connecting to sandbox or production through load balancer */
+			port = 80;
+			tlsPort = 443;
 		}
 	}
 
@@ -88,7 +92,7 @@ public class RestSetup {
 					opts.restHost = host;
 					opts.port = port;
 					opts.tlsPort = tlsPort;
-					opts.tls = tls;
+					opts.tls = true;
 					ably = new AblyRest(opts);
 				} catch(AblyException e) {
 					System.err.println("Unable to instance AblyRest: " + e);
@@ -114,7 +118,7 @@ public class RestSetup {
 							result.host = host;
 							result.port = port;
 							result.tlsPort = tlsPort;
-							result.tls = tls;
+							result.tls = true;
 							return result;
 						} catch (IOException e) {
 							throw new AblyException("Unexpected exception processing server response; err = " + e, 500, 50000);
@@ -146,7 +150,7 @@ public class RestSetup {
 				opts.restHost = host;
 				opts.port = port;
 				opts.tlsPort = tlsPort;
-				opts.tls = tls;
+				opts.tls = true;
 				ably = new AblyRest(opts);
 				ably.http.del("/apps/" + testVars.appId, HttpUtils.defaultGetHeaders(false), null, null);
 			} catch (AblyException ae) {
