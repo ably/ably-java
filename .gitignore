@@ -1,4 +1,4 @@
-TEST*.txt
 build
-junit*.properties
-/target/
+.gradle
+.settings
+
