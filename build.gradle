@@ -1,0 +1,41 @@
+apply plugin: 'java'
+
+group = 'io.ably'
+version = '0.0.1-SNAPSHOT'
+description = """Ably java client library"""
+
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+
+configurations.all {
+}
+
+repositories {
+    mavenCentral()
+    maven { url "https://raw.github.com/paddybyers/Java-WebSocket/mvn-repo/" }
+}
+
+dependencies {
+    compile 'org.msgpack:msgpack-core:0.7.0-p9'
+    compile 'org.msgpack:jackson-dataformat-msgpack:0.7.0-p9'
+    compile 'org.json:json:20140107'
+    compile 'org.apache.httpcomponents:httpclient:4.5'
+    compile 'org.java-websocket:Java-WebSocket:1.3.1'
+    testCompile 'junit:junit:4.12'
+}
+
+task testRealtime(type: Test) {
+   include '**/RealtimeSuite.class'
+   exclude '**/*Test.class'
+  beforeTest { descriptor ->
+    logger.lifecycle("Running test: " + descriptor)
+  }
+}
+
+task testRest(type: Test) {
+   include '**/RestSuite.class'
+   exclude '**/*Test.class'
+  beforeTest { descriptor ->
+    logger.lifecycle("Running test: " + descriptor)
+  }
+}
