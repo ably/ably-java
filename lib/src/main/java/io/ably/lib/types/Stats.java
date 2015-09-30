@@ -1,0 +1,130 @@
+package io.ably.lib.types;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+/**
+ * A class encapsulating a Stats datapoint.
+ * Ably usage information, across an account or an individual app,
+ * is available as Stats records on a timeline with different granularities.
+ * This class defines the Stats type and its subtypes, giving a structured
+ * representation of service usage for a specific scope and time interval.
+ * This class also contains utility methods to convert from the different
+ * formats used for REST responses.
+ */
+@JsonInclude(Include.NON_DEFAULT)
+@JsonIgnoreProperties(ignoreUnknown=true)
+public class Stats {
+
+	/**
+	 * A breakdown of summary stats data for different (tls vs non-tls)
+	 * connection types.
+	 */
+	@JsonInclude(Include.NON_DEFAULT)
+	@JsonIgnoreProperties(ignoreUnknown=true)
+	public static class ConnectionTypes {
+		public ResourceCount all;
+		public ResourceCount plain;
+		public ResourceCount tls;
+	}
+
+	/**
+	 * A datapoint for message volume (number of messages plus aggregate data size)
+	 */
+	@JsonInclude(Include.NON_DEFAULT)
+	@JsonIgnoreProperties(ignoreUnknown=true)
+	public static class MessageCount {
+		public double count;
+		public double data;
+	}
+
+	/**
+	 * A breakdown of summary stats data for different (message vs presence)
+	 * message types.
+	 */
+	@JsonInclude(Include.NON_DEFAULT)
+	@JsonIgnoreProperties(ignoreUnknown=true)
+	public static class MessageTypes {
+		public MessageCount all;
+		public MessageCount messages;
+		public MessageCount presence;
+	}
+
+	/**
+	 * A breakdown of summary stats data for traffic over various transport types.
+	 */
+	@JsonInclude(Include.NON_DEFAULT)
+	@JsonIgnoreProperties(ignoreUnknown=true)
+	public static class MessageTraffic {
+		public MessageTypes all;
+		public MessageTypes realtime;
+		public MessageTypes rest;
+		public MessageTypes webhook;
+	}
+
+	/**
+	 * Aggregate data for numbers of requests in a specific scope.
+	 */
+	@JsonInclude(Include.NON_DEFAULT)
+	@JsonIgnoreProperties(ignoreUnknown=true)
+	public static class RequestCount {
+		public double succeeded;
+		public double failed;
+		public double refused;
+	}
+
+	/**
+	 * Aggregate data for usage of a resource in a specific scope.
+	 */
+	@JsonInclude(Include.NON_DEFAULT)
+	@JsonIgnoreProperties(ignoreUnknown=true)
+	public static class ResourceCount {
+		public double opened;
+		public double peak;
+		public double mean;
+		public double min;
+		public double refused;
+	}
+
+	public static enum Granularity {
+		MINUTE,
+		HOUR,
+		DAY,
+		MONTH
+	}
+
+	private static String[] intervalFormatString = new String[] {
+		"yyyy-MM-dd:hh:mm",
+		"yyyy-MM-dd:hh",
+		"yyyy-MM-dd",
+		"yyyy-MM"
+	};
+
+	public static String toIntervalId(long timestamp, Granularity granularity) {
+		String formatString = intervalFormatString[granularity.ordinal()];
+		return new SimpleDateFormat(formatString).format(new Date(timestamp));
+	}
+
+	public static long fromIntervalId(String intervalId) {
+		try {
+			String formatString = intervalFormatString[0].substring(0, intervalId.length());
+			return new SimpleDateFormat(formatString).parse(intervalId).getTime();
+		} catch (ParseException e) { return 0; }
+	}
+
+	public String intervalId;
+	public String unit;
+	public MessageTypes all;
+	public MessageTraffic inbound;
+	public MessageTraffic outbound;
+	public MessageTypes persisted;
+	public ConnectionTypes connections;
+	public ResourceCount channels;
+	public RequestCount apiRequests;
+	public RequestCount tokenRequests;
+}
