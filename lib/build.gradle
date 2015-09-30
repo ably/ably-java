@@ -1,0 +1,59 @@
+apply plugin: 'java'
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+configurations {
+    provided
+    compile.extendsFrom provided
+}
+
+dependencies {
+  compile 'org.msgpack:msgpack-core:0.7.0-p9'
+  compile 'org.msgpack:jackson-dataformat-msgpack:0.7.0-p9'
+  compile 'org.java-websocket:Java-WebSocket:1.3.1'
+  provided 'org.json:json:20140107'
+  provided 'org.apache.httpcomponents:httpclient:4.5'
+  testCompile 'junit:junit:4.12'
+}
+
+task fullJar(type: Jar) {
+  baseName = project.name + '-full'
+  from {
+    configurations.compile.collect {
+      it.isDirectory() ? it : zipTree(it)
+    }
+  }
+  with jar
+}
+
+task androidJar(type: Jar) {
+  baseName = project.name + '-android'
+  from {
+    (configurations.runtime - configurations.provided).collect {
+      it.isDirectory() ? it : zipTree(it)
+    }
+  }
+  with jar
+  exclude 'META-INF/**'
+}
+
+task testsJar(type: Jar) { 
+  baseName = project.name + '-tests'
+  from sourceSets.test.output
+  classifier = 'test'
+  includes = ['**/test/**','**/common/**']
+  excludes = ['**/*Suite.class', '**/jre/**']
+  includeEmptyDirs false
+  with jar
+}
+
+configurations {
+  androidConfiguration
+  testsConfiguration
+}
+
+artifacts {
+  androidConfiguration androidJar
+  testsConfiguration testsJar
+}
