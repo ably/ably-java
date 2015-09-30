@@ -1,1 +1,3 @@
 rootProject.name = 'ably-java'
+include 'lib'
+include 'android-test'
