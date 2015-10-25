@@ -36,10 +36,10 @@ dependencies {
 task copyAssetFiles (type: Copy) {
   description = 'Copies assets from the common library...'
   from new File(project(':lib').projectDir, '/src/test/resources/assets')
-  into new File(project.projectDir, '/src/main/assets')
+  into new File(project.projectDir, '/src/androidTest/assets')
   include('**/*')
 }
 
-android.applicationVariants.all{ variant ->
+android.testVariants.all{ variant ->
     variant.mergeAssets.dependsOn copyAssetFiles
 }
