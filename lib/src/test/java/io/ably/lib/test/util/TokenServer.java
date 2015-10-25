@@ -37,6 +37,7 @@ import io.ably.lib.util.Serialisation;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.io.UnsupportedEncodingException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
@@ -58,7 +59,6 @@ import org.apache.http.HttpStatus;
 import org.apache.http.MethodNotSupportedException;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
-import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.http.impl.DefaultHttpResponseFactory;
@@ -89,6 +89,7 @@ import org.json.JSONObject;
  *
  *
  */
+@SuppressWarnings("deprecation")
 public class TokenServer {
 
 	public TokenServer(AblyRest ably, int port) {
@@ -102,7 +103,6 @@ public class TokenServer {
 		listenerThread.start();
 	}
 
-	@SuppressWarnings("deprecation")
 	public void stop() {
 		if(listenerThread != null) {
 			listenerThread.destroy();
@@ -209,12 +209,13 @@ public class TokenServer {
 			reqistry.register("*", new TokenRequestHandler());
 
 			// Set up the HTTP service
-			this.httpService = new HttpService(
+			httpService = new HttpService(
 					httpproc,
 					new DefaultConnectionReuseStrategy(),
-					new DefaultHttpResponseFactory(),
-					reqistry,
-					this.params);
+					new DefaultHttpResponseFactory());
+
+			httpService.setHandlerResolver(reqistry);
+			httpService.setParams(params);
 		}
 
 		@Override
@@ -318,17 +319,24 @@ public class TokenServer {
 	}
 
 	private static HttpEntity json2Entity(JSONObject json) {
-		return new StringEntity(json.toString(), ContentType.create("application/json", "UTF-8"));
+		StringEntity result = null;
+		try {
+			result = new StringEntity(json.toString(), "UTF-8");
+			result.setContentType("application/json");
+		} catch (UnsupportedEncodingException e) {}
+		return result;
 	}
 
 	private static HttpEntity error2Entity(final int statusCode, final String errMessage) {
+		StringEntity result = null;
 		try {
 			ErrorResponse err = new ErrorResponse();
 			err.error = new ErrorInfo(errMessage, statusCode, 0);
-			return new StringEntity(Serialisation.jsonObjectMapper.writeValueAsString(err), ContentType.create("application/json", "UTF-8"));
+			result = new StringEntity(Serialisation.jsonObjectMapper.writeValueAsString(err), "UTF-8");
+			result.setContentType("application/json");
 		}
 		catch (IOException e) {}
-		return null;
+		return result;
 	}
 
 	private final AblyRest ably;
