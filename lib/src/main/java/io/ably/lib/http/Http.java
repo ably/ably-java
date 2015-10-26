@@ -124,7 +124,6 @@ public class Http {
 		return credentialsProvider;
 	}
 
-	@SuppressWarnings("deprecation")
 	public Http(AblyRest ably, ClientOptions options) {
 		this.ably = ably;
 		this.scheme = options.tls ? "https" : "http";
