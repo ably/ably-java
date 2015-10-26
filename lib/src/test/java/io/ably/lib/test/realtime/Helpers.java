@@ -1,7 +1,5 @@
 package io.ably.lib.test.realtime;
 
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -13,18 +11,15 @@ import java.util.Set;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.ably.lib.debug.RawProtocolListener;
 import io.ably.lib.realtime.Channel;
+import io.ably.lib.realtime.Channel.MessageListener;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.ChannelStateListener;
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.realtime.Connection;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.realtime.ConnectionStateListener;
-import io.ably.lib.realtime.Channel.MessageListener;
 import io.ably.lib.realtime.Presence.PresenceListener;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.BaseMessage;
