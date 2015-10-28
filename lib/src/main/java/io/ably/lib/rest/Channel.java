@@ -46,7 +46,7 @@ public class Channel {
 		Message message = new Message(name, data);
 		message.encode(options);
 		RequestBody requestBody = ably.options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(message) : MessageSerializer.asJSONRequest(message);
-		ably.http.post(basePath + "/messages", HttpUtils.defaultPostHeaders(ably.options.useBinaryProtocol), null, requestBody, null);
+		ably.http.post(basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), null, requestBody, null);
 	}
 
 	/**
@@ -61,7 +61,7 @@ public class Channel {
 		for(Message message : messages)
 			message.encode(options);
 		RequestBody requestBody = ably.options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(messages) : MessageSerializer.asJSONRequest(messages);
-		ably.http.post(basePath + "/messages", HttpUtils.defaultPostHeaders(ably.options.useBinaryProtocol), null, requestBody, null);
+		ably.http.post(basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), null, requestBody, null);
 	}
 
 	/**
@@ -75,7 +75,7 @@ public class Channel {
 	 */
 	public PaginatedResult<Message> history(Param[] params) throws AblyException {
 		BodyHandler<Message> bodyHandler = MessageSerializer.getMessageResponseHandler(options);
-		return new PaginatedQuery<Message>(ably.http, basePath + "/messages", HttpUtils.defaultGetHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
+		return new PaginatedQuery<Message>(ably.http, basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
 	}
 
 	/**
@@ -93,7 +93,7 @@ public class Channel {
 		 */
 		public PaginatedResult<PresenceMessage> get(Param[] params) throws AblyException {
 			BodyHandler<PresenceMessage> bodyHandler = PresenceSerializer.getPresenceResponseHandler(options);
-			return new PaginatedQuery<PresenceMessage>(ably.http, basePath + "/presence", HttpUtils.defaultGetHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
+			return new PaginatedQuery<PresenceMessage>(ably.http, basePath + "/presence", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
 		}
 
 		/**
@@ -107,7 +107,7 @@ public class Channel {
 		 */
 		public PaginatedResult<PresenceMessage> history(Param[] params) throws AblyException {
 			BodyHandler<PresenceMessage> bodyHandler = PresenceSerializer.getPresenceResponseHandler(options);
-			return new PaginatedQuery<PresenceMessage>(ably.http, basePath + "/presence/history", HttpUtils.defaultGetHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
+			return new PaginatedQuery<PresenceMessage>(ably.http, basePath + "/presence/history", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
 		}
 	}
 

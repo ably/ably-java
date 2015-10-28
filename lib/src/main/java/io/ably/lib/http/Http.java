@@ -1,5 +1,21 @@
 package io.ably.lib.http;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.ConnectException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.NoRouteToHostException;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.util.Collection;
+import java.util.List;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Connection;
 import io.ably.lib.realtime.ConnectionState;
@@ -9,49 +25,11 @@ import io.ably.lib.rest.Auth.AuthMethod;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.ErrorResponse;
 import io.ably.lib.types.Param;
+import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Log;
-
-import java.io.IOException;
-import java.net.ConnectException;
-import java.net.NoRouteToHostException;
-import java.net.URI;
-import java.net.UnknownHostException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.StatusLine;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.ClientConnectionManager;
-import org.apache.http.conn.scheme.PlainSocketFactory;
-import org.apache.http.conn.scheme.Scheme;
-import org.apache.http.conn.scheme.SchemeRegistry;
-import org.apache.http.conn.ssl.SSLSocketFactory;
-import org.apache.http.entity.AbstractHttpEntity;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.impl.client.AbstractHttpClient;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
-import org.apache.http.message.BasicHeader;
-import org.apache.http.params.BasicHttpParams;
-import org.apache.http.params.HttpConnectionParams;
-import org.apache.http.protocol.BasicHttpContext;
-import org.apache.http.protocol.HttpContext;
-import org.apache.http.util.EntityUtils;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Http
@@ -64,7 +42,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class Http {
 
 	public interface ResponseHandler {
-		public Object handleResponse(int statusCode, String contentType, String[] linkHeaders, byte[] body) throws AblyException;
+		public Object handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException;
 	}
 
 	public interface BodyHandler<T> {
@@ -72,72 +50,42 @@ public class Http {
 	}
 
 	public interface RequestBody {
-		public HttpEntity getEntity() throws AblyException;
+		public byte[] getEncoded();
+		public String getContentType();
 	}
 
 	public static class JSONRequestBody implements RequestBody {
 		public JSONRequestBody(String jsonText) { this.jsonText = jsonText; }
 		public JSONRequestBody(Object ob, ObjectMapper objectMapper) throws JsonProcessingException { this(objectMapper.writeValueAsString(ob)); }
+
 		@Override
-		public HttpEntity getEntity() throws AblyException {
-			AbstractHttpEntity entity = new ByteArrayEntity(jsonText.getBytes());
-			entity.setContentEncoding("utf-8");
-			entity.setContentType("application/json");
-			return entity;
-		}
-		private String jsonText;
+		public byte[] getEncoded() { return jsonText.getBytes(); }
+		@Override
+		public String getContentType() { return JSON; }
+
+		private final String jsonText;
 	}
 
 	public static class ByteArrayRequestBody implements RequestBody {
-		public ByteArrayRequestBody(byte[] bytes) { this.bytes = bytes; }
+		public ByteArrayRequestBody(byte[] bytes, String contentType) { this.bytes = bytes; this.contentType = contentType; }
+
 		@Override
-		public HttpEntity getEntity() throws AblyException {
-			AbstractHttpEntity entity = new ByteArrayEntity(bytes);
-			entity.setContentEncoding("utf-8");
-			entity.setContentType("application/json");
-			return entity;
-		}
-		private byte[] bytes;
+		public byte[] getEncoded() { return bytes; }
+		@Override
+		public String getContentType() { return contentType; }
+
+		private final byte[] bytes;
+		private final String contentType;
 	}
 
 	/*************************
 	 *     Public API
 	 *************************/
 
-	public void setAuth(Auth auth) {
-		String prefScheme;
-		if(auth.getAuthMethod() == AuthMethod.basic) {
-			credentialsProvider = new BasicCredentialsProvider();
-			credentialsProvider.setCredentials(authScope, new UsernamePasswordCredentials(auth.getBasicCredentials()));
-			prefScheme = "basic";
-		} else {
-			prefScheme = TokenAuth.SCHEME_NAME;
-			TokenAuth tokenAuth = auth.getTokenAuth();
-			httpClient.getAuthSchemes().register(TokenAuth.SCHEME_NAME, tokenAuth);
-			credentialsProvider = tokenAuth;
-		}
-		httpClient.getParams().setParameter("http.auth.target-scheme-pref", Arrays.asList(new String[] { prefScheme }));
-		httpClient.setCredentialsProvider(credentialsProvider);
-	}
-
-	public CredentialsProvider getCredentialsProvider() {
-		return credentialsProvider;
-	}
-
 	public Http(AblyRest ably, ClientOptions options) {
 		this.ably = ably;
-		this.scheme = options.tls ? "https" : "http";
+		this.scheme = options.tls ? "https://" : "http://";
 		this.port = Defaults.getPort(options);
-		BasicHttpParams params = new BasicHttpParams();
-		SchemeRegistry schemeRegistry = new SchemeRegistry();  
-		schemeRegistry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
-		schemeRegistry.register(new Scheme("https", SSLSocketFactory.getSocketFactory(), 443));
-
-		HttpConnectionParams.setConnectionTimeout(params, CONNECTION_TIMEOUT);  
-		HttpConnectionParams.setSoTimeout(params, SOCKET_TIMEOUT);  
-
-		ClientConnectionManager cm = new ThreadSafeClientConnManager(params, schemeRegistry);
-		httpClient = new DefaultHttpClient(cm, params);
 	}
 
 	private String getPrefHost() {
@@ -149,33 +97,66 @@ public class Http {
 		return Defaults.getHost(ably.options);
 	}
 
+	/**
+	 * Simple HTTP GET; no auth, headers, returning response body as string
+	 * @param url
+	 * @return
+	 * @throws AblyException
+	 */
 	public String getUrlString(String url) throws AblyException {
 		return new String(getUrl(url));
 	}
 
+	/**
+	 * Simple HTTP GET; no auth, headers, returning response body as byte[]
+	 * @param url
+	 * @return
+	 * @throws AblyException
+	 */
 	public byte[] getUrl(String url) throws AblyException {
-		HttpGet httpGet = new HttpGet(url);
 		try {
-			return EntityUtils.toByteArray(httpClient.execute(httpGet).getEntity());
+			return (byte[])httpGet(new URL(url), null, false, new ResponseHandler() {
+				@Override
+				public Object handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
+					return body;
+				}});
 		} catch(IOException ioe) {
 			throw new AblyException(ioe);
 		}
 	}
 
-	public Object get(String path, Param[] headers, Param[] params, ResponseHandler handler) throws AblyException {
-		HttpGet httpGet = new HttpGet(HttpUtils.encodeParams(path, params));
-		if(headers != null)
-			for(Param header : headers)
-				httpGet.addHeader(new BasicHeader(header.key, header.value));
+	/**
+	 * HTTP GET for non-Ably host
+	 * @param uri
+	 * @param headers
+	 * @param params
+	 * @param responseHandler
+	 * @return
+	 * @throws AblyException
+	 */
+	public Object getUri(String uri, Param[] headers, Param[] params, ResponseHandler responseHandler) throws AblyException {
+		return httpGet(buildURL(uri, params), headers, false, responseHandler);
+	}
+
+	/**
+	 * HTTP GET for Ably host, with fallbacks
+	 * @param path
+	 * @param headers
+	 * @param params
+	 * @param responseHandler
+	 * @return
+	 * @throws AblyException
+	 */
+	public Object get(String path, Param[] headers, Param[] params, ResponseHandler responseHandler) throws AblyException {
 		try {
-			return getForHost(getPrefHost(), httpGet, handler);
+			return httpGet(scheme, getPrefHost(), path, params, headers, true, responseHandler);
 		} catch(HostFailedException bhe) {
 			/* one of the exceptions occurred that signifies a problem reaching the host */
 			String[] fallbackHosts = Defaults.getFallbackHosts(ably.options);
 			if(fallbackHosts != null) {
 				for(String host : fallbackHosts) {
 					try {
-						return getForHost(host, httpGet, handler);
+						return httpGet(scheme, host, path, params, headers, true, responseHandler);
 					} catch(HostFailedException bhe2) {}
 				}
 			}
@@ -183,42 +164,26 @@ public class Http {
 		}
 	}
 
-	private Object getForHost(String host, HttpGet httpGet, ResponseHandler handler) throws HostFailedException, AblyException {
+	/**
+	 * HTTP POST for Ably host, with fallbacks
+	 * @param path
+	 * @param headers
+	 * @param params
+	 * @param requestBody
+	 * @param responseHandler
+	 * @return
+	 * @throws AblyException
+	 */
+	public Object post(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler responseHandler) throws AblyException {
 		try {
-			return handleResponse(httpClient.execute(getHttpHost(host), httpGet, localContext), handler);
-		} catch(Throwable t) {
-			throw HostFailedException.checkFor(t);
-		}
-	}
-
-	public Object getUri(String uri, Param[] headers, Param[] params, ResponseHandler handler) throws AblyException {
-		try {
-			URI parsedUri = new URI(uri);
-			HttpGet httpGet = new HttpGet(HttpUtils.encodeParams(parsedUri.getPath(), params));
-			if(headers != null)
-				for(Param header : headers)
-					httpGet.addHeader(new BasicHeader(header.key, header.value));
-			return handleResponse(httpClient.execute(new HttpHost(parsedUri.getHost(), parsedUri.getPort(), parsedUri.getScheme()), httpGet, localContext), handler);
-		} catch(Throwable t) {
-			throw AblyException.fromThrowable(t);
-		}
-	}
-
-	public Object post(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler handler) throws AblyException {
-		HttpPost httpPost = new HttpPost(HttpUtils.encodeParams(path, params));
-		if(headers != null)
-			for(Param header : headers)
-				httpPost.addHeader(new BasicHeader(header.key, header.value));
-		httpPost.setEntity(requestBody.getEntity());
-		try {
-			return postForHost(getPrefHost(), httpPost, handler);
+			return httpPost(scheme, getPrefHost(), path, params, headers, requestBody, true, responseHandler);
 		} catch(HostFailedException bhe) {
 			/* one of the exceptions occurred that signifies a problem reaching the host */
 			String[] fallbackHosts = Defaults.getFallbackHosts(ably.options);
 			if(fallbackHosts != null) {
 				for(String host : fallbackHosts) {
 					try {
-						return postForHost(host, httpPost, handler);
+						return httpPost(scheme, host, path, params, headers, requestBody, true, responseHandler);
 					} catch(HostFailedException bhe2) {}
 				}
 			}
@@ -226,40 +191,29 @@ public class Http {
 		}
 	}
 
-	private Object postForHost(String host, HttpPost httpPost, ResponseHandler handler) throws HostFailedException, AblyException {
+	/**
+	 * HTTP DEL for Ably host, with fallbacks
+	 * @param path
+	 * @param headers
+	 * @param params
+	 * @param responseHandler
+	 * @return
+	 * @throws AblyException
+	 */
+	public Object del(String path, Param[] headers, Param[] params, ResponseHandler responseHandler) throws AblyException {
 		try {
-			return handleResponse(httpClient.execute(getHttpHost(host), httpPost, localContext), handler);
-		} catch(Throwable t) {
-			throw HostFailedException.checkFor(t);
-		}
-	}
-
-	public Object del(String path, Param[] headers, Param[] params, ResponseHandler handler) throws AblyException {
-		HttpDelete httpDel = new HttpDelete(HttpUtils.encodeParams(path, params));
-		if(headers != null)
-			for(Param header : headers)
-				httpDel.addHeader(new BasicHeader(header.key, header.value));
-		try {
-			return delForHost(getPrefHost(), httpDel, handler);
+			return httpDel(scheme, getPrefHost(), path, params, headers, true, responseHandler);
 		} catch(HostFailedException bhe) {
 			/* one of the exceptions occurred that signifies a problem reaching the host */
 			String[] fallbackHosts = Defaults.getFallbackHosts(ably.options);
 			if(fallbackHosts != null) {
 				for(String host : fallbackHosts) {
 					try {
-						return delForHost(host, httpDel, handler);
+						return httpDel(scheme, host, path, params, headers, true, responseHandler);
 					} catch(HostFailedException bhe2) {}
 				}
 			}
 			throw new AblyException("Connection failed; no host available", 404, 80000);
-		}
-	}
-
-	private Object delForHost(String host, HttpDelete httpDel, ResponseHandler handler) throws HostFailedException, AblyException {
-		try {
-			return handleResponse(httpClient.execute(getHttpHost(host), httpDel, localContext), handler);
-		} catch(Throwable t) {
-			throw HostFailedException.checkFor(t);
 		}
 	}
 
@@ -267,53 +221,26 @@ public class Http {
 	 *     Internal API
 	 **************************/
 
-	private synchronized HttpHost getHttpHost(String host) {
-		HttpHost httpHost = httpHosts.get(host);
-		if(httpHost == null) {
-			httpHost = new HttpHost(host, port, scheme);
-			httpHosts.put(host,  httpHost);
+	private String getAuthorizationHeader(boolean renew) throws AblyException {
+		if(authHeader != null && !renew) {
+			return authHeader;
 		}
-		return httpHost;
+		Auth auth = ably.auth;
+		if(auth.getAuthMethod() == AuthMethod.basic) {
+			authHeader = "Basic " + Base64Coder.encodeString(auth.getBasicCredentials());
+		} else {
+			auth.authorise(null, null, renew);
+			authHeader = "Bearer " + auth.getTokenAuth().getEncodedToken();
+		}
+		return authHeader;
 	}
 
-	private Object handleResponse(HttpResponse response, ResponseHandler handler) throws AblyException {
-		try {
-			StatusLine statusLine = response.getStatusLine();
-			int statusCode = statusLine.getStatusCode();
-			byte[] responseBody = null;
-			HttpEntity entity = response.getEntity();
-			if(entity != null)
-				responseBody = EntityUtils.toByteArray(entity);
-
-			if(statusCode < 200 || statusCode >= 300) {
-				if(responseBody != null && responseBody.length > 0) {
-					Log.e(TAG, "Error response from server: statusCode = " + statusCode + "; responseBody = " + new String(responseBody));
-					throw AblyException.fromJSON(responseBody);
-				} else {
-					Log.e(TAG, "Error response from server: statusCode = " + statusCode + "; statusLine = " + statusLine);
-					throw AblyException.fromResponseStatus(statusLine, statusCode);
-				}
-			}
-
-			if(handler == null)
-				return null;
-
-			String[] linkHeaders = null;
-			Header[] headers = response.getHeaders("Link");
-			if(headers != null && headers.length > 0) {
-				linkHeaders = new String[headers.length];
-				for(int i = 0; i <headers.length; i++)
-					linkHeaders[i] = headers[i].getValue();
-			}
-			return handler.handleResponse(statusCode, response.getFirstHeader("Content-Type").getValue(), linkHeaders, responseBody);
-		} catch (Throwable t) {
-			throw AblyException.fromThrowable(t);
-		}
+	private void authorise(boolean renew) throws AblyException {
+		getAuthorizationHeader(renew);
 	}
 
 	synchronized void dispose() {
 		if(!isDisposed) {
-			httpClient.getConnectionManager().shutdown();
 			isDisposed = true;
 		}
 	}
@@ -333,23 +260,216 @@ public class Http {
 		}
 	}
 
+	private Object httpGet(String scheme, String host, String path, Param[] params, Param[] headers, boolean withCredentials, ResponseHandler responseHandler) throws AblyException {
+		URL url = buildURL(scheme, host, path, params);
+		return httpGet(url, headers, withCredentials, responseHandler);
+	}
+
+	private Object httpGet(URL url, Param[] headers, boolean withCredentials, ResponseHandler responseHandler) throws AblyException {
+		return httpExecute(url, GET, headers, null, withCredentials, responseHandler);
+	}
+
+	private Object httpDel(String scheme, String host, String path, Param[] params, Param[] headers, boolean withCredentials, ResponseHandler responseHandler) throws AblyException {
+		URL url = buildURL(scheme, host, path, params);
+		return httpDel(url, headers, withCredentials, responseHandler);
+	}
+
+	private Object httpDel(URL url, Param[] headers, boolean withCredentials, ResponseHandler responseHandler) throws AblyException {
+		return httpExecute(url, DELETE, headers, null, withCredentials, responseHandler);
+	}
+
+	private Object httpPost(String scheme, String host, String path, Param[] params, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler responseHandler) throws AblyException {
+		URL url = buildURL(scheme, host, path, params);
+		return httpPost(url, headers, requestBody, withCredentials, responseHandler);
+	}
+
+	private Object httpPost(URL url, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler responseHandler) throws AblyException {
+		return httpExecute(url, POST, headers, requestBody, withCredentials, responseHandler);
+	}
+
+	private Object httpExecute(URL url, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler responseHandler) throws AblyException {
+		HttpURLConnection conn = null;
+		InputStream is = null;
+		int statusCode = 0;
+		String statusLine = null;
+		String contentType = null;
+		byte[] responseBody = null;
+		List<String> linkHeaders = null;
+		boolean credentialsIncluded = false;
+		try {
+
+			/* prepare connection */
+			conn = (HttpURLConnection)url.openConnection();
+			conn.setDoInput(true);
+			if(method != null) {
+				conn.setRequestMethod(method);
+			}
+			if(withCredentials && authHeader != null) {
+				credentialsIncluded = true;
+				conn.setRequestProperty(AUTHORIZATION, authHeader);
+			}
+			boolean acceptSet = false;
+			if(headers != null) {
+				for(Param header: headers) {
+					conn.setRequestProperty(header.key, header.value);
+					if(header.key.equals(ACCEPT)) acceptSet = true;
+				}
+			}
+			if(!acceptSet) conn.setRequestProperty(ACCEPT, JSON);
+
+			/* send request body */
+			if(requestBody != null) {
+				conn.setDoOutput(true);
+				byte[] body = requestBody.getEncoded();
+				int length = body.length;
+				conn.setFixedLengthStreamingMode(length);
+				conn.setRequestProperty(CONTENT_TYPE, requestBody.getContentType());
+				conn.setRequestProperty(CONTENT_LENGTH, Integer.toString(length));
+				OutputStream os = conn.getOutputStream();
+				os.write(body);
+			}
+
+			/* get response */
+			statusCode = conn.getResponseCode();
+			statusLine = conn.getResponseMessage();
+			if(statusCode != HttpURLConnection.HTTP_NO_CONTENT) {
+				contentType = conn.getContentType();
+				int contentLength = conn.getContentLength();
+				int successStatusCode = (method == POST) ? HttpURLConnection.HTTP_CREATED : HttpURLConnection.HTTP_OK;
+				is = (statusCode == successStatusCode) ? conn.getInputStream() : conn.getErrorStream();
+				if(is != null) {
+					int read;
+					if(contentLength == -1) {
+						ByteArrayOutputStream baos = new ByteArrayOutputStream();
+						byte[] buf = new byte[4 * 1024];
+						while((read = is.read(buf)) > -1) {
+							baos.write(buf, 0, read);
+						}
+						responseBody = baos.toByteArray();
+					} else {
+						int idx = 0;
+						responseBody = new byte[contentLength];
+						while((read = is.read(responseBody,  idx, contentLength - idx)) > -1) {
+							idx += read;
+						}
+					}
+				}
+			}
+		} catch(IOException ioe) {
+			throw HostFailedException.checkFor(ioe);
+		} finally {
+			try {
+				if(is != null)
+					is.close();
+				if(conn != null)
+					conn.disconnect();
+			} catch(IOException ioe) {}
+		}
+
+		if(statusCode == 0) {
+			return null;
+		}
+
+		if(statusCode < 200 || statusCode >= 300) {
+			/* get any in-body error details */
+			ErrorInfo error = null;
+			if(responseBody != null && responseBody.length > 0) {
+				ErrorResponse errorResponse = ErrorResponse.fromJSON(new String(responseBody));
+				if(errorResponse != null) {
+					error = errorResponse.error;
+				}
+			}
+
+			/* handle error details in header instead of body */
+			if(error == null) {
+				String errorCodeHeader = conn.getHeaderField("X-Ably-ErrorCode");
+				String errorMessageHeader = conn.getHeaderField("X-Ably-ErrorMessage");
+				if(errorCodeHeader != null) {
+					try {
+						error = new ErrorInfo(errorMessageHeader, statusCode, Integer.parseInt(errorCodeHeader));
+					} catch(NumberFormatException e) {}
+				}
+			}
+
+			/* handle www-authenticate */
+			if(statusCode == 401) {
+				String wwwAuthHeader = conn.getHeaderField(WWW_AUTHENTICATE);
+				if(wwwAuthHeader != null) {
+					boolean stale = (wwwAuthHeader.indexOf("stale") > -1) || (error != null && error.code == 40140);
+					if(withCredentials && (stale || !credentialsIncluded)) {
+						/* retry the request with credentials, renewed if necessary */
+						authorise(stale);
+						return httpExecute(url, method, headers, requestBody, withCredentials, responseHandler);
+					}
+				}
+			}
+			if(error != null) {
+				Log.e(TAG, "Error response from server: " + error);
+				throw AblyException.fromError(error);
+			} else {
+				Log.e(TAG, "Error response from server: statusCode = " + statusCode + "; statusLine = " + statusLine);
+				throw AblyException.fromResponseStatus(statusLine, statusCode);
+			}
+		}
+
+		if(responseHandler == null) {
+			return null;
+		}
+
+		linkHeaders = conn.getHeaderFields().get(LINK);
+		return responseHandler.handleResponse(statusCode, contentType, linkHeaders, responseBody);
+	}
+
+	private void appendParams(StringBuilder uri, Param[] params) {
+		if(params != null && params.length > 0) {
+			uri.append('?').append(params[0].key).append('=').append(params[0].value);
+			for(int i = 1; i < params.length; i++) {
+				uri.append('&').append(params[i].key).append('=').append(params[i].value);
+			}
+		}
+	}
+
+	private URL buildURL(String scheme, String host, String path, Param[] params) {
+		StringBuilder builder = new StringBuilder(scheme).append(host).append(':').append(port).append(path);
+		appendParams(builder, params);
+
+		URL result = null;
+		try {
+			result = new URL(builder.toString());
+		} catch (MalformedURLException e) {}
+		return result;
+	}
+
+	private URL buildURL(String uri, Param[] params) {
+		StringBuilder builder = new StringBuilder(uri);
+		appendParams(builder, params);
+
+		URL result = null;
+		try {
+			result = new URL(builder.toString());
+		} catch (MalformedURLException e) {}
+		return result;
+	}
+
 	/*************************
 	 *     Private state
 	 *************************/
 
-	public static int CONNECTION_TIMEOUT = 2*60*1000;  
-	public static int SOCKET_TIMEOUT = 2*60*1000;
-	private static final AuthScope authScope = new AuthScope(AuthScope.ANY_HOST, AuthScope.ANY_PORT);
-	private static final String TAG = Http.class.getName();
-
-	private AblyRest ably;
-	private String scheme;
-	private int port;
-	private Map<String, HttpHost> httpHosts = new HashMap<String, HttpHost>();
-	private HttpContext localContext = new BasicHttpContext();
-	private CredentialsProvider credentialsProvider;
-
-	AbstractHttpClient httpClient;
+	private final AblyRest ably;
+	private final String scheme;
+	private final int port;
+	private String authHeader;
 	private boolean isDisposed;
 
+	private static final String TAG              = Http.class.getName();
+	private static final String LINK             = "Link";
+	private static final String ACCEPT           = "Accept";
+	private static final String CONTENT_TYPE     = "Content-Type";
+	private static final String CONTENT_LENGTH   = "Content-Length";
+	private static final String JSON             = "application/json";
+	private static final String WWW_AUTHENTICATE = "WWW-Authenticate";
+	private static final String AUTHORIZATION    = "Authorization";
+	private static final String GET              = "GET";
+	private static final String POST             = "POST";
+	private static final String DELETE           = "DELETE";
 }

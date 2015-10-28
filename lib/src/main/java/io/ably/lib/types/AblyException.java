@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
 
-import org.apache.http.StatusLine;
-
 import io.ably.lib.util.Serialisation;
 
 /**
@@ -55,6 +53,16 @@ public class AblyException extends Exception {
 	}
 
 	/**
+	 * Get an exception from a response body with error details
+	 * @param jsonText
+	 * @return
+	 * @throws AblyException
+	 */
+	public static AblyException fromError(ErrorInfo error) throws AblyException {
+		return new AblyException(error);
+	}
+
+	/**
 	 * Get an exception from a response body with error details as byte[]
 	 * @param jsonBytes
 	 * @return
@@ -87,8 +95,8 @@ public class AblyException extends Exception {
 	 * @param statusCode
 	 * @return
 	 */
-	public static AblyException fromResponseStatus(StatusLine statusLine, int statusCode) {
-		return new AblyException(statusLine.getReasonPhrase(), statusCode, statusCode * 100);
+	public static AblyException fromResponseStatus(String statusLine, int statusCode) {
+		return new AblyException(statusLine, statusCode, statusCode * 100);
 	}
 
 	/**

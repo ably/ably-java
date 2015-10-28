@@ -43,6 +43,7 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -58,11 +59,11 @@ import org.apache.http.HttpServerConnection;
 import org.apache.http.HttpStatus;
 import org.apache.http.MethodNotSupportedException;
 import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.http.impl.DefaultHttpResponseFactory;
 import org.apache.http.impl.DefaultHttpServerConnection;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.params.CoreConnectionPNames;
 import org.apache.http.params.CoreProtocolPNames;
 import org.apache.http.params.HttpParams;
@@ -133,7 +134,7 @@ public class TokenServer {
 			} catch (URISyntaxException e) {}
 
 			String target = URLDecoder.decode(request.getRequestLine().getUri(), "UTF-8");
-			List<NameValuePair> params = URLEncodedUtils.parse(targetUri, "UTF-8");
+			List<NameValuePair> params = getUrlParameters(targetUri);
 
 			if(target.startsWith("/get-token")) {
 				TokenParams tokenParams = params2TokenParams(params);
@@ -337,6 +338,23 @@ public class TokenServer {
 		}
 		catch (IOException e) {}
 		return result;
+	}
+
+	private static List<NameValuePair> getUrlParameters(URI uri) throws UnsupportedEncodingException {
+		List<NameValuePair> params = new ArrayList<NameValuePair>();
+		String queryString = uri.getQuery();
+		if(queryString != null) {
+			for (String param : queryString.split("&")) {
+				String pair[] = param.split("=");
+				String key = URLDecoder.decode(pair[0], "UTF-8");
+				String value = "";
+				if (pair.length > 1) {
+					value = URLDecoder.decode(pair[1], "UTF-8");
+				}
+				params.add(new BasicNameValuePair(new String(key), new String(value)));
+			}
+		}
+		return params;
 	}
 
 	private final AblyRest ably;

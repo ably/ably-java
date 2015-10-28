@@ -15,6 +15,7 @@ import io.ably.lib.util.Log;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import javax.crypto.Mac;
@@ -414,7 +415,7 @@ public class Auth {
 			try {
 				authUrlResponse = (JSONObject)ably.http.getUri(tokenOptions.authUrl, tokenOptions.authHeaders, requestParams, new ResponseHandler() {
 					@Override
-					public Object handleResponse(int statusCode, String contentType, String[] linkHeaders, byte[] body) throws AblyException {
+					public Object handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
 						if(contentType != null && !contentType.startsWith("application/json"))
 							throw new AblyException("Unacceptable content type from auth callback", 406, 40170);
 
@@ -448,10 +449,11 @@ public class Auth {
 		String tokenPath = "/keys/" + signedTokenRequest.keyName + "/requestToken";
 		return (TokenDetails)ably.http.post(tokenPath, tokenOptions.authHeaders, tokenOptions.authParams, new Http.JSONRequestBody(signedTokenRequest.asJSON().toString()), new ResponseHandler() {
 			@Override
-			public Object handleResponse(int statusCode, String contentType, String[] linkHeaders, byte[] body) throws AblyException {
+			public Object handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
 				JSONObject json;
 				try {
-					json = new JSONObject(new String(body));
+					String jsonText = new String(body);
+					json = new JSONObject(jsonText);
 				} catch (JSONException e) {
 					throw AblyException.fromThrowable(e);
 				}

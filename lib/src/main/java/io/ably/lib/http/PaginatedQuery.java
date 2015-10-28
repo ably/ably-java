@@ -8,6 +8,7 @@ import io.ably.lib.types.Param;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -55,7 +56,7 @@ public class PaginatedQuery<T> implements ResponseHandler {
 	private class ResultPage implements PaginatedResult<T> {
 		private T[] contents;
 
-		private ResultPage(T[] contents, String[] linkHeaders) throws AblyException {
+		private ResultPage(T[] contents, Collection<String> linkHeaders) throws AblyException {
 			this.contents = contents;
 
 			if(linkHeaders != null) {
@@ -110,7 +111,7 @@ public class PaginatedQuery<T> implements ResponseHandler {
 	}
 
 	@Override
-	public Object handleResponse(int statusCode, String contentType, String[] linkHeaders, byte[] body) throws AblyException {
+	public Object handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
 		T[] responseContents = bodyHandler.handleResponseBody(contentType, body);
 		return new ResultPage(responseContents, linkHeaders);
 	}
@@ -122,7 +123,7 @@ public class PaginatedQuery<T> implements ResponseHandler {
 	private static Pattern linkPattern = Pattern.compile("\\s*<(.*)>;\\s*rel=\"(.*)\"");
 	private static Pattern urlPattern = Pattern.compile("\\./(.*)\\?(.*)");
 
-	private static HashMap<String, String> parseLinks(String[] linkHeaders) {
+	private static HashMap<String, String> parseLinks(Collection<String> linkHeaders) {
 		HashMap<String, String> result = new HashMap<String, String>();
 		for(String link : linkHeaders) {
 			/* we're expecting the format to be <url>; rel="first current ..." */

@@ -489,7 +489,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 */
 	public PaginatedResult<Message> history(Param[] params) throws AblyException {
 		BodyHandler<Message> bodyHandler = MessageSerializer.getMessageResponseHandler(options);
-		return new PaginatedQuery<Message>(ably.http, basePath + "/history", HttpUtils.defaultGetHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
+		return new PaginatedQuery<Message>(ably.http, basePath + "/history", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
 	}
 
 	/************************************

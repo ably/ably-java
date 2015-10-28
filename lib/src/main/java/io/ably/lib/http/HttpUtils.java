@@ -24,28 +24,12 @@ public class HttpUtils {
 		mimeTypes.put("msgpack", "application/x-msgpack");
 	}
 
-	public static Param[] defaultGetHeaders(boolean binary) {
+	public static Param[] defaultAcceptHeaders(boolean binary) {
 		Param[] headers;
 		if(binary) {
 			headers = new Param[]{ new Param("Accept", "application/x-msgpack,application/json") };
 		} else {
 			headers = new Param[]{ new Param("Accept", "application/json") };
-		}
-		return headers;
-	}
-
-	public static Param[] defaultPostHeaders(boolean binary) {
-		Param[] headers;
-		if(binary) {
-			headers = new Param[]{
-				new Param("Accept", "application/x-msgpack,application/json"),
-				new Param("Content-Type", "application/x-msgpack")
-			};
-		} else {
-			headers = new Param[]{
-				new Param("Accept", "application/json"),
-				new Param("Content-Type", "application/json")
-			};
 		}
 		return headers;
 	}

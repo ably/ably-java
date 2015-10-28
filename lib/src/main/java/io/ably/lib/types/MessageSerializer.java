@@ -51,7 +51,7 @@ public class MessageSerializer extends JsonSerializer<Message> {
 
 	public static RequestBody asJSONRequest(Message[] messages) throws AblyException {
 		try {
-			return new Http.ByteArrayRequestBody(Serialisation.jsonObjectMapper.writeValueAsBytes(messages));
+			return new Http.ByteArrayRequestBody(Serialisation.jsonObjectMapper.writeValueAsBytes(messages), "application/json");
 		} catch(IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}
@@ -59,7 +59,7 @@ public class MessageSerializer extends JsonSerializer<Message> {
 
 	public static RequestBody asMsgpackRequest(Message[] messages) throws AblyException {
 		try {
-			return new Http.ByteArrayRequestBody(Serialisation.msgpackObjectMapper.writeValueAsBytes(messages));
+			return new Http.ByteArrayRequestBody(Serialisation.msgpackObjectMapper.writeValueAsBytes(messages), "application/x-msgpack");
 		} catch(IOException ioe) {
 			throw AblyException.fromIOException(ioe);
 		}

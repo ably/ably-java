@@ -16,6 +16,7 @@ import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 
 import java.io.IOException;
+import java.util.Collection;
 
 /**
  * AblyRest
@@ -65,7 +66,6 @@ public class AblyRest {
 
 		http = new Http(this, options);
 		auth = new Auth(this, options);
-		http.setAuth(auth);
 		channels = new Channels();
 	}
 
@@ -93,9 +93,9 @@ public class AblyRest {
 	 * @throws AblyException
 	 */
 	public long time() throws AblyException {
-		return ((Long)http.get("/time", HttpUtils.defaultGetHeaders(false), null, new ResponseHandler() {
+		return ((Long)http.get("/time", HttpUtils.defaultAcceptHeaders(false), null, new ResponseHandler() {
 			@Override
-			public Object handleResponse(int statusCode, String contentType, String[] linkHeaders, byte[] body) throws AblyException {
+			public Object handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
 				try {
 					return (Long)Serialisation.jsonObjectMapper.readValue(body, Long[].class)[0];
 				} catch (IOException e) {
@@ -113,7 +113,7 @@ public class AblyRest {
 	 * @throws AblyException
 	 */
 	public PaginatedResult<Stats> stats(Param[] params) throws AblyException {
-		return new PaginatedQuery<Stats>(http, "/stats", HttpUtils.defaultGetHeaders(false), params, StatsReader.statsResponseHandler).get();
+		return new PaginatedQuery<Stats>(http, "/stats", HttpUtils.defaultAcceptHeaders(false), params, StatsReader.statsResponseHandler).get();
 	}
 
 }
