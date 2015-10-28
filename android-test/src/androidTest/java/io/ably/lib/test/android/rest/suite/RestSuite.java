@@ -1,6 +1,4 @@
-package io.ably.lib.test.android.realtime;
-
-import android.support.test.runner.AndroidJUnit4;
+package io.ably.lib.test.android.rest.suite;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -12,25 +10,22 @@ import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
 import io.ably.lib.test.common.Setup;
-import io.ably.lib.test.realtime.*;
+import io.ably.lib.test.rest.*;
 
 @RunWith(Suite.class)
 @SuiteClasses({
-	EventEmitterTest.class,
-	RealtimeInitTest.class,
-	RealtimeConnectTest.class,
-	RealtimeConnectFailTest.class,
-	RealtimeChannelTest.class,
-	RealtimePresenceTest.class,
-	RealtimeMessageTest.class,
-	RealtimeResumeTest.class,
-	RealtimeRecoverTest.class,
-	RealtimeCryptoTest.class,
-	RealtimeCryptoMessageTest.class,
-	RealtimeChannelHistoryTest.class,
-	RealtimePresenceHistoryTest.class
+	RestAppStatsTest.class,
+	RestInitTest.class,
+	RestTimeTest.class,
+	RestAuthTest.class,
+	RestTokenTest.class,
+	RestCapabilityTest.class,
+	RestChannelHistoryTest.class,
+	RestChannelPublishTest.class,
+	RestCryptoTest.class,
+	RestPresenceTest.class
 })
-public class RealtimeSuite {
+public class RestSuite {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
@@ -41,5 +36,4 @@ public class RealtimeSuite {
 	public static void tearDownAfterClass() throws Exception {
 		Setup.clearTestVars();
 	}
-
 }
