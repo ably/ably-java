@@ -26,6 +26,14 @@
  */
 package io.ably.lib.test.util;
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import fi.iki.elonen.NanoHTTPD;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth.TokenDetails;
 import io.ably.lib.rest.Auth.TokenParams;
@@ -35,329 +43,114 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ErrorResponse;
 import io.ably.lib.util.Serialisation;
 
-import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.io.UnsupportedEncodingException;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-
-import org.apache.http.ConnectionClosedException;
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpException;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpResponseInterceptor;
-import org.apache.http.HttpServerConnection;
-import org.apache.http.HttpStatus;
-import org.apache.http.MethodNotSupportedException;
-import org.apache.http.NameValuePair;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.DefaultConnectionReuseStrategy;
-import org.apache.http.impl.DefaultHttpResponseFactory;
-import org.apache.http.impl.DefaultHttpServerConnection;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.params.CoreConnectionPNames;
-import org.apache.http.params.CoreProtocolPNames;
-import org.apache.http.params.HttpParams;
-import org.apache.http.params.SyncBasicHttpParams;
-import org.apache.http.protocol.BasicHttpContext;
-import org.apache.http.protocol.HttpContext;
-import org.apache.http.protocol.HttpProcessor;
-import org.apache.http.protocol.HttpRequestHandler;
-import org.apache.http.protocol.HttpRequestHandlerRegistry;
-import org.apache.http.protocol.HttpService;
-import org.apache.http.protocol.ImmutableHttpProcessor;
-import org.apache.http.protocol.ResponseConnControl;
-import org.apache.http.protocol.ResponseContent;
-import org.apache.http.protocol.ResponseDate;
-import org.apache.http.protocol.ResponseServer;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-/**
- * Basic, yet fully functional and spec compliant, HTTP/1.1 file server.
- * <p>
- * Please note the purpose of this application is demonstrate the usage of HttpCore APIs.
- * It is NOT intended to demonstrate the most efficient way of building an HTTP file server.
- *
- *
- */
-@SuppressWarnings("deprecation")
-public class TokenServer {
+public class TokenServer extends NanoHTTPD {
 
 	public TokenServer(AblyRest ably, int port) {
+		super(port);
 		this.ably = ably;
-		this.port = port;
 	}
 
-	public void start() throws IOException {
-		listenerThread = new RequestListenerThread(port);
-		listenerThread.setDaemon(false);
-		listenerThread.start();
-	}
+	@Override
+    public Response serve(IHTTPSession session) {
+        Method method = session.getMethod();
+        String target = session.getUri();
+        Map<String, String> params = session.getParms();
+        Map<String, String> headers = session.getHeaders();
 
-	public void stop() {
-		if(listenerThread != null) {
-			listenerThread.destroy();
-			listenerThread = null;
-		}
-	}
-
-	private class TokenRequestHandler implements HttpRequestHandler {
-
-		public TokenRequestHandler() {
-			super();
+		if (!method.equals(Method.GET)) {
+			return new Response(Response.Status.METHOD_NOT_ALLOWED, MIME_PLAINTEXT, "Method not supported");
 		}
 
-		@Override
-		public void handle(
-				final HttpRequest request,
-				final HttpResponse response,
-				final HttpContext context) throws HttpException, IOException {
-
-			String method = request.getRequestLine().getMethod().toUpperCase(Locale.ENGLISH);
-			if (!method.equals("GET")) {
-				throw new MethodNotSupportedException(method + " method not supported");
-			}
-
-			URI targetUri = null;
+		if(target.equals("/get-token")) {
+			TokenParams tokenParams = params2TokenParams(params);
 			try {
-				targetUri = new URI(request.getRequestLine().getUri());
-			} catch (URISyntaxException e) {}
-
-			String target = URLDecoder.decode(request.getRequestLine().getUri(), "UTF-8");
-			List<NameValuePair> params = getUrlParameters(targetUri);
-
-			if(target.startsWith("/get-token")) {
-				TokenParams tokenParams = params2TokenParams(params);
-				try {
-					TokenDetails token = ably.auth.requestToken(null, tokenParams);
-					response.setStatusCode(HttpStatus.SC_OK);
-					response.setEntity(json2Entity(token.asJSON()));
-				} catch (AblyException e) {
-					e.printStackTrace();
-					int statusCode = e.errorInfo.statusCode;
-					response.setStatusCode(statusCode);
-					response.setEntity(error2Entity(statusCode, null));
-				} catch (JSONException e) {
-					e.printStackTrace();
-					response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
-					response.setEntity(error2Entity(HttpStatus.SC_BAD_REQUEST, null));
-				}
-			}
-			else if(target.startsWith("/get-token-request")) {
-				TokenParams tokenParams = params2TokenParams(params);
-				try {
-					TokenRequest tokenRequest = ably.auth.createTokenRequest(null, tokenParams);
-					response.setStatusCode(HttpStatus.SC_OK);
-					response.setEntity(json2Entity(tokenRequest.asJSON()));
-				} catch (AblyException e) {
-					e.printStackTrace();
-					int statusCode = e.errorInfo.statusCode;
-					response.setStatusCode(statusCode);
-					response.setEntity(error2Entity(statusCode, null));
-				}
-			}
-			else if(target.startsWith("/echo-params")) {
-				response.setStatusCode(HttpStatus.SC_NOT_FOUND);
-				response.setEntity(error2Entity(HttpStatus.SC_NOT_FOUND, params2Json(params)));
-			}
-			else if(target.startsWith("/echo-headers")) {
-				response.setStatusCode(HttpStatus.SC_NOT_FOUND);
-				response.setEntity(error2Entity(HttpStatus.SC_NOT_FOUND, headers2Json(request.getAllHeaders())));
-			}
-			else if(target.startsWith("/404")) {
-				response.setStatusCode(HttpStatus.SC_NOT_FOUND);
-				response.setEntity(error2Entity(HttpStatus.SC_NOT_FOUND, null));
+				TokenDetails token = ably.auth.requestToken(null, tokenParams);
+				return json2Response(token.asJSON());
+			} catch (AblyException e) {
+				e.printStackTrace();
+				return error2Response(e.errorInfo);
+			} catch (JSONException e) {
+				e.printStackTrace();
+				return new Response(Response.Status.BAD_REQUEST, MIME_PLAINTEXT, "Bad request");
 			}
 		}
-	}
-
-	private class RequestListenerThread extends Thread {
-
-		private final ServerSocket serversocket;
-		private final HttpParams params;
-		private final HttpService httpService;
-
-		public RequestListenerThread(int port) throws IOException {
-			this.serversocket = new ServerSocket(port);
-			this.params = new SyncBasicHttpParams();
-			this.params
-			.setIntParameter(CoreConnectionPNames.SO_TIMEOUT, 5000)
-			.setIntParameter(CoreConnectionPNames.SOCKET_BUFFER_SIZE, 8 * 1024)
-			.setBooleanParameter(CoreConnectionPNames.STALE_CONNECTION_CHECK, false)
-			.setBooleanParameter(CoreConnectionPNames.TCP_NODELAY, true)
-			.setParameter(CoreProtocolPNames.ORIGIN_SERVER, "HttpComponents/1.1");
-
-			// Set up the HTTP protocol processor
-			HttpProcessor httpproc = new ImmutableHttpProcessor(new HttpResponseInterceptor[] {
-					new ResponseDate(),
-					new ResponseServer(),
-					new ResponseContent(),
-					new ResponseConnControl()
-			});
-
-			// Set up request handlers
-			HttpRequestHandlerRegistry reqistry = new HttpRequestHandlerRegistry();
-			reqistry.register("*", new TokenRequestHandler());
-
-			// Set up the HTTP service
-			httpService = new HttpService(
-					httpproc,
-					new DefaultConnectionReuseStrategy(),
-					new DefaultHttpResponseFactory());
-
-			httpService.setHandlerResolver(reqistry);
-			httpService.setParams(params);
-		}
-
-		@Override
-		public void run() {
-			while (!Thread.interrupted()) {
-				try {
-					// Set up HTTP connection
-					Socket socket = this.serversocket.accept();
-					DefaultHttpServerConnection conn = new DefaultHttpServerConnection();
-					conn.bind(socket, this.params);
-
-					// Start worker thread
-					Thread t = new WorkerThread(this.httpService, conn);
-					t.setDaemon(true);
-					t.start();
-				} catch (InterruptedIOException ex) {
-					break;
-				} catch (IOException e) {
-					System.err.println("I/O error initialising connection thread: "
-							+ e.getMessage());
-					break;
-				}
-			}
-		}
-	}
-
-	static class WorkerThread extends Thread {
-
-		private final HttpService httpservice;
-		private final HttpServerConnection conn;
-
-		public WorkerThread(
-				final HttpService httpservice,
-				final HttpServerConnection conn) {
-			super();
-			this.httpservice = httpservice;
-			this.conn = conn;
-		}
-
-		@Override
-		public void run() {
-			HttpContext context = new BasicHttpContext(null);
+		else if(target.equals("/get-token-request")) {
+			TokenParams tokenParams = params2TokenParams(params);
 			try {
-				while (!Thread.interrupted() && this.conn.isOpen()) {
-					this.httpservice.handleRequest(this.conn, context);
-				}
-			} catch (ConnectionClosedException ex) {
-				/* we don't need to report this
-				System.err.println("Client closed connection"); */
-			} catch (IOException ex) {
-				/* each thread will end up here with a read timeout
-				 System.err.println("I/O error: " + ex.getMessage()); */
-			} catch (HttpException ex) {
-				System.err.println("Unrecoverable HTTP protocol violation: " + ex.getMessage());
-			} finally {
-				try {
-					this.conn.shutdown();
-				} catch (IOException ignore) {}
+				TokenRequest tokenRequest = ably.auth.createTokenRequest(null, tokenParams);
+				return json2Response(tokenRequest.asJSON());
+			} catch (AblyException e) {
+				e.printStackTrace();
+				return error2Response(e.errorInfo);
 			}
 		}
-	}
-
-	private static HashMap<String, String> params2HashMap(List<NameValuePair> params) {
-		HashMap<String, String> map = new HashMap<String, String>();
-		for(NameValuePair nameValuePair : params) {
-			map.put(nameValuePair.getName(), nameValuePair.getValue());
+		else if(target.equals("/echo-params")) {
+			return params2ErrorResponse(params, Response.Status.NOT_FOUND);
 		}
-		return map;
+		else if(target.equals("/echo-headers")) {
+			return params2ErrorResponse(headers, Response.Status.NOT_FOUND);
+		}
+		else if(target.equals("/404")) {
+			return error2Response(new ErrorInfo("Not found", 404, 0));
+		}
+		else {
+			return new Response(Response.Status.NOT_FOUND, MIME_PLAINTEXT, "Unexpected path: " + target);
+		}
 	}
 
-	private static String params2Json(List<NameValuePair> params) {
+	private static Response params2ErrorResponse(Map<String, String> params, Response.Status status) {
 		StringBuilder builder = new StringBuilder();
-		for(NameValuePair nameValuePair : params) {
+		for(Entry<String, String> entry : params.entrySet()) {
 			if(builder.length() != 0) builder.append('&');
-			builder.append(nameValuePair.getName()).append('=').append(nameValuePair.getValue());
+			builder.append(entry.getKey()).append('=').append(entry.getValue());
 		}
-		return builder.toString();
+		return error2Response(new ErrorInfo(builder.toString(), status.getRequestStatus(), 0));
 	}
 
-	private static String headers2Json(Header[] headers) {
-		StringBuilder builder = new StringBuilder();
-		for(Header header : headers) {
-			if(builder.length() != 0) builder.append('&');
-			builder.append(header.getName()).append('=').append(header.getValue());
-		}
-		return builder.toString();
-	}
-
-	private static TokenParams params2TokenParams(List<NameValuePair> params) {
-		HashMap<String, String> map = params2HashMap(params);
+	private static TokenParams params2TokenParams(Map<String, String> params) {
 		TokenParams tokenParams = new TokenParams();
-		if(map.containsKey("client_id"))
-			tokenParams.clientId = map.get("client_id");
-		if(map.containsKey("timestamp"))
-			tokenParams.timestamp = Long.valueOf(map.get("timestamp"));
-		if(map.containsKey("ttl"))
-			tokenParams.ttl = Long.valueOf(map.get("ttl"));
-		if(map.containsKey("capability"))
-			tokenParams.capability = map.get("capability");
+		if(params.containsKey("client_id"))
+			tokenParams.clientId = params.get("client_id");
+		if(params.containsKey("timestamp"))
+			tokenParams.timestamp = Long.valueOf(params.get("timestamp"));
+		if(params.containsKey("ttl"))
+			tokenParams.ttl = Long.valueOf(params.get("ttl"));
+		if(params.containsKey("capability"))
+			tokenParams.capability = params.get("capability");
 		return tokenParams;
 	}
 
-	private static HttpEntity json2Entity(JSONObject json) {
-		StringEntity result = null;
-		try {
-			result = new StringEntity(json.toString(), "UTF-8");
-			result.setContentType("application/json");
-		} catch (UnsupportedEncodingException e) {}
-		return result;
+	private static Response json2Response(JSONObject json) {
+		return new Response(Response.Status.OK, MIME_JSON, json.toString());
 	}
 
-	private static HttpEntity error2Entity(final int statusCode, final String errMessage) {
-		StringEntity result = null;
+	private static Response.Status getStatus(int statusCode) {
+		switch(statusCode) {
+		case 200:
+			return Response.Status.OK;
+		case 400:
+			return Response.Status.BAD_REQUEST;
+		case 401:
+			return Response.Status.UNAUTHORIZED;
+		case 404:
+			return Response.Status.NOT_FOUND;
+		case 500:
+		default:
+			return Response.Status.INTERNAL_ERROR;
+		}
+	}
+
+	private static Response error2Response(ErrorInfo errorInfo) {
+		Response result = null;
 		try {
 			ErrorResponse err = new ErrorResponse();
-			err.error = new ErrorInfo(errMessage, statusCode, 0);
-			result = new StringEntity(Serialisation.jsonObjectMapper.writeValueAsString(err), "UTF-8");
-			result.setContentType("application/json");
+			err.error = errorInfo;
+			result = new Response(getStatus(errorInfo.statusCode), MIME_JSON, Serialisation.jsonObjectMapper.writeValueAsString(err));
 		}
 		catch (IOException e) {}
 		return result;
 	}
 
-	private static List<NameValuePair> getUrlParameters(URI uri) throws UnsupportedEncodingException {
-		List<NameValuePair> params = new ArrayList<NameValuePair>();
-		String queryString = uri.getQuery();
-		if(queryString != null) {
-			for (String param : queryString.split("&")) {
-				String pair[] = param.split("=");
-				String key = URLDecoder.decode(pair[0], "UTF-8");
-				String value = "";
-				if (pair.length > 1) {
-					value = URLDecoder.decode(pair[1], "UTF-8");
-				}
-				params.add(new BasicNameValuePair(new String(key), new String(value)));
-			}
-		}
-		return params;
-	}
-
 	private final AblyRest ably;
-	private final int port;
-	private RequestListenerThread listenerThread;
+	private static final String MIME_JSON = "application/json";	
 }
