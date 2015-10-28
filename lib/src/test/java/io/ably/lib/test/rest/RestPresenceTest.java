@@ -302,8 +302,11 @@ public class RestPresenceTest {
 			}
 
 			/* verify there are no further results */
-			if(members.hasNext())
-				fail("Expected no further members");
+			if(members.hasNext()) {
+				members = members.next();
+				if(members != null)
+					assertEquals("Expected no further members", members.items().length, 0);
+			}
 
 		} catch(AblyException e) {
 			e.printStackTrace();
