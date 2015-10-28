@@ -43,7 +43,7 @@ task testsJar(type: Jar) {
   from sourceSets.test.output
   classifier = 'test'
   includes = ['**/test/**','**/common/**']
-  excludes = ['**/*Suite.class', '**/jre/**']
+  excludes = ['**/jre/**']
   includeEmptyDirs false
   with jar
 }
