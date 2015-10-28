@@ -29,6 +29,7 @@ project(':lib') {
     beforeTest { descriptor ->
       logger.lifecycle("Running test: " + descriptor)
     }
+    outputs.upToDateWhen { false }
   }
 
   task testRestSuite(type: Test) {
@@ -37,6 +38,7 @@ project(':lib') {
     beforeTest { descriptor ->
       logger.lifecycle("Running test: " + descriptor)
     }
+    outputs.upToDateWhen { false }
   }
 }
 
