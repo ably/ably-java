@@ -19,9 +19,40 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.Param;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class RestAuthTest {
+
+	/**
+	 * Init token server
+	 */
+	@BeforeClass
+	public static void auth_start_tokenserver() {
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			AblyRest ably = new AblyRest(opts);
+			tokenServer = new TokenServer(ably, 8982);
+			tokenServer.start();
+		} catch (IOException e) {
+			e.printStackTrace();
+			fail("auth_start_tokenserver: Unexpected exception starting server");
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_start_tokenserver: Unexpected exception starting server");
+		}
+	}
+
+	/**
+	 * Kill token server
+	 */
+	@AfterClass
+	public static void auth_stop_tokenserver() {
+		if(tokenServer != null)
+			tokenServer.stop();
+	}
 
 	/**
 	 * Init library with a key only
@@ -128,26 +159,6 @@ public class RestAuthTest {
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("authinit3: Unexpected exception instantiating library");
-		}
-	}
-
-	/**
-	 * Init token server
-	 */
-	@Test
-	public void auth_start_tokenserver() {
-		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
-			AblyRest ably = new AblyRest(opts);
-			tokenServer = new TokenServer(ably, 8982);
-			tokenServer.start();
-		} catch (IOException e) {
-			e.printStackTrace();
-			fail("auth_start_tokenserver: Unexpected exception starting server");
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("auth_start_tokenserver: Unexpected exception starting server");
 		}
 	}
 
@@ -290,15 +301,6 @@ public class RestAuthTest {
 			e.printStackTrace();
 			fail("auth_authURL_headers: Unexpected exception instantiating library");
 		}
-	}
-
-	/**
-	 * Kill token server
-	 */
-	@Test
-	public void auth_stop_tokenserver() {
-		if(tokenServer != null)
-			tokenServer.stop();
 	}
 
 	/**
@@ -459,5 +461,5 @@ public class RestAuthTest {
 		}
 	}
 
-	private TokenServer tokenServer;
+	private static TokenServer tokenServer;
 }
