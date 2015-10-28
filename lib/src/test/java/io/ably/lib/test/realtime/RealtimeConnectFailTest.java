@@ -113,7 +113,7 @@ public class RealtimeConnectFailTest {
 	 * Verify that the connection enters the suspended state, after multiple attempts
 	 * to connect to a non-existent ws host
 	 */
-	//@Test
+	@Test
 	public void connect_fail_suspended() {
 		try {
 			TestVars testVars = Setup.getTestVars();
@@ -165,7 +165,7 @@ public class RealtimeConnectFailTest {
 			/* create Ably realtime instance without key */
 			final TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = testVars.createOptions();
-			opts.token = tokenDetails.token;
+			opts.tokenDetails = tokenDetails;
 			opts.authCallback = authCallback;
 			opts.logLevel = Log.VERBOSE;
 			AblyRealtime ably = new AblyRealtime(opts);
