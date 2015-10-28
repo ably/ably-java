@@ -14,7 +14,7 @@ dependencies {
   compile 'org.java-websocket:Java-WebSocket:1.3.1'
   provided 'org.json:json:20140107'
   testCompile 'junit:junit:4.12'
-  testCompile 'org.apache.httpcomponents:httpcore:4.3'
+  testCompile 'com.nanohttpd:nanohttpd:2.1.0'
 }
 
 task fullJar(type: Jar) {

@@ -28,6 +28,7 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'com.android.support:appcompat-v7:23.0.0'
     compile project(path: ':lib', configuration: 'androidConfiguration')
+    androidTestCompile 'com.nanohttpd:nanohttpd:2.1.0'
     androidTestCompile project(path: ':lib', configuration: 'testsConfiguration')
     androidTestCompile 'com.android.support.test:runner:0.3'
     androidTestCompile 'com.android.support.test:rules:0.3'
@@ -35,7 +36,7 @@ dependencies {
 
 task copyAssetFiles (type: Copy) {
   description = 'Copies assets from the common library...'
-  from new File(project(':lib').projectDir, '/src/test/resources/assets')
+  from new File(project(':lib').projectDir, '/src/test/resources')
   into new File(project.projectDir, '/src/androidTest/assets')
   include('**/*')
 }
