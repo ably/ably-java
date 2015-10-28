@@ -313,7 +313,7 @@ public class RestPresenceTest {
 	}
 
 	/**
-	 * Get paginated presence history data in the forward direction using text protocol
+	 * Get paginated presence history data in the backwards direction using text protocol
 	 */
 	@Test
 	public void rest_presencehistory_paginate_text_b() {
@@ -365,8 +365,11 @@ public class RestPresenceTest {
 			}
 
 			/* verify there are no further results */
-			if(members.hasNext())
-				fail("Expected no further members");
+			if(members.hasNext()) {
+				members = members.next();
+				if(members != null)
+					assertEquals("Expected no further members", members.items().length, 0);
+			}
 
 		} catch(AblyException e) {
 			e.printStackTrace();
