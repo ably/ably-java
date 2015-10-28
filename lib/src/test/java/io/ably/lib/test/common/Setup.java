@@ -1,7 +1,7 @@
 package io.ably.lib.test.common;
 
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -138,6 +138,7 @@ public class Setup {
 					/* we need to provide an appId to keep the library happy,
 					 * but we are only instancing the library to use the http
 					 * convenience methods */
+					opts.key = "none:none";
 					opts.restHost = host;
 					opts.port = port;
 					opts.tlsPort = tlsPort;
@@ -160,9 +161,9 @@ public class Setup {
 				System.exit(1);
 			}
 			try {
-				testVars = (TestVars)ably.http.post("/apps", HttpUtils.defaultPostHeaders(false), null, new JSONRequestBody(appSpec, Serialisation.jsonObjectMapper), new ResponseHandler() {
+				testVars = (TestVars)ably.http.post("/apps", null, null, new JSONRequestBody(appSpec, Serialisation.jsonObjectMapper), new ResponseHandler() {
 					@Override
-					public Object handleResponse(int statusCode, String contentType, String[] headers, byte[] body) throws AblyException {
+					public Object handleResponse(int statusCode, String contentType, Collection<String> headers, byte[] body) throws AblyException {
 						try {
 							TestVars result = (TestVars)Serialisation.jsonObjectMapper.readValue(body, TestVars.class);
 							result.restHost = host;
@@ -202,7 +203,7 @@ public class Setup {
 				opts.tlsPort = tlsPort;
 				opts.tls = true;
 				ably = new AblyRest(opts);
-				ably.http.del("/apps/" + testVars.appId, HttpUtils.defaultGetHeaders(false), null, null);
+				ably.http.del("/apps/" + testVars.appId, HttpUtils.defaultAcceptHeaders(false), null, null);
 			} catch (AblyException ae) {
 				System.err.println("Unable to delete test app: " + ae);
 				ae.printStackTrace();
@@ -232,7 +233,7 @@ public class Setup {
 	}
 
 	private static ResourceLoader resourceLoader;
-	private static final String specFile = "testAppSpec.json";
+	private static final String specFile = "local/testAppSpec.json";
 
 	private static AblyRest ably;
 	private static String environment;

@@ -27,8 +27,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 
 public class RealtimeCryptoMessageTest {
 
-	private static final String testDataFile128 = "src/test/resources/ably-common/test-resources/crypto-data-128.json";
-	private static final String testDataFile256 = "src/test/resources/ably-common/test-resources/crypto-data-256.json";
+	private static final String testDataFile128 = "ably-common/test-resources/crypto-data-128.json";
+	private static final String testDataFile256 = "ably-common/test-resources/crypto-data-256.json";
 	private static CryptoTestData testData128;
 	private static CryptoTestData testData256;
 

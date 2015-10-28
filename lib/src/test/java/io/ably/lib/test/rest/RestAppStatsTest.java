@@ -40,7 +40,7 @@ public class RestAppStatsTest {
 
 	private static void createStats(Stats[] stats) {
 		try {
-			ably.http.post("/stats", HttpUtils.defaultGetHeaders(false), null, StatsWriter.asJSONRequest(stats), null);
+			ably.http.post("/stats", HttpUtils.defaultAcceptHeaders(false), null, StatsWriter.asJSONRequest(stats), null);
 		} catch (AblyException e) {
 			e.printStackTrace();
 		}
