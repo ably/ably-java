@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -454,6 +455,20 @@ public class Http {
 	/*************************
 	 *     Private state
 	 *************************/
+
+	static {
+		/* if on Android, check version */
+		Field androidVersionField = null;
+		int androidVersion = 0;
+		try {
+	        androidVersionField = Class.forName("android.os.Build$VERSION").getField("SDK_INT");
+	        androidVersion = androidVersionField.getInt(androidVersionField);
+	    } catch (Exception e) {}
+		if(androidVersionField != null && androidVersion < 8) {
+			/* HTTP connection reuse which was buggy pre-froyo */
+			System.setProperty("http.keepAlive", "false");
+		}
+	}
 
 	private final AblyRest ably;
 	private final String scheme;
