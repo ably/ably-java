@@ -3,6 +3,7 @@ package io.ably.lib.test.realtime;
 import static org.junit.Assert.*;
 
 import java.util.HashMap;
+import java.util.UUID;
 
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
@@ -24,6 +25,7 @@ import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.PresenceMessage.Action;
+import io.ably.lib.util.Log;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -32,16 +34,11 @@ import org.junit.Test;
 public class RealtimePresenceTest {
 
 	private static TestVars testVars;
-	private static AblyRest rest;
-	private static AblyRealtime ably;
 	private static final String testClientId1 = "testClientId1";
 	private static final String testClientId2 = "testClientId2";
-	private static final String presenceChannelName = "presence0";
 	private static Auth.TokenDetails token1;
 	private static Auth.TokenDetails token2;
 	private static Auth.TokenDetails wildcardToken;
-	private static Channel rtPresenceChannel;
-	private static io.ably.lib.rest.Channel restPresenceChannel;
 
 	private static PresenceMessage contains(PresenceMessage[] messages, String clientId) {
 		for(PresenceMessage message : messages)
@@ -57,6 +54,35 @@ public class RealtimePresenceTest {
 		return null;
 	}
 
+	private static String random() {
+		return UUID.randomUUID().toString();
+	}
+
+	private class TestChannel {
+		TestChannel() {
+			try {
+				ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
+				testVars.fillInOptions(opts);
+				rest = new AblyRest(opts);
+				restChannel = rest.channels.get(channelName);
+				realtime = new AblyRealtime(opts);
+				realtimeChannel = realtime.channels.get(channelName);
+				realtimeChannel.attach();
+			} catch(AblyException ae) {}
+		}
+
+		void dispose() {
+			if(realtime != null)
+				realtime.close();
+		}
+
+		String channelName = random();
+		AblyRest rest;
+		AblyRealtime realtime;
+		io.ably.lib.rest.Channel restChannel;
+		io.ably.lib.realtime.Channel realtimeChannel;
+	}
+
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		testVars = Setup.getTestVars();
@@ -64,23 +90,14 @@ public class RealtimePresenceTest {
 		/* create tokens for specific clientIds */
 		ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 		testVars.fillInOptions(opts);
-		rest = new AblyRest(opts);
+		AblyRest rest = new AblyRest(opts);
 		token1 = rest.auth.requestToken(null, new TokenParams() {{ clientId = testClientId1; }});
 		token2 = rest.auth.requestToken(null, new TokenParams() {{ clientId = testClientId2; }});
 		wildcardToken = rest.auth.requestToken(null, new TokenParams() {{ clientId = "*"; }});
-
-		/* get rest channel */
-		restPresenceChannel = rest.channels.get(presenceChannelName);
-
-		ClientOptions rtOpts = new ClientOptions(testVars.keys[0].keyStr);
-		testVars.fillInOptions(rtOpts);
-		ably = new AblyRealtime(rtOpts);
-		(rtPresenceChannel = ably.channels.get(presenceChannelName)).attach();
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
-		ably.close();
 		Setup.clearTestVars();
 	}
 
@@ -90,9 +107,10 @@ public class RealtimePresenceTest {
 	@Test
 	public void enter_simple() {
 		AblyRealtime clientAbly1 = null;
+		TestChannel testChannel = new TestChannel();
 		try {
 			/* subscribe for presence events in the anonymous connection */
-			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
+			PresenceWaiter presenceWaiter = new PresenceWaiter(testChannel.realtimeChannel);
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = token1;
@@ -106,7 +124,7 @@ public class RealtimePresenceTest {
 			assertEquals("Verify connected state reached", clientAbly1.connection.state, ConnectionState.connected);
 
 			/* get channel and attach */
-			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+			Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
 			client1Channel.attach();
 			(new ChannelWaiter(client1Channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", client1Channel.state, ChannelState.attached);
@@ -124,13 +142,12 @@ public class RealtimePresenceTest {
 			assertTrue("Verify enter callback called on completion", enterComplete.success);
 		} catch(AblyException e) {
 			e.printStackTrace();
-			fail("enter0: Unexpected exception running test");
-		} catch(Throwable t) {
-			t.printStackTrace();
-			fail("enter0: Unexpected exception running test");
+			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
 			if(clientAbly1 != null)
 				clientAbly1.close();
+			if(testChannel != null)
+				testChannel.dispose();
 		}
 	}
 
@@ -140,9 +157,10 @@ public class RealtimePresenceTest {
 	@Test
 	public void enter_before_attach() {
 		AblyRealtime clientAbly1 = null;
+		TestChannel testChannel = new TestChannel();
 		try {
 			/* subscribe for presence events in the anonymous connection */
-			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
+			PresenceWaiter presenceWaiter = new PresenceWaiter(testChannel.realtimeChannel);
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = token1;
@@ -156,7 +174,7 @@ public class RealtimePresenceTest {
 			assertEquals("Verify connected state reached", clientAbly1.connection.state, ConnectionState.connected);
 
 			/* get channel */
-			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+			Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
 
 			/* let client1 enter the channel and wait for the entered event to be delivered */
 			CompletionWaiter enterComplete = new CompletionWaiter();
@@ -172,13 +190,12 @@ public class RealtimePresenceTest {
 			assertTrue("Verify enter callback called on completion", enterComplete.success);
 		} catch(AblyException e) {
 			e.printStackTrace();
-			fail("enter0: Unexpected exception running test");
-		} catch(Throwable t) {
-			t.printStackTrace();
-			fail("enter0: Unexpected exception running test");
+			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
 			if(clientAbly1 != null)
 				clientAbly1.close();
+			if(testChannel != null)
+				testChannel.dispose();
 		}
 	}
 
@@ -188,9 +205,10 @@ public class RealtimePresenceTest {
 	@Test
 	public void enter_before_connect() {
 		AblyRealtime clientAbly1 = null;
+		TestChannel testChannel = new TestChannel();
 		try {
 			/* subscribe for presence events in the anonymous connection */
-			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
+			PresenceWaiter presenceWaiter = new PresenceWaiter(testChannel.realtimeChannel);
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = token1;
@@ -200,7 +218,7 @@ public class RealtimePresenceTest {
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* get channel */
-			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+			Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
 
 			/* let client1 enter the channel and wait for the entered event to be delivered */
 			CompletionWaiter enterComplete = new CompletionWaiter();
@@ -216,13 +234,12 @@ public class RealtimePresenceTest {
 			assertTrue("Verify enter callback called on completion", enterComplete.success);
 		} catch(AblyException e) {
 			e.printStackTrace();
-			fail("enter0: Unexpected exception running test");
-		} catch(Throwable t) {
-			t.printStackTrace();
-			fail("enter0: Unexpected exception running test");
+			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
 			if(clientAbly1 != null)
 				clientAbly1.close();
+			if(testChannel != null)
+				testChannel.dispose();
 		}
 	}
 
@@ -232,9 +249,10 @@ public class RealtimePresenceTest {
 	@Test
 	public void enter_leave_simple() {
 		AblyRealtime clientAbly1 = null;
+		TestChannel testChannel = new TestChannel();
 		try {
 			/* subscribe for presence events in the anonymous connection */
-			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
+			PresenceWaiter presenceWaiter = new PresenceWaiter(testChannel.realtimeChannel);
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = token1;
@@ -244,7 +262,7 @@ public class RealtimePresenceTest {
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* get channel */
-			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+			Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
 
 			/* let client1 enter the channel and wait for the entered event to be delivered */
 			CompletionWaiter enterComplete = new CompletionWaiter();
@@ -274,13 +292,12 @@ public class RealtimePresenceTest {
 
 		} catch(AblyException e) {
 			e.printStackTrace();
-			fail("enter0: Unexpected exception running test");
-		} catch(Throwable t) {
-			t.printStackTrace();
-			fail("enter0: Unexpected exception running test");
+			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
 			if(clientAbly1 != null)
 				clientAbly1.close();
+			if(testChannel != null)
+				testChannel.dispose();
 		}
 	}
 
@@ -290,9 +307,10 @@ public class RealtimePresenceTest {
 	@Test
 	public void enter_enter_simple() {
 		AblyRealtime clientAbly1 = null;
+		TestChannel testChannel = new TestChannel();
 		try {
 			/* subscribe for presence events in the anonymous connection */
-			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
+			PresenceWaiter presenceWaiter = new PresenceWaiter(testChannel.realtimeChannel);
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = token1;
@@ -302,7 +320,7 @@ public class RealtimePresenceTest {
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* get channel */
-			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+			Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
 
 			/* let client1 enter the channel and wait for the entered event to be delivered */
 			CompletionWaiter enterComplete = new CompletionWaiter();
@@ -343,13 +361,12 @@ public class RealtimePresenceTest {
 			assertTrue("Verify leave callback called on completion", leaveComplete.success);
 		} catch(AblyException e) {
 			e.printStackTrace();
-			fail("enter0: Unexpected exception running test");
-		} catch(Throwable t) {
-			t.printStackTrace();
-			fail("enter0: Unexpected exception running test");
+			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
 			if(clientAbly1 != null)
 				clientAbly1.close();
+			if(testChannel != null)
+				testChannel.dispose();
 		}
 	}
 
@@ -359,9 +376,10 @@ public class RealtimePresenceTest {
 	@Test
 	public void enter_update_simple() {
 		AblyRealtime clientAbly1 = null;
+		TestChannel testChannel = new TestChannel();
 		try {
 			/* subscribe for presence events in the anonymous connection */
-			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
+			PresenceWaiter presenceWaiter = new PresenceWaiter(testChannel.realtimeChannel);
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = token1;
@@ -371,7 +389,7 @@ public class RealtimePresenceTest {
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* get channel */
-			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+			Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
 
 			/* let client1 enter the channel and wait for the entered event to be delivered */
 			CompletionWaiter enterComplete = new CompletionWaiter();
@@ -412,13 +430,12 @@ public class RealtimePresenceTest {
 			assertTrue("Verify leave callback called on completion", leaveComplete.success);
 		} catch(AblyException e) {
 			e.printStackTrace();
-			fail("enter0: Unexpected exception running test");
-		} catch(Throwable t) {
-			t.printStackTrace();
-			fail("enter0: Unexpected exception running test");
+			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
 			if(clientAbly1 != null)
 				clientAbly1.close();
+			if(testChannel != null)
+				testChannel.dispose();
 		}
 	}
 
@@ -428,9 +445,10 @@ public class RealtimePresenceTest {
 	@Test
 	public void enter_update_null() {
 		AblyRealtime clientAbly1 = null;
+		TestChannel testChannel = new TestChannel();
 		try {
 			/* subscribe for presence events in the anonymous connection */
-			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
+			PresenceWaiter presenceWaiter = new PresenceWaiter(testChannel.realtimeChannel);
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = token1;
@@ -441,7 +459,7 @@ public class RealtimePresenceTest {
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* get channel */
-			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+			Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
 
 			/* let client1 enter the channel and wait for the entered event to be delivered */
 			CompletionWaiter enterComplete = new CompletionWaiter();
@@ -482,13 +500,12 @@ public class RealtimePresenceTest {
 			assertTrue("Verify leave callback called on completion", leaveComplete.success);
 		} catch(AblyException e) {
 			e.printStackTrace();
-			fail("enter0: Unexpected exception running test");
-		} catch(Throwable t) {
-			t.printStackTrace();
-			fail("enter0: Unexpected exception running test");
+			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
 			if(clientAbly1 != null)
 				clientAbly1.close();
+			if(testChannel != null)
+				testChannel.dispose();
 		}
 	}
 
@@ -498,9 +515,10 @@ public class RealtimePresenceTest {
 	@Test
 	public void update_noenter() {
 		AblyRealtime clientAbly1 = null;
+		TestChannel testChannel = new TestChannel();
 		try {
 			/* subscribe for presence events in the anonymous connection */
-			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
+			PresenceWaiter presenceWaiter = new PresenceWaiter(testChannel.realtimeChannel);
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = token1;
@@ -510,7 +528,7 @@ public class RealtimePresenceTest {
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* get channel */
-			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+			Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
 
 			/* let client1 enter the channel and wait for the entered event to be delivered */
 			CompletionWaiter enterComplete = new CompletionWaiter();
@@ -539,13 +557,12 @@ public class RealtimePresenceTest {
 			assertTrue("Verify leave callback called on completion", leaveComplete.success);
 		} catch(AblyException e) {
 			e.printStackTrace();
-			fail("enter0: Unexpected exception running test");
-		} catch(Throwable t) {
-			t.printStackTrace();
-			fail("enter0: Unexpected exception running test");
+			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
 			if(clientAbly1 != null)
 				clientAbly1.close();
+			if(testChannel != null)
+				testChannel.dispose();
 		}
 	}
 
@@ -556,9 +573,10 @@ public class RealtimePresenceTest {
 	@Test
 	public void enter_leave_nodata() {
 		AblyRealtime clientAbly1 = null;
+		TestChannel testChannel = new TestChannel();
 		try {
 			/* subscribe for presence events in the anonymous connection */
-			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
+			PresenceWaiter presenceWaiter = new PresenceWaiter(testChannel.realtimeChannel);
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = token1;
@@ -568,7 +586,7 @@ public class RealtimePresenceTest {
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* get channel */
-			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+			Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
 
 			/* let client1 enter the channel and wait for the entered event to be delivered */
 			CompletionWaiter enterComplete = new CompletionWaiter();
@@ -596,13 +614,11 @@ public class RealtimePresenceTest {
 
 		} catch(AblyException e) {
 			e.printStackTrace();
-			fail("enter0: Unexpected exception running test");
-		} catch(Throwable t) {
-			t.printStackTrace();
-			fail("enter0: Unexpected exception running test");
 		} finally {
 			if(clientAbly1 != null)
 				clientAbly1.close();
+			if(testChannel != null)
+				testChannel.dispose();
 		}
 	}
 
@@ -612,9 +628,10 @@ public class RealtimePresenceTest {
 	@Test
 	public void realtime_get_simple() {
 		AblyRealtime clientAbly1 = null;
+		TestChannel testChannel = new TestChannel();
 		try {
 			/* subscribe for presence events in the anonymous connection */
-			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
+			PresenceWaiter presenceWaiter = new PresenceWaiter(testChannel.realtimeChannel);
 
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
@@ -629,7 +646,7 @@ public class RealtimePresenceTest {
 			assertEquals("Verify connected state reached", clientAbly1.connection.state, ConnectionState.connected);
 
 			/* get channel and attach */
-			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+			Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
 			client1Channel.attach();
 			(new ChannelWaiter(client1Channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", client1Channel.state, ChannelState.attached);
@@ -643,20 +660,19 @@ public class RealtimePresenceTest {
 
 			/* get presence set and verify client present */
 			presenceWaiter.waitFor(testClientId1);
-			PresenceMessage[] presences = rtPresenceChannel.presence.get();
+			PresenceMessage[] presences = testChannel.realtimeChannel.presence.get();
 			PresenceMessage expectedPresent = contains(presences, testClientId1, Action.PRESENT);
 			assertNotNull("Verify expected client is in presence set", expectedPresent);
 			assertEquals(expectedPresent.data, enterString);
 			
 		} catch(AblyException e) {
 			e.printStackTrace();
-			fail("enter0: Unexpected exception running test");
-		} catch(Throwable t) {
-			t.printStackTrace();
-			fail("enter0: Unexpected exception running test");
+			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
 			if(clientAbly1 != null)
 				clientAbly1.close();
+			if(testChannel != null)
+				testChannel.dispose();
 		}
 	}
 
@@ -666,9 +682,10 @@ public class RealtimePresenceTest {
 	@Test
 	public void realtime_get_leave() {
 		AblyRealtime clientAbly1 = null;
+		TestChannel testChannel = new TestChannel();
 		try {
 			/* subscribe for presence events in the anonymous connection */
-			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
+			PresenceWaiter presenceWaiter = new PresenceWaiter(testChannel.realtimeChannel);
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = token1;
@@ -682,7 +699,7 @@ public class RealtimePresenceTest {
 			assertEquals("Verify connected state reached", clientAbly1.connection.state, ConnectionState.connected);
 
 			/* get channel and attach */
-			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+			Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
 			client1Channel.attach();
 			(new ChannelWaiter(client1Channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", client1Channel.state, ChannelState.attached);
@@ -702,18 +719,17 @@ public class RealtimePresenceTest {
 			assertTrue("Verify leave callback called on completion", leaveComplete.success);
 
 			/* get presence set and verify client absent */
-			PresenceMessage[] presences = rtPresenceChannel.presence.get();
+			PresenceMessage[] presences = testChannel.realtimeChannel.presence.get();
 			assertNull("Verify expected client is in presence set", contains(presences, testClientId1));
 			
 		} catch(AblyException e) {
 			e.printStackTrace();
-			fail("enter0: Unexpected exception running test");
-		} catch(Throwable t) {
-			t.printStackTrace();
-			fail("enter0: Unexpected exception running test");
+			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
 			if(clientAbly1 != null)
 				clientAbly1.close();
+			if(testChannel != null)
+				testChannel.dispose();
 		}
 	}
 
@@ -725,9 +741,10 @@ public class RealtimePresenceTest {
 	public void attach_enter_simple() {
 		AblyRealtime clientAbly1 = null;
 		AblyRealtime clientAbly2 = null;
+		TestChannel testChannel = new TestChannel();
 		try {
 			/* subscribe for presence events in the anonymous connection */
-			new PresenceWaiter(rtPresenceChannel);
+			new PresenceWaiter(testChannel.realtimeChannel);
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = token1;
@@ -741,7 +758,7 @@ public class RealtimePresenceTest {
 			assertEquals("Verify connected state reached", clientAbly1.connection.state, ConnectionState.connected);
 
 			/* get channel and attach */
-			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+			Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
 			client1Channel.attach();
 			(new ChannelWaiter(client1Channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", client1Channel.state, ChannelState.attached);
@@ -766,7 +783,7 @@ public class RealtimePresenceTest {
 			assertEquals("Verify connected state reached", clientAbly2.connection.state, ConnectionState.connected);
 
 			/* get channel and subscribe to presence */
-			Channel client2Channel = clientAbly2.channels.get(presenceChannelName);
+			Channel client2Channel = clientAbly2.channels.get(testChannel.channelName);
 			PresenceWaiter client2Waiter = new PresenceWaiter(client2Channel);
 			client2Waiter.waitFor(testClientId1, Action.PRESENT);
 
@@ -778,15 +795,14 @@ public class RealtimePresenceTest {
 			
 		} catch(AblyException e) {
 			e.printStackTrace();
-			fail("enter0: Unexpected exception running test");
-		} catch(Throwable t) {
-			t.printStackTrace();
-			fail("enter0: Unexpected exception running test");
+			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
 			if(clientAbly1 != null)
 				clientAbly1.close();
 			if(clientAbly2 != null)
 				clientAbly2.close();
+			if(testChannel != null)
+				testChannel.dispose();
 		}
 	}
 
@@ -799,15 +815,17 @@ public class RealtimePresenceTest {
 	public void attach_enter_multiple() {
 		AblyRealtime clientAbly1 = null;
 		AblyRealtime clientAbly2 = null;
+		TestChannel testChannel = new TestChannel();
 		int clientCount = 300;
 		long delay = 50L;
 		try {
 			/* subscribe for presence events in the anonymous connection */
-			new PresenceWaiter(rtPresenceChannel);
+			new PresenceWaiter(testChannel.realtimeChannel);
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = wildcardToken;
 				clientId = testClientId1;
+				logLevel = Log.VERBOSE;
 			}};
 			testVars.fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
@@ -817,7 +835,7 @@ public class RealtimePresenceTest {
 			assertEquals("Verify connected state reached", clientAbly1.connection.state, ConnectionState.connected);
 
 			/* get channel and attach */
-			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+			Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
 			client1Channel.attach();
 			(new ChannelWaiter(client1Channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", client1Channel.state, ChannelState.attached);
@@ -829,7 +847,8 @@ public class RealtimePresenceTest {
 				try { Thread.sleep(delay); } catch(InterruptedException e){}
 			}
 			enterComplete.waitFor();
-			assertTrue("Verify enter callback called on completion", enterComplete.errors.isEmpty());
+			assertTrue("Verify enter callback called on completion", enterComplete.pending.isEmpty());
+			assertTrue("Verify no enter errors", enterComplete.errors.isEmpty());
 
 			/* set up a second connection with different clientId */
 			ClientOptions client2Opts = new ClientOptions() {{
@@ -844,7 +863,7 @@ public class RealtimePresenceTest {
 			assertEquals("Verify connected state reached", clientAbly2.connection.state, ConnectionState.connected);
 
 			/* get channel */
-			Channel client2Channel = clientAbly2.channels.get(presenceChannelName);
+			Channel client2Channel = clientAbly2.channels.get(testChannel.channelName);
 			client2Channel.attach();
 			(new ChannelWaiter(client2Channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", client2Channel.state, ChannelState.attached);
@@ -852,6 +871,7 @@ public class RealtimePresenceTest {
 			/* get presence set and verify client present */
 			HashMap<String, PresenceMessage> memberIndex = new HashMap<String, PresenceMessage>();
 			PresenceMessage[] members = client2Channel.presence.get(true);
+			Thread.sleep(10000L);
 			assertNotNull("Expected non-null messages", members);
 			assertEquals("Expected " + clientCount + " messages", members.length, clientCount);
 
@@ -869,15 +889,17 @@ public class RealtimePresenceTest {
 			}
 		} catch(AblyException e) {
 			e.printStackTrace();
-			fail("enter0: Unexpected exception running test");
-		} catch(Throwable t) {
-			t.printStackTrace();
-			fail("enter0: Unexpected exception running test");
+			fail("Unexpected exception running test: " + e.getMessage());
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
 			if(clientAbly1 != null)
 				clientAbly1.close();
 			if(clientAbly2 != null)
 				clientAbly2.close();
+			if(testChannel != null)
+				testChannel.dispose();
 		}
 	}
 
@@ -888,9 +910,10 @@ public class RealtimePresenceTest {
 	public void realtime_enter_multiple() {
 		AblyRealtime clientAbly1 = null;
 		AblyRealtime clientAbly2 = null;
+		TestChannel testChannel = new TestChannel();
 		try {
 			/* subscribe for presence events in the anonymous connection */
-			PresenceWaiter waiter = new PresenceWaiter(rtPresenceChannel);
+			PresenceWaiter waiter = new PresenceWaiter(testChannel.realtimeChannel);
 
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
@@ -901,7 +924,7 @@ public class RealtimePresenceTest {
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* get channel and attach */
-			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+			Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
 			CompletionWaiter enter1Complete = new CompletionWaiter();
 			String enterString1 = "Test data (enter_multiple, clientId1)";
 			client1Channel.presence.enter(enterString1, enter1Complete);
@@ -917,7 +940,7 @@ public class RealtimePresenceTest {
 			clientAbly2 = new AblyRealtime(client2Opts);
 
 			/* get channel and subscribe to presence */
-			Channel client2Channel = clientAbly2.channels.get(presenceChannelName);
+			Channel client2Channel = clientAbly2.channels.get(testChannel.channelName);
 			CompletionWaiter enter2Complete = new CompletionWaiter();
 			String enterString2 = "Test data (enter_multiple, clientId2)";
 			client2Channel.presence.enter(enterString2, enter2Complete);
@@ -929,7 +952,7 @@ public class RealtimePresenceTest {
 			waiter.waitFor(testClientId2, Action.ENTER);
 
 			/* get presence set and verify clients present */
-			PresenceMessage[] presences = rtPresenceChannel.presence.get();
+			PresenceMessage[] presences = testChannel.realtimeChannel.presence.get();
 			PresenceMessage expectedPresent1 = contains(presences, testClientId1, Action.PRESENT);
 			PresenceMessage expectedPresent2 = contains(presences, testClientId2, Action.PRESENT);
 			assertNotNull("Verify expected clients are in presence set", expectedPresent1);
@@ -939,15 +962,14 @@ public class RealtimePresenceTest {
 			
 		} catch(AblyException e) {
 			e.printStackTrace();
-			fail("enter0: Unexpected exception running test");
-		} catch(Throwable t) {
-			t.printStackTrace();
-			fail("enter0: Unexpected exception running test");
+			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
 			if(clientAbly1 != null)
 				clientAbly1.close();
 			if(clientAbly2 != null)
 				clientAbly2.close();
+			if(testChannel != null)
+				testChannel.dispose();
 		}
 	}
 
@@ -957,9 +979,10 @@ public class RealtimePresenceTest {
 	@Test
 	public void rest_get_simple() {
 		AblyRealtime clientAbly1 = null;
+		TestChannel testChannel = new TestChannel();
 		try {
 			/* subscribe for presence events in the anonymous connection */
-			new PresenceWaiter(rtPresenceChannel);
+			new PresenceWaiter(testChannel.realtimeChannel);
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = token1;
@@ -973,7 +996,7 @@ public class RealtimePresenceTest {
 			assertEquals("Verify connected state reached", clientAbly1.connection.state, ConnectionState.connected);
 
 			/* get channel and attach */
-			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+			Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
 			client1Channel.attach();
 			(new ChannelWaiter(client1Channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", client1Channel.state, ChannelState.attached);
@@ -986,20 +1009,19 @@ public class RealtimePresenceTest {
 			assertTrue("Verify enter callback called on completion", enterComplete.success);
 
 			/* get presence set and verify client present */
-			PresenceMessage[] presences = restPresenceChannel.presence.get(null).items();
+			PresenceMessage[] presences = testChannel.restChannel.presence.get(null).items();
 			PresenceMessage expectedPresent = contains(presences, testClientId1, Action.PRESENT);
 			assertNotNull("Verify expected client is in presence set", expectedPresent);
 			assertEquals(expectedPresent.data, enterString);
 
 		} catch(AblyException e) {
 			e.printStackTrace();
-			fail("enter0: Unexpected exception running test");
-		} catch(Throwable t) {
-			t.printStackTrace();
-			fail("enter0: Unexpected exception running test");
+			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
 			if(clientAbly1 != null)
 				clientAbly1.close();
+			if(testChannel != null)
+				testChannel.dispose();
 		}
 	}
 
@@ -1009,9 +1031,10 @@ public class RealtimePresenceTest {
 	@Test
 	public void rest_get_leave() {
 		AblyRealtime clientAbly1 = null;
+		TestChannel testChannel = new TestChannel();
 		try {
 			/* subscribe for presence events in the anonymous connection */
-			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
+			PresenceWaiter presenceWaiter = new PresenceWaiter(testChannel.realtimeChannel);
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = token1;
@@ -1025,7 +1048,7 @@ public class RealtimePresenceTest {
 			assertEquals("Verify connected state reached", clientAbly1.connection.state, ConnectionState.connected);
 
 			/* get channel and attach */
-			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+			Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
 			client1Channel.attach();
 			(new ChannelWaiter(client1Channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", client1Channel.state, ChannelState.attached);
@@ -1045,18 +1068,17 @@ public class RealtimePresenceTest {
 			assertTrue("Verify leave callback called on completion", leaveComplete.success);
 
 			/* get presence set and verify client absent */
-			PresenceMessage[] presences = restPresenceChannel.presence.get(null).items();
+			PresenceMessage[] presences = testChannel.restChannel.presence.get(null).items();
 			assertNull("Verify expected client is in presence set", contains(presences, testClientId1));
 
 		} catch(AblyException e) {
 			e.printStackTrace();
-			fail("enter0: Unexpected exception running test");
-		} catch(Throwable t) {
-			t.printStackTrace();
-			fail("enter0: Unexpected exception running test");
+			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
 			if(clientAbly1 != null)
 				clientAbly1.close();
+			if(testChannel != null)
+				testChannel.dispose();
 		}
 	}
 
@@ -1067,9 +1089,10 @@ public class RealtimePresenceTest {
 	public void rest_enter_multiple() {
 		AblyRealtime clientAbly1 = null;
 		AblyRealtime clientAbly2 = null;
+		TestChannel testChannel = new TestChannel();
 		try {
 			/* subscribe for presence events in the anonymous connection */
-			new PresenceWaiter(rtPresenceChannel);
+			new PresenceWaiter(testChannel.realtimeChannel);
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = token1;
@@ -1079,7 +1102,7 @@ public class RealtimePresenceTest {
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* get channel and attach */
-			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+			Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
 			CompletionWaiter enter1Complete = new CompletionWaiter();
 			String enterString1 = "Test data (enter_multiple, clientId1)";
 			client1Channel.presence.enter(enterString1, enter1Complete);
@@ -1095,7 +1118,7 @@ public class RealtimePresenceTest {
 			clientAbly2 = new AblyRealtime(client2Opts);
 
 			/* get channel and subscribe to presence */
-			Channel client2Channel = clientAbly2.channels.get(presenceChannelName);
+			Channel client2Channel = clientAbly2.channels.get(testChannel.channelName);
 			CompletionWaiter enter2Complete = new CompletionWaiter();
 			String enterString2 = "Test data (enter_multiple, clientId2)";
 			client2Channel.presence.enter(enterString2, enter2Complete);
@@ -1103,7 +1126,7 @@ public class RealtimePresenceTest {
 			assertTrue("Verify enter callback called on completion", enter2Complete.success);
 
 			/* get presence set and verify client present */
-			PresenceMessage[] presences = restPresenceChannel.presence.get(null).items();
+			PresenceMessage[] presences = testChannel.restChannel.presence.get(null).items();
 			PresenceMessage expectedPresent1 = contains(presences, testClientId1, Action.PRESENT);
 			PresenceMessage expectedPresent2 = contains(presences, testClientId2, Action.PRESENT);
 			assertNotNull("Verify expected clients are in presence set", expectedPresent1);
@@ -1113,15 +1136,14 @@ public class RealtimePresenceTest {
 
 		} catch(AblyException e) {
 			e.printStackTrace();
-			fail("enter0: Unexpected exception running test");
-		} catch(Throwable t) {
-			t.printStackTrace();
-			fail("enter0: Unexpected exception running test");
+			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
 			if(clientAbly1 != null)
 				clientAbly1.close();
 			if(clientAbly2 != null)
 				clientAbly2.close();
+			if(testChannel != null)
+				testChannel.dispose();
 		}
 	}
 
@@ -1131,11 +1153,12 @@ public class RealtimePresenceTest {
 	@Test
 	public void rest_paginated_get() {
 		AblyRealtime clientAbly1 = null;
+		TestChannel testChannel = new TestChannel();
 		int clientCount = 30;
 		long delay = 100L;
 		try {
 			/* subscribe for presence events in the anonymous connection */
-			new PresenceWaiter(rtPresenceChannel);
+			new PresenceWaiter(testChannel.realtimeChannel);
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = wildcardToken;
@@ -1145,7 +1168,7 @@ public class RealtimePresenceTest {
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* get channel and attach */
-			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+			Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
 
 			/* enter multiple clients */
 			CompletionSet enterComplete = new CompletionSet();
@@ -1158,7 +1181,7 @@ public class RealtimePresenceTest {
 
 			/* get the presence for this channel */
 			HashMap<String, PresenceMessage> memberIndex = new HashMap<String, PresenceMessage>();
-			PaginatedResult<PresenceMessage> members = restPresenceChannel.presence.get(new Param[] { new Param("limit", "10") });
+			PaginatedResult<PresenceMessage> members = testChannel.restChannel.presence.get(new Param[] { new Param("limit", "10") });
 			assertNotNull("Expected non-null messages", members);
 			assertEquals("Expected 10 messages", members.items().length, 10);
 
@@ -1201,13 +1224,12 @@ public class RealtimePresenceTest {
 			}
 		} catch(AblyException e) {
 			e.printStackTrace();
-			fail("enter0: Unexpected exception running test");
-		} catch(Throwable t) {
-			t.printStackTrace();
-			fail("enter0: Unexpected exception running test");
+			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
 			if(clientAbly1 != null)
 				clientAbly1.close();
+			if(testChannel != null)
+				testChannel.dispose();
 		}
 	}
 
@@ -1217,10 +1239,11 @@ public class RealtimePresenceTest {
 	@Test
 	public void disconnect_leave() {
 		AblyRealtime clientAbly1 = null;
+		TestChannel testChannel = new TestChannel();
 		boolean requiresClose = false;
 		try {
 			/* subscribe for presence events in the anonymous connection */
-			PresenceWaiter presenceWaiter = new PresenceWaiter(rtPresenceChannel);
+			PresenceWaiter presenceWaiter = new PresenceWaiter(testChannel.realtimeChannel);
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = token1;
@@ -1231,7 +1254,7 @@ public class RealtimePresenceTest {
 			requiresClose = true;
 
 			/* get channel */
-			Channel client1Channel = clientAbly1.channels.get(presenceChannelName);
+			Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
 
 			/* let client1 enter the channel and wait for the entered event to be delivered */
 			CompletionWaiter enterComplete = new CompletionWaiter();
@@ -1257,13 +1280,12 @@ public class RealtimePresenceTest {
 
 		} catch(AblyException e) {
 			e.printStackTrace();
-			fail("enter0: Unexpected exception running test");
-		} catch(Throwable t) {
-			t.printStackTrace();
-			fail("enter0: Unexpected exception running test");
+			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
 			if(requiresClose)
 				clientAbly1.close();
+			if(testChannel != null)
+				testChannel.dispose();
 		}
 	}
 
