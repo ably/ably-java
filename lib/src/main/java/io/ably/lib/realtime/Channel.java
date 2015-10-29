@@ -177,8 +177,10 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		attachSerial = message.channelSerial;
 		setState(ChannelState.attached, message.error);
 		sendQueuedMessages();
-		if((message.flags & ( 1 << Flag.HAS_PRESENCE.ordinal())) > 0)
+		if((message.flags & ( 1 << Flag.HAS_PRESENCE.ordinal())) > 0) {
+			Log.v(TAG, "setAttached(); awaiting sync; channel = " + name);
 			presence.awaitSync();
+		}
 		presence.setAttached();
 	}
 
