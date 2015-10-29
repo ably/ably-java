@@ -12,8 +12,9 @@ android {
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArgument "class", "io.ably.lib.test.rest.RestSuite,io.ably.lib.test.realtime.RealtimeSuite"
-        testInstrumentationRunnerArgument "timeout_msec" "60000"
+        testInstrumentationRunnerArgument "timeout_msec", "150000"
     }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -40,7 +41,7 @@ task copyAssetFiles (type: Copy) {
   description = 'Copies assets from the common library...'
   from new File(project(':lib').projectDir, '/src/test/resources')
   into new File(project.projectDir, '/src/androidTest/assets')
-  include('**/*')
+  include('**/*.json')
 }
 
 android.testVariants.all{ variant ->
