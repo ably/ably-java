@@ -247,6 +247,7 @@ public class Http {
 	public void finalize() {
 		dispose();
 	}
+
 	private static class HostFailedException extends AblyException {
 		private static final long serialVersionUID = 1L;
 		public HostFailedException(Throwable cause) {
