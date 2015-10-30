@@ -68,6 +68,7 @@ public class RealtimePresenceTest {
 				realtime = new AblyRealtime(opts);
 				realtimeChannel = realtime.channels.get(channelName);
 				realtimeChannel.attach();
+				(new ChannelWaiter(realtimeChannel)).waitFor(ChannelState.attached);
 			} catch(AblyException ae) {}
 		}
 
