@@ -825,7 +825,6 @@ public class RealtimePresenceTest {
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = wildcardToken;
 				clientId = testClientId1;
-				logLevel = Log.VERBOSE;
 			}};
 			testVars.fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
