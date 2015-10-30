@@ -30,7 +30,7 @@ configurations.all {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'com.android.support:appcompat-v7:23.0.0'
-    compile project(path: ':lib', configuration: 'androidConfiguration')
+    compile project(path: ':lib', configuration: 'fullConfiguration')
     androidTestCompile 'com.nanohttpd:nanohttpd:2.1.0'
     androidTestCompile project(path: ':lib', configuration: 'testsConfiguration')
     androidTestCompile 'com.android.support.test:runner:0.3'
