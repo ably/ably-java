@@ -46,11 +46,7 @@ public class Setup {
 
 	public static class Channel {
 		public String name;
-		public PresenceMember[] presence;
-	}
-
-	public static class PresenceMember extends PresenceMessage {
-		public PresenceMember() { action = Action.ENTER; }
+		public PresenceMessage[] presence;
 	}
 
 	public static class AppSpec {
