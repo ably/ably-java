@@ -17,8 +17,9 @@ public class Serialisation {
 		gsonParser = new JsonParser();
 		gsonBuilder = new GsonBuilder();
 		gsonBuilder.registerTypeAdapter(Message.class, new Message.Serializer());
-		gsonBuilder.registerTypeAdapter(PresenceMessage.Action.class, new PresenceMessage.Serializer());
-		gsonBuilder.registerTypeAdapter(ProtocolMessage.Action.class, new ProtocolMessage.Serializer());
+		gsonBuilder.registerTypeAdapter(PresenceMessage.class, new PresenceMessage.Serializer());
+		gsonBuilder.registerTypeAdapter(PresenceMessage.Action.class, new PresenceMessage.ActionSerializer());
+		gsonBuilder.registerTypeAdapter(ProtocolMessage.Action.class, new ProtocolMessage.ActionSerializer());
 		gson = gsonBuilder.create();
 	}
 }

@@ -193,7 +193,7 @@ public class ProtocolMessage {
 		return (new ProtocolMessage()).readMsgpack(unpacker);
 	}
 
-	public static class Serializer implements JsonSerializer<Action>, JsonDeserializer<Action> {
+	public static class ActionSerializer implements JsonSerializer<Action>, JsonDeserializer<Action> {
 		@Override
 		public Action deserialize(JsonElement json, Type t, JsonDeserializationContext ctx)
 				throws JsonParseException {

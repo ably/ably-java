@@ -10,12 +10,11 @@ import org.msgpack.core.MessageUnpacker;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-
-import io.ably.lib.util.Serialisation;
 
 /**
  * A class representing an individual presence update to be sent or received
@@ -121,20 +120,20 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
 		return (new PresenceMessage()).readMsgpack(unpacker);
 	}
 
-	public static class Serializer implements JsonSerializer<Action>, JsonDeserializer<Action> {
+	public static class ActionSerializer implements JsonDeserializer<Action> {
 		@Override
 		public Action deserialize(JsonElement json, Type t, JsonDeserializationContext ctx)
 				throws JsonParseException {
 			return Action.findByValue(json.getAsInt());
 		}
-
-		@Override
-		public JsonElement serialize(Action action, Type t, JsonSerializationContext ctx) {
-			return new JsonPrimitive(action.getValue());
-		}		
 	}
 
-	static {
-		Serialisation.gsonBuilder.registerTypeAdapter(Action.class, new Serializer());
+	public static class Serializer extends BaseMessage.Serializer implements JsonSerializer<PresenceMessage> {
+		@Override
+		public JsonElement serialize(PresenceMessage message, Type typeOfMessage, JsonSerializationContext ctx) {
+			JsonObject json = (JsonObject)super.serialize(message, typeOfMessage, ctx);
+			if(message.action != null) json.addProperty("action", message.action.getValue());
+			return json;
+		}		
 	}
 }
