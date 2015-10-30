@@ -1,11 +1,24 @@
 package io.ably.lib.util;
 
-import org.msgpack.jackson.dataformat.MessagePackFactory;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParser;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.ably.lib.types.Message;
+import io.ably.lib.types.PresenceMessage;
+import io.ably.lib.types.ProtocolMessage;
 
 public class Serialisation {
-	public static final ObjectMapper msgpackObjectMapper = new ObjectMapper(new MessagePackFactory());
-	public static final ObjectMapper jsonObjectMapper = new ObjectMapper(new JsonFactory());
+	public static final JsonParser gsonParser;
+	public static final GsonBuilder gsonBuilder;
+	public static final Gson gson;
+
+	static {
+		gsonParser = new JsonParser();
+		gsonBuilder = new GsonBuilder();
+		gsonBuilder.registerTypeAdapter(Message.class, new Message.Serializer());
+		gsonBuilder.registerTypeAdapter(PresenceMessage.Action.class, new PresenceMessage.Serializer());
+		gsonBuilder.registerTypeAdapter(ProtocolMessage.Action.class, new ProtocolMessage.Serializer());
+		gson = gsonBuilder.create();
+	}
 }

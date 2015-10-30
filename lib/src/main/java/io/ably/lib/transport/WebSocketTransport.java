@@ -111,9 +111,9 @@ public class WebSocketTransport implements ITransport {
 	public void send(ProtocolMessage msg) throws AblyException {
 		try {
 			if(channelBinaryMode)
-				wsConnection.send(ProtocolSerializer.asMsgpack(msg));
+				wsConnection.send(ProtocolSerializer.writeMsgpack(msg));
 			else
-				wsConnection.send(ProtocolSerializer.asJSON(msg));
+				wsConnection.send(ProtocolSerializer.writeJSON(msg));
 		} catch (Exception e) {
 			throw AblyException.fromThrowable(e);
 		}
@@ -145,7 +145,7 @@ public class WebSocketTransport implements ITransport {
 		@Override
 		public void onMessage(ByteBuffer blob) {
 			try {
-				connectionManager.onMessage(ProtocolSerializer.fromMsgpack(blob.array()));
+				connectionManager.onMessage(ProtocolSerializer.readMsgpack(blob.array()));
 			} catch (AblyException e) {
 				String msg = "Unexpected exception processing received binary message";
 				Log.e(TAG, msg, e);

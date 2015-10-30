@@ -4,10 +4,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.Http.JSONRequestBody;
@@ -20,16 +17,15 @@ import io.ably.lib.util.Serialisation;
 
 public class Setup {
 
-	public static Object loadJSON(String resourceName, ObjectMapper objectMapper, TypeReference<?> typeReference) throws IOException {
+	public static Object loadJSON(String resourceName, Class<? extends Object> expectedType) throws IOException {
 		try {
 			byte[] jsonBytes = resourceLoader.read(resourceName);
-			return objectMapper.readValue(new String(jsonBytes), typeReference);
+			return gson.fromJson(new String(jsonBytes), expectedType);
 		} catch(IOException e) {
 			return null;
 		}
 	}
 
-	@JsonIgnoreProperties(ignoreUnknown=true)
 	public static class Key {
 		public String keyName;
 		public String keySecret;
@@ -38,30 +34,25 @@ public class Setup {
 		public int status;
 	}
 
-	@JsonIgnoreProperties(ignoreUnknown=true)
 	public static class Namespace {
 		public String id;
 		public boolean persisted;
 		public int status;
 	}
 
-	@JsonIgnoreProperties(ignoreUnknown=true)
 	public static class Connection {
 		public String id;
 	}
 
-	@JsonIgnoreProperties(ignoreUnknown=true)
 	public static class Channel {
 		public String name;
 		public PresenceMember[] presence;
 	}
 
-	@JsonIgnoreProperties(ignoreUnknown=true)
 	public static class PresenceMember extends PresenceMessage {
 		public PresenceMember() { action = Action.ENTER; }
 	}
 
-	@JsonIgnoreProperties(ignoreUnknown=true)
 	public static class AppSpec {
 		public String id;
 		public String appId;
@@ -153,7 +144,7 @@ public class Setup {
 
 			Setup.AppSpec appSpec = null;
 			try {
-				appSpec = (Setup.AppSpec)loadJSON(specFile, Serialisation.jsonObjectMapper, new TypeReference<Setup.AppSpec>(){});
+				appSpec = (Setup.AppSpec)loadJSON(specFile, Setup.AppSpec.class);
 				appSpec.notes = "Test app; created by ably-java realtime tests; date = " + new Date().toString();
 			} catch(IOException ioe) {
 				System.err.println("Unable to read spec file: " + ioe);
@@ -161,28 +152,20 @@ public class Setup {
 				System.exit(1);
 			}
 			try {
-				testVars = (TestVars)ably.http.post("/apps", null, null, new JSONRequestBody(appSpec, Serialisation.jsonObjectMapper), new ResponseHandler() {
+				testVars = (TestVars)ably.http.post("/apps", null, null, new JSONRequestBody(appSpec), new ResponseHandler() {
 					@Override
 					public Object handleResponse(int statusCode, String contentType, Collection<String> headers, byte[] body) throws AblyException {
-						try {
-							TestVars result = (TestVars)Serialisation.jsonObjectMapper.readValue(body, TestVars.class);
-							result.restHost = host;
-							result.realtimeHost = wsHost;
-							result.port = port;
-							result.tlsPort = tlsPort;
-							result.tls = true;
-							return result;
-						} catch (IOException e) {
-							throw new AblyException("Unexpected exception processing server response; err = " + e, 500, 50000);
-						}
+						TestVars result = (TestVars)Serialisation.gson.fromJson(new String(body), TestVars.class);
+						result.restHost = host;
+						result.realtimeHost = wsHost;
+						result.port = port;
+						result.tlsPort = tlsPort;
+						result.tls = true;
+						return result;
 					}});
 			} catch (AblyException ae) {
 				System.err.println("Unable to create test app: " + ae);
 				ae.printStackTrace();
-				System.exit(1);
-			} catch (JsonProcessingException jpe) {
-				System.err.println("Unable to process app spec: " + jpe);
-				jpe.printStackTrace();
 				System.exit(1);
 			}
 		}
@@ -244,4 +227,5 @@ public class Setup {
 
 	private static TestVars testVars;
 	private static int refCount;
+	private static Gson gson = new Gson();
 }

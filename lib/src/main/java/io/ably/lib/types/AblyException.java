@@ -44,12 +44,8 @@ public class AblyException extends Exception {
 	 * @throws AblyException
 	 */
 	public static AblyException fromJSON(String jsonText) throws AblyException {
-		try {
-			ErrorResponse errorResponse = (ErrorResponse)Serialisation.jsonObjectMapper.readValue(jsonText, ErrorResponse.class);
-			return new AblyException(errorResponse.error);
-		} catch (IOException e) {
-			throw new AblyException("Unexpected exception decoding server response: " + e, 500, 50000);
-		}
+		ErrorResponse errorResponse = (ErrorResponse)Serialisation.gson.fromJson(jsonText, ErrorResponse.class);
+		return new AblyException(errorResponse.error);
 	}
 
 	/**

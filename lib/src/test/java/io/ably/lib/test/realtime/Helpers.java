@@ -8,8 +8,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import io.ably.lib.debug.RawProtocolListener;
 import io.ably.lib.realtime.Channel;
@@ -503,8 +505,10 @@ public class Helpers {
 		if(one.data instanceof byte[]) {
 			return compareBytes((byte[])one.data, (byte[])two.data);
 		}
-		if(one.data instanceof JSONObject || one.data instanceof JSONArray)
-			return compareString(one.data.toString(), two.data.toString());
+		if(one.data instanceof JsonObject || one.data instanceof JsonArray) {
+			Gson gson = new Gson();
+			return compareString(gson.toJson((JsonElement)one.data), gson.toJson((JsonElement)two.data));
+		}
 		return false;
 	}
 

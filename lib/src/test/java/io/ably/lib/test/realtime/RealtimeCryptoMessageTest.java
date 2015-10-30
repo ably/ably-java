@@ -3,6 +3,14 @@ package io.ably.lib.test.realtime;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.IOException;
+
+import javax.crypto.spec.IvParameterSpec;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.common.Setup.TestVars;
@@ -12,18 +20,7 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.Message;
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Crypto;
-import io.ably.lib.util.Serialisation;
 import io.ably.lib.util.Crypto.CipherParams;
-
-import java.io.IOException;
-
-import javax.crypto.spec.IvParameterSpec;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 
 public class RealtimeCryptoMessageTest {
 
@@ -45,7 +42,7 @@ public class RealtimeCryptoMessageTest {
 	@Test
 	public void encrypt_message_128() {
 		try {
-			testData128 = (CryptoTestData)Setup.loadJSON(testDataFile128, Serialisation.jsonObjectMapper, new TypeReference<CryptoTestData>(){});
+			testData128 = (CryptoTestData)Setup.loadJSON(testDataFile128, CryptoTestData.class);
 		} catch (IOException e1) {
 			fail();
 			return;
@@ -99,7 +96,7 @@ public class RealtimeCryptoMessageTest {
 	@Test
 	public void encrypt_message_256() {
 		try {
-			testData256 = (CryptoTestData)Setup.loadJSON(testDataFile256, Serialisation.jsonObjectMapper, new TypeReference<CryptoTestData>(){});
+			testData256 = (CryptoTestData)Setup.loadJSON(testDataFile256, CryptoTestData.class);
 		} catch (IOException e1) {
 			fail();
 			return;
@@ -153,7 +150,7 @@ public class RealtimeCryptoMessageTest {
 	@Test
 	public void decrypt_message_128() {
 		try {
-			testData128 = (CryptoTestData)Setup.loadJSON(testDataFile128, Serialisation.jsonObjectMapper, new TypeReference<CryptoTestData>(){});
+			testData128 = (CryptoTestData)Setup.loadJSON(testDataFile128, CryptoTestData.class);
 		} catch (IOException e1) {
 			fail();
 			return;
@@ -207,7 +204,7 @@ public class RealtimeCryptoMessageTest {
 	@Test
 	public void decrypt_message_256() {
 		try {
-			testData256 = (CryptoTestData)Setup.loadJSON(testDataFile256, Serialisation.jsonObjectMapper, new TypeReference<CryptoTestData>(){});
+			testData256 = (CryptoTestData)Setup.loadJSON(testDataFile256, CryptoTestData.class);
 		} catch (IOException e1) {
 			fail();
 			return;

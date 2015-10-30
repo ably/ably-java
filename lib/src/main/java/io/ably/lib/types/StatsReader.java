@@ -1,15 +1,9 @@
 package io.ably.lib.types;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.List;
-
-import org.msgpack.jackson.dataformat.MessagePackFactory;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.ably.lib.http.Http.BodyHandler;
+import io.ably.lib.util.Serialisation;
 
 /**
  * StatsReader: internal
@@ -26,21 +20,7 @@ public class StatsReader  {
 	}
 
 	public static Stats[] readJSON(String packed) throws AblyException {
-		try {
-			List<Stats> stats = jsonObjectMapper.readValue(packed, typeReference);
-			return stats.toArray(new Stats[stats.size()]);
-		} catch (IOException ioe) {
-			throw AblyException.fromIOException(ioe);
-		}
-	}
-
-	public static Stats[] readMsgpack(byte[] packed) throws AblyException {
-		try {
-			List<Stats> stats = msgpackObjectMapper.readValue(packed, typeReference);
-			return stats.toArray(new Stats[stats.size()]);
-		} catch (IOException ioe) {
-			throw AblyException.fromIOException(ioe);
-		}
+		return Serialisation.gson.fromJson(packed, Stats[].class);
 	}
 
 	public static BodyHandler<Stats> statsResponseHandler = new BodyHandler<Stats>() {
@@ -48,13 +28,7 @@ public class StatsReader  {
 		public Stats[] handleResponseBody(String contentType, byte[] body) throws AblyException {
 			if("application/json".equals(contentType))
 				return readJSON(body);
-			if("application/x-msgpack".equals(contentType))
-				return readMsgpack(body);
 			return null;
 		}
 	};
-
-	private static final TypeReference<List<Stats>> typeReference = new TypeReference<List<Stats>>(){};
-	private static final ObjectMapper msgpackObjectMapper = new ObjectMapper(new MessagePackFactory());
-	private static final ObjectMapper jsonObjectMapper = new ObjectMapper(new MessagePackFactory());
 }

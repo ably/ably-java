@@ -1,18 +1,21 @@
 package io.ably.lib.types;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.core.JsonGenerator;
+import org.msgpack.core.MessageFormat;
+import org.msgpack.core.MessagePacker;
+import org.msgpack.core.MessageUnpacker;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 
 /**
  * A class representing an individual message to be sent or received
  * via the Ably Realtime service.
  */
-@JsonInclude(Include.NON_DEFAULT)
-@JsonIgnoreProperties(ignoreUnknown=true)
 public class Message extends BaseMessage {
 
 	/**
@@ -58,11 +61,45 @@ public class Message extends BaseMessage {
 		return result.toString();
 	}
 
-	protected void serializeFields(JsonGenerator generator) throws IOException {
-		if(name != null) generator.writeStringField("name", name);
-		super.serializeFields(generator);
+	void writeMsgpack(MessagePacker packer) throws IOException {
+		int fieldCount = super.countFields();
+		if(name != null) ++fieldCount;
+		packer.packMapHeader(fieldCount);
+		super.writeFields(packer);
+		if(name != null) {
+			packer.packString("name");
+			packer.packString(name);
+		}
 	}
 
-	/* force initialisation of MessageSerializer */
-	static { new MessageSerializer(); }
+	Message readMsgpack(MessageUnpacker unpacker) throws IOException {
+		int fieldCount = unpacker.unpackMapHeader();
+		for(int i = 0; i < fieldCount; i++) {
+			String fieldName = unpacker.unpackString().intern();
+			MessageFormat fieldFormat = unpacker.getNextFormat();
+			if(fieldFormat.equals(MessageFormat.NIL)) { unpacker.unpackNil(); continue; }
+
+			if(super.readField(unpacker, fieldName, fieldFormat)) continue;
+			if(fieldName == "name") {
+				name = unpacker.unpackString();
+			} else {
+				System.out.println("Unexpected field: " + fieldName);
+				unpacker.skipValue();
+			}
+		}
+		return this;
+	}
+
+	static Message fromMsgpack(MessageUnpacker unpacker) throws IOException {
+		return (new Message()).readMsgpack(unpacker);
+	}
+
+	public static class Serializer extends BaseMessage.Serializer implements JsonSerializer<Message> {
+		@Override
+		public JsonElement serialize(Message message, Type typeOfMessage, JsonSerializationContext ctx) {
+			JsonObject json = (JsonObject)super.serialize(message, typeOfMessage, ctx);
+			if(message.name != null) json.addProperty("name", message.name);
+			return json;
+		}		
+	}
 }

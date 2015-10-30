@@ -1,15 +1,14 @@
 package io.ably.lib.types;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import java.io.IOException;
+
+import org.msgpack.core.MessageFormat;
+import org.msgpack.core.MessageUnpacker;
 
 /**
  * An exception type encapsulating error information containing
  * an Ably-specific error code and generic status code.
  */
-@JsonInclude(Include.NON_DEFAULT)
-@JsonIgnoreProperties(ignoreUnknown=true)
 public class ErrorInfo {
 
 	/**
@@ -63,5 +62,30 @@ public class ErrorInfo {
 			result.append(" statusCode = ").append(statusCode);
 		result.append(']');
 		return result.toString();
+	}
+
+	ErrorInfo readMsgpack(MessageUnpacker unpacker) throws IOException {
+		int fieldCount = unpacker.unpackMapHeader();
+		for(int i = 0; i < fieldCount; i++) {
+			String fieldName = unpacker.unpackString().intern();
+			MessageFormat fieldFormat = unpacker.getNextFormat();
+			if(fieldFormat.equals(MessageFormat.NIL)) { unpacker.unpackNil(); continue; }
+
+			if(fieldName == "message") {
+				message = unpacker.unpackString();
+			} else if(fieldName == "code") {
+				code = unpacker.unpackInt();
+			} else if(fieldName == "statusCode") {
+				statusCode = unpacker.unpackInt();
+			} else {
+				System.out.println("Unexpected field: " + fieldName);
+				unpacker.skipValue();
+			}
+		}
+		return this;
+	}
+
+	static ErrorInfo fromMsgpack(MessageUnpacker unpacker) throws IOException {
+		return (new ErrorInfo()).readMsgpack(unpacker);
 	}
 }

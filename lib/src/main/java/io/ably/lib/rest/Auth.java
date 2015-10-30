@@ -9,8 +9,8 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 import io.ably.lib.util.Base64Coder;
-import io.ably.lib.util.JSONHelpers;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.Serialisation;
 
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
@@ -21,8 +21,9 @@ import java.util.List;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 
 /**
  * Token-generation and authentication operations for the Ably API.
@@ -173,29 +174,8 @@ public class Auth {
 		 * @param json
 		 * @return
 		 */
-		public static TokenDetails fromJSON(JSONObject json) {
-			TokenDetails details = new TokenDetails();
-			details.token = JSONHelpers.getString(json, "token");
-			details.expires = json.optLong("expires");
-			details.issued = json.optLong("issued");
-			details.capability = JSONHelpers.getString(json, "capability");
-			details.clientId = JSONHelpers.getString(json, "clientId");
-			return details;
-		}
-
-		/**
-		 * Internal; convert a TokenDetails to JSON
-		 * @return
-		 * @throws JSONException
-		 */
-		public JSONObject asJSON() throws JSONException {
-			JSONObject json = new JSONObject();
-			json.put("token", token);
-			json.put("expires", expires);
-			json.put("issued", issued);
-			json.put("capability", capability);
-			json.put("clientId", clientId);
-			return json;
+		public static TokenDetails fromJSON(JsonObject json) {
+			return Serialisation.gson.fromJson(json, TokenDetails.class);
 		}
 	}
 
@@ -283,35 +263,15 @@ public class Auth {
 		 * @param json
 		 * @return
 		 */
-		public static TokenRequest fromJSON(JSONObject json) {
-			TokenRequest params = new TokenRequest();
-			params.keyName = json.optString("keyName");
-			params.ttl = json.optLong("ttl");
-			params.capability = JSONHelpers.getString(json, "capability");
-			params.clientId = JSONHelpers.getString(json, "clientId");
-			params.timestamp = json.optLong("timestamp");
-			params.nonce = JSONHelpers.getString(json, "nonce");
-			params.mac = JSONHelpers.getString(json, "mac");
-			return params;
+		public static TokenRequest fromJSON(JsonObject json) {
+			return Serialisation.gson.fromJson(json, TokenRequest.class);
 		}
 
 		/**
 		 * Internal; convert a TokenParams into a JSON object.
 		 */
-		public JSONObject asJSON() {
-			JSONObject json = new JSONObject();
-			try {
-				if(keyName != null) json.put("keyName", keyName);
-				if(ttl != 0) json.put("ttl", ttl);
-				if(capability != null) json.put("capability", capability);
-				if(clientId != null) json.put("clientId", clientId);
-				if(timestamp != 0) json.put("timestamp", timestamp);
-				if(nonce != null) json.put("nonce", nonce);
-				if(mac != null) json.put("mac", mac);
-				return json;
-			} catch (JSONException e) {
-				return null;
-			}
+		public JsonObject asJSON() {
+			return (JsonObject)Serialisation.gson.toJsonTree(this);
 		}
 	}
 
@@ -411,18 +371,37 @@ public class Auth {
 			Param[] requestParams = tokenParams.toArray(new Param[tokenParams.size()]);
 
 			/* the auth request can return either a signed token request as a TokenParams, or a TokenDetails */
-			JSONObject authUrlResponse = null;
+			Object authUrlResponse = null;
 			try {
-				authUrlResponse = (JSONObject)ably.http.getUri(tokenOptions.authUrl, tokenOptions.authHeaders, requestParams, new ResponseHandler() {
+				authUrlResponse = ably.http.getUri(tokenOptions.authUrl, tokenOptions.authHeaders, requestParams, new ResponseHandler() {
 					@Override
 					public Object handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
-						if(contentType != null && !contentType.startsWith("application/json"))
-							throw new AblyException("Unacceptable content type from auth callback", 406, 40170);
-
 						try {
-							return new JSONObject(new String(body));
-						} catch(JSONException je) {
-							throw new AblyException("Unable to parse response from auth callback", 400, 40170);
+							if(contentType != null) {
+								if(contentType.startsWith("text/plain")) {
+									/* assumed to be token string */
+									String token = new String(body);
+									return new TokenDetails(token);
+								}
+								if(!contentType.startsWith("application/json")) {
+									throw new AblyException("Unacceptable content type from auth callback", 406, 40170);
+								}
+							}
+							/* if not explicitly indicated, we will just assume it's JSON */
+							JsonElement json = Serialisation.gsonParser.parse(new String(body));
+							if(!(json instanceof JsonObject)) {
+								throw new AblyException("Unexpected response type from auth callback", 406, 40170);
+							}
+							JsonObject jsonObject = (JsonObject)json;
+							if(jsonObject.has("issued")) {
+								/* we assume this is a token details */
+								return TokenDetails.fromJSON(jsonObject);
+							} else {
+								/* otherwise it's a signed token request */
+								return TokenRequest.fromJSON(jsonObject);
+							}
+						} catch(JsonParseException e) {
+							throw new AblyException("Unable to parse response from auth callback", 406, 40170);
 						}
 					}
 				});
@@ -433,12 +412,12 @@ public class Auth {
 				if(errorInfo.statusCode == 0) errorInfo.statusCode = 401;
 				throw e;
 			}
-			if(authUrlResponse.has("issued")) {
-				/* we assume this is a token */
-				return TokenDetails.fromJSON(authUrlResponse);
+			if(authUrlResponse instanceof TokenDetails) {
+				/* we're done */
+				return (TokenDetails)authUrlResponse;
 			}
 			/* otherwise it's a signed token request */
-			signedTokenRequest = TokenRequest.fromJSON(authUrlResponse);
+			signedTokenRequest = (TokenRequest)authUrlResponse;
 		} else if(tokenOptions.key != null) {
 			Log.i("Auth.requestToken()", "using token auth with client-side signing");
 			signedTokenRequest = createTokenRequest(tokenOptions, params);
@@ -450,14 +429,13 @@ public class Auth {
 		return (TokenDetails)ably.http.post(tokenPath, tokenOptions.authHeaders, tokenOptions.authParams, new Http.JSONRequestBody(signedTokenRequest.asJSON().toString()), new ResponseHandler() {
 			@Override
 			public Object handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
-				JSONObject json;
 				try {
 					String jsonText = new String(body);
-					json = new JSONObject(jsonText);
-				} catch (JSONException e) {
+					JsonObject json = (JsonObject)Serialisation.gsonParser.parse(jsonText);
+					return TokenDetails.fromJSON(json);
+				} catch(JsonParseException e) {
 					throw AblyException.fromThrowable(e);
 				}
-				return TokenDetails.fromJSON(json);
 			}
 		});
 	}

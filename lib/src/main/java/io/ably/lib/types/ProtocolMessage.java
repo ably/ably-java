@@ -1,8 +1,19 @@
 package io.ably.lib.types;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import java.io.IOException;
+import java.lang.reflect.Type;
+
+import org.msgpack.core.MessageFormat;
+import org.msgpack.core.MessagePacker;
+import org.msgpack.core.MessageUnpacker;
+
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 
 /**
  * A message sent and received over the Realtime protocol.
@@ -12,8 +23,6 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * See the Ably client library developer documentation for further
  * details on the members of a ProtocolMessage.
  */
-@JsonInclude(Include.NON_DEFAULT)
-@JsonIgnoreProperties(ignoreUnknown=true)
 public class ProtocolMessage {
 	public enum Action {
 		HEARTBEAT,
@@ -107,4 +116,93 @@ public class ProtocolMessage {
 	public Message[] messages;
 	public PresenceMessage[] presence;
 	public ConnectionDetails connectionDetails;
+
+	void writeMsgpack(MessagePacker packer) throws IOException {
+		int fieldCount = 1; //action
+		if(channel != null) ++fieldCount;
+		if(msgSerial != null) ++fieldCount;
+		if(messages != null) ++fieldCount;
+		if(presence != null) ++fieldCount;
+		packer.packMapHeader(fieldCount);
+		packer.packString("action");
+		packer.packInt(action.getValue());
+		if(channel != null) {
+			packer.packString("channel");
+			packer.packString(channel);
+		}
+		if(msgSerial != null) {
+			packer.packString("msgSerial");
+			packer.packLong(msgSerial.longValue());
+		}
+		if(messages != null) {
+			packer.packString("messages");
+			MessageSerializer.writeMsgpackArray(messages, packer);
+		}
+		if(presence != null) {
+			packer.packString("presence");
+			PresenceSerializer.writeMsgpackArray(presence, packer);
+		}
+	}
+
+	ProtocolMessage readMsgpack(MessageUnpacker unpacker) throws IOException {
+		int fieldCount = unpacker.unpackMapHeader();
+		for(int i = 0; i < fieldCount; i++) {
+			String fieldName = unpacker.unpackString().intern();
+			MessageFormat fieldFormat = unpacker.getNextFormat();
+			if(fieldFormat.equals(MessageFormat.NIL)) { unpacker.unpackNil(); continue; }
+
+			if(fieldName == "action") {
+				action = Action.findByValue(unpacker.unpackInt());
+			} else if(fieldName == "flags") {
+				flags = unpacker.unpackInt();
+			} else if(fieldName == "count") {
+				count = unpacker.unpackInt();
+			} else if(fieldName == "error") {
+				error = ErrorInfo.fromMsgpack(unpacker);
+			} else if(fieldName == "id") {
+				id = unpacker.unpackString();
+			} else if(fieldName == "channel") {
+				channel = unpacker.unpackString();
+			} else if(fieldName == "channelSerial") {
+				channelSerial = unpacker.unpackString();
+			} else if(fieldName == "connectionId") {
+				connectionId = unpacker.unpackString();
+			} else if(fieldName == "connectionKey") {
+				connectionKey = unpacker.unpackString();
+			} else if(fieldName == "connectionSerial") {
+				connectionSerial = Long.valueOf(unpacker.unpackLong());
+			} else if(fieldName == "msgSerial") {
+				msgSerial = Long.valueOf(unpacker.unpackLong());
+			} else if(fieldName == "timestamp") {
+				timestamp = unpacker.unpackLong();
+			} else if(fieldName == "messages") {
+				messages = MessageSerializer.readMsgpackArray(unpacker);
+			} else if(fieldName == "presence") {
+				presence = PresenceSerializer.readMsgpackArray(unpacker);
+			} else if(fieldName == "connectionDetails") {
+				connectionDetails = ConnectionDetails.fromMsgpack(unpacker);
+			} else {
+				System.out.println("Unexpected field: " + fieldName);
+				unpacker.skipValue();
+			}
+		}
+		return this;
+	}
+
+	static ProtocolMessage fromMsgpack(MessageUnpacker unpacker) throws IOException {
+		return (new ProtocolMessage()).readMsgpack(unpacker);
+	}
+
+	public static class Serializer implements JsonSerializer<Action>, JsonDeserializer<Action> {
+		@Override
+		public Action deserialize(JsonElement json, Type t, JsonDeserializationContext ctx)
+				throws JsonParseException {
+			return Action.findByValue(json.getAsInt());
+		}
+
+		@Override
+		public JsonElement serialize(Action action, Type t, JsonSerializationContext ctx) {
+			return new JsonPrimitive(action.getValue());
+		}		
+	}
 }

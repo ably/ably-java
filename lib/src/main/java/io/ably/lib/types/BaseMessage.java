@@ -2,22 +2,23 @@ package io.ably.lib.types;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Type;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.msgpack.core.MessageFormat;
+import org.msgpack.core.MessagePacker;
+import org.msgpack.core.MessageUnpacker;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.core.JsonGenerator;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSerializationContext;
 
 import io.ably.lib.util.Base64Coder;
-import io.ably.lib.util.Serialisation;
 import io.ably.lib.util.Crypto.ChannelCipher;
+import io.ably.lib.util.Serialisation;
 
-@JsonInclude(Include.NON_DEFAULT)
 public class BaseMessage implements Cloneable {
 	/**
 	 * A unique id for this message
@@ -86,12 +87,9 @@ public class BaseMessage implements Cloneable {
 					if(xform == "json") {
 						try {
 							String jsonText = ((String)data).trim();
-							if(jsonText.charAt(0) == '[')
-								data = new JSONArray(jsonText);
-							else
-								data = new JSONObject(jsonText);
+							data = Serialisation.gsonParser.parse(jsonText);
 						}
-						catch(JSONException e) { throw AblyException.fromThrowable(e); }
+						catch(JsonParseException e) { throw AblyException.fromThrowable(e); }
 						continue;
 					}
 					if(xform == "cipher" && opts != null && opts.encrypted) {
@@ -107,8 +105,8 @@ public class BaseMessage implements Cloneable {
 	}
 
 	public void encode(ChannelOptions opts) throws AblyException {
-		if(data instanceof JSONObject || data instanceof JSONArray) {
-			data = data.toString();
+		if(data instanceof JsonElement) {
+			data = Serialisation.gson.toJson((JsonElement)data);
 			encoding = ((encoding == null) ? "" : encoding + "/") + "json";
 		}
 		if(opts != null && opts.encrypted) {
@@ -125,25 +123,6 @@ public class BaseMessage implements Cloneable {
 		}
 	}
 
-	protected void serializeFields(JsonGenerator generator) throws IOException {
-		if(data != null) {
-			if(data instanceof byte[]) {
-				byte[] dataBytes = (byte[])data;
-				if(generator.getCodec() == Serialisation.jsonObjectMapper) {
-					generator.writeStringField("data", new String(Base64Coder.encode(dataBytes)));
-					encoding = (encoding == null) ? "base64" : encoding + "/base64";
-				} else {
-					generator.writeBinaryField("data", dataBytes);
-				}
-			} else {
-				generator.writeStringField("data", data.toString());
-			}
-			if(encoding != null) generator.writeStringField("encoding", encoding);
-		}
-		if(clientId != null) generator.writeStringField("clientId", clientId);
-		if(connectionId != null) generator.writeStringField("connectionId", connectionId);
-	}
-
 	/* trivial utilities for processing encoding string */
 	private static Pattern xformPattern = Pattern.compile("([\\-\\w]+)(\\+([\\-\\w]+))?");
 	private String join(String[] elements, char separator, int start, int end) {
@@ -151,5 +130,93 @@ public class BaseMessage implements Cloneable {
 		for(int i = start; i < end; i++)
 			result.append(separator).append(elements[i]);
 		return result.toString();
+	}
+
+	/* Gson Serializer */
+	public static class Serializer {
+		public JsonElement serialize(BaseMessage message, Type typeOfMessage, JsonSerializationContext ctx) {
+			JsonObject json = new JsonObject();
+			Object data = message.data;
+			String encoding = message.encoding;
+			if(data != null) {
+				if(data instanceof byte[]) {
+					byte[] dataBytes = (byte[])data;
+					json.addProperty("data", new String(Base64Coder.encode(dataBytes)));
+					encoding = (encoding == null) ? "base64" : encoding + "/base64";
+				} else {
+					json.addProperty("data", data.toString());
+				}
+				if(encoding != null) json.addProperty("encoding", encoding);
+			}
+			if(message.clientId != null) json.addProperty("clientId", message.clientId);
+			if(message.connectionId != null) json.addProperty("connectionId", message.connectionId);
+			return json;
+		}		
+	}
+
+	/* Msgpack processing */
+	boolean readField(MessageUnpacker unpacker, String fieldName, MessageFormat fieldType) throws IOException {
+		boolean result = true;
+		if(fieldName == "timestamp") {
+			timestamp = unpacker.unpackLong();
+		} else if(fieldName == "id") {
+			id = unpacker.unpackString();
+		} else if(fieldName == "clientId") {
+			clientId = unpacker.unpackString();
+		} else if(fieldName == "connectionId") {
+			connectionId = unpacker.unpackString();
+		} else if(fieldName == "encoding") {
+			encoding = unpacker.unpackString();
+		} else if(fieldName == "data") {
+			if(fieldType.getValueType().isBinaryType()) {
+				byte[] byteData = new byte[unpacker.unpackBinaryHeader()];
+				unpacker.readPayload(byteData);
+				data = byteData;
+			} else {
+				data = unpacker.unpackString();
+			}
+		} else {
+			result = false;
+		}
+		return result;
+	}
+
+	protected int countFields() {
+		int fieldCount = 0;
+		if(timestamp > 0) ++fieldCount;
+		if(clientId != null) ++fieldCount;
+		if(connectionId != null) ++fieldCount;
+		if(encoding != null) ++fieldCount;
+		if(data != null) ++fieldCount;
+		return fieldCount;
+	}
+
+	void writeFields(MessagePacker packer) throws IOException {
+		if(timestamp > 0) {
+			packer.packString("timestamp");
+			packer.packLong(timestamp);
+		}
+		if(clientId != null) {
+			packer.packString("clientId");
+			packer.packString(clientId);
+		}
+		if(connectionId != null) {
+			packer.packString("connectionId");
+			packer.packString(connectionId);
+		}
+		if(encoding != null) {
+			packer.packString("encoding");
+			packer.packString(encoding);
+		}
+		if(data != null) {
+			packer.packString("data");
+			if(data instanceof byte[]) {
+				byte[] byteData = (byte[])data;
+				packer.packBinaryHeader(byteData.length);
+				packer.writePayload(byteData);
+			} else {
+				packer.packString(data.toString());
+			}
+		}
 	}
 }

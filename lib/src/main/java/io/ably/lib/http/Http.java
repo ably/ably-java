@@ -14,9 +14,6 @@ import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.List;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Connection;
 import io.ably.lib.realtime.ConnectionState;
@@ -31,6 +28,7 @@ import io.ably.lib.types.ErrorResponse;
 import io.ably.lib.types.Param;
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.Serialisation;
 
 /**
  * Http
@@ -57,7 +55,7 @@ public class Http {
 
 	public static class JSONRequestBody implements RequestBody {
 		public JSONRequestBody(String jsonText) { this.jsonText = jsonText; }
-		public JSONRequestBody(Object ob, ObjectMapper objectMapper) throws JsonProcessingException { this(objectMapper.writeValueAsString(ob)); }
+		public JSONRequestBody(Object ob) { this(Serialisation.gson.toJson(ob)); }
 
 		@Override
 		public byte[] getEncoded() { return jsonText.getBytes(); }

@@ -26,12 +26,8 @@
  */
 package io.ably.lib.test.util;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import fi.iki.elonen.NanoHTTPD;
 import io.ably.lib.rest.AblyRest;
@@ -65,13 +61,10 @@ public class TokenServer extends NanoHTTPD {
 			TokenParams tokenParams = params2TokenParams(params);
 			try {
 				TokenDetails token = ably.auth.requestToken(null, tokenParams);
-				return json2Response(token.asJSON());
+				return json2Response(token);
 			} catch (AblyException e) {
 				e.printStackTrace();
 				return error2Response(e.errorInfo);
-			} catch (JSONException e) {
-				e.printStackTrace();
-				return new Response(Response.Status.BAD_REQUEST, MIME_PLAINTEXT, "Bad request");
 			}
 		}
 		else if(target.equals("/get-token-request")) {
@@ -120,8 +113,8 @@ public class TokenServer extends NanoHTTPD {
 		return tokenParams;
 	}
 
-	private static Response json2Response(JSONObject json) {
-		return new Response(Response.Status.OK, MIME_JSON, json.toString());
+	private static Response json2Response(Object obj) {
+		return new Response(Response.Status.OK, MIME_JSON, Serialisation.gson.toJson(obj));
 	}
 
 	private static Response.Status getStatus(int statusCode) {
@@ -141,14 +134,9 @@ public class TokenServer extends NanoHTTPD {
 	}
 
 	private static Response error2Response(ErrorInfo errorInfo) {
-		Response result = null;
-		try {
-			ErrorResponse err = new ErrorResponse();
-			err.error = errorInfo;
-			result = new Response(getStatus(errorInfo.statusCode), MIME_JSON, Serialisation.jsonObjectMapper.writeValueAsString(err));
-		}
-		catch (IOException e) {}
-		return result;
+		ErrorResponse err = new ErrorResponse();
+		err.error = errorInfo;
+		return new Response(getStatus(errorInfo.statusCode), MIME_JSON, Serialisation.gson.toJson(err));
 	}
 
 	private final AblyRest ably;

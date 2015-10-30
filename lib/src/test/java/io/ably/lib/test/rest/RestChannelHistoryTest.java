@@ -29,6 +29,7 @@ public class RestChannelHistoryTest {
 	public static void setUpBeforeClass() throws Exception {
 		TestVars testVars = Setup.getTestVars();
 		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+		opts.useBinaryProtocol = false;
 		ably = new AblyRest(opts);
 		long timeFromService = ably.time();
 		timeOffset = timeFromService - System.currentTimeMillis();

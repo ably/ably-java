@@ -15,7 +15,6 @@ import io.ably.lib.types.StatsReader;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 
-import java.io.IOException;
 import java.util.Collection;
 
 /**
@@ -96,11 +95,7 @@ public class AblyRest {
 		return ((Long)http.get("/time", HttpUtils.defaultAcceptHeaders(false), null, new ResponseHandler() {
 			@Override
 			public Object handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
-				try {
-					return (Long)Serialisation.jsonObjectMapper.readValue(body, Long[].class)[0];
-				} catch (IOException e) {
-					throw AblyException.fromThrowable(e);
-				}
+				return (Long)Serialisation.gson.fromJson(new String(body), Long[].class)[0];
 			}})).longValue();
 	}
 

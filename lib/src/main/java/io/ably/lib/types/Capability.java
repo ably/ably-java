@@ -2,12 +2,15 @@ package io.ably.lib.types;
 
 
 import java.util.Arrays;
+import java.util.Map.Entry;
+import java.util.Set;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import io.ably.lib.util.JSONHelpers;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 
 /**
  * A class representing an Ably Capability, providing
@@ -24,9 +27,13 @@ public class Capability {
 	 * (if for example it is not valid JSON)
 	 */
 	public static final String c14n(String capability) throws AblyException {
+		if(capability == null || capability.isEmpty()) return "";
 		try {
-			return (capability == null || capability.isEmpty()) ? "" : (new Capability(new JSONObject(capability))).toString();
-		} catch (JSONException e) {
+			JsonObject json = (JsonObject)gsonParser.parse(capability);
+			return (new Capability(json)).toString();
+		} catch(ClassCastException e) {
+			throw AblyException.fromThrowable(e);
+		} catch(JsonParseException e) {
 			throw AblyException.fromThrowable(e);
 		}
 	}
@@ -35,7 +42,7 @@ public class Capability {
 	 * Construct a new empty Capability
 	 */
 	public Capability() {
-		json = new JSONObject();
+		json = new JsonObject();
 	}
 
 	/**
@@ -43,7 +50,7 @@ public class Capability {
 	 *
 	 * @param json the JSONObject
 	 */
-	private Capability(JSONObject json) {
+	private Capability(JsonObject json) {
 		this.json = json;
 		dirty = true;
 	}
@@ -58,11 +65,9 @@ public class Capability {
 	 * the array does not need to be sorted
 	 */
 	public void addResource(String resource, String[] ops) {
-		try {
-			JSONArray jsonOps = JSONHelpers.newJSONArray(ops);
-			json.put(resource, jsonOps);
-			dirty = true;
-		} catch (JSONException e) {}
+		JsonArray jsonOps = (JsonArray)gson.toJsonTree(ops);
+		json.add(resource, jsonOps);
+		dirty = true;
 	}
 
 	/**
@@ -106,20 +111,18 @@ public class Capability {
 	 * @param op a single operation String to be added for this resource;
 	 */
 	public void addOperation(String resource, String op) {
-		try {
-			JSONArray jsonOps = json.optJSONArray(resource);
-			if(jsonOps == null) {
-				jsonOps = new JSONArray();
-				json.put(resource, jsonOps);
-			}
-			int opCount = jsonOps.length();
-			for(int i = 0; i < opCount; i++)
-				if(jsonOps.optString(i).equals(op))
-					return;
+		JsonArray jsonOps = (JsonArray)json.get(resource);
+		if(jsonOps == null) {
+			jsonOps = new JsonArray();
+			json.add(resource, jsonOps);
+		}
+		int opCount = jsonOps.size();
+		for(int i = 0; i < opCount; i++)
+			if(jsonOps.get(i).getAsString().equals(op))
+				return;
 
-			jsonOps.put(op);
-			dirty = true;
-		} catch (JSONException e) {}
+		jsonOps.add(op);
+		dirty = true;
 	}
 
 	/**
@@ -131,18 +134,17 @@ public class Capability {
 	 * @param op a operation String to be removed for this resource;
 	 */
 	public void removeOperation(String resource, String op) {
-		JSONArray jsonOps = json.optJSONArray(resource);
+		JsonArray jsonOps = (JsonArray)json.get(resource);
 		if(jsonOps == null)
 			return;
 
-		int opCount = jsonOps.length();
+		int opCount = jsonOps.size();
 		for(int i = 0; i < opCount; i++)
-			if(jsonOps.optString(i).equals(op)) {
+			if(jsonOps.get(i).getAsString().equals(op)) {
 				if(opCount == 1) {
 					json.remove(resource);
 				} else {
-					jsonOps = JSONHelpers.remove(jsonOps, i);
-					try { json.put(resource, jsonOps); } catch (JSONException e) {}
+					jsonOps.remove(i);
 				}
 				return;
 			}
@@ -158,28 +160,32 @@ public class Capability {
 	 */
 	public String toString() {
 		if(dirty) {
-			String[] resources = JSONHelpers.getNames(json);
-			Arrays.sort(resources);
-			if(resources.length == 0)
+			Set<Entry<String, JsonElement>> entries = json.entrySet();
+			if(entries.isEmpty())
 				return "";
-			JSONObject c14nJson = new JSONObject();
-			try {
-				for(String resource : resources) {
-					JSONArray jsonOps = json.optJSONArray(resource);
-					int count = jsonOps.length();
-					String[] ops = new String[count];
-					for(int i = 0; i < count; i++)
-						ops[i] = jsonOps.optString(i);
-					Arrays.sort(ops);
-					c14nJson.put(resource, JSONHelpers.newJSONArray(ops));
-				}
-			} catch (JSONException e) {}
+			String[] resources = new String[entries.size()];
+			int idx = 0;
+			for(Entry<String, JsonElement> entry : entries)
+				resources[idx++] = entry.getKey();
+			Arrays.sort(resources);
+			JsonObject c14nJson = new JsonObject();
+			for(String resource : resources) {
+				JsonArray jsonOps = json.get(resource).getAsJsonArray();
+				int count = jsonOps.size();
+				String[] ops = new String[count];
+				for(int i = 0; i < count; i++)
+					ops[i] = jsonOps.get(i).getAsString();
+				Arrays.sort(ops);
+				c14nJson.add(resource, gson.toJsonTree(ops));
+			}
 			json = c14nJson;
 			dirty = false;
 		}
-		return json.toString();
+		return gson.toJson(json);
 	}
 
-	private JSONObject json;
+	private JsonObject json;
 	private boolean dirty;
+	private static final Gson gson = new Gson();
+	private static final JsonParser gsonParser = new JsonParser();
 }

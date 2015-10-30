@@ -113,7 +113,7 @@ public class RealtimeConnectFailTest {
 	 * Verify that the connection enters the suspended state, after multiple attempts
 	 * to connect to a non-existent ws host
 	 */
-	@Test
+	//@Test
 	public void connect_fail_suspended() {
 		try {
 			TestVars testVars = Setup.getTestVars();

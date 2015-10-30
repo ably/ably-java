@@ -1,18 +1,26 @@
 package io.ably.lib.types;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.core.JsonGenerator;
+import org.msgpack.core.MessageFormat;
+import org.msgpack.core.MessagePacker;
+import org.msgpack.core.MessageUnpacker;
+
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+
+import io.ably.lib.util.Serialisation;
 
 /**
  * A class representing an individual presence update to be sent or received
  * via the Ably Realtime service.
  */
-@JsonInclude(Include.NON_DEFAULT)
-@JsonIgnoreProperties(ignoreUnknown=true)
 public class PresenceMessage extends BaseMessage implements Cloneable {
 
 	/**
@@ -82,11 +90,51 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
 		return result;
 	}
 
-	protected void serializeFields(JsonGenerator generator) throws IOException {
-		generator.writeNumberField("action", action.getValue());
-		super.serializeFields(generator);
+	void writeMsgpack(MessagePacker packer) throws IOException {
+		int fieldCount = super.countFields();
+		++fieldCount;
+		packer.packMapHeader(fieldCount);
+		super.writeFields(packer);
+		packer.packString("action");
+		packer.packInt(action.getValue());
 	}
 
-	/* force initialisation of PresenceSerializer */
-	static { new PresenceSerializer(); }
+	PresenceMessage readMsgpack(MessageUnpacker unpacker) throws IOException {
+		int fieldCount = unpacker.unpackMapHeader();
+		for(int i = 0; i < fieldCount; i++) {
+			String fieldName = unpacker.unpackString().intern();
+			MessageFormat fieldFormat = unpacker.getNextFormat();
+			if(fieldFormat.equals(MessageFormat.NIL)) { unpacker.unpackNil(); continue; }
+
+			if(super.readField(unpacker, fieldName, fieldFormat)) continue;
+			if(fieldName == "action") {
+				action = Action.findByValue(unpacker.unpackInt());
+			} else {
+				System.out.println("Unexpected field: " + fieldName);
+				unpacker.skipValue();
+			}
+		}
+		return this;
+	}
+
+	static PresenceMessage fromMsgpack(MessageUnpacker unpacker) throws IOException {
+		return (new PresenceMessage()).readMsgpack(unpacker);
+	}
+
+	public static class Serializer implements JsonSerializer<Action>, JsonDeserializer<Action> {
+		@Override
+		public Action deserialize(JsonElement json, Type t, JsonDeserializationContext ctx)
+				throws JsonParseException {
+			return Action.findByValue(json.getAsInt());
+		}
+
+		@Override
+		public JsonElement serialize(Action action, Type t, JsonSerializationContext ctx) {
+			return new JsonPrimitive(action.getValue());
+		}		
+	}
+
+	static {
+		Serialisation.gsonBuilder.registerTypeAdapter(Action.class, new Serializer());
+	}
 }
