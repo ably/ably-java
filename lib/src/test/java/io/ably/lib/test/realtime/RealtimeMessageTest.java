@@ -247,6 +247,196 @@ public class RealtimeMessageTest {
 	}
 
 	/**
+	 * Get a channel and subscribe without explicitly attaching.
+	 * Verify that the channel reaches the attached state.
+	 */
+	@Test
+	public void subscribe_implicit_attach_binary() {
+		AblyRealtime ably = null;
+		String channelName = "subscribe_implicit_attach_binary";
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* create a channel */
+			final Channel channel = ably.channels.get(channelName);
+
+			/* subscribe */
+			MessageWaiter messageWaiter =  new MessageWaiter(channel);
+
+			/* verify attached state is reached */
+			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			/* publish to the channel */
+			CompletionWaiter msgComplete = new CompletionWaiter();
+			channel.publish("test_event", "Test message (" + channelName + ")", msgComplete);
+
+			/* wait for the publish callback to be called */
+			msgComplete.waitFor();
+			assertTrue("Verify success callback was called", msgComplete.success);
+
+			/* wait for the subscription callback to be called */
+			messageWaiter.waitFor(1);
+			assertEquals("Verify message subscription was called", messageWaiter.receivedMessages.size(), 1);
+
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
+	 * Get a channel and subscribe without explicitly attaching.
+	 * Verify that the channel reaches the attached state.
+	 */
+	@Test
+	public void subscribe_implicit_attach_text() {
+		AblyRealtime ably = null;
+		String channelName = "subscribe_implicit_attach_text";
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			opts.useBinaryProtocol = false;
+			ably = new AblyRealtime(opts);
+
+			/* create a channel */
+			final Channel channel = ably.channels.get(channelName);
+
+			/* subscribe */
+			MessageWaiter messageWaiter =  new MessageWaiter(channel);
+
+			/* verify attached state is reached */
+			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			/* publish to the channel */
+			CompletionWaiter msgComplete = new CompletionWaiter();
+			channel.publish("test_event", "Test message (" + channelName + ")", msgComplete);
+
+			/* wait for the publish callback to be called */
+			msgComplete.waitFor();
+			assertTrue("Verify success callback was called", msgComplete.success);
+
+			/* wait for the subscription callback to be called */
+			messageWaiter.waitFor(1);
+			assertEquals("Verify message subscription was called", messageWaiter.receivedMessages.size(), 1);
+
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
+	 * Get a channel and publish without explicitly attaching.
+	 * Verify that the channel reaches the attached state.
+	 */
+	@Test
+	public void publish_implicit_attach_binary() {
+		AblyRealtime pubAbly = null;
+		AblyRealtime subAbly = null;
+		String channelName = "publish_implicit_attach_binary";
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			pubAbly = new AblyRealtime(opts);
+			subAbly = new AblyRealtime(opts);
+
+			/* create a channel */
+			final Channel pubChannel = pubAbly.channels.get(channelName);
+			final Channel subChannel = subAbly.channels.get(channelName);
+
+			/* subscribe and wait for subscription channel to attach */
+			MessageWaiter messageWaiter =  new MessageWaiter(subChannel);
+			(new ChannelWaiter(subChannel)).waitFor(ChannelState.attached);
+
+			/* publish to the channel */
+			CompletionWaiter msgComplete = new CompletionWaiter();
+			pubChannel.publish("test_event", "Test message (" + channelName + ")", msgComplete);
+
+			/* verify attached state is reached */
+			(new ChannelWaiter(pubChannel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", pubChannel.state, ChannelState.attached);
+
+			/* wait for the publish callback to be called */
+			msgComplete.waitFor();
+			assertTrue("Verify success callback was called", msgComplete.success);
+
+			/* wait for the subscription callback to be called */
+			messageWaiter.waitFor(1);
+			assertEquals("Verify message subscription was called", messageWaiter.receivedMessages.size(), 1);
+
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			if(pubAbly != null)
+				pubAbly.close();
+			if(subAbly != null)
+				subAbly.close();
+		}
+	}
+
+	/**
+	 * Get a channel and publish without explicitly attaching.
+	 * Verify that the channel reaches the attached state.
+	 */
+	@Test
+	public void publish_implicit_attach_text() {
+		AblyRealtime pubAbly = null;
+		AblyRealtime subAbly = null;
+		String channelName = "publish_implicit_attach_text";
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			opts.useBinaryProtocol = false;
+			pubAbly = new AblyRealtime(opts);
+			subAbly = new AblyRealtime(opts);
+
+			/* create a channel */
+			final Channel pubChannel = pubAbly.channels.get(channelName);
+			final Channel subChannel = subAbly.channels.get(channelName);
+
+			/* subscribe and wait for subscription channel to attach */
+			MessageWaiter messageWaiter =  new MessageWaiter(subChannel);
+			(new ChannelWaiter(subChannel)).waitFor(ChannelState.attached);
+
+			/* publish to the channel */
+			CompletionWaiter msgComplete = new CompletionWaiter();
+			pubChannel.publish("test_event", "Test message (" + channelName + ")", msgComplete);
+
+			/* verify attached state is reached */
+			(new ChannelWaiter(pubChannel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", pubChannel.state, ChannelState.attached);
+
+			/* wait for the publish callback to be called */
+			msgComplete.waitFor();
+			assertTrue("Verify success callback was called", msgComplete.success);
+
+			/* wait for the subscription callback to be called */
+			messageWaiter.waitFor(1);
+			assertEquals("Verify message subscription was called", messageWaiter.receivedMessages.size(), 1);
+
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			if(pubAbly != null)
+				pubAbly.close();
+			if(subAbly != null)
+				subAbly.close();
+		}
+	}
+
+	/**
 	 * Connect to the service using the default (binary) protocol
 	 * and attach, subscribe to an event, and publish multiple
 	 * messages on that channel
