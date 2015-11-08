@@ -429,6 +429,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		msg.messages = messages;
 		switch(state) {
 		case initialised:
+			attach();
 		case attaching:
 			/* queue the message for later send */
 			queuedMessages.add(new QueuedMessage(msg, listener));
