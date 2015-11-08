@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 
-public class ConnectionManager extends Thread implements ConnectListener {
+public class ConnectionManager implements Runnable, ConnectListener {
 
 	private static final String TAG = ConnectionManager.class.getName();
 	private static final String INTERNET_CHECK_URL = "http://live.cdn.ably-realtime.com/is-the-internet-up.txt";
@@ -133,8 +133,6 @@ public class ConnectionManager extends Thread implements ConnectListener {
 		}
 		synchronized(this) {
 			setSuspendTime();
-			this.start();
-			try { wait(); } catch(InterruptedException e) {}
 		}
 	}
 	
@@ -152,6 +150,15 @@ public class ConnectionManager extends Thread implements ConnectListener {
 	/*********************
 	 * state management
 	 *********************/
+
+	public void connect() {
+		startThread();
+		requestState(ConnectionState.connecting);
+	}
+
+	public void close() {
+		requestState(ConnectionState.closing);
+	}
 
 	public synchronized StateInfo getConnectionState() {
 		return state;
@@ -350,6 +357,32 @@ public class ConnectionManager extends Thread implements ConnectListener {
 	 * ConnectionManager thread
 	 **************************/
 
+	private void startThread() {
+		boolean creating = false;
+		synchronized(this) {
+			if(mgrThread == null) {
+				mgrThread = new Thread(this);
+				state = states.get(ConnectionState.initialized);
+				creating = true;
+			}
+		}
+		if(creating) {
+			synchronized(mgrThread) {
+				mgrThread.start();
+				try { mgrThread.wait(); } catch(InterruptedException ie) {}
+			}
+		}
+	}
+
+	private void stopThread() {
+		synchronized(this) {
+			if(mgrThread != null) {
+				mgrThread.interrupt();
+				mgrThread = null;
+			}
+		}
+	}
+
 	private void handleStateRequest() {
 		boolean handled = false;
 		switch(requestedState.state) {
@@ -407,7 +440,12 @@ public class ConnectionManager extends Thread implements ConnectListener {
 			case closed:
 			case failed:
 				/* terminal states */
+				if(transport != null) {
+					transport.close(false);
+					transport = null;
+				}
 				stateChange = null;
+				stopThread();
 				break;
 			case connected:
 				/* we were connected, so retry immediately */
@@ -464,13 +502,17 @@ public class ConnectionManager extends Thread implements ConnectListener {
 
 	public void run() {
 		StateIndication stateChange;
-		while(true) {
+		Thread thisThread = Thread.currentThread();
+		while(!state.terminal) {
 			stateChange = null;
 			synchronized(this) {
 				/* if we're initialising, then tell the starting thread that
 				 * we're ready to receive events */
-				if(state.state == ConnectionState.initialized)
-					notify();
+				if(state.state == ConnectionState.initialized) {
+					synchronized(thisThread) {
+						thisThread.notify();
+					}
+				}
 	
 				while(stateChange == null) {
 					tryWait(state.timeout);
@@ -501,6 +543,10 @@ public class ConnectionManager extends Thread implements ConnectListener {
 			}
 			if(stateChange != null)
 				handleStateChange(stateChange);
+		}
+		synchronized(this) {
+			if(mgrThread == thisThread)
+				mgrThread = null;
 		}
 	}
 
@@ -771,6 +817,7 @@ public class ConnectionManager extends Thread implements ConnectListener {
 	 * private members
 	 ******************/
 
+	private Thread mgrThread;
 	final AblyRealtime ably;
 	private final ClientOptions options;
 	private final Connection connection;

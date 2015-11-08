@@ -42,7 +42,7 @@ public class Connection extends EventEmitter<ConnectionState, ConnectionStateLis
 	 * closed by the user, or was closed as a result of an unrecoverable error.
 	 */
 	public void connect() {
-		connectionManager.requestState(ConnectionState.connecting);
+		connectionManager.connect();
 	}
 
 	/**
@@ -60,7 +60,7 @@ public class Connection extends EventEmitter<ConnectionState, ConnectionStateLis
 	 */
 	public void close() {
 		key = null;
-		connectionManager.requestState(ConnectionState.closing);
+		connectionManager.close();
 	}
 
 	/*****************
