@@ -1,3 +1,6 @@
 rootProject.name = 'ably-java'
 include 'lib'
-include 'android-test'
+
+if(System.getenv('ANDROID_HOME')) {
+  include 'android-test'
+}

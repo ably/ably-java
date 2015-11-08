@@ -41,6 +41,3 @@ project(':lib') {
     outputs.upToDateWhen { false }
   }
 }
-
-project(':android-test') {
-}
