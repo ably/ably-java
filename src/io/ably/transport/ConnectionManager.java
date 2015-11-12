@@ -131,6 +131,8 @@ public class ConnectionManager extends Thread implements ConnectListener {
 			Log.e(getClass().getName(), msg, e);
 			throw new RuntimeException(msg, e);
 		}
+
+		setDaemon(true);
 		synchronized(this) {
 			setSuspendTime();
 			this.start();
