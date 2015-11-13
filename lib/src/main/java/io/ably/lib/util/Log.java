@@ -129,7 +129,7 @@ public class Log {
 	}
 
     public static void setLevel(int level) { Log.level = (level != 0) ? level : defaultLevel; }
-    public static int defaultLevel = NONE;
+    public static int defaultLevel = ERROR;
     public static int level = defaultLevel;
 
     public static void setHandler(LogHandler handler) { Log.handler = (handler != null) ? handler : defaultHandler; }
