@@ -12,18 +12,8 @@ import io.ably.lib.http.AsyncPaginatedQuery;
 import io.ably.lib.http.HttpPaginatedQuery;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.AsyncHttpPaginatedResponse;
-import io.ably.lib.types.AsyncPaginatedResult;
-import io.ably.lib.types.Callback;
-import io.ably.lib.types.ChannelOptions;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.HttpPaginatedResponse;
-import io.ably.lib.types.PaginatedResult;
-import io.ably.lib.types.Param;
-import io.ably.lib.types.Stats;
-import io.ably.lib.types.StatsReader;
+import io.ably.lib.types.*;
+import io.ably.lib.util.Crypto;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 
@@ -224,5 +214,57 @@ public class AblyRest {
 	 */
 	protected void onAuthError(ErrorInfo errorInfo) {
 		/* Default is to do nothing. Overridden by subclass. */
+	}
+
+	/**
+	 * Publish a messages on one or more channels. When there are
+	 * messages to be sent on multiple channels simultaneously,
+	 * it is more efficient to use this method to publish them in
+	 * a single request, as compared with publishing via multiple
+	 * independent requests.
+	 * @throws AblyException
+	 */
+	public PublishResponse[] publish(Message.Batch[] pubSpecs, ChannelOptions channelOptions) throws AblyException {
+		return publishImpl(pubSpecs, channelOptions).sync();
+	}
+
+	public void publishAsync(Message.Batch[] pubSpecs, ChannelOptions channelOptions, final Callback<PublishResponse[]> callback) throws AblyException {
+		publishImpl(pubSpecs, channelOptions).async(callback);
+	}
+
+	private Http.Request<PublishResponse[]> publishImpl(final Message.Batch[] pubSpecs, ChannelOptions channelOptions) throws AblyException {
+		boolean hasClientSuppliedId = false;
+		for(Message.Batch spec : pubSpecs) {
+			for(Message message : spec.messages) {
+				/* handle message ids */
+				/* RSL1k2 */
+				hasClientSuppliedId |= (message.id != null);
+				/* RTL6g3 */
+				auth.checkClientId(message, true, false);
+				message.encode(channelOptions);
+			}
+			if(!hasClientSuppliedId && options.idempotentRestPublishing) {
+				/* RSL1k1: populate the message id with a library-generated id */
+				String messageId = Crypto.getRandomMessageId();
+				for (int i = 0; i < spec.messages.length; i++) {
+					spec.messages[i].id = messageId + ':' + i;
+				}
+			}
+		}
+		return http.request(new Http.Execute<PublishResponse[]>() {
+			@Override
+			public void execute(HttpScheduler http, final Callback<PublishResponse[]> callback) throws AblyException {
+				HttpCore.RequestBody requestBody = options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(pubSpecs) : MessageSerializer.asJSONRequest(pubSpecs);
+				http.post("/messages", HttpUtils.defaultAcceptHeaders(options.useBinaryProtocol), null, requestBody, new HttpCore.ResponseHandler<PublishResponse[]>() {
+					@Override
+					public PublishResponse[] handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
+						if(error != null) {
+							throw AblyException.fromErrorInfo(error);
+						}
+						return PublishResponse.getBulkPublishResponseHandler(response.statusCode).handleResponseBody(response.contentType, response.body);
+					}
+				}, true, callback);
+			}
+		});
 	}
 }
