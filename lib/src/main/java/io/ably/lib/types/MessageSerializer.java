@@ -70,6 +70,29 @@ public class MessageSerializer {
 		} catch(IOException e) {}
 	}
 
+	public static HttpCore.RequestBody asMsgpackRequest(Message.Batch[] pubSpecs) {
+		return new HttpUtils.ByteArrayRequestBody(writeMsgpackArray(pubSpecs), "application/x-msgpack");
+	}
+
+	static byte[] writeMsgpackArray(Message.Batch[] pubSpecs) {
+		try {
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			MessagePacker packer = Serialisation.msgpackPackerConfig.newPacker(out);
+			writeMsgpackArray(pubSpecs, packer);
+			packer.flush();
+			return out.toByteArray();
+		} catch(IOException e) { return null; }
+	}
+
+	static void writeMsgpackArray(Message.Batch[] pubSpecs, MessagePacker packer) throws IOException {
+		try {
+			int count = pubSpecs.length;
+			packer.packArrayHeader(count);
+			for(Message.Batch spec : pubSpecs)
+				spec.writeMsgpack(packer);
+		} catch(IOException e) {}
+	}
+
 	/****************************************
 	 *              JSON decode
 	 ****************************************/
@@ -88,6 +111,10 @@ public class MessageSerializer {
 
 	public static HttpCore.RequestBody asJsonRequest(Message[] messages) {
 		return new HttpUtils.JsonRequestBody(Serialisation.gson.toJson(messages));
+	}
+
+	public static HttpCore.RequestBody asJSONRequest(Message.Batch[] pubSpecs) {
+		return new HttpUtils.JsonRequestBody(Serialisation.gson.toJson(pubSpecs));
 	}
 
 	/****************************************
@@ -129,6 +156,5 @@ public class MessageSerializer {
 	}
 
 	private static HttpCore.BodyHandler<Message> messageResponseHandler = new MessageBodyHandler(null);
-
 	private static final String TAG = MessageSerializer.class.getName();
 }
