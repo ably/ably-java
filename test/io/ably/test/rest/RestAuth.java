@@ -39,6 +39,28 @@ public class RestAuth {
 	}
 
 	/**
+	 * Check that an exception is thrown if a basic Auth request is made over HTTP (RSA1)
+	 */
+	@Test
+	public void auth_basic_request_over_http() {
+		try {
+			ClientOptions opts = new ClientOptions("sample:key");
+			opts.tls = false;
+			AblyRest ably = new AblyRest(opts);
+			
+			try {
+				ably.time();
+			} catch (AblyException e) {
+				return;
+			}
+			fail("auth_basic_request_over_http: Basic Auth must not be usable over non-TLS connections.");
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_basic_request_over_http: Unexpected exception instantiating library");
+		}
+	}
+	
+	/**
 	 * Init library with a token only
 	 */
 	@Test
