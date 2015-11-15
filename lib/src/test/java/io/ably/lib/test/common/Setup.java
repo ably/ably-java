@@ -149,9 +149,9 @@ public class Setup {
 				System.exit(1);
 			}
 			try {
-				testVars = (TestVars)ably.http.post("/apps", null, null, new JSONRequestBody(appSpec), new ResponseHandler() {
+				testVars = ably.http.post("/apps", null, null, new JSONRequestBody(appSpec), new ResponseHandler<TestVars>() {
 					@Override
-					public Object handleResponse(int statusCode, String contentType, Collection<String> headers, byte[] body) throws AblyException {
+					public TestVars handleResponse(int statusCode, String contentType, Collection<String> headers, byte[] body) throws AblyException {
 						TestVars result = (TestVars)Serialisation.gson.fromJson(new String(body), TestVars.class);
 						result.restHost = host;
 						result.realtimeHost = wsHost;

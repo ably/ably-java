@@ -376,7 +376,7 @@ public class Auth {
 			/* the auth request can return either a signed token request as a TokenParams, or a TokenDetails */
 			Object authUrlResponse = null;
 			try {
-				authUrlResponse = ably.http.getUri(tokenOptions.authUrl, tokenOptions.authHeaders, requestParams, new ResponseHandler() {
+				authUrlResponse = ably.http.getUri(tokenOptions.authUrl, tokenOptions.authHeaders, requestParams, new ResponseHandler<Object>() {
 					@Override
 					public Object handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
 						try {
@@ -429,9 +429,9 @@ public class Auth {
 		}
 
 		String tokenPath = "/keys/" + signedTokenRequest.keyName + "/requestToken";
-		return (TokenDetails)ably.http.post(tokenPath, tokenOptions.authHeaders, tokenOptions.authParams, new Http.JSONRequestBody(signedTokenRequest.asJSON().toString()), new ResponseHandler() {
+		return ably.http.post(tokenPath, tokenOptions.authHeaders, tokenOptions.authParams, new Http.JSONRequestBody(signedTokenRequest.asJSON().toString()), new ResponseHandler<TokenDetails>() {
 			@Override
-			public Object handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
+			public TokenDetails handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
 				try {
 					String jsonText = new String(body);
 					JsonObject json = (JsonObject)Serialisation.gsonParser.parse(jsonText);

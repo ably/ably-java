@@ -40,8 +40,8 @@ import io.ably.lib.util.Serialisation;
  */
 public class Http {
 
-	public interface ResponseHandler {
-		public Object handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException;
+	public interface ResponseHandler<T> {
+		public T handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException;
 	}
 
 	public interface BodyHandler<T> {
@@ -114,9 +114,9 @@ public class Http {
 	 */
 	public byte[] getUrl(String url) throws AblyException {
 		try {
-			return (byte[])httpGet(new URL(url), null, false, new ResponseHandler() {
+			return httpExecute(new URL(url), GET, null, null, false, new ResponseHandler<byte[]>() {
 				@Override
-				public Object handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
+				public byte[] handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
 					return body;
 				}});
 		} catch(IOException ioe) {
@@ -133,8 +133,8 @@ public class Http {
 	 * @return
 	 * @throws AblyException
 	 */
-	public Object getUri(String uri, Param[] headers, Param[] params, ResponseHandler responseHandler) throws AblyException {
-		return httpGet(buildURL(uri, params), headers, false, responseHandler);
+	public <T> T getUri(String uri, Param[] headers, Param[] params, ResponseHandler<T> responseHandler) throws AblyException {
+		return httpExecute(buildURL(uri, params), GET, headers, null, false, responseHandler);
 	}
 
 	/**
@@ -146,21 +146,8 @@ public class Http {
 	 * @return
 	 * @throws AblyException
 	 */
-	public Object get(String path, Param[] headers, Param[] params, ResponseHandler responseHandler) throws AblyException {
-		try {
-			return httpGet(scheme, getPrefHost(), path, params, headers, true, responseHandler);
-		} catch(HostFailedException bhe) {
-			/* one of the exceptions occurred that signifies a problem reaching the host */
-			String[] fallbackHosts = Defaults.getFallbackHosts(ably.options);
-			if(fallbackHosts != null) {
-				for(String host : fallbackHosts) {
-					try {
-						return httpGet(scheme, host, path, params, headers, true, responseHandler);
-					} catch(HostFailedException bhe2) {}
-				}
-			}
-			throw new AblyException("Connection failed; no host available", 404, 80000);
-		}
+	public <T> T get(String path, Param[] headers, Param[] params, ResponseHandler<T> responseHandler) throws AblyException {
+		return ablyHttpExecute(path, GET, headers, params, null, responseHandler);
 	}
 
 	/**
@@ -173,21 +160,8 @@ public class Http {
 	 * @return
 	 * @throws AblyException
 	 */
-	public Object post(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler responseHandler) throws AblyException {
-		try {
-			return httpPost(scheme, getPrefHost(), path, params, headers, requestBody, true, responseHandler);
-		} catch(HostFailedException bhe) {
-			/* one of the exceptions occurred that signifies a problem reaching the host */
-			String[] fallbackHosts = Defaults.getFallbackHosts(ably.options);
-			if(fallbackHosts != null) {
-				for(String host : fallbackHosts) {
-					try {
-						return httpPost(scheme, host, path, params, headers, requestBody, true, responseHandler);
-					} catch(HostFailedException bhe2) {}
-				}
-			}
-			throw new AblyException("Connection failed; no host available", 404, 80000);
-		}
+	public <T> T post(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
+		return ablyHttpExecute(path, POST, headers, params, requestBody, responseHandler);
 	}
 
 	/**
@@ -199,21 +173,8 @@ public class Http {
 	 * @return
 	 * @throws AblyException
 	 */
-	public Object del(String path, Param[] headers, Param[] params, ResponseHandler responseHandler) throws AblyException {
-		try {
-			return httpDel(scheme, getPrefHost(), path, params, headers, true, responseHandler);
-		} catch(HostFailedException bhe) {
-			/* one of the exceptions occurred that signifies a problem reaching the host */
-			String[] fallbackHosts = Defaults.getFallbackHosts(ably.options);
-			if(fallbackHosts != null) {
-				for(String host : fallbackHosts) {
-					try {
-						return httpDel(scheme, host, path, params, headers, true, responseHandler);
-					} catch(HostFailedException bhe2) {}
-				}
-			}
-			throw new AblyException("Connection failed; no host available", 404, 80000);
-		}
+	public <T> T del(String path, Param[] headers, Param[] params, ResponseHandler<T> responseHandler) throws AblyException {
+		return ablyHttpExecute(path, DELETE, headers, params, null, responseHandler);
 	}
 
 	/**************************
@@ -260,34 +221,26 @@ public class Http {
 		}
 	}
 
-	private Object httpGet(String scheme, String host, String path, Param[] params, Param[] headers, boolean withCredentials, ResponseHandler responseHandler) throws AblyException {
-		URL url = buildURL(scheme, host, path, params);
-		return httpGet(url, headers, withCredentials, responseHandler);
+	<T> T ablyHttpExecute(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
+		try {
+			URL url = buildURL(scheme, getPrefHost(), path, params);
+			return httpExecute(url, method, headers, requestBody, true, responseHandler);
+		} catch(HostFailedException bhe) {
+			/* one of the exceptions occurred that signifies a problem reaching the host */
+			String[] fallbackHosts = Defaults.getFallbackHosts(ably.options);
+			if(fallbackHosts != null) {
+				for(String host : fallbackHosts) {
+					try {
+						URL url = buildURL(scheme, host, path, params);
+						return httpExecute(url, method, headers, requestBody, true, responseHandler);
+					} catch(HostFailedException bhe2) {}
+				}
+			}
+			throw new AblyException("Connection failed; no host available", 404, 80000);
+		}
 	}
 
-	private Object httpGet(URL url, Param[] headers, boolean withCredentials, ResponseHandler responseHandler) throws AblyException {
-		return httpExecute(url, GET, headers, null, withCredentials, responseHandler);
-	}
-
-	private Object httpDel(String scheme, String host, String path, Param[] params, Param[] headers, boolean withCredentials, ResponseHandler responseHandler) throws AblyException {
-		URL url = buildURL(scheme, host, path, params);
-		return httpDel(url, headers, withCredentials, responseHandler);
-	}
-
-	private Object httpDel(URL url, Param[] headers, boolean withCredentials, ResponseHandler responseHandler) throws AblyException {
-		return httpExecute(url, DELETE, headers, null, withCredentials, responseHandler);
-	}
-
-	private Object httpPost(String scheme, String host, String path, Param[] params, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler responseHandler) throws AblyException {
-		URL url = buildURL(scheme, host, path, params);
-		return httpPost(url, headers, requestBody, withCredentials, responseHandler);
-	}
-
-	private Object httpPost(URL url, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler responseHandler) throws AblyException {
-		return httpExecute(url, POST, headers, requestBody, withCredentials, responseHandler);
-	}
-
-	private Object httpExecute(URL url, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler responseHandler) throws AblyException {
+	<T> T httpExecute(URL url, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler<T> responseHandler) throws AblyException {
 		HttpURLConnection conn = null;
 		InputStream is = null;
 		int statusCode = 0;
@@ -483,7 +436,8 @@ public class Http {
 	private static final String JSON             = "application/json";
 	private static final String WWW_AUTHENTICATE = "WWW-Authenticate";
 	private static final String AUTHORIZATION    = "Authorization";
-	private static final String GET              = "GET";
-	private static final String POST             = "POST";
-	private static final String DELETE           = "DELETE";
+
+	static final String GET                      = "GET";
+	static final String POST                     = "POST";
+	static final String DELETE                   = "DELETE";
 }
