@@ -1,4 +1,4 @@
-package io.ably.lib.test.realtime;
+package io.ably.lib.test.common;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,6 +25,7 @@ import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.realtime.Presence.PresenceListener;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.BaseMessage;
+import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.PresenceMessage;
@@ -49,7 +50,7 @@ public class Helpers {
 	 * @author paddy
 	 *
 	 */
-	static class CompletionWaiter implements CompletionListener {
+	public static class CompletionWaiter implements CompletionListener {
 		public boolean success;
 		public ErrorInfo error;
 
@@ -88,7 +89,7 @@ public class Helpers {
 	 * @author paddy
 	 *
 	 */
-	static class MessageWaiter implements MessageListener {
+	public static class MessageWaiter implements MessageListener {
 		public List<Message> receivedMessages;
 
 		/**
@@ -165,7 +166,7 @@ public class Helpers {
 	 * @author paddy
 	 *
 	 */
-	static class PresenceWaiter implements PresenceListener {
+	public static class PresenceWaiter implements PresenceListener {
 		public List<PresenceMessage> receivedMessages;
 
 		/**
@@ -237,13 +238,13 @@ public class Helpers {
 					return message;
 			return null;
 		}
-		PresenceMessage contains(String clientId, PresenceMessage.Action action) {
+		public PresenceMessage contains(String clientId, PresenceMessage.Action action) {
 			for(PresenceMessage message : receivedMessages)
 				if(clientId.equals(message.clientId) && action == message.action)
 					return message;
 			return null;
 		}
-		PresenceMessage contains(String clientId, String connectionId, PresenceMessage.Action action) {
+		public PresenceMessage contains(String clientId, String connectionId, PresenceMessage.Action action) {
 			for(PresenceMessage message : receivedMessages)
 				if(clientId.equals(message.clientId) && connectionId.equals(message.connectionId) && action == message.action)
 					return message;
@@ -256,7 +257,7 @@ public class Helpers {
 	 * @author paddy
 	 *
 	 */
-	static class ConnectionWaiter implements ConnectionStateListener {
+	public static class ConnectionWaiter implements ConnectionStateListener {
 		public Map<ConnectionState, Counter> stateCounts;
 
 		/**
@@ -332,7 +333,7 @@ public class Helpers {
 	 * @author paddy
 	 *
 	 */
-	static class ChannelWaiter implements ChannelStateListener {
+	public static class ChannelWaiter implements ChannelStateListener {
 
 		/**
 		 * Public API
@@ -371,7 +372,7 @@ public class Helpers {
 	 * A class that waits for raw protocol messages.
 	 *
 	 */
-	static class RawProtocolWaiter implements RawProtocolListener {
+	public static class RawProtocolWaiter implements RawProtocolListener {
 		public List<ProtocolMessage> receivedMessages;
 		public Action action;
 
@@ -431,7 +432,7 @@ public class Helpers {
 	 * @author paddy
 	 *
 	 */
-	static class CompletionSet {
+	public static class CompletionSet {
 		public Set<Member> pending = new HashSet<Member>();
 		public Set<ErrorInfo> errors = new HashSet<ErrorInfo>();
 
@@ -512,4 +513,29 @@ public class Helpers {
 		return false;
 	}
 
+	public static class AsyncWaiter<T> implements Callback<T> {
+
+		@Override
+		public synchronized void onSuccess(T result) {
+			this.result = result;
+			notify();
+		}
+
+		@Override
+		public void onError(ErrorInfo error) {
+			this.error = error;
+			notify();
+		}
+
+		public synchronized void waitFor() {
+			try {
+				while(result == null && error == null) {
+					wait();
+				}
+			} catch(InterruptedException e) {}
+		}
+
+		public T result;
+		public ErrorInfo error;
+	}
 }

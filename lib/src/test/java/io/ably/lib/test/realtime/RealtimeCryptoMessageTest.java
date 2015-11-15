@@ -12,6 +12,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.common.Setup.TestVars;
 import io.ably.lib.types.AblyException;
