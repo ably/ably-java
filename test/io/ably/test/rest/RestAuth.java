@@ -9,9 +9,11 @@ import java.io.IOException;
 
 import io.ably.rest.AblyRest;
 import io.ably.rest.Auth.AuthMethod;
+import io.ably.rest.Auth.AuthOptions;
 import io.ably.rest.Auth.TokenCallback;
 import io.ably.rest.Auth.TokenDetails;
 import io.ably.rest.Auth.TokenParams;
+import io.ably.rest.Auth.TokenRequest;
 import io.ably.test.rest.RestSetup.TestVars;
 import io.ably.test.util.TokenServer;
 import io.ably.types.AblyException;
@@ -317,7 +319,64 @@ public class RestAuth {
 			fail("auth_authURL_headers: Unexpected exception instantiating library");
 		}
 	}
+	
+	/**
+	 * Verify Auth#createTokenRequest signature and argument usage (RSA9h)		
+	 */
+	@Test
+	public void auth_createtokenrequest_sig_args() {
+		TestVars testVars = RestSetup.getTestVars();
+		try {
+			ClientOptions opts = testVars.createOptions("myKey:1");
+			opts.clientId = "cid";
+			AblyRest ably = new AblyRest(opts);
+			
+			//test optional params
+			ably.auth.createTokenRequest(null, null);
+			
+			//test param and option overwriting
+			AuthOptions authOpt = new AuthOptions();
+			authOpt.key = "myNewKey:2";
+			
+			TokenParams params = new TokenParams();
+			params.clientId = "cid_2";
+			params.ttl = 64L;
+			
+			TokenRequest tokenRequest = ably.auth.createTokenRequest(authOpt, params);
+			assertEquals(
+					"The keyName in the returned token is different than the one supplied in the AuthOptions argument",
+					"myNewKey", tokenRequest.keyName);
+			assertEquals(
+					"The clientId in the returned token is different than the one supplied in the TokenParams argument",
+					"cid_2", tokenRequest.clientId);
+			assertEquals(
+					"The ttl in the returned token is different than the one supplied in the TokenParams argument",
+					64L, tokenRequest.ttl);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("unexpected exception while verifying Auth#createTokenRequest method's signature");
+		}
+	}
 
+	/**
+	 * Verify that Auth#createTokenRequest generates a 16+ character nonce (RSA9c)
+	 */
+	@Test
+	public void auth_createtokenrequest_nonce() {
+		TestVars testVars = RestSetup.getTestVars();
+		try {
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			AblyRest ably = new AblyRest(opts);
+			TokenRequest tokenRequest = ably.auth.createTokenRequest(null, new TokenParams());
+			if (tokenRequest.nonce.length() < 16) {
+				fail("generated nonce is less than 16 characters");
+			}
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("unexpected exception during auth_createtokenrequest_nonce");
+		}
+	}
+	
 	/**
 	 * Kill token server
 	 */
