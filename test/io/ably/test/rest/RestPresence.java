@@ -78,7 +78,7 @@ public class RestPresence {
 	}
 
 	/**
-	 * Get member data of various datatypes using text protocol
+	 * Get member data of various datatypes using binary protocol
 	 */
 	@Test
 	public void rest_getpresence_binary() {
