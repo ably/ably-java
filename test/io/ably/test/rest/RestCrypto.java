@@ -385,8 +385,8 @@ public class RestCrypto {
 
 	/**
 	 * Connect twice to the service, one with and one without encryption.
-	 * Publish an unencrypted message and verify that the receiving connection
-	 * does not attempt to decrypt it.
+	 * Publish an encrypted message and verify that the receiving connection
+	 * is unable to decrypt it and leaves it as encoded cipher data
 	 */
 	@Test
 	public void crypto_send_encrypted_unhandled() {
