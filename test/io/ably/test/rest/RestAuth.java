@@ -342,7 +342,7 @@ public class RestAuth {
 			params.clientId = "cid_2";
 			params.ttl = 64L;
 			
-			TokenRequest tokenRequest = ably.auth.createTokenRequest(authOpt, params);
+			TokenRequest tokenRequest = ably.auth.createTokenRequest(params, authOpt);
 			assertEquals(
 					"The keyName in the returned token is different than the one supplied in the AuthOptions argument",
 					"myNewKey", tokenRequest.keyName);
