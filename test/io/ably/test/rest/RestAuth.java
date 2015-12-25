@@ -7,15 +7,20 @@ import static org.junit.Assert.fail;
 
 import java.io.IOException;
 
+import io.ably.http.Http;
 import io.ably.rest.AblyRest;
 import io.ably.rest.Auth.AuthMethod;
+import io.ably.rest.Auth.AuthOptions;
 import io.ably.rest.Auth.TokenCallback;
 import io.ably.rest.Auth.TokenDetails;
 import io.ably.rest.Auth.TokenParams;
+import io.ably.rest.Channel;
 import io.ably.test.rest.RestSetup.TestVars;
 import io.ably.test.util.TokenServer;
 import io.ably.types.AblyException;
 import io.ably.types.ClientOptions;
+import io.ably.types.Message;
+import io.ably.types.PaginatedResult;
 import io.ably.types.Param;
 
 import org.json.JSONObject;
@@ -462,6 +467,68 @@ public class RestAuth {
 			fail("auth_authURL_token: Unexpected exception instantiating library");
 		}
 	}
+	
+	/**
+	 * Verify client does not have a clientId data within token details and published messages, 
+	 * when a token initialized with null client id
+	 */
+	@Test
+	public void auth_clientid_null() {
+		try {
+			final TestVars testVars = RestSetup.getTestVars();
+
+			// implement callback, using Ably instance with key
+			TokenCallback authCallback = new TokenCallback() {
+				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					return ably.auth.requestToken(null, params);
+				}
+			};
+			
+			// create Ably instance without clientId
+			ClientOptions options = testVars.createOptions();
+			options.clientId = null;
+			options.authCallback = authCallback;
+			options.useBinaryProtocol = false;
+			AblyRest ably = new AblyRest(options);
+			
+			// Fetch token
+			TokenDetails tokenDetails = ably.auth.requestToken(null, null);
+			assertEquals("Auth#clientId is expected to be null", null, tokenDetails.clientId);
+			
+			// Publish message
+			String messageName = "clientless";
+			String messageData = String.valueOf(System.currentTimeMillis());
+			
+			Channel channel = ably.channels.get("test");
+			channel.publish(messageName, messageData);
+			
+			// Fetch published message
+			PaginatedResult<Message> result = channel.history(null);
+			Message[] messages = result.items();
+			Message publishedMessage = null;
+			Message message;
+			
+			for (int i = 0; i < messages.length; i++) {
+				message = messages[i];
+				
+				if (messageName.equals(message.name) &&
+					messageData.equals(message.data)) {
+					publishedMessage = message;
+					break;
+				}
+			}
+			
+			assertNotNull("Recently published message expected to be accessible", publishedMessage);
+			assertEquals("Message#clientId is expected to be null", null, publishedMessage.clientId);
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("auth_clientid_null: Unexpected exception");
+		}
+	}
+	
+	
 
 	private TokenServer tokenServer;
 }
