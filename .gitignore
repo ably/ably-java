@@ -1,3 +1,4 @@
 TEST*.txt
 build
 junit*.properties
+.idea

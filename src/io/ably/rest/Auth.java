@@ -3,25 +3,19 @@ package io.ably.rest;
 import io.ably.http.Http;
 import io.ably.http.Http.ResponseHandler;
 import io.ably.http.TokenAuth;
-import io.ably.types.AblyException;
-import io.ably.types.Capability;
-import io.ably.types.ErrorInfo;
-import io.ably.types.ClientOptions;
-import io.ably.types.Param;
+import io.ably.types.*;
 import io.ably.util.Base64Coder;
 import io.ably.util.JSONHelpers;
 import io.ably.util.Log;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 /**
  * Token-generation and authentication operations for the Ably API.
@@ -109,6 +103,9 @@ public class Auth {
 		 * @throws AblyException
 		 */
 		public AuthOptions(String key) throws AblyException {
+			if (key == null) {
+				throw new AblyException("key string cannot be null", 40000, 400);
+			}
 			if(key.indexOf(':') > -1)
 				this.key = key;
 			else
