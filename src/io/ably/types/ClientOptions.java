@@ -1,6 +1,7 @@
 package io.ably.types;
 
 import io.ably.rest.Auth.AuthOptions;
+import io.ably.util.Log;
 import io.ably.util.Log.LogHandler;
 
 import java.util.Map;
@@ -21,7 +22,10 @@ public class ClientOptions extends AuthOptions {
 	 * @param key: the key string
 	 * @throws AblyException if the key is not in a valid format
 	 */
-	public ClientOptions(String key) throws AblyException { super(key); }
+	public ClientOptions(String key) throws AblyException {
+		super(key);
+		logLevel = Log.defaultLevel;
+	}
 
 	/**
 	 * The id of the client represented by this instance. The clientId is relevant

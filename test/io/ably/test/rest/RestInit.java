@@ -1,9 +1,5 @@
 package io.ably.test.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import io.ably.rest.AblyRest;
 import io.ably.test.rest.RestSetup.TestVars;
 import io.ably.transport.Defaults;
@@ -11,11 +7,12 @@ import io.ably.types.AblyException;
 import io.ably.types.ClientOptions;
 import io.ably.util.Log;
 import io.ably.util.Log.LogHandler;
+import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
-import org.junit.Test;
+import static org.junit.Assert.*;
 
 public class RestInit {
 
@@ -83,7 +80,7 @@ public class RestInit {
 			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.restHost = "some.other.host";
 			AblyRest ably = new AblyRest(opts);
-			assertEquals("Unexpected host mismatch", Defaults.getHost(opts), opts.restHost);
+			assertEquals("Unexpected host mismatch", Defaults.getHost(opts), ably.options.restHost);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init4: Unexpected exception instantiating library");
@@ -215,13 +212,20 @@ public class RestInit {
 	@Test
 	public void init_default_log_output_stream() {
 		ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-		PrintStream defaultOs = System.out;
+		PrintStream newTarget = new PrintStream(outContent);
+		PrintStream oldTarget = System.out;
+		// Log level was changed in above tests, turning in back to defaults
+		Log.setLevel(Log.defaultLevel);
 		try {
-			System.setOut(new PrintStream(outContent));
+			System.setOut(newTarget);
+
 			Log.w(null, "hello");
-			assertEquals("hello", outContent.toString());
+			String logContent = outContent.toString();
+			System.out.flush();
+			// \n because logs are printed with println() function
+			assertEquals("hello\n", logContent);
 		} finally {
-			System.setOut(defaultOs);
+			System.setOut(oldTarget);
 		}
 	}
 }
