@@ -7,10 +7,8 @@ import static org.junit.Assert.fail;
 
 import java.io.IOException;
 
-import io.ably.http.Http;
 import io.ably.rest.AblyRest;
 import io.ably.rest.Auth.AuthMethod;
-import io.ably.rest.Auth.AuthOptions;
 import io.ably.rest.Auth.TokenCallback;
 import io.ably.rest.Auth.TokenDetails;
 import io.ably.rest.Auth.TokenParams;
