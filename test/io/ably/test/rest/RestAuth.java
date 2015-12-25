@@ -473,7 +473,7 @@ public class RestAuth {
 	 * when a token initialized with null client id
 	 */
 	@Test
-	public void auth_clientid_null() {
+	public void auth_clientid_null_success() {
 		try {
 			final TestVars testVars = RestSetup.getTestVars();
 
@@ -490,7 +490,6 @@ public class RestAuth {
 			ClientOptions options = testVars.createOptions();
 			options.clientId = null;
 			options.authCallback = authCallback;
-			options.useBinaryProtocol = false;
 			AblyRest ably = new AblyRest(options);
 			
 			// Fetch token
@@ -528,6 +527,48 @@ public class RestAuth {
 		}
 	}
 	
+	/**
+	 * Verify publishing message fails, when there is a client id mismatch
+	 */
+	@Test
+	public void auth_clientid_null_mismatch() {
+		try {
+			final TestVars testVars = RestSetup.getTestVars();
+
+			// implement callback, using Ably instance with key
+			TokenCallback authCallback = new TokenCallback() {
+				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					return ably.auth.requestToken(null, params);
+				}
+			};
+			
+			// create Ably instance without clientId
+			ClientOptions options = testVars.createOptions();
+			options.clientId = null;
+			options.authCallback = authCallback;
+			AblyRest ably = new AblyRest(options);
+			
+			// Fetch token
+			TokenDetails tokenDetails = ably.auth.requestToken(null, null);
+			assertEquals("Auth#clientId is expected to be null", null, tokenDetails.clientId);
+			
+			// Publish message
+			Message message = new Message("I", "will", "fail");
+			Channel channel = ably.channels.get("test");
+			
+			try {
+				channel.publish(new Message[]{ message });
+				fail ("auth_clientid_null2: AblyException for mismatched clientId is expected here");
+			} catch (AblyException e) {
+				assertEquals("AblyException for mismatched clientId is expected here", "Malformed message; mismatched clientId", e.getMessage());
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("auth_clientid_null: Unexpected exception");
+		}
+	}
 	
 
 	private TokenServer tokenServer;
