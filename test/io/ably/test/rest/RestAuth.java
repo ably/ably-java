@@ -570,7 +570,10 @@ public class RestAuth {
 		}
 	}
 	
-
+	/**
+	 * Verify published message has null client id,
+	 * when authenticated with wildcard '*' client id
+	 */
 	@Test
 	public void auth_clientid_null_wildcard () {
 		try {
@@ -596,7 +599,7 @@ public class RestAuth {
 			assertEquals("Auth#clientId is expected to be wildcard '*'", "*", tokenDetails.clientId);
 			
 			// Publish message
-			String messageName = "clientless";
+			String messageName = "wildcard";
 			String messageData = String.valueOf(System.currentTimeMillis());
 			
 			Channel channel = ably.channels.get("test");
@@ -626,7 +629,67 @@ public class RestAuth {
 		}
 	}
 	
-	
+	/**
+	 * Verify message with explicit client id successfully gets published,
+	 * when authenticated with wildcard '*' client id
+	 */
+	@Test
+	public void auth_clientid_explicit_wildcard () {
+		try {
+			final TestVars testVars = RestSetup.getTestVars();
+
+			// implement callback, using Ably instance with key
+			TokenCallback authCallback = new TokenCallback() {
+				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					return ably.auth.requestToken(null, params);
+				}
+			};
+			
+			// create Ably instance without clientId
+			ClientOptions options = testVars.createOptions();
+			options.clientId = "*";
+			options.authCallback = authCallback;
+			AblyRest ably = new AblyRest(options);
+			
+			// Fetch token
+			TokenDetails tokenDetails = ably.auth.requestToken(null, null);
+			assertEquals("Auth#clientId is expected to be wildcard '*'", "*", tokenDetails.clientId);
+			
+			// Publish message
+			Message messagePublishee = new Message(
+					"wildcard",	// name
+					"brian that is called brian",	// clientId
+					String.valueOf(System.currentTimeMillis())	// data
+					);
+			
+			Channel channel = ably.channels.get("test");
+			channel.publish(new Message[] { messagePublishee });
+			
+			// Fetch published message
+			PaginatedResult<Message> result = channel.history(null);
+			Message[] messages = result.items();
+			Message messagePublished = null;
+			Message message;
+			
+			for (int i = 0; i < messages.length; i++) {
+				message = messages[i];
+				
+				if (messagePublishee.name.equals(message.name) &&
+					messagePublishee.data.equals(message.data)) {
+					messagePublished = message;
+					break;
+				}
+			}
+			
+			assertNotNull("Recently published message expected to be accessible", messagePublished);
+			assertEquals("Message#clientId is expected to be same with explicitly defined clientId", messagePublishee.clientId, messagePublished.clientId);
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("auth_clientid_explicit_wildcard: Unexpected exception");
+		}
+	}
 	
 
 	private TokenServer tokenServer;
