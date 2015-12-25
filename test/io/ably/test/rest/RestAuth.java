@@ -523,7 +523,7 @@ public class RestAuth {
 			assertEquals("Message#clientId is expected to be null", null, publishedMessage.clientId);
 		} catch (Exception e) {
 			e.printStackTrace();
-			fail("auth_clientid_null: Unexpected exception");
+			fail("auth_clientid_null_success: Unexpected exception");
 		}
 	}
 	
@@ -560,15 +560,16 @@ public class RestAuth {
 			
 			try {
 				channel.publish(new Message[]{ message });
-				fail ("auth_clientid_null2: AblyException for mismatched clientId is expected here");
+				fail ("auth_clientid_null_mismatch: AblyException for mismatched clientId is expected here");
 			} catch (AblyException e) {
 				assertEquals("AblyException for mismatched clientId is expected here", "Malformed message; mismatched clientId", e.getMessage());
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			fail("auth_clientid_null: Unexpected exception");
+			fail("auth_clientid_null_mismatch: Unexpected exception");
 		}
 	}
+	
 	
 
 	private TokenServer tokenServer;
