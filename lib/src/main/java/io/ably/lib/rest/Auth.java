@@ -1,17 +1,5 @@
 package io.ably.lib.rest;
 
-import io.ably.lib.http.Http;
-import io.ably.lib.http.TokenAuth;
-import io.ably.lib.http.Http.ResponseHandler;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.Capability;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.Param;
-import io.ably.lib.util.Base64Coder;
-import io.ably.lib.util.Log;
-import io.ably.lib.util.Serialisation;
-
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,6 +12,18 @@ import javax.crypto.spec.SecretKeySpec;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+
+import io.ably.lib.http.Http;
+import io.ably.lib.http.Http.ResponseHandler;
+import io.ably.lib.http.TokenAuth;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.Capability;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Param;
+import io.ably.lib.util.Base64Coder;
+import io.ably.lib.util.Log;
+import io.ably.lib.util.Serialisation;
 
 /**
  * Token-generation and authentication operations for the Ably API.
