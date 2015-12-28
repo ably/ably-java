@@ -2,3 +2,5 @@ build
 .gradle
 .settings
 /bin/
+.idea
+*.iml

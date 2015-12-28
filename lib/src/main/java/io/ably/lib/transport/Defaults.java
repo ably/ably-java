@@ -33,9 +33,9 @@ public class Defaults {
 		}
 
 		if(ws) {
-			if(host == options.restHost && options.realtimeHost != null)
+			if(host.equals(options.restHost) && options.realtimeHost != null)
 				host = options.realtimeHost;
-			else if(host == Defaults.REST_HOST)
+			else if(host.equals(Defaults.REST_HOST))
 				host = Defaults.REALTIME_HOST;
 		}
 		return host;
