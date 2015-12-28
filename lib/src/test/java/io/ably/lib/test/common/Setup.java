@@ -22,6 +22,7 @@ public class Setup {
 			byte[] jsonBytes = resourceLoader.read(resourceName);
 			return gson.fromJson(new String(jsonBytes), expectedType);
 		} catch(IOException e) {
+			e.printStackTrace();
 			return null;
 		}
 	}
