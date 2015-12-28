@@ -232,7 +232,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 						pending = heartbeatWaiters.remove(this);
 					}
 					if(pending)
-						listener.onError(new ErrorInfo("Timedout waiting for heartbeat response", 50000, 500));
+						listener.onError(new ErrorInfo("Timed out waiting for heartbeat response", 50000, 500));
 					else
 						listener.onSuccess();
 				}
