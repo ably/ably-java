@@ -17,27 +17,6 @@ allprojects {
 }
 
 subprojects {
-  version = '0.0.1-SNAPSHOT'
+  version = '0.8.0-SNAPSHOT'
   description = """Ably java client library"""
-}
-
-project(':lib') {
-
-  task testRealtimeSuite(type: Test) {
-    include '**/RealtimeSuite.class'
-    exclude '**/*Test.class'
-    beforeTest { descriptor ->
-      logger.lifecycle("Running test: " + descriptor)
-    }
-    outputs.upToDateWhen { false }
-  }
-
-  task testRestSuite(type: Test) {
-    include '**/RestSuite.class'
-    exclude '**/*Test.class'
-    beforeTest { descriptor ->
-      logger.lifecycle("Running test: " + descriptor)
-    }
-    outputs.upToDateWhen { false }
-  }
 }
