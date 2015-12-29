@@ -1,11 +1,5 @@
 package io.ably.lib.http;
 
-import io.ably.lib.http.Http.BodyHandler;
-import io.ably.lib.http.Http.ResponseHandler;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.PaginatedResult;
-import io.ably.lib.types.Param;
-
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.Collection;
@@ -14,12 +8,20 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import io.ably.lib.http.Http.BodyHandler;
+import io.ably.lib.http.Http.ResponseHandler;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.AsyncPaginatedResult;
+import io.ably.lib.types.Callback;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Param;
+
 /**
  * An object that encapsulates parameters of a REST query with a paginated response
  *
  * @param <T> the body response type.
  */
-public class PaginatedQuery<T> implements ResponseHandler<PaginatedResult<T>> {
+public class AsyncPaginatedQuery<T> implements ResponseHandler<AsyncPaginatedResult<T>> {
 
 	/**
 	 * Construct a PaginatedQuery
@@ -30,7 +32,7 @@ public class PaginatedQuery<T> implements ResponseHandler<PaginatedResult<T>> {
 	 * @param params. params to pass into the initial query
 	 * @param bodyHandler. handler to parse response bodies for first and all relative queries
 	 */
-	public PaginatedQuery(Http http, String path, Param[] headers, Param[] params, BodyHandler<T> bodyHandler) {
+	public AsyncPaginatedQuery(AsyncHttp http, String path, Param[] headers, Param[] params, BodyHandler<T> bodyHandler) {
 		this.http = http;
 		this.path = path;
 		this.headers = headers;
@@ -40,24 +42,22 @@ public class PaginatedQuery<T> implements ResponseHandler<PaginatedResult<T>> {
 
 	/**
 	 * Get the result of the first query
-	 * @return A PaginatedResult<T> giving the first page of results
-	 * together with any available links to related results pages.
-	 * @throws AblyException
+	 * @param callback. On success returns A PaginatedResult<T> giving the
+	 * first page of results together with any available links to related results pages.
 	 */
-	public PaginatedResult<T> get() throws AblyException {
-		return http.get(path, headers, params, this);
+	public void get(Callback<AsyncPaginatedResult<T>> callback) {
+		http.get(path, headers, params, this, callback);
 	}
 
 	/**
 	 * A private class encapsulating the result of a single page response
 	 *
 	 */
-	public class ResultPage implements PaginatedResult<T> {
+	public class ResultPage implements AsyncPaginatedResult<T> {
 		private T[] contents;
 
-		private ResultPage(T[] contents, Collection<String> linkHeaders) throws AblyException {
+		private ResultPage(T[] contents, Collection<String> linkHeaders) {
 			this.contents = contents;
-
 			if(linkHeaders != null) {
 				HashMap<String, String> links = parseLinks(linkHeaders);
 				relFirst = links.get("first");
@@ -70,34 +70,44 @@ public class PaginatedQuery<T> implements ResponseHandler<PaginatedResult<T>> {
 		public T[] items() { return contents; }
 
 		@Override
-		public PaginatedResult<T> first() throws AblyException { return getRel(relFirst); }
+		public void first(Callback<AsyncPaginatedResult<T>> callback) {
+			getRel(relFirst, callback);
+		}
 
 		@Override
-		public PaginatedResult<T> current() throws AblyException { return getRel(relCurrent); }
+		public void current(Callback<AsyncPaginatedResult<T>> callback) {
+			getRel(relCurrent, callback);
+		}
 
 		@Override
-		public PaginatedResult<T> next() throws AblyException { return getRel(relNext); }
+		public void next(Callback<AsyncPaginatedResult<T>> callback) {
+			getRel(relNext, callback);
+		}
 
-		private PaginatedResult<T> getRel(String linkUrl) throws AblyException {
-			if(linkUrl == null) return null;
+		private void getRel(String linkUrl, Callback<AsyncPaginatedResult<T>> callback) {
+			if(linkUrl == null) {
+				callback.onSuccess(null);
+				return;
+			}
+
 			/* we're expecting the format to be ./path-component?name=value&name=value... */
 			Matcher urlMatch = urlPattern.matcher(linkUrl);
-			if(urlMatch.matches()) {
-				String[] paramSpecs = urlMatch.group(2).split("&");
-				Param[] params = new Param[paramSpecs.length];
-				try {
-					for(int i = 0; i < paramSpecs.length; i++) {
-						String[] split = paramSpecs[i].split("=");
-						params[i] = new Param(split[0], URLDecoder.decode(split[1], "UTF-8"));
-					}
-				} catch(UnsupportedEncodingException uee) {}
-				return http.get(path, headers, params, PaginatedQuery.this);
+			if(!urlMatch.matches()) {
+				callback.onError(new ErrorInfo("Unexpected link URL format", 500, 50000));
+				return;
 			}
-			throw new AblyException("Unexpected link URL format", 500, 50000);
+
+			String[] paramSpecs = urlMatch.group(2).split("&");
+			Param[] params = new Param[paramSpecs.length];
+			try {
+				for(int i = 0; i < paramSpecs.length; i++) {
+					String[] split = paramSpecs[i].split("=");
+					params[i] = new Param(split[0], URLDecoder.decode(split[1], "UTF-8"));
+				}
+			} catch(UnsupportedEncodingException uee) {}
+			http.get(path, headers, params, AsyncPaginatedQuery.this, callback);
 		}
 	
-		private String relFirst, relCurrent, relNext;
-
 		@Override
 		public boolean hasFirst() { return relFirst != null; }
 
@@ -106,6 +116,8 @@ public class PaginatedQuery<T> implements ResponseHandler<PaginatedResult<T>> {
 
 		@Override
 		public boolean hasNext() { return relNext != null; }
+
+		private String relFirst, relCurrent, relNext;
 	}
 
 	@Override
@@ -135,7 +147,7 @@ public class PaginatedQuery<T> implements ResponseHandler<PaginatedResult<T>> {
 		return result;
 	}
 
-	private Http http;
+	private AsyncHttp http;
 	private String path;
 	private Param[] headers;
 	private Param[] params;
