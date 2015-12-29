@@ -100,7 +100,7 @@ public class RestInitTest {
 			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.restHost = "some.other.host";
 			AblyRest ably = new AblyRest(opts);
-			assertEquals("Unexpected host mismatch", Defaults.getHost(opts), opts.restHost);
+			assertEquals("Unexpected host mismatch", Defaults.getHost(opts), ably.options.restHost);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init4: Unexpected exception instantiating library");
@@ -217,13 +217,20 @@ public class RestInitTest {
 	@Test
 	public void init_default_log_output_stream() {
 		ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-		PrintStream defaultOs = System.out;
+		PrintStream newTarget = new PrintStream(outContent);
+		PrintStream oldTarget = System.out;
+		/* Log level was changed in above tests, turning in back to defaults */
+		Log.setLevel(Log.defaultLevel);
 		try {
-			System.setOut(new PrintStream(outContent));
+			System.setOut(newTarget);
+
 			Log.w(null, "hello");
-			assertEquals("hello", outContent.toString());
+			String logContent = outContent.toString();
+			System.out.flush();
+			/* \n because logs are printed with println() function */
+			assertEquals("hello\n", logContent);
 		} finally {
-			System.setOut(defaultOs);
+			System.setOut(oldTarget);
 		}
 	}
 }
