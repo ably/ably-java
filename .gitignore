@@ -4,3 +4,6 @@ build
 /bin/
 .idea
 *.iml
+.classpath
+.project
+
