@@ -131,9 +131,9 @@ public class AsyncHttp extends ThreadPoolExecutor {
 
 	private final Http http;
 
-	private static final int DEFAULT_POOL_SIZE = 8;
+	private static final int DEFAULT_POOL_SIZE = 0;
 	private static final int MAX_POOL_SIZE = 64;
-	private static final long KEEP_ALIVE_TIME = 20000L;
+	private static final long KEEP_ALIVE_TIME = 2000L;
 	private static final long SHUTDOWN_TIME = 5000L;
 	private static final String TAG = AsyncHttp.class.getName();
 }
