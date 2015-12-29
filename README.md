@@ -14,42 +14,34 @@ Please refer to the [documentation](https://www.ably.io/documentation).
 
 ## Dependencies
 
-JRE 6 or later is required.
-All dependencies are included as libraries in `libs`.
+JRE 7 or later is required.
 Note that the [Java Unlimited JCE extensions](http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html)
 must be installed in the runtime environment.
 
 ## Building
 
-Build a jar file for ably-rest with ant:
+The library consists of a generic java library (in `lib/`) and a separate Android test project (in `android-test/`).
+The base library jar is built with:
 
-    ant clean && ant
+    gradle lib:jar
 
-Alternatively, Eclipse project and classpath files are included; import directly into Eclipse
-(Indigo or later).
+There is also a task to build a fat jar containing the dependencies:
+
+    gradle fullJar
 
 ## Tests
 
-Tests are based on JUnit, and a single JUnit suite (at `io.ably.test.RestSuite`)
-covers all tests.
+Tests are based on JUnit, and there are separate suites for the REST and Realtime libraries, with gradle tasks:
 
-Tests can be run from Eclipse, or from the command-line by:
+    gradle testRestSuite
 
-    java -classpath "./out/classes:./libs/*:./libs/test/*" io.ably.test.RestSuite
+    gradle testRealtimeSuite
 
-There is also an ant target to run the unit tests:
+To run tests against a specific host, specify in the environment:
 
-    ant test
+    export ABLY_ENV=staging; gradle testRealtimeSuite
 
-To run tests against a specific host, specify this as a property on the ant commandline:
-
-    ant test -Dably.host=custom.host.com
-
-Tests will run against staging by default.
-
-Also, to force the tests to run without TLS, do
-
-    ant test -Dably.tls=false
+Tests will run against sandbox by default.
 
 ## Support, feedback and troubleshooting
 
