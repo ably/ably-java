@@ -103,7 +103,6 @@ public class RestTimeTest {
 				long actualTime = System.currentTimeMillis();
 				assertTrue(Math.abs(actualTime - callback.result) < 2000);
 			}
-			ably.dispose();
 		} catch(AblyException e) {
 			fail("time_async: Unexpected exception instancing Ably REST library");
 		}

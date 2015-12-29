@@ -50,15 +50,6 @@ public class RestChannelPublishTest {
 		ably_binary = new AblyRest(opts_binary);
 	}
 
-	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
-		if(ably_text != null)
-			ably_text.dispose();
-
-		if(ably_binary != null)
-			ably_binary.dispose();
-	}
-
 	/**
 	 * Publish events with data of various datatypes using text protocol
 	 */

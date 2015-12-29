@@ -1,28 +1,24 @@
 package io.ably.lib.rest;
 
+import java.util.Collection;
+
 import io.ably.lib.http.AsyncHttp;
 import io.ably.lib.http.AsyncPaginatedQuery;
 import io.ably.lib.http.Http;
+import io.ably.lib.http.Http.ResponseHandler;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
-import io.ably.lib.http.Http.BodyHandler;
-import io.ably.lib.http.Http.ResponseHandler;
-import io.ably.lib.rest.Channel;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.AsyncPaginatedResult;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.Message;
-import io.ably.lib.types.MessageSerializer;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.Stats;
 import io.ably.lib.types.StatsReader;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
-
-import java.util.Collection;
 
 /**
  * AblyRest
@@ -75,10 +71,6 @@ public class AblyRest {
 		asyncHttp = new AsyncHttp(http);
 		auth = new Auth(this, options);
 		channels = new Channels();
-	}
-
-	public void dispose() {
-		asyncHttp.dispose();
 	}
 
 	/**
