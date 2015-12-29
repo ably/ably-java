@@ -24,21 +24,27 @@ public class Log {
 		public void println(int severity, String tag, String msg, Throwable tr);
 	}
 
-	private static class PrintStreamHandler implements LogHandler {
-		private final PrintStream mPrintStream;
-		PrintStreamHandler(final PrintStream printStream) {
-			mPrintStream = printStream;
-		}
+	/**
+	 * Default log handler class that sends output to System.out.
+	 * This is public as a convenience to allow simple subclasses
+	 * to output to other PrintStrems.
+	 *
+	 */
+	public static class DefaultHandler implements LogHandler {
 		@Override
 		public void println(int severity, String tag, String msg, Throwable tr) {
-			mPrintStream.print("(" + severities[severity] + "): ");
+			println(System.out, severity, tag, msg, tr);
+		}
+
+		protected void println(PrintStream stream, int severity, String tag, String msg, Throwable tr) {
+			stream.print("(" + severities[severity] + "): ");
 			if(tag != null && tag.length() != 0)
-				mPrintStream.print(tag + ": ");
+				stream.print(tag + ": ");
 			if(msg != null && msg.length() != 0)
-				mPrintStream.print(msg);
-			mPrintStream.println();
+				stream.print(msg);
+			stream.println();
 			if(tr != null) {
-				tr.printStackTrace(mPrintStream);
+				tr.printStackTrace(stream);
 			}
 		}
 	}
@@ -129,11 +135,11 @@ public class Log {
 	}
 
     public static void setLevel(int level) { Log.level = (level != 0) ? level : defaultLevel; }
-    public static int defaultLevel = WARN;
+    public static final int defaultLevel = WARN;
     public static int level = defaultLevel;
 
     public static void setHandler(LogHandler handler) { Log.handler = (handler != null) ? handler : defaultHandler; }
-    public static LogHandler defaultHandler = new PrintStreamHandler(System.out);
+    public static final LogHandler defaultHandler = new DefaultHandler();
     public static LogHandler handler = defaultHandler;
 
 	private static String[] severities = new String[]{"", "", "VERBOSE", "DEBUG", "INFO", "WARN", "ERROR", "ASSERT"};
