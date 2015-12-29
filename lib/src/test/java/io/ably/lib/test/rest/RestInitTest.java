@@ -225,10 +225,10 @@ public class RestInitTest {
 			System.setOut(newTarget);
 
 			Log.w(null, "hello");
-			String logContent = outContent.toString();
 			System.out.flush();
+			String logContent = outContent.toString();
 			/* \n because logs are printed with println() function */
-			assertEquals("hello\n", logContent);
+			assertEquals("(WARN): hello\n", logContent);
 		} finally {
 			System.setOut(oldTarget);
 		}
