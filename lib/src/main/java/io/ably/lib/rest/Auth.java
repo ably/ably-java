@@ -111,6 +111,9 @@ public class Auth {
 		 * @throws AblyException
 		 */
 		public AuthOptions(String key) throws AblyException {
+			if (key == null) {
+				throw new AblyException("key string cannot be null", 40000, 400);
+			}
 			if(key.indexOf(':') > -1)
 				this.key = key;
 			else

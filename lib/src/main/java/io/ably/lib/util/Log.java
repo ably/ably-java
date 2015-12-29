@@ -26,7 +26,7 @@ public class Log {
 
 	private static class PrintStreamHandler implements LogHandler {
 		private final PrintStream mPrintStream;
-		PrintStreamHandler(PrintStream printStream) {
+		PrintStreamHandler(final PrintStream printStream) {
 			mPrintStream = printStream;
 		}
 		@Override
@@ -129,7 +129,7 @@ public class Log {
 	}
 
     public static void setLevel(int level) { Log.level = (level != 0) ? level : defaultLevel; }
-    public static int defaultLevel = ERROR;
+    public static int defaultLevel = WARN;
     public static int level = defaultLevel;
 
     public static void setHandler(LogHandler handler) { Log.handler = (handler != null) ? handler : defaultHandler; }
