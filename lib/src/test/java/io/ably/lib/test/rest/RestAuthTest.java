@@ -2,7 +2,9 @@ package io.ably.lib.test.rest;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 
@@ -27,6 +29,9 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class RestAuthTest {
+
+	@Rule
+	public ExpectedException thrown = ExpectedException.none();
 
 	/**
 	 * Init token server
@@ -523,6 +528,54 @@ public class RestAuthTest {
 			e.printStackTrace();
 			fail("auth_clientid_null_success: Unexpected exception");
 		}
+	}
+
+	/**
+	 * Verify message gets rejected when there is a client id mismatch
+	 * between token details and message<br>
+	 * <br>
+	 * Spec: RSA8f2
+	 */
+	@Test
+	public void auth_clientid_null_mismatch() throws AblyException {
+		AblyRest ably = null;
+
+		try {
+			final TestVars testVars = Setup.getTestVars();
+
+			// implement callback, using Ably instance with key
+			TokenCallback authCallback = new TokenCallback() {
+				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					return ably.auth.requestToken(null, params);
+				}
+			};
+
+			// create Ably instance without clientId
+			ClientOptions options = testVars.createOptions();
+			options.clientId = null;
+			options.authCallback = authCallback;
+			ably = new AblyRest(options);
+
+			// Fetch token
+			TokenDetails tokenDetails = ably.auth.requestToken(null, null);
+			assertEquals("Auth#clientId is expected to be null", null, tokenDetails.clientId);
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("auth_clientid_null_mismatch: Unexpected exception");
+		}
+
+		// Publish a message with mismatching client id
+		Message message = new Message(
+				"I", // name
+				"will", // mismatching client id
+				"fail"); // data
+		Channel channel = ably.channels.get("test");
+
+		thrown.expect(AblyException.class);
+		thrown.expectMessage("Malformed message; mismatched clientId");
+		channel.publish(new Message[]{ message });
 	}
 
 
