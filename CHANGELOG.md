@@ -1,8 +1,48 @@
 # Change Log
 
-## [v0.8.0](https://github.com/ably/ably-java/tree/v0.8.0) (2015-05-07)
+## [v0.8.1](https://github.com/ably/ably-java/tree/v0.8.1)
 
-[Initial implementation of client library specification 0.8](http://docs.ably.io/client-lib-development-guide/features/)
+[Full Changelog](https://github.com/ably/ably-java/compare/v0.8.0...v0.8.1)
+
+**Implemented enhancements:**
+
+- Travis.CI support [\#4](https://github.com/ably/ably-java/issues/4)
+
+**Fixed bugs:**
+
+- Gradle build should be able to build library without Android SDK installed [\#46](https://github.com/ably/ably-java/issues/46)
+
+- Token authentication "Request mac doesn't match" [\#40](https://github.com/ably/ably-java/issues/40)
+
+- Re-enable temporarily disabled test [\#31](https://github.com/ably/ably-java/issues/31)
+
+- Travis.CI support [\#4](https://github.com/ably/ably-java/issues/4)
+
+**Closed issues:**
+
+- Re-enable temporarily disabled test [\#32](https://github.com/ably/ably-java/issues/32)
+
+- Additional encoding / decoding tests [\#1](https://github.com/ably/ably-java/issues/1)
+
+**Merged pull requests:**
+
+- Async http [\#59](https://github.com/ably/ably-java/pull/59) ([paddybyers](https://github.com/paddybyers))
+
+- changes to run provided RestInit test case [\#58](https://github.com/ably/ably-java/pull/58) ([gorodechnyj](https://github.com/gorodechnyj))
+
+- Allow connection manager thread to exit when closed or failed, and re… [\#50](https://github.com/ably/ably-java/pull/50) ([paddybyers](https://github.com/paddybyers))
+
+- Add script for running tests in CI [\#49](https://github.com/ably/ably-java/pull/49) ([lmars](https://github.com/lmars))
+
+- Publish implicit attach [\#48](https://github.com/ably/ably-java/pull/48) ([paddybyers](https://github.com/paddybyers))
+
+- Make inclusion of android-test project conditional on whether or not … [\#47](https://github.com/ably/ably-java/pull/47) ([paddybyers](https://github.com/paddybyers))
+
+- RSC1 and RSC2 - initialisation and default logging behaviour [\#43](https://github.com/ably/ably-java/pull/43) ([iliyakostadinov](https://github.com/iliyakostadinov))
+
+- Key length case and ably common [\#35](https://github.com/ably/ably-java/pull/35) ([mattheworiordan](https://github.com/mattheworiordan))
+
+## [v0.8.0](https://github.com/ably/ably-java/tree/v0.8.0) (2015-05-07)
 
 **Implemented enhancements:**
 
