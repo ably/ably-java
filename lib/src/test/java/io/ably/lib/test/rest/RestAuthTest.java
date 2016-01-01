@@ -1,9 +1,8 @@
 package io.ably.lib.test.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
 
@@ -12,16 +11,20 @@ import io.ably.lib.rest.Auth.AuthMethod;
 import io.ably.lib.rest.Auth.TokenCallback;
 import io.ably.lib.rest.Auth.TokenDetails;
 import io.ably.lib.rest.Auth.TokenParams;
+import io.ably.lib.rest.Channel;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.common.Setup.TestVars;
 import io.ably.lib.test.util.TokenServer;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.Message;
+import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class RestAuthTest {
 
@@ -460,6 +463,68 @@ public class RestAuthTest {
 			fail("auth_authURL_token: Unexpected exception instantiating library");
 		}
 	}
+
+	/**
+	 * Verify token details has null client id after authenticating with null client id,
+	 * the message gets published, and published message also does not contain a client id.<br>
+	 * <br>
+	 * Spec: RSA8f1
+	 */
+	@Test
+	public void auth_clientid_null_success() {
+		try {
+			final TestVars testVars = Setup.getTestVars();
+
+			// implement callback, using Ably instance with key
+			TokenCallback authCallback = new TokenCallback() {
+				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					return ably.auth.requestToken(null, params);
+				}
+			};
+
+			// create Ably instance without clientId
+			ClientOptions options = testVars.createOptions();
+			options.clientId = null;
+			options.authCallback = authCallback;
+			AblyRest ably = new AblyRest(options);
+
+			// Fetch token
+			TokenDetails tokenDetails = ably.auth.requestToken(null, null);
+			assertEquals("Auth#clientId is expected to be null", null, tokenDetails.clientId);
+
+			// Publish message
+			String messageName = "clientless";
+			String messageData = String.valueOf(System.currentTimeMillis());
+
+			Channel channel = ably.channels.get("test");
+			channel.publish(messageName, messageData);
+
+			// Fetch published message
+			PaginatedResult<Message> result = channel.history(null);
+			Message[] messages = result.items();
+			Message publishedMessage = null;
+			Message message;
+
+			for(int i = 0; i < messages.length; i++) {
+				message = messages[i];
+
+				if(messageName.equals(message.name) &&
+					messageData.equals(message.data)) {
+					publishedMessage = message;
+					break;
+				}
+			}
+
+			assertNotNull("Recently published message expected to be accessible", publishedMessage);
+			assertEquals("Message#clientId is expected to be null", null, publishedMessage.clientId);
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("auth_clientid_null_success: Unexpected exception");
+		}
+	}
+
 
 	private static TokenServer tokenServer;
 }
