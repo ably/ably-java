@@ -61,9 +61,9 @@ task createPom << {
 			}
 
 			scm {
-				url 'scm:git:git@github.com:ably/ably-java'
-				connection 'scm:git:git@github.com:ably/ably-java'
-				developerConnection 'scm:git:git@github.com:ably/ably-java</developerConnection'
+				url 'scm:git:https://github.com/ably/ably-java'
+				connection 'scm:git:https://github.com/ably/ably-java'
+				developerConnection 'scm:git:git@github.com:ably/ably-java'
 			}
 
 			organization {
