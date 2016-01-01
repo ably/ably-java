@@ -10,6 +10,8 @@ Visit https://www.ably.io/documentation for a complete API reference and more ex
 
 ## Using the Realtime and REST API
 
+The Realtime library for Java is downloadable as a JAR at our [Github releases page](https://github.com/ably/ably-java/releases). You can either download the full JAR which includes all dependencies, or just the library but it will be your responsibility to ensure alld dependencies are met.
+
 Please refer to the [documentation](https://www.ably.io/documentation).
 
 ## Dependencies
@@ -42,6 +44,16 @@ To run tests against a specific host, specify in the environment:
     export ABLY_ENV=staging; gradle testRealtimeSuite
 
 Tests will run against sandbox by default.
+
+## Release notes
+
+This library uses [semantic versioning](http://semver.org/). For each release, the following needs to be done:
+
+* Replace all references of the current version number with the new version number (check [pom.xml](./pom.xml) and [build.gradle](.build.gradle)) and commit the changes
+* Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to automate the update of the [CHANGELOG](./CHANGELOG.md). Once the CHANGELOG has completed, manually change the `Unreleased` heading and link with the current version number such as `v0.8.1`. Also ensure that the `Full Changelog` link points to the new version tag instead of the `HEAD`. Commit this change.
+* Add a tag and push to origin such as `git tag v0.8.1 && git push origin v0.8.1`
+* Run `gradle lib:jar && gradle fullJar` to build the JARs for this release
+* Visit [https://github.com/ably/ably-java/tags](https://github.com/ably/ably-java/tags) and `Add release notes` for the release, then attach the generated JARs in the folder `lib/build/libs`
 
 ## Support, feedback and troubleshooting
 
