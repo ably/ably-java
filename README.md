@@ -162,6 +162,59 @@ channel.presence.enter("john.doe", new CompletionListener() {
 PaginatedResult<PresenceMessage> result = channel.presence.history(null);
 ```
 
+## Using the REST API ##
+
+### Introduction ###
+
+All examples assume a client and/or channel has been created as follows:
+
+```java
+AblyRest ably = new AblyRest("xxxxx");
+Channel channel = ably.channels.get("test");
+```
+
+### Publishing a message to a channel ###
+
+```java
+channel.publish("myEvent", "Hello!");
+```
+
+### Querying the history ###
+
+```java
+PaginatedResult<Message> result = channel.history(null);
+```
+
+### Presence on a channel ###
+
+```java
+PaginatedResult<PresenceMessage> result = channel.presence.get(null);
+```
+
+### Querying the presence history ###
+
+```java
+PaginatedResult<PresenceMessage> result = channel.presence.history(null);
+```
+
+### Generate a Token and Token Request ###
+
+```java
+TokenDetails tokenDetails = ably.auth.requestToken(null, null);
+```
+
+### Fetching your application's stats ###
+
+```java
+PaginatedResult<Stats> stats = ably.stats(null);
+```
+
+### Fetching the Ably service time ###
+
+```java
+long serviceTime = ably.time();
+```
+
 ## Release notes
 
 This library uses [semantic versioning](http://semver.org/). For each release, the following needs to be done:
