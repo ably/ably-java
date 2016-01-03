@@ -20,7 +20,7 @@ JRE 7 or later is required.
 Note that the [Java Unlimited JCE extensions](http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html)
 must be installed in the runtime environment.
 
-## Building
+## Building ##
 
 The library consists of a generic java library (in `lib/`) and a separate Android test project (in `android-test/`).
 The base library jar is built with:
@@ -44,6 +44,18 @@ To run tests against a specific host, specify in the environment:
     export ABLY_ENV=staging; gradle testRealtimeSuite
 
 Tests will run against sandbox by default.
+
+## Installation ##
+
+Download [the latest JAR](https://github.com/ably/ably-java/releases) or generate a new one using [Building](#building) instructions.
+
+Copy JAR file to your Gradle-based project.
+
+Declare JAR file as a dependency in your module's build script,
+
+```groovy
+compile fileTree(dir: 'path/to/your/JARfolder', include: ['*.jar'])
+```
 
 ## Release notes
 
