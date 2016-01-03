@@ -57,6 +57,111 @@ Declare JAR file as a dependency in your module's build script,
 compile fileTree(dir: 'path/to/your/JARfolder', include: ['*.jar'])
 ```
 
+## Using the Realtime API ##
+
+### Introduction ###
+
+All examples assume a client has been created as follows:
+
+```java
+AblyRealtime ably = new AblyRealtime("xxx");
+```
+
+### Connection ###
+
+AblyRealtime will attempt to connect automatically once new instance is created. Also, it offers API for listening connection state changes.
+
+```java
+ably.connection.on(new ConnectionStateListener() {
+	@Override
+	public void onConnectionStateChanged(ConnectionStateChange state) {
+		switch (state.current) {
+			case connected: {
+				// Successful connection
+				break;
+			}
+			case failed: {
+				// Failed connection
+				break;
+			}
+		}
+	}
+});
+```
+
+### Subscribing to a channel ###
+
+Given:
+
+```java
+Channel channel = ably.channels.get("test");
+```
+
+Subscribe to all events:
+
+```java
+channel.subscribe(new MessageListener() {
+	@Override
+	public void onMessage(Message[] messages) {
+	}
+});
+```
+
+or subscribe to certain events:
+
+```java
+String[] events = new String[] {"event1", "event2"};
+channel.subscribe(events, new MessageListener() {
+	@Override
+	public void onMessage(Message[] messages) {
+	}
+});
+```
+
+### Publishing to a channel ###
+
+```java
+channel.publish("greeting", "Hello World!", new CompletionListener() {
+	@Override
+	public void onSuccess() {
+		// Successfully published message
+	}
+
+	@Override
+	public void onError(ErrorInfo reason) {
+		// Failed to publish message
+	}
+});
+```
+
+### Querying the history ###
+
+```java
+PaginatedResult<Message> result = channel.history(null);
+```
+
+### Presence on a channel ###
+
+```java
+channel.presence.enter("john.doe", new CompletionListener() {
+	@Override
+	public void onSuccess() {
+		// Successfully entered to the channel
+	}
+
+	@Override
+	public void onError(ErrorInfo reason) {
+		// Failed to enter channel
+	}
+});
+```
+
+### Querying the presence history ###
+
+```java
+PaginatedResult<PresenceMessage> result = channel.presence.history(null);
+```
+
 ## Release notes
 
 This library uses [semantic versioning](http://semver.org/). For each release, the following needs to be done:
