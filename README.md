@@ -47,14 +47,16 @@ Tests will run against sandbox by default.
 
 ## Installation ##
 
-Download [the latest JAR](https://github.com/ably/ably-java/releases) or generate a new one using [Building](#building) instructions.
-
-Copy JAR file to your Gradle-based project.
-
-Declare JAR file as a dependency in your module's build script,
+Download [the latest JAR](https://github.com/ably/ably-java/releases) or grab via Gradle:
 
 ```groovy
-compile fileTree(dir: 'path/to/your/JARfolder', include: ['*.jar'])
+compile 'io.ably:ably-java:0.8.1'
+```
+
+and add following repo for a sub-dependency,
+
+```groovy
+maven { url "https://raw.github.com/paddybyers/Java-WebSocket/mvn-repo/" }
 ```
 
 ## Using the Realtime API ##
