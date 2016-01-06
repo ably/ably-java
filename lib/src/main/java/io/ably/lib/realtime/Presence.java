@@ -283,7 +283,7 @@ public class Presence {
 
 	/**
 	 * Obtain recent history for this channel using the REST API.
-	 * The history provided relqtes to all clients of this application,
+	 * The history provided relates to all clients of this application,
 	 * not just this instance.
 	 * @param params: the request params. See the Ably REST API
 	 * documentation for more details.
