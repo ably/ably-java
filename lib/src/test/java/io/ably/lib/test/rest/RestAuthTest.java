@@ -480,7 +480,7 @@ public class RestAuthTest {
 		try {
 			final TestVars testVars = Setup.getTestVars();
 
-			// implement callback, using Ably instance with key
+			/* implement callback, using Ably instance with key */
 			TokenCallback authCallback = new TokenCallback() {
 				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
 				@Override
@@ -489,24 +489,24 @@ public class RestAuthTest {
 				}
 			};
 
-			// create Ably instance without clientId
+			/* create Ably instance without clientId */
 			ClientOptions options = testVars.createOptions();
 			options.clientId = null;
 			options.authCallback = authCallback;
 			AblyRest ably = new AblyRest(options);
 
-			// Fetch token
+			/* Fetch token */
 			TokenDetails tokenDetails = ably.auth.requestToken(null, null);
 			assertEquals("Auth#clientId is expected to be null", null, tokenDetails.clientId);
 
-			// Publish message
+			/* Publish message */
 			String messageName = "clientless";
 			String messageData = String.valueOf(System.currentTimeMillis());
 
 			Channel channel = ably.channels.get("test");
 			channel.publish(messageName, messageData);
 
-			// Fetch published message
+			/* Fetch published message */
 			PaginatedResult<Message> result = channel.history(null);
 			Message[] messages = result.items();
 			Message publishedMessage = null;
@@ -543,7 +543,7 @@ public class RestAuthTest {
 		try {
 			final TestVars testVars = Setup.getTestVars();
 
-			// implement callback, using Ably instance with key
+			/* implement callback, using Ably instance with key */
 			TokenCallback authCallback = new TokenCallback() {
 				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
 				@Override
@@ -552,13 +552,13 @@ public class RestAuthTest {
 				}
 			};
 
-			// create Ably instance without clientId
+			/* create Ably instance without clientId */
 			ClientOptions options = testVars.createOptions();
 			options.clientId = null;
 			options.authCallback = authCallback;
 			ably = new AblyRest(options);
 
-			// Fetch token
+			/* Fetch token */
 			TokenDetails tokenDetails = ably.auth.requestToken(null, null);
 			assertEquals("Auth#clientId is expected to be null", null, tokenDetails.clientId);
 		} catch (Exception e) {
@@ -566,11 +566,11 @@ public class RestAuthTest {
 			fail("auth_clientid_null_mismatch: Unexpected exception");
 		}
 
-		// Publish a message with mismatching client id
+		/* Publish a message with mismatching client id */
 		Message message = new Message(
-				"I", // name
-				"will", // mismatching client id
-				"fail"); // data
+				"I", /* name */
+				"will", /* mismatching client id */
+				"fail"); /* data */
 		Channel channel = ably.channels.get("test");
 
 		thrown.expect(AblyException.class);
@@ -589,7 +589,7 @@ public class RestAuthTest {
 		try {
 			final TestVars testVars = Setup.getTestVars();
 
-			// implement callback, using Ably instance with key
+			/* implement callback, using Ably instance with key */
 			TokenCallback authCallback = new TokenCallback() {
 				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
 				@Override
@@ -598,24 +598,24 @@ public class RestAuthTest {
 				}
 			};
 
-			// create Ably instance with wildcard clientId
+			/* create Ably instance with wildcard clientId */
 			ClientOptions options = testVars.createOptions();
 			options.clientId = "*";
 			options.authCallback = authCallback;
 			AblyRest ably = new AblyRest(options);
 
-			// Fetch token
+			/* Fetch token */
 			TokenDetails tokenDetails = ably.auth.requestToken(null, null);
 			assertEquals("Auth#clientId is expected to be wildcard '*'", "*", tokenDetails.clientId);
 
-			// Publish message
+			/* Publish message */
 			String messageName = "wildcard";
 			String messageData = String.valueOf(System.currentTimeMillis());
 
 			Channel channel = ably.channels.get("test");
 			channel.publish(messageName, messageData);
 
-			// Fetch published message
+			/* Fetch published message */
 			PaginatedResult<Message> result = channel.history(null);
 			Message[] messages = result.items();
 			Message publishedMessage = null;
@@ -650,7 +650,7 @@ public class RestAuthTest {
 		try {
 			final TestVars testVars = Setup.getTestVars();
 
-			// implement callback, using Ably instance with key
+			/* implement callback, using Ably instance with key */
 			TokenCallback authCallback = new TokenCallback() {
 				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
 				@Override
@@ -659,17 +659,17 @@ public class RestAuthTest {
 				}
 			};
 
-			// create Ably instance with wildcard clientId
+			/* create Ably instance with wildcard clientId */
 			ClientOptions options = testVars.createOptions();
 			options.clientId = "*";
 			options.authCallback = authCallback;
 			AblyRest ably = new AblyRest(options);
 
-			// Fetch token
+			/* Fetch token */
 			TokenDetails tokenDetails = ably.auth.requestToken(null, null);
 			assertEquals("Auth#clientId is expected to be wildcard '*'", "*", tokenDetails.clientId);
 
-			// Publish a message
+			/* Publish a message */
 			Message messagePublishee = new Message(
 					"wildcard",	// name
 					"brian that is called brian",	// clientId
@@ -679,7 +679,7 @@ public class RestAuthTest {
 			Channel channel = ably.channels.get("test");
 			channel.publish(new Message[] { messagePublishee });
 
-			// Fetch published message
+			/* Fetch published message */
 			PaginatedResult<Message> result = channel.history(null);
 			Message[] messages = result.items();
 			Message messagePublished = null;
