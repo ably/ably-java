@@ -362,6 +362,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		synchronized(this) {
 			if(mgrThread == null) {
 				mgrThread = new Thread(this);
+				mgrThread.setDaemon(true);
 				state = states.get(ConnectionState.initialized);
 				creating = true;
 			}
