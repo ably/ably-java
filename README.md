@@ -66,7 +66,7 @@ maven { url "https://raw.github.com/paddybyers/Java-WebSocket/mvn-repo/" }
 All examples assume a client has been created as follows:
 
 ```java
-AblyRealtime ably = new AblyRealtime("xxx");
+AblyRealtime ably = new AblyRealtime("xxxxx");
 ```
 
 ### Connection ###
@@ -77,6 +77,8 @@ AblyRealtime will attempt to connect automatically once new instance is created.
 ably.connection.on(new ConnectionStateListener() {
 	@Override
 	public void onConnectionStateChanged(ConnectionStateChange state) {
+    System.out.println("New state is " + change.current.name());
+
 		switch (state.current) {
 			case connected: {
 				// Successful connection
@@ -105,6 +107,9 @@ Subscribe to all events:
 channel.subscribe(new MessageListener() {
 	@Override
 	public void onMessage(Message[] messages) {
+    for(Message message : messages) {
+			System.out.println("Received `" + message.name + "` message with data: " + message.data);
+		}
 	}
 });
 ```
@@ -116,6 +121,7 @@ String[] events = new String[] {"event1", "event2"};
 channel.subscribe(events, new MessageListener() {
 	@Override
 	public void onMessage(Message[] messages) {
+    System.out.println("Received `" + messages[0].name + "` message with data: " + message[0].data);
 	}
 });
 ```
@@ -126,12 +132,12 @@ channel.subscribe(events, new MessageListener() {
 channel.publish("greeting", "Hello World!", new CompletionListener() {
 	@Override
 	public void onSuccess() {
-		// Successfully published message
+    System.out.println("Message successfully sent");
 	}
 
 	@Override
 	public void onError(ErrorInfo reason) {
-		// Failed to publish message
+    System.err.println("Unable to publish message; err = " + reason.message);
 	}
 });
 ```
@@ -140,6 +146,12 @@ channel.publish("greeting", "Hello World!", new CompletionListener() {
 
 ```java
 PaginatedResult<Message> result = channel.history(null);
+
+System.out.println(result.items().length + " messages received in first page");
+while(result.hasNext()) {
+  result = result.getNext();
+  System.out.println(result.items().length + " messages received in next page");
+}
 ```
 
 ### Presence on a channel ###
@@ -162,6 +174,12 @@ channel.presence.enter("john.doe", new CompletionListener() {
 
 ```java
 PaginatedResult<PresenceMessage> result = channel.presence.history(null);
+
+System.out.println(result.items().length + " messages received in first page");
+while(result.hasNext()) {
+  result = result.getNext();
+  System.out.println(result.items().length + " messages received in next page");
+}
 ```
 
 ## Using the REST API ##
@@ -177,38 +195,87 @@ Channel channel = ably.channels.get("test");
 
 ### Publishing a message to a channel ###
 
+Given messages below
+
 ```java
-channel.publish("myEvent", "Hello!");
+Message[] messages = new Message[]{new Message("myEvent", "Hello")};
 ```
+
+Sharing synchronously,
+
+```java
+channel.publish(messages);
+```
+Sharing asynchronously,
+
+```java
+channel.publishAsync(messages, new CompletionListener() {
+  @Override
+	public void onSuccess() {
+	   System.out.println("Message successfully sent");
+	}
+
+	@Override
+	public void onError(ErrorInfo reason) {
+    System.err.println("Unable to publish message; err = " + reason.message);
+	}
+});
+```
+
 
 ### Querying the history ###
 
 ```java
 PaginatedResult<Message> result = channel.history(null);
+
+System.out.println(result.items().length + " messages received in first page");
+while(result.hasNext()) {
+  result = result.getNext();
+  System.out.println(result.items().length + " messages received in next page");
+}
 ```
 
 ### Presence on a channel ###
 
 ```java
 PaginatedResult<PresenceMessage> result = channel.presence.get(null);
+
+System.out.println(result.items().length + " messages received in first page");
+while(result.hasNext()) {
+  result = result.getNext();
+  System.out.println(result.items().length + " messages received in next page");
+}
 ```
 
 ### Querying the presence history ###
 
 ```java
 PaginatedResult<PresenceMessage> result = channel.presence.history(null);
+
+System.out.println(result.items().length + " messages received in first page");
+while(result.hasNext()) {
+  result = result.getNext();
+  System.out.println(result.items().length + " messages received in next page");
+}
 ```
 
 ### Generate a Token and Token Request ###
 
 ```java
 TokenDetails tokenDetails = ably.auth.requestToken(null, null);
+System.out.println("Success; token = " + tokenRequest);
 ```
 
 ### Fetching your application's stats ###
 
 ```java
 PaginatedResult<Stats> stats = ably.stats(null);
+
+System.out.println(result.items().length + " messages received in first page");
+while(result.hasNext()) {
+  result = result.getNext();
+  System.out.println(result.items().length + " messages received in next page");
+}
 ```
 
 ### Fetching the Ably service time ###
