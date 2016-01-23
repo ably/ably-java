@@ -39,6 +39,8 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ErrorResponse;
 import io.ably.lib.util.Serialisation;
 
+import static fi.iki.elonen.NanoHTTPD.newFixedLengthResponse;
+
 public class TokenServer extends NanoHTTPD {
 
 	public TokenServer(AblyRest ably, int port) {
@@ -54,7 +56,7 @@ public class TokenServer extends NanoHTTPD {
         Map<String, String> headers = session.getHeaders();
 
 		if (!method.equals(Method.GET)) {
-			return new Response(Response.Status.METHOD_NOT_ALLOWED, MIME_PLAINTEXT, "Method not supported");
+			return newFixedLengthResponse(Response.Status.METHOD_NOT_ALLOWED, MIME_PLAINTEXT, "Method not supported");
 		}
 
 		if(target.equals("/get-token")) {
@@ -87,7 +89,7 @@ public class TokenServer extends NanoHTTPD {
 			return error2Response(new ErrorInfo("Not found", 404, 0));
 		}
 		else {
-			return new Response(Response.Status.NOT_FOUND, MIME_PLAINTEXT, "Unexpected path: " + target);
+			return newFixedLengthResponse(Response.Status.NOT_FOUND, MIME_PLAINTEXT, "Unexpected path: " + target);
 		}
 	}
 
@@ -114,7 +116,7 @@ public class TokenServer extends NanoHTTPD {
 	}
 
 	private static Response json2Response(Object obj) {
-		return new Response(Response.Status.OK, MIME_JSON, Serialisation.gson.toJson(obj));
+		return newFixedLengthResponse(Response.Status.OK, MIME_JSON, Serialisation.gson.toJson(obj));
 	}
 
 	private static Response.Status getStatus(int statusCode) {
@@ -136,7 +138,7 @@ public class TokenServer extends NanoHTTPD {
 	private static Response error2Response(ErrorInfo errorInfo) {
 		ErrorResponse err = new ErrorResponse();
 		err.error = errorInfo;
-		return new Response(getStatus(errorInfo.statusCode), MIME_JSON, Serialisation.gson.toJson(err));
+		return newFixedLengthResponse(getStatus(errorInfo.statusCode), MIME_JSON, Serialisation.gson.toJson(err));
 	}
 
 	private final AblyRest ably;
