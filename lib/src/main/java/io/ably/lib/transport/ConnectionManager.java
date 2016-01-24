@@ -254,43 +254,49 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	 * transport events/notifications
 	 ***************************************/
 
-	void onMessage(ProtocolMessage message) {
-		if(protocolListener != null)
-			protocolListener.onRawMessage(message);
-		switch(message.action) {
-		case HEARTBEAT:
-			onHeartbeat(message);
-			break;
-		case ERROR:
-			ErrorInfo reason = message.error;
-			if(reason == null)
-				Log.e(TAG, "onMessage(): ERROR message received (no error detail)");
-			else
-				Log.e(TAG, "onMessage(): ERROR message received; message = " + reason.message + "; code = " + reason.code);
+	void onMessage(ProtocolMessage message) throws AblyException {
+		try {
+			if(protocolListener != null)
+				protocolListener.onRawMessage(message);
+			switch(message.action) {
+				case HEARTBEAT:
+					onHeartbeat(message);
+					break;
+				case ERROR:
+					ErrorInfo reason = message.error;
+					if(reason == null)
+						Log.e(TAG, "onMessage(): ERROR message received (no error detail)");
+					else
+						Log.e(TAG, "onMessage(): ERROR message received; message = " + reason.message + "; code = " + reason.code);
 
 			/* an error message may signify an error state in a channel, or in the connection */
-			if(message.channel != null)
-				onChannelMessage(message);
-			else
-				onError(message);
-			break;
-		case CONNECTED:
-			onConnected(message);
-			break;
-		case DISCONNECTED:
-			onDisconnected(message);
-			break;
-		case CLOSED:
-			onClosed(message);
-			break;
-		case ACK:
-			onAck(message);
-			break;
-		case NACK:
-			onNack(message);
-			break;
-		default:
-			onChannelMessage(message);
+					if(message.channel != null)
+						onChannelMessage(message);
+					else
+						onError(message);
+					break;
+				case CONNECTED:
+					onConnected(message);
+					break;
+				case DISCONNECTED:
+					onDisconnected(message);
+					break;
+				case CLOSED:
+					onClosed(message);
+					break;
+				case ACK:
+					onAck(message);
+					break;
+				case NACK:
+					onNack(message);
+					break;
+				default:
+					onChannelMessage(message);
+			}
+		}
+		catch(Exception e) {
+			// Prevent any non-AblyException to be thrown
+			throw (e instanceof AblyException?(AblyException)e:new AblyException(e));
 		}
 	}
 
