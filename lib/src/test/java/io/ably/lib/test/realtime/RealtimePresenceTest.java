@@ -817,7 +817,7 @@ public class RealtimePresenceTest {
 		AblyRealtime clientAbly1 = null;
 		AblyRealtime clientAbly2 = null;
 		TestChannel testChannel = new TestChannel();
-		int clientCount = 300;
+		int clientCount = 20;
 		long delay = 50L;
 		try {
 			/* subscribe for presence events in the anonymous connection */
