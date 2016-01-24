@@ -296,7 +296,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		}
 		catch(Exception e) {
 			// Prevent any non-AblyException to be thrown
-			throw (e instanceof AblyException?(AblyException)e:new AblyException(e));
+			throw AblyException.fromThrowable(e);
 		}
 	}
 
@@ -681,7 +681,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				return;
 			}
 		}
-		throw new AblyException(state.defaultErrorInfo);
+		throw AblyException.fromErrorInfo(state.defaultErrorInfo);
 	}
 
 	@SuppressWarnings("unused")

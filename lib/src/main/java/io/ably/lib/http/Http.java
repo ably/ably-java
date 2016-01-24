@@ -120,7 +120,7 @@ public class Http {
 					return body;
 				}});
 		} catch(IOException ioe) {
-			throw new AblyException(ioe);
+			throw AblyException.fromThrowable(ioe);
 		}
 	}
 
@@ -209,23 +209,11 @@ public class Http {
 		dispose();
 	}
 
-	private static class HostFailedException extends AblyException {
-		private static final long serialVersionUID = 1L;
-		public HostFailedException(Throwable cause) {
-			super(cause);
-		}		
-		private static AblyException checkFor(Throwable t) {
-			if(t instanceof ConnectException || t instanceof UnknownHostException || t instanceof NoRouteToHostException)
-				return new HostFailedException(t);
-			return AblyException.fromThrowable(t);
-		}
-	}
-
 	<T> T ablyHttpExecute(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
 		try {
 			URL url = buildURL(scheme, getPrefHost(), path, params);
 			return httpExecute(url, method, headers, requestBody, true, responseHandler);
-		} catch(HostFailedException bhe) {
+		} catch(AblyException.HostFailedException bhe) {
 			/* one of the exceptions occurred that signifies a problem reaching the host */
 			String[] fallbackHosts = Defaults.getFallbackHosts(ably.options);
 			if(fallbackHosts != null) {
@@ -233,10 +221,10 @@ public class Http {
 					try {
 						URL url = buildURL(scheme, host, path, params);
 						return httpExecute(url, method, headers, requestBody, true, responseHandler);
-					} catch(HostFailedException bhe2) {}
+					} catch(AblyException.HostFailedException bhe2) {}
 				}
 			}
-			throw new AblyException("Connection failed; no host available", 404, 80000);
+			throw AblyException.fromErrorInfo(new ErrorInfo("Connection failed; no host available", 404, 80000));
 		}
 	}
 
@@ -309,7 +297,7 @@ public class Http {
 				}
 			}
 		} catch(IOException ioe) {
-			throw HostFailedException.checkFor(ioe);
+			throw AblyException.fromThrowable(ioe);
 		} finally {
 			try {
 				if(is != null)
@@ -358,10 +346,10 @@ public class Http {
 			}
 			if(error != null) {
 				Log.e(TAG, "Error response from server: " + error);
-				throw AblyException.fromError(error);
+				throw AblyException.fromErrorInfo(error);
 			} else {
 				Log.e(TAG, "Error response from server: statusCode = " + statusCode + "; statusLine = " + statusLine);
-				throw AblyException.fromResponseStatus(statusLine, statusCode);
+				throw AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus(statusLine, statusCode));
 			}
 		}
 

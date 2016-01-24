@@ -17,6 +17,7 @@ import io.ably.lib.test.common.Setup.TestVars;
 import io.ably.lib.test.util.TokenServer;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 
 import org.junit.AfterClass;
@@ -439,7 +440,7 @@ public class RestAuthTest {
 			TokenCallback authCallback = new TokenCallback() {
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
-					throw new AblyException("test exception", 404, 0);
+					throw AblyException.fromErrorInfo(new ErrorInfo("test exception", 404, 0));
 				}
 			};
 

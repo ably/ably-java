@@ -3,6 +3,7 @@ package io.ably.lib.http;
 import io.ably.lib.http.Http.BodyHandler;
 import io.ably.lib.http.Http.ResponseHandler;
 import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 
@@ -93,7 +94,7 @@ public class PaginatedQuery<T> implements ResponseHandler<PaginatedResult<T>> {
 				} catch(UnsupportedEncodingException uee) {}
 				return http.get(path, headers, params, PaginatedQuery.this);
 			}
-			throw new AblyException("Unexpected link URL format", 500, 50000);
+			throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected link URL format", 500, 50000));
 		}
 	
 		private String relFirst, relCurrent, relNext;

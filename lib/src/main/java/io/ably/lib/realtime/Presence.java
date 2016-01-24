@@ -253,7 +253,7 @@ public class Presence {
 		}
 
 		if(msg.clientId == null)
-			throw new AblyException("Unable to enter presence channel without clientId", 400, 91000);
+			throw AblyException.fromErrorInfo(new ErrorInfo("Unable to enter presence channel without clientId", 400, 91000));
 
 		msg.encode(null);
 		synchronized(channel) {
@@ -272,7 +272,7 @@ public class Presence {
 				connectionManager.send(message, ably.options.queueMessages, listener);
 				break;
 			default:
-				throw new AblyException("Unable to enter presence channel in detached or failed state", 400, 91001);
+				throw AblyException.fromErrorInfo(new ErrorInfo("Unable to enter presence channel in detached or failed state", 400, 91001));
 			}
 		}
 	}

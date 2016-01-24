@@ -8,15 +8,7 @@ import io.ably.lib.http.Http;
 import io.ably.lib.http.Http.ResponseHandler;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.AsyncPaginatedResult;
-import io.ably.lib.types.Callback;
-import io.ably.lib.types.ChannelOptions;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.PaginatedResult;
-import io.ably.lib.types.Param;
-import io.ably.lib.types.Stats;
-import io.ably.lib.types.StatsReader;
+import io.ably.lib.types.*;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 
@@ -57,7 +49,7 @@ public class AblyRest {
 		if(options == null) {
 			String msg = "no options provided";
 			Log.e(getClass().getName(), msg);
-			throw new AblyException(msg, 400, 40000);
+			throw AblyException.fromErrorInfo(new ErrorInfo(msg, 400, 40000));
 		}
 		this.options = options;
 

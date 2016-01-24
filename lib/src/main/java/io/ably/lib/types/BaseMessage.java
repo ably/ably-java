@@ -115,7 +115,7 @@ public class BaseMessage implements Cloneable {
 				encoding = ((encoding == null) ? "" : encoding + "/") + "utf-8";
 			}
 			if(!(data instanceof byte[])) {
-				throw new AblyException("Unable to encode message data (incompatible type)", 400, 40000);
+				throw AblyException.fromErrorInfo(new ErrorInfo("Unable to encode message data (incompatible type)", 400, 40000));
 			}
 			ChannelCipher cipher = opts.getCipher();
 			data = cipher.encrypt((byte[])data);
