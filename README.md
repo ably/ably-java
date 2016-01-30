@@ -182,6 +182,38 @@ while(result.hasNext()) {
 }
 ```
 
+### Channel state ###
+
+`Channel` extends `EventEmitter` that emits channel state changes, and listening those events is possible with `ChannelStateListener`
+
+```java
+ChannelStateListener listener = new ChannelStateListener() {
+	@Override
+	public void onChannelStateChanged(ChannelState state, ErrorInfo reason) {
+		System.out.println("Channel state changed to " + state.name());
+		if (reason != null) System.out.println(reason.toString());
+	}
+};
+```
+
+You can register using
+
+```java
+channel.on(listener);
+```
+
+and after you are done listening channel state events, you can unregister using
+```java
+channel.off(listener);
+```
+
+If you are interested with specific events, it is possible with providing extra `ChannelState` value.
+
+```java
+channel.on(ChannelState.attached, listener);
+```
+
+
 ## Using the REST API ##
 
 ### Introduction ###
