@@ -335,7 +335,8 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 	private synchronized void onError(ProtocolMessage message) {
 		connection.key = null;
-		notifyState(transport, new StateIndication(ConnectionState.failed, message.error));
+		ConnectionState destinationState = isFatalError(message.error) ? ConnectionState.failed : ConnectionState.disconnected;
+		notifyState(transport, new StateIndication(destinationState, message.error));
 	}
 
 	private void onAck(ProtocolMessage message) {
@@ -811,6 +812,22 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				}
 			}
 		}
+	}
+
+	/*******************
+	 * internal
+	 ******************/
+
+	private boolean isFatalError(ErrorInfo err) {
+		if(err.code != 0) {
+			/* token errors are assumed to be recoverable */
+			if((err.code >= 40140) && (err.code < 40150)) { return false; }
+			/* 400 codes assumed to be fatal */
+			if((err.code >= 40000) && (err.code < 50000)) { return true; }
+		}
+		/* otherwise, use statusCode */
+		if(err.statusCode != 0 && err.statusCode < 500) { return true; }
+		return false;
 	}
 
 	/*******************
