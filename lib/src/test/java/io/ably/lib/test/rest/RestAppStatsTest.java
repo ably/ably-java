@@ -1,9 +1,8 @@
 package io.ably.lib.test.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.*;
 
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.rest.AblyRest;
@@ -99,8 +98,8 @@ public class RestAppStatsTest {
 				new Param("end", intervalIds[0])
 			});
 			assertNotNull("Expected non-null stats", stats);
-			assertEquals("Expected 1 record", stats.items().length, 1);
-			assertEquals("Expected 50 messages", (int)stats.items()[0].inbound.all.all.count, (int)50);
+			assertThat("Expected 1 record", stats.items().length, is(equalTo(1)));
+			assertThat("Expected 50 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(50)));
 
 			stats = ably.stats(new Param[] {
 				new Param("direction", "forwards"),
@@ -108,8 +107,8 @@ public class RestAppStatsTest {
 				new Param("end", intervalIds[1])
 			});
 			assertNotNull("Expected non-null stats", stats);
-			assertEquals("Expected 1 record", stats.items().length, 1);
-			assertEquals("Expected 60 messages", (int)stats.items()[0].inbound.all.all.count, (int)60);
+			assertThat("Expected 1 record", stats.items().length, is(equalTo(1)));
+			assertThat("Expected 60 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(60)));
 
 			stats = ably.stats(new Param[] {
 					new Param("direction", "forwards"),
@@ -117,8 +116,8 @@ public class RestAppStatsTest {
 					new Param("end", intervalIds[2])
 				});
 				assertNotNull("Expected non-null stats", stats);
-				assertEquals("Expected 1 record", stats.items().length, 1);
-				assertEquals("Expected 70 messages", (int)stats.items()[0].inbound.all.all.count, (int)70);
+				assertThat("Expected 1 record", stats.items().length, is(equalTo(1)));
+				assertThat("Expected 70 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(70)));
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("appstats_minute0: Unexpected exception");
@@ -140,8 +139,8 @@ public class RestAppStatsTest {
 				new Param("end", intervalIds[0])
 			});
 			assertNotNull("Expected non-null stats", stats);
-			assertEquals("Expected 1 record", stats.items().length, 1);
-			assertEquals("Expected 50 messages", (int)stats.items()[0].inbound.all.all.count, (int)50);
+			assertThat("Expected 1 record", stats.items().length, is(equalTo(1)));
+			assertThat("Expected 50 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(50)));
 
 			stats = ably.stats(new Param[] {
 				new Param("direction", "backwards"),
@@ -149,8 +148,8 @@ public class RestAppStatsTest {
 				new Param("end", intervalIds[1])
 			});
 			assertNotNull("Expected non-null stats", stats);
-			assertEquals("Expected 1 record", stats.items().length, 1);
-			assertEquals("Expected 60 messages", (int)stats.items()[0].inbound.all.all.count, (int)60);
+			assertThat("Expected 1 record", stats.items().length, is(equalTo(1)));
+			assertThat("Expected 60 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(60)));
 
 			stats = ably.stats(new Param[] {
 					new Param("direction", "backwards"),
@@ -158,8 +157,8 @@ public class RestAppStatsTest {
 					new Param("end", intervalIds[2])
 				});
 				assertNotNull("Expected non-null stats", stats);
-				assertEquals("Expected 1 record", stats.items().length, 1);
-				assertEquals("Expected 70 messages", (int)stats.items()[0].inbound.all.all.count, (int)70);
+				assertThat("Expected 1 record", stats.items().length, is(equalTo(1)));
+				assertThat("Expected 70 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(70)));
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("appstats_minute1: Unexpected exception");
@@ -181,8 +180,8 @@ public class RestAppStatsTest {
 				new Param("unit", "hour")
 			});
 			assertNotNull("Expected non-null stats", stats);
-			assertEquals("Expected 1 record", stats.items().length, 1);
-			assertEquals("Expected 180 messages", (int)stats.items()[0].inbound.all.all.count, (int)180);
+			assertThat("Expected 1 record", stats.items().length, is(equalTo(1)));
+			assertThat("Expected 180 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(180)));
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("appstats_hour0: Unexpected exception");
@@ -204,8 +203,8 @@ public class RestAppStatsTest {
 				new Param("unit", "day")
 			});
 			assertNotNull("Expected non-null stats", stats);
-			assertEquals("Expected 1 record", stats.items().length, 1);
-			assertEquals("Expected 180 messages", (int)stats.items()[0].inbound.all.all.count, (int)180);
+			assertThat("Expected 1 record", stats.items().length, is(equalTo(1)));
+			assertThat("Expected 180 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(180)));
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("appstats_day0: Unexpected exception");
@@ -227,8 +226,8 @@ public class RestAppStatsTest {
 				new Param("unit", "month")
 			});
 			assertNotNull("Expected non-null stats", stats);
-			assertEquals("Expected 1 record", stats.items().length, 1);
-			assertEquals("Expected 180 messages", (int)stats.items()[0].inbound.all.all.count, (int)180);
+			assertThat("Expected 1 record", stats.items().length, is(equalTo(1)));
+			assertThat("Expected 180 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(180)));
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("appstats_month0: Unexpected exception");
@@ -250,8 +249,8 @@ public class RestAppStatsTest {
 				new Param("limit", String.valueOf(1))
 			});
 			assertNotNull("Expected non-null stats", stats);
-			assertEquals("Expected 1 records", stats.items().length, 1);
-			assertEquals("Expected 70 messages", (int)stats.items()[0].inbound.all.all.count, (int)70);
+			assertThat("Expected 1 records", stats.items().length, is(equalTo(1)));
+			assertThat("Expected 70 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(70)));
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("appstats_limit0: Unexpected exception");
@@ -272,8 +271,8 @@ public class RestAppStatsTest {
 				new Param("limit", String.valueOf(1))
 			});
 			assertNotNull("Expected non-null stats", stats);
-			assertEquals("Expected 1 records", stats.items().length, 1);
-			assertEquals("Expected 50 messages", (int)stats.items()[0].inbound.all.all.count, (int)50);
+			assertThat("Expected 1 records", stats.items().length, is(equalTo(1)));
+			assertThat("Expected 50 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(50)));
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("appstats_limit1: Unexpected exception");
@@ -294,18 +293,18 @@ public class RestAppStatsTest {
 				new Param("limit", String.valueOf(1))
 			});
 			assertNotNull("Expected non-null stats", stats);
-			assertEquals("Expected 1 records", stats.items().length, 1);
-			assertEquals("Expected 70 messages", (int)stats.items()[0].inbound.all.all.count, (int)70);
+			assertThat("Expected 1 records", stats.items().length, is(equalTo(1)));
+			assertThat("Expected 70 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(70)));
 			/* get next page */
 			stats = stats.next();
 			assertNotNull("Expected non-null stats", stats);
-			assertEquals("Expected 1 records", stats.items().length, 1);
-			assertEquals("Expected 60 messages", (int)stats.items()[0].inbound.all.all.count, (int)60);
+			assertThat("Expected 1 records", stats.items().length, is(equalTo(1)));
+			assertThat("Expected 60 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(60)));
 			/* get next page */
 			stats = stats.next();
 			assertNotNull("Expected non-null stats", stats);
-			assertEquals("Expected 1 records", stats.items().length, 1);
-			assertEquals("Expected 50 messages", (int)stats.items()[0].inbound.all.all.count, (int)50);
+			assertThat("Expected 1 records", stats.items().length, is(equalTo(1)));
+			assertThat("Expected 50 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(50)));
 			/* verify that there is no next page */
 			assertFalse("Expected null next page", stats.hasNext());
 		} catch (AblyException e) {
@@ -328,18 +327,18 @@ public class RestAppStatsTest {
 				new Param("limit", String.valueOf(1))
 			});
 			assertNotNull("Expected non-null stats", stats);
-			assertEquals("Expected 1 records", stats.items().length, 1);
-			assertEquals("Expected 50 messages", (int)stats.items()[0].inbound.all.all.count, (int)50);
+			assertThat("Expected 1 records", stats.items().length, is(equalTo(1)));
+			assertThat("Expected 50 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(50)));
 			/* get next page */
 			stats = stats.next();
 			assertNotNull("Expected non-null stats", stats);
-			assertEquals("Expected 1 records", stats.items().length, 1);
-			assertEquals("Expected 60 messages", (int)stats.items()[0].inbound.all.all.count, (int)60);
+			assertThat("Expected 1 records", stats.items().length, is(equalTo(1)));
+			assertThat("Expected 60 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(60)));
 			/* get next page */
 			stats = stats.next();
 			assertNotNull("Expected non-null stats", stats);
-			assertEquals("Expected 1 records", stats.items().length, 1);
-			assertEquals("Expected 70 messages", (int)stats.items()[0].inbound.all.all.count, (int)70);
+			assertThat("Expected 1 records", stats.items().length, is(equalTo(1)));
+			assertThat("Expected 70 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(70)));
 			/* verify that there is no next page */
 			assertFalse("Expected null next page", stats.hasNext());
 		} catch (AblyException e) {
@@ -362,18 +361,18 @@ public class RestAppStatsTest {
 				new Param("limit", String.valueOf(1))
 			});
 			assertNotNull("Expected non-null stats", stats);
-			assertEquals("Expected 1 records", stats.items().length, 1);
-			assertEquals("Expected 70 messages", (int)stats.items()[0].inbound.all.all.count, (int)70);
+			assertThat("Expected 1 records", stats.items().length, is(equalTo(1)));
+			assertThat("Expected 70 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(70)));
 			/* get next page */
 			stats = stats.next();
 			assertNotNull("Expected non-null stats", stats);
-			assertEquals("Expected 1 records", stats.items().length, 1);
-			assertEquals("Expected 60 messages", (int)stats.items()[0].inbound.all.all.count, (int)60);
+			assertThat("Expected 1 records", stats.items().length, is(equalTo(1)));
+			assertThat("Expected 60 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(60)));
 			/* get first page */
 			stats = stats.first();
 			assertNotNull("Expected non-null stats", stats);
-			assertEquals("Expected 1 records", stats.items().length, 1);
-			assertEquals("Expected 70 messages", (int)stats.items()[0].inbound.all.all.count, (int)70);
+			assertThat("Expected 1 records", stats.items().length, is(equalTo(1)));
+			assertThat("Expected 70 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(70)));
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("appstats_pagination2: Unexpected exception");
@@ -394,18 +393,18 @@ public class RestAppStatsTest {
 				new Param("limit", String.valueOf(1))
 			});
 			assertNotNull("Expected non-null stats", stats);
-			assertEquals("Expected 1 records", stats.items().length, 1);
-			assertEquals("Expected 50 messages", (int)stats.items()[0].inbound.all.all.count, (int)50);
+			assertThat("Expected 1 records", stats.items().length, is(equalTo(1)));
+			assertThat("Expected 50 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(50)));
 			/* get next page */
 			stats = stats.next();
 			assertNotNull("Expected non-null stats", stats);
-			assertEquals("Expected 1 records", stats.items().length, 1);
-			assertEquals("Expected 60 messages", (int)stats.items()[0].inbound.all.all.count, (int)60);
+			assertThat("Expected 1 records", stats.items().length, is(equalTo(1)));
+			assertThat("Expected 60 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(60)));
 			/* get first page */
 			stats = stats.first();
 			assertNotNull("Expected non-null stats", stats);
-			assertEquals("Expected 1 records", stats.items().length, 1);
-			assertEquals("Expected 50 messages", (int)stats.items()[0].inbound.all.all.count, (int)50);
+			assertThat("Expected 1 records", stats.items().length, is(equalTo(1)));
+			assertThat("Expected 50 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(50)));
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("appstats_pagination3: Unexpected exception");
