@@ -20,7 +20,7 @@ JRE 7 or later is required.
 Note that the [Java Unlimited JCE extensions](http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html)
 must be installed in the runtime environment.
 
-## Building
+## Building ##
 
 The library consists of a generic java library (in `lib/`) and a separate Android test project (in `android-test/`).
 The base library jar is built with:
@@ -44,6 +44,277 @@ To run tests against a specific host, specify in the environment:
     export ABLY_ENV=staging; gradle testRealtimeSuite
 
 Tests will run against sandbox by default.
+
+## Installation ##
+
+Download [the latest JAR](https://github.com/ably/ably-java/releases) or grab via Gradle:
+
+```groovy
+compile 'io.ably:ably-java:0.8.1'
+```
+
+and add following repo for a sub-dependency,
+
+```groovy
+maven { url "https://raw.github.com/paddybyers/Java-WebSocket/mvn-repo/" }
+```
+
+## Using the Realtime API ##
+
+### Introduction ###
+
+All examples assume a client has been created as follows:
+
+```java
+AblyRealtime ably = new AblyRealtime("xxxxx");
+```
+
+### Connection ###
+
+AblyRealtime will attempt to connect automatically once new instance is created. Also, it offers API for listening connection state changes.
+
+```java
+ably.connection.on(new ConnectionStateListener() {
+	@Override
+	public void onConnectionStateChanged(ConnectionStateChange state) {
+    System.out.println("New state is " + change.current.name());
+
+		switch (state.current) {
+			case connected: {
+				// Successful connection
+				break;
+			}
+			case failed: {
+				// Failed connection
+				break;
+			}
+		}
+	}
+});
+```
+
+### Subscribing to a channel ###
+
+Given:
+
+```java
+Channel channel = ably.channels.get("test");
+```
+
+Subscribe to all events:
+
+```java
+channel.subscribe(new MessageListener() {
+	@Override
+	public void onMessage(Message[] messages) {
+    for(Message message : messages) {
+			System.out.println("Received `" + message.name + "` message with data: " + message.data);
+		}
+	}
+});
+```
+
+or subscribe to certain events:
+
+```java
+String[] events = new String[] {"event1", "event2"};
+channel.subscribe(events, new MessageListener() {
+	@Override
+	public void onMessage(Message[] messages) {
+    System.out.println("Received `" + messages[0].name + "` message with data: " + message[0].data);
+	}
+});
+```
+
+### Publishing to a channel ###
+
+```java
+channel.publish("greeting", "Hello World!", new CompletionListener() {
+	@Override
+	public void onSuccess() {
+    System.out.println("Message successfully sent");
+	}
+
+	@Override
+	public void onError(ErrorInfo reason) {
+    System.err.println("Unable to publish message; err = " + reason.message);
+	}
+});
+```
+
+### Querying the history ###
+
+```java
+PaginatedResult<Message> result = channel.history(null);
+
+System.out.println(result.items().length + " messages received in first page");
+while(result.hasNext()) {
+  result = result.getNext();
+  System.out.println(result.items().length + " messages received in next page");
+}
+```
+
+### Presence on a channel ###
+
+```java
+channel.presence.enter("john.doe", new CompletionListener() {
+	@Override
+	public void onSuccess() {
+		// Successfully entered to the channel
+	}
+
+	@Override
+	public void onError(ErrorInfo reason) {
+		// Failed to enter channel
+	}
+});
+```
+
+### Querying the presence history ###
+
+```java
+PaginatedResult<PresenceMessage> result = channel.presence.history(null);
+
+System.out.println(result.items().length + " messages received in first page");
+while(result.hasNext()) {
+  result = result.getNext();
+  System.out.println(result.items().length + " messages received in next page");
+}
+```
+
+### Channel state ###
+
+`Channel` extends `EventEmitter` that emits channel state changes, and listening those events is possible with `ChannelStateListener`
+
+```java
+ChannelStateListener listener = new ChannelStateListener() {
+	@Override
+	public void onChannelStateChanged(ChannelState state, ErrorInfo reason) {
+		System.out.println("Channel state changed to " + state.name());
+		if (reason != null) System.out.println(reason.toString());
+	}
+};
+```
+
+You can register using
+
+```java
+channel.on(listener);
+```
+
+and after you are done listening channel state events, you can unregister using
+```java
+channel.off(listener);
+```
+
+If you are interested with specific events, it is possible with providing extra `ChannelState` value.
+
+```java
+channel.on(ChannelState.attached, listener);
+```
+
+
+## Using the REST API ##
+
+### Introduction ###
+
+All examples assume a client and/or channel has been created as follows:
+
+```java
+AblyRest ably = new AblyRest("xxxxx");
+Channel channel = ably.channels.get("test");
+```
+
+### Publishing a message to a channel ###
+
+Given messages below
+
+```java
+Message[] messages = new Message[]{new Message("myEvent", "Hello")};
+```
+
+Sharing synchronously,
+
+```java
+channel.publish(messages);
+```
+Sharing asynchronously,
+
+```java
+channel.publishAsync(messages, new CompletionListener() {
+  @Override
+	public void onSuccess() {
+	   System.out.println("Message successfully sent");
+	}
+
+	@Override
+	public void onError(ErrorInfo reason) {
+    System.err.println("Unable to publish message; err = " + reason.message);
+	}
+});
+```
+
+
+### Querying the history ###
+
+```java
+PaginatedResult<Message> result = channel.history(null);
+
+System.out.println(result.items().length + " messages received in first page");
+while(result.hasNext()) {
+  result = result.getNext();
+  System.out.println(result.items().length + " messages received in next page");
+}
+```
+
+### Presence on a channel ###
+
+```java
+PaginatedResult<PresenceMessage> result = channel.presence.get(null);
+
+System.out.println(result.items().length + " messages received in first page");
+while(result.hasNext()) {
+  result = result.getNext();
+  System.out.println(result.items().length + " messages received in next page");
+}
+```
+
+### Querying the presence history ###
+
+```java
+PaginatedResult<PresenceMessage> result = channel.presence.history(null);
+
+System.out.println(result.items().length + " messages received in first page");
+while(result.hasNext()) {
+  result = result.getNext();
+  System.out.println(result.items().length + " messages received in next page");
+}
+```
+
+### Generate a Token and Token Request ###
+
+```java
+TokenDetails tokenDetails = ably.auth.requestToken(null, null);
+System.out.println("Success; token = " + tokenRequest);
+```
+
+### Fetching your application's stats ###
+
+```java
+PaginatedResult<Stats> stats = ably.stats(null);
+
+System.out.println(result.items().length + " messages received in first page");
+while(result.hasNext()) {
+  result = result.getNext();
+  System.out.println(result.items().length + " messages received in next page");
+}
+```
+
+### Fetching the Ably service time ###
+
+```java
+long serviceTime = ably.time();
+```
 
 ## Release notes
 

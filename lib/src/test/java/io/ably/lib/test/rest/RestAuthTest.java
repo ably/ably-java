@@ -1,9 +1,10 @@
 package io.ably.lib.test.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 
@@ -12,19 +13,26 @@ import io.ably.lib.rest.Auth.AuthMethod;
 import io.ably.lib.rest.Auth.TokenCallback;
 import io.ably.lib.rest.Auth.TokenDetails;
 import io.ably.lib.rest.Auth.TokenParams;
+import io.ably.lib.rest.Channel;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.common.Setup.TestVars;
 import io.ably.lib.test.util.TokenServer;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Message;
+import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class RestAuthTest {
+
+	@Rule
+	public ExpectedException thrown = ExpectedException.none();
 
 	/**
 	 * Init token server
@@ -461,6 +469,241 @@ public class RestAuthTest {
 			fail("auth_authURL_token: Unexpected exception instantiating library");
 		}
 	}
+
+	/**
+	 * Verify token details has null client id after authenticating with null client id,
+	 * the message gets published, and published message also does not contain a client id.<br>
+	 * <br>
+	 * Spec: RSA8f1
+	 */
+	@Test
+	public void auth_clientid_null_success() {
+		try {
+			final TestVars testVars = Setup.getTestVars();
+
+			/* implement callback, using Ably instance with key */
+			TokenCallback authCallback = new TokenCallback() {
+				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					return ably.auth.requestToken(null, params);
+				}
+			};
+
+			/* create Ably instance without clientId */
+			ClientOptions options = testVars.createOptions();
+			options.clientId = null;
+			options.authCallback = authCallback;
+			AblyRest ably = new AblyRest(options);
+
+			/* Fetch token */
+			TokenDetails tokenDetails = ably.auth.requestToken(null, null);
+			assertEquals("Auth#clientId is expected to be null", null, tokenDetails.clientId);
+
+			/* Publish message */
+			String messageName = "clientless";
+			String messageData = String.valueOf(System.currentTimeMillis());
+
+			Channel channel = ably.channels.get("test");
+			channel.publish(messageName, messageData);
+
+			/* Fetch published message */
+			PaginatedResult<Message> result = channel.history(null);
+			Message[] messages = result.items();
+			Message publishedMessage = null;
+			Message message;
+
+			for(int i = 0; i < messages.length; i++) {
+				message = messages[i];
+
+				if(messageName.equals(message.name) &&
+					messageData.equals(message.data)) {
+					publishedMessage = message;
+					break;
+				}
+			}
+
+			assertNotNull("Recently published message expected to be accessible", publishedMessage);
+			assertEquals("Message#clientId is expected to be null", null, publishedMessage.clientId);
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("auth_clientid_null_success: Unexpected exception");
+		}
+	}
+
+	/**
+	 * Verify message gets rejected when there is a client id mismatch
+	 * between token details and message<br>
+	 * <br>
+	 * Spec: RSA8f2
+	 */
+	@Test
+	public void auth_clientid_null_mismatch() throws AblyException {
+		AblyRest ably = null;
+
+		try {
+			final TestVars testVars = Setup.getTestVars();
+
+			/* implement callback, using Ably instance with key */
+			TokenCallback authCallback = new TokenCallback() {
+				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					return ably.auth.requestToken(null, params);
+				}
+			};
+
+			/* create Ably instance without clientId */
+			ClientOptions options = testVars.createOptions();
+			options.clientId = null;
+			options.authCallback = authCallback;
+			ably = new AblyRest(options);
+
+			/* Fetch token */
+			TokenDetails tokenDetails = ably.auth.requestToken(null, null);
+			assertEquals("Auth#clientId is expected to be null", null, tokenDetails.clientId);
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("auth_clientid_null_mismatch: Unexpected exception");
+		}
+
+		/* Publish a message with mismatching client id */
+		Message message = new Message(
+				"I", /* name */
+				"will", /* mismatching client id */
+				"fail"); /* data */
+		Channel channel = ably.channels.get("test");
+
+		thrown.expect(AblyException.class);
+		thrown.expectMessage("Malformed message; mismatched clientId");
+		channel.publish(new Message[]{ message });
+	}
+
+	/**
+	 * Verify message with wildcard `*` client id gets published,
+	 * and contains null client id.<br>
+	 * <br>
+	 * Spec: RSA8f3
+	 */
+	@Test
+	public void auth_clientid_null_wildcard () {
+		try {
+			final TestVars testVars = Setup.getTestVars();
+
+			/* implement callback, using Ably instance with key */
+			TokenCallback authCallback = new TokenCallback() {
+				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					return ably.auth.requestToken(null, params);
+				}
+			};
+
+			/* create Ably instance with wildcard clientId */
+			ClientOptions options = testVars.createOptions();
+			options.clientId = "*";
+			options.authCallback = authCallback;
+			AblyRest ably = new AblyRest(options);
+
+			/* Fetch token */
+			TokenDetails tokenDetails = ably.auth.requestToken(null, null);
+			assertEquals("Auth#clientId is expected to be wildcard '*'", "*", tokenDetails.clientId);
+
+			/* Publish message */
+			String messageName = "wildcard";
+			String messageData = String.valueOf(System.currentTimeMillis());
+
+			Channel channel = ably.channels.get("test");
+			channel.publish(messageName, messageData);
+
+			/* Fetch published message */
+			PaginatedResult<Message> result = channel.history(null);
+			Message[] messages = result.items();
+			Message publishedMessage = null;
+			Message message;
+
+			for(int i = 0; i < messages.length; i++) {
+				message = messages[i];
+
+				if(messageName.equals(message.name) &&
+						messageData.equals(message.data)) {
+					publishedMessage = message;
+					break;
+				}
+			}
+
+			assertNotNull("Recently published message expected to be accessible", publishedMessage);
+			assertEquals("Message#clientId is expected to be null", null, publishedMessage.clientId);
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("auth_clientid_null_wildcard: Unexpected exception");
+		}
+	}
+
+	/**
+	 * Verify message with explicit client id successfully gets published,
+	 * when authenticated with wildcard '*' client id<br>
+	 * <br>
+	 * Spec: RSA8f4
+	 */
+	@Test
+	public void auth_clientid_explicit_wildcard () {
+		try {
+			final TestVars testVars = Setup.getTestVars();
+
+			/* implement callback, using Ably instance with key */
+			TokenCallback authCallback = new TokenCallback() {
+				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					return ably.auth.requestToken(null, params);
+				}
+			};
+
+			/* create Ably instance with wildcard clientId */
+			ClientOptions options = testVars.createOptions();
+			options.clientId = "*";
+			options.authCallback = authCallback;
+			AblyRest ably = new AblyRest(options);
+
+			/* Fetch token */
+			TokenDetails tokenDetails = ably.auth.requestToken(null, null);
+			assertEquals("Auth#clientId is expected to be wildcard '*'", "*", tokenDetails.clientId);
+
+			/* Publish a message */
+			Message messagePublishee = new Message(
+					"wildcard",	// name
+					"brian that is called brian",	// clientId
+					String.valueOf(System.currentTimeMillis())	// data
+			);
+
+			Channel channel = ably.channels.get("test");
+			channel.publish(new Message[] { messagePublishee });
+
+			/* Fetch published message */
+			PaginatedResult<Message> result = channel.history(null);
+			Message[] messages = result.items();
+			Message messagePublished = null;
+			Message message;
+
+			for(int i = 0; i < messages.length; i++) {
+				message = messages[i];
+
+				if(messagePublishee.name.equals(message.name) &&
+						messagePublishee.data.equals(message.data)) {
+					messagePublished = message;
+					break;
+				}
+			}
+
+			assertNotNull("Recently published message expected to be accessible", messagePublished);
+			assertEquals("Message#clientId is expected to be same with explicitly defined clientId", messagePublishee.clientId, messagePublished.clientId);
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("auth_clientid_explicit_wildcard: Unexpected exception");
+		}
+	}
+
 
 	private static TokenServer tokenServer;
 }
