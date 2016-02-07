@@ -105,7 +105,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		}
 		ConnectionManager connectionManager = ably.connection.connectionManager;
 		if(!connectionManager.isActive())
-			throw new AblyException(connectionManager.getStateErrorInfo());
+			throw AblyException.fromErrorInfo(connectionManager.getStateErrorInfo());
 
 		/* send attach request and pending state */
 		ProtocolMessage attachMessage = new ProtocolMessage(Action.ATTACH, this.name);
@@ -136,7 +136,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		}
 		ConnectionManager connectionManager = ably.connection.connectionManager;
 		if(!connectionManager.isActive())
-			throw new AblyException(connectionManager.getStateErrorInfo());
+			throw AblyException.fromErrorInfo(connectionManager.getStateErrorInfo());
 
 		/* send detach request */
 		ProtocolMessage detachMessage = new ProtocolMessage(Action.DETACH, this.name);
@@ -155,12 +155,12 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 			case initialised:
 			case detaching:
 			case detached:
-				throw new AblyException(new ErrorInfo("Unable to sync to channel; not attached", 40000));
+				throw AblyException.fromErrorInfo(new ErrorInfo("Unable to sync to channel; not attached", 40000));
 			default:
 		}
 		ConnectionManager connectionManager = ably.connection.connectionManager;
 		if(!connectionManager.isActive())
-			throw new AblyException(connectionManager.getStateErrorInfo());
+			throw AblyException.fromErrorInfo(connectionManager.getStateErrorInfo());
 
 		/* send sync request */
 		ProtocolMessage syncMessage = new ProtocolMessage(Action.SYNC, this.name);
@@ -437,7 +437,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		case detaching:
 		case detached:
 		case failed:
-			throw new AblyException(new ErrorInfo("Unable to publish in detached or failed state", 400, 40000));
+			throw AblyException.fromErrorInfo(new ErrorInfo("Unable to publish in detached or failed state", 400, 40000));
 		case attached:
 			ConnectionManager connectionManager = ably.connection.connectionManager;
 			connectionManager.send(msg, ably.options.queueMessages, listener);

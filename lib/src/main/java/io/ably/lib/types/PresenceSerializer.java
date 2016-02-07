@@ -36,7 +36,7 @@ public class PresenceSerializer {
 			MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(packed);
 			return readMsgpackArray(unpacker);
 		} catch(IOException ioe) {
-			throw AblyException.fromIOException(ioe);
+			throw AblyException.fromThrowable(ioe);
 		}
 	}
 
@@ -108,7 +108,7 @@ public class PresenceSerializer {
 						message.decode(opts);
 				return messages;
 			} catch(IOException e) {
-				throw AblyException.fromIOException(e);
+				throw AblyException.fromThrowable(e);
 			}
 		}
 

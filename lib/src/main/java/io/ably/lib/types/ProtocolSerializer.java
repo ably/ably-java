@@ -20,7 +20,7 @@ public class ProtocolSerializer {
 			MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(packed);
 			return ProtocolMessage.fromMsgpack(unpacker);
 		} catch (IOException ioe) {
-			throw AblyException.fromIOException(ioe);
+			throw AblyException.fromThrowable(ioe);
 		}
 	}
 

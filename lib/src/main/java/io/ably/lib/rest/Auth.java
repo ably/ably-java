@@ -112,7 +112,7 @@ public class Auth {
 		 */
 		public AuthOptions(String key) throws AblyException {
 			if (key == null) {
-				throw new AblyException("key string cannot be null", 40000, 400);
+				throw AblyException.fromErrorInfo(new ErrorInfo("key string cannot be null", 40000, 400));
 			}
 			if(key.indexOf(':') > -1)
 				this.key = key;
@@ -357,7 +357,7 @@ public class Auth {
 				if(authCallbackResponse instanceof TokenRequest)
 					signedTokenRequest = (TokenRequest)authCallbackResponse;
 				else
-					throw new AblyException("Invalid authCallback response", 40000, 400);
+					throw AblyException.fromErrorInfo(new ErrorInfo("Invalid authCallback response", 40000, 400));
 			} catch(AblyException e) {
 				/* the auth callback threw an error */
 				ErrorInfo errorInfo = e.errorInfo;
@@ -387,13 +387,13 @@ public class Auth {
 									return new TokenDetails(token);
 								}
 								if(!contentType.startsWith("application/json")) {
-									throw new AblyException("Unacceptable content type from auth callback", 406, 40170);
+									throw AblyException.fromErrorInfo(new ErrorInfo("Unacceptable content type from auth callback", 406, 40170));
 								}
 							}
 							/* if not explicitly indicated, we will just assume it's JSON */
 							JsonElement json = Serialisation.gsonParser.parse(new String(body));
 							if(!(json instanceof JsonObject)) {
-								throw new AblyException("Unexpected response type from auth callback", 406, 40170);
+								throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected response type from auth callback", 406, 40170));
 							}
 							JsonObject jsonObject = (JsonObject)json;
 							if(jsonObject.has("issued")) {
@@ -404,7 +404,7 @@ public class Auth {
 								return TokenRequest.fromJSON(jsonObject);
 							}
 						} catch(JsonParseException e) {
-							throw new AblyException("Unable to parse response from auth callback", 406, 40170);
+							throw AblyException.fromErrorInfo(new ErrorInfo("Unable to parse response from auth callback", 406, 40170));
 						}
 					}
 				});
@@ -425,7 +425,7 @@ public class Auth {
 			Log.i("Auth.requestToken()", "using token auth with client-side signing");
 			signedTokenRequest = createTokenRequest(tokenOptions, params);
 		} else {
-			throw new AblyException("Auth.requestToken(): options must include valid authentication parameters", 400, 40000);
+			throw AblyException.fromErrorInfo(new ErrorInfo("Auth.requestToken(): options must include valid authentication parameters", 400, 40000));
 		}
 
 		String tokenPath = "/keys/" + signedTokenRequest.keyName + "/requestToken";
@@ -459,17 +459,17 @@ public class Auth {
 
 		String key = options.key;
 		if(key == null)
-			throw new AblyException("No key specified", 401, 40101);
+			throw AblyException.fromErrorInfo(new ErrorInfo("No key specified", 401, 40101));
 
 		String[] keyParts = key.split(":");
 		if(keyParts.length != 2)
-			throw new AblyException("Invalid key specified", 401, 40101);
+			throw AblyException.fromErrorInfo(new ErrorInfo("Invalid key specified", 401, 40101));
 
 		String keyName = keyParts[0], keySecret = keyParts[1];
 		if(request.keyName == null)
 			request.keyName = keyName;
 		else if(!request.keyName.equals(keyName))
-			throw new AblyException("Incompatible keys specified", 401, 40102);
+			throw AblyException.fromErrorInfo(new ErrorInfo("Incompatible keys specified", 401, 40102));
 
 		/* expires */
 		String ttlText = (request.ttl == 0) ? "" : String.valueOf(request.ttl);

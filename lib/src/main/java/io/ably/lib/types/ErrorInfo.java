@@ -1,9 +1,11 @@
 package io.ably.lib.types;
 
-import java.io.IOException;
-
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessageUnpacker;
+
+import java.io.IOException;
+import java.net.NoRouteToHostException;
+import java.net.UnknownHostException;
 
 /**
  * An exception type encapsulating error information containing
@@ -87,5 +89,25 @@ public class ErrorInfo {
 
 	static ErrorInfo fromMsgpack(MessageUnpacker unpacker) throws IOException {
 		return (new ErrorInfo()).readMsgpack(unpacker);
+	}
+
+	public static ErrorInfo fromThrowable(Throwable throwable) {
+		ErrorInfo errorInfo;
+		if(throwable instanceof UnknownHostException
+				|| throwable instanceof NoRouteToHostException) {
+			errorInfo = new ErrorInfo(throwable.getLocalizedMessage(), 404, 40400);
+		}
+		else if(throwable instanceof IOException) {
+			errorInfo = new ErrorInfo(throwable.getLocalizedMessage(), 500, 50000);
+		}
+		else {
+			errorInfo = new ErrorInfo("Unexpected exception: " + throwable.getLocalizedMessage(), 50000, 500);
+		}
+
+		return errorInfo;
+	}
+
+	public static ErrorInfo fromResponseStatus(String statusLine, int statusCode) {
+		return new ErrorInfo(statusLine, statusCode, statusCode * 100);
 	}
 }

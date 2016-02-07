@@ -254,43 +254,49 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	 * transport events/notifications
 	 ***************************************/
 
-	void onMessage(ProtocolMessage message) {
-		if(protocolListener != null)
-			protocolListener.onRawMessage(message);
-		switch(message.action) {
-		case HEARTBEAT:
-			onHeartbeat(message);
-			break;
-		case ERROR:
-			ErrorInfo reason = message.error;
-			if(reason == null)
-				Log.e(TAG, "onMessage(): ERROR message received (no error detail)");
-			else
-				Log.e(TAG, "onMessage(): ERROR message received; message = " + reason.message + "; code = " + reason.code);
+	void onMessage(ProtocolMessage message) throws AblyException {
+		try {
+			if(protocolListener != null)
+				protocolListener.onRawMessage(message);
+			switch(message.action) {
+				case HEARTBEAT:
+					onHeartbeat(message);
+					break;
+				case ERROR:
+					ErrorInfo reason = message.error;
+					if(reason == null)
+						Log.e(TAG, "onMessage(): ERROR message received (no error detail)");
+					else
+						Log.e(TAG, "onMessage(): ERROR message received; message = " + reason.message + "; code = " + reason.code);
 
 			/* an error message may signify an error state in a channel, or in the connection */
-			if(message.channel != null)
-				onChannelMessage(message);
-			else
-				onError(message);
-			break;
-		case CONNECTED:
-			onConnected(message);
-			break;
-		case DISCONNECTED:
-			onDisconnected(message);
-			break;
-		case CLOSED:
-			onClosed(message);
-			break;
-		case ACK:
-			onAck(message);
-			break;
-		case NACK:
-			onNack(message);
-			break;
-		default:
-			onChannelMessage(message);
+					if(message.channel != null)
+						onChannelMessage(message);
+					else
+						onError(message);
+					break;
+				case CONNECTED:
+					onConnected(message);
+					break;
+				case DISCONNECTED:
+					onDisconnected(message);
+					break;
+				case CLOSED:
+					onClosed(message);
+					break;
+				case ACK:
+					onAck(message);
+					break;
+				case NACK:
+					onNack(message);
+					break;
+				default:
+					onChannelMessage(message);
+			}
+		}
+		catch(Exception e) {
+			// Prevent any non-AblyException to be thrown
+			throw AblyException.fromThrowable(e);
 		}
 	}
 
@@ -335,7 +341,8 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 	private synchronized void onError(ProtocolMessage message) {
 		connection.key = null;
-		notifyState(transport, new StateIndication(ConnectionState.failed, message.error));
+		ConnectionState destinationState = isFatalError(message.error) ? ConnectionState.failed : ConnectionState.disconnected;
+		notifyState(transport, new StateIndication(destinationState, message.error));
 	}
 
 	private void onAck(ProtocolMessage message) {
@@ -675,7 +682,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				return;
 			}
 		}
-		throw new AblyException(state.defaultErrorInfo);
+		throw AblyException.fromErrorInfo(state.defaultErrorInfo);
 	}
 
 	@SuppressWarnings("unused")
@@ -811,6 +818,22 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				}
 			}
 		}
+	}
+
+	/*******************
+	 * internal
+	 ******************/
+
+	private boolean isFatalError(ErrorInfo err) {
+		if(err.code != 0) {
+			/* token errors are assumed to be recoverable */
+			if((err.code >= 40140) && (err.code < 40150)) { return false; }
+			/* 400 codes assumed to be fatal */
+			if((err.code >= 40000) && (err.code < 50000)) { return true; }
+		}
+		/* otherwise, use statusCode */
+		if(err.statusCode != 0 && err.statusCode < 500) { return true; }
+		return false;
 	}
 
 	/*******************

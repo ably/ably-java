@@ -15,6 +15,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
+import io.ably.lib.types.ErrorInfo;
 
 /**
  * Utility classes and interfaces for message payload encryption.
@@ -133,7 +134,7 @@ public class Crypto {
 		else if(opts.cipherParams instanceof CipherParams)
 			params = (CipherParams)opts.cipherParams;
 		else
-			throw new AblyException("ChannelOptions not supported", 400, 40000);
+			throw AblyException.fromErrorInfo(new ErrorInfo("ChannelOptions not supported", 400, 40000));
 
 		return new CBCCipher(params);
 	}
@@ -166,10 +167,10 @@ public class Crypto {
 				iv = params.ivSpec.getIV();
 				blockLength = iv.length;
 			}
-			catch (NoSuchAlgorithmException e) { throw new AblyException(e); }
-			catch (NoSuchPaddingException e) { throw new AblyException(e); }
-			catch (InvalidAlgorithmParameterException e) { throw new AblyException(e); }
-			catch (InvalidKeyException e) { throw new AblyException(e); }
+			catch (NoSuchAlgorithmException e) { throw AblyException.fromThrowable(e); }
+			catch (NoSuchPaddingException e) { throw AblyException.fromThrowable(e); }
+			catch (InvalidAlgorithmParameterException e) { throw AblyException.fromThrowable(e); }
+			catch (InvalidKeyException e) { throw AblyException.fromThrowable(e); }
 		}
 
 		@Override
@@ -202,10 +203,10 @@ public class Crypto {
 				decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(ciphertext, 0, blockLength));
 				plaintext = decryptCipher.doFinal(ciphertext, blockLength, ciphertext.length - blockLength);
 			}
-			catch (InvalidKeyException e) { Log.e(TAG, "decrypt()", e); throw new AblyException(e); }
-			catch (InvalidAlgorithmParameterException e) { Log.e(TAG, "decrypt()", e); throw new AblyException(e); }
-			catch (IllegalBlockSizeException e) { Log.e(TAG, "decrypt()", e); throw new AblyException(e); }
-			catch (BadPaddingException e) { Log.e(TAG, "decrypt()", e); throw new AblyException(e); }
+			catch (InvalidKeyException e) { Log.e(TAG, "decrypt()", e); throw AblyException.fromThrowable(e); }
+			catch (InvalidAlgorithmParameterException e) { Log.e(TAG, "decrypt()", e); throw AblyException.fromThrowable(e); }
+			catch (IllegalBlockSizeException e) { Log.e(TAG, "decrypt()", e); throw AblyException.fromThrowable(e); }
+			catch (BadPaddingException e) { Log.e(TAG, "decrypt()", e); throw AblyException.fromThrowable(e); }
 			//System.out.println("decrypt: out");
 			//System.out.println(HexDump.dump(plaintext));
 			return plaintext;
