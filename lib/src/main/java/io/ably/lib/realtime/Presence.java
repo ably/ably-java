@@ -238,6 +238,33 @@ public class Presence {
 	/**
 	 * Update the presence data for a specified client into this channel.
 	 * If the client is not already a member of the presence set it will be added, and
+	 * presence subscribers will see an empty message for this client.
+	 * As for #enterClient above, the connection must be authenticated in a way that
+	 * enables it to represent an arbitrary clientId.
+	 * @param clientId: the id of the client.
+	 * @throws AblyException
+	 */
+	public void updateClient(String clientId) throws AblyException {
+		updateClient(clientId, null);
+	}
+
+	/**
+	 * Update the presence data for a specified client into this channel.
+	 * If the client is not already a member of the presence set it will be added, and
+	 * presence subscribers will see an enter or update message for this client.
+	 * As for #enterClient above, the connection must be authenticated in a way that
+	 * enables it to represent an arbitrary clientId.
+	 * @param clientId: the id of the client.
+	 * @param data: optional data (eg a status message) for this member.
+	 * @throws AblyException
+	 */
+	public void updateClient(String clientId, Object data) throws AblyException {
+		updateClient(clientId, data, null);
+	}
+
+	/**
+	 * Update the presence data for a specified client into this channel.
+	 * If the client is not already a member of the presence set it will be added, and
 	 * presence subscribers will see an enter or update message for this client.
 	 * As for #enterClient above, the connection must be authenticated in a way that
 	 * enables it to represent an arbitrary clientId.
