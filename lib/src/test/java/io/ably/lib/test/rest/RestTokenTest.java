@@ -59,7 +59,7 @@ public class RestTokenTest {
 	public void authrequesttoken1() {
 		try {
 			long requestTime = timeOffset + System.currentTimeMillis();
-			TokenDetails tokenDetails = ably.auth.requestToken(null, new TokenParams());
+			TokenDetails tokenDetails = ably.auth.requestToken(new TokenParams(), null);
 			assertNotNull("Expected token value", tokenDetails.token);
 			assertTrue("Unexpected issued time", (tokenDetails.issued >= (requestTime - 1000)) && (tokenDetails.issued <= (requestTime + 1000)));
 			assertEquals("Unexpected expires time", tokenDetails.expires, tokenDetails.issued + 60*60*1000);
@@ -79,7 +79,7 @@ public class RestTokenTest {
 			long requestTime = timeOffset + System.currentTimeMillis();
 			TokenParams tokenParams = new TokenParams();
 			tokenParams.timestamp = requestTime;
-			TokenDetails tokenDetails = ably.auth.requestToken(null, tokenParams);
+			TokenDetails tokenDetails = ably.auth.requestToken(tokenParams, null);
 			assertNotNull("Expected token value", tokenDetails.token);
 			assertTrue("Unexpected issued time", (tokenDetails.issued >= (requestTime - 1000)) && (tokenDetails.issued <= (requestTime + 1000)));
 			assertEquals("Unexpected expires time", tokenDetails.expires, tokenDetails.issued + 60*60*1000);
@@ -99,7 +99,7 @@ public class RestTokenTest {
 		TokenParams tokenParams = new TokenParams();
 		tokenParams.timestamp = requestTime - 30*60*1000;
 		try {
-			ably.auth.requestToken(null, tokenParams);
+			ably.auth.requestToken(tokenParams, null);
 			fail("Expected token request rejection");
 		} catch(AblyException e) {
 			assertEquals("Unexpected error code", e.errorInfo.code, 40101);
@@ -115,7 +115,7 @@ public class RestTokenTest {
 			long requestTime = timeOffset + System.currentTimeMillis();
 			AuthOptions authOptions = new AuthOptions();
 			authOptions.queryTime = true;
-			TokenDetails tokenDetails = ably.auth.requestToken(authOptions, null);
+			TokenDetails tokenDetails = ably.auth.requestToken(null, authOptions);
 			assertNotNull("Expected token value", tokenDetails.token);
 			assertTrue("Unexpected issued time", (tokenDetails.issued >= (requestTime - 1000)) && (tokenDetails.issued <= (requestTime + 1000)));
 			assertEquals("Unexpected expires time", tokenDetails.expires, tokenDetails.issued + 60*60*1000);
@@ -135,7 +135,7 @@ public class RestTokenTest {
 			long requestTime = timeOffset + System.currentTimeMillis();
 			TokenParams tokenParams = new TokenParams();
 			tokenParams.clientId = "test client id";
-			TokenDetails tokenDetails = ably.auth.requestToken(null, tokenParams);
+			TokenDetails tokenDetails = ably.auth.requestToken(tokenParams, null);
 			assertNotNull("Expected token value", tokenDetails.token);
 			assertTrue("Unexpected issued time", (tokenDetails.issued >= (requestTime - 2000)) && (tokenDetails.issued <= (requestTime + 2000)));
 			assertEquals("Unexpected expires time", tokenDetails.expires, tokenDetails.issued + 60*60*1000);
@@ -157,7 +157,7 @@ public class RestTokenTest {
 			Capability capability = new Capability();
 			capability.addResource("onlythischannel", "subscribe");
 			String capabilityText = tokenParams.capability = capability.toString();
-			TokenDetails tokenDetails = ably.auth.requestToken(null, tokenParams);
+			TokenDetails tokenDetails = ably.auth.requestToken(tokenParams, null);
 			assertNotNull("Expected token value", tokenDetails.token);
 			assertEquals("Unexpected capability", tokenDetails.capability, capabilityText);
 		} catch (AblyException e) {
@@ -175,7 +175,7 @@ public class RestTokenTest {
 			Key key = Setup.getTestVars().keys[1];
 			AuthOptions authOptions = new AuthOptions();
 			authOptions.key = key.keyStr;
-			TokenDetails tokenDetails = ably.auth.requestToken(authOptions, null);
+			TokenDetails tokenDetails = ably.auth.requestToken(null, authOptions);
 			assertNotNull("Expected token value", tokenDetails.token);
 			assertEquals("Unexpected capability", tokenDetails.capability, key.capability);
 		} catch (AblyException e) {
@@ -192,7 +192,7 @@ public class RestTokenTest {
 		try {
 			TokenParams tokenParams = new TokenParams();
 			tokenParams.ttl = 100*1000;
-			TokenDetails tokenDetails = ably.auth.requestToken(null, tokenParams);
+			TokenDetails tokenDetails = ably.auth.requestToken(tokenParams, null);
 			assertNotNull("Expected token value", tokenDetails.token);
 			assertEquals("Unexpected expires", tokenDetails.expires, tokenDetails.issued + 100*1000);
 		} catch (AblyException e) {
@@ -209,7 +209,7 @@ public class RestTokenTest {
 		TokenParams tokenParams = new TokenParams();
 		tokenParams.ttl = 365*24*60*60*1000;
 		try {
-			ably.auth.requestToken(null, tokenParams);
+			ably.auth.requestToken(tokenParams, null);
 			fail("Expected token request rejection");
 		} catch(AblyException e) {
 			assertEquals("Unexpected error code", e.errorInfo.code, 40003);
@@ -224,7 +224,7 @@ public class RestTokenTest {
 		TokenParams tokenParams = new TokenParams();
 		tokenParams.ttl = -1;
 		try {
-			ably.auth.requestToken(null, tokenParams);
+			ably.auth.requestToken(tokenParams, null);
 			fail("Expected token request rejection");
 		} catch(AblyException e) {
 			assertEquals("Unexpected error code", e.errorInfo.code, 40003);

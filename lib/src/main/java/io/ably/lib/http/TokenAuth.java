@@ -51,7 +51,7 @@ public class TokenAuth {
 			}
 		}
 		Log.i("TokenAuth.authorise()", "requesting new token");
-		setTokenDetails(auth.requestToken(options, params));
+		setTokenDetails(auth.requestToken(params, options));
 		return tokenDetails;
 	}
 
