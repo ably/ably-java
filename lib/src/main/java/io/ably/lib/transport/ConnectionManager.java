@@ -243,7 +243,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			}
 		}
 		try {
-			send(new ProtocolMessage(ProtocolMessage.Action.HEARTBEAT), false, null);
+			send(new ProtocolMessage(ProtocolMessage.Action.heartbeat), false, null);
 		} catch (AblyException e) {
 			if(listener != null)
 				listener.onError(e.errorInfo);
@@ -259,10 +259,10 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			if(protocolListener != null)
 				protocolListener.onRawMessage(message);
 			switch(message.action) {
-				case HEARTBEAT:
+				case heartbeat:
 					onHeartbeat(message);
 					break;
-				case ERROR:
+				case error:
 					ErrorInfo reason = message.error;
 					if(reason == null)
 						Log.e(TAG, "onMessage(): ERROR message received (no error detail)");
@@ -275,19 +275,19 @@ public class ConnectionManager implements Runnable, ConnectListener {
 					else
 						onError(message);
 					break;
-				case CONNECTED:
+				case connected:
 					onConnected(message);
 					break;
-				case DISCONNECTED:
+				case disconnected:
 					onDisconnected(message);
 					break;
-				case CLOSED:
+				case closed:
 					onClosed(message);
 					break;
-				case ACK:
+				case ack:
 					onAck(message);
 					break;
-				case NACK:
+				case nack:
 					onNack(message);
 					break;
 				default:
@@ -618,7 +618,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		/* send a close message on the transport, if any */
 		if(transport != null) {
 			try {
-				transport.send(new ProtocolMessage(Action.CLOSE));
+				transport.send(new ProtocolMessage(Action.close));
 			} catch (AblyException e) {
 				transport.abort(e.errorInfo);
 			}

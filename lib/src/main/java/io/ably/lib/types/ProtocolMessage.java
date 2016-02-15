@@ -25,31 +25,31 @@ import com.google.gson.JsonSerializer;
  */
 public class ProtocolMessage {
 	public enum Action {
-		HEARTBEAT,
-		ACK,
-		NACK,
-		CONNECT,
-		CONNECTED,
-		DISCONNECT,
-		DISCONNECTED,
-		CLOSE,
-		CLOSED,
-		ERROR,
-		ATTACH,
-		ATTACHED,
-		DETACH,
-		DETACHED,
-		PRESENCE,
-		MESSAGE,
-		SYNC;
+		heartbeat,
+		ack,
+		nack,
+		connect,
+		connected,
+		disconnect,
+		disconnected,
+		close,
+		closed,
+		error,
+		attach,
+		attached,
+		detach,
+		detached,
+		presence,
+		message,
+		sync;
 
 		public int getValue() { return ordinal(); }
 		public static Action findByValue(int value) { return values()[value]; }
 	}
 
 	public enum Flag {
-		HAS_PRESENCE,
-		HAS_BACKLOG;
+		has_presence,
+		has_backlog;
 
 		public int getValue() { return ordinal(); }
 		public static Flag findByValue(int value) { return values()[value]; }
@@ -61,7 +61,7 @@ public class ProtocolMessage {
 		if(dest.channel == src.channel) {
 			if((action = dest.action) == src.action) {
 				switch(action) {
-				case MESSAGE: {
+				case message: {
 						Message[] srcMessages = src.messages;
 						Message[] destMessages = dest.messages;
 						Message[] mergedMessages = dest.messages = new Message[destMessages.length + srcMessages.length];
@@ -70,7 +70,7 @@ public class ProtocolMessage {
 						result = true;
 					}
 					break;					
-				case PRESENCE: {
+				case presence: {
 						PresenceMessage[] srcMessages = src.presence;
 						PresenceMessage[] destMessages = dest.presence;
 						PresenceMessage[] mergedMessages = dest.presence = new PresenceMessage[destMessages.length + srcMessages.length];
@@ -87,7 +87,7 @@ public class ProtocolMessage {
 	}
 
 	public static boolean ackRequired(ProtocolMessage msg) {
-		return (msg.action == Action.MESSAGE || msg.action == Action.PRESENCE);
+		return (msg.action == Action.message || msg.action == Action.presence);
 	}
 
 	public ProtocolMessage() {}

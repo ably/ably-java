@@ -74,10 +74,10 @@ public class Stats {
 	}
 
 	public static enum Granularity {
-		MINUTE,
-		HOUR,
-		DAY,
-		MONTH
+		minute,
+		hour,
+		day,
+		month
 	}
 
 	private static String[] intervalFormatString = new String[] {

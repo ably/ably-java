@@ -108,7 +108,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 			throw AblyException.fromErrorInfo(connectionManager.getStateErrorInfo());
 
 		/* send attach request and pending state */
-		ProtocolMessage attachMessage = new ProtocolMessage(Action.ATTACH, this.name);
+		ProtocolMessage attachMessage = new ProtocolMessage(Action.attach, this.name);
 		try {
 			setState(ChannelState.attaching, null);
 			connectionManager.send(attachMessage, true, null);
@@ -139,7 +139,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 			throw AblyException.fromErrorInfo(connectionManager.getStateErrorInfo());
 
 		/* send detach request */
-		ProtocolMessage detachMessage = new ProtocolMessage(Action.DETACH, this.name);
+		ProtocolMessage detachMessage = new ProtocolMessage(Action.detach, this.name);
 		try {
 			setState(ChannelState.detaching, null);
 			connectionManager.send(detachMessage, true, null);
@@ -163,7 +163,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 			throw AblyException.fromErrorInfo(connectionManager.getStateErrorInfo());
 
 		/* send sync request */
-		ProtocolMessage syncMessage = new ProtocolMessage(Action.SYNC, this.name);
+		ProtocolMessage syncMessage = new ProtocolMessage(Action.sync, this.name);
 		syncMessage.channelSerial = syncChannelSerial;
 		connectionManager.send(syncMessage, true, null);
 	}
@@ -177,7 +177,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		attachSerial = message.channelSerial;
 		setState(ChannelState.attached, message.error);
 		sendQueuedMessages();
-		if((message.flags & ( 1 << Flag.HAS_PRESENCE.ordinal())) > 0) {
+		if((message.flags & ( 1 << Flag.has_presence.ordinal())) > 0) {
 			Log.v(TAG, "setAttached(); awaiting sync; channel = " + name);
 			presence.awaitSync();
 		}
@@ -425,7 +425,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	public void publish(Message[] messages, CompletionListener listener) throws AblyException {
 		Log.v(TAG, "publish(Message[]); channel = " + this.name);
 		for(Message message : messages) message.encode(options);
-		ProtocolMessage msg = new ProtocolMessage(Action.MESSAGE, this.name);
+		ProtocolMessage msg = new ProtocolMessage(Action.message, this.name);
 		msg.messages = messages;
 		switch(state) {
 		case initialised:
@@ -520,22 +520,22 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 
 	void onChannelMessage(ProtocolMessage msg) {
 		switch(msg.action) {
-		case ATTACHED:
+		case attached:
 			setAttached(msg);
 			break;
-		case DETACHED:
+		case detached:
 			setDetached(msg);
 			break;
-		case MESSAGE:
+		case message:
 			onMessage(msg);
 			break;
-		case PRESENCE:
+		case presence:
 			onPresence(msg, null);
 			break;
-		case SYNC:
+		case sync:
 			onSync(msg);
 			break;
-		case ERROR:
+		case error:
 			setFailed(msg);
 			break;
 		default:

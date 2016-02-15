@@ -102,17 +102,17 @@ public class Presence {
 		}
 		for(PresenceMessage update : messages) {
 			switch(update.action) {
-			case ENTER:
-			case UPDATE:
+			case enter:
+			case update:
 				update = (PresenceMessage)update.clone();
-				update.action = PresenceMessage.Action.PRESENT;
-			case PRESENT:
+				update.action = PresenceMessage.Action.present;
+			case present:
 				broadcast &= presence.put(update);
 				break;
-			case LEAVE:
+			case leave:
 				broadcast &= presence.remove(update);
 				break;
-			case ABSENT:
+			case absent:
 			}
 		}
 		/* if this is the last message in a sequence of sync updates, end the sync */
@@ -205,7 +205,7 @@ public class Presence {
 	 */
 	public void enterClient(String clientId, Object data, CompletionListener listener) throws AblyException {
 		Log.v(TAG, "enterClient(); channel = " + channel.name + "; clientId = " + clientId);
-		updatePresence(new PresenceMessage(PresenceMessage.Action.ENTER, clientId, data), listener);
+		updatePresence(new PresenceMessage(PresenceMessage.Action.enter, clientId, data), listener);
 	}
 
 	/**
@@ -222,7 +222,7 @@ public class Presence {
 	 */
 	public void updateClient(String clientId, Object data, CompletionListener listener) throws AblyException {
 		Log.v(TAG, "updateClient(); channel = " + channel.name + "; clientId = " + clientId);
-		updatePresence(new PresenceMessage(PresenceMessage.Action.UPDATE, clientId, data), listener);
+		updatePresence(new PresenceMessage(PresenceMessage.Action.update, clientId, data), listener);
 	}
 
 	/**
@@ -235,7 +235,7 @@ public class Presence {
 	 */
 	public void leaveClient(String clientId, Object data, CompletionListener listener) throws AblyException {
 		Log.v(TAG, "leaveClient(); channel = " + channel.name + "; clientId = " + clientId);
-		updatePresence(new PresenceMessage(PresenceMessage.Action.LEAVE, clientId, data), listener);
+		updatePresence(new PresenceMessage(PresenceMessage.Action.leave, clientId, data), listener);
 	}
 
 	/**
@@ -265,7 +265,7 @@ public class Presence {
 				pendingPresence.put(msg.clientId, queued);
 				break;
 			case attached:
-				ProtocolMessage message = new ProtocolMessage(ProtocolMessage.Action.PRESENCE, channel.name);
+				ProtocolMessage message = new ProtocolMessage(ProtocolMessage.Action.presence, channel.name);
 				message.presence = new PresenceMessage[] { msg };
 				AblyRealtime ably = channel.ably;
 				ConnectionManager connectionManager = ably.connection.connectionManager;
@@ -317,7 +317,7 @@ public class Presence {
 		if(count == 0)
 			return;
 
-		ProtocolMessage message = new ProtocolMessage(ProtocolMessage.Action.PRESENCE, channel.name);
+		ProtocolMessage message = new ProtocolMessage(ProtocolMessage.Action.presence, channel.name);
 		Iterator<QueuedPresence> allQueued = pendingPresence.values().iterator();
 		PresenceMessage[] presenceMessages = message.presence = new PresenceMessage[count];
 		CompletionListener listener;
@@ -387,9 +387,9 @@ public class Presence {
 	 * indexed by a String key that is a combination of connectionId and clientId.
 	 * This map synchronises the membership of the presence set by handling
 	 * sync messages from the service. Since sync messages can be out-of-order -
-	 * eg an ENTER sync event being received after that member has in fact left -
-	 * this map keeps "witness" entries, with ABSENT Action, to remember the
-	 * fact that a LEAVE event has been seen for a member. These entries are
+	 * eg an enter sync event being received after that member has in fact left -
+	 * this map keeps "witness" entries, with absent Action, to remember the
+	 * fact that a leave event has been seen for a member. These entries are
 	 * cleared once the last set of updates of a sync sequence have been received.
 	 *
 	 */
@@ -403,7 +403,7 @@ public class Presence {
 			Collection<PresenceMessage> result = new HashSet<PresenceMessage>();
 			for(Iterator<Map.Entry<String, PresenceMessage>> it = members.entrySet().iterator(); it.hasNext();) {
 				PresenceMessage entry = it.next().getValue();
-				if(entry.clientId.equals(clientId) && entry.action != PresenceMessage.Action.ABSENT) {
+				if(entry.clientId.equals(clientId) && entry.action != PresenceMessage.Action.absent) {
 					result.add(entry);
 				}
 			}
@@ -422,7 +422,7 @@ public class Presence {
 			if(residualMembers != null)
 				residualMembers.remove(key);
 
-			/* compare the timestamp of the new item with any existing member (or ABSENT witness) */
+			/* compare the timestamp of the new item with any existing member (or absent witness) */
 			PresenceMessage existingItem = members.get(key);
 			if(existingItem != null && item.timestamp < existingItem.timestamp) {
 				/* no item supersedes a newer item with the same key */
@@ -454,7 +454,7 @@ public class Presence {
 			result.addAll(members.values());
 			for(Iterator<PresenceMessage> it = result.iterator(); it.hasNext();) {
 				PresenceMessage entry = it.next();
-				if(entry.action == PresenceMessage.Action.ABSENT) {
+				if(entry.action == PresenceMessage.Action.absent) {
 					it.remove();
 				}
 			}
@@ -469,7 +469,7 @@ public class Presence {
 		synchronized boolean remove(PresenceMessage item) {
 			String key = memberKey(item);
 			PresenceMessage existingItem = members.remove(key);
-			if(existingItem != null && existingItem.action == PresenceMessage.Action.ABSENT)
+			if(existingItem != null && existingItem.action == PresenceMessage.Action.absent)
 				return false;
 			return true;
 		}
@@ -494,11 +494,11 @@ public class Presence {
 		synchronized void endSync() {
 			Log.v(TAG, "endSync(); channel = " + channel.name + "; syncInProgress = " + syncInProgress);
 			if(syncInProgress) {
-				/* we can now strip out the ABSENT members, as we have
+				/* we can now strip out the absent members, as we have
 				 * received all of the out-of-order sync messages */
 				for(Iterator<Map.Entry<String, PresenceMessage>> it = members.entrySet().iterator(); it.hasNext();) {
 					Map.Entry<String, PresenceMessage> entry = it.next();
-					if(entry.getValue().action == PresenceMessage.Action.ABSENT) {
+					if(entry.getValue().action == PresenceMessage.Action.absent) {
 						it.remove();
 					}
 				}

@@ -12,8 +12,8 @@ import io.ably.lib.util.EventEmitter;
 public class EventEmitterTest {
 
 	private static enum MyEvents {
-		EVENT_0,
-		EVENT_1
+		event_0,
+		event_1
 	}
 
 	private static class MyEventPayload {
@@ -51,11 +51,11 @@ public class EventEmitterTest {
 		emitter.on(new MyListener() {
 			@Override
 			public void onMyThingHappened(MyEventPayload theThing) {
-				assertEquals(theThing.event, MyEvents.EVENT_0);
+				assertEquals(theThing.event, MyEvents.event_0);
 				assertEquals(theThing.message, "on_simple");
 			}
 		});
-		emitter.emit(MyEvents.EVENT_0, "on_simple");
+		emitter.emit(MyEvents.event_0, "on_simple");
 	}
 
 	/**
@@ -67,11 +67,11 @@ public class EventEmitterTest {
 		MyEmitter emitter = new MyEmitter();
 		CountingListener listener = new CountingListener();
 		emitter.on(listener);
-		emitter.emit(MyEvents.EVENT_0, "on_multiple_0");
-		emitter.emit(MyEvents.EVENT_0, "on_multiple_0");
-		emitter.emit(MyEvents.EVENT_1, "on_multiple_1");
-		assertEquals(listener.counts.get(MyEvents.EVENT_0), Integer.valueOf(2));
-		assertEquals(listener.counts.get(MyEvents.EVENT_1), Integer.valueOf(1));
+		emitter.emit(MyEvents.event_0, "on_multiple_0");
+		emitter.emit(MyEvents.event_0, "on_multiple_0");
+		emitter.emit(MyEvents.event_1, "on_multiple_1");
+		assertEquals(listener.counts.get(MyEvents.event_0), Integer.valueOf(2));
+		assertEquals(listener.counts.get(MyEvents.event_1), Integer.valueOf(1));
 	}
 
 	/**
@@ -84,10 +84,10 @@ public class EventEmitterTest {
 		CountingListener listener = new CountingListener();
 		emitter.on(listener);
 		emitter.off(listener);
-		emitter.emit(MyEvents.EVENT_0, "on_multiple_0");
-		emitter.emit(MyEvents.EVENT_1, "on_multiple_1");
-		assertNull(listener.counts.get(MyEvents.EVENT_0));
-		assertNull(listener.counts.get(MyEvents.EVENT_1));
+		emitter.emit(MyEvents.event_0, "on_multiple_0");
+		emitter.emit(MyEvents.event_1, "on_multiple_1");
+		assertNull(listener.counts.get(MyEvents.event_0));
+		assertNull(listener.counts.get(MyEvents.event_1));
 	}
 
 	/**
@@ -98,12 +98,12 @@ public class EventEmitterTest {
 	public void on_event_simple() {
 		MyEmitter emitter = new MyEmitter();
 		CountingListener listener = new CountingListener();
-		emitter.on(MyEvents.EVENT_0, listener);
-		emitter.emit(MyEvents.EVENT_0, "on_event_simple_0");
-		emitter.emit(MyEvents.EVENT_0, "on_event_simple_0");
-		emitter.emit(MyEvents.EVENT_1, "on_event_simple_1");
-		assertEquals(listener.counts.get(MyEvents.EVENT_0), Integer.valueOf(2));
-		assertNull(listener.counts.get(MyEvents.EVENT_1));
+		emitter.on(MyEvents.event_0, listener);
+		emitter.emit(MyEvents.event_0, "on_event_simple_0");
+		emitter.emit(MyEvents.event_0, "on_event_simple_0");
+		emitter.emit(MyEvents.event_1, "on_event_simple_1");
+		assertEquals(listener.counts.get(MyEvents.event_0), Integer.valueOf(2));
+		assertNull(listener.counts.get(MyEvents.event_1));
 	}
 
 	/**
@@ -114,13 +114,13 @@ public class EventEmitterTest {
 	public void off_event_simple() {
 		MyEmitter emitter = new MyEmitter();
 		CountingListener listener = new CountingListener();
-		emitter.on(MyEvents.EVENT_0, listener);
-		emitter.emit(MyEvents.EVENT_0, "off_event_simple_0");
-		emitter.emit(MyEvents.EVENT_1, "off_event_simple_1");
-		emitter.off(MyEvents.EVENT_0, listener);
-		emitter.emit(MyEvents.EVENT_0, "off_event_simple_0");
-		assertEquals(listener.counts.get(MyEvents.EVENT_0), Integer.valueOf(1));
-		assertNull(listener.counts.get(MyEvents.EVENT_1));
+		emitter.on(MyEvents.event_0, listener);
+		emitter.emit(MyEvents.event_0, "off_event_simple_0");
+		emitter.emit(MyEvents.event_1, "off_event_simple_1");
+		emitter.off(MyEvents.event_0, listener);
+		emitter.emit(MyEvents.event_0, "off_event_simple_0");
+		assertEquals(listener.counts.get(MyEvents.event_0), Integer.valueOf(1));
+		assertNull(listener.counts.get(MyEvents.event_1));
 	}
 
 	/**
@@ -131,12 +131,12 @@ public class EventEmitterTest {
 	public void once_event_simple() {
 		MyEmitter emitter = new MyEmitter();
 		CountingListener listener = new CountingListener();
-		emitter.once(MyEvents.EVENT_0, listener);
-		emitter.emit(MyEvents.EVENT_0, "once_event_simple_0");
-		emitter.emit(MyEvents.EVENT_0, "once_event_simple_0");
-		emitter.emit(MyEvents.EVENT_1, "once_event_simple_1");
-		assertEquals(listener.counts.get(MyEvents.EVENT_0), Integer.valueOf(1));
-		assertNull(listener.counts.get(MyEvents.EVENT_1));
+		emitter.once(MyEvents.event_0, listener);
+		emitter.emit(MyEvents.event_0, "once_event_simple_0");
+		emitter.emit(MyEvents.event_0, "once_event_simple_0");
+		emitter.emit(MyEvents.event_1, "once_event_simple_1");
+		assertEquals(listener.counts.get(MyEvents.event_0), Integer.valueOf(1));
+		assertNull(listener.counts.get(MyEvents.event_1));
 	}
 
 	/**
@@ -147,12 +147,12 @@ public class EventEmitterTest {
 	public void once_off_event_simple() {
 		MyEmitter emitter = new MyEmitter();
 		CountingListener listener = new CountingListener();
-		emitter.once(MyEvents.EVENT_0, listener);
-		emitter.emit(MyEvents.EVENT_1, "once_event_simple_1");
-		emitter.off(MyEvents.EVENT_0, listener);
-		emitter.emit(MyEvents.EVENT_0, "once_event_simple_0");
-		assertNull(listener.counts.get(MyEvents.EVENT_0));
-		assertNull(listener.counts.get(MyEvents.EVENT_1));
+		emitter.once(MyEvents.event_0, listener);
+		emitter.emit(MyEvents.event_1, "once_event_simple_1");
+		emitter.off(MyEvents.event_0, listener);
+		emitter.emit(MyEvents.event_0, "once_event_simple_0");
+		assertNull(listener.counts.get(MyEvents.event_0));
+		assertNull(listener.counts.get(MyEvents.event_1));
 	}
 
 }
