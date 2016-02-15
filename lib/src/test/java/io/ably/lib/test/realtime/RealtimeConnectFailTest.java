@@ -146,7 +146,7 @@ public class RealtimeConnectFailTest {
 			ClientOptions optsForToken = optsTestVars.createOptions(optsTestVars.keys[0].keyStr);
 			optsForToken.logLevel = Log.VERBOSE;
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
-			TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, new TokenParams() {{ ttl = 8000L; }});
+			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 8000L; }}, null);
 			assertNotNull("Expected token value", tokenDetails.token);
 
 			/* implement callback, using Ably instance with key */
@@ -154,7 +154,7 @@ public class RealtimeConnectFailTest {
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
 					++cbCount;
-					return ablyForToken.auth.requestToken(null, params);
+					return ablyForToken.auth.requestToken(params, null);
 				}
 				public int getCbCount() { return cbCount; }
 				private int cbCount = 0;

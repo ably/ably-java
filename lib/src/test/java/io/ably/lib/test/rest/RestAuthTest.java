@@ -361,7 +361,7 @@ public class RestAuthTest {
 				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
-					return ably.auth.requestToken(null, params);
+					return ably.auth.requestToken(params, null);
 				}
 			};
 
@@ -393,7 +393,7 @@ public class RestAuthTest {
 			final TestVars testVars = Setup.getTestVars();
 			ClientOptions optsForToken = testVars.createOptions(testVars.keys[0].keyStr);
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
-			TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, new TokenParams() {{ ttl = 5000L; }});
+			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 5000L; }}, null);
 			assertNotNull("Expected token value", tokenDetails.token);
 
 			/* implement callback, using Ably instance with key */
@@ -401,7 +401,7 @@ public class RestAuthTest {
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
 					++cbCount;
-					return ablyForToken.auth.requestToken(null, params);
+					return ablyForToken.auth.requestToken(params, null);
 				}
 				public int getCbCount() { return cbCount; }
 				private int cbCount = 0;
@@ -486,7 +486,7 @@ public class RestAuthTest {
 				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
-					return ably.auth.requestToken(null, params);
+					return ably.auth.requestToken(params, null);
 				}
 			};
 
@@ -549,7 +549,7 @@ public class RestAuthTest {
 				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
-					return ably.auth.requestToken(null, params);
+					return ably.auth.requestToken(params, null);
 				}
 			};
 
@@ -595,7 +595,7 @@ public class RestAuthTest {
 				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
-					return ably.auth.requestToken(null, params);
+					return ably.auth.requestToken(params, null);
 				}
 			};
 
@@ -656,7 +656,7 @@ public class RestAuthTest {
 				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
-					return ably.auth.requestToken(null, params);
+					return ably.auth.requestToken(params, null);
 				}
 			};
 

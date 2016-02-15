@@ -48,7 +48,7 @@ public class RealtimePresenceHistoryTest {
 		ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 		testVars.fillInOptions(opts);
 		rest = new AblyRest(opts);
-		token = rest.auth.requestToken(null, new TokenParams() {{ clientId = testClientId; }});
+		token = rest.auth.requestToken(new TokenParams() {{ clientId = testClientId; }}, null);
 
 		/* sync */
 		long timeFromService = rest.time();

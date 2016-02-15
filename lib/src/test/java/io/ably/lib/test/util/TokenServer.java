@@ -62,7 +62,7 @@ public class TokenServer extends NanoHTTPD {
 		if(target.equals("/get-token")) {
 			TokenParams tokenParams = params2TokenParams(params);
 			try {
-				TokenDetails token = ably.auth.requestToken(null, tokenParams);
+				TokenDetails token = ably.auth.requestToken(tokenParams, null);
 				return json2Response(token);
 			} catch (AblyException e) {
 				e.printStackTrace();

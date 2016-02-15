@@ -326,12 +326,12 @@ public class Auth {
 	/**
 	 * Make a token request. This will make a token request now, even if the library already
 	 * has a valid token. It would typically be used to issue tokens for use by other clients.
-	 * @param options: see {@link #authorise} for options
-	 * @param params: see {@link #authorise} for params
+	 * @param params : see {@link #authorise} for params
+	 * @param options : see {@link #authorise} for options
 	 * @return: the TokenDetails
 	 * @throws AblyException
 	 */
-	public TokenDetails requestToken(AuthOptions options, TokenParams params) throws AblyException {
+	public TokenDetails requestToken(TokenParams params, AuthOptions options) throws AblyException {
 		/* merge supplied options with the already-known options */
 		final AuthOptions tokenOptions = (options == null) ? authOptions : options.merge(authOptions);
 

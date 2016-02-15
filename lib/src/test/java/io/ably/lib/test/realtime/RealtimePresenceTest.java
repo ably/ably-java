@@ -25,7 +25,6 @@ import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.PresenceMessage.Action;
-import io.ably.lib.util.Log;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -92,9 +91,9 @@ public class RealtimePresenceTest {
 		ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 		testVars.fillInOptions(opts);
 		AblyRest rest = new AblyRest(opts);
-		token1 = rest.auth.requestToken(null, new TokenParams() {{ clientId = testClientId1; }});
-		token2 = rest.auth.requestToken(null, new TokenParams() {{ clientId = testClientId2; }});
-		wildcardToken = rest.auth.requestToken(null, new TokenParams() {{ clientId = "*"; }});
+		token1 = rest.auth.requestToken(new TokenParams() {{ clientId = testClientId1; }}, null);
+		token2 = rest.auth.requestToken(new TokenParams() {{ clientId = testClientId2; }}, null);
+		wildcardToken = rest.auth.requestToken(new TokenParams() {{ clientId = "*"; }}, null);
 	}
 
 	@AfterClass
