@@ -133,8 +133,8 @@ public class RealtimePresenceTest {
 			CompletionWaiter enterComplete = new CompletionWaiter();
 			String enterString = "Test data (enter_simple)";
 			client1Channel.presence.enter(enterString, enterComplete);
-			presenceWaiter.waitFor(testClientId1, Action.ENTER);
-			assertNotNull(presenceWaiter.contains(testClientId1, Action.ENTER));
+			presenceWaiter.waitFor(testClientId1, Action.enter);
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.enter));
 			assertEquals(presenceWaiter.receivedMessages.get(0).data, enterString);
 
 			/* verify enter callback called on completion */
@@ -180,8 +180,8 @@ public class RealtimePresenceTest {
 			CompletionWaiter enterComplete = new CompletionWaiter();
 			String enterString = "Test data (enter_before_attach)";
 			client1Channel.presence.enter(enterString, enterComplete);
-			presenceWaiter.waitFor(testClientId1, Action.ENTER);
-			PresenceMessage expectedPresent = presenceWaiter.contains(testClientId1, clientAbly1.connection.id, Action.ENTER);
+			presenceWaiter.waitFor(testClientId1, Action.enter);
+			PresenceMessage expectedPresent = presenceWaiter.contains(testClientId1, clientAbly1.connection.id, Action.enter);
 			assertNotNull(expectedPresent);
 			assertEquals(expectedPresent.data, enterString);
 
@@ -224,8 +224,8 @@ public class RealtimePresenceTest {
 			CompletionWaiter enterComplete = new CompletionWaiter();
 			String enterString = "Test data (enter_before_connect)";
 			client1Channel.presence.enter(enterString, enterComplete);
-			presenceWaiter.waitFor(testClientId1, Action.ENTER);
-			PresenceMessage expectedPresent = presenceWaiter.contains(testClientId1, clientAbly1.connection.id, Action.ENTER);
+			presenceWaiter.waitFor(testClientId1, Action.enter);
+			PresenceMessage expectedPresent = presenceWaiter.contains(testClientId1, clientAbly1.connection.id, Action.enter);
 			assertNotNull(expectedPresent);
 			assertEquals(expectedPresent.data, enterString);
 
@@ -268,8 +268,8 @@ public class RealtimePresenceTest {
 			CompletionWaiter enterComplete = new CompletionWaiter();
 			String enterString = "Test data (enter_before_connect)";
 			client1Channel.presence.enter(enterString, enterComplete);
-			presenceWaiter.waitFor(testClientId1, Action.ENTER);
-			assertNotNull(presenceWaiter.contains(testClientId1, Action.ENTER));
+			presenceWaiter.waitFor(testClientId1, Action.enter);
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.enter));
 			assertEquals(presenceWaiter.receivedMessages.get(0).data, enterString);
 			presenceWaiter.reset();
 
@@ -281,8 +281,8 @@ public class RealtimePresenceTest {
 			CompletionWaiter leaveComplete = new CompletionWaiter();
 			String leaveString = "Test data (enter_before_connect), leaving";
 			client1Channel.presence.leave(leaveString, leaveComplete);
-			presenceWaiter.waitFor(testClientId1, Action.LEAVE);
-			PresenceMessage expectedLeft = presenceWaiter.contains(testClientId1, clientAbly1.connection.id, Action.LEAVE);
+			presenceWaiter.waitFor(testClientId1, Action.leave);
+			PresenceMessage expectedLeft = presenceWaiter.contains(testClientId1, clientAbly1.connection.id, Action.leave);
 			assertNotNull(expectedLeft);
 			assertEquals(expectedLeft.data, leaveString);
 
@@ -326,8 +326,8 @@ public class RealtimePresenceTest {
 			CompletionWaiter enterComplete = new CompletionWaiter();
 			String enterString = "Test data (enter_enter_simple)";
 			client1Channel.presence.enter(enterString, enterComplete);
-			presenceWaiter.waitFor(testClientId1, Action.ENTER);
-			assertNotNull(presenceWaiter.contains(testClientId1, Action.ENTER));
+			presenceWaiter.waitFor(testClientId1, Action.enter);
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.enter));
 			assertEquals(presenceWaiter.receivedMessages.get(0).data, enterString);
 			presenceWaiter.reset();
 
@@ -339,8 +339,8 @@ public class RealtimePresenceTest {
 			CompletionWaiter reenterComplete = new CompletionWaiter();
 			String reenterString = "Test data (enter_enter_simple), reentering";
 			client1Channel.presence.enter(reenterString, reenterComplete);
-			presenceWaiter.waitFor(testClientId1, Action.UPDATE);
-			assertNotNull(presenceWaiter.contains(testClientId1, Action.UPDATE));
+			presenceWaiter.waitFor(testClientId1, Action.update);
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.update));
 			assertEquals(presenceWaiter.receivedMessages.get(0).data, reenterString);
 
 			/* verify reenter callback called on completion */
@@ -351,8 +351,8 @@ public class RealtimePresenceTest {
 			CompletionWaiter leaveComplete = new CompletionWaiter();
 			String leaveString = "Test data (enter_enter_simple), leaving";
 			client1Channel.presence.leave(leaveString, leaveComplete);
-			presenceWaiter.waitFor(testClientId1, Action.LEAVE);
-			PresenceMessage expectedLeft = presenceWaiter.contains(testClientId1, clientAbly1.connection.id, Action.LEAVE);
+			presenceWaiter.waitFor(testClientId1, Action.leave);
+			PresenceMessage expectedLeft = presenceWaiter.contains(testClientId1, clientAbly1.connection.id, Action.leave);
 			assertNotNull(expectedLeft);
 			assertEquals(expectedLeft.data, leaveString);
 
@@ -395,8 +395,8 @@ public class RealtimePresenceTest {
 			CompletionWaiter enterComplete = new CompletionWaiter();
 			String enterString = "Test data (enter_update_simple)";
 			client1Channel.presence.enter(enterString, enterComplete);
-			presenceWaiter.waitFor(testClientId1, Action.ENTER);
-			assertNotNull(presenceWaiter.contains(testClientId1, Action.ENTER));
+			presenceWaiter.waitFor(testClientId1, Action.enter);
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.enter));
 			assertEquals(presenceWaiter.receivedMessages.get(0).data, enterString);
 			presenceWaiter.reset();
 
@@ -408,8 +408,8 @@ public class RealtimePresenceTest {
 			CompletionWaiter updateComplete = new CompletionWaiter();
 			String reenterString = "Test data (enter_update_simple), updating";
 			client1Channel.presence.enter(reenterString, updateComplete);
-			presenceWaiter.waitFor(testClientId1, Action.UPDATE);
-			assertNotNull(presenceWaiter.contains(testClientId1, Action.UPDATE));
+			presenceWaiter.waitFor(testClientId1, Action.update);
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.update));
 			assertEquals(presenceWaiter.receivedMessages.get(0).data, reenterString);
 
 			/* verify reenter callback called on completion */
@@ -420,8 +420,8 @@ public class RealtimePresenceTest {
 			CompletionWaiter leaveComplete = new CompletionWaiter();
 			String leaveString = "Test data (enter_update_simple), leaving";
 			client1Channel.presence.leave(leaveString, leaveComplete);
-			presenceWaiter.waitFor(testClientId1, Action.LEAVE);
-			PresenceMessage expectedLeft = presenceWaiter.contains(testClientId1, clientAbly1.connection.id, Action.LEAVE);
+			presenceWaiter.waitFor(testClientId1, Action.leave);
+			PresenceMessage expectedLeft = presenceWaiter.contains(testClientId1, clientAbly1.connection.id, Action.leave);
 			assertNotNull(expectedLeft);
 			assertEquals(expectedLeft.data, leaveString);
 
@@ -465,8 +465,8 @@ public class RealtimePresenceTest {
 			CompletionWaiter enterComplete = new CompletionWaiter();
 			String enterString = "Test data (enter_update_null)";
 			client1Channel.presence.enter(enterString, enterComplete);
-			presenceWaiter.waitFor(testClientId1, Action.ENTER);
-			assertNotNull(presenceWaiter.contains(testClientId1, Action.ENTER));
+			presenceWaiter.waitFor(testClientId1, Action.enter);
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.enter));
 			assertEquals(presenceWaiter.receivedMessages.get(0).data, enterString);
 			presenceWaiter.reset();
 
@@ -478,8 +478,8 @@ public class RealtimePresenceTest {
 			CompletionWaiter updateComplete = new CompletionWaiter();
 			String updateString = null;
 			client1Channel.presence.enter(updateString, updateComplete);
-			presenceWaiter.waitFor(testClientId1, Action.UPDATE);
-			assertNotNull(presenceWaiter.contains(testClientId1, Action.UPDATE));
+			presenceWaiter.waitFor(testClientId1, Action.update);
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.update));
 			assertEquals(presenceWaiter.receivedMessages.get(0).data, updateString);
 
 			/* verify reenter callback called on completion */
@@ -490,8 +490,8 @@ public class RealtimePresenceTest {
 			CompletionWaiter leaveComplete = new CompletionWaiter();
 			String leaveString = "Test data (enter_update_null), leaving";
 			client1Channel.presence.leave(leaveString, leaveComplete);
-			presenceWaiter.waitFor(testClientId1, Action.LEAVE);
-			PresenceMessage expectedLeft = presenceWaiter.contains(testClientId1, clientAbly1.connection.id, Action.LEAVE);
+			presenceWaiter.waitFor(testClientId1, Action.leave);
+			PresenceMessage expectedLeft = presenceWaiter.contains(testClientId1, clientAbly1.connection.id, Action.leave);
 			assertNotNull(expectedLeft);
 			assertEquals(expectedLeft.data, leaveString);
 
@@ -534,8 +534,8 @@ public class RealtimePresenceTest {
 			CompletionWaiter enterComplete = new CompletionWaiter();
 			String updateString = "Test data (update_noenter)";
 			client1Channel.presence.update(updateString, enterComplete);
-			presenceWaiter.waitFor(testClientId1, Action.ENTER);
-			assertNotNull(presenceWaiter.contains(testClientId1, Action.ENTER));
+			presenceWaiter.waitFor(testClientId1, Action.enter);
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.enter));
 			assertEquals(presenceWaiter.receivedMessages.get(0).data, updateString);
 			presenceWaiter.reset();
 
@@ -547,8 +547,8 @@ public class RealtimePresenceTest {
 			CompletionWaiter leaveComplete = new CompletionWaiter();
 			String leaveString = "Test data (update_noenter), leaving";
 			client1Channel.presence.leave(leaveString, leaveComplete);
-			presenceWaiter.waitFor(testClientId1, Action.LEAVE);
-			PresenceMessage expectedLeft = presenceWaiter.contains(testClientId1, clientAbly1.connection.id, Action.LEAVE);
+			presenceWaiter.waitFor(testClientId1, Action.leave);
+			PresenceMessage expectedLeft = presenceWaiter.contains(testClientId1, clientAbly1.connection.id, Action.leave);
 			assertNotNull(expectedLeft);
 			assertEquals(expectedLeft.data, leaveString);
 
@@ -592,8 +592,8 @@ public class RealtimePresenceTest {
 			CompletionWaiter enterComplete = new CompletionWaiter();
 			String enterString = "Test data (enter_before_connect)";
 			client1Channel.presence.enter(enterString, enterComplete);
-			presenceWaiter.waitFor(testClientId1, Action.ENTER);
-			assertNotNull(presenceWaiter.contains(testClientId1, Action.ENTER));
+			presenceWaiter.waitFor(testClientId1, Action.enter);
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.enter));
 			assertEquals(presenceWaiter.receivedMessages.get(0).data, enterString);
 			presenceWaiter.reset();
 
@@ -604,8 +604,8 @@ public class RealtimePresenceTest {
 			/* let client1 leave the channel and wait for the leave event to be delivered */
 			CompletionWaiter leaveComplete = new CompletionWaiter();
 			client1Channel.presence.leave(leaveComplete);
-			presenceWaiter.waitFor(testClientId1, Action.LEAVE);
-			assertNotNull(presenceWaiter.contains(testClientId1, Action.LEAVE));
+			presenceWaiter.waitFor(testClientId1, Action.leave);
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.leave));
 			assertEquals(presenceWaiter.receivedMessages.get(0).data, enterString);
 
 			/* verify leave callback called on completion */
@@ -661,7 +661,7 @@ public class RealtimePresenceTest {
 			/* get presence set and verify client present */
 			presenceWaiter.waitFor(testClientId1);
 			PresenceMessage[] presences = testChannel.realtimeChannel.presence.get();
-			PresenceMessage expectedPresent = contains(presences, testClientId1, Action.PRESENT);
+			PresenceMessage expectedPresent = contains(presences, testClientId1, Action.present);
 			assertNotNull("Verify expected client is in presence set", expectedPresent);
 			assertEquals(expectedPresent.data, enterString);
 			
@@ -715,7 +715,7 @@ public class RealtimePresenceTest {
 			client1Channel.presence.leave(leaveComplete);
 			leaveComplete.waitFor();
 			assertTrue("Verify leave callback called on completion", leaveComplete.success);
-			presenceWaiter.waitFor(testClientId1, Action.LEAVE);
+			presenceWaiter.waitFor(testClientId1, Action.leave);
 			assertTrue("Verify leave callback called on completion", leaveComplete.success);
 
 			/* get presence set and verify client absent */
@@ -785,11 +785,11 @@ public class RealtimePresenceTest {
 			/* get channel and subscribe to presence */
 			Channel client2Channel = clientAbly2.channels.get(testChannel.channelName);
 			PresenceWaiter client2Waiter = new PresenceWaiter(client2Channel);
-			client2Waiter.waitFor(testClientId1, Action.PRESENT);
+			client2Waiter.waitFor(testClientId1, Action.present);
 
 			/* get presence set and verify client present */
 			PresenceMessage[] presences = client2Channel.presence.get();
-			PresenceMessage expectedPresent = contains(presences, testClientId1, Action.PRESENT);
+			PresenceMessage expectedPresent = contains(presences, testClientId1, Action.present);
 			assertNotNull("Verify expected client is in presence set", expectedPresent);
 			assertEquals(expectedPresent.data, enterString);
 			
@@ -947,13 +947,13 @@ public class RealtimePresenceTest {
 			assertTrue("Verify enter callback called on completion", enter2Complete.success);
 
 			/* verify enter events for both clients are received */
-			waiter.waitFor(testClientId1, Action.ENTER);
-			waiter.waitFor(testClientId2, Action.ENTER);
+			waiter.waitFor(testClientId1, Action.enter);
+			waiter.waitFor(testClientId2, Action.enter);
 
 			/* get presence set and verify clients present */
 			PresenceMessage[] presences = testChannel.realtimeChannel.presence.get();
-			PresenceMessage expectedPresent1 = contains(presences, testClientId1, Action.PRESENT);
-			PresenceMessage expectedPresent2 = contains(presences, testClientId2, Action.PRESENT);
+			PresenceMessage expectedPresent1 = contains(presences, testClientId1, Action.present);
+			PresenceMessage expectedPresent2 = contains(presences, testClientId2, Action.present);
 			assertNotNull("Verify expected clients are in presence set", expectedPresent1);
 			assertNotNull("Verify expected clients are in presence set", expectedPresent2);
 			assertEquals(expectedPresent1.data, enterString1);
@@ -1009,7 +1009,7 @@ public class RealtimePresenceTest {
 
 			/* get presence set and verify client present */
 			PresenceMessage[] presences = testChannel.restChannel.presence.get(null).items();
-			PresenceMessage expectedPresent = contains(presences, testClientId1, Action.PRESENT);
+			PresenceMessage expectedPresent = contains(presences, testClientId1, Action.present);
 			assertNotNull("Verify expected client is in presence set", expectedPresent);
 			assertEquals(expectedPresent.data, enterString);
 
@@ -1063,7 +1063,7 @@ public class RealtimePresenceTest {
 			client1Channel.presence.leave(leaveComplete);
 			leaveComplete.waitFor();
 			assertTrue("Verify leave callback called on completion", leaveComplete.success);
-			presenceWaiter.waitFor(testClientId1, Action.LEAVE);
+			presenceWaiter.waitFor(testClientId1, Action.leave);
 			assertTrue("Verify leave callback called on completion", leaveComplete.success);
 
 			/* get presence set and verify client absent */
@@ -1126,8 +1126,8 @@ public class RealtimePresenceTest {
 
 			/* get presence set and verify client present */
 			PresenceMessage[] presences = testChannel.restChannel.presence.get(null).items();
-			PresenceMessage expectedPresent1 = contains(presences, testClientId1, Action.PRESENT);
-			PresenceMessage expectedPresent2 = contains(presences, testClientId2, Action.PRESENT);
+			PresenceMessage expectedPresent1 = contains(presences, testClientId1, Action.present);
+			PresenceMessage expectedPresent2 = contains(presences, testClientId2, Action.present);
 			assertNotNull("Verify expected clients are in presence set", expectedPresent1);
 			assertNotNull("Verify expected clients are in presence set", expectedPresent2);
 			assertEquals(expectedPresent1.data, enterString1);
@@ -1259,8 +1259,8 @@ public class RealtimePresenceTest {
 			CompletionWaiter enterComplete = new CompletionWaiter();
 			String enterString = "Test data (disconnect_leave)";
 			client1Channel.presence.enter(enterString, enterComplete);
-			presenceWaiter.waitFor(testClientId1, Action.ENTER);
-			PresenceMessage expectedPresent = presenceWaiter.contains(testClientId1, Action.ENTER);
+			presenceWaiter.waitFor(testClientId1, Action.enter);
+			PresenceMessage expectedPresent = presenceWaiter.contains(testClientId1, Action.enter);
 			assertNotNull(expectedPresent);
 			assertEquals(expectedPresent.data, enterString);
 
@@ -1271,8 +1271,8 @@ public class RealtimePresenceTest {
 			/* close client1 connection and wait for the leave event to be delivered */
 			clientAbly1.close();
 			requiresClose = false;
-			presenceWaiter.waitFor(testClientId1, Action.LEAVE);
-			PresenceMessage expectedLeft = presenceWaiter.contains(testClientId1, Action.LEAVE);
+			presenceWaiter.waitFor(testClientId1, Action.leave);
+			PresenceMessage expectedLeft = presenceWaiter.contains(testClientId1, Action.leave);
 			assertNotNull(expectedLeft);
 			/* verify leave message contains data that was published with enter */
 			assertEquals(expectedLeft.data, enterString);

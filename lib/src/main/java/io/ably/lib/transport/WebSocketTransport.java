@@ -85,9 +85,9 @@ public class WebSocketTransport implements ITransport {
 			if(wsConnection != null) {
 				if(sendClose) {
 					try {
-						send(new ProtocolMessage(Action.CLOSE));
+						send(new ProtocolMessage(Action.close));
 					} catch (AblyException e) {
-						Log.e(TAG, "Unexpected exception sending CLOSE", e);
+						Log.e(TAG, "Unexpected exception sending close", e);
 					}
 				}
 				wsConnection.close();

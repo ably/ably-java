@@ -61,7 +61,7 @@ public class RestAppStatsTest {
 		intervalIds = new String[3];
 		for(int i = 0; i < 3; i++) {
 			long intervalTime = currentTime + (i - 3) * 60 * 1000;
-			intervalIds[i] = Stats.toIntervalId(intervalTime, Stats.Granularity.MINUTE);
+			intervalIds[i] = Stats.toIntervalId(intervalTime, Stats.Granularity.minute);
 		}
 
 		/* add stats for each of the minutes within the interval */

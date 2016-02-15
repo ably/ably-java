@@ -26,11 +26,11 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
 	 * Presence Action: the event signified by a PresenceMessage
 	 */
 	public enum Action {
-		ABSENT,
-		PRESENT,
-		ENTER,
-		LEAVE,
-		UPDATE;
+		absent,
+		present,
+		enter,
+		leave,
+		update;
 
 		public int getValue() { return ordinal(); }
 		public static Action findByValue(int value) { return values()[value]; }

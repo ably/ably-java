@@ -27,9 +27,9 @@ public interface ITransport {
 	}
 
 	public enum Mode {
-		CLEAN,
-		RESUME,
-		RECOVER
+		clean,
+		resume,
+		recover
 	}
 
 	public static class TransportParams {
@@ -47,12 +47,12 @@ public interface ITransport {
 			if(!options.echoMessages)
 				paramList.add(new Param("echo", "false"));
 			if(connectionKey != null) {
-				mode = Mode.RESUME;
+				mode = Mode.resume;
 				paramList.add(new Param("resume", connectionKey));
 				if(connectionSerial != null)
 					paramList.add(new Param("connection_serial", connectionSerial));
 			} else if(options.recover != null) {
-				mode = Mode.RECOVER;
+				mode = Mode.recover;
 				Pattern recoverSpec = Pattern.compile("^([\\w\\-\\!]+):(\\-?\\d+)$");
 				Matcher match = recoverSpec.matcher(options.recover);
 				if(match.matches()) {

@@ -1205,7 +1205,7 @@ public class RealtimePresenceHistoryTest {
 
 			DebugOptions rxOpts = new DebugOptions(testVars.keys[0].keyStr);
 			testVars.fillInOptions(rxOpts);
-			RawProtocolWaiter rawPresenceWaiter = new RawProtocolWaiter(Action.PRESENCE);
+			RawProtocolWaiter rawPresenceWaiter = new RawProtocolWaiter(Action.presence);
 			rxOpts.protocolListener = rawPresenceWaiter;
 			rxAbly = new AblyRealtime(rxOpts);
 			String channelName = "persisted:presencehistory_from_attach";
