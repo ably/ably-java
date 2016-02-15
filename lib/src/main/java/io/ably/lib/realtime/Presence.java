@@ -191,8 +191,9 @@ public class Presence {
 	}
 
 	/**
-	 * Enter a specified client into this channel. The given client will be added to the
-	 * presence set and presence subscribers will see an empty presence message.
+	 * Enter a specified client into this channel. The given clientId will be added to
+	 * the presence set and presence subscribers will see a corresponding presence message
+	 * with an empty data payload.
 	 * This method is provided to support connections (eg connections from application
 	 * server instances) that act on behalf of multiple clientIds. In order to be able to
 	 * enter the channel with this method, the client library must have been instanced
@@ -237,10 +238,10 @@ public class Presence {
 
 	/**
 	 * Update the presence data for a specified client into this channel.
-	 * If the client is not already a member of the presence set it will be added, and
-	 * presence subscribers will see an empty message for this client.
-	 * As for #enterClient above, the connection must be authenticated in a way that
-	 * enables it to represent an arbitrary clientId.
+	 * If the client is not already a member of the presence set it will be added,
+	 * and presence subscribers will see a corresponding presence message
+	 * with an empty data payload. As for #enterClient above, the connection
+	 * must be authenticated in a way that enables it to represent an arbitrary clientId.
 	 * @param clientId: the id of the client.
 	 * @throws AblyException
 	 */
@@ -280,7 +281,8 @@ public class Presence {
 
 	/**
 	 * Leave a given client from this channel. This client will be removed from the
-	 * presence set and presence subscribers will see an empty leave message for this client.
+	 * presence set and presence subscribers will see a corresponding presence message
+	 * with an empty data payload.
 	 * @param clientId: the id of the client.
 	 * @throws AblyException
 	 */
@@ -370,7 +372,7 @@ public class Presence {
 		return new PaginatedQuery<PresenceMessage>(ably.http, channel.basePath + "/presence/history", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
 	}
 
-	/***
+	/**
 	 * internal
 	 *
 	 */
