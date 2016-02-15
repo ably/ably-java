@@ -280,6 +280,27 @@ public class Presence {
 
 	/**
 	 * Leave a given client from this channel. This client will be removed from the
+	 * presence set and presence subscribers will see an empty leave message for this client.
+	 * @param clientId: the id of the client.
+	 * @throws AblyException
+	 */
+	public void leaveClient(String clientId) throws AblyException {
+		leaveClient(clientId, null);
+	}
+
+	/**
+	 * Leave a given client from this channel. This client will be removed from the
+	 * presence set and presence subscribers will see a leave message for this client.
+	 * @param clientId: the id of the client.
+	 * @param data: optional data (eg a status message) for this member.
+	 * @throws AblyException
+	 */
+	public void leaveClient(String clientId, Object data) throws AblyException {
+		leaveClient(clientId, data, null);
+	}
+
+	/**
+	 * Leave a given client from this channel. This client will be removed from the
 	 * presence set and presence subscribers will see a leave message for this client.
 	 * @param clientId: the id of the client.
 	 * @param data: optional data (eg a status message) for this member.
