@@ -192,6 +192,19 @@ public class Presence {
 
 	/**
 	 * Enter a specified client into this channel. The given client will be added to the
+	 * presence set and presence subscribers will see an empty presence message.
+	 * This method is provided to support connections (eg connections from application
+	 * server instances) that act on behalf of multiple clientIds. In order to be able to
+	 * enter the channel with this method, the client library must have been instanced
+	 * either with a key, or with a token bound to the wildcard clientId.
+	 * @param clientId: the id of the client.
+	 */
+	public void enterClient(String clientId) throws AblyException {
+		enterClient(clientId, null);
+	}
+
+	/**
+	 * Enter a specified client into this channel. The given client will be added to the
 	 * presence set and presence subscribers will see a corresponding presence message.
 	 * This method is provided to support connections (eg connections from application
 	 * server instances) that act on behalf of multiple clientIds. In order to be able to
@@ -199,7 +212,21 @@ public class Presence {
 	 * either with a key, or with a token bound to the wildcard clientId.
 	 * @param clientId: the id of the client.
 	 * @param data: optional data (eg a status message) for this member.
-	 * See {@link io.ably.types.Data} for the supported data types.
+	 * @throws AblyException
+	 */
+	public void enterClient(String clientId, Object data) throws AblyException {
+		enterClient(clientId, data, null);
+	}
+
+	/**
+	 * Enter a specified client into this channel. The given client will be added to the
+	 * presence set and presence subscribers will see a corresponding presence message.
+	 * This method is provided to support connections (eg connections from application
+	 * server instances) that act on behalf of multiple clientIds. In order to be able to
+	 * enter the channel with this method, the client library must have been instanced
+	 * either with a key, or with a token bound to the wildcard clientId.
+	 * @param clientId: the id of the client.
+	 * @param data: optional data (eg a status message) for this member.
 	 * @param listener: a listener to be notified on completion of the operation.
 	 * @throws AblyException
 	 */
@@ -216,7 +243,6 @@ public class Presence {
 	 * enables it to represent an arbitrary clientId.
 	 * @param clientId: the id of the client.
 	 * @param data: optional data (eg a status message) for this member.
-	 * See {@link io.ably.types.Data} for the supported data types.
 	 * @param listener: a listener to be notified on completion of the operation.
 	 * @throws AblyException
 	 */
