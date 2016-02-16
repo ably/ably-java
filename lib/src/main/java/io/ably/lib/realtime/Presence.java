@@ -191,6 +191,20 @@ public class Presence {
 	}
 
 	/**
+	 * Enter a specified client into this channel. The given clientId will be added to
+	 * the presence set and presence subscribers will see a corresponding presence message
+	 * with an empty data payload.
+	 * This method is provided to support connections (eg connections from application
+	 * server instances) that act on behalf of multiple clientIds. In order to be able to
+	 * enter the channel with this method, the client library must have been instanced
+	 * either with a key, or with a token bound to the wildcard clientId.
+	 * @param clientId: the id of the client.
+	 */
+	public void enterClient(String clientId) throws AblyException {
+		enterClient(clientId, null);
+	}
+
+	/**
 	 * Enter a specified client into this channel. The given client will be added to the
 	 * presence set and presence subscribers will see a corresponding presence message.
 	 * This method is provided to support connections (eg connections from application
@@ -199,7 +213,21 @@ public class Presence {
 	 * either with a key, or with a token bound to the wildcard clientId.
 	 * @param clientId: the id of the client.
 	 * @param data: optional data (eg a status message) for this member.
-	 * See {@link io.ably.types.Data} for the supported data types.
+	 * @throws AblyException
+	 */
+	public void enterClient(String clientId, Object data) throws AblyException {
+		enterClient(clientId, data, null);
+	}
+
+	/**
+	 * Enter a specified client into this channel. The given client will be added to the
+	 * presence set and presence subscribers will see a corresponding presence message.
+	 * This method is provided to support connections (eg connections from application
+	 * server instances) that act on behalf of multiple clientIds. In order to be able to
+	 * enter the channel with this method, the client library must have been instanced
+	 * either with a key, or with a token bound to the wildcard clientId.
+	 * @param clientId: the id of the client.
+	 * @param data: optional data (eg a status message) for this member.
 	 * @param listener: a listener to be notified on completion of the operation.
 	 * @throws AblyException
 	 */
@@ -210,19 +238,67 @@ public class Presence {
 
 	/**
 	 * Update the presence data for a specified client into this channel.
+	 * If the client is not already a member of the presence set it will be added,
+	 * and presence subscribers will see a corresponding presence message
+	 * with an empty data payload. As for #enterClient above, the connection
+	 * must be authenticated in a way that enables it to represent an arbitrary clientId.
+	 * @param clientId: the id of the client.
+	 * @throws AblyException
+	 */
+	public void updateClient(String clientId) throws AblyException {
+		updateClient(clientId, null);
+	}
+
+	/**
+	 * Update the presence data for a specified client into this channel.
 	 * If the client is not already a member of the presence set it will be added, and
 	 * presence subscribers will see an enter or update message for this client.
 	 * As for #enterClient above, the connection must be authenticated in a way that
 	 * enables it to represent an arbitrary clientId.
 	 * @param clientId: the id of the client.
 	 * @param data: optional data (eg a status message) for this member.
-	 * See {@link io.ably.types.Data} for the supported data types.
+	 * @throws AblyException
+	 */
+	public void updateClient(String clientId, Object data) throws AblyException {
+		updateClient(clientId, data, null);
+	}
+
+	/**
+	 * Update the presence data for a specified client into this channel.
+	 * If the client is not already a member of the presence set it will be added, and
+	 * presence subscribers will see an enter or update message for this client.
+	 * As for #enterClient above, the connection must be authenticated in a way that
+	 * enables it to represent an arbitrary clientId.
+	 * @param clientId: the id of the client.
+	 * @param data: optional data (eg a status message) for this member.
 	 * @param listener: a listener to be notified on completion of the operation.
 	 * @throws AblyException
 	 */
 	public void updateClient(String clientId, Object data, CompletionListener listener) throws AblyException {
 		Log.v(TAG, "updateClient(); channel = " + channel.name + "; clientId = " + clientId);
 		updatePresence(new PresenceMessage(PresenceMessage.Action.update, clientId, data), listener);
+	}
+
+	/**
+	 * Leave a given client from this channel. This client will be removed from the
+	 * presence set and presence subscribers will see a corresponding presence message
+	 * with an empty data payload.
+	 * @param clientId: the id of the client.
+	 * @throws AblyException
+	 */
+	public void leaveClient(String clientId) throws AblyException {
+		leaveClient(clientId, null);
+	}
+
+	/**
+	 * Leave a given client from this channel. This client will be removed from the
+	 * presence set and presence subscribers will see a leave message for this client.
+	 * @param clientId: the id of the client.
+	 * @param data: optional data (eg a status message) for this member.
+	 * @throws AblyException
+	 */
+	public void leaveClient(String clientId, Object data) throws AblyException {
+		leaveClient(clientId, data, null);
 	}
 
 	/**
@@ -296,7 +372,7 @@ public class Presence {
 		return new PaginatedQuery<PresenceMessage>(ably.http, channel.basePath + "/presence/history", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
 	}
 
-	/***
+	/**
 	 * internal
 	 *
 	 */
