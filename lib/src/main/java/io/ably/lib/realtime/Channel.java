@@ -395,6 +395,37 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 * not already attached.
 	 * @param name: the event name
 	 * @param data: the message payload. See {@link io.ably.types.Data} for supported datatypes
+	 * @throws AblyException
+	 */
+	public void publish(String name, Object data) throws AblyException {
+		publish(name, data, null);
+	}
+
+	/**
+	 * Publish a message on this channel. This implicitly attaches the channel if
+	 * not already attached.
+	 * @param message: the message
+	 * @throws AblyException
+	 */
+	public void publish(Message message) throws AblyException {
+		publish(message, null);
+	}
+
+	/**
+	 * Publish an array of messages on this channel. This implicitly attaches the channel if
+	 * not already attached.
+	 * @param messages: the message
+	 * @throws AblyException
+	 */
+	public void publish(Message[] messages) throws AblyException {
+		publish(messages, null);
+	}
+
+	/**
+	 * Publish a message on this channel. This implicitly attaches the channel if
+	 * not already attached.
+	 * @param name: the event name
+	 * @param data: the message payload. See {@link io.ably.types.Data} for supported datatypes
 	 * @param listener: a listener to be notified of the outcome of this message.
 	 * @throws AblyException
 	 */
@@ -418,7 +449,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	/**
 	 * Publish an array of messages on this channel. This implicitly attaches the channel if
 	 * not already attached.
-	 * @param message: the message
+	 * @param messages: the message
 	 * @param listener: a listener to be notified of the outcome of this message.
 	 * @throws AblyException
 	 */
