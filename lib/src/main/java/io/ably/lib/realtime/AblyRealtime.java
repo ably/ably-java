@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import io.ably.lib.rest.AblyRest;
+import io.ably.lib.transport.Defaults;
 import io.ably.lib.transport.ITransport;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;

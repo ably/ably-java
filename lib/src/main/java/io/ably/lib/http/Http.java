@@ -5,22 +5,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
-import java.net.ConnectException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.NoRouteToHostException;
-import java.net.URL;
-import java.net.UnknownHostException;
+import java.net.*;
+import java.nio.charset.Charset;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
-import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Connection;
-import io.ably.lib.realtime.ConnectionState;
-import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.AuthMethod;
 import io.ably.lib.transport.Defaults;
+import io.ably.lib.transport.Hosts;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
@@ -41,16 +38,65 @@ import io.ably.lib.util.Serialisation;
 public class Http {
 
 	public interface ResponseHandler<T> {
-		public T handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException;
+		T handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException;
 	}
 
 	public interface BodyHandler<T> {
-		public T[] handleResponseBody(String contentType, byte[] body) throws AblyException;
+		T[] handleResponseBody(String contentType, byte[] body) throws AblyException;
 	}
 
 	public interface RequestBody {
-		public byte[] getEncoded();
-		public String getContentType();
+		byte[] getEncoded();
+		String getContentType();
+	}
+
+	private static class Response {
+		int statusCode;
+		String statusLine;
+		Map<String,List<String>> headers;
+		String contentType;
+		int contentLength;
+		byte[] body;
+
+		/**
+		 * Returns the value of the named header field.
+		 * <p>
+		 * If called on a connection that sets the same header multiple times
+		 * with possibly different values, only the last value is returned.
+		 *
+		 *
+		 * @param   name   the name of a header field.
+		 * @return  the value of the named header field, or {@code null}
+		 *          if there is no such field in the header.
+		 */
+		public String getHeaderField(String name) {
+			List<String> fields = getHeaderFields(name);
+
+			if (fields == null || fields.isEmpty()) {
+				return null;
+			}
+
+			return fields.get(fields.size() - 1);
+		}
+
+		/**
+		 * Returns the value of the named header field.
+		 * <p>
+		 * If called on a connection that sets the same header multiple times
+		 * with possibly different values, only the last value is returned.
+		 *
+		 *
+		 * @param   name   the name of a header field.
+		 * @return  the value of the named header field, or {@code null}
+		 *          if there is no such field in the header.
+		 */
+		public List<String> getHeaderFields(String name) {
+			if(headers == null) {
+				return null;
+			}
+
+			return headers.get(name.toLowerCase());
+		}
 	}
 
 	public static class JSONRequestBody implements RequestBody {
@@ -81,19 +127,30 @@ public class Http {
 	 *     Public API
 	 *************************/
 
-	public Http(AblyRest ably, ClientOptions options) {
-		this.ably = ably;
+	public Http(ClientOptions options, Auth auth) {
+		this.options = options;
+		this.auth = auth;
+		this.host = options.restHost;
 		this.scheme = options.tls ? "https://" : "http://";
 		this.port = Defaults.getPort(options);
 	}
 
-	private String getPrefHost() {
-		if(ably instanceof AblyRealtime) {
-			Connection connection = ((AblyRealtime)ably).connection;
-			if(connection.state == ConnectionState.connected)
-				return connection.connectionManager.getHost();
-		}
-		return Defaults.getHost(ably.options);
+	/**
+	 * Sets host for this HTTP client
+	 *
+	 * @param host URL string
+	 */
+	public void setHost(String host) {
+		this.host = host;
+	}
+
+	/**
+	 * Gets host for this HTTP client
+	 *
+	 * @return
+     */
+	public String getHost() {
+		return host;
 	}
 
 	/**
@@ -185,7 +242,6 @@ public class Http {
 		if(authHeader != null && !renew) {
 			return authHeader;
 		}
-		Auth auth = ably.auth;
 		if(auth.getAuthMethod() == AuthMethod.basic) {
 			authHeader = "Basic " + Base64Coder.encodeString(auth.getBasicCredentials());
 		} else {
@@ -210,37 +266,38 @@ public class Http {
 	}
 
 	<T> T ablyHttpExecute(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
-		try {
-			URL url = buildURL(scheme, getPrefHost(), path, params);
-			return httpExecute(url, method, headers, requestBody, true, responseHandler);
-		} catch(AblyException.HostFailedException bhe) {
-			/* one of the exceptions occurred that signifies a problem reaching the host */
-			String[] fallbackHosts = Defaults.getFallbackHosts(ably.options);
-			if(fallbackHosts != null) {
-				for(String host : fallbackHosts) {
-					try {
-						URL url = buildURL(scheme, host, path, params);
-						return httpExecute(url, method, headers, requestBody, true, responseHandler);
-					} catch(AblyException.HostFailedException bhe2) {}
+		int retryCountRemaining = Hosts.isRestFallbackSupported(this.host)?options.httpMaxRetryCount:0;
+		String hostCurrent = this.host;
+		URL url;
+
+		do {
+			url = buildURL(scheme, hostCurrent, path, params);
+
+			try {
+				return httpExecute(url, method, headers, requestBody, true, responseHandler);
+			} catch (AblyException.HostFailedException e) {
+				retryCountRemaining--;
+
+				if (retryCountRemaining >= 0) {
+					Log.d(TAG, "Connection failed to host `" + hostCurrent + "`. Searching for new host...");
+					hostCurrent = Hosts.getFallback(hostCurrent);
+					Log.d(TAG, "Switched to `" + hostCurrent + "`.");
 				}
 			}
-			throw AblyException.fromErrorInfo(new ErrorInfo("Connection failed; no host available", 404, 80000));
-		}
+		} while (retryCountRemaining >= 0);
+
+		throw AblyException.fromErrorInfo(new ErrorInfo("Connection failed; no host available", 404, 80000));
 	}
 
 	<T> T httpExecute(URL url, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler<T> responseHandler) throws AblyException {
+		Response response;
 		HttpURLConnection conn = null;
-		InputStream is = null;
-		int statusCode = 0;
-		String statusLine = null;
-		String contentType = null;
-		byte[] responseBody = null;
-		List<String> linkHeaders = null;
 		boolean credentialsIncluded = false;
 		try {
-
 			/* prepare connection */
 			conn = (HttpURLConnection)url.openConnection();
+			conn.setConnectTimeout(options.httpOpenTimeout);
+			conn.setReadTimeout(options.httpRequestTimeout);
 			conn.setDoInput(true);
 			if(method != null) {
 				conn.setRequestMethod(method);
@@ -260,62 +317,30 @@ public class Http {
 
 			/* send request body */
 			if(requestBody != null) {
-				conn.setDoOutput(true);
-				byte[] body = requestBody.getEncoded();
-				int length = body.length;
-				conn.setFixedLengthStreamingMode(length);
-				conn.setRequestProperty(CONTENT_TYPE, requestBody.getContentType());
-				conn.setRequestProperty(CONTENT_LENGTH, Integer.toString(length));
-				OutputStream os = conn.getOutputStream();
-				os.write(body);
+				writeRequestBody(requestBody, conn);
 			}
 
-			/* get response */
-			statusCode = conn.getResponseCode();
-			statusLine = conn.getResponseMessage();
-			if(statusCode != HttpURLConnection.HTTP_NO_CONTENT) {
-				contentType = conn.getContentType();
-				int contentLength = conn.getContentLength();
-				int successStatusCode = (method == POST) ? HttpURLConnection.HTTP_CREATED : HttpURLConnection.HTTP_OK;
-				is = (statusCode == successStatusCode) ? conn.getInputStream() : conn.getErrorStream();
-				if(is != null) {
-					int read;
-					if(contentLength == -1) {
-						ByteArrayOutputStream baos = new ByteArrayOutputStream();
-						byte[] buf = new byte[4 * 1024];
-						while((read = is.read(buf)) > -1) {
-							baos.write(buf, 0, read);
-						}
-						responseBody = baos.toByteArray();
-					} else {
-						int idx = 0;
-						responseBody = new byte[contentLength];
-						while((read = is.read(responseBody,  idx, contentLength - idx)) > -1) {
-							idx += read;
-						}
-					}
-				}
-			}
+			response = readResponse(conn);
 		} catch(IOException ioe) {
 			throw AblyException.fromThrowable(ioe);
 		} finally {
-			try {
-				if(is != null)
-					is.close();
-				if(conn != null)
-					conn.disconnect();
-			} catch(IOException ioe) {}
+			if(conn != null)
+				conn.disconnect();
 		}
 
-		if(statusCode == 0) {
+		if (response.statusCode == 0) {
 			return null;
 		}
 
-		if(statusCode < 200 || statusCode >= 300) {
+		if (response.statusCode >=500 && response.statusCode <= 504) {
+			throw AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus(response.statusLine, response.statusCode));
+		}
+
+		if(response.statusCode < 200 || response.statusCode >= 300) {
 			/* get any in-body error details */
 			ErrorInfo error = null;
-			if(responseBody != null && responseBody.length > 0) {
-				ErrorResponse errorResponse = ErrorResponse.fromJSON(new String(responseBody));
+			if(response.body != null && response.body.length > 0) {
+				ErrorResponse errorResponse = ErrorResponse.fromJSON(new String(response.body));
 				if(errorResponse != null) {
 					error = errorResponse.error;
 				}
@@ -327,14 +352,14 @@ public class Http {
 				String errorMessageHeader = conn.getHeaderField("X-Ably-ErrorMessage");
 				if(errorCodeHeader != null) {
 					try {
-						error = new ErrorInfo(errorMessageHeader, statusCode, Integer.parseInt(errorCodeHeader));
+						error = new ErrorInfo(errorMessageHeader, response.statusCode, Integer.parseInt(errorCodeHeader));
 					} catch(NumberFormatException e) {}
 				}
 			}
 
 			/* handle www-authenticate */
-			if(statusCode == 401) {
-				String wwwAuthHeader = conn.getHeaderField(WWW_AUTHENTICATE);
+			if(response.statusCode == 401) {
+				String wwwAuthHeader = response.getHeaderField(WWW_AUTHENTICATE);
 				if(wwwAuthHeader != null) {
 					boolean stale = (wwwAuthHeader.indexOf("stale") > -1) || (error != null && error.code == 40140);
 					if(withCredentials && (stale || !credentialsIncluded)) {
@@ -348,8 +373,8 @@ public class Http {
 				Log.e(TAG, "Error response from server: " + error);
 				throw AblyException.fromErrorInfo(error);
 			} else {
-				Log.e(TAG, "Error response from server: statusCode = " + statusCode + "; statusLine = " + statusLine);
-				throw AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus(statusLine, statusCode));
+				Log.e(TAG, "Error response from server: statusCode = " + response.statusCode + "; statusLine = " + response.statusLine);
+				throw AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus(response.statusLine, response.statusCode));
 			}
 		}
 
@@ -357,8 +382,87 @@ public class Http {
 			return null;
 		}
 
-		linkHeaders = conn.getHeaderFields().get(LINK);
-		return responseHandler.handleResponse(statusCode, contentType, linkHeaders, responseBody);
+		List<String> linkHeaders = response.getHeaderFields(LINK);
+		return responseHandler.handleResponse(response.statusCode, response.contentType, linkHeaders, response.body);
+	}
+
+	private void writeRequestBody(RequestBody requestBody, HttpURLConnection conn) throws IOException {
+		conn.setDoOutput(true);
+		byte[] body = requestBody.getEncoded();
+		int length = body.length;
+		conn.setFixedLengthStreamingMode(length);
+		conn.setRequestProperty(CONTENT_TYPE, requestBody.getContentType());
+		conn.setRequestProperty(CONTENT_LENGTH, Integer.toString(length));
+		OutputStream os = conn.getOutputStream();
+		os.write(body);
+	}
+
+	private Response readResponse(HttpURLConnection connection) throws IOException {
+		Response response = new Response();
+		response.statusCode = connection.getResponseCode();
+		response.statusLine = connection.getResponseMessage();
+
+		/* Store all header field names in lower-case to eliminate case insensitivity */
+		Map<String, List<String>> caseSensitiveHeaders = connection.getHeaderFields();
+		response.headers = new HashMap<>(caseSensitiveHeaders.size(), 1f);
+
+		for (Map.Entry<String, List<String>> entry : caseSensitiveHeaders.entrySet()) {
+			if (entry.getKey() != null) {
+				response.headers.put(entry.getKey().toLowerCase(), entry.getValue());
+			}
+		}
+
+		if(response.statusCode == HttpURLConnection.HTTP_NO_CONTENT) {
+			return response;
+		}
+
+		response.contentType = connection.getContentType();
+		response.contentLength = connection.getContentLength();
+
+		int successStatusCode = (POST.equals(connection.getRequestMethod())) ? HttpURLConnection.HTTP_CREATED : HttpURLConnection.HTTP_OK;
+		InputStream is = (response.statusCode == successStatusCode) ? connection.getInputStream() : connection.getErrorStream();
+
+		try {
+			response.body = readInputStream(is, response.contentLength);
+		} catch (NullPointerException e) {
+			/* nothing to read */
+		} finally {
+			if (is != null) {
+				try {
+					is.close();
+				} catch (IOException e) {}
+			}
+		}
+
+		return response;
+	}
+
+	private byte[] readInputStream(InputStream inputStream, int bytes) throws IOException {
+		/* If there is nothing to read */
+		if (inputStream == null) {
+			throw new NullPointerException("inputStream == null");
+		}
+
+		int bytesRead = 0;
+
+		if (bytes == -1) {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			byte[] buffer = new byte[4 * 1024];
+			while((bytesRead = inputStream.read(buffer)) > -1) {
+				outputStream.write(buffer, 0, bytesRead);
+			}
+
+			return outputStream.toByteArray();
+		}
+		else {
+			int idx = 0;
+			byte[] output = new byte[bytes];
+			while((bytesRead = inputStream.read(output,  idx, bytes - idx)) > -1) {
+				idx += bytesRead;
+			}
+
+			return output;
+		}
 	}
 
 	private void appendParams(StringBuilder uri, Param[] params) {
@@ -392,6 +496,7 @@ public class Http {
 		return result;
 	}
 
+
 	/*************************
 	 *     Private state
 	 *************************/
@@ -410,20 +515,22 @@ public class Http {
 		}
 	}
 
-	private final AblyRest ably;
+	private final ClientOptions options;
+	private final Auth auth;
 	private final String scheme;
+	private String host;
 	private final int port;
 	private String authHeader;
 	private boolean isDisposed;
 
-	private static final String TAG              = Http.class.getName();
-	private static final String LINK             = "Link";
-	private static final String ACCEPT           = "Accept";
-	private static final String CONTENT_TYPE     = "Content-Type";
-	private static final String CONTENT_LENGTH   = "Content-Length";
-	private static final String JSON             = "application/json";
-	private static final String WWW_AUTHENTICATE = "WWW-Authenticate";
-	private static final String AUTHORIZATION    = "Authorization";
+	private static final String TAG               = Http.class.getName();
+	private static final String LINK              = "Link";
+	private static final String ACCEPT            = "Accept";
+	private static final String CONTENT_TYPE      = "Content-Type";
+	private static final String CONTENT_LENGTH    = "Content-Length";
+	private static final String JSON              = "application/json";
+	private static final String WWW_AUTHENTICATE  = "WWW-Authenticate";
+	private static final String AUTHORIZATION     = "Authorization";
 
 	static final String GET                      = "GET";
 	static final String POST                     = "POST";
