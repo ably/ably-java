@@ -16,6 +16,14 @@ import java.util.Set;
 public abstract class EventEmitter<Event, Listener> {
 
 	/**
+	 * Remove all registered listeners irrespective of type
+	 */
+	public synchronized void off() {
+		listeners.clear();
+		filters.clear();
+	}
+
+	/**
 	 * Register the given listener for all events
 	 * @param listener
 	 */
