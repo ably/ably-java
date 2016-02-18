@@ -142,6 +142,91 @@ public class RealtimeChannelHistoryTest {
 	}
 
 	/**
+	 * Send a single message on a channel and verify that it can be
+	 * retrieved using channel.history() without needing to wait for
+	 * it to be persisted.
+	 */
+	@Test
+	public void channelhistory_simple_binary_withoutlistener() {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+			String channelName = "persisted:channelhistory_simple_binary";
+			String messageText = "Test message (channelhistory_simple_binary)";
+
+			/* create a channel */
+			final Channel channel = ably.channels.get(channelName);
+
+			/* attach */
+			channel.attach();
+			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			/* publish to the channel */
+			channel.publish("test_event", messageText);
+
+			/* get the history for this channel */
+			PaginatedResult<Message> messages = channel.history(null);
+			assertNotNull("Expected non-null messages", messages);
+			assertEquals("Expected 1 message", messages.items().length, 1);
+
+			/* verify message contents */
+			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("single_history_binary: Unexpected exception instantiating library");
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
+	 * Send a single message on a channel and verify that it can be
+	 * retrieved using channel.history() without needing to wait for
+	 * it to be persisted.
+	 */
+	@Test
+	public void channelhistory_simple_text_withoutlistener() {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			opts.useBinaryProtocol = false;
+			ably = new AblyRealtime(opts);
+			String channelName = "persisted:channelhistory_simple_text";
+			String messageText = "Test message (channelhistory_simple_text)";
+
+			/* create a channel */
+			final Channel channel = ably.channels.get(channelName);
+
+			/* attach */
+			channel.attach();
+			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			/* publish to the channel */
+			channel.publish("test_event", messageText);
+
+			/* get the history for this channel */
+			PaginatedResult<Message> messages = channel.history(null);
+			assertNotNull("Expected non-null messages", messages);
+			assertEquals("Expected 1 message", messages.items().length, 1);
+
+			/* verify message contents */
+			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("single_history_binary: Unexpected exception instantiating library");
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
 	 * Publish events with data of various datatypes
 	 */
 	@Test
