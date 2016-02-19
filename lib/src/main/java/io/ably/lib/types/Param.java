@@ -25,4 +25,23 @@ public class Param {
 				return true;
 		return false;
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		Param param = (Param) o;
+
+		if (key != null ? !key.equals(param.key) : param.key != null) return false;
+		return value != null ? value.equals(param.value) : param.value == null;
+
+	}
+
+	@Override
+	public int hashCode() {
+		int result = key != null ? key.hashCode() : 0;
+		result = 31 * result + (value != null ? value.hashCode() : 0);
+		return result;
+	}
 }
