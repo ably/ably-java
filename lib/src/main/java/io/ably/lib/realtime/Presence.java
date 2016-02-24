@@ -334,7 +334,7 @@ public class Presence {
 		msg.encode(null);
 		synchronized(channel) {
 			switch(channel.state) {
-			case initialised:
+			case initialized:
 				channel.attach();
 			case attaching:
 				QueuedPresence queued = new QueuedPresence(msg, listener);

@@ -127,7 +127,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		Log.v(TAG, "detach(); channel = " + name);
 		/* check preconditions */
 		switch(state) {
-			case initialised:
+			case initialized:
 			case detaching:
 			case detached:
 				/* nothing to do */
@@ -152,7 +152,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		Log.v(TAG, "sync(); channel = " + name);
 		/* check preconditions */
 		switch(state) {
-			case initialised:
+			case initialized:
 			case detaching:
 			case detached:
 				throw AblyException.fromErrorInfo(new ErrorInfo("Unable to sync to channel; not attached", 40000));
@@ -442,7 +442,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		ProtocolMessage msg = new ProtocolMessage(Action.message, this.name);
 		msg.messages = messages;
 		switch(state) {
-		case initialised:
+		case initialized:
 			attach();
 		case attaching:
 			/* queue the message for later send */
@@ -528,7 +528,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		this.name = name;
 		this.basePath = "/channels/" + HttpUtils.encodeURIComponent(name);
 		this.presence = new Presence(this);
-		state = ChannelState.initialised;
+		state = ChannelState.initialized;
 		queuedMessages = new ArrayList<QueuedMessage>();
 	}
 
