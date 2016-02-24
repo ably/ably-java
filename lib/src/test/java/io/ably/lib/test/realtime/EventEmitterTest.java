@@ -91,6 +91,26 @@ public class EventEmitterTest {
 	}
 
 	/**
+	 * Register and unregister multiple listeners, and verify they
+	 * are not called when the event is emitted
+	 */
+	@Test
+	public void off_all() {
+		MyEmitter emitter = new MyEmitter();
+		CountingListener listener1 = new CountingListener();
+		CountingListener listener2 = new CountingListener();
+		emitter.on(listener1);
+		emitter.on(listener2);
+		emitter.off();
+		emitter.emit(MyEvents.event_0, "on_multiple_0");
+		emitter.emit(MyEvents.event_1, "on_multiple_1");
+		assertNull(listener1.counts.get(MyEvents.event_0));
+		assertNull(listener1.counts.get(MyEvents.event_1));
+		assertNull(listener2.counts.get(MyEvents.event_0));
+		assertNull(listener2.counts.get(MyEvents.event_1));
+	}
+
+	/**
 	 * Register a listener for a specific event, and verify it is called
 	 * only when that event is emitted
 	 */

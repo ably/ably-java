@@ -236,6 +236,20 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	}
 
 	/**
+	 * <p>
+	 * Unsubscribe all subscribed listeners from this channel.
+	 * </p>
+	 * <p>
+	 * Spec: RTL8a
+	 * </p>
+	 */
+	public synchronized void unsubscribe() {
+		Log.v(TAG, "unsubscribe(); channel = " + this.name);
+		listeners.clear();
+		eventListeners.clear();
+	}
+
+	/**
 	 * Subscribe for messages on this channel. This implicitly attaches the channel if
 	 * not already attached.
 	 * @param listener: the MessageListener

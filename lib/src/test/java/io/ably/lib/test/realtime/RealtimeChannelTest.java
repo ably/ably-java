@@ -1,7 +1,11 @@
 package io.ably.lib.test.realtime;
 
+import static org.hamcrest.Matchers.emptyCollectionOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 
+import io.ably.lib.test.common.Helpers;
+import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -20,6 +24,10 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class RealtimeChannelTest {
 
@@ -242,6 +250,76 @@ public class RealtimeChannelTest {
 			channel.subscribe("test_event", testListener);
 			/* unsubscribe */
 			channel.unsubscribe("test_event", testListener);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
+	 * <p>
+	 * Verifies that unsubscribe call with no argument removes all listeners,
+	 * and any of the previously subscribed listeners doesn't receive any message
+	 * after that.
+	 * </p>
+	 * <p>
+	 * Spec: RTL8a
+	 * </p>
+	 */
+	@Test
+	public void unsubscribe_all() {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* create a channel and attach */
+			final Channel channel = ably.channels.get("unsubscribe_all");
+			channel.attach();
+			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			/* Create a message listener to collect received messages */
+			ArrayList<Message> receivedMessageStack = new ArrayList<>();
+			MessageListener messageListener = new MessageListener() {
+				List<Message> receivedMessageStack;
+
+				@Override
+				public void onMessage(Message[] messages) {
+					receivedMessageStack.addAll(Arrays.asList(messages));
+				}
+
+				public MessageListener setReceivedMessageStack(List<Message> receivedMessageStack) {
+					this.receivedMessageStack = receivedMessageStack;
+					return this;
+				}
+			}.setReceivedMessageStack(receivedMessageStack);
+
+			/* Subscribe,
+			 *   - a generic event listener
+			 *   - a specific event listener
+			 */
+			channel.subscribe(messageListener);
+			channel.subscribe("test_event", messageListener);
+
+			/* Unsubscribe all listeners */
+			channel.unsubscribe();
+
+			/* Feed the channel */
+			Helpers.CompletionWaiter completionWaiter = new Helpers.CompletionWaiter();
+			channel.publish(new Message[] {
+				new Message("test_event", "Lorem"),
+				new Message("test_event", "Ipsum"),
+				new Message("test_event", "Mate")
+			}, completionWaiter);
+
+			completionWaiter.waitFor();
+
+			assertThat(receivedMessageStack, is(emptyCollectionOf(Message.class)));
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
