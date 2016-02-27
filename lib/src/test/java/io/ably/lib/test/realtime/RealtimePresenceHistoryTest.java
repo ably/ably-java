@@ -1,7 +1,10 @@
 package io.ably.lib.test.realtime;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -1325,68 +1328,36 @@ public class RealtimePresenceHistoryTest {
 			assertEquals("Verify attached state reached", txChannel.state, ChannelState.attached);
 
 			/* publish messages to the channel */
-			final CompletionSet msgComplete = new CompletionSet();
-			Thread publisherThread = new Thread() {
-				@Override
-				public void run() {
-					for(int i = 0; i < 50; i++) {
-						try {
-							txChannel.presence.enter(String.valueOf(i), msgComplete.add());
-							try {
-								sleep(100L);
-							} catch(InterruptedException ie) {}
-						} catch(AblyException e) {
-							e.printStackTrace();
-							fail("presencehistory_from_attach: Unexpected exception");
-							return;
-						}
-					}
-					msgComplete.waitFor();
-				}
-			};
-			publisherThread.start();
+			CompletionSet msgComplete = new CompletionSet();
+			int messageCount = 25;
+			for (int i = 0; i < messageCount; i++) {
+				txChannel.presence.enter(String.valueOf(i), msgComplete.add());
+			}
 
-			/* wait 2 seconds */
-			try {
-				Thread.sleep(2000L);
-			} catch(InterruptedException ie) {}
-
-			/* subscribe; this will trigger the attach */
-			PresenceWaiter presenceWaiter =  new PresenceWaiter(rxChannel);
+			msgComplete.waitFor();
 
 			/* get the channel history from the attachSerial when we get the attach indication */
-			(new ChannelWaiter(rxChannel)).waitFor(ChannelState.attached);
+			rxChannel.attach();
+			new ChannelWaiter(rxChannel).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", rxChannel.state, ChannelState.attached);
 			assertNotNull("Verify attachSerial provided", rxChannel.attachSerial);
 
-			/* the subscription callback will be called first on the "sync" presence message
-			 * delivered immediately following attach; so wait for this and then the first
-			 * "realtime" message to be received */
-			presenceWaiter.waitFor(2);
-			PresenceMessage firstReceivedRealtimeMessage = null;
-			for(ProtocolMessage msg : rawPresenceWaiter.receivedMessages) {
-				if(msg.channelSerial != null) {
-					firstReceivedRealtimeMessage = msg.presence[0];
-					break;
-				}
-			}
-
-			/* wait for the end of the tx thread */
-			try {
-				publisherThread.join();
-			} catch (InterruptedException e) {}
-			assertTrue("Verify success callback was called", msgComplete.errors.isEmpty());
-
 			/* get the history for this channel */
-			PaginatedResult<PresenceMessage> messages = rxChannel.presence.history(new Param[] { new Param("untilAttach", "true")});
+			PaginatedResult<PresenceMessage> messages = rxChannel.presence.history(new Param[] { new Param("untilAttach", "true") });
 			assertNotNull("Expected non-null messages", messages);
 			assertTrue("Expected at least one message", messages.items().length >= 1);
 
 			/* verify that the history and received messages meet */
-			int earliestReceivedOnConnection = Integer.valueOf((String)firstReceivedRealtimeMessage.data);
-			int latestReceivedInHistory = Integer.valueOf((String)messages.items()[0].data);
-			assertEquals("Verify that the history and received messages meet", earliestReceivedOnConnection, latestReceivedInHistory + 1);
-
+			for (int i = 0; i < messageCount; i++) {
+				/* 0 --> "24"
+				 * 1 --> "23"
+				 * ...
+				 * 24 --> "0"
+				 */
+				String actual = (String) messages.items()[messageCount - 1 - i].data;
+				String expected = String.valueOf(i);
+				assertThat(actual, is(equalTo(expected)));
+			}
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("presencehistory_from_attach: Unexpected exception instantiating library");

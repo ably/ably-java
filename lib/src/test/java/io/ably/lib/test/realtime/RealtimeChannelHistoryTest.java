@@ -1,7 +1,10 @@
 package io.ably.lib.test.realtime;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -675,7 +678,7 @@ public class RealtimeChannelHistoryTest {
 			CompletionSet msgComplete = new CompletionSet();
 			for(int i = 0; i < 50; i++) {
 				try {
-					channel.publish("history" + i,  String.valueOf(i), msgComplete.add());
+					channel.publish("history" + i, String.valueOf(i), msgComplete.add());
 				} catch(AblyException e) {
 					e.printStackTrace();
 					fail("channelhistory_limit_f: Unexpected exception");
@@ -732,7 +735,7 @@ public class RealtimeChannelHistoryTest {
 			CompletionSet msgComplete = new CompletionSet();
 			for(int i = 0; i < 50; i++) {
 				try {
-					channel.publish("history" + i,  String.valueOf(i), msgComplete.add());
+					channel.publish("history" + i, String.valueOf(i), msgComplete.add());
 				} catch(AblyException e) {
 					e.printStackTrace();
 					fail("channelhistory_limit_b: Unexpected exception");
@@ -935,7 +938,7 @@ public class RealtimeChannelHistoryTest {
 			CompletionSet msgComplete = new CompletionSet();
 			for(int i = 0; i < 50; i++) {
 				try {
-					channel.publish("history" + i,  String.valueOf(i), msgComplete.add());
+					channel.publish("history" + i, String.valueOf(i), msgComplete.add());
 				} catch(AblyException e) {
 					e.printStackTrace();
 					fail("channelhistory_paginate_f: Unexpected exception");
@@ -1024,7 +1027,7 @@ public class RealtimeChannelHistoryTest {
 			CompletionSet msgComplete = new CompletionSet();
 			for(int i = 0; i < 50; i++) {
 				try {
-					channel.publish("history" + i,  String.valueOf(i), msgComplete.add());
+					channel.publish("history" + i, String.valueOf(i), msgComplete.add());
 				} catch(AblyException e) {
 					e.printStackTrace();
 					fail("channelhistory_paginate_f: Unexpected exception");
@@ -1113,7 +1116,7 @@ public class RealtimeChannelHistoryTest {
 			CompletionSet msgComplete = new CompletionSet();
 			for(int i = 0; i < 50; i++) {
 				try {
-					channel.publish("history" + i,  String.valueOf(i), msgComplete.add());
+					channel.publish("history" + i, String.valueOf(i), msgComplete.add());
 				} catch(AblyException e) {
 					e.printStackTrace();
 					fail("channelhistory_paginate_f: Unexpected exception");
@@ -1202,7 +1205,7 @@ public class RealtimeChannelHistoryTest {
 			CompletionSet msgComplete = new CompletionSet();
 			for(int i = 0; i < 50; i++) {
 				try {
-					channel.publish("history" + i,  String.valueOf(i), msgComplete.add());
+					channel.publish("history" + i, String.valueOf(i), msgComplete.add());
 				} catch(AblyException e) {
 					e.printStackTrace();
 					fail("channelhistory_paginate_f: Unexpected exception");
@@ -1300,7 +1303,7 @@ public class RealtimeChannelHistoryTest {
 				public void run() {
 					for(int i = 0; i < 50; i++) {
 						try {
-							txChannel.publish("history" + i,  String.valueOf(i), msgComplete.add());
+							txChannel.publish("history" + i, String.valueOf(i), msgComplete.add());
 							try {
 								sleep(100L);
 							} catch(InterruptedException ie) {}
@@ -1383,57 +1386,36 @@ public class RealtimeChannelHistoryTest {
 			assertEquals("Verify attached state reached", txChannel.state, ChannelState.attached);
 
 			/* publish messages to the channel */
-			final CompletionSet msgComplete = new CompletionSet();
-			Thread publisherThread = new Thread() {
-				@Override
-				public void run() {
-					for(int i = 0; i < 50; i++) {
-						try {
-							txChannel.publish("history" + i,  String.valueOf(i), msgComplete.add());
-							try {
-								sleep(100L);
-							} catch(InterruptedException ie) {}
-						} catch(AblyException e) {
-							e.printStackTrace();
-							fail("channelhistory_from_attach: Unexpected exception");
-							return;
-						}
-					}
-				}
-			};
-			publisherThread.start();
+			CompletionSet msgComplete = new CompletionSet();
+			int messageCount = 25;
+			for (int i = 0; i < messageCount; i++) {
+				txChannel.publish("history" + i,  String.valueOf(i), msgComplete.add());
+			}
 
-			/* wait 2 seconds */
-			try {
-				Thread.sleep(2000L);
-			} catch(InterruptedException ie) {}
-
-			/* subscribe; this will trigger the attach */
-			MessageWaiter messageWaiter =  new MessageWaiter(rxChannel);
+			msgComplete.waitFor();
 
 			/* get the channel history from the attachSerial when we get the attach indication */
-			(new ChannelWaiter(rxChannel)).waitFor(ChannelState.attached);
+			rxChannel.attach();
+			new ChannelWaiter(rxChannel).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", rxChannel.state, ChannelState.attached);
 			assertNotNull("Verify attachSerial provided", rxChannel.attachSerial);
 
-			/* wait for the subscription callback to be called on the first received message */
-			messageWaiter.waitFor(1);
-
-			/* wait for the publisher thread to complete */
-			try {
-				publisherThread.join();
-			} catch (InterruptedException e) {}
-
 			/* get the history for this channel */
-			PaginatedResult<Message> messages = rxChannel.history(new Param[] { new Param("untilAttach", "true"), new Param("untilAttach", "true") });
+			PaginatedResult<Message> messages = rxChannel.history(new Param[] { new Param("untilAttach", "true") });
 			assertNotNull("Expected non-null messages", messages);
 			assertTrue("Expected at least one message", messages.items().length >= 1);
 
 			/* verify that the history and received messages meet */
-			int earliestReceivedOnConnection = Integer.valueOf((String)messageWaiter.receivedMessages.get(0).data).intValue();
-			int latestReceivedInHistory = Integer.valueOf((String)messages.items()[0].data).intValue();
-			assertEquals("Verify that the history and received messages meet", earliestReceivedOnConnection, latestReceivedInHistory + 1);
-
+			for (int i = 0; i < messageCount; i++) {
+				/* 0 --> "24"
+				 * 1 --> "23"
+				 * ...
+				 * 24 --> "0"
+				 */
+				String actual = (String) messages.items()[messageCount - 1 - i].data;
+				String expected = String.valueOf(i);
+				assertThat(actual, is(equalTo(expected)));
+			}
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("channelhistory_from_attach: Unexpected exception instantiating library");
