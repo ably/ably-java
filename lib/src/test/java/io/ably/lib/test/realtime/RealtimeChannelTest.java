@@ -245,7 +245,7 @@ public class RealtimeChannelTest {
 			/* subscribe */
 			MessageListener testListener =  new MessageListener() {
 				@Override
-				public void onMessage(Message[] messages) {
+				public void onMessage(Message message) {
 				}};
 			channel.subscribe("test_event", testListener);
 			/* unsubscribe */
@@ -289,8 +289,8 @@ public class RealtimeChannelTest {
 				List<Message> receivedMessageStack;
 
 				@Override
-				public void onMessage(Message[] messages) {
-					receivedMessageStack.addAll(Arrays.asList(messages));
+				public void onMessage(Message message) {
+					receivedMessageStack.add(message);
 				}
 
 				public MessageListener setReceivedMessageStack(List<Message> receivedMessageStack) {

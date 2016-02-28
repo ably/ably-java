@@ -65,7 +65,7 @@ public class Presence {
 	 * An interface allowing a listener to be notified of arrival of presence messages
 	 */
 	public interface PresenceListener {
-		public void onPresenceMessage(PresenceMessage[] messages);
+		void onPresenceMessage(PresenceMessage messages);
 	}
 
 	/**
@@ -124,17 +124,19 @@ public class Presence {
 	}
  
 	private void broadcastPresence(PresenceMessage[] messages) {
-		this.listeners.onPresenceMessage(messages);
+		for (PresenceMessage message : messages) {
+			this.listeners.onPresenceMessage(message);
+		}
 	}
 
 	private final Multicaster listeners = new Multicaster();
 
 	private static class Multicaster extends io.ably.lib.util.Multicaster<PresenceListener> implements PresenceListener {
 		@Override
-		public void onPresenceMessage(PresenceMessage[] messages) {
+		public void onPresenceMessage(PresenceMessage message) {
 			for(PresenceListener member : members)
 				try {
-					member.onPresenceMessage(messages);
+					member.onPresenceMessage(message);
 				} catch(Throwable t) {}
 		}
 	}
