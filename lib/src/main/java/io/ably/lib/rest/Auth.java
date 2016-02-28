@@ -63,6 +63,11 @@ public class Auth {
 		public String authUrl;
 
 		/**
+		 * When true, indicates that a new token should be requested
+		 */
+		public boolean force;
+
+		/**
 		 * Full Ably key string as obtained from dashboard.
 		 */
 		public String key;
@@ -314,13 +319,10 @@ public class Auth {
 	 * - queryTime   (optional) boolean indicating that the Ably system should be
 	 *               queried for the current time when none is specified explicitly.
 	 *
-	 * - force       (optional) boolean indicating that a new token should be requested,
-	 *               even if a current token is still valid.
-	 *
 	 * @param callback (err, tokenDetails)
 	 */
-	public TokenDetails authorise(AuthOptions options, TokenParams params, boolean force) throws AblyException {
-		return tokenAuth.authorise(options, params, force);
+	public TokenDetails authorise(AuthOptions options, TokenParams params) throws AblyException {
+		return tokenAuth.authorise(options, params);
 	}
 
 	/**
@@ -534,7 +536,7 @@ public class Auth {
 			params = new Param[]{new Param("key", authOptions.key) };
 			break;
 		case token:
-			authorise(null, null, false);
+			authorise(null, null);
 			params = new Param[]{new Param("access_token", tokenAuth.getTokenDetails().token) };
 			break;
 		}
