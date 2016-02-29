@@ -570,8 +570,9 @@ public class RestAuthTest {
 		/* Publish a message with mismatching client id */
 		Message message = new Message(
 				"I", /* name */
-				"will", /* mismatching client id */
-				"fail"); /* data */
+				"will", /* data */
+				"fail" /* mismatching client id */
+		);
 		Channel channel = ably.channels.get("test");
 
 		thrown.expect(AblyException.class);
@@ -672,9 +673,9 @@ public class RestAuthTest {
 
 			/* Publish a message */
 			Message messagePublishee = new Message(
-					"wildcard",	// name
-					"brian that is called brian",	// clientId
-					String.valueOf(System.currentTimeMillis())	// data
+					"wildcard",	/* name */
+					String.valueOf(System.currentTimeMillis()), /* data */
+					"brian that is called brian" /* clientId */
 			);
 
 			Channel channel = ably.channels.get("test");

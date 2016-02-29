@@ -34,7 +34,7 @@ public class Message extends BaseMessage {
 	 * @param data
 	 */
 	public Message(String name, Object data) {
-		this(name, null, data);
+		this(name, data, null);
 	}
 
 	/**
@@ -42,7 +42,7 @@ public class Message extends BaseMessage {
 	 * @param name
 	 * @param data
 	 */
-	public Message(String name, String clientId, Object data) {
+	public Message(String name, Object data, String clientId) {
 		this.name = name;
 		this.clientId = clientId;
 		this.data = data;
