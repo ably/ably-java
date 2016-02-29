@@ -189,7 +189,13 @@ public class Http {
 		if(auth.getAuthMethod() == AuthMethod.basic) {
 			authHeader = "Basic " + Base64Coder.encodeString(auth.getBasicCredentials());
 		} else {
-			auth.authorise(null, null, renew);
+			Auth.AuthOptions options = null;
+			if (renew) {
+				options = new Auth.AuthOptions();
+				options.force = true;
+			}
+
+			auth.authorise(options, null);
 			authHeader = "Bearer " + auth.getTokenAuth().getEncodedToken();
 		}
 		return authHeader;
