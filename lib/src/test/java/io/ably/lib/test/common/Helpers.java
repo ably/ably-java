@@ -153,9 +153,9 @@ public class Helpers {
 		 * MessageListener interface
 		 */
 		@Override
-		public void onMessage(Message[] messages) {
+		public void onMessage(Message message) {
 			synchronized(this) {
-				receivedMessages.addAll(Arrays.asList(messages));
+				receivedMessages.add(message);
 				notify();
 			}
 		}
@@ -222,9 +222,9 @@ public class Helpers {
 		 * PresenceListener API
 		 */
 		@Override
-		public void onPresenceMessage(PresenceMessage[] messages) {
+		public void onPresenceMessage(PresenceMessage message) {
 			synchronized(this) {
-				receivedMessages.addAll(Arrays.asList(messages));
+				receivedMessages.add(message);
 				notify();
 			}
 		}

@@ -232,7 +232,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 * An interface whereby a client maybe notified of messages changes on a channel.
 	 */
 	public interface MessageListener {
-		public void onMessage(Message[] messages);
+		void onMessage(Message messages);
 	}
 
 	/**
@@ -337,12 +337,14 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 			if(msg.timestamp == 0) msg.timestamp = message.timestamp;
 			if(msg.id == null) msg.id = message.id + ':' + i;
 			/* broadcast */
-			Message[] singleMessage = new Message[] {msg};
 			MessageMulticaster listeners = eventListeners.get(msg.name);
 			if(listeners != null)
-				listeners.onMessage(singleMessage);
+				listeners.onMessage(msg);
 		}
-		this.listeners.onMessage(message.messages);
+
+		for (Message msg : message.messages) {
+			this.listeners.onMessage(msg);
+		}
 	}
 
 	private void onPresence(ProtocolMessage message, String syncChannelSerial) {
@@ -374,10 +376,10 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 
 	private static class MessageMulticaster extends io.ably.lib.util.Multicaster<MessageListener> implements MessageListener {
 		@Override
-		public void onMessage(Message[] messages) {
+		public void onMessage(Message message) {
 			for(MessageListener member : members)
 				try {
-					member.onMessage(messages);
+					member.onMessage(message);
 				} catch(Throwable t) {}
 		}
 	}
