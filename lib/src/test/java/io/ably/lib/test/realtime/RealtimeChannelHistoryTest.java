@@ -142,9 +142,9 @@ public class RealtimeChannelHistoryTest {
 	}
 
 	/**
-	 * Send a single message on a channel and verify that it can be
-	 * retrieved using channel.history() without needing to wait for
-	 * it to be persisted.
+	 * Send couple of messages without listener on a channel and
+	 * verify that it can be retrieved using channel.history()
+	 * without needing to wait for it to be persisted.
 	 */
 	@Test
 	public void channelhistory_simple_binary_withoutlistener() {
@@ -194,9 +194,9 @@ public class RealtimeChannelHistoryTest {
 	}
 
 	/**
-	 * Send a single message on a channel and verify that it can be
-	 * retrieved using channel.history() without needing to wait for
-	 * it to be persisted.
+	 * Send couple of messages without listener using binary protocol
+	 * on a channel and verify that it can be retrieved using channel.history()
+	 * without needing to wait for it to be persisted.
 	 */
 	@Test
 	public void channelhistory_simple_text_withoutlistener() {
