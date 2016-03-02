@@ -2,6 +2,7 @@ package io.ably.lib.types;
 
 import java.net.ConnectException;
 import java.net.NoRouteToHostException;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 
 /**
@@ -21,6 +22,15 @@ public class AblyException extends Exception {
 	}
 
 	public static AblyException fromErrorInfo(ErrorInfo errorInfo) {
+		/* If status code is one of server error HTTP response codes */
+		if (errorInfo.statusCode >= 500 &&
+			errorInfo.statusCode <= 504) {
+			return new HostFailedException(
+					new Exception(errorInfo.message),
+					errorInfo
+			);
+		}
+
 		return new AblyException(
 				new Exception(errorInfo.message),
 				errorInfo);
@@ -34,7 +44,7 @@ public class AblyException extends Exception {
 	public static AblyException fromThrowable(Throwable t) {
 		if(t instanceof AblyException)
 			return (AblyException)t;
-		if(t instanceof ConnectException || t instanceof UnknownHostException || t instanceof NoRouteToHostException)
+		if(t instanceof ConnectException || t instanceof SocketTimeoutException || t instanceof UnknownHostException || t instanceof NoRouteToHostException)
 			return new HostFailedException(t, ErrorInfo.fromThrowable(t));
 
 		return new AblyException(t, ErrorInfo.fromThrowable(t));

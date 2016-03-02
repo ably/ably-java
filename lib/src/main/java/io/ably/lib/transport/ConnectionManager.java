@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
+
 
 public class ConnectionManager implements Runnable, ConnectListener {
 
@@ -51,10 +51,16 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	public static class StateIndication {
 		final ConnectionState state;
 		final ErrorInfo reason;
-		boolean useFallbackHost;
+		final boolean fallback;
+
 		public StateIndication(ConnectionState state, ErrorInfo reason) {
+			this(state, reason, false);
+		}
+
+		public StateIndication(ConnectionState state, ErrorInfo reason, boolean fallback) {
 			this.state = state;
 			this.reason = reason;
+			this.fallback = fallback;
 		}
 	}
 	
@@ -91,11 +97,11 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	@SuppressWarnings("serial")
 	public static final HashMap<ConnectionState, StateInfo> states = new HashMap<ConnectionState, StateInfo>() {{
 		put(ConnectionState.initialized, new StateInfo(ConnectionState.initialized, true, false, false, false, 0, null));
-		put(ConnectionState.connecting, new StateInfo(ConnectionState.connecting, true, false, false, false, Defaults.connectTimeout, null));
+		put(ConnectionState.connecting, new StateInfo(ConnectionState.connecting, true, false, false, false, Defaults.TIMEOUT_CONNECT, null));
 		put(ConnectionState.connected, new StateInfo(ConnectionState.connected, false, true, false, false, 0, null));
-		put(ConnectionState.disconnected, new StateInfo(ConnectionState.disconnected, true, false, false, true, Defaults.disconnectTimeout, REASON_DISCONNECTED));
-		put(ConnectionState.suspended, new StateInfo(ConnectionState.suspended, false, false, false, true, Defaults.suspendedTimeout, REASON_SUSPENDED));
-		put(ConnectionState.closing, new StateInfo(ConnectionState.closing, false, false, false, false, Defaults.connectTimeout, REASON_CLOSED));
+		put(ConnectionState.disconnected, new StateInfo(ConnectionState.disconnected, true, false, false, true, Defaults.TIMEOUT_DISCONNECT, REASON_DISCONNECTED));
+		put(ConnectionState.suspended, new StateInfo(ConnectionState.suspended, false, false, false, true, Defaults.TIMEOUT_SUSPEND, REASON_SUSPENDED));
+		put(ConnectionState.closing, new StateInfo(ConnectionState.closing, false, false, false, false, Defaults.TIMEOUT_CONNECT, REASON_CLOSED));
 		put(ConnectionState.closed, new StateInfo(ConnectionState.closed, false, false, true, false, 0, REASON_CLOSED));
 		put(ConnectionState.failed, new StateInfo(ConnectionState.failed, false, false, true, false, 0, REASON_FAILED));
 	}};
@@ -119,7 +125,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		queuedMessages = new ArrayList<QueuedMessage>();
 		pendingMessages = new PendingMessageQueue();
 		state = states.get(ConnectionState.initialized);
-		String transportClass = Defaults.transport;
+		String transportClass = Defaults.TRANSPORT;
 		/* debug options */
 		if(options instanceof DebugOptions)
 			protocolListener = ((DebugOptions)options).protocolListener;
@@ -467,7 +473,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	}
 
 	private void setSuspendTime() {
-		suspendTime = (System.currentTimeMillis() + Defaults.suspendedTimeout);
+		suspendTime = (System.currentTimeMillis() + Defaults.TIMEOUT_SUSPEND);
 	}
 
 	private StateIndication checkSuspend(StateIndication stateChange) {
@@ -483,16 +489,11 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 		/* FIXME: we might want to limit this behaviour to only a specific
 		 * set of error codes */
-		if(pendingConnect != null && !pendingConnect.fallback && checkConnectivity()) {
-			String[] fallbackHosts = Defaults.getFallbackHosts(options);
-			if(fallbackHosts != null && fallbackHosts.length > 0) {
-				/* we will try a fallback host */
-				StateIndication fallbackConnectRequest = new StateIndication(ConnectionState.connecting, null);
-				fallbackConnectRequest.useFallbackHost = true;
-				requestState(fallbackConnectRequest);
-				/* returning null ensures we stay in the connecting state */
-				return null;
-			}
+		if(pendingConnect != null && checkConnectivity()) {
+			/* we will try a fallback host */
+			requestState(new StateIndication(ConnectionState.connecting, null, true));
+			/* returning null ensures we stay in the connecting state */
+			return null;
 		}
 		boolean suspendMode = System.currentTimeMillis() > suspendTime;
 		ConnectionState expiredState = suspendMode ? ConnectionState.suspended : ConnectionState.disconnected;
@@ -570,19 +571,11 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	}
 
 	private class ConnectParams extends TransportParams {
-		private boolean fallback;
-		ConnectParams(ClientOptions options, boolean fallback) {
+		ConnectParams(ClientOptions options) {
 			this.options = options;
-			this.fallback = fallback;
 			this.connectionKey = connection.key;
 			this.connectionSerial = String.valueOf(connection.serial);
-			String[] fallbackHosts;
-			if(fallback && (fallbackHosts = Defaults.getFallbackHosts(options)).length > 0) {
-				fallbackHosts = Defaults.getFallbackHosts(options);
-				this.host = fallbackHosts[random.nextInt(fallbackHosts.length)];
-			} else {
-				this.host = Defaults.getHost(options, host, true);
-			}
+			this.host = options.realtimeHost;
 			this.port = Defaults.getPort(options);
 		}
 	}
@@ -594,7 +587,17 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		 * Second, choose the host. ConnectParams will use the default
 		 * (or requested) host, unless fallback=true, in which case
 		 * it will choose a fallback host at random */
-		pendingConnect = new ConnectParams(options, request.useFallbackHost);
+		pendingConnect = new ConnectParams(options);
+
+		if (request.fallback && Hosts.isRealtimeFallbackSupported(options.realtimeHost)) {
+			String hostFallback = Hosts.getFallback(getHost());
+			pendingConnect.host = hostFallback;
+			ably.http.setHost(hostFallback);
+		}
+		else {
+			pendingConnect.host = options.realtimeHost;
+			ably.http.setHost(options.restHost);
+		}
 
 		/* enter the connecting state */
 		notifyState(request);
@@ -855,9 +858,6 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	private ITransport transport;
 	private long suspendTime;
 	private long msgSerial;
-
-	/* for choosing fallback host*/
-	private static final Random random = new Random();
 
 	/* for debug/test only */
 	private RawProtocolListener protocolListener;

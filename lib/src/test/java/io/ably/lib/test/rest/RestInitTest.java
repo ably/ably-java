@@ -96,11 +96,13 @@ public class RestInitTest {
 	@Test
 	public void init_host() {
 		try {
+			String hostExpected = "some.other.host";
+
 			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-			opts.restHost = "some.other.host";
+			opts.restHost = hostExpected;
 			AblyRest ably = new AblyRest(opts);
-			assertEquals("Unexpected host mismatch", Defaults.getHost(opts), ably.options.restHost);
+			assertEquals("Unexpected host mismatch", hostExpected, ably.options.restHost);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init4: Unexpected exception instantiating library");

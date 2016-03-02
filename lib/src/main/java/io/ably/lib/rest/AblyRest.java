@@ -59,9 +59,9 @@ public class AblyRest {
 		Log.i(getClass().getName(), "started");
 		this.clientId = options.clientId;
 
-		http = new Http(this, options);
-		asyncHttp = new AsyncHttp(http);
 		auth = new Auth(this, options);
+		http = new Http(options, auth);
+		asyncHttp = new AsyncHttp(http);
 		channels = new Channels();
 	}
 

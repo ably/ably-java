@@ -1,6 +1,7 @@
 package io.ably.lib.types;
 
 import io.ably.lib.rest.Auth.AuthOptions;
+import io.ably.lib.transport.Defaults;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Log.LogHandler;
 
@@ -62,13 +63,13 @@ public class ClientOptions extends AuthOptions {
 	/**
 	 * For development environments only; allows a non-default Ably host to be specified.
 	 */
-	public String restHost;
+	public String restHost = Defaults.HOST_REST;
 
 	/**
 	 * For development environments only; allows a non-default Ably host to be specified for
 	 * websocket connections.
 	 */
-	public String realtimeHost;
+	public String realtimeHost = Defaults.HOST_REALTIME;
 
 	/**
 	 * For development environments only; allows a non-default Ably port to be specified.
@@ -110,4 +111,20 @@ public class ClientOptions extends AuthOptions {
 	 * Realtime API documentation for further information on connection state recovery.
 	 */
 	public String recover;
+
+	/**
+	 * Spec: TO313
+	 */
+	public int httpOpenTimeout = Defaults.TIMEOUT_HTTP_OPEN;
+
+	/**
+	 * Spec: TO314
+	 */
+	public int httpRequestTimeout = Defaults.TIMEOUT_HTTP_REQUEST;
+
+	/**
+	 * Max number of fallback hosts to use as a fallback when an HTTP request to
+	 * the primary host is unreachable or indicates that it is unserviceable
+	 */
+	public int httpMaxRetryCount = Defaults.HTTP_MAX_RETRY_COUNT;
 }
