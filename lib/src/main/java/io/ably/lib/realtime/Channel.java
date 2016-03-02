@@ -268,6 +268,9 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	public synchronized void unsubscribe(MessageListener listener) {
 		Log.v(TAG, "unsubscribe(); channel = " + this.name);
 		listeners.remove(listener);
+		for (MessageMulticaster multicaster: eventListeners.values()) {
+			multicaster.remove(listener);
+		}
 	}
 
 	/**

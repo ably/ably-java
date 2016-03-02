@@ -1,12 +1,6 @@
 package io.ably.lib.test.common;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -178,6 +172,16 @@ public class Helpers {
 			try {
 				channel.presence.subscribe(this);
 			} catch(AblyException e) {}
+		}
+
+		public PresenceWaiter(PresenceMessage.Action event, Channel channel) throws AblyException {
+			reset();
+			channel.presence.subscribe(event, this);
+		}
+
+		public PresenceWaiter(EnumSet<PresenceMessage.Action> events, Channel channel) throws AblyException {
+			reset();
+			channel.presence.subscribe(events, this);
 		}
 
 		/**

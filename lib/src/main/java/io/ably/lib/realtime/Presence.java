@@ -1,8 +1,8 @@
 package io.ably.lib.realtime;
 
+import io.ably.lib.http.Http.BodyHandler;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
-import io.ably.lib.http.Http.BodyHandler;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
@@ -14,6 +14,8 @@ import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
 
 import java.util.Collection;
+import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -33,7 +35,7 @@ public class Presence {
 	/**
 	 * Get the presence state for this Channel.
 	 * @return: the current present members.
-	 * @throws AblyException 
+	 * @throws AblyException
 	 */
 	public synchronized PresenceMessage[] get()  {
 		Collection<PresenceMessage> values = presence.values();
@@ -43,7 +45,7 @@ public class Presence {
 	/**
 	 * Get the presence state for this Channel, optionally waiting for sync to complete.
 	 * @return: the current present members.
-	 * @throws AblyException 
+	 * @throws AblyException
 	 */
 	public synchronized PresenceMessage[] get(boolean wait) throws InterruptedException {
 		Collection<PresenceMessage> values = presence.values(wait);
@@ -85,7 +87,69 @@ public class Presence {
 	 */
 	public void unsubscribe(PresenceListener listener) {
 		listeners.remove(listener);
+		for (Multicaster multicaster: eventListeners.values()) {
+			multicaster.remove(listener);
+		}
 	}
+
+	/**
+	 * Subscribe to presence events with a specific action on the associated Channel.
+	 * This implicitly attaches the Channel if it is not already attached.
+	 *
+	 * @param action to be observed
+	 * @param listener
+	 * @throws AblyException
+	 */
+	public void subscribe(PresenceMessage.Action action, PresenceListener listener) throws AblyException {
+		subscribeImpl(action, listener);
+		channel.attach();
+	}
+
+	/**
+	 * Unsubscribe a previously subscribed presence listener for this channel from specific action.
+	 *
+	 * @param action
+	 * @param listener
+	 */
+	public void unsubscribe(PresenceMessage.Action action, PresenceListener listener) {
+		unsubscribeImpl(action, listener);
+	}
+
+	/**
+	 * Subscribe to presence events with specific actions on the associated Channel.
+	 * This implicitly attaches the Channel if it is not already attached.
+	 *
+	 * @param actions to be observed
+	 * @param listener
+	 * @throws AblyException
+	 */
+	public void subscribe(EnumSet<PresenceMessage.Action> actions, PresenceListener listener) throws AblyException {
+		for (PresenceMessage.Action action : actions) {
+			subscribeImpl(action, listener);
+		}
+		channel.attach();
+	}
+
+	/**
+	 * Unsubscribe a previously subscribed presence listener for this channel from specific actions.
+	 *
+	 * @param actions
+	 * @param listener
+	 */
+	public void unsubscribe(EnumSet<PresenceMessage.Action> actions, PresenceListener listener) {
+		for (PresenceMessage.Action action : actions) {
+			unsubscribeImpl(action, listener);
+		}
+	}
+
+	/**
+	 * Unsubscribe all subscribed presence lisceners for this channel.
+	 */
+	public void unsubscribe() {
+		listeners.clear();
+		eventListeners.clear();
+	}
+
 
 	/***
 	 * internal
@@ -122,14 +186,19 @@ public class Presence {
 		if(broadcast)
 			broadcastPresence(messages);
 	}
- 
+
 	private void broadcastPresence(PresenceMessage[] messages) {
-		for (PresenceMessage message : messages) {
-			this.listeners.onPresenceMessage(message);
+		for(PresenceMessage message : messages) {
+			listeners.onPresenceMessage(message);
+
+			Multicaster eventListener = eventListeners.get(message.action);
+			if(eventListener != null)
+				eventListener.onPresenceMessage(message);
 		}
 	}
 
 	private final Multicaster listeners = new Multicaster();
+	private final EnumMap<PresenceMessage.Action, Multicaster> eventListeners = new EnumMap<>(PresenceMessage.Action.class);
 
 	private static class Multicaster extends io.ably.lib.util.Multicaster<PresenceListener> implements PresenceListener {
 		@Override
@@ -140,6 +209,26 @@ public class Presence {
 				} catch(Throwable t) {}
 		}
 	}
+
+	private void subscribeImpl(PresenceMessage.Action action, PresenceListener listener) {
+		Multicaster listeners = eventListeners.get(action);
+		if(listeners == null) {
+			listeners = new Multicaster();
+			eventListeners.put(action, listeners);
+		}
+		listeners.add(listener);
+	}
+
+	private void unsubscribeImpl(PresenceMessage.Action action, PresenceListener listener) {
+		Multicaster listeners = eventListeners.get(action);
+		if(listeners != null) {
+			listeners.remove(listener);
+			if(listeners.isEmpty()) {
+				eventListeners.remove(action);
+			}
+		}
+	}
+
 
 	/************************************
 	 * enter/leave and pending messages
@@ -432,8 +521,8 @@ public class Presence {
 					msg.listener.onError(reason);
 				} catch(Throwable t) {
 					Log.e(TAG, "failQueuedMessages(): Unexpected exception calling listener", t);
-				}			
-			
+				}
+
 	}
 
 	/************************************
