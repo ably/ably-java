@@ -1,17 +1,15 @@
 package io.ably.lib.test.realtime;
 
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.*;
 
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.Channel;
-import io.ably.lib.realtime.ChannelState;
-import io.ably.lib.realtime.ConnectionState;
+import io.ably.lib.realtime.*;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.TokenParams;
+import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
@@ -19,13 +17,10 @@ import io.ably.lib.test.common.Helpers.CompletionWaiter;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.Helpers.PresenceWaiter;
 import io.ably.lib.test.common.Setup.TestVars;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.PaginatedResult;
-import io.ably.lib.types.Param;
-import io.ably.lib.types.PresenceMessage;
+import io.ably.lib.types.*;
 import io.ably.lib.types.PresenceMessage.Action;
 
+import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -1288,4 +1283,385 @@ public class RealtimePresenceTest {
 		}
 	}
 
+	/**
+	 * <p>
+	 * Validates channel removes all subscribers,
+	 * when {@code Channel#unsubscribe()} with no argument gets called.
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void realtime_presence_unsubscribe_all() throws AblyException {
+		/* Ably instance that will emit presence events */
+		AblyRealtime ably1 = null;
+		/* Ably instance that will receive presence events */
+		AblyRealtime ably2 = null;
+
+		String channelName = "test.presence.unsubscribe.all" + System.currentTimeMillis();
+
+		try {
+			ClientOptions option1 = testVars.createOptions(testVars.keys[0].keyStr);
+			option1.clientId = "emitter client";
+			ClientOptions option2 = testVars.createOptions(testVars.keys[0].keyStr);
+			option2.clientId = "receiver client";
+
+			ably1 = new AblyRealtime(option1);
+			ably2 = new AblyRealtime(option2);
+
+			Channel channel1 = ably1.channels.get(channelName);
+			channel1.attach();
+			(new ChannelWaiter(channel1)).waitFor(ChannelState.attached);
+
+			Channel channel2 = ably2.channels.get(channelName);
+			channel2.attach();
+			(new ChannelWaiter(channel2)).waitFor(ChannelState.attached);
+
+			ArrayList<PresenceMessage> receivedMessageStack = new ArrayList<>();
+			Presence.PresenceListener listener = new Presence.PresenceListener() {
+				List<PresenceMessage> messageStack;
+
+				@Override
+				public void onPresenceMessage(PresenceMessage message) {
+					messageStack.add(message);
+				}
+
+				public Presence.PresenceListener setMessageStack(List<PresenceMessage> messageStack) {
+					this.messageStack = messageStack;
+					return this;
+				}
+			}.setMessageStack(receivedMessageStack);
+
+			/* Subscribe using various alternatives of {@code Presence#subscribe()} */
+			channel2.presence.subscribe(listener);
+			channel2.presence.subscribe(Action.present, listener);
+			channel2.presence.subscribe(EnumSet.of(Action.update, Action.leave), listener);
+
+			/* Unsubscribe */
+			channel2.presence.unsubscribe();
+
+			/* Start emitting channel with ably client 1 (emitter) */
+			channel1.presence.enter("Hello, #2!", null);
+			channel1.presence.update("Lorem ipsum", null);
+			channel1.presence.update("Dolor sit!", null);
+			channel1.presence.leave(null);
+
+			/* Wait until receiver client (ably2) observes {@code Action.leave}
+			 * is emitted from emitter client (ably1)
+			 */
+			Helpers.PresenceWaiter leavePresenceWaiter = new Helpers.PresenceWaiter(channel2);
+			leavePresenceWaiter.waitFor(ably1.options.clientId, Action.leave);
+
+			/* Validate that we didn't received anything
+			 */
+			assertThat(receivedMessageStack, is(emptyCollectionOf(PresenceMessage.class)));
+		} finally {
+			if (ably1 != null) ably1.close();
+			if (ably2 != null) ably2.close();
+		}
+	}
+
+	/**
+	 * <p>
+	 * Validates channel removes a subscriber,
+	 * when {@code Channel#unsubscribe()} gets called with a listener.
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void realtime_presence_unsubscribe_single() throws AblyException {
+		/* Ably instance that will emit presence events */
+		AblyRealtime ably1 = null;
+		/* Ably instance that will receive presence events */
+		AblyRealtime ably2 = null;
+
+		String channelName = "test.presence.unsubscribe.single" + System.currentTimeMillis();
+
+		try {
+			ClientOptions option1 = testVars.createOptions(testVars.keys[0].keyStr);
+			option1.clientId = "emitter client";
+			ClientOptions option2 = testVars.createOptions(testVars.keys[0].keyStr);
+			option2.clientId = "receiver client";
+
+			ably1 = new AblyRealtime(option1);
+			ably2 = new AblyRealtime(option2);
+
+			Channel channel1 = ably1.channels.get(channelName);
+			channel1.attach();
+			(new ChannelWaiter(channel1)).waitFor(ChannelState.attached);
+
+			Channel channel2 = ably2.channels.get(channelName);
+			channel2.attach();
+			(new ChannelWaiter(channel2)).waitFor(ChannelState.attached);
+
+			ArrayList<PresenceMessage> receivedMessageStack = new ArrayList<>();
+			Presence.PresenceListener listener = new Presence.PresenceListener() {
+				List<PresenceMessage> messageStack;
+
+				@Override
+				public void onPresenceMessage(PresenceMessage message) {
+					messageStack.add(message);
+				}
+
+				public Presence.PresenceListener setMessageStack(List<PresenceMessage> messageStack) {
+					this.messageStack = messageStack;
+					return this;
+				}
+			}.setMessageStack(receivedMessageStack);
+
+			/* Subscribe using various alternatives of {@code Presence#subscribe()} */
+			channel2.presence.subscribe(listener);
+			channel2.presence.subscribe(Action.present, listener);
+			channel2.presence.subscribe(EnumSet.of(Action.update, Action.leave), listener);
+
+			/* Unsubscribe */
+			channel2.presence.unsubscribe(listener);
+
+			/* Start emitting channel with ably client 1 (emitter) */
+			channel1.presence.enter("Hello, #2!", null);
+			channel1.presence.update("Lorem ipsum", null);
+			channel1.presence.update("Dolor sit!", null);
+			channel1.presence.leave(null);
+
+			/* Wait until receiver client (ably2) observes {@code Action.leave}
+			 * is emitted from emitter client (ably1)
+			 */
+			Helpers.PresenceWaiter leavePresenceWaiter = new Helpers.PresenceWaiter(channel2);
+			leavePresenceWaiter.waitFor(ably1.options.clientId, Action.leave);
+
+			/* Validate that we didn't received anything
+			 */
+			assertThat(receivedMessageStack, is(emptyCollectionOf(PresenceMessage.class)));
+		} finally {
+			if (ably1 != null) ably1.close();
+			if (ably2 != null) ably2.close();
+		}
+	}
+
+	/**
+	 * <p>
+	 * Validates a client can observe presence messages of other client,
+	 * when they entered to the same channel and observing client subscribed
+	 * to multiple actions.
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void realtime_presence_subscribe_all() throws AblyException {
+		/* Ably instance that will emit presence events */
+		AblyRealtime ably1 = null;
+		/* Ably instance that will receive presence events */
+		AblyRealtime ably2 = null;
+
+		String channelName = "test.presence.subscribe.all" + System.currentTimeMillis();
+
+		try {
+			ClientOptions option1 = testVars.createOptions(testVars.keys[0].keyStr);
+			option1.clientId = "emitter client";
+			ClientOptions option2 = testVars.createOptions(testVars.keys[0].keyStr);
+			option2.clientId = "receiver client";
+
+			ably1 = new AblyRealtime(option1);
+			ably2 = new AblyRealtime(option2);
+
+			Channel channel1 = ably1.channels.get(channelName);
+			channel1.attach();
+			(new ChannelWaiter(channel1)).waitFor(ChannelState.attached);
+
+			Channel channel2 = ably2.channels.get(channelName);
+			channel2.attach();
+			(new ChannelWaiter(channel2)).waitFor(ChannelState.attached);
+
+			ArrayList<PresenceMessage> receivedMessageStack = new ArrayList<>();
+			channel2.presence.subscribe(new Presence.PresenceListener() {
+				List<PresenceMessage> messageStack;
+
+				@Override
+				public void onPresenceMessage(PresenceMessage message) {
+					messageStack.add(message);
+				}
+
+				public Presence.PresenceListener setMessageStack(List<PresenceMessage> messageStack) {
+					this.messageStack = messageStack;
+					return this;
+				}
+			}.setMessageStack(receivedMessageStack));
+
+			/* Start emitting channel with ably client 1 (emitter) */
+			channel1.presence.enter("Hello, #2!", null);
+			channel1.presence.update("Lorem ipsum", null);
+			channel1.presence.update("Dolor sit!", null);
+			channel1.presence.leave(null);
+
+			/* Wait until receiver client (ably2) observes {@code Action.leave}
+			 * is emitted from emitter client (ably1)
+			 */
+			Helpers.PresenceWaiter leavePresenceWaiter = new Helpers.PresenceWaiter(channel2);
+			leavePresenceWaiter.waitFor(ably1.options.clientId, Action.leave);
+
+			/* Validate that,
+			 *	- we received all actions
+			 */
+			assertThat(receivedMessageStack.size(), is(equalTo(4)));
+			for (PresenceMessage message : receivedMessageStack) {
+				assertThat(message.action, isOneOf(Action.enter, Action.update, Action.leave));
+			}
+		} finally {
+			if (ably1 != null) ably1.close();
+			if (ably2 != null) ably2.close();
+		}
+	}
+
+	/**
+	 * <p>
+	 * Validates a client can observe presence messages of other client,
+	 * when they entered to the same channel and observing client subscribed
+	 * to multiple actions.
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void realtime_presence_subscribe_multiple() throws AblyException {
+		/* Ably instance that will emit presence events */
+		AblyRealtime ably1 = null;
+		/* Ably instance that will receive presence events */
+		AblyRealtime ably2 = null;
+
+		String channelName = "test.presence.subscribe.multiple" + System.currentTimeMillis();
+		EnumSet<PresenceMessage.Action> actions = EnumSet.of(Action.update, Action.leave);
+
+		try {
+			ClientOptions option1 = testVars.createOptions(testVars.keys[0].keyStr);
+			option1.clientId = "emitter client";
+			ClientOptions option2 = testVars.createOptions(testVars.keys[0].keyStr);
+			option2.clientId = "receiver client";
+
+			ably1 = new AblyRealtime(option1);
+			ably2 = new AblyRealtime(option2);
+
+			Channel channel1 = ably1.channels.get(channelName);
+			channel1.attach();
+			(new ChannelWaiter(channel1)).waitFor(ChannelState.attached);
+
+			Channel channel2 = ably2.channels.get(channelName);
+			channel2.attach();
+			(new ChannelWaiter(channel2)).waitFor(ChannelState.attached);
+
+			ArrayList<PresenceMessage> receivedMessageStack = new ArrayList<>();
+			channel2.presence.subscribe(actions, new Presence.PresenceListener() {
+				List<PresenceMessage> messageStack;
+
+				@Override
+				public void onPresenceMessage(PresenceMessage message) {
+					messageStack.add(message);
+				}
+
+				public Presence.PresenceListener setMessageStack(List<PresenceMessage> messageStack) {
+					this.messageStack = messageStack;
+					return this;
+				}
+			}.setMessageStack(receivedMessageStack));
+
+			/* Start emitting channel with ably client 1 (emitter) */
+			channel1.presence.enter("Hello, #2!", null);
+			channel1.presence.update("Lorem ipsum", null);
+			channel1.presence.update("Dolor sit!", null);
+			channel1.presence.leave(null);
+
+			/* Wait until receiver client (ably2) observes {@code Action.leave}
+			 * is emitted from emitter client (ably1)
+			 */
+			Helpers.PresenceWaiter leavePresenceWaiter = new Helpers.PresenceWaiter(channel2);
+			leavePresenceWaiter.waitFor(ably1.options.clientId, Action.leave);
+
+			/* Validate that,
+			 *	- we received specific actions
+			 */
+			assertThat(receivedMessageStack.size(), is(equalTo(3)));
+			for (PresenceMessage message : receivedMessageStack) {
+				assertTrue(actions.contains(message.action));
+			}
+		} finally {
+			if (ably1 != null) ably1.close();
+			if (ably2 != null) ably2.close();
+		}
+	}
+
+	/**
+	 * <p>
+	 * Validates a client can observe presence messages of other client,
+	 * when they entered to the same channel and observing client subscribed
+	 * to a single action.
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void realtime_presence_subscribe_single() throws AblyException {
+		/* Ably instance that will emit presence events */
+		AblyRealtime ably1 = null;
+		/* Ably instance that will receive presence events */
+		AblyRealtime ably2 = null;
+
+		String channelName = "test.presence.subscribe.single." + System.currentTimeMillis();
+		PresenceMessage.Action action = Action.enter;
+
+		try {
+			ClientOptions option1 = testVars.createOptions(testVars.keys[0].keyStr);
+			option1.clientId = "emitter client";
+			ClientOptions option2 = testVars.createOptions(testVars.keys[0].keyStr);
+			option2.clientId = "receiver client";
+
+			ably1 = new AblyRealtime(option1);
+			ably2 = new AblyRealtime(option2);
+
+			Channel channel1 = ably1.channels.get(channelName);
+			channel1.attach();
+			(new ChannelWaiter(channel1)).waitFor(ChannelState.attached);
+
+			Channel channel2 = ably2.channels.get(channelName);
+			channel2.attach();
+			(new ChannelWaiter(channel2)).waitFor(ChannelState.attached);
+
+			ArrayList<PresenceMessage> receivedMessageStack = new ArrayList<>();
+			channel2.presence.subscribe(action, new Presence.PresenceListener() {
+				List<PresenceMessage> messageStack;
+
+				@Override
+				public void onPresenceMessage(PresenceMessage message) {
+					messageStack.add(message);
+				}
+
+				public Presence.PresenceListener setMessageStack(List<PresenceMessage> messageStack) {
+					this.messageStack = messageStack;
+					return this;
+				}
+			}.setMessageStack(receivedMessageStack));
+
+			/* Start emitting presence with ably client 1 (emitter) */
+			channel1.presence.enter("Hello, #2!", null);
+			channel1.presence.updatePresence(new PresenceMessage(Action.present, ably1.options.clientId), null);
+			channel1.presence.update("Lorem Ipsum", null);
+			channel1.presence.leave(null);
+
+			/* Wait until receiver client (ably2) observes {@code Action.leave}
+			 * is emitted from emitter client (ably1)
+			 */
+			new Helpers.PresenceWaiter(channel2).waitFor(ably1.options.clientId, Action.leave);
+
+			/* Validate that,
+			 *	- we received specific actions
+			 */
+			assertThat(receivedMessageStack, is(not(empty())));
+			for (PresenceMessage message : receivedMessageStack) {
+				assertThat(message.action, is(equalTo(action)));
+			}
+		} finally {
+			if (ably1 != null) ably1.close();
+			if (ably2 != null) ably2.close();
+		}
+	}
 }
