@@ -93,6 +93,17 @@ ably.connection.on(new ConnectionStateListener() {
 });
 ```
 
+And it offers API for listening specific connection state changes.
+
+```java
+ably.connection.on(ConnectionState.connected, new ConnectionStateListener() {
+	@Override
+	public void onConnectionStateChanged(ConnectionStateChange state) {
+		/* Do something */
+	}
+});
+```
+
 ### Subscribing to a channel ###
 
 Given:
