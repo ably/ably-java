@@ -145,6 +145,111 @@ public class RealtimeChannelHistoryTest {
 	}
 
 	/**
+	 * Send couple of messages without listener on a channel and
+	 * verify that it can be retrieved using channel.history()
+	 * without needing to wait for it to be persisted.
+	 */
+	@Test
+	public void channelhistory_simple_binary_withoutlistener() {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+			String channelName = "persisted:channelhistory_simple_binary";
+			String message1Text = "Test message 1 (channelhistory_simple_binary)";
+			Message message2 = new Message("test_event", "Test message 2 (channelhistory_simple_binary)");
+			Message[] messages34 = new Message[] {
+					new Message("test_event", "Test message 3 (channelhistory_simple_binary)"),
+					new Message("test_event", "Test message 4 (channelhistory_simple_binary)")
+			};
+
+			/* create a channel */
+			final Channel channel = ably.channels.get(channelName);
+
+			/* attach */
+			channel.attach();
+			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			/* publish to the channel */
+			channel.publish("test_event", message1Text);
+			channel.publish(message2);
+			channel.publish(messages34);
+
+			/* get the history for this channel */
+			PaginatedResult<Message> messages = channel.history(null);
+			assertNotNull("Expected non-null messages", messages);
+			assertEquals("Expected 4 message", messages.items().length, 4);
+
+			/* verify we received message history from most recent to older */
+			assertEquals("Expect correct message text", messages.items()[0].data, messages34[1].data);
+			assertEquals("Expect correct message text", messages.items()[1].data, messages34[0].data);
+			assertEquals("Expect correct message text", messages.items()[2].data, message2.data);
+			assertEquals("Expect correct message text", messages.items()[3].data, message1Text);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("single_history_binary: Unexpected exception instantiating library");
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
+	 * Send couple of messages without listener using binary protocol
+	 * on a channel and verify that it can be retrieved using channel.history()
+	 * without needing to wait for it to be persisted.
+	 */
+	@Test
+	public void channelhistory_simple_text_withoutlistener() {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			opts.useBinaryProtocol = false;
+			ably = new AblyRealtime(opts);
+			String channelName = "persisted:channelhistory_simple_text";
+			String message1Text = "Test message 1 (channelhistory_simple_binary)";
+			Message message2 = new Message("test_event", "Test message 2 (channelhistory_simple_binary)");
+			Message[] messages34 = new Message[] {
+					new Message("test_event", "Test message 3 (channelhistory_simple_binary)"),
+					new Message("test_event", "Test message 4 (channelhistory_simple_binary)")
+			};
+
+			/* create a channel */
+			final Channel channel = ably.channels.get(channelName);
+
+			/* attach */
+			channel.attach();
+			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			/* publish to the channel */
+			channel.publish("test_event", message1Text);
+			channel.publish(message2);
+			channel.publish(messages34);
+
+			/* get the history for this channel */
+			PaginatedResult<Message> messages = channel.history(null);
+			assertNotNull("Expected non-null messages", messages);
+			assertEquals("Expected 4 message", messages.items().length, 4);
+
+			/* verify we received message history from most recent to older */
+			assertEquals("Expect correct message text", messages.items()[0].data, messages34[1].data);
+			assertEquals("Expect correct message text", messages.items()[1].data, messages34[0].data);
+			assertEquals("Expect correct message text", messages.items()[2].data, message2.data);
+			assertEquals("Expect correct message text", messages.items()[3].data, message1Text);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("single_history_binary: Unexpected exception instantiating library");
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
 	 * Publish events with data of various datatypes
 	 */
 	@Test
