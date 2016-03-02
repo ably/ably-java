@@ -13,6 +13,7 @@ import io.ably.lib.types.PresenceSerializer;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -369,9 +370,11 @@ public class Presence {
 	 * @throws AblyException
 	 */
 	public PaginatedResult<PresenceMessage> history(Param[] params) throws AblyException {
+		params = Channel.replacePlaceholderParams(channel, params);
+
 		AblyRealtime ably = channel.ably;
 		BodyHandler<PresenceMessage> bodyHandler = PresenceSerializer.getPresenceResponseHandler(channel.options);
-		return new PaginatedQuery<PresenceMessage>(ably.http, channel.basePath + "/presence/history", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
+		return new PaginatedQuery<>(ably.http, channel.basePath + "/presence/history", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
 	}
 
 	/**
@@ -435,6 +438,7 @@ public class Presence {
 				}			
 			
 	}
+
 
 	/************************************
 	 * attach / detach

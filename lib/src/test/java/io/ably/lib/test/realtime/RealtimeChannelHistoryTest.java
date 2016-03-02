@@ -1,7 +1,10 @@
 package io.ably.lib.test.realtime;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -675,7 +678,7 @@ public class RealtimeChannelHistoryTest {
 			CompletionSet msgComplete = new CompletionSet();
 			for(int i = 0; i < 50; i++) {
 				try {
-					channel.publish("history" + i,  String.valueOf(i), msgComplete.add());
+					channel.publish("history" + i, String.valueOf(i), msgComplete.add());
 				} catch(AblyException e) {
 					e.printStackTrace();
 					fail("channelhistory_limit_f: Unexpected exception");
@@ -732,7 +735,7 @@ public class RealtimeChannelHistoryTest {
 			CompletionSet msgComplete = new CompletionSet();
 			for(int i = 0; i < 50; i++) {
 				try {
-					channel.publish("history" + i,  String.valueOf(i), msgComplete.add());
+					channel.publish("history" + i, String.valueOf(i), msgComplete.add());
 				} catch(AblyException e) {
 					e.printStackTrace();
 					fail("channelhistory_limit_b: Unexpected exception");
@@ -935,7 +938,7 @@ public class RealtimeChannelHistoryTest {
 			CompletionSet msgComplete = new CompletionSet();
 			for(int i = 0; i < 50; i++) {
 				try {
-					channel.publish("history" + i,  String.valueOf(i), msgComplete.add());
+					channel.publish("history" + i, String.valueOf(i), msgComplete.add());
 				} catch(AblyException e) {
 					e.printStackTrace();
 					fail("channelhistory_paginate_f: Unexpected exception");
@@ -1024,7 +1027,7 @@ public class RealtimeChannelHistoryTest {
 			CompletionSet msgComplete = new CompletionSet();
 			for(int i = 0; i < 50; i++) {
 				try {
-					channel.publish("history" + i,  String.valueOf(i), msgComplete.add());
+					channel.publish("history" + i, String.valueOf(i), msgComplete.add());
 				} catch(AblyException e) {
 					e.printStackTrace();
 					fail("channelhistory_paginate_f: Unexpected exception");
@@ -1113,7 +1116,7 @@ public class RealtimeChannelHistoryTest {
 			CompletionSet msgComplete = new CompletionSet();
 			for(int i = 0; i < 50; i++) {
 				try {
-					channel.publish("history" + i,  String.valueOf(i), msgComplete.add());
+					channel.publish("history" + i, String.valueOf(i), msgComplete.add());
 				} catch(AblyException e) {
 					e.printStackTrace();
 					fail("channelhistory_paginate_f: Unexpected exception");
@@ -1202,7 +1205,7 @@ public class RealtimeChannelHistoryTest {
 			CompletionSet msgComplete = new CompletionSet();
 			for(int i = 0; i < 50; i++) {
 				try {
-					channel.publish("history" + i,  String.valueOf(i), msgComplete.add());
+					channel.publish("history" + i, String.valueOf(i), msgComplete.add());
 				} catch(AblyException e) {
 					e.printStackTrace();
 					fail("channelhistory_paginate_f: Unexpected exception");
@@ -1300,7 +1303,7 @@ public class RealtimeChannelHistoryTest {
 				public void run() {
 					for(int i = 0; i < 50; i++) {
 						try {
-							txChannel.publish("history" + i,  String.valueOf(i), msgComplete.add());
+							txChannel.publish("history" + i, String.valueOf(i), msgComplete.add());
 							try {
 								sleep(100L);
 							} catch(InterruptedException ie) {}
@@ -1354,5 +1357,103 @@ public class RealtimeChannelHistoryTest {
 			if(rxAbly != null)
 				rxAbly.close();
 		}
+	}
+
+	/**
+	 * Connect twice to the service, each using the default (binary) protocol.
+	 * Publish messages on one connection to a given channel; while in progress,
+	 * attach the second connection to the same channel and verify a message
+	 * history up to the point of attachment can be obtained.
+	 */
+	@Test
+	public void channelhistory_until_attach() {
+		AblyRealtime txAbly = null, rxAbly = null;
+		try {
+			io.ably.lib.test.common.Setup.TestVars testVars = Setup.getTestVars();
+			ClientOptions txOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			txAbly = new AblyRealtime(txOpts);
+			ClientOptions rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			rxAbly = new AblyRealtime(rxOpts);
+			String channelName = "persisted:channelhistory_until_attach";
+
+			/* create a channel */
+			final Channel txChannel = txAbly.channels.get(channelName);
+			final Channel rxChannel = rxAbly.channels.get(channelName);
+
+			/* attach sender */
+			txChannel.attach();
+			(new ChannelWaiter(txChannel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", txChannel.state, ChannelState.attached);
+
+			/* publish messages to the channel */
+			CompletionSet msgComplete = new CompletionSet();
+			int messageCount = 25;
+			for (int i = 0; i < messageCount; i++) {
+				txChannel.publish("history" + i,  String.valueOf(i), msgComplete.add());
+			}
+
+			msgComplete.waitFor();
+
+			/* get the channel history from the attachSerial when we get the attach indication */
+			rxChannel.attach();
+			new ChannelWaiter(rxChannel).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", rxChannel.state, ChannelState.attached);
+			assertNotNull("Verify attachSerial provided", rxChannel.attachSerial);
+
+			/* get the history for this channel */
+			PaginatedResult<Message> messages = rxChannel.history(new Param[] { new Param("untilAttach", "true") });
+			assertNotNull("Expected non-null messages", messages);
+			assertTrue("Expected at least one message", messages.items().length >= 1);
+
+			/* verify that the history and received messages meet */
+			for (int i = 0; i < messageCount; i++) {
+				/* 0 --> "24"
+				 * 1 --> "23"
+				 * ...
+				 * 24 --> "0"
+				 */
+				String actual = (String) messages.items()[messageCount - 1 - i].data;
+				String expected = String.valueOf(i);
+				assertThat(actual, is(equalTo(expected)));
+			}
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("channelhistory_from_attach: Unexpected exception instantiating library");
+		} finally {
+			if(txAbly != null)
+				txAbly.close();
+			if(rxAbly != null)
+				rxAbly.close();
+		}
+	}
+
+	/**
+	 * Verifies an Exception is thrown, when a channel history is requested
+	 * with parameter {"untilAttach":"true}" before client is attached to the channel
+	 *
+	 * @throws AblyException
+	 */
+	@Test(expected=AblyException.class)
+	public void channelhistory_until_attach_before_attached() throws AblyException {
+		io.ably.lib.test.common.Setup.TestVars testVars = Setup.getTestVars();
+		ClientOptions options = testVars.createOptions(testVars.keys[0].keyStr);
+		AblyRealtime ably = new AblyRealtime(options);
+
+		ably.channels.get("test").history(new Param[]{ new Param("untilAttach", "true") });
+	}
+
+	/**
+	 * Verifies an Exception is thrown, when a channel history is requested
+	 * with invalid "untilAttach" parameter value.
+	 *
+	 * @throws AblyException
+	 */
+	@Test(expected=AblyException.class)
+	public void channelhistory_until_attach_invalid_value() throws AblyException {
+		io.ably.lib.test.common.Setup.TestVars testVars = Setup.getTestVars();
+		ClientOptions options = testVars.createOptions(testVars.keys[0].keyStr);
+		AblyRealtime ably = new AblyRealtime(options);
+
+		ably.channels.get("test").history(new Param[]{ new Param("untilAttach", "affirmative")});
 	}
 }

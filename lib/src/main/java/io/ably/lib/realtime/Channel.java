@@ -20,8 +20,11 @@ import io.ably.lib.util.EventEmitter;
 import io.ably.lib.util.Log;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+
 
 /**
  * A class representing a Channel belonging to this application.
@@ -491,6 +494,37 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		queuedMessages.clear();
 	}
 
+	static Param[] replacePlaceholderParams(Channel channel, Param[] placeholderParams) throws AblyException {
+		HashSet<Param> params = new HashSet<>();
+
+		Param param;
+		for(int i = 0; i < placeholderParams.length; i++) {
+			param = placeholderParams[i];
+
+			if(KEY_UNTIL_ATTACH.equals(param.key)) {
+				if("true".equalsIgnoreCase(param.value)) {
+					if (channel.state != ChannelState.attached) {
+						throw AblyException.fromErrorInfo(new ErrorInfo("option untilAttach requires the channel to be attached", 40000, 400));
+					}
+
+					params.add(new Param(KEY_FROM_SERIAL, channel.attachSerial));
+				}
+				else if(!"false".equalsIgnoreCase(param.value)) {
+					throw AblyException.fromErrorInfo(new ErrorInfo("option untilAttach is invalid. \"true\" or \"false\" expected", 40000, 400));
+				}
+			}
+			else {
+				/* Add non-placeholder param as is */
+				params.add(param);
+			}
+		}
+
+		return params.toArray(new Param[params.size()]);
+	}
+
+
+	private static final String KEY_UNTIL_ATTACH = "untilAttach";
+	private static final String KEY_FROM_SERIAL = "fromSerial";
 	private List<QueuedMessage> queuedMessages;
 
 	/************************************
@@ -507,8 +541,10 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 * @throws AblyException
 	 */
 	public PaginatedResult<Message> history(Param[] params) throws AblyException {
+		params = replacePlaceholderParams(this, params);
+
 		BodyHandler<Message> bodyHandler = MessageSerializer.getMessageResponseHandler(options);
-		return new PaginatedQuery<Message>(ably.http, basePath + "/history", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
+		return new PaginatedQuery<>(ably.http, basePath + "/history", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
 	}
 
 	/************************************
