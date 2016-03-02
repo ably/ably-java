@@ -526,6 +526,10 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	}
 
 	static Param[] replacePlaceholderParams(Channel channel, Param[] placeholderParams) throws AblyException {
+		if (placeholderParams == null) {
+			return null;
+		}
+
 		HashSet<Param> params = new HashSet<>();
 
 		Param param;
