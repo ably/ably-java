@@ -97,12 +97,35 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 * @throws AblyException
 	 */
 	public void attach() throws AblyException {
+		attach(null);
+	}
+
+	/**
+	 * Attach to this channel.
+	 * This call initiates the attach request, and the response
+	 * is indicated asynchronously in the resulting state change.
+	 * attach() is called implicitly when publishing or subscribing
+	 * on this channel, so it is not usually necessary for a client
+	 * to call attach() explicitly.
+	 *
+	 * @param listener When the channel is attached successfully or the attach fails and
+	 * the ErrorInfo error is passed as an argument to the callback
+	 * @throws AblyException
+	 */
+	public void attach(final CompletionListener listener) throws AblyException {
 		Log.v(TAG, "attach(); channel = " + name);
 		/* check preconditions */
 		switch(state) {
 			case attaching:
+				if (listener != null) {
+					on(new AttachListener(listener));
+				}
+
+				return;
 			case attached:
-				/* nothing to do */
+				if (listener != null) {
+					listener.onSuccess();
+				}
 				return;
 			default:
 		}
@@ -113,6 +136,10 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		/* send attach request and pending state */
 		ProtocolMessage attachMessage = new ProtocolMessage(Action.attach, this.name);
 		try {
+			if (listener != null) {
+				on(new AttachListener(listener));
+			}
+
 			setState(ChannelState.attaching, null);
 			connectionManager.send(attachMessage, true, null);
 		} catch(AblyException e) {
@@ -597,6 +624,30 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 * internal general
 	 * @throws AblyException 
 	 ************************************/
+
+	private class AttachListener implements ChannelStateListener {
+		private CompletionListener completionListener;
+
+		public AttachListener(CompletionListener completionListener) {
+			this.completionListener = completionListener;
+		}
+
+		@Override
+		public void onChannelStateChanged(ChannelState state, ErrorInfo reason) {
+			switch (state) {
+				case attached: {
+					Channel.this.off(this);
+					completionListener.onSuccess();
+					break;
+				}
+				case failed: {
+					Channel.this.off(this);
+					completionListener.onError(reason);
+					break;
+				}
+			}
+		}
+	}
 
 	Channel(AblyRealtime ably, String name) {
 		Log.v(TAG, "RealtimeChannel(); channel = " + name);
