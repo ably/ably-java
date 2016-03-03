@@ -797,4 +797,150 @@ public class RealtimeChannelTest {
 				ably.close();
 		}
 	}
+
+	/**
+	 * When client detaches from a channel successfully after initialized state,
+	 * verify attach {@code CompletionListener#onSuccess()} gets called.
+	 */
+	@Test
+	public void detach_success_callback_initialized() {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			(new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and attach */
+			final Channel channel = ably.channels.get("detach_success");
+			assertEquals("Verify failed state reached", channel.state, ChannelState.initialized);
+
+			/* detach */
+			Helpers.CompletionWaiter waiter = new Helpers.CompletionWaiter();
+			channel.detach(waiter);
+
+			/* Verify onSuccess callback gets called */
+			waiter.waitFor();
+			assertThat(waiter.success, is(true));
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
+	 * When client detaches from a channel successfully after attached state,
+	 * verify attach {@code CompletionListener#onSuccess()} gets called.
+	 */
+	@Test
+	public void detach_success_callback_attached() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			(new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and attach */
+			final Channel channel = ably.channels.get("detach_success");
+			channel.attach();
+			new ChannelWaiter(channel).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			/* detach */
+			Helpers.CompletionWaiter waiter = new Helpers.CompletionWaiter();
+			channel.detach(waiter);
+
+			/* Verify onSuccess callback gets called */
+			waiter.waitFor();
+			assertThat(waiter.success, is(true));
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
+	 * When client detaches from a channel successfully after detaching state,
+	 * verify attach {@code CompletionListener#onSuccess()} gets called.
+	 */
+	@Test
+	public void detach_success_callback_detaching() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			(new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and attach */
+			final Channel channel = ably.channels.get("detach_success");
+			channel.attach();
+			new ChannelWaiter(channel).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			/* detach */
+			channel.detach();
+			assertEquals("Verify detaching state reached", channel.state, ChannelState.detaching);
+			Helpers.CompletionWaiter waiter = new Helpers.CompletionWaiter();
+			channel.detach(waiter);
+
+			/* Verify onSuccess callback gets called */
+			waiter.waitFor();
+			assertThat(waiter.success, is(true));
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
+	 * When client detaches from a channel successfully after detached state,
+	 * verify attach {@code CompletionListener#onSuccess()} gets called.
+	 */
+	@Test
+	public void detach_success_callback_detached() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			(new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and attach */
+			final Channel channel = ably.channels.get("detach_success");
+			channel.attach();
+			new ChannelWaiter(channel).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			/* detach */
+			channel.detach();
+			new ChannelWaiter(channel).waitFor(ChannelState.detached);
+
+			Helpers.CompletionWaiter waiter = new Helpers.CompletionWaiter();
+			channel.detach(waiter);
+
+			/* Verify onSuccess callback gets called */
+			waiter.waitFor();
+			assertThat(waiter.success, is(true));
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
 }

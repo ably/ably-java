@@ -118,7 +118,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		switch(state) {
 			case attaching:
 				if (listener != null) {
-					on(new AttachListener(listener));
+					on(new ChannelStateCompletionListener(listener, ChannelState.attached, ChannelState.failed));
 				}
 
 				return;
@@ -137,7 +137,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		ProtocolMessage attachMessage = new ProtocolMessage(Action.attach, this.name);
 		try {
 			if (listener != null) {
-				on(new AttachListener(listener));
+				on(new ChannelStateCompletionListener(listener, ChannelState.attached, ChannelState.failed));
 			}
 
 			setState(ChannelState.attaching, null);
@@ -154,13 +154,30 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 * @throws AblyException
 	 */
 	public void detach() throws AblyException {
+		detach(null);
+	}
+
+	/**
+	 * Detach from this channel.
+	 * This call initiates the detach request, and the response
+	 * is indicated asynchronously in the resulting state change.
+	 * @throws AblyException
+	 */
+	public void detach(CompletionListener listener) throws AblyException {
 		Log.v(TAG, "detach(); channel = " + name);
 		/* check preconditions */
 		switch(state) {
 			case initialized:
+			case detached: {
+				if(listener != null) {
+					listener.onSuccess();
+				}
+				return;
+			}
 			case detaching:
-			case detached:
-				/* nothing to do */
+				if (listener != null) {
+					on(new ChannelStateCompletionListener(listener, ChannelState.detached, ChannelState.failed));
+				}
 				return;
 			default:
 		}
@@ -171,6 +188,10 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		/* send detach request */
 		ProtocolMessage detachMessage = new ProtocolMessage(Action.detach, this.name);
 		try {
+			if (listener != null) {
+				on(new ChannelStateCompletionListener(listener, ChannelState.detached, ChannelState.failed));
+			}
+
 			setState(ChannelState.detaching, null);
 			connectionManager.send(detachMessage, true, null);
 		} catch(AblyException e) {
@@ -625,26 +646,26 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 * @throws AblyException 
 	 ************************************/
 
-	private class AttachListener implements ChannelStateListener {
+	private class ChannelStateCompletionListener implements ChannelStateListener {
 		private CompletionListener completionListener;
+		private final ChannelState successState;
+		private final ChannelState failureState;
 
-		public AttachListener(CompletionListener completionListener) {
+		public ChannelStateCompletionListener(CompletionListener completionListener, ChannelState successState, ChannelState failureState) {
 			this.completionListener = completionListener;
+			this.successState = successState;
+			this.failureState = failureState;
 		}
 
 		@Override
 		public void onChannelStateChanged(ChannelState state, ErrorInfo reason) {
-			switch (state) {
-				case attached: {
-					Channel.this.off(this);
-					completionListener.onSuccess();
-					break;
-				}
-				case failed: {
-					Channel.this.off(this);
-					completionListener.onError(reason);
-					break;
-				}
+			if(state.equals(successState)) {
+				Channel.this.off(this);
+				completionListener.onSuccess();
+			}
+			else if(state.equals(failureState)) {
+				Channel.this.off(this);
+				completionListener.onError(reason);
 			}
 		}
 	}
