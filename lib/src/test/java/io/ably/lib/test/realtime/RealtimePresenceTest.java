@@ -1739,4 +1739,40 @@ public class RealtimePresenceTest {
 				ably.close();
 		}
 	}
+
+	/**
+	 * <p>
+	 * Validate {@code Presence#get(...)} will result in an error, when the channel
+	 * is in or moves to the FAILED state before the operation succeeds
+	 * </p>
+	 * <p>
+	 * Spec: RTP11b
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void realtime_presence_attach_implicit_get_fail() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+			assertEquals("Verify failed state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and subscribe */
+			final Channel channel = ably.channels.get("get_fail");
+			channel.presence.get();
+
+			ErrorInfo fail = new ChannelWaiter(channel).waitFor(ChannelState.failed);
+			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
+			assertEquals("Verify reason code gives correct failure reason", fail.statusCode, 401);
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
 }
