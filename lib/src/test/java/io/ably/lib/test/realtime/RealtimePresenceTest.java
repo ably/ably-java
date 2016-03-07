@@ -20,7 +20,6 @@ import io.ably.lib.test.common.Setup.TestVars;
 import io.ably.lib.types.*;
 import io.ably.lib.types.PresenceMessage.Action;
 
-import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -1662,6 +1661,43 @@ public class RealtimePresenceTest {
 		} finally {
 			if (ably1 != null) ably1.close();
 			if (ably2 != null) ably2.close();
+		}
+	}
+
+	/**
+	 * <p>
+	 * Validate {@code Presence#subscribe(...)} will result in the listener not being
+	 * registered and an error being indicated, when the channel is in or moves to the
+	 * FAILED state before the operation succeeds
+	 * </p>
+	 * <p>
+	 * Spec: RTP6c
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void realtime_presence_attach_implicit_subscribe_fail() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+			assertEquals("Verify failed state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and subscribe */
+			final Channel channel = ably.channels.get("subscribe_fail");
+			channel.presence.subscribe(null);
+
+			ErrorInfo fail = new ChannelWaiter(channel).waitFor(ChannelState.failed);
+			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
+			assertEquals("Verify reason code gives correct failure reason", fail.statusCode, 401);
+		} finally {
+			if(ably != null)
+				ably.close();
 		}
 	}
 }
