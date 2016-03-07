@@ -946,8 +946,8 @@ public class RealtimeChannelTest {
 
 	/**
 	 * <p>
-	 * Validate publish will result in an error, when the channel is
-	 * in or moves to the FAILED state before the operation succeeds
+	 * Validate publish will result in an error, when the channel moves
+	 * to the FAILED state before the operation succeeds
 	 * </p>
 	 * <p>
 	 * Spec: RTL6c3
@@ -965,16 +965,18 @@ public class RealtimeChannelTest {
 
 			/* wait until connected */
 			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
-			assertEquals("Verify failed state reached", ably.connection.state, ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
 			/* create a channel and subscribe */
 			final Channel channel = ably.channels.get("publish_fail");
-			channel.publish("Lorem", "Ipsum!");
+			Helpers.CompletionWaiter completionWaiter = new Helpers.CompletionWaiter();
+			channel.publish("Lorem", "Ipsum!", completionWaiter);
 			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
 
-			ErrorInfo fail = new ChannelWaiter(channel).waitFor(ChannelState.failed);
+			ErrorInfo errorInfo = completionWaiter.waitFor();
+
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-			assertEquals("Verify reason code gives correct failure reason", fail.statusCode, 401);
+			assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
 		} finally {
 			if(ably != null)
 				ably.close();
@@ -1002,7 +1004,7 @@ public class RealtimeChannelTest {
 
 			/* wait until connected */
 			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
-			assertEquals("Verify failed state reached", ably.connection.state, ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
 			/* create a channel and subscribe */
 			final Channel channel = ably.channels.get("subscribe_fail");

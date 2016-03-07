@@ -1667,8 +1667,8 @@ public class RealtimePresenceTest {
 	/**
 	 * <p>
 	 * Validate {@code Presence#subscribe(...)} will result in the listener not being
-	 * registered and an error being indicated, when the channel is in or moves to the
-	 * FAILED state before the operation succeeds
+	 * registered and an error being indicated, when the channel moves to the FAILED
+	 * state before the operation succeeds
 	 * </p>
 	 * <p>
 	 * Spec: RTP6c
@@ -1890,6 +1890,44 @@ public class RealtimePresenceTest {
 
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
 			assertEquals("Verify reason code gives correct failure reason", completionWaiter.error.statusCode, 401);
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
+	 * <p>
+	 * Validate {@code Presence#get(...)} throws an exception, when the channel
+	 * is in the FAILED state
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void realtime_presence_get_throws_when_channel_failed() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+			assertEquals("Verify failed state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and subscribe */
+			final Channel channel = ably.channels.get("get_fail");
+			channel.attach();
+			new ChannelWaiter(channel).waitFor(ChannelState.failed);
+
+			try {
+				channel.presence.get();
+				fail("Presence#get(...) should throw an exception when channel is in failed state");
+			} catch(AblyException e) {
+				assertThat(e.errorInfo.code, is(equalTo(90001)));
+				assertThat(e.errorInfo.message, is(equalTo("channel operation failed (invalid channel state)")));
+			}
 		} finally {
 			if(ably != null)
 				ably.close();
