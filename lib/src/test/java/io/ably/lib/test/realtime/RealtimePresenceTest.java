@@ -1705,8 +1705,8 @@ public class RealtimePresenceTest {
 	/**
 	 * <p>
 	 * Validate {@code Presence#enter(...)} will result in the listener not being
-	 * registered and an error being indicated, when the channel is in or moves
-	 * to the FAILED state before the operation succeeds
+	 * registered and an error being indicated, when the channel moves to the
+	 * FAILED state before the operation succeeds
 	 * </p>
 	 * <p>
 	 * Spec: RTP8d
@@ -1732,10 +1732,11 @@ public class RealtimePresenceTest {
 			CompletionWaiter completionWaiter = new CompletionWaiter();
 			channel.presence.enter("Lorem Ipsum", completionWaiter);
 			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
-			completionWaiter.waitFor();
+
+			ErrorInfo errorInfo = completionWaiter.waitFor();
 
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-			assertEquals("Verify reason code gives correct failure reason", completionWaiter.error.statusCode, 401);
+			assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
 		} finally {
 			if(ably != null)
 				ably.close();
@@ -1745,7 +1746,7 @@ public class RealtimePresenceTest {
 	/**
 	 * <p>
 	 * Validate {@code Presence#get(...)} will result in an error, when the channel
-	 * is in or moves to the FAILED state before the operation succeeds
+	 * moves to the FAILED state before the operation succeeds
 	 * </p>
 	 * <p>
 	 * Spec: RTP11b
@@ -1782,8 +1783,8 @@ public class RealtimePresenceTest {
 	/**
 	 * <p>
 	 * Validate {@code Presence#enterClient(...)} will result in the listener not being
-	 * registered and an error being indicated, when the channel is in or moves to the
-	 * FAILED state before the operation succeeds
+	 * registered and an error being indicated, when the channel moves to the FAILED
+	 * state before the operation succeeds
 	 * </p>
 	 * <p>
 	 * Spec: RTP15e
@@ -1808,10 +1809,11 @@ public class RealtimePresenceTest {
 			CompletionWaiter completionWaiter = new CompletionWaiter();
 			channel.presence.enterClient("theClient", "Lorem Ipsum", completionWaiter);
 			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
-			completionWaiter.waitFor();
+
+			ErrorInfo errorInfo = completionWaiter.waitFor();
 
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-			assertEquals("Verify reason code gives correct failure reason", completionWaiter.error.statusCode, 401);
+			assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
 		} finally {
 			if(ably != null)
 				ably.close();
@@ -1847,10 +1849,11 @@ public class RealtimePresenceTest {
 			CompletionWaiter completionWaiter = new CompletionWaiter();
 			channel.presence.updateClient("theClient", "Lorem Ipsum", completionWaiter);
 			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
-			completionWaiter.waitFor();
+
+			ErrorInfo errorInfo = completionWaiter.waitFor();
 
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-			assertEquals("Verify reason code gives correct failure reason", completionWaiter.error.statusCode, 401);
+			assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
 		} finally {
 			if(ably != null)
 				ably.close();
@@ -1888,8 +1891,10 @@ public class RealtimePresenceTest {
 			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
 			completionWaiter.waitFor();
 
+			ErrorInfo errorInfo = completionWaiter.waitFor();
+
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-			assertEquals("Verify reason code gives correct failure reason", completionWaiter.error.statusCode, 401);
+			assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
 		} finally {
 			if(ably != null)
 				ably.close();
