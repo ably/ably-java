@@ -1775,4 +1775,118 @@ public class RealtimePresenceTest {
 				ably.close();
 		}
 	}
+
+	/**
+	 * <p>
+	 * Validate {@code Presence#enterClient(...)} will result in the listener not being
+	 * registered and an error being indicated, when the channel is in or moves to the
+	 * FAILED state before the operation succeeds
+	 * </p>
+	 * <p>
+	 * Spec: RTP15e
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void realtime_presence_attach_implicit_enterclient_fail() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+			assertEquals("Verify failed state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and subscribe */
+			final Channel channel = ably.channels.get("enterclient_fail");
+			CompletionWaiter completionWaiter = new CompletionWaiter();
+			channel.presence.enterClient("theClient", "Lorem Ipsum", completionWaiter);
+			completionWaiter.waitFor();
+
+			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
+			assertEquals("Verify reason code gives correct failure reason", completionWaiter.error.statusCode, 401);
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
+	 * <p>
+	 * Validate {@code Presence#updateClient(...)} will result in the listener not being
+	 * registered and an error being indicated, when the channel is in or moves to the
+	 * FAILED state before the operation succeeds
+	 * </p>
+	 * <p>
+	 * Spec: RTP15e
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void realtime_presence_attach_implicit_updateclient_fail() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+			assertEquals("Verify failed state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and subscribe */
+			final Channel channel = ably.channels.get("updateclient_fail");
+			CompletionWaiter completionWaiter = new CompletionWaiter();
+			channel.presence.updateClient("theClient", "Lorem Ipsum", completionWaiter);
+			completionWaiter.waitFor();
+
+			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
+			assertEquals("Verify reason code gives correct failure reason", completionWaiter.error.statusCode, 401);
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
+	 * <p>
+	 * Validate {@code Presence#leaveClient(...)} will result in the listener not being
+	 * registered and an error being indicated, when the channel is in or moves to the
+	 * FAILED state before the operation succeeds
+	 * </p>
+	 * <p>
+	 * Spec: RTP15e
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void realtime_presence_attach_implicit_leaveclient_fail() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+			assertEquals("Verify failed state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and subscribe */
+			final Channel channel = ably.channels.get("leaveclient_fail");
+			CompletionWaiter completionWaiter = new CompletionWaiter();
+			channel.presence.leaveClient("theClient", "Lorem Ipsum", completionWaiter);
+			completionWaiter.waitFor();
+
+			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
+			assertEquals("Verify reason code gives correct failure reason", completionWaiter.error.statusCode, 401);
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
 }
