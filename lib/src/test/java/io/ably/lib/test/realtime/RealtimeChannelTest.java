@@ -985,8 +985,8 @@ public class RealtimeChannelTest {
 
 	/**
 	 * <p>
-	 * Validate subscribe will result in an error, when the channel is
-	 * in or moves to the FAILED state before the operation succeeds
+	 * Validate subscribe will result in an error, when the channel moves
+	 * to the FAILED state before the operation succeeds
 	 * </p>
 	 * <p>
 	 * Spec: RTL7c
@@ -1010,6 +1010,42 @@ public class RealtimeChannelTest {
 			final Channel channel = ably.channels.get("subscribe_fail");
 			channel.subscribe(null);
 			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
+
+			ErrorInfo fail = new ChannelWaiter(channel).waitFor(ChannelState.failed);
+			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
+			assertEquals("Verify reason code gives correct failure reason", fail.statusCode, 401);
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
+	 * <p>
+	 * Validate subscribe will result in an error, when the channel is
+	 * in or moves to the FAILED state before the operation succeeds
+	 * </p>
+	 * <p>
+	 * Spec: RTL7c
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void attach_implicit_subscribe_fail() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+			assertEquals("Verify failed state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and subscribe */
+			final Channel channel = ably.channels.get("subscribe_fail");
+			channel.subscribe(null);
 
 			ErrorInfo fail = new ChannelWaiter(channel).waitFor(ChannelState.failed);
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
