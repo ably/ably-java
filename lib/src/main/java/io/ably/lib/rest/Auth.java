@@ -47,18 +47,20 @@ public class Auth {
 	public static class AuthOptions {
 
 		/**
-		 * A callback to call to obtain a signed token request.
-		 * This enables a client to obtain token requests from
-		 * another entity, so tokens can be renewed without the
-		 * client requiring access to keys.
+		 * A callback to call to obtain a signed TokenRequest,
+		 * TokenDetails or a token string. This enables a client
+		 * to obtain token requests or tokens from another entity,
+		 * so tokens can be renewed without the client requiring a
+		 * key
 		 */
 		public TokenCallback authCallback;
 
 		/**
-		 * A URL to queryto obtain a signed token request.
-		 * This enables a client to obtain token requests from
-		 * another entity, so tokens can be renewed without the
-		 * client requiring access to keys.
+		 * A URL to query to obtain a signed TokenRequest,
+		 * TokenDetails or a token string. This enables a client
+		 * to obtain token request or token from another entity,
+		 * so tokens can be renewed without the client requiring
+		 * a key
 		 */
 		public String authUrl;
 
