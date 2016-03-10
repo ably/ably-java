@@ -1691,6 +1691,7 @@ public class RealtimePresenceTest {
 			/* create a channel and subscribe */
 			final Channel channel = ably.channels.get("subscribe_fail");
 			channel.presence.subscribe(null);
+			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
 
 			ErrorInfo fail = new ChannelWaiter(channel).waitFor(ChannelState.failed);
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
@@ -1730,6 +1731,7 @@ public class RealtimePresenceTest {
 			final Channel channel = ably.channels.get("enter_fail");
 			CompletionWaiter completionWaiter = new CompletionWaiter();
 			channel.presence.enter("Lorem Ipsum", completionWaiter);
+			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
 			completionWaiter.waitFor();
 
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
@@ -1766,6 +1768,7 @@ public class RealtimePresenceTest {
 			/* create a channel and subscribe */
 			final Channel channel = ably.channels.get("get_fail");
 			channel.presence.get();
+			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
 
 			ErrorInfo fail = new ChannelWaiter(channel).waitFor(ChannelState.failed);
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
@@ -1804,6 +1807,7 @@ public class RealtimePresenceTest {
 			final Channel channel = ably.channels.get("enterclient_fail");
 			CompletionWaiter completionWaiter = new CompletionWaiter();
 			channel.presence.enterClient("theClient", "Lorem Ipsum", completionWaiter);
+			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
 			completionWaiter.waitFor();
 
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
@@ -1842,6 +1846,7 @@ public class RealtimePresenceTest {
 			final Channel channel = ably.channels.get("updateclient_fail");
 			CompletionWaiter completionWaiter = new CompletionWaiter();
 			channel.presence.updateClient("theClient", "Lorem Ipsum", completionWaiter);
+			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
 			completionWaiter.waitFor();
 
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
@@ -1880,6 +1885,7 @@ public class RealtimePresenceTest {
 			final Channel channel = ably.channels.get("leaveclient_fail");
 			CompletionWaiter completionWaiter = new CompletionWaiter();
 			channel.presence.leaveClient("theClient", "Lorem Ipsum", completionWaiter);
+			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
 			completionWaiter.waitFor();
 
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);

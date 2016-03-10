@@ -1007,6 +1007,7 @@ public class RealtimeChannelTest {
 			/* create a channel and subscribe */
 			final Channel channel = ably.channels.get("subscribe_fail");
 			channel.subscribe(null);
+			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
 
 			ErrorInfo fail = new ChannelWaiter(channel).waitFor(ChannelState.failed);
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
