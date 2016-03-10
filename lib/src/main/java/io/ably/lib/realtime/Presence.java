@@ -41,6 +41,10 @@ public class Presence {
 	 * @throws AblyException
 	 */
 	public synchronized PresenceMessage[] get() throws AblyException {
+		if (channel.state == ChannelState.failed) {
+			throw AblyException.fromErrorInfo(new ErrorInfo("channel operation failed (invalid channel state)", 90001));
+		}
+
 		channel.attach();
 		Collection<PresenceMessage> values = presence.values();
 		return values.toArray(new PresenceMessage[values.size()]);
@@ -54,6 +58,10 @@ public class Presence {
 	 * @throws AblyException
 	 */
 	public synchronized PresenceMessage[] get(boolean wait) throws InterruptedException, AblyException {
+		if (channel.state == ChannelState.failed) {
+			throw AblyException.fromErrorInfo(new ErrorInfo("channel operation failed (invalid channel state)", 90001));
+		}
+
 		channel.attach();
 		Collection<PresenceMessage> values = presence.values(wait);
 		return values.toArray(new PresenceMessage[values.size()]);
@@ -69,6 +77,10 @@ public class Presence {
 	 * @throws AblyException
 	 */
 	public synchronized PresenceMessage[] get(String clientId, boolean wait) throws InterruptedException, AblyException {
+		if (channel.state == ChannelState.failed) {
+			throw AblyException.fromErrorInfo(new ErrorInfo("channel operation failed (invalid channel state)", 90001));
+		}
+
 		channel.attach();
 		Collection<PresenceMessage> values = presence.getClient(clientId, wait);
 		return values.toArray(new PresenceMessage[values.size()]);
