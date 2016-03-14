@@ -50,7 +50,7 @@ Tests will run against sandbox by default.
 Download [the latest JAR](https://github.com/ably/ably-java/releases) or grab via Gradle:
 
 ```groovy
-compile 'io.ably:ably-java:0.8.1'
+compile 'io.ably:ably-java:0.8.2'
 ```
 
 and add following repo for a sub-dependency,
