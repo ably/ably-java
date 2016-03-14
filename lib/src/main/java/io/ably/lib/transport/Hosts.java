@@ -16,7 +16,8 @@ public class Hosts {
 	 * Provides fallback host alternative for given host
 	 *
 	 * @param host
-	 * @return Successor host that can be used as a fallback
+	 * @return Successor host that can be used as a fallback.
+	 * null, if there is no successor fallback available.
 	 */
 	public static String getFallback(String host) {
 		int size = FALLBACKS.size();
