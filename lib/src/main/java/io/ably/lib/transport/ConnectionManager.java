@@ -739,6 +739,17 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	private class PendingMessageQueue {
 		private long startSerial = 0L;
 		private ArrayList<QueuedMessage> queue = new ArrayList<QueuedMessage>();
+
+		public PendingMessageQueue() {
+			/* put startSerial to 0 every time the connection is closed */
+			connection.on(ConnectionState.closed, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange state) {
+					startSerial = 0L;
+				}
+			});
+		}
+
 		public synchronized void push(QueuedMessage msg) {
 			queue.add(msg);
 		}

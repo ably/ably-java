@@ -147,6 +147,17 @@ public class RealtimeConnectTest {
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 			connectionWaiter.waitFor(ConnectionState.connected);
 			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
+
+			/* send a few channels to increment PendingMessageQueue.startSerial */
+			for (int i = 0; i < 3; i++) {
+				/* publish to the channel */
+				CompletionWaiter msgComplete = new CompletionWaiter();
+				ably.channels.get("test_channel").publish("test_event", "Test message", msgComplete);
+				/* wait for the publish callback to be called */
+				msgComplete.waitFor();
+				assertTrue("Verify success callback was called", msgComplete.success);
+			}
+
 			ably.close();
 			connectionWaiter.waitFor(ConnectionState.closed);
 			assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
@@ -155,6 +166,14 @@ public class RealtimeConnectTest {
 			ably.connection.connect();
 			connectionWaiter.waitFor(ConnectionState.connected);
 			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
+
+			/* publish to the channel in the new connection to check that it works */
+			CompletionWaiter msgComplete = new CompletionWaiter();
+			ably.channels.get("test_channel").publish("test_event", "Test message", msgComplete);
+			/* wait for the publish callback to be called */
+			msgComplete.waitFor();
+			assertTrue("Verify success callback was called", msgComplete.success);
+
 			ably.close();
 			connectionWaiter.waitFor(ConnectionState.closed);
 			assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
