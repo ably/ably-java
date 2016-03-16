@@ -107,6 +107,11 @@ public class PaginatedQuery<T> implements ResponseHandler<PaginatedResult<T>> {
 
 		@Override
 		public boolean hasNext() { return relNext != null; }
+
+		@Override
+		public boolean isLast() {
+			return relNext == null;
+		}
 	}
 
 	@Override

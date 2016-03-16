@@ -35,6 +35,8 @@ import io.ably.lib.types.ProtocolMessage.Action;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Locale;
+
 public class RealtimePresenceHistoryTest {
 
 	private static TestVars testVars;
@@ -1397,5 +1399,62 @@ public class RealtimePresenceHistoryTest {
 		AblyRealtime ably = new AblyRealtime(options);
 
 		ably.channels.get("test").presence.history(new Param[]{ new Param("untilAttach", "affirmative")});
+	}
+
+	/**
+	 * Publish enough presence to fill 2 pages.
+	 * Verify that,
+	 *   - {@code PaginatedQuery#isLast} returns false, when we are at the first page.
+	 *   - {@code PaginatedQuery#isLast} returns true, when we are at the second page.
+	 */
+	@Test
+	public void presencehistory_islast() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			opts.token = token.token;
+			opts.clientId = testClientId;
+			ably = new AblyRealtime(opts);
+			String channelName = "persisted:presencehistory_islast";
+			int pageMessageCount = 10;
+
+			/* create a channel */
+			final Channel channel = ably.channels.get(channelName);
+
+			/* attach */
+			channel.attach();
+			new ChannelWaiter(channel).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			/* publish to the channel */
+			CompletionSet msgComplete = new CompletionSet();
+			for (int i = 0; i < (pageMessageCount * 2); i++) {
+				channel.presence.update(String.valueOf(i), msgComplete.add());
+			}
+
+			/* wait for the publish callbacks to be called */
+			msgComplete.waitFor();
+			assertTrue("Verify success callback was called", msgComplete.errors.isEmpty());
+
+			/* get the history for this channel */
+			PaginatedResult<PresenceMessage> messages = channel.presence.history(new Param[]{new Param("limit", String.format(Locale.ENGLISH, "%d", pageMessageCount))});
+			assertNotNull("Expected non-null messages", messages);
+			assertEquals("Expected " + pageMessageCount + " messages", messages.items().length, pageMessageCount);
+
+			/* Verify that current page is the last */
+			assertThat(messages.isLast(), is(false));
+
+			/* get next page */
+			messages = messages.next();
+			assertNotNull("Expected non-null messages", messages);
+			assertEquals("Expected " + pageMessageCount + " messages", messages.items().length, pageMessageCount);
+
+			/* Verify that current page is the last */
+			assertThat(messages.isLast(), is(true));
+		} finally {
+			if (ably != null)
+				ably.close();
+		}
 	}
 }

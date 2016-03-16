@@ -12,16 +12,18 @@ public interface PaginatedResult<T> {
 	/**
 	 * Get the contents as an array of component type
 	 */
-	public T[] items();
+	T[] items();
 
 	/**
 	 * Obtain params required to perform the given relative query
 	 */
-	public abstract PaginatedResult<T> first() throws AblyException;
-	public abstract PaginatedResult<T> current() throws AblyException;
-	public abstract PaginatedResult<T> next() throws AblyException;
+	PaginatedResult<T> first() throws AblyException;
+	PaginatedResult<T> current() throws AblyException;
+	PaginatedResult<T> next() throws AblyException;
 
-	public abstract boolean hasFirst();
-	public abstract boolean hasCurrent();
-	public abstract boolean hasNext();
+	boolean hasFirst();
+	boolean hasCurrent();
+	boolean hasNext();
+
+	boolean isLast();
 }
