@@ -97,12 +97,35 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 * @throws AblyException
 	 */
 	public void attach() throws AblyException {
+		attach(null);
+	}
+
+	/**
+	 * Attach to this channel.
+	 * This call initiates the attach request, and the response
+	 * is indicated asynchronously in the resulting state change.
+	 * attach() is called implicitly when publishing or subscribing
+	 * on this channel, so it is not usually necessary for a client
+	 * to call attach() explicitly.
+	 *
+	 * @param listener When the channel is attached successfully or the attach fails and
+	 * the ErrorInfo error is passed as an argument to the callback
+	 * @throws AblyException
+	 */
+	public void attach(final CompletionListener listener) throws AblyException {
 		Log.v(TAG, "attach(); channel = " + name);
 		/* check preconditions */
 		switch(state) {
 			case attaching:
+				if (listener != null) {
+					on(new ChannelStateCompletionListener(listener, ChannelState.attached, ChannelState.failed));
+				}
+
+				return;
 			case attached:
-				/* nothing to do */
+				if (listener != null) {
+					listener.onSuccess();
+				}
 				return;
 			default:
 		}
@@ -113,6 +136,10 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		/* send attach request and pending state */
 		ProtocolMessage attachMessage = new ProtocolMessage(Action.attach, this.name);
 		try {
+			if (listener != null) {
+				on(new ChannelStateCompletionListener(listener, ChannelState.attached, ChannelState.failed));
+			}
+
 			setState(ChannelState.attaching, null);
 			connectionManager.send(attachMessage, true, null);
 		} catch(AblyException e) {
@@ -127,13 +154,30 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 * @throws AblyException
 	 */
 	public void detach() throws AblyException {
+		detach(null);
+	}
+
+	/**
+	 * Detach from this channel.
+	 * This call initiates the detach request, and the response
+	 * is indicated asynchronously in the resulting state change.
+	 * @throws AblyException
+	 */
+	public void detach(CompletionListener listener) throws AblyException {
 		Log.v(TAG, "detach(); channel = " + name);
 		/* check preconditions */
 		switch(state) {
 			case initialized:
+			case detached: {
+				if(listener != null) {
+					listener.onSuccess();
+				}
+				return;
+			}
 			case detaching:
-			case detached:
-				/* nothing to do */
+				if (listener != null) {
+					on(new ChannelStateCompletionListener(listener, ChannelState.detached, ChannelState.failed));
+				}
 				return;
 			default:
 		}
@@ -144,6 +188,10 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		/* send detach request */
 		ProtocolMessage detachMessage = new ProtocolMessage(Action.detach, this.name);
 		try {
+			if (listener != null) {
+				on(new ChannelStateCompletionListener(listener, ChannelState.detached, ChannelState.failed));
+			}
+
 			setState(ChannelState.detaching, null);
 			connectionManager.send(detachMessage, true, null);
 		} catch(AblyException e) {
@@ -597,6 +645,30 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 * internal general
 	 * @throws AblyException 
 	 ************************************/
+
+	private class ChannelStateCompletionListener implements ChannelStateListener {
+		private CompletionListener completionListener;
+		private final ChannelState successState;
+		private final ChannelState failureState;
+
+		public ChannelStateCompletionListener(CompletionListener completionListener, ChannelState successState, ChannelState failureState) {
+			this.completionListener = completionListener;
+			this.successState = successState;
+			this.failureState = failureState;
+		}
+
+		@Override
+		public void onChannelStateChanged(ChannelState state, ErrorInfo reason) {
+			if(state.equals(successState)) {
+				Channel.this.off(this);
+				completionListener.onSuccess();
+			}
+			else if(state.equals(failureState)) {
+				Channel.this.off(this);
+				completionListener.onError(reason);
+			}
+		}
+	}
 
 	Channel(AblyRealtime ably, String name) {
 		Log.v(TAG, "RealtimeChannel(); channel = " + name);

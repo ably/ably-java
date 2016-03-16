@@ -1,8 +1,11 @@
 package io.ably.lib.util;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -28,7 +31,8 @@ public abstract class EventEmitter<Event, Listener> {
 	 * @param listener
 	 */
 	public synchronized void on(Listener listener) {
-		listeners.add(listener);
+		if(!listeners.contains(listener))
+			listeners.add(listener);
 	}
 
 	/**
@@ -81,8 +85,10 @@ public abstract class EventEmitter<Event, Listener> {
 	 * @param args the arguments to pass to listeners
 	 */
 	public synchronized void emit(Event event, Object... args) {
-		for(Iterator<Listener> it = listeners.iterator(); it.hasNext(); )
-			apply(it.next(), event, args);
+		for (int i = listeners.size() - 1; i >= 0; i--) {
+			apply(listeners.get(i), event, args);
+		}
+
 		for(Iterator<Map.Entry<Listener, Filter>> it = filters.entrySet().iterator(); it.hasNext(); )
 			if(it.next().getValue().apply(event, args))
 				it.remove();
@@ -105,5 +111,5 @@ public abstract class EventEmitter<Event, Listener> {
 	}
 
 	Map<Listener, Filter> filters = new HashMap<Listener, Filter>();
-	Set<Listener> listeners = new HashSet<Listener>();
+	List<Listener> listeners = new ArrayList<Listener>();
 }
