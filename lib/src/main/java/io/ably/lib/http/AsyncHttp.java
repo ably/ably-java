@@ -2,7 +2,6 @@ package io.ably.lib.http;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.Proxy;
 import java.net.URL;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -70,7 +69,6 @@ public class AsyncHttp extends ThreadPoolExecutor {
 	private class UrlRequest<T> extends AsyncRequest<T> implements Runnable {
 		private UrlRequest(
 				URL url,
-				final Proxy proxy,
 				final String method,
 				final Param[] headers,
 				final Param[] params,
@@ -78,7 +76,7 @@ public class AsyncHttp extends ThreadPoolExecutor {
 				final boolean withCredentials,
 				final ResponseHandler<T> responseHandler,
 				final Callback<T> callback) {
-			super(proxy, method, headers, params, requestBody, withCredentials, responseHandler, callback);
+			super(method, headers, params, requestBody, withCredentials, responseHandler, callback);
 			this.url = url;
 		}
 		@Override
@@ -105,14 +103,13 @@ public class AsyncHttp extends ThreadPoolExecutor {
 		private AblyRequestWithRetry(
 				String host,
 				String path,
-				final Proxy proxy,
 				final String method,
 				final Param[] headers,
 				final Param[] params,
 				final RequestBody requestBody,
 				final ResponseHandler<T> responseHandler,
 				final Callback<T> callback) {
-			super(proxy, method, headers, params, requestBody, true, responseHandler, callback);
+			super(method, headers, params, requestBody, true, responseHandler, callback);
 			this.host = host;
 			this.path = path;
 		}
@@ -139,14 +136,14 @@ public class AsyncHttp extends ThreadPoolExecutor {
 	private class AblyRequestWithFallback<T> extends AsyncRequest<T> implements Runnable {
 		private AblyRequestWithFallback(
 				String path,
-				final Proxy proxy,
+//				final Proxy proxy,
 				final String method,
 				final Param[] headers,
 				final Param[] params,
 				final RequestBody requestBody,
 				final ResponseHandler<T> responseHandler,
 				final Callback<T> callback) {
-			super(proxy, method, headers, params, requestBody, true, responseHandler, callback);
+			super(method, headers, params, requestBody, true, responseHandler, callback);
 			this.path = path;
 		}
 		@Override
@@ -184,7 +181,6 @@ public class AsyncHttp extends ThreadPoolExecutor {
 	 */
 	private abstract class AsyncRequest<T> implements Future<T> {
 		private AsyncRequest(
-				final Proxy proxy,
 				final String method,
 				final Param[] headers,
 				final Param[] params,
@@ -192,7 +188,6 @@ public class AsyncHttp extends ThreadPoolExecutor {
 				final boolean withCredentials,
 				final ResponseHandler<T> responseHandler,
 				final Callback<T> callback) {
-			this.proxy = (proxy == null) ? Proxy.NO_PROXY : proxy;
 			this.method = method;
 			this.headers = headers;
 			this.params = params;
@@ -255,7 +250,7 @@ public class AsyncHttp extends ThreadPoolExecutor {
 
 		protected synchronized void createConnection(URL url) throws AblyException {
 			try {
-				conn = (HttpURLConnection)url.openConnection(proxy);
+				conn = (HttpURLConnection)url.openConnection(http.getProxy(url));
 			} catch(IOException ioe) {
 				throw AblyException.fromThrowable(ioe);
 			}
@@ -265,7 +260,7 @@ public class AsyncHttp extends ThreadPoolExecutor {
 		}
 		protected T httpExecuteWithRetry(String host, String path) throws AblyException {
 			URL url = Http.buildURL(http.scheme, host, http.port, path, params);
-			return http.httpExecuteWithRetry(url, proxy, method, headers, requestBody, responseHandler);
+			return http.httpExecuteWithRetry(url, method, headers, requestBody, responseHandler);
 		}
 		protected void setResult(T result) {
 			synchronized(this) {
@@ -300,7 +295,6 @@ public class AsyncHttp extends ThreadPoolExecutor {
 		protected T result;
 		protected ErrorInfo err;
 
-		protected final Proxy proxy;
 		protected final String method;
 		protected final Param[] headers;
 		protected final Param[] params;
@@ -341,7 +335,7 @@ public class AsyncHttp extends ThreadPoolExecutor {
 			final ResponseHandler<T> responseHandler,
 			final Callback<T> callback) {
 
-		UrlRequest<T> request = new UrlRequest<>(url, http.proxy, method, headers, null, requestBody, withCredentials, responseHandler, callback);
+		UrlRequest<T> request = new UrlRequest<>(url, method, headers, null, requestBody, withCredentials, responseHandler, callback);
 		execute(request);
 		return request;
 	}
@@ -366,7 +360,7 @@ public class AsyncHttp extends ThreadPoolExecutor {
 			final ResponseHandler<T> responseHandler,
 			final Callback<T> callback) {
 
-		AblyRequestWithFallback<T> request = new AblyRequestWithFallback<>(path, http.proxy, method, headers, null, requestBody, responseHandler, callback);
+		AblyRequestWithFallback<T> request = new AblyRequestWithFallback<>(path, method, headers, null, requestBody, responseHandler, callback);
 		execute(request);
 		return request;
 	}
@@ -393,7 +387,7 @@ public class AsyncHttp extends ThreadPoolExecutor {
 			final ResponseHandler<T> responseHandler,
 			final Callback<T> callback) {
 
-		AblyRequestWithRetry<T> request = new AblyRequestWithRetry<>(host, path, http.proxy, method, headers, null, requestBody, responseHandler, callback);
+		AblyRequestWithRetry<T> request = new AblyRequestWithRetry<>(host, path, method, headers, null, requestBody, responseHandler, callback);
 		execute(request);
 		return request;
 	}

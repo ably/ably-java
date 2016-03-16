@@ -115,8 +115,7 @@ public class ClientOptions extends AuthOptions {
 	/**
 	 * Proxy settings
 	 */
-	public String proxyHost = null;
-	public int proxyPort = 0;
+	public ProxyOptions proxy;
 
 	/**
 	 * Spec: TO313

@@ -24,6 +24,7 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ErrorResponse;
 import io.ably.lib.types.Param;
+import io.ably.lib.types.ProxyOptions;
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
@@ -170,7 +171,14 @@ public class Http {
 		this.host = options.restHost;
 		this.scheme = options.tls ? "https://" : "http://";
 		this.port = Defaults.getPort(options);
-		this.proxy = (options.proxyHost != null) ? new Proxy(Proxy.Type.HTTP, new InetSocketAddress(options.proxyHost, options.proxyPort)) : Proxy.NO_PROXY;
+		this.proxyOptions = options.proxy;
+		if(proxyOptions != null) {
+			String proxyHost = proxyOptions.host;
+			if(proxyHost == null) { throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy host", 40000, 400)); }
+			int proxyPort = proxyOptions.port;
+			if(proxyPort == 0) { throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy port", 40000, 400)); }
+			this.proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
+		}
 	}
 
 	/**
@@ -334,7 +342,7 @@ public class Http {
 		while(true) {
 			url = buildURL(scheme, candidateHost, port, path, params);
 			try {
-				return httpExecuteWithRetry(url, this.proxy, method, headers, requestBody, responseHandler);
+				return httpExecuteWithRetry(url, method, headers, requestBody, responseHandler);
 			} catch (AblyException.HostFailedException e) {
 				if(--retryCountRemaining < 0) {
 					throw AblyException.fromErrorInfo(new ErrorInfo("Connection failed; no host available", 404, 80000));
@@ -358,7 +366,7 @@ public class Http {
 	 * @throws AblyException
 	 */
 	<T> T httpExecute(URL url, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler<T> responseHandler) throws AblyException {
-		return httpExecute(url, this.proxy, method, headers, requestBody, withCredentials, responseHandler);
+		return httpExecute(url, getProxy(url), method, headers, requestBody, withCredentials, responseHandler);
 	}
 
 	/**
@@ -445,11 +453,11 @@ public class Http {
 	 * @return
 	 * @throws AblyException
 	 */
-	<T> T httpExecuteWithRetry(URL url, Proxy proxy, String method, Param[] headers, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
+	<T> T httpExecuteWithRetry(URL url, String method, Param[] headers, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
 		boolean authPending = true, renewPending = true;
 		while(true) {
 			try {
-				return httpExecute(url, proxy, method, headers, requestBody, true, responseHandler);
+				return httpExecute(url, getProxy(url), method, headers, requestBody, true, responseHandler);
 			} catch(AuthRequiredException are) {
 				if(authPending) {
 					authorise(false);
@@ -657,6 +665,21 @@ public class Http {
 		return result;
 	}
 
+	Proxy getProxy(URL url) {
+		String host = url.getHost();
+		return getProxy(host);
+	}
+
+	private Proxy getProxy(String host) {
+		if(proxyOptions.nonProxyHosts != null) {
+			for(String nonProxyHostPattern : proxyOptions.nonProxyHosts) {
+				if(host.matches(nonProxyHostPattern)) {
+					return Proxy.NO_PROXY;
+				}
+			}
+		}
+		return proxy;
+	}
 
 	/*************************
 	 *     Private state
@@ -676,13 +699,14 @@ public class Http {
 		}
 	}
 
-	Proxy proxy;
 	final String scheme;
 	String host;
 	final int port;
 	final ClientOptions options;
 
 	private final Auth auth;
+	private final ProxyOptions proxyOptions;
+	private Proxy proxy = Proxy.NO_PROXY;
 	private String authHeader;
 	private boolean isDisposed;
 
