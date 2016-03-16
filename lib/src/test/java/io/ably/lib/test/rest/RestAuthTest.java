@@ -313,7 +313,7 @@ public class RestAuthTest {
 	}
 
 	/**
-	 * Verify authCallback called and handled when returning token request
+	 * Verify authCallback called and handled when returning {@code TokenRequest}
 	 */
 	@Test
 	public void auth_authcallback_tokenrequest() {
@@ -349,10 +349,10 @@ public class RestAuthTest {
 	}
 
 	/**
-	 * Verify authCallback called and handled when returning token
+	 * Verify authCallback called and handled when returning {@code TokenDetails}
 	 */
 	@Test
-	public void auth_authcallback_token() {
+	public void auth_authcallback_tokendetails() {
 		try {
 			final TestVars testVars = Setup.getTestVars();
 
@@ -381,6 +381,37 @@ public class RestAuthTest {
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("auth_authURL_tokenrequest: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Verify authCallback called and handled when returning token string
+	 */
+	@Test
+	public void auth_authcallback_tokenstring() throws AblyException {
+		final TestVars testVars = Setup.getTestVars();
+
+			/* implement callback, using Ably instance with key */
+		TokenCallback authCallback = new TokenCallback() {
+			private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
+			@Override
+			public Object getTokenRequest(TokenParams params) throws AblyException {
+				return ably.auth.requestToken(params, null).token;
+			}
+		};
+
+			/* create Ably instance without key */
+		ClientOptions opts = testVars.createOptions();
+		opts.authCallback = authCallback;
+		AblyRest ably = new AblyRest(opts);
+
+			/* make a call to trigger token request */
+		try {
+			TokenDetails tokenDetails = ably.auth.requestToken(null, null);
+			assertNotNull("Expected token value", tokenDetails.token);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_authURL_tokenrequest: Unexpected exception requesting token");
 		}
 	}
 
