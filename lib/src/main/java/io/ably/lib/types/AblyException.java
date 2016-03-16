@@ -16,7 +16,7 @@ public class AblyException extends Exception {
 	/**
 	 * Constructor for use where there is an ErrorInfo available
 	 */
-	AblyException(Throwable throwable, ErrorInfo reason) {
+	protected AblyException(Throwable throwable, ErrorInfo reason) {
 		super(throwable);
 		this.errorInfo = reason;
 	}
@@ -49,8 +49,6 @@ public class AblyException extends Exception {
 
 		return new AblyException(t, ErrorInfo.fromThrowable(t));
 	}
-
-
 
 	public static class HostFailedException extends AblyException {
 		private static final long serialVersionUID = 1L;
