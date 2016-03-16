@@ -8,6 +8,7 @@ import org.msgpack.core.MessageUnpacker;
 public class ConnectionDetails {
 	public String clientId;
 	public String connectionKey;
+	public String serverId;
 	public Long maxMessageSize;
 	public Long maxInboundRate;
 	public Long maxFrameSize;
@@ -23,6 +24,8 @@ public class ConnectionDetails {
 				clientId = unpacker.unpackString();
 			} else if(fieldName == "connectionKey") {
 				connectionKey = unpacker.unpackString();
+			} else if(fieldName == "serverId") {
+				serverId = unpacker.unpackString();
 			} else if(fieldName == "maxMessageSize") {
 				maxMessageSize = unpacker.unpackLong();
 			} else if(fieldName == "maxInboundRate") {
