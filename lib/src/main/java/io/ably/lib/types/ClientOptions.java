@@ -113,6 +113,12 @@ public class ClientOptions extends AuthOptions {
 	public String recover;
 
 	/**
+	 * Proxy settings
+	 */
+	public String proxyHost = null;
+	public int proxyPort = 0;
+
+	/**
 	 * Spec: TO313
 	 */
 	public int httpOpenTimeout = Defaults.TIMEOUT_HTTP_OPEN;
