@@ -5,15 +5,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
-import java.net.*;
-import java.nio.charset.Charset;
+import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
+import java.net.Proxy;
+import java.net.URL;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
-import io.ably.lib.realtime.Connection;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.AuthMethod;
 import io.ably.lib.transport.Defaults;
@@ -36,20 +37,50 @@ import io.ably.lib.util.Serialisation;
  *
  */
 public class Http {
+	public static final String GET    = "GET";
+	public static final String POST   = "POST";
+	public static final String DELETE = "DELETE";
 
+	/**
+	 * Interface for an entity that performs type-specific processing on an http response
+	 * @param <T>
+	 */
 	public interface ResponseHandler<T> {
 		T handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException;
 	}
 
+	/**
+	 * Interface for an entity that performs type-specific processing on an http response body
+	 * @param <T>
+	 */
 	public interface BodyHandler<T> {
 		T[] handleResponseBody(String contentType, byte[] body) throws AblyException;
 	}
 
+	/**
+	 * Interface for an entity that supplies an http request body
+	 * @param <T>
+	 */
 	public interface RequestBody {
 		byte[] getEncoded();
 		String getContentType();
 	}
 
+	/**
+	 * Exception signifying that an http request failed with a WWW-Authenticate response
+	 */
+	public static class AuthRequiredException extends AblyException {
+		private static final long serialVersionUID = 1L;
+		public AuthRequiredException(Throwable throwable, ErrorInfo reason, boolean expired) {
+			super(throwable, reason);
+			this.expired = expired;
+		}
+		public final boolean expired;
+	}
+
+	/**
+	 * A type encapsulating an http response
+	 */
 	private static class Response {
 		int statusCode;
 		String statusLine;
@@ -99,6 +130,9 @@ public class Http {
 		}
 	}
 
+	/**
+	 * A RequestBody wrapping a JSON-serialisable object
+	 */
 	public static class JSONRequestBody implements RequestBody {
 		public JSONRequestBody(String jsonText) { this.jsonText = jsonText; }
 		public JSONRequestBody(Object ob) { this(Serialisation.gson.toJson(ob)); }
@@ -111,6 +145,9 @@ public class Http {
 		private final String jsonText;
 	}
 
+	/**
+	 * A RequestBody wrapping a byte array
+	 */
 	public static class ByteArrayRequestBody implements RequestBody {
 		public ByteArrayRequestBody(byte[] bytes, String contentType) { this.bytes = bytes; this.contentType = contentType; }
 
@@ -127,12 +164,13 @@ public class Http {
 	 *     Public API
 	 *************************/
 
-	public Http(ClientOptions options, Auth auth) {
+	public Http(ClientOptions options, Auth auth) throws AblyException {
 		this.options = options;
 		this.auth = auth;
 		this.host = options.restHost;
 		this.scheme = options.tls ? "https://" : "http://";
 		this.port = Defaults.getPort(options);
+		this.proxy = (options.proxyHost != null) ? new Proxy(Proxy.Type.HTTP, new InetSocketAddress(options.proxyHost, options.proxyPort)) : Proxy.NO_PROXY;
 	}
 
 	/**
@@ -238,6 +276,12 @@ public class Http {
 	 *     Internal API
 	 **************************/
 
+	/**
+	 * Get the Authorization header, forcing the creation of a new token if requested
+	 * @param renew
+	 * @return
+	 * @throws AblyException
+	 */
 	private String getAuthorizationHeader(boolean renew) throws AblyException {
 		if(authHeader != null && !renew) {
 			return authHeader;
@@ -257,7 +301,7 @@ public class Http {
 		return authHeader;
 	}
 
-	private void authorise(boolean renew) throws AblyException {
+	void authorise(boolean renew) throws AblyException {
 		getAuthorizationHeader(renew);
 	}
 
@@ -271,46 +315,102 @@ public class Http {
 		dispose();
 	}
 
+	/**
+	 * Make a synchronous HTTP request to an Ably endpoint, using the Ably auth credentials and fallback hosts if necessary
+	 * @param path
+	 * @param method
+	 * @param headers
+	 * @param params
+	 * @param requestBody
+	 * @param responseHandler
+	 * @return
+	 * @throws AblyException
+	 */
 	<T> T ablyHttpExecute(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
-		int retryCountRemaining = Hosts.isRestFallbackSupported(this.host)?options.httpMaxRetryCount:0;
-		String hostCurrent = this.host;
+		int retryCountRemaining = Hosts.isRestFallbackSupported(this.host) ? options.httpMaxRetryCount : 0;
+		String candidateHost = this.host;
 		URL url;
 
-		do {
-			url = buildURL(scheme, hostCurrent, path, params);
-
+		while(true) {
+			url = buildURL(scheme, candidateHost, port, path, params);
 			try {
-				return httpExecute(url, method, headers, requestBody, true, responseHandler);
+				return httpExecuteWithRetry(url, this.proxy, method, headers, requestBody, responseHandler);
 			} catch (AblyException.HostFailedException e) {
-				retryCountRemaining--;
-
-				if (retryCountRemaining >= 0) {
-					Log.d(TAG, "Connection failed to host `" + hostCurrent + "`. Searching for new host...");
-					hostCurrent = Hosts.getFallback(hostCurrent);
-					Log.d(TAG, "Switched to `" + hostCurrent + "`.");
+				if(--retryCountRemaining < 0) {
+					throw AblyException.fromErrorInfo(new ErrorInfo("Connection failed; no host available", 404, 80000));
 				}
+				Log.d(TAG, "Connection failed to host `" + candidateHost + "`. Searching for new host...");
+				candidateHost = Hosts.getFallback(candidateHost);
+				Log.d(TAG, "Switched to `" + candidateHost + "`.");
 			}
-		} while (retryCountRemaining >= 0);
-
-		throw AblyException.fromErrorInfo(new ErrorInfo("Connection failed; no host available", 404, 80000));
+		}
 	}
 
+	/**
+	 * Make a synchronous HTTP request specified by URL and using the configured proxy, if any
+	 * @param url
+	 * @param method
+	 * @param headers
+	 * @param requestBody
+	 * @param withCredentials
+	 * @param responseHandler
+	 * @return
+	 * @throws AblyException
+	 */
 	<T> T httpExecute(URL url, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler<T> responseHandler) throws AblyException {
-		Response response;
+		return httpExecute(url, this.proxy, method, headers, requestBody, withCredentials, responseHandler);
+	}
+
+	/**
+	 * Make a synchronous HTTP request specified by URL and proxy
+	 * @param url
+	 * @param proxy
+	 * @param method
+	 * @param headers
+	 * @param requestBody
+	 * @param withCredentials
+	 * @param responseHandler
+	 * @return
+	 * @throws AblyException
+	 */
+	<T> T httpExecute(URL url, Proxy proxy, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler<T> responseHandler) throws AblyException {
+		if(proxy == null) { proxy = Proxy.NO_PROXY; }
 		HttpURLConnection conn = null;
+		try {
+			conn = (HttpURLConnection)url.openConnection(proxy);
+			return httpExecute(conn, method, headers, requestBody, withCredentials, responseHandler);
+		} catch(IOException ioe) {
+			throw AblyException.fromThrowable(ioe);
+		} finally {
+			if(conn != null) {
+				conn.disconnect();
+			}
+		}
+	}
+
+	/**
+	 * Make a synchronous HTTP request with a given HttpURLConnection
+	 * @param conn
+	 * @param method
+	 * @param headers
+	 * @param requestBody
+	 * @param withCredentials
+	 * @param responseHandler
+	 * @return
+	 * @throws AblyException
+	 */
+	<T> T httpExecute(HttpURLConnection conn, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler<T> responseHandler) throws AblyException {
+		Response response;
 		boolean credentialsIncluded = false;
 		try {
 			/* prepare connection */
-			conn = (HttpURLConnection)url.openConnection();
+			conn.setRequestMethod(method);
 			conn.setConnectTimeout(options.httpOpenTimeout);
 			conn.setReadTimeout(options.httpRequestTimeout);
 			conn.setDoInput(true);
-			if(method != null) {
-				conn.setRequestMethod(method);
-			}
 			if(withCredentials && authHeader != null) {
-				credentialsIncluded = true;
 				conn.setRequestProperty(AUTHORIZATION, authHeader);
+				credentialsIncluded = true;
 			}
 			boolean acceptSet = false;
 			if(headers != null) {
@@ -329,11 +429,53 @@ public class Http {
 			response = readResponse(conn);
 		} catch(IOException ioe) {
 			throw AblyException.fromThrowable(ioe);
-		} finally {
-			if(conn != null)
-				conn.disconnect();
 		}
 
+		return handleResponse(conn, credentialsIncluded, response, responseHandler);
+	}
+
+	/**
+	 * Make a synchronous HTTP request specified by URL and proxy, retrying if necessary on WWW-Authenticate
+	 * @param url
+	 * @param proxy
+	 * @param method
+	 * @param headers
+	 * @param requestBody
+	 * @param responseHandler
+	 * @return
+	 * @throws AblyException
+	 */
+	<T> T httpExecuteWithRetry(URL url, Proxy proxy, String method, Param[] headers, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
+		boolean authPending = true, renewPending = true;
+		while(true) {
+			try {
+				return httpExecute(url, proxy, method, headers, requestBody, true, responseHandler);
+			} catch(AuthRequiredException are) {
+				if(authPending) {
+					authorise(false);
+					authPending = false;
+					continue;
+				}
+				if(are.expired && renewPending) {
+					authorise(true);
+					renewPending = false;
+					continue;
+				}
+				throw are;
+			}
+		}
+	}
+
+	/**
+	 * Handle HTTP response
+	 * @param conn
+	 * @param credentialsIncluded
+	 * @param response
+	 * @param responseHandler
+	 * @return
+	 * @throws AblyException
+	 */
+	private <T> T handleResponse(HttpURLConnection conn, boolean credentialsIncluded, Response response, ResponseHandler<T> responseHandler) throws AblyException {
 		if (response.statusCode == 0) {
 			return null;
 		}
@@ -368,10 +510,11 @@ public class Http {
 				String wwwAuthHeader = response.getHeaderField(WWW_AUTHENTICATE);
 				if(wwwAuthHeader != null) {
 					boolean stale = (wwwAuthHeader.indexOf("stale") > -1) || (error != null && error.code == 40140);
-					if(withCredentials && (stale || !credentialsIncluded)) {
-						/* retry the request with credentials, renewed if necessary */
-						authorise(stale);
-						return httpExecute(url, method, headers, requestBody, withCredentials, responseHandler);
+					if(stale) {
+						throw new AuthRequiredException(null, error, true);
+					}
+					if(!credentialsIncluded) {
+						throw new AuthRequiredException(null, error, false);
 					}
 				}
 			}
@@ -392,6 +535,12 @@ public class Http {
 		return responseHandler.handleResponse(response.statusCode, response.contentType, linkHeaders, response.body);
 	}
 
+	/**
+	 * Emit the request body for an HTTP request
+	 * @param requestBody
+	 * @param conn
+	 * @throws IOException
+	 */
 	private void writeRequestBody(RequestBody requestBody, HttpURLConnection conn) throws IOException {
 		conn.setDoOutput(true);
 		byte[] body = requestBody.getEncoded();
@@ -403,6 +552,12 @@ public class Http {
 		os.write(body);
 	}
 
+	/**
+	 * Read the response for an HTTP request
+	 * @param connection
+	 * @return
+	 * @throws IOException
+	 */
 	private Response readResponse(HttpURLConnection connection) throws IOException {
 		Response response = new Response();
 		response.statusCode = connection.getResponseCode();
@@ -471,7 +626,7 @@ public class Http {
 		}
 	}
 
-	private void appendParams(StringBuilder uri, Param[] params) {
+	private static void appendParams(StringBuilder uri, Param[] params) {
 		if(params != null && params.length > 0) {
 			uri.append('?').append(params[0].key).append('=').append(params[0].value);
 			for(int i = 1; i < params.length; i++) {
@@ -480,7 +635,7 @@ public class Http {
 		}
 	}
 
-	private URL buildURL(String scheme, String host, String path, Param[] params) {
+	static URL buildURL(String scheme, String host, int port, String path, Param[] params) {
 		StringBuilder builder = new StringBuilder(scheme).append(host).append(':').append(port).append(path);
 		appendParams(builder, params);
 
@@ -491,7 +646,7 @@ public class Http {
 		return result;
 	}
 
-	private URL buildURL(String uri, Param[] params) {
+	static URL buildURL(String uri, Param[] params) {
 		StringBuilder builder = new StringBuilder(uri);
 		appendParams(builder, params);
 
@@ -521,11 +676,13 @@ public class Http {
 		}
 	}
 
-	private final ClientOptions options;
+	Proxy proxy;
+	final String scheme;
+	String host;
+	final int port;
+	final ClientOptions options;
+
 	private final Auth auth;
-	private final String scheme;
-	private String host;
-	private final int port;
 	private String authHeader;
 	private boolean isDisposed;
 
@@ -537,8 +694,4 @@ public class Http {
 	private static final String JSON              = "application/json";
 	private static final String WWW_AUTHENTICATE  = "WWW-Authenticate";
 	private static final String AUTHORIZATION     = "Authorization";
-
-	static final String GET                      = "GET";
-	static final String POST                     = "POST";
-	static final String DELETE                   = "DELETE";
 }
