@@ -553,14 +553,14 @@ public class RestAuthTest {
 				}
 			};
 
-			/* create Ably instance without clientId */
+			/* create Ably instance */
 			ClientOptions options = testVars.createOptions();
-			options.clientId = null;
 			options.authCallback = authCallback;
 			ably = new AblyRest(options);
 
-			/* Fetch token */
-			TokenDetails tokenDetails = ably.auth.requestToken(null, null);
+			/* Create token with null clientId */
+			TokenParams tokenParams = new TokenParams() {{ clientId = null; }};
+			TokenDetails tokenDetails = ably.auth.requestToken(tokenParams, null);
 			assertEquals("Auth#clientId is expected to be null", null, tokenDetails.clientId);
 		} catch (Exception e) {
 			e.printStackTrace();
