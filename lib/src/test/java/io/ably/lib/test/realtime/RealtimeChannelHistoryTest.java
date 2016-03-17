@@ -156,12 +156,12 @@ public class RealtimeChannelHistoryTest {
 			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_simple_binary";
-			String message1Text = "Test message 1 (channelhistory_simple_binary)";
-			Message message2 = new Message("test_event", "Test message 2 (channelhistory_simple_binary)");
+			String channelName = "persisted:channelhistory_simple_binary_withoutlistener";
+			String message1Text = "Test message 1 (channelhistory_simple_binary_withoutlistener)";
+			Message message2 = new Message("test_event", "Test message 2 (channelhistory_simple_binary_withoutlistener)");
 			Message[] messages34 = new Message[] {
-					new Message("test_event", "Test message 3 (channelhistory_simple_binary)"),
-					new Message("test_event", "Test message 4 (channelhistory_simple_binary)")
+					new Message("test_event", "Test message 3 (channelhistory_simple_binary_withoutlistener)"),
+					new Message("test_event", "Test message 4 (channelhistory_simple_binary_withoutlistener)")
 			};
 
 			/* create a channel */
@@ -189,7 +189,7 @@ public class RealtimeChannelHistoryTest {
 			assertEquals("Expect correct message text", messages.items()[3].data, message1Text);
 		} catch (AblyException e) {
 			e.printStackTrace();
-			fail("single_history_binary: Unexpected exception instantiating library");
+			fail("channelhistory_simple_binary_withoutlistener: Unexpected exception instantiating library");
 		} finally {
 			if(ably != null)
 				ably.close();
@@ -209,12 +209,12 @@ public class RealtimeChannelHistoryTest {
 			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			opts.useBinaryProtocol = false;
 			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_simple_text";
-			String message1Text = "Test message 1 (channelhistory_simple_binary)";
-			Message message2 = new Message("test_event", "Test message 2 (channelhistory_simple_binary)");
+			String channelName = "persisted:channelhistory_simple_text_withoutlistener";
+			String message1Text = "Test message 1 (channelhistory_simple_text_withoutlistener)";
+			Message message2 = new Message("test_event", "Test message 2 (channelhistory_simple_text_withoutlistener)");
 			Message[] messages34 = new Message[] {
-					new Message("test_event", "Test message 3 (channelhistory_simple_binary)"),
-					new Message("test_event", "Test message 4 (channelhistory_simple_binary)")
+					new Message("test_event", "Test message 3 (channelhistory_simple_text_withoutlistener)"),
+					new Message("test_event", "Test message 4 (channelhistory_simple_text_withoutlistener)")
 			};
 
 			/* create a channel */
@@ -242,7 +242,7 @@ public class RealtimeChannelHistoryTest {
 			assertEquals("Expect correct message text", messages.items()[3].data, message1Text);
 		} catch (AblyException e) {
 			e.printStackTrace();
-			fail("single_history_binary: Unexpected exception instantiating library");
+			fail("channelhistory_simple_text_withoutlistener: Unexpected exception instantiating library");
 		} finally {
 			if(ably != null)
 				ably.close();
