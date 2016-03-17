@@ -49,8 +49,8 @@ public class AblyRealtime extends AblyRest {
 	 */
 	public AblyRealtime(ClientOptions options) throws AblyException {
 		super(options);
-		channels = new Channels();
 		connection = new Connection(this);
+		channels = new Channels();
 		if(options.autoConnect) connection.connect();
 	}
 
@@ -70,6 +70,16 @@ public class AblyRealtime extends AblyRest {
 	 */
 	@SuppressWarnings("serial")
 	public class Channels extends HashMap<String, Channel> {
+		public Channels() {
+			/* remove all channels when the connection is closed, to avoid stalled state */
+			connection.on(ConnectionState.closed, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange state) {
+					Channels.this.clear();
+				}
+			});
+		}
+
 		/**
 		 * Get the named channel; if it does not already exist,
 		 * create it with default options.
