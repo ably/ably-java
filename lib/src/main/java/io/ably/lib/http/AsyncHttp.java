@@ -1,6 +1,5 @@
 package io.ably.lib.http;
 
-import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.ExecutionException;
@@ -82,8 +81,7 @@ public class AsyncHttp extends ThreadPoolExecutor {
 		@Override
 		public void run() {
 			try {
-				createConnection(url);
-				T result = httpExecute();
+				T result = httpExecuteWithRetry(url);
 				setResult(result);
 			} catch(AblyException e) {
 				setError(e.errorInfo);
@@ -116,7 +114,7 @@ public class AsyncHttp extends ThreadPoolExecutor {
 		@Override
 		public void run() {
 			try {
-				result = httpExecuteWithRetry(host, path);
+				result = httpExecuteWithRetry(host, path, true);
 				setResult(result);
 			} catch(AblyException e) {
 				setError(e.errorInfo);
@@ -136,7 +134,6 @@ public class AsyncHttp extends ThreadPoolExecutor {
 	private class AblyRequestWithFallback<T> extends AsyncRequest<T> implements Runnable {
 		private AblyRequestWithFallback(
 				String path,
-//				final Proxy proxy,
 				final String method,
 				final Param[] headers,
 				final Param[] params,
@@ -153,7 +150,7 @@ public class AsyncHttp extends ThreadPoolExecutor {
 
 			while(!isCancelled) {
 				try {
-					result = httpExecuteWithRetry(candidateHost, path);
+					result = httpExecuteWithRetry(candidateHost, path, true);
 					setResult(result);
 					break;
 				} catch (AblyException.HostFailedException e) {
@@ -192,7 +189,6 @@ public class AsyncHttp extends ThreadPoolExecutor {
 			this.headers = headers;
 			this.params = params;
 			this.requestBody = requestBody;
-			this.withCredentials = withCredentials;
 			this.responseHandler = responseHandler;
 			this.callback = callback;
 		}
@@ -248,19 +244,12 @@ public class AsyncHttp extends ThreadPoolExecutor {
 		 *        Private
 		 **************************/
 
-		protected synchronized void createConnection(URL url) throws AblyException {
-			try {
-				conn = (HttpURLConnection)url.openConnection(http.getProxy(url));
-			} catch(IOException ioe) {
-				throw AblyException.fromThrowable(ioe);
-			}
+		protected T httpExecuteWithRetry(URL url) throws AblyException {
+			return http.httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, false);
 		}
-		protected T httpExecute() throws AblyException {
-			return http.httpExecute(conn, method, headers, requestBody, withCredentials, responseHandler);
-		}
-		protected T httpExecuteWithRetry(String host, String path) throws AblyException {
+		protected T httpExecuteWithRetry(String host, String path, boolean allowAblyAuth) throws AblyException {
 			URL url = Http.buildURL(http.scheme, host, http.port, path, params);
-			return http.httpExecuteWithRetry(url, method, headers, requestBody, responseHandler);
+			return http.httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, allowAblyAuth);
 		}
 		protected void setResult(T result) {
 			synchronized(this) {
@@ -299,7 +288,6 @@ public class AsyncHttp extends ThreadPoolExecutor {
 		protected final Param[] headers;
 		protected final Param[] params;
 		protected final RequestBody requestBody;
-		protected final boolean withCredentials;
 		protected final ResponseHandler<T> responseHandler;
 		protected final Callback<T> callback;
 		protected boolean isCancelled = false;

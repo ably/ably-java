@@ -72,11 +72,12 @@ public class Http {
 	 */
 	public static class AuthRequiredException extends AblyException {
 		private static final long serialVersionUID = 1L;
-		public AuthRequiredException(Throwable throwable, ErrorInfo reason, boolean expired) {
+		public AuthRequiredException(Throwable throwable, ErrorInfo reason) {
 			super(throwable, reason);
-			this.expired = expired;
 		}
-		public final boolean expired;
+		public boolean expired;
+		public String authChallenge;
+		public String proxyAuthChallenge;
 	}
 
 	/**
@@ -139,11 +140,12 @@ public class Http {
 		public JSONRequestBody(Object ob) { this(Serialisation.gson.toJson(ob)); }
 
 		@Override
-		public byte[] getEncoded() { return jsonText.getBytes(); }
+		public byte[] getEncoded() { return (bytes != null) ? bytes : (bytes = jsonText.getBytes()); }
 		@Override
 		public String getContentType() { return JSON; }
 
 		private final String jsonText;
+		private byte[] bytes;
 	}
 
 	/**
@@ -171,6 +173,7 @@ public class Http {
 		this.host = options.restHost;
 		this.scheme = options.tls ? "https://" : "http://";
 		this.port = Defaults.getPort(options);
+
 		this.proxyOptions = options.proxy;
 		if(proxyOptions != null) {
 			String proxyHost = proxyOptions.host;
@@ -178,6 +181,12 @@ public class Http {
 			int proxyPort = proxyOptions.port;
 			if(proxyPort == 0) { throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy port", 40000, 400)); }
 			this.proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
+			String proxyUser = proxyOptions.username;
+			if(proxyUser != null) {
+				String proxyPassword = proxyOptions.password;
+				if(proxyPassword == null) { throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy password", 40000, 400)); }
+				proxyAuth = new HttpAuth(proxyUser, proxyPassword);
+			}
 		}
 	}
 
@@ -217,7 +226,7 @@ public class Http {
 	 */
 	public byte[] getUrl(String url) throws AblyException {
 		try {
-			return httpExecute(new URL(url), GET, null, null, false, new ResponseHandler<byte[]>() {
+			return httpExecute(new URL(url), GET, null, null, new ResponseHandler<byte[]>() {
 				@Override
 				public byte[] handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
 					return body;
@@ -237,7 +246,7 @@ public class Http {
 	 * @throws AblyException
 	 */
 	public <T> T getUri(String uri, Param[] headers, Param[] params, ResponseHandler<T> responseHandler) throws AblyException {
-		return httpExecute(buildURL(uri, params), GET, headers, null, false, responseHandler);
+		return httpExecute(buildURL(uri, params), GET, headers, null, responseHandler);
 	}
 
 	/**
@@ -342,7 +351,7 @@ public class Http {
 		while(true) {
 			url = buildURL(scheme, candidateHost, port, path, params);
 			try {
-				return httpExecuteWithRetry(url, method, headers, requestBody, responseHandler);
+				return httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, true);
 			} catch (AblyException.HostFailedException e) {
 				if(--retryCountRemaining < 0) {
 					throw AblyException.fromErrorInfo(new ErrorInfo("Connection failed; no host available", 404, 80000));
@@ -355,7 +364,7 @@ public class Http {
 	}
 
 	/**
-	 * Make a synchronous HTTP request specified by URL and using the configured proxy, if any
+	 * Make a synchronous HTTP request to non-Ably endpoint, specified by URL and using the configured proxy, if any
 	 * @param url
 	 * @param method
 	 * @param headers
@@ -365,8 +374,8 @@ public class Http {
 	 * @return
 	 * @throws AblyException
 	 */
-	<T> T httpExecute(URL url, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler<T> responseHandler) throws AblyException {
-		return httpExecute(url, getProxy(url), method, headers, requestBody, withCredentials, responseHandler);
+	<T> T httpExecute(URL url, String method, Param[] headers, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
+		return httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, false);
 	}
 
 	/**
@@ -382,11 +391,10 @@ public class Http {
 	 * @throws AblyException
 	 */
 	<T> T httpExecute(URL url, Proxy proxy, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler<T> responseHandler) throws AblyException {
-		if(proxy == null) { proxy = Proxy.NO_PROXY; }
 		HttpURLConnection conn = null;
 		try {
 			conn = (HttpURLConnection)url.openConnection(proxy);
-			return httpExecute(conn, method, headers, requestBody, withCredentials, responseHandler);
+			return httpExecute(conn, method, headers, requestBody, withCredentials, (proxy != Proxy.NO_PROXY), responseHandler);
 		} catch(IOException ioe) {
 			throw AblyException.fromThrowable(ioe);
 		} finally {
@@ -407,7 +415,7 @@ public class Http {
 	 * @return
 	 * @throws AblyException
 	 */
-	<T> T httpExecute(HttpURLConnection conn, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler<T> responseHandler) throws AblyException {
+	<T> T httpExecute(HttpURLConnection conn, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, boolean withProxyCredentials, ResponseHandler<T> responseHandler) throws AblyException {
 		Response response;
 		boolean credentialsIncluded = false;
 		try {
@@ -419,6 +427,9 @@ public class Http {
 			if(withCredentials && authHeader != null) {
 				conn.setRequestProperty(AUTHORIZATION, authHeader);
 				credentialsIncluded = true;
+			}
+			if(withProxyCredentials && proxyAuthHeader != null) {
+				conn.setRequestProperty(PROXY_AUTHORIZATION, proxyAuthHeader);
 			}
 			boolean acceptSet = false;
 			if(headers != null) {
@@ -453,20 +464,28 @@ public class Http {
 	 * @return
 	 * @throws AblyException
 	 */
-	<T> T httpExecuteWithRetry(URL url, String method, Param[] headers, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
-		boolean authPending = true, renewPending = true;
+	<T> T httpExecuteWithRetry(URL url, String method, Param[] headers, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean allowAblyAuth) throws AblyException {
+		boolean authPending = true, renewPending = true, proxyAuthPending = true;
 		while(true) {
 			try {
 				return httpExecute(url, getProxy(url), method, headers, requestBody, true, responseHandler);
 			} catch(AuthRequiredException are) {
-				if(authPending) {
-					authorise(false);
-					authPending = false;
-					continue;
+				if(are.authChallenge != null && allowAblyAuth) {
+					if(authPending) {
+						authorise(false);
+						authPending = false;
+						continue;
+					}
+					if(are.expired && renewPending) {
+						authorise(true);
+						renewPending = false;
+						continue;
+					}
 				}
-				if(are.expired && renewPending) {
-					authorise(true);
-					renewPending = false;
+				if(are.proxyAuthChallenge != null && proxyAuthPending && proxyAuth != null) {
+					byte[] encodedRequestBody = (requestBody != null) ? requestBody.getEncoded() : null;
+					proxyAuthHeader = proxyAuth.getHeader(are.proxyAuthChallenge, method, url.getPath(), encodedRequestBody);
+					proxyAuthPending = false;
 					continue;
 				}
 				throw are;
@@ -518,12 +537,24 @@ public class Http {
 				String wwwAuthHeader = response.getHeaderField(WWW_AUTHENTICATE);
 				if(wwwAuthHeader != null) {
 					boolean stale = (wwwAuthHeader.indexOf("stale") > -1) || (error != null && error.code == 40140);
+					AuthRequiredException exception = new AuthRequiredException(null, error);
+					exception.authChallenge = wwwAuthHeader;
 					if(stale) {
-						throw new AuthRequiredException(null, error, true);
+						exception.expired = true;
+						throw exception;
 					}
 					if(!credentialsIncluded) {
-						throw new AuthRequiredException(null, error, false);
+						throw exception;
 					}
+				}
+			}
+			/* handle proxy-authenticate */
+			if(response.statusCode == 407) {
+				String proxyAuthHeader = response.getHeaderField(PROXY_AUTHENTICATE);
+				if(proxyAuthHeader != null) {
+					AuthRequiredException exception = new AuthRequiredException(null, error);
+					exception.proxyAuthChallenge = proxyAuthHeader;
+					throw exception;
 				}
 			}
 			if(error != null) {
@@ -671,10 +702,13 @@ public class Http {
 	}
 
 	private Proxy getProxy(String host) {
-		if(proxyOptions.nonProxyHosts != null) {
-			for(String nonProxyHostPattern : proxyOptions.nonProxyHosts) {
-				if(host.matches(nonProxyHostPattern)) {
-					return Proxy.NO_PROXY;
+		if(proxyOptions != null) {
+			String[] nonProxyHosts = proxyOptions.nonProxyHosts;
+			if(nonProxyHosts != null) {
+				for(String nonProxyHostPattern : nonProxyHosts) {
+					if(host.matches(nonProxyHostPattern)) {
+						return null;
+					}
 				}
 			}
 		}
@@ -705,17 +739,21 @@ public class Http {
 	final ClientOptions options;
 
 	private final Auth auth;
-	private final ProxyOptions proxyOptions;
-	private Proxy proxy = Proxy.NO_PROXY;
 	private String authHeader;
+	private final ProxyOptions proxyOptions;
+	private HttpAuth proxyAuth;
+	private String proxyAuthHeader;
+	private Proxy proxy = Proxy.NO_PROXY;
 	private boolean isDisposed;
 
-	private static final String TAG               = Http.class.getName();
-	private static final String LINK              = "Link";
-	private static final String ACCEPT            = "Accept";
-	private static final String CONTENT_TYPE      = "Content-Type";
-	private static final String CONTENT_LENGTH    = "Content-Length";
-	private static final String JSON              = "application/json";
-	private static final String WWW_AUTHENTICATE  = "WWW-Authenticate";
-	private static final String AUTHORIZATION     = "Authorization";
+	private static final String TAG                 = Http.class.getName();
+	private static final String LINK                = "Link";
+	private static final String ACCEPT              = "Accept";
+	private static final String CONTENT_TYPE        = "Content-Type";
+	private static final String CONTENT_LENGTH      = "Content-Length";
+	private static final String JSON                =  "application/json";
+	private static final String WWW_AUTHENTICATE    = "WWW-Authenticate";
+	private static final String PROXY_AUTHENTICATE  = "Proxy-Authenticate";
+	private static final String AUTHORIZATION       = "Authorization";
+	private static final String PROXY_AUTHORIZATION = "Proxy-Authorization";
 }

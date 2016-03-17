@@ -99,12 +99,12 @@ public class HttpTest {
 			List<String> urlArgumentStack;
 
 			@Override
-			<T> T httpExecute(URL url, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler<T> responseHandler) throws AblyException {
+			<T> T httpExecute(URL url, String method, Param[] headers, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
 				// Store a copy of given argument
 				urlArgumentStack.add(url.getHost());
 
 				// Execute the original method without changing behavior
-				return super.httpExecute(url, method, headers, requestBody, withCredentials, responseHandler);
+				return super.httpExecute(url, method, headers, requestBody, responseHandler);
 			}
 
 			public Http setUrlArgumentStack(List<String> urlArgumentStack) {
@@ -174,7 +174,6 @@ public class HttpTest {
 						anyString(), /* Ignore */
 						aryEq(new Param[0]), /* Ignore */
 						any(Http.RequestBody.class), /* Ignore */
-						anyBoolean(), /* Ignore */
 						any(Http.ResponseHandler.class) /* Ignore */
 				);
 
@@ -198,7 +197,6 @@ public class HttpTest {
 						anyString(), /* Ignore */
 						aryEq(new Param[0]), /* Ignore */
 						any(Http.RequestBody.class), /* Ignore */
-						anyBoolean(), /* Ignore */
 						any(Http.ResponseHandler.class) /* Ignore */
 				);
 
@@ -240,7 +238,6 @@ public class HttpTest {
 						anyString(), /* Ignore */
 						aryEq(new Param[0]), /* Ignore */
 						any(Http.RequestBody.class), /* Ignore */
-						anyBoolean(), /* Ignore */
 						any(Http.ResponseHandler.class) /* Ignore */
 				);
 
@@ -266,7 +263,6 @@ public class HttpTest {
 						anyString(), /* Ignore */
 						aryEq(new Param[0]), /* Ignore */
 						any(Http.RequestBody.class), /* Ignore */
-						anyBoolean(), /* Ignore */
 						any(Http.ResponseHandler.class) /* Ignore */
 				);
 
@@ -308,7 +304,6 @@ public class HttpTest {
 						anyString(), /* Ignore */
 						aryEq(new Param[0]), /* Ignore */
 						any(Http.RequestBody.class), /* Ignore */
-						anyBoolean(), /* Ignore */
 						any(Http.ResponseHandler.class) /* Ignore */
 				);
 
@@ -342,7 +337,6 @@ public class HttpTest {
 						anyString(), /* Ignore */
 						aryEq(new Param[0]), /* Ignore */
 						any(Http.RequestBody.class), /* Ignore */
-						anyBoolean(), /* Ignore */
 						any(Http.ResponseHandler.class) /* Ignore */
 				);
 	}
@@ -381,7 +375,6 @@ public class HttpTest {
 						anyString(), /* Ignore */
 						aryEq(new Param[0]), /* Ignore */
 						any(Http.RequestBody.class), /* Ignore */
-						anyBoolean(), /* Ignore */
 						any(Http.ResponseHandler.class) /* Ignore */
 				);
 
@@ -406,7 +399,6 @@ public class HttpTest {
 						anyString(), /* Ignore */
 						aryEq(new Param[0]), /* Ignore */
 						any(Http.RequestBody.class), /* Ignore */
-						anyBoolean(), /* Ignore */
 						any(Http.ResponseHandler.class) /* Ignore */
 				);
 
@@ -457,7 +449,6 @@ public class HttpTest {
 						anyString(), /* Ignore */
 						aryEq(new Param[0]), /* Ignore */
 						any(Http.RequestBody.class), /* Ignore */
-						anyBoolean(), /* Ignore */
 						any(Http.ResponseHandler.class) /* Ignore */
 				);
 
@@ -503,7 +494,7 @@ public class HttpTest {
 			hfe = null;
 
 			try {
-				http.httpExecute(url, Http.GET, new Param[0], requestBody, false, null);
+				http.httpExecute(url, Http.GET, new Param[0], requestBody, null);
 			} catch (AblyException.HostFailedException e) {
 				hfe = e;
 			}
@@ -537,7 +528,7 @@ public class HttpTest {
 			url = new URL("http://localhost:" + server.getListeningPort() + "/status/" + statusCode);
 
 			try {
-				http.httpExecute(url, Http.GET, new Param[0], requestBody, false, null);
+				http.httpExecute(url, Http.GET, new Param[0], requestBody, null);
 			} catch (AblyException.HostFailedException e) {
 				Assert.fail("Informal status code " + statusCode + " shouldn't throw an exception");
 			} catch (Exception e) {
@@ -552,7 +543,7 @@ public class HttpTest {
 			url = new URL("http://localhost:" + server.getListeningPort() + "/status/" + statusCode);
 
 			try {
-				http.httpExecute(url, Http.GET, new Param[0], requestBody, false, null);
+				http.httpExecute(url, Http.GET, new Param[0], requestBody, null);
 			} catch (AblyException.HostFailedException e) {
 				Assert.fail("Multiple choices status code " + statusCode + " shouldn't throw an exception");
 			} catch (Exception e) {
@@ -567,7 +558,7 @@ public class HttpTest {
 			url = new URL("http://localhost:" + server.getListeningPort() + "/status/" + statusCode);
 
 			try {
-				http.httpExecute(url, Http.GET, new Param[0], requestBody, false, null);
+				http.httpExecute(url, Http.GET, new Param[0], requestBody, null);
 			} catch (AblyException.HostFailedException e) {
 				Assert.fail("Client error status code " + statusCode + " shouldn't throw an exception");
 			} catch (Exception e) {
