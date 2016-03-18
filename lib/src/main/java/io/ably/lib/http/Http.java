@@ -375,7 +375,8 @@ public class Http {
 		HttpURLConnection conn = null;
 		try {
 			conn = (HttpURLConnection)url.openConnection(proxy);
-			return httpExecute(conn, method, headers, requestBody, withCredentials, (proxy != Proxy.NO_PROXY), responseHandler);
+			boolean withProxyCredentials = (proxy != Proxy.NO_PROXY) && (proxyAuth != null);
+			return httpExecute(conn, method, headers, requestBody, withCredentials, withProxyCredentials, responseHandler);
 		} catch(IOException ioe) {
 			throw AblyException.fromThrowable(ioe);
 		} finally {
