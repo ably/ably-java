@@ -15,6 +15,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.gson.JsonParseException;
+
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.AuthMethod;
 import io.ably.lib.transport.Defaults;
@@ -76,8 +78,8 @@ public class Http {
 			super(throwable, reason);
 		}
 		public boolean expired;
-		public String authChallenge;
-		public String proxyAuthChallenge;
+		public Map<HttpAuth.Type, String> authChallenge;
+		public Map<HttpAuth.Type, String> proxyAuthChallenge;
 	}
 
 	/**
@@ -90,27 +92,6 @@ public class Http {
 		String contentType;
 		int contentLength;
 		byte[] body;
-
-		/**
-		 * Returns the value of the named header field.
-		 * <p>
-		 * If called on a connection that sets the same header multiple times
-		 * with possibly different values, only the last value is returned.
-		 *
-		 *
-		 * @param   name   the name of a header field.
-		 * @return  the value of the named header field, or {@code null}
-		 *          if there is no such field in the header.
-		 */
-		public String getHeaderField(String name) {
-			List<String> fields = getHeaderFields(name);
-
-			if (fields == null || fields.isEmpty()) {
-				return null;
-			}
-
-			return fields.get(fields.size() - 1);
-		}
 
 		/**
 		 * Returns the value of the named header field.
@@ -185,7 +166,7 @@ public class Http {
 			if(proxyUser != null) {
 				String proxyPassword = proxyOptions.password;
 				if(proxyPassword == null) { throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy password", 40000, 400)); }
-				proxyAuth = new HttpAuth(proxyUser, proxyPassword);
+				proxyAuth = new HttpAuth(proxyUser, proxyPassword, proxyOptions.prefAuthType);
 			}
 		}
 	}
@@ -428,17 +409,19 @@ public class Http {
 				conn.setRequestProperty(AUTHORIZATION, authHeader);
 				credentialsIncluded = true;
 			}
-			if(withProxyCredentials && proxyAuthHeader != null) {
-				conn.setRequestProperty(PROXY_AUTHORIZATION, proxyAuthHeader);
+			if(withProxyCredentials && proxyAuth.hasChallenge()) {
+				byte[] encodedRequestBody = (requestBody != null) ? requestBody.getEncoded() : null;
+				String proxyAuthorizationHeader = proxyAuth.getAuthorizationHeader(method, conn.getURL().getPath(), encodedRequestBody);
+				conn.setRequestProperty(PROXY_AUTHORIZATION, proxyAuthorizationHeader);
 			}
 			boolean acceptSet = false;
 			if(headers != null) {
 				for(Param header: headers) {
 					conn.setRequestProperty(header.key, header.value);
-					if(header.key.equals(ACCEPT)) acceptSet = true;
+					if(header.key.equals(ACCEPT)) { acceptSet = true; }
 				}
 			}
-			if(!acceptSet) conn.setRequestProperty(ACCEPT, JSON);
+			if(!acceptSet) { conn.setRequestProperty(ACCEPT, JSON); }
 
 			/* send request body */
 			if(requestBody != null) {
@@ -483,8 +466,7 @@ public class Http {
 					}
 				}
 				if(are.proxyAuthChallenge != null && proxyAuthPending && proxyAuth != null) {
-					byte[] encodedRequestBody = (requestBody != null) ? requestBody.getEncoded() : null;
-					proxyAuthHeader = proxyAuth.getHeader(are.proxyAuthChallenge, method, url.getPath(), encodedRequestBody);
+					proxyAuth.processAuthenticateHeaders(are.proxyAuthChallenge);
 					proxyAuthPending = false;
 					continue;
 				}
@@ -515,9 +497,15 @@ public class Http {
 			/* get any in-body error details */
 			ErrorInfo error = null;
 			if(response.body != null && response.body.length > 0) {
-				ErrorResponse errorResponse = ErrorResponse.fromJSON(new String(response.body));
-				if(errorResponse != null) {
-					error = errorResponse.error;
+				String bodyText = new String(response.body);
+				try {
+					ErrorResponse errorResponse = ErrorResponse.fromJSON(bodyText);
+					if(errorResponse != null) {
+						error = errorResponse.error;
+					}
+				} catch(JsonParseException jse) {
+					/* error pages aren't necessarily going to satisfy our Accept criteria ... */
+					System.err.println("Error message in unexpected format: " + bodyText);
 				}
 			}
 
@@ -534,11 +522,14 @@ public class Http {
 
 			/* handle www-authenticate */
 			if(response.statusCode == 401) {
-				String wwwAuthHeader = response.getHeaderField(WWW_AUTHENTICATE);
-				if(wwwAuthHeader != null) {
-					boolean stale = (wwwAuthHeader.indexOf("stale") > -1) || (error != null && error.code == 40140);
+				boolean stale = (error != null && error.code == 40140);
+				List<String> wwwAuthHeaders = response.getHeaderFields(WWW_AUTHENTICATE);
+				if(wwwAuthHeaders != null && wwwAuthHeaders.size() > 0) {
+					Map<HttpAuth.Type, String> headersByType = HttpAuth.sortAuthenticateHeaders(wwwAuthHeaders);
+					String tokenHeader = headersByType.get(HttpAuth.Type.X_ABLY_TOKEN);
+					if(tokenHeader != null) { stale |= (tokenHeader.indexOf("stale") > -1); }
 					AuthRequiredException exception = new AuthRequiredException(null, error);
-					exception.authChallenge = wwwAuthHeader;
+					exception.authChallenge = headersByType;
 					if(stale) {
 						exception.expired = true;
 						throw exception;
@@ -550,10 +541,10 @@ public class Http {
 			}
 			/* handle proxy-authenticate */
 			if(response.statusCode == 407) {
-				String proxyAuthHeader = response.getHeaderField(PROXY_AUTHENTICATE);
-				if(proxyAuthHeader != null) {
+				List<String> proxyAuthHeaders = response.getHeaderFields(PROXY_AUTHENTICATE);
+				if(proxyAuthHeaders != null && proxyAuthHeaders.size() > 0) {
 					AuthRequiredException exception = new AuthRequiredException(null, error);
-					exception.proxyAuthChallenge = proxyAuthHeader;
+					exception.proxyAuthChallenge = HttpAuth.sortAuthenticateHeaders(proxyAuthHeaders);
 					throw exception;
 				}
 			}
@@ -742,7 +733,6 @@ public class Http {
 	private String authHeader;
 	private final ProxyOptions proxyOptions;
 	private HttpAuth proxyAuth;
-	private String proxyAuthHeader;
 	private Proxy proxy = Proxy.NO_PROXY;
 	private boolean isDisposed;
 

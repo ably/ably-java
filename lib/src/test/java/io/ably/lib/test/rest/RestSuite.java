@@ -13,16 +13,16 @@ import io.ably.lib.test.common.Setup;
 
 @RunWith(Suite.class)
 @SuiteClasses({
-	RestAppStatsTest.class,
-	RestInitTest.class,
-	RestTimeTest.class,
-	RestAuthTest.class,
-	RestTokenTest.class,
-	RestCapabilityTest.class,
-	RestChannelHistoryTest.class,
-	RestChannelPublishTest.class,
-	RestCryptoTest.class,
-	RestPresenceTest.class,
+//	RestAppStatsTest.class,
+//	RestInitTest.class,
+//	RestTimeTest.class,
+//	RestAuthTest.class,
+//	RestTokenTest.class,
+//	RestCapabilityTest.class,
+//	RestChannelHistoryTest.class,
+//	RestChannelPublishTest.class,
+//	RestCryptoTest.class,
+//	RestPresenceTest.class,
 	RestProxyTest.class
 })
 public class RestSuite {
