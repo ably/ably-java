@@ -165,8 +165,8 @@ public class RestProxyTest {
 			opts.proxy = new ProxyOptions() {{
 				host = "sandbox-proxy.ably.io";
 				port = 6129;
-				username = "ably";
-				password = "digest-password";
+				username = "ably-digest";
+				password = "password";
 				prefAuthType = HttpAuth.Type.DIGEST;
 			}};
 			AblyRest ably = new AblyRest(opts);
