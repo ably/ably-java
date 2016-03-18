@@ -501,9 +501,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		 * - the suspend timer has expired, so we're going into suspended state.
 		 */
 
-		/* FIXME: we might want to limit this behaviour to only a specific
-		 * set of error codes */
-		if(pendingConnect != null) {
+		if(pendingConnect != null && stateChange.reason == null) {
 			if (!Hosts.isFallback(pendingConnect.host)) {
 				if (!checkConnectivity()) {
 					return new StateIndication(ConnectionState.failed, new ErrorInfo("connection failed", 80000), false, pendingConnect.host);
