@@ -24,7 +24,9 @@ import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 
 import java.util.HashMap;
+import java.util.Locale;
 
+import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -1560,5 +1562,60 @@ public class RealtimeChannelHistoryTest {
 		AblyRealtime ably = new AblyRealtime(options);
 
 		ably.channels.get("test").history(new Param[]{ new Param("untilAttach", "affirmative")});
+	}
+
+	/**
+	 * Publish enough message to fill 2 pages.
+	 * Verify that,
+	 *   - {@code PaginatedQuery#isLast} returns false, when we are at the first page.
+	 *   - {@code PaginatedQuery#isLast} returns true, when we are at the second page.
+	 */
+	@Test
+	public void channelhistory_islast() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+			String channelName = "persisted:channelhistory_islast";
+			int pageMessageCount = 10;
+
+			/* create a channel */
+			final Channel channel = ably.channels.get(channelName);
+
+			/* attach */
+			channel.attach();
+			new ChannelWaiter(channel).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			/* publish to the channel */
+			CompletionSet msgComplete = new CompletionSet();
+			for (int i = 0; i < (pageMessageCount * 2); i++) {
+				channel.publish("history" + i, String.valueOf(i), msgComplete.add());
+			}
+
+			/* wait for the publish callbacks to be called */
+			msgComplete.waitFor();
+			assertTrue("Verify success callback was called", msgComplete.errors.isEmpty());
+
+			/* get the history for this channel */
+			PaginatedResult<Message> messages = channel.history(new Param[]{new Param("limit", String.format(Locale.ENGLISH, "%d", pageMessageCount))});
+			assertNotNull("Expected non-null messages", messages);
+			assertEquals("Expected 10 messages", messages.items().length, pageMessageCount);
+
+			/* Verify that current page is the last */
+			assertThat(messages.isLast(), is(false));
+
+			/* get next page */
+			messages = messages.next();
+			assertNotNull("Expected non-null messages", messages);
+			assertEquals("Expected 10 messages", messages.items().length, pageMessageCount);
+
+			/* Verify that current page is the last */
+			assertThat(messages.isLast(), is(true));
+		} finally {
+			if (ably != null)
+				ably.close();
+		}
 	}
 }
