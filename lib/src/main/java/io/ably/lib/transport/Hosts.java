@@ -53,7 +53,7 @@ public class Hosts {
 	 * @return true, if the given host is qualified for a retry against a fallback host. Otherwise, false.
 	 */
 	public static boolean isRestFallbackSupported(String host) {
-		return host.equals(REST_PROD_HOST);
+		return host.equalsIgnoreCase(REST_PROD_HOST);
 	}
 
 	/**
@@ -68,6 +68,6 @@ public class Hosts {
 	 * @return true, if given host is qualified for a retry against a fallback host. Otherwise, false.
 	 */
 	public static boolean isRealtimeFallbackSupported(String host) {
-		return host.equals(REALTIME_PROD_HOST);
+		return host.equalsIgnoreCase(REALTIME_PROD_HOST);
 	}
 }
