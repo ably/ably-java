@@ -28,4 +28,19 @@ public class HostsTest {
         String host = Hosts.getFallback(null);
         assertThat(Hosts.getFallback(host), is(not(allOf(isEmptyOrNullString(), equalTo(host)))));
     }
+
+	/**
+	 * Expect a null, when we requested more than available fallback hosts
+     */
+    @Test
+    public void hosts_fallback_traverse_all() {
+        String host = Hosts.getFallback(null);
+
+        for (int i = Defaults.HOST_FALLBACKS.size(); i > 0; i--) {
+            assertThat(host, is(not(equalTo(null))));
+            host = Hosts.getFallback(host);
+        }
+
+        assertThat(host, is(equalTo(null)));
+    }
 }

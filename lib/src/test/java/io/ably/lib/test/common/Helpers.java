@@ -17,6 +17,7 @@ import io.ably.lib.realtime.Connection;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.realtime.Presence.PresenceListener;
+import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.BaseMessage;
 import io.ably.lib.types.Callback;
@@ -330,6 +331,36 @@ public class Helpers {
 		 */
 		private Connection connection;
 		private ErrorInfo reason;
+	}
+
+	/**
+	 * A class that listens for state change events on a {@code ConnectionManager}.
+	 */
+	public static class ConnectionManagerWaiter {
+		private static final long INTERVAL_POLLING = 1000;
+
+		/**
+		 * Public API
+		 */
+		public ConnectionManagerWaiter(ConnectionManager connectionManager) {
+			this.connectionManager = connectionManager;
+		}
+
+		/**
+		 * Wait for a given state to be reached.
+		 * @param state
+		 * @return error info
+		 */
+		public synchronized ErrorInfo waitFor(ConnectionState state) {
+			while(connectionManager.getConnectionState().state != state)
+				try { wait(INTERVAL_POLLING); } catch(InterruptedException e) {}
+			return connectionManager.getConnectionState().defaultErrorInfo;
+		}
+
+		/**
+		 * Internal
+		 */
+		private ConnectionManager connectionManager;
 	}
 
 	/**

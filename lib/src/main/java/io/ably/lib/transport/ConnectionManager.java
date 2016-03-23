@@ -52,15 +52,17 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		final ConnectionState state;
 		final ErrorInfo reason;
 		final boolean fallback;
+		final String currentHost;
 
 		public StateIndication(ConnectionState state, ErrorInfo reason) {
-			this(state, reason, false);
+			this(state, reason, false, null);
 		}
 
-		public StateIndication(ConnectionState state, ErrorInfo reason, boolean fallback) {
+		public StateIndication(ConnectionState state, ErrorInfo reason, boolean fallback, String currentHost) {
 			this.state = state;
 			this.reason = reason;
 			this.fallback = fallback;
+			this.currentHost = currentHost;
 		}
 	}
 	
@@ -78,6 +80,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		final boolean terminal;
 		final boolean retry;
 		final long timeout;
+		String host;
 
 		StateInfo(ConnectionState state, boolean queueEvents, boolean sendEvents, boolean terminal, boolean retry, long timeout, ErrorInfo defaultErrorInfo) {
 			this.state = state;
@@ -147,10 +150,10 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	 *********************/
 
 	public String getHost() {
-		String result = null;
 		if(transport != null)
-			result = transport.getHost();
-		return result;
+			return transport.getHost();
+
+		return state.host;
 	}
 	
 	/*********************
@@ -158,8 +161,13 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	 *********************/
 
 	public void connect() {
-		startThread();
-		requestState(ConnectionState.connecting);
+		boolean connectionExist = state.state == ConnectionState.connected;
+		boolean connectionAttemptAvailable = (requestedState != null && requestedState.state != ConnectionState.connecting) ||
+				state.state == ConnectionState.connecting;
+
+		if(!connectionExist && !connectionAttemptAvailable && startThread()) {
+			requestState(ConnectionState.connecting);
+		}
 	}
 
 	public void close() {
@@ -177,6 +185,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		synchronized(this) {
 			ErrorInfo reason = newState.reason; if(reason == null) reason = newStateInfo.defaultErrorInfo;
 			change = new ConnectionStateListener.ConnectionStateChange(state.state, newState.state, newStateInfo.timeout, reason);
+			newStateInfo.host = newState.currentHost;
 			state = newStateInfo;
 		}
 
@@ -370,7 +379,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	 * ConnectionManager thread
 	 **************************/
 
-	private void startThread() {
+	private boolean startThread() {
 		boolean creating = false;
 		synchronized(this) {
 			if(mgrThread == null) {
@@ -385,6 +394,8 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				try { mgrThread.wait(); } catch(InterruptedException ie) {}
 			}
 		}
+
+		return creating;
 	}
 
 	private void stopThread() {
@@ -418,7 +429,10 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			}
 			break;
 		case connecting:
-			connectImpl(requestedState);
+			if(!connectImpl(requestedState)) {
+				indicatedState = new StateIndication(ConnectionState.failed, new ErrorInfo("Connection failed; no host available", 404, 80000), false, requestedState.currentHost);
+			}
+
 			handled = true;
 			break;
 		case closing:
@@ -487,11 +501,15 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		 * - the suspend timer has expired, so we're going into suspended state.
 		 */
 
-		/* FIXME: we might want to limit this behaviour to only a specific
-		 * set of error codes */
-		if(pendingConnect != null && checkConnectivity()) {
+		if(pendingConnect != null && stateChange.reason == null) {
+			if (!Hosts.isFallback(pendingConnect.host)) {
+				if (!checkConnectivity()) {
+					return new StateIndication(ConnectionState.failed, new ErrorInfo("connection failed", 80000), false, pendingConnect.host);
+				}
+			}
+
 			/* we will try a fallback host */
-			requestState(new StateIndication(ConnectionState.connecting, null, true));
+			requestState(new StateIndication(ConnectionState.connecting, null, true, pendingConnect.host));
 			/* returning null ensures we stay in the connecting state */
 			return null;
 		}
@@ -565,9 +583,9 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 	@Override
 	public synchronized void onTransportUnavailable(ITransport transport, TransportParams params, ErrorInfo reason) {
-		transport = null;
 		ably.auth.onAuthError(reason);
-		notifyState(new StateIndication(ConnectionState.disconnected, reason));
+		notifyState(new StateIndication(ConnectionState.disconnected, reason, false, transport.getHost()));
+		transport = null;
 	}
 
 	private class ConnectParams extends TransportParams {
@@ -580,21 +598,27 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		}
 	}
 
-	private void connectImpl(StateIndication request) {
+	private boolean connectImpl(StateIndication request) {
 		/* determine the parameters of this connection attempt, and
 		 * instance the transport.
 		 * First, choose the transport. (Right now there's only one.)
 		 * Second, choose the host. ConnectParams will use the default
 		 * (or requested) host, unless fallback=true, in which case
 		 * it will choose a fallback host at random */
-		pendingConnect = new ConnectParams(options);
 
-		if (request.fallback && Hosts.isRealtimeFallbackSupported(options.realtimeHost)) {
-			String hostFallback = Hosts.getFallback(getHost());
+		if(request.fallback) {
+			String hostFallback = Hosts.isRealtimeFallbackSupported(options.realtimeHost)?(Hosts.getFallback(request.currentHost)):(null);
+
+			if (hostFallback == null) {
+				return false;
+			}
+
+			pendingConnect = new ConnectParams(options);
 			pendingConnect.host = hostFallback;
 			ably.http.setHost(hostFallback);
 		}
 		else {
+			pendingConnect = new ConnectParams(options);
 			pendingConnect.host = options.realtimeHost;
 			ably.http.setHost(options.restHost);
 		}
@@ -612,6 +636,8 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			throw new RuntimeException(msg, e);
 		}
 		transport.connect(this);
+
+		return true;
 	}
 
 	private void closeImpl(StateIndication request) {
@@ -639,7 +665,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	 */
 	protected boolean checkConnectivity() {
 		try {
-			return INTERNET_CHECK_OK.equals(ably.http.getUrlString(INTERNET_CHECK_URL));
+			return ably.http.getUrlString(INTERNET_CHECK_URL).contains(INTERNET_CHECK_OK);
 		} catch(AblyException e) {
 			return false;
 		}

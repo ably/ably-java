@@ -42,7 +42,7 @@ public class RealtimeConnectFailTest {
 	 * to connect with invalid app
 	 */
 	@Test
-	public void connect_fail_notfound_error() {
+	public void connect_fail_notfound_error() throws AblyException {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = Setup.getTestVars();
@@ -53,9 +53,6 @@ public class RealtimeConnectFailTest {
 			ErrorInfo fail = connectionWaiter.waitFor(ConnectionState.failed);
 			assertEquals("Verify failed state is reached", ConnectionState.failed, ably.connection.state);
 			assertEquals("Verify correct error code is given", 404, fail.statusCode);
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("init0: Unexpected exception instantiating library");
 		} finally {
 			ably.close();
 		}
@@ -66,7 +63,7 @@ public class RealtimeConnectFailTest {
 	 * to connect with invalid key
 	 */
 	@Test
-	public void connect_fail_authorized_error() {
+	public void connect_fail_authorized_error() throws AblyException {
 		AblyRealtime ably = null;
 		try {
 			TestVars testVars = Setup.getTestVars();
@@ -77,9 +74,6 @@ public class RealtimeConnectFailTest {
 			ErrorInfo fail = connectionWaiter.waitFor(ConnectionState.failed);
 			assertEquals("Verify failed state is reached", ConnectionState.failed, ably.connection.state);
 			assertEquals("Verify correct error code is given", 401, fail.statusCode);
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("init0: Unexpected exception instantiating library");
 		} finally {
 			ably.close();
 		}
@@ -90,30 +84,25 @@ public class RealtimeConnectFailTest {
 	 * to connect to a non-existent ws host
 	 */
 	@Test
-	public void connect_fail_disconnected() {
-		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
-			opts.realtimeHost = "non.existent.host";
-			AblyRealtime ably = new AblyRealtime(opts);
-			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+	public void connect_fail_disconnected() throws AblyException {
+		TestVars testVars = Setup.getTestVars();
+		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+		opts.realtimeHost = "non.existent.host";
+		AblyRealtime ably = new AblyRealtime(opts);
+		ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
-			connectionWaiter.waitFor(ConnectionState.disconnected);
-			assertEquals("Verify disconnected state is reached", ConnectionState.disconnected, ably.connection.state);
-			ably.close();
-			connectionWaiter.waitFor(ConnectionState.closed);
-			assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("init0: Unexpected exception instantiating library");
-		}
+		connectionWaiter.waitFor(ConnectionState.disconnected);
+		assertEquals("Verify disconnected state is reached", ConnectionState.disconnected, ably.connection.state);
+		ably.close();
+		connectionWaiter.waitFor(ConnectionState.closed);
+		assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
 	}
 
 	/**
 	 * Verify that the connection enters the suspended state, after multiple attempts
 	 * to connect to a non-existent ws host
 	 */
-	//@Test
+	@Test
 	public void connect_fail_suspended() {
 		try {
 			TestVars testVars = Setup.getTestVars();
