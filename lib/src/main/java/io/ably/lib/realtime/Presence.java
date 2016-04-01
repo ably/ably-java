@@ -34,32 +34,54 @@ public class Presence {
 	 ************************************/
 
 	/**
-	 * Get the presence state for this Channel.
+	 * Get the presence state for this Channel. Implicitly attaches the
+	 * Channel. However, if the channel is in or moves to the FAILED
+	 * state before the operation succeeds, it will result in an error
 	 * @return: the current present members.
 	 * @throws AblyException
 	 */
-	public synchronized PresenceMessage[] get()  {
+	public synchronized PresenceMessage[] get() throws AblyException {
+		if (channel.state == ChannelState.failed) {
+			throw AblyException.fromErrorInfo(new ErrorInfo("channel operation failed (invalid channel state)", 90001));
+		}
+
+		channel.attach();
 		Collection<PresenceMessage> values = presence.values();
 		return values.toArray(new PresenceMessage[values.size()]);
 	}
 
 	/**
 	 * Get the presence state for this Channel, optionally waiting for sync to complete.
+	 * Implicitly attaches the Channel. However, if the channel is in or moves to the FAILED
+	 * state before the operation succeeds, it will result in an error
 	 * @return: the current present members.
 	 * @throws AblyException
 	 */
-	public synchronized PresenceMessage[] get(boolean wait) throws InterruptedException {
+	public synchronized PresenceMessage[] get(boolean wait) throws InterruptedException, AblyException {
+		if (channel.state == ChannelState.failed) {
+			throw AblyException.fromErrorInfo(new ErrorInfo("channel operation failed (invalid channel state)", 90001));
+		}
+
+		channel.attach();
 		Collection<PresenceMessage> values = presence.values(wait);
 		return values.toArray(new PresenceMessage[values.size()]);
 	}
 
 	/**
-	 * Get the presence state for a given clientId
+	 * Get the presence state for a given clientId. Implicitly attaches the
+	 * Channel. However, if the channel is in or moves to the FAILED
+	 * state before the operation succeeds, it will result in an error
 	 * @param wait
 	 * @return
 	 * @throws InterruptedException
+	 * @throws AblyException
 	 */
-	public synchronized PresenceMessage[] get(String clientId, boolean wait) throws InterruptedException {
+	public synchronized PresenceMessage[] get(String clientId, boolean wait) throws InterruptedException, AblyException {
+		if (channel.state == ChannelState.failed) {
+			throw AblyException.fromErrorInfo(new ErrorInfo("channel operation failed (invalid channel state)", 90001));
+		}
+
+		channel.attach();
 		Collection<PresenceMessage> values = presence.getClient(clientId, wait);
 		return values.toArray(new PresenceMessage[values.size()]);
 	}

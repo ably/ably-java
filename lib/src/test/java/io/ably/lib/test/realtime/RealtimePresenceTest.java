@@ -20,7 +20,6 @@ import io.ably.lib.test.common.Setup.TestVars;
 import io.ably.lib.types.*;
 import io.ably.lib.types.PresenceMessage.Action;
 
-import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -1662,6 +1661,281 @@ public class RealtimePresenceTest {
 		} finally {
 			if (ably1 != null) ably1.close();
 			if (ably2 != null) ably2.close();
+		}
+	}
+
+	/**
+	 * <p>
+	 * Validate {@code Presence#subscribe(...)} will result in the listener not being
+	 * registered and an error being indicated, when the channel moves to the FAILED
+	 * state before the operation succeeds
+	 * </p>
+	 * <p>
+	 * Spec: RTP6c
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void realtime_presence_attach_implicit_subscribe_fail() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and subscribe */
+			final Channel channel = ably.channels.get("subscribe_fail");
+			channel.presence.subscribe(null);
+			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
+
+			ErrorInfo fail = new ChannelWaiter(channel).waitFor(ChannelState.failed);
+			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
+			assertEquals("Verify reason code gives correct failure reason", fail.statusCode, 401);
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
+	 * <p>
+	 * Validate {@code Presence#enter(...)} will result in the listener not being
+	 * registered and an error being indicated, when the channel moves to the
+	 * FAILED state before the operation succeeds
+	 * </p>
+	 * <p>
+	 * Spec: RTP8d
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void realtime_presence_attach_implicit_enter_fail() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			opts.clientId = "theClient";
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and subscribe */
+			final Channel channel = ably.channels.get("enter_fail");
+			CompletionWaiter completionWaiter = new CompletionWaiter();
+			channel.presence.enter("Lorem Ipsum", completionWaiter);
+			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
+
+			ErrorInfo errorInfo = completionWaiter.waitFor();
+
+			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
+			assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
+	 * <p>
+	 * Validate {@code Presence#get(...)} will result in an error, when the channel
+	 * moves to the FAILED state before the operation succeeds
+	 * </p>
+	 * <p>
+	 * Spec: RTP11b
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void realtime_presence_attach_implicit_get_fail() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and subscribe */
+			final Channel channel = ably.channels.get("get_fail");
+			channel.presence.get();
+			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
+
+			ErrorInfo fail = new ChannelWaiter(channel).waitFor(ChannelState.failed);
+			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
+			assertEquals("Verify reason code gives correct failure reason", fail.statusCode, 401);
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
+	 * <p>
+	 * Validate {@code Presence#enterClient(...)} will result in the listener not being
+	 * registered and an error being indicated, when the channel moves to the FAILED
+	 * state before the operation succeeds
+	 * </p>
+	 * <p>
+	 * Spec: RTP15e
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void realtime_presence_attach_implicit_enterclient_fail() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and subscribe */
+			final Channel channel = ably.channels.get("enterclient_fail");
+			CompletionWaiter completionWaiter = new CompletionWaiter();
+			channel.presence.enterClient("theClient", "Lorem Ipsum", completionWaiter);
+			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
+
+			ErrorInfo errorInfo = completionWaiter.waitFor();
+
+			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
+			assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
+	 * <p>
+	 * Validate {@code Presence#updateClient(...)} will result in the listener not being
+	 * registered and an error being indicated, when the channel is in or moves to the
+	 * FAILED state before the operation succeeds
+	 * </p>
+	 * <p>
+	 * Spec: RTP15e
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void realtime_presence_attach_implicit_updateclient_fail() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and subscribe */
+			final Channel channel = ably.channels.get("updateclient_fail");
+			CompletionWaiter completionWaiter = new CompletionWaiter();
+			channel.presence.updateClient("theClient", "Lorem Ipsum", completionWaiter);
+			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
+
+			ErrorInfo errorInfo = completionWaiter.waitFor();
+
+			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
+			assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
+	 * <p>
+	 * Validate {@code Presence#leaveClient(...)} will result in the listener not being
+	 * registered and an error being indicated, when the channel is in or moves to the
+	 * FAILED state before the operation succeeds
+	 * </p>
+	 * <p>
+	 * Spec: RTP15e
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void realtime_presence_attach_implicit_leaveclient_fail() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and subscribe */
+			final Channel channel = ably.channels.get("leaveclient_fail");
+			CompletionWaiter completionWaiter = new CompletionWaiter();
+			channel.presence.leaveClient("theClient", "Lorem Ipsum", completionWaiter);
+			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
+			completionWaiter.waitFor();
+
+			ErrorInfo errorInfo = completionWaiter.waitFor();
+
+			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
+			assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
+	 * <p>
+	 * Validate {@code Presence#get(...)} throws an exception, when the channel
+	 * is in the FAILED state
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void realtime_presence_get_throws_when_channel_failed() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and subscribe */
+			final Channel channel = ably.channels.get("get_fail");
+			channel.attach();
+			new ChannelWaiter(channel).waitFor(ChannelState.failed);
+
+			try {
+				channel.presence.get();
+				fail("Presence#get(...) should throw an exception when channel is in failed state");
+			} catch(AblyException e) {
+				assertThat(e.errorInfo.code, is(equalTo(90001)));
+				assertThat(e.errorInfo.message, is(equalTo("channel operation failed (invalid channel state)")));
+			}
+		} finally {
+			if(ably != null)
+				ably.close();
 		}
 	}
 }
