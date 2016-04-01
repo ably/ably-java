@@ -1686,7 +1686,7 @@ public class RealtimePresenceTest {
 
 			/* wait until connected */
 			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
-			assertEquals("Verify failed state reached", ably.connection.state, ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
 			/* create a channel and subscribe */
 			final Channel channel = ably.channels.get("subscribe_fail");
@@ -1725,7 +1725,7 @@ public class RealtimePresenceTest {
 
 			/* wait until connected */
 			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
-			assertEquals("Verify failed state reached", ably.connection.state, ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
 			/* create a channel and subscribe */
 			final Channel channel = ably.channels.get("enter_fail");
@@ -1764,7 +1764,7 @@ public class RealtimePresenceTest {
 
 			/* wait until connected */
 			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
-			assertEquals("Verify failed state reached", ably.connection.state, ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
 			/* create a channel and subscribe */
 			final Channel channel = ably.channels.get("get_fail");
@@ -1802,7 +1802,7 @@ public class RealtimePresenceTest {
 
 			/* wait until connected */
 			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
-			assertEquals("Verify failed state reached", ably.connection.state, ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
 			/* create a channel and subscribe */
 			final Channel channel = ably.channels.get("enterclient_fail");
@@ -1842,7 +1842,7 @@ public class RealtimePresenceTest {
 
 			/* wait until connected */
 			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
-			assertEquals("Verify failed state reached", ably.connection.state, ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
 			/* create a channel and subscribe */
 			final Channel channel = ably.channels.get("updateclient_fail");
@@ -1882,7 +1882,7 @@ public class RealtimePresenceTest {
 
 			/* wait until connected */
 			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
-			assertEquals("Verify failed state reached", ably.connection.state, ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
 			/* create a channel and subscribe */
 			final Channel channel = ably.channels.get("leaveclient_fail");
@@ -1919,7 +1919,7 @@ public class RealtimePresenceTest {
 
 			/* wait until connected */
 			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
-			assertEquals("Verify failed state reached", ably.connection.state, ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
 			/* create a channel and subscribe */
 			final Channel channel = ably.channels.get("get_fail");
