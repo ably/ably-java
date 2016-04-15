@@ -1,0 +1,13 @@
+apply plugin: 'java'
+
+ext {
+    artifactId = 'ably-java'
+}
+
+dependencies {
+    compile project.gradle.startParameter.taskNames.findAll { it =~ /generateRelease$/ }?
+            ("io.ably:ably-core:${ably.version}"):
+            project(":core")
+}
+
+apply from: '../maven.gradle'
