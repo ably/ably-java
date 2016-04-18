@@ -145,11 +145,11 @@ public class ConnectionManager implements Runnable, ConnectListener, Connectivit
 			connectivityStateChangeEmitter = (ConnectivityStateChangeEmitter) Class.forName("io.ably.lib.transport.ConnectivityStateChangeEmitterImpl").newInstance();
 			connectivityStateChangeEmitter.on(this);
 		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
+			Log.e(TAG, e.getMessage());
 		} catch (InstantiationException e) {
-			e.printStackTrace();
+			Log.e(TAG, e.getMessage());
 		} catch (IllegalAccessException e) {
-			e.printStackTrace();
+			Log.e(TAG, e.getMessage());
 		}
 
 		synchronized(this) {
