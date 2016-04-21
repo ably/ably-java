@@ -1,0 +1,68 @@
+apply plugin: 'com.android.library'
+
+ext {
+    artifactId = 'ably-android'
+}
+
+android {
+    compileSdkVersion 23
+    buildToolsVersion '23.0.1'
+
+    defaultConfig {
+        minSdkVersion 10
+        targetSdkVersion 23
+        versionCode 1
+        versionName ably.version
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+//        testInstrumentationRunnerArgument "class", "io.ably.lib.test.rest.RestSuite,io.ably.lib.test.realtime.RealtimeSuite"
+//        testInstrumentationRunnerArgument "timeout_msec", "150000"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+/* Fix for android test logging. Source: https://code.google.com/p/android/issues/detail?id=182307 */
+tasks.withType(com.android.build.gradle.internal.tasks.AndroidTestTask) { task ->
+    task.doFirst {
+        logging.level = LogLevel.INFO
+    }
+    task.doLast {
+        logging.level = LogLevel.LIFECYCLE
+    }
+}
+
+configurations.all {
+    resolutionStrategy.force 'org.hamcrest:hamcrest-all:1.3'
+}
+
+dependencies {
+    testCompile 'junit:junit:4.12'
+    debugCompile 'com.android.support.test:runner:0.4'
+    debugCompile 'com.android.support.test:rules:0.4'
+//    debugCompile 'org.mockito:mockito-core:2.0.46-beta'
+    debugCompile 'com.crittercism.dexmaker:dexmaker-mockito:1.4'
+    debugCompile 'org.hamcrest:hamcrest-library:1.3'
+    debugCompile 'com.nanohttpd:nanohttpd:2.2.0'
+    debugCompile 'org.nanohttpd:nanohttpd-nanolets:2.3.0'
+    compile project.gradle.startParameter.taskNames.findAll { it =~ /generateRelease$/ } ?
+            ("io.ably:ably-core:${ably.version}") :
+            project(":core")
+}
+
+task copyAssetFiles (type: Copy) {
+    description = 'Copies assets from the common library...'
+    from new File(project(':core').projectDir, '/src/test/resources')
+    into new File(project.projectDir, '/src/androidTest/assets')
+    include('**/*.json')
+}
+
+android.testVariants.all{ variant ->
+    variant.mergeAssets.dependsOn copyAssetFiles
+}
+
+
+//apply from: '../maven.gradle'

@@ -3,12 +3,30 @@ jdk:
   - oraclejdk8
   - openjdk7
 
-# Buffer overflow patch. Source: https://github.com/travis-ci/travis-ci/issues/5227#issuecomment-165135711
+language: android
+android:
+  components:
+    - platform-tools
+    - build-tools-23.0.1
+    - android-23
+
 before_install:
+  # Buffer overflow patch. Source: https://github.com/travis-ci/travis-ci/issues/5227#issuecomment-165135711
   - cat /etc/hosts # optionally check the content *before*
   - sudo hostname "$(hostname | cut -c1-63)"
   - sed -e "s/^\\(127\\.0\\.0\\.1.*\\)/\\1 $(hostname | cut -c1-63)/" /etc/hosts | sudo tee /etc/hosts
   - cat /etc/hosts # optionally check the content *after*
 
+  # Emulator Management: Create, Start and Wait
+  - echo no | android create avd --force -n test -t android-19 --abi armeabi-v7a
+  - emulator -avd test -no-audio -no-window &
+  - android-wait-for-emulator
+  - adb shell input keyevent 82 &
+
 install: true
-script: "./gradlew testRealtimeSuite && ./gradlew testRestSuite"
+script:
+  - ./gradlew core:testRealtimeSuite
+  - ./gradlew core:testRestSuite
+  - ./gradlew java:test
+  - ./gradlew android:test
+  - ./gradlew android:connectedAndroidTest
