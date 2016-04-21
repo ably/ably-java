@@ -1,0 +1,92 @@
+apply plugin: 'maven'
+apply plugin: 'signing'
+
+def groupId = "io.ably"
+def localReleaseDest = "${buildDir}/release/${ably.version}"
+
+if (plugins.hasPlugin('java')) {
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier = 'javadoc'
+        from javadoc.destinationDir
+    }
+
+
+}
+else if (plugins.hasPlugin('com.android.library')) {
+    task androidJavadocs(type: Javadoc) {
+        source = android.sourceSets.main.java.srcDirs
+    }
+
+    task javadocJar(type: Jar, dependsOn: androidJavadocs) {
+        classifier = 'javadoc'
+        from androidJavadocs.destinationDir
+    }
+
+    task sourcesJar(type: Jar) {
+        classifier = 'sources'
+        from android.sourceSets.main.java.srcDirs
+    }
+}
+
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+}
+
+uploadArchives {
+    repositories.mavenDeployer {
+        pom.groupId = groupId
+        pom.artifactId = artifactId
+        pom.version = ably.version
+
+        // Add other pom properties here if you want (developer details / licenses)
+        pom.project {
+            name 'Ably java client library'
+            description 'A Java Realtime and REST client library for [Ably.io](https://www.ably.io), the realtime messaging service.'
+            packaging 'jar'
+            inceptionYear '2015'
+            scm {
+                url 'scm:git:https://github.com/ably/ably-java'
+                connection 'scm:git:https://github.com/ably/ably-java'
+                developerConnection 'scm:git:git@github.com:ably/ably-java'
+            }
+            organization {
+                name 'Ably'
+                url 'http://ably.io'
+            }
+            issueManagement {
+                system 'Github'
+                url 'https://github.com/ably/ably-java/issues'
+            }
+            licenses {
+                license {
+                    name 'The Apache Software License, Version 2.0'
+                    url 'https://raw.github.com/ably/ably-java/master/LICENSE'
+                    distribution 'repo'
+                }
+            }
+        }
+
+        // Export files to local storage
+        repository(url: "file://${localReleaseDest}")
+    }
+}
+
+task zipRelease(type: Zip) {
+    from localReleaseDest
+    destinationDir buildDir
+    archiveName "release-${ably.version}.zip"
+}
+
+task generateRelease << {
+    println "Release ${ably.version} can be found at ${localReleaseDest}/"
+    println "Release ${ably.version} zipped can be found ${buildDir}/release-${ably.version}.zip"
+}
+
+generateRelease.dependsOn(uploadArchives)
+generateRelease.dependsOn(zipRelease)
