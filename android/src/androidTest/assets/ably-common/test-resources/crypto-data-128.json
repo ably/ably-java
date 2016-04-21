@@ -1,0 +1,60 @@
+{
+  "algorithm": "aes",
+  "mode": "cbc",
+  "keylength": 128,
+  "key": "WUP6u0K7MXI5Zeo0VppPwg==",
+  "iv": "HO4cYSP8LybPYBPZPHQOtg==",
+  "items": [
+    {
+      "encoded": {
+        "name": "example",
+        "data": "The quick brown fox jumped over the lazy dog"
+      },
+      "encrypted": {
+        "name": "example",
+        "data": "HO4cYSP8LybPYBPZPHQOtmHItcxYdSvcNUC6kXVpMn0VFL+9z2/5tJ6WFbR0SBT1xhFRuJ+MeBGTU3yOY9P5ow==",
+        "encoding": "utf-8/cipher+aes-128-cbc/base64"
+      },
+      "msgpack": "g6RuYW1lp2V4YW1wbGWoZW5jb2Rpbme4dXRmLTgvY2lwaGVyK2Flcy0xMjgtY2JjpGRhdGHEQBzuHGEj/C8mz2AT2Tx0DrZhyLXMWHUr3DVAupF1aTJ9FRS/vc9v+bSelhW0dEgU9cYRUbifjHgRk1N8jmPT+aM="
+    },
+    {
+      "encoded": {
+        "name": "example",
+        "data": "AAECAwQFBgcICQoLDA0ODw==",
+        "encoding": "base64"
+      },
+      "encrypted": {
+        "name": "example",
+        "data": "HO4cYSP8LybPYBPZPHQOtuB3dfKG08yw7J4qx3kkjxdW0eoZv+nGAp76OKqYQ327",
+        "encoding": "cipher+aes-128-cbc/base64"
+      },
+      "msgpack": "g6RuYW1lp2V4YW1wbGWoZW5jb2RpbmeyY2lwaGVyK2Flcy0xMjgtY2JjpGRhdGHEMBzuHGEj/C8mz2AT2Tx0Drbgd3XyhtPMsOyeKsd5JI8XVtHqGb/pxgKe+jiqmEN9uw=="
+    },
+    {
+      "encoded": {
+        "name": "example",
+        "data": "{\"example\":{\"json\":\"Object\"}}",
+        "encoding": "json"
+      },
+      "encrypted": {
+        "name": "example",
+        "data": "HO4cYSP8LybPYBPZPHQOtuD53yrD3YV3NBoTEYBh4U0N1QXHbtkfsDfTspKeLQFt",
+        "encoding": "json/utf-8/cipher+aes-128-cbc/base64"
+      },
+      "msgpack": "g6RuYW1lp2V4YW1wbGWoZW5jb2Rpbme9anNvbi91dGYtOC9jaXBoZXIrYWVzLTEyOC1jYmOkZGF0YcQwHO4cYSP8LybPYBPZPHQOtuD53yrD3YV3NBoTEYBh4U0N1QXHbtkfsDfTspKeLQFt"
+    },
+    {
+      "encoded": {
+        "name": "example",
+        "data": "[\"example\",\"json\",\"array\"]",
+        "encoding": "json"
+      },
+      "encrypted": {
+        "name": "example",
+        "data": "HO4cYSP8LybPYBPZPHQOtvmStzmExkdjvrn51J6cmaTZrGl+EsJ61sgxmZ6j6jcA",
+        "encoding": "json/utf-8/cipher+aes-128-cbc/base64"
+      },
+      "msgpack": "g6RuYW1lp2V4YW1wbGWoZW5jb2Rpbme9anNvbi91dGYtOC9jaXBoZXIrYWVzLTEyOC1jYmOkZGF0YcQwHO4cYSP8LybPYBPZPHQOtvmStzmExkdjvrn51J6cmaTZrGl+EsJ61sgxmZ6j6jcA"
+    }
+  ]
+}

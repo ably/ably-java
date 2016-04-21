@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="io.ably.lib">
+    <instrumentation
+        android:name="android.support.test.runner.AndroidJUnitRunner"
+        android:targetPackage="io.ably.lib.test" />
 
+    <uses-permission android:name="android.permission.INTERNET" />
 </manifest>
