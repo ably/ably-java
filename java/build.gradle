@@ -1,0 +1,45 @@
+apply plugin: 'java'
+
+ext {
+    artifactId = 'ably-java'
+}
+
+dependencies {
+    compile (project.gradle.startParameter.taskNames.findAll { it =~ /generateRelease$/ }?
+            ("io.ably:ably-core:${ably.version}"):
+            project(":core")) {
+        transitive = !project.gradle.startParameter.taskNames.findAll { it =~ /simpleJar$/ }
+    }
+}
+
+task fullJar(type: Jar) {
+    baseName = project.name + '-full'
+    from {
+        configurations.compile.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    with jar
+    exclude 'META-INF/**'
+}
+
+task simpleJar(type: Jar) {
+    baseName = project.name + '-simple'
+    from {
+        configurations.compile.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    with jar
+    exclude 'META-INF/**'
+}
+
+configurations {
+    fullConfiguration
+}
+
+artifacts {
+    fullConfiguration fullJar
+}
+
+apply from: '../maven.gradle'

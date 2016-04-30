@@ -1,6 +1,40 @@
-rootProject.name = 'ably-java'
-include 'lib'
+include ':core', ':java'
 
-if(System.getenv('ANDROID_HOME')) {
-  include 'android-test'
+if(isAndroidSdkAvailable()) {
+    include ':android'
+}
+else {
+    println("':android' module will not be included to the current build.")
+    println('> Android SDK location not found. Define location with sdk.dir in the local.properties file or with an ANDROID_HOME environment variable.')
+}
+
+def isAndroidSdkAvailable() {
+    return !StringUtils.isBlank(getAndroidSdkPath())
+}
+
+def getAndroidSdkPathFromLocalProperties() {
+    Properties properties = new Properties()
+    File propertiesFile = file('local.properties');
+
+    if (!propertiesFile.exists()) {
+        return false
+    }
+
+    properties.load(propertiesFile.newDataInputStream())
+    return properties.getProperty('sdk.dir')
+}
+
+def getAndroidSdkPathFromSystemEnvironment() {
+    return System.getenv('ANDROID_HOME')
+}
+
+def getAndroidSdkPath() {
+    return getAndroidSdkPathFromLocalProperties()?:
+            getAndroidSdkPathFromSystemEnvironment()
+}
+
+class StringUtils {
+    def static isBlank(String s) {
+        return s == null || s.isAllWhitespace()
+    }
 }

@@ -22,14 +22,14 @@ must be installed in the runtime environment.
 
 ## Building ##
 
-The library consists of a generic java library (in `lib/`) and a separate Android test project (in `android-test/`).
-The base library jar is built with:
+The library consists of a generic java library (in `java/`) and a Android project (in `android/`).
+The java library jar is built with:
 
-    gradle lib:jar
+    gradle java:simpleJar
 
 There is also a task to build a fat jar containing the dependencies:
 
-    gradle fullJar
+    gradle java:fullJar
 
 ## Tests
 
