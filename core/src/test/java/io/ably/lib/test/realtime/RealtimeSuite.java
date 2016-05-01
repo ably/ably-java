@@ -25,7 +25,8 @@ import io.ably.lib.test.common.Setup;
 	RealtimeCryptoTest.class,
 	RealtimeCryptoMessageTest.class,
 	RealtimeChannelHistoryTest.class,
-	RealtimePresenceHistoryTest.class
+	RealtimePresenceHistoryTest.class,
+	RealtimeConnectivityStateTest.class
 })
 public class RealtimeSuite {
 

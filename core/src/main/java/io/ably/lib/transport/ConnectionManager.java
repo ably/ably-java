@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 
 
-public class ConnectionManager implements Runnable, ConnectListener {
+public class ConnectionManager implements Runnable, ConnectListener, ConnectivityStateChangeEmitter.ConnectivityStateChangeListener {
 
 	private static final String TAG = ConnectionManager.class.getName();
 	private static final String INTERNET_CHECK_URL = "http://internet-up.ably-realtime.com/is-the-internet-up.txt";
@@ -140,6 +140,18 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			Log.e(getClass().getName(), msg, e);
 			throw new RuntimeException(msg, e);
 		}
+
+		try {
+			connectivityStateChangeEmitter = (ConnectivityStateChangeEmitter) Class.forName("io.ably.lib.transport.ConnectivityStateChangeEmitterImpl").newInstance();
+			connectivityStateChangeEmitter.on(this);
+		} catch (ClassNotFoundException e) {
+			Log.e(TAG, e.getMessage());
+		} catch (InstantiationException e) {
+			Log.e(TAG, e.getMessage());
+		} catch (IllegalAccessException e) {
+			Log.e(TAG, e.getMessage());
+		}
+
 		synchronized(this) {
 			setSuspendTime();
 		}
@@ -429,6 +441,11 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			}
 			break;
 		case connecting:
+			if( state.state == ConnectionState.connecting ||
+				state.state == ConnectionState.connected) {
+				break;
+			}
+
 			if(!connectImpl(requestedState)) {
 				indicatedState = new StateIndication(ConnectionState.failed, new ErrorInfo("Connection failed; no host available", 404, 80000), false, requestedState.currentHost);
 			}
@@ -438,6 +455,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		case closing:
 			closeImpl(requestedState);
 			handled = true;
+			break;
 		default:
 		}
 		if(!handled) {
@@ -586,6 +604,13 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		ably.auth.onAuthError(reason);
 		notifyState(new StateIndication(ConnectionState.disconnected, reason, false, transport.getHost()));
 		transport = null;
+	}
+
+	@Override
+	public void onConnectivityStateChanged(boolean connected) {
+		ConnectionState state = connected ? ConnectionState.connecting : ConnectionState.disconnected;
+		ErrorInfo errorInfo = new ErrorInfo("Unable to access application context", 000);
+		requestState(new StateIndication(state, errorInfo));
 	}
 
 	private class ConnectParams extends TransportParams {
@@ -888,6 +913,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	private final List<QueuedMessage> queuedMessages;
 	private final PendingMessageQueue pendingMessages;
 	private final HashSet<Object> heartbeatWaiters = new HashSet<Object>();
+	private ConnectivityStateChangeEmitter connectivityStateChangeEmitter;
 
 	private StateInfo state;
 	private StateIndication indicatedState, requestedState;
