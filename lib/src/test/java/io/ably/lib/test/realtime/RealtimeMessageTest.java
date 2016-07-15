@@ -1,6 +1,7 @@
 package io.ably.lib.test.realtime;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -11,8 +12,10 @@ import org.junit.Test;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
+import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
+import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
 import io.ably.lib.test.common.Helpers.MessageWaiter;
@@ -20,6 +23,8 @@ import io.ably.lib.test.common.Setup.TestVars;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.util.Log;
 
 public class RealtimeMessageTest {
@@ -637,4 +642,33 @@ public class RealtimeMessageTest {
 		}
 	}
 
+	@Test
+	public void ensure_disconnect_with_error_does_not_move_to_failed() {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			(new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+			ProtocolMessage protoMessage = new ProtocolMessage(ProtocolMessage.Action.disconnect);
+			protoMessage.error = new ErrorInfo("test error", 123);
+
+			ConnectionManager connectionManager = ably.connection.connectionManager;
+			connectionManager.onMessage(protoMessage);
+
+			// On disconnected we retry right away since we're connected, so we can only
+			// check that the state is not failed.
+			assertNotEquals("connection state should not be failed", ably.connection.state, ConnectionState.failed);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
 }
