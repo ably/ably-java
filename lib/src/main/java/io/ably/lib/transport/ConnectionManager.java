@@ -269,7 +269,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	 * transport events/notifications
 	 ***************************************/
 
-	void onMessage(ProtocolMessage message) throws AblyException {
+	public void onMessage(ProtocolMessage message) throws AblyException {
 		try {
 			if(protocolListener != null)
 				protocolListener.onRawMessage(message);
@@ -293,6 +293,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				case connected:
 					onConnected(message);
 					break;
+				case disconnect:
 				case disconnected:
 					onDisconnected(message);
 					break;

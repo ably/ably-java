@@ -685,6 +685,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		case attached:
 			setAttached(msg);
 			break;
+		case detach:
 		case detached:
 			setDetached(msg);
 			break;

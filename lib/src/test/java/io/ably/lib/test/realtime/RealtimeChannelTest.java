@@ -14,6 +14,8 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
+import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.transport.ConnectionManager;
 import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -1014,6 +1016,41 @@ public class RealtimeChannelTest {
 			ErrorInfo fail = new ChannelWaiter(channel).waitFor(ChannelState.failed);
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
 			assertEquals("Verify reason code gives correct failure reason", fail.statusCode, 401);
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	@Test
+	public void ensure_detach_with_error_does_not_move_to_failed() {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			(new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and attach */
+			final Channel channel = ably.channels.get("test");
+			channel.attach();
+			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			ProtocolMessage protoMessage = new ProtocolMessage(ProtocolMessage.Action.detach, "test");
+			protoMessage.error = new ErrorInfo("test error", 123);
+
+			ConnectionManager connectionManager = ably.connection.connectionManager;
+			connectionManager.onMessage(protoMessage);
+
+			assertEquals("channel state should be detached now", channel.state, ChannelState.detached);
+			assertEquals("channel error reason should be set", channel.reason, protoMessage.error);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
 		} finally {
 			if(ably != null)
 				ably.close();
