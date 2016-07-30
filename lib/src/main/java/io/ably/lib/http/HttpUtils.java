@@ -66,8 +66,9 @@ public class HttpUtils {
 	}
 
 	public static String getHeaderXAblyLib(String platform) {
-		return String.format("%s%s-%s", GlobalConstants.LIB_TYPE,
-										((platform == null) || (platform.length() == 0)) ? "" : "." + platform,
-										GlobalConstants.LIB_VERSION);
+		return String.format("%s%s-%s",
+				GlobalConstants.LIB_TYPE,
+				((platform == null) || (platform.length() == 0)) ? "" : "." + platform,
+				GlobalConstants.LIB_VERSION);
 	}
 }
