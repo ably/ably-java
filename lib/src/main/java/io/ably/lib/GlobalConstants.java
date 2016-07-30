@@ -1,8 +1,10 @@
 package io.ably.lib;
 
+import io.ably.BuildConfig;
+
 public class GlobalConstants {
 
-    public static final String LIB_VERSION = "0.8.2";
+    public static final String LIB_VERSION = BuildConfig.VERSION;
     public static final String LIB_TYPE = "java";
 
     private GlobalConstants() {
