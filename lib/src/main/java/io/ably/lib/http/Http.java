@@ -753,5 +753,5 @@ public class Http {
 	private static final String PROXY_AUTHENTICATE  = "Proxy-Authenticate";
 	private static final String AUTHORIZATION       = "Authorization";
 	private static final String PROXY_AUTHORIZATION = "Proxy-Authorization";
-	private static final String X_ABLY_LIB 			= "X-Ably-Lib";
+	private static final String X_ABLY_LIB          = "X-Ably-Lib";
 }

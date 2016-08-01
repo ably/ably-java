@@ -1,4 +1,4 @@
-package io.ably.lib.test.other;
+package io.ably.lib.test.utils;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -20,7 +20,7 @@ public class HttpUtilsTest {
     }
 
     @Test
-    public void testHeaderXAblyLyb() {
+    public void testHeaderXAblyLib() {
         assertTrue(HttpUtils.getHeaderXAblyLib(null).equals(headerNoPlatform));
         assertTrue(HttpUtils.getHeaderXAblyLib("android").equals(headerAndroidPlatform));
     }

@@ -1,4 +1,4 @@
-package io.ably.lib.test.other;
+package io.ably.lib.test.utils;
 
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
@@ -10,10 +10,10 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
         HttpUtilsTest.class,
 })
-public class OtherSuite {
+public class UtilsSuite {
 
     public static void main(String[] args) {
-        Result result = JUnitCore.runClasses(OtherSuite.class);
+        Result result = JUnitCore.runClasses(UtilsSuite.class);
         for(Failure failure : result.getFailures()) {
             System.out.println(failure.toString());
         }
