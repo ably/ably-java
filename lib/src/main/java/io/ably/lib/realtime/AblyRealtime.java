@@ -72,10 +72,19 @@ public class AblyRealtime extends AblyRest {
 	public class Channels extends HashMap<String, Channel> {
 		public Channels() {
 			/* remove all channels when the connection is closed, to avoid stalled state */
-			connection.on(ConnectionState.closed, new ConnectionStateListener() {
+			connection.on(new ConnectionStateListener() {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange state) {
-					Channels.this.clear();
+					if (state.current == ConnectionState.closed) {
+						Channels.this.clear();
+					} else if (state.current == ConnectionState.failed) {
+						Iterator iterator = channels.entrySet().iterator();
+						while (iterator.hasNext()) {
+							ProtocolMessage protocolMessage = new ProtocolMessage(ProtocolMessage.Action.error);
+							protocolMessage.error = state.reason;
+							((Channel)((Map.Entry)iterator.next()).getValue()).onChannelMessage(protocolMessage);
+						}
+					}
 				}
 			});
 		}
