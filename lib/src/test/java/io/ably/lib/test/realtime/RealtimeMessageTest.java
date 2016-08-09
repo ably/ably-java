@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.Collection;
 
 import io.ably.lib.http.Http;
+import java.util.HashMap;
+
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
@@ -33,6 +35,7 @@ import io.ably.lib.test.common.Helpers.CompletionWaiter;
 import io.ably.lib.test.common.Helpers.MessageWaiter;
 import io.ably.lib.test.common.Setup.TestVars;
 import io.ably.lib.types.AblyException;
+import io.ably.lib.types.BaseMessage;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
@@ -862,5 +865,17 @@ public class RealtimeMessageTest {
 		public String expectedType;
 		public JsonElement expectedValue;
 		public String expectedHexValue;
+	}
+
+	@Test
+	public void reject_invalid_message_data() {
+		HashMap data = new HashMap<String, Integer>();
+		Message message = new Message("event", data);
+		try {
+			message.encode(null);
+			fail(String.format("should have thrown an exception, got data encoded as: %s (class: %s)", message.encoding, message.data.getClass()));
+		} catch (AblyException e) {
+			assertEquals("java.lang.Exception: Unable to encode message data (incompatible type)", e.getMessage());
+		}
 	}
 }

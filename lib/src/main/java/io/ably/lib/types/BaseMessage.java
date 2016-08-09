@@ -109,16 +109,17 @@ public class BaseMessage implements Cloneable {
 			data = Serialisation.gson.toJson((JsonElement)data);
 			encoding = ((encoding == null) ? "" : encoding + "/") + "json";
 		}
-		if(opts != null && opts.encrypted) {
-			if(data instanceof String) {
+		if(data instanceof String) {
+			if (opts != null && opts.encrypted) {
 				try { data = ((String)data).getBytes("UTF-8"); } catch(UnsupportedEncodingException e) {}
 				encoding = ((encoding == null) ? "" : encoding + "/") + "utf-8";
 			}
-			if(!(data instanceof byte[])) {
-				throw AblyException.fromErrorInfo(new ErrorInfo("Unable to encode message data (incompatible type)", 400, 40000));
-			}
+		} else if(!(data instanceof byte[])) {
+			throw AblyException.fromErrorInfo(new ErrorInfo("Unable to encode message data (incompatible type)", 400, 40000));
+		}
+		if (opts != null && opts.encrypted) {
 			ChannelCipher cipher = opts.getCipher();
-			data = cipher.encrypt((byte[])data);
+			data = cipher.encrypt((byte[]) data);
 			encoding = ((encoding == null) ? "" : encoding + "/") + "cipher+" + cipher.getAlgorithm();
 		}
 	}
