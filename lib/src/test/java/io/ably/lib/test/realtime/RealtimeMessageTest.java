@@ -1,5 +1,10 @@
 package io.ably.lib.test.realtime;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -9,6 +14,10 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.util.Collection;
+
+import io.ably.lib.http.Http;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
@@ -23,13 +32,16 @@ import io.ably.lib.test.common.Setup.TestVars;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Message;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.util.Log;
 
 public class RealtimeMessageTest {
 
+	private static final String testMessagesEncodingFile = "ably-common/test-resources/messages-encoding.json";
 	private static final String TAG = RealtimeMessageTest.class.getName();
+	private static Gson gson = new Gson();
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
@@ -670,5 +682,89 @@ public class RealtimeMessageTest {
 			if(ably != null)
 				ably.close();
 		}
+	}
+
+	@Test
+	public void messages_encoding_fixtures() {
+		MessagesEncodingData fixtures;
+		try {
+			fixtures = (MessagesEncodingData)Setup.loadJSON(testMessagesEncodingFile, MessagesEncodingData.class);
+		} catch (IOException e) {
+			fail();
+			return;
+		}
+
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+			final Channel channel = ably.channels.get("test");
+
+			channel.attach();
+			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			for (MessagesEncodingDataItem fixtureMessage : fixtures.messages) {
+				/* subscribe */
+				MessageWaiter messageWaiter = new MessageWaiter(channel);
+
+				ably.http.post("/channels/" + channel.name + "/messages", null, null, new Http.JSONRequestBody(fixtureMessage), null);
+
+				messageWaiter.waitFor(1);
+				channel.unsubscribe(messageWaiter);
+
+				Message receivedMessage = messageWaiter.receivedMessages.get(0);
+
+				if (fixtureMessage.expectedType.equals("string")) {
+					assertEquals("Verify decoded message data", fixtureMessage.expectedValue.getAsString(), receivedMessage.data);
+				} else if (fixtureMessage.expectedType.equals("jsonObject")) {
+					assertEquals("Verify decoded message data", fixtureMessage.expectedValue.getAsJsonObject(), receivedMessage.data);
+				} else if (fixtureMessage.expectedType.equals("jsonArray")) {
+					assertEquals("Verify decoded message data", fixtureMessage.expectedValue.getAsJsonArray(), receivedMessage.data);
+				} else if (fixtureMessage.expectedType.equals("binary")) {
+					byte[] receivedData = (byte[])receivedMessage.data;
+					StringBuilder sb = new StringBuilder(receivedData.length * 2);
+					for (byte b : receivedData) {
+						sb.append(String.format("%02x", b & 0xff));
+					}
+					String receivedDataHex = sb.toString();
+					assertEquals("Verify decoded message data", fixtureMessage.expectedHexValue, receivedDataHex);
+				} else {
+					throw new RuntimeException(String.format("unhandled: %s", fixtureMessage.expectedType));
+				}
+
+				CompletionWaiter msgComplete = new CompletionWaiter();
+				channel.publish(receivedMessage, msgComplete);
+				msgComplete.waitFor();
+
+				MessagesEncodingDataItem persistedMessage = ably.http.get("/channels/" + channel.name + "/messages?limit=1", null, null, new Http.ResponseHandler<MessagesEncodingDataItem[]>() {
+					@Override
+					public MessagesEncodingDataItem[] handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
+						return gson.fromJson(new String(body), MessagesEncodingDataItem[].class);
+					}
+				})[0];
+				assertEquals("Verify persisted message encoding", fixtureMessage.encoding, persistedMessage.encoding);
+				assertEquals("Verify persisted message data", fixtureMessage.data, persistedMessage.data);
+			}
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			if (ably != null)
+				ably.close();
+		}
+	}
+
+	static class MessagesEncodingData {
+		public MessagesEncodingDataItem[] messages;
+	}
+
+	static class MessagesEncodingDataItem {
+		public String data;
+		public String encoding;
+		public String expectedType;
+		public JsonElement expectedValue;
+		public String expectedHexValue;
 	}
 }
