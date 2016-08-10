@@ -13,6 +13,7 @@ import io.ably.lib.test.common.Setup;
 
 @RunWith(Suite.class)
 @SuiteClasses({
+    RealtimeChannelFailedTest.class,
 	EventEmitterTest.class,
 	RealtimeInitTest.class,
 	RealtimeConnectTest.class,
