@@ -7,6 +7,7 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -20,6 +21,9 @@ import java.io.IOException;
 import java.util.Collection;
 
 import io.ably.lib.http.Http;
+import java.util.ArrayList;
+import java.util.HashMap;
+
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
@@ -33,6 +37,7 @@ import io.ably.lib.test.common.Helpers.CompletionWaiter;
 import io.ably.lib.test.common.Helpers.MessageWaiter;
 import io.ably.lib.test.common.Setup.TestVars;
 import io.ably.lib.types.AblyException;
+import io.ably.lib.types.BaseMessage;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
@@ -862,5 +867,47 @@ public class RealtimeMessageTest {
 		public String expectedType;
 		public JsonElement expectedValue;
 		public String expectedHexValue;
+	}
+
+	@Test
+	public void reject_invalid_message_data() throws AblyException {
+		HashMap data = new HashMap<String, Integer>();
+		Message message = new Message("event", data);
+		final Log.LogHandler logHandler = Log.handler;
+		try {
+			final ArrayList<LogLine> capturedLog = new ArrayList<>();
+			Log.setHandler(new Log.LogHandler() {
+				@Override
+				public void println(int severity, String tag, String msg, Throwable tr) {
+					capturedLog.add(new LogLine(severity, tag, msg, tr));
+				}
+			});
+
+			message.encode(null);
+
+			assertEquals(null, message.encoding);
+			assertEquals(data, message.data);
+
+			assertEquals(1, capturedLog.size());
+			LogLine capturedLine = capturedLog.get(0);
+			assertTrue(capturedLine.tag.contains("ably"));
+			assertTrue(capturedLine.msg.contains("Message data must be either `byte[]`, `String` or `JSONElement`; implicit coercion of other types to String is deprecated" ));
+		} finally {
+			Log.setHandler(logHandler);
+		}
+	}
+
+	public static class LogLine {
+		public int severity;
+		public String tag;
+		public String msg;
+		public Throwable tr;
+
+		public LogLine(int severity, String tag, String msg, Throwable tr) {
+			this.severity = severity;
+			this.tag = tag;
+			this.msg = msg;
+			this.tr = tr;
+		}
 	}
 }
