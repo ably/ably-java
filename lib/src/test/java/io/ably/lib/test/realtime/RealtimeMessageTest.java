@@ -3,7 +3,9 @@ package io.ably.lib.test.realtime;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -22,6 +24,7 @@ import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.ConnectionState;
+import io.ably.lib.rest.AblyRest;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
@@ -716,23 +719,7 @@ public class RealtimeMessageTest {
 
 				Message receivedMessage = messageWaiter.receivedMessages.get(0);
 
-				if (fixtureMessage.expectedType.equals("string")) {
-					assertEquals("Verify decoded message data", fixtureMessage.expectedValue.getAsString(), receivedMessage.data);
-				} else if (fixtureMessage.expectedType.equals("jsonObject")) {
-					assertEquals("Verify decoded message data", fixtureMessage.expectedValue.getAsJsonObject(), receivedMessage.data);
-				} else if (fixtureMessage.expectedType.equals("jsonArray")) {
-					assertEquals("Verify decoded message data", fixtureMessage.expectedValue.getAsJsonArray(), receivedMessage.data);
-				} else if (fixtureMessage.expectedType.equals("binary")) {
-					byte[] receivedData = (byte[])receivedMessage.data;
-					StringBuilder sb = new StringBuilder(receivedData.length * 2);
-					for (byte b : receivedData) {
-						sb.append(String.format("%02x", b & 0xff));
-					}
-					String receivedDataHex = sb.toString();
-					assertEquals("Verify decoded message data", fixtureMessage.expectedHexValue, receivedDataHex);
-				} else {
-					throw new RuntimeException(String.format("unhandled: %s", fixtureMessage.expectedType));
-				}
+				expectDataToMatch(fixtureMessage, receivedMessage);
 
 				CompletionWaiter msgComplete = new CompletionWaiter();
 				channel.publish(receivedMessage, msgComplete);
@@ -754,6 +741,115 @@ public class RealtimeMessageTest {
 			if (ably != null)
 				ably.close();
 		}
+	}
+
+	@Test
+	public void messages_msgpack_and_json_encoding_is_compatible() {
+		MessagesEncodingData fixtures;
+		try {
+			fixtures = (MessagesEncodingData)Setup.loadJSON(testMessagesEncodingFile, MessagesEncodingData.class);
+		} catch (IOException e) {
+			fail();
+			return;
+		}
+
+		// Publish each data type through JSON and retrieve through MsgPack.
+
+		AblyRealtime realtimeSubscribeClient = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions jsonOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			jsonOpts.useBinaryProtocol = false;
+			AblyRest restPublishClient = new AblyRest(jsonOpts);
+
+			ClientOptions msgpackOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			msgpackOpts.useBinaryProtocol = true;
+			realtimeSubscribeClient = new AblyRealtime(msgpackOpts);
+
+			final Channel realtimeSubscribeChannel = realtimeSubscribeClient.channels.get("test-subscribe");
+
+			realtimeSubscribeChannel.attach();
+			(new ChannelWaiter(realtimeSubscribeChannel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", realtimeSubscribeChannel.state, ChannelState.attached);
+
+			for (MessagesEncodingDataItem fixtureMessage : fixtures.messages) {
+				MessageWaiter messageWaiter = new MessageWaiter(realtimeSubscribeChannel);
+
+				restPublishClient.http.post("/channels/" + realtimeSubscribeChannel.name + "/messages", null, null, new Http.JSONRequestBody(fixtureMessage), null);
+
+				messageWaiter.waitFor(1);
+				realtimeSubscribeChannel.unsubscribe(messageWaiter);
+
+				Message receivedMessage = messageWaiter.receivedMessages.get(0);
+
+				expectDataToMatch(fixtureMessage, receivedMessage);
+			}
+
+			realtimeSubscribeClient.close();
+			realtimeSubscribeClient = null;
+
+			// Publish each data type through MsgPack and retrieve through JSON.
+
+			restPublishClient = new AblyRest(msgpackOpts);
+			AblyRest restRetrieveClient = new AblyRest(jsonOpts);
+
+			final io.ably.lib.rest.Channel restPublishChannel = restPublishClient.channels.get("test-publish");
+
+			for (MessagesEncodingDataItem fixtureMessage : fixtures.messages) {
+				Object data = fixtureMessage.expectedValue;
+				if (fixtureMessage.expectedHexValue != null) {
+					data = hexStringToByteArray(fixtureMessage.expectedHexValue);
+				} else if (data instanceof JsonPrimitive) {
+					data = ((JsonPrimitive)data).getAsString();
+				}
+				restPublishChannel.publish("event", data);
+
+				MessagesEncodingDataItem persistedMessage = restRetrieveClient.http.get("/channels/" + restPublishChannel.name + "/messages?limit=1", null, null, new Http.ResponseHandler<MessagesEncodingDataItem[]>() {
+					@Override
+					public MessagesEncodingDataItem[] handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
+						return gson.fromJson(new String(body), MessagesEncodingDataItem[].class);
+					}
+				})[0];
+				assertEquals("Verify persisted message encoding", fixtureMessage.encoding, persistedMessage.encoding);
+				assertEquals("Verify persisted message data", fixtureMessage.data, persistedMessage.data);
+			}
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			if (realtimeSubscribeClient != null)
+				realtimeSubscribeClient.close();
+		}
+	}
+
+	private void expectDataToMatch(MessagesEncodingDataItem fixtureMessage, Message receivedMessage) {
+		if (fixtureMessage.expectedType.equals("string")) {
+			assertEquals("Verify decoded message data", fixtureMessage.expectedValue.getAsString(), receivedMessage.data);
+		} else if (fixtureMessage.expectedType.equals("jsonObject")) {
+			assertEquals("Verify decoded message data", fixtureMessage.expectedValue.getAsJsonObject(), receivedMessage.data);
+		} else if (fixtureMessage.expectedType.equals("jsonArray")) {
+			assertEquals("Verify decoded message data", fixtureMessage.expectedValue.getAsJsonArray(), receivedMessage.data);
+		} else if (fixtureMessage.expectedType.equals("binary")) {
+			byte[] receivedData = (byte[])receivedMessage.data;
+			StringBuilder sb = new StringBuilder(receivedData.length * 2);
+			for (byte b : receivedData) {
+				sb.append(String.format("%02x", b & 0xff));
+			}
+			String receivedDataHex = sb.toString();
+			assertEquals("Verify decoded message data", fixtureMessage.expectedHexValue, receivedDataHex);
+		} else {
+			throw new RuntimeException(String.format("unhandled: %s", fixtureMessage.expectedType));
+		}
+	}
+
+	public static byte[] hexStringToByteArray(String s) {
+		int len = s.length();
+		byte[] data = new byte[len / 2];
+		for (int i = 0; i < len; i += 2) {
+			data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+					+ Character.digit(s.charAt(i+1), 16));
+		}
+		return data;
 	}
 
 	static class MessagesEncodingData {
