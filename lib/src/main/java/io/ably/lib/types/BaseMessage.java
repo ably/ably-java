@@ -17,6 +17,7 @@ import com.google.gson.JsonSerializationContext;
 
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Crypto.ChannelCipher;
+import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 
 public class BaseMessage implements Cloneable {
@@ -115,7 +116,11 @@ public class BaseMessage implements Cloneable {
 				encoding = ((encoding == null) ? "" : encoding + "/") + "utf-8";
 			}
 		} else if(!(data instanceof byte[])) {
-			throw AblyException.fromErrorInfo(new ErrorInfo("Unable to encode message data (incompatible type)", 400, 40000));
+			if (opts != null && opts.encrypted) {
+				throw AblyException.fromErrorInfo(new ErrorInfo("Invalid message data or encoding", 400, 40013));
+			} else {
+				Log.e(TAG, "Message data must be either `byte[]`, `String` or `JSONElement`; implicit coercion of other types to String is deprecated and throws from v.0.9 on.\nPlease check the documentation (https://www.ably.io/documentation/realtime/types#message).");
+			}
 		}
 		if (opts != null && opts.encrypted) {
 			ChannelCipher cipher = opts.getCipher();
@@ -220,4 +225,6 @@ public class BaseMessage implements Cloneable {
 			}
 		}
 	}
+
+	private static final String TAG = BaseMessage.class.getName();
 }
