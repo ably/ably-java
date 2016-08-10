@@ -41,7 +41,7 @@ Tests are based on JUnit, and there are separate suites for the REST and Realtim
 
 To run tests against a specific host, specify in the environment:
 
-    export ABLY_ENV=staging; gradle testRealtimeSuite
+    env ABLY_ENV=staging gradle testRealtimeSuite
 
 Tests will run against sandbox by default.
 
