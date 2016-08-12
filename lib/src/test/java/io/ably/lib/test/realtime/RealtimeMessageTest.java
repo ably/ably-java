@@ -758,47 +758,57 @@ public class RealtimeMessageTest {
 			return;
 		}
 
-		// Publish each data type through JSON and retrieve through MsgPack.
+		// Publish each data type through raw JSON POST and retrieve through MsgPack and JSON.
 
-		AblyRealtime realtimeSubscribeClient = null;
+		AblyRealtime realtimeSubscribeClientMsgPack = null;
+		AblyRealtime realtimeSubscribeClientJson = null;
 		try {
 			TestVars testVars = Setup.getTestVars();
 			ClientOptions jsonOpts = testVars.createOptions(testVars.keys[0].keyStr);
 			jsonOpts.useBinaryProtocol = false;
-			AblyRest restPublishClient = new AblyRest(jsonOpts);
 
 			ClientOptions msgpackOpts = testVars.createOptions(testVars.keys[0].keyStr);
 			msgpackOpts.useBinaryProtocol = true;
-			realtimeSubscribeClient = new AblyRealtime(msgpackOpts);
 
-			final Channel realtimeSubscribeChannel = realtimeSubscribeClient.channels.get("test-subscribe");
+			AblyRest restPublishClient = new AblyRest(jsonOpts);
+			realtimeSubscribeClientMsgPack = new AblyRealtime(msgpackOpts);
+			realtimeSubscribeClientJson = new AblyRealtime(jsonOpts);
 
-			realtimeSubscribeChannel.attach();
-			(new ChannelWaiter(realtimeSubscribeChannel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", realtimeSubscribeChannel.state, ChannelState.attached);
+			final Channel realtimeSubscribeChannelMsgPack = realtimeSubscribeClientMsgPack.channels.get("test-subscribe");
+			final Channel realtimeSubscribeChannelJson = realtimeSubscribeClientJson.channels.get("test-subscribe");
 
-			for (MessagesEncodingDataItem fixtureMessage : fixtures.messages) {
-				MessageWaiter messageWaiter = new MessageWaiter(realtimeSubscribeChannel);
+			for (Channel realtimeSubscribeChannel : new Channel[]{realtimeSubscribeChannelMsgPack, realtimeSubscribeChannelJson}) {
+				realtimeSubscribeChannel.attach();
+				(new ChannelWaiter(realtimeSubscribeChannel)).waitFor(ChannelState.attached);
+				assertEquals("Verify attached state reached", realtimeSubscribeChannel.state, ChannelState.attached);
 
-				restPublishClient.http.post("/channels/" + realtimeSubscribeChannel.name + "/messages", null, null, new Http.JSONRequestBody(fixtureMessage), null);
+				for (MessagesEncodingDataItem fixtureMessage : fixtures.messages) {
+					MessageWaiter messageWaiter = new MessageWaiter(realtimeSubscribeChannel);
 
-				messageWaiter.waitFor(1);
-				realtimeSubscribeChannel.unsubscribe(messageWaiter);
+					restPublishClient.http.post("/channels/" + realtimeSubscribeChannel.name + "/messages", null, null, new Http.JSONRequestBody(fixtureMessage), null);
 
-				Message receivedMessage = messageWaiter.receivedMessages.get(0);
+					messageWaiter.waitFor(1);
+					realtimeSubscribeChannel.unsubscribe(messageWaiter);
 
-				expectDataToMatch(fixtureMessage, receivedMessage);
+					Message receivedMessage = messageWaiter.receivedMessages.get(0);
+
+					expectDataToMatch(fixtureMessage, receivedMessage);
+				}
 			}
 
-			realtimeSubscribeClient.close();
-			realtimeSubscribeClient = null;
+			for (AblyRealtime realtimeSubscribeClient : new AblyRealtime[]{realtimeSubscribeClientMsgPack, realtimeSubscribeClientJson}) {
+				realtimeSubscribeClient.close();
+				realtimeSubscribeClient = null;
+			}
 
-			// Publish each data type through MsgPack and retrieve through JSON.
+			// Publish each data type through MsgPack and JSON and retrieve through raw JSON GET.
 
-			restPublishClient = new AblyRest(msgpackOpts);
+			AblyRest restPublishClientMsgPack = new AblyRest(msgpackOpts);
+			AblyRest restPublishClientJson = new AblyRest(jsonOpts);
 			AblyRest restRetrieveClient = new AblyRest(jsonOpts);
 
-			final io.ably.lib.rest.Channel restPublishChannel = restPublishClient.channels.get("test-publish");
+			final io.ably.lib.rest.Channel restPublishChannelMsgPack = restPublishClientMsgPack.channels.get("test-publish");
+			final io.ably.lib.rest.Channel restPublishChannelJson = restPublishClientJson.channels.get("test-publish");
 
 			for (MessagesEncodingDataItem fixtureMessage : fixtures.messages) {
 				Object data = fixtureMessage.expectedValue;
@@ -807,23 +817,28 @@ public class RealtimeMessageTest {
 				} else if (data instanceof JsonPrimitive) {
 					data = ((JsonPrimitive)data).getAsString();
 				}
-				restPublishChannel.publish("event", data);
 
-				MessagesEncodingDataItem persistedMessage = restRetrieveClient.http.get("/channels/" + restPublishChannel.name + "/messages?limit=1", null, null, new Http.ResponseHandler<MessagesEncodingDataItem[]>() {
-					@Override
-					public MessagesEncodingDataItem[] handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
-						return gson.fromJson(new String(body), MessagesEncodingDataItem[].class);
-					}
-				})[0];
-				assertEquals("Verify persisted message encoding", fixtureMessage.encoding, persistedMessage.encoding);
-				assertEquals("Verify persisted message data", fixtureMessage.data, persistedMessage.data);
+				for (io.ably.lib.rest.Channel restPublishChannel : new io.ably.lib.rest.Channel[]{restPublishChannelMsgPack, restPublishChannelJson}) {
+					restPublishChannel.publish("event", data);
+
+					MessagesEncodingDataItem persistedMessage = restRetrieveClient.http.get("/channels/" + restPublishChannel.name + "/messages?limit=1", null, null, new Http.ResponseHandler<MessagesEncodingDataItem[]>() {
+						@Override
+						public MessagesEncodingDataItem[] handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
+							return gson.fromJson(new String(body), MessagesEncodingDataItem[].class);
+						}
+					})[0];
+					assertEquals("Verify persisted message encoding", fixtureMessage.encoding, persistedMessage.encoding);
+					assertEquals("Verify persisted message data", fixtureMessage.data, persistedMessage.data);
+				}
 			}
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
-			if (realtimeSubscribeClient != null)
-				realtimeSubscribeClient.close();
+			if (realtimeSubscribeClientMsgPack != null)
+				realtimeSubscribeClientMsgPack.close();
+			if (realtimeSubscribeClientJson != null)
+				realtimeSubscribeClientJson.close();
 		}
 	}
 
