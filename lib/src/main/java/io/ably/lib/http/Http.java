@@ -424,6 +424,8 @@ public class Http {
 			}
 			if(!acceptSet) { conn.setRequestProperty(ACCEPT, JSON); }
 
+			conn.setRequestProperty(X_ABLY_LIB, headerXAblyLib);
+
 			/* send request body */
 			if(requestBody != null) {
 				writeRequestBody(requestBody, conn);
@@ -711,6 +713,8 @@ public class Http {
 	 *     Private state
 	 *************************/
 
+	static final String headerXAblyLib;
+
 	static {
 		/* if on Android, check version */
 		Field androidVersionField = null;
@@ -723,6 +727,8 @@ public class Http {
 			/* HTTP connection reuse which was buggy pre-froyo */
 			System.setProperty("http.keepAlive", "false");
 		}
+
+		headerXAblyLib = HttpUtils.getHeaderXAblyLib(androidVersionField != null ? "android" : null);
 	}
 
 	final String scheme;
@@ -747,4 +753,5 @@ public class Http {
 	private static final String PROXY_AUTHENTICATE  = "Proxy-Authenticate";
 	private static final String AUTHORIZATION       = "Authorization";
 	private static final String PROXY_AUTHORIZATION = "Proxy-Authorization";
+	private static final String X_ABLY_LIB          = "X-Ably-Lib";
 }

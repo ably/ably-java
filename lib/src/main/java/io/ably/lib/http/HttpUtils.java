@@ -5,6 +5,7 @@ import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.ably.lib.GlobalConstants;
 import io.ably.lib.types.Param;
 
 /**
@@ -62,5 +63,12 @@ public class HttpUtils {
 				.replaceAll("~", "%7E");
 		} catch (UnsupportedEncodingException e) {}
 		return null;
+	}
+
+	public static String getHeaderXAblyLib(String platform) {
+		return String.format("%s%s-%s",
+				GlobalConstants.LIB_TYPE,
+				((platform == null) || (platform.length() == 0)) ? "" : "." + platform,
+				GlobalConstants.LIB_VERSION);
 	}
 }

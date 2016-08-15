@@ -17,6 +17,5 @@ allprojects {
 }
 
 subprojects {
-  version = '0.8.2'
   description = """Ably java client library"""
 }

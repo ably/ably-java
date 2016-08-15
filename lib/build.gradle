@@ -1,8 +1,24 @@
+buildscript {
+  repositories {
+    maven { url 'https://plugins.gradle.org/m2/' }
+  }
+  dependencies {
+    classpath 'gradle.plugin.de.fuerstenau:BuildConfigPlugin:1.1.6'
+  }
+}
+
 apply plugin: 'java'
 apply from: 'maven.gradle'
+apply plugin: 'de.fuerstenau.buildconfig'
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
+
+version = '0.8.2'
+
+buildConfig {
+  packageName = 'io.ably'
+}
 
 dependencies {
   compile 'org.msgpack:msgpack-core:0.8.2'
@@ -57,6 +73,15 @@ task testRealtimeSuite(type: Test) {
 
 task testRestSuite(type: Test) {
   include '**/RestSuite.class'
+  exclude '**/*Test.class'
+  beforeTest { descriptor ->
+    logger.lifecycle("Running test: " + descriptor)
+  }
+  outputs.upToDateWhen { false }
+}
+
+task testUtilsSuite(type: Test) {
+  include '**/UtilsSuite.class'
   exclude '**/*Test.class'
   beforeTest { descriptor ->
     logger.lifecycle("Running test: " + descriptor)
