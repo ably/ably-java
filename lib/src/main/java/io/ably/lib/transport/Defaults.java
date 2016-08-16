@@ -8,7 +8,7 @@ import java.util.List;
 
 public class Defaults {
 	public static final int PROTOCOL_VERSION        = 1;
-	static final List<String> HOST_FALLBACKS        = Arrays.asList("A.ably-realtime.com", "B.ably-realtime.com", "C.ably-realtime.com", "D.ably-realtime.com", "E.ably-realtime.com");
+	public static final List<String> HOST_FALLBACKS = Arrays.asList("A.ably-realtime.com", "B.ably-realtime.com", "C.ably-realtime.com", "D.ably-realtime.com", "E.ably-realtime.com");
 	public static final String HOST_REST            = "rest.ably.io";
 	public static final String HOST_REALTIME        = "realtime.ably.io";
 	public static final int PORT                    = 80;

@@ -2,6 +2,7 @@ package io.ably.lib.http;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -147,6 +148,7 @@ public class AsyncHttp extends ThreadPoolExecutor {
 		public void run() {
 			int retryCountRemaining = Hosts.isRestFallbackSupported(http.host) ? http.options.httpMaxRetryCount : 0;
 			String candidateHost = http.host;
+			Collections.shuffle(http.options.fallbackHosts);
 
 			while(!isCancelled) {
 				try {
@@ -159,7 +161,7 @@ public class AsyncHttp extends ThreadPoolExecutor {
 						break;
 					}
 					Log.d(TAG, "Connection failed to host `" + candidateHost + "`. Searching for new host...");
-					candidateHost = Hosts.getFallback(candidateHost);
+					candidateHost = Hosts.getFallback(candidateHost, http.options.fallbackHosts);
 					Log.d(TAG, "Switched to `" + candidateHost + "`.");
 				} catch(AblyException e) {
 					setError(e.errorInfo);

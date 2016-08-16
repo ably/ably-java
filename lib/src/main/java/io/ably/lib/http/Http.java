@@ -11,6 +11,7 @@ import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -327,6 +328,7 @@ public class Http {
 	<T> T ablyHttpExecute(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
 		int retryCountRemaining = Hosts.isRestFallbackSupported(this.host) ? options.httpMaxRetryCount : 0;
 		String candidateHost = this.host;
+		Collections.shuffle(options.fallbackHosts);
 		URL url;
 
 		while(true) {
@@ -338,7 +340,7 @@ public class Http {
 					throw AblyException.fromErrorInfo(new ErrorInfo("Connection failed; no host available", 404, 80000));
 				}
 				Log.d(TAG, "Connection failed to host `" + candidateHost + "`. Searching for new host...");
-				candidateHost = Hosts.getFallback(candidateHost);
+				candidateHost = Hosts.getFallback(candidateHost, options.fallbackHosts);
 				Log.d(TAG, "Switched to `" + candidateHost + "`.");
 			}
 		}
