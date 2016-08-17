@@ -11,6 +11,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import io.ably.lib.types.ClientOptions;
+
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
@@ -83,4 +85,58 @@ public class HostsTest {
 
         assertThat(customHosts, IsIterableContainingInAnyOrder.containsInAnyOrder(resultList.toArray()));
     }
+
+    /**
+     * Expect that returned host is contained within custom host list in options
+     */
+    @Test
+    public void hosts_fallback_custom_hosts_options(){
+        List<String> customHosts    = Arrays.asList("F.ably-realtime.com", "G.ably-realtime.com", "H.ably-realtime.com", "I.ably-realtime.com", "J.ably-realtime.com", "K.ably-realtime.com");
+        ClientOptions options       = new ClientOptions();
+
+        options.setFallbackHosts(customHosts);
+        String host = Hosts.getFallback(null, options.getFallbackHosts());
+
+        assertTrue(options.getFallbackHosts().contains(host));
+    }
+
+    /**
+     * Expect that returned host is contained within default host list in options
+     */
+    @Test
+    public void hosts_fallback_no_custom_hosts_options(){
+        ClientOptions options = new ClientOptions();
+
+        String host = Hosts.getFallback(null, options.getFallbackHosts());
+
+        assertTrue(Defaults.HOST_FALLBACKS.contains(host));
+    }
+
+    /**
+     * Expect that returned host is null when setting an empty list in options
+     */
+    @Test
+    public void hosts_fallback_empty_custom_hosts_options(){
+        ClientOptions options = new ClientOptions();
+        options.setFallbackHosts(new ArrayList<>());
+
+        String host = Hosts.getFallback(null, options.getFallbackHosts());
+
+        assertThat(host, is(equalTo(null)));
+    }
+
+    /**
+     * Expect that returned host is null when setting null as fallback host list
+     */
+    @Test
+    public void hosts_fallback_null_custom_hosts_options(){
+        ClientOptions options = new ClientOptions();
+        options.setFallbackHosts(null);
+
+        String host = Hosts.getFallback(null, options.getFallbackHosts());
+
+        assertThat(host, is(equalTo(null)));
+    }
+
+
 }
