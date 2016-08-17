@@ -557,7 +557,7 @@ public class Helpers {
 		}
 
 		@Override
-		public void onError(ErrorInfo error) {
+		public synchronized void onError(ErrorInfo error) {
 			this.error = error;
 			notify();
 		}

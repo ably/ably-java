@@ -21,8 +21,6 @@ import java.util.List;
 
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.util.StatusHandler;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
@@ -576,69 +574,6 @@ public class HttpTest {
             } catch (Exception e) {
                 /* non HostFailedExceptions are ignored */
             }
-        }
-    }
-
-    /**
-     * The header X-Ably-Lib: [lib][.optional variant]?-[version]
-     * should be included in all REST requests to the Ably endpoint where
-     * <p/>
-     * -[lib] is the name of the library such as js for ably-js,
-     * -[.optional variant] is an optional library variant,
-     * -[version] is the full client library version (ex.0.9.2).
-     * <p/>
-     * For example, Javascript library would use the header X-Ably-Lib: js-0.9.2
-     * <p/>
-     * <p/>
-     * <p>
-     * Spec: RSC7b
-     * </p>
-     */
-    @Test
-    public void check_lib_header() {
-        try {
-            Setup.TestVars testVars = Setup.getTestVars();
-            ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-            AblyRest ably = new AblyRest(opts);
-
-            Http http = new Http(ably.options, ably.auth) {
-                @Override
-                <T> T ablyHttpExecute(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
-                    Assert.assertTrue("Expected header X-Ably-Lib", Param.containsKey(headers, "X-Ably-Lib"));
-                    for (Param header : headers) {
-                        if (header.key.equals("X-Ably-Lib"))
-                            Assert.assertEquals(header.value, String.format("java-%s", "0.8.2"));
-                    }
-                    return super.ablyHttpExecute(path, method, headers, params, requestBody, responseHandler);
-                }
-            };
-            http.setHost(Defaults.HOST_REST);
-            http.ablyHttpExecute(
-                    "", /* Ignore */
-                    "", /* Ignore */
-                    new Param[0], /* Empty */ //new Param[]{new Param("X-Ably-Lib", String.format("java-%s", "0.8.2"))},
-                    new Param[0], /* Ignore */
-                    mock(Http.RequestBody.class), /* Ignore */
-                    mock(Http.ResponseHandler.class) /* Ignore */
-            );
-        } catch (AblyException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Test
-    public void check_lib_header_ably() {
-        try {
-            Setup.TestVars testVars = Setup.getTestVars();
-            ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-            AblyRest ably = new AblyRest(opts);
-
-            String ably_lib_header = ably.options.headers.get("X-Ably-Lib");
-
-            Assert.assertNotNull("Expected header X-Ably-Lib", ably_lib_header);
-            Assert.assertEquals(ably_lib_header, String.format("java-%s", "0.8.2"));
-        } catch (AblyException e) {
-            e.printStackTrace();
         }
     }
 
