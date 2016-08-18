@@ -1,5 +1,7 @@
 package io.ably.lib.http;
 
+import com.google.gson.JsonParseException;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,8 +16,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.google.gson.JsonParseException;
 
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.AuthMethod;
@@ -423,7 +423,8 @@ public class Http {
 				}
 			}
 			if(!acceptSet) { conn.setRequestProperty(ACCEPT, JSON); }
-
+			/* pass required headers */
+			conn.setRequestProperty(HttpUtils.X_ABLY_LIB_HEADER, HttpUtils.getAblyLibValue());
 			/* send request body */
 			if(requestBody != null) {
 				writeRequestBody(requestBody, conn);
