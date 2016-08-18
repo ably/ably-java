@@ -1,8 +1,16 @@
+plugins {
+  id 'de.fuerstenau.buildconfig' version '1.1.7'
+}
+
 apply plugin: 'java'
 apply from: 'maven.gradle'
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
+
+buildConfig {
+  buildConfigField 'String', 'LIBRARY_NAME', 'java'
+}
 
 dependencies {
   compile 'org.msgpack:msgpack-core:0.8.2'
@@ -26,7 +34,7 @@ task fullJar(type: Jar) {
   exclude 'META-INF/**'
 }
 
-task testsJar(type: Jar) { 
+task testsJar(type: Jar) {
   baseName = project.name + '-tests'
   from sourceSets.test.output
   classifier = 'test'
