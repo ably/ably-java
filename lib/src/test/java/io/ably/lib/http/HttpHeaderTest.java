@@ -6,20 +6,16 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
 import io.ably.lib.rest.AblyRest;
-import io.ably.lib.test.common.Helpers;
+import io.ably.lib.rest.Channel;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.Param;
-
-import static org.mockito.Mockito.mock;
 
 /**
  * Created by VOstopolets on 8/17/16.
@@ -30,7 +26,7 @@ public class HttpHeaderTest {
 
     @BeforeClass
     public static void setUp() throws IOException {
-        // create custom RouterNanoHTTPD class for getting session object
+        /* Create custom RouterNanoHTTPD class for getting session object */
         server = new SessionHandlerNanoHTTPD(27331);
         server.start(NanoHTTPD.SOCKET_READ_TIMEOUT, true);
 
@@ -55,54 +51,11 @@ public class HttpHeaderTest {
      * Spec: RSC7b
      * </p>
      *
-     * @throws MalformedURLException
      */
     @Test
-    public void header_lib_general() throws MalformedURLException {
+    public void header_lib_channel_publish() {
         try {
-            // init values for local server
-            Setup.TestVars testVars = Setup.getTestVars();
-            ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-            opts.tls = false;
-            opts.port = server.getListeningPort();
-            opts.restHost = "localhost";
-            AblyRest ably = new AblyRest(opts);
-            Http.RequestBody requestBody = new Http.ByteArrayRequestBody(new byte[0], NanoHTTPD.MIME_PLAINTEXT);
-
-            // init URL
-            URL url = new URL("http://localhost:" + server.getListeningPort());
-            try {
-                ably.http.httpExecuteWithRetry(
-                        url, /* Ignore */
-                        Http.GET, /* Ignore */
-                        new Param[0], /* Ignore */
-                        requestBody, /* Ignore */
-                        mock(Http.ResponseHandler.class), /* Ignore */
-                        true
-                );
-            } catch (AblyException ex) {
-            }
-
-            // get last session
-            NanoHTTPD.IHTTPSession session = server.getResult();
-            Map<String, String> headers = session.getHeaders();
-
-            // prepare checked header
-            String ably_lib_header = HttpUtils.X_ABLY_LIB_HEADER.toLowerCase();
-
-            // check header
-            Assert.assertNotNull("Expected headers", headers);
-            Assert.assertTrue(String.format("Expected header %s", HttpUtils.X_ABLY_LIB_HEADER), headers.containsKey(ably_lib_header));
-            Assert.assertEquals(headers.get(ably_lib_header), HttpUtils.X_ABLY_LIB_VALUE);
-        } catch (AblyException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Test
-    public void header_lib_async() {
-        try {
-            // init values for local server
+            /* Init values for local server */
             Setup.TestVars testVars = Setup.getTestVars();
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
             opts.tls = false;
@@ -110,78 +63,31 @@ public class HttpHeaderTest {
             opts.restHost = "localhost";
             AblyRest ably = new AblyRest(opts);
 
-            // create waiter callback
-            Helpers.AsyncWaiter callback = new Helpers.AsyncWaiter();
+            /* Publish message */
+            String messageName = "test message";
+            String messageData = String.valueOf(System.currentTimeMillis());
 
-            // send async request
-            ably.asyncHttp.get(
-                    "", /* Ignore */
-                    new Param[0], /* Ignore */
-                    new Param[0], /* Ignore */
-                    mock(Http.ResponseHandler.class), /* Ignore */
-                    callback /* Set waiter Callback */
-            );
-            // waiting while request is completed
-            callback.waitFor();
+            Channel channel = ably.channels.get("test");
+            channel.publish(messageName, messageData);
 
-            // get last session
-            NanoHTTPD.IHTTPSession session = server.getResult();
-            Map<String, String> headers = session.getHeaders();
+            /* Get last headers */
+            Map<String, String> headers = server.getHeaders();
 
-            // prepare checked header
+            /* Prepare checked header */
             String ably_lib_header = HttpUtils.X_ABLY_LIB_HEADER.toLowerCase();
 
-            // check header
+            /* Check header */
             Assert.assertNotNull("Expected headers", headers);
             Assert.assertTrue(String.format("Expected header %s", HttpUtils.X_ABLY_LIB_HEADER), headers.containsKey(ably_lib_header));
             Assert.assertEquals(headers.get(ably_lib_header), HttpUtils.X_ABLY_LIB_VALUE);
         } catch (AblyException e) {
             e.printStackTrace();
-        }
-    }
-
-    @Test
-    public void header_lib_http() throws MalformedURLException {
-        try {
-            // init values for local server
-            Setup.TestVars testVars = Setup.getTestVars();
-            ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-            opts.tls = false;
-            opts.port = server.getListeningPort();
-            opts.restHost = "localhost";
-            AblyRest ably = new AblyRest(opts);
-            Http.RequestBody requestBody = new Http.ByteArrayRequestBody(new byte[0], NanoHTTPD.MIME_PLAINTEXT);
-
-            try {
-                ably.http.ablyHttpExecute(
-                        "", /* Ignore */
-                        Http.GET, /* Ignore */
-                        new Param[0], /* Ignore */
-                        new Param[0], /* Ignore */
-                        requestBody, /* Ignore */
-                        mock(Http.ResponseHandler.class) /* Ignore */
-                );
-            } catch (AblyException ex) {
-            }
-
-            // get last session
-            NanoHTTPD.IHTTPSession session = server.getResult();
-            Map<String, String> headers = session.getHeaders();
-
-            // prepare checked header
-            String ably_lib_header = HttpUtils.X_ABLY_LIB_HEADER.toLowerCase();
-
-            // check header
-            Assert.assertNotNull("Expected headers", headers);
-            Assert.assertTrue(String.format("Expected header %s", HttpUtils.X_ABLY_LIB_HEADER), headers.containsKey(ably_lib_header));
-            Assert.assertEquals(headers.get(ably_lib_header), HttpUtils.X_ABLY_LIB_VALUE);
-        } catch (AblyException e) {
-            e.printStackTrace();
+            Assert.fail("header_lib_channel_publish: Unexpected exception");
         }
     }
 
     private static class SessionHandlerNanoHTTPD extends RouterNanoHTTPD {
-        public NanoHTTPD.IHTTPSession result;
+        public Map<String, String> headers;
 
         public SessionHandlerNanoHTTPD(int port) {
             super(port);
@@ -189,12 +95,12 @@ public class HttpHeaderTest {
 
         @Override
         public Response serve(IHTTPSession session) {
-            result = session;
-            return super.serve(session);
+            headers = new HashMap<>(session.getHeaders());
+            return newFixedLengthResponse("Ignored response");
         }
 
-        public IHTTPSession getResult() {
-            return result;
+        public Map<String, String> getHeaders() {
+            return headers;
         }
     }
 }
