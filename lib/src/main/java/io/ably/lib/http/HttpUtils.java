@@ -14,8 +14,9 @@ import io.ably.lib.types.Param;
  *
  */
 public class HttpUtils {
-	// Headers
+	/* Headers */
 	public static final String X_ABLY_LIB_HEADER = "X-Ably-Lib";
+	public static final String X_ABLY_LIB_VALUE = String.format("%s-%s", BuildConfig.LIBRARY_NAME, BuildConfig.VERSION);
 
 	public static final String DEFAULT_FORMAT = "json";
 	public static Map<String, String> mimeTypes;
@@ -66,28 +67,5 @@ public class HttpUtils {
 				.replaceAll("~", "%7E");
 		} catch (UnsupportedEncodingException e) {}
 		return null;
-	}
-
-	/**
-	 * The header X-Ably-Lib: [lib][.optional variant]?-[version]
-	 * should be included in all REST requests to the Ably endpoint where
-	 * <p/>
-	 * -[lib] is the name of the library such as js for ably-js,
-	 * -[.optional variant] is an optional library variant,
-	 * -[version] is the full client library version (ex.0.9.2).
-	 * <p/>
-	 * For example, Javascript library would use the header X-Ably-Lib: js-0.9.2
-	 * <p/>
-	 * <p/>
-	 * <p>
-	 * Spec: RSC7b
-	 * </p>
-	 */
-	public static Param getAblyLibHeader() {
-		return new Param(X_ABLY_LIB_HEADER, getAblyLibValue());
-	}
-
-	public static String getAblyLibValue() {
-		return String.format("%s-%s", BuildConfig.LIBRARY_NAME, BuildConfig.VERSION);
 	}
 }

@@ -50,9 +50,12 @@ public class HttpHeaderTest {
 
     /**
      * The header X-Ably-Lib: [lib][.optional variant]?-[version]
-     * should be included in all REST requests to the Ably endpoint see {@link io.ably.lib.http.HttpUtils}
+     * should be included in all REST requests to the Ably endpoint
      * <p>
      * Spec: RSC7b
+     * </p>
+     *
+     * @throws MalformedURLException
      */
     @Test
     public void header_lib_general() throws MalformedURLException {
@@ -90,7 +93,7 @@ public class HttpHeaderTest {
             // check header
             Assert.assertNotNull("Expected headers", headers);
             Assert.assertTrue(String.format("Expected header %s", HttpUtils.X_ABLY_LIB_HEADER), headers.containsKey(ably_lib_header));
-            Assert.assertEquals(headers.get(ably_lib_header), HttpUtils.getAblyLibValue());
+            Assert.assertEquals(headers.get(ably_lib_header), HttpUtils.X_ABLY_LIB_VALUE);
         } catch (AblyException e) {
             e.printStackTrace();
         }
@@ -131,7 +134,7 @@ public class HttpHeaderTest {
             // check header
             Assert.assertNotNull("Expected headers", headers);
             Assert.assertTrue(String.format("Expected header %s", HttpUtils.X_ABLY_LIB_HEADER), headers.containsKey(ably_lib_header));
-            Assert.assertEquals(headers.get(ably_lib_header), HttpUtils.getAblyLibValue());
+            Assert.assertEquals(headers.get(ably_lib_header), HttpUtils.X_ABLY_LIB_VALUE);
         } catch (AblyException e) {
             e.printStackTrace();
         }
@@ -171,7 +174,7 @@ public class HttpHeaderTest {
             // check header
             Assert.assertNotNull("Expected headers", headers);
             Assert.assertTrue(String.format("Expected header %s", HttpUtils.X_ABLY_LIB_HEADER), headers.containsKey(ably_lib_header));
-            Assert.assertEquals(headers.get(ably_lib_header), HttpUtils.getAblyLibValue());
+            Assert.assertEquals(headers.get(ably_lib_header), HttpUtils.X_ABLY_LIB_VALUE);
         } catch (AblyException e) {
             e.printStackTrace();
         }
