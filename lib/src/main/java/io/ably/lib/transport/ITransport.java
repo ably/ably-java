@@ -1,5 +1,6 @@
 package io.ably.lib.transport;
 
+import io.ably.lib.http.HttpUtils;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
@@ -33,6 +34,9 @@ public interface ITransport {
 	}
 
 	public static class TransportParams {
+		/* Param keys */
+		public static final String LIB_PARAM_KEY = "lib";
+
 		ClientOptions options;
 		String host;
 		int port;
@@ -64,6 +68,8 @@ public interface ITransport {
 			}
 			if(options.clientId != null)
 				paramList.add(new Param("client_id", options.clientId));
+
+			paramList.add(new Param(LIB_PARAM_KEY, HttpUtils.X_ABLY_LIB_VALUE));
 
 			return paramList.toArray(new Param[paramList.size()]);
 		}

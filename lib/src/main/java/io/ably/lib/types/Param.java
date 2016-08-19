@@ -26,6 +26,15 @@ public class Param {
 		return false;
 	}
 
+	public static Param getParamByKey(Param[] params, String key) {
+		if(params == null)
+			return null;
+		for(Param param : params)
+			if(param.key.equals(key))
+				return param;
+		return null;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
