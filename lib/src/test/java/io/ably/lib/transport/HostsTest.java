@@ -94,10 +94,10 @@ public class HostsTest {
         List<String> customHosts    = Arrays.asList("F.ably-realtime.com", "G.ably-realtime.com", "H.ably-realtime.com", "I.ably-realtime.com", "J.ably-realtime.com", "K.ably-realtime.com");
         ClientOptions options       = new ClientOptions();
 
-        options.setFallbackHosts(customHosts);
-        String host = Hosts.getFallback(null, options.getFallbackHosts());
+        options.fallbackHosts = customHosts;
+        String host = Hosts.getFallback(null, options.fallbackHosts);
 
-        assertTrue(options.getFallbackHosts().contains(host));
+        assertTrue(options.fallbackHosts.contains(host));
     }
 
     /**
@@ -107,7 +107,7 @@ public class HostsTest {
     public void hosts_fallback_no_custom_hosts_options(){
         ClientOptions options = new ClientOptions();
 
-        String host = Hosts.getFallback(null, options.getFallbackHosts());
+        String host = Hosts.getFallback(null, options.fallbackHosts);
 
         assertTrue(Defaults.HOST_FALLBACKS.contains(host));
     }
@@ -118,9 +118,9 @@ public class HostsTest {
     @Test
     public void hosts_fallback_empty_custom_hosts_options(){
         ClientOptions options = new ClientOptions();
-        options.setFallbackHosts(new ArrayList<>());
+        options.fallbackHosts = new ArrayList<>();
 
-        String host = Hosts.getFallback(null, options.getFallbackHosts());
+        String host = Hosts.getFallback(null, options.fallbackHosts);
 
         assertThat(host, is(equalTo(null)));
     }
@@ -131,9 +131,9 @@ public class HostsTest {
     @Test
     public void hosts_fallback_null_custom_hosts_options(){
         ClientOptions options = new ClientOptions();
-        options.setFallbackHosts(null);
+        options.fallbackHosts = null;
 
-        String host = Hosts.getFallback(null, options.getFallbackHosts());
+        String host = Hosts.getFallback(null, options.fallbackHosts);
 
         assertThat(host, is(equalTo(null)));
     }

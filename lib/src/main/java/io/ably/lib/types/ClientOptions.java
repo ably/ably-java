@@ -139,25 +139,6 @@ public class ClientOptions extends AuthOptions {
 	 * Spec: RSC15a list of custom fallback hosts, default hosts set by default
 	 */
 
-	private List<String> fallbackHosts = Defaults.HOST_FALLBACKS;
+	public List<String> fallbackHosts = Defaults.HOST_FALLBACKS;
 
-	/**
-	 * Getter for the list of fallback hosts
-	 * @return list of fallback hosts
-     */
-
-	public List<String> getFallbackHosts() {
-		return fallbackHosts;
-	}
-
-	/**
-	 * Setter of an optional custom fallback hosts list
-	 * @param fallbackHosts: the list of fallback hosts addresses
-     */
-
-	public void setFallbackHosts(List<String> fallbackHosts) {
-		this.fallbackHosts = fallbackHosts;
-		if(fallbackHosts != null)
-			Collections.shuffle(fallbackHosts);
-	}
 }

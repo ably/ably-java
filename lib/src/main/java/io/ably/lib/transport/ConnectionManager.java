@@ -503,7 +503,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		 */
 
 		if(pendingConnect != null && stateChange.reason == null) {
-			if (!Hosts.isFallback(pendingConnect.host, options.getFallbackHosts())) {
+			if (!Hosts.isFallback(pendingConnect.host, options.fallbackHosts)) {
 				if (!checkConnectivity()) {
 					return new StateIndication(ConnectionState.failed, new ErrorInfo("connection failed", 80000), false, pendingConnect.host);
 				}
@@ -608,7 +608,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		 * it will choose a fallback host at random */
 
 		if(request.fallback) {
-			String hostFallback = Hosts.isRealtimeFallbackSupported(options.realtimeHost)?(Hosts.getFallback(request.currentHost, options.getFallbackHosts())):(null);
+			String hostFallback = Hosts.isRealtimeFallbackSupported(options.realtimeHost)?(Hosts.getFallback(request.currentHost, options.fallbackHosts)):(null);
 
 			if (hostFallback == null) {
 				return false;

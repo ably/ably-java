@@ -327,6 +327,8 @@ public class Http {
 	 */
 	<T> T ablyHttpExecute(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
 		int retryCountRemaining = Hosts.isRestFallbackSupported(this.host) ? options.httpMaxRetryCount : 0;
+		if(options.fallbackHosts != null)
+			Collections.shuffle(options.fallbackHosts);
 		String candidateHost = this.host;
 		URL url;
 
@@ -339,8 +341,10 @@ public class Http {
 					throw AblyException.fromErrorInfo(new ErrorInfo("Connection failed; no host available", 404, 80000));
 				}
 				Log.d(TAG, "Connection failed to host `" + candidateHost + "`. Searching for new host...");
-				candidateHost = Hosts.getFallback(candidateHost, options.getFallbackHosts());
+				candidateHost = Hosts.getFallback(candidateHost, options.fallbackHosts);
 				Log.d(TAG, "Switched to `" + candidateHost + "`.");
+				if(candidateHost == null)
+					throw AblyException.fromErrorInfo(new ErrorInfo("Connection failed; no host available", 404, 80000));
 			}
 		}
 	}
