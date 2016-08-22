@@ -63,3 +63,12 @@ task testRestSuite(type: Test) {
   }
   outputs.upToDateWhen { false }
 }
+
+task testTransportSuite(type: Test) {
+  include '**/TransportSuite.class'
+  exclude '**/*Test.class'
+  beforeTest { descriptor ->
+    logger.lifecycle("Running test: " + descriptor)
+  }
+  outputs.upToDateWhen { false }
+}

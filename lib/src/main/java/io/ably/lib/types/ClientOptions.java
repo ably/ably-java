@@ -5,6 +5,8 @@ import io.ably.lib.transport.Defaults;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Log.LogHandler;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -132,4 +134,11 @@ public class ClientOptions extends AuthOptions {
 	 * the primary host is unreachable or indicates that it is unserviceable
 	 */
 	public int httpMaxRetryCount = Defaults.HTTP_MAX_RETRY_COUNT;
+
+	/**
+	 * Spec: RSC15a list of custom fallback hosts, default hosts set by default
+	 */
+
+	public List<String> fallbackHosts = Defaults.HOST_FALLBACKS;
+
 }

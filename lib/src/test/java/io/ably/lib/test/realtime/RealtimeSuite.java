@@ -9,6 +9,7 @@ import org.junit.runner.notification.Failure;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
+import io.ably.lib.http.HttpTest;
 import io.ably.lib.test.common.Setup;
 
 @RunWith(Suite.class)
