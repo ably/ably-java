@@ -424,6 +424,9 @@ public class Http {
 			}
 			if(!acceptSet) { conn.setRequestProperty(ACCEPT, JSON); }
 
+			/* pass required headers */
+			conn.setRequestProperty(HttpUtils.X_ABLY_LIB_HEADER, HttpUtils.X_ABLY_LIB_VALUE);
+
 			/* send request body */
 			if(requestBody != null) {
 				writeRequestBody(requestBody, conn);

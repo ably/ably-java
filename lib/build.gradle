@@ -1,5 +1,13 @@
+plugins {
+  id 'de.fuerstenau.buildconfig' version '1.1.7'
+}
+
 apply plugin: 'java'
 apply from: 'maven.gradle'
+
+buildConfig {
+  buildConfigField 'String', 'LIBRARY_NAME', 'java'
+}
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
