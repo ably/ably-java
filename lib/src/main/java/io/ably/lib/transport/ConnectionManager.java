@@ -13,6 +13,7 @@ import io.ably.lib.transport.ITransport.TransportParams;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.util.Log;
@@ -859,6 +860,14 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				}
 			}
 		}
+	}
+
+	/***************************
+	 * connect params management
+	 ***************************/
+
+	public Param[] getConnectParams() {
+		return pendingConnect.getConnectParams(new Param[]{});
 	}
 
 	/*******************

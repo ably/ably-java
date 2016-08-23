@@ -47,6 +47,7 @@ public class HttpHeaderTest {
     /**
      * The header X-Ably-Lib: [lib][.optional variant]?-[version]
      * should be included in all REST requests to the Ably endpoint
+     * see {@link io.ably.lib.http.HttpUtils#X_ABLY_LIB_VALUE}
      * <p>
      * Spec: RSC7b
      * </p>
