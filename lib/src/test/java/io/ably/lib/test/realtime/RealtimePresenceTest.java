@@ -584,7 +584,7 @@ public class RealtimePresenceTest {
 
 			/* let client1 enter the channel and wait for the entered event to be delivered */
 			CompletionWaiter enterComplete = new CompletionWaiter();
-			String enterString = "Test data (enter_before_connect)";
+			String enterString = "Test data (enter_leave_nodata)";
 			client1Channel.presence.enter(enterString, enterComplete);
 			presenceWaiter.waitFor(testClientId1, Action.enter);
 			assertNotNull(presenceWaiter.contains(testClientId1, Action.enter));

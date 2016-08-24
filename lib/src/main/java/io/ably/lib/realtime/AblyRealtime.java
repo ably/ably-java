@@ -140,7 +140,6 @@ public class AblyRealtime extends AblyRest {
 		public void suspendAll(ErrorInfo error) {
 			for(Iterator<Map.Entry<String, Channel>> it = entrySet().iterator(); it.hasNext(); ) {
 				Map.Entry<String, Channel> entry = it.next();
-				it.remove();
 				entry.getValue().setSuspended(error);
 			}
 		}

@@ -65,6 +65,7 @@ public interface ITransport {
 			if(options.clientId != null)
 				paramList.add(new Param("client_id", options.clientId));
 
+			Log.d(TAG, "getConnectParams: params = " + paramList);
 			return paramList.toArray(new Param[paramList.size()]);
 		}
 	}
