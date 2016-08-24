@@ -21,8 +21,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.sun.media.jfxmedia.logging.Logger;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -1082,7 +1080,6 @@ public class RealtimeChannelTest {
 			ably.close();
 
 			/* establish a new connection */
-			opts.logLevel = Logger.DEBUG;
 			ably = new AblyRealtime(opts);
 
 			/* wait until connected */
