@@ -21,6 +21,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.sun.media.jfxmedia.logging.Logger;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -29,7 +31,10 @@ import java.util.List;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class RealtimeChannelTest {
@@ -1048,6 +1053,74 @@ public class RealtimeChannelTest {
 
 			assertEquals("channel state should be detached now", channel.state, ChannelState.detached);
 			assertEquals("channel error reason should be set", channel.reason, protoMessage.error);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	@Test
+	public void detach_on_clean_connection_preserves_channel() {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+
+			/* connect with these options to get a valid connection recover key */
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			(new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+			/* keep connection details and close */
+			String recoverConnectionId = ably.connection.key;
+			long recoverConnectionSerial = ably.connection.serial;
+			ably.close();
+
+			/* establish a new connection */
+			opts.logLevel = Logger.DEBUG;
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			(new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and attach */
+			final String channelName = "detach_on_clean_connection_preserves_channel";
+			final Channel channel = ably.channels.get(channelName);
+			channel.attach();
+			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			/* disconnect the connection, without closing;
+			 * NOTE this depends on knowledge of the internal structure
+			 * of the library, to simulate a dropped transport without
+			 * causing the connection itself to be disposed */
+			ably.connection.connectionManager.requestState(ConnectionState.failed);
+
+			/* wait */
+			try { Thread.sleep(2000L); } catch(InterruptedException e) {}
+
+			/* reconnect the connection; this time attempting to recover the (now-closed) recovery key */
+			ably.options.recover = recoverConnectionId + ':' + String.valueOf(recoverConnectionSerial);
+			ably.connection.key = null;
+			ably.connection.connect();
+
+			/* wait until connected */
+			(new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+			assertNotEquals("Verify new connection established", recoverConnectionId, ably.connection.id);
+			assertNotNull("Verify error was returned with connected state", ably.connection.reason);
+
+			/* verify existing channel is detached but not removed */
+			(new ChannelWaiter(channel)).waitFor(ChannelState.detached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.detached);
+			assertTrue("Verify the original channel remains in the channel set", ably.channels.get(channelName) == channel);
+
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
