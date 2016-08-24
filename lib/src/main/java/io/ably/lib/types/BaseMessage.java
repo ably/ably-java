@@ -106,20 +106,22 @@ public class BaseMessage implements Cloneable {
 	}
 
 	public void encode(ChannelOptions opts) throws AblyException {
-		if(data instanceof JsonElement) {
-			data = Serialisation.gson.toJson((JsonElement)data);
-			encoding = ((encoding == null) ? "" : encoding + "/") + "json";
-		}
-		if(data instanceof String) {
-			if (opts != null && opts.encrypted) {
-				try { data = ((String)data).getBytes("UTF-8"); } catch(UnsupportedEncodingException e) {}
-				encoding = ((encoding == null) ? "" : encoding + "/") + "utf-8";
+		if(data != null) {
+			if(data instanceof JsonElement) {
+				data = Serialisation.gson.toJson((JsonElement)data);
+				encoding = ((encoding == null) ? "" : encoding + "/") + "json";
 			}
-		} else if(!(data instanceof byte[])) {
-			if (opts != null && opts.encrypted) {
-				throw AblyException.fromErrorInfo(new ErrorInfo("Invalid message data or encoding", 400, 40013));
-			} else {
-				Log.e(TAG, "Message data must be either `byte[]`, `String` or `JSONElement`; implicit coercion of other types to String is deprecated and throws from v.0.9 on.\nPlease check the documentation (https://www.ably.io/documentation/realtime/types#message).");
+			if(data instanceof String) {
+				if (opts != null && opts.encrypted) {
+					try { data = ((String)data).getBytes("UTF-8"); } catch(UnsupportedEncodingException e) {}
+					encoding = ((encoding == null) ? "" : encoding + "/") + "utf-8";
+				}
+			} else if(!(data instanceof byte[])) {
+				if (opts != null && opts.encrypted) {
+					throw AblyException.fromErrorInfo(new ErrorInfo("Invalid message data or encoding", 400, 40013));
+				} else {
+					Log.e(TAG, "Message data must be either `byte[]`, `String` or `JSONElement`; implicit coercion of other types to String is deprecated and throws from v.0.9 on.\nPlease check the documentation (https://www.ably.io/documentation/realtime/types#message).");
+				}
 			}
 		}
 		if (opts != null && opts.encrypted) {
