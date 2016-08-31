@@ -324,7 +324,16 @@ public class Auth {
 	 * @param callback (err, tokenDetails)
 	 */
 	public TokenDetails authorise(AuthOptions options, TokenParams params) throws AblyException {
-		return tokenAuth.authorise(options, params);
+		TokenDetails tokenDetails = tokenAuth.authorise(options, params);
+
+		/* RTC8
+		 *  If authorise is called with AuthOptions#force set to true
+		 *  the client will obtain a new token, disconnect the current transport
+		 *  and resume the connection
+		 */
+		if (options != null && options.force)
+			ably.onAuthUpdated();
+		return tokenDetails;
 	}
 
 	/**

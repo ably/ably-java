@@ -17,6 +17,7 @@ import io.ably.lib.test.common.Setup;
 	ConnectionManagerTest.class,
 	HostsTest.class,
 	EventEmitterTest.class,
+	RealtimeReauthTest.class,
 	RealtimeInitTest.class,
 	RealtimeConnectTest.class,
 	RealtimeConnectFailTest.class,
