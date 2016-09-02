@@ -1,0 +1,76 @@
+plugins {
+  id 'de.fuerstenau.buildconfig' version '1.1.7'
+}
+
+apply plugin: 'java'
+apply from: '../core/maven.gradle'
+
+ext {
+    artifactId = 'ably-java'
+}
+
+dependencies {
+    compile (project.gradle.startParameter.taskNames.findAll { it =~ /generateRelease$/ }?
+            ("io.ably:ably-core:${ably.version}"):
+            project(":core")) {
+        transitive = !project.gradle.startParameter.taskNames.findAll { it =~ /simpleJar$/ }
+    }
+    testCompile 'org.hamcrest:hamcrest-all:1.3'
+    testCompile 'junit:junit:4.12'
+    testCompile 'com.nanohttpd:nanohttpd:2.2.0'
+    testCompile 'org.nanohttpd:nanohttpd-nanolets:2.3.0'
+    testCompile 'org.mockito:mockito-core:2.0.46-beta'
+    testCompile project (path: ':core', configuration: 'coreTestsConfiguration')
+}
+
+task fullJar(type: Jar) {
+    baseName = project.name + '-full'
+    from {
+        configurations.compile.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    with jar
+    exclude 'META-INF/**'
+}
+
+task simpleJar(type: Jar) {
+    baseName = project.name + '-simple'
+    from {
+        configurations.compile.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    with jar
+    exclude 'META-INF/**'
+}
+
+configurations {
+    fullConfiguration
+}
+
+artifacts {
+    fullConfiguration fullJar
+}
+
+task testRealtimeSuite(type: Test) {
+    filter {
+        includeTestsMatching "*RealtimeSuite"
+    }
+
+    beforeTest { descriptor ->
+        logger.lifecycle("Running test: " + descriptor)
+    }
+    outputs.upToDateWhen { false }
+}
+
+task testRestSuite(type: Test) {
+    filter {
+        includeTestsMatching "*RestSuite"
+    }
+
+    beforeTest { descriptor ->
+        logger.lifecycle("Running test: " + descriptor)
+    }
+    outputs.upToDateWhen { false }
+}

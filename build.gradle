@@ -8,7 +8,7 @@ buildscript {
 }
 
 allprojects {
-  group = 'io.ably'
+  group = 'io.ably.lib'
 
   repositories {
       jcenter()
