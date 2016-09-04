@@ -324,6 +324,9 @@ public class Auth {
 	 * @param callback (err, tokenDetails)
 	 */
 	public TokenDetails authorise(AuthOptions options, TokenParams params) throws AblyException {
+		/* Spec: RSA10g */
+		storeAuthOptions(options);
+		storeTokenParams(params);
 		return tokenAuth.authorise(options, params);
 	}
 
@@ -511,6 +514,49 @@ public class Auth {
 	}
 
 	/**
+	 * Stores the AuthOptions arguments as defaults for subsequent authorisations
+	 * with the exception of the attributes {@link AuthOptions#queryTime}
+	 * and {@link AuthOptions#force}
+	 * <p>
+	 * Spec: RSA10g
+	 * </p>
+	 */
+	private void storeAuthOptions(AuthOptions authOptions) {
+		if (authOptions != null) {
+			this.authOptions.key = authOptions.key;
+			this.authOptions.authUrl = authOptions.authUrl;
+			this.authOptions.authParams = authOptions.authParams;
+			this.authOptions.authHeaders = authOptions.authHeaders;
+			this.authOptions.token = authOptions.token;
+			this.authOptions.tokenDetails = authOptions.tokenDetails;
+			this.authOptions.authCallback = authOptions.authCallback;
+		}
+	}
+
+	/**
+	 * Stores the TokenParams arguments as defaults for subsequent authorisations
+	 * with the exception of the attributes {@link TokenParams#timestamp}
+	 * <p>
+	 * Spec: RSA10g
+	 * </p>
+	 */
+	private void storeTokenParams(TokenParams tokenParams) {
+		if (tokenParams != null) {
+			this.tokenParams.ttl = tokenParams.ttl;
+			this.tokenParams.capability = tokenParams.capability;
+			this.tokenParams.clientId = tokenParams.clientId;
+		}
+	}
+
+	public AuthOptions getAuthOptions() {
+		return this.authOptions;
+	}
+
+	public TokenParams getTokenParams() {
+		return tokenParams;
+	}
+
+	/**
 	 * Get the authentication method for this library instance.
 	 * @return
 	 */
@@ -570,6 +616,8 @@ public class Auth {
 	Auth(AblyRest ably, ClientOptions options) throws AblyException {
 		this.ably = ably;
 		authOptions = options;
+		tokenParams = options.defaultTokenParams != null ?
+				options.defaultTokenParams : new TokenParams();
 
 		/* decide default auth method */
 		if(authOptions.key != null) {
@@ -618,6 +666,7 @@ public class Auth {
 	private final AblyRest ably;
 	private final AuthMethod method;
 	private final AuthOptions authOptions;
+	private final TokenParams tokenParams;
 	private String basicCredentials;
 	private TokenAuth tokenAuth;
 }

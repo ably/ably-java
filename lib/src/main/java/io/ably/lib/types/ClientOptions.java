@@ -7,6 +7,8 @@ import io.ably.lib.util.Log.LogHandler;
 
 import java.util.Map;
 
+import static io.ably.lib.rest.Auth.*;
+
 /**
  * Options: Ably library options for REST and Realtime APIs
  */
@@ -132,4 +134,11 @@ public class ClientOptions extends AuthOptions {
 	 * the primary host is unreachable or indicates that it is unserviceable
 	 */
 	public int httpMaxRetryCount = Defaults.HTTP_MAX_RETRY_COUNT;
+
+	/**
+	 * When a TokenParams object is provided, it will override
+	 * the client library defaults described in TokenParams
+	 * Spec: TO3j11
+	 */
+	public TokenParams defaultTokenParams = new TokenParams();
 }
