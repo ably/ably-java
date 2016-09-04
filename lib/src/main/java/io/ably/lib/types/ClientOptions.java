@@ -1,6 +1,7 @@
 package io.ably.lib.types;
 
 import io.ably.lib.rest.Auth.AuthOptions;
+import io.ably.lib.rest.Auth.TokenParams;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Log.LogHandler;
@@ -143,4 +144,10 @@ public class ClientOptions extends AuthOptions {
 	 */
 	public String[] fallbackHosts;
 
+	/**
+	 * When a TokenParams object is provided, it will override
+	 * the client library defaults described in TokenParams
+	 * Spec: TO3j11
+	 */
+	public TokenParams defaultTokenParams = new TokenParams();
 }

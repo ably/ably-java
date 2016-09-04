@@ -136,8 +136,28 @@ public class Auth {
 			if(key == null) key = defaults.key;
 			if(authHeaders == null) authHeaders = defaults.authHeaders;
 			if(authParams == null) authParams = defaults.authParams;
-			queryTime = queryTime & defaults.queryTime;
+			queryTime = queryTime | defaults.queryTime;
 			return this;
+		}
+
+		/**
+		 * Stores the AuthOptions arguments as defaults for subsequent authorisations
+		 * with the exception of the attributes {@link AuthOptions#queryTime}
+		 * and {@link AuthOptions#force}
+		 * <p>
+		 * Spec: RSA10g
+		 * </p>
+		 */
+		AuthOptions storedValues() {
+			AuthOptions result = new AuthOptions();
+			result.key = this.key;
+			result.authUrl = this.authUrl;
+			result.authParams = this.authParams;
+			result.authHeaders = this.authHeaders;
+			result.token = this.token;
+			result.tokenDetails = this.tokenDetails;
+			result.authCallback = this.authCallback;
+			return result;
 		}
 	}
 
@@ -234,6 +254,21 @@ public class Auth {
 			if(timestamp > 0) params.add(new Param("timestamp", String.valueOf(timestamp)));
 			return params;
 		}
+
+		/**
+		 * Stores the TokenParams arguments as defaults for subsequent authorisations
+		 * with the exception of the attributes {@link TokenParams#timestamp}
+		 * <p>
+		 * Spec: RSA10g
+		 * </p>
+		 */
+		TokenParams storedValues() {
+			TokenParams result = new TokenParams();
+			result.ttl = this.ttl;
+			result.capability = this.capability;
+			result.clientId = this.clientId;
+			return result;
+		}
 	}
 
 	/**
@@ -324,6 +359,18 @@ public class Auth {
 	 * @param callback (err, tokenDetails)
 	 */
 	public TokenDetails authorise(AuthOptions options, TokenParams params) throws AblyException {
+		/* Spec: RSA10g */
+		if (options != null) {
+			this.authOptions = options.storedValues();
+		} else {
+			options = this.authOptions;
+		}
+		if (params != null) {
+			this.tokenParams = params.storedValues();
+		} else {
+			params = this.tokenParams;
+		}
+
 		TokenDetails tokenDetails = tokenAuth.authorise(options, params);
 
 		/* RTC8
@@ -347,6 +394,7 @@ public class Auth {
 	public TokenDetails requestToken(TokenParams params, AuthOptions options) throws AblyException {
 		/* merge supplied options with the already-known options */
 		final AuthOptions tokenOptions = (options == null) ? authOptions : options.merge(authOptions);
+		params = (params == null) ? tokenParams : params;
 
 		/* set up the request params */
 		if(params == null) params = new TokenParams();
@@ -579,6 +627,8 @@ public class Auth {
 	Auth(AblyRest ably, ClientOptions options) throws AblyException {
 		this.ably = ably;
 		authOptions = options;
+		tokenParams = options.defaultTokenParams != null ?
+				options.defaultTokenParams : new TokenParams();
 
 		/* decide default auth method */
 		if(authOptions.key != null) {
@@ -626,7 +676,8 @@ public class Auth {
 
 	private final AblyRest ably;
 	private final AuthMethod method;
-	private final AuthOptions authOptions;
+	private AuthOptions authOptions;
+	private TokenParams tokenParams;
 	private String basicCredentials;
 	private TokenAuth tokenAuth;
 }
