@@ -152,10 +152,20 @@ public class Auth {
 				}
 				AuthOptions.copyAttributes(copy, options);
 			} else {
-				copy = copyAttributes(new AuthOptions(), options);
+				copy = AuthOptions.copy(options);
 				AuthOptions.copyAttributes(copy, options);
 			}
 			return copy;
+		}
+
+		/**
+		 * Create a new copy of object
+		 *
+		 * @param options source object for a copy
+		 * @return copied object
+		 */
+		public static AuthOptions copy(AuthOptions options) {
+			return copyAttributes(new AuthOptions(), options);
 		}
 
 		/**
@@ -175,6 +185,24 @@ public class Auth {
 			src.tokenDetails = dest.tokenDetails;
 			src.authCallback = dest.authCallback;
 			return src;
+		}
+
+		/**
+		 * A special case convenience for AuthOption
+		 * that if all its attributes are null apart from force,
+		 * then when passed to authorise as an argument
+		 * the previously configured authentication options will remain intact
+		 * This behaviour takes precedence over RSA10j
+		 * <p>
+		 * Spec: RSA10d
+		 * </p>
+		 *
+		 * @return true, if all attributes are null apart from force. Otherwise, false.
+		 */
+		public boolean onlyForce() {
+			return force && key == null && authUrl == null && authParams == null &&
+					authHeaders == null && token == null && tokenDetails == null &&
+					authCallback == null && !queryTime;
 		}
 	}
 
@@ -403,8 +431,21 @@ public class Auth {
 	 * @param callback (err, tokenDetails)
 	 */
 	public TokenDetails authorise(AuthOptions options, TokenParams params) throws AblyException {
-		/* Spec: RSA10j */
-		options = (options == null) ? this.authOptions : this.authOptions.replace(options);
+		if (options == null) {
+			/* use previously configured options */
+			options = this.authOptions;
+		} else if (options.onlyForce()) {
+			/* create a copy and set force attribute true
+			 * Spec: RSA10d */
+			options = this.authOptions instanceof ClientOptions ?
+					ClientOptions.copy((ClientOptions) authOptions) :
+					AuthOptions.copy(authOptions);
+			options.force = true;
+		} else {
+			/* replace attributes
+			 * Spec: RSA10j */
+			options = this.authOptions.replace(options);
+		}
 		params = (params == null) ? ably.options.defaultTokenParams :
 				TokenParams.copy(ably.options.defaultTokenParams).replace(params);
 
@@ -607,15 +648,15 @@ public class Auth {
 	 * Spec: RSA10g
 	 * </p>
 	 */
-	private void storeAuthOptions(AuthOptions authOptions) {
-		if (authOptions != null) {
-			this.authOptions.key = authOptions.key;
-			this.authOptions.authUrl = authOptions.authUrl;
-			this.authOptions.authParams = authOptions.authParams;
-			this.authOptions.authHeaders = authOptions.authHeaders;
-			this.authOptions.token = authOptions.token;
-			this.authOptions.tokenDetails = authOptions.tokenDetails;
-			this.authOptions.authCallback = authOptions.authCallback;
+	private void storeAuthOptions(AuthOptions options) {
+		if (options != null && !options.onlyForce()) {
+			this.authOptions.key = options.key;
+			this.authOptions.authUrl = options.authUrl;
+			this.authOptions.authParams = options.authParams;
+			this.authOptions.authHeaders = options.authHeaders;
+			this.authOptions.token = options.token;
+			this.authOptions.tokenDetails = options.tokenDetails;
+			this.authOptions.authCallback = options.authCallback;
 		}
 	}
 
