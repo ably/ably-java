@@ -31,6 +31,47 @@ public class ClientOptions extends AuthOptions {
 	}
 
 	/**
+	 * Create a new copy of object
+	 * @param options source object for a copy
+	 * @return copied object
+	 */
+	public static ClientOptions copy(ClientOptions options) {
+		ClientOptions copy = new ClientOptions();
+		AuthOptions.copyAttributes(copy,options);
+		return ClientOptions.copyAttributes(copy, options);
+	}
+
+	/**
+	 * Copy the values of each attribute
+	 * @param src source object for copy attributes
+	 * @param dest destination object
+	 * @return source object with new attributes
+	 */
+	public static ClientOptions copyAttributes(ClientOptions src, ClientOptions dest) {
+		src.clientId = dest.clientId;
+		src.logLevel = dest.logLevel;
+		src.logHandler = dest.logHandler;
+		src.tls = dest.tls;
+		src.headers = dest.headers;
+		src.restHost = dest.restHost;
+		src.realtimeHost = dest.realtimeHost;
+		src.port = dest.port;
+		src.tlsPort = dest.tlsPort;
+		src.autoConnect = dest.autoConnect;
+		src.useBinaryProtocol = dest.useBinaryProtocol;
+		src.queueMessages = dest.queueMessages;
+		src.echoMessages = dest.echoMessages;
+		src.recover = dest.recover;
+		src.proxy = dest.proxy;
+		src.httpOpenTimeout = dest.httpOpenTimeout;
+		src.httpRequestTimeout = dest.httpRequestTimeout;
+		src.httpMaxRetryCount = dest.httpMaxRetryCount;
+		src.defaultTokenParams = dest.defaultTokenParams;
+		src.defaultTokenParams = dest.defaultTokenParams;
+		return src;
+	}
+
+	/**
 	 * The id of the client represented by this instance. The clientId is relevant
 	 * to presence operations, where the clientId is the principal identifier of the
 	 * client in presence update messages. The clientId is also relevant to
