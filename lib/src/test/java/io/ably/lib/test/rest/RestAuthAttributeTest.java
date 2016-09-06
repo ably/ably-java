@@ -48,7 +48,7 @@ public class RestAuthAttributeTest {
 	public void auth_stores_options_params() {
 		try {
 			/* init custom TokenParams */
-			Capability capability1 = new Capability();
+			final Capability capability1 = new Capability();
 			capability1.addResource("testchannel", "subscribe");
 			TokenParams tokenParams = new TokenParams() {{
 				ttl = 1000L;
@@ -57,7 +57,7 @@ public class RestAuthAttributeTest {
 			}};
 
 			/* init custom AuthOptions */
-			Setup.TestVars testVars = Setup.getTestVars();
+			final Setup.TestVars testVars = Setup.getTestVars();
 			AuthOptions authOptions = new AuthOptions() {{
 				authCallback = new TokenCallback() {
 					private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
@@ -123,8 +123,8 @@ public class RestAuthAttributeTest {
 			/* get key and capability */
 			Setup.TestVars testVars = Setup.getTestVars();
 			Setup.Key key = testVars.keys[2];
-			String keyCapability = key.capability;
-			String keyStr = key.keyStr;
+			final String keyCapability = key.capability;
+			final String keyStr = key.keyStr;
 
 			/* init custom TokenParams */
 			TokenParams tokenParams = new TokenParams() {{
@@ -145,7 +145,7 @@ public class RestAuthAttributeTest {
 			assertEquals(tokenDetails.capability, tokenParams.capability);
 
 			/* init custom AuthOptions */
-			String test_token = "test_token";
+			final String test_token = "test_token";
 			AuthOptions authOptions = new AuthOptions() {{
 				authCallback = new TokenCallback() {
 					@Override
@@ -190,8 +190,8 @@ public class RestAuthAttributeTest {
 			/* get key and capability */
 			Setup.TestVars testVars = Setup.getTestVars();
 			Setup.Key key = testVars.keys[2];
-			String keyCapability = key.capability;
-			String keyStr = key.keyStr;
+			final String keyCapability = key.capability;
+			final String keyStr = key.keyStr;
 			String keyName = key.keyName;
 
 			/* init custom TokenParams */
@@ -242,7 +242,7 @@ public class RestAuthAttributeTest {
 	public void auth_custom_options_authorise() {
 		try {
 			/* init custom TokenParams */
-			Capability capability1 = new Capability();
+			final Capability capability1 = new Capability();
 			capability1.addResource("testchannel", "subscribe");
 			TokenParams tokenParams = new TokenParams() {{
 				ttl = 5000L;
@@ -251,7 +251,7 @@ public class RestAuthAttributeTest {
 			}};
 
 			/* init custom AuthOptions */
-			Setup.TestVars testVars = Setup.getTestVars();
+			final Setup.TestVars testVars = Setup.getTestVars();
 			AuthOptions authOptions = new AuthOptions() {{
 				authCallback = new TokenCallback() {
 					private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
@@ -305,7 +305,7 @@ public class RestAuthAttributeTest {
 			TokenDetails tokenDetails1 = ably.auth.authorise(null, null);
 
 			/* init custom AuthOptions with force value is true */
-			String custom_test_value = "test_forced_token";
+			final String custom_test_value = "test_forced_token";
 			AuthOptions authOptions = new AuthOptions() {{
 				authCallback = new TokenCallback() {
 					@Override
@@ -364,6 +364,69 @@ public class RestAuthAttributeTest {
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("auth_custom_options_authorise: Unexpected exception");
+		}
+	}
+
+	/**
+	 * Verify if the {@link AuthOptions#queryTime} is true, it will obtain
+	 * the server time once and persist the offset from the local clock.
+	 * All future token requests generated directly or indirectly via a call
+	 * to authorise will not obtain the server time,
+	 * but instead use the local clock offset to calculate the server time.
+	 * <p>
+	 * Spec: RSA10k
+	 * </p>
+	 */
+	private int counter = 0;
+
+	@Test
+	public void auth_authorise_query_time() {
+		try {
+			/* init custom Ably client with counter for time() method */
+			Setup.TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions();
+			AblyRest ablyRest = new AblyRest(opts) {
+				@Override
+				public long time() throws AblyException {
+					counter++;
+					return super.time();
+				}
+			};
+
+			/* init custom auth options for obtaining the server time */
+			AuthOptions authOptions = new AuthOptions();
+			authOptions.force = true;
+			authOptions.queryTime = true;
+			authOptions.key = testVars.keys[0].keyStr;
+
+			/* authorise with custom auth options */
+			TokenDetails tokenDetails1 = ablyRest.auth.authorise(authOptions, null);
+
+			/* Verify that, token isn't null and method time() invoked once */
+			assertNotNull("Expected token value", tokenDetails1.token);
+			assertEquals("Excepted one invoke", counter, 1);
+
+			/* re-authorise with same custom auth options */
+			TokenDetails tokenDetails2 = ablyRest.auth.authorise(authOptions, null);
+
+			/* Verify that,
+			 * new token isn't null, tokens aren't equals and
+			 * method time() not invoked again */
+			assertNotNull("Expected token value", tokenDetails2.token);
+			assertNotEquals(tokenDetails1.token, tokenDetails2.token);
+			assertEquals("Excepted one invoke", counter, 1);
+
+			/* discard the cached local clock offset and
+			 * re-authorise with same custom auth options */
+			ablyRest.auth.discardTimeOffset();
+			TokenDetails tokenDetails = ablyRest.auth.authorise(authOptions, null);
+
+			/* Verify that, issued token isn't null and method time() invoked twice */
+			assertNotNull("Expected token value", tokenDetails.token);
+			assertEquals("Excepted one invoke", counter, 2);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_authorise_query_time: Unexpected exception");
 		}
 	}
 }

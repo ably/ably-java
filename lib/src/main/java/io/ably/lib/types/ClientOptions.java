@@ -67,7 +67,6 @@ public class ClientOptions extends AuthOptions {
 		src.httpRequestTimeout = dest.httpRequestTimeout;
 		src.httpMaxRetryCount = dest.httpMaxRetryCount;
 		src.defaultTokenParams = dest.defaultTokenParams;
-		src.defaultTokenParams = dest.defaultTokenParams;
 		return src;
 	}
 
