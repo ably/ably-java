@@ -617,10 +617,15 @@ public class Auth {
 
 		/* timestamp */
 		if(request.timestamp == 0) {
-			if(options.queryTime)
-				request.timestamp = ably.time();
-			else
+			if (options.queryTime) {
+				/* Spec: RSA10k */
+				if (timeOffset == null) {
+					timeOffset = ably.time() - timestamp();
+				}
+				request.timestamp = timeOffset + timestamp();
+			} else {
 				request.timestamp = timestamp();
+			}
 		}
 
 		/* nonce */
@@ -730,6 +735,18 @@ public class Auth {
 
 	public static long timestamp() { return System.currentTimeMillis(); }
 
+	/**
+	 * A client may discard the cached local clock offset in situations
+	 * in which it may have been invalidated, such as if there is a local change
+	 * to the date, time, or timezone, of the client device
+	 * <p>
+	 * Spec: RSA10k
+	 * </p>
+	 */
+	public void discardTimeOffset() {
+		timeOffset = null;
+	}
+
 	/********************
 	 * internal
 	 ********************/
@@ -796,4 +813,5 @@ public class Auth {
 	private final TokenParams tokenParams;
 	private String basicCredentials;
 	private TokenAuth tokenAuth;
+	private Long timeOffset = null;
 }
