@@ -48,7 +48,7 @@ public class RestAuthAttributeTest {
 	public void auth_stores_options_params() {
 		try {
 			/* init custom TokenParams */
-			Capability capability1 = new Capability();
+			final Capability capability1 = new Capability();
 			capability1.addResource("testchannel", "subscribe");
 			TokenParams tokenParams = new TokenParams() {{
 				ttl = 1000L;
@@ -57,7 +57,7 @@ public class RestAuthAttributeTest {
 			}};
 
 			/* init custom AuthOptions */
-			Setup.TestVars testVars = Setup.getTestVars();
+			final Setup.TestVars testVars = Setup.getTestVars();
 			AuthOptions authOptions = new AuthOptions() {{
 				authCallback = new TokenCallback() {
 					private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
@@ -123,8 +123,8 @@ public class RestAuthAttributeTest {
 			/* get key and capability */
 			Setup.TestVars testVars = Setup.getTestVars();
 			Setup.Key key = testVars.keys[2];
-			String keyCapability = key.capability;
-			String keyStr = key.keyStr;
+			final String keyCapability = key.capability;
+			final String keyStr = key.keyStr;
 
 			/* init custom TokenParams */
 			TokenParams tokenParams = new TokenParams() {{
@@ -145,7 +145,7 @@ public class RestAuthAttributeTest {
 			assertEquals(tokenDetails.capability, tokenParams.capability);
 
 			/* init custom AuthOptions */
-			String test_token = "test_token";
+			final String test_token = "test_token";
 			AuthOptions authOptions = new AuthOptions() {{
 				authCallback = new TokenCallback() {
 					@Override
@@ -190,8 +190,8 @@ public class RestAuthAttributeTest {
 			/* get key and capability */
 			Setup.TestVars testVars = Setup.getTestVars();
 			Setup.Key key = testVars.keys[2];
-			String keyCapability = key.capability;
-			String keyStr = key.keyStr;
+			final String keyCapability = key.capability;
+			final String keyStr = key.keyStr;
 			String keyName = key.keyName;
 
 			/* init custom TokenParams */
@@ -242,7 +242,7 @@ public class RestAuthAttributeTest {
 	public void auth_custom_options_authorise() {
 		try {
 			/* init custom TokenParams */
-			Capability capability1 = new Capability();
+			final Capability capability1 = new Capability();
 			capability1.addResource("testchannel", "subscribe");
 			TokenParams tokenParams = new TokenParams() {{
 				ttl = 5000L;
@@ -251,7 +251,7 @@ public class RestAuthAttributeTest {
 			}};
 
 			/* init custom AuthOptions */
-			Setup.TestVars testVars = Setup.getTestVars();
+			final Setup.TestVars testVars = Setup.getTestVars();
 			AuthOptions authOptions = new AuthOptions() {{
 				authCallback = new TokenCallback() {
 					private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
@@ -305,7 +305,7 @@ public class RestAuthAttributeTest {
 			TokenDetails tokenDetails1 = ably.auth.authorise(null, null);
 
 			/* init custom AuthOptions with force value is true */
-			String custom_test_value = "test_forced_token";
+			final String custom_test_value = "test_forced_token";
 			AuthOptions authOptions = new AuthOptions() {{
 				authCallback = new TokenCallback() {
 					@Override

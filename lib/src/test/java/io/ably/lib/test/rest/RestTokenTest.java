@@ -115,6 +115,7 @@ public class RestTokenTest {
 			long requestTime = timeOffset + System.currentTimeMillis();
 			AuthOptions authOptions = new AuthOptions();
 			authOptions.queryTime = true;
+			authOptions.key = Setup.getTestVars().keys[0].keyStr;
 			TokenDetails tokenDetails = ably.auth.requestToken(null, authOptions);
 			assertNotNull("Expected token value", tokenDetails.token);
 			assertTrue("Unexpected issued time", (tokenDetails.issued >= (requestTime - 1000)) && (tokenDetails.issued <= (requestTime + 1000)));

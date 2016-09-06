@@ -762,6 +762,7 @@ public class Auth {
 		authOptions = options;
 		tokenParams = options.defaultTokenParams != null ?
 				options.defaultTokenParams : new TokenParams();
+		tokenParams.clientId = options.clientId;
 
 		/* decide default auth method */
 		if(authOptions.key != null) {
