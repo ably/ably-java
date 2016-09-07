@@ -341,6 +341,7 @@ public class Auth {
 	public TokenDetails requestToken(TokenParams params, AuthOptions options) throws AblyException {
 		/* merge supplied options with the already-known options */
 		final AuthOptions tokenOptions = (options == null) ? authOptions : options.merge(authOptions);
+		params = (params == null) ? tokenParams : params;
 
 		/* set up the request params */
 		if(params == null) params = new TokenParams();
@@ -546,14 +547,6 @@ public class Auth {
 			this.tokenParams.capability = tokenParams.capability;
 			this.tokenParams.clientId = tokenParams.clientId;
 		}
-	}
-
-	public AuthOptions getAuthOptions() {
-		return this.authOptions;
-	}
-
-	public TokenParams getTokenParams() {
-		return tokenParams;
 	}
 
 	/**
