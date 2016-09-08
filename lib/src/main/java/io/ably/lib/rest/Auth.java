@@ -139,6 +139,26 @@ public class Auth {
 			queryTime = queryTime & defaults.queryTime;
 			return this;
 		}
+
+		/**
+		 * Stores the AuthOptions arguments as defaults for subsequent authorisations
+		 * with the exception of the attributes {@link AuthOptions#queryTime}
+		 * and {@link AuthOptions#force}
+		 * <p>
+		 * Spec: RSA10g
+		 * </p>
+		 */
+		AuthOptions storedValues() {
+			AuthOptions result = new AuthOptions();
+			result.key = this.key;
+			result.authUrl = this.authUrl;
+			result.authParams = this.authParams;
+			result.authHeaders = this.authHeaders;
+			result.token = this.token;
+			result.tokenDetails = this.tokenDetails;
+			result.authCallback = this.authCallback;
+			return result;
+		}
 	}
 
 	/**
@@ -234,6 +254,21 @@ public class Auth {
 			if(timestamp > 0) params.add(new Param("timestamp", String.valueOf(timestamp)));
 			return params;
 		}
+
+		/**
+		 * Stores the TokenParams arguments as defaults for subsequent authorisations
+		 * with the exception of the attributes {@link TokenParams#timestamp}
+		 * <p>
+		 * Spec: RSA10g
+		 * </p>
+		 */
+		TokenParams storedValues() {
+			TokenParams result = new TokenParams();
+			result.ttl = this.ttl;
+			result.capability = this.capability;
+			result.clientId = this.clientId;
+			return result;
+		}
 	}
 
 	/**
@@ -325,8 +360,11 @@ public class Auth {
 	 */
 	public TokenDetails authorise(AuthOptions options, TokenParams params) throws AblyException {
 		/* Spec: RSA10g */
-		storeAuthOptions(options);
-		storeTokenParams(params);
+		if (options != null)
+			this.authOptions = options.storedValues();
+		if (params != null)
+			this.tokenParams = params.storedValues();
+
 		return tokenAuth.authorise(options, params);
 	}
 
@@ -515,41 +553,6 @@ public class Auth {
 	}
 
 	/**
-	 * Stores the AuthOptions arguments as defaults for subsequent authorisations
-	 * with the exception of the attributes {@link AuthOptions#queryTime}
-	 * and {@link AuthOptions#force}
-	 * <p>
-	 * Spec: RSA10g
-	 * </p>
-	 */
-	private void storeAuthOptions(AuthOptions authOptions) {
-		if (authOptions != null) {
-			this.authOptions.key = authOptions.key;
-			this.authOptions.authUrl = authOptions.authUrl;
-			this.authOptions.authParams = authOptions.authParams;
-			this.authOptions.authHeaders = authOptions.authHeaders;
-			this.authOptions.token = authOptions.token;
-			this.authOptions.tokenDetails = authOptions.tokenDetails;
-			this.authOptions.authCallback = authOptions.authCallback;
-		}
-	}
-
-	/**
-	 * Stores the TokenParams arguments as defaults for subsequent authorisations
-	 * with the exception of the attributes {@link TokenParams#timestamp}
-	 * <p>
-	 * Spec: RSA10g
-	 * </p>
-	 */
-	private void storeTokenParams(TokenParams tokenParams) {
-		if (tokenParams != null) {
-			this.tokenParams.ttl = tokenParams.ttl;
-			this.tokenParams.capability = tokenParams.capability;
-			this.tokenParams.clientId = tokenParams.clientId;
-		}
-	}
-
-	/**
 	 * Get the authentication method for this library instance.
 	 * @return
 	 */
@@ -658,8 +661,8 @@ public class Auth {
 
 	private final AblyRest ably;
 	private final AuthMethod method;
-	private final AuthOptions authOptions;
-	private final TokenParams tokenParams;
+	private AuthOptions authOptions;
+	private TokenParams tokenParams;
 	private String basicCredentials;
 	private TokenAuth tokenAuth;
 }
