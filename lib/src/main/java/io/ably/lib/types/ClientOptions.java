@@ -1,13 +1,12 @@
 package io.ably.lib.types;
 
 import io.ably.lib.rest.Auth.AuthOptions;
+import io.ably.lib.rest.Auth.TokenParams;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Log.LogHandler;
 
 import java.util.Map;
-
-import static io.ably.lib.rest.Auth.*;
 
 /**
  * Options: Ably library options for REST and Realtime APIs

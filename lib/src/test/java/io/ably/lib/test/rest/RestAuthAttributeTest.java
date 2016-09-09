@@ -8,7 +8,6 @@ import io.ably.lib.test.common.Setup;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Capability;
 import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.Param;
 
 import static io.ably.lib.rest.Auth.AuthOptions;
 import static io.ably.lib.rest.Auth.TokenCallback;
@@ -17,6 +16,7 @@ import static io.ably.lib.rest.Auth.TokenParams;
 import static io.ably.lib.rest.Auth.TokenRequest;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
@@ -47,16 +47,18 @@ public class RestAuthAttributeTest {
 	public void auth_stores_options_params() {
 		try {
 			/* init custom TokenParams */
-			Capability capability1 = new Capability();
-			capability1.addResource("testchannel", "subscribe");
+			Capability capability = new Capability();
+			capability.addResource("testchannel", "subscribe");
+			final String capabilityStr = capability.toString();
+			final String testClientId = "firstClientId";
 			TokenParams tokenParams = new TokenParams() {{
-				ttl = 1000L;
-				clientId = "firstClientId";
-				capability = capability1.toString();
+				ttl = 4000L;
+				clientId = testClientId;
+				capability = capabilityStr;
 			}};
 
 			/* init custom AuthOptions */
-			Setup.TestVars testVars = Setup.getTestVars();
+			final Setup.TestVars testVars = Setup.getTestVars();
 			AuthOptions authOptions = new AuthOptions() {{
 				authCallback = new TokenCallback() {
 					private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
@@ -66,42 +68,35 @@ public class RestAuthAttributeTest {
 						return ably.auth.requestToken(params, null);
 					}
 				};
-				authUrl = "auth_url_1";
-				token = "test_token_1";
 				key = testVars.keys[1].keyStr;
-				tokenDetails = new TokenDetails();
-				authHeaders = new Param[]{new Param("X-Header-Param", "1")};
-				authParams = new Param[]{new Param("X-Auth-Param", "1")};
 			}};
 
 			/* authorise with custom options */
-			ably.auth.authorise(authOptions, tokenParams);
-
-			/* get stored TokenParams */
-			TokenParams storedTokenParams = ably.auth.getTokenParams();
+			TokenDetails tokenDetails1 = ably.auth.authorise(authOptions, tokenParams);
 
 			/* Verify that,
-			 * storedTokenParams isn't null,
-			 * and storedTokenParams equals custom tokenParams */
-			assertNotNull(storedTokenParams);
-			assertEquals(storedTokenParams.ttl, tokenParams.ttl);
-			assertEquals(storedTokenParams.clientId, tokenParams.clientId);
-			assertEquals(storedTokenParams.capability, tokenParams.capability);
+			 * tokenDetails1 isn't null,
+			 * capability and clientId equals to the values of corresponding attributes in tokenParams */
+			assertNotNull(tokenDetails1);
+			assertEquals(tokenDetails1.clientId, testClientId);
+			assertEquals(tokenDetails1.capability, capabilityStr);
 
-			/* get stored AuthOptions */
-			AuthOptions storedAuthOptions = ably.auth.getAuthOptions();
+			/* wait until token expires */
+			try {
+				Thread.sleep(5000L);
+			} catch(InterruptedException ie) {}
+
+			/* authorise with default options */
+			TokenDetails tokenDetails2 = ably.auth.authorise(null, null);
 
 			/* Verify that,
-			 * storedAuthOptions isn't null,
-			 * and storedAuthOptions equals custom authOptions */
-			assertNotNull(storedAuthOptions);
-			assertEquals(storedAuthOptions.authCallback, authOptions.authCallback);
-			assertEquals(storedAuthOptions.authUrl, authOptions.authUrl);
-			assertEquals(storedAuthOptions.token, authOptions.token);
-			assertEquals(storedAuthOptions.key, authOptions.key);
-			assertEquals(storedAuthOptions.tokenDetails, authOptions.tokenDetails);
-			assertArrayEquals(storedAuthOptions.authHeaders, authOptions.authHeaders);
-			assertArrayEquals(storedAuthOptions.authParams, authOptions.authParams);
+			 * tokenDetails2 isn't null,
+			 * new token has to be issued,
+			 * capability and clientId for different TokenDetails are the same */
+			assertNotNull(tokenDetails2);
+			assertNotEquals(tokenDetails1.token, tokenDetails2.token);
+			assertEquals(tokenDetails1.capability, tokenDetails2.capability);
+			assertEquals(tokenDetails1.clientId, tokenDetails2.clientId);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("auth_stores_options_params: Unexpected exception");
