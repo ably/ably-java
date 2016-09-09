@@ -128,19 +128,6 @@ public class Auth {
 		}
 
 		/**
-		 * Internal
-		 */
-		public AuthOptions merge(AuthOptions defaults) {
-			if(authCallback == null) authCallback = defaults.authCallback;
-			if(authUrl == null) authUrl = defaults.authUrl;
-			if(key == null) key = defaults.key;
-			if(authHeaders == null) authHeaders = defaults.authHeaders;
-			if(authParams == null) authParams = defaults.authParams;
-			queryTime = queryTime & defaults.queryTime;
-			return this;
-		}
-
-		/**
 		 * Stores the AuthOptions arguments as defaults for subsequent authorisations
 		 * with the exception of the attributes {@link AuthOptions#queryTime}
 		 * and {@link AuthOptions#force}
@@ -148,7 +135,7 @@ public class Auth {
 		 * Spec: RSA10g
 		 * </p>
 		 */
-		AuthOptions storedValues() {
+		private AuthOptions storedValues() {
 			AuthOptions result = new AuthOptions();
 			result.key = this.key;
 			result.authUrl = this.authUrl;
@@ -157,6 +144,25 @@ public class Auth {
 			result.token = this.token;
 			result.tokenDetails = this.tokenDetails;
 			result.authCallback = this.authCallback;
+			return result;
+		}
+
+		/**
+		 * Create a new copy of object
+		 *
+		 * @return copied object
+		 */
+		private AuthOptions copy() {
+			AuthOptions result = new AuthOptions();
+			result.key = this.key;
+			result.authUrl = this.authUrl;
+			result.authParams = this.authParams;
+			result.authHeaders = this.authHeaders;
+			result.token = this.token;
+			result.tokenDetails = this.tokenDetails;
+			result.authCallback = this.authCallback;
+			result.queryTime = this.queryTime;
+			result.force = this.force;
 			return result;
 		}
 	}
@@ -262,11 +268,25 @@ public class Auth {
 		 * Spec: RSA10g
 		 * </p>
 		 */
-		TokenParams storedValues() {
+		private TokenParams storedValues() {
 			TokenParams result = new TokenParams();
 			result.ttl = this.ttl;
 			result.capability = this.capability;
 			result.clientId = this.clientId;
+			return result;
+		}
+
+		/**
+		 * Create a new copy of object
+		 *
+		 * @return copied object
+		 */
+		private TokenParams copy() {
+			TokenParams result = new TokenParams();
+			result.ttl = this.ttl;
+			result.capability = this.capability;
+			result.clientId = this.clientId;
+			result.timestamp = this.timestamp;
 			return result;
 		}
 	}
@@ -355,15 +375,18 @@ public class Auth {
 	 *
 	 * - queryTime   (optional) boolean indicating that the Ably system should be
 	 *               queried for the current time when none is specified explicitly.
-	 *
-	 * @param callback (err, tokenDetails)
+	 * @param options
 	 */
-	public TokenDetails authorise(AuthOptions options, TokenParams params) throws AblyException {
+	public TokenDetails authorise(TokenParams params, AuthOptions options) throws AblyException {
 		/* Spec: RSA10g */
 		if (options != null)
 			this.authOptions = options.storedValues();
 		if (params != null)
 			this.tokenParams = params.storedValues();
+
+		/* Spec: RSA10j */
+		options = (options == null) ? this.authOptions : options.copy();
+		params = (params == null) ? this.tokenParams : params.copy();
 
 		return tokenAuth.authorise(options, params);
 	}
@@ -377,25 +400,19 @@ public class Auth {
 	 * @throws AblyException
 	 */
 	public TokenDetails requestToken(TokenParams params, AuthOptions options) throws AblyException {
-		/* merge supplied options with the already-known options */
-		final AuthOptions tokenOptions = (options == null) ? authOptions : options.merge(authOptions);
-		params = (params == null) ? tokenParams : params;
+		/* Spec: RSA8e */
+		options = (options == null) ? this.authOptions : options.copy();
+		params = (params == null) ? this.tokenParams : params.copy();
 
-		/* set up the request params */
-		if(params == null) params = new TokenParams();
-		if(params.clientId == null)
-			params.clientId = ably.clientId;
-
-		if(params.capability != null)
-			params.capability = Capability.c14n(params.capability);
+		params.capability = Capability.c14n(params.capability);
 
 		/* get the signed token request */
 		TokenRequest signedTokenRequest;
-		if(tokenOptions.authCallback != null) {
+		if (options.authCallback != null) {
 			Log.i("Auth.requestToken()", "using token auth with auth_callback");
 			try {
 				/* the callback can return either a signed token request, or a TokenDetails */
-				Object authCallbackResponse = tokenOptions.authCallback.getTokenRequest(params);
+				Object authCallbackResponse = options.authCallback.getTokenRequest(params);
 				if(authCallbackResponse instanceof String)
 					return new TokenDetails((String)authCallbackResponse);
 				if(authCallbackResponse instanceof TokenDetails)
@@ -411,18 +428,18 @@ public class Auth {
 				if(errorInfo.statusCode == 0) errorInfo.statusCode = 401;
 				throw e;
 			}
-		} else if(tokenOptions.authUrl != null) {
+		} else if (options.authUrl != null) {
 			Log.i("Auth.requestToken()", "using token auth with auth_url");
 			/* append any custom params to token params */
 			List<Param> tokenParams = params.asParams();
-			if(tokenOptions.authParams != null)
-				tokenParams.addAll(Arrays.asList(tokenOptions.authParams));
+			if (options.authParams != null)
+				tokenParams.addAll(Arrays.asList(options.authParams));
 			Param[] requestParams = tokenParams.toArray(new Param[tokenParams.size()]);
 
 			/* the auth request can return either a signed token request as a TokenParams, or a TokenDetails */
 			Object authUrlResponse = null;
 			try {
-				authUrlResponse = ably.http.getUri(tokenOptions.authUrl, tokenOptions.authHeaders, requestParams, new ResponseHandler<Object>() {
+				authUrlResponse = ably.http.getUri(options.authUrl, options.authHeaders, requestParams, new ResponseHandler<Object>() {
 					@Override
 					public Object handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
 						try {
@@ -467,15 +484,15 @@ public class Auth {
 			}
 			/* otherwise it's a signed token request */
 			signedTokenRequest = (TokenRequest)authUrlResponse;
-		} else if(tokenOptions.key != null) {
+		} else if (options.key != null) {
 			Log.i("Auth.requestToken()", "using token auth with client-side signing");
-			signedTokenRequest = createTokenRequest(tokenOptions, params);
+			signedTokenRequest = createTokenRequest(params, options);
 		} else {
 			throw AblyException.fromErrorInfo(new ErrorInfo("Auth.requestToken(): options must include valid authentication parameters", 400, 40000));
 		}
 
 		String tokenPath = "/keys/" + signedTokenRequest.keyName + "/requestToken";
-		return ably.http.post(tokenPath, tokenOptions.authHeaders, tokenOptions.authParams, new Http.JSONRequestBody(signedTokenRequest.asJSON().toString()), new ResponseHandler<TokenDetails>() {
+		return ably.http.post(tokenPath, options.authHeaders, options.authParams, new Http.JSONRequestBody(signedTokenRequest.asJSON().toString()), new ResponseHandler<TokenDetails>() {
 			@Override
 			public TokenDetails handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
 				try {
@@ -493,14 +510,19 @@ public class Auth {
 	 * Create a signed token request based on known credentials
 	 * and the given token params. This would typically be used if creating
 	 * signed requests for submission by another client.
-	 * @param options: see {@link #authorise} for options
-	 * @param params: see {@link #authorise} for params
+	 * @param params : see {@link #authorise} for params
+	 * @param options : see {@link #authorise} for options
 	 * @return: the params augmented with the mac.
 	 * @throws AblyException
 	 */
-	public TokenRequest createTokenRequest(AuthOptions options, TokenParams params) throws AblyException {
-		if(options == null) options = this.authOptions;
-		else options.merge(this.authOptions);
+	public TokenRequest createTokenRequest(TokenParams params, AuthOptions options) throws AblyException {
+		/* Spec: RSA9h */
+		options = (options == null) ? this.authOptions : options.copy();
+		params = (params == null) ? this.tokenParams : params.copy();
+
+		if(params.capability != null)
+			params.capability = Capability.c14n(params.capability);
+
 		TokenRequest request = new TokenRequest(params);
 
 		String key = options.key;
