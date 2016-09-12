@@ -1,6 +1,5 @@
 package io.ably.lib.test.rest;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import io.ably.lib.rest.AblyRest;
@@ -25,16 +24,6 @@ import static org.junit.Assert.fail;
  */
 public class RestAuthAttributeTest {
 
-	private static AblyRest ably;
-
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-		Setup.TestVars testVars = Setup.getTestVars();
-		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
-		opts.clientId = "defaultClientId";
-		ably = new AblyRest(opts);
-	}
-
 	/**
 	 * Stores the AuthOptions and TokenParams arguments as defaults
 	 * for subsequent authorisations with the exception of the attributes:
@@ -46,6 +35,12 @@ public class RestAuthAttributeTest {
 	@Test
 	public void auth_stores_options_params() {
 		try {
+			/* create Ably instance with clientId */
+			final Setup.TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			opts.clientId = "defaultClientId";
+			AblyRest ably = new AblyRest(opts);
+
 			/* init custom TokenParams */
 			Capability capability = new Capability();
 			capability.addResource("testchannel", "subscribe");
@@ -58,7 +53,6 @@ public class RestAuthAttributeTest {
 			}};
 
 			/* init custom AuthOptions */
-			final Setup.TestVars testVars = Setup.getTestVars();
 			AuthOptions authOptions = new AuthOptions() {{
 				authCallback = new TokenCallback() {
 					private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
@@ -114,8 +108,13 @@ public class RestAuthAttributeTest {
 	@Test
 	public void auth_custom_options_request_token() {
 		try {
-			/* init ably client for token */
+			/* create Ably instance with clientId */
 			final Setup.TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			opts.clientId = "defaultClientId";
+			AblyRest ably = new AblyRest(opts);
+
+			/* init ably client for token */
 			ClientOptions optsForToken = testVars.createOptions(testVars.keys[0].keyStr);
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
 
@@ -189,9 +188,14 @@ public class RestAuthAttributeTest {
 	@Test
 	public void auth_custom_options_create_token_request() {
 		try {
+			/* create Ably instance with clientId */
+			final Setup.TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			opts.clientId = "defaultClientId";
+			AblyRest ably = new AblyRest(opts);
+
 			/* test values */
 			final String ablyDefaultClientId = ably.options.clientId;
-			Setup.TestVars testVars = Setup.getTestVars();
 			final Setup.Key defaultKey = testVars.keys[2];
 			final String defaultCapability = defaultKey.capability;
 			final String testClientId = "testClientId";
@@ -247,8 +251,13 @@ public class RestAuthAttributeTest {
 	@Test
 	public void auth_custom_options_authorise() {
 		try {
-			/* init ably client for token */
+			/* create Ably instance with clientId */
 			final Setup.TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			opts.clientId = "defaultClientId";
+			AblyRest ably = new AblyRest(opts);
+
+			/* init ably client for token */
 			ClientOptions optsForToken = testVars.createOptions(testVars.keys[0].keyStr);
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
 
@@ -341,36 +350,66 @@ public class RestAuthAttributeTest {
 	 */
 	@Test
 	public void auth_authorise_force() {
+		Capability capability = new Capability();
+		capability.addResource("testchannel", "subscribe");
+		final String capabilityStr = capability.toString();
+		final String testClientId = "testClientId";
+		Capability capability2 = new Capability();
+		capability2.addResource("testchannel", "publish");
+		final String capabilityStr2 = capability2.toString();
+		final String testClientId2 = "testClientId2";
+
 		try {
-			/* authorise with default options */
-			TokenDetails tokenDetails1 = ably.auth.authorise(null, null);
+			/* create Ably instance with clientId */
+			final Setup.TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			opts.clientId = "defaultClientId";
+			AblyRest ably = new AblyRest(opts);
 
-			/* init custom AuthOptions with force value is true */
-			String custom_test_value = "test_forced_token";
-			AuthOptions authOptions = new AuthOptions() {{
-				authCallback = new TokenCallback() {
-					@Override
-					public Object getTokenRequest(TokenParams params) throws AblyException {
-						return custom_test_value;
-					}
-				};
-				force = true;
-			}};
+			/* init custom TokenParams */
+			TokenParams tokenParams = new TokenParams();
+			tokenParams.clientId = testClientId;
+			tokenParams.capability = capabilityStr;
 
-			/* authorise with custom AuthOptions */
-			TokenDetails tokenDetails2 = ably.auth.authorise(authOptions, null);
+			/* init custom AuthOptions */
+			AuthOptions authOptions = new AuthOptions();
+			authOptions.authCallback = new TokenCallback() {
+				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
 
-			/* Verify that,
-			 * tokenDetails1 and tokenDetails2 aren't null,
-			 * tokens are different,
-			 * token from tokenDetails2 equals custom_test_value */
-			assertNotNull(tokenDetails1);
-			assertNotNull(tokenDetails2);
-			assertNotEquals(tokenDetails1.token, tokenDetails2.token);
-			assertEquals(tokenDetails2.token, custom_test_value);
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					return ably.auth.requestToken(params, null);
+				}
+			};
+
+			/* authorise with custom options */
+			TokenDetails tokenDetails1 = ably.auth.authorise(tokenParams, authOptions);
+			assertNotNull("Expected token details", tokenDetails1);
+			assertEquals("Unexpected clientId", tokenDetails1.clientId, testClientId);
+			assertEquals("Unexpected capability", tokenDetails1.capability, capabilityStr);
+
+
+			/* change TokenParams */
+			tokenParams.clientId = testClientId2;
+			tokenParams.capability = capabilityStr2;
+
+			/* re-authorise, verify that token already exists */
+			TokenDetails tokenDetails2 = ably.auth.authorise(tokenParams, authOptions);
+			assertNotNull("Expected token details", tokenDetails2);
+			assertEquals("Unexpected token", tokenDetails1.token, tokenDetails2.token);
+			assertEquals("Unexpected clientId", tokenDetails1.clientId, tokenDetails2.clientId);
+			assertEquals("Unexpected capability", tokenDetails1.capability, tokenDetails2.capability);
+
+			/* force authorise */
+			authOptions.force = true;
+			TokenDetails tokenDetails3 = ably.auth.authorise(tokenParams, authOptions);
+			assertNotNull("Expected token details", tokenDetails3);
+			assertNotEquals("Unexpected token value", tokenDetails3.token, tokenDetails2.token);
+			assertEquals("Unexpected clientId", tokenDetails3.clientId, testClientId2);
+			assertEquals("Unexpected capability", tokenDetails3.capability, capabilityStr2);
 		} catch (AblyException e) {
 			e.printStackTrace();
-			fail("auth_custom_options_authorise: Unexpected exception");
+			fail("auth_authorise_force: Unexpected exception");
 		}
 	}
 
@@ -384,27 +423,48 @@ public class RestAuthAttributeTest {
 	 */
 	@Test
 	public void auth_authorise_only_force() {
+		Capability capability = new Capability();
+		capability.addResource("testchannel", "subscribe");
+		final String capabilityStr = capability.toString();
+		final String testClientId = "testClientId";
+
 		try {
-			/* authorise with default options */
-			TokenDetails tokenDetails1 = ably.auth.authorise(null, null);
+			/* create Ably instance with clientId */
+			final Setup.TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			opts.clientId = "defaultClientId";
+			AblyRest ably = new AblyRest(opts);
 
-			/* init custom AuthOptions with provided force value only */
-			AuthOptions authOptions = new AuthOptions() {{
-				force = true;
-			}};
+			/* init custom TokenParams */
+			TokenParams tokenParams = new TokenParams();
+			tokenParams.clientId = testClientId;
+			tokenParams.capability = capabilityStr;
 
-			/* authorise with default options */
-			TokenDetails tokenDetails2 = ably.auth.authorise(authOptions, null);
+			/* init custom AuthOptions */
+			AuthOptions authOptions = new AuthOptions();
+			authOptions.authCallback = new TokenCallback() {
+				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					return ably.auth.requestToken(params, null);
+				}
+			};
 
-			/* Verify that,
-			 * tokenDetails1 and tokenDetails2 aren't null,
-			 * tokens are different */
-			assertNotNull(tokenDetails1);
-			assertNotNull(tokenDetails2);
-			assertNotEquals(tokenDetails1.token, tokenDetails2.token);
+			/* authorise with custom options */
+			TokenDetails tokenDetails1 = ably.auth.authorise(tokenParams, authOptions);
+			assertNotNull("Expected token details", tokenDetails1);
+			assertEquals("Unexpected clientId", tokenDetails1.clientId, testClientId);
+			assertEquals("Unexpected capability", tokenDetails1.capability, capabilityStr);
+
+			/* authorise if all its attributes are null apart from force */
+			TokenDetails tokenDetails2 = ably.auth.authorise(null, new AuthOptions() {{ force = true; }});
+			assertNotNull("Expected token details", tokenDetails2);
+			assertNotEquals("Unexpected token", tokenDetails1.token, tokenDetails2.token);
+			assertEquals("Unexpected clientId", tokenDetails2.clientId, testClientId);
+			assertEquals("Unexpected capability", tokenDetails2.capability, capabilityStr);
 		} catch (AblyException e) {
 			e.printStackTrace();
-			fail("auth_custom_options_authorise: Unexpected exception");
+			fail("auth_authorise_only_force: Unexpected exception");
 		}
 	}
 }

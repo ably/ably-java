@@ -411,7 +411,6 @@ public class Auth {
 		} else {
 			options = options.copy();
 		}
-		//options = (options == null) ? this.authOptions : options.copy();
 		params = (params == null) ? this.tokenParams : params.copy();
 
 		return tokenAuth.authorise(options, params);
