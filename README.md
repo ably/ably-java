@@ -1,6 +1,6 @@
 # [Ably](https://www.ably.io)
 
-[![Build Status](https://travis-ci.org/ably/ably-java.png)](https://travis-ci.org/ably/ably-java)
+[![Build Status](https://travis-ci.org/ably/ably-java.png)](https://travis-ci.org/ably/ably-java)  [ ![Download](https://api.bintray.com/packages/ably-io/ably/java/images/download.svg) ](https://bintray.com/ably-io/ably/java/_latestVersion)
 
 A Java Realtime and REST client library for [Ably.io](https://www.ably.io), the realtime messaging service.
 
@@ -336,6 +336,14 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 * Add a tag and push to origin such as `git tag v0.8.3 && git push origin v0.8.3`
 * Run `gradle lib:jar && gradle fullJar` to build the JARs for this release
 * Visit [https://github.com/ably/ably-java/tags](https://github.com/ably/ably-java/tags) and `Add release notes` for the release, then attach the generated JARs in the folder `lib/build/libs`
+
+### Publishing to JCentre (Maven)
+
+* Go to the home page https://bintray.com/ably-io/ably/java. Select [New version](https://bintray.com/ably-io/ably/java/new/version), enter the new version such as "0.8.3" in name and save
+* Run `gradle generateRelease uploadArchives` locally to generate the files
+* Open local relative folder such as `/lib/build/release/0.8.3/`
+* Then go to the new version in JFrog Bintray and go to files such as https://bintray.com/ably-io/ably/java/0.8.3#files/io/ably/ably-java, then click on Upload files
+* Type in `io/ably/ably-java/0.8.3` into "Target Repository Path" ensuring the correct version is included. The drag in the files in `/lib/build/release/0.8.3/`
 
 ## Support, feedback and troubleshooting
 
