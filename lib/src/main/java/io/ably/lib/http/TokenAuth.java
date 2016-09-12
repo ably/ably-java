@@ -40,6 +40,7 @@ public class TokenAuth {
 		Log.i("TokenAuth.authorise()", "");
 		if(tokenDetails != null) {
 			if(tokenDetails.expires == 0 || tokenValid(tokenDetails)) {
+				/* Spec: RSA10d */
 				if(options == null || !options.force) {
 					Log.i("TokenAuth.authorise()", "using cached token; expires = " + tokenDetails.expires);
 					return tokenDetails;

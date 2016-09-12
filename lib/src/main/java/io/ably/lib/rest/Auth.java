@@ -165,6 +165,24 @@ public class Auth {
 			result.force = this.force;
 			return result;
 		}
+
+		/**
+		 * A special case convenience for AuthOption
+		 * that if all its attributes are null apart from force,
+		 * then when passed to authorise as an argument
+		 * the previously configured authentication options will remain intact
+		 * This behaviour takes precedence over RSA10j
+		 * <p>
+		 * Spec: RSA10d
+		 * </p>
+		 *
+		 * @return true, if all attributes are null apart from force. Otherwise, false.
+		 */
+		public boolean onlyForce() {
+			return force && key == null && authUrl == null && authParams == null &&
+					authHeaders == null && token == null && tokenDetails == null &&
+					authCallback == null && !queryTime;
+		}
 	}
 
 	/**
@@ -379,13 +397,20 @@ public class Auth {
 	 */
 	public TokenDetails authorise(TokenParams params, AuthOptions options) throws AblyException {
 		/* Spec: RSA10g */
-		if (options != null)
+		if (options != null && !options.onlyForce())
 			this.authOptions = options.storedValues();
 		if (params != null)
 			this.tokenParams = params.storedValues();
 
 		/* Spec: RSA10j */
-		options = (options == null) ? this.authOptions : options.copy();
+		if (options == null) {
+			options = this.authOptions;
+		} else if (options.onlyForce()) {
+			options = this.authOptions.copy();
+			options.force = true;
+		} else {
+			options = options.copy();
+		}
 		params = (params == null) ? this.tokenParams : params.copy();
 
 		return tokenAuth.authorise(options, params);
