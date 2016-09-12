@@ -1,13 +1,12 @@
 package io.ably.lib.types;
 
 import io.ably.lib.rest.Auth.AuthOptions;
+import io.ably.lib.rest.Auth.TokenParams;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Log.LogHandler;
 
 import java.util.Map;
-
-import static io.ably.lib.rest.Auth.*;
 
 /**
  * Options: Ably library options for REST and Realtime APIs
@@ -28,47 +27,6 @@ public class ClientOptions extends AuthOptions {
 	public ClientOptions(String key) throws AblyException {
 		super(key);
 		logLevel = Log.defaultLevel;
-	}
-
-	/**
-	 * Create a new copy of object
-	 * @param options source object for a copy
-	 * @return copied object
-	 */
-	public static ClientOptions copy(ClientOptions options) {
-		ClientOptions copy = new ClientOptions();
-		AuthOptions.copyAttributes(copy,options);
-		return ClientOptions.copyAttributes(copy, options);
-	}
-
-	/**
-	 * Copy the values of each attribute
-	 * @param src source object for copy attributes
-	 * @param dest destination object
-	 * @return source object with new attributes
-	 */
-	public static ClientOptions copyAttributes(ClientOptions src, ClientOptions dest) {
-		src.clientId = dest.clientId;
-		src.logLevel = dest.logLevel;
-		src.logHandler = dest.logHandler;
-		src.tls = dest.tls;
-		src.headers = dest.headers;
-		src.restHost = dest.restHost;
-		src.realtimeHost = dest.realtimeHost;
-		src.port = dest.port;
-		src.tlsPort = dest.tlsPort;
-		src.autoConnect = dest.autoConnect;
-		src.useBinaryProtocol = dest.useBinaryProtocol;
-		src.queueMessages = dest.queueMessages;
-		src.echoMessages = dest.echoMessages;
-		src.recover = dest.recover;
-		src.proxy = dest.proxy;
-		src.httpOpenTimeout = dest.httpOpenTimeout;
-		src.httpRequestTimeout = dest.httpRequestTimeout;
-		src.httpMaxRetryCount = dest.httpMaxRetryCount;
-		src.defaultTokenParams = dest.defaultTokenParams;
-		src.defaultTokenParams = dest.defaultTokenParams;
-		return src;
 	}
 
 	/**

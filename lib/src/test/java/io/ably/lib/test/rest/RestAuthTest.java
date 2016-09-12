@@ -325,7 +325,7 @@ public class RestAuthTest {
 				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
-					return ably.auth.createTokenRequest(null, params);
+					return ably.auth.createTokenRequest(params, null);
 				}
 			};
 

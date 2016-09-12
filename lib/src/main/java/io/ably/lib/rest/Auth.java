@@ -128,63 +128,42 @@ public class Auth {
 		}
 
 		/**
-		 * Internal, when AuthOptions are provided, the values of each attribute are not merged,
-		 * but instead replace all corresponding values, even when null.
-		 *
-		 * should be used for:
-		 * - {@link Auth#requestToken(TokenParams, AuthOptions)} (Spec:RSA8e),
-		 * - {@link Auth#createTokenRequest(AuthOptions, TokenParams)} (Spec:RSA9h),
-		 * - {@link Auth#authorise(AuthOptions, TokenParams)} (Spec:RSA10j).
-		 *
+		 * Stores the AuthOptions arguments as defaults for subsequent authorisations
+		 * with the exception of the attributes {@link AuthOptions#queryTime}
+		 * and {@link AuthOptions#force}
 		 * <p>
-		 * Spec: RSA8e, RSA9h, RSA10j
+		 * Spec: RSA10g
 		 * </p>
-		 *
-		 * @param options if the object is null, the client library configured defaults are used.
-		 * @return superseded object
 		 */
-		public AuthOptions replace(AuthOptions options) {
-			AuthOptions copy;
-			if (this instanceof ClientOptions) {
-				copy = ClientOptions.copy((ClientOptions) this);
-				if (options instanceof ClientOptions) {
-					ClientOptions.copyAttributes((ClientOptions) copy, (ClientOptions) options);
-				}
-				AuthOptions.copyAttributes(copy, options);
-			} else {
-				copy = AuthOptions.copy(options);
-				AuthOptions.copyAttributes(copy, options);
-			}
-			return copy;
+		private AuthOptions storedValues() {
+			AuthOptions result = new AuthOptions();
+			result.key = this.key;
+			result.authUrl = this.authUrl;
+			result.authParams = this.authParams;
+			result.authHeaders = this.authHeaders;
+			result.token = this.token;
+			result.tokenDetails = this.tokenDetails;
+			result.authCallback = this.authCallback;
+			return result;
 		}
 
 		/**
 		 * Create a new copy of object
 		 *
-		 * @param options source object for a copy
 		 * @return copied object
 		 */
-		public static AuthOptions copy(AuthOptions options) {
-			return copyAttributes(new AuthOptions(), options);
-		}
-
-		/**
-		 * Copy the values of each attribute
-		 * @param src source object for copy attributes
-		 * @param dest destination object
-		 * @return source object with new attributes
-		 */
-		public static AuthOptions copyAttributes(AuthOptions src, AuthOptions dest) {
-			src.key = dest.key;
-			src.queryTime = dest.queryTime;
-			src.authUrl = dest.authUrl;
-			src.authParams = dest.authParams;
-			src.authHeaders = dest.authHeaders;
-			src.force = dest.force;
-			src.token = dest.token;
-			src.tokenDetails = dest.tokenDetails;
-			src.authCallback = dest.authCallback;
-			return src;
+		private AuthOptions copy() {
+			AuthOptions result = new AuthOptions();
+			result.key = this.key;
+			result.authUrl = this.authUrl;
+			result.authParams = this.authParams;
+			result.authHeaders = this.authHeaders;
+			result.token = this.token;
+			result.tokenDetails = this.tokenDetails;
+			result.authCallback = this.authCallback;
+			result.queryTime = this.queryTime;
+			result.force = this.force;
+			return result;
 		}
 
 		/**
@@ -301,45 +280,32 @@ public class Auth {
 		}
 
 		/**
-		 * Internal, when TokenParams are provided, the values of each attribute are not merged,
-		 * but instead replace all corresponding values, even when null.
-		 *
-		 * should be used for:
-		 * - {@link Auth#requestToken(TokenParams, AuthOptions)} (Spec:RSA8e),
-		 * - {@link Auth#createTokenRequest(AuthOptions, TokenParams)} (Spec:RSA9h),
-		 * - {@link Auth#authorise(AuthOptions, TokenParams)} (Spec:RSA10j).
-		 *
+		 * Stores the TokenParams arguments as defaults for subsequent authorisations
+		 * with the exception of the attributes {@link TokenParams#timestamp}
 		 * <p>
-		 * Spec: RSA8e, RSA9h, RSA10j
+		 * Spec: RSA10g
 		 * </p>
-		 *
-		 * @param options if the object is null, the client library configured defaults are used.
-		 * @return superseded object
 		 */
-		public TokenParams replace(TokenParams options) {
-			if (options != null) {
-				this.ttl = options.ttl;
-				this.capability = options.capability;
-				this.clientId = options.clientId;
-				this.timestamp = options.timestamp;
-			}
-			return this;
+		private TokenParams storedValues() {
+			TokenParams result = new TokenParams();
+			result.ttl = this.ttl;
+			result.capability = this.capability;
+			result.clientId = this.clientId;
+			return result;
 		}
 
 		/**
 		 * Create a new copy of object
-		 * @param tokenParams source object for a copy
+		 *
 		 * @return copied object
 		 */
-		public static TokenParams copy(TokenParams tokenParams) {
-			TokenParams copy = new TokenParams();
-			if (tokenParams != null) {
-				copy.ttl = tokenParams.ttl;
-				copy.capability = tokenParams.capability;
-				copy.clientId = tokenParams.clientId;
-				copy.timestamp = tokenParams.timestamp;
-			}
-			return copy;
+		private TokenParams copy() {
+			TokenParams result = new TokenParams();
+			result.ttl = this.ttl;
+			result.capability = this.capability;
+			result.clientId = this.clientId;
+			result.timestamp = this.timestamp;
+			return result;
 		}
 	}
 
@@ -427,31 +393,26 @@ public class Auth {
 	 *
 	 * - queryTime   (optional) boolean indicating that the Ably system should be
 	 *               queried for the current time when none is specified explicitly.
-	 *
-	 * @param callback (err, tokenDetails)
+	 * @param options
 	 */
-	public TokenDetails authorise(AuthOptions options, TokenParams params) throws AblyException {
+	public TokenDetails authorise(TokenParams params, AuthOptions options) throws AblyException {
+		/* Spec: RSA10g */
+		if (options != null && !options.onlyForce())
+			this.authOptions = options.storedValues();
+		if (params != null)
+			this.tokenParams = params.storedValues();
+
+		/* Spec: RSA10j */
 		if (options == null) {
-			/* use previously configured options */
 			options = this.authOptions;
 		} else if (options.onlyForce()) {
-			/* create a copy and set force attribute true
-			 * Spec: RSA10d */
-			options = this.authOptions instanceof ClientOptions ?
-					ClientOptions.copy((ClientOptions) authOptions) :
-					AuthOptions.copy(authOptions);
+			options = this.authOptions.copy();
 			options.force = true;
 		} else {
-			/* replace attributes
-			 * Spec: RSA10j */
-			options = this.authOptions.replace(options);
+			options = options.copy();
 		}
-		params = (params == null) ? ably.options.defaultTokenParams :
-				TokenParams.copy(ably.options.defaultTokenParams).replace(params);
-
-		/* Spec: RSA10g */
-		storeAuthOptions(options);
-		storeTokenParams(params);
+		//options = (options == null) ? this.authOptions : options.copy();
+		params = (params == null) ? this.tokenParams : params.copy();
 
 		return tokenAuth.authorise(options, params);
 	}
@@ -466,9 +427,8 @@ public class Auth {
 	 */
 	public TokenDetails requestToken(TokenParams params, AuthOptions options) throws AblyException {
 		/* Spec: RSA8e */
-		options = (options == null) ? this.authOptions : authOptions.replace(options);
-		params = (params == null) ? ably.options.defaultTokenParams :
-				TokenParams.copy(ably.options.defaultTokenParams).replace(params);
+		options = (options == null) ? this.authOptions : options.copy();
+		params = (params == null) ? this.tokenParams : params.copy();
 
 		params.capability = Capability.c14n(params.capability);
 
@@ -552,7 +512,7 @@ public class Auth {
 			signedTokenRequest = (TokenRequest)authUrlResponse;
 		} else if (options.key != null) {
 			Log.i("Auth.requestToken()", "using token auth with client-side signing");
-			signedTokenRequest = createTokenRequest(options, params);
+			signedTokenRequest = createTokenRequest(params, options);
 		} else {
 			throw AblyException.fromErrorInfo(new ErrorInfo("Auth.requestToken(): options must include valid authentication parameters", 400, 40000));
 		}
@@ -576,18 +536,18 @@ public class Auth {
 	 * Create a signed token request based on known credentials
 	 * and the given token params. This would typically be used if creating
 	 * signed requests for submission by another client.
-	 * @param options: see {@link #authorise} for options
-	 * @param params: see {@link #authorise} for params
+	 * @param params : see {@link #authorise} for params
+	 * @param options : see {@link #authorise} for options
 	 * @return: the params augmented with the mac.
 	 * @throws AblyException
 	 */
-	public TokenRequest createTokenRequest(AuthOptions options, TokenParams params) throws AblyException {
+	public TokenRequest createTokenRequest(TokenParams params, AuthOptions options) throws AblyException {
 		/* Spec: RSA9h */
-		options = (options == null) ? this.authOptions : authOptions.replace(options);
-		params = (params == null) ? ably.options.defaultTokenParams :
-				TokenParams.copy(ably.options.defaultTokenParams).replace(params);
+		options = (options == null) ? this.authOptions : options.copy();
+		params = (params == null) ? this.tokenParams : params.copy();
 
-		params.capability = Capability.c14n(params.capability);
+		if(params.capability != null)
+			params.capability = Capability.c14n(params.capability);
 
 		TokenRequest request = new TokenRequest(params);
 
@@ -638,49 +598,6 @@ public class Auth {
 
 		Log.i("Auth.getTokenRequest()", "generated signed request");
 		return request;
-	}
-
-	/**
-	 * Stores the AuthOptions arguments as defaults for subsequent authorisations
-	 * with the exception of the attributes {@link AuthOptions#queryTime}
-	 * and {@link AuthOptions#force}
-	 * <p>
-	 * Spec: RSA10g
-	 * </p>
-	 */
-	private void storeAuthOptions(AuthOptions options) {
-		if (options != null && !options.onlyForce()) {
-			this.authOptions.key = options.key;
-			this.authOptions.authUrl = options.authUrl;
-			this.authOptions.authParams = options.authParams;
-			this.authOptions.authHeaders = options.authHeaders;
-			this.authOptions.token = options.token;
-			this.authOptions.tokenDetails = options.tokenDetails;
-			this.authOptions.authCallback = options.authCallback;
-		}
-	}
-
-	/**
-	 * Stores the TokenParams arguments as defaults for subsequent authorisations
-	 * with the exception of the attributes {@link TokenParams#timestamp}
-	 * <p>
-	 * Spec: RSA10g
-	 * </p>
-	 */
-	private void storeTokenParams(TokenParams tokenParams) {
-		if (tokenParams != null) {
-			this.tokenParams.ttl = tokenParams.ttl;
-			this.tokenParams.capability = tokenParams.capability;
-			this.tokenParams.clientId = tokenParams.clientId;
-		}
-	}
-
-	public AuthOptions getAuthOptions() {
-		return this.authOptions;
-	}
-
-	public TokenParams getTokenParams() {
-		return tokenParams;
 	}
 
 	/**
@@ -792,8 +709,8 @@ public class Auth {
 
 	private final AblyRest ably;
 	private final AuthMethod method;
-	private final AuthOptions authOptions;
-	private final TokenParams tokenParams;
+	private AuthOptions authOptions;
+	private TokenParams tokenParams;
 	private String basicCredentials;
 	private TokenAuth tokenAuth;
 }
