@@ -8,6 +8,7 @@ import io.ably.lib.http.Http;
 import io.ably.lib.http.Http.ResponseHandler;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
+import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.*;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
@@ -51,7 +52,7 @@ public class AblyRest {
 			Log.e(getClass().getName(), msg);
 			throw AblyException.fromErrorInfo(new ErrorInfo(msg, 400, 40000));
 		}
-		this.options = options;
+		this.options = normaliseOptions(options);
 
 		/* process options */
 		Log.setLevel(options.logLevel);
@@ -134,4 +135,13 @@ public class AblyRest {
 		(new AsyncPaginatedQuery<Stats>(asyncHttp, "/stats", HttpUtils.defaultAcceptHeaders(false), params, StatsReader.statsResponseHandler)).get(callback);
 	}
 
+	private ClientOptions normaliseOptions(ClientOptions options) {
+		if (options != null) {
+			/* Spec: RSC11 */
+			options.restHost = options.restHost != null ? options.restHost :
+					(options.environment != null && !options.environment.equalsIgnoreCase("production")) ?
+							String.format("%s-%s", options.environment, Defaults.HOST_REST) : Defaults.HOST_REST;
+		}
+		return options;
+	}
 }
