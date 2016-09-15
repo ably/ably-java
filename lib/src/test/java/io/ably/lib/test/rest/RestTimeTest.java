@@ -26,6 +26,7 @@ public class RestTimeTest {
 			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.restHost = testVars.restHost;
+			opts.environment = testVars.environment;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
 			opts.tls = testVars.tls;
@@ -48,6 +49,7 @@ public class RestTimeTest {
 			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = new ClientOptions();
 			opts.restHost = testVars.restHost;
+			opts.environment = testVars.environment;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
 			opts.tls = testVars.tls;
@@ -87,6 +89,7 @@ public class RestTimeTest {
 			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.restHost = testVars.restHost;
+			opts.environment = testVars.environment;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
 			opts.tls = testVars.tls;

@@ -36,6 +36,7 @@ public class RestChannelPublishTest {
 
 		ClientOptions opts_text = new ClientOptions(testVars.keys[0].keyStr);
 		opts_text.restHost = testVars.restHost;
+		opts_text.environment = testVars.environment;
 		opts_text.port = testVars.port;
 		opts_text.tlsPort = testVars.tlsPort;
 		opts_text.tls = testVars.tls;
@@ -44,6 +45,7 @@ public class RestChannelPublishTest {
 
 		ClientOptions opts_binary = new ClientOptions(testVars.keys[0].keyStr);
 		opts_binary.restHost = testVars.restHost;
+		opts_binary.environment = testVars.environment;
 		opts_binary.port = testVars.port;
 		opts_binary.tlsPort = testVars.tlsPort;
 		opts_binary.tls = testVars.tls;

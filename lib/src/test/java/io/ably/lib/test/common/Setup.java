@@ -65,6 +65,7 @@ public class Setup {
 	public static class TestVars extends AppSpec {
 		public String restHost;
 		public String realtimeHost;
+		public String environment;
 		public int port;
 		public int tlsPort;
 		public boolean tls;
@@ -82,6 +83,7 @@ public class Setup {
 		public void fillInOptions(ClientOptions opts) {
 			opts.restHost = restHost;
 			opts.realtimeHost = realtimeHost;
+			opts.environment = environment;
 			opts.port = port;
 			opts.tlsPort = tlsPort;
 			opts.tls = tls;
@@ -95,23 +97,22 @@ public class Setup {
 	private static TestVars __getTestVars() {
 		if(testVars == null) {
 			host = System.getenv("ABLY_REST_HOST");
+			environment = System.getenv("ABLY_ENV");
+			if(environment == null)
+				environment = "sandbox";
+
 			if(host != null) {
 				wsHost = System.getenv("ABLY_REALTIME_HOST");
 				if(wsHost == null)
 					wsHost = host;
 			} else {
-				environment = System.getenv("ABLY_ENV");
-				if(environment == null)
-					environment = "sandbox";
-
-				host = environment + "-rest.ably.io";
 				wsHost = environment + "-realtime.ably.io";
 			}
 
 			if(System.getenv("ABLY_PORT") != null) {
 				port = Integer.valueOf(System.getenv("ABLY_PORT"));
 				tlsPort = Integer.valueOf(System.getenv("ABLY_TLS_PORT"));
-			} else if(host.contains("local")) {
+			} else if(host != null && host.contains("local")) {
 				port = 8080;
 				tlsPort = 8081;
 			} else {
@@ -128,6 +129,7 @@ public class Setup {
 					 * convenience methods */
 					opts.key = "none:none";
 					opts.restHost = host;
+					opts.environment = environment;
 					opts.port = port;
 					opts.tlsPort = tlsPort;
 					opts.tls = true;
@@ -155,6 +157,7 @@ public class Setup {
 						TestVars result = (TestVars)Serialisation.gson.fromJson(new String(body), TestVars.class);
 						result.restHost = host;
 						result.realtimeHost = wsHost;
+						result.environment = environment;
 						result.port = port;
 						result.tlsPort = tlsPort;
 						result.tls = true;
@@ -179,6 +182,7 @@ public class Setup {
 			try {
 				ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 				opts.restHost = host;
+				opts.environment = environment;
 				opts.port = port;
 				opts.tlsPort = tlsPort;
 				opts.tls = true;
