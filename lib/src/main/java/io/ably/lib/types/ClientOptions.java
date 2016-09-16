@@ -125,6 +125,13 @@ public class ClientOptions extends AuthOptions {
 	public String environment;
 
 	/**
+	 * Optionally allows one or more fallback hosts to be used instead of the default fallback
+	 * hosts. If an empty array is specified, then fallback host functionality is disabled.
+	 * Spec: TO3k6
+	 */
+	public String[] fallbackHosts;
+
+	/**
 	 * Spec: TO313
 	 */
 	public int httpOpenTimeout = Defaults.TIMEOUT_HTTP_OPEN;
