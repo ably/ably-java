@@ -393,6 +393,159 @@ public class HttpTest {
 	}
 
 	/**
+	 * <strong>This method mocks the API behavior</strong>
+	 * <p>
+	 * Validates {@link Http} isn't using any fallback hosts if {@link ClientOptions#fallbackHosts}
+	 * array is empty.
+	 * </p>
+	 * <p>
+	 * Spec: RSC15a
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void http_ably_execute_empty_fallback_array() throws AblyException {
+		ClientOptions options = new ClientOptions();
+		options.fallbackHosts = new String[0];
+		AblyRest ably = new AblyRest(options);
+
+		Http http = Mockito.spy(new Http(ably.options, ably.auth));
+
+		String responseExpected = "Lorem Ipsum";
+		ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
+
+        /* Partially mock http */
+		Answer answer = new GrumpyAnswer(
+				2, /* Throw exception twice (2) */
+				AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+				responseExpected /* Then return a valid response with third call */
+		);
+
+		doAnswer(answer) /* Behave as defined above */
+				.when(http) /* when following method is executed on {@code Http} instance */
+				.httpExecute(
+						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid fallback url */
+						any(Proxy.class), /* Ignore */
+						anyString(), /* Ignore */
+						aryEq(new Param[0]), /* Ignore */
+						any(Http.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
+						any(Http.ResponseHandler.class) /* Ignore */
+				);
+
+		try {
+			http.ablyHttpExecute(
+					"", /* Ignore */
+					"", /* Ignore */
+					new Param[0], /* Ignore */
+					new Param[0], /* Ignore */
+					mock(Http.RequestBody.class), /* Ignore */
+					mock(Http.ResponseHandler.class) /* Ignore */
+			);
+		} catch (AblyException e) {
+			/* Verify that,
+			 * 		- an {@code AblyException} with {@code ErrorInfo} having a `404` status code is thrown.
+			 */
+			ErrorInfo expectedErrorInfo = new ErrorInfo("Connection failed; no host available", 404, 80000);
+			assertThat(e, new ErrorInfoMatcher(expectedErrorInfo));
+		}
+
+		/* Verify call causes captor to capture same arguments once.
+		 * Do the validation, after we completed the {@code ArgumentCaptor} related assertions */
+		verify(http, times(1))
+				.httpExecute( /* Just validating call counter. Ignore following parameters */
+						any(URL.class), /* Ignore */
+						any(Proxy.class), /* Ignore */
+						anyString(), /* Ignore */
+						aryEq(new Param[0]), /* Ignore */
+						any(Http.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
+						any(Http.ResponseHandler.class) /* Ignore */
+				);
+		assertThat("Unexpected host", url.getAllValues().get(0).getHost(), is(equalTo(Defaults.HOST_REST)));
+	}
+
+	/**
+	 * <p>
+	 * Validates {@code Http} performs fallback behavior with custom {@link ClientOptions#fallbackHosts}
+	 * array httpMaxRetryCount number of times at most,
+	 * when host & fallback hosts are unreachable. Then, finally throws an error.
+	 * </p>
+	 * <p>
+	 * Spec: RSC15a
+	 * </p>
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void http_ably_execute_custom_fallback_array() throws AblyException {
+		final String[] expectedFallbackHosts = new String[]{"f.ably-realtime.com", "g.ably-realtime.com", "h.ably-realtime.com", "i.ably-realtime.com", "j.ably-realtime.com"};
+		final List<String> fallbackHostsList = Arrays.asList(expectedFallbackHosts);
+
+		ClientOptions options = new ClientOptions();
+		options.fallbackHosts = expectedFallbackHosts;
+		int expectedCallCount = options.httpMaxRetryCount + 1;
+		AblyRest ably = new AblyRest(options);
+
+		Http http = Mockito.spy(new Http(ably.options, ably.auth));
+
+		String responseExpected = "Lorem Ipsum";
+		ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
+
+		/* Partially mock http */
+		Answer answer = new GrumpyAnswer(
+				options.httpMaxRetryCount, /* Throw exception options.httpMaxRetryCount */
+				AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+				responseExpected /* Then return a valid response with third call */
+		);
+
+		doAnswer(answer) /* Behave as defined above */
+				.when(http) /* when following method is executed on {@code Http} instance */
+				.httpExecute(
+						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid fallback url */
+						any(Proxy.class), /* Ignore */
+						anyString(), /* Ignore */
+						aryEq(new Param[0]), /* Ignore */
+						any(Http.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
+						any(Http.ResponseHandler.class) /* Ignore */
+				);
+
+		String responseActual = (String) http.ablyHttpExecute(
+				"", /* Ignore */
+				"", /* Ignore */
+				new Param[0], /* Ignore */
+				new Param[0], /* Ignore */
+				mock(Http.RequestBody.class), /* Ignore */
+				mock(Http.ResponseHandler.class) /* Ignore */
+		);
+
+		/* Verify {code Http#httpExecute} have been called (httpMaxRetryCount + 1) times */
+		verify(http, times(expectedCallCount))
+				.httpExecute( /* Just validating call counter. Ignore following parameters */
+						any(URL.class), /* Ignore */
+						any(Proxy.class), /* Ignore */
+						anyString(), /* Ignore */
+						aryEq(new Param[0]), /* Ignore */
+						any(Http.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
+						any(Http.ResponseHandler.class) /* Ignore */
+				);
+
+		/* Verify that,
+		 * 		- delivered expected response
+		 * 		- first call executed against production rest host
+		 * 		- other calls executed against a random custom fallback host */
+		List<URL> allValues = url.getAllValues();
+		assertThat("Unexpected response", responseActual, is(equalTo(responseExpected)));
+		assertThat("Unexpected default primary host", allValues.get(0).getHost(), is(equalTo(Defaults.HOST_REST)));
+		for (int i = 1; i < allValues.size(); i++) {
+			assertThat("Unexpected host fallback", fallbackHostsList.contains(allValues.get(i).getHost()), is(true));
+		}
+	}
+
+	/**
 	 * <p>
 	 * Validates {@code Http} performs fallback behavior httpMaxRetryCount number of times at most,
 	 * when host & fallback hosts are unreachable. Then, finally throws an error.
