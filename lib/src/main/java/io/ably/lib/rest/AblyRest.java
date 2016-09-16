@@ -141,6 +141,10 @@ public class AblyRest {
 			options.restHost = options.restHost != null ? options.restHost :
 					(options.environment != null && !options.environment.equalsIgnoreCase("production")) ?
 							String.format("%s-%s", options.environment, Defaults.HOST_REST) : Defaults.HOST_REST;
+			/* Spec: RTC1e */
+			options.realtimeHost = options.realtimeHost != null ? options.realtimeHost :
+					(options.environment != null && !options.environment.equalsIgnoreCase("production")) ?
+							String.format("%s-%s", options.environment, Defaults.HOST_REALTIME) : Defaults.HOST_REALTIME;
 		}
 		return options;
 	}

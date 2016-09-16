@@ -97,17 +97,13 @@ public class Setup {
 	private static TestVars __getTestVars() {
 		if(testVars == null) {
 			host = System.getenv("ABLY_REST_HOST");
+			wsHost = System.getenv("ABLY_REALTIME_HOST");
+			if(wsHost == null)
+				wsHost = host;
+
 			environment = System.getenv("ABLY_ENV");
 			if(environment == null)
 				environment = "sandbox";
-
-			if(host != null) {
-				wsHost = System.getenv("ABLY_REALTIME_HOST");
-				if(wsHost == null)
-					wsHost = host;
-			} else {
-				wsHost = environment + "-realtime.ably.io";
-			}
 
 			if(System.getenv("ABLY_PORT") != null) {
 				port = Integer.valueOf(System.getenv("ABLY_PORT"));
