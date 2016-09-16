@@ -10,7 +10,9 @@ import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -325,7 +327,17 @@ public class Http {
 	 * @throws AblyException
 	 */
 	<T> T ablyHttpExecute(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
-		int retryCountRemaining = Hosts.isRestFallbackSupported(this.host) ? options.httpMaxRetryCount : 0;
+		List<String> customFallbackHosts = null;
+		int retryCountRemaining = 0;
+		if (options.fallbackHosts != null) {
+			if (options.fallbackHosts.length > 0) {
+				retryCountRemaining = options.httpMaxRetryCount;
+				customFallbackHosts = Arrays.asList(options.fallbackHosts);
+				Collections.shuffle(customFallbackHosts);
+			}
+		} else if (Hosts.isRestFallbackSupported(this.host)) {
+			retryCountRemaining = options.httpMaxRetryCount;
+		}
 		String candidateHost = this.host;
 		URL url;
 
@@ -338,7 +350,8 @@ public class Http {
 					throw AblyException.fromErrorInfo(new ErrorInfo("Connection failed; no host available", 404, 80000));
 				}
 				Log.d(TAG, "Connection failed to host `" + candidateHost + "`. Searching for new host...");
-				candidateHost = Hosts.getFallback(candidateHost);
+				candidateHost = customFallbackHosts != null ?
+						Hosts.getFallback(candidateHost, customFallbackHosts) : Hosts.getFallback(candidateHost);
 				Log.d(TAG, "Switched to `" + candidateHost + "`.");
 			}
 		}
