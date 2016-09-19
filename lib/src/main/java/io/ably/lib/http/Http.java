@@ -327,17 +327,10 @@ public class Http {
 	 * @throws AblyException
 	 */
 	<T> T ablyHttpExecute(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
+		int retryCountRemaining = options.fallbackHosts != null ?
+				(options.fallbackHosts.length > 0 ? options.httpMaxRetryCount : 0) :
+				(Hosts.isRestFallbackSupported(this.host) ? options.httpMaxRetryCount : 0);
 		List<String> customFallbackHosts = null;
-		int retryCountRemaining = 0;
-		if (options.fallbackHosts != null) {
-			if (options.fallbackHosts.length > 0) {
-				retryCountRemaining = options.httpMaxRetryCount;
-				customFallbackHosts = Arrays.asList(options.fallbackHosts);
-				Collections.shuffle(customFallbackHosts);
-			}
-		} else if (Hosts.isRestFallbackSupported(this.host)) {
-			retryCountRemaining = options.httpMaxRetryCount;
-		}
 		String candidateHost = this.host;
 		URL url;
 
@@ -350,6 +343,10 @@ public class Http {
 					throw AblyException.fromErrorInfo(new ErrorInfo("Connection failed; no host available", 404, 80000));
 				}
 				Log.d(TAG, "Connection failed to host `" + candidateHost + "`. Searching for new host...");
+				if (customFallbackHosts == null && options.fallbackHosts != null && options.fallbackHosts.length > 0) {
+					customFallbackHosts = Arrays.asList(options.fallbackHosts);
+					Collections.shuffle(customFallbackHosts);
+				}
 				candidateHost = customFallbackHosts != null ?
 						Hosts.getFallback(candidateHost, customFallbackHosts) : Hosts.getFallback(candidateHost);
 				Log.d(TAG, "Switched to `" + candidateHost + "`.");
