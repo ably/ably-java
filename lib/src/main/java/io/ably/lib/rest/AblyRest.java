@@ -51,6 +51,18 @@ public class AblyRest {
 			String msg = "no options provided";
 			Log.e(getClass().getName(), msg);
 			throw AblyException.fromErrorInfo(new ErrorInfo(msg, 400, 40000));
+		} else if (options.environment != null) {
+			if (options.restHost != null) {
+				/* Spec: TO3k2 */
+				String msg = "both restHost and environment provided is never valid";
+				Log.e(getClass().getName(), msg);
+				throw AblyException.fromErrorInfo(new ErrorInfo(msg, 400, 40000));
+			} else if (options.realtimeHost != null) {
+				/* Spec: TO3k3 */
+				String msg = "both realtimeHost and environment provided is never valid";
+				Log.e(getClass().getName(), msg);
+				throw AblyException.fromErrorInfo(new ErrorInfo(msg, 400, 40000));
+			}
 		}
 		this.options = normaliseOptions(options);
 

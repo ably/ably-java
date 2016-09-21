@@ -256,25 +256,4 @@ public class RealtimeInitTest {
 			fail("init_given_environment: Unexpected exception instantiating library");
 		}
 	}
-
-	/**
-	 * Init library with given environment and specified host
-	 * Spec: RTC1e
-	 */
-	@Test
-	public void init_given_host_environment() {
-		final String givenEnvironment = "staging";
-		final String specifiedHost = "fake.ably.io";
-		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-			opts.realtimeHost = specifiedHost;
-			opts.environment = givenEnvironment;
-			AblyRealtime ably = new AblyRealtime(opts);
-			assertEquals("Unexpected host mismatch", specifiedHost, ably.options.realtimeHost);
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("init_given_host_environment: Unexpected exception instantiating library");
-		}
-	}
 }
