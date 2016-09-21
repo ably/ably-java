@@ -20,15 +20,28 @@ public class Hosts {
 	 * null, if there is no successor fallback available.
 	 */
 	public static String getFallback(String host) {
-		int size = FALLBACKS.size();
-		int indexCurrent = FALLBACKS.indexOf(host);
+		return getFallback(host, FALLBACKS);
+	}
+
+	/**
+	 * Provides fallback host alternative for given host and list of fallbacks
+	 *
+	 * @param host
+	 * @param fallbacksList
+	 * @return
+	 */
+	public static String getFallback(String host, List<String> fallbacksList) {
+		if (fallbacksList == null) return null;
+
+		int size = fallbacksList.size();
+		int indexCurrent = fallbacksList.indexOf(host);
 		int indexNext = indexCurrent + 1;
 
 		if (indexNext >= size) {
 			return null;
 		}
 
-		return FALLBACKS.get(indexNext);
+		return fallbacksList.get(indexNext);
 	}
 
 	/**
