@@ -125,6 +125,38 @@ public class RealtimeConnectFailTest {
 	}
 
 	/**
+	 * Verify that the connection in the disconnected state (after attempts to
+	 * connect to a non-existent ws host) allows an immediate explicit connect
+	 * attempt, instead of ignoring the explicit connect and waiting till the
+	 * next scheduled retry.
+	 */
+	@Test
+	public void connect_while_disconnected() {
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			opts.realtimeHost = "non.existent.host";
+			AblyRealtime ably = new AblyRealtime(opts);
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+
+			connectionWaiter.waitFor(ConnectionState.disconnected);
+			assertEquals("Verify disconnected state is reached", ConnectionState.disconnected, ably.connection.state);
+
+			long before = System.currentTimeMillis();
+			ably.connection.connect();
+			connectionWaiter.waitFor(ConnectionState.connecting);
+			assertTrue("Verify explicit connect is actioned immediately", System.currentTimeMillis() - before < 1000L);
+
+			ably.close();
+			connectionWaiter.waitFor(ConnectionState.closed);
+			assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
 	 * Verify that the connection enters the disconnected state, after a token
 	 * used for successful connection expires
 	 */
