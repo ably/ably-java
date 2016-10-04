@@ -162,10 +162,11 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 	public void connect() {
 		boolean connectionExist = state.state == ConnectionState.connected;
-		boolean connectionAttemptAvailable = (requestedState != null && requestedState.state != ConnectionState.connecting) ||
+		boolean connectionAttemptInProgress = (requestedState != null && requestedState.state == ConnectionState.connecting) ||
 				state.state == ConnectionState.connecting;
 
-		if(!connectionExist && !connectionAttemptAvailable && startThread()) {
+		if(!connectionExist && !connectionAttemptInProgress) {
+			startThread(); // Start thread if not already started.
 			requestState(ConnectionState.connecting);
 		}
 	}
