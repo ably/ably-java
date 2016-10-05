@@ -13,12 +13,17 @@ import io.ably.lib.util.Log;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 
 import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.framing.CloseFrame;
+import org.java_websocket.framing.Framedata;
 import org.java_websocket.handshake.ServerHandshake;
+import org.java_websocket.WebSocket;
 
 public class WebSocketTransport implements ITransport {
 
@@ -140,6 +145,7 @@ public class WebSocketTransport implements ITransport {
 				connectListener.onTransportAvailable(WebSocketTransport.this, params);
 				connectListener = null;
 			}
+			flagActivity();
 		}
 
 		@Override
@@ -150,6 +156,7 @@ public class WebSocketTransport implements ITransport {
 				String msg = "Unexpected exception processing received binary message";
 				Log.e(TAG, msg, e);
 			}
+			flagActivity();
 		}
 
 		@Override
@@ -160,10 +167,12 @@ public class WebSocketTransport implements ITransport {
 				String msg = "Unexpected exception processing received binary message";
 				Log.e(TAG, msg, e);
 			}
+			flagActivity();
 		}
 
 		@Override
 		public void onClose(int wsCode, String wsReason, boolean remote) {
+			flagActivity();
 			ConnectionState newState;
 			ErrorInfo reason;
 			switch(wsCode) {
@@ -219,6 +228,71 @@ public class WebSocketTransport implements ITransport {
 				connectListener = null;
 			}
 		}
+
+		private void flagActivity() {
+			lastActivityTime = System.currentTimeMillis();
+			if (timer == null && connectionManager.maxIdleInterval != 0) {
+				/* No timer currently running because previously there was no
+				 * maxIdleInterval configured, but now there is a
+				 * maxIdleInterval configured.  Call checkActivity so a timer
+				 * gets started.  This happens when flagActivity gets called
+				 * just after processing the connect message that configures
+				 * maxIdleInterval. */
+				checkActivity();
+			}
+		}
+
+		private void checkActivity() {
+			long timeout = connectionManager.maxIdleInterval;
+			if (timeout == 0) {
+				Log.v(TAG, "checkActivity: infinite timeout");
+				timer = null;
+				return;
+			}
+			timeout += connectionManager.ably.options.realtimeRequestTimeout;
+			long now = System.currentTimeMillis();
+			long next = lastActivityTime + timeout;
+			if (now < next) {
+				/* We have not reached maxIdleInterval+realtimeRequestTimeout
+				 * of inactivity.  Schedule a new timer for that long after the
+				 * last activity time. */
+				Log.v(TAG, "checkActivity: ok");
+				if (timer == null) {
+					synchronized(this) {
+						if (timer == null)
+							timer = new Timer();
+					}
+				}
+				timer.schedule(new WsClientTimerTask(this), next - now);
+			} else {
+				/* Timeout has been reached. Close the connection. */
+				Log.e(TAG, "No activity for " + timeout + "ms, closing connection");
+				closeConnection(CloseFrame.ABNORMAL_CLOSE, "timed out");
+			}
+		}
+
+		/* The TimerTask used to implement disconnection if no activity (inc
+		 * pings) is seen within a certain time.
+		 */
+		class WsClientTimerTask extends TimerTask {
+			private final WsClient client;
+
+			public WsClientTimerTask(WsClient client) {
+				this.client = client;
+			}
+
+			public void run() {
+				client.checkActivity();
+			}
+		}
+
+		/***************************
+		 * WsClient private members
+		 ***************************/
+
+		private Timer timer;
+		private long lastActivityTime;
+
 	}
 
 	public String toString() {

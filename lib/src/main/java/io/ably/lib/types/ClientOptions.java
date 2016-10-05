@@ -132,4 +132,9 @@ public class ClientOptions extends AuthOptions {
 	 * the primary host is unreachable or indicates that it is unserviceable
 	 */
 	public int httpMaxRetryCount = Defaults.HTTP_MAX_RETRY_COUNT;
+
+	/**
+	 * Spec: DF1b
+	 */
+	public long realtimeRequestTimeout = Defaults.realtimeRequestTimeout;
 }
