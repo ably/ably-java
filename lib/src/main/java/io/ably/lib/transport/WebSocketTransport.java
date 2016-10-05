@@ -48,6 +48,8 @@ public class WebSocketTransport implements ITransport {
 		this.params = params;
 		this.connectionManager = connectionManager;
 		this.channelBinaryMode = params.options.useBinaryProtocol;
+		/* We do not require Ably heartbeats, as we can use WebSocket pings instead. */
+		params.heartbeats = false;
 	}
 
 	/******************
@@ -167,6 +169,14 @@ public class WebSocketTransport implements ITransport {
 				String msg = "Unexpected exception processing received binary message";
 				Log.e(TAG, msg, e);
 			}
+			flagActivity();
+		}
+
+		/* This allows us to detect a websocket ping, so we don't need Ably pings. */
+		@Override
+		public void onWebsocketPing( WebSocket conn, Framedata f ) {
+			/* Call superclass to ensure the pong is sent. */
+			super.onWebsocketPing( conn, f );
 			flagActivity();
 		}
 
