@@ -336,10 +336,17 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 		/* set the new connection id */
 		connection.key = message.connectionKey;
+		if (!message.connectionId.equals(connection.id)) {
+			/* The connection id has changed. Reset the message serial and the
+			 * pending message queue (which fails the messages currently in
+			 * there). */
+			pendingMessages.reset(msgSerial,
+					new ErrorInfo("Connection resume failed", 500, 50000));
+			msgSerial = 0;
+		}
 		connection.id = message.connectionId;
 		if(message.connectionSerial != null)
 			connection.serial = message.connectionSerial.longValue();
-		msgSerial = 0;
 
 		/* indicated connected state */
 		setSuspendTime();
@@ -771,16 +778,6 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		private long startSerial = 0L;
 		private ArrayList<QueuedMessage> queue = new ArrayList<QueuedMessage>();
 
-		public PendingMessageQueue() {
-			/* put startSerial to 0 every time the connection is closed */
-			connection.on(ConnectionState.closed, new ConnectionStateListener() {
-				@Override
-				public void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange state) {
-					startSerial = 0L;
-				}
-			});
-		}
-
 		public synchronized void push(QueuedMessage msg) {
 			queue.add(msg);
 		}
@@ -793,6 +790,8 @@ public class ConnectionManager implements Runnable, ConnectListener {
 					 * we can handle it gracefully by only processing the
 					 * relevant portion of the response */
 					count -= (int)(startSerial - msgSerial);
+					if(count < 0)
+						count = 0;
 					msgSerial = startSerial;
 				}
 				if(msgSerial > startSerial) {
@@ -863,6 +862,19 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				}
 			}
 		}
+
+		/**
+		 * reset the pending message queue, failing any currently pending messages.
+		 * Used when a resume fails and we get a different connection id.
+		 * @param oldMsgSerial the next message serial number for the old
+		 *		connection, and thus one more than the highest message serial
+		 *		in the queue.
+		 */
+		public synchronized void reset(long oldMsgSerial, ErrorInfo err) {
+			nack(startSerial, (int)(oldMsgSerial - startSerial), err);
+			startSerial = 0;
+		}
+
 	}
 
 	/*******************
