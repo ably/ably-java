@@ -338,7 +338,6 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		connection.id = message.connectionId;
 		if(message.connectionSerial != null)
 			connection.serial = message.connectionSerial.longValue();
-		msgSerial = 0;
 
 		/* indicated connected state */
 		setSuspendTime();
@@ -431,6 +430,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				transport.close(state.state == ConnectionState.connected);
 				handled = true;
 			}
+			msgSerial = 0;
 			break;
 		case connecting:
 			if(!connectImpl(requestedState)) {
@@ -792,6 +792,8 @@ public class ConnectionManager implements Runnable, ConnectListener {
 					 * we can handle it gracefully by only processing the
 					 * relevant portion of the response */
 					count -= (int)(startSerial - msgSerial);
+					if(count < 0)
+						count = 0;
 					msgSerial = startSerial;
 				}
 				if(msgSerial > startSerial) {
