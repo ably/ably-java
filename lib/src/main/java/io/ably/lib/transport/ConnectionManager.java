@@ -15,6 +15,7 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
+import io.ably.lib.types.ProtocolSerializer;
 import io.ably.lib.util.Log;
 
 import java.util.ArrayList;
@@ -271,6 +272,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	 ***************************************/
 
 	public void onMessage(ProtocolMessage message) throws AblyException {
+		Log.v(TAG, "onMessage(): " + new String(ProtocolSerializer.writeJSON(message)));
 		try {
 			if(protocolListener != null)
 				protocolListener.onRawMessage(message);
