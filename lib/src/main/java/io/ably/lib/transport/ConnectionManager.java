@@ -15,6 +15,7 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
+import io.ably.lib.types.ProtocolSerializer;
 import io.ably.lib.util.Log;
 
 import java.util.ArrayList;
@@ -271,6 +272,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	 ***************************************/
 
 	public void onMessage(ProtocolMessage message) throws AblyException {
+		Log.v(TAG, "onMessage(): " + new String(ProtocolSerializer.writeJSON(message)));
 		try {
 			if(protocolListener != null)
 				protocolListener.onRawMessage(message);
@@ -336,7 +338,6 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		connection.id = message.connectionId;
 		if(message.connectionSerial != null)
 			connection.serial = message.connectionSerial.longValue();
-		msgSerial = 0;
 
 		/* indicated connected state */
 		setSuspendTime();
@@ -429,6 +430,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				transport.close(state.state == ConnectionState.connected);
 				handled = true;
 			}
+			msgSerial = 0;
 			break;
 		case connecting:
 			if(!connectImpl(requestedState)) {
@@ -790,6 +792,8 @@ public class ConnectionManager implements Runnable, ConnectListener {
 					 * we can handle it gracefully by only processing the
 					 * relevant portion of the response */
 					count -= (int)(startSerial - msgSerial);
+					if(count < 0)
+						count = 0;
 					msgSerial = startSerial;
 				}
 				if(msgSerial > startSerial) {

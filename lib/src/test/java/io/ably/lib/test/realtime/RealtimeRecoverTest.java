@@ -236,4 +236,107 @@ public class RealtimeRecoverTest {
 		}
 	}
 
+	/**
+	 * Connect to the service using two library instances to set
+	 * up separate send and recv connections.
+	 * Disconnect+suspend and then reconnect the send connection; verify that
+	 * each subsequent publish causes a CompletionListener call.
+	 */
+	@Test
+	public void recover_verify_publish() {
+		AblyRealtime ablyRx = null, ablyTx = null;
+		String channelName = "suspend_verify_publish";
+		int messageCount = 5;
+		long delay = 200;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ablyRx = new AblyRealtime(opts);
+			ablyTx = new AblyRealtime(opts);
+
+			/* create and attach channel to send on */
+			final Channel channelTx = ablyTx.channels.get(channelName);
+			channelTx.attach();
+			(new ChannelWaiter(channelTx)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached for tx", channelTx.state, ChannelState.attached);
+
+			/* create and attach channel to recv on */
+			final Channel channelRx = ablyRx.channels.get(channelName);
+			channelRx.attach();
+			(new ChannelWaiter(channelRx)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached for rx", channelRx.state, ChannelState.attached);
+
+			/* subscribe */
+			MessageWaiter messageWaiter =  new MessageWaiter(channelRx);
+
+			/* publish first messages to the channel */
+			CompletionSet msgComplete1 = new CompletionSet();
+			for(int i = 0; i < messageCount; i++) {
+				channelTx.publish("test_event", "Test message (resume_simple) " + i, msgComplete1.add());
+				try { Thread.sleep(delay); } catch(InterruptedException e){}
+			}
+
+			/* wait for the publish callback to be called */
+			ErrorInfo[] errors = msgComplete1.waitFor();
+			assertTrue("Verify success from all message callbacks", errors.length == 0);				
+
+			/* wait for the subscription callback to be called */
+			messageWaiter.waitFor(messageCount);
+			assertEquals("Verify message subscriptions all called", messageWaiter.receivedMessages.size(), messageCount);
+			messageWaiter.reset();
+
+			/* suspend the tx connection, without closing;
+			 * NOTE this depends on knowledge of the internal structure
+			 * of the library, to simulate a dropped transport without
+			 * causing the connection itself to be disposed */
+			System.out.println("*** about to suspend tx connection");
+			ablyTx.connection.connectionManager.requestState(ConnectionState.suspended);
+
+			/* wait */
+			try { Thread.sleep(2000L); } catch(InterruptedException e) {}
+
+			/* reconnect the tx connection */
+			System.out.println("*** about to reconnect tx connection");
+			ablyTx.connection.connect();
+			(new ConnectionWaiter(ablyTx.connection)).waitFor(ConnectionState.connected);
+
+			/* need to manually attach the tx channel as connection was suspended */
+			System.out.println("*** tx connection now connected. About to recover channel");
+			channelTx.attach();
+			(new ChannelWaiter(channelTx)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached for tx again", channelTx.state, ChannelState.attached);
+			System.out.println("*** tx channel now attached. About to publish");
+
+			/* publish further messages to the channel */
+			CompletionSet msgComplete2 = new CompletionSet();
+			for(int i = 0; i < messageCount; i++) {
+				channelTx.publish("test_event", "Test message (resume_simple) " + i, msgComplete2.add());
+				try { Thread.sleep(delay); } catch(InterruptedException e){}
+			}
+
+			/* wait for the publish callback to be called. This never finishes if
+			 * https://github.com/ably/ably-java/issues/170
+			 * is not fixed. */
+			System.out.println("*** published. About to wait for callbacks");
+			errors = msgComplete2.waitFor();
+			System.out.println("*** done");
+			assertTrue("Verify success from all message callbacks", errors.length == 0);				
+
+			/* wait for the subscription callback to be called */
+			messageWaiter.waitFor(messageCount);
+			assertEquals("Verify message subscriptions all called after reconnection", messageWaiter.receivedMessages.size(), messageCount);
+
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			if(ablyTx != null)
+				ablyTx.close();
+			if(ablyRx != null)
+				ablyRx.close();
+		}
+	}
+
+
+
 }
