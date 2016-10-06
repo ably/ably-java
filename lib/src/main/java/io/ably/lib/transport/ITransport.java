@@ -39,6 +39,11 @@ public interface ITransport {
 		String connectionKey;
 		String connectionSerial;
 		Mode mode;
+		boolean heartbeats;
+
+		public TransportParams() {
+			heartbeats = true; /* default to requiring Ably heartbeats */
+		}
 
 		public Param[] getConnectParams(Param[] baseParams) {
 			List<Param> paramList = new ArrayList<Param>(Arrays.asList(baseParams));
@@ -64,6 +69,8 @@ public interface ITransport {
 			}
 			if(options.clientId != null)
 				paramList.add(new Param("client_id", options.clientId));
+			if(!heartbeats)
+				paramList.add(new Param("heartbeats", "false"));
 
 			Log.d(TAG, "getConnectParams: params = " + paramList);
 			return paramList.toArray(new Param[paramList.size()]);

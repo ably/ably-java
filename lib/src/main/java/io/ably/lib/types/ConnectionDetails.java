@@ -2,6 +2,7 @@ package io.ably.lib.types;
 
 import java.io.IOException;
 
+import io.ably.lib.transport.Defaults;
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessageUnpacker;
 
@@ -12,6 +13,11 @@ public class ConnectionDetails {
 	public Long maxMessageSize;
 	public Long maxInboundRate;
 	public Long maxFrameSize;
+	public Long maxIdleInterval;
+
+	ConnectionDetails() {
+		maxIdleInterval = Defaults.maxIdleInterval;
+	}
 
 	ConnectionDetails readMsgpack(MessageUnpacker unpacker) throws IOException {
 		int fieldCount = unpacker.unpackMapHeader();
@@ -32,6 +38,8 @@ public class ConnectionDetails {
 				maxInboundRate = unpacker.unpackLong();
 			} else if(fieldName == "maxFrameSize") {
 				maxFrameSize = unpacker.unpackLong();
+			} else if(fieldName == "maxIdleInterval") {
+				maxIdleInterval = unpacker.unpackLong();
 			} else {
 				System.out.println("Unexpected field: " + fieldName);
 				unpacker.skipValue();

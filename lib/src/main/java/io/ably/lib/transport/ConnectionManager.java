@@ -109,6 +109,8 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		put(ConnectionState.failed, new StateInfo(ConnectionState.failed, false, false, true, false, 0, REASON_FAILED));
 	}};
 
+	long maxIdleInterval;
+
 	public ErrorInfo getStateErrorInfo() {
 		return state.defaultErrorInfo;
 	}
@@ -337,6 +339,9 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		if(message.connectionSerial != null)
 			connection.serial = message.connectionSerial.longValue();
 		msgSerial = 0;
+
+		/* Get any parameters from connectionDetails. */
+		maxIdleInterval = message.connectionDetails.maxIdleInterval;
 
 		/* indicated connected state */
 		setSuspendTime();

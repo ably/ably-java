@@ -20,6 +20,10 @@ public class Defaults {
 	public static final int TIMEOUT_HTTP_OPEN = 4000;
 	/* TO314 */
 	public static final int TIMEOUT_HTTP_REQUEST = 15000;
+	/* DF1b */
+	public static final long realtimeRequestTimeout = 10000L;
+	/* CD2h (but no default in the spec) */
+	public static final long maxIdleInterval = 20000L;
 
 
 	public static final String[] TRANSPORTS         = new String[]{"web_socket"};
