@@ -116,6 +116,8 @@ public class WebSocketTransport implements ITransport {
 
 	@Override
 	public void send(ProtocolMessage msg) throws AblyException {
+		if (Log.level <= Log.VERBOSE)
+			Log.v(TAG, "send(): " + new String(ProtocolSerializer.writeJSON(msg)));
 		try {
 			if(channelBinaryMode)
 				wsConnection.send(ProtocolSerializer.writeMsgpack(msg));
