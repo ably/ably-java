@@ -1,6 +1,6 @@
 # [Ably](https://www.ably.io)
 
-(https://bintray.com/ably-io/ably/java/_latestVersion)
+[ ![Download](https://api.bintray.com/packages/ably-io/ably/java/images/download.svg) ](https://bintray.com/ably-io/ably/java/_latestVersion)
 
 A Java Realtime and REST client library for [Ably.io](https://www.ably.io), the realtime messaging service.
 
