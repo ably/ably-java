@@ -50,7 +50,7 @@ Tests will run against sandbox by default.
 Download [the latest JAR](https://github.com/ably/ably-java/releases) or grab via Gradle:
 
 ```groovy
-compile 'io.ably:ably-java:0.8.3'
+compile 'io.ably:ably-java:0.8.4'
 ```
 
 and add following repo for a sub-dependency,
@@ -332,18 +332,18 @@ long serviceTime = ably.time();
 This library uses [semantic versioning](http://semver.org/). For each release, the following needs to be done:
 
 * Replace all references of the current version number with the new version number (check [pom.xml](./pom.xml) and [build.gradle](.build.gradle)) and commit the changes
-* Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to automate the update of the [CHANGELOG](./CHANGELOG.md). Once the CHANGELOG has completed, manually change the `Unreleased` heading and link with the current version number such as `v0.8.3`. Also ensure that the `Full Changelog` link points to the new version tag instead of the `HEAD`. Commit this change.
-* Add a tag and push to origin such as `git tag v0.8.3 && git push origin v0.8.3`
+* Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to automate the update of the [CHANGELOG](./CHANGELOG.md). Once the CHANGELOG has completed, manually change the `Unreleased` heading and link with the current version number such as `v0.8.4`. Also ensure that the `Full Changelog` link points to the new version tag instead of the `HEAD`. Commit this change.
+* Add a tag and push to origin such as `git tag v0.8.4 && git push origin v0.8.4`
 * Run `gradle lib:jar && gradle fullJar` to build the JARs for this release
 * Visit [https://github.com/ably/ably-java/tags](https://github.com/ably/ably-java/tags) and `Add release notes` for the release, then attach the generated JARs in the folder `lib/build/libs`
 
 ### Publishing to JCentre (Maven)
 
-* Go to the home page https://bintray.com/ably-io/ably/java. Select [New version](https://bintray.com/ably-io/ably/java/new/version), enter the new version such as "0.8.3" in name and save
+* Go to the home page https://bintray.com/ably-io/ably/java. Select [New version](https://bintray.com/ably-io/ably/java/new/version), enter the new version such as "0.8.4" in name and save
 * Run `gradle generateRelease uploadArchives` locally to generate the files
-* Open local relative folder such as `/lib/build/release/0.8.3/`
-* Then go to the new version in JFrog Bintray and go to files such as https://bintray.com/ably-io/ably/java/0.8.3#files/io/ably/ably-java, then click on Upload files
-* Type in `io/ably/ably-java/0.8.3` into "Target Repository Path" ensuring the correct version is included. The drag in the files in `/lib/build/release/0.8.3/`
+* Open local relative folder such as `/lib/build/release/0.8.4/`
+* Then go to the new version in JFrog Bintray and go to files such as https://bintray.com/ably-io/ably/java/0.8.4#files/io/ably/ably-java, then click on Upload files
+* Type in `io/ably/ably-java/0.8.4` into "Target Repository Path" ensuring the correct version is included. The drag in the files in `/lib/build/release/0.8.4/`
 
 ## Support, feedback and troubleshooting
 

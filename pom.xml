@@ -4,9 +4,9 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.ably</groupId>
   <artifactId>ably-java</artifactId>
-  <version>0.8.3</version>
-  <name>Ably java client library</name>
-  <description>A Java Realtime and REST client library for [Ably.io](https://www.ably.io), the realtime messaging service.</description>
+  <version>0.8.4</version>
+  <name>Ably Java and Android client library</name>
+  <description>A Java and Android Realtime and REST client library for [Ably.io](https://www.ably.io), the realtime messaging service.</description>
   <inceptionYear>2015</inceptionYear>
   <organization>
     <name>Ably</name>
