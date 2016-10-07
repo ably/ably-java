@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/ably/ably-java/tree/v0.8.4)
+## [v0.8.4](https://github.com/ably/ably-java/tree/v0.8.4)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v0.8.3...v0.8.4)
 
