@@ -344,6 +344,7 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 * Open local relative folder such as `/lib/build/release/0.8.4/`
 * Then go to the new version in JFrog Bintray and go to files such as https://bintray.com/ably-io/ably/java/0.8.4#files/io/ably/ably-java, then click on Upload files
 * Type in `io/ably/ably-java/0.8.4` into "Target Repository Path" ensuring the correct version is included. The drag in the files in `/lib/build/release/0.8.4/`
+* You will see a notice "You have 8 unpublished item(s) for this version", make sure you click "Publish". Wait a few minutes and check that your version has all the necessary files at https://bintray.com/ably-io/ably/java/v0.8.4?sort=&order=#files/io/ably/ably-java/0.8.4 for example.
 
 ## Support, feedback and troubleshooting
 
