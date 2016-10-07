@@ -10,7 +10,7 @@ public class JreResourceLoader implements ResourceLoader {
 	public byte[] read(String resourceName) throws IOException {
 		FileInputStream fis = null;
 		try {
-			fis = new FileInputStream(new File("src/test/resources", resourceName));
+			fis = new FileInputStream(new File("../lib/src/test/resources", resourceName));
 			byte[] bytes = new byte[fis.available()];
 			fis.read(bytes);
 			return bytes;

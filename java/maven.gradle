@@ -6,22 +6,6 @@ def groupId = "io.ably"
 def artifactId = "ably-java"
 def localReleaseDest = "${buildDir}/release/${version}"
 
-allprojects {
-    tasks.withType(Javadoc) {
-        // To prevent javadoc warnings with Java 8
-        options.addStringOption('Xdoclint:none', '-quiet')
-    }
-}
-
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-}
-
-artifacts {
-    archives sourcesJar
-}
-
 uploadArchives {
     repositories.mavenDeployer {
         pom.groupId = groupId
@@ -53,6 +37,13 @@ uploadArchives {
                     url 'https://raw.github.com/ably/ably-java/master/LICENSE'
                     distribution 'repo'
                 }
+            }
+        }
+
+        // Exclude dependency on lib subproject.
+        pom.whenConfigured {
+            p -> p.dependencies = p.dependencies.findAll {
+                dep -> dep.artifactId != "lib"
             }
         }
 

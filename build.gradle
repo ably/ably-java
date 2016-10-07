@@ -14,6 +14,11 @@ allprojects {
       jcenter()
       maven { url "https://raw.github.com/paddybyers/Java-WebSocket/mvn-repo/" }
   }
+
+  tasks.withType(Javadoc) {
+      // To prevent javadoc warnings with Java 8
+      options.addStringOption('Xdoclint:none', '-quiet')
+  }
 }
 
 subprojects {
