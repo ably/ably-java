@@ -11,7 +11,12 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.*;
+import org.hamcrest.collection.IsIterableContainingInAnyOrder;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -23,15 +28,23 @@ import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 /**
  * Created by gokhanbarisaker on 2/2/16.
@@ -39,6 +52,8 @@ import static org.mockito.Mockito.*;
 public class HttpTest {
 
 	private static final String PATTERN_HOST_FALLBACK = "(?i)[a-e]\\.ably-realtime.com";
+	private static final String CUSTOM_PATTERN_HOST_FALLBACK = "(?i)[f-k]\\.ably-realtime.com";
+	private static final String[] CUSTOM_HOSTS = { "f.ably-realtime.com", "g.ably-realtime.com", "h.ably-realtime.com", "i.ably-realtime.com", "j.ably-realtime.com", "k.ably-realtime.com" };
 
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
@@ -144,6 +159,123 @@ public class HttpTest {
 
 		for (int i = 1; i < expectedCallCount; i++) {
 			urlHostArgumentStack.get(i).matches(PATTERN_HOST_FALLBACK);
+		}
+	}
+
+	/**
+	 * Validates that fallbacks are disabled when ClientOpitons#fallbackHosts are set to empty and the only host used is Defaults#HOST_REST
+	 * @throws AblyException
+     */
+
+	@Test
+	public void http_ably_execute_null_fallbacks() throws AblyException {
+		ClientOptions options = new ClientOptions();
+		options.tls = false;
+		options.fallbackHosts = new String[0];
+		options.port = 7777;
+
+		ArrayList<String> urlHostArgumentStack = new ArrayList<>();
+
+		Http http = new Http(options, null) {
+			List<String> urlArgumentStack;
+
+			@Override
+			public <T> T httpExecuteWithRetry(URL url, String method, Param[] headers, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean allowAblyAuth) throws AblyException {
+				urlArgumentStack.add(url.getHost());
+				return super.httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, allowAblyAuth);
+			}
+
+			public Http setUrlArgumentStack(List<String> urlArgumentStack) {
+				this.urlArgumentStack = urlArgumentStack;
+				return this;
+			}
+		}.setUrlArgumentStack(urlHostArgumentStack);
+
+		http.setHost(Defaults.HOST_REST);
+
+		try {
+			http.ablyHttpExecute(
+					"/path/to/fallback", /* Ignore path */
+					Http.GET, /* Ignore method */
+					new Param[0], /* Ignore headers */
+					new Param[0], /* Ignore params */
+					null, /* Ignore requestBody */
+					null /* Ignore requestHandler */
+			);
+		} catch (AblyException.HostFailedException e) {
+			/* Verify that,
+			 * 		- a {@code AblyException.HostFailedException} is thrown.
+			 */
+			assertTrue(true);
+		} catch (AblyException e) {
+			assertTrue(false);
+		}
+
+		/* Validate that only one host is used and it is Defaults#HOST_REST */
+		Assert.assertTrue(urlHostArgumentStack.size() == 1);
+		assertThat(urlHostArgumentStack.get(0), is(equalTo(Defaults.HOST_REST)));
+	}
+
+	/**
+	 * Validates that Http uses ClientOptions#fallbackHosts when there is AblyException.HostFailedException thrown
+	 * @throws AblyException
+	 */
+
+	@Test
+	public void http_ably_execute_custom_fallback() throws AblyException {
+		ClientOptions options = new ClientOptions();
+		options.tls = false;
+		options.fallbackHosts = CUSTOM_HOSTS;
+		options.port = 7777;
+
+		ArrayList<String> urlHostArgumentStack = new ArrayList<>();
+
+		Http http = new Http(options, null) {
+			/* Store only string representations to avoid try/catch blocks */
+			List<String> urlArgumentStack;
+
+			@Override
+			public <T> T httpExecuteWithRetry(URL url, String method, Param[] headers, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean allowAblyAuth) throws AblyException {
+				urlArgumentStack.add(url.getHost());
+				/* verify if fallback hosts are from specified list */
+				if(!url.getHost().equals(Defaults.HOST_REST))
+					assertTrue(Arrays.asList(CUSTOM_HOSTS).contains(url.getHost()));
+
+				return super.httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, allowAblyAuth);
+			}
+
+			public Http setUrlArgumentStack(List<String> urlArgumentStack) {
+				this.urlArgumentStack = urlArgumentStack;
+				return this;
+			}
+		}.setUrlArgumentStack(urlHostArgumentStack);
+
+		http.setHost(Defaults.HOST_REST);
+
+		try {
+			http.ablyHttpExecute(
+					"/path/to/fallback", /* Ignore path */
+					Http.GET, /* Ignore method */
+					new Param[0], /* Ignore headers */
+					new Param[0], /* Ignore params */
+					null, /* Ignore requestBody */
+					null /* Ignore requestHandler */
+			);
+		} catch (AblyException.HostFailedException e) {
+			/* Verify that,
+			 * 		- a {@code AblyException.HostFailedException} is thrown.
+			 */
+			assertTrue(true);
+		} catch (AblyException e) {
+			assertTrue(false);
+		}
+
+		int expectedCallCount = options.httpMaxRetryCount + 1;
+		Assert.assertTrue(urlHostArgumentStack.size() == expectedCallCount);
+		assertThat(urlHostArgumentStack.get(0), is(equalTo(Defaults.HOST_REST)));
+
+		for (int i = 1; i < expectedCallCount; i++) {
+			Assert.assertTrue(urlHostArgumentStack.get(i).matches(CUSTOM_PATTERN_HOST_FALLBACK));
 		}
 	}
 
