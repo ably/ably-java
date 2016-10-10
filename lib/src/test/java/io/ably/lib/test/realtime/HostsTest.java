@@ -9,41 +9,24 @@ import org.junit.Test;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
-/**
- * Created by gokhanbarisaker on 2/2/16.
- */
 public class HostsTest {
 
-    /**
-     * Expect given fallback host string is (relatively) valid
-     */
-    @Test
-    public void hosts_fallback_single() {
-        String host = Hosts.getFallback(null);
-        assertThat(host, is(not(isEmptyOrNullString())));
-    }
-
-    /**
-     * Expect multiple calls will provide different (relatively) valid fallback hosts
-     */
-    @Test
-    public void hosts_fallback_multiple() {
-        String host = Hosts.getFallback(null);
-        assertThat(Hosts.getFallback(host), is(not(allOf(isEmptyOrNullString(), equalTo(host)))));
-    }
-
 	/**
-	 * Expect a null, when we requested more than available fallback hosts
-     */
-    @Test
-    public void hosts_fallback_traverse_all() {
-        String host = Hosts.getFallback(null);
-
-        for (int i = Defaults.HOST_FALLBACKS.size(); i > 0; i--) {
-            assertThat(host, is(not(equalTo(null))));
-            host = Hosts.getFallback(host);
-        }
-
-        assertThat(host, is(equalTo(null)));
-    }
+	 * Tests for Hosts class (fallback hosts).
+	 */
+	@Test
+	public void hosts_fallback() {
+		Hosts hosts = new Hosts(Defaults.HOST_REALTIME, Defaults.HOST_REALTIME);
+		String host = hosts.getFallback(Defaults.HOST_REALTIME);
+		/* Expect given fallback host string is (relatively) valid */
+		assertThat(host, is(not(isEmptyOrNullString())));
+		/* Expect multiple calls will provide different (relatively) valid fallback hosts */
+		String host2 = hosts.getFallback(host);
+		assertThat(host2, is(not(allOf(isEmptyOrNullString(), equalTo(host)))));
+		/* Expect a null, when we requested more than available fallback hosts */
+		for (int i = Defaults.HOST_FALLBACKS.length - 1; i > 0; i--) {
+			assertThat(host2, is(not(equalTo(null))));
+			host2 = hosts.getFallback(host2);
+		}
+	}
 }

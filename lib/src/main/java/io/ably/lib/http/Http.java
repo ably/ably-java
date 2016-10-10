@@ -151,9 +151,9 @@ public class Http {
 	public Http(ClientOptions options, Auth auth) throws AblyException {
 		this.options = options;
 		this.auth = auth;
-		this.host = options.restHost;
 		this.scheme = options.tls ? "https://" : "http://";
 		this.port = Defaults.getPort(options);
+		this.hosts = new Hosts(options.restHost, Defaults.HOST_REST);
 
 		this.proxyOptions = options.proxy;
 		if(proxyOptions != null) {
@@ -177,7 +177,7 @@ public class Http {
 	 * @param host URL string
 	 */
 	public void setHost(String host) {
-		this.host = host;
+		hosts.setHost(host);
 	}
 
 	/**
@@ -186,7 +186,7 @@ public class Http {
 	 * @return
      */
 	public String getHost() {
-		return host;
+		return hosts.getHost();
 	}
 
 	/**
@@ -325,8 +325,8 @@ public class Http {
 	 * @throws AblyException
 	 */
 	public <T> T ablyHttpExecute(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
-		int retryCountRemaining = Hosts.isRestFallbackSupported(this.host) ? options.httpMaxRetryCount : 0;
-		String candidateHost = this.host;
+		String candidateHost = getHost();
+		int retryCountRemaining = hosts.getFallback(candidateHost) != null ? options.httpMaxRetryCount : 0;
 		URL url;
 
 		while(true) {
@@ -337,7 +337,7 @@ public class Http {
 				if(--retryCountRemaining < 0)
 					throw e; /* reached httpMaxRetryCount */
 				Log.d(TAG, "Connection failed to host `" + candidateHost + "`. Searching for new host...");
-				candidateHost = Hosts.getFallback(candidateHost);
+				candidateHost = hosts.getFallback(candidateHost);
 				if (candidateHost == null)
 					throw e; /* run out of fallback hosts */
 				Log.d(TAG, "Switched to `" + candidateHost + "`.");
@@ -730,9 +730,9 @@ public class Http {
 	}
 
 	final String scheme;
-	String host;
 	final int port;
 	final ClientOptions options;
+	final Hosts hosts;
 
 	private final Auth auth;
 	private String authHeader;
