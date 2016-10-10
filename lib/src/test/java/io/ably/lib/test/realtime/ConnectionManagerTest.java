@@ -1,10 +1,12 @@
-package io.ably.lib.transport;
+package io.ably.lib.test.realtime;
 
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Connection;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Setup;
+import io.ably.lib.transport.ConnectionManager;
+import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import org.hamcrest.Matchers;

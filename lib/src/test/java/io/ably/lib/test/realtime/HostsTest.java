@@ -1,4 +1,7 @@
-package io.ably.lib.transport;
+package io.ably.lib.test.realtime;
+
+import io.ably.lib.transport.Defaults;
+import io.ably.lib.transport.Hosts;
 
 import org.hamcrest.Matchers;
 import org.junit.Test;
