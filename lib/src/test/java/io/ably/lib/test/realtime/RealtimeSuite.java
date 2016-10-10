@@ -13,6 +13,7 @@ import io.ably.lib.test.common.Setup;
 
 @RunWith(Suite.class)
 @SuiteClasses({
+	ConnectionParamTest.class,
 	ConnectionManagerTest.class,
 	HostsTest.class,
 	EventEmitterTest.class,

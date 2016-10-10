@@ -20,6 +20,7 @@ dependencies {
   testCompile 'junit:junit:4.12'
   testCompile 'com.nanohttpd:nanohttpd:2.2.0'
   testCompile 'org.nanohttpd:nanohttpd-nanolets:2.2.0'
+  testCompile 'org.nanohttpd:nanohttpd-websocket:2.2.0'
   testCompile 'org.mockito:mockito-all:2.0.2-beta'
 }
 
