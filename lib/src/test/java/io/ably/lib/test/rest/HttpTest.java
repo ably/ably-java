@@ -1,8 +1,9 @@
-package io.ably.lib.http;
+package io.ably.lib.test.rest;
 
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
 import io.ably.lib.test.util.StatusHandler;
+import io.ably.lib.http.Http;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
@@ -19,6 +20,7 @@ import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.Proxy;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -99,12 +101,12 @@ public class HttpTest {
 			List<String> urlArgumentStack;
 
 			@Override
-			<T> T httpExecute(URL url, String method, Param[] headers, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
+			public <T> T httpExecute(URL url, Proxy proxy, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler<T> responseHandler) throws AblyException {
 				// Store a copy of given argument
 				urlArgumentStack.add(url.getHost());
 
 				// Execute the original method without changing behavior
-				return super.httpExecute(url, method, headers, requestBody, responseHandler);
+				return super.httpExecute(url, proxy, method, headers, requestBody, withCredentials, responseHandler);
 			}
 
 			public Http setUrlArgumentStack(List<String> urlArgumentStack) {
@@ -171,9 +173,11 @@ public class HttpTest {
 				.when(http) /* when following method is executed on {@code Http} instance */
 				.httpExecute(
 						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+						any(Proxy.class), /* Ignore */
 						anyString(), /* Ignore */
 						aryEq(new Param[0]), /* Ignore */
 						any(Http.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
 						any(Http.ResponseHandler.class) /* Ignore */
 				);
 
@@ -193,10 +197,12 @@ public class HttpTest {
          *   - and delivered expected response */
 		verify(http, times(1))
 				.httpExecute( /* Just validating call counter. Ignore following parameters */
-						url.capture(), /* Ignore */
+						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+						any(Proxy.class), /* Ignore */
 						anyString(), /* Ignore */
 						aryEq(new Param[0]), /* Ignore */
 						any(Http.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
 						any(Http.ResponseHandler.class) /* Ignore */
 				);
 
@@ -234,10 +240,12 @@ public class HttpTest {
 		doAnswer(answer) /* Behave as defined above */
 				.when(http) /* when following method is executed on {@code Http} instance */
 				.httpExecute(
-						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid fallback url */
+						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+						any(Proxy.class), /* Ignore */
 						anyString(), /* Ignore */
 						aryEq(new Param[0]), /* Ignore */
 						any(Http.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
 						any(Http.ResponseHandler.class) /* Ignore */
 				);
 
@@ -259,10 +267,12 @@ public class HttpTest {
 
 		verify(http, times(2))
 				.httpExecute( /* Just validating call counter. Ignore following parameters */
-						url.capture(), /* Ignore */
+						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+						any(Proxy.class), /* Ignore */
 						anyString(), /* Ignore */
 						aryEq(new Param[0]), /* Ignore */
 						any(Http.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
 						any(Http.ResponseHandler.class) /* Ignore */
 				);
 
@@ -300,10 +310,12 @@ public class HttpTest {
 		doAnswer(answer) /* Behave as defined above */
 				.when(http) /* when following method is executed on {@code Http} instance */
 				.httpExecute(
-						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid fallback url */
+						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+						any(Proxy.class), /* Ignore */
 						anyString(), /* Ignore */
 						aryEq(new Param[0]), /* Ignore */
 						any(Http.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
 						any(Http.ResponseHandler.class) /* Ignore */
 				);
 
@@ -333,10 +345,12 @@ public class HttpTest {
          * Do the validation, after we completed the {@code ArgumentCaptor} related assertions */
 		verify(http, times(3))
 				.httpExecute( /* Just validating call counter. Ignore following parameters */
-						url.capture(), /* Ignore */
+						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+						any(Proxy.class), /* Ignore */
 						anyString(), /* Ignore */
 						aryEq(new Param[0]), /* Ignore */
 						any(Http.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
 						any(Http.ResponseHandler.class) /* Ignore */
 				);
 	}
@@ -371,10 +385,12 @@ public class HttpTest {
 		doAnswer(answer) /* Behave as defined above */
 				.when(http) /* when following method is executed on {@code Http} instance */
 				.httpExecute(
-						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid fallback url */
+						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+						any(Proxy.class), /* Ignore */
 						anyString(), /* Ignore */
 						aryEq(new Param[0]), /* Ignore */
 						any(Http.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
 						any(Http.ResponseHandler.class) /* Ignore */
 				);
 
@@ -395,10 +411,12 @@ public class HttpTest {
 		doReturn("Lorem Ipsum") /* Return some response string that we will ignore */
 				.when(http) /* when following method is executed on {@code Http} instance */
 				.httpExecute(
-						url.capture(), /* capture url arguments passed down httpExecute to assert http call successfully executed against `rest.ably.io` host */
+						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+						any(Proxy.class), /* Ignore */
 						anyString(), /* Ignore */
 						aryEq(new Param[0]), /* Ignore */
 						any(Http.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
 						any(Http.ResponseHandler.class) /* Ignore */
 				);
 
@@ -445,10 +463,12 @@ public class HttpTest {
 		doAnswer(answer) /* Behave as defined above */
 				.when(http) /* when following method is executed on {@code Http} instance */
 				.httpExecute(
-						url.capture(), /* Ignore */
+						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+						any(Proxy.class), /* Ignore */
 						anyString(), /* Ignore */
 						aryEq(new Param[0]), /* Ignore */
 						any(Http.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
 						any(Http.ResponseHandler.class) /* Ignore */
 				);
 
@@ -494,7 +514,7 @@ public class HttpTest {
 			hfe = null;
 
 			try {
-				http.httpExecute(url, Http.GET, new Param[0], requestBody, null);
+				String result = http.httpExecute(url, Http.GET, new Param[0], requestBody, null);
 			} catch (AblyException.HostFailedException e) {
 				hfe = e;
 			}

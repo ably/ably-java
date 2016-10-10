@@ -1,4 +1,4 @@
-package io.ably.lib.http;
+package io.ably.lib.test.rest;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -11,6 +11,8 @@ import java.util.Map;
 
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
+import io.ably.lib.http.Http;
+import io.ably.lib.http.HttpUtils;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Channel;
 import io.ably.lib.test.common.Setup;

@@ -324,7 +324,7 @@ public class Http {
 	 * @return
 	 * @throws AblyException
 	 */
-	<T> T ablyHttpExecute(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
+	public <T> T ablyHttpExecute(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
 		int retryCountRemaining = Hosts.isRestFallbackSupported(this.host) ? options.httpMaxRetryCount : 0;
 		String candidateHost = this.host;
 		URL url;
@@ -355,7 +355,7 @@ public class Http {
 	 * @return
 	 * @throws AblyException
 	 */
-	<T> T httpExecute(URL url, String method, Param[] headers, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
+	public <T> T httpExecute(URL url, String method, Param[] headers, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
 		return httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, false);
 	}
 
@@ -371,7 +371,7 @@ public class Http {
 	 * @return
 	 * @throws AblyException
 	 */
-	<T> T httpExecute(URL url, Proxy proxy, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler<T> responseHandler) throws AblyException {
+	public <T> T httpExecute(URL url, Proxy proxy, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler<T> responseHandler) throws AblyException {
 		HttpURLConnection conn = null;
 		try {
 			conn = (HttpURLConnection)url.openConnection(proxy);
@@ -451,7 +451,7 @@ public class Http {
 	 * @return
 	 * @throws AblyException
 	 */
-	<T> T httpExecuteWithRetry(URL url, String method, Param[] headers, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean allowAblyAuth) throws AblyException {
+	public <T> T httpExecuteWithRetry(URL url, String method, Param[] headers, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean allowAblyAuth) throws AblyException {
 		boolean authPending = true, renewPending = true, proxyAuthPending = true;
 		while(true) {
 			try {
