@@ -71,13 +71,13 @@ public class ConnectionManagerTest {
 		AblyRealtime ably = new AblyRealtime(opts);
 		ConnectionManager connectionManager = ably.connection.connectionManager;
 
-		new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.failed);
+		new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.disconnected);
 
 		/* Verify that,
-		 *   - connectionManager is connected
-		 *   - connectionManager is connected to the host without any fallback
+		 *   - connectionManager is disconnected
+		 *   - connectionManager's last host did not have any fallback
 		 */
-		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.failed));
+		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.disconnected));
 		assertThat(connectionManager.getHost(), is(equalTo(opts.realtimeHost)));
 	}
 
@@ -111,13 +111,13 @@ public class ConnectionManagerTest {
 
 		connectionManager.connect();
 
-		new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.failed);
+		new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.disconnected);
 
 		/* Verify that,
-		 *   - connectionManager is failed
-		 *   - connectionManager is didn't applied any fallback behavior
+		 *   - connectionManager is disconnected
+		 *   - connectionManager did not apply any fallback behavior
 		 */
-		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.failed));
+		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.disconnected));
 		assertThat(connectionManager.getHost(), is(equalTo(opts.realtimeHost)));
 	}
 
@@ -145,16 +145,14 @@ public class ConnectionManagerTest {
 		AblyRealtime ably = new AblyRealtime(opts);
 		ConnectionManager connectionManager = ably.connection.connectionManager;
 
-		new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.failed);
+		new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.disconnected);
 
 		/* Verify that,
-		 *   - connectionManager is connected
-		 *   - connectionManager is connected to a fallback host
-		 *   - Ably http client is also using the same fallback host
+		 *   - connectionManager is disconnected
+		 *   - connectionManager's last host was a fallback host
 		 */
-		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.failed));
+		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.disconnected));
 		assertThat(connectionManager.getHost(), is(not(equalTo(opts.realtimeHost))));
-		assertThat(ably.http.getHost(), is(equalTo(connectionManager.getHost())));
 	}
 
 	/**
@@ -176,28 +174,38 @@ public class ConnectionManagerTest {
 		AblyRealtime ably = new AblyRealtime(opts);
 		ConnectionManager connectionManager = ably.connection.connectionManager;
 
-		new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.failed);
+		System.out.println("waiting for disconnected");
+		new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.disconnected);
+		System.out.println("got disconnected");
 
 		/* Verify that,
-		 *   - connectionManager is connected
-		 *   - connectionManager is connected to a fallback host
-		 *   - Ably http client is also using the same fallback host
+		 *   - connectionManager is disconnected
+		 *   - connectionManager's last host was a fallback host
 		 */
-		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.failed));
+		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.disconnected));
 		assertThat(connectionManager.getHost(), is(not(equalTo(opts.realtimeHost))));
-		assertThat(ably.http.getHost(), is(equalTo(connectionManager.getHost())));
 
 		/* Reconnect */
 		ably.options.tlsPort = Defaults.TLS_PORT;
+		System.out.println("about to connect");
 		ably.connection.connect();
 
-		new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.connected);
+		/* Wait 1s and then get the name of the host it is trying to connect to. */
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {}
+		String host = connectionManager.getHost();
+
+		new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.failed);
 
 		/* Verify that,
-		 *   - connectionManager is connected
-		 *   - connectionManager is connected to the host without any fallback
+		 *   - connectionManager is failed, because we are using an application key
+		 *     that only works on sandbox;
+		 *   - connectionManager first tried to connect to the original host, not a fallback one.
 		 */
-		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.connected));
-		assertThat(connectionManager.getHost(), is(equalTo(opts.realtimeHost)));
+		System.out.println("waiting for failed");
+		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.failed));
+		System.out.println("got failed");
+		assertThat(host, is(equalTo(opts.realtimeHost)));
 	}
 }
