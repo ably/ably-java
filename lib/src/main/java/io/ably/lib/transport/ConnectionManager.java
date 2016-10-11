@@ -34,14 +34,14 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	 * default errors
 	 ***********************************/
 
-	static ErrorInfo REASON_CLOSED = new ErrorInfo("Connection closed by client", 10000);
-	static ErrorInfo REASON_DISCONNECTED = new ErrorInfo("Connection temporarily unavailable", 80003);
-	static ErrorInfo REASON_SUSPENDED = new ErrorInfo("Connection unavailable", 80002);
-	static ErrorInfo REASON_FAILED = new ErrorInfo("Connection failed", 80000);
-	static ErrorInfo REASON_REFUSED = new ErrorInfo("Access refused", 40100);
-	static ErrorInfo REASON_TOO_BIG = new ErrorInfo("Connection closed; message too large", 40000);
-	static ErrorInfo REASON_NEVER_CONNECTED = new ErrorInfo("Unable to establish connection", 80002);
-	static ErrorInfo REASON_TIMEDOUT = new ErrorInfo("Unable to establish connection", 80014);
+	static ErrorInfo REASON_CLOSED = new ErrorInfo("Connection closed by client", 200, 10000);
+	static ErrorInfo REASON_DISCONNECTED = new ErrorInfo("Connection temporarily unavailable", 503, 80003);
+	static ErrorInfo REASON_SUSPENDED = new ErrorInfo("Connection unavailable", 503, 80002);
+	static ErrorInfo REASON_FAILED = new ErrorInfo("Connection failed", 503, 80000);
+	static ErrorInfo REASON_REFUSED = new ErrorInfo("Access refused", 401, 40100);
+	static ErrorInfo REASON_TOO_BIG = new ErrorInfo("Connection closed; message too large", 400, 40000);
+	static ErrorInfo REASON_NEVER_CONNECTED = new ErrorInfo("Unable to establish connection", 503, 80002);
+	static ErrorInfo REASON_TIMEDOUT = new ErrorInfo("Unable to establish connection", 503, 80014);
 
 	/***********************************
 	 * a class encapsulating information
@@ -530,7 +530,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		 * - the suspend timer has expired, so we're going into suspended state.
 		 */
 
-		if(pendingConnect != null && stateChange.reason == null) {
+		if(pendingConnect != null && (stateChange.reason == null || stateChange.reason.statusCode >= 500)) {
 			if (!Hosts.isFallback(pendingConnect.host)) {
 				if (!checkConnectivity()) {
 					return new StateIndication(ConnectionState.failed, new ErrorInfo("connection failed", 80000), false, pendingConnect.host);
