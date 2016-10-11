@@ -329,6 +329,18 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	}
 
 	private synchronized void onConnected(ProtocolMessage message) {
+		/* Set the http host to try and ensure that realtime and rest use the
+		 * same region:
+		 *  - if we're on the default realtime host, set http to the default
+		 *    rest host
+		 *  - otherwise (the realtime host has been overridden or has fallen
+		 *    back), set http to the same as realtime.
+		 */
+		if (pendingConnect.host == options.realtimeHost)
+			ably.http.setHost(options.restHost);
+		else
+			ably.http.setHost(pendingConnect.host);
+
 		/* if there was a (non-fatal) connection error
 		 * that invalidates an existing connection id, then
 		 * remove all channels attached to the previous id */
@@ -632,12 +644,10 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 			pendingConnect = new ConnectParams(options);
 			pendingConnect.host = hostFallback;
-			ably.http.setHost(hostFallback);
 		}
 		else {
 			pendingConnect = new ConnectParams(options);
 			pendingConnect.host = options.realtimeHost;
-			ably.http.setHost(options.restHost);
 		}
 
 		/* enter the connecting state */
