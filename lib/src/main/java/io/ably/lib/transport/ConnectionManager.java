@@ -52,14 +52,14 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	public static class StateIndication {
 		final ConnectionState state;
 		final ErrorInfo reason;
-		final boolean fallback;
+		final String fallback;
 		final String currentHost;
 
 		public StateIndication(ConnectionState state, ErrorInfo reason) {
-			this(state, reason, false, null);
+			this(state, reason, null, null);
 		}
 
-		public StateIndication(ConnectionState state, ErrorInfo reason, boolean fallback, String currentHost) {
+		public StateIndication(ConnectionState state, ErrorInfo reason, String fallback, String currentHost) {
 			this.state = state;
 			this.reason = reason;
 			this.fallback = fallback;
@@ -460,7 +460,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			break;
 		case connecting:
 			if(!connectImpl(requestedState)) {
-				indicatedState = new StateIndication(ConnectionState.failed, new ErrorInfo("Connection failed; no host available", 404, 80000), false, requestedState.currentHost);
+				indicatedState = new StateIndication(ConnectionState.failed, new ErrorInfo("Connection failed; no host available", 404, 80000), null, requestedState.currentHost);
 			}
 
 			handled = true;
@@ -537,17 +537,18 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		 */
 
 		if(pendingConnect != null && (stateChange.reason == null || stateChange.reason.statusCode >= 500)) {
-			if (!Hosts.isFallback(pendingConnect.host)) {
-				if (!checkConnectivity()) {
-					return new StateIndication(ConnectionState.failed, new ErrorInfo("connection failed", 80000), false, pendingConnect.host);
+			if (Hosts.isFallback(pendingConnect.host) || checkConnectivity()) {
+				/* we will try a fallback host */
+				String hostFallback = Hosts.isRealtimeFallbackSupported(options.realtimeHost)?(Hosts.getFallback(pendingConnect.host)):(null);
+				if (hostFallback != null) {
+					Log.v(TAG, "checkSuspend: fallback to " + hostFallback);
+					requestState(new StateIndication(ConnectionState.connecting, null, hostFallback, pendingConnect.host));
+					/* returning null ensures we stay in the connecting state */
+					return null;
 				}
 			}
-
-			/* we will try a fallback host */
-			requestState(new StateIndication(ConnectionState.connecting, null, true, pendingConnect.host));
-			/* returning null ensures we stay in the connecting state */
-			return null;
 		}
+		Log.v(TAG, "checkSuspend: not falling back");
 		boolean suspendMode = System.currentTimeMillis() > suspendTime;
 		ConnectionState expiredState = suspendMode ? ConnectionState.suspended : ConnectionState.disconnected;
 		return new StateIndication(expiredState, stateChange.reason);
@@ -623,7 +624,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			return;
 		}
 		ably.auth.onAuthError(reason);
-		notifyState(new StateIndication(ConnectionState.disconnected, reason, false, transport.getHost()));
+		notifyState(new StateIndication(ConnectionState.disconnected, reason, null, transport.getHost()));
 		transport = null;
 	}
 
@@ -642,23 +643,14 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		 * instance the transport.
 		 * First, choose the transport. (Right now there's only one.)
 		 * Second, choose the host. ConnectParams will use the default
-		 * (or requested) host, unless fallback=true, in which case
-		 * it will choose a fallback host at random */
+		 * (or requested) host, unless fallback!=null, in which case
+		 * checkSuspend has already chosen a fallback host at random */
 
-		if(request.fallback) {
-			String hostFallback = Hosts.isRealtimeFallbackSupported(options.realtimeHost)?(Hosts.getFallback(request.currentHost)):(null);
-
-			if (hostFallback == null) {
-				return false;
-			}
-
-			pendingConnect = new ConnectParams(options);
-			pendingConnect.host = hostFallback;
-		}
-		else {
-			pendingConnect = new ConnectParams(options);
-			pendingConnect.host = options.realtimeHost;
-		}
+		String host = request.fallback;
+		if (host == null)
+			host = options.realtimeHost;
+		pendingConnect = new ConnectParams(options);
+		pendingConnect.host = host;
 
 		/* enter the connecting state */
 		notifyState(request);
