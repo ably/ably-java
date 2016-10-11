@@ -224,7 +224,8 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			if(states.get(state.state).terminal)
 				this.transport = null;
 			notifyState(state);
-		}
+		} else
+			Log.v(TAG, "notifyState: wrong transport");
 	}
 
 	synchronized void notifyState(StateIndication state) {
@@ -507,6 +508,11 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				/* we were connected, so retry immediately */
 				requestState(ConnectionState.connecting);
 				break;
+			case suspended:
+				/* Don't allow a second disconnected to make the state come out of suspended. */
+				Log.v(TAG, "handleStateChange: not moving out of suspended");
+				stateChange = null;
+				break;
 			default:
 				break;
 			}
@@ -607,11 +613,15 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 	@Override
 	public void onTransportAvailable(ITransport transport, TransportParams params) {
-		this.transport = transport;
 	}
 
 	@Override
 	public synchronized void onTransportUnavailable(ITransport transport, TransportParams params, ErrorInfo reason) {
+		if (this.transport != transport) {
+			/* This is from a transport that we have already abandoned. */
+			Log.v(TAG, "onTransportUnavailable: wrong transport");
+			return;
+		}
 		ably.auth.onAuthError(reason);
 		notifyState(new StateIndication(ConnectionState.disconnected, reason, false, transport.getHost()));
 		transport = null;
@@ -662,17 +672,24 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			Log.e(getClass().getName(), msg, e);
 			throw new RuntimeException(msg, e);
 		}
+		ITransport oldTransport;
+		synchronized(this) {
+			oldTransport = this.transport;
+			this.transport = transport;
+		}
+		if (oldTransport != null)
+			oldTransport.abort(REASON_TIMEDOUT);
 		transport.connect(this);
-
 		return true;
 	}
 
 	private void closeImpl(StateIndication request) {
+		boolean connectionExist = state.state == ConnectionState.connected;
 		/* enter the closing state */
 		notifyState(request);
 
-		/* send a close message on the transport, if any */
-		if(transport != null) {
+		/* send a close message on the transport, if connected */
+		if(connectionExist) {
 			try {
 				transport.send(new ProtocolMessage(Action.close));
 			} catch (AblyException e) {

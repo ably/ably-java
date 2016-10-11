@@ -112,6 +112,12 @@ public class RealtimeConnectFailTest {
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
 			connectionWaiter.waitFor(ConnectionState.suspended);
+			/* Wait 1s to force bug where it changes to disconnected right after
+			 * changing to suspended. Without this it fails only intermittently
+			 * when that bug is present. */
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {}
 			assertEquals("Verify suspended state is reached", ConnectionState.suspended, ably.connection.state);
 			assertTrue("Verify multiple connect attempts", connectionWaiter.getCount(ConnectionState.connecting) > 1);
 			assertTrue("Verify multiple connect attempts", connectionWaiter.getCount(ConnectionState.disconnected) > 1);
