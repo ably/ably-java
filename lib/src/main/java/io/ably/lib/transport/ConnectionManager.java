@@ -132,7 +132,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		pendingMessages = new PendingMessageQueue();
 		state = states.get(ConnectionState.initialized);
 		String transportClass = Defaults.TRANSPORT;
-		this.hosts = new Hosts(options.realtimeHost, Defaults.HOST_REALTIME);
+		this.hosts = new Hosts(options.realtimeHost, Defaults.HOST_REALTIME, options);
 		/* debug options */
 		if(options instanceof DebugOptions)
 			protocolListener = ((DebugOptions)options).protocolListener;

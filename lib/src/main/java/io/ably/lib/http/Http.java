@@ -153,7 +153,7 @@ public class Http {
 		this.auth = auth;
 		this.scheme = options.tls ? "https://" : "http://";
 		this.port = Defaults.getPort(options);
-		this.hosts = new Hosts(options.restHost, Defaults.HOST_REST);
+		this.hosts = new Hosts(options.restHost, Defaults.HOST_REST, options);
 
 		this.proxyOptions = options.proxy;
 		if(proxyOptions != null) {

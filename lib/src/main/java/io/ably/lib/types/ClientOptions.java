@@ -137,4 +137,10 @@ public class ClientOptions extends AuthOptions {
 	 * Spec: DF1b
 	 */
 	public long realtimeRequestTimeout = Defaults.realtimeRequestTimeout;
+
+	/**
+	 * Spec: TO3k6,RSC15a,RSC15b,RTN17b list of custom fallback hosts.
+	 */
+	public String[] fallbackHosts;
+
 }

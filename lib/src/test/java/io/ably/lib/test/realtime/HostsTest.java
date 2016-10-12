@@ -2,6 +2,7 @@ package io.ably.lib.test.realtime;
 
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.transport.Hosts;
+import io.ably.lib.types.ClientOptions;
 
 import org.hamcrest.Matchers;
 import org.junit.Test;
@@ -16,7 +17,8 @@ public class HostsTest {
 	 */
 	@Test
 	public void hosts_fallback() {
-		Hosts hosts = new Hosts(Defaults.HOST_REALTIME, Defaults.HOST_REALTIME);
+		ClientOptions options = new ClientOptions();
+		Hosts hosts = new Hosts(Defaults.HOST_REALTIME, Defaults.HOST_REALTIME, options);
 		String host = hosts.getFallback(Defaults.HOST_REALTIME);
 		/* Expect given fallback host string is (relatively) valid */
 		assertThat(host, is(not(isEmptyOrNullString())));
