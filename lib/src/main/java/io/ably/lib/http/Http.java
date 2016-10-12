@@ -34,7 +34,7 @@ import io.ably.lib.util.Serialisation;
 /**
  * Http
  * Support class for HTTP REST operations supporting
- * host fallback in the case of host unavalilability
+ * host fallback in the case of host unavailability
  * and authentication.
  * Internal
  *
@@ -334,11 +334,12 @@ public class Http {
 			try {
 				return httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, true);
 			} catch (AblyException.HostFailedException e) {
-				if(--retryCountRemaining < 0) {
-					throw AblyException.fromErrorInfo(new ErrorInfo("Connection failed; no host available", 404, 80000));
-				}
+				if(--retryCountRemaining < 0)
+					throw e; /* reached httpMaxRetryCount */
 				Log.d(TAG, "Connection failed to host `" + candidateHost + "`. Searching for new host...");
 				candidateHost = Hosts.getFallback(candidateHost);
+				if (candidateHost == null)
+					throw e; /* run out of fallback hosts */
 				Log.d(TAG, "Switched to `" + candidateHost + "`.");
 			}
 		}

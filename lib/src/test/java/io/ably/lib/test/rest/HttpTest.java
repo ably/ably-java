@@ -128,10 +128,9 @@ public class HttpTest {
 			);
 		} catch (AblyException e) {
 			/* Verify that,
-			 * 		- an {@code AblyException} with {@code ErrorInfo} having a `404` status code is thrown.
+			 * 		- an {@code AblyException} with {@code ErrorInfo} having a `50x` status code is thrown.
 			 */
-			ErrorInfo expectedErrorInfo = new ErrorInfo("Connection failed; no host available", 404, 80000);
-			assertThat(e, new ErrorInfoMatcher(expectedErrorInfo));
+			assertThat(e.errorInfo.statusCode / 10, is(equalTo(50)));
 		}
 
 		/* Verify that,
@@ -474,11 +473,9 @@ public class HttpTest {
 
 
         /* Verify
-         *   - ably exception with 404 status code is thrown
+         *   - ably exception with 50x status code is thrown
          */
-		ErrorInfo expectedErrorInfo = new ErrorInfo("Connection failed; no host available", 404, 80000);
-		thrown.expect(AblyException.class);
-		thrown.expect(new ErrorInfoMatcher(expectedErrorInfo));
+		thrown.expect(AblyException.HostFailedException.class);
 
 		http.ablyHttpExecute(
 				"", /* Ignore */

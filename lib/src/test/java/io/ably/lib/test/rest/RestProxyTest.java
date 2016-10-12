@@ -2,6 +2,7 @@ package io.ably.lib.test.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.junit.Test;
@@ -37,8 +38,11 @@ public class RestProxyTest {
 			/* attempt the call, expecting no exception */
 			ably.stats(null);
 			fail("proxy_simple_invalid_host: call succeeded unexpectedly");
+		} catch (AblyException.HostFailedException e) {
+			/* Verify we got a 50x */
+			assertTrue(true);
 		} catch (AblyException e) {
-			assertEquals("Verify expected error code", e.errorInfo.code, 80000);
+			fail("Wrong error code");
 		}
 	}
 
@@ -61,8 +65,11 @@ public class RestProxyTest {
 			/* attempt the call, expecting no exception */
 			ably.stats(null);
 			fail("proxy_simple_invalid_port: call succeeded unexpectedly");
+		} catch (AblyException.HostFailedException e) {
+			/* Verify we got a 50x */
+			assertTrue(true);
 		} catch (AblyException e) {
-			assertEquals("Verify expected error code", e.errorInfo.code, 80000);
+			fail("Wrong error code");
 		}
 	}
 

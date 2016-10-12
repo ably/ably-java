@@ -155,11 +155,15 @@ public class AsyncHttp extends ThreadPoolExecutor {
 					break;
 				} catch (AblyException.HostFailedException e) {
 					if(--retryCountRemaining < 0) {
-						setError(new ErrorInfo("Connection failed; no host available", 404, 80000));
+						setError(e.errorInfo);
 						break;
 					}
 					Log.d(TAG, "Connection failed to host `" + candidateHost + "`. Searching for new host...");
 					candidateHost = Hosts.getFallback(candidateHost);
+					if (candidateHost == null) {
+						setError(e.errorInfo);
+						break;
+					}
 					Log.d(TAG, "Switched to `" + candidateHost + "`.");
 				} catch(AblyException e) {
 					setError(e.errorInfo);
