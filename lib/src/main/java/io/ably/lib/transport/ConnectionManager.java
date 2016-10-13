@@ -153,11 +153,11 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	 * host management
 	 *********************/
 
+	/* This is only here for the benefit of ConnectionManagerTest. */
 	public String getHost() {
 		if(transport != null)
 			return transport.getHost();
-
-		return state.host;
+		return pendingConnect.host;
 	}
 	
 	/*********************
