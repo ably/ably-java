@@ -100,6 +100,13 @@ public class RealtimeReauthTest {
 			Auth.TokenDetails reauthTokenDetails = ablyRealtime.auth.authorise(authOptions, null);
 			assertNotNull("Expected token value", reauthTokenDetails.token);
 			System.out.println("done reauthorise");
+			/* Delay 2s to allow connection to go disconnected (and probably
+			 * then onto connecting and connected). This is a workaround for
+			 * https://github.com/ably/ably-java/issues/180 */
+			try {
+				Thread.sleep(2000);
+			} catch (Exception e) {
+			}
 
 			/* re-attach to the channel */
 			waiter = new Helpers.CompletionWaiter();
