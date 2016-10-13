@@ -13,6 +13,8 @@ import io.ably.lib.test.common.Setup;
 
 @RunWith(Suite.class)
 @SuiteClasses({
+	HttpTest.class,
+	HttpHeaderTest.class,
 	RestAppStatsTest.class,
 	RestInitTest.class,
 	RestTimeTest.class,
