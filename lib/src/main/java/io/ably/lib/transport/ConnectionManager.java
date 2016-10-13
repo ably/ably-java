@@ -132,6 +132,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		pendingMessages = new PendingMessageQueue();
 		state = states.get(ConnectionState.initialized);
 		String transportClass = Defaults.TRANSPORT;
+		this.hosts = new Hosts(options.realtimeHost, Defaults.HOST_REALTIME, options);
 		/* debug options */
 		if(options instanceof DebugOptions)
 			protocolListener = ((DebugOptions)options).protocolListener;
@@ -152,11 +153,11 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	 * host management
 	 *********************/
 
+	/* This is only here for the benefit of ConnectionManagerTest. */
 	public String getHost() {
 		if(transport != null)
 			return transport.getHost();
-
-		return state.host;
+		return pendingConnect.host;
 	}
 	
 	/*********************
@@ -537,9 +538,9 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		 */
 
 		if(pendingConnect != null && (stateChange.reason == null || stateChange.reason.statusCode >= 500)) {
-			if (Hosts.isFallback(pendingConnect.host) || checkConnectivity()) {
+			if (checkConnectivity()) {
 				/* we will try a fallback host */
-				String hostFallback = Hosts.isRealtimeFallbackSupported(options.realtimeHost)?(Hosts.getFallback(pendingConnect.host)):(null);
+				String hostFallback = hosts.getFallback(pendingConnect.host);
 				if (hostFallback != null) {
 					Log.v(TAG, "checkSuspend: fallback to " + hostFallback);
 					requestState(new StateIndication(ConnectionState.connecting, null, hostFallback, pendingConnect.host));
@@ -648,7 +649,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 		String host = request.fallback;
 		if (host == null)
-			host = options.realtimeHost;
+			host = hosts.getHost();
 		pendingConnect = new ConnectParams(options);
 		pendingConnect.host = host;
 
@@ -929,6 +930,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	private final List<QueuedMessage> queuedMessages;
 	private final PendingMessageQueue pendingMessages;
 	private final HashSet<Object> heartbeatWaiters = new HashSet<Object>();
+	private final Hosts hosts;
 
 	private StateInfo state;
 	private StateIndication indicatedState, requestedState;

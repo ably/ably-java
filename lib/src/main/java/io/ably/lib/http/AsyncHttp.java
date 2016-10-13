@@ -145,8 +145,8 @@ public class AsyncHttp extends ThreadPoolExecutor {
 		}
 		@Override
 		public void run() {
-			int retryCountRemaining = Hosts.isRestFallbackSupported(http.host) ? http.options.httpMaxRetryCount : 0;
-			String candidateHost = http.host;
+			String candidateHost = http.getHost();
+			int retryCountRemaining = http.hosts.getFallback(candidateHost) != null ? http.options.httpMaxRetryCount : 0;
 
 			while(!isCancelled) {
 				try {
@@ -155,11 +155,15 @@ public class AsyncHttp extends ThreadPoolExecutor {
 					break;
 				} catch (AblyException.HostFailedException e) {
 					if(--retryCountRemaining < 0) {
-						setError(new ErrorInfo("Connection failed; no host available", 404, 80000));
+						setError(e.errorInfo);
 						break;
 					}
 					Log.d(TAG, "Connection failed to host `" + candidateHost + "`. Searching for new host...");
-					candidateHost = Hosts.getFallback(candidateHost);
+					candidateHost = http.hosts.getFallback(candidateHost);
+					if (candidateHost == null) {
+						setError(e.errorInfo);
+						break;
+					}
 					Log.d(TAG, "Switched to `" + candidateHost + "`.");
 				} catch(AblyException e) {
 					setError(e.errorInfo);

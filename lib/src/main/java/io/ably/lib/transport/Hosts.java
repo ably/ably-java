@@ -1,73 +1,87 @@
 package io.ably.lib.transport;
 
+import io.ably.lib.types.ClientOptions;
+
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+
 /**
- * Created by gokhanbarisaker on 2/1/16.
+ * Object to encapsulate primary host name and shuffled fallback host names.
  */
 public class Hosts {
-	private static final List<String> FALLBACKS = Defaults.HOST_FALLBACKS;
-	private static final String REST_PROD_HOST = Defaults.HOST_REST;
-	private static final String REALTIME_PROD_HOST = Defaults.HOST_REALTIME;
-
-	private Hosts() { /* Restrict new instance creation */ }
+	private String primaryHost;
+	boolean primaryHostIsDefault;
+	private final String defaultHost;
+	private final String[] fallbackHosts;
+	private final boolean fallbackHostsIsDefault;
 
 	/**
-	 * Provides fallback host alternative for given host
+	 * Create Hosts object
 	 *
-	 * @param host
+	 * @param primaryHost the primary hostname
+	 * @param defaultHost the default hostname that the primary hostname must
+	 *        match for fallback to occur
+	 */
+	public Hosts(String primaryHost, String defaultHost, ClientOptions options) {
+		this.defaultHost = defaultHost;
+		setHost(primaryHost);
+		if (options.fallbackHosts == null) {
+			fallbackHosts = Arrays.copyOf(Defaults.HOST_FALLBACKS, Defaults.HOST_FALLBACKS.length);
+			fallbackHostsIsDefault = true;
+		} else {
+			/* RSC15a: use ClientOptions#fallbackHosts if set */
+			fallbackHosts = Arrays.copyOf(options.fallbackHosts, options.fallbackHosts.length);
+			fallbackHostsIsDefault = false;
+		}
+		/* RSC15a: shuffle the fallback hosts. */
+		Collections.shuffle(Arrays.asList(fallbackHosts));
+	}
+
+	/**
+	 * set primary hostname
+	 */
+	public void setHost(String primaryHost) {
+		this.primaryHost = primaryHost;
+		primaryHostIsDefault = primaryHost.equalsIgnoreCase(defaultHost);
+	}
+		
+
+	/**
+	 * Get primary host name
+	 */
+	public String getHost() {
+		return primaryHost;
+	}
+
+	/**
+	 * Get next fallback host if any
+	 *
+	 * @param lastHost
 	 * @return Successor host that can be used as a fallback.
 	 * null, if there is no successor fallback available.
 	 */
-	public static String getFallback(String host) {
-		int size = FALLBACKS.size();
-		int indexCurrent = FALLBACKS.indexOf(host);
-		int indexNext = indexCurrent + 1;
-
-		if (indexNext >= size) {
+	public String getFallback(String lastHost) {
+		if (fallbackHosts == null)
 			return null;
+		int idx;
+		if (lastHost.equals(primaryHost)) {
+			/* RSC15b: only use fallback if the hostname has not been overridden
+			 * or if ClientOptions#fallbackHosts was provided. */
+			if (!primaryHostIsDefault && fallbackHostsIsDefault)
+				return null;
+			idx = 0;
+		} else {
+			/* Onto next fallback. */
+			idx = Arrays.asList(fallbackHosts).indexOf(lastHost);
+			if (idx < 0)
+				return null;
+			++idx;
 		}
-
-		return FALLBACKS.get(indexNext);
-	}
-
-	/**
-	 * Checks if given host is a fallback, or not.
-	 *
-	 * @param host
-	 * @return true, if the given host is a fallback. Otherwise, false.
-	 */
-	public static boolean isFallback(String host) {
-		return FALLBACKS.indexOf(host) >= 0;
-	}
-
-	/**
-	 * <p>
-	 * Determines whether given rest host is qualified for a retry against a fallback host, or not.
-	 * </p>
-	 * <p>
-	 * Spec: RSC15b
-	 * </p>
-	 *
-	 * @param host
-	 * @return true, if the given host is qualified for a retry against a fallback host. Otherwise, false.
-	 */
-	public static boolean isRestFallbackSupported(String host) {
-		return host.equalsIgnoreCase(REST_PROD_HOST);
-	}
-
-	/**
-	 * <p>
-	 * Determines whether given realtime host is qualified for a retry against a fallback host, or not.
-	 * </p>
-	 * <p>
-	 * Spec: RTN17b
-	 * </p>
-	 *
-	 * @param host
-	 * @return true, if given host is qualified for a retry against a fallback host. Otherwise, false.
-	 */
-	public static boolean isRealtimeFallbackSupported(String host) {
-		return host.equalsIgnoreCase(REALTIME_PROD_HOST);
+		if (idx >= fallbackHosts.length)
+			return null;
+		return fallbackHosts[idx];
 	}
 }
+

@@ -139,9 +139,11 @@ public class ConnectionManagerTest {
 		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 		// Use a host that supports fallback
 		opts.realtimeHost = Defaults.HOST_REALTIME;
-		// Use a non-reachable port number
+		/* Use an incorrect port number for TLS. Using 80 rather than some
+		 * random number (e.g. 1234) makes the failure almost immediate,
+		 * instead of taking 15s to time out at each fallback host. */
 		opts.tls = true;
-		opts.tlsPort = 1234;
+		opts.tlsPort = 80;
 		AblyRealtime ably = new AblyRealtime(opts);
 		ConnectionManager connectionManager = ably.connection.connectionManager;
 
@@ -168,9 +170,11 @@ public class ConnectionManagerTest {
 		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 		// Use a host that supports fallback
 		opts.realtimeHost = Defaults.HOST_REALTIME;
-		// Use a non-reachable port number
+		/* Use an incorrect port number for TLS. Using 80 rather than some
+		 * random number (e.g. 1234) makes the failure almost immediate,
+		 * instead of taking 15s to time out at each fallback host. */
 		opts.tls = true;
-		opts.tlsPort = 1234;
+		opts.tlsPort = 80;
 		AblyRealtime ably = new AblyRealtime(opts);
 		ConnectionManager connectionManager = ably.connection.connectionManager;
 
@@ -190,12 +194,6 @@ public class ConnectionManagerTest {
 		System.out.println("about to connect");
 		ably.connection.connect();
 
-		/* Wait 1s and then get the name of the host it is trying to connect to. */
-		try {
-			Thread.sleep(1000);
-		} catch (InterruptedException e) {}
-		String host = connectionManager.getHost();
-
 		new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.failed);
 
 		/* Verify that,
@@ -206,6 +204,6 @@ public class ConnectionManagerTest {
 		System.out.println("waiting for failed");
 		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.failed));
 		System.out.println("got failed");
-		assertThat(host, is(equalTo(opts.realtimeHost)));
+		assertThat(connectionManager.getHost(), is(equalTo(opts.realtimeHost)));
 	}
 }
