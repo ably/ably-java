@@ -134,4 +134,10 @@ public class AblyRest {
 		(new AsyncPaginatedQuery<Stats>(asyncHttp, "/stats", HttpUtils.defaultAcceptHeaders(false), params, StatsReader.statsResponseHandler)).get(callback);
 	}
 
+	/**
+	 * Authentication token has changed.
+	 */
+	public void onAuthUpdated() {
+		/* Default is to do nothing. Overridden by subclass. */
+	}
 }

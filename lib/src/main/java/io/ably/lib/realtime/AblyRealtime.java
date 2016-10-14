@@ -64,6 +64,13 @@ public class AblyRealtime extends AblyRest {
 	}
 
 	/**
+	 * Authentication token has changed.
+	 */
+	public void onAuthUpdated() {
+		connection.connectionManager.onAuthUpdated();
+	}
+
+	/**
 	 * A collection of the Channels associated with this Realtime
 	 * instance.
 	 *

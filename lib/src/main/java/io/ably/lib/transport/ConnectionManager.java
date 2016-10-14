@@ -271,6 +271,33 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		}
 	}
 
+	/**
+	 * Authentication token changes for the current connection are possible when
+	 * the client is in the {@link ConnectionState#connected}, {@link ConnectionState#connecting}
+	 * or {@link ConnectionState#disconnected } states.
+	 *
+	 * In the current protocol version we are not able to update auth params on the fly;
+	 * so disconnect, and the new auth params will be used for subsequent reconnection
+	 * * <p>
+	 * Spec: RTC8 (reauthorise) (0.8 spec)
+	 * </p>
+	 *
+	 */
+	public void onAuthUpdated() {
+		switch (state.state){
+			case connected:
+			case connecting:
+				ITransport transport = this.transport;
+				if (transport != null) {
+					Log.v(TAG, "onAuthUpdated: closing transport");
+					transport.close(/*sendDisconnect=*/false);
+				}
+				break;
+			default:
+				break;
+		}
+	}
+
 	/***************************************
 	 * transport events/notifications
 	 ***************************************/
