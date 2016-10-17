@@ -176,8 +176,6 @@ public class Crypto {
 		@Override
 		public byte[] encrypt(byte[] plaintext) {
 			if(plaintext == null) return null;
-			//System.out.println("encrypt: in");
-			//System.out.println(HexDump.dump(plaintext));
 			int plaintextLength = plaintext.length;
 			int paddedLength = getPaddedLength(plaintextLength);
 			byte[] cipherIn = new byte[paddedLength];
@@ -188,8 +186,6 @@ public class Crypto {
 			System.arraycopy(getIv(), 0, ciphertext, 0, blockLength);
 			byte[] cipherOut = encryptCipher.update(cipherIn);
 			System.arraycopy(cipherOut, 0, ciphertext, blockLength, paddedLength);
-			//System.out.println("encrypt: out");
-			//System.out.println(HexDump.dump(ciphertext));
 			return ciphertext;
 		}
 
@@ -197,8 +193,6 @@ public class Crypto {
 		public byte[] decrypt(byte[] ciphertext) throws AblyException {
 			if(ciphertext == null) return null;
 			byte[] plaintext = null;
-			//System.out.println("decrypt: in");
-			//System.out.println(HexDump.dump(ciphertext));
 			try {
 				decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(ciphertext, 0, blockLength));
 				plaintext = decryptCipher.doFinal(ciphertext, blockLength, ciphertext.length - blockLength);
@@ -207,8 +201,6 @@ public class Crypto {
 			catch (InvalidAlgorithmParameterException e) { Log.e(TAG, "decrypt()", e); throw AblyException.fromThrowable(e); }
 			catch (IllegalBlockSizeException e) { Log.e(TAG, "decrypt()", e); throw AblyException.fromThrowable(e); }
 			catch (BadPaddingException e) { Log.e(TAG, "decrypt()", e); throw AblyException.fromThrowable(e); }
-			//System.out.println("decrypt: out");
-			//System.out.println(HexDump.dump(plaintext));
 			return plaintext;
 		}
 
