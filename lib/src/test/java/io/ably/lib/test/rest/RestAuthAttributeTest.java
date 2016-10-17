@@ -262,7 +262,9 @@ public class RestAuthAttributeTest {
 			* 	 - new token was issued
 			* 	 - authorise called twice
 			* 	 - first timestamp value equals expected timestamp
-			* 	 - second timestamp value is not expected */
+			* 	 - second timestamp value is not expected
+			* tokenDetails1 and tokenDetails2 aren't null,
+			* the values of each attribute are equals */
 			assertNotNull(tokenDetails1);
 			assertNotNull(tokenDetails2);
 			assertEquals(expectedClientId, clientId1);
@@ -274,6 +276,49 @@ public class RestAuthAttributeTest {
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("auth_stores_options_exception_timestamp: Unexpected exception");
+		}
+	}
+
+	/**
+	 * Verify if {@link AuthOptions#force} is true
+	 * will to issue a new token even if an existing token exists.
+	 * <p>
+	 * Spec: RSA10d
+	 * </p>
+	 */
+	@Test
+	public void auth_authorise_force() {
+		try {
+			setup();
+			/* authorise with default options */
+			TokenDetails tokenDetails1 = ably.auth.authorise(null, null);
+
+			/* init custom AuthOptions with force value is true */
+			final String custom_test_value = "test_forced_token";
+			AuthOptions authOptions = new AuthOptions() {{
+				authCallback = new TokenCallback() {
+					@Override
+					public Object getTokenRequest(TokenParams params) throws AblyException {
+						return custom_test_value;
+					}
+				};
+				force = true;
+			}};
+
+			/* authorise with custom AuthOptions */
+			TokenDetails tokenDetails2 = ably.auth.authorise(null, authOptions);
+
+			/* Verify that,
+			 * tokenDetails1 and tokenDetails2 aren't null,
+			 * tokens are different,
+			 * token from tokenDetails2 equals custom_test_value */
+			assertNotNull(tokenDetails1);
+			assertNotNull(tokenDetails2);
+			assertNotEquals(tokenDetails1.token, tokenDetails2.token);
+			assertEquals(tokenDetails2.token, custom_test_value);
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("auth_custom_options_authorise: Unexpected exception");
 		}
 	}
 }
