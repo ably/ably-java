@@ -136,8 +136,47 @@ public class Auth {
 			if(key == null) key = defaults.key;
 			if(authHeaders == null) authHeaders = defaults.authHeaders;
 			if(authParams == null) authParams = defaults.authParams;
-			queryTime = queryTime & defaults.queryTime;
+			queryTime = queryTime | defaults.queryTime;
 			return this;
+		}
+
+		/**
+		 * Stores the AuthOptions arguments as defaults for subsequent authorisations
+		 * with the exception of the attributes {@link AuthOptions#queryTime}
+		 * and {@link AuthOptions#force}
+		 * <p>
+		 * Spec: RSA10g
+		 * </p>
+		 */
+		private AuthOptions storedValues() {
+			AuthOptions result = new AuthOptions();
+			result.key = this.key;
+			result.authUrl = this.authUrl;
+			result.authParams = this.authParams;
+			result.authHeaders = this.authHeaders;
+			result.token = this.token;
+			result.tokenDetails = this.tokenDetails;
+			result.authCallback = this.authCallback;
+			return result;
+		}
+
+		/**
+		 * Create a new copy of object
+		 *
+		 * @return copied object
+		 */
+		private AuthOptions copy() {
+			AuthOptions result = new AuthOptions();
+			result.key = this.key;
+			result.authUrl = this.authUrl;
+			result.authParams = this.authParams;
+			result.authHeaders = this.authHeaders;
+			result.token = this.token;
+			result.tokenDetails = this.tokenDetails;
+			result.authCallback = this.authCallback;
+			result.queryTime = this.queryTime;
+			result.force = this.force;
+			return result;
 		}
 	}
 
@@ -234,6 +273,46 @@ public class Auth {
 			if(timestamp > 0) params.add(new Param("timestamp", String.valueOf(timestamp)));
 			return params;
 		}
+
+		/**
+		 * Stores the TokenParams arguments as defaults for subsequent authorisations
+		 * with the exception of the attributes {@link TokenParams#timestamp}
+		 * <p>
+		 * Spec: RSA10g
+		 * </p>
+		 */
+		private TokenParams storedValues() {
+			TokenParams result = new TokenParams();
+			result.ttl = this.ttl;
+			result.capability = this.capability;
+			result.clientId = this.clientId;
+			return result;
+		}
+
+		/**
+		 * Create a new copy of object
+		 *
+		 * @return copied object
+		 */
+		private TokenParams copy() {
+			TokenParams result = new TokenParams();
+			result.ttl = this.ttl;
+			result.capability = this.capability;
+			result.clientId = this.clientId;
+			result.timestamp = this.timestamp;
+			return result;
+		}
+
+		/**
+		 * Internal
+		 */
+		public TokenParams merge(TokenParams defaults) {
+			if (ttl == 0) ttl = defaults.ttl;
+			if (capability == null) capability = defaults.capability;
+			if (clientId == null) clientId = defaults.clientId;
+			if (timestamp == 0) timestamp = defaults.timestamp;
+			return this;
+		}
 	}
 
 	/**
@@ -299,6 +378,9 @@ public class Auth {
 	 * requested.
 	 * Authorisation will use the parameters supplied on construction except
 	 * where overridden with the options supplied in the call.
+	 *
+	 * @param options
+	 *
 	 * @param params
 	 * an object containing the request params:
 	 * - key:        (optional) the key to use; if not specified, the key
@@ -320,10 +402,24 @@ public class Auth {
 	 *
 	 * - queryTime   (optional) boolean indicating that the Ably system should be
 	 *               queried for the current time when none is specified explicitly.
-	 *
-	 * @param callback (err, tokenDetails)
 	 */
 	public TokenDetails authorise(AuthOptions options, TokenParams params) throws AblyException {
+		/* To avoid breaking compatibility in 0.8 versions of the library, merge
+		 * supplied options and params with stored defaults. This needs to be
+		 * removed in 0.9 to comply with RSA10j. */
+		options = (options == null) ? authOptions : options.merge(authOptions);
+		params = (params == null) ? tokenParams : params.merge(tokenParams);
+
+		/* Spec: RSA10g */
+		if (options != null)
+			this.authOptions = options.storedValues();
+		if (params != null)
+			this.tokenParams = params.storedValues();
+
+		/* Spec: RSA10j */
+		options = (options == null) ? this.authOptions : options.copy();
+		params = (params == null) ? this.tokenParams : params.copy();
+
 		TokenDetails tokenDetails = tokenAuth.authorise(options, params);
 
 		/* RTC8
@@ -344,17 +440,20 @@ public class Auth {
 	 * @return: the TokenDetails
 	 * @throws AblyException
 	 */
-	public TokenDetails requestToken(TokenParams params, AuthOptions options) throws AblyException {
-		/* merge supplied options with the already-known options */
-		final AuthOptions tokenOptions = (options == null) ? authOptions : options.merge(authOptions);
+	public TokenDetails requestToken(TokenParams params, AuthOptions tokenOptions) throws AblyException {
+		/* To avoid breaking compatibility in 0.8 versions of the library, merge
+		 * supplied options and params with stored defaults. This needs to be
+		 * removed in 0.9 to comply with RSA8e. */
+		tokenOptions = (tokenOptions == null) ? authOptions : tokenOptions.merge(authOptions);
+		params = (params == null) ? tokenParams : params.merge(tokenParams);
 
-		/* set up the request params */
-		if(params == null) params = new TokenParams();
+		/* Spec: RSA8e */
+		tokenOptions = (tokenOptions == null) ? this.authOptions : tokenOptions.copy();
+		params = (params == null) ? this.tokenParams : params.copy();
+
 		if(params.clientId == null)
 			params.clientId = ably.clientId;
-
-		if(params.capability != null)
-			params.capability = Capability.c14n(params.capability);
+		params.capability = Capability.c14n(params.capability);
 
 		/* get the signed token request */
 		TokenRequest signedTokenRequest;
@@ -466,8 +565,18 @@ public class Auth {
 	 * @throws AblyException
 	 */
 	public TokenRequest createTokenRequest(AuthOptions options, TokenParams params) throws AblyException {
-		if(options == null) options = this.authOptions;
-		else options.merge(this.authOptions);
+		/* To avoid breaking compatibility in 0.8 versions of the library, merge
+		 * supplied options and params with stored defaults. This needs to be
+		 * removed in 0.9 to comply with RSA9h. */
+		options = (options == null) ? authOptions : options.merge(authOptions);
+		params = (params == null) ? tokenParams : params.merge(tokenParams);
+
+		/* Spec: RSA9h */
+		options = (options == null) ? this.authOptions : options.copy();
+		params = (params == null) ? this.tokenParams : params.copy();
+
+		if(params.capability != null)
+			params.capability = Capability.c14n(params.capability);
 		TokenRequest request = new TokenRequest(params);
 
 		String key = options.key;
@@ -554,6 +663,13 @@ public class Auth {
 		return params;
 	}
 
+	/**
+	 * Get (a copy of) auth options currently set in this Auth.
+	 */
+	public AuthOptions getAuthOptions() {
+		return authOptions.copy();
+	}
+
 	public TokenAuth getTokenAuth() {
 		return tokenAuth;
 	}
@@ -579,6 +695,8 @@ public class Auth {
 	Auth(AblyRest ably, ClientOptions options) throws AblyException {
 		this.ably = ably;
 		authOptions = options;
+		tokenParams = options.defaultTokenParams != null ?
+				options.defaultTokenParams : new TokenParams();
 
 		/* decide default auth method */
 		if(authOptions.key != null) {
@@ -626,7 +744,8 @@ public class Auth {
 
 	private final AblyRest ably;
 	private final AuthMethod method;
-	private final AuthOptions authOptions;
+	private AuthOptions authOptions;
+	private TokenParams tokenParams;
 	private String basicCredentials;
 	private TokenAuth tokenAuth;
 }
