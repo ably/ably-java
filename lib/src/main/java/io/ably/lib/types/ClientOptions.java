@@ -118,6 +118,13 @@ public class ClientOptions extends AuthOptions {
 	public ProxyOptions proxy;
 
 	/**
+	 * For development environments only; allows a non-default Ably environment
+	 * to be used such as 'sandbox'.
+	 * Spec: TO3k1
+	 */
+	public String environment;
+
+	/**
 	 * Spec: TO313
 	 */
 	public int httpOpenTimeout = Defaults.TIMEOUT_HTTP_OPEN;
