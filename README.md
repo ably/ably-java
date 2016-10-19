@@ -12,6 +12,8 @@ Visit https://www.ably.io/documentation for a complete API reference and more ex
 
 The Realtime library for Java is downloadable as a JAR at our [Github releases page](https://github.com/ably/ably-java/releases). You can either download the full JAR which includes all dependencies, or just the library but it will be your responsibility to ensure alld dependencies are met.
 
+An Android-specific AAR is also available.
+
 Please refer to the [documentation](https://www.ably.io/documentation).
 
 ## Dependencies
@@ -23,7 +25,7 @@ must be installed in the runtime environment.
 ## Building ##
 
 The library consists of a generic Java library (in `lib/`), a JRE-specific library
-(in `java/`) that includes the generic library, and a separate Android test project (in `android-test/`).
+(in `java/`) that includes the generic library, and a separate Android-specific library (in `android/`).
 The JRE-specific library jar is built with:
 
     gradle java:jar
@@ -32,9 +34,16 @@ There is also a task to build a fat jar containing the dependencies:
 
     gradle java:fullJar
 
+The Android-specific library jar is built with:
+
+    gradle android:assemble
+
+(The `ANDROID_HOME` environment variable must be set appropriately.)
+
 ## Tests
 
-Tests are based on JUnit, and there are separate suites for the REST and Realtime libraries, with gradle tasks:
+Tests are based on JUnit, and there are separate suites for the REST and Realtime libraries, with gradle tasks
+for the JRE-specific library:
 
     gradle java:testRestSuite
 
@@ -46,12 +55,23 @@ To run tests against a specific host, specify in the environment:
 
 Tests will run against sandbox by default.
 
+Tests can be run on the Android-specific library. An Android device must be connected,
+either a real device or the Android emulator.
+
+    gradle android:connectedTest
+
 ## Installation ##
 
 Download [the latest JAR](https://github.com/ably/ably-java/releases) or grab via Gradle:
 
 ```groovy
 compile 'io.ably:ably-java:0.8.4'
+```
+
+or
+
+```groovy
+compile 'io.ably:ably-android:0.8.4'
 ```
 
 and add following repo for a sub-dependency,
@@ -335,8 +355,10 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 * Replace all references of the current version number with the new version number (check this file [README.md](./README.md) and [build.gradle](./build.gradle)) and commit the changes
 * Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to automate the update of the [CHANGELOG](./CHANGELOG.md). Once the CHANGELOG has completed, manually change the `Unreleased` heading and link with the current version number such as `v0.8.4`. Also ensure that the `Full Changelog` link points to the new version tag instead of the `HEAD`. Commit this change.
 * Add a tag and push to origin such as `git tag v0.8.4 && git push origin v0.8.4`
-* Run `gradle java:assemble` to build the JARs for this release
-* Visit [https://github.com/ably/ably-java/tags](https://github.com/ably/ably-java/tags) and `Add release notes` for the release, then attach the generated JARs (`ably-java-0.8.4.jar` and `ably-java-0.8.4-full.jar`) in the folder `java/build/libs`
+* Run `gradle java:assemble` to build the JRE-specific JARs for this release
+* Run `gradle android:assemble` to build the Android AAR for this release
+* Visit [https://github.com/ably/ably-java/tags](https://github.com/ably/ably-java/tags) and `Add release notes` for the release, then attach the generated JARs (`ably-java-0.8.4.jar` and `ably-java-0.8.4-full.jar`) in the folder `java/build/libs`,
+  and the generated AAR (`ably-android-0.8.4-release.aar` in the folder `android/build/outputs/aar`.
 
 ### Publishing to JCentre (Maven)
 
@@ -346,6 +368,10 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 * Then go to the new version in JFrog Bintray and go to files such as https://bintray.com/ably-io/ably/java/0.8.4#files/io/ably/ably-java, then click on Upload files
 * Type in `io/ably/ably-java/0.8.4` into "Target Repository Path" ensuring the correct version is included. The drag in the files in `java/build/release/0.8.4/`
 * You will see a notice "You have 8 unpublished item(s) for this version", make sure you click "Publish". Wait a few minutes and check that your version has all the necessary files at https://bintray.com/ably-io/ably/java/v0.8.4?sort=&order=#files/io/ably/ably-java/0.8.4 for example.
+
+Similarly for the Android release at `https://bintray.com/ably-io/ably/android`.
+Run `gradle android:generateRelease` locally to generate the files, and drag in the files in
+`android/build/release/0.8.4/`.
 
 ## Support, feedback and troubleshooting
 

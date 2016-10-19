@@ -1,0 +1,69 @@
+apply plugin: 'maven'
+apply plugin: 'signing'
+
+def groupId = "io.ably"
+def artifactId = "ably-android"
+def localReleaseDest = "${buildDir}/release/${version}"
+
+uploadArchives {
+    repositories.mavenDeployer {
+        pom.groupId = groupId
+        pom.artifactId = artifactId
+        pom.version = version
+
+        // Add other pom properties here if you want (developer details / licenses)
+        pom.project {
+            name 'Ably Android client library'
+            description 'An Android Realtime and REST client library for [Ably.io](https://www.ably.io), the realtime messaging service.'
+            packaging 'aar'
+            inceptionYear '2015'
+            scm {
+                url 'scm:git:https://github.com/ably/ably-java'
+                connection 'scm:git:https://github.com/ably/ably-java'
+                developerConnection 'scm:git:git@github.com:ably/ably-java'
+            }
+            organization {
+                name 'Ably'
+                url 'http://ably.io'
+            }
+            issueManagement {
+                system 'Github'
+                url 'https://github.com/ably/ably-java/issues'
+            }
+            licenses {
+                license {
+                    name 'The Apache Software License, Version 2.0'
+                    url 'https://raw.github.com/ably/ably-java/master/LICENSE'
+                    distribution 'repo'
+                }
+            }
+        }
+
+        // Exclude dependency on lib subproject.
+        pom.whenConfigured {
+            p -> p.dependencies = p.dependencies.findAll {
+                dep -> dep.artifactId != "lib"
+            }
+        }
+
+        // Export files to local storage
+        repository(url: "file://${localReleaseDest}")
+
+        // // Export to local Maven cache
+        // repository(url: repositories.mavenLocal().url)
+    }
+}
+
+task zipRelease(type: Zip) {
+    from localReleaseDest
+    destinationDir buildDir
+    archiveName "release-${version}.zip"
+}
+
+assembleRelease.doLast {
+    println "Release ${version} can be found at ${localReleaseDest}/"
+    println "Release ${version} zipped can be found ${buildDir}/release-${version}.zip"
+}
+
+assembleRelease.dependsOn(uploadArchives)
+assembleRelease.dependsOn(zipRelease)
