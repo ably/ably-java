@@ -4,6 +4,7 @@ import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
 import io.ably.lib.test.util.StatusHandler;
 import io.ably.lib.http.Http;
+import io.ably.lib.rest.AblyRest;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
@@ -214,6 +215,334 @@ public class HttpTest {
 		/* Validate that only one host is used and it is Defaults#HOST_REST */
 		Assert.assertTrue(urlHostArgumentStack.size() == 1);
 		assertThat(urlHostArgumentStack.get(0), is(equalTo(Defaults.HOST_REST)));
+	}
+
+	/**
+	 * <strong>This method mocks the API behavior</strong>
+	 * <p>
+	 * Validates {@link Http} is using first attempt to default primary host
+	 * for every new HTTP request, even if a previous request to that endpoint has failed.
+	 * </p>
+	 * <p>
+	 * Spec: RSC15e
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void http_ably_execute_first_attempt_to_default() throws AblyException {
+		String hostExpectedPattern = PATTERN_HOST_FALLBACK;
+		ClientOptions options = new ClientOptions();
+		options.httpMaxRetryCount = 1;
+		AblyRest ably = new AblyRest(options);
+
+		Http http = Mockito.spy(new Http(ably.options, ably.auth));
+
+		String responseExpected = "Lorem Ipsum";
+		ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
+
+        /* Partially mock http */
+		Answer answer = new GrumpyAnswer(
+				1, /* Throw exception */
+				AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+				responseExpected /* Then return a valid response with second call */
+		);
+
+		doAnswer(answer) /* Behave as defined above */
+				.when(http) /* when following method is executed on {@code Http} instance */
+				.httpExecute(
+						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid fallback url */
+						any(Proxy.class), /* Ignore */
+						anyString(), /* Ignore */
+						aryEq(new Param[0]), /* Ignore */
+						any(Http.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
+						any(Http.ResponseHandler.class) /* Ignore */
+				);
+
+		String responseActual = (String) http.ablyHttpExecute(
+				"", /* Ignore */
+				"", /* Ignore */
+				new Param[0], /* Ignore */
+				new Param[0], /* Ignore */
+				mock(Http.RequestBody.class), /* Ignore */
+				mock(Http.ResponseHandler.class) /* Ignore */
+		);
+
+		assertThat("Unexpected default primary host", url.getAllValues().get(0).getHost(), is(equalTo(Defaults.HOST_REST)));
+		assertThat("Unexpected host fallback", url.getAllValues().get(1).getHost().matches(hostExpectedPattern), is(true));
+		assertThat("Unexpected response", responseActual, is(equalTo(responseExpected)));
+
+		String responseActual2 = (String) http.ablyHttpExecute(
+				"", /* Ignore */
+				"", /* Ignore */
+				new Param[0], /* Ignore */
+				new Param[0], /* Ignore */
+				mock(Http.RequestBody.class), /* Ignore */
+				mock(Http.ResponseHandler.class) /* Ignore */
+		);
+
+		/* Verify call causes captor to capture same arguments thrice.
+		 * Do the validation, after we completed the {@code ArgumentCaptor} related assertions */
+		verify(http, times(3))
+				.httpExecute( /* Just validating call counter. Ignore following parameters */
+						any(URL.class), /* Ignore */
+						any(Proxy.class), /* Ignore */
+						anyString(), /* Ignore */
+						aryEq(new Param[0]), /* Ignore */
+						any(Http.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
+						any(Http.ResponseHandler.class) /* Ignore */
+				);
+		assertThat("Unexpected default primary host", url.getAllValues().get(2).getHost(), is(equalTo(Defaults.HOST_REST)));
+		assertThat("Unexpected response", responseActual2, is(equalTo(responseExpected)));
+	}
+
+	/**
+	 * <strong>This method mocks the API behavior</strong>
+	 * <p>
+	 * Validates {@link Http} is using overriden host for every new HTTP request,
+	 * even if a previous request to that endpoint has failed.
+	 * </p>
+	 * <p>
+	 * Spec: RSC15e
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void http_ably_execute_overriden_host() throws AblyException {
+		final String fakeHost = "fake.ably.io";
+		ClientOptions options = new ClientOptions();
+		options.restHost = fakeHost;
+		AblyRest ably = new AblyRest(options);
+
+		Http http = Mockito.spy(new Http(ably.options, ably.auth));
+
+		String responseExpected = "Lorem Ipsum";
+		ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
+
+        /* Partially mock http */
+		Answer answer = new GrumpyAnswer(
+				1, /* Throw exception */
+				AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+				responseExpected /* Then return a valid response with second call */
+		);
+
+		doAnswer(answer) /* Behave as defined above */
+				.when(http) /* when following method is executed on {@code Http} instance */
+				.httpExecute(
+						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid fallback url */
+						any(Proxy.class), /* Ignore */
+						anyString(), /* Ignore */
+						aryEq(new Param[0]), /* Ignore */
+						any(Http.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
+						any(Http.ResponseHandler.class) /* Ignore */
+				);
+
+		try {
+			http.ablyHttpExecute(
+					"", /* Ignore */
+					"", /* Ignore */
+					new Param[0], /* Ignore */
+					new Param[0], /* Ignore */
+					mock(Http.RequestBody.class), /* Ignore */
+					mock(Http.ResponseHandler.class) /* Ignore */
+			);
+		} catch (AblyException e) {
+			/* Verify that,
+			 * 		- an {@code AblyException} with {@code ErrorInfo} having the 500 error from above
+			 */
+			ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, 50000);
+			assertThat(e, new ErrorInfoMatcher(expectedErrorInfo));
+		}
+
+		assertThat("Unexpected host", url.getAllValues().get(0).getHost(), is(equalTo(fakeHost)));
+
+		try {
+			http.ablyHttpExecute(
+					"", /* Ignore */
+					"", /* Ignore */
+					new Param[0], /* Ignore */
+					new Param[0], /* Ignore */
+					mock(Http.RequestBody.class), /* Ignore */
+					mock(Http.ResponseHandler.class) /* Ignore */
+			);
+		} catch (AblyException e) {
+			/* Verify that,
+			 * 		- an {@code AblyException} with {@code ErrorInfo} having the 500 error from above
+			 */
+			ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, 50000);
+			assertThat(e, new ErrorInfoMatcher(expectedErrorInfo));
+		}
+
+		/* Verify call causes captor to capture same arguments twice.
+		 * Do the validation, after we completed the {@code ArgumentCaptor} related assertions */
+		verify(http, times(2))
+				.httpExecute( /* Just validating call counter. Ignore following parameters */
+						any(URL.class), /* Ignore */
+						any(Proxy.class), /* Ignore */
+						anyString(), /* Ignore */
+						aryEq(new Param[0]), /* Ignore */
+						any(Http.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
+						any(Http.ResponseHandler.class) /* Ignore */
+				);
+		assertThat("Unexpected host", url.getAllValues().get(1).getHost(), is(equalTo(fakeHost)));
+	}
+
+	/**
+	 * <strong>This method mocks the API behavior</strong>
+	 * <p>
+	 * Validates {@link Http} isn't using any fallback hosts if {@link ClientOptions#fallbackHosts}
+	 * array is empty.
+	 * </p>
+	 * <p>
+	 * Spec: RSC15a
+	 * </p>
+	 *
+	 * @throws AblyException
+	 */
+	@Test
+	public void http_ably_execute_empty_fallback_array() throws AblyException {
+		ClientOptions options = new ClientOptions();
+		options.fallbackHosts = new String[0];
+		AblyRest ably = new AblyRest(options);
+
+		Http http = Mockito.spy(new Http(ably.options, ably.auth));
+
+		String responseExpected = "Lorem Ipsum";
+		ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
+
+        /* Partially mock http */
+		Answer answer = new GrumpyAnswer(
+				2, /* Throw exception twice (2) */
+				AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+				responseExpected /* Then return a valid response with third call */
+		);
+
+		doAnswer(answer) /* Behave as defined above */
+				.when(http) /* when following method is executed on {@code Http} instance */
+				.httpExecute(
+						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid fallback url */
+						any(Proxy.class), /* Ignore */
+						anyString(), /* Ignore */
+						aryEq(new Param[0]), /* Ignore */
+						any(Http.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
+						any(Http.ResponseHandler.class) /* Ignore */
+				);
+
+		try {
+			http.ablyHttpExecute(
+					"", /* Ignore */
+					"", /* Ignore */
+					new Param[0], /* Ignore */
+					new Param[0], /* Ignore */
+					mock(Http.RequestBody.class), /* Ignore */
+					mock(Http.ResponseHandler.class) /* Ignore */
+			);
+		} catch (AblyException e) {
+			/* Verify that,
+			 * 		- an {@code AblyException} with {@code ErrorInfo} with the 500 error from above.
+			 */
+			ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, 50000);
+			assertThat(e, new ErrorInfoMatcher(expectedErrorInfo));
+		}
+
+		/* Verify call causes captor to capture same arguments once.
+		 * Do the validation, after we completed the {@code ArgumentCaptor} related assertions */
+		verify(http, times(1))
+				.httpExecute( /* Just validating call counter. Ignore following parameters */
+						any(URL.class), /* Ignore */
+						any(Proxy.class), /* Ignore */
+						anyString(), /* Ignore */
+						aryEq(new Param[0]), /* Ignore */
+						any(Http.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
+						any(Http.ResponseHandler.class) /* Ignore */
+				);
+		assertThat("Unexpected host", url.getAllValues().get(0).getHost(), is(equalTo(Defaults.HOST_REST)));
+	}
+
+	/**
+	 * <p>
+	 * Validates {@code Http} performs fallback behavior with custom {@link ClientOptions#fallbackHosts}
+	 * array httpMaxRetryCount number of times at most,
+	 * when host & fallback hosts are unreachable. Then, finally throws an error.
+	 * </p>
+	 * <p>
+	 * Spec: RSC15a
+	 * </p>
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void http_ably_execute_custom_fallback_array() throws AblyException {
+		final String[] expectedFallbackHosts = new String[]{"f.ably-realtime.com", "g.ably-realtime.com", "h.ably-realtime.com", "i.ably-realtime.com", "j.ably-realtime.com"};
+		final List<String> fallbackHostsList = Arrays.asList(expectedFallbackHosts);
+
+		ClientOptions options = new ClientOptions();
+		options.fallbackHosts = expectedFallbackHosts;
+		int expectedCallCount = options.httpMaxRetryCount + 1;
+		AblyRest ably = new AblyRest(options);
+
+		Http http = Mockito.spy(new Http(ably.options, ably.auth));
+
+		String responseExpected = "Lorem Ipsum";
+		ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
+
+		/* Partially mock http */
+		Answer answer = new GrumpyAnswer(
+				options.httpMaxRetryCount, /* Throw exception options.httpMaxRetryCount */
+				AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+				responseExpected /* Then return a valid response with third call */
+		);
+
+		doAnswer(answer) /* Behave as defined above */
+				.when(http) /* when following method is executed on {@code Http} instance */
+				.httpExecute(
+						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid fallback url */
+						any(Proxy.class), /* Ignore */
+						anyString(), /* Ignore */
+						aryEq(new Param[0]), /* Ignore */
+						any(Http.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
+						any(Http.ResponseHandler.class) /* Ignore */
+				);
+
+		String responseActual = (String) http.ablyHttpExecute(
+				"", /* Ignore */
+				"", /* Ignore */
+				new Param[0], /* Ignore */
+				new Param[0], /* Ignore */
+				mock(Http.RequestBody.class), /* Ignore */
+				mock(Http.ResponseHandler.class) /* Ignore */
+		);
+
+		/* Verify {code Http#httpExecute} have been called (httpMaxRetryCount + 1) times */
+		verify(http, times(expectedCallCount))
+				.httpExecute( /* Just validating call counter. Ignore following parameters */
+						any(URL.class), /* Ignore */
+						any(Proxy.class), /* Ignore */
+						anyString(), /* Ignore */
+						aryEq(new Param[0]), /* Ignore */
+						any(Http.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
+						any(Http.ResponseHandler.class) /* Ignore */
+				);
+
+		/* Verify that,
+		 * 		- delivered expected response
+		 * 		- first call executed against production rest host
+		 * 		- other calls executed against a random custom fallback host */
+		List<URL> allValues = url.getAllValues();
+		assertThat("Unexpected response", responseActual, is(equalTo(responseExpected)));
+		assertThat("Unexpected default primary host", allValues.get(0).getHost(), is(equalTo(Defaults.HOST_REST)));
+		for (int i = 1; i < allValues.size(); i++) {
+			assertThat("Unexpected host fallback", fallbackHostsList.contains(allValues.get(i).getHost()), is(true));
+		}
 	}
 
 	/**
