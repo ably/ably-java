@@ -154,6 +154,7 @@ public class Http {
 		this.scheme = options.tls ? "https://" : "http://";
 		this.port = Defaults.getPort(options);
 		this.hosts = new Hosts(options.restHost, Defaults.HOST_REST, options);
+		options.restHost = this.hosts.getHost();
 
 		this.proxyOptions = options.proxy;
 		if(proxyOptions != null) {

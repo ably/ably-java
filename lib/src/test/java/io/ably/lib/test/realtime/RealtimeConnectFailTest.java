@@ -202,12 +202,12 @@ public class RealtimeConnectFailTest {
 			connectionWaiter.waitFor(ConnectionState.connected);
 			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
 
-			/* wait for disconnected state (on token expiry) */
-			connectionWaiter.waitFor(ConnectionState.disconnected);
+			/* wait for disconnected state (on token expiry), with timeout */
+			connectionWaiter.waitFor(ConnectionState.disconnected, 1, 30000L);
 			assertEquals("Verify disconnected state is reached", ConnectionState.disconnected, ably.connection.state);
 
 			/* wait for connected state (on token renewal) */
-			connectionWaiter.waitFor(ConnectionState.connected);
+			connectionWaiter.waitFor(ConnectionState.connected, 1, 30000L);
 			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
 
 			/* verify that our token generator was called */

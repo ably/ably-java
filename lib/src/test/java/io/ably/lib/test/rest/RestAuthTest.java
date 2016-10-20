@@ -104,6 +104,7 @@ public class RestAuthTest {
 			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = new ClientOptions();
 			opts.restHost = testVars.restHost;
+			opts.environment = testVars.environment;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
 			opts.tls = testVars.tls;
@@ -152,6 +153,7 @@ public class RestAuthTest {
 			TestVars testVars = Setup.getTestVars();
 			ClientOptions optsForToken = new ClientOptions(testVars.keys[0].keyStr);
 			optsForToken.restHost = testVars.restHost;
+			optsForToken.environment = testVars.environment;
 			optsForToken.port = testVars.port;
 			optsForToken.tlsPort = testVars.tlsPort;
 			optsForToken.tls = testVars.tls;
@@ -161,6 +163,7 @@ public class RestAuthTest {
 			ClientOptions opts = new ClientOptions();
 			opts.token = tokenDetails.token;
 			opts.restHost = testVars.restHost;
+			opts.environment = testVars.environment;
 			opts.port = testVars.port;
 			opts.tls = testVars.tls;
 			AblyRest ably = new AblyRest(opts);
@@ -180,6 +183,7 @@ public class RestAuthTest {
 			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = new ClientOptions();
 			opts.restHost = testVars.restHost;
+			opts.environment = testVars.environment;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
 			opts.tls = testVars.tls;
@@ -208,6 +212,7 @@ public class RestAuthTest {
 			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = new ClientOptions();
 			opts.restHost = testVars.restHost;
+			opts.environment = testVars.environment;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
 			opts.tls = testVars.tls;
@@ -236,6 +241,7 @@ public class RestAuthTest {
 			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = new ClientOptions();
 			opts.restHost = testVars.restHost;
+			opts.environment = testVars.environment;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
 			opts.tls = testVars.tls;
@@ -263,6 +269,7 @@ public class RestAuthTest {
 			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = new ClientOptions();
 			opts.restHost = testVars.restHost;
+			opts.environment = testVars.environment;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
 			opts.tls = testVars.tls;
@@ -292,6 +299,7 @@ public class RestAuthTest {
 			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = new ClientOptions();
 			opts.restHost = testVars.restHost;
+			opts.environment = testVars.environment;
 			opts.port = testVars.port;
 			opts.tlsPort = testVars.tlsPort;
 			opts.tls = testVars.tls;

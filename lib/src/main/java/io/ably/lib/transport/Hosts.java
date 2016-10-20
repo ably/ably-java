@@ -20,13 +20,34 @@ public class Hosts {
 	/**
 	 * Create Hosts object
 	 *
-	 * @param primaryHost the primary hostname
+	 * @param primaryHost the primary hostname, null if not configured
 	 * @param defaultHost the default hostname that the primary hostname must
 	 *        match for fallback to occur
+	 * @param options ClientOptions to get environment and fallbackHosts from
+	 *
+	 * The fallback and environment processing here is used when the Hosts
+	 * object is used by a ConnectionManager (for a realtime connection) or by
+	 * an Http for a rest connection. The case where the Hosts object is used
+	 * by an Http that is being used by a ConnectionManager goes through this
+	 * code, but the results are ignored because ConnectionManager then calls
+	 * setHost() and fallback is not used.
 	 */
 	public Hosts(String primaryHost, String defaultHost, ClientOptions options) {
 		this.defaultHost = defaultHost;
-		setHost(primaryHost);
+		if (primaryHost != null) {
+			setHost(primaryHost);
+		} else if (options.environment != null && !options.environment.equalsIgnoreCase("production")) {
+			/* RSC11: If ClientOptions.environment is set and is not
+			 * "production", then the primary hostname is set to the default
+			 * hostname with the environment setting used as a prefix.
+			 * Note that this does not happen if there is an explicit setting
+			 * of ClientOptions.restHost or ClientOptions.realtimeHost (as
+			 * appropriate). The spec is not clear on which one should take
+			 * precedence. */
+			setHost(options.environment + "-" + defaultHost);
+		} else {
+			setHost(defaultHost);
+		}
 		if (options.fallbackHosts == null) {
 			fallbackHosts = Arrays.copyOf(Defaults.HOST_FALLBACKS, Defaults.HOST_FALLBACKS.length);
 			fallbackHostsIsDefault = true;
@@ -41,12 +62,14 @@ public class Hosts {
 
 	/**
 	 * set primary hostname
+	 *
+	 * This gets called when the Hosts object is being used by an Http that is
+	 * the http connection for a ConnectionManager.
 	 */
 	public void setHost(String primaryHost) {
 		this.primaryHost = primaryHost;
 		primaryHostIsDefault = primaryHost.equalsIgnoreCase(defaultHost);
 	}
-		
 
 	/**
 	 * Get primary host name

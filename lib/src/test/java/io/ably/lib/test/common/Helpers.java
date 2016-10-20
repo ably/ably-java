@@ -26,6 +26,7 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
+import io.ably.lib.util.Log;
 
 public class Helpers {
 
@@ -263,6 +264,7 @@ public class Helpers {
 	 *
 	 */
 	public static class ConnectionWaiter implements ConnectionStateListener {
+		private static final String TAG = ConnectionWaiter.class.getName();
 		public Map<ConnectionState, Counter> stateCounts;
 
 		/**
@@ -280,8 +282,10 @@ public class Helpers {
 		 * @return error info
 		 */
 		public synchronized ErrorInfo waitFor(ConnectionState state) {
+			Log.d(TAG, "waitFor(state=" + state + ")");
 			while(connection.state != state)
 				try { wait(); } catch(InterruptedException e) {}
+			Log.d(TAG, "waitFor done: state=" + connection.state + ")");
 			return reason;
 		}
 
@@ -291,8 +295,28 @@ public class Helpers {
 		 * @param count
 		 */
 		public synchronized void waitFor(ConnectionState state, int count) {
+			Log.d(TAG, "waitFor(state=" + state + ", count=" + count + ")");
 			while(connection.state != state || stateCounts.get(state).value < count)
 				try { wait(); } catch(InterruptedException e) {}
+			Log.d(TAG, "waitFor done: state=" + connection.state + ", count=" + stateCounts.get(state).value + ")");
+		}
+
+		/**
+		 * Wait for a given state to be reached a given number of times, with a
+		 * timeout
+		 * @param state
+		 * @param count
+		 * @param time timeout in ms
+		 */
+		public synchronized void waitFor(ConnectionState state, int count, long time) {
+			Log.d(TAG, "waitFor(state=" + state + ", count=" + count + ", time=" + time + ")");
+			long targetTime = System.currentTimeMillis() + time;
+			long remaining = time;
+			while((connection.state != state || stateCounts.get(state).value < count) && remaining > 0) {
+				try { wait(remaining); } catch(InterruptedException e) {}
+				remaining = targetTime - System.currentTimeMillis();
+			}
+			Log.d(TAG, "waitFor done: state=" + connection.state + ", count=" + stateCounts.get(state).value + ")");
 		}
 
 		/**

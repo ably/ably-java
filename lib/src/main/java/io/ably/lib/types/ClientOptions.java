@@ -64,13 +64,13 @@ public class ClientOptions extends AuthOptions {
 	/**
 	 * For development environments only; allows a non-default Ably host to be specified.
 	 */
-	public String restHost = Defaults.HOST_REST;
+	public String restHost;
 
 	/**
 	 * For development environments only; allows a non-default Ably host to be specified for
 	 * websocket connections.
 	 */
-	public String realtimeHost = Defaults.HOST_REALTIME;
+	public String realtimeHost;
 
 	/**
 	 * For development environments only; allows a non-default Ably port to be specified.
@@ -117,6 +117,13 @@ public class ClientOptions extends AuthOptions {
 	 * Proxy settings
 	 */
 	public ProxyOptions proxy;
+
+	/**
+	 * For development environments only; allows a non-default Ably environment
+	 * to be used such as 'sandbox'.
+	 * Spec: TO3k1
+	 */
+	public String environment;
 
 	/**
 	 * Spec: TO313

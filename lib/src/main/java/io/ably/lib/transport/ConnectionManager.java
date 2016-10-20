@@ -133,6 +133,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		state = states.get(ConnectionState.initialized);
 		String transportClass = Defaults.TRANSPORT;
 		this.hosts = new Hosts(options.realtimeHost, Defaults.HOST_REALTIME, options);
+		options.realtimeHost = this.hosts.getHost();
 		/* debug options */
 		if(options instanceof DebugOptions)
 			protocolListener = ((DebugOptions)options).protocolListener;
@@ -661,7 +662,6 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			this.options = options;
 			this.connectionKey = connection.key;
 			this.connectionSerial = String.valueOf(connection.serial);
-			this.host = options.realtimeHost;
 			this.port = Defaults.getPort(options);
 		}
 	}

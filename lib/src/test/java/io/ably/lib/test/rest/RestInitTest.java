@@ -235,4 +235,62 @@ public class RestInitTest {
 			System.setOut(oldTarget);
 		}
 	}
+
+	/**
+	 * Init library with 'production' environment
+	 * Spec: RSC11
+	 */
+	@Test
+	public void init_production_environment() {
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
+			opts.environment = "production";
+			AblyRest ably = new AblyRest(opts);
+			assertEquals("Unexpected host mismatch", Defaults.HOST_REST, ably.options.restHost);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init4: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Init library with given environment
+	 * Spec: RSC11
+	 */
+	@Test
+	public void init_given_environment() {
+		final String givenEnvironment = "staging";
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
+			opts.environment = givenEnvironment;
+			AblyRest ably = new AblyRest(opts);
+			assertEquals("Unexpected host mismatch", String.format("%s-%s", givenEnvironment, Defaults.HOST_REST), ably.options.restHost);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init4: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Init library with given environment and specified host
+	 * Spec: RSC11
+	 */
+	@Test
+	public void init_given_host_environment() {
+		final String givenEnvironment = "staging";
+		final String specifiedHost = "fake.ably.io";
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
+			opts.restHost = specifiedHost;
+			opts.environment = givenEnvironment;
+			AblyRest ably = new AblyRest(opts);
+			assertEquals("Unexpected host mismatch", specifiedHost, ably.options.restHost);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init4: Unexpected exception instantiating library");
+		}
+	}
 }
