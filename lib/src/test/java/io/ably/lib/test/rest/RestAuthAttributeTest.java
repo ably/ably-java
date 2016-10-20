@@ -306,7 +306,7 @@ public class RestAuthAttributeTest {
 			}};
 
 			/* authorise with custom AuthOptions */
-			TokenDetails tokenDetails2 = ably.auth.authorise(null, authOptions);
+			TokenDetails tokenDetails2 = ably.auth.authorise(authOptions, null);
 
 			/* Verify that,
 			 * tokenDetails1 and tokenDetails2 aren't null,
