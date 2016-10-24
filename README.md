@@ -360,7 +360,7 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 * Visit [https://github.com/ably/ably-java/tags](https://github.com/ably/ably-java/tags) and `Add release notes` for the release, then attach the generated JARs (`ably-java-0.8.4.jar` and `ably-java-0.8.4-full.jar`) in the folder `java/build/libs`,
   and the generated AAR (`ably-android-0.8.4-release.aar` in the folder `android/build/outputs/aar`.
 
-### Publishing to JCentre (Maven)
+### Publishing to JCenter (Maven)
 
 * Go to the home page https://bintray.com/ably-io/ably/java. Select [New version](https://bintray.com/ably-io/ably/java/new/version), enter the new version such as "0.8.4" in name and save
 * Run `gradle java:generateRelease` locally to generate the files
