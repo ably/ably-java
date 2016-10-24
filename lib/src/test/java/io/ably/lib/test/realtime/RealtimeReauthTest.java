@@ -27,11 +27,11 @@ public class RealtimeReauthTest {
 
 	/**
 	 * RTC8 (0.8 spec)
-	 *  If authorise is called with AuthOptions#force set to true
+	 *  If authorize is called with AuthOptions#force set to true
 	 *  the client will obtain a new token, disconnect the current transport
 	 *  and resume the connection
 	 *
-	 * use authorise({force: true}) to reauth with a token with a different set of capabilities
+	 * use authorize({force: true}) to reauth with a token with a different set of capabilities
 	 */
 	@Test
 	public void reauth_tokenDetails() {
@@ -92,14 +92,14 @@ public class RealtimeReauthTest {
 			Auth.TokenDetails secondToken = ablyForToken.auth.requestToken(tokenParams, null);
 			assertNotNull("Expected token value", secondToken.token);
 
-			/* reauthorise */
+			/* reauthorize */
 			Auth.AuthOptions authOptions = new Auth.AuthOptions();
 			authOptions.key = optsTestVars.keys[0].keyStr;
 			authOptions.tokenDetails = secondToken;
 			authOptions.force = true;
-			Auth.TokenDetails reauthTokenDetails = ablyRealtime.auth.authorise(null, authOptions);
+			Auth.TokenDetails reauthTokenDetails = ablyRealtime.auth.authorize(null, authOptions);
 			assertNotNull("Expected token value", reauthTokenDetails.token);
-			System.out.println("done reauthorise");
+			System.out.println("done reauthorize");
 			/* Delay 2s to allow connection to go disconnected (and probably
 			 * then onto connecting and connected). This is a workaround for
 			 * https://github.com/ably/ably-java/issues/180 */
