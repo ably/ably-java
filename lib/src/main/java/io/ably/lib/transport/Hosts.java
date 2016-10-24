@@ -1,6 +1,8 @@
 package io.ably.lib.transport;
 
+import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,10 +34,15 @@ public class Hosts {
 	 * code, but the results are ignored because ConnectionManager then calls
 	 * setHost() and fallback is not used.
 	 */
-	public Hosts(String primaryHost, String defaultHost, ClientOptions options) {
+	public Hosts(String primaryHost, String defaultHost, ClientOptions options) throws AblyException {
 		this.defaultHost = defaultHost;
 		if (primaryHost != null) {
 			setHost(primaryHost);
+			if (options.environment != null) {
+				/* TO3k2: It is never valid to provide both a restHost and environment value
+				 * TO3k3: It is never valid to provide both a realtimeHost and environment value */
+				throw AblyException.fromErrorInfo(new ErrorInfo("cannot set both restHost/realtimeHost and environment options", 40000, 400));
+			}
 		} else if (options.environment != null && !options.environment.equalsIgnoreCase("production")) {
 			/* RSC11: If ClientOptions.environment is set and is not
 			 * "production", then the primary hostname is set to the default

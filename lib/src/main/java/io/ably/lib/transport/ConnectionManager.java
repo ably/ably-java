@@ -132,13 +132,13 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		pendingMessages = new PendingMessageQueue();
 		state = states.get(ConnectionState.initialized);
 		String transportClass = Defaults.TRANSPORT;
-		this.hosts = new Hosts(options.realtimeHost, Defaults.HOST_REALTIME, options);
-		options.realtimeHost = this.hosts.getHost();
-		/* debug options */
-		if(options instanceof DebugOptions)
-			protocolListener = ((DebugOptions)options).protocolListener;
-
 		try {
+			this.hosts = new Hosts(options.realtimeHost, Defaults.HOST_REALTIME, options);
+			options.realtimeHost = this.hosts.getHost();
+			/* debug options */
+			if(options instanceof DebugOptions)
+				protocolListener = ((DebugOptions)options).protocolListener;
+
 			factory = ((ITransport.Factory)Class.forName(transportClass).newInstance());
 		} catch(Exception e) {
 			String msg = "Unable to instance factory class";
