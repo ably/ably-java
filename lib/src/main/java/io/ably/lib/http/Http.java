@@ -293,7 +293,7 @@ public class Http {
 				options.force = true;
 			}
 
-			auth.authorise(options, null);
+			auth.authorise(null, options);
 			authHeader = "Bearer " + auth.getTokenAuth().getEncodedToken();
 		}
 		return authHeader;
