@@ -36,21 +36,21 @@ public class TokenAuth {
 		this.encodedToken = Base64Coder.encodeString(tokenDetails.token).replace("=", "");
 	}
 
-	public TokenDetails authorise(AuthOptions options, TokenParams params) throws AblyException {
-		Log.i("TokenAuth.authorise()", "");
+	public TokenDetails authorize(AuthOptions options, TokenParams params) throws AblyException {
+		Log.i("TokenAuth.authorize()", "");
 		if(tokenDetails != null) {
 			if(tokenDetails.expires == 0 || tokenValid(tokenDetails)) {
 				if(options == null || !options.force) {
-					Log.i("TokenAuth.authorise()", "using cached token; expires = " + tokenDetails.expires);
+					Log.i("TokenAuth.authorize()", "using cached token; expires = " + tokenDetails.expires);
 					return tokenDetails;
 				}
 			} else {
 				/* expired, so remove */
-				Log.i("TokenAuth.authorise()", "deleting expired token");
+				Log.i("TokenAuth.authorize()", "deleting expired token");
 				clear();
 			}
 		}
-		Log.i("TokenAuth.authorise()", "requesting new token");
+		Log.i("TokenAuth.authorize()", "requesting new token");
 		setTokenDetails(auth.requestToken(params, options));
 		return tokenDetails;
 	}
