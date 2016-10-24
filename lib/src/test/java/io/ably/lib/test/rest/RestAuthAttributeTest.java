@@ -41,7 +41,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 	}
 
 	/**
-	 * Stores the AuthOptions and TokenParams arguments as defaults for subsequent authorisations
+	 * Stores the AuthOptions and TokenParams arguments as defaults for subsequent authorizations
 	 * <p>
 	 * Spec: RSA10g
 	 * </p>
@@ -73,7 +73,9 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 				key = testVars.keys[1].keyStr;
 			}};
 
-			/* authorise with custom options */
+			/* authorise with custom options
+			 * Deliberate use of British spelling alias authorise() to check that
+			 * it works (0.9 RSA10l) */
 			TokenDetails tokenDetails1 = ably.auth.authorise(tokenParams, authOptions);
 
 			/* Verify that,
@@ -88,8 +90,8 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 				Thread.sleep(5000L);
 			} catch(InterruptedException ie) {}
 
-			/* authorise with default options */
-			TokenDetails tokenDetails2 = ably.auth.authorise(null, null);
+			/* authorize with default options */
+			TokenDetails tokenDetails2 = ably.auth.authorize(null, null);
 
 			/* Verify that,
 			 * tokenDetails2 isn't null,
@@ -106,7 +108,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 	}
 
 	/**
-	 * Verify that {@link AuthOptions#force} attribute don't stored/used for subsequent authorisations
+	 * Verify that {@link AuthOptions#force} attribute don't stored/used for subsequent authorizations
 	 * <p>
 	 * Spec: RSA10g
 	 * </p>
@@ -114,13 +116,13 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 	@Test
 	public void auth_stores_options_exception_force() {
 		try {
-			/* authorise with default values */
-			TokenDetails tokenDetails1 = ably.auth.authorise(null, null);
+			/* authorize with default values */
+			TokenDetails tokenDetails1 = ably.auth.authorize(null, null);
 			final String token1 = tokenDetails1.token;
 			final String clientId1 = tokenDetails1.clientId;
 
-			/* authorise with force attribute */
-			TokenDetails tokenDetails2 = ably.auth.authorise(null,
+			/* authorize with force attribute */
+			TokenDetails tokenDetails2 = ably.auth.authorize(null,
 					new AuthOptions() {{
 						force = true;
 						key = ably.options.key;
@@ -134,8 +136,8 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 			assertEquals(clientId1, clientId2);
 			assertNotEquals(token1, token2);
 
-			/* authorise with stored values */
-			TokenDetails tokenDetails3 = ably.auth.authorise(null, null);
+			/* authorize with stored values */
+			TokenDetails tokenDetails3 = ably.auth.authorize(null, null);
 			final String token3 = tokenDetails3.token;
 			final String clientId3 = tokenDetails3.clientId;
 
@@ -150,7 +152,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 	}
 
 	/**
-	 * Verify that {@link AuthOptions#queryTime} attribute don't stored/used for subsequent authorisations
+	 * Verify that {@link AuthOptions#queryTime} attribute don't stored/used for subsequent authorizations
 	 * <p>
 	 * Spec: RSA10g
 	 * </p>
@@ -180,9 +182,9 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 			assertEquals(expectedClientId, tokenRequest.clientId);
 			assertEquals(fakeServerTime, tokenRequest.timestamp);
 
-			/* authorise for store custom AuthOptions that has attribute queryTime */
+			/* authorize for store custom AuthOptions that has attribute queryTime */
 			try {
-				ablyForTime.auth.authorise(tokenParams, authOptions);
+				ablyForTime.auth.authorize(tokenParams, authOptions);
 			} catch (Throwable e) {
 			}
 
@@ -203,7 +205,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 	}
 
 	/**
-	 * Verify that {@link TokenParams#timestamp} attribute don't stored/used for subsequent authorisations
+	 * Verify that {@link TokenParams#timestamp} attribute don't stored/used for subsequent authorizations
 	 * <p>
 	 * Spec: RSA10g
 	 * </p>
@@ -235,25 +237,25 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 				}
 			}.setTimestampCapturedList(timestampCapturedList);
 
-			/* authorise with custom timestamp */
+			/* authorize with custom timestamp */
 			AuthOptions authOptions = new AuthOptions();
 			authOptions.key = ably.options.key;
 			authOptions.authCallback = tokenCallback;
 			TokenParams tokenParams = new TokenParams();
 			tokenParams.timestamp = expectedTimestamp;
-			TokenDetails tokenDetails1 = ably.auth.authorise(tokenParams, authOptions);
+			TokenDetails tokenDetails1 = ably.auth.authorize(tokenParams, authOptions);
 			final String token1 = tokenDetails1.token;
 			final String clientId1 = tokenDetails1.clientId;
 
-			/* force authorise with stored TokenParams values */
+			/* force authorize with stored TokenParams values */
 			authOptions.force = true;
-			TokenDetails tokenDetails2 = ably.auth.authorise(null, authOptions);
+			TokenDetails tokenDetails2 = ably.auth.authorize(null, authOptions);
 			final String token2 = tokenDetails2.token;
 			final String clientId2 = tokenDetails2.clientId;
 
 			/* Verify that,
 			* 	 - new token was issued
-			* 	 - authorise called twice
+			* 	 - authorize called twice
 			* 	 - first timestamp value equals expected timestamp
 			* 	 - second timestamp value is not expected
 			* tokenDetails1 and tokenDetails2 aren't null,
@@ -280,10 +282,10 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 	 * </p>
 	 */
 	@Test
-	public void auth_authorise_force() {
+	public void auth_authorize_force() {
 		try {
-			/* authorise with default options */
-			TokenDetails tokenDetails1 = ably.auth.authorise(null, null);
+			/* authorize with default options */
+			TokenDetails tokenDetails1 = ably.auth.authorize(null, null);
 
 			/* init custom AuthOptions with force value is true */
 			final String custom_test_value = "test_forced_token";
@@ -297,8 +299,8 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 				force = true;
 			}};
 
-			/* authorise with custom AuthOptions */
-			TokenDetails tokenDetails2 = ably.auth.authorise(null, authOptions);
+			/* authorize with custom AuthOptions */
+			TokenDetails tokenDetails2 = ably.auth.authorize(null, authOptions);
 
 			/* Verify that,
 			 * tokenDetails1 and tokenDetails2 aren't null,
@@ -310,7 +312,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 			assertEquals(tokenDetails2.token, custom_test_value);
 		} catch (Exception e) {
 			e.printStackTrace();
-			fail("auth_custom_options_authorise: Unexpected exception");
+			fail("auth_custom_options_authorize: Unexpected exception");
 		}
 	}
 }
