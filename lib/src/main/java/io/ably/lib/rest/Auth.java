@@ -384,8 +384,6 @@ public class Auth {
 	 * Authorisation will use the parameters supplied on construction except
 	 * where overridden with the options supplied in the call.
 	 *
-	 * @param options
-	 *
 	 * @param params
 	 * an object containing the request params:
 	 * - key:        (optional) the key to use; if not specified, the key
@@ -407,8 +405,10 @@ public class Auth {
 	 *
 	 * - queryTime   (optional) boolean indicating that the Ably system should be
 	 *               queried for the current time when none is specified explicitly.
+	 *
+	 * @param options
 	 */
-	public TokenDetails authorise(AuthOptions options, TokenParams params) throws AblyException {
+	public TokenDetails authorise(TokenParams params, AuthOptions options) throws AblyException {
 		/* To avoid breaking compatibility in 0.8 versions of the library, merge
 		 * supplied options and params with stored defaults. This needs to be
 		 * removed in 0.9 to comply with RSA10j. */
