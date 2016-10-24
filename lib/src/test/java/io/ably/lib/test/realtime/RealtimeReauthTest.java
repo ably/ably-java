@@ -97,7 +97,7 @@ public class RealtimeReauthTest {
 			authOptions.key = optsTestVars.keys[0].keyStr;
 			authOptions.tokenDetails = secondToken;
 			authOptions.force = true;
-			Auth.TokenDetails reauthTokenDetails = ablyRealtime.auth.authorise(authOptions, null);
+			Auth.TokenDetails reauthTokenDetails = ablyRealtime.auth.authorise(null, authOptions);
 			assertNotNull("Expected token value", reauthTokenDetails.token);
 			System.out.println("done reauthorise");
 			/* Delay 2s to allow connection to go disconnected (and probably
