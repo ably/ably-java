@@ -17,7 +17,7 @@ import io.ably.lib.types.Param;
 public class HttpUtils {
 	/* Headers */
 	public static final String X_ABLY_VERSION_HEADER = "X-Ably-Version";
-	public static final String X_ABLY_VERSION_VALUE = "0.8";
+	public static final String X_ABLY_VERSION_VALUE = "0.9";
 	public static final String X_ABLY_LIB_HEADER = "X-Ably-Lib";
 	public static final String X_ABLY_LIB_VALUE = String.format("%s-%s", BuildConfig.LIBRARY_NAME, BuildConfig.VERSION);
 
