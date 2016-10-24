@@ -293,13 +293,13 @@ public class Http {
 				options.force = true;
 			}
 
-			auth.authorise(null, options);
+			auth.authorize(null, options);
 			authHeader = "Bearer " + auth.getTokenAuth().getEncodedToken();
 		}
 		return authHeader;
 	}
 
-	void authorise(boolean renew) throws AblyException {
+	void authorize(boolean renew) throws AblyException {
 		getAuthorizationHeader(renew);
 	}
 
@@ -461,12 +461,12 @@ public class Http {
 			} catch(AuthRequiredException are) {
 				if(are.authChallenge != null && allowAblyAuth) {
 					if(authPending) {
-						authorise(false);
+						authorize(false);
 						authPending = false;
 						continue;
 					}
 					if(are.expired && renewPending) {
-						authorise(true);
+						authorize(true);
 						renewPending = false;
 						continue;
 					}
