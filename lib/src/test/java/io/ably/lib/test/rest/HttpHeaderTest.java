@@ -84,7 +84,7 @@ public class HttpHeaderTest extends ParameterizedTest {
 			/* Check header */
 			Assert.assertNotNull("Expected headers", headers);
 			Assert.assertTrue(String.format("Expected header %s", HttpUtils.X_ABLY_VERSION_HEADER), headers.containsKey(ably_version_header));
-			Assert.assertEquals(headers.get(ably_version_header), "0.8");
+			Assert.assertEquals(headers.get(ably_version_header), "0.9");
 			Assert.assertTrue(String.format("Expected header %s", HttpUtils.X_ABLY_LIB_HEADER), headers.containsKey(ably_lib_header));
 			Assert.assertEquals(headers.get(ably_lib_header), HttpUtils.X_ABLY_LIB_VALUE);
 		} catch (AblyException e) {
