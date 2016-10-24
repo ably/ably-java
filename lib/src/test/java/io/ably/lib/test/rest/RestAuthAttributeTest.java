@@ -74,7 +74,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 			}};
 
 			/* authorise with custom options */
-			TokenDetails tokenDetails1 = ably.auth.authorise(authOptions, tokenParams);
+			TokenDetails tokenDetails1 = ably.auth.authorise(tokenParams, authOptions);
 
 			/* Verify that,
 			 * tokenDetails1 isn't null,
@@ -120,11 +120,11 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 			final String clientId1 = tokenDetails1.clientId;
 
 			/* authorise with force attribute */
-			TokenDetails tokenDetails2 = ably.auth.authorise(
+			TokenDetails tokenDetails2 = ably.auth.authorise(null,
 					new AuthOptions() {{
 						force = true;
 						key = ably.options.key;
-					}}, null);
+					}});
 			final String token2 = tokenDetails2.token;
 			final String clientId2 = tokenDetails2.clientId;
 
@@ -182,7 +182,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 
 			/* authorise for store custom AuthOptions that has attribute queryTime */
 			try {
-				ablyForTime.auth.authorise(authOptions, tokenParams);
+				ablyForTime.auth.authorise(tokenParams, authOptions);
 			} catch (Throwable e) {
 			}
 
@@ -241,13 +241,13 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 			authOptions.authCallback = tokenCallback;
 			TokenParams tokenParams = new TokenParams();
 			tokenParams.timestamp = expectedTimestamp;
-			TokenDetails tokenDetails1 = ably.auth.authorise(authOptions, tokenParams);
+			TokenDetails tokenDetails1 = ably.auth.authorise(tokenParams, authOptions);
 			final String token1 = tokenDetails1.token;
 			final String clientId1 = tokenDetails1.clientId;
 
 			/* force authorise with stored TokenParams values */
 			authOptions.force = true;
-			TokenDetails tokenDetails2 = ably.auth.authorise(authOptions, null);
+			TokenDetails tokenDetails2 = ably.auth.authorise(null, authOptions);
 			final String token2 = tokenDetails2.token;
 			final String clientId2 = tokenDetails2.clientId;
 
@@ -298,7 +298,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 			}};
 
 			/* authorise with custom AuthOptions */
-			TokenDetails tokenDetails2 = ably.auth.authorise(authOptions, null);
+			TokenDetails tokenDetails2 = ably.auth.authorise(null, authOptions);
 
 			/* Verify that,
 			 * tokenDetails1 and tokenDetails2 aren't null,

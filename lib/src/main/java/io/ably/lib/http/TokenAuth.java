@@ -36,7 +36,7 @@ public class TokenAuth {
 		this.encodedToken = Base64Coder.encodeString(tokenDetails.token).replace("=", "");
 	}
 
-	public TokenDetails authorise(AuthOptions options, TokenParams params) throws AblyException {
+	public TokenDetails authorise(TokenParams params, AuthOptions options) throws AblyException {
 		Log.i("TokenAuth.authorise()", "");
 		if(tokenDetails != null) {
 			if(tokenDetails.expires == 0 || tokenValid(tokenDetails)) {
