@@ -11,4 +11,4 @@ before_install:
   - cat /etc/hosts # optionally check the content *after*
 
 install: true
-script: "ret=0; ./gradlew testRealtimeSuite || ret=1; ./gradlew testRestSuite || ret=1; exit $ret"
+script: "ret=0; ./gradlew java:testRealtimeSuite || ret=1; ./gradlew java:testRestSuite || ret=1; exit $ret"
