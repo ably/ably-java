@@ -79,6 +79,23 @@ public class RestAuthTest {
 	}
 
 	/**
+	 * Init library with useTokenAuth set
+	 */
+	@Test
+	public void authinit0_useTokenAuth() {
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
+			opts.useTokenAuth = true;
+			AblyRest ably = new AblyRest(opts);
+			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("authinit0point5: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
 	 * Init library with a token only
 	 */
 	@Test
@@ -741,6 +758,34 @@ public class RestAuthTest {
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("auth_clientid_explicit_wildcard: Unexpected exception");
+		}
+	}
+
+	/**
+	 * Verify token auth used when useTokenAuth=true
+	 */
+	@Test
+	public void auth_useTokenAuth() {
+		try {
+			final TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			opts.useTokenAuth = true;
+			AblyRest ably = new AblyRest(opts);
+			/* verify that we don't have a token yet. */
+			assertTrue("Not expecting a token yet", ably.auth.getTokenAuth() == null || ably.auth.getTokenAuth().getTokenDetails() == null);
+			/* make a request that relies on the token */
+			try {
+				ably.stats(new Param[] { new Param("by", "hour"), new Param("limit", "1") });
+			} catch (AblyException e) {
+				e.printStackTrace();
+				fail("Unexpected exception requesting token");
+			}
+			/* verify that we have a token. */
+			assertTrue("Expected to use token auth", ably.auth.getTokenAuth().getTokenDetails() != null);
+			System.out.println("Token is " + ably.auth.getTokenAuth().getTokenDetails().token);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("Unexpected exception instantiating library");
 		}
 	}
 
