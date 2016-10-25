@@ -1,7 +1,9 @@
 language: java
 jdk:
   - oraclejdk8
-  - openjdk7
+# DISABLED openjdk7 as it still gives me a buffer overflow fault.
+# See issue https://github.com/ably/ably-java/issues/191
+#  - openjdk7
 
 # Buffer overflow patch. Source: https://github.com/travis-ci/travis-ci/issues/5227#issuecomment-165135711
 before_install:
