@@ -2,9 +2,6 @@ plugins {
   id 'de.fuerstenau.buildconfig' version '1.1.7'
 }
 
-apply plugin: 'java'
-apply from: 'maven.gradle'
-
 buildConfig {
   buildConfigField 'String', 'LIBRARY_NAME', 'java'
 }
@@ -12,27 +9,12 @@ buildConfig {
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
-dependencies {
-  compile 'org.msgpack:msgpack-core:0.8.2'
-  compile 'org.java-websocket:Java-WebSocket:1.3.1'
-  compile 'com.google.code.gson:gson:2.5'
-  testCompile 'org.hamcrest:hamcrest-all:1.3'
-  testCompile 'junit:junit:4.12'
-  testCompile 'com.nanohttpd:nanohttpd:2.2.0'
-  testCompile 'org.nanohttpd:nanohttpd-nanolets:2.2.0'
-  testCompile 'org.nanohttpd:nanohttpd-websocket:2.2.0'
-  testCompile 'org.mockito:mockito-all:2.0.2-beta'
-}
+apply from: '../dependencies.gradle'
 
-task fullJar(type: Jar) {
-  baseName = project.name + '-full'
-  from {
-    configurations.compile.collect {
-      it.isDirectory() ? it : zipTree(it)
-    }
-  }
-  with jar
-  exclude 'META-INF/**'
+task javadocJar(type: Jar, dependsOn: javadoc) {
+  baseName = 'ably-java'
+  classifier = 'javadoc'
+  from javadoc.destinationDir
 }
 
 task testsJar(type: Jar) { 
@@ -46,29 +28,11 @@ task testsJar(type: Jar) {
 }
 
 configurations {
-  fullConfiguration
   testsConfiguration
 }
 
 artifacts {
-  fullConfiguration fullJar
   testsConfiguration testsJar
+  archives javadocJar
 }
 
-task testRealtimeSuite(type: Test) {
-  include '**/RealtimeSuite.class'
-  exclude '**/*Test.class'
-  beforeTest { descriptor ->
-    logger.lifecycle("Running test: " + descriptor)
-  }
-  outputs.upToDateWhen { false }
-}
-
-task testRestSuite(type: Test) {
-  include '**/RestSuite.class'
-  exclude '**/*Test.class'
-  beforeTest { descriptor ->
-    logger.lifecycle("Running test: " + descriptor)
-  }
-  outputs.upToDateWhen { false }
-}

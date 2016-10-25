@@ -1,0 +1,24 @@
+
+configurations {
+    embedded
+}
+
+dependencies {
+    compile configurations.embedded
+}
+
+afterEvaluate {
+    if (tasks.findByPath('compileReleaseJava') != null) {
+        embedJavaJars.mustRunAfter compileReleaseJava
+    } else if (tasks.findByPath('compileReleaseJavaWithJavac') != null) {
+        embedJavaJars.mustRunAfter compileReleaseJavaWithJavac
+    }
+    bundleRelease.dependsOn embedJavaJars
+}
+
+task embedJavaJars << {
+    copy {
+        into("${buildDir}/intermediates/bundles/release/libs")
+        from configurations.compile.findAll { it =~ /lib-.*\.jar$/ }
+    }
+}

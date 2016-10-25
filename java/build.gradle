@@ -1,0 +1,77 @@
+plugins {
+  id 'de.fuerstenau.buildconfig' version '1.1.7'
+}
+
+apply plugin: 'java'
+apply from: 'maven.gradle'
+
+buildConfig {
+  buildConfigField 'String', 'LIBRARY_NAME', 'java'
+}
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+apply from: '../dependencies.gradle'
+dependencies {
+  compile project(':lib')
+  testCompile project (path: ':lib', configuration: 'testsConfiguration')
+}
+
+// Default jar: add io.ably classes from :lib dependency.
+jar {
+  baseName = 'ably-java'
+  from {
+    configurations.compile.collect {
+      it.isDirectory() ? it : zipTree(it)
+    }
+  }
+  includes = ['**/io/ably/**']
+  includeEmptyDirs false
+  exclude 'META-INF/**'
+}
+
+// fullJar: add all classes from dependencies transitively.
+task fullJar(type: Jar) {
+  baseName = 'ably-java'
+  classifier = 'full'
+  from {
+    configurations.compile.collect {
+      it.isDirectory() ? it : zipTree(it)
+    }
+  }
+  with jar
+  exclude 'META-INF/**'
+}
+
+assemble.dependsOn fullJar
+assemble.dependsOn ':lib:javadocJar'
+
+configurations {
+  fullConfiguration
+  testsConfiguration
+}
+
+artifacts {
+  fullConfiguration fullJar
+}
+
+task testRealtimeSuite(type: Test) {
+  filter {
+    includeTestsMatching "*JavaRealtimeSuite"
+  }
+  beforeTest { descriptor ->
+    logger.lifecycle("Running test: " + descriptor)
+  }
+  outputs.upToDateWhen { false }
+}
+
+task testRestSuite(type: Test) {
+  filter {
+    includeTestsMatching "*JavaRestSuite"
+  }
+  beforeTest { descriptor ->
+    logger.lifecycle("Running test: " + descriptor)
+  }
+  outputs.upToDateWhen { false }
+}

@@ -1,26 +1,9 @@
-apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'signing'
 
 def groupId = "io.ably"
-def artifactId = "ably-java"
+def artifactId = "ably-android"
 def localReleaseDest = "${buildDir}/release/${version}"
-
-allprojects {
-    tasks.withType(Javadoc) {
-        // To prevent javadoc warnings with Java 8
-        options.addStringOption('Xdoclint:none', '-quiet')
-    }
-}
-
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-}
-
-artifacts {
-    archives sourcesJar
-}
 
 uploadArchives {
     repositories.mavenDeployer {
@@ -30,9 +13,9 @@ uploadArchives {
 
         // Add other pom properties here if you want (developer details / licenses)
         pom.project {
-            name 'Ably java client library'
-            description 'A Java Realtime and REST client library for [Ably.io](https://www.ably.io), the realtime messaging service.'
-            packaging 'jar'
+            name 'Ably Android client library'
+            description 'An Android Realtime and REST client library for [Ably.io](https://www.ably.io), the realtime messaging service.'
+            packaging 'aar'
             inceptionYear '2015'
             scm {
                 url 'scm:git:https://github.com/ably/ably-java'
@@ -56,8 +39,18 @@ uploadArchives {
             }
         }
 
+        // Exclude dependency on lib subproject.
+        pom.whenConfigured {
+            p -> p.dependencies = p.dependencies.findAll {
+                dep -> dep.artifactId != "lib"
+            }
+        }
+
         // Export files to local storage
         repository(url: "file://${localReleaseDest}")
+
+        // // Export to local Maven cache
+        // repository(url: repositories.mavenLocal().url)
     }
 }
 
@@ -67,10 +60,10 @@ task zipRelease(type: Zip) {
     archiveName "release-${version}.zip"
 }
 
-task generateRelease << {
+assembleRelease.doLast {
     println "Release ${version} can be found at ${localReleaseDest}/"
     println "Release ${version} zipped can be found ${buildDir}/release-${version}.zip"
 }
 
-generateRelease.dependsOn(uploadArchives)
-generateRelease.dependsOn(zipRelease)
+assembleRelease.dependsOn(uploadArchives)
+assembleRelease.dependsOn(zipRelease)
