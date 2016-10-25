@@ -49,7 +49,7 @@ public class ConnectionManagerTest {
 		 *   - connectionManager is connected to the host without any fallback
 		 */
 		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.connected));
-		assertThat(connectionManager.getHost(), is(equalTo(opts.realtimeHost)));
+		assertThat(connectionManager.getHost(), is(equalTo(opts.environment + "-realtime.ably.io")));
 	}
 
 	/**
@@ -68,6 +68,7 @@ public class ConnectionManagerTest {
 		Setup.TestVars testVars = Setup.getTestVars();
 		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 		opts.realtimeHost = "un.reachable.host.example.com";
+		opts.environment = null;
 		AblyRealtime ably = new AblyRealtime(opts);
 		ConnectionManager connectionManager = ably.connection.connectionManager;
 
@@ -98,6 +99,7 @@ public class ConnectionManagerTest {
 		Setup.TestVars testVars = Setup.getTestVars();
 		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 		opts.realtimeHost = "un.reachable.host";
+		opts.environment = null;
 		opts.autoConnect = false;
 		AblyRealtime ably = new AblyRealtime(opts);
 		Connection connection = Mockito.mock(Connection.class);
@@ -138,7 +140,8 @@ public class ConnectionManagerTest {
 		Setup.TestVars testVars = Setup.getTestVars();
 		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 		// Use a host that supports fallback
-		opts.realtimeHost = Defaults.HOST_REALTIME;
+		opts.realtimeHost = null;
+		opts.environment = null;
 		/* Use an incorrect port number for TLS. Using 80 rather than some
 		 * random number (e.g. 1234) makes the failure almost immediate,
 		 * instead of taking 15s to time out at each fallback host. */
@@ -168,8 +171,9 @@ public class ConnectionManagerTest {
 	public void connectionmanager_reconnect_default_endpoint() throws AblyException {
 		Setup.TestVars testVars = Setup.getTestVars();
 		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
-		// Use a host that supports fallback
-		opts.realtimeHost = Defaults.HOST_REALTIME;
+		// Use the default host, supporting fallback
+		opts.realtimeHost = null;
+		opts.environment = null;
 		/* Use an incorrect port number for TLS. Using 80 rather than some
 		 * random number (e.g. 1234) makes the failure almost immediate,
 		 * instead of taking 15s to time out at each fallback host. */
@@ -187,7 +191,7 @@ public class ConnectionManagerTest {
 		 *   - connectionManager's last host was a fallback host
 		 */
 		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.disconnected));
-		assertThat(connectionManager.getHost(), is(not(equalTo(opts.realtimeHost))));
+		assertThat(connectionManager.getHost(), is(not(equalTo("realtime.ably.io"))));
 
 		/* Reconnect */
 		ably.options.tlsPort = Defaults.TLS_PORT;
@@ -204,6 +208,6 @@ public class ConnectionManagerTest {
 		System.out.println("waiting for failed");
 		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.failed));
 		System.out.println("got failed");
-		assertThat(connectionManager.getHost(), is(equalTo(opts.realtimeHost)));
+		assertThat(connectionManager.getHost(), is(equalTo("realtime.ably.io")));
 	}
 }

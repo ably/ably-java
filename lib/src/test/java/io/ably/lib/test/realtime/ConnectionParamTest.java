@@ -98,6 +98,7 @@ public class ConnectionParamTest {
 		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 		opts.tls = false;
 		opts.realtimeHost = "localhost";
+		opts.environment = null;
 		opts.port = server.getListeningPort();
 
 		AblyRealtime ably = new AblyRealtime(opts);

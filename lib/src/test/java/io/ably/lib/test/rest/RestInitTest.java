@@ -247,7 +247,7 @@ public class RestInitTest {
 			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.environment = "production";
 			AblyRest ably = new AblyRest(opts);
-			assertEquals("Unexpected host mismatch", Defaults.HOST_REST, ably.options.restHost);
+			assertEquals("Unexpected host mismatch", Defaults.HOST_REST, ably.http.getHost());
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init4: Unexpected exception instantiating library");
@@ -266,7 +266,7 @@ public class RestInitTest {
 			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.environment = givenEnvironment;
 			AblyRest ably = new AblyRest(opts);
-			assertEquals("Unexpected host mismatch", String.format("%s-%s", givenEnvironment, Defaults.HOST_REST), ably.options.restHost);
+			assertEquals("Unexpected host mismatch", String.format("%s-%s", givenEnvironment, Defaults.HOST_REST), ably.http.getHost());
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init4: Unexpected exception instantiating library");
