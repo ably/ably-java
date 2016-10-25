@@ -200,4 +200,36 @@ public class ConnectionManagerTest extends ParameterizedTest {
 		System.out.println("got failed");
 		assertThat(connectionManager.getHost(), is(equalTo("realtime.ably.io")));
 	}
+
+	/**
+	 * Test that default fallback happens with a non-default host if
+	 * fallbackHostsUseDefault is set.
+	 */
+	@Test
+	public void connectionmanager_reconnect_default_fallback() throws AblyException {
+		Setup.TestVars testVars = Setup.getTestVars();
+		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+		// Use a host that does not normally support fallback.
+		opts.realtimeHost = "nondefault.ably.io";
+		opts.environment = null;
+		opts.fallbackHostsUseDefault = true;
+		/* Use an incorrect port number for TLS. Using 80 rather than some
+		 * random number (e.g. 1234) makes the failure almost immediate,
+		 * instead of taking 15s to time out at each fallback host. */
+		opts.tls = true;
+		opts.tlsPort = 80;
+		AblyRealtime ably = new AblyRealtime(opts);
+		ConnectionManager connectionManager = ably.connection.connectionManager;
+
+		System.out.println("waiting for disconnected");
+		new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.disconnected);
+		System.out.println("got disconnected");
+
+		/* Verify that,
+		 *   - connectionManager is disconnected
+		 *   - connectionManager's last host was a fallback host
+		 */
+		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.disconnected));
+		assertThat(connectionManager.getHost(), is(not(equalTo(opts.realtimeHost))));
+	}
 }
