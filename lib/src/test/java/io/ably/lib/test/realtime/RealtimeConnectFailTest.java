@@ -88,6 +88,7 @@ public class RealtimeConnectFailTest {
 		TestVars testVars = Setup.getTestVars();
 		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 		opts.realtimeHost = "non.existent.host";
+		opts.environment = null;
 		AblyRealtime ably = new AblyRealtime(opts);
 		ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
@@ -108,6 +109,7 @@ public class RealtimeConnectFailTest {
 			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			opts.realtimeHost = "non.existent.host";
+			opts.environment = null;
 			AblyRealtime ably = new AblyRealtime(opts);
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
@@ -142,6 +144,7 @@ public class RealtimeConnectFailTest {
 			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			opts.realtimeHost = "non.existent.host";
+			opts.environment = null;
 			AblyRealtime ably = new AblyRealtime(opts);
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 

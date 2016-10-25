@@ -105,8 +105,6 @@ public class Setup {
 				wsHost = System.getenv("ABLY_REALTIME_HOST");
 				if(wsHost == null)
 					wsHost = host;
-			} else {
-				wsHost = environment + "-realtime.ably.io";
 			}
 
 			if(System.getenv("ABLY_PORT") != null) {
