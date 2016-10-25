@@ -804,8 +804,9 @@ public class RealtimePresenceTest {
 	 * Attach to channel, enter presence channel with large number of clientIds,
 	 * then initiate second connection, seeing existing members in sync subsequent
 	 * to second attach response
+	 * DISABLED: See issue https://github.com/ably/ably-java/issues/159
 	 */
-	@Test
+	/*@Test*/
 	public void attach_enter_multiple() {
 		AblyRealtime clientAbly1 = null;
 		AblyRealtime clientAbly2 = null;
