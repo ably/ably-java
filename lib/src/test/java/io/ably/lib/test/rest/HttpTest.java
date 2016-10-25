@@ -797,7 +797,7 @@ public class HttpTest {
 
 		assertThat(url.getAllValues().get(1).getHost().matches(hostExpectedPattern), is(true));
 		assertThat(url.getAllValues().get(2).getHost().matches(hostExpectedPattern), is(true));
-		assertThat(url.getAllValues().get(1), is(not(equalTo(url.getAllValues().get(2)))));
+		assertThat(url.getAllValues().get(1).toString(), is(not(equalTo(url.getAllValues().get(2).toString()))));
 
 		assertThat(responseActual, is(equalTo(responseExpected)));
 
