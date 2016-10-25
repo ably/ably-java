@@ -140,4 +140,55 @@ public class HostsTest {
 			fail("Unexpected exception " + e);
 		}
 	}
+
+	/**
+	 * Expect a null, when realtimeHost is non-default
+	 */
+	@Test
+	public void hosts_fallback_overridden_host() {
+		try {
+			ClientOptions options = new ClientOptions();
+			String host = "overridden.ably.io";
+			Hosts hosts = new Hosts(host, Defaults.HOST_REALTIME, options);
+			host = hosts.getFallback(host);
+			assertThat(host, is(equalTo(null)));
+		} catch (Exception e) {
+			fail("Unexpected exception " + e);
+		}
+	}
+
+	/**
+	 * Expect that returned host is contained within default host list
+	 * when realtimeHost is non-default and fallbackHostsUseDefault is set
+	 */
+	@Test
+	public void hosts_fallback_use_default(){
+		try {
+			ClientOptions options = new ClientOptions();
+			options.fallbackHostsUseDefault = true;
+			String host = "overridden.ably.io";
+			Hosts hosts = new Hosts(host, Defaults.HOST_REALTIME, options);
+			int idx;
+			boolean shuffled = false;
+			boolean allFound = true;
+			for (idx = 0; ; ++idx) {
+				host = hosts.getFallback(host);
+				if (host == null)
+					break;
+				int found = Arrays.asList(Defaults.HOST_FALLBACKS).indexOf(host);
+				if (found < 0)
+					allFound = false;
+				else if (found != idx)
+					shuffled = true;
+			}
+			assertTrue(idx == Defaults.HOST_FALLBACKS.length);
+			assertTrue(allFound);
+			assertTrue(shuffled);
+		} catch (Exception e) {
+			fail("Unexpected exception " + e);
+		}
+	}
+
+
+
 }
