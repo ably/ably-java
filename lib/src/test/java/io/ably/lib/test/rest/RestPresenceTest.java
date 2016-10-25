@@ -153,8 +153,9 @@ public class RestPresenceTest {
 
 	/**
 	 * Get presence history data in the forward direction using text protocol and check order
+	 * DISABLED: See issue https://github.com/ably/ably-java/issues/159
 	 */
-	@Test
+	/*@Test*/
 	public void rest_presencehistory_order_text_f() {
 		/* get channel */
 		Channel channel = ably_text.channels.get("persisted:restpresence_persisted");
@@ -178,8 +179,9 @@ public class RestPresenceTest {
 
 	/**
 	 * Get presence history data in the backwards direction using text protocol and check order
+	 * DISABLED: See issue https://github.com/ably/ably-java/issues/159
 	 */
-	@Test
+	/*@Test*/
 	public void rest_presencehistory_order_text_b() {
 		/* get channel */
 		Channel channel = ably_text.channels.get("persisted:restpresence_persisted");
@@ -203,8 +205,9 @@ public class RestPresenceTest {
 
 	/**
 	 * Get limited presence history data in the forward direction using text protocol and check order
+	 * DISABLED: See issue https://github.com/ably/ably-java/issues/159
 	 */
-	@Test
+	/*@Test*/
 	public void rest_presencehistory_limit_text_f() {
 		/* get channel */
 		Channel channel = ably_text.channels.get("persisted:restpresence_persisted");
@@ -228,8 +231,9 @@ public class RestPresenceTest {
 
 	/**
 	 * Get limited presence history data in the backwards direction using text protocol and check order
+	 * DISABLED: See issue https://github.com/ably/ably-java/issues/159
 	 */
-	@Test
+	/*@Test*/
 	public void rest_presencehistory_limit_text_b() {
 		/* get channel */
 		Channel channel = ably_text.channels.get("persisted:restpresence_persisted");
@@ -253,8 +257,9 @@ public class RestPresenceTest {
 
 	/**
 	 * Get paginated presence history data in the forward direction using text protocol
+	 * DISABLED: See issue https://github.com/ably/ably-java/issues/159
 	 */
-	@Test
+	/*@Test*/
 	public void rest_presencehistory_paginate_text_f() {
 		/* get channel */
 		Channel channel = ably_text.channels.get("persisted:restpresence_persisted");
@@ -319,8 +324,9 @@ public class RestPresenceTest {
 
 	/**
 	 * Get paginated presence history data in the backwards direction using text protocol
+	 * DISABLED: See issue https://github.com/ably/ably-java/issues/159
 	 */
-	@Test
+	/*@Test*/
 	public void rest_presencehistory_paginate_text_b() {
 		/* get channel */
 		Channel channel = ably_text.channels.get("persisted:restpresence_persisted");

@@ -191,8 +191,9 @@ public class RestAppStatsTest {
 
 	/**
 	 * Check day-level stats exist (forwards)
+	 * DISABLED: See issue https://github.com/ably/ably-java/issues/159
 	 */
-	@Test
+	/*@Test*/
 	public void appstats_day0() {
 		/* get the stats for this channel */
 		try {
@@ -214,8 +215,9 @@ public class RestAppStatsTest {
 
 	/**
 	 * Check month-level stats exist (forwards)
+	 * DISABLED: See issue https://github.com/ably/ably-java/issues/159
 	 */
-	@Test
+	/*@Test*/
 	public void appstats_month0() {
 		/* get the stats for this channel */
 		try {
