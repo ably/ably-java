@@ -287,10 +287,10 @@ public class RestInitTest {
 			opts.restHost = specifiedHost;
 			opts.environment = givenEnvironment;
 			AblyRest ably = new AblyRest(opts);
+			fail("init4: Expected exception instantiating library");
 			assertEquals("Unexpected host mismatch", specifiedHost, ably.options.restHost);
 		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("init4: Unexpected exception instantiating library");
+			/* pass: Got exception from setting restHost and environment */
 		}
 	}
 }
