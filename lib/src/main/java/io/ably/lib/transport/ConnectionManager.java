@@ -134,7 +134,6 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		String transportClass = Defaults.TRANSPORT;
 		try {
 			this.hosts = new Hosts(options.realtimeHost, Defaults.HOST_REALTIME, options);
-			options.realtimeHost = this.hosts.getHost();
 			/* debug options */
 			if(options instanceof DebugOptions)
 				protocolListener = ((DebugOptions)options).protocolListener;

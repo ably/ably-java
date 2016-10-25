@@ -49,7 +49,7 @@ public class ConnectionManagerTest {
 		 *   - connectionManager is connected to the host without any fallback
 		 */
 		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.connected));
-		assertThat(connectionManager.getHost(), is(equalTo(opts.realtimeHost)));
+		assertThat(connectionManager.getHost(), is(equalTo(opts.environment + "-realtime.ably.io")));
 	}
 
 	/**
@@ -191,7 +191,7 @@ public class ConnectionManagerTest {
 		 *   - connectionManager's last host was a fallback host
 		 */
 		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.disconnected));
-		assertThat(connectionManager.getHost(), is(not(equalTo(opts.realtimeHost))));
+		assertThat(connectionManager.getHost(), is(not(equalTo("realtime.ably.io"))));
 
 		/* Reconnect */
 		ably.options.tlsPort = Defaults.TLS_PORT;
@@ -208,6 +208,6 @@ public class ConnectionManagerTest {
 		System.out.println("waiting for failed");
 		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.failed));
 		System.out.println("got failed");
-		assertThat(connectionManager.getHost(), is(equalTo(opts.realtimeHost)));
+		assertThat(connectionManager.getHost(), is(equalTo("realtime.ably.io")));
 	}
 }
