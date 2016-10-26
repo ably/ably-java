@@ -128,19 +128,6 @@ public class Auth {
 		}
 
 		/**
-		 * Internal
-		 */
-		public AuthOptions merge(AuthOptions defaults) {
-			if(authCallback == null) authCallback = defaults.authCallback;
-			if(authUrl == null) authUrl = defaults.authUrl;
-			if(key == null) key = defaults.key;
-			if(authHeaders == null) authHeaders = defaults.authHeaders;
-			if(authParams == null) authParams = defaults.authParams;
-			queryTime = queryTime | defaults.queryTime;
-			return this;
-		}
-
-		/**
 		 * Stores the AuthOptions arguments as defaults for subsequent authorizations
 		 * with the exception of the attributes {@link AuthOptions#timeStamp} and
 		 * {@link AuthOptions#queryTime}
@@ -301,17 +288,6 @@ public class Auth {
 			result.timestamp = this.timestamp;
 			return result;
 		}
-
-		/**
-		 * Internal
-		 */
-		public TokenParams merge(TokenParams defaults) {
-			if (ttl == 0) ttl = defaults.ttl;
-			if (capability == null) capability = defaults.capability;
-			if (clientId == null) clientId = defaults.clientId;
-			if (timestamp == 0) timestamp = defaults.timestamp;
-			return this;
-		}
 	}
 
 	/**
@@ -403,12 +379,6 @@ public class Auth {
 	 * @param options
 	 */
 	public TokenDetails authorize(TokenParams params, AuthOptions options) throws AblyException {
-		/* To avoid breaking compatibility in 0.8 versions of the library, merge
-		 * supplied options and params with stored defaults. This needs to be
-		 * removed in 0.9 to comply with RSA10j. */
-		options = (options == null) ? authOptions : options.merge(authOptions);
-		params = (params == null) ? tokenParams : params.merge(tokenParams);
-
 		/* Spec: RSA10g */
 		if (options != null)
 			this.authOptions = options.storedValues();
@@ -449,12 +419,6 @@ public class Auth {
 	 * @throws AblyException
 	 */
 	public TokenDetails requestToken(TokenParams params, AuthOptions tokenOptions) throws AblyException {
-		/* To avoid breaking compatibility in 0.8 versions of the library, merge
-		 * supplied options and params with stored defaults. This needs to be
-		 * removed in 0.9 to comply with RSA8e. */
-		tokenOptions = (tokenOptions == null) ? authOptions : tokenOptions.merge(authOptions);
-		params = (params == null) ? tokenParams : params.merge(tokenParams);
-
 		/* Spec: RSA8e */
 		tokenOptions = (tokenOptions == null) ? this.authOptions : tokenOptions.copy();
 		params = (params == null) ? this.tokenParams : params.copy();
@@ -573,12 +537,6 @@ public class Auth {
 	 * @throws AblyException
 	 */
 	public TokenRequest createTokenRequest(AuthOptions options, TokenParams params) throws AblyException {
-		/* To avoid breaking compatibility in 0.8 versions of the library, merge
-		 * supplied options and params with stored defaults. This needs to be
-		 * removed in 0.9 to comply with RSA9h. */
-		options = (options == null) ? authOptions : options.merge(authOptions);
-		params = (params == null) ? tokenParams : params.merge(tokenParams);
-
 		/* Spec: RSA9h */
 		options = (options == null) ? this.authOptions : options.copy();
 		params = (params == null) ? this.tokenParams : params.copy();
