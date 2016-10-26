@@ -65,11 +65,6 @@ public class Auth {
 		public String authUrl;
 
 		/**
-		 * When true, indicates that a new token should be requested
-		 */
-		public boolean force;
-
-		/**
 		 * Full Ably key string as obtained from dashboard.
 		 */
 		public String key;
@@ -147,8 +142,8 @@ public class Auth {
 
 		/**
 		 * Stores the AuthOptions arguments as defaults for subsequent authorizations
-		 * with the exception of the attributes {@link AuthOptions#queryTime}
-		 * and {@link AuthOptions#force}
+		 * with the exception of the attributes {@link AuthOptions#timeStamp} and
+		 * {@link AuthOptions#queryTime}
 		 * <p>
 		 * Spec: RSA10g
 		 * </p>
@@ -180,7 +175,6 @@ public class Auth {
 			result.tokenDetails = this.tokenDetails;
 			result.authCallback = this.authCallback;
 			result.queryTime = this.queryTime;
-			result.force = this.force;
 			return result;
 		}
 	}
@@ -425,15 +419,9 @@ public class Auth {
 		options = (options == null) ? this.authOptions : options.copy();
 		params = (params == null) ? this.tokenParams : params.copy();
 
-		TokenDetails tokenDetails = tokenAuth.authorize(params, options);
+		TokenDetails tokenDetails = tokenAuth.authorize(params, options, /*force=*/true);
 
-		/* RTC8
-		 *  If authorize is called with AuthOptions#force set to true
-		 *  the client will obtain a new token, disconnect the current transport
-		 *  and resume the connection
-		 */
-		if (options != null && options.force)
-			ably.onAuthUpdated();
+		ably.onAuthUpdated();
 		return tokenDetails;
 	}
 
@@ -443,6 +431,13 @@ public class Auth {
 	public TokenDetails authorise(TokenParams params, AuthOptions options) throws AblyException {
 		Log.w(TAG, "authorise() alias will be removed in 1.0");
 		return authorize(params, options);
+	}
+
+	/**
+	 * Ensure we have a valid token.
+	 */
+	public TokenDetails ensureValidAuth() throws AblyException {
+		return tokenAuth.authorize(this.tokenParams, this.authOptions, /*force=*/false);
 	}
 
 	/**
@@ -669,7 +664,7 @@ public class Auth {
 			params = new Param[]{new Param("key", authOptions.key) };
 			break;
 		case token:
-			authorize(null, null);
+			ensureValidAuth();
 			params = new Param[]{new Param("access_token", tokenAuth.getTokenDetails().token) };
 			break;
 		}

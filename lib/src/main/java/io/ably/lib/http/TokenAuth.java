@@ -36,11 +36,11 @@ public class TokenAuth {
 		this.encodedToken = Base64Coder.encodeString(tokenDetails.token).replace("=", "");
 	}
 
-	public TokenDetails authorize(TokenParams params, AuthOptions options) throws AblyException {
+	public TokenDetails authorize(TokenParams params, AuthOptions options, boolean force) throws AblyException {
 		Log.i("TokenAuth.authorize()", "");
 		if(tokenDetails != null) {
 			if(tokenDetails.expires == 0 || tokenValid(tokenDetails)) {
-				if(options == null || !options.force) {
+				if (!force) {
 					Log.i("TokenAuth.authorize()", "using cached token; expires = " + tokenDetails.expires);
 					return tokenDetails;
 				}
