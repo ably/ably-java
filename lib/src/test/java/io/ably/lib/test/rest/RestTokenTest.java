@@ -113,6 +113,9 @@ public class RestTokenTest extends ParameterizedTest {
 		try {
 			long requestTime = timeOffset + System.currentTimeMillis();
 			AuthOptions authOptions = new AuthOptions();
+			/* Unset fields in authOptions no longer inherit from stored values,
+			 * so we need to set up authOptions.key manually. */
+			authOptions.key = ably.options.key;
 			authOptions.queryTime = true;
 			TokenDetails tokenDetails = ably.auth.requestToken(null, authOptions);
 			assertNotNull("Expected token value", tokenDetails.token);
