@@ -43,7 +43,8 @@ public class ProtocolMessage {
 		detached,
 		presence,
 		message,
-		sync;
+		sync,
+		auth;
 
 		public int getValue() { return ordinal(); }
 		public static Action findByValue(int value) { return values()[value]; }
@@ -117,6 +118,7 @@ public class ProtocolMessage {
 	public Message[] messages;
 	public PresenceMessage[] presence;
 	public ConnectionDetails connectionDetails;
+	public AuthDetails auth;
 
 	void writeMsgpack(MessagePacker packer) throws IOException {
 		int fieldCount = 1; //action
@@ -124,6 +126,7 @@ public class ProtocolMessage {
 		if(msgSerial != null) ++fieldCount;
 		if(messages != null) ++fieldCount;
 		if(presence != null) ++fieldCount;
+		if(auth != null) ++fieldCount;
 		packer.packMapHeader(fieldCount);
 		packer.packString("action");
 		packer.packInt(action.getValue());
@@ -142,6 +145,10 @@ public class ProtocolMessage {
 		if(presence != null) {
 			packer.packString("presence");
 			PresenceSerializer.writeMsgpackArray(presence, packer);
+		}
+		if(auth != null) {
+			packer.packString("auth");
+			auth.writeMsgpack(packer);
 		}
 	}
 
@@ -180,6 +187,8 @@ public class ProtocolMessage {
 				presence = PresenceSerializer.readMsgpackArray(unpacker);
 			} else if(fieldName == "connectionDetails") {
 				connectionDetails = ConnectionDetails.fromMsgpack(unpacker);
+			} else if(fieldName == "auth") {
+				auth = AuthDetails.fromMsgpack(unpacker);
 			} else {
 				Log.v(TAG, "Unexpected field: " + fieldName);
 				unpacker.skipValue();
@@ -203,6 +212,44 @@ public class ProtocolMessage {
 		public JsonElement serialize(Action action, Type t, JsonSerializationContext ctx) {
 			return new JsonPrimitive(action.getValue());
 		}		
+	}
+
+	public static class AuthDetails {
+		public String accessToken;
+
+		private AuthDetails() { }
+		public AuthDetails(String s) { accessToken = s; }
+
+		AuthDetails readMsgpack(MessageUnpacker unpacker) throws IOException {
+			int fieldCount = unpacker.unpackMapHeader();
+			for(int i = 0; i < fieldCount; i++) {
+				String fieldName = unpacker.unpackString().intern();
+				MessageFormat fieldFormat = unpacker.getNextFormat();
+				if(fieldFormat.equals(MessageFormat.NIL)) { unpacker.unpackNil(); continue; }
+
+				if(fieldName == "accessToken") {
+					accessToken = unpacker.unpackString();
+				} else {
+					System.out.println("Unexpected field: " + fieldName);
+					unpacker.skipValue();
+				}
+			}
+			return this;
+		}
+
+		static AuthDetails fromMsgpack(MessageUnpacker unpacker) throws IOException {
+			return (new AuthDetails()).readMsgpack(unpacker);
+		}
+
+		void writeMsgpack(MessagePacker packer) throws IOException {
+			int fieldCount = 0;
+			if(accessToken != null) ++fieldCount;
+			packer.packMapHeader(fieldCount);
+			if(accessToken != null) {
+				packer.packString("accessToken");
+				packer.packString(accessToken);
+			}
+		}
 	}
 
 	private static final String TAG = ProtocolMessage.class.getName();
