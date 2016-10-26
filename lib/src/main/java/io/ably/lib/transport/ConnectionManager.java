@@ -94,6 +94,50 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		}
 	}
 
+	/*************************************
+	 * a class that listens for state change
+	 * events for in-place authorization
+	 *************************************/
+	public class ConnectionWaiter implements ConnectionStateListener {
+
+		/**
+		 * Public API
+		 */
+		public ConnectionWaiter() {
+			connection.on(this);
+		}
+
+		/**
+		 * Wait for a state change notification
+		 */
+		public synchronized ErrorInfo waitForChange() {
+			Log.d(TAG, "ConnectionWaiter.waitFor()");
+			if (change == null) {
+				try { wait(); } catch(InterruptedException e) {}
+			}
+			Log.d(TAG, "ConnectionWaiter.waitFor done: state=" + state + ")");
+			ErrorInfo reason = change.reason;
+			change = null;
+			return reason;
+		}
+
+		/**
+		 * ConnectionStateListener interface
+		 */
+		@Override
+		public void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange state) {
+			synchronized(this) {
+				change = state;
+				notify();
+			}
+		}
+
+		/**
+		 * Internal
+		 */
+		private ConnectionStateListener.ConnectionStateChange change;
+	}
+
 	/***********************
 	 * all state information
 	 ***********************/
@@ -272,29 +316,56 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	}
 
 	/**
-	 * Authentication token changes for the current connection are possible when
-	 * the client is in the {@link ConnectionState#connected}, {@link ConnectionState#connecting}
-	 * or {@link ConnectionState#disconnected } states.
-	 *
-	 * In the current protocol version we are not able to update auth params on the fly;
-	 * so disconnect, and the new auth params will be used for subsequent reconnection
-	 * * <p>
-	 * Spec: RTC8 (reauthorize) (0.8 spec)
-	 * </p>
-	 *
+	 * (RTC8) For a realtime client, Auth.authorize instructs the library to
+	 * obtain a token using the provided tokenParams and authOptions and upgrade
+	 * the current connection to use that token; or if not currently connected,
+	 * to connect with the token.
 	 */
-	public void onAuthUpdated() {
-		switch (state.state){
-			case connected:
-			case connecting:
-				ITransport transport = this.transport;
-				if (transport != null) {
-					Log.v(TAG, "onAuthUpdated: closing transport");
-					transport.close(/*sendDisconnect=*/false);
-				}
-				break;
-			default:
-				break;
+	public void onAuthUpdated(String token) throws AblyException {
+		ConnectionWaiter waiter = new ConnectionWaiter();
+		if (state.state == ConnectionState.connected) {
+			/* (RTC8a) If the connection is in the CONNECTED state and
+			 * auth.authorize is called or Ably requests a re-authentication
+			 * (see RTN22), the client must obtain a new token, then send an
+			 * AUTH ProtocolMessage to Ably with an auth attribute
+			 * containing an AuthDetails object with the token string. */
+			try {
+				ProtocolMessage msg = new ProtocolMessage(ProtocolMessage.Action.auth);
+				msg.auth = new ProtocolMessage.AuthDetails(token);
+				send(msg, false, null);
+			} catch (AblyException e) {
+				/* The send failed. Close the transport; if a subsequent
+				 * reconnect succeeds, it will be with the new token. */
+				Log.v(TAG, "onAuthUpdated: closing transport after send failure");
+				transport.close(/*sendDisconnect=*/false);
+			}
+		} else {
+			if (state.state == ConnectionState.connecting) {
+				/* Close the connecting transport. */
+				Log.v(TAG, "onAuthUpdated: closing connecting transport");
+				transport.close(/*sendDisconnect=*/false);
+			}
+			/* Start a new connection attempt. */
+			connect();
+		}
+		/* Wait for a state transition into anything other than connecting or
+		 * disconnected. Note that this includes the case that the connection
+		 * was already connected, and the AUTH message prompted the server to
+		 * send another connected message. */
+		for (;;) {
+			ErrorInfo reason = waiter.waitForChange();
+			switch (state.state) {
+				case connected:
+					Log.v(TAG, "onAuthUpdated: got connected");
+					return;
+				case connecting:
+				case disconnected:
+					continue;
+				default:
+					/* suspended/closed/error: throw the error. */
+					Log.v(TAG, "onAuthUpdated: throwing exception");
+					throw AblyException.fromErrorInfo(reason);
+			}
 		}
 	}
 
