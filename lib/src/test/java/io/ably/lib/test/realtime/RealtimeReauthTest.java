@@ -26,12 +26,10 @@ import io.ably.lib.types.ErrorInfo;
 public class RealtimeReauthTest extends ParameterizedTest {
 
 	/**
-	 * RTC8 (0.8 spec)
-	 *  If authorize is called with AuthOptions#force set to true
+	 * RTC8 (0.8 spec with 0.9 removal of AuthOptions.force)
+	 *  If authorize is called
 	 *  the client will obtain a new token, disconnect the current transport
 	 *  and resume the connection
-	 *
-	 * use authorize({force: true}) to reauth with a token with a different set of capabilities
 	 */
 	@Test
 	public void reauth_tokenDetails() {
@@ -94,7 +92,6 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			Auth.AuthOptions authOptions = new Auth.AuthOptions();
 			authOptions.key = testVars.keys[0].keyStr;
 			authOptions.tokenDetails = secondToken;
-			authOptions.force = true;
 			Auth.TokenDetails reauthTokenDetails = ablyRealtime.auth.authorize(null, authOptions);
 			assertNotNull("Expected token value", reauthTokenDetails.token);
 			System.out.println("done reauthorize");
