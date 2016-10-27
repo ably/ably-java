@@ -57,6 +57,10 @@ public class RestAppStatsTest {
 		currentDate.setSeconds(0);
 		currentTime = currentDate.getTime();
 
+		/* Make it the same time last year, to avoid problems with the app
+		 * already having stats from other tests in the same test run. */
+		currentTime -= 365 * 24 * 3600 * 1000L;
+
 		/* get time bounds for test */
 		intervalIds = new String[3];
 		for(int i = 0; i < 3; i++) {
@@ -168,9 +172,8 @@ public class RestAppStatsTest {
 
 	/**
 	 * Check hour-level stats exist (forwards)
-	 * DISABLED: See issue https://github.com/ably/ably-java/issues/159
 	 */
-	/*@Test*/
+	@Test
 	public void appstats_hour0() {
 		/* get the stats for this channel */
 		try {
@@ -192,9 +195,8 @@ public class RestAppStatsTest {
 
 	/**
 	 * Check day-level stats exist (forwards)
-	 * DISABLED: See issue https://github.com/ably/ably-java/issues/159
 	 */
-	/*@Test*/
+	@Test
 	public void appstats_day0() {
 		/* get the stats for this channel */
 		try {
@@ -216,9 +218,8 @@ public class RestAppStatsTest {
 
 	/**
 	 * Check month-level stats exist (forwards)
-	 * DISABLED: See issue https://github.com/ably/ably-java/issues/159
 	 */
-	/*@Test*/
+	@Test
 	public void appstats_month0() {
 		/* get the stats for this channel */
 		try {
@@ -285,9 +286,8 @@ public class RestAppStatsTest {
 
 	/**
 	 * Check query pagination (backwards)
-	 * DISABLED: See issue https://github.com/ably/ably-java/issues/159
 	 */
-	/*@Test*/
+	@Test
 	public void appstats_pagination0() {
 		try {
 			PaginatedResult<Stats> stats = ably.stats(new Param[] {
@@ -320,9 +320,8 @@ public class RestAppStatsTest {
 
 	/**
 	 * Check query pagination (forwards)
-	 * DISABLED: See issue https://github.com/ably/ably-java/issues/159
 	 */
-	/*@Test*/
+	@Test
 	public void appstats_pagination1() {
 		try {
 			PaginatedResult<Stats> stats = ably.stats(new Param[] {
@@ -355,9 +354,8 @@ public class RestAppStatsTest {
 
 	/**
 	 * Check query pagination rel="first" (backwards)
-	 * DISABLED: See issue https://github.com/ably/ably-java/issues/159
 	 */
-	/*@Test*/
+	@Test
 	public void appstats_pagination2() {
 		try {
 			PaginatedResult<Stats> stats = ably.stats(new Param[] {
@@ -388,9 +386,8 @@ public class RestAppStatsTest {
 
 	/**
 	 * Check query pagination rel="first" (forwards)
-	 * DISABLED: See issue https://github.com/ably/ably-java/issues/159
 	 */
-	/*@Test*/
+	@Test
 	public void appstats_pagination3() {
 		try {
 			PaginatedResult<Stats> stats = ably.stats(new Param[] {
