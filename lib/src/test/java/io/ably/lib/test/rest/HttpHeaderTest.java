@@ -53,6 +53,9 @@ public class HttpHeaderTest {
 	 * <p>
 	 * Spec: RSC7b
 	 * </p>
+	 *
+	 * Spec: RSC7a: Must have the header X-Ably-Version: 0.8 (or whatever the
+	 * spec version is).
 	 */
 	@Test
 	public void header_lib_channel_publish() {
@@ -76,10 +79,13 @@ public class HttpHeaderTest {
 			Map<String, String> headers = server.getHeaders();
 
 			/* Prepare checked header */
+			String ably_version_header = HttpUtils.X_ABLY_VERSION_HEADER.toLowerCase();
 			String ably_lib_header = HttpUtils.X_ABLY_LIB_HEADER.toLowerCase();
 
 			/* Check header */
 			Assert.assertNotNull("Expected headers", headers);
+			Assert.assertTrue(String.format("Expected header %s", HttpUtils.X_ABLY_VERSION_HEADER), headers.containsKey(ably_version_header));
+			Assert.assertEquals(headers.get(ably_version_header), "0.8");
 			Assert.assertTrue(String.format("Expected header %s", HttpUtils.X_ABLY_LIB_HEADER), headers.containsKey(ably_lib_header));
 			Assert.assertEquals(headers.get(ably_lib_header), HttpUtils.X_ABLY_LIB_VALUE);
 		} catch (AblyException e) {
