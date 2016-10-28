@@ -121,7 +121,7 @@ public class WebSocketTransport implements ITransport {
 				byte[] encodedMsg = ProtocolSerializer.writeMsgpack(msg);
 				if (Log.level <= Log.VERBOSE) {
 					ProtocolMessage decodedMsg = ProtocolSerializer.readMsgpack(encodedMsg);
-					Log.v(TAG, "send(): " + new String(ProtocolSerializer.writeJSON(decodedMsg)));
+					Log.v(TAG, "send(): " + decodedMsg.action + ": " + new String(ProtocolSerializer.writeJSON(decodedMsg)));
 				}
 				wsConnection.send(encodedMsg);
 			} else {
