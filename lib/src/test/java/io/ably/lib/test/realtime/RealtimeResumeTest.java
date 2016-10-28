@@ -29,6 +29,56 @@ public class RealtimeResumeTest extends ParameterizedTest {
 	public Timeout testTimeout = Timeout.seconds(60);
 
 	/**
+	 * Connect to the service and attach a channel.
+	 * Don't publish any messages; disconnect and then reconnect; verify that
+	 * the channel is still attached.
+	 */
+	@Test
+	public void resume_none() {
+		AblyRealtime ably = null;
+		String channelName = "resume_none";
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* create and attach channel */
+			final Channel channel = ably.channels.get(channelName);
+			System.out.println("Attaching");
+			channel.attach();
+			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			/* disconnect the connection, without closing;
+			 * NOTE this depends on knowledge of the internal structure
+			 * of the library, to simulate a dropped transport without
+			 * causing the connection itself to be disposed */
+			System.out.println("Simulating dropped transport");
+			ably.connection.connectionManager.requestState(ConnectionState.disconnected);
+
+			/* reconnect the rx connection */
+			ably.connection.connect();
+			System.out.println("Waiting for reconnection");
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+			connectionWaiter.waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
+
+			/* wait */
+			System.out.println("Got reconnection; waiting 2s");
+			try { Thread.sleep(2000L); } catch(InterruptedException e) {}
+
+			/* Check the channel is still attached. */
+			assertEquals("Verify channel still attached", channel.state, ChannelState.attached);
+
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
 	 * Connect to the service using two library instances to set
 	 * up separate send and recv connections.
 	 * Disconnect and then reconnect one connection; verify that
@@ -81,7 +131,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 			 * NOTE this depends on knowledge of the internal structure
 			 * of the library, to simulate a dropped transport without
 			 * causing the connection itself to be disposed */
-			ablyRx.connection.connectionManager.requestState(ConnectionState.failed);
+			ablyRx.connection.connectionManager.requestState(ConnectionState.disconnected);
 
 			/* wait */
 			try { Thread.sleep(2000L); } catch(InterruptedException e) {}
@@ -168,7 +218,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 			 * NOTE this depends on knowledge of the internal structure
 			 * of the library, to simulate a dropped transport without
 			 * causing the connection itself to be disposed */
-			ablyRx.connection.connectionManager.requestState(ConnectionState.failed);
+			ablyRx.connection.connectionManager.requestState(ConnectionState.disconnected);
 
 			/* wait */
 			try { Thread.sleep(2000L); } catch(InterruptedException e) {}
@@ -263,7 +313,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 			 * NOTE this depends on knowledge of the internal structure
 			 * of the library, to simulate a dropped transport without
 			 * causing the connection itself to be disposed */
-			ablyRx.connection.connectionManager.requestState(ConnectionState.failed);
+			ablyRx.connection.connectionManager.requestState(ConnectionState.disconnected);
 
 			/* wait */
 			try { Thread.sleep(2000L); } catch(InterruptedException e) {}
@@ -349,7 +399,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 			 * NOTE this depends on knowledge of the internal structure
 			 * of the library, to simulate a dropped transport without
 			 * causing the connection itself to be disposed */
-			ablyRx.connection.connectionManager.requestState(ConnectionState.failed);
+			ablyRx.connection.connectionManager.requestState(ConnectionState.disconnected);
 
 			/* wait */
 			try { Thread.sleep(20000L); } catch(InterruptedException e) {}
