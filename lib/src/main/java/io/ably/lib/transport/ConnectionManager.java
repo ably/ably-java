@@ -309,7 +309,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 	public void onMessage(ProtocolMessage message) throws AblyException {
 		if (Log.level <= Log.VERBOSE)
-			Log.v(TAG, "onMessage(): " + new String(ProtocolSerializer.writeJSON(message)));
+			Log.v(TAG, "onMessage(): " + message.action + ": " + new String(ProtocolSerializer.writeJSON(message)));
 		try {
 			if(protocolListener != null)
 				protocolListener.onRawMessage(message);
