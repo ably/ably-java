@@ -107,6 +107,11 @@ public class Auth {
 		public boolean queryTime;
 
 		/**
+		 * TO3j4: Use token authorization even if no clientId
+		 */
+		public boolean useTokenAuth;
+
+		/**
 		 * Default constructor
 		 */
 		public AuthOptions() {}
@@ -700,7 +705,7 @@ public class Auth {
 
 		/* decide default auth method */
 		if(authOptions.key != null) {
-			if(options.clientId == null) {
+			if(options.clientId == null && !options.useTokenAuth) {
 				/* we have the key and do not need to authenticate the client,
 				 * so default to using basic auth */
 				Log.i("Auth()", "anonymous, using basic auth");
