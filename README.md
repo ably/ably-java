@@ -65,13 +65,13 @@ either a real device or the Android emulator.
 Download [the latest JAR](https://github.com/ably/ably-java/releases) or grab via Gradle:
 
 ```groovy
-compile 'io.ably:ably-java:0.8.4'
+compile 'io.ably:ably-java:0.9.pre'
 ```
 
 or
 
 ```groovy
-compile 'io.ably:ably-android:0.8.4'
+compile 'io.ably:ably-android:0.9.pre'
 ```
 
 and add following repo for a sub-dependency,
@@ -353,25 +353,25 @@ long serviceTime = ably.time();
 This library uses [semantic versioning](http://semver.org/). For each release, the following needs to be done:
 
 * Replace all references of the current version number with the new version number (check this file [README.md](./README.md) and [build.gradle](./build.gradle)) and commit the changes
-* Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to automate the update of the [CHANGELOG](./CHANGELOG.md). Once the CHANGELOG has completed, manually change the `Unreleased` heading and link with the current version number such as `v0.8.4`. Also ensure that the `Full Changelog` link points to the new version tag instead of the `HEAD`. Commit this change.
-* Add a tag and push to origin such as `git tag v0.8.4 && git push origin v0.8.4`
+* Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to automate the update of the [CHANGELOG](./CHANGELOG.md). Once the CHANGELOG has completed, manually change the `Unreleased` heading and link with the current version number such as `v0.9.pre`. Also ensure that the `Full Changelog` link points to the new version tag instead of the `HEAD`. Commit this change.
+* Add a tag and push to origin such as `git tag v0.9.pre && git push origin v0.9.pre`
 * Run `gradle java:assemble` to build the JRE-specific JARs for this release
 * Run `gradle android:assemble` to build the Android AAR for this release
-* Visit [https://github.com/ably/ably-java/tags](https://github.com/ably/ably-java/tags) and `Add release notes` for the release, then attach the generated JARs (`ably-java-0.8.4.jar` and `ably-java-0.8.4-full.jar`) in the folder `java/build/libs`,
-  and the generated AAR (`ably-android-0.8.4-release.aar` in the folder `android/build/outputs/aar`.
+* Visit [https://github.com/ably/ably-java/tags](https://github.com/ably/ably-java/tags) and `Add release notes` for the release, then attach the generated JARs (`ably-java-0.9.pre.jar` and `ably-java-0.9.pre-full.jar`) in the folder `java/build/libs`,
+  and the generated AAR (`ably-android-0.9.pre-release.aar` in the folder `android/build/outputs/aar`.
 
 ### Publishing to JCenter (Maven)
 
-* Go to the home page https://bintray.com/ably-io/ably/java. Select [New version](https://bintray.com/ably-io/ably/java/new/version), enter the new version such as "0.8.4" in name and save
+* Go to the home page https://bintray.com/ably-io/ably/java. Select [New version](https://bintray.com/ably-io/ably/java/new/version), enter the new version such as "0.9.pre" in name and save
 * Run `gradle java:generateRelease` locally to generate the files
-* Open local relative folder such as `/lib/build/release/0.8.4/`
-* Then go to the new version in JFrog Bintray and go to files such as https://bintray.com/ably-io/ably/java/0.8.4#files/io/ably/ably-java, then click on Upload files
-* Type in `io/ably/ably-java/0.8.4` into "Target Repository Path" ensuring the correct version is included. The drag in the files in `java/build/release/0.8.4/`
-* You will see a notice "You have 8 unpublished item(s) for this version", make sure you click "Publish". Wait a few minutes and check that your version has all the necessary files at https://bintray.com/ably-io/ably/java/v0.8.4?sort=&order=#files/io/ably/ably-java/0.8.4 for example.
+* Open local relative folder such as `/lib/build/release/0.9.pre/`
+* Then go to the new version in JFrog Bintray and go to files such as https://bintray.com/ably-io/ably/java/0.9.pre#files/io/ably/ably-java, then click on Upload files
+* Type in `io/ably/ably-java/0.9.pre` into "Target Repository Path" ensuring the correct version is included. The drag in the files in `java/build/release/0.9.pre/`
+* You will see a notice "You have 8 unpublished item(s) for this version", make sure you click "Publish". Wait a few minutes and check that your version has all the necessary files at https://bintray.com/ably-io/ably/java/v0.9.pre?sort=&order=#files/io/ably/ably-java/0.9.pre for example.
 
 Similarly for the Android release at `https://bintray.com/ably-io/ably/android`.
 Run `gradle android:generateRelease` locally to generate the files, and drag in the files in
-`android/build/release/0.8.4/`.
+`android/build/release/0.9.pre/`.
 
 ## Support, feedback and troubleshooting
 
