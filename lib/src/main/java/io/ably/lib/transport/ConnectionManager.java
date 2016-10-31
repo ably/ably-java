@@ -279,7 +279,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	 * In the current protocol version we are not able to update auth params on the fly;
 	 * so disconnect, and the new auth params will be used for subsequent reconnection
 	 * * <p>
-	 * Spec: RTC8 (reauthorise) (0.8 spec)
+	 * Spec: RTC8 (reauthorize) (0.8 spec)
 	 * </p>
 	 *
 	 */
