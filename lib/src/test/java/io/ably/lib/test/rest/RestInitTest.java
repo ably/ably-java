@@ -229,8 +229,8 @@ public class RestInitTest {
 			Log.w(null, "hello");
 			System.out.flush();
 			String logContent = outContent.toString();
-			/* \n because logs are printed with println() function */
-			assertEquals("(WARN): hello\n", logContent);
+			/* \n or \r\n at the end because logs are printed with println() function */
+			assertEquals("(WARN): hello" + System.lineSeparator(), logContent);
 		} finally {
 			System.setOut(oldTarget);
 		}
