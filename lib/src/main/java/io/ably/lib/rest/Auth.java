@@ -146,7 +146,7 @@ public class Auth {
 		}
 
 		/**
-		 * Stores the AuthOptions arguments as defaults for subsequent authorisations
+		 * Stores the AuthOptions arguments as defaults for subsequent authorizations
 		 * with the exception of the attributes {@link AuthOptions#queryTime}
 		 * and {@link AuthOptions#force}
 		 * <p>
@@ -280,7 +280,7 @@ public class Auth {
 		}
 
 		/**
-		 * Stores the TokenParams arguments as defaults for subsequent authorisations
+		 * Stores the TokenParams arguments as defaults for subsequent authorizations
 		 * with the exception of the attributes {@link TokenParams#timestamp}
 		 * <p>
 		 * Spec: RSA10g
@@ -381,10 +381,8 @@ public class Auth {
 	 * Ensure valid auth credentials are present. This may rely in an already-known
 	 * and valid token, and will obtain a new token if necessary or explicitly
 	 * requested.
-	 * Authorisation will use the parameters supplied on construction except
+	 * Authorization will use the parameters supplied on construction except
 	 * where overridden with the options supplied in the call.
-	 *
-	 * @param options
 	 *
 	 * @param params
 	 * an object containing the request params:
@@ -407,8 +405,10 @@ public class Auth {
 	 *
 	 * - queryTime   (optional) boolean indicating that the Ably system should be
 	 *               queried for the current time when none is specified explicitly.
+	 *
+	 * @param options
 	 */
-	public TokenDetails authorise(AuthOptions options, TokenParams params) throws AblyException {
+	public TokenDetails authorize(TokenParams params, AuthOptions options) throws AblyException {
 		/* To avoid breaking compatibility in 0.8 versions of the library, merge
 		 * supplied options and params with stored defaults. This needs to be
 		 * removed in 0.9 to comply with RSA10j. */
@@ -425,10 +425,10 @@ public class Auth {
 		options = (options == null) ? this.authOptions : options.copy();
 		params = (params == null) ? this.tokenParams : params.copy();
 
-		TokenDetails tokenDetails = tokenAuth.authorise(options, params);
+		TokenDetails tokenDetails = tokenAuth.authorize(options, params);
 
 		/* RTC8
-		 *  If authorise is called with AuthOptions#force set to true
+		 *  If authorize is called with AuthOptions#force set to true
 		 *  the client will obtain a new token, disconnect the current transport
 		 *  and resume the connection
 		 */
@@ -438,10 +438,18 @@ public class Auth {
 	}
 
 	/**
+	 * Alias of authorize() (0.9 RSA10l)
+	 */
+	public TokenDetails authorise(TokenParams params, AuthOptions options) throws AblyException {
+		Log.w(TAG, "authorise() alias will be removed in 1.0");
+		return authorize(params, options);
+	}
+
+	/**
 	 * Make a token request. This will make a token request now, even if the library already
 	 * has a valid token. It would typically be used to issue tokens for use by other clients.
-	 * @param params : see {@link #authorise} for params
-	 * @param options : see {@link #authorise} for options
+	 * @param params : see {@link #authorize} for params
+	 * @param options : see {@link #authorize} for options
 	 * @return: the TokenDetails
 	 * @throws AblyException
 	 */
@@ -564,8 +572,8 @@ public class Auth {
 	 * Create a signed token request based on known credentials
 	 * and the given token params. This would typically be used if creating
 	 * signed requests for submission by another client.
-	 * @param options: see {@link #authorise} for options
-	 * @param params: see {@link #authorise} for params
+	 * @param options: see {@link #authorize} for options
+	 * @param params: see {@link #authorize} for params
 	 * @return: the params augmented with the mac.
 	 * @throws AblyException
 	 */
@@ -661,7 +669,7 @@ public class Auth {
 			params = new Param[]{new Param("key", authOptions.key) };
 			break;
 		case token:
-			authorise(null, null);
+			authorize(null, null);
 			params = new Param[]{new Param("access_token", tokenAuth.getTokenDetails().token) };
 			break;
 		}
@@ -747,6 +755,7 @@ public class Auth {
 		} catch (GeneralSecurityException e) { Log.e("Auth.hmac", "Unexpected exception", e); return null; }
 	}
 
+	private static final String TAG = Auth.class.getName();
 	private final AblyRest ably;
 	private final AuthMethod method;
 	private AuthOptions authOptions;
