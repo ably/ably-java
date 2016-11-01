@@ -389,8 +389,17 @@ public class Auth {
 		options = (options == null) ? this.authOptions : options.copy();
 		params = (params == null) ? this.tokenParams : params.copy();
 
-		TokenDetails tokenDetails = tokenAuth.authorize(params, options, /*force=*/true);
-
+		/* RSA10e (as clarified in PR https://github.com/ably/docs/pull/186 )
+		 * Use supplied token or tokenDetails if any. */
+		if (authOptions.token != null)
+			authOptions.tokenDetails = new TokenDetails(authOptions.token);
+		TokenDetails tokenDetails;
+		if (authOptions.tokenDetails != null) {
+			tokenDetails = authOptions.tokenDetails;
+			tokenAuth.setTokenDetails(tokenDetails);
+		} else {
+			tokenDetails = tokenAuth.authorize(params, options, /*force=*/true);
+		}
 		ably.onAuthUpdated();
 		return tokenDetails;
 	}
@@ -408,6 +417,17 @@ public class Auth {
 	 */
 	public TokenDetails ensureValidAuth() throws AblyException {
 		return tokenAuth.authorize(this.tokenParams, this.authOptions, /*force=*/false);
+	}
+
+	/**
+	 * Renew auth credentials.
+	 * Will obtain a new token, even if we already have an apparently valid one.
+	 * Authorization will use the parameters supplied on construction.
+	 */
+	public TokenDetails renew() throws AblyException {
+		TokenDetails tokenDetails = tokenAuth.authorize(this.tokenParams, this.authOptions, /*force=*/true);
+		ably.onAuthUpdated();
+		return tokenDetails;
 	}
 
 	/**
