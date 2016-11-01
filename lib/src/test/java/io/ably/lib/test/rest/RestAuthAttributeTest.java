@@ -110,51 +110,6 @@ public class RestAuthAttributeTest {
 	}
 
 	/**
-	 * Verify that {@link AuthOptions#force} attribute don't stored/used for subsequent authorizations
-	 * <p>
-	 * Spec: RSA10g
-	 * </p>
-	 */
-	@Test
-	public void auth_stores_options_exception_force() {
-		try {
-			setup();
-			/* authorize with default values */
-			TokenDetails tokenDetails1 = ably.auth.authorize(null, null);
-			final String token1 = tokenDetails1.token;
-			final String clientId1 = tokenDetails1.clientId;
-
-			/* authorize with force attribute */
-			TokenDetails tokenDetails2 = ably.auth.authorize(null,
-					new AuthOptions() {{
-						force = true;
-						key = ably.options.key;
-					}});
-			final String token2 = tokenDetails2.token;
-			final String clientId2 = tokenDetails2.clientId;
-
-			/* Verify that, new token was issued */
-			assertNotNull(tokenDetails1);
-			assertNotNull(tokenDetails2);
-			assertEquals(clientId1, clientId2);
-			assertNotEquals(token1, token2);
-
-			/* authorize with stored values */
-			TokenDetails tokenDetails3 = ably.auth.authorize(null, null);
-			final String token3 = tokenDetails3.token;
-			final String clientId3 = tokenDetails3.clientId;
-
-			/* Verify that, new token wasn't issued */
-			assertNotNull(tokenDetails3);
-			assertEquals(clientId2, clientId3);
-			assertEquals(token2, token3);
-		} catch (Exception e) {
-			e.printStackTrace();
-			fail("auth_stores_options_exception_force: Unexpected exception");
-		}
-	}
-
-	/**
 	 * Verify that {@link AuthOptions#queryTime} attribute don't stored/used for subsequent authorizations
 	 * <p>
 	 * Spec: RSA10g
@@ -255,7 +210,6 @@ public class RestAuthAttributeTest {
 			final String clientId1 = tokenDetails1.clientId;
 
 			/* force authorize with stored TokenParams values */
-			authOptions.force = true;
 			TokenDetails tokenDetails2 = ably.auth.authorize(null, authOptions);
 			final String token2 = tokenDetails2.token;
 			final String clientId2 = tokenDetails2.clientId;
@@ -282,7 +236,7 @@ public class RestAuthAttributeTest {
 	}
 
 	/**
-	 * Verify if {@link AuthOptions#force} is true
+	 * Verify
 	 * will to issue a new token even if an existing token exists.
 	 * <p>
 	 * Spec: RSA10d
@@ -295,7 +249,7 @@ public class RestAuthAttributeTest {
 			/* authorize with default options */
 			TokenDetails tokenDetails1 = ably.auth.authorize(null, null);
 
-			/* init custom AuthOptions with force value is true */
+			/* init custom AuthOptions */
 			final String custom_test_value = "test_forced_token";
 			AuthOptions authOptions = new AuthOptions() {{
 				authCallback = new TokenCallback() {
@@ -304,7 +258,6 @@ public class RestAuthAttributeTest {
 						return custom_test_value;
 					}
 				};
-				force = true;
 			}};
 
 			/* authorize with custom AuthOptions */
