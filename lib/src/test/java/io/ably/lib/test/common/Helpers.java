@@ -330,7 +330,10 @@ public class Helpers {
 		 * @return
 		 */
 		public synchronized int getCount(ConnectionState state) {
-			return stateCounts.get(state).value;
+			Counter counter = stateCounts.get(state);
+			if (counter == null)
+				return 0;
+			return counter.value;
 		}
 
 		/**
@@ -339,6 +342,7 @@ public class Helpers {
 		 * meets their requirements.
 		 */
 		public synchronized void reset() {
+			Log.d(TAG, "reset()");
 			stateCounts = new HashMap<ConnectionState, Counter>();
 		}
 
@@ -351,6 +355,7 @@ public class Helpers {
 				reason = state.reason;
 				Counter counter = stateCounts.get(state.current); if(counter == null) stateCounts.put(state.current, (counter = new Counter()));
 				counter.incr();
+				Log.d(TAG, "onConnectionStateChanged(" + state.current + "): count now " + counter.value);
 				notify();
 			}
 		}
