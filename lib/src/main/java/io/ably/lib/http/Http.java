@@ -288,7 +288,7 @@ public class Http {
 			authHeader = "Basic " + Base64Coder.encodeString(auth.getBasicCredentials());
 		} else {
 			if (renew)
-				auth.authorize(null, null);
+				auth.renew();
 			else
 				auth.ensureValidAuth();
 			authHeader = "Bearer " + auth.getTokenAuth().getEncodedToken();
