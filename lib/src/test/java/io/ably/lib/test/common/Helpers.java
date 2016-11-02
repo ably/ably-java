@@ -435,7 +435,7 @@ public class Helpers {
 		 * ChannelStateListener interface
 		 */
 		@Override
-		public void onChannelStateChanged(ChannelState state, ErrorInfo reason) {
+		public void onChannelStateChanged(ChannelStateListener.ChannelStateChange stateChange) {
 			synchronized(this) { notify(); }
 		}
 
