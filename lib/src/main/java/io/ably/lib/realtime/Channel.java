@@ -66,13 +66,15 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 */
 	private void setState(ChannelState newState, ErrorInfo reason) {
 		Log.v(TAG, "setState(): channel = " + name + "; setting " + newState);
+		ChannelStateListener.ChannelStateChange stateChange;
 		synchronized(this) {
-			this.state = newState;
-			this.reason = reason;
+			stateChange = new ChannelStateListener.ChannelStateChange(newState, this.state, reason, false);
+			this.state = stateChange.current;
+			this.reason = stateChange.reason;
 		}
 
 		/* broadcast state change */
-		emit(newState, reason);
+		emit(newState, stateChange);
 	}
 
 	/************************************
@@ -262,7 +264,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 
 	@Override
 	protected void apply(ChannelStateListener listener, ChannelState state, Object... args) {
-		listener.onChannelStateChanged(state, (ErrorInfo)args[0]);
+		listener.onChannelStateChanged((ChannelStateListener.ChannelStateChange)args[0]);
 	}
 
 	static ErrorInfo REASON_NOT_ATTACHED = new ErrorInfo("Channel not attached", 400, 90001);
@@ -650,12 +652,12 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		}
 
 		@Override
-		public void onChannelStateChanged(ChannelState state, ErrorInfo reason) {
-			if(state.equals(successState)) {
+		public void onChannelStateChanged(ChannelStateListener.ChannelStateChange stateChange) {
+			if(stateChange.current.equals(successState)) {
 				Channel.this.off(this);
 				completionListener.onSuccess();
 			}
-			else if(state.equals(failureState)) {
+			else if(stateChange.current.equals(failureState)) {
 				Channel.this.off(this);
 				completionListener.onError(reason);
 			}
