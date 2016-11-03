@@ -1113,9 +1113,9 @@ public class RealtimeChannelTest {
 			assertNotEquals("Verify new connection established", recoverConnectionId, ably.connection.id);
 			assertNotNull("Verify error was returned with connected state", ably.connection.reason);
 
-			/* verify existing channel is detached but not removed */
-			(new ChannelWaiter(channel)).waitFor(ChannelState.detached);
-			assertEquals("Verify attached state reached", channel.state, ChannelState.detached);
+			/* verify existing channel is failed but not removed */
+			(new ChannelWaiter(channel)).waitFor(ChannelState.failed);
+			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
 			assertTrue("Verify the original channel remains in the channel set", ably.channels.get(channelName) == channel);
 
 		} catch (AblyException e) {

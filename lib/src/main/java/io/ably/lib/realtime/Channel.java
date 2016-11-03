@@ -241,21 +241,21 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		presence.setAttached();
 	}
 
-	private void setDetached(ProtocolMessage message) {
+	private void setDetached(ErrorInfo reason) {
 		Log.v(TAG, "setDetached(); channel = " + name);
-		ErrorInfo reason = (message.error != null) ? message.error : REASON_NOT_ATTACHED;
 		setState(ChannelState.detached, reason);
 		failQueuedMessages(reason);
 		presence.setDetached(reason);
 	}
 
-	private void setFailed(ProtocolMessage message) {
+	private void setFailed(ErrorInfo reason) {
 		Log.v(TAG, "setFailed(); channel = " + name);
-		ErrorInfo reason = message.error;
 		setState(ChannelState.failed, reason);
 		failQueuedMessages(reason);
 		presence.setDetached(reason);
 	}
+
+	/* State changes provoked by ConnectionManager state changes. */
 
 	public void setConnected() {
 		if(state == ChannelState.attached) {
@@ -267,11 +267,34 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		}
 	}
 
+	/** (RTL3a) If the connection state enters the FAILED state, then an
+	 * ATTACHING or ATTACHED channel state will transition to FAILED, set the
+	 * Channel#errorReason and emit the error event.
+	 * The Java library does not currently have functionality for an error
+	 * event; it is just an error in the attached->failed state change. */
+	public void setConnectionFailed(ErrorInfo reason) {
+		if (state == ChannelState.attached || state == ChannelState.attaching)
+			setFailed(reason);
+	}
+
+	/** (RTL3b) If the connection state enters the CLOSED state, then an
+	 * ATTACHING or ATTACHED channel state will transition to DETACHED. */
+	public void setConnectionClosed(ErrorInfo reason) {
+		if (state == ChannelState.attached || state == ChannelState.attaching)
+			setDetached(reason);
+	}
+
+	/** (RTL3c) If the connection state enters the SUSPENDED state, then an
+	 * ATTACHING or ATTACHED channel state will transition to SUSPENDED.
+	 * This also gets called when a connection enters CONNECTED but with a
+	 * non-fatal error for a failed reconnect (RTN16e). */
 	public void setSuspended(ErrorInfo reason) {
-		Log.v(TAG, "setSuspended(); channel = " + name);
-		setState(ChannelState.detached, reason);
-		failQueuedMessages(reason);		
-		presence.setSuspended(reason);
+		if (state == ChannelState.attached || state == ChannelState.attaching) {
+			Log.v(TAG, "setSuspended(); channel = " + name);
+			setState(ChannelState.suspended, reason);
+			failQueuedMessages(reason);		
+			presence.setSuspended(reason);
+		}
 	}
 
 	@Override
@@ -544,7 +567,8 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		case detaching:
 		case detached:
 		case failed:
-			throw AblyException.fromErrorInfo(new ErrorInfo("Unable to publish in detached or failed state", 400, 40000));
+		case suspended:
+			throw AblyException.fromErrorInfo(new ErrorInfo("Unable to publish in detached, failed or suspended state", 400, 40000));
 		case attached:
 			ConnectionManager connectionManager = ably.connection.connectionManager;
 			connectionManager.send(msg, ably.options.queueMessages, listener);
@@ -693,7 +717,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 			break;
 		case detach:
 		case detached:
-			setDetached(msg);
+			setDetached((msg.error != null) ? msg.error : REASON_NOT_ATTACHED);
 			break;
 		case message:
 			onMessage(msg);
@@ -705,7 +729,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 			onSync(msg);
 			break;
 		case error:
-			setFailed(msg);
+			setFailed(msg.error);
 			break;
 		default:
 			Log.e(TAG, "onChannelMessage(): Unexpected message action (" + msg.action + ")");

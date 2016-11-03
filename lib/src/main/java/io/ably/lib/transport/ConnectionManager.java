@@ -246,10 +246,37 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			sendQueuedMessages();
 			for(Channel channel : ably.channels.values())
 				channel.setConnected();
-		} else if(!state.queueEvents) {
-			failQueuedMessages(state.defaultErrorInfo);
-			for(Channel channel : ably.channels.values())
-				channel.setSuspended(state.defaultErrorInfo);
+		} else { 
+			if(!state.queueEvents)
+				failQueuedMessages(state.defaultErrorInfo);
+			for(Channel channel : ably.channels.values()) {
+				switch (state.state) {
+					case disconnected:
+						/* (RTL3e) If the connection state enters the
+						 * DISCONNECTED state, it will have no effect on the
+						 * channel states. */
+						break;
+					case failed:
+						/* (RTL3a) If the connection state enters the FAILED
+						 * state, then an ATTACHING or ATTACHED channel state
+						 * will transition to FAILED, set the
+						 * Channel#errorReason and emit the error event. */
+						channel.setConnectionFailed(change.reason);
+						break;
+					case closed:
+						/* (RTL3b) If the connection state enters the CLOSED
+						 * state, then an ATTACHING or ATTACHED channel state
+						 * will transition to DETACHED. */
+						channel.setConnectionClosed(state.defaultErrorInfo);
+						break;
+					case suspended:
+						/* (RTL3c) If the connection state enters the SUSPENDED
+						 * state, then an ATTACHING or ATTACHED channel state
+						 * will transition to SUSPENDED. */
+						channel.setSuspended(state.defaultErrorInfo);
+						break;
+				}
+			}
 		}
 	}
 
