@@ -23,6 +23,7 @@ import java.util.Collection;
 import io.ably.lib.http.Http;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Locale;
 
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
@@ -839,6 +840,73 @@ public class RealtimeMessageTest {
 				realtimeSubscribeClientMsgPack.close();
 			if (realtimeSubscribeClientJson != null)
 				realtimeSubscribeClientJson.close();
+		}
+	}
+
+	/**
+	 * Test behaviour when message is encoded as encrypted but encryption is not set up
+	 */
+	@Test
+	public void message_inconsistent_encoding () {
+		AblyRealtime realtimeSubscribeClient = null;
+		final ArrayList<String> log = new ArrayList<>();
+
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions apiOptions = testVars.createOptions(testVars.keys[0].keyStr);
+			apiOptions.logHandler = new Log.LogHandler() {
+				@Override
+				public void println(int severity, String tag, String msg, Throwable tr) {
+					synchronized (log) {
+						log.add(String.format(Locale.US, "%s: %s", tag, msg));
+					}
+				}
+			};
+			apiOptions.logLevel = Log.ERROR;
+
+			AblyRest restPublishClient = new AblyRest(apiOptions);
+			realtimeSubscribeClient = new AblyRealtime(apiOptions);
+
+			final Channel realtimeSubscribeChannelJson = realtimeSubscribeClient.channels.get("test-encoding");
+
+			realtimeSubscribeChannelJson.attach();
+			(new ChannelWaiter(realtimeSubscribeChannelJson)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", realtimeSubscribeChannelJson.state, ChannelState.attached);
+
+			MessageWaiter messageWaiter = new MessageWaiter(realtimeSubscribeChannelJson);
+
+			MessagesEncodingDataItem	testData = new MessagesEncodingDataItem();
+			testData.data = "MDEyMzQ1Njc4OQ==";					/* Base64("0123456789") */
+			testData.encoding = "utf-8/cipher+aes-128-cbc/base64";
+			testData.expectedType = "binary";
+			testData.expectedHexValue = "30313233343536373839";	/* hex for "0123456789" */
+
+			restPublishClient.http.post("/channels/" + realtimeSubscribeChannelJson.name + "/messages", null, null, new Http.JSONRequestBody(testData), null);
+
+			messageWaiter.waitFor(1);
+			realtimeSubscribeChannelJson.unsubscribe(messageWaiter);
+
+			Message receivedMessage = messageWaiter.receivedMessages.get(0);
+
+			expectDataToMatch(testData, receivedMessage);
+			assertEquals("Verify resulting encoding", receivedMessage.encoding, "utf-8/cipher+aes-128-cbc");
+
+			synchronized (log) {
+				boolean foundErrorMessage = false;
+				for (String logMessage: log) {
+					if (logMessage.contains("encryption is not set up"))
+						foundErrorMessage = true;
+				}
+				assertTrue("Verify logged error messages", foundErrorMessage);
+			}
+		}
+		catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		}
+		finally {
+			if (realtimeSubscribeClient != null)
+				realtimeSubscribeClient.close();
 		}
 	}
 
