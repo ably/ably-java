@@ -65,10 +65,13 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 *
 	 */
 	private void setState(ChannelState newState, ErrorInfo reason) {
+		setState(newState, reason, false);
+	}
+	private void setState(ChannelState newState, ErrorInfo reason, boolean resumed) {
 		Log.v(TAG, "setState(): channel = " + name + "; setting " + newState);
 		ChannelStateListener.ChannelStateChange stateChange;
 		synchronized(this) {
-			stateChange = new ChannelStateListener.ChannelStateChange(newState, this.state, reason, false);
+			stateChange = new ChannelStateListener.ChannelStateChange(newState, this.state, reason, resumed);
 			this.state = stateChange.current;
 			this.reason = stateChange.reason;
 		}
@@ -218,9 +221,10 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 *
 	 */
 	private void setAttached(ProtocolMessage message) {
-		Log.v(TAG, "setAttached(); channel = " + name);
+		boolean resumed = (message.flags & ( 1 << Flag.resumed.ordinal())) != 0;
+		Log.v(TAG, "setAttached(); channel = " + name + ", resumed = " + resumed);
 		attachSerial = message.channelSerial;
-		setState(ChannelState.attached, message.error);
+		setState(ChannelState.attached, message.error, resumed);
 		sendQueuedMessages();
 		if((message.flags & ( 1 << Flag.has_presence.ordinal())) > 0) {
 			Log.v(TAG, "setAttached(); awaiting sync; channel = " + name);
