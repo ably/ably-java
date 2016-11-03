@@ -9,5 +9,6 @@ public enum ChannelState {
 	attached,
 	detaching,
 	detached,
-	failed
+	failed,
+	suspended
 }
