@@ -52,7 +52,8 @@ public class ProtocolMessage {
 
 	public enum Flag {
 		has_presence,
-		has_backlog;
+		has_backlog,
+		resumed;
 
 		public int getValue() { return ordinal(); }
 		public static Flag findByValue(int value) { return values()[value]; }
