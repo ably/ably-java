@@ -862,7 +862,7 @@ public class RealtimeMessageTest {
 					}
 				}
 			};
-			apiOptions.logLevel = Log.ERROR;
+			apiOptions.logLevel = Log.INFO;
 
 			AblyRest restPublishClient = new AblyRest(apiOptions);
 			realtimeSubscribeClient = new AblyRealtime(apiOptions);

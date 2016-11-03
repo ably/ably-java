@@ -81,9 +81,7 @@ public class BaseMessage implements Cloneable {
 						try {
 							data = Base64Coder.decode((String) data);
 						}
-						catch (IllegalArgumentException e) {
-							throw AblyException.fromThrowable(e);
-						}
+						catch (IllegalArgumentException e) { throw AblyException.fromThrowable(e); }
 						continue;
 					}
 					if(xform == "utf-8") {
@@ -99,12 +97,13 @@ public class BaseMessage implements Cloneable {
 						continue;
 					}
 					if(xform == "cipher") {
-						if (opts != null && opts.encrypted) {
+						if(opts != null && opts.encrypted) {
 							data = opts.getCipher().decrypt((byte[]) data);
 							continue;
 						}
-						else
-							Log.e(TAG, "Encrypted message received but encryption is not set up");
+						else {
+							Log.i(TAG, "Encrypted message received but encryption is not set up");
+						}
 					}
 					break;
 				}
