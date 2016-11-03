@@ -398,6 +398,7 @@ public class Helpers {
 	 *
 	 */
 	public static class ChannelWaiter implements ChannelStateListener {
+		private static final String TAG = ChannelWaiter.class.getName();
 
 		/**
 		 * Public API
@@ -413,8 +414,10 @@ public class Helpers {
 		 * @param state
 		 */
 		public synchronized ErrorInfo waitFor(ChannelState state) {
+			Log.d(TAG, "waitFor(" + state + ")");
 			while(channel.state != state)
 				try { wait(); } catch(InterruptedException e) {}
+			Log.d(TAG, "waitFor done: " + channel.state + ", " + channel.reason + ")");
 			return channel.reason;
 		}
 
