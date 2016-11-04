@@ -398,26 +398,11 @@ public class Auth {
 			tokenDetails = authOptions.tokenDetails;
 			tokenAuth.setTokenDetails(tokenDetails);
 		} else {
-			tokenDetails = tokenAuthAthorize(params, options);
+			tokenDetails = tokenAuthorize(params, options);
 		}
 		ably.onAuthUpdated(tokenDetails.token);
 		return tokenDetails;
 	}
-
-	private TokenDetails tokenAuthAthorize (TokenParams params, AuthOptions options) {
-		try {
-			return tokenAuth.authorize(params, options, /*force=*/true);
-		}
-		catch (AblyException e) {
-			ErrorInfo authErrorInfo = new ErrorInfo();
-			authErrorInfo.code = 80019;
-			authErrorInfo.message = e.errorInfo.message;
-			authErrorInfo.statusCode = e.errorInfo.statusCode;
-			ably.onAuthError(authErrorInfo);
-			throw e;
-		}
-	}
-
 
 	/**
 	 * Alias of authorize() (0.9 RSA10l)
@@ -440,7 +425,7 @@ public class Auth {
 	 * Authorization will use the parameters supplied on construction.
 	 */
 	public TokenDetails renew() throws AblyException {
-		TokenDetails tokenDetails = tokenAuthAuthorize(this.tokenParams, this.authOptions);
+		TokenDetails tokenDetails = tokenAuthorize(this.tokenParams, this.authOptions);
 		ably.onAuthUpdated(tokenDetails.token);
 		return tokenDetails;
 	}
@@ -758,6 +743,28 @@ public class Auth {
 			mac.init(new SecretKeySpec(key.getBytes(), "HmacSHA256"));
 			return new String(Base64Coder.encode(mac.doFinal(text.getBytes())));
 		} catch (GeneralSecurityException e) { Log.e("Auth.hmac", "Unexpected exception", e); return null; }
+	}
+
+	/**
+	 * Authorize using token and notify connection of authentication errors if needed
+	 *
+	 * @param params
+	 * @param options
+	 * @return
+	 * @throws AblyException
+	 */
+	private TokenDetails tokenAuthorize(TokenParams params, AuthOptions options) throws AblyException {
+		try {
+			return tokenAuth.authorize(params, options, /*force=*/true);
+		}
+		catch (AblyException e) {
+			ErrorInfo authErrorInfo = new ErrorInfo();
+			authErrorInfo.code = 80019;
+			authErrorInfo.message = e.errorInfo.message;
+			authErrorInfo.statusCode = e.errorInfo.statusCode;
+			ably.onAuthError(authErrorInfo);
+			throw e;
+		}
 	}
 
 	/**

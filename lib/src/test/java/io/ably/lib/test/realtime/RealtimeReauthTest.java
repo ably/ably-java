@@ -100,7 +100,6 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			Auth.AuthOptions authOptions = new Auth.AuthOptions();
 			authOptions.key = testVars.keys[0].keyStr;
 			authOptions.tokenDetails = secondToken;
-			//authOptions.authUrl = "https://nonexistent-domain-abcdef.com";
 			Auth.TokenDetails reauthTokenDetails = ablyRealtime.auth.authorize(null, authOptions);
 			assertNotNull("Expected token value", reauthTokenDetails.token);
 			System.out.println("done reauthorize");
