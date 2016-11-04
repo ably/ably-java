@@ -398,11 +398,26 @@ public class Auth {
 			tokenDetails = authOptions.tokenDetails;
 			tokenAuth.setTokenDetails(tokenDetails);
 		} else {
-			tokenDetails = tokenAuth.authorize(params, options, /*force=*/true);
+			tokenDetails = tokenAuthAthorize(params, options);
 		}
 		ably.onAuthUpdated(tokenDetails.token);
 		return tokenDetails;
 	}
+
+	private TokenDetails tokenAuthAthorize (TokenParams params, AuthOptions options) {
+		try {
+			return tokenAuth.authorize(params, options, /*force=*/true);
+		}
+		catch (AblyException e) {
+			ErrorInfo authErrorInfo = new ErrorInfo();
+			authErrorInfo.code = 80019;
+			authErrorInfo.message = e.errorInfo.message;
+			authErrorInfo.statusCode = e.errorInfo.statusCode;
+			ably.onAuthError(authErrorInfo);
+			throw e;
+		}
+	}
+
 
 	/**
 	 * Alias of authorize() (0.9 RSA10l)
@@ -425,7 +440,7 @@ public class Auth {
 	 * Authorization will use the parameters supplied on construction.
 	 */
 	public TokenDetails renew() throws AblyException {
-		TokenDetails tokenDetails = tokenAuth.authorize(this.tokenParams, this.authOptions, /*force=*/true);
+		TokenDetails tokenDetails = tokenAuthAuthorize(this.tokenParams, this.authOptions);
 		ably.onAuthUpdated(tokenDetails.token);
 		return tokenDetails;
 	}
@@ -434,7 +449,7 @@ public class Auth {
 	 * Make a token request. This will make a token request now, even if the library already
 	 * has a valid token. It would typically be used to issue tokens for use by other clients.
 	 * @param params : see {@link #authorize} for params
-	 * @param options : see {@link #authorize} for options
+	 * @param tokenOptions : see {@link #authorize} for options
 	 * @return: the TokenDetails
 	 * @throws AblyException
 	 */
