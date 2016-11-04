@@ -256,6 +256,20 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 			} catch (AblyException e) {
 				Log.e(TAG, "setConnected(): Unable to sync; channel = " + name, e);
 			}
+		} else if (state == ChannelState.suspended) {
+			/* (RTL3d) If the connection state enters the CONNECTED state, then
+			 * a SUSPENDED channel will initiate an attach operation. If the
+			 * attach operation for the channel times out and the channel
+			 * returns to the SUSPENDED state (see #RTL4f), then an ERROR event
+			 * on the Channel with Ably error code 91200 should be emitted.
+			 *
+			 * The timeout part is not implemented yet, and there is no
+			 * implementation of an error event on Channel. */
+			try {
+				attach();
+			} catch (AblyException e) {
+				Log.e(TAG, "setConnected(): Unable to initiate attach; channel = " + name, e);
+			}
 		}
 	}
 
