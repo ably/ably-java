@@ -82,8 +82,7 @@ public class BaseMessage implements Cloneable {
 							data = Base64Coder.decode((String) data);
 						}
 						catch (IllegalArgumentException e) {
-							Log.e(TAG, "Invalid base64 data received");
-							break;
+                            throw MessageDecodeException.fromDescription("Invalid base64 data received");
 						}
 						continue;
 					}
@@ -97,8 +96,7 @@ public class BaseMessage implements Cloneable {
 							data = Serialisation.gsonParser.parse(jsonText);
 						}
 						catch(JsonParseException e) {
-							Log.e(TAG, "Invalid JSON data received");
-							break;
+                            throw MessageDecodeException.fromDescription("Invalid JSON data received");
 						}
 						continue;
 					}
@@ -108,7 +106,7 @@ public class BaseMessage implements Cloneable {
 							continue;
 						}
 						else {
-							Log.i(TAG, "Encrypted message received but encryption is not set up");
+                            throw MessageDecodeException.fromDescription("Encrypted message received but encryption is not set up");
 						}
 					}
 					break;
