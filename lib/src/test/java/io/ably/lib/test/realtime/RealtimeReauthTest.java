@@ -102,7 +102,6 @@ public class RealtimeReauthTest {
 			Auth.AuthOptions authOptions = new Auth.AuthOptions();
 			authOptions.key = optsTestVars.keys[0].keyStr;
 			authOptions.tokenDetails = secondToken;
-			//authOptions.authUrl = "https://nonexistent-domain-abcdef.com";
 			Auth.TokenDetails reauthTokenDetails = ablyRealtime.auth.authorize(null, authOptions);
 			assertNotNull("Expected token value", reauthTokenDetails.token);
 			System.out.println("done reauthorize");
