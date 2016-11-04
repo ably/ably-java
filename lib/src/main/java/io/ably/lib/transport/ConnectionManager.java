@@ -406,6 +406,31 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		}
 	}
 
+	/**
+	 * Called when where was an error during authentication attempt
+	 *
+	 * @param errorInfo Error associated with unsuccessful authentication
+	 */
+	public void onAuthError(ErrorInfo errorInfo) {
+		Log.i(TAG, String.format("onAuthError: (%d) %s", errorInfo.code, errorInfo.message));
+		switch (state.state) {
+			case connecting:
+				ITransport transport = this.transport;
+				if (transport != null)
+					/* onTransportUnavailable will send state change event and set transport to null */
+					onTransportUnavailable(transport, null, errorInfo);
+				break;
+
+			case connected:
+				/* stay connected but notify of authentication error */
+				setState(new StateIndication(ConnectionState.connected, errorInfo));
+				break;
+
+			default:
+				break;
+		}
+	}
+
 	/***************************************
 	 * transport events/notifications
 	 ***************************************/

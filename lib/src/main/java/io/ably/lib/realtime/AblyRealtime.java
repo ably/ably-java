@@ -71,6 +71,13 @@ public class AblyRealtime extends AblyRest {
 	}
 
 	/**
+	 * Authentication error occurred
+	 */
+	public void onAuthError(ErrorInfo errorInfo) {
+		connection.connectionManager.onAuthError(errorInfo);
+	}
+
+	/**
 	 * A collection of the Channels associated with this Realtime
 	 * instance.
 	 *
