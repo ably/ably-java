@@ -78,7 +78,13 @@ public class BaseMessage implements Cloneable {
 					if(!match.matches()) break;
 					String xform = match.group(1).intern();
 					if(xform == "base64") {
-						data = Base64Coder.decode((String)data);
+						try {
+							data = Base64Coder.decode((String) data);
+						}
+						catch (IllegalArgumentException e) {
+							Log.e(TAG, "Invalid base64 data received");
+							break;
+						}
 						continue;
 					}
 					if(xform == "utf-8") {
@@ -90,12 +96,20 @@ public class BaseMessage implements Cloneable {
 							String jsonText = ((String)data).trim();
 							data = Serialisation.gsonParser.parse(jsonText);
 						}
-						catch(JsonParseException e) { throw AblyException.fromThrowable(e); }
+						catch(JsonParseException e) {
+							Log.e(TAG, "Invalid JSON data received");
+							break;
+						}
 						continue;
 					}
-					if(xform == "cipher" && opts != null && opts.encrypted) {
-						data = opts.getCipher().decrypt((byte[])data);
-						continue;
+					if(xform == "cipher") {
+						if(opts != null && opts.encrypted) {
+							data = opts.getCipher().decrypt((byte[]) data);
+							continue;
+						}
+						else {
+							Log.i(TAG, "Encrypted message received but encryption is not set up");
+						}
 					}
 					break;
 				}
