@@ -81,7 +81,7 @@ public class BaseMessage implements Cloneable {
 						try {
 							data = Base64Coder.decode((String) data);
 						}
-						catch (IllegalArgumentException e) { throw AblyException.fromThrowable(e); }
+						catch (IllegalArgumentException e) { break; }
 						continue;
 					}
 					if(xform == "utf-8") {
@@ -93,7 +93,7 @@ public class BaseMessage implements Cloneable {
 							String jsonText = ((String)data).trim();
 							data = Serialisation.gsonParser.parse(jsonText);
 						}
-						catch(JsonParseException e) { throw AblyException.fromThrowable(e); }
+						catch(JsonParseException e) { break; }
 						continue;
 					}
 					if(xform == "cipher") {
