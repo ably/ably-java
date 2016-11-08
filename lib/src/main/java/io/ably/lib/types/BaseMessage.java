@@ -68,7 +68,7 @@ public class BaseMessage implements Cloneable {
 			builder.append(" id=").append(id);
 	}
 
-	public void decode(ChannelOptions opts) throws AblyException {
+	public void decode(ChannelOptions opts) throws MessageDecodeException {
 		if(encoding != null) {
 			String[] xforms = encoding.split("\\/");
 			int i = 0, j = xforms.length;
@@ -80,8 +80,7 @@ public class BaseMessage implements Cloneable {
 						case "base64":
 							try {
 								data = Base64Coder.decode((String) data);
-							}
-							catch (IllegalArgumentException e) {
+							} catch (IllegalArgumentException e) {
 								throw MessageDecodeException.fromDescription("Invalid base64 data received");
 							}
 							continue;
@@ -94,15 +93,18 @@ public class BaseMessage implements Cloneable {
 							try {
 								String jsonText = ((String)data).trim();
 								data = Serialisation.gsonParser.parse(jsonText);
-							}
-							catch(JsonParseException e) {
+							} catch(JsonParseException e) {
 								throw MessageDecodeException.fromDescription("Invalid JSON data received");
 							}
 							continue;
 
 						case "cipher":
 							if(opts != null && opts.encrypted) {
-								data = opts.getCipher().decrypt((byte[]) data);
+								try {
+									data = opts.getCipher().decrypt((byte[]) data);
+								} catch(AblyException e) {
+									throw MessageDecodeException.fromDescription(e.errorInfo.message);
+								}
 								continue;
 							}
 							else {

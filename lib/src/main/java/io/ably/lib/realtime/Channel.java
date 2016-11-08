@@ -377,8 +377,6 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 				msg.decode(options);
 			} catch (MessageDecodeException e) {
 				Log.e(TAG, String.format("%s on channel %s", e.errorInfo.message, name));
-			} catch(AblyException e) {
-				Log.e(TAG, String.format("Unexpected exception decrypting message on channel %s", name), e);
 			}
 			/* populate fields derived from protocol message */
 			if(msg.connectionId == null) msg.connectionId = message.connectionId;
@@ -404,8 +402,6 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 				msg.decode(options);
 			} catch (MessageDecodeException e) {
 				Log.e(TAG, String.format("%s on channel %s", e.errorInfo.message, name));
-			} catch(AblyException e) {
-				Log.e(TAG, String.format("Unexpected exception decrypting message on channel %s", name), e);
 			}
 			/* populate fields derived from protocol message */
 			if(msg.connectionId == null) msg.connectionId = message.connectionId;
