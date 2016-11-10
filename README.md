@@ -40,6 +40,13 @@ The Android-specific library jar is built with:
 
 (The `ANDROID_HOME` environment variable must be set appropriately.)
 
+#### Proguard ####
+
+If using proguard, the following flags should avoid `ClassNotFoundException` issues:
+```
+-keep class io.ably.lib.** { *; } -keep class org.msgpack.core.** { *; }
+```
+
 ## Tests
 
 Tests are based on JUnit, and there are separate suites for the REST and Realtime libraries, with gradle tasks
