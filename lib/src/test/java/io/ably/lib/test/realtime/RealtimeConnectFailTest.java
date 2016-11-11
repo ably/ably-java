@@ -8,6 +8,9 @@ import static org.junit.Assert.fail;
 
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.realtime.ConnectionStateListener;
+import io.ably.lib.rest.Auth;
+import io.ably.lib.transport.Defaults;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -26,6 +29,10 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.util.Log;
 
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class RealtimeConnectFailTest {
 
@@ -308,21 +315,96 @@ public class RealtimeConnectFailTest {
 
 			// transition to suspended state failing messages
 			ably.connection.connectionManager.requestState(ConnectionState.suspended);
-			try { Thread.sleep(500); } catch (InterruptedException e) {}
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+			}
 			// transition once more to ensure onError() won't be called twice
 			ably.connection.connectionManager.requestState(ConnectionState.closed);
-			try { Thread.sleep(500); } catch (InterruptedException e) {}
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+			}
 
 			// onError() should be called only once
 			assertEquals("Verifying number of onError() calls", numberOfErrors[0], 1);
-		}
-		catch (AblyException e) {
+		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("Unexpected exception");
-		}
-		finally {
+		} finally {
 			if (ably != null)
 				ably.close();
+		}
+	}
+
+	/**
+	 * Allow token to expire and return already expired token after that. Test that the connection state
+	 * is changed in the correct way and without duplicates:
+	 *
+	 * connecting -> connected -> disconnected -> connecting -> disconnected -> failed
+	 */
+	@Test
+	public void connect_reauth_failure_state_flow_test() {
+		AblyRealtime ablyRealtime = null;
+		AblyRest ablyRest = null;
+		try {
+			/* To trigger the bug when connection is going to suspended if total connection time is more than
+			 * TIMEOUT_SUSPEND we set TIMEOUT_SUSPEND to smaller value
+			 */
+			Defaults.TIMEOUT_SUSPEND = 5000;
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+
+			ablyRest = new AblyRest(opts);
+			final TokenDetails tokenDetails = ablyRest.auth.requestToken(new TokenParams() {{ ttl = 8000L; }}, null);
+			assertNotNull("Expected token value", tokenDetails.token);
+
+			final ArrayList<ConnectionState> stateHistory = new ArrayList<>();
+
+			ClientOptions optsForRealtime = testVars.createOptions();
+			optsForRealtime.authCallback = new TokenCallback() {
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					// return already expired token
+					return tokenDetails;
+				}
+			};
+			optsForRealtime.tokenDetails = tokenDetails;
+			ablyRealtime = new AblyRealtime(optsForRealtime);
+			ablyRealtime.connection.on(new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					synchronized (stateHistory) {
+						System.out.println(state.current);
+						stateHistory.add(state.current);
+					}
+				}
+			});
+
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ablyRealtime.connection);
+			connectionWaiter.waitFor(ConnectionState.failed);
+
+			List<ConnectionState> correctHistory = Arrays.asList(
+					ConnectionState.connecting,
+					ConnectionState.connected,
+					ConnectionState.disconnected,
+					ConnectionState.connecting,
+					ConnectionState.disconnected,
+					ConnectionState.failed
+			);
+
+			System.out.println(correctHistory.toString());
+			synchronized (stateHistory) {
+				assertTrue("Verifying state change history", stateHistory.toString().equals(correctHistory.toString()));
+			}
+
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			Defaults.TIMEOUT_SUSPEND = 120000;
+			if (ablyRealtime != null)
+				ablyRealtime.close();
 		}
 	}
 }
