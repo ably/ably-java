@@ -814,14 +814,16 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 	private void failQueuedMessages(ErrorInfo reason) {
 		synchronized(this) {
-			for(QueuedMessage queued : queuedMessages) {
-				try {
-					if(queued.listener != null)
+			for (QueuedMessage queued: queuedMessages) {
+				if (queued.listener != null) {
+					try {
 						queued.listener.onError(reason);
-				} catch (Throwable t) {
-					Log.e(TAG, "failQueuedMessages(): Unexpected error calling listener", t);
+					} catch (Throwable t) {
+						Log.e(TAG, "failQueuedMessages(): Unexpected error calling listener", t);
+					}
 				}
 			}
+			queuedMessages.clear();
 		}
 	}
 

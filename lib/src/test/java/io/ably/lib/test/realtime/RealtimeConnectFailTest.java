@@ -6,6 +6,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import io.ably.lib.realtime.CompletionListener;
+import io.ably.lib.types.ProtocolMessage;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -275,6 +277,52 @@ public class RealtimeConnectFailTest {
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
 			ably.close();
+		}
+	}
+
+	/**
+	 * Test that connection manager correctly fails messages set stored in message queue
+	 */
+
+	@Test
+	public void connect_test_queued_messages_on_failure() {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+			final int[] numberOfErrors = new int[]{0};
+
+			// assume we are in connecting state now
+			ably.connection.connectionManager.send(new ProtocolMessage(), true, new CompletionListener() {
+				@Override
+				public void onSuccess() {
+					fail("Unexpected success sending message");
+				}
+
+				@Override
+				public void onError(ErrorInfo reason) {
+					numberOfErrors[0]++;
+				}
+			});
+
+			// transition to suspended state failing messages
+			ably.connection.connectionManager.requestState(ConnectionState.suspended);
+			try { Thread.sleep(500); } catch (InterruptedException e) {}
+			// transition once more to ensure onError() won't be called twice
+			ably.connection.connectionManager.requestState(ConnectionState.closed);
+			try { Thread.sleep(500); } catch (InterruptedException e) {}
+
+			// onError() should be called only once
+			assertEquals("Verifying number of onError() calls", numberOfErrors[0], 1);
+		}
+		catch (AblyException e) {
+			e.printStackTrace();
+			fail("Unexpected exception");
+		}
+		finally {
+			if (ably != null)
+				ably.close();
 		}
 	}
 }
