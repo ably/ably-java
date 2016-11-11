@@ -338,7 +338,7 @@ public class RealtimeConnectFailTest {
 	}
 
 	/**
-	 * Allow token to expire and return already expired token after that. Test that the connection state
+	 * Allow token to expire and try to authorize with already expired token after that. Test that the connection state
 	 * is changed in the correct way and without duplicates:
 	 *
 	 * connecting -> connected -> disconnected -> connecting -> disconnected -> failed
@@ -375,7 +375,6 @@ public class RealtimeConnectFailTest {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange state) {
 					synchronized (stateHistory) {
-						System.out.println(state.current);
 						stateHistory.add(state.current);
 					}
 				}
@@ -393,9 +392,9 @@ public class RealtimeConnectFailTest {
 					ConnectionState.failed
 			);
 
-			System.out.println(correctHistory.toString());
+			System.out.println(stateHistory.toString());
 			synchronized (stateHistory) {
-				assertTrue("Verifying state change history", stateHistory.toString().equals(correctHistory.toString()));
+				assertTrue("Verifying state change history", stateHistory.equals(correctHistory));
 			}
 
 		} catch (AblyException e) {
