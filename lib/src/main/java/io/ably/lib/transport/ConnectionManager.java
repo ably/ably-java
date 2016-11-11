@@ -546,7 +546,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				break;
 			}
 		}
-		if(stateChange != null)
+		if(stateChange != null && stateChange.state != state.state)
 			setState(stateChange);
 	}
 
