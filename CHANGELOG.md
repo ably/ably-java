@@ -1,7 +1,59 @@
 # Change Log
 
-## [v0.8.4](https://github.com/ably/ably-java/tree/v0.8.4)
+## [v0.8.5](https://github.com/ably/ably-java/tree/v0.8.5)
 
+[Full Changelog](https://github.com/ably/ably-java/compare/v0.8.4...v0.8.5)
+
+**Implemented enhancements:**
+
+- Add reauth capability [\#129](https://github.com/ably/ably-java/issues/129)
+- Remove unused HexDump file [\#81](https://github.com/ably/ably-java/issues/81)
+- Final 0.8 spec updates [\#53](https://github.com/ably/ably-java/issues/53)
+- HAS\_BACKLOG flag [\#6](https://github.com/ably/ably-java/issues/6)
+
+**Fixed bugs:**
+
+- ConnectionManager.failQueuedMessages() does not remove messages once the callback is called [\#222](https://github.com/ably/ably-java/issues/222)
+- ConnectionManager.setSuspendTime() isn't called when a transport disconnects [\#220](https://github.com/ably/ably-java/issues/220)
+
+**Closed issues:**
+
+- "Trust anchor for certification path not found" exception on android [\#197](https://github.com/ably/ably-java/issues/197)
+- travis jdk7 build gets buffer overflow fault [\#191](https://github.com/ably/ably-java/issues/191)
+- never valid to provide both a restHost and environment value [\#187](https://github.com/ably/ably-java/issues/187)
+- fallback problems [\#178](https://github.com/ably/ably-java/issues/178)
+- Complete Android build work [\#148](https://github.com/ably/ably-java/issues/148)
+- Add shutdown hook to close a connection when the VM exits [\#71](https://github.com/ably/ably-java/issues/71)
+- AuthOptions constructor is not unambiguous [\#62](https://github.com/ably/ably-java/issues/62)
+
+**Merged pull requests:**
+
+- Messages are now removed from the queue after onError\(\) call [\#225](https://github.com/ably/ably-java/pull/225) ([psolstice](https://github.com/psolstice))
+- Ensure that suspendTime is set on disconnection [\#221](https://github.com/ably/ably-java/pull/221) ([paddybyers](https://github.com/paddybyers))
+- Added logging, clarified code [\#219](https://github.com/ably/ably-java/pull/219) ([psolstice](https://github.com/psolstice))
+- RSL6b test, log errors [\#215](https://github.com/ably/ably-java/pull/215) ([psolstice](https://github.com/psolstice))
+- Fixed travis crash when using OpenJDK 7 [\#213](https://github.com/ably/ably-java/pull/213) ([psolstice](https://github.com/psolstice))
+- Fixed init\_default\_log\_output\_stream test on Windows [\#209](https://github.com/ably/ably-java/pull/209) ([psolstice](https://github.com/psolstice))
+- Worked around RealtimeCryptoTest.set\_cipher\_params intermittent failure [\#203](https://github.com/ably/ably-java/pull/203) ([trenouf](https://github.com/trenouf))
+- Fixed and re-enabled RestAppStatsTest [\#201](https://github.com/ably/ably-java/pull/201) ([trenouf](https://github.com/trenouf))
+- Used hardcoded constant for protocol version [\#200](https://github.com/ably/ably-java/pull/200) ([trenouf](https://github.com/trenouf))
+- Add note on proguard to readme [\#199](https://github.com/ably/ably-java/pull/199) ([SimonWoolf](https://github.com/SimonWoolf))
+- useTokenAuth forces token authorization [\#196](https://github.com/ably/ably-java/pull/196) ([trenouf](https://github.com/trenouf))
+- RSC7a: X-Ably-Version header [\#195](https://github.com/ably/ably-java/pull/195) ([trenouf](https://github.com/trenouf))
+- HttpTest: fixed test to allow for fallback hosts with same IP [\#192](https://github.com/ably/ably-java/pull/192) ([trenouf](https://github.com/trenouf))
+- Don't modify ClientOptions; Fixed tests to not set both host and environment [\#190](https://github.com/ably/ably-java/pull/190) ([trenouf](https://github.com/trenouf))
+- TO3k2,TO3k3: disallow restHost/realtimeHost with environment [\#189](https://github.com/ably/ably-java/pull/189) ([trenouf](https://github.com/trenouf))
+- Separate java and android builds [\#188](https://github.com/ably/ably-java/pull/188) ([trenouf](https://github.com/trenouf))
+- Tests for host fallback behaviour on rest [\#184](https://github.com/ably/ably-java/pull/184) ([trenouf](https://github.com/trenouf))
+- 0.8 authorisation changes [\#182](https://github.com/ably/ably-java/pull/182) ([trenouf](https://github.com/trenouf))
+- Removed unused HexDump class [\#181](https://github.com/ably/ably-java/pull/181) ([trenouf](https://github.com/trenouf))
+- issues/178: fix fallback [\#179](https://github.com/ably/ably-java/pull/179) ([trenouf](https://github.com/trenouf))
+- custom fallback support [\#176](https://github.com/ably/ably-java/pull/176) ([trenouf](https://github.com/trenouf))
+- RSC11 environment prefix [\#162](https://github.com/ably/ably-java/pull/162) ([VOstopolets](https://github.com/VOstopolets))
+- Reauth capability [\#149](https://github.com/ably/ably-java/pull/149) ([VOstopolets](https://github.com/VOstopolets))
+- RTN2g: Param "Lib" with header value \(RSC7b\) [\#147](https://github.com/ably/ably-java/pull/147) ([VOstopolets](https://github.com/VOstopolets))
+
+## [v0.8.4](https://github.com/ably/ably-java/tree/v0.8.4) (2016-10-07)
 [Full Changelog](https://github.com/ably/ably-java/compare/v0.8.3...v0.8.4)
 
 **Fixed bugs:**
