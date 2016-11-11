@@ -5,15 +5,7 @@ import io.ably.lib.http.PaginatedQuery;
 import io.ably.lib.http.Http.BodyHandler;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ConnectionManager.QueuedMessage;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ChannelOptions;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.Message;
-import io.ably.lib.types.MessageSerializer;
-import io.ably.lib.types.PaginatedResult;
-import io.ably.lib.types.Param;
-import io.ably.lib.types.PresenceMessage;
-import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.types.*;
 import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.types.ProtocolMessage.Flag;
 import io.ably.lib.util.EventEmitter;
@@ -383,8 +375,8 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 			Message msg = messages[i];
 			try {
 				msg.decode(options);
-			} catch(AblyException e) {
-				Log.e(TAG, "Unexpected exception decrypting message", e);
+			} catch (MessageDecodeException e) {
+				Log.e(TAG, String.format("%s on channel %s", e.errorInfo.message, name));
 			}
 			/* populate fields derived from protocol message */
 			if(msg.connectionId == null) msg.connectionId = message.connectionId;
@@ -408,8 +400,8 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 			PresenceMessage msg = messages[i];
 			try {
 				msg.decode(options);
-			} catch(AblyException e) {
-				Log.e(TAG, "Unexpected exception decrypting message", e);
+			} catch (MessageDecodeException e) {
+				Log.e(TAG, String.format("%s on channel %s", e.errorInfo.message, name));
 			}
 			/* populate fields derived from protocol message */
 			if(msg.connectionId == null) msg.connectionId = message.connectionId;

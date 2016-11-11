@@ -68,7 +68,7 @@ public class BaseMessage implements Cloneable {
 			builder.append(" id=").append(id);
 	}
 
-	public void decode(ChannelOptions opts) throws AblyException {
+	public void decode(ChannelOptions opts) throws MessageDecodeException {
 		if(encoding != null) {
 			String[] xforms = encoding.split("\\/");
 			int i = 0, j = xforms.length;
@@ -76,40 +76,40 @@ public class BaseMessage implements Cloneable {
 				while((i = j) > 0) {
 					Matcher match = xformPattern.matcher(xforms[--j]);
 					if(!match.matches()) break;
-					String xform = match.group(1).intern();
-					if(xform == "base64") {
-						try {
-							data = Base64Coder.decode((String) data);
-						}
-						catch (IllegalArgumentException e) {
-							Log.e(TAG, "Invalid base64 data received");
-							break;
-						}
-						continue;
-					}
-					if(xform == "utf-8") {
-						try { data = new String((byte[])data, "UTF-8"); } catch(UnsupportedEncodingException e) {}
-						continue;
-					}
-					if(xform == "json") {
-						try {
-							String jsonText = ((String)data).trim();
-							data = Serialisation.gsonParser.parse(jsonText);
-						}
-						catch(JsonParseException e) {
-							Log.e(TAG, "Invalid JSON data received");
-							break;
-						}
-						continue;
-					}
-					if(xform == "cipher") {
-						if(opts != null && opts.encrypted) {
-							data = opts.getCipher().decrypt((byte[]) data);
+					switch(match.group(1)) {
+						case "base64":
+							try {
+								data = Base64Coder.decode((String) data);
+							} catch (IllegalArgumentException e) {
+								throw MessageDecodeException.fromDescription("Invalid base64 data received");
+							}
 							continue;
-						}
-						else {
-							Log.i(TAG, "Encrypted message received but encryption is not set up");
-						}
+
+						case "utf-8":
+							try { data = new String((byte[])data, "UTF-8"); } catch(UnsupportedEncodingException e) {}
+							continue;
+
+						case "json":
+							try {
+								String jsonText = ((String)data).trim();
+								data = Serialisation.gsonParser.parse(jsonText);
+							} catch(JsonParseException e) {
+								throw MessageDecodeException.fromDescription("Invalid JSON data received");
+							}
+							continue;
+
+						case "cipher":
+							if(opts != null && opts.encrypted) {
+								try {
+									data = opts.getCipher().decrypt((byte[]) data);
+								} catch(AblyException e) {
+									throw MessageDecodeException.fromDescription(e.errorInfo.message);
+								}
+								continue;
+							}
+							else {
+								throw MessageDecodeException.fromDescription("Encrypted message received but encryption is not set up");
+							}
 					}
 					break;
 				}
@@ -179,26 +179,29 @@ public class BaseMessage implements Cloneable {
 	/* Msgpack processing */
 	boolean readField(MessageUnpacker unpacker, String fieldName, MessageFormat fieldType) throws IOException {
 		boolean result = true;
-		if(fieldName == "timestamp") {
-			timestamp = unpacker.unpackLong();
-		} else if(fieldName == "id") {
-			id = unpacker.unpackString();
-		} else if(fieldName == "clientId") {
-			clientId = unpacker.unpackString();
-		} else if(fieldName == "connectionId") {
-			connectionId = unpacker.unpackString();
-		} else if(fieldName == "encoding") {
-			encoding = unpacker.unpackString();
-		} else if(fieldName == "data") {
-			if(fieldType.getValueType().isBinaryType()) {
-				byte[] byteData = new byte[unpacker.unpackBinaryHeader()];
-				unpacker.readPayload(byteData);
-				data = byteData;
-			} else {
-				data = unpacker.unpackString();
-			}
-		} else {
-			result = false;
+		switch (fieldName) {
+			case "timestamp":
+				timestamp = unpacker.unpackLong(); break;
+			case "id":
+				id = unpacker.unpackString(); break;
+			case "clientId":
+				clientId = unpacker.unpackString(); break;
+			case "connectionId":
+				connectionId = unpacker.unpackString(); break;
+			case "encoding":
+				encoding = unpacker.unpackString(); break;
+			case "data":
+				if(fieldType.getValueType().isBinaryType()) {
+					byte[] byteData = new byte[unpacker.unpackBinaryHeader()];
+					unpacker.readPayload(byteData);
+					data = byteData;
+				} else {
+					data = unpacker.unpackString();
+				}
+				break;
+			default:
+				result = false;
+				break;
 		}
 		return result;
 	}

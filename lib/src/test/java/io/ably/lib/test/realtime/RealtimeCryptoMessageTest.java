@@ -7,6 +7,7 @@ import java.io.IOException;
 
 import javax.crypto.spec.IvParameterSpec;
 
+import io.ably.lib.types.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -15,10 +16,6 @@ import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.common.Setup.TestVars;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ChannelOptions;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.Message;
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Crypto;
 import io.ably.lib.util.Crypto.CipherParams;
@@ -71,7 +68,9 @@ public class RealtimeCryptoMessageTest {
 
 				/* decode (ie remove any base64 encoding) */
 				testMessage.decode(null);
-				encryptedMessage.decode(null);
+				try {
+					encryptedMessage.decode(null);
+				} catch (MessageDecodeException e) {}
 
 				/* reset channel cipher, to ensure it uses the given iv */
 				ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
@@ -125,7 +124,9 @@ public class RealtimeCryptoMessageTest {
 
 				/* decode (ie remove any base64 encoding) */
 				testMessage.decode(null);
-				encryptedMessage.decode(null);
+				try {
+					encryptedMessage.decode(null);
+				} catch (MessageDecodeException e) {}
 
 				/* reset channel cipher, to ensure it uses the given iv */
 				ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
@@ -179,7 +180,9 @@ public class RealtimeCryptoMessageTest {
 
 				/* decode (ie remove any base64 encoding) */
 				testMessage.decode(null);
-				encryptedMessage.decode(null);
+				try {
+					encryptedMessage.decode(null);
+				} catch (MessageDecodeException e) {}
 
 				/* reset channel cipher, to ensure it uses the given iv */
 				ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
@@ -233,7 +236,9 @@ public class RealtimeCryptoMessageTest {
 
 				/* decode (ie remove any base64 encoding) */
 				testMessage.decode(null);
-				encryptedMessage.decode(null);
+				try {
+					encryptedMessage.decode(null);
+				} catch (MessageDecodeException e) {}
 
 				/* reset channel cipher, to ensure it uses the given iv */
 				ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};

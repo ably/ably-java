@@ -3,6 +3,7 @@ package io.ably.lib.types;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+import io.ably.lib.util.Log;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
@@ -112,9 +113,15 @@ public class MessageSerializer {
 					messages = readJSON(body);
 				else if("application/x-msgpack".equals(contentType))
 					messages = readMsgpack(body);
-				if(messages != null)
-					for(Message message : messages)
-						message.decode(opts);
+				if(messages != null) {
+					for (Message message : messages) {
+						try {
+							message.decode(opts);
+						} catch (MessageDecodeException e) {
+							Log.e(TAG, e.errorInfo.message);
+						}
+					}
+				}
 				return messages;
 			} catch(IOException e) {
 				throw AblyException.fromThrowable(e);
@@ -125,4 +132,6 @@ public class MessageSerializer {
 	}
 
 	private static BodyHandler<Message> messageResponseHandler = new MessageBodyHandler(null);
+
+	private static final String TAG = MessageSerializer.class.getName();
 }

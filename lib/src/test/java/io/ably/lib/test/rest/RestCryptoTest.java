@@ -9,11 +9,7 @@ import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Channel;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.common.Setup.TestVars;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ChannelOptions;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.Message;
-import io.ably.lib.types.PaginatedResult;
+import io.ably.lib.types.*;
 import io.ably.lib.util.Crypto;
 import io.ably.lib.util.Crypto.CipherParams;
 
@@ -340,10 +336,12 @@ public class RestCryptoTest {
 		try {
 			ChannelOptions rx_channelOpts = new ChannelOptions() {{ encrypted = true; }};
 			Channel rx_publish = ably_text.channels.get("persisted:crypto_publish_key_mismatch", rx_channelOpts);
-			rx_publish.history(null);
-			fail("crypto_publish_key_mismatch: Expected exception");
+
+			PaginatedResult<Message> messages = rx_publish.history(new Param[] { new Param("direction", "backwards"), new Param("limit", "2") });
+			for (Message failedMessage: messages.items())
+				assertTrue("Check decrypt failure", failedMessage.encoding.contains("cipher"));
 		} catch (AblyException e) {
-			assertEquals("Expect decrypt padding failure", e.getCause().getClass(), javax.crypto.BadPaddingException.class);
+			fail("Didn't expect exception");
 		}
 	}
 
