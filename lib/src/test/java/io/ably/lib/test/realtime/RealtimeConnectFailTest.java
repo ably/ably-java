@@ -318,7 +318,7 @@ public class RealtimeConnectFailTest {
 		}
 		catch (AblyException e) {
 			e.printStackTrace();
-			fail("Unexepcted exception");
+			fail("Unexpected exception");
 		}
 		finally {
 			if (ably != null)
