@@ -534,6 +534,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				break;
 			case connected:
 				/* we were connected, so retry immediately */
+				setSuspendTime();
 				requestState(ConnectionState.connecting);
 				break;
 			case suspended:
@@ -545,7 +546,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				break;
 			}
 		}
-		if(stateChange != null)
+		if(stateChange != null && stateChange.state != state.state)
 			setState(stateChange);
 	}
 

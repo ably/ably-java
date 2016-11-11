@@ -13,17 +13,18 @@ public class Defaults {
 	public static final String HOST_REALTIME        = "realtime.ably.io";
 	public static final int PORT                    = 80;
 	public static final int TLS_PORT                = 443;
-	public static final int TIMEOUT_CONNECT         = 15000;
-	public static final int TIMEOUT_DISCONNECT      = 30000;
-	public static final int TIMEOUT_SUSPEND         = 120000;
+
+	public static int TIMEOUT_CONNECT               = 15000;
+	public static int TIMEOUT_DISCONNECT            = 30000;
+	public static int TIMEOUT_SUSPEND               = 120000;
 	/* TO313 */
-	public static final int TIMEOUT_HTTP_OPEN = 4000;
+	public static int TIMEOUT_HTTP_OPEN = 4000;
 	/* TO314 */
-	public static final int TIMEOUT_HTTP_REQUEST = 15000;
+	public static int TIMEOUT_HTTP_REQUEST = 15000;
 	/* DF1b */
-	public static final long realtimeRequestTimeout = 10000L;
+	public static long realtimeRequestTimeout = 10000L;
 	/* CD2h (but no default in the spec) */
-	public static final long maxIdleInterval = 20000L;
+	public static long maxIdleInterval = 20000L;
 
 
 	public static final String[] TRANSPORTS         = new String[]{"web_socket"};
