@@ -1,10 +1,12 @@
-/*plugins {
+plugins {
   id 'de.fuerstenau.buildconfig' version '1.1.7'
-}*/
+}
 
-/*buildConfig {
+buildConfig {
+  packageName 'io.ably.lib'
+  clsName 'AblyBuildConfig'
   buildConfigField 'String', 'LIBRARY_NAME', 'java'
-}*/
+}
 
 apply plugin: 'java'
 
