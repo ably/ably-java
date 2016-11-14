@@ -5,7 +5,7 @@ import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
-//import io.ably.BuildConfig;
+import io.ably.lib.AblyBuildConfig;
 import io.ably.lib.types.Param;
 
 /**
@@ -18,8 +18,7 @@ public class HttpUtils {
 	public static final String X_ABLY_VERSION_HEADER = "X-Ably-Version";
 	public static final String X_ABLY_VERSION_VALUE = "0.8";
 	public static final String X_ABLY_LIB_HEADER = "X-Ably-Lib";
-	//public static final String X_ABLY_LIB_VALUE = String.format("%s-%s", BuildConfig.LIBRARY_NAME, BuildConfig.VERSION);
-	public static final String X_ABLY_LIB_VALUE = String.format("%s-%s", "JAVA", "0.8.5");
+	public static final String X_ABLY_LIB_VALUE = String.format("%s-%s", AblyBuildConfig.LIBRARY_NAME, AblyBuildConfig.VERSION);
 
 	public static final String DEFAULT_FORMAT = "json";
 	public static Map<String, String> mimeTypes;
