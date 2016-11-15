@@ -12,7 +12,6 @@ allprojects {
 
   repositories {
       jcenter()
-      maven { url "https://raw.github.com/paddybyers/Java-WebSocket/mvn-repo/" }
   }
 
   tasks.withType(Javadoc) {
