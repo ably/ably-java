@@ -1126,4 +1126,54 @@ public class RealtimeChannelTest {
 				ably.close();
 		}
 	}
+
+
+	@Test
+	public void channel_state_on_connection_suspended() {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			(new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and attach */
+			final String channelName = "test_state_channel";
+			final Channel channel = ably.channels.get(channelName);
+			channel.attach();
+
+			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+			channelWaiter.waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			/* switch to suspended state */
+			ably.connection.connectionManager.requestState(ConnectionState.suspended);
+
+			channelWaiter.waitFor(ChannelState.suspended);
+			assertEquals("Verify suspended state reached", channel.state, ChannelState.suspended);
+
+			/* switch to connected state */
+			ably.connection.connectionManager.requestState(ConnectionState.connected);
+
+			channelWaiter.waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			/* switch to failed state */
+			ably.connection.connectionManager.requestState(ConnectionState.failed);
+
+			channelWaiter.waitFor(ChannelState.failed);
+			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
+
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("Unexpected exception");
+		} finally {
+			if (ably != null)
+				ably.close();
+		}
+	}
 }
