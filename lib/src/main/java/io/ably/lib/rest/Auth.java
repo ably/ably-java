@@ -325,9 +325,9 @@ public class Auth {
 	 */
 	public static class TokenRequest extends TokenParams {
 
-		TokenRequest() {}
+		public TokenRequest() {}
 
-		TokenRequest(TokenParams params) {
+		public TokenRequest(TokenParams params) {
 			this.ttl = params.ttl;
 			this.capability = params.capability;
 			this.clientId = params.clientId;
