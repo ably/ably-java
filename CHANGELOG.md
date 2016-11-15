@@ -1,7 +1,15 @@
 # Change Log
 
-## [v0.8.5](https://github.com/ably/ably-java/tree/v0.8.5)
+## [v0.8.6](https://github.com/ably/ably-java/tree/v0.8.6)
+[Full Changelog](https://github.com/ably/ably-java/compare/v0.8.5...v0.8.6)
 
+**Merged pull requests:**
+
+- Relocated java-websocket library to bintray [\#229](https://github.com/ably/ably-java/pull/229) ([psolstice](https://github.com/psolstice))
+- Made Auth.TokenRequest constructors public [\#228](https://github.com/ably/ably-java/pull/228) ([psolstice](https://github.com/psolstice))
+- Fixed BuildConfig problems [\#227](https://github.com/ably/ably-java/pull/227) ([psolstice](https://github.com/psolstice))
+
+## [v0.8.5](https://github.com/ably/ably-java/tree/v0.8.5)
 [Full Changelog](https://github.com/ably/ably-java/compare/v0.8.4...v0.8.5)
 
 **Implemented enhancements:**
