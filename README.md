@@ -47,26 +47,6 @@ If using proguard, the following flags should avoid `ClassNotFoundException` iss
 -keep class io.ably.lib.** { *; } -keep class org.msgpack.core.** { *; }
 ```
 
-## Tests
-
-Tests are based on JUnit, and there are separate suites for the REST and Realtime libraries, with gradle tasks
-for the JRE-specific library:
-
-    gradle java:testRestSuite
-
-    gradle java:testRealtimeSuite
-
-To run tests against a specific host, specify in the environment:
-
-    env ABLY_ENV=staging gradle testRealtimeSuite
-
-Tests will run against sandbox by default.
-
-Tests can be run on the Android-specific library. An Android device must be connected,
-either a real device or the Android emulator.
-
-    gradle android:connectedTest
-
 ## Installation ##
 
 Download [the latest JAR](https://github.com/ably/ably-java/releases) or grab via Gradle:
@@ -348,6 +328,26 @@ while(result.hasNext()) {
 ```java
 long serviceTime = ably.time();
 ```
+
+## Tests
+
+Tests are based on JUnit, and there are separate suites for the REST and Realtime libraries, with gradle tasks
+for the JRE-specific library:
+
+    gradle java:testRestSuite
+
+    gradle java:testRealtimeSuite
+
+To run tests against a specific host, specify in the environment:
+
+    env ABLY_ENV=staging gradle testRealtimeSuite
+
+Tests will run against sandbox by default.
+
+Tests can be run on the Android-specific library. An Android device must be connected,
+either a real device or the Android emulator.
+
+    gradle android:connectedTest
 
 ## Release notes
 
