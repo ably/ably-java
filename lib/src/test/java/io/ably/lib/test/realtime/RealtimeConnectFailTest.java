@@ -7,6 +7,9 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import io.ably.lib.realtime.CompletionListener;
+import io.ably.lib.transport.ConnectionManager;
+import io.ably.lib.transport.ITransport;
+import io.ably.lib.transport.WebSocketTransport;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.rest.Auth;
@@ -406,4 +409,54 @@ public class RealtimeConnectFailTest {
 				ablyRealtime.close();
 		}
 	}
+
+	/**
+	 * Throw exception in authCallback repeatedly and check if connection goes into suspended state
+	 */
+	@Test
+	public void connect_auth_failure_and_suspend_test() {
+		AblyRealtime ablyRealtime = null;
+		AblyRest ablyRest = null;
+		int oldTimeout = Defaults.TIMEOUT_SUSPEND;
+
+		try {
+			/* Make test faster */
+
+			Defaults.TIMEOUT_SUSPEND = 5000;
+
+			final int[] numberOfAuthCalls = new int[] {0};
+
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+
+			ablyRest = new AblyRest(opts);
+			final TokenDetails tokenDetails = ablyRest.auth.requestToken(new TokenParams() {{ ttl = 3000L; }}, null);
+			assertNotNull("Expected token value", tokenDetails.token);
+
+			ClientOptions optsForRealtime = testVars.createOptions();
+			optsForRealtime.authCallback = new TokenCallback() {
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					if (numberOfAuthCalls[0]++ == 0)
+						return tokenDetails;
+					else
+						throw AblyException.fromErrorInfo(new ErrorInfo("Auth failure", 90000));
+				}
+			};
+			optsForRealtime.tokenDetails = tokenDetails;
+			ablyRealtime = new AblyRealtime(optsForRealtime);
+
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ablyRealtime.connection);
+			connectionWaiter.waitFor(ConnectionState.suspended);
+			assertEquals(ablyRealtime.connection.state, ConnectionState.suspended);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			Defaults.TIMEOUT_SUSPEND = oldTimeout;
+			if (ablyRealtime != null)
+				ablyRealtime.close();
+		}
+	}
+
 }
