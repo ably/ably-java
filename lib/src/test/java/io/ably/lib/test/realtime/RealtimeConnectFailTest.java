@@ -417,20 +417,22 @@ public class RealtimeConnectFailTest {
 	public void connect_auth_failure_and_suspend_test() {
 		AblyRealtime ablyRealtime = null;
 		AblyRest ablyRest = null;
-		int oldTimeout = Defaults.TIMEOUT_SUSPEND;
+		int oldSuspendTimeout = Defaults.TIMEOUT_SUSPEND;
+		int oldDisconnectTimeout = Defaults.TIMEOUT_DISCONNECT;
 
 		try {
 			/* Make test faster */
-
-			Defaults.TIMEOUT_SUSPEND = 5000;
+			Defaults.TIMEOUT_SUSPEND = 2000;
+			Defaults.TIMEOUT_DISCONNECT = 1000;
 
 			final int[] numberOfAuthCalls = new int[] {0};
+			final boolean[] reachedFinalState = new boolean[] {false};
 
 			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 
 			ablyRest = new AblyRest(opts);
-			final TokenDetails tokenDetails = ablyRest.auth.requestToken(new TokenParams() {{ ttl = 3000L; }}, null);
+			final TokenDetails tokenDetails = ablyRest.auth.requestToken(new TokenParams() {{ ttl = 5000L; }}, null);
 			assertNotNull("Expected token value", tokenDetails.token);
 
 			ClientOptions optsForRealtime = testVars.createOptions();
@@ -443,17 +445,34 @@ public class RealtimeConnectFailTest {
 						throw AblyException.fromErrorInfo(new ErrorInfo("Auth failure", 90000));
 				}
 			};
-			optsForRealtime.tokenDetails = tokenDetails;
 			ablyRealtime = new AblyRealtime(optsForRealtime);
 
-			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ablyRealtime.connection);
-			connectionWaiter.waitFor(ConnectionState.suspended);
-			assertEquals(ablyRealtime.connection.state, ConnectionState.suspended);
+			ablyRealtime.connection.on(new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					System.out.println(String.format("New state: %s", state.current));
+					synchronized (reachedFinalState) {
+						reachedFinalState[0] = state.current == ConnectionState.closed ||
+								state.current == ConnectionState.suspended ||
+								state.current == ConnectionState.failed;
+						reachedFinalState.notify();
+					}
+				}
+			});
+
+			synchronized (reachedFinalState) {
+				while (!reachedFinalState[0]) {
+					try { reachedFinalState.wait(); } catch (InterruptedException e) {}
+				}
+			}
+
+			assertEquals("Verify suspended state", ablyRealtime.connection.state, ConnectionState.suspended);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
-			Defaults.TIMEOUT_SUSPEND = oldTimeout;
+			Defaults.TIMEOUT_SUSPEND = oldSuspendTimeout;
+			Defaults.TIMEOUT_DISCONNECT = oldDisconnectTimeout;
 			if (ablyRealtime != null)
 				ablyRealtime.close();
 		}
