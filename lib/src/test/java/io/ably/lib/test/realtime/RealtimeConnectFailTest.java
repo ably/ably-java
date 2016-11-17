@@ -188,15 +188,17 @@ public class RealtimeConnectFailTest {
 			ClientOptions optsForToken = optsTestVars.createOptions(optsTestVars.keys[0].keyStr);
 			optsForToken.logLevel = Log.VERBOSE;
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
-			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 8000L; }}, null);
+			final TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 8000L; }}, null);
 			assertNotNull("Expected token value", tokenDetails.token);
 
 			/* implement callback, using Ably instance with key */
 			final class TokenGenerator implements TokenCallback {
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
-					++cbCount;
-					return ablyForToken.auth.requestToken(params, null);
+					if(cbCount++ == 0)
+						return tokenDetails;
+					else
+						return ablyForToken.auth.requestToken(params, null);
 				}
 				public int getCbCount() { return cbCount; }
 				private int cbCount = 0;
@@ -207,7 +209,7 @@ public class RealtimeConnectFailTest {
 			/* create Ably realtime instance without key */
 			final TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = testVars.createOptions();
-			opts.tokenDetails = tokenDetails;
+			//opts.tokenDetails = tokenDetails;
 			opts.authCallback = authCallback;
 			opts.logLevel = Log.VERBOSE;
 			AblyRealtime ably = new AblyRealtime(opts);
@@ -218,15 +220,14 @@ public class RealtimeConnectFailTest {
 			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
 
 			/* wait for disconnected state (on token expiry), with timeout */
-			connectionWaiter.waitFor(ConnectionState.disconnected, 1, 30000L);
-			assertEquals("Verify disconnected state is reached", ConnectionState.disconnected, ably.connection.state);
+			assertTrue("Verify disconnected state is reached", connectionWaiter.waitFor(ConnectionState.disconnected, 1, 30000L));
 
 			/* wait for connected state (on token renewal) */
 			connectionWaiter.waitFor(ConnectionState.connected, 1, 30000L);
 			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
 
 			/* verify that our token generator was called */
-			assertEquals("Expected token generator to be called", 1, authCallback.getCbCount());
+			assertEquals("Expected token generator to be called", 2, authCallback.getCbCount());
 
 			/* end */
 			ably.close();
@@ -374,6 +375,9 @@ public class RealtimeConnectFailTest {
 			};
 			optsForRealtime.tokenDetails = tokenDetails;
 			ablyRealtime = new AblyRealtime(optsForRealtime);
+
+			(new ConnectionWaiter(ablyRealtime.connection)).waitFor(ConnectionState.connected);
+
 			ablyRealtime.connection.on(new ConnectionStateListener() {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange state) {
@@ -387,8 +391,6 @@ public class RealtimeConnectFailTest {
 			connectionWaiter.waitFor(ConnectionState.failed);
 
 			List<ConnectionState> correctHistory = Arrays.asList(
-					ConnectionState.connecting,
-					ConnectionState.connected,
 					ConnectionState.disconnected,
 					ConnectionState.connecting,
 					ConnectionState.disconnected,

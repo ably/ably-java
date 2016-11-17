@@ -307,8 +307,9 @@ public class Helpers {
 		 * @param state
 		 * @param count
 		 * @param time timeout in ms
+		 * @return true if state was reached
 		 */
-		public synchronized void waitFor(ConnectionState state, int count, long time) {
+		public synchronized boolean waitFor(ConnectionState state, int count, long time) {
 			Log.d(TAG, "waitFor(state=" + state + ", count=" + count + ", time=" + time + ")");
 			long targetTime = System.currentTimeMillis() + time;
 			long remaining = time;
@@ -316,7 +317,9 @@ public class Helpers {
 				try { wait(remaining); } catch(InterruptedException e) {}
 				remaining = targetTime - System.currentTimeMillis();
 			}
-			Log.d(TAG, "waitFor done: state=" + connection.state + ", count=" + stateCounts.get(state).value + ")");
+			Log.d(TAG, "waitFor done: state=" + connection.state + ", count=" +
+					(stateCounts.get(state) != null ? stateCounts.get(state).value : "0") + ")");
+			return remaining > 0;
 		}
 
 		/**
