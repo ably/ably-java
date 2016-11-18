@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import io.ably.lib.rest.Auth;
 import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.rest.Auth;
 import org.junit.AfterClass;
@@ -175,10 +176,14 @@ public class RealtimeConnectFailTest {
 	public void connect_token_expire_disconnected() {
 		try {
 			final Setup.TestVars optsTestVars = Setup.getTestVars();
-			ClientOptions optsForToken = optsTestVars.createOptions(optsTestVars.keys[0].keyStr);
-			//optsForToken.logLevel = Log.VERBOSE;
+			final ClientOptions optsForToken = optsTestVars.createOptions(optsTestVars.keys[0].keyStr);
+			optsForToken.logLevel = Log.VERBOSE;
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
-			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 8000L; }}, null);
+			Auth.AuthOptions restAuthOptions = new Auth.AuthOptions() {{
+				key = optsForToken.key;
+				queryTime = true;
+			}};
+			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 8000L; }}, restAuthOptions);
 			assertNotNull("Expected token value", tokenDetails.token);
 
 			/* implement callback, using Ably instance with key */
@@ -199,7 +204,7 @@ public class RealtimeConnectFailTest {
 			ClientOptions opts = testVars.createOptions();
 			opts.tokenDetails = tokenDetails;
 			opts.authCallback = authCallback;
-			//opts.logLevel = Log.VERBOSE;
+			opts.logLevel = Log.VERBOSE;
 			AblyRealtime ably = new AblyRealtime(opts);
 
 			ably.connection.on(new ConnectionStateListener() {
