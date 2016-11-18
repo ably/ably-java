@@ -17,6 +17,7 @@ import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.TokenCallback;
 import io.ably.lib.rest.Auth.TokenDetails;
 import io.ably.lib.rest.Auth.TokenParams;
@@ -161,9 +162,13 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 	@Test
 	public void connect_token_expire_disconnected() {
 		try {
-			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
+			final ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
-			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 8000L; }}, null);
+			Auth.AuthOptions restAuthOptions = new Auth.AuthOptions() {{
+				key = optsForToken.key;
+				queryTime = true;
+			}};
+			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 8000L; }}, restAuthOptions);
 			assertNotNull("Expected token value", tokenDetails.token);
 
 			/* implement callback, using Ably instance with key */
@@ -183,7 +188,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 			ClientOptions opts = createOptions();
 			opts.tokenDetails = tokenDetails;
 			opts.authCallback = authCallback;
-			//opts.logLevel = Log.VERBOSE;
+			opts.logLevel = Log.VERBOSE;
 			AblyRealtime ably = new AblyRealtime(opts);
 
 			ably.connection.on(new ConnectionStateListener() {
