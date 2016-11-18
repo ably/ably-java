@@ -1,5 +1,17 @@
 # Change Log
 
+## [v0.8.7](https://github.com/ably/ably-java/tree/v0.8.7)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v0.8.6...v0.8.7)
+
+**Fixed bugs:**
+
+- Transport state change events suppressed after loss of network [\#233](https://github.com/ably/ably-java/issues/233)
+
+**Merged pull requests:**
+
+- Fixed issue 233, made changes to allow ITransport mocking [\#236](https://github.com/ably/ably-java/pull/236) ([psolstice](https://github.com/psolstice))
+
 ## [v0.8.6](https://github.com/ably/ably-java/tree/v0.8.6)
 [Full Changelog](https://github.com/ably/ably-java/compare/v0.8.5...v0.8.6)
 
