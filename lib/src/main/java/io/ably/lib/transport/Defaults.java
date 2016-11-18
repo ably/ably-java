@@ -28,7 +28,7 @@ public class Defaults {
 
 
 	public static final String[] TRANSPORTS         = new String[]{"web_socket"};
-	public static final String TRANSPORT = "io.ably.lib.transport.WebSocketTransport$Factory";
+	public static String TRANSPORT = "io.ably.lib.transport.WebSocketTransport$Factory";
 	public static final int HTTP_MAX_RETRY_COUNT    = 3;
 
 	public static int getPort(ClientOptions options) {

@@ -231,8 +231,13 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 	synchronized void notifyState(StateIndication state) {
 		Log.v(TAG, "notifyState(): notifying " + state.state + "; id = " + connection.key);
-		indicatedState = state;
-		notify();
+		if (Thread.currentThread() == mgrThread) {
+			handleStateChange(state);
+		}
+		else {
+			indicatedState = state;
+			notify();
+		}
 	}
 
 	public void ping(final CompletionListener listener) {

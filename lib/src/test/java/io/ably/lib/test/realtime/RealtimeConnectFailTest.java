@@ -7,6 +7,9 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import io.ably.lib.realtime.CompletionListener;
+import io.ably.lib.transport.ConnectionManager;
+import io.ably.lib.transport.ITransport;
+import io.ably.lib.transport.WebSocketTransport;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.rest.Auth;
@@ -184,16 +187,20 @@ public class RealtimeConnectFailTest {
 			final Setup.TestVars optsTestVars = Setup.getTestVars();
 			ClientOptions optsForToken = optsTestVars.createOptions(optsTestVars.keys[0].keyStr);
 			optsForToken.logLevel = Log.VERBOSE;
+			final Auth.AuthOptions authOptions = new Auth.AuthOptions();
+			authOptions.queryTime = true;
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
-			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 8000L; }}, null);
+			final TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 8000L; }}, authOptions);
 			assertNotNull("Expected token value", tokenDetails.token);
 
 			/* implement callback, using Ably instance with key */
 			final class TokenGenerator implements TokenCallback {
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
-					++cbCount;
-					return ablyForToken.auth.requestToken(params, null);
+					if(cbCount++ == 0)
+						return tokenDetails;
+					else
+						return ablyForToken.auth.requestToken(params, authOptions);
 				}
 				public int getCbCount() { return cbCount; }
 				private int cbCount = 0;
@@ -204,7 +211,6 @@ public class RealtimeConnectFailTest {
 			/* create Ably realtime instance without key */
 			final TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = testVars.createOptions();
-			opts.tokenDetails = tokenDetails;
 			opts.authCallback = authCallback;
 			opts.logLevel = Log.VERBOSE;
 			AblyRealtime ably = new AblyRealtime(opts);
@@ -215,20 +221,17 @@ public class RealtimeConnectFailTest {
 			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
 
 			/* wait for disconnected state (on token expiry), with timeout */
-			connectionWaiter.waitFor(ConnectionState.disconnected, 1, 30000L);
-			assertEquals("Verify disconnected state is reached", ConnectionState.disconnected, ably.connection.state);
+			assertTrue("Verify disconnected state is reached", connectionWaiter.waitFor(ConnectionState.disconnected, 1, 30000L));
 
 			/* wait for connected state (on token renewal) */
-			connectionWaiter.waitFor(ConnectionState.connected, 1, 30000L);
-			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
+			assertTrue("Verify connected state is reached", connectionWaiter.waitFor(ConnectionState.connected, 2, 30000L));
 
 			/* verify that our token generator was called */
-			assertEquals("Expected token generator to be called", 1, authCallback.getCbCount());
+			assertEquals("Expected token generator to be called", 2, authCallback.getCbCount());
 
 			/* end */
 			ably.close();
 			connectionWaiter.waitFor(ConnectionState.closed);
-			assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
@@ -371,6 +374,9 @@ public class RealtimeConnectFailTest {
 			};
 			optsForRealtime.tokenDetails = tokenDetails;
 			ablyRealtime = new AblyRealtime(optsForRealtime);
+
+			(new ConnectionWaiter(ablyRealtime.connection)).waitFor(ConnectionState.connected);
+
 			ablyRealtime.connection.on(new ConnectionStateListener() {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange state) {
@@ -384,8 +390,6 @@ public class RealtimeConnectFailTest {
 			connectionWaiter.waitFor(ConnectionState.failed);
 
 			List<ConnectionState> correctHistory = Arrays.asList(
-					ConnectionState.connecting,
-					ConnectionState.connected,
 					ConnectionState.disconnected,
 					ConnectionState.connecting,
 					ConnectionState.disconnected,
@@ -406,4 +410,73 @@ public class RealtimeConnectFailTest {
 				ablyRealtime.close();
 		}
 	}
+
+	/**
+	 * Throw exception in authCallback repeatedly and check if connection goes into suspended state
+	 */
+	@Test
+	public void connect_auth_failure_and_suspend_test() {
+		AblyRealtime ablyRealtime = null;
+		AblyRest ablyRest = null;
+		int oldSuspendTimeout = Defaults.TIMEOUT_SUSPEND;
+		int oldDisconnectTimeout = Defaults.TIMEOUT_DISCONNECT;
+
+		try {
+			/* Make test faster */
+			Defaults.TIMEOUT_SUSPEND = 2000;
+			Defaults.TIMEOUT_DISCONNECT = 1000;
+
+			final int[] numberOfAuthCalls = new int[] {0};
+			final boolean[] reachedFinalState = new boolean[] {false};
+
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+
+			ablyRest = new AblyRest(opts);
+			final TokenDetails tokenDetails = ablyRest.auth.requestToken(new TokenParams() {{ ttl = 5000L; }}, null);
+			assertNotNull("Expected token value", tokenDetails.token);
+
+			ClientOptions optsForRealtime = testVars.createOptions();
+			optsForRealtime.authCallback = new TokenCallback() {
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					if (numberOfAuthCalls[0]++ == 0)
+						return tokenDetails;
+					else
+						throw AblyException.fromErrorInfo(new ErrorInfo("Auth failure", 90000));
+				}
+			};
+			ablyRealtime = new AblyRealtime(optsForRealtime);
+
+			ablyRealtime.connection.on(new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					System.out.println(String.format("New state: %s", state.current));
+					synchronized (reachedFinalState) {
+						reachedFinalState[0] = state.current == ConnectionState.closed ||
+								state.current == ConnectionState.suspended ||
+								state.current == ConnectionState.failed;
+						reachedFinalState.notify();
+					}
+				}
+			});
+
+			synchronized (reachedFinalState) {
+				while (!reachedFinalState[0]) {
+					try { reachedFinalState.wait(); } catch (InterruptedException e) {}
+				}
+			}
+
+			assertEquals("Verify suspended state", ablyRealtime.connection.state, ConnectionState.suspended);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			Defaults.TIMEOUT_SUSPEND = oldSuspendTimeout;
+			Defaults.TIMEOUT_DISCONNECT = oldDisconnectTimeout;
+			if (ablyRealtime != null)
+				ablyRealtime.close();
+		}
+	}
+
 }
