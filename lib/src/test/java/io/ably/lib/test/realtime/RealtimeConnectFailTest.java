@@ -209,7 +209,6 @@ public class RealtimeConnectFailTest {
 			/* create Ably realtime instance without key */
 			final TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = testVars.createOptions();
-			//opts.tokenDetails = tokenDetails;
 			opts.authCallback = authCallback;
 			opts.logLevel = Log.VERBOSE;
 			AblyRealtime ably = new AblyRealtime(opts);
