@@ -61,7 +61,7 @@ public class TokenAuth {
 	}
 
 	private static boolean tokenValid(TokenDetails tokenDetails) {
-		return tokenDetails.expires > Auth.timestamp();
+		return tokenDetails.expires > Auth.serverTimestamp();
 	}
 
 	private Auth auth;
