@@ -296,9 +296,10 @@ public class Helpers {
 		 */
 		public synchronized void waitFor(ConnectionState state, int count) {
 			Log.d(TAG, "waitFor(state=" + state + ", count=" + count + ")");
-			while(connection.state != state || stateCounts.get(state).value < count)
+
+			while(getStateCount(state) < count)
 				try { wait(); } catch(InterruptedException e) {}
-			Log.d(TAG, "waitFor done: state=" + connection.state + ", count=" + stateCounts.get(state).value + ")");
+			Log.d(TAG, "waitFor done: state=" + connection.state + ", count=" + getStateCount(state) + ")");
 		}
 
 		/**
@@ -313,13 +314,14 @@ public class Helpers {
 			Log.d(TAG, "waitFor(state=" + state + ", count=" + count + ", time=" + time + ")");
 			long targetTime = System.currentTimeMillis() + time;
 			long remaining = time;
-			while((connection.state != state || stateCounts.get(state).value < count) && remaining > 0) {
+			while(getStateCount(state) < count && remaining > 0) {
 				try { wait(remaining); } catch(InterruptedException e) {}
 				remaining = targetTime - System.currentTimeMillis();
 			}
-			Log.d(TAG, "waitFor done: state=" + connection.state + ", count=" +
-					(stateCounts.get(state) != null ? stateCounts.get(state).value : "0") + ")");
-			return remaining > 0;
+			int stateCount = getStateCount(state);
+			Log.d(TAG, "waitFor done: state=" + connection.state +
+					", count=" + Integer.toString(stateCount)+ ")");
+			return stateCount >= count;
 		}
 
 		/**
@@ -351,6 +353,14 @@ public class Helpers {
 				counter.incr();
 				notify();
 			}
+		}
+
+		/**
+		 * Helper function
+		 */
+		private synchronized int getStateCount(ConnectionState state) {
+			Counter counter = stateCounts.get(state);
+			return counter != null ? counter.value : 0;
 		}
 
 		/**
