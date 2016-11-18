@@ -51,6 +51,7 @@ public interface ITransport {
 
 		public Param[] getConnectParams(Param[] baseParams) {
 			List<Param> paramList = new ArrayList<Param>(Arrays.asList(baseParams));
+			paramList.add(new Param("v", HttpUtils.X_ABLY_VERSION_VALUE));
 			if(options.useBinaryProtocol)
 				paramList.add(new Param("format", "msgpack"));
 			if(!options.echoMessages)
