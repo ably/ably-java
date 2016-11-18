@@ -681,7 +681,7 @@ public class Auth {
 
 	public void onAuthError(ErrorInfo err) {
 		/* we're only interested in token expiry errors */
-		if(err.code == 40140)
+		if(err.code >= 40140 && err.code < 40150)
 			tokenAuth.clear();
 	}
 

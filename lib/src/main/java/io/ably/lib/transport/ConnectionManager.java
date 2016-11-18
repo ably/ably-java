@@ -518,7 +518,6 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		if(stateChange.state == ConnectionState.disconnected) {
 			switch(state.state) {
 			case connecting:
-			case disconnected:
 				stateChange = checkSuspend(stateChange);
 				pendingConnect = null;
 				break;
