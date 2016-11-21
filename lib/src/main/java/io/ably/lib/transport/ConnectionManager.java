@@ -2,6 +2,7 @@ package io.ably.lib.transport;
 
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.debug.RawProtocolListener;
+import io.ably.lib.http.TokenAuth;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.CompletionListener;
@@ -236,6 +237,10 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			change = new ConnectionStateListener.ConnectionStateChange(state.state, newState.state, newStateInfo.timeout, reason);
 			newStateInfo.host = newState.currentHost;
 			state = newStateInfo;
+
+			if (change.current != change.previous)
+				/* any state change clears pending reauth flag */
+				pendingReauth = false;
 		}
 
 		/* broadcast state change */
@@ -411,6 +416,12 @@ public class ConnectionManager implements Runnable, ConnectListener {
 					break;
 				case nack:
 					onNack(message);
+					break;
+				case auth:
+					synchronized (this) {
+						pendingReauth = true;
+						notify();
+					}
 					break;
 				default:
 					onChannelMessage(message);
@@ -654,7 +665,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	}
 
 	private void tryWait(long timeout) {
-		if(requestedState == null && indicatedState == null)
+		if(requestedState == null && indicatedState == null && !pendingReauth)
 			try {
 				if(timeout == 0) wait();
 				else wait(timeout);
@@ -690,13 +701,16 @@ public class ConnectionManager implements Runnable, ConnectListener {
 						indicatedState = null;
 						break;
 					}
-	
+
 					/* if our state wants us to retry on timer expiry, do that */
 					if(state.retry) {
 						requestState(ConnectionState.connecting);
 						continue;
 					}
-	
+
+					if(pendingReauth)
+						handleReauth();
+
 					/* no indicated state or requested action, so the timer
 					 * expired while we were in the connecting/closing state */
 					stateChange = checkSuspend(new StateIndication(ConnectionState.disconnected, REASON_TIMEDOUT));
@@ -708,6 +722,25 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		synchronized(this) {
 			if(mgrThread == thisThread)
 				mgrThread = null;
+		}
+	}
+
+	private void handleReauth() {
+		pendingReauth = false;
+
+		if (state.state == ConnectionState.connected) {
+			Log.v(TAG, "Server initiated reauth");
+
+			/*
+			 * It is a server initiated reauth, it is issued while previous token is still valid for ~30 seconds,
+			 * we have to clear cached token and get a new one
+			 */
+			try {
+				ably.auth.renew();
+			} catch (AblyException e) {
+				/* report error in connected->connected state change */
+				setState(new StateIndication(state.state, e.errorInfo));
+			}
 		}
 	}
 
@@ -1032,6 +1065,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	private StateInfo state;
 	private StateIndication indicatedState, requestedState;
 	private ConnectParams pendingConnect;
+	private boolean pendingReauth;
 	private ITransport transport;
 	private long suspendTime;
 	private long msgSerial;
