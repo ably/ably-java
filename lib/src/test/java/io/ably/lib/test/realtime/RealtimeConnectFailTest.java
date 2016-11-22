@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import io.ably.lib.realtime.ConnectionStateListener;
+import io.ably.lib.rest.Auth;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -167,32 +168,23 @@ public class RealtimeConnectFailTest {
 	}
 
 	/**
-	 * Verify that the server issues reauth message 30 seconds before token expiration time, authCallback is
-	 * called to obtain new token and in-place re-authorization takes place with connection staying in connected
-	 * state
+	 * Verify that the connection enters the disconnected state, after a token
+	 * used for successful connection expires
 	 */
 	@Test
-	public void connect_token_expire_inplace_reauth() {
+	public void connect_token_expire_disconnected() {
 		try {
 			final Setup.TestVars optsTestVars = Setup.getTestVars();
 			ClientOptions optsForToken = optsTestVars.createOptions(optsTestVars.keys[0].keyStr);
 			optsForToken.logLevel = Log.VERBOSE;
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
-			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 38000L; }}, null);
+			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 8000L; }}, null);
 			assertNotNull("Expected token value", tokenDetails.token);
-
-            final boolean[] flags = new boolean[] {
-                    false, /* authCallback is called */
-                    false  /* state other than connected is reached */
-            };
 
 			/* implement callback, using Ably instance with key */
 			final class TokenGenerator implements TokenCallback {
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
-                    synchronized (flags) {
-                        flags[0] = true;
-                    }
 					++cbCount;
 					return ablyForToken.auth.requestToken(params, null);
 				}
@@ -210,25 +202,88 @@ public class RealtimeConnectFailTest {
 			opts.logLevel = Log.VERBOSE;
 			AblyRealtime ably = new AblyRealtime(opts);
 
-            ably.connection.on(new ConnectionStateListener() {
-                @Override
-                public void onConnectionStateChanged(ConnectionStateChange state) {
-                    if (state.previous == ConnectionState.connected) {
-                        synchronized (flags) {
-                            flags[1] = true;
-                            flags.notify();
-                        }
-                    }
-                }
-            });
+			/* wait for connected state */
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+			connectionWaiter.waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
 
-            synchronized (flags) {
-                try {
-                    flags.wait(15000);
-                } catch (InterruptedException e) {}
-            }
+			/* wait for disconnected state (on token expiry), with timeout */
+			connectionWaiter.waitFor(ConnectionState.disconnected, 1, 30000L);
+			assertEquals("Verify disconnected state is reached", ConnectionState.disconnected, ably.connection.state);
 
-            assertTrue("Verify that token generation was called", flags[0]);
+			/* wait for connected state (on token renewal) */
+			connectionWaiter.waitFor(ConnectionState.connected, 1, 30000L);
+			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
+
+			/* verify that our token generator was called */
+			assertEquals("Expected token generator to be called", 1, authCallback.getCbCount());
+
+			/* end */
+			ably.close();
+			connectionWaiter.waitFor(ConnectionState.closed);
+			assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Verify that the server issues reauth message 30 seconds before token expiration time, authCallback is
+	 * called to obtain new token and in-place re-authorization takes place with connection staying in connected
+	 * state
+	 */
+	@Test
+	public void connect_token_expire_inplace_reauth() {
+		try {
+			final Setup.TestVars optsTestVars = Setup.getTestVars();
+			ClientOptions optsForToken = optsTestVars.createOptions(optsTestVars.keys[0].keyStr);
+			optsForToken.logLevel = Log.VERBOSE;
+			final AblyRest ablyForToken = new AblyRest(optsForToken);
+			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 34000L; }}, null);
+			assertNotNull("Expected token value", tokenDetails.token);
+
+			final boolean[] flags = new boolean[] {
+					false, /* authCallback is called */
+					false  /* state other than connected is reached */
+			};
+
+			/* create Ably realtime instance without key */
+			final TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions();
+			opts.tokenDetails = tokenDetails;
+			opts.authCallback = new TokenCallback() {
+				/* implement callback, using Ably instance with key */
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					synchronized (flags) {
+						flags[0] = true;
+					}
+					return ablyForToken.auth.requestToken(params, null);
+				}
+			};
+			opts.logLevel = Log.VERBOSE;
+			AblyRealtime ably = new AblyRealtime(opts);
+
+			ably.connection.on(new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					if (state.previous == ConnectionState.connected) {
+						synchronized (flags) {
+							flags[1] = true;
+							flags.notify();
+						}
+					}
+				}
+			});
+
+			synchronized (flags) {
+				try {
+					flags.wait(8000);
+				} catch (InterruptedException e) {}
+			}
+
+			assertTrue("Verify that token generation was called", flags[0]);
 			assertFalse("Verify that connection didn't leave connected state", flags[1]);
 
 		} catch (AblyException e) {
