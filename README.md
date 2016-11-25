@@ -347,7 +347,7 @@ Tests will run against sandbox by default.
 Tests can be run on the Android-specific library. An Android device must be connected,
 either a real device or the Android emulator.
 
-    gradle android:connectedTest
+    gradle android:connectedAndroidTest
 
 ## Release notes
 
