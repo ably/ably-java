@@ -1,3 +1,7 @@
+plugins {
+  id 'de.fuerstenau.buildconfig' version '1.1.7'
+}
+
 apply plugin: 'java'
 apply from: 'maven.gradle'
 
@@ -5,9 +9,24 @@ sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
 apply from: '../dependencies.gradle'
-dependencies {
-  compile project(':lib')
-  testCompile project (path: ':lib', configuration: 'testsConfiguration')
+
+buildConfig {
+  packageName 'io.ably.lib'
+  clsName 'BuildConfig'
+  buildConfigField 'String', 'LIBRARY_NAME', 'java'
+}
+
+sourceSets {
+  main {
+    java {
+      srcDirs = ['../lib/src/main/java']
+    }
+  }
+  test {
+    java {
+      srcDirs = ['src/test/java', '../lib/src/test/java']
+    }
+  }
 }
 
 // Default jar: add io.ably classes from :lib dependency.
@@ -37,7 +56,6 @@ task fullJar(type: Jar) {
 }
 
 assemble.dependsOn fullJar
-assemble.dependsOn ':lib:javadocJar'
 
 configurations {
   fullConfiguration
