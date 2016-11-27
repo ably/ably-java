@@ -1,4 +1,4 @@
-package io.ably.lib.test.android;
+package io.ably.lib.test.loader;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
@@ -6,9 +6,8 @@ import android.util.Log;
 
 import java.io.InputStream;
 import java.io.IOException;
-import io.ably.lib.test.common.ResourceLoader;
 
-public class AssetResourceLoader implements ResourceLoader {
+public class ResourceLoader {
 	public byte[] read(String resourceName) throws IOException {
 		InputStream is = null;
 		byte[] bytes = null;
@@ -26,6 +25,6 @@ public class AssetResourceLoader implements ResourceLoader {
 		}
 	}
 
-	private static final String TAG = AssetResourceLoader.class.getName();
+	private static final String TAG = ResourceLoader.class.getName();
 	private Context instrumentationCtx = InstrumentationRegistry.getContext();
 }
