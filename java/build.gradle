@@ -68,7 +68,7 @@ artifacts {
 
 task testRealtimeSuite(type: Test) {
   filter {
-    includeTestsMatching "*JavaRealtimeSuite"
+    includeTestsMatching "*RealtimeSuite"
   }
   beforeTest { descriptor ->
     logger.lifecycle("Running test: " + descriptor)
@@ -78,7 +78,7 @@ task testRealtimeSuite(type: Test) {
 
 task testRestSuite(type: Test) {
   filter {
-    includeTestsMatching "*JavaRestSuite"
+    includeTestsMatching "*RestSuite"
   }
   beforeTest { descriptor ->
     logger.lifecycle("Running test: " + descriptor)

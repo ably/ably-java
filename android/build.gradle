@@ -17,7 +17,7 @@ android {
         versionName version
         setProperty("archivesBaseName", "ably-android-$versionName")
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-        testInstrumentationRunnerArgument "class", "io.ably.lib.test.rest.AndroidRestSuite,io.ably.lib.test.realtime.AndroidRealtimeSuite"
+        testInstrumentationRunnerArgument "class", "io.ably.lib.test.rest.RestSuite,io.ably.lib.test.realtime.RealtimeSuite"
         testInstrumentationRunnerArgument "timeout_msec", "150000"
     }
 
