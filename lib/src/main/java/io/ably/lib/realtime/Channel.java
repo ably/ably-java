@@ -5,6 +5,7 @@ import io.ably.lib.http.PaginatedQuery;
 import io.ably.lib.http.Http.BodyHandler;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ConnectionManager.QueuedMessage;
+import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ErrorInfo;
@@ -19,11 +20,7 @@ import io.ably.lib.types.ProtocolMessage.Flag;
 import io.ably.lib.util.EventEmitter;
 import io.ably.lib.util.Log;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 
 /**
@@ -270,11 +267,45 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 			 * attach operation for the channel times out and the channel
 			 * returns to the SUSPENDED state (see #RTL4f), then an ERROR event
 			 * on the Channel with Ably error code 91200 should be emitted.
-			 *
-			 * The timeout part is not implemented yet, and there is no
-			 * implementation of an error event on Channel. */
+			 */
+			final Timer attachTimer = new Timer();
+			final boolean[] timerActive = new boolean[]{true};
+
 			try {
-				attach();
+				attach(new CompletionListener() {
+					private void clearTimer () {
+						synchronized (Channel.this) {
+							timerActive[0] = false;
+							attachTimer.cancel();
+							attachTimer.purge();
+						}
+					}
+
+					@Override
+					public void onSuccess() {
+						clearTimer();
+					}
+
+					@Override
+					public void onError(ErrorInfo reason) {
+						clearTimer();
+					}
+				});
+
+				attachTimer.schedule(
+						new TimerTask() {
+							@Override
+							public void run() {
+								String errorMessage = String.format("Attach timed out for channel %s", name);
+								Log.v(TAG, errorMessage);
+								synchronized (Channel.this) {
+									if (!timerActive[0] || state != ChannelState.attaching)
+										return;
+									setSuspended(new ErrorInfo(errorMessage, 91200));
+								}
+							}
+						}, Defaults.realtimeRequestTimeout);
+
 			} catch (AblyException e) {
 				Log.e(TAG, "setConnected(): Unable to initiate attach; channel = " + name, e);
 			}
@@ -302,7 +333,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 * ATTACHING or ATTACHED channel state will transition to SUSPENDED.
 	 * This also gets called when a connection enters CONNECTED but with a
 	 * non-fatal error for a failed reconnect (RTN16e). */
-	public void setSuspended(ErrorInfo reason) {
+	public synchronized void setSuspended(ErrorInfo reason) {
 		if (state == ChannelState.attached || state == ChannelState.attaching) {
 			Log.v(TAG, "setSuspended(); channel = " + name);
 			setState(ChannelState.suspended, reason);
