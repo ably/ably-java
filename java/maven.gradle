@@ -40,10 +40,10 @@ uploadArchives {
             }
         }
 
-        // Exclude dependency on lib subproject.
+        // Exclude test dependencies
         pom.whenConfigured {
             p -> p.dependencies = p.dependencies.findAll {
-                dep -> dep.artifactId != "lib"
+                dep -> dep.scope == 'compile'
             }
         }
 
