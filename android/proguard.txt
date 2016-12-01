@@ -1,0 +1,2 @@
+-keep public class io.ably.lib.transport.WebSocketTransport$Factory {*;}
+-keep class org.msgpack.core.** {*;}

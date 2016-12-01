@@ -19,6 +19,7 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArgument "class", "io.ably.lib.test.rest.RestSuite,io.ably.lib.test.realtime.RealtimeSuite,io.ably.lib.test.android.AndroidSuite"
         testInstrumentationRunnerArgument "timeout_msec", "150000"
+        consumerProguardFiles 'proguard.txt'
     }
 
     buildTypes {
