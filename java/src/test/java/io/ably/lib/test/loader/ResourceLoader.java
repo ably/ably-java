@@ -1,12 +1,13 @@
-package io.ably.lib.test.common.jre;
+package io.ably.lib.test.loader;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
-import io.ably.lib.test.common.ResourceLoader;
-
-public class JreResourceLoader implements ResourceLoader {
+/**
+ * Implementation of ResourceLoader for JRE environment
+ */
+public class ResourceLoader {
 	public byte[] read(String resourceName) throws IOException {
 		FileInputStream fis = null;
 		try {
@@ -18,5 +19,5 @@ public class JreResourceLoader implements ResourceLoader {
 			if(fis != null)
 				fis.close();
 		}
-	} 
+	}
 }

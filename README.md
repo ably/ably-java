@@ -347,7 +347,7 @@ Tests will run against sandbox by default.
 Tests can be run on the Android-specific library. An Android device must be connected,
 either a real device or the Android emulator.
 
-    gradle android:connectedTest
+    gradle android:connectedAndroidTest
 
 ## Release notes
 
@@ -363,15 +363,15 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 
 ### Publishing to JCenter (Maven)
 
-* Go to the home page https://bintray.com/ably-io/ably/java. Select [New version](https://bintray.com/ably-io/ably/java/new/version), enter the new version such as "0.8.7" in name and save
-* Run `gradle java:generateRelease` locally to generate the files
+* Go to the home page https://bintray.com/ably-io/ably/ably-java. Select [New version](https://bintray.com/ably-io/ably/ably-java/new/version), enter the new version such as "0.8.7" in name and save
+* Run `gradle java:assembleRelease` locally to generate the files
 * Open local relative folder such as `/lib/build/release/0.8.7/`
 * Then go to the new version in JFrog Bintray and go to files such as https://bintray.com/ably-io/ably/java/0.8.7#files/io/ably/ably-java, then click on Upload files
 * Type in `io/ably/ably-java/0.8.7` into "Target Repository Path" ensuring the correct version is included. The drag in the files in `java/build/release/0.8.7/`
 * You will see a notice "You have 8 unpublished item(s) for this version", make sure you click "Publish". Wait a few minutes and check that your version has all the necessary files at https://bintray.com/ably-io/ably/java/v0.8.7?sort=&order=#files/io/ably/ably-java/0.8.7 for example.
 
-Similarly for the Android release at `https://bintray.com/ably-io/ably/android`.
-Run `gradle android:generateRelease` locally to generate the files, and drag in the files in
+Similarly for the Android release at `https://bintray.com/ably-io/ably/ably-android`.
+Run `gradle android:assembleRelease` locally to generate the files, and drag in the files in
 `android/build/release/0.8.7/`.
 
 ## Support, feedback and troubleshooting
