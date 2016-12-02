@@ -61,8 +61,7 @@ AblyRealtime will attempt to connect automatically once new instance is created.
 ably.connection.on(new ConnectionStateListener() {
 	@Override
 	public void onConnectionStateChanged(ConnectionStateChange state) {
-    System.out.println("New state is " + change.current.name());
-
+		System.out.println("New state is " + change.current.name());
 		switch (state.current) {
 			case connected: {
 				// Successful connection
@@ -102,7 +101,7 @@ Subscribe to all events:
 channel.subscribe(new MessageListener() {
 	@Override
 	public void onMessage(Message[] messages) {
-    for(Message message : messages) {
+		for(Message message : messages) {
 			System.out.println("Received `" + message.name + "` message with data: " + message.data);
 		}
 	}
@@ -116,7 +115,7 @@ String[] events = new String[] {"event1", "event2"};
 channel.subscribe(events, new MessageListener() {
 	@Override
 	public void onMessage(Message[] messages) {
-    System.out.println("Received `" + messages[0].name + "` message with data: " + message[0].data);
+		System.out.println("Received `" + messages[0].name + "` message with data: " + message[0].data);
 	}
 });
 ```
@@ -127,12 +126,12 @@ channel.subscribe(events, new MessageListener() {
 channel.publish("greeting", "Hello World!", new CompletionListener() {
 	@Override
 	public void onSuccess() {
-    System.out.println("Message successfully sent");
+		System.out.println("Message successfully sent");
 	}
 
 	@Override
 	public void onError(ErrorInfo reason) {
-    System.err.println("Unable to publish message; err = " + reason.message);
+		System.err.println("Unable to publish message; err = " + reason.message);
 	}
 });
 ```
@@ -144,8 +143,8 @@ PaginatedResult<Message> result = channel.history(null);
 
 System.out.println(result.items().length + " messages received in first page");
 while(result.hasNext()) {
-  result = result.getNext();
-  System.out.println(result.items().length + " messages received in next page");
+	result = result.getNext();
+	System.out.println(result.items().length + " messages received in next page");
 }
 ```
 
@@ -172,8 +171,8 @@ PaginatedResult<PresenceMessage> result = channel.presence.history(null);
 
 System.out.println(result.items().length + " messages received in first page");
 while(result.hasNext()) {
-  result = result.getNext();
-  System.out.println(result.items().length + " messages received in next page");
+	result = result.getNext();
+	System.out.println(result.items().length + " messages received in next page");
 }
 ```
 
@@ -235,6 +234,7 @@ Sharing synchronously,
 ```java
 channel.publish(messages);
 ```
+
 Sharing asynchronously,
 
 ```java
@@ -246,7 +246,7 @@ channel.publishAsync(messages, new CompletionListener() {
 
 	@Override
 	public void onError(ErrorInfo reason) {
-    System.err.println("Unable to publish message; err = " + reason.message);
+		System.err.println("Unable to publish message; err = " + reason.message);
 	}
 });
 ```
@@ -259,8 +259,8 @@ PaginatedResult<Message> result = channel.history(null);
 
 System.out.println(result.items().length + " messages received in first page");
 while(result.hasNext()) {
-  result = result.getNext();
-  System.out.println(result.items().length + " messages received in next page");
+	result = result.getNext();
+	System.out.println(result.items().length + " messages received in next page");
 }
 ```
 
@@ -271,8 +271,8 @@ PaginatedResult<PresenceMessage> result = channel.presence.get(null);
 
 System.out.println(result.items().length + " messages received in first page");
 while(result.hasNext()) {
-  result = result.getNext();
-  System.out.println(result.items().length + " messages received in next page");
+	result = result.getNext();
+	System.out.println(result.items().length + " messages received in next page");
 }
 ```
 
@@ -283,8 +283,8 @@ PaginatedResult<PresenceMessage> result = channel.presence.history(null);
 
 System.out.println(result.items().length + " messages received in first page");
 while(result.hasNext()) {
-  result = result.getNext();
-  System.out.println(result.items().length + " messages received in next page");
+	result = result.getNext();
+	System.out.println(result.items().length + " messages received in next page");
 }
 ```
 
@@ -302,8 +302,8 @@ PaginatedResult<Stats> stats = ably.stats(null);
 
 System.out.println(result.items().length + " messages received in first page");
 while(result.hasNext()) {
-  result = result.getNext();
-  System.out.println(result.items().length + " messages received in next page");
+	result = result.getNext();
+	System.out.println(result.items().length + " messages received in next page");
 }
 ```
 
