@@ -10,35 +10,44 @@ Visit https://www.ably.io/documentation for a complete API reference and more ex
 
 ## Installation ##
 
-Grab the library with gradle:
+Reference the library by including a compile dependency reference inyour gradle build file.
+
+For [Java](https://bintray.com/ably-io/ably/ably-java/_latestVersion):
 
 ```groovy
 compile 'io.ably:ably-java:0.8.7'
 ```
 
-or
+For [Android](https://bintray.com/ably-io/ably/ably-android/_latestVersion):
 
 ```groovy
 compile 'io.ably:ably-android:0.8.7'
 ```
 
-## Using the Realtime and REST API
+The library is hosted on the [Jcenter repository](https://bintray.com/ably-io/ably), so you need to ensure that the repo is referenced also; IDEs will typically include this by default:
 
-Previous releases of the Java library included a downloadable JAR; however we now only support download via the Jcenter repository (see [installation](#installation) above). If you want to use a standalone fat JAR (ie containing all dependencies), it can be generated via a gradle task (see [building](#building) below).
+```groovy
+repositories {
+   jcenter()
+}
+```
 
-Please refer to the [documentation](https://www.ably.io/documentation).
+Previous releases of the Java library included a downloadable JAR; however we now only support installation via Maven/Gradle from the Jcenter repository. If you want to use a standalone fat JAR for (ie containing all dependencies), it can be generated via a gradle task (see [building](#building) below); note that this is the "Java" (JRE) library variant only; Android is now supported via an AAR and there is no self-contained AAR build option.
 
 ## Dependencies
 
-JRE 7 or later is required.
-Note that the [Java Unlimited JCE extensions](http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html)
-must be installed in the runtime environment.
+For Java, JRE 7 or later is required. Note that the [Java Unlimited JCE extensions](http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html)
+must be installed in the Java runtime environment.
+
+For Android, 4.0 (API level 14) or later is required.
 
 ## Using the Realtime API ##
 
 ### Introduction ###
 
-All examples assume a client has been created as follows:
+Please refer to the [documentation](https://www.ably.io/documentation) for a full realtime API reference.
+
+The examples below assume a client has been created as follows:
 
 ```java
 AblyRealtime ably = new AblyRealtime("xxxxx");
@@ -204,7 +213,9 @@ channel.on(ChannelState.attached, listener);
 
 ### Introduction ###
 
-All examples assume a client and/or channel has been created as follows:
+Please refer to the [documentation](https://www.ably.io/documentation) for a full REST API reference.
+
+The examples below assume a client and/or channel has been created as follows:
 
 ```java
 AblyRest ably = new AblyRest("xxxxx");
@@ -319,7 +330,6 @@ The Android-specific library AAR is built with:
     gradle android:assemble
 
 (The `ANDROID_HOME` environment variable must be set appropriately.)
-
 
 ## Tests
 
