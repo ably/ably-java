@@ -14,7 +14,7 @@ Reference the library by including a compile dependency reference inyour gradle 
 
 For [Java](https://bintray.com/ably-io/ably/ably-java/_latestVersion):
 
-```groovy
+```
 compile 'io.ably:ably-java:0.8.7'
 ```
 
@@ -28,7 +28,7 @@ The library is hosted on the [Jcenter repository](https://bintray.com/ably-io/ab
 
 ```
 repositories {
-   jcenter()
+	jcenter()
 }
 ```
 
