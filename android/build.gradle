@@ -11,7 +11,7 @@ android {
     defaultConfig {
         buildConfigField 'String', 'LIBRARY_NAME', '"android"'
         buildConfigField 'String', 'VERSION', "\"$version\""
-        minSdkVersion 8
+        minSdkVersion 14
         targetSdkVersion 24
         versionCode 1
         versionName version
