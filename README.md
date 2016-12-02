@@ -1,6 +1,6 @@
 # [Ably](https://www.ably.io)
 
-[ ![Download](https://api.bintray.com/packages/ably-io/ably/ably-java/images/download.svg) ](https://bintray.com/ably-io/ably/ably-java/_latestVersion)
+[ ![Bintray](https://img.shields.io/bintray/v/ably-io/ably/ably-java.svg) ](https://bintray.com/ably-io/ably/ably-java/_latestVersion)
 
 A Java Realtime and REST client library for [Ably Realtime](https://www.ably.io), the realtime messaging and data delivery service.
 
@@ -24,9 +24,7 @@ compile 'io.ably:ably-android:0.8.7'
 
 ## Using the Realtime and REST API
 
-The Realtime library for Java is downloadable as a JAR at our [Github releases page](https://github.com/ably/ably-java/releases). You can either download the full JAR which includes all dependencies, or just the library but it will be your responsibility to ensure alld dependencies are met.
-
-An Android-specific AAR is also available.
+Previous releases of the Java library included a downloadable JAR; however we now only support download via the Jcenter repository (see [installation](#installation) above). If you want to use a standalone fat JAR (ie containing all dependencies), it can be generated via a gradle task (see [building](#building) below).
 
 Please refer to the [documentation](https://www.ably.io/documentation).
 
@@ -306,17 +304,17 @@ long serviceTime = ably.time();
 
 ## Building ##
 
-The library consists of JRE-specific library (in `java/`) that includes the generic library, and a separate Android-specific library (in `android/`). Code in `lib/` is shared between them.
+The library consists of JRE-specific library (in `java/`) and an Android-specific library (in `android/`). The libraries are largely common-sourced; the `lib/` directory contains the common parts.
 
-The JRE-specific library jar is built with:
+The JRE-specific library JAR is built with:
 
     gradle java:jar
 
-There is also a task to build a fat jar containing the dependencies:
+There is also a task to build a fat JAR containing the dependencies:
 
     gradle java:fullJar
 
-The Android-specific library jar is built with:
+The Android-specific library AAR is built with:
 
     gradle android:assemble
 
@@ -387,4 +385,4 @@ To see what has changed in recent versions of Bundler, see the [CHANGELOG](CHANG
 
 ## License
 
-Copyright (c) 2015 Ably Real-time Ltd, Licensed under the Apache License, Version 2.0.  Refer to [LICENSE](LICENSE) for the license terms.
+Copyright (c) 2015-2016 Ably Real-time Ltd, Licensed under the Apache License, Version 2.0.  Refer to [LICENSE](LICENSE) for the license terms.
