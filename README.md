@@ -1,6 +1,6 @@
 # [Ably](https://www.ably.io)
 
-[ ![Download](https://api.bintray.com/packages/ably-io/ably/ably-java/images/download.svg) ](https://bintray.com/ably-io/ably/ably-java/_latestVersion)
+[ ![Bintray](https://img.shields.io/bintray/v/ably-io/ably/ably-java.svg) ](https://bintray.com/ably-io/ably/ably-java/_latestVersion)
 
 A Java Realtime and REST client library for [Ably Realtime](https://www.ably.io), the realtime messaging and data delivery service.
 
@@ -8,64 +8,46 @@ A Java Realtime and REST client library for [Ably Realtime](https://www.ably.io)
 
 Visit https://www.ably.io/documentation for a complete API reference and more examples.
 
-## Using the Realtime and REST API
-
-The Realtime library for Java is downloadable as a JAR at our [Github releases page](https://github.com/ably/ably-java/releases). You can either download the full JAR which includes all dependencies, or just the library but it will be your responsibility to ensure alld dependencies are met.
-
-An Android-specific AAR is also available.
-
-Please refer to the [documentation](https://www.ably.io/documentation).
-
-## Dependencies
-
-JRE 7 or later is required.
-Note that the [Java Unlimited JCE extensions](http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html)
-must be installed in the runtime environment.
-
-## Building ##
-
-The library consists of a generic Java library (in `lib/`), a JRE-specific library
-(in `java/`) that includes the generic library, and a separate Android-specific library (in `android/`).
-The JRE-specific library jar is built with:
-
-    gradle java:jar
-
-There is also a task to build a fat jar containing the dependencies:
-
-    gradle java:fullJar
-
-The Android-specific library jar is built with:
-
-    gradle android:assemble
-
-(The `ANDROID_HOME` environment variable must be set appropriately.)
-
-#### Proguard ####
-
-If using proguard, the following flags should avoid `ClassNotFoundException` issues:
-```
--keep class io.ably.lib.** { *; } -keep class org.msgpack.core.** { *; }
-```
-
 ## Installation ##
 
-Download [the latest JAR](https://github.com/ably/ably-java/releases) or grab via Gradle:
+Reference the library by including a compile dependency reference inyour gradle build file.
+
+For [Java](https://bintray.com/ably-io/ably/ably-java/_latestVersion):
 
 ```groovy
 compile 'io.ably:ably-java:0.8.7'
 ```
 
-or
+For [Android](https://bintray.com/ably-io/ably/ably-android/_latestVersion):
 
 ```groovy
 compile 'io.ably:ably-android:0.8.7'
 ```
 
+The library is hosted on the [Jcenter repository](https://bintray.com/ably-io/ably), so you need to ensure that the repo is referenced also; IDEs will typically include this by default:
+
+```groovy
+repositories {
+   jcenter()
+}
+```
+
+Previous releases of the Java library included a downloadable JAR; however we now only support installation via Maven/Gradle from the Jcenter repository. If you want to use a standalone fat JAR for (ie containing all dependencies), it can be generated via a gradle task (see [building](#building) below); note that this is the "Java" (JRE) library variant only; Android is now supported via an AAR and there is no self-contained AAR build option.
+
+## Dependencies
+
+For Java, JRE 7 or later is required. Note that the [Java Unlimited JCE extensions](http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html)
+must be installed in the Java runtime environment.
+
+For Android, 4.0 (API level 14) or later is required.
+
 ## Using the Realtime API ##
 
 ### Introduction ###
 
-All examples assume a client has been created as follows:
+Please refer to the [documentation](https://www.ably.io/documentation) for a full realtime API reference.
+
+The examples below assume a client has been created as follows:
 
 ```java
 AblyRealtime ably = new AblyRealtime("xxxxx");
@@ -231,7 +213,9 @@ channel.on(ChannelState.attached, listener);
 
 ### Introduction ###
 
-All examples assume a client and/or channel has been created as follows:
+Please refer to the [documentation](https://www.ably.io/documentation) for a full REST API reference.
+
+The examples below assume a client and/or channel has been created as follows:
 
 ```java
 AblyRest ably = new AblyRest("xxxxx");
@@ -329,6 +313,24 @@ while(result.hasNext()) {
 long serviceTime = ably.time();
 ```
 
+## Building ##
+
+The library consists of JRE-specific library (in `java/`) and an Android-specific library (in `android/`). The libraries are largely common-sourced; the `lib/` directory contains the common parts.
+
+The JRE-specific library JAR is built with:
+
+    gradle java:jar
+
+There is also a task to build a fat JAR containing the dependencies:
+
+    gradle java:fullJar
+
+The Android-specific library AAR is built with:
+
+    gradle android:assemble
+
+(The `ANDROID_HOME` environment variable must be set appropriately.)
+
 ## Tests
 
 Tests are based on JUnit, and there are separate suites for the REST and Realtime libraries, with gradle tasks
@@ -363,14 +365,14 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 
 ### Publishing to JCenter (Maven)
 
-* Go to the home page https://bintray.com/ably-io/ably/ably-java. Select [New version](https://bintray.com/ably-io/ably/ably-java/new/version), enter the new version such as "0.8.7" in name and save
+* Go to the home page for the package; eg https://bintray.com/ably-io/ably/ably-java. Select [New version](https://bintray.com/ably-io/ably/ably-java/new/version), enter the new version such as "0.8.7" in name and save
 * Run `gradle java:assembleRelease` locally to generate the files
 * Open local relative folder such as `/lib/build/release/0.8.7/`
-* Then go to the new version in JFrog Bintray and go to files such as https://bintray.com/ably-io/ably/java/0.8.7#files/io/ably/ably-java, then click on Upload files
+* Then go to the new version in JFrog Bintray; eg https://bintray.com/ably-io/ably/ably-java/0.8.7, then click on the link to upload via the UI in the "Upload files" section
 * Type in `io/ably/ably-java/0.8.7` into "Target Repository Path" ensuring the correct version is included. The drag in the files in `java/build/release/0.8.7/`
-* You will see a notice "You have 8 unpublished item(s) for this version", make sure you click "Publish". Wait a few minutes and check that your version has all the necessary files at https://bintray.com/ably-io/ably/java/v0.8.7?sort=&order=#files/io/ably/ably-java/0.8.7 for example.
+* You will see a notice "You have 8 unpublished item(s) for this version", make sure you click "Publish". Wait a few minutes and check that your version has all the necessary files at https://bintray.com/ably-io/ably/ably-java/0.8.7?sort=&order=#files/io/ably/ably-java/0.8.7 for example.
 
-Similarly for the Android release at `https://bintray.com/ably-io/ably/ably-android`.
+Similarly for the Android release at https://bintray.com/ably-io/ably/ably-android.
 Run `gradle android:assembleRelease` locally to generate the files, and drag in the files in
 `android/build/release/0.8.7/`.
 
@@ -393,4 +395,4 @@ To see what has changed in recent versions of Bundler, see the [CHANGELOG](CHANG
 
 ## License
 
-Copyright (c) 2015 Ably Real-time Ltd, Licensed under the Apache License, Version 2.0.  Refer to [LICENSE](LICENSE) for the license terms.
+Copyright (c) 2015-2016 Ably Real-time Ltd, Licensed under the Apache License, Version 2.0.  Refer to [LICENSE](LICENSE) for the license terms.
