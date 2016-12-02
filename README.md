@@ -20,13 +20,13 @@ compile 'io.ably:ably-java:0.8.7'
 
 For [Android](https://bintray.com/ably-io/ably/ably-android/_latestVersion):
 
-```groovy
+```
 compile 'io.ably:ably-android:0.8.7'
 ```
 
 The library is hosted on the [Jcenter repository](https://bintray.com/ably-io/ably), so you need to ensure that the repo is referenced also; IDEs will typically include this by default:
 
-```groovy
+```
 repositories {
    jcenter()
 }
