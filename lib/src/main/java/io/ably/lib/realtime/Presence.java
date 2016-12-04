@@ -615,14 +615,60 @@ public class Presence {
 			if(residualMembers != null)
 				residualMembers.remove(key);
 
-			/* compare the timestamp of the new item with any existing member (or absent witness) */
-			PresenceMessage existingItem = members.get(key);
-			if(existingItem != null && item.timestamp < existingItem.timestamp) {
-				/* no item supersedes a newer item with the same key */
+			/* check if there is a newer existing member (or absent witness) */
+			if (hasNewerItem(key, item))
 				return false;
-			}
+
 			members.put(key, item);
 			return true;
+		}
+
+		/**
+		 * Determine if there is a newer item already in the map
+		 * @param key key used to search the item in the map
+		 * @param item new presence message to be added
+		 * @return true if there is a newer item
+		 */
+		synchronized boolean hasNewerItem(String key, PresenceMessage item) {
+			PresenceMessage existingItem = members.get(key);
+			if(existingItem == null)
+				return false;
+
+			/*
+			 * (RTP2b1) If either presence message has a connectionId which is not an initial substring
+			 * of its id, compare them by timestamp numerically. (This will be the case when one of them
+			 * is a 'synthesized leave' event sent by realtime to indicate a connection disconnected
+			 * unexpectedly 15s ago. Such messages will have an id that does not correspond to its
+			 * connectionId, as it wasn’t actually published by that connection
+			 */
+			if(item.connectionId != null && existingItem.connectionId != null &&
+					!item.id.startsWith(item.connectionId) && !existingItem.id.startsWith(existingItem.connectionId))
+				return existingItem.timestamp >= item.timestamp;
+
+			/*
+			 * (RTP2b2) Else split the id of both presence messages (which will be of the form
+			 * connid:msgSerial:index, e.g. aaaaaa:0:0) on the separator :, and parse the latter two as
+			 * integers. Compare them first by msgSerial numerically, then (if @msgSerial@s are equal) by
+			 * index numerically, larger being newer in both cases
+			 */
+			String[] itemComponents = item.id.split(":", 3);
+			String[] existingItemComponents = item.id.split(":", 3);
+
+			if(itemComponents.length < 3 || existingItemComponents.length < 3)
+				return false;
+
+			try {
+				long messageSerial = Long.valueOf(itemComponents[1]);
+				long messageIndex = Long.valueOf(itemComponents[2]);
+				long existingMessageSerial = Long.valueOf(existingItemComponents[1]);
+				long existingMessageIndex = Long.valueOf(existingItemComponents[2]);
+
+				return existingMessageSerial > messageSerial ||
+						(existingMessageSerial == messageSerial && existingMessageIndex > messageIndex);
+			}
+			catch(NumberFormatException e) {
+				return false;
+			}
 		}
 
 		/**
