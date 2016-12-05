@@ -217,6 +217,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 *
 	 */
 	private void setAttached(ProtocolMessage message) {
+		clearAttachTimers();
 		boolean resumed = (message.flags & ( 1 << Flag.resumed.ordinal())) != 0;
 		Log.v(TAG, "setAttached(); channel = " + name + ", resumed = " + resumed);
 		attachSerial = message.channelSerial;
@@ -230,6 +231,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	}
 
 	private void setDetached(ErrorInfo reason) {
+		clearAttachTimers();
 		Log.v(TAG, "setDetached(); channel = " + name);
 		setState(ChannelState.detached, reason);
 		failQueuedMessages(reason);
@@ -237,10 +239,97 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	}
 
 	private void setFailed(ErrorInfo reason) {
+		clearAttachTimers();
 		Log.v(TAG, "setFailed(); channel = " + name);
 		setState(ChannelState.failed, reason);
 		failQueuedMessages(reason);
 		presence.setDetached(reason);
+	}
+
+	/* Timer for attach operation */
+	private Timer attachTimer;
+
+	/* Timer for reattaching if attach failed */
+	private Timer reattachTimer;
+
+	/**
+	 * Cancel attach/reattach timers
+	 */
+	synchronized private void clearAttachTimers() {
+		Timer[] timers = new Timer[]{attachTimer, reattachTimer};
+		attachTimer = reattachTimer = null;
+		for (Timer t: timers) {
+			if (t != null) {
+				t.cancel();
+				t.purge();
+			}
+		}
+	}
+
+	/**
+	 * Attach channel, if not attached within timeout set state to suspended and
+	 * set up timer to reattach it later
+	 */
+	synchronized private void attachTimerWithTimeout() {
+		final Timer currentAttachTimer = new Timer();
+		attachTimer = currentAttachTimer;
+
+		try {
+			attach(new CompletionListener() {
+				@Override
+				public void onSuccess() {
+					clearAttachTimers();
+				}
+
+				@Override
+				public void onError(ErrorInfo reason) {
+					clearAttachTimers();
+				}
+			});
+
+			attachTimer.schedule(
+					new TimerTask() {
+						@Override
+						public void run() {
+							String errorMessage = String.format("Attach timed out for channel %s", name);
+							Log.v(TAG, errorMessage);
+							synchronized (Channel.this) {
+								if(attachTimer != currentAttachTimer)
+									return;
+								attachTimer = null;
+								if(state == ChannelState.attaching) {
+									setSuspended(new ErrorInfo(errorMessage, 91200));
+									reattachAfterTimeout();
+								}
+							}
+						}
+					}, Defaults.realtimeRequestTimeout);
+
+		} catch (AblyException e) {
+			Log.e(TAG, "setConnected(): Unable to initiate attach; channel = " + name, e);
+		}
+	}
+
+	/**
+	 * Must be called in suspended state. Wait for timeout specified in clientOptions, and then
+	 * try to attach the channel
+	 */
+	synchronized private void reattachAfterTimeout() {
+		final Timer currentReattachTimer = new Timer();
+		reattachTimer = currentReattachTimer;
+
+		reattachTimer.schedule(new TimerTask() {
+			@Override
+			public void run() {
+				synchronized (Channel.this) {
+					if (currentReattachTimer != reattachTimer)
+						return;
+					reattachTimer = null;
+					if (state == ChannelState.suspended)
+						attachTimerWithTimeout();
+				}
+			}
+		}, ably.options.channelRetryTimeout);
 	}
 
 	/* State changes provoked by ConnectionManager state changes. */
@@ -256,50 +345,9 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 			/* (RTL3d) If the connection state enters the CONNECTED state, then
 			 * a SUSPENDED channel will initiate an attach operation. If the
 			 * attach operation for the channel times out and the channel
-			 * returns to the SUSPENDED state (see #RTL4f), then an ERROR event
-			 * on the Channel with Ably error code 91200 should be emitted.
+			 * returns to the SUSPENDED state (see #RTL4f)
 			 */
-			final Timer attachTimer = new Timer();
-			final boolean[] timerActive = new boolean[]{true};
-
-			try {
-				attach(new CompletionListener() {
-					private void clearTimer () {
-						synchronized (Channel.this) {
-							timerActive[0] = false;
-							attachTimer.cancel();
-							attachTimer.purge();
-						}
-					}
-
-					@Override
-					public void onSuccess() {
-						clearTimer();
-					}
-
-					@Override
-					public void onError(ErrorInfo reason) {
-						clearTimer();
-					}
-				});
-
-				attachTimer.schedule(
-						new TimerTask() {
-							@Override
-							public void run() {
-								String errorMessage = String.format("Attach timed out for channel %s", name);
-								Log.v(TAG, errorMessage);
-								synchronized (Channel.this) {
-									if (!timerActive[0] || state != ChannelState.attaching)
-										return;
-									setSuspended(new ErrorInfo(errorMessage, 91200));
-								}
-							}
-						}, Defaults.realtimeRequestTimeout);
-
-			} catch (AblyException e) {
-				Log.e(TAG, "setConnected(): Unable to initiate attach; channel = " + name, e);
-			}
+			attachTimerWithTimeout();
 		}
 	}
 
@@ -309,6 +357,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 * The Java library does not currently have functionality for an error
 	 * event; it is just an error in the attached->failed state change. */
 	public void setConnectionFailed(ErrorInfo reason) {
+		clearAttachTimers();
 		if (state == ChannelState.attached || state == ChannelState.attaching)
 			setFailed(reason);
 	}
@@ -316,6 +365,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	/** (RTL3b) If the connection state enters the CLOSED state, then an
 	 * ATTACHING or ATTACHED channel state will transition to DETACHED. */
 	public void setConnectionClosed(ErrorInfo reason) {
+		clearAttachTimers();
 		if (state == ChannelState.attached || state == ChannelState.attaching)
 			setDetached(reason);
 	}
@@ -325,6 +375,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 * This also gets called when a connection enters CONNECTED but with a
 	 * non-fatal error for a failed reconnect (RTN16e). */
 	public synchronized void setSuspended(ErrorInfo reason) {
+		clearAttachTimers();
 		if (state == ChannelState.attached || state == ChannelState.attaching) {
 			Log.v(TAG, "setSuspended(); channel = " + name);
 			setState(ChannelState.suspended, reason);

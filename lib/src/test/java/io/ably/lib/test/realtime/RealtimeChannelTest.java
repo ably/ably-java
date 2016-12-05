@@ -1074,11 +1074,12 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			/* Mock transport to block send */
 			Defaults.TRANSPORT = "io.ably.lib.test.realtime.RealtimeChannelTest$MockWebsocketFactory";
 			/* Reduce timeout for test to run faster */
-			Defaults.realtimeRequestTimeout = 2000;
+			Defaults.realtimeRequestTimeout = 1000;
 			MockWebsocketTransport.blockSend = false;
 
 			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			opts.channelRetryTimeout = 1000;
 
 			ably = new AblyRealtime(opts);
 
@@ -1104,12 +1105,20 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			/* Channel should move to attaching state */
 			channelWaiter.waitFor(ChannelState.attaching);
 			/*
-			 * Then within realtimeRequestTimeout interval it should get back to suspended with an error code
-			 * of 91200
+			 * Then within realtimeRequestTimeout interval it should get back to suspended
 			 */
-			ErrorInfo errorInfo = channelWaiter.waitFor(ChannelState.suspended);
+			channelWaiter.waitFor(ChannelState.suspended);
 
-			assertEquals("Verify correct error code", errorInfo.code, 91200);
+			/* In channelRetryTimeout we should get back to attaching state again */
+			channelWaiter.waitFor(ChannelState.attaching);
+			/* And then suspended in another 1 second */
+			channelWaiter.waitFor(ChannelState.suspended);
+
+			/* Enable message sending again */
+			MockWebsocketTransport.blockSend = false;
+
+			/* And wait for attached state of the channel */
+			channelWaiter.waitFor(ChannelState.attached);
 
 		} catch(AblyException e)  {
 			e.printStackTrace();
