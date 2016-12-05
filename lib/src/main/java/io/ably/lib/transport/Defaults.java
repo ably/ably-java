@@ -21,13 +21,13 @@ public class Defaults {
 	/* TO314 */
 	public static final int TIMEOUT_HTTP_REQUEST = 15000;
 	/* DF1b */
-	public static final long realtimeRequestTimeout = 10000L;
+	public static long realtimeRequestTimeout = 10000L;
 	/* CD2h (but no default in the spec) */
 	public static final long maxIdleInterval = 20000L;
 
 
 	public static final String[] TRANSPORTS         = new String[]{"web_socket"};
-	public static final String TRANSPORT = "io.ably.lib.transport.WebSocketTransport$Factory";
+	public static String TRANSPORT = "io.ably.lib.transport.WebSocketTransport$Factory";
 	public static final int HTTP_MAX_RETRY_COUNT    = 3;
 
 	public static int getPort(ClientOptions options) {

@@ -41,10 +41,10 @@ public class WebSocketTransport implements ITransport {
 	}
 
 	/******************
-	 * private constructor
+	 * protected constructor
 	 ******************/
 
-	private WebSocketTransport(TransportParams params, ConnectionManager connectionManager) {
+	protected WebSocketTransport(TransportParams params, ConnectionManager connectionManager) {
 		this.params = params;
 		this.connectionManager = connectionManager;
 		this.channelBinaryMode = params.options.useBinaryProtocol;
