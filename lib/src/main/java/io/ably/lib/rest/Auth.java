@@ -592,8 +592,18 @@ public class Auth {
 		/* timestamp */
 		if(request.timestamp == 0) {
 			if(options.queryTime) {
+				long oldNanoTimeDelta = nanoTimeDelta;
+				long currentNanoTimeDelta = System.currentTimeMillis() - System.nanoTime()/(1000*1000);
+
+				if (timeDelta != Long.MAX_VALUE) {
+					/* system time changed by more than 500ms since last time? */
+					if(Math.abs(oldNanoTimeDelta - currentNanoTimeDelta) > 500)
+						timeDelta = Long.MAX_VALUE;
+				}
+
 				if (timeDelta != Long.MAX_VALUE) {
 					request.timestamp = timestamp() + timeDelta;
+					nanoTimeDelta = currentNanoTimeDelta;
 				} else {
 					request.timestamp = ably.time();
 					timeDelta = request.timestamp - timestamp();
@@ -756,4 +766,9 @@ public class Auth {
 	 * Time delta is server time minus client time, in milliseconds, MAX_VALUE if not obtained yet
 	 */
 	private static long timeDelta = Long.MAX_VALUE;
+	/**
+	 * Time delta between System.nanoTime() and System.currentTimeMillis. If it changes significantly it
+	 * suggests device time/date has changed
+	 */
+	private static long nanoTimeDelta = System.currentTimeMillis() - System.nanoTime()/(1000*1000);
 }
