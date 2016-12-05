@@ -1,15 +1,15 @@
 package io.ably.lib.test.realtime;
 
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.Channel;
+import io.ably.lib.realtime.*;
 import io.ably.lib.realtime.Channel.MessageListener;
-import io.ably.lib.realtime.ChannelState;
-import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.common.Setup.TestVars;
+import io.ably.lib.transport.Defaults;
+import io.ably.lib.transport.ITransport;
+import io.ably.lib.transport.WebSocketTransport;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
@@ -21,6 +21,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import javax.management.DescriptorAccess;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -1176,4 +1177,92 @@ public class RealtimeChannelTest {
 				ably.close();
 		}
 	}
+
+	/*
+	 * Attach channel, suspend connection, resume it and immediately block sending packets failing channel
+	 * reattach. Verify that the channel goes back to suspended state on timeout with correct error code.
+	 */
+	@Test
+	public void channel_reattach_failed() {
+		AblyRealtime ably = null;
+		String oldTransportFractory = Defaults.TRANSPORT;
+		long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
+		try {
+			/* Mock transport to block send */
+			Defaults.TRANSPORT = "io.ably.lib.test.realtime.RealtimeChannelTest$MockWebsocketFactory";
+			/* Reduce timeout for test to run faster */
+			Defaults.realtimeRequestTimeout = 2000;
+			MockWebsocketTransport.blockSend = false;
+
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+
+			ably = new AblyRealtime(opts);
+
+			/* Attach new channel */
+			Channel channel = ably.channels.get("channel_reattach_test");
+			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+			channel.attach();
+			channelWaiter.waitFor(ChannelState.attached);
+
+			/* Suspend connection: channel state should change to suspended */
+			ably.connection.connectionManager.requestState(ConnectionState.suspended);
+			channelWaiter.waitFor(ChannelState.suspended);
+
+			/* Reconnect and immediately block transport's send(). This should fail channel reattach */
+			ably.connection.once(ConnectionState.connected, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					MockWebsocketTransport.blockSend = true;
+				}
+			});
+			ably.connection.connectionManager.requestState(ConnectionState.connected);
+
+			/* Channel should move to attaching state */
+			channelWaiter.waitFor(ChannelState.attaching);
+			/*
+			 * Then within realtimeRequestTimeout interval it should get back to suspended with an error code
+			 * of 91200
+			 */
+			ErrorInfo errorInfo = channelWaiter.waitFor(ChannelState.suspended);
+
+			assertEquals("Verify correct error code", errorInfo.code, 91200);
+
+		} catch(AblyException e)  {
+			e.printStackTrace();
+			fail("Unexpected exception");
+		} finally {
+			if (ably != null)
+				ably.close();
+			/* Restore default values to run other tests */
+			Defaults.TRANSPORT = oldTransportFractory;
+			Defaults.realtimeRequestTimeout = oldRealtimeTimeout;
+		}
+	}
+
+	public static class MockWebsocketFactory implements ITransport.Factory {
+		@Override
+		public ITransport getTransport(ITransport.TransportParams transportParams, ConnectionManager connectionManager) {
+			return new MockWebsocketTransport(transportParams, connectionManager);
+		}
+	}
+
+	/*
+	 * Special transport class that allows blocking send()
+	 */
+	public static class MockWebsocketTransport extends WebSocketTransport {
+		static boolean blockSend = false;
+
+		private MockWebsocketTransport(TransportParams transportParams, ConnectionManager connectionManager) {
+			super(transportParams, connectionManager);
+		}
+
+		@Override
+		public void send(ProtocolMessage msg) throws AblyException {
+			if (!blockSend)
+				super.send(msg);
+		}
+	}
+
 }
+
