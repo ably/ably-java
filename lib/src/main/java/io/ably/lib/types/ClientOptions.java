@@ -163,4 +163,10 @@ public class ClientOptions extends AuthOptions {
 	 * Spec: TO3j11
 	 */
 	public TokenParams defaultTokenParams = new TokenParams();
+
+	/**
+	 * Channel reattach timeout
+	 * Spec: RTL13b
+	 */
+	public int channelRetryTimeout = Defaults.TIMEOUT_CHANNEL_RETRY;
 }
