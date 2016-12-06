@@ -270,7 +270,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 * Attach channel, if not attached within timeout set state to suspended and
 	 * set up timer to reattach it later
 	 */
-	synchronized private void attachTimerWithTimeout() {
+	synchronized private void attachWithTimeout() {
 		final Timer currentAttachTimer = new Timer();
 		attachTimer = currentAttachTimer;
 
@@ -326,7 +326,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 						return;
 					reattachTimer = null;
 					if (state == ChannelState.suspended)
-						attachTimerWithTimeout();
+						attachWithTimeout();
 				}
 			}
 		}, ably.options.channelRetryTimeout);
@@ -347,7 +347,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 			 * attach operation for the channel times out and the channel
 			 * returns to the SUSPENDED state (see #RTL4f)
 			 */
-			attachTimerWithTimeout();
+			attachWithTimeout();
 		}
 	}
 
