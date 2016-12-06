@@ -360,11 +360,10 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		}
 	}
 
-	/** (RTL3a) If the connection state enters the FAILED state, then an
-	 * ATTACHING or ATTACHED channel state will transition to FAILED, set the
-	 * Channel#errorReason and emit the error event.
-	 * The Java library does not currently have functionality for an error
-	 * event; it is just an error in the attached->failed state change. */
+	/** If the connection state enters the FAILED state, then an ATTACHING
+	 * or ATTACHED channel state will transition to FAILED and set the
+	 * Channel#errorReason
+	 */
 	public void setConnectionFailed(ErrorInfo reason) {
 		clearAttachTimers();
 		if (state == ChannelState.attached || state == ChannelState.attaching)
