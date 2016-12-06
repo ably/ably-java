@@ -75,10 +75,4 @@ configurations {
     }
 }
 
-project.gradle.taskGraph.whenReady {
-    connectedDebugAndroidTest {
-        ignoreFailures = true
-    }
-}
-
 apply from: 'maven.gradle'
