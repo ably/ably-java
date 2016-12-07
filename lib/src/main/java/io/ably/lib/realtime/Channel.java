@@ -5,6 +5,7 @@ import io.ably.lib.http.PaginatedQuery;
 import io.ably.lib.http.Http.BodyHandler;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ConnectionManager.QueuedMessage;
+import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.*;
 import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.types.ProtocolMessage.Flag;
