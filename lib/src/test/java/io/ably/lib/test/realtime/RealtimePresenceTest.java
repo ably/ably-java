@@ -1550,20 +1550,16 @@ public class RealtimePresenceTest {
 			channel2.attach();
 			(new ChannelWaiter(channel2)).waitFor(ChannelState.attached);
 
-			ArrayList<PresenceMessage> receivedMessageStack = new ArrayList<>();
+			final ArrayList<PresenceMessage> receivedMessageStack = new ArrayList<>();
 			channel2.presence.subscribe(actions, new Presence.PresenceListener() {
-				List<PresenceMessage> messageStack;
-
 				@Override
 				public void onPresenceMessage(PresenceMessage message) {
-					messageStack.add(message);
+					synchronized (receivedMessageStack) {
+						receivedMessageStack.add(message);
+						receivedMessageStack.notify();
+					}
 				}
-
-				public Presence.PresenceListener setMessageStack(List<PresenceMessage> messageStack) {
-					this.messageStack = messageStack;
-					return this;
-				}
-			}.setMessageStack(receivedMessageStack));
+			});
 
 			/* Start emitting channel with ably client 1 (emitter) */
 			channel1.presence.enter("Hello, #2!", null);
@@ -1574,8 +1570,14 @@ public class RealtimePresenceTest {
 			/* Wait until receiver client (ably2) observes {@code Action.leave}
 			 * is emitted from emitter client (ably1)
 			 */
-			Helpers.PresenceWaiter leavePresenceWaiter = new Helpers.PresenceWaiter(channel2);
-			leavePresenceWaiter.waitFor(ably1.options.clientId, Action.leave);
+			try {
+				synchronized (receivedMessageStack) {
+					while (receivedMessageStack.size() == 0 ||
+							!receivedMessageStack.get(receivedMessageStack.size()-1).clientId.equals(ably1.options.clientId) ||
+							receivedMessageStack.get(receivedMessageStack.size()-1).action != Action.leave)
+						receivedMessageStack.wait();
+				}
+			} catch(InterruptedException e) {}
 
 			/* Validate that,
 			 *	- we received specific actions
