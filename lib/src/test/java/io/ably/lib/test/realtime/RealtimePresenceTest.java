@@ -1941,4 +1941,74 @@ public class RealtimePresenceTest {
 				ably.close();
 		}
 	}
+
+	/**
+	 * Test if after reattach when returning from suspended mode client re-enters the channel with the same data
+	 * @throws AblyException
+	 */
+	@Test
+	public void realtime_presence_suspended_reenter() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+			connectionWaiter.waitFor(ConnectionState.connected);
+
+			final boolean[] presenceWaiter = new boolean[] {false};
+
+			Channel channel = ably.channels.get("presence_suspended_reenter");
+			channel.attach();
+			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+
+			final String presenceData = "PRESENCE_DATA";
+
+			channelWaiter.waitFor(ChannelState.attached);
+			channel.presence.enterClient(testClientId1, presenceData, new CompletionListener() {
+				@Override
+				public void onSuccess() {
+					synchronized (presenceWaiter) {
+						presenceWaiter[0] = true;
+						presenceWaiter.notify();
+					}
+				}
+
+				@Override
+				public void onError(ErrorInfo reason) {
+					fail("Presence: enter() failed");
+				}
+			});
+
+			try {
+				synchronized (presenceWaiter) {
+					while (!presenceWaiter[0])
+						presenceWaiter.wait();
+				}
+			}
+			catch (InterruptedException e) {
+			}
+
+			ably.connection.connectionManager.requestState(ConnectionState.suspended);
+			channelWaiter.waitFor(ChannelState.suspended);
+
+			ably.connection.connectionManager.requestState(ConnectionState.connected);
+			channelWaiter.waitFor(ChannelState.attached);
+
+			try {
+				Thread.sleep(500);
+				PresenceMessage[] presenceMessages = channel.presence.get(testClientId1, true);
+				assertNotNull("Verify there are presence messages after reattach");
+				assertEquals("Verify there is exactly one presence message", presenceMessages.length, 1);
+				assertEquals("Verify presence message data is the same as before", presenceMessages[0].data, presenceData);
+			}
+			catch (InterruptedException e) {
+			}
+
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
 }
