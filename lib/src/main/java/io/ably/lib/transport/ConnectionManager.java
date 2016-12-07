@@ -660,7 +660,8 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				break;
 			}
 		}
-		if(stateChange != null && stateChange.state != state.state)
+		/* connected is special case because we want to deliver reauth notifications to listeners */
+		if(stateChange != null && (stateChange.state == ConnectionState.connected || stateChange.state != state.state))
 			setState(stateChange);
 	}
 
