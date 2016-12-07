@@ -188,6 +188,7 @@ public class Presence {
 				presence.startSync();
 		}
 		for(PresenceMessage update : messages) {
+			boolean updateInternalPresence = update.connectionId.equals(channel.ably.connection.id);
 			switch(update.action) {
 			case enter:
 			case update:
@@ -195,16 +196,43 @@ public class Presence {
 				update.action = PresenceMessage.Action.present;
 			case present:
 				broadcast &= presence.put(update);
+				if(updateInternalPresence)
+					internalPresence.put(update);
 				break;
 			case leave:
 				broadcast &= presence.remove(update);
+				if(updateInternalPresence)
+					internalPresence.remove(update);
 				break;
 			case absent:
 			}
 		}
 		/* if this is the last message in a sequence of sync updates, end the sync */
-		if(syncChannelSerial == null || syncCursor.length() <= 1)
+		if(syncChannelSerial == null || syncCursor.length() <= 1) {
 			presence.endSync();
+			/**
+			 * (RTP5c2) If a SYNC is initiated as part of the attach, then once the SYNC is complete,
+			 * all members not present in the PresenceMap but present in the internal PresenceMap must
+			 * be re-entered automatically by the client using the clientId and data attributes from
+			 * each. The members re-entered automatically must be removed from the internal PresenceMap
+			 * ensuring that members present on the channel are constructed from presence events sent
+			 * from Ably since the channel became ATTACHED
+			 */
+			if (syncAsResultOfAttach) {
+				syncAsResultOfAttach = false;
+				for (PresenceMessage item: internalPresence.values()) {
+					if (presence.put(item)) {
+						/* Message is new to presence map, send it */
+						try {
+							updatePresence(item, null);
+						} catch(AblyException e) {
+							Log.e(TAG, String.format("Cannot automatically re-enter channel %s", channel.name));
+						}
+					}
+				}
+				internalPresence.clear();
+			}
+		}
 
 		if(broadcast)
 			broadcastPresence(messages);
@@ -547,7 +575,7 @@ public class Presence {
 				} catch(Throwable t) {
 					Log.e(TAG, "failQueuedMessages(): Unexpected exception calling listener", t);
 				}
-
+		pendingPresence.clear();
 	}
 
 
@@ -556,15 +584,32 @@ public class Presence {
 	 ************************************/
 
 	void setAttached() {
+		/**
+		 * Channel calls awaitSync() before setAttached() if the corresponding flag in message is set.
+		 * We use it to set syncAsResultOfAttach to re-enter channel later needed.
+		 */
+		syncAsResultOfAttach = presence.syncInProgress;
 		sendQueuedMessages();
 	}
 
 	void setDetached(ErrorInfo reason) {
+		/**
+		 * (RTP5a) If the channel enters the DETACHED or FAILED state then all queued presence
+		 * messages will fail immediately, and the PresenceMap and internal PresenceMap is cleared.
+		 * The latter ensures members are not automatically re-entered if the Channel later becomes attached
+		 */
 		failQueuedMessages(reason);
+		presence.clear();
+		internalPresence.clear();
 	}
 
 	void setSuspended(ErrorInfo reason) {
+		/*
+		 * (RTP5f) If the channel enters the SUSPENDED state then all queued presence messages will fail
+		 * immediately, and the PresenceMap is cleared
+		 */
 		failQueuedMessages(reason);
+		presence.clear();
 	}
 
 	/************************************
@@ -763,12 +808,22 @@ public class Presence {
 			return message.connectionId + ':' + message.clientId;
 		}
 
+		/**
+		 * Clear all entries
+		 */
+		synchronized void clear() {
+			members.clear();
+			if(residualMembers != null)
+				residualMembers.clear();
+		}
+
 		private boolean syncInProgress;
 		private Collection<String> residualMembers;
 		private final HashMap<String, PresenceMessage> members = new HashMap<String, PresenceMessage>();
 	}
 
 	private final PresenceMap presence = new PresenceMap();
+	private final PresenceMap internalPresence = new PresenceMap();
 
 	/************************************
 	 * general
@@ -783,4 +838,7 @@ public class Presence {
 
 	private final Channel channel;
 	private final String clientId;
+
+	/* Sync in progress is a result of attach operation */
+	private boolean syncAsResultOfAttach;
 }
