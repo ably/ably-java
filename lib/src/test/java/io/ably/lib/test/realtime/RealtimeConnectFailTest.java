@@ -201,15 +201,12 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 			/* wait for connected state */
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 			connectionWaiter.waitFor(ConnectionState.connected);
-			//assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
 
 			/* wait for disconnected state (on token expiry), with timeout */
 			connectionWaiter.waitFor(ConnectionState.disconnected, 1, 30000L);
-			//assertEquals("Verify disconnected state is reached", ConnectionState.disconnected, ably.connection.state);
 
 			/* wait for connected state (on token renewal) */
 			connectionWaiter.waitFor(ConnectionState.connected, 2, 30000L);
-			//assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
 
 			/* verify that our token generator was called */
 			assertEquals("Expected token generator to be called", 1, authCallback.getCbCount());
@@ -217,7 +214,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 			/* end */
 			ably.close();
 			connectionWaiter.waitFor(ConnectionState.closed);
-			//assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
+			assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
