@@ -1,5 +1,8 @@
 package io.ably.lib.test.rest;
 
+import fi.iki.elonen.NanoHTTPD;
+import fi.iki.elonen.router.RouterNanoHTTPD;
+import io.ably.lib.rest.Auth;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -7,6 +10,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
+import java.util.*;
 
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth.AuthMethod;
@@ -45,6 +49,17 @@ public class RestAuthTest {
 			AblyRest ably = new AblyRest(opts);
 			tokenServer = new TokenServer(ably, 8982);
 			tokenServer.start();
+
+			nanoHTTPD = new SessionHandlerNanoHTTPD(27335);
+			nanoHTTPD.start(NanoHTTPD.SOCKET_READ_TIMEOUT, true);
+
+			while (!nanoHTTPD.wasStarted()) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 			fail("auth_start_tokenserver: Unexpected exception starting server");
@@ -61,6 +76,8 @@ public class RestAuthTest {
 	public static void auth_stop_tokenserver() {
 		if(tokenServer != null)
 			tokenServer.stop();
+		if (nanoHTTPD != null)
+			nanoHTTPD.stop();
 	}
 
 	/**
@@ -789,6 +806,62 @@ public class RestAuthTest {
 		}
 	}
 
+	/**
+	 * Test behaviour of queryTime parameter in ClientOpts. Time is requested from the Ably server only once,
+	 * cached value should be used afterwards
+	 */
+	@Test
+	public void auth_testQueryTime() {
+		try {
+			Auth.clearCachedServerTime();
+
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
+			opts.tls = false;
+			opts.restHost = "localhost";
+			opts.port = nanoHTTPD.getListeningPort();
+			opts.queryTime = true;
+
+			AblyRest ably1 = new AblyRest(opts);
+			Auth.TokenRequest tr1 = ably1.auth.createTokenRequest(null, null);
+
+			AblyRest ably2 = new AblyRest(opts);
+			Auth.TokenRequest tr2 = ably2.auth.createTokenRequest(null, null);
+
+			List<String> requestHistory = nanoHTTPD.getRequestHistory();
+			/* search for all /time request in the list */
+			int timeRequestCount = 0;
+			for (String request: requestHistory)
+				if (request.contains("/time"))
+					timeRequestCount++;
+
+			assertEquals("Verify number of time requests", timeRequestCount, 1);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("Unexpected exception");
+		}
+	}
 
 	private static TokenServer tokenServer;
+	private static SessionHandlerNanoHTTPD nanoHTTPD;
+
+	private static class SessionHandlerNanoHTTPD extends RouterNanoHTTPD {
+		private final ArrayList<String> requestHistory = new ArrayList<>();
+
+		public SessionHandlerNanoHTTPD(int port) {
+			super(port);
+		}
+
+		@Override
+		public Response serve(IHTTPSession session) {
+			synchronized (requestHistory) {
+				requestHistory.add(session.getUri());
+			}
+			/* the only request supported here is /time */
+			return newFixedLengthResponse(String.format(Locale.US, "[%d]", System.currentTimeMillis()));
+		}
+
+		public List<String> getRequestHistory() { return requestHistory; }
+	}
+
 }
