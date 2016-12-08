@@ -591,10 +591,27 @@ public class Auth {
 
 		/* timestamp */
 		if(request.timestamp == 0) {
-			if(options.queryTime)
-				request.timestamp = ably.time();
-			else
+			if(options.queryTime) {
+				long oldNanoTimeDelta = nanoTimeDelta;
+				long currentNanoTimeDelta = System.currentTimeMillis() - System.nanoTime()/(1000*1000);
+
+				if (timeDelta != Long.MAX_VALUE) {
+					/* system time changed by more than 500ms since last time? */
+					if(Math.abs(oldNanoTimeDelta - currentNanoTimeDelta) > 500)
+						timeDelta = Long.MAX_VALUE;
+				}
+
+				if (timeDelta != Long.MAX_VALUE) {
+					request.timestamp = timestamp() + timeDelta;
+					nanoTimeDelta = currentNanoTimeDelta;
+				} else {
+					request.timestamp = ably.time();
+					timeDelta = request.timestamp - timestamp();
+				}
+			}
+			else {
 				request.timestamp = timestamp();
+			}
 		}
 
 		/* nonce */
@@ -728,6 +745,15 @@ public class Auth {
 		} catch (GeneralSecurityException e) { Log.e("Auth.hmac", "Unexpected exception", e); return null; }
 	}
 
+	/**
+	 * Using time delta obtained before guess current server time
+	 */
+	public static long serverTimestamp() {
+		long clientTime = timestamp();
+		long delta = timeDelta;
+		return delta != Long.MAX_VALUE ? clientTime + timeDelta : clientTime;
+	}
+
 	private static final String TAG = Auth.class.getName();
 	private final AblyRest ably;
 	private final AuthMethod method;
@@ -735,4 +761,21 @@ public class Auth {
 	private TokenParams tokenParams;
 	private String basicCredentials;
 	private TokenAuth tokenAuth;
+
+	/**
+	 * Time delta is server time minus client time, in milliseconds, MAX_VALUE if not obtained yet
+	 */
+	private static long timeDelta = Long.MAX_VALUE;
+	/**
+	 * Time delta between System.nanoTime() and System.currentTimeMillis. If it changes significantly it
+	 * suggests device time/date has changed
+	 */
+	private static long nanoTimeDelta = System.currentTimeMillis() - System.nanoTime()/(1000*1000);
+
+	/**
+	 * For testing purposes we need method to clear cached timeDelta
+	 */
+	public static void clearCachedServerTime() {
+		timeDelta = Long.MAX_VALUE;
+	}
 }
