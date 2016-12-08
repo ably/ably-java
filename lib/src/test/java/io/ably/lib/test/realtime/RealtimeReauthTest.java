@@ -1,5 +1,6 @@
 package io.ably.lib.test.realtime;
 
+import io.ably.lib.realtime.ConnectionStateListener;
 import org.junit.Test;
 
 import io.ably.lib.realtime.AblyRealtime;
@@ -15,6 +16,8 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Capability;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
+
+import java.util.ArrayList;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -306,4 +309,92 @@ public class RealtimeReauthTest {
 			fail();
 		}
 	}
+
+	/**
+	 * RSA4c
+	 *  If authorize fails we should get the event for the failure
+	 */
+	@Test
+	public void reauth_failure_test() {
+		String testClientId = "testClientId";
+
+		try {
+			final ArrayList<ConnectionStateListener.ConnectionStateChange> stateChangeHistory = new ArrayList<>();
+
+			/* init ably for token */
+			final Setup.TestVars optsTestVars = Setup.getTestVars();
+			ClientOptions optsForToken = optsTestVars.createOptions(optsTestVars.keys[0].keyStr);
+			final AblyRest ablyForToken = new AblyRest(optsForToken);
+			System.out.println("done init ably for token");
+
+			/* get first token */
+			Auth.TokenParams tokenParams = new Auth.TokenParams();
+			tokenParams.clientId = testClientId;
+			Auth.TokenDetails firstToken = ablyForToken.auth.requestToken(tokenParams, null);
+			assertNotNull("Expected token value", firstToken.token);
+
+			/* create ably realtime with tokenDetails and clientId */
+			final Setup.TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions();
+			opts.clientId = testClientId;
+			opts.tokenDetails = firstToken;
+			AblyRealtime ablyRealtime = new AblyRealtime(opts);
+			System.out.println("done create ably");
+
+			ablyRealtime.connection.on(new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					synchronized (stateChangeHistory) {
+						stateChangeHistory.add(state);
+						stateChangeHistory.notify();
+					}
+				}
+			});
+
+			/* wait for connected state */
+			synchronized (stateChangeHistory) {
+				while (ablyRealtime.connection.state != ConnectionState.connected) {
+					try { stateChangeHistory.wait(); } catch (InterruptedException e) {}
+				}
+			}
+
+			assertEquals("Verify connected state is reached", ConnectionState.connected, ablyRealtime.connection.state);
+			System.out.println("connected");
+
+			int stateChangeCount = stateChangeHistory.size();
+
+			/* fail getting the second token */
+			/* reauthorize and fail */
+			Auth.AuthOptions authOptions = new Auth.AuthOptions();
+			authOptions.key = optsTestVars.keys[0].keyStr;
+			authOptions.authUrl = "https://nonexistent-domain-abcdef.com";
+			try {
+				ablyRealtime.auth.authorize(null, authOptions);
+				// should not succeed
+				fail();
+			}
+			catch (AblyException e) {
+				// nothing
+			}
+
+			/* wait for new entries in state change history */
+			synchronized (stateChangeHistory) {
+				while (stateChangeHistory.size() <= stateChangeCount) {
+					try { stateChangeHistory.wait(); } catch (InterruptedException e) {}
+				}
+
+				/* should stay in connected state, errorInfo should indicate authentication non-fatal error */
+				ConnectionStateListener.ConnectionStateChange lastChange = stateChangeHistory.get(stateChangeHistory.size()-1);
+				assertEquals("Verify connection stayed in connected state", lastChange.current, ConnectionState.connected);
+				assertEquals("Verify authentication failure error code", lastChange.reason.code, 80019);
+			}
+
+			ablyRealtime.close();
+
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
 }

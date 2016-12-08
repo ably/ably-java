@@ -3,6 +3,7 @@ package io.ably.lib.test.rest;
 import static org.junit.Assert.*;
 
 import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.AuthOptions;
 import io.ably.lib.rest.Auth.TokenDetails;
 import io.ably.lib.rest.Auth.TokenParams;
@@ -112,6 +113,7 @@ public class RestTokenTest {
 	@Test
 	public void authtime2() {
 		try {
+			Auth.clearCachedServerTime();
 			long requestTime = timeOffset + System.currentTimeMillis();
 			AuthOptions authOptions = new AuthOptions();
 			/* Unset fields in authOptions no longer inherit from stored values,

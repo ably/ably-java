@@ -66,8 +66,15 @@ public class AblyRealtime extends AblyRest {
 	/**
 	 * Authentication token has changed.
 	 */
-	public void onAuthUpdated(String token) throws AblyException {
+	protected void onAuthUpdated(String token) throws AblyException {
 		connection.connectionManager.onAuthUpdated(token);
+	}
+
+	/**
+	 * Authentication error occurred
+	 */
+	protected void onAuthError(ErrorInfo errorInfo) {
+		connection.connectionManager.onAuthError(errorInfo);
 	}
 
 	/**
