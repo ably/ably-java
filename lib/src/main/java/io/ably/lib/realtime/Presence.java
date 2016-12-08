@@ -586,7 +586,7 @@ public class Presence {
 	void setAttached() {
 		/**
 		 * Channel calls awaitSync() before setAttached() if the corresponding flag in message is set.
-		 * We use it to set syncAsResultOfAttach to re-enter channel later needed.
+		 * We use side effect of awaitSync() call to determine if sync is requested on attach
 		 */
 		syncAsResultOfAttach = presence.syncInProgress;
 		sendQueuedMessages();
