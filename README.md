@@ -10,7 +10,7 @@ Visit https://www.ably.io/documentation for a complete API reference and more ex
 
 ## Installation ##
 
-Reference the library by including a compile dependency reference inyour gradle build file.
+Reference the library by including a compile dependency reference in your gradle build file.
 
 For [Java](https://bintray.com/ably-io/ably/ably-java/_latestVersion):
 
