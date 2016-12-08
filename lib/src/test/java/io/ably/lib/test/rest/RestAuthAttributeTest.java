@@ -1,5 +1,6 @@
 package io.ably.lib.test.rest;
 
+import io.ably.lib.rest.Auth;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -119,6 +120,7 @@ public class RestAuthAttributeTest {
 	public void auth_stores_options_exception_querytime() {
 		try {
 			setup();
+			Auth.clearCachedServerTime();
 			final long fakeServerTime = -1000;
 			final String expectedClientId = "testClientId";
 			Setup.TestVars testVars = Setup.getTestVars();
