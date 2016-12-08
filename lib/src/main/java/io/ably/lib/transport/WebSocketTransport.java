@@ -168,7 +168,7 @@ public class WebSocketTransport implements ITransport {
 			try {
 				connectionManager.onMessage(ProtocolSerializer.fromJSON(string));
 			} catch (AblyException e) {
-				String msg = "Unexpected exception processing received binary message";
+				String msg = "Unexpected exception processing received text message";
 				Log.e(TAG, msg, e);
 			}
 			flagActivity();
