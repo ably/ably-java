@@ -16,6 +16,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.AuthOptions;
 import io.ably.lib.rest.Auth.TokenCallback;
 import io.ably.lib.rest.Auth.TokenDetails;
@@ -116,6 +117,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 	@Test
 	public void auth_stores_options_exception_querytime() {
 		try {
+			Auth.clearCachedServerTime();
 			final long fakeServerTime = -1000;
 			final String expectedClientId = "testClientId";
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
