@@ -771,4 +771,11 @@ public class Auth {
 	 * suggests device time/date has changed
 	 */
 	private static long nanoTimeDelta = System.currentTimeMillis() - System.nanoTime()/(1000*1000);
+
+	/**
+	 * For testing purposes we need method to clear cached timeDelta
+	 */
+	public static void clearCachedServerTime() {
+		timeDelta = Long.MAX_VALUE;
+	}
 }
