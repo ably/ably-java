@@ -16,6 +16,7 @@ import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.realtime.ConnectionStateListener;
+import io.ably.lib.realtime.UpdateEvent;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.TokenCallback;
@@ -224,7 +225,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 	/**
 	 * Verify that the server issues reauth message 30 seconds before token expiration time, authCallback is
 	 * called to obtain new token and in-place re-authorization takes place with connection staying in connected
-	 * state
+	 * state. Also tests if UPDATE event is delivered on the connection
 	 */
 	@Test
 	public void connect_token_expire_inplace_reauth() {
@@ -237,7 +238,8 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 
 			final boolean[] flags = new boolean[] {
 					false, /* authCallback is called */
-					false  /* state other than connected is reached */
+					false, /* state other than connected is reached */
+					false  /* update event was delivered */
 			};
 
 			/* create Ably realtime instance without key */
@@ -256,10 +258,16 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 			opts.logLevel = Log.VERBOSE;
 			AblyRealtime ably = new AblyRealtime(opts);
 
+			ably.connection.on(UpdateEvent.update, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					flags[2] = true;
+				}
+			});
 			ably.connection.on(new ConnectionStateListener() {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange state) {
-					if (state.previous == ConnectionState.connected) {
+					if (state.previous == ConnectionState.connected && state.current != ConnectionState.connected) {
 						synchronized (flags) {
 							flags[1] = true;
 							flags.notify();
@@ -276,6 +284,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 
 			assertTrue("Verify that token generation was called", flags[0]);
 			assertFalse("Verify that connection didn't leave connected state", flags[1]);
+			assertTrue("Verify that UPDATE event was delivered", flags[2]);
 
 		} catch (AblyException e) {
 			e.printStackTrace();
