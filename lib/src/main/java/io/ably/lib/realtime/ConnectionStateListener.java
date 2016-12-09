@@ -18,6 +18,13 @@ public interface ConnectionStateListener {
 			this.retryIn = retryIn;
 			this.reason = reason;
 		}
+
+		/* constructor for UPDATE event */
+		public ConnectionStateChange(ConnectionState state, ErrorInfo reason) {
+			this.current = this.previous = state;
+			this.reason = reason;
+			this.retryIn = 0;
+		}
 	}
 
 	static class Multicaster extends io.ably.lib.util.Multicaster<ConnectionStateListener> implements ConnectionStateListener {

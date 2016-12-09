@@ -400,7 +400,7 @@ public class Auth {
 		} else {
 			tokenDetails = tokenAuthorize(params, options);
 		}
-		ably.onAuthUpdated(tokenDetails.token);
+		ably.onAuthUpdated(tokenDetails.token, true);
 		return tokenDetails;
 	}
 
@@ -426,7 +426,7 @@ public class Auth {
 	 */
 	public TokenDetails renew() throws AblyException {
 		TokenDetails tokenDetails = tokenAuthorize(this.tokenParams, this.authOptions);
-		ably.onAuthUpdated(tokenDetails.token);
+		ably.onAuthUpdated(tokenDetails.token, false);
 		return tokenDetails;
 	}
 
