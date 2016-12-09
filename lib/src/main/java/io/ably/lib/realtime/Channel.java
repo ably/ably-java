@@ -22,7 +22,7 @@ import java.util.*;
  * attachment to the channel.
  *
  */
-public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
+public class Channel extends EventEmitter<Event, ChannelStateListener> {
 
 	/************************************
 	 * ChannelState and state management
@@ -385,7 +385,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	}
 
 	@Override
-	protected void apply(ChannelStateListener listener, ChannelState state, Object... args) {
+	protected void apply(ChannelStateListener listener, Event event, Object... args) {
 		listener.onChannelStateChanged((ChannelStateListener.ChannelStateChange)args[0]);
 	}
 
