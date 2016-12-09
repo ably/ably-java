@@ -9,7 +9,7 @@ import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.*;
 import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.types.ProtocolMessage.Flag;
-import io.ably.lib.util.EventEmitter;
+import io.ably.lib.util.EventPairEmitter;
 import io.ably.lib.util.Log;
 
 import java.util.*;
@@ -22,7 +22,7 @@ import java.util.*;
  * attachment to the channel.
  *
  */
-public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
+public class Channel extends EventPairEmitter<EventType, ChannelState, ChannelStateListener> {
 
 	/************************************
 	 * ChannelState and state management
@@ -74,7 +74,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		}
 
 		/* broadcast state change */
-		emit(newState, stateChange);
+		emitPair(EventType.stateChange, newState, stateChange);
 	}
 
 	/************************************
@@ -385,11 +385,26 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	}
 
 	@Override
-	protected void apply(ChannelStateListener listener, ChannelState state, Object... args) {
+	protected void apply(ChannelStateListener listener, Object... args) {
 		listener.onChannelStateChanged((ChannelStateListener.ChannelStateChange)args[0]);
 	}
 
 	static ErrorInfo REASON_NOT_ATTACHED = new ErrorInfo("Channel not attached", 400, 90001);
+
+	/**
+	 * Additional methods for listening of ConnectionState event change
+	 */
+	public void on(ChannelState state, ChannelStateListener listener) {
+		super.on(EventType.stateChange, state, listener);
+	}
+
+	public void once(ChannelState state, ChannelStateListener listener) {
+		super.once(EventType.stateChange, state, listener);
+	}
+
+	public void off(ChannelState state, ChannelStateListener listener) {
+		super.off(EventType.stateChange, state, listener);
+	}
 
 	/************************************
 	 * subscriptions and MessageListener

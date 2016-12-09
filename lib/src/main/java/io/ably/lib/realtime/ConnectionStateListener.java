@@ -11,12 +11,23 @@ public interface ConnectionStateListener {
 		public final ConnectionState current;
 		public final long retryIn;
 		public final ErrorInfo reason;
-	
+		public final EventType eventType;
+
+		/* Constructor for STATE CHANGE event */
 		public ConnectionStateChange(ConnectionState previous, ConnectionState current, long retryIn, ErrorInfo reason) {
 			this.previous = previous;
 			this.current = current;
 			this.retryIn = retryIn;
 			this.reason = reason;
+			this.eventType = EventType.stateChange;
+		}
+
+		/* Constructor for UPDATE event */
+		public ConnectionStateChange(ConnectionState state, ErrorInfo reason) {
+			this.previous = this.current = state;
+			this.retryIn = 0;
+			this.reason = reason;
+			this.eventType = EventType.update;
 		}
 	}
 
