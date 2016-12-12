@@ -37,6 +37,11 @@ public interface ChannelStateListener {
 			this.reason = reason;
 			this.resumed = resumed;
 		}
+
+		/* construct UPDATE event */
+		static ChannelStateChange createUpdateEvent(ErrorInfo reason) {
+			return new ChannelStateChange(ChannelState.attached, ChannelState.attached, reason, false);
+		}
 	}
 
 	static class Multicaster extends io.ably.lib.util.Multicaster<ChannelStateListener> implements ChannelStateListener {

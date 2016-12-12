@@ -3,12 +3,7 @@ package io.ably.lib.transport;
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.debug.RawProtocolListener;
 import io.ably.lib.http.TokenAuth;
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.Channel;
-import io.ably.lib.realtime.CompletionListener;
-import io.ably.lib.realtime.Connection;
-import io.ably.lib.realtime.ConnectionState;
-import io.ably.lib.realtime.ConnectionStateListener;
+import io.ably.lib.realtime.*;
 import io.ably.lib.transport.ITransport.ConnectListener;
 import io.ably.lib.transport.ITransport.TransportParams;
 import io.ably.lib.types.AblyException;
@@ -358,7 +353,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	 * the current connection to use that token; or if not currently connected,
 	 * to connect with the token.
 	 */
-	public void onAuthUpdated(String token) throws AblyException {
+	public void onAuthUpdated(String token, boolean waitForResponse) throws AblyException {
 		ConnectionWaiter waiter = new ConnectionWaiter();
 		if (state.state == ConnectionState.connected) {
 			/* (RTC8a) If the connection is in the CONNECTED state and
@@ -385,6 +380,10 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			/* Start a new connection attempt. */
 			connect();
 		}
+
+		if(!waitForResponse)
+			return;
+
 		/* Wait for a state transition into anything other than connecting or
 		 * disconnected. Note that this includes the case that the connection
 		 * was already connected, and the AUTH message prompted the server to
@@ -423,7 +422,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 			case connected:
 				/* stay connected but notify of authentication error */
-				setState(new StateIndication(ConnectionState.connected, errorInfo));
+				connection.emitUpdate(errorInfo);
 				break;
 
 			default:
@@ -685,9 +684,14 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				break;
 			}
 		}
-		/* connected is special case because we want to deliver reauth notifications to listeners */
-		if(stateChange != null && (stateChange.state == ConnectionState.connected || stateChange.state != state.state))
-			setState(stateChange);
+		if(stateChange != null) {
+			if (stateChange.state != state.state) {
+				setState(stateChange);
+			} else if (stateChange.state == ConnectionState.connected) {
+				/* connected is special case because we want to deliver reauth notifications to listeners as an update */
+				connection.emitUpdate(null);
+			}
+		}
 	}
 
 	private void setSuspendTime() {
@@ -767,14 +771,17 @@ public class ConnectionManager implements Runnable, ConnectListener {
 						continue;
 					}
 
-					if(pendingReauth)
+					if(pendingReauth) {
 						handleReauth();
+						break;
+					}
 
 					/* no indicated state or requested action, so the timer
 					 * expired while we were in the connecting/closing state */
 					stateChange = checkSuspend(new StateIndication(ConnectionState.disconnected, REASON_TIMEDOUT));
 				}
 			}
+
 			if(stateChange != null)
 				handleStateChange(stateChange);
 		}
@@ -790,6 +797,8 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		if (state.state == ConnectionState.connected) {
 			Log.v(TAG, "Server initiated reauth");
 
+			ErrorInfo errorInfo = null;
+
 			/*
 			 * It is a server initiated reauth, it is issued while previous token is still valid for ~30 seconds,
 			 * we have to clear cached token and get a new one
@@ -797,9 +806,12 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			try {
 				ably.auth.renew();
 			} catch (AblyException e) {
-				/* report error in connected->connected state change */
-				setState(new StateIndication(state.state, e.errorInfo));
+				errorInfo = e.errorInfo;
 			}
+
+			/* report error in UPDATE event */
+			if (state.state == ConnectionState.connected && errorInfo != null)
+				connection.emitUpdate(errorInfo);
 		}
 	}
 
