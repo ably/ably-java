@@ -138,6 +138,13 @@ public class AblyRest {
 	 * Authentication token has changed. waitForResult is true if there is a need to
 	 * wait for server response to auth request
 	 */
+
+	/**
+	 * Override this method in AblyRealtime and pass updated token to ConnectionManager
+	 * @param token new token
+	 * @param waitForResponse wait for server response before returning from method
+	 * @throws AblyException
+	 */
 	protected void onAuthUpdated(String token, boolean waitForResponse) throws AblyException {
 		/* Default is to do nothing. Overridden by subclass. */
 	}
