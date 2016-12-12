@@ -19,11 +19,9 @@ public interface ConnectionStateListener {
 			this.reason = reason;
 		}
 
-		/* constructor for UPDATE event */
-		public ConnectionStateChange(ConnectionState state, ErrorInfo reason) {
-			this.current = this.previous = state;
-			this.reason = reason;
-			this.retryIn = 0;
+		/* construct UPDATE event */
+		public static ConnectionStateChange createUpdateEvent(ErrorInfo reason) {
+			return new ConnectionStateChange(ConnectionState.connected, ConnectionState.connected, 0, reason);
 		}
 	}
 
