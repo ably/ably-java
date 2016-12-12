@@ -38,11 +38,9 @@ public interface ChannelStateListener {
 			this.resumed = resumed;
 		}
 
-		/* constructor for UPDATE event */
-		ChannelStateChange(ChannelState state, ErrorInfo reason) {
-			this.current = this.previous = state;
-			this.reason = reason;
-			this.resumed = false;
+		/* construct UPDATE event */
+		static ChannelStateChange createUpdateEvent(ErrorInfo reason) {
+			return new ChannelStateChange(ChannelState.attached, ChannelState.attached, reason, false);
 		}
 	}
 
