@@ -422,7 +422,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 			case connected:
 				/* stay connected but notify of authentication error */
-				connection.emit(UpdateEvent.update, new ConnectionStateListener.ConnectionStateChange(ConnectionState.connected, errorInfo));
+				connection.emitUpdate(errorInfo);
 				break;
 
 			default:
@@ -689,7 +689,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				setState(stateChange);
 			} else if (stateChange.state == ConnectionState.connected) {
 				/* connected is special case because we want to deliver reauth notifications to listeners as an update */
-				connection.emit(UpdateEvent.update, new ConnectionStateListener.ConnectionStateChange(ConnectionState.connected, null));
+				connection.emitUpdate(null);
 			}
 		}
 	}
@@ -811,7 +811,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 			/* report error in UPDATE event */
 			if (state.state == ConnectionState.connected && errorInfo != null)
-				connection.emit(UpdateEvent.update, new ConnectionStateListener.ConnectionStateChange(ConnectionState.connected, errorInfo));
+				connection.emitUpdate(errorInfo);
 		}
 	}
 

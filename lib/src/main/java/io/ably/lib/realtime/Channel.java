@@ -823,6 +823,15 @@ public class Channel extends EventEmitter<Event, ChannelStateListener> {
 		}
 	}
 
+	/**
+	 * Emits UPDATE event
+	 * @param errorInfo
+	 */
+	void emitUpdate(ErrorInfo errorInfo) {
+		if(state == ChannelState.attached)
+			emit(UpdateEvent.update, ChannelStateListener.ChannelStateChange.createUpdateEvent(errorInfo));
+	}
+
 	private static final String TAG = Channel.class.getName();
 	final AblyRealtime ably;
 	final String basePath;
