@@ -226,6 +226,8 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 	 * Verify that the server issues reauth message 30 seconds before token expiration time, authCallback is
 	 * called to obtain new token and in-place re-authorization takes place with connection staying in connected
 	 * state. Also tests if UPDATE event is delivered on the connection
+	 *
+	 * Test for RTN4h, RTC8a, RTN24 features
 	 */
 	@Test
 	public void connect_token_expire_inplace_reauth() {
@@ -233,6 +235,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
 			optsForToken.logLevel = Log.VERBOSE;
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
+			/* Server will send reauth message 30 seconds before token expiration time i.e. in 4 seconds */
 			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 34000L; }}, null);
 			assertNotNull("Expected token value", tokenDetails.token);
 
@@ -258,6 +261,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 			opts.logLevel = Log.VERBOSE;
 			AblyRealtime ably = new AblyRealtime(opts);
 
+			/* Test UPDATE event delivery */
 			ably.connection.on(UpdateEvent.update, new ConnectionStateListener() {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange state) {
@@ -282,9 +286,9 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 				} catch (InterruptedException e) {}
 			}
 
-			assertTrue("Verify that token generation was called", flags[0]);
-			assertFalse("Verify that connection didn't leave connected state", flags[1]);
-			assertTrue("Verify that UPDATE event was delivered", flags[2]);
+			assertTrue("Verify token generation was called", flags[0]);
+			assertFalse("Verify connection didn't leave connected state", flags[1]);
+			assertTrue("Verify UPDATE event was delivered", flags[2]);
 
 		} catch (AblyException e) {
 			e.printStackTrace();
