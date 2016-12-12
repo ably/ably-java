@@ -227,7 +227,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 	 * called to obtain new token and in-place re-authorization takes place with connection staying in connected
 	 * state. Also tests if UPDATE event is delivered on the connection
 	 *
-	 * Test for RTN4h, RTC8a, RTN24 features
+	 * Test for RTN4h, RTC8a1, RTN24 features
 	 */
 	@Test
 	public void connect_token_expire_inplace_reauth() {

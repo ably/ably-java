@@ -2,6 +2,7 @@ package io.ably.lib.realtime;
 
 import io.ably.lib.realtime.ConnectionStateListener.ConnectionStateChange;
 import io.ably.lib.transport.ConnectionManager;
+import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Event;
 import io.ably.lib.util.EventEmitter;
@@ -85,7 +86,11 @@ public class Connection extends EventEmitter<Event, ConnectionStateListener> {
 		listener.onConnectionStateChanged((ConnectionStateChange)args[0]);
 	}
 
+	public void emitUpdate(ErrorInfo errorInfo) {
+		if (state == ConnectionState.connected)
+			emit(UpdateEvent.update, ConnectionStateListener.ConnectionStateChange.createUpdateEvent(errorInfo));
+	}
+
 	final AblyRealtime ably;
 	public final ConnectionManager connectionManager;
-
 }
