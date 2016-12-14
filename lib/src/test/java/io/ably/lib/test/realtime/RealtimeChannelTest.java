@@ -1062,8 +1062,15 @@ public class RealtimeChannelTest extends ParameterizedTest {
 	}
 
 	/*
-	 * Attach channel, suspend connection, resume it and immediately block sending packets failing channel
+	 * Initiate connection, block send on transport to simulate network packet loss, try to attach, wait for
+	 * channel to eventually attach when send is re-enabled on transport.
+	 *
+	 * Then suspend connection, resume it and immediately block sending packets failing channel
 	 * reattach. Verify that the channel goes back to suspended state on timeout with correct error code.
+	 *
+	 * Try to detach channel while blocking send, channel should go back to attached state through detaching
+	 *
+	 * Tests features RTL4c, RTL4f, RTL5f, RTL5e
 	 */
 	@Test
 	public void channel_reattach_failed() {
@@ -1083,10 +1090,23 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
 			ably = new AblyRealtime(opts);
 
-			/* Attach new channel */
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+			connectionWaiter.waitFor(ConnectionState.connected);
+
+			/* Block send() and attach */
+			MockWebsocketTransport.blockSend = true;
+
 			Channel channel = ably.channels.get("channel_reattach_test");
 			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
 			channel.attach();
+
+			channelWaiter.waitFor(ChannelState.attaching);
+
+			/* Should get to suspended soon because send() is blocked */
+			channelWaiter.waitFor(ChannelState.suspended);
+
+			/* Re-enable send() and wait for channel to attach */
+			MockWebsocketTransport.blockSend = false;
 			channelWaiter.waitFor(ChannelState.attached);
 
 			/* Suspend connection: channel state should change to suspended */
@@ -1119,6 +1139,38 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
 			/* And wait for attached state of the channel */
 			channelWaiter.waitFor(ChannelState.attached);
+
+			final ErrorInfo[] errorDetaching = new ErrorInfo[] {null};
+
+			/* Block and detach */
+			MockWebsocketTransport.blockSend = true;
+			channel.detach(new CompletionListener() {
+				@Override
+				public void onSuccess() {
+					fail("Detach succeeded");
+				}
+
+				@Override
+				public void onError(ErrorInfo reason) {
+					synchronized (errorDetaching) {
+						errorDetaching[0] = reason;
+						errorDetaching.notify();
+					}
+				}
+			});
+
+			/* Should get to detaching first */
+			channelWaiter.waitFor(ChannelState.detaching);
+			/* And then back to attached on timeout */
+			channelWaiter.waitFor(ChannelState.attached);
+			try {
+				synchronized (errorDetaching) {
+					if (errorDetaching[0] != null)
+						errorDetaching.wait(1000);
+				}
+			} catch (InterruptedException e) {}
+
+			assertNotNull("Verify detach operation failed", errorDetaching[0]);
 
 		} catch(AblyException e)  {
 			e.printStackTrace();
