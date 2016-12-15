@@ -232,13 +232,19 @@ public class Channel extends EventEmitter<Event, ChannelStateListener> {
 		boolean resumed = (message.flags & ( 1 << Flag.resumed.ordinal())) != 0;
 		Log.v(TAG, "setAttached(); channel = " + name + ", resumed = " + resumed);
 		attachSerial = message.channelSerial;
-		setState(ChannelState.attached, message.error, resumed);
-		sendQueuedMessages();
-		if((message.flags & ( 1 << Flag.has_presence.ordinal())) > 0) {
-			Log.v(TAG, "setAttached(); awaiting sync; channel = " + name);
-			presence.awaitSync();
+		if(state == ChannelState.attached) {
+			Log.v(TAG, String.format("Server initiated attach for channel %s", name));
+			/* emit UPDATE event according to RTL12 */
+			emit(UpdateEvent.update, ChannelStateListener.ChannelStateChange.createUpdateEvent(null));
+		} else {
+			setState(ChannelState.attached, message.error, resumed);
+			sendQueuedMessages();
+			if ((message.flags & (1 << Flag.has_presence.ordinal())) > 0) {
+				Log.v(TAG, "setAttached(); awaiting sync; channel = " + name);
+				presence.awaitSync();
+			}
+			presence.setAttached();
 		}
-		presence.setAttached();
 	}
 
 	private void setDetached(ErrorInfo reason) {
@@ -881,7 +887,18 @@ public class Channel extends EventEmitter<Event, ChannelStateListener> {
 			break;
 		case detach:
 		case detached:
+			ChannelState oldState = state;
 			setDetached((msg.error != null) ? msg.error : REASON_NOT_ATTACHED);
+			if(oldState == ChannelState.attaching || oldState == ChannelState.attached || oldState == ChannelState.suspended) {
+				/* Unexpected detach, reattach when possible */
+				Log.v(TAG, String.format("Server initiated detach for channel %s", name));
+				try {
+					attachWithTimeout(null);
+				} catch (AblyException e) {
+					/* Send message error */
+					setDetached(e.errorInfo);
+				}
+			}
 			break;
 		case message:
 			onMessage(msg);
