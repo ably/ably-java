@@ -1049,8 +1049,8 @@ public class RealtimeChannelTest {
 			ConnectionManager connectionManager = ably.connection.connectionManager;
 			connectionManager.onMessage(protoMessage);
 
-			assertEquals("channel state should be detached now", channel.state, ChannelState.detached);
-			assertEquals("channel error reason should be set", channel.reason, protoMessage.error);
+			/* Because of (RTL13) channel should now be in either attaching or attached state */
+			assertNotEquals("channel state shouldn't be failed", channel.state, ChannelState.failed);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
@@ -1174,6 +1174,69 @@ public class RealtimeChannelTest {
 		} finally {
 			if (ably != null)
 				ably.close();
+		}
+	}
+
+	/*
+	 * Establish connection, attach channel, simulate sending attached and detached messages
+	 * from the server, test correct behaviour
+	 *
+	 * Tests RTL12, RTL13
+	 */
+	@Test
+	public void channel_server_initiated_attached_detached() throws AblyException {
+		AblyRealtime ably = null;
+		long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
+		final String channelName = "channel_server_initiated_attach_detach";
+
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+
+			/* Make test faster */
+			Defaults.realtimeRequestTimeout = 1000;
+			opts.channelRetryTimeout = 1000;
+
+			ably = new AblyRealtime(opts);
+
+			Channel channel = ably.channels.get(channelName);
+			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+
+			channel.attach();
+			channelWaiter.waitFor(ChannelState.attached);
+
+			final int[] updateEventsEmitted = new int[]{0};
+			channel.on(UpdateEvent.update, new ChannelStateListener() {
+				@Override
+				public void onChannelStateChanged(ChannelStateChange stateChange) {
+					updateEventsEmitted[0]++;
+				}
+			});
+
+			/* Inject attached message as if received from the server */
+			ProtocolMessage attachedMessage = new ProtocolMessage() {{
+				action = Action.attached;
+				channel = channelName;
+			}};
+			ably.connection.connectionManager.onMessage(attachedMessage);
+
+			/* Inject detached message as if from the server */
+			ProtocolMessage detachedMessage = new ProtocolMessage() {{
+				action = Action.detached;
+				channel = channelName;
+			}};
+			ably.connection.connectionManager.onMessage(detachedMessage);
+
+			/* Channel should transition to attaching, then to attached */
+			channelWaiter.waitFor(ChannelState.attaching);
+			channelWaiter.waitFor(ChannelState.attached);
+
+			/* Verify received UPDATE message on channel */
+			assertEquals("Verify exactly one UPDATE event was emitted on the channel", updateEventsEmitted[0], 1);
+		} finally {
+			if (ably != null)
+				ably.close();
+			Defaults.realtimeRequestTimeout = oldRealtimeTimeout;
 		}
 	}
 
