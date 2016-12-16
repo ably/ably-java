@@ -687,7 +687,7 @@ public class Presence {
 			 * connectionId, as it wasn’t actually published by that connection
 			 */
 			if(item.connectionId != null && existingItem.connectionId != null &&
-					!item.id.startsWith(item.connectionId) && !existingItem.id.startsWith(existingItem.connectionId))
+					(!item.id.startsWith(item.connectionId) || !existingItem.id.startsWith(existingItem.connectionId)))
 				return existingItem.timestamp >= item.timestamp;
 
 			/*
@@ -697,7 +697,7 @@ public class Presence {
 			 * index numerically, larger being newer in both cases
 			 */
 			String[] itemComponents = item.id.split(":", 3);
-			String[] existingItemComponents = item.id.split(":", 3);
+			String[] existingItemComponents = existingItem.id.split(":", 3);
 
 			if(itemComponents.length < 3 || existingItemComponents.length < 3)
 				return false;
