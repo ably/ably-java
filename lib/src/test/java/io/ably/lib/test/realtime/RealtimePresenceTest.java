@@ -1951,6 +1951,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	/**
 	 * Test if after reattach when returning from suspended mode client re-enters the channel with the same data
 	 * @throws AblyException
+	 *
+	 * Tests RTP17
 	 */
 	@Test
 	public void realtime_presence_suspended_reenter() throws AblyException {
@@ -2014,6 +2016,118 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 		} finally {
 			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/**
+	 * Test comparison for newness
+	 * Tests RTP2b* features
+	 */
+	@Test
+	public void realtime_presence_newness_comparison_test() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+
+			Channel channel = ably.channels.get("newness_comparison");
+			channel.attach();
+			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+			channelWaiter.waitFor(ChannelState.attached);
+
+			final String wontPass = "Won't pass newness test";
+
+			Presence presence = channel.presence;
+			final ArrayList<PresenceMessage> presenceMessages = new ArrayList<>();
+			presence.subscribe(new Presence.PresenceListener() {
+				@Override
+				public void onPresenceMessage(PresenceMessage message) {
+					synchronized (presenceMessages) {
+						assertNotEquals("Verify wrong message didn't pass the newness test",
+								message.data, wontPass);
+						presenceMessages.add(message);
+					}
+				}
+			});
+
+			PresenceMessage[] testData = new PresenceMessage[] {
+					new PresenceMessage() {{
+						clientId = "1";
+						action = Action.enter;
+						connectionId = "1";
+						id = "1:0";
+					}},
+					new PresenceMessage() {{
+						clientId = "2";
+						action = Action.enter;
+						connectionId = "2";
+						id = "2:1:0";
+					}},
+					/* Should be newer than previous one */
+					new PresenceMessage() {{
+						clientId = "2";
+						action = Action.update;
+						connectionId = "2";
+						id = "2:2:1";
+					}},
+					/* Shouldn't pass newness test because of message serial */
+					new PresenceMessage() {{
+						clientId = "2";
+						action = Action.update;
+						connectionId = "2";
+						id = "2:1:1";
+						data = wontPass;
+					}},
+					/* Shouldn't pass because of message index */
+					new PresenceMessage() {{
+						clientId = "2";
+						action = Action.update;
+						connectionId = "2";
+						id = "2:2:0";
+						data = wontPass;
+					}},
+					/* Should pass because there id is not in form connId:clientId:index and timestamp is greater */
+					new PresenceMessage() {{
+						clientId = "2";
+						action = Action.update;
+						connectionId = "2";
+						id = "weird_id";
+						timestamp = 1000;
+					}},
+					/* Shouldn't pass because of timestamp */
+					new PresenceMessage() {{
+						clientId = "2";
+						action = Action.update;
+						connectionId = "2";
+						id = "2:3:1";
+						timestamp = 500;
+						data = wontPass;
+					}}
+			};
+
+			for (final PresenceMessage msg: testData) {
+				ProtocolMessage protocolMessage = new ProtocolMessage() {{
+						channel = "newness_comparison";
+						action = Action.presence;
+						presence = new PresenceMessage[]{msg};
+					}};
+
+				ably.connection.connectionManager.onMessage(protocolMessage);
+			}
+
+			int n = 0;
+			for (PresenceMessage testMsg: testData) {
+				if (testMsg.data != wontPass) {
+					PresenceMessage factualMsg = n < presenceMessages.size() ? presenceMessages.get(n++) : null;
+					assertTrue("Verify message passed newness test",
+							factualMsg != null && factualMsg.id.equals(testMsg.id));
+				}
+			}
+		}
+		finally {
+			if (ably != null)
 				ably.close();
 		}
 	}
