@@ -709,7 +709,7 @@ public class Presence {
 				long existingMessageIndex = Long.valueOf(existingItemComponents[2]);
 
 				return existingMessageSerial > messageSerial ||
-						(existingMessageSerial == messageSerial && existingMessageIndex > messageIndex);
+						(existingMessageSerial == messageSerial && existingMessageIndex >= messageIndex);
 			}
 			catch(NumberFormatException e) {
 				return false;

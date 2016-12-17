@@ -8,6 +8,7 @@ import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -21,12 +22,12 @@ import java.util.List;
 import java.util.UUID;
 
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
+import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.realtime.Presence;
 import io.ably.lib.rest.AblyRest;
@@ -39,6 +40,8 @@ import io.ably.lib.test.common.Helpers.CompletionWaiter;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.Helpers.PresenceWaiter;
 import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.test.util.MockWebsocketFactory;
+import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
@@ -46,6 +49,7 @@ import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.PresenceMessage.Action;
+import io.ably.lib.types.ProtocolMessage;
 
 public class RealtimePresenceTest extends ParameterizedTest {
 
@@ -1957,9 +1961,13 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	@Test
 	public void realtime_presence_suspended_reenter() throws AblyException {
 		AblyRealtime ably = null;
+		String oldWebsockFactory = Defaults.TRANSPORT;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			Defaults.TRANSPORT = MockWebsocketFactory.class.getName();
+			MockWebsocketFactory.allowSend();
+
+			final String channelName = "presence_suspended_reenter";
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
@@ -1967,13 +1975,14 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 			final boolean[] presenceWaiter = new boolean[] {false};
 
-			Channel channel = ably.channels.get("presence_suspended_reenter");
+			final Channel channel = ably.channels.get(channelName);
 			channel.attach();
 			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
 
-			final String presenceData = "PRESENCE_DATA";
-
 			channelWaiter.waitFor(ChannelState.attached);
+
+			final String presenceData = "PRESENCE_DATA";
+			final String connId = ably.connection.id;
 			channel.presence.enterClient(testClientId1, presenceData, new CompletionListener() {
 				@Override
 				public void onSuccess() {
@@ -1985,38 +1994,64 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 				@Override
 				public void onError(ErrorInfo reason) {
-					fail("Presence: enter() failed");
 				}
 			});
-
-			try {
-				synchronized (presenceWaiter) {
-					while (!presenceWaiter[0])
+			synchronized (presenceWaiter) {
+				while (!presenceWaiter[0]) {
+					try {
 						presenceWaiter.wait();
+					} catch (InterruptedException e) {}
 				}
 			}
-			catch (InterruptedException e) {
-			}
+
+			/*
+			 * We put testClientId2 presence data into the client library presence map but we
+			 * don't send it to the server
+			 */
+
+			MockWebsocketFactory.blockSend();
+			channel.presence.enterClient(testClientId2, presenceData);
+
+			ProtocolMessage msg = new ProtocolMessage();
+			msg.connectionId = connId;
+			msg.action = ProtocolMessage.Action.sync;
+			msg.channel = channelName;
+			msg.presence = new PresenceMessage[] {
+					new PresenceMessage() {{
+						action = Action.present;
+						id = String.format("%s:0:0", connId);
+						timestamp = System.currentTimeMillis();
+						clientId = testClientId2;
+						connectionId = connId;
+						data = presenceData;
+					}}
+			};
+			ably.connection.connectionManager.onMessage(msg);
+
+			MockWebsocketFactory.allowSend();
 
 			ably.connection.connectionManager.requestState(ConnectionState.suspended);
 			channelWaiter.waitFor(ChannelState.suspended);
+
+			/*
+			 * When restoring from suspended state server will send sync message erasing
+			 * testClientId2 record from the presence map. Client should re-send presence message
+			 * for testClientId2 and restore its presence data.
+			 */
 
 			ably.connection.connectionManager.requestState(ConnectionState.connected);
 			channelWaiter.waitFor(ChannelState.attached);
 
 			try {
 				Thread.sleep(500);
-				PresenceMessage[] presenceMessages = channel.presence.get(testClientId1, true);
-				assertNotNull("Verify there are presence messages after reattach");
-				assertEquals("Verify there is exactly one presence message", presenceMessages.length, 1);
-				assertEquals("Verify presence message data is the same as before", presenceMessages[0].data, presenceData);
-			}
-			catch (InterruptedException e) {
-			}
+				assertEquals("Verify correct presence message data has been received",
+						channel.presence.get(testClientId2, true)[0].data, presenceData);
+			} catch (InterruptedException e) {}
 
 		} finally {
 			if(ably != null)
 				ably.close();
+			Defaults.TRANSPORT = oldWebsockFactory;
 		}
 	}
 
@@ -2028,8 +2063,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	public void realtime_presence_newness_comparison_test() throws AblyException {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			Channel channel = ably.channels.get("newness_comparison");
@@ -2088,7 +2122,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 						id = "2:2:0";
 						data = wontPass;
 					}},
-					/* Should pass because there id is not in form connId:clientId:index and timestamp is greater */
+					/* Should pass because id is not in form connId:clientId:index and timestamp is greater */
 					new PresenceMessage() {{
 						clientId = "2";
 						action = Action.update;
