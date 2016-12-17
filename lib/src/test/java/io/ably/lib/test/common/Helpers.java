@@ -48,6 +48,7 @@ public class Helpers {
 	 */
 	public static class CompletionWaiter implements CompletionListener {
 		public boolean success;
+		public int successCount = 0;
 		public ErrorInfo error;
 
 		/**
@@ -55,10 +56,15 @@ public class Helpers {
 		 */
 		public CompletionWaiter() {}
 
-		public synchronized ErrorInfo waitFor() {
-			while(!success && error == null)
+		public synchronized ErrorInfo waitFor(int count) {
+			while(successCount<count && error == null)
 				try { wait(); } catch(InterruptedException e) {}
+			success = successCount >= count;
 			return error;
+		}
+
+		public synchronized ErrorInfo waitFor() {
+			return waitFor(1);
 		}
 
 		/**
@@ -67,7 +73,7 @@ public class Helpers {
 		@Override
 		public void onSuccess() {
 			synchronized(this) {
-				success = true;
+				successCount++;
 				notifyAll();
 			}
 		}
