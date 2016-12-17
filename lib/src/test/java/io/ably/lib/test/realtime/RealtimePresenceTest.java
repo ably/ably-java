@@ -1983,26 +1983,9 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 			final String presenceData = "PRESENCE_DATA";
 			final String connId = ably.connection.id;
-			channel.presence.enterClient(testClientId1, presenceData, new CompletionListener() {
-				@Override
-				public void onSuccess() {
-					synchronized (presenceWaiter) {
-						presenceWaiter[0] = true;
-						presenceWaiter.notify();
-					}
-				}
-
-				@Override
-				public void onError(ErrorInfo reason) {
-				}
-			});
-			synchronized (presenceWaiter) {
-				while (!presenceWaiter[0]) {
-					try {
-						presenceWaiter.wait();
-					} catch (InterruptedException e) {}
-				}
-			}
+			CompletionWaiter completionWaiter = new CompletionWaiter();
+			channel.presence.enterClient(testClientId1, presenceData, completionWaiter);
+			completionWaiter.waitFor();
 
 			/*
 			 * We put testClientId2 presence data into the client library presence map but we
