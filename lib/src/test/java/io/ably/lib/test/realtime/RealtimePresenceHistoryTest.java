@@ -60,7 +60,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 	 * it to be persisted.
 	 */
 	@Test
-	public void presencehistory_simpley() {
+	public void presencehistory_simple() {
 		AblyRealtime ably = null;
 		try {
 			ClientOptions rtOpts = createOptions();
@@ -84,7 +84,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 			channel.presence.enter(messageText, msgComplete);
 
 			/* wait for the enter callback to be called */
-			msgComplete.waitFor();
+			msgComplete.waitFor(2);
 			assertTrue("Verify success callback was called", msgComplete.success);
 
 			/* get the presence history for this channel */
@@ -132,7 +132,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 			channel.presence.enter("This is a byte[] message payload".getBytes(), msgComplete);
 
 			/* wait for the enter callback to be called */
-			msgComplete.waitFor();
+			msgComplete.waitFor(2);
 			assertTrue("Verify success callback was called", msgComplete.success);
 
 			/* get the history for this channel */
@@ -181,7 +181,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 			channel.presence.enter("This is a byte[] message payload".getBytes(), msgComplete);
 
 			/* wait for the enter callback to be called */
-			msgComplete.waitFor();
+			msgComplete.waitFor(2);
 			assertTrue("Verify success callback was called", msgComplete.success);
 
 			/* get the history for this channel */
@@ -406,7 +406,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 			channel.presence.enter(liveMessageText, msgComplete);
 
 			/* wait for the publish callback to be called */
-			msgComplete.waitFor();
+			msgComplete.waitFor(2);
 			assertTrue("Verify success callback was called", msgComplete.success);
 
 			/* get the history for this channel */
@@ -466,7 +466,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 			channel.presence.enter(liveMessageText, msgComplete);
 
 			/* wait for the publish callback to be called */
-			msgComplete.waitFor();
+			msgComplete.waitFor(2);
 			assertTrue("Verify success callback was called", msgComplete.success);
 
 			/* get the history for this channel */
