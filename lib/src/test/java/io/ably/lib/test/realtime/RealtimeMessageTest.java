@@ -462,6 +462,66 @@ public class RealtimeMessageTest {
 		}
 	}
 
+	/*
+	 * Test right and wrong channel states to publish messages
+	 * Tests RTL6c
+	 */
+	@Test
+	public void publish_channel_state() {
+		AblyRealtime ably = null;
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+
+			Channel pubChannel = ably.channels.get("publish_channel_state");
+			ChannelWaiter channelWaiter = new ChannelWaiter(pubChannel);
+			pubChannel.attach();
+
+			/* Publish in attaching state */
+			pubChannel.publish(new Message("name1", "data1"));
+
+			channelWaiter.waitFor(ChannelState.attached);
+
+			/* Go to suspended state */
+			ably.connection.connectionManager.requestState(ConnectionState.suspended);
+			channelWaiter.waitFor(ChannelState.suspended);
+
+			boolean error = false;
+			try {
+				pubChannel.publish(new Message("name2", "data2"));
+			} catch (AblyException e) {
+				error = true;
+			}
+			assertTrue("Verify exception was thrown on publishing in suspended state", error);
+
+			/* reconnect and try again */
+			ably.connection.connectionManager.requestState(ConnectionState.connecting);
+			channelWaiter.waitFor(ChannelState.attached);
+
+			pubChannel.publish(new Message("name3", "data3"));
+
+			/* fail connection */
+			ably.connection.connectionManager.requestState(ConnectionState.failed);
+			channelWaiter.waitFor(ChannelState.failed);
+			error = false;
+			try {
+				pubChannel.publish(new Message("name4", "data4"));
+			} catch (AblyException e) {
+				error = true;
+			}
+			assertTrue("Verify exception was thrown on publishing in failed state", error);
+
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("Unexpected exception");
+		} finally {
+			if (ably != null)
+				ably.close();
+		}
+
+	}
+
 	/**
 	 * Connect to the service using the default (binary) protocol
 	 * and attach, subscribe to an event, and publish multiple
