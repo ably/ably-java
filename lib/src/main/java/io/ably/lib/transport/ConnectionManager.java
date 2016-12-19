@@ -195,9 +195,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 	/* This is only here for the benefit of ConnectionManagerTest. */
 	public String getHost() {
-		if(transport != null)
-			return transport.getHost();
-		return pendingConnect.host;
+		return lastUsedHost;
 	}
 	
 	/*********************
@@ -434,7 +432,15 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	 * transport events/notifications
 	 ***************************************/
 
-	public void onMessage(ProtocolMessage message) throws AblyException {
+	/**
+	 * React on message from the transport
+	 * @param transport transport instance or null to bypass transport correctness check (for testing)
+	 * @param message
+	 * @throws AblyException
+	 */
+	public void onMessage(ITransport transport, ProtocolMessage message) throws AblyException {
+		if (transport != null && this.transport != transport)
+			return;
 		if (Log.level <= Log.VERBOSE)
 			Log.v(TAG, "onMessage(): " + message.action + ": " + new String(ProtocolSerializer.writeJSON(message)));
 		try {
@@ -828,7 +834,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		}
 		ably.auth.onAuthError(reason);
 		notifyState(new StateIndication(ConnectionState.disconnected, reason, null, transport.getHost()));
-		transport = null;
+		this.transport = null;
 	}
 
 	private class ConnectParams extends TransportParams {
@@ -853,6 +859,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			host = hosts.getHost();
 		pendingConnect = new ConnectParams(options);
 		pendingConnect.host = host;
+		lastUsedHost = host;
 
 		/* enter the connecting state */
 		notifyState(request);
@@ -1146,6 +1153,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 	/* for debug/test only */
 	private RawProtocolListener protocolListener;
+	private String lastUsedHost;
 
 	private static final long HEARTBEAT_TIMEOUT = 5000L;
 }

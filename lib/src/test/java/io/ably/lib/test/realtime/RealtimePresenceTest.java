@@ -41,6 +41,7 @@ import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.Helpers.PresenceWaiter;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.util.MockWebsocketFactory;
+import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
@@ -2001,7 +2002,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 						data = presenceData;
 					}}
 			};
-			ably.connection.connectionManager.onMessage(msg);
+			ably.connection.connectionManager.onMessage(null, msg);
 
 			MockWebsocketFactory.allowSend();
 
@@ -2123,7 +2124,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 						presence = new PresenceMessage[]{msg};
 					}};
 
-				ably.connection.connectionManager.onMessage(protocolMessage);
+				ably.connection.connectionManager.onMessage(null, protocolMessage);
 			}
 
 			int n = 0;
@@ -2140,4 +2141,121 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				ably.close();
 		}
 	}
+
+	/**
+	 * Enter large (>100) number of clients so there are several sync messages, disconnect transport
+	 * in the middle and verify channel is re-syncing presence messages after transport reconnect
+	 *
+	 * Tests RTP3
+	 */
+	@Test
+	public void reattach_resume_broken_sync() {
+		AblyRealtime clientAbly1 = null;
+		AblyRealtime clientAbly2 = null;
+		TestChannel testChannel = new TestChannel();
+		int clientCount = 150; /* Should be greater than 100 to break sync into several messages */
+		String oldTransportName = Defaults.TRANSPORT;
+		try {
+			/* subscribe for presence events in the anonymous connection */
+			new PresenceWaiter(testChannel.realtimeChannel);
+			/* set up a connection with specific clientId */
+			ClientOptions client1Opts = new ClientOptions() {{
+				tokenDetails = wildcardToken;
+				clientId = testClientId1;
+			}};
+			testVars.fillInOptions(client1Opts);
+			clientAbly1 = new AblyRealtime(client1Opts);
+
+			/* wait until connected */
+			(new ConnectionWaiter(clientAbly1.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", clientAbly1.connection.state, ConnectionState.connected);
+
+			/* get channel and attach */
+			Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
+			client1Channel.attach();
+			(new ChannelWaiter(client1Channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", client1Channel.state, ChannelState.attached);
+
+			/* let client1 enter the channel for multiple clients and wait for the success callback */
+			CompletionSet enterComplete = new CompletionSet();
+			for(int i = 0; i < clientCount; i++) {
+				client1Channel.presence.enterClient("client" + i, "Test data (attach_enter_multiple) " + i, enterComplete.add());
+			}
+			enterComplete.waitFor();
+			assertTrue("Verify enter callback called on completion", enterComplete.pending.isEmpty());
+			assertTrue("Verify no enter errors", enterComplete.errors.isEmpty());
+
+			/* set up a second connection with different clientId */
+			Defaults.TRANSPORT = MockWebsocketFactory.class.getName();
+			ClientOptions client2Opts = new ClientOptions() {{
+				tokenDetails = token2;
+				clientId = testClientId2;
+			}};
+			testVars.fillInOptions(client2Opts);
+			clientAbly2 = new AblyRealtime(client2Opts);
+
+			/* wait until connected */
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(clientAbly2.connection);
+			connectionWaiter.waitFor(ConnectionState.connected);
+
+			/* get channel */
+			final Channel client2Channel = clientAbly2.channels.get(testChannel.channelName);
+			final ConnectionManager connectionManager = clientAbly2.connection.connectionManager;
+			final boolean[] disconnectedTransport = new boolean[]{false};
+			final int[] presenceCount = new int[]{0};
+			client2Channel.attach(new CompletionListener() {
+				@Override
+				public void onSuccess() {
+					try {
+						client2Channel.presence.subscribe(new Presence.PresenceListener() {
+							@Override
+							public void onPresenceMessage(PresenceMessage messages) {
+								if (!disconnectedTransport[0]) {
+									MockWebsocketFactory.lastCreatedTransport.close(false);
+									connectionManager.onTransportUnavailable(MockWebsocketFactory.lastCreatedTransport,
+											null, new ErrorInfo("Mock", 40000));
+
+								}
+								disconnectedTransport[0] = true;
+								presenceCount[0]++;
+							}
+						});
+					}
+					catch (AblyException e) {
+					}
+				}
+
+				@Override
+				public void onError(ErrorInfo reason) {
+				}
+			});
+
+			ChannelWaiter channelWaiter = new ChannelWaiter(client2Channel);
+			channelWaiter.waitFor(ChannelState.attached);
+
+			/* Wait for reconnect */
+			connectionWaiter.waitFor(ConnectionState.connecting, 2);
+			connectionWaiter.waitFor(ConnectionState.connected, 2);
+
+			client2Channel.presence.unsubscribe();
+
+			/* Verify that channel received sync and all 150 presence messages are received */
+			try {
+				Thread.sleep(500);
+				assertEquals("Verify number of received presence messages", client2Channel.presence.get(true).length, clientCount);
+			} catch (InterruptedException e) {}
+
+		} catch(AblyException e) {
+			e.printStackTrace();
+			fail("Unexpected exception running test: " + e.getMessage());
+		} finally {
+			if(clientAbly1 != null)
+				clientAbly1.close();
+			if(clientAbly2 != null)
+				clientAbly2.close();
+			testChannel.dispose();
+			Defaults.TRANSPORT = oldTransportName;
+		}
+	}
+
 }

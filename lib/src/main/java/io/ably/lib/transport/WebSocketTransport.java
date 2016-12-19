@@ -161,7 +161,7 @@ public class WebSocketTransport implements ITransport {
 		@Override
 		public void onMessage(ByteBuffer blob) {
 			try {
-				connectionManager.onMessage(ProtocolSerializer.readMsgpack(blob.array()));
+				connectionManager.onMessage(WebSocketTransport.this, ProtocolSerializer.readMsgpack(blob.array()));
 			} catch (AblyException e) {
 				String msg = "Unexpected exception processing received binary message";
 				Log.e(TAG, msg, e);
@@ -172,7 +172,7 @@ public class WebSocketTransport implements ITransport {
 		@Override
 		public void onMessage(String string) {
 			try {
-				connectionManager.onMessage(ProtocolSerializer.fromJSON(string));
+				connectionManager.onMessage(WebSocketTransport.this, ProtocolSerializer.fromJSON(string));
 			} catch (AblyException e) {
 				String msg = "Unexpected exception processing received text message";
 				Log.e(TAG, msg, e);

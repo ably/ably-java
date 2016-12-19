@@ -13,7 +13,8 @@ import io.ably.lib.types.ProtocolMessage;
 public class MockWebsocketFactory implements ITransport.Factory {
 	@Override
 	public ITransport getTransport(ITransport.TransportParams transportParams, ConnectionManager connectionManager) {
-		return new MockWebsocketTransport(transportParams, connectionManager);
+		lastCreatedTransport = new MockWebsocketTransport(transportParams, connectionManager);
+		return lastCreatedTransport;
 	}
 
 	public static void blockSend() {
@@ -22,6 +23,8 @@ public class MockWebsocketFactory implements ITransport.Factory {
 	public static void allowSend() {
 		MockWebsocketTransport.blockSend = false;
 	}
+
+	public static ITransport lastCreatedTransport =  null;
 
 	/*
 	 * Special transport class that allows blocking send()
