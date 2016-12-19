@@ -722,7 +722,7 @@ public class Channel extends EventEmitter<Event, ChannelStateListener> {
 	 * @param listener: a listener to be notified of the outcome of this message.
 	 * @throws AblyException
 	 */
-	public void publish(Message[] messages, CompletionListener listener) throws AblyException {
+	public synchronized void publish(Message[] messages, CompletionListener listener) throws AblyException {
 		Log.v(TAG, "publish(Message[]); channel = " + this.name);
 		for(Message message : messages) message.encode(options);
 		ProtocolMessage msg = new ProtocolMessage(Action.message, this.name);
@@ -749,7 +749,7 @@ public class Channel extends EventEmitter<Event, ChannelStateListener> {
 	 * internal
 	 *
 	 */
-	private void sendQueuedMessages() {
+	private synchronized void sendQueuedMessages() {
 		Log.v(TAG, "sendQueuedMessages()");
 		boolean queueMessages = ably.options.queueMessages;
 		ConnectionManager connectionManager = ably.connection.connectionManager;
@@ -764,7 +764,7 @@ public class Channel extends EventEmitter<Event, ChannelStateListener> {
 		queuedMessages.clear();
 	}
 
-	private void failQueuedMessages(ErrorInfo reason) {
+	private synchronized void failQueuedMessages(ErrorInfo reason) {
 		Log.v(TAG, "failQueuedMessages()");
 		for(QueuedMessage msg : queuedMessages)
 			if(msg.listener != null)
