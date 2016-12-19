@@ -821,15 +821,15 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	 * Attach to channel, enter presence channel with large number of clientIds,
 	 * then initiate second connection, seeing existing members in sync subsequent
 	 * to second attach response
-	 * DISABLED: See issue https://github.com/ably/ably-java/issues/159
+	 *
+	 * Test RTP4
 	 */
-	/*@Test*/
+	@Test
 	public void attach_enter_multiple() {
 		AblyRealtime clientAbly1 = null;
 		AblyRealtime clientAbly2 = null;
 		TestChannel testChannel = new TestChannel();
-		int clientCount = 20;
-		long delay = 50L;
+		int clientCount = 250;
 		try {
 			/* subscribe for presence events in the anonymous connection */
 			new PresenceWaiter(testChannel.realtimeChannel);
@@ -855,7 +855,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			CompletionSet enterComplete = new CompletionSet();
 			for(int i = 0; i < clientCount; i++) {
 				client1Channel.presence.enterClient("client" + i, "Test data (attach_enter_multiple) " + i, enterComplete.add());
-				try { Thread.sleep(delay); } catch(InterruptedException e){}
 			}
 			enterComplete.waitFor();
 			assertTrue("Verify enter callback called on completion", enterComplete.pending.isEmpty());
@@ -882,15 +881,12 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			/* get presence set and verify client present */
 			HashMap<String, PresenceMessage> memberIndex = new HashMap<String, PresenceMessage>();
 			PresenceMessage[] members = client2Channel.presence.get(true);
-			Thread.sleep(10000L);
 			assertNotNull("Expected non-null messages", members);
 			assertEquals("Expected " + clientCount + " messages", members.length, clientCount);
 
 			/* index received messages */
-			for(int i = 0; i < members.length; i++) {
-				PresenceMessage member = members[i];
+			for(PresenceMessage member: members)
 				memberIndex.put(member.clientId, member);
-			}
 
 			/* verify that all clientIds were received */
 			assertEquals("Expected " + clientCount + " members", memberIndex.size(), clientCount);
@@ -898,10 +894,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				String clientId = "client" + i;
 				assertTrue("Expected client with id " + clientId, memberIndex.containsKey(clientId));
 			}
-		} catch(AblyException e) {
-			e.printStackTrace();
-			fail("Unexpected exception running test: " + e.getMessage());
-		} catch (InterruptedException e) {
+		} catch(AblyException|InterruptedException e) {
 			e.printStackTrace();
 			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
@@ -909,8 +902,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				clientAbly1.close();
 			if(clientAbly2 != null)
 				clientAbly2.close();
-			if(testChannel != null)
-				testChannel.dispose();
+			testChannel.dispose();
 		}
 	}
 

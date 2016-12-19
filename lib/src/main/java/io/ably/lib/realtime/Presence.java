@@ -186,6 +186,7 @@ public class Presence {
 			syncCursor = syncChannelSerial.substring(syncChannelSerial.indexOf(':'));
 			if(syncCursor.length() > 1)
 				presence.startSync();
+			lastSyncSerial = syncChannelSerial;
 		}
 		for(PresenceMessage update : messages) {
 			boolean updateInternalPresence = update.connectionId.equals(channel.ably.connection.id);
@@ -224,9 +225,24 @@ public class Presence {
 					if (presence.put(item)) {
 						/* Message is new to presence map, send it */
 						try {
-							updatePresence(item, null);
+							updatePresence(item, new CompletionListener() {
+								@Override
+								public void onSuccess() {
+								}
+
+								@Override
+								public void onError(ErrorInfo reason) {
+									/*
+									 * (RTP5c3) If any of the automatic ENTER presence messages published in RTP5c2
+									 * fail, then an UPDATE event should be emitted on the channel, with a reason
+									 * set to the ErrorInfo received from realtime
+									 */
+									Log.e(TAG, String.format("Cannot automatically re-enter channel %s", channel.name));
+									channel.emit(UpdateEvent.update, ChannelStateListener.ChannelStateChange.createUpdateEvent(reason));
+								}
+							});
 						} catch(AblyException e) {
-							Log.e(TAG, String.format("Cannot automatically re-enter channel %s", channel.name));
+							Log.e(TAG, String.format("Error automatically re-entering channel %s", channel.name));
 						}
 					}
 				}
@@ -590,6 +606,24 @@ public class Presence {
 		 */
 		syncAsResultOfAttach = presence.syncInProgress;
 		sendQueuedMessages();
+		/*
+		 * (RTP3) If a SYNC operation is underway but not yet complete, and the transport is disconnected
+		 * unexpectedly, then if the connection is resumed successfully, it is the responsibility of the
+		 * client library to complete the SYNC operation. The client library requests a SYNC resume by
+		 * sending a SYNC ProtocolMessage with the channelSerial set to the same as the channelSerial of
+		 * the most recently received SYNC.
+		 */
+		if (!presence.syncInProgress && suspendedWhenSyncing && lastSyncSerial != null) {
+			ProtocolMessage syncMessage = new ProtocolMessage(ProtocolMessage.Action.sync, channel.name);
+			syncMessage.channelSerial = lastSyncSerial;
+			try {
+				channel.ably.connection.connectionManager.send(syncMessage, false, null);
+			}
+			catch (AblyException e) {
+				Log.e(TAG, String.format("Re-syncing failed after resume for channel %s", channel.name));
+			}
+		}
+		suspendedWhenSyncing = false;
 	}
 
 	void setDetached(ErrorInfo reason) {
@@ -604,6 +638,8 @@ public class Presence {
 	}
 
 	void setSuspended(ErrorInfo reason) {
+		if(presence.syncInProgress)
+			suspendedWhenSyncing = true;
 		/*
 		 * (RTP5f) If the channel enters the SUSPENDED state then all queued presence messages will fail
 		 * immediately, and the PresenceMap is cleared
@@ -841,4 +877,8 @@ public class Presence {
 
 	/* Sync in progress is a result of attach operation */
 	private boolean syncAsResultOfAttach;
+	/* Serial of most recently received sync */
+	private String lastSyncSerial;
+	/* Channel got suspended during sync? */
+	private boolean suspendedWhenSyncing;
 }
