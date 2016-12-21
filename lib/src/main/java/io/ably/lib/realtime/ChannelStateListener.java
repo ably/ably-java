@@ -29,7 +29,7 @@ public interface ChannelStateListener {
 		 * channel, and as such there is no loss of message continuity. In all
 		 * other cases, resumed is false, and may be accompanied with a "channel
 		 * state change error reason". */
-		final boolean resumed;
+		final public boolean resumed;
 
 		ChannelStateChange(ChannelState current, ChannelState previous, ErrorInfo reason, boolean resumed) {
 			this.current = current;
@@ -39,8 +39,8 @@ public interface ChannelStateListener {
 		}
 
 		/* construct UPDATE event */
-		static ChannelStateChange createUpdateEvent(ErrorInfo reason) {
-			return new ChannelStateChange(ChannelState.attached, ChannelState.attached, reason, false);
+		static ChannelStateChange createUpdateEvent(ErrorInfo reason, boolean resumed) {
+			return new ChannelStateChange(ChannelState.attached, ChannelState.attached, reason, resumed);
 		}
 	}
 
