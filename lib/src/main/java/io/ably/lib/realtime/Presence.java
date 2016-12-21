@@ -239,7 +239,7 @@ public class Presence {
 									 * set to the ErrorInfo received from realtime
 									 */
 									Log.e(TAG, String.format("Cannot automatically re-enter channel %s", channel.name));
-									channel.emit(UpdateEvent.update, ChannelStateListener.ChannelStateChange.createUpdateEvent(reason));
+									channel.emitUpdate(reason, false);
 								}
 							});
 						} catch(AblyException e) {

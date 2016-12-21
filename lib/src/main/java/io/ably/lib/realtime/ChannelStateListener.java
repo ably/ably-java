@@ -13,6 +13,7 @@ public interface ChannelStateListener {
 	 * Channel state change. See Ably Realtime API documentation for more details.
 	 */
 	public class ChannelStateChange {
+		final public ChannelEvent event;
 		/* (TH2) The ChannelStateChange object contains the current state in
 		 * attribute current, the previous state in attribute previous. */
 		final public ChannelState current;
@@ -32,15 +33,23 @@ public interface ChannelStateListener {
 		final public boolean resumed;
 
 		ChannelStateChange(ChannelState current, ChannelState previous, ErrorInfo reason, boolean resumed) {
+			this.event = current.getChannelEvent();
 			this.current = current;
 			this.previous = previous;
 			this.reason = reason;
 			this.resumed = resumed;
 		}
 
+		private ChannelStateChange(ErrorInfo reason, boolean resumed) {
+			this.event = ChannelEvent.update;
+			this.current = this.previous = ChannelState.attached;
+			this.reason = reason;
+			this.resumed = resumed;
+		}
+
 		/* construct UPDATE event */
 		static ChannelStateChange createUpdateEvent(ErrorInfo reason, boolean resumed) {
-			return new ChannelStateChange(ChannelState.attached, ChannelState.attached, reason, resumed);
+			return new ChannelStateChange(reason, resumed);
 		}
 	}
 

@@ -14,9 +14,9 @@ import org.junit.Test;
 
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.CompletionListener;
+import io.ably.lib.realtime.ConnectionEvent;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.realtime.ConnectionStateListener;
-import io.ably.lib.realtime.UpdateEvent;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.TokenCallback;
@@ -262,7 +262,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 			AblyRealtime ably = new AblyRealtime(opts);
 
 			/* Test UPDATE event delivery */
-			ably.connection.on(UpdateEvent.update, new ConnectionStateListener() {
+			ably.connection.on(ConnectionEvent.update, new ConnectionStateListener() {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange state) {
 					flags[2] = true;
