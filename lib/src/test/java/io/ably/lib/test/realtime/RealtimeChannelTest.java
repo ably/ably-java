@@ -1090,10 +1090,12 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			channelWaiter.waitFor(ChannelState.attached);
 
 			final int[] updateEventsEmitted = new int[]{0};
+			final boolean[] resumedFlag = new boolean[]{true};
 			channel.on(UpdateEvent.update, new ChannelStateListener() {
 				@Override
 				public void onChannelStateChanged(ChannelStateChange stateChange) {
 					updateEventsEmitted[0]++;
+					resumedFlag[0] = stateChange.resumed;
 				}
 			});
 
@@ -1101,6 +1103,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			ProtocolMessage attachedMessage = new ProtocolMessage() {{
 				action = Action.attached;
 				channel = channelName;
+				flags |= 1 << Flag.resumed.ordinal();
 			}};
 			ably.connection.connectionManager.onMessage(attachedMessage);
 
@@ -1117,6 +1120,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
 			/* Verify received UPDATE message on channel */
 			assertEquals("Verify exactly one UPDATE event was emitted on the channel", updateEventsEmitted[0], 1);
+			assertTrue("Verify resumed flag set in UPDATE event", resumedFlag[0]);
 		} finally {
 			if (ably != null)
 				ably.close();
