@@ -179,8 +179,16 @@ public class RealtimeChannelHistoryTest {
 			channel.publish(message2);
 			channel.publish(messages34);
 
-			/* get the history for this channel */
-			PaginatedResult<Message> messages = channel.history(null);
+			/* Get history for the channel. Wait for no longer than 2 seconds for the history to be populated */
+			PaginatedResult<Message> messages;
+			int n = 0;
+			do {
+				messages = channel.history(null);
+				if (messages.items().length < 4) {
+					try { Thread.sleep(100); } catch (InterruptedException e) {}
+				}
+			} while (messages.items().length < 4 && ++n < 20);
+
 			assertNotNull("Expected non-null messages", messages);
 			assertEquals("Expected 4 message", messages.items().length, 4);
 
@@ -232,10 +240,15 @@ public class RealtimeChannelHistoryTest {
 			channel.publish(message2);
 			channel.publish(messages34);
 
-			/* get the history for this channel */
-			PaginatedResult<Message> messages = channel.history(null);
-			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 4 message", messages.items().length, 4);
+			/* Get history for the channel. Wait for no longer than 2 seconds for the history to be populated */
+			PaginatedResult<Message> messages;
+			int n = 0;
+			do {
+				messages = channel.history(null);
+				if (messages.items().length < 4) {
+					try { Thread.sleep(100); } catch (InterruptedException e) {}
+				}
+			} while (messages.items().length < 4 && ++n < 20);
 
 			/* verify we received message history from most recent to older */
 			assertEquals("Expect correct message text", messages.items()[0].data, messages34[1].data);

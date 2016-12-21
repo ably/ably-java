@@ -739,7 +739,7 @@ public class RealtimeMessageTest {
 			protoMessage.error = new ErrorInfo("test error", 123);
 
 			ConnectionManager connectionManager = ably.connection.connectionManager;
-			connectionManager.onMessage(protoMessage);
+			connectionManager.onMessage(null, protoMessage);
 
 			// On disconnected we retry right away since we're connected, so we can only
 			// check that the state is not failed.

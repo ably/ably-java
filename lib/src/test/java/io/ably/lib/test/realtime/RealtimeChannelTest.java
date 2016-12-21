@@ -1047,7 +1047,7 @@ public class RealtimeChannelTest {
 			protoMessage.error = new ErrorInfo("test error", 123);
 
 			ConnectionManager connectionManager = ably.connection.connectionManager;
-			connectionManager.onMessage(protoMessage);
+			connectionManager.onMessage(null, protoMessage);
 
 			/* Because of (RTL13) channel should now be in either attaching or attached state */
 			assertNotEquals("channel state shouldn't be failed", channel.state, ChannelState.failed);

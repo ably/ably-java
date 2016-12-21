@@ -188,6 +188,7 @@ public class Presence {
 				presence.startSync();
 		}
 		for(PresenceMessage update : messages) {
+			boolean updateInternalPresence = update.connectionId.equals(channel.ably.connection.id);
 			switch(update.action) {
 			case enter:
 			case update:
@@ -195,16 +196,60 @@ public class Presence {
 				update.action = PresenceMessage.Action.present;
 			case present:
 				broadcast &= presence.put(update);
+				if(updateInternalPresence)
+					internalPresence.put(update);
 				break;
 			case leave:
 				broadcast &= presence.remove(update);
+				if(updateInternalPresence)
+					internalPresence.remove(update);
 				break;
 			case absent:
 			}
 		}
 		/* if this is the last message in a sequence of sync updates, end the sync */
-		if(syncChannelSerial == null || syncCursor.length() <= 1)
+		if(syncChannelSerial == null || syncCursor.length() <= 1) {
 			presence.endSync();
+			/**
+			 * (RTP5c2) If a SYNC is initiated as part of the attach, then once the SYNC is complete,
+			 * all members not present in the PresenceMap but present in the internal PresenceMap must
+			 * be re-entered automatically by the client using the clientId and data attributes from
+			 * each. The members re-entered automatically must be removed from the internal PresenceMap
+			 * ensuring that members present on the channel are constructed from presence events sent
+			 * from Ably since the channel became ATTACHED
+			 */
+			if (syncAsResultOfAttach) {
+				syncAsResultOfAttach = false;
+				for (PresenceMessage item: internalPresence.values()) {
+					if (presence.put(item)) {
+						/* Message is new to presence map, send it */
+						try {
+							PresenceMessage itemToSend = (PresenceMessage)item.clone();
+							itemToSend.action = PresenceMessage.Action.enter;
+							updatePresence(itemToSend, new CompletionListener() {
+								@Override
+								public void onSuccess() {
+								}
+
+								@Override
+								public void onError(ErrorInfo reason) {
+									/*
+									 * (RTP5c3) If any of the automatic ENTER presence messages published in RTP5c2
+									 * fail, then an UPDATE event should be emitted on the channel, with a reason
+									 * set to the ErrorInfo received from realtime
+									 */
+									Log.e(TAG, String.format("Cannot automatically re-enter channel %s", channel.name));
+									channel.emit(UpdateEvent.update, ChannelStateListener.ChannelStateChange.createUpdateEvent(reason));
+								}
+							});
+						} catch(AblyException e) {
+							Log.e(TAG, String.format("Error automatically re-entering channel %s", channel.name));
+						}
+					}
+				}
+				internalPresence.clear();
+			}
+		}
 
 		if(broadcast)
 			broadcastPresence(messages);
@@ -547,7 +592,7 @@ public class Presence {
 				} catch(Throwable t) {
 					Log.e(TAG, "failQueuedMessages(): Unexpected exception calling listener", t);
 				}
-
+		pendingPresence.clear();
 	}
 
 
@@ -556,15 +601,32 @@ public class Presence {
 	 ************************************/
 
 	void setAttached() {
+		/**
+		 * Channel calls awaitSync() before setAttached() if the corresponding flag in message is set.
+		 * We use side effect of awaitSync() call to determine if sync is requested on attach
+		 */
+		syncAsResultOfAttach = presence.syncInProgress;
 		sendQueuedMessages();
 	}
 
 	void setDetached(ErrorInfo reason) {
+		/**
+		 * (RTP5a) If the channel enters the DETACHED or FAILED state then all queued presence
+		 * messages will fail immediately, and the PresenceMap and internal PresenceMap is cleared.
+		 * The latter ensures members are not automatically re-entered if the Channel later becomes attached
+		 */
 		failQueuedMessages(reason);
+		presence.clear();
+		internalPresence.clear();
 	}
 
 	void setSuspended(ErrorInfo reason) {
+		/*
+		 * (RTP5f) If the channel enters the SUSPENDED state then all queued presence messages will fail
+		 * immediately, and the PresenceMap is cleared
+		 */
 		failQueuedMessages(reason);
+		presence.clear();
 	}
 
 	/************************************
@@ -615,14 +677,60 @@ public class Presence {
 			if(residualMembers != null)
 				residualMembers.remove(key);
 
-			/* compare the timestamp of the new item with any existing member (or absent witness) */
-			PresenceMessage existingItem = members.get(key);
-			if(existingItem != null && item.timestamp < existingItem.timestamp) {
-				/* no item supersedes a newer item with the same key */
+			/* check if there is a newer existing member (or absent witness) */
+			if (hasNewerItem(key, item))
 				return false;
-			}
+
 			members.put(key, item);
 			return true;
+		}
+
+		/**
+		 * Determine if there is a newer item already in the map
+		 * @param key key used to search the item in the map
+		 * @param item new presence message to be added
+		 * @return true if there is a newer item
+		 */
+		synchronized boolean hasNewerItem(String key, PresenceMessage item) {
+			PresenceMessage existingItem = members.get(key);
+			if(existingItem == null)
+				return false;
+
+			/*
+			 * (RTP2b1) If either presence message has a connectionId which is not an initial substring
+			 * of its id, compare them by timestamp numerically. (This will be the case when one of them
+			 * is a 'synthesized leave' event sent by realtime to indicate a connection disconnected
+			 * unexpectedly 15s ago. Such messages will have an id that does not correspond to its
+			 * connectionId, as it wasn’t actually published by that connection
+			 */
+			if(item.connectionId != null && existingItem.connectionId != null &&
+					(!item.id.startsWith(item.connectionId) || !existingItem.id.startsWith(existingItem.connectionId)))
+				return existingItem.timestamp >= item.timestamp;
+
+			/*
+			 * (RTP2b2) Else split the id of both presence messages (which will be of the form
+			 * connid:msgSerial:index, e.g. aaaaaa:0:0) on the separator :, and parse the latter two as
+			 * integers. Compare them first by msgSerial numerically, then (if @msgSerial@s are equal) by
+			 * index numerically, larger being newer in both cases
+			 */
+			String[] itemComponents = item.id.split(":", 3);
+			String[] existingItemComponents = existingItem.id.split(":", 3);
+
+			if(itemComponents.length < 3 || existingItemComponents.length < 3)
+				return false;
+
+			try {
+				long messageSerial = Long.valueOf(itemComponents[1]);
+				long messageIndex = Long.valueOf(itemComponents[2]);
+				long existingMessageSerial = Long.valueOf(existingItemComponents[1]);
+				long existingMessageIndex = Long.valueOf(existingItemComponents[2]);
+
+				return existingMessageSerial > messageSerial ||
+						(existingMessageSerial == messageSerial && existingMessageIndex >= messageIndex);
+			}
+			catch(NumberFormatException e) {
+				return false;
+			}
 		}
 
 		/**
@@ -717,12 +825,22 @@ public class Presence {
 			return message.connectionId + ':' + message.clientId;
 		}
 
+		/**
+		 * Clear all entries
+		 */
+		synchronized void clear() {
+			members.clear();
+			if(residualMembers != null)
+				residualMembers.clear();
+		}
+
 		private boolean syncInProgress;
 		private Collection<String> residualMembers;
 		private final HashMap<String, PresenceMessage> members = new HashMap<String, PresenceMessage>();
 	}
 
 	private final PresenceMap presence = new PresenceMap();
+	private final PresenceMap internalPresence = new PresenceMap();
 
 	/************************************
 	 * general
@@ -737,4 +855,7 @@ public class Presence {
 
 	private final Channel channel;
 	private final String clientId;
+
+	/* Sync in progress is a result of attach operation */
+	private boolean syncAsResultOfAttach;
 }
