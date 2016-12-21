@@ -749,31 +749,57 @@ public class Channel extends EventEmitter<Event, ChannelStateListener> {
 	 * internal
 	 *
 	 */
-	private synchronized void sendQueuedMessages() {
-		Log.v(TAG, "sendQueuedMessages()");
-		boolean queueMessages = ably.options.queueMessages;
-		ConnectionManager connectionManager = ably.connection.connectionManager;
-		for(QueuedMessage msg : queuedMessages)
-			try {
-				connectionManager.send(msg.msg, queueMessages, msg.listener);
-			} catch(AblyException e) {
-				Log.e(TAG, "sendQueuedMessages(): Unexpected exception sending message", e);
-				if(msg.listener != null)
-					msg.listener.onError(e.errorInfo);
-			}
-		queuedMessages.clear();
+
+	private static class FailedMessage {
+		QueuedMessage msg;
+		ErrorInfo reason;
+		FailedMessage(QueuedMessage msg, ErrorInfo reason) {
+			this.msg = msg;
+			this.reason = reason;
+		}
 	}
 
-	private synchronized void failQueuedMessages(ErrorInfo reason) {
-		Log.v(TAG, "failQueuedMessages()");
-		for(QueuedMessage msg : queuedMessages)
-			if(msg.listener != null)
+	private void sendQueuedMessages() {
+		Log.v(TAG, "sendQueuedMessages()");
+		ArrayList<FailedMessage> failedMessages = new ArrayList<>();
+		synchronized (this) {
+			boolean queueMessages = ably.options.queueMessages;
+			ConnectionManager connectionManager = ably.connection.connectionManager;
+			for (QueuedMessage msg : queuedMessages)
 				try {
-					msg.listener.onError(reason);
-				} catch(Throwable t) {
-					Log.e(TAG, "failQueuedMessages(): Unexpected exception calling listener", t);
+					connectionManager.send(msg.msg, queueMessages, msg.listener);
+				} catch (AblyException e) {
+					Log.e(TAG, "sendQueuedMessages(): Unexpected exception sending message", e);
+					if (msg.listener != null)
+						failedMessages.add(new FailedMessage(msg, e.errorInfo));
 				}
-		queuedMessages.clear();
+			queuedMessages.clear();
+		}
+
+		/* Call completion callbacks for failed messages without holding the lock */
+		for (FailedMessage failed: failedMessages)
+			failed.msg.listener.onError(failed.reason);
+	}
+
+	private void failQueuedMessages(ErrorInfo reason) {
+		Log.v(TAG, "failQueuedMessages()");
+
+		ArrayList<FailedMessage> failedMessages = new ArrayList<>();
+		synchronized (this) {
+			for (QueuedMessage msg: queuedMessages) {
+				if (msg.listener != null)
+					failedMessages.add(new FailedMessage(msg, reason));
+			}
+			queuedMessages.clear();
+		}
+
+		for(FailedMessage failed : failedMessages) {
+			try {
+				failed.msg.listener.onError(failed.reason);
+			} catch (Throwable t) {
+				Log.e(TAG, "failQueuedMessages(): Unexpected exception calling listener", t);
+			}
+		}
 	}
 
 	static Param[] replacePlaceholderParams(Channel channel, Param[] placeholderParams) throws AblyException {
