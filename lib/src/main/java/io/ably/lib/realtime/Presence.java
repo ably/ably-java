@@ -221,9 +221,11 @@ public class Presence {
 			if (syncAsResultOfAttach) {
 				syncAsResultOfAttach = false;
 				for (PresenceMessage item: internalPresence.values()) {
+					item.action = PresenceMessage.Action.enter;
 					if (presence.put(item)) {
 						/* Message is new to presence map, send it */
 						try {
+							item.action = PresenceMessage.Action.enter;
 							updatePresence(item, new CompletionListener() {
 								@Override
 								public void onSuccess() {
