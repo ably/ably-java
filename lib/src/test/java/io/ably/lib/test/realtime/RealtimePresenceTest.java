@@ -6,8 +6,8 @@ import static org.junit.Assert.*;
 import java.util.*;
 
 import io.ably.lib.realtime.*;
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.rest.Auth;
+import io.ably.lib.realtime.Channel;
+import io.ably.lib.rest.*;
 import io.ably.lib.rest.Auth.TokenParams;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Setup;
@@ -1961,8 +1961,6 @@ public class RealtimePresenceTest {
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 			connectionWaiter.waitFor(ConnectionState.connected);
 
-			final boolean[] presenceWaiter = new boolean[] {false};
-
 			final Channel channel = ably.channels.get(channelName);
 			channel.attach();
 			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
@@ -2015,10 +2013,12 @@ public class RealtimePresenceTest {
 
 			try {
 				Thread.sleep(500);
-				assertEquals("Verify correct presence message data has been received",
-						channel.presence.get(testClientId2, true)[0].data, presenceData);
 			} catch (InterruptedException e) {}
 
+			AblyRest ablyRest = new AblyRest(opts);
+			io.ably.lib.rest.Channel restChannel = ablyRest.channels.get(channelName);
+			assertEquals("Verify presence data is received by the server",
+					restChannel.presence.get(null).items().length, 2);
 		} finally {
 			if(ably != null)
 				ably.close();
