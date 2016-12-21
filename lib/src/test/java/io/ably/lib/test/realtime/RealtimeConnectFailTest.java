@@ -6,15 +6,12 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import io.ably.lib.realtime.UpdateEvent;
+import io.ably.lib.realtime.*;
 import io.ably.lib.rest.Auth;
-import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.rest.Auth;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth.TokenCallback;
 import io.ably.lib.rest.Auth.TokenDetails;
@@ -280,7 +277,7 @@ public class RealtimeConnectFailTest {
 			AblyRealtime ably = new AblyRealtime(opts);
 
 			/* Test UPDATE event delivery */
-			ably.connection.on(UpdateEvent.update, new ConnectionStateListener() {
+			ably.connection.on(ConnectionEvent.update, new ConnectionStateListener() {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange state) {
 					flags[2] = true;
