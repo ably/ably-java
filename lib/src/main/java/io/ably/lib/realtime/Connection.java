@@ -4,14 +4,13 @@ import io.ably.lib.realtime.ConnectionStateListener.ConnectionStateChange;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.Event;
 import io.ably.lib.util.EventEmitter;
 
 /**
  * A class representing the connection associated with an AblyRealtime instance.
  * The Connection object exposes the lifecycle and parameters of the realtime connection.
  */
-public class Connection extends EventEmitter<Event, ConnectionStateListener> {
+public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateListener> {
 
 	/**
 	 * The current state of this Connection.
@@ -82,13 +81,25 @@ public class Connection extends EventEmitter<Event, ConnectionStateListener> {
 	}
 
 	@Override
-	protected void apply(ConnectionStateListener listener, Event event, Object... args) {
+	protected void apply(ConnectionStateListener listener, ConnectionEvent event, Object... args) {
 		listener.onConnectionStateChanged((ConnectionStateChange)args[0]);
 	}
 
 	public void emitUpdate(ErrorInfo errorInfo) {
 		if (state == ConnectionState.connected)
-			emit(UpdateEvent.update, ConnectionStateListener.ConnectionStateChange.createUpdateEvent(errorInfo));
+			emit(ConnectionEvent.update, ConnectionStateListener.ConnectionStateChange.createUpdateEvent(errorInfo));
+	}
+
+	public void emit(ConnectionState state, ConnectionStateChange stateChange) {
+		super.emit(state.getConnectionEvent(), stateChange);
+	}
+
+	public void on(ConnectionState state, ConnectionStateListener listener) {
+		super.on(state.getConnectionEvent(), listener);
+	}
+
+	public void once(ConnectionState state, ConnectionStateListener listener) {
+		super.once(state.getConnectionEvent(), listener);
 	}
 
 	final AblyRealtime ably;

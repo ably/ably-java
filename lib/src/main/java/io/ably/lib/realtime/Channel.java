@@ -22,7 +22,7 @@ import java.util.*;
  * attachment to the channel.
  *
  */
-public class Channel extends EventEmitter<Event, ChannelStateListener> {
+public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 
 	/************************************
 	 * ChannelState and state management
@@ -468,7 +468,7 @@ public class Channel extends EventEmitter<Event, ChannelStateListener> {
 	}
 
 	@Override
-	protected void apply(ChannelStateListener listener, Event event, Object... args) {
+	protected void apply(ChannelStateListener listener, ChannelEvent event, Object... args) {
 		listener.onChannelStateChanged((ChannelStateListener.ChannelStateChange)args[0]);
 	}
 
@@ -949,7 +949,19 @@ public class Channel extends EventEmitter<Event, ChannelStateListener> {
 	 */
 	void emitUpdate(ErrorInfo errorInfo, boolean resumed) {
 		if(state == ChannelState.attached)
-			emit(UpdateEvent.update, ChannelStateListener.ChannelStateChange.createUpdateEvent(errorInfo, resumed));
+			emit(ChannelEvent.update, ChannelStateListener.ChannelStateChange.createUpdateEvent(errorInfo, resumed));
+	}
+
+	public void emit(ChannelState state, ChannelStateListener.ChannelStateChange channelStateChange) {
+		super.emit(state.getChannelEvent(), channelStateChange);
+	}
+
+	public void on(ChannelState state, ChannelStateListener listener) {
+		super.on(state.getChannelEvent(), listener);
+	}
+
+	public void once(ChannelState state, ChannelStateListener listener) {
+		super.on(state.getChannelEvent(), listener);
 	}
 
 	private static final String TAG = Channel.class.getName();

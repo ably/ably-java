@@ -1,17 +1,23 @@
 package io.ably.lib.realtime;
 
-import io.ably.lib.types.Event;
-
 /**
  * Connection states. See Ably Realtime API documentation for more details.
  */
-public enum ConnectionState implements Event {
-	initialized,
-	connecting,
-	connected,
-	disconnected,
-	suspended,
-	closing,
-	closed,
-	failed
+public enum ConnectionState {
+	initialized(ConnectionEvent.initialized),
+	connecting(ConnectionEvent.connecting),
+	connected(ConnectionEvent.connected),
+	disconnected(ConnectionEvent.disconnected),
+	suspended(ConnectionEvent.suspended),
+	closing(ConnectionEvent.closing),
+	closed(ConnectionEvent.closed),
+	failed(ConnectionEvent.failed);
+
+	final private ConnectionEvent event;
+	private ConnectionState(ConnectionEvent event) {
+		this.event = event;
+	}
+	public ConnectionEvent getConnectionEvent() {
+		return event;
+	}
 }
