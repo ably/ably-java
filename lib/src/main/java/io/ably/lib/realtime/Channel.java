@@ -235,7 +235,7 @@ public class Channel extends EventEmitter<Event, ChannelStateListener> {
 		if(state == ChannelState.attached) {
 			Log.v(TAG, String.format("Server initiated attach for channel %s", name));
 			/* emit UPDATE event according to RTL12 */
-			emit(UpdateEvent.update, ChannelStateListener.ChannelStateChange.createUpdateEvent(null));
+			emitUpdate(null, resumed);
 		} else {
 			setState(ChannelState.attached, message.error, resumed);
 			sendQueuedMessages();
@@ -947,9 +947,9 @@ public class Channel extends EventEmitter<Event, ChannelStateListener> {
 	 * Emits UPDATE event
 	 * @param errorInfo
 	 */
-	void emitUpdate(ErrorInfo errorInfo) {
+	void emitUpdate(ErrorInfo errorInfo, boolean resumed) {
 		if(state == ChannelState.attached)
-			emit(UpdateEvent.update, ChannelStateListener.ChannelStateChange.createUpdateEvent(errorInfo));
+			emit(UpdateEvent.update, ChannelStateListener.ChannelStateChange.createUpdateEvent(errorInfo, resumed));
 	}
 
 	private static final String TAG = Channel.class.getName();
