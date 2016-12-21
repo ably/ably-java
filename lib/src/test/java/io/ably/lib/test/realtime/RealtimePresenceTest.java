@@ -2135,6 +2135,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 							factualMsg != null && factualMsg.id.equals(testMsg.id));
 				}
 			}
+			assertEquals("Verify nothing else passed the newness test", n, presenceMessages.size());
 		}
 		finally {
 			if (ably != null)
