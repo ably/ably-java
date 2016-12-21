@@ -961,7 +961,7 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 	}
 
 	public void once(ChannelState state, ChannelStateListener listener) {
-		super.on(state.getChannelEvent(), listener);
+		super.once(state.getChannelEvent(), listener);
 	}
 
 	private static final String TAG = Channel.class.getName();
