@@ -20,7 +20,10 @@ import org.junit.Test;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.Channel.MessageListener;
+import io.ably.lib.realtime.ChannelEvent;
 import io.ably.lib.realtime.ChannelState;
+import io.ably.lib.realtime.ChannelStateListener;
+import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.test.common.Helpers;
@@ -30,9 +33,8 @@ import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.common.Setup.TestVars;
 import io.ably.lib.transport.ConnectionManager;
+import io.ably.lib.test.util.MockWebsocketFactory;
 import io.ably.lib.transport.Defaults;
-import io.ably.lib.transport.ITransport;
-import io.ably.lib.transport.WebSocketTransport;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
@@ -1091,7 +1093,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
 			final int[] updateEventsEmitted = new int[]{0};
 			final boolean[] resumedFlag = new boolean[]{true};
-			channel.on(UpdateEvent.update, new ChannelStateListener() {
+			channel.on(ChannelEvent.update, new ChannelStateListener() {
 				@Override
 				public void onChannelStateChanged(ChannelStateChange stateChange) {
 					updateEventsEmitted[0]++;
@@ -1105,14 +1107,14 @@ public class RealtimeChannelTest extends ParameterizedTest {
 				channel = channelName;
 				flags |= 1 << Flag.resumed.ordinal();
 			}};
-			ably.connection.connectionManager.onMessage(attachedMessage);
+			ably.connection.connectionManager.onMessage(null, attachedMessage);
 
 			/* Inject detached message as if from the server */
 			ProtocolMessage detachedMessage = new ProtocolMessage() {{
 				action = Action.detached;
 				channel = channelName;
 			}};
-			ably.connection.connectionManager.onMessage(detachedMessage);
+			ably.connection.connectionManager.onMessage(null, detachedMessage);
 
 			/* Channel should transition to attaching, then to attached */
 			channelWaiter.waitFor(ChannelState.attaching);
@@ -1146,10 +1148,10 @@ public class RealtimeChannelTest extends ParameterizedTest {
 		long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
 		try {
 			/* Mock transport to block send */
-			Defaults.TRANSPORT = "io.ably.lib.test.realtime.RealtimeChannelTest$MockWebsocketFactory";
+			Defaults.TRANSPORT = MockWebsocketFactory.class.getName();
 			/* Reduce timeout for test to run faster */
 			Defaults.realtimeRequestTimeout = 1000;
-			MockWebsocketTransport.blockSend = false;
+			MockWebsocketFactory.allowSend();
 
 			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
@@ -1161,7 +1163,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			connectionWaiter.waitFor(ConnectionState.connected);
 
 			/* Block send() and attach */
-			MockWebsocketTransport.blockSend = true;
+			MockWebsocketFactory.blockSend();
 
 			Channel channel = ably.channels.get("channel_reattach_test");
 			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
@@ -1173,7 +1175,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			channelWaiter.waitFor(ChannelState.suspended);
 
 			/* Re-enable send() and wait for channel to attach */
-			MockWebsocketTransport.blockSend = false;
+			MockWebsocketFactory.allowSend();
 			channelWaiter.waitFor(ChannelState.attached);
 
 			/* Suspend connection: channel state should change to suspended */
@@ -1184,7 +1186,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			ably.connection.once(ConnectionState.connected, new ConnectionStateListener() {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange state) {
-					MockWebsocketTransport.blockSend = true;
+					MockWebsocketFactory.blockSend();
 				}
 			});
 			ably.connection.connectionManager.requestState(ConnectionState.connected);
@@ -1202,7 +1204,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			channelWaiter.waitFor(ChannelState.suspended);
 
 			/* Enable message sending again */
-			MockWebsocketTransport.blockSend = false;
+			MockWebsocketFactory.allowSend();
 
 			/* And wait for attached state of the channel */
 			channelWaiter.waitFor(ChannelState.attached);
@@ -1210,7 +1212,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			final ErrorInfo[] errorDetaching = new ErrorInfo[] {null};
 
 			/* Block and detach */
-			MockWebsocketTransport.blockSend = true;
+			MockWebsocketFactory.blockSend();
 			channel.detach(new CompletionListener() {
 				@Override
 				public void onSuccess() {
@@ -1250,30 +1252,5 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			Defaults.realtimeRequestTimeout = oldRealtimeTimeout;
 		}
 	}
-
-	public static class MockWebsocketFactory implements ITransport.Factory {
-		@Override
-		public ITransport getTransport(ITransport.TransportParams transportParams, ConnectionManager connectionManager) {
-			return new MockWebsocketTransport(transportParams, connectionManager);
-		}
-	}
-
-	/*
-	 * Special transport class that allows blocking send()
-	 */
-	public static class MockWebsocketTransport extends WebSocketTransport {
-		static boolean blockSend = false;
-
-		private MockWebsocketTransport(TransportParams transportParams, ConnectionManager connectionManager) {
-			super(transportParams, connectionManager);
-		}
-
-		@Override
-		public void send(ProtocolMessage msg) throws AblyException {
-			if (!blockSend)
-				super.send(msg);
-		}
-	}
-
 }
 

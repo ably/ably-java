@@ -2188,15 +2188,18 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 			/* set up a second connection with different clientId */
 			Defaults.TRANSPORT = MockWebsocketFactory.class.getName();
+			MockWebsocketFactory.allowSend();
 			ClientOptions client2Opts = new ClientOptions() {{
 				tokenDetails = token2;
 				clientId = testClientId2;
 			}};
 			testVars.fillInOptions(client2Opts);
+			client2Opts.autoConnect = false;
 			clientAbly2 = new AblyRealtime(client2Opts);
 
 			/* wait until connected */
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(clientAbly2.connection);
+			clientAbly2.connection.connect();
 			connectionWaiter.waitFor(ConnectionState.connected);
 
 			/* get channel */
