@@ -88,6 +88,10 @@ public class AblyRest {
 			super.put(channelName, channel);
 			return channel;
 		}
+
+		public void release(String channelName) {
+			super.remove(channelName);
+		}
 	}
 
 	/**
