@@ -245,8 +245,16 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			for(Channel channel : ably.channels.values())
 				channel.setConnected();
 		} else { 
-			if(!state.queueEvents)
+			if(!state.queueEvents) {
+				/* (RTN7c)  If a connection enters the SUSPENDED, CLOSED or FAILED state,
+				 * or if the connection state is lost, and an ACK or NACK has not yet been
+				 * received for a message, the client should consider the delivery of those
+				 * messages as failed
+				 */
+				pendingMessages.reset(msgSerial, state.defaultErrorInfo);
+				/* fail not sent yet but queued messages */
 				failQueuedMessages(state.defaultErrorInfo);
+			}
 			for(Channel channel : ably.channels.values()) {
 				switch (state.state) {
 					case disconnected:
