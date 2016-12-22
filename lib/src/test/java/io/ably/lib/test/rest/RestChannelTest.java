@@ -40,5 +40,8 @@ public class RestChannelTest {
 			assertTrue("Verify correct channels are in the hashmap",
 					channel == channel1 || channel == channel2);
 		}
+		ablyRest.channels.release("channel_1");
+		channel1_copy = ablyRest.channels.get("channel_1");
+		assertNotEquals("Verify channel is re-created after release", channel1, channel1_copy);
 	}
 }
