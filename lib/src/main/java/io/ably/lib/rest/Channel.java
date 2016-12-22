@@ -184,6 +184,6 @@ public class Channel {
 
 	private final AblyRest ably;
 	private final String basePath;
-	private ChannelOptions options;
+	ChannelOptions options;
 
 }

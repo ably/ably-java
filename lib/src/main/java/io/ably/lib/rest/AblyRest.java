@@ -1,6 +1,7 @@
 package io.ably.lib.rest;
 
 import java.util.Collection;
+import java.util.HashMap;
 
 import io.ably.lib.http.AsyncHttp;
 import io.ably.lib.http.AsyncPaginatedQuery;
@@ -69,14 +70,23 @@ public class AblyRest {
 	 * A collection of Channels associated with an Ably instance.
 	 *
 	 */
-	public class Channels {
+	public class Channels extends HashMap<String, Channel> {
 		public Channel get(String channelName) {
 			try {
 				return get(channelName, null);
 			} catch (AblyException e) { return null; }
 		}
 		public Channel get(String channelName, ChannelOptions channelOptions) throws AblyException {
-			return new Channel(AblyRest.this, channelName, channelOptions);
+			Channel channel = super.get(channelName);
+			if (channel != null) {
+				if (channelOptions != null)
+					channel.options = channelOptions;
+				return channel;
+			}
+
+			channel = new Channel(AblyRest.this, channelName, channelOptions);
+			super.put(channelName, channel);
+			return channel;
 		}
 	}
 
