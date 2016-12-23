@@ -134,7 +134,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 			TokenParams tokenParams = new TokenParams();
 
 			/* create token request with custom AuthOptions that has attribute queryTime */
-			TokenRequest tokenRequest = ablyForTime.auth.createTokenRequest(authOptions, tokenParams);
+			TokenRequest tokenRequest = ablyForTime.auth.createTokenRequest(tokenParams, authOptions);
 
 			/* verify that issued time of server equals fake expected value */
 			assertEquals(expectedClientId, tokenRequest.clientId);
@@ -147,7 +147,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 			}
 
 			/* create token request with stored AuthOptions */
-			tokenRequest = ablyForTime.auth.createTokenRequest(null, tokenParams);
+			tokenRequest = ablyForTime.auth.createTokenRequest(tokenParams, null);
 
 			/* Verify that,
 			* 	 - timestamp not equals fake server time
