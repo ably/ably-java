@@ -527,7 +527,7 @@ public class Auth {
 			signedTokenRequest = (TokenRequest)authUrlResponse;
 		} else if(tokenOptions.key != null) {
 			Log.i("Auth.requestToken()", "using token auth with client-side signing");
-			signedTokenRequest = createTokenRequest(tokenOptions, params);
+			signedTokenRequest = createTokenRequest(params, tokenOptions);
 		} else {
 			throw AblyException.fromErrorInfo(new ErrorInfo("Auth.requestToken(): options must include valid authentication parameters", 400, 40000));
 		}
@@ -551,12 +551,12 @@ public class Auth {
 	 * Create a signed token request based on known credentials
 	 * and the given token params. This would typically be used if creating
 	 * signed requests for submission by another client.
-	 * @param options: see {@link #authorize} for options
-	 * @param params: see {@link #authorize} for params
+	 * @param params : see {@link #authorize} for params
+	 * @param options : see {@link #authorize} for options
 	 * @return: the params augmented with the mac.
 	 * @throws AblyException
 	 */
-	public TokenRequest createTokenRequest(AuthOptions options, TokenParams params) throws AblyException {
+	public TokenRequest createTokenRequest(TokenParams params, AuthOptions options) throws AblyException {
 		/* Spec: RSA9h */
 		options = (options == null) ? this.authOptions : options.copy();
 		params = (params == null) ? this.tokenParams : params.copy();
