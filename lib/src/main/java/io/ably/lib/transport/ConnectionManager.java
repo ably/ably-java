@@ -810,9 +810,10 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			while(queuedMessages.size() > 0) {
 				try {
 					sendImpl(queuedMessages.get(0));
-					queuedMessages.remove(0);
 				} catch (AblyException e) {
 					Log.e(TAG, "sendQueuedMessages(): Unexpected error sending queued messages", e);
+				} finally {
+					queuedMessages.remove(0);
 				}
 			}
 		}

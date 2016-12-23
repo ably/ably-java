@@ -1,9 +1,10 @@
 package io.ably.lib.test.realtime;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import io.ably.lib.transport.ConnectionManager;
+import io.ably.lib.transport.Defaults;
+import io.ably.lib.transport.ITransport;
+import io.ably.lib.transport.WebSocketTransport;
+import io.ably.lib.types.ProtocolMessage;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -22,6 +23,10 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.lessThan;
+import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.*;
 
 public class RealtimeRecoverTest {
 
@@ -337,6 +342,96 @@ public class RealtimeRecoverTest {
 		}
 	}
 
+	/**
+	 * Test if ConnectionManager behaves correctly after exception thrown from ITransport.send()
+	 */
+	@Test
+	public void recover_transport_send_exception() {
+		AblyRealtime ably = null;
+		String oldTransportClass = Defaults.TRANSPORT;
+		final String channelName = "recover_transport_send_exception";
+		try {
+			MockWebsocketTransport.throwOnSend = false;
+			MockWebsocketTransport.exceptionsThrown = 0;
 
+			Defaults.TRANSPORT = MockWebsocketFactory.class.getName();
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			opts.autoConnect = false;
+			ably = new AblyRealtime(opts);
+			ConnectionWaiter connWaiter = new ConnectionWaiter(ably.connection);
+			ably.connection.connect();
+			connWaiter.waitFor(ConnectionState.connected);
+
+			Channel channel = ably.channels.get(channelName);
+			channel.attach();
+			new ChannelWaiter(channel).waitFor(ChannelState.attached);
+
+			ably.connection.connectionManager.requestState(ConnectionState.disconnected);
+			connWaiter.waitFor(ConnectionState.connecting, 2);
+
+			/* Start throwing exceptions in the send() */
+			MockWebsocketTransport.throwOnSend = true;
+			for (int i=0; i<5; i++) {
+				try {
+					channel.publish("name", "data");
+				} catch (Throwable e) {
+				}
+			}
+
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {}
+
+			/* Stop exceptions */
+			MockWebsocketTransport.throwOnSend = false;
+			channel.publish("name2", "data2");
+
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {}
+
+			/* It is hard to predict how many exception would be thrown but it shouldn't be hundreds */
+			assertThat("", MockWebsocketTransport.exceptionsThrown, is(lessThan(10)));
+
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("Unexpected exception");
+		} finally {
+			if (ably != null)
+				ably.close();
+			Defaults.TRANSPORT = oldTransportClass;
+		}
+
+	}
+
+	public static class MockWebsocketFactory implements ITransport.Factory {
+		@Override
+		public ITransport getTransport(ITransport.TransportParams transportParams, ConnectionManager connectionManager) {
+			return new MockWebsocketTransport(transportParams, connectionManager);
+		}
+	}
+
+	/*
+	 * Special transport class that allows throwing exceptions from send()
+	 */
+	private static class MockWebsocketTransport extends WebSocketTransport {
+		static boolean throwOnSend = false;
+		static int exceptionsThrown = 0;
+
+		private MockWebsocketTransport(TransportParams transportParams, ConnectionManager connectionManager) {
+			super(transportParams, connectionManager);
+		}
+
+		@Override
+		public void send(ProtocolMessage msg) throws AblyException {
+			if (throwOnSend) {
+				exceptionsThrown++;
+				throw AblyException.fromErrorInfo(new ErrorInfo("TestException", 40000));
+			} else {
+				super.send(msg);
+			}
+		}
+	}
 
 }
