@@ -12,6 +12,9 @@ import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ClientOptions;
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.Iterator;
+
 /**
  * Test for basic Channel operation not related to publish or history
  */
@@ -36,7 +39,10 @@ public class RestChannelTest {
 
 		/* Test channel enumeration */
 		assertEquals("Verify total number of channels", ablyRest.channels.values().size(), 2);
-		for (Channel channel: ablyRest.channels.values()) {
+		assertTrue("Verify there is channel 1 in the list", ablyRest.channels.containsKey("channel_1"));
+		assertTrue("Verify there is channel 2 in the list", ablyRest.channels.containsKey("channel_2"));
+		for (Iterator<Channel> iterator=ablyRest.channels.values().iterator(); iterator.hasNext(); ) {
+			Channel channel = iterator.next();
 			assertTrue("Verify correct channels are in the hashmap",
 					channel == channel1 || channel == channel2);
 		}
