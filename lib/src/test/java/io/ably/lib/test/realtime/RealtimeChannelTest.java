@@ -1047,7 +1047,7 @@ public class RealtimeChannelTest {
 			protoMessage.error = new ErrorInfo("test error", 123);
 
 			ConnectionManager connectionManager = ably.connection.connectionManager;
-			connectionManager.onMessage(protoMessage);
+			connectionManager.onMessage(null, protoMessage);
 
 			assertEquals("channel state should be detached now", channel.state, ChannelState.detached);
 			assertEquals("channel error reason should be set", channel.reason, protoMessage.error);

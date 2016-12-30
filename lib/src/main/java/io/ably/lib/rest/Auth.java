@@ -378,6 +378,14 @@ public class Auth {
 	}
 
 	/**
+	 * Ensure we have a valid token.
+	 */
+	public TokenDetails ensureValidAuth() throws AblyException {
+		tokenAuth.authorise(this.authOptions, this.tokenParams, /*force=*/false);
+		return tokenAuth.getTokenDetails();
+	}
+
+	/**
 	 * Ensure valid auth credentials are present. This may rely in an already-known
 	 * and valid token, and will obtain a new token if necessary or explicitly
 	 * requested.
@@ -409,6 +417,8 @@ public class Auth {
 	 *               queried for the current time when none is specified explicitly.
 	 */
 	public TokenDetails authorise(AuthOptions options, TokenParams params) throws AblyException {
+		boolean force = (options != null && options.force);
+
 		/* To avoid breaking compatibility in 0.8 versions of the library, merge
 		 * supplied options and params with stored defaults. This needs to be
 		 * removed in 0.9 to comply with RSA10j. */
@@ -425,15 +435,35 @@ public class Auth {
 		options = (options == null) ? this.authOptions : options.copy();
 		params = (params == null) ? this.tokenParams : params.copy();
 
-		TokenDetails tokenDetails = tokenAuth.authorise(options, params);
+		/* RSA10e (as clarified in PR https://github.com/ably/docs/pull/186 )
+		 * Use supplied token or tokenDetails if any. */
+		if (authOptions.token != null)
+			authOptions.tokenDetails = new TokenDetails(authOptions.token);
+		TokenDetails tokenDetails;
+		boolean tokenUpdated;
+		if (authOptions.tokenDetails != null) {
+			tokenDetails = authOptions.tokenDetails;
+			tokenAuth.setTokenDetails(tokenDetails);
+			tokenUpdated = true;
+		} else {
+			tokenUpdated = tokenAuthorize(params, options, force);
+			tokenDetails = tokenAuth.getTokenDetails();
+		}
+		if(tokenUpdated) {
+			ably.onAuthUpdated(tokenDetails.token, true);
+		}
+		return tokenDetails;
+	}
 
-		/* RTC8
-		 *  If authorise is called with AuthOptions#force set to true
-		 *  the client will obtain a new token, disconnect the current transport
-		 *  and resume the connection
-		 */
-		if (options != null && options.force)
-			ably.onAuthUpdated();
+	/**
+	 * Renew auth credentials.
+	 * Will obtain a new token, even if we already have an apparently valid one.
+	 * Authorization will use the parameters supplied on construction.
+	 */
+	public TokenDetails renew() throws AblyException {
+		tokenAuthorize(this.tokenParams, this.authOptions, true);
+		TokenDetails tokenDetails = tokenAuth.getTokenDetails();
+		ably.onAuthUpdated(tokenDetails.token, false);
 		return tokenDetails;
 	}
 
@@ -661,7 +691,7 @@ public class Auth {
 			params = new Param[]{new Param("key", authOptions.key) };
 			break;
 		case token:
-			authorise(null, null);
+			ensureValidAuth();
 			params = new Param[]{new Param("access_token", tokenAuth.getTokenDetails().token) };
 			break;
 		}
@@ -745,6 +775,28 @@ public class Auth {
 			mac.init(new SecretKeySpec(key.getBytes(), "HmacSHA256"));
 			return new String(Base64Coder.encode(mac.doFinal(text.getBytes())));
 		} catch (GeneralSecurityException e) { Log.e("Auth.hmac", "Unexpected exception", e); return null; }
+	}
+
+	/**
+	 * Authorize using token and notify connection of authentication errors if needed
+	 *
+	 * @param params
+	 * @param options
+	 * @return
+	 * @throws AblyException
+	 */
+	private boolean tokenAuthorize(TokenParams params, AuthOptions options, boolean force) throws AblyException {
+		try {
+			return tokenAuth.authorise(options, params, force);
+		}
+		catch (AblyException e) {
+			ErrorInfo authErrorInfo = new ErrorInfo();
+			authErrorInfo.code = 80019;
+			authErrorInfo.message = e.errorInfo.message;
+			authErrorInfo.statusCode = e.errorInfo.statusCode;
+			ably.onAuthError(authErrorInfo);
+			throw e;
+		}
 	}
 
 	private final AblyRest ably;
