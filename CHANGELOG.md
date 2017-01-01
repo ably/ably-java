@@ -1,5 +1,12 @@
 # Change Log
 
+## [v0.8.9](https://github.com/ably/ably-java/tree/v0.8.9) (2017-01-01)
+[Full Changelog](https://github.com/ably/ably-java/compare/v0.8.8...v0.8.9)
+
+**Fixed bugs:**
+
+- Msgpack truncates data member [\#261](https://github.com/ably/ably-java/issues/261)
+
 ## [0.8.8](https://github.com/ably/ably-java/tree/v0.8.8)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v0.8.7...v0.8.8)
