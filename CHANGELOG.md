@@ -1,5 +1,14 @@
 # Change Log
 
+## [0.8.8](https://github.com/ably/ably-java/tree/v0.8.8)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v0.8.7...v0.8.8)
+
+**Fixed bugs:**
+
+- Fix bug causing infinite loop if exception thrown in Transport.send()
+- Bump msgpack-core dependency to 0.8.11
+
 ## [v0.8.7](https://github.com/ably/ably-java/tree/v0.8.7)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v0.8.6...v0.8.7)
