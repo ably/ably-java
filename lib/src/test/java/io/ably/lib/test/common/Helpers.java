@@ -48,6 +48,7 @@ public class Helpers {
 	 */
 	public static class CompletionWaiter implements CompletionListener {
 		public boolean success;
+		public int successCount = 0;
 		public ErrorInfo error;
 
 		/**
@@ -55,10 +56,15 @@ public class Helpers {
 		 */
 		public CompletionWaiter() {}
 
-		public synchronized ErrorInfo waitFor() {
-			while(!success && error == null)
+		public synchronized ErrorInfo waitFor(int count) {
+			while(successCount<count && error == null)
 				try { wait(); } catch(InterruptedException e) {}
+			success = successCount >= count;
 			return error;
+		}
+
+		public synchronized ErrorInfo waitFor() {
+			return waitFor(1);
 		}
 
 		/**
@@ -67,7 +73,7 @@ public class Helpers {
 		@Override
 		public void onSuccess() {
 			synchronized(this) {
-				success = true;
+				successCount++;
 				notifyAll();
 			}
 		}
@@ -330,7 +336,10 @@ public class Helpers {
 		 * @return
 		 */
 		public synchronized int getCount(ConnectionState state) {
-			return stateCounts.get(state).value;
+			Counter counter = stateCounts.get(state);
+			if (counter == null)
+				return 0;
+			return counter.value;
 		}
 
 		/**
@@ -339,6 +348,7 @@ public class Helpers {
 		 * meets their requirements.
 		 */
 		public synchronized void reset() {
+			Log.d(TAG, "reset()");
 			stateCounts = new HashMap<ConnectionState, Counter>();
 		}
 
@@ -351,6 +361,7 @@ public class Helpers {
 				reason = state.reason;
 				Counter counter = stateCounts.get(state.current); if(counter == null) stateCounts.put(state.current, (counter = new Counter()));
 				counter.incr();
+				Log.d(TAG, "onConnectionStateChanged(" + state.current + "): count now " + counter.value);
 				notify();
 			}
 		}
@@ -406,6 +417,7 @@ public class Helpers {
 	 *
 	 */
 	public static class ChannelWaiter implements ChannelStateListener {
+		private static final String TAG = ChannelWaiter.class.getName();
 
 		/**
 		 * Public API
@@ -421,8 +433,10 @@ public class Helpers {
 		 * @param state
 		 */
 		public synchronized ErrorInfo waitFor(ChannelState state) {
+			Log.d(TAG, "waitFor(" + state + ")");
 			while(channel.state != state)
 				try { wait(); } catch(InterruptedException e) {}
+			Log.d(TAG, "waitFor done: " + channel.state + ", " + channel.reason + ")");
 			return channel.reason;
 		}
 

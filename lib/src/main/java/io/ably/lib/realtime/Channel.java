@@ -5,6 +5,7 @@ import io.ably.lib.http.PaginatedQuery;
 import io.ably.lib.http.Http.BodyHandler;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ConnectionManager.QueuedMessage;
+import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.*;
 import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.types.ProtocolMessage.Flag;
@@ -16,6 +17,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 
 /**
@@ -105,6 +108,11 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 * @throws AblyException
 	 */
 	public void attach(final CompletionListener listener) throws AblyException {
+		clearAttachTimers();
+		attachWithTimeout(listener);
+	}
+
+	private void attachImpl(final CompletionListener listener) throws AblyException {
 		Log.v(TAG, "attach(); channel = " + name);
 		/* check preconditions */
 		switch(state) {
@@ -156,6 +164,11 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 * @throws AblyException
 	 */
 	public void detach(CompletionListener listener) throws AblyException {
+		clearAttachTimers();
+		detachWithTimeout(listener);
+	}
+
+	private void detachImpl(CompletionListener listener) throws AblyException {
 		Log.v(TAG, "detach(); channel = " + name);
 		/* check preconditions */
 		switch(state) {
@@ -215,6 +228,155 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 	 * internal
 	 *
 	 */
+	/* Timer for attach operation */
+	private Timer attachTimer;
+
+	/* Timer for reattaching if attach failed */
+	private Timer reattachTimer;
+
+	/**
+	 * Cancel attach/reattach timers
+	 */
+	synchronized private void clearAttachTimers() {
+		Timer[] timers = new Timer[]{attachTimer, reattachTimer};
+		attachTimer = reattachTimer = null;
+		for (Timer t: timers) {
+			if (t != null) {
+				t.cancel();
+				t.purge();
+			}
+		}
+	}
+
+	/**
+	 * Attach channel, if not attached within timeout set state to suspended and
+	 * set up timer to reattach it later
+	 */
+	synchronized private void attachWithTimeout(final CompletionListener listener) throws AblyException {
+		final Timer currentAttachTimer = new Timer();
+		attachTimer = currentAttachTimer;
+
+		try {
+			attachImpl(new CompletionListener() {
+				@Override
+				public void onSuccess() {
+					clearAttachTimers();
+					if (listener != null)
+						listener.onSuccess();
+				}
+
+				@Override
+				public void onError(ErrorInfo reason) {
+					clearAttachTimers();
+					if (listener != null)
+						listener.onError(reason);
+				}
+			});
+		} catch(AblyException e) {
+			attachTimer = null;
+		}
+
+		if(attachTimer == null)
+			/* operation has already succeeded or failed, no need to set the timer */
+			return;
+
+		attachTimer.schedule(
+				new TimerTask() {
+					@Override
+					public void run() {
+						String errorMessage = String.format("Attach timed out for channel %s", name);
+						Log.v(TAG, errorMessage);
+						synchronized (Channel.this) {
+							if(attachTimer != currentAttachTimer)
+								return;
+							attachTimer = null;
+							if(state == ChannelState.attaching) {
+								setSuspended(new ErrorInfo(errorMessage, 91200));
+								reattachAfterTimeout();
+							}
+						}
+					}
+				}, Defaults.realtimeRequestTimeout);
+	}
+
+	/**
+	 * Must be called in suspended state. Wait for timeout specified in clientOptions, and then
+	 * try to attach the channel
+	 */
+	synchronized private void reattachAfterTimeout() {
+		final Timer currentReattachTimer = new Timer();
+		reattachTimer = currentReattachTimer;
+
+		reattachTimer.schedule(new TimerTask() {
+			@Override
+			public void run() {
+				synchronized (Channel.this) {
+					if (currentReattachTimer != reattachTimer)
+						return;
+					reattachTimer = null;
+					if (state == ChannelState.detached) {
+						try {
+							attachWithTimeout(null);
+						} catch (AblyException e) {
+							Log.e(TAG, "Reattach channel failed; channel = " + name, e);
+						}
+					}
+				}
+			}
+		}, Defaults.TIMEOUT_CHANNEL_RETRY);
+	}
+
+	/**
+	 * Try to detach the channel. If the server doesn't confirm the detach operation within realtime
+	 * request timeout return channel to previous state
+	 */
+	synchronized private void detachWithTimeout(final CompletionListener listener) throws AblyException {
+		final ChannelState originalState = state;
+		final Timer currentDetachTimer = new Timer();
+		attachTimer = currentDetachTimer;
+
+		try {
+			detachImpl(new CompletionListener() {
+				@Override
+				public void onSuccess() {
+					clearAttachTimers();
+					if (listener != null)
+						listener.onSuccess();
+				}
+
+				@Override
+				public void onError(ErrorInfo reason) {
+					clearAttachTimers();
+					if (listener != null)
+						listener.onError(reason);
+				}
+			});
+		} catch (AblyException e) {
+			attachTimer = null;
+		}
+
+		if(attachTimer == null)
+			/* operation has already succeeded or failed, no need to set the timer */
+			return;
+
+		attachTimer.schedule(new TimerTask() {
+			@Override
+			public void run() {
+				synchronized (Channel.this) {
+					if (currentDetachTimer != attachTimer)
+						return;
+					attachTimer = null;
+					if (state == ChannelState.detaching) {
+						ErrorInfo reason = new ErrorInfo("Detach operation timed out", 90007);
+						if(listener != null)
+							listener.onError(reason);
+						setState(originalState, reason);
+					}
+				}
+			}
+		}, Defaults.realtimeRequestTimeout);
+	}
+
 	private void setAttached(ProtocolMessage message) {
 		Log.v(TAG, "setAttached(); channel = " + name);
 		attachSerial = message.channelSerial;
@@ -227,17 +389,15 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 		presence.setAttached();
 	}
 
-	private void setDetached(ProtocolMessage message) {
+	private void setDetached(ErrorInfo reason) {
 		Log.v(TAG, "setDetached(); channel = " + name);
-		ErrorInfo reason = (message.error != null) ? message.error : REASON_NOT_ATTACHED;
 		setState(ChannelState.detached, reason);
 		failQueuedMessages(reason);
 		presence.setDetached(reason);
 	}
 
-	private void setFailed(ProtocolMessage message) {
+	private void setFailed(ErrorInfo reason) {
 		Log.v(TAG, "setFailed(); channel = " + name);
-		ErrorInfo reason = message.error;
 		setState(ChannelState.failed, reason);
 		failQueuedMessages(reason);
 		presence.setDetached(reason);
@@ -251,6 +411,24 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 				Log.e(TAG, "setConnected(): Unable to sync; channel = " + name, e);
 			}
 		}
+	}
+
+	/** If the connection state enters the FAILED state, then an ATTACHING
+	 * or ATTACHED channel state will transition to FAILED and set the
+	 * Channel#errorReason
+	 */
+	public void setConnectionFailed(ErrorInfo reason) {
+		clearAttachTimers();
+		if (state == ChannelState.attached || state == ChannelState.attaching)
+			setFailed(reason);
+	}
+
+	/** (RTL3b) If the connection state enters the CLOSED state, then an
+	 * ATTACHING or ATTACHED channel state will transition to DETACHED. */
+	public void setConnectionClosed(ErrorInfo reason) {
+		clearAttachTimers();
+		if (state == ChannelState.attached || state == ChannelState.attaching)
+			setDetached(reason);
 	}
 
 	public void setSuspended(ErrorInfo reason) {
@@ -679,7 +857,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 			break;
 		case detach:
 		case detached:
-			setDetached(msg);
+			setDetached((msg.error != null) ? msg.error : REASON_NOT_ATTACHED);
 			break;
 		case message:
 			onMessage(msg);
@@ -691,7 +869,7 @@ public class Channel extends EventEmitter<ChannelState, ChannelStateListener> {
 			onSync(msg);
 			break;
 		case error:
-			setFailed(msg);
+			setFailed(msg.error);
 			break;
 		default:
 			Log.e(TAG, "onChannelMessage(): Unexpected message action (" + msg.action + ")");

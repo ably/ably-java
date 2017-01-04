@@ -1,5 +1,12 @@
 # Change Log
 
+## [v0.8.10](https://github.com/ably/ably-java/tree/v0.8.10) (2017-01-01)
+[Full Changelog](https://github.com/ably/ably-java/compare/v0.8.9...v0.8.10)
+
+**New features:**
+
+- Added in-place authorisation update
+
 ## [v0.8.9](https://github.com/ably/ably-java/tree/v0.8.9) (2017-01-01)
 [Full Changelog](https://github.com/ably/ably-java/compare/v0.8.8...v0.8.9)
 

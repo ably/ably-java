@@ -376,6 +376,7 @@ public class RealtimeRecoverTest {
 				try {
 					channel.publish("name", "data");
 				} catch (Throwable e) {
+					e.printStackTrace();
 				}
 			}
 
@@ -392,7 +393,7 @@ public class RealtimeRecoverTest {
 			} catch (InterruptedException e) {}
 
 			/* It is hard to predict how many exception would be thrown but it shouldn't be hundreds */
-			assertThat("", MockWebsocketTransport.exceptionsThrown, is(lessThan(10)));
+			assertThat("", MockWebsocketTransport.exceptionsThrown, is(lessThan(20)));
 
 		} catch (AblyException e) {
 			e.printStackTrace();

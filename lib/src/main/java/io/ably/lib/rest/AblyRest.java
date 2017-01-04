@@ -142,7 +142,14 @@ public class AblyRest {
 	/**
 	 * Authentication token has changed.
 	 */
-	public void onAuthUpdated() {
+	protected void onAuthUpdated(String token, boolean waitForResponse) throws AblyException {
+		/* Default is to do nothing. Overridden by subclass. */
+	}
+
+	/**
+	 * Authentication error occurred
+	 */
+	protected void onAuthError(ErrorInfo errorInfo) {
 		/* Default is to do nothing. Overridden by subclass. */
 	}
 }
