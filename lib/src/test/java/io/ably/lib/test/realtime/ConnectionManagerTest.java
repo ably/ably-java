@@ -1,32 +1,27 @@
 package io.ably.lib.test.realtime;
 
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.Connection;
-import io.ably.lib.realtime.ConnectionState;
-import io.ably.lib.test.common.Helpers;
-import io.ably.lib.test.common.Setup;
-import io.ably.lib.transport.ConnectionManager;
-import io.ably.lib.transport.Defaults;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ClientOptions;
-import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+
+import org.junit.Test;
+import org.mockito.Mockito;
+
+import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.realtime.Connection;
+import io.ably.lib.realtime.ConnectionState;
+import io.ably.lib.test.common.Helpers;
+import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.transport.ConnectionManager;
+import io.ably.lib.transport.Defaults;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ClientOptions;
 
 /**
  * Created by gokhanbarisaker on 3/9/16.
  */
-public class ConnectionManagerTest {
+public class ConnectionManagerTest extends ParameterizedTest {
 	/**
 	 * <p>
 	 * Verifies that ably connects to default host,
@@ -37,8 +32,7 @@ public class ConnectionManagerTest {
 	 */
 	@Test
 	public void connectionmanager_fallback_none() throws AblyException {
-		Setup.TestVars testVars = Setup.getTestVars();
-		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 		AblyRealtime ably = new AblyRealtime(opts);
 		ConnectionManager connectionManager = ably.connection.connectionManager;
 
@@ -65,8 +59,7 @@ public class ConnectionManagerTest {
 	 */
 	@Test
 	public void connectionmanager_fallback_none_customhost() throws AblyException {
-		Setup.TestVars testVars = Setup.getTestVars();
-		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 		opts.realtimeHost = "un.reachable.host.example.com";
 		opts.environment = null;
 		AblyRealtime ably = new AblyRealtime(opts);
@@ -96,8 +89,7 @@ public class ConnectionManagerTest {
 	 */
 	@Test
 	public void connectionmanager_fallback_none_withoutconnection() throws AblyException {
-		Setup.TestVars testVars = Setup.getTestVars();
-		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 		opts.realtimeHost = "un.reachable.host";
 		opts.environment = null;
 		opts.autoConnect = false;
@@ -137,8 +129,7 @@ public class ConnectionManagerTest {
 	 */
 	@Test
 	public void connectionmanager_fallback_applied() throws AblyException {
-		Setup.TestVars testVars = Setup.getTestVars();
-		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 		// Use a host that supports fallback
 		opts.realtimeHost = null;
 		opts.environment = null;
@@ -169,8 +160,7 @@ public class ConnectionManagerTest {
 	 */
 	@Test
 	public void connectionmanager_reconnect_default_endpoint() throws AblyException {
-		Setup.TestVars testVars = Setup.getTestVars();
-		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 		// Use the default host, supporting fallback
 		opts.realtimeHost = null;
 		opts.environment = null;

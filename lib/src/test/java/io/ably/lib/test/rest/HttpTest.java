@@ -1,37 +1,5 @@
 package io.ably.lib.test.rest;
 
-import fi.iki.elonen.NanoHTTPD;
-import fi.iki.elonen.router.RouterNanoHTTPD;
-import io.ably.lib.test.util.StatusHandler;
-import io.ably.lib.http.Http;
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.transport.Defaults;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.Param;
-import org.hamcrest.Description;
-import org.hamcrest.TypeSafeMatcher;
-import org.hamcrest.collection.IsIterableContainingInAnyOrder;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.Proxy;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -46,6 +14,38 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.Proxy;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import org.hamcrest.Description;
+import org.hamcrest.TypeSafeMatcher;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import fi.iki.elonen.NanoHTTPD;
+import fi.iki.elonen.router.RouterNanoHTTPD;
+import io.ably.lib.http.Http;
+import io.ably.lib.rest.AblyRest;
+import io.ably.lib.test.util.StatusHandler;
+import io.ably.lib.transport.Defaults;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Param;
 
 /**
  * Created by gokhanbarisaker on 2/2/16.

@@ -6,48 +6,31 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import io.ably.lib.realtime.CompletionListener;
-import io.ably.lib.transport.ConnectionManager;
-import io.ably.lib.transport.ITransport;
-import io.ably.lib.transport.WebSocketTransport;
-import io.ably.lib.types.ProtocolMessage;
-import io.ably.lib.realtime.ConnectionStateListener;
-import io.ably.lib.rest.Auth;
-import io.ably.lib.transport.Defaults;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.ConnectionState;
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.rest.Auth.TokenCallback;
-import io.ably.lib.rest.Auth.TokenDetails;
-import io.ably.lib.rest.Auth.TokenParams;
-import io.ably.lib.test.common.Setup;
-import io.ably.lib.test.common.Helpers.ConnectionWaiter;
-import io.ably.lib.test.common.Setup.TestVars;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.util.Log;
-
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class RealtimeConnectFailTest {
+import org.junit.Test;
 
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-		Setup.getTestVars();
-	}
+import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.realtime.CompletionListener;
+import io.ably.lib.realtime.ConnectionState;
+import io.ably.lib.realtime.ConnectionStateListener;
+import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.Auth;
+import io.ably.lib.rest.Auth.TokenCallback;
+import io.ably.lib.rest.Auth.TokenDetails;
+import io.ably.lib.rest.Auth.TokenParams;
+import io.ably.lib.test.common.Helpers.ConnectionWaiter;
+import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.transport.Defaults;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.util.Log;
 
-	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
-		Setup.clearTestVars();
-	}
+public class RealtimeConnectFailTest extends ParameterizedTest {
 
 	/**
 	 * Verify that the connection enters the failed state, after attempting
@@ -57,8 +40,7 @@ public class RealtimeConnectFailTest {
 	public void connect_fail_notfound_error() throws AblyException {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions("not_an_app.invalid_key_id:invalid_key_value");
+			ClientOptions opts = createOptions("not_an_app.invalid_key_id:invalid_key_value");
 			ably = new AblyRealtime(opts);
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
@@ -78,8 +60,7 @@ public class RealtimeConnectFailTest {
 	public void connect_fail_authorized_error() throws AblyException {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.appId + ".invalid_key_id:invalid_key_value");
+			ClientOptions opts = createOptions(testVars.appId + ".invalid_key_id:invalid_key_value");
 			ably = new AblyRealtime(opts);
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
@@ -97,8 +78,7 @@ public class RealtimeConnectFailTest {
 	 */
 	@Test
 	public void connect_fail_disconnected() throws AblyException {
-		TestVars testVars = Setup.getTestVars();
-		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 		opts.realtimeHost = "non.existent.host";
 		opts.environment = null;
 		AblyRealtime ably = new AblyRealtime(opts);
@@ -118,8 +98,7 @@ public class RealtimeConnectFailTest {
 	@Test
 	public void connect_fail_suspended() {
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			opts.realtimeHost = "non.existent.host";
 			opts.environment = null;
 			AblyRealtime ably = new AblyRealtime(opts);
@@ -153,8 +132,7 @@ public class RealtimeConnectFailTest {
 	@Test
 	public void connect_while_disconnected() {
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			opts.realtimeHost = "non.existent.host";
 			opts.environment = null;
 			AblyRealtime ably = new AblyRealtime(opts);
@@ -184,8 +162,7 @@ public class RealtimeConnectFailTest {
 	@Test
 	public void connect_token_expire_disconnected() {
 		try {
-			final Setup.TestVars optsTestVars = Setup.getTestVars();
-			ClientOptions optsForToken = optsTestVars.createOptions(optsTestVars.keys[0].keyStr);
+			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
 			optsForToken.logLevel = Log.VERBOSE;
 			final Auth.AuthOptions authOptions = new Auth.AuthOptions();
 			authOptions.queryTime = true;
@@ -209,8 +186,7 @@ public class RealtimeConnectFailTest {
 			TokenGenerator authCallback = new TokenGenerator();
 
 			/* create Ably realtime instance without key */
-			final TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions();
+			ClientOptions opts = createOptions();
 			opts.authCallback = authCallback;
 			opts.logLevel = Log.VERBOSE;
 			AblyRealtime ably = new AblyRealtime(opts);
@@ -246,8 +222,7 @@ public class RealtimeConnectFailTest {
 	public void connect_invalid_recover_fail() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			opts.recover = "not_a_valid_connection_id:99";
 			ably = new AblyRealtime(opts);
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
@@ -271,8 +246,7 @@ public class RealtimeConnectFailTest {
 	public void connect_unknown_recover_fail() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			String recoverConnectionId = "0123456789abcdef-99";
 			opts.recover = recoverConnectionId + ":0";
 			ably = new AblyRealtime(opts);
@@ -298,8 +272,7 @@ public class RealtimeConnectFailTest {
 	public void connect_test_queued_messages_on_failure() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 			final int[] numberOfErrors = new int[]{0};
 
@@ -355,8 +328,7 @@ public class RealtimeConnectFailTest {
 			 * TIMEOUT_SUSPEND we set TIMEOUT_SUSPEND to smaller value
 			 */
 			Defaults.TIMEOUT_SUSPEND = 5000;
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 
 			ablyRest = new AblyRest(opts);
 			final TokenDetails tokenDetails = ablyRest.auth.requestToken(new TokenParams() {{ ttl = 8000L; }}, null);
@@ -364,7 +336,7 @@ public class RealtimeConnectFailTest {
 
 			final ArrayList<ConnectionState> stateHistory = new ArrayList<>();
 
-			ClientOptions optsForRealtime = testVars.createOptions();
+			ClientOptions optsForRealtime = createOptions();
 			optsForRealtime.authCallback = new TokenCallback() {
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
@@ -429,14 +401,13 @@ public class RealtimeConnectFailTest {
 			final int[] numberOfAuthCalls = new int[] {0};
 			final boolean[] reachedFinalState = new boolean[] {false};
 
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 
 			ablyRest = new AblyRest(opts);
 			final TokenDetails tokenDetails = ablyRest.auth.requestToken(new TokenParams() {{ ttl = 5000L; }}, null);
 			assertNotNull("Expected token value", tokenDetails.token);
 
-			ClientOptions optsForRealtime = testVars.createOptions();
+			ClientOptions optsForRealtime = createOptions();
 			optsForRealtime.authCallback = new TokenCallback() {
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {

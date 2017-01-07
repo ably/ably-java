@@ -8,111 +8,54 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.HashMap;
+import java.util.Locale;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
-import io.ably.lib.test.common.Setup;
+//import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
 import io.ably.lib.test.common.Helpers.MessageWaiter;
-import io.ably.lib.test.common.Setup.TestVars;
+import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 
-import java.util.HashMap;
-import java.util.Locale;
+public class RealtimeChannelHistoryTest extends ParameterizedTest {
 
-import org.hamcrest.Matchers;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+	private AblyRealtime ably;
+	private long timeOffset;
 
-public class RealtimeChannelHistoryTest {
-
-	private static AblyRealtime ably;
-	private static long timeOffset;
-
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-		TestVars testVars = Setup.getTestVars();
-		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+	@Before
+	public void setUpBefore() throws Exception {
+		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 		ably = new AblyRealtime(opts);
 		long timeFromService = ably.time();
 		timeOffset = timeFromService - System.currentTimeMillis();
 	}
 
-	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
-		Setup.clearTestVars();
-	}
-
 	/**
 	 * Send a single message on a channel and verify that it can be
 	 * retrieved using channel.history() without needing to wait for
 	 * it to be persisted.
 	 */
 	@Test
-	public void channelhistory_simple_binary() {
+	public void channelhistory_simple() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_simple_binary";
-			String messageText = "Test message (channelhistory_simple_binary)";
-
-			/* create a channel */
-			final Channel channel = ably.channels.get(channelName);
-
-			/* attach */
-			channel.attach();
-			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
-
-			/* publish to the channel */
-			CompletionWaiter msgComplete = new CompletionWaiter();
-			channel.publish("test_event", messageText, msgComplete);
-
-			/* wait for the publish callback to be called */
-			msgComplete.waitFor();
-			assertTrue("Verify success callback was called", msgComplete.success);
-
-			/* get the history for this channel */
-			PaginatedResult<Message> messages = channel.history(null);
-			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 1 message", messages.items().length, 1);
-
-			/* verify message contents */
-			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("single_history_binary: Unexpected exception instantiating library");
-		} finally {
-			if(ably != null)
-				ably.close();
-		}
-	}
-
-	/**
-	 * Send a single message on a channel and verify that it can be
-	 * retrieved using channel.history() without needing to wait for
-	 * it to be persisted.
-	 */
-	@Test
-	public void channelhistory_simple_text() {
-		AblyRealtime ably = null;
-		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
-			opts.useBinaryProtocol = false;
-			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_simple_text";
-			String messageText = "Test message (channelhistory_simple_text)";
+			String channelName = "persisted:channelhistory_simple_" + testParams.name;
+			String messageText = "Test message (channelhistory_simple)";
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -152,18 +95,17 @@ public class RealtimeChannelHistoryTest {
 	 * without needing to wait for it to be persisted.
 	 */
 	@Test
-	public void channelhistory_simple_binary_withoutlistener() {
+	public void channelhistory_simple_withoutlistener() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_simple_binary_withoutlistener";
-			String message1Text = "Test message 1 (channelhistory_simple_binary_withoutlistener)";
-			Message message2 = new Message("test_event", "Test message 2 (channelhistory_simple_binary_withoutlistener)");
+			String channelName = "persisted:channelhistory_simple_withoutlistener_" + testParams.name;
+			String message1Text = "Test message 1 (channelhistory_simple_withoutlistener)";
+			Message message2 = new Message("test_event", "Test message 2 (channelhistory_simple_withoutlistener)");
 			Message[] messages34 = new Message[] {
-					new Message("test_event", "Test message 3 (channelhistory_simple_binary_withoutlistener)"),
-					new Message("test_event", "Test message 4 (channelhistory_simple_binary_withoutlistener)")
+					new Message("test_event", "Test message 3 (channelhistory_simple_withoutlistener)"),
+					new Message("test_event", "Test message 4 (channelhistory_simple_withoutlistener)")
 			};
 
 			/* create a channel */
@@ -199,126 +141,15 @@ public class RealtimeChannelHistoryTest {
 	}
 
 	/**
-	 * Send couple of messages without listener using binary protocol
-	 * on a channel and verify that it can be retrieved using channel.history()
-	 * without needing to wait for it to be persisted.
-	 */
-	@Test
-	public void channelhistory_simple_text_withoutlistener() {
-		AblyRealtime ably = null;
-		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
-			opts.useBinaryProtocol = false;
-			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_simple_text_withoutlistener";
-			String message1Text = "Test message 1 (channelhistory_simple_text_withoutlistener)";
-			Message message2 = new Message("test_event", "Test message 2 (channelhistory_simple_text_withoutlistener)");
-			Message[] messages34 = new Message[] {
-					new Message("test_event", "Test message 3 (channelhistory_simple_text_withoutlistener)"),
-					new Message("test_event", "Test message 4 (channelhistory_simple_text_withoutlistener)")
-			};
-
-			/* create a channel */
-			final Channel channel = ably.channels.get(channelName);
-
-			/* attach */
-			channel.attach();
-			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
-
-			/* publish to the channel */
-			channel.publish("test_event", message1Text);
-			channel.publish(message2);
-			channel.publish(messages34);
-
-			/* get the history for this channel */
-			PaginatedResult<Message> messages = channel.history(null);
-			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 4 message", messages.items().length, 4);
-
-			/* verify we received message history from most recent to older */
-			assertEquals("Expect correct message text", messages.items()[0].data, messages34[1].data);
-			assertEquals("Expect correct message text", messages.items()[1].data, messages34[0].data);
-			assertEquals("Expect correct message text", messages.items()[2].data, message2.data);
-			assertEquals("Expect correct message text", messages.items()[3].data, message1Text);
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("channelhistory_simple_text_withoutlistener: Unexpected exception instantiating library");
-		} finally {
-			if(ably != null)
-				ably.close();
-		}
-	}
-
-	/**
 	 * Publish events with data of various datatypes
 	 */
 	@Test
-	public void channelhistory_types_binary() {
+	public void channelhistory_types() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_types_binary";
-
-			/* create a channel */
-			final Channel channel = ably.channels.get(channelName);
-
-			/* attach */
-			channel.attach();
-			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
-
-			/* publish to the channel */
-			CompletionSet msgComplete = new CompletionSet();
-			channel.publish("history0", "This is a string message payload", msgComplete.add());
-			channel.publish("history1", "This is a byte[] message payload".getBytes(), msgComplete.add());
-
-			/* wait for the publish callback to be called */
-			msgComplete.waitFor();
-			assertTrue("Verify success callback was called", msgComplete.errors.isEmpty());
-
-			/* get the history for this channel */
-			PaginatedResult<Message> messages = channel.history(null);
-			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 2 messages", messages.items().length, 2);
-			HashMap<String, Message> messageContents = new HashMap<String, Message>();
-
-			/* verify message contents */
-			for(Message message : messages.items())
-				messageContents.put(message.name, message);
-			assertEquals("Expect history0 to be expected String", messageContents.get("history0").data, "This is a string message payload");
-			assertEquals("Expect history1 to be expected byte[]", new String((byte[])messageContents.get("history1").data), "This is a byte[] message payload");
-
-			/* verify message order */
-			Message[] expectedMessageHistory = new Message[]{
-				messageContents.get("history1"),
-				messageContents.get("history0")
-			};
-			Assert.assertArrayEquals("Expect messages in reverse order", messages.items(), expectedMessageHistory);
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("channelhistory_types: Unexpected exception");
-		} finally {
-			if(ably != null)
-				ably.close();
-		}
-	}
-
-	/**
-	 * Publish events with data of various datatypes
-	 */
-	@Test
-	public void channelhistory_types_text() {
-		AblyRealtime ably = null;
-		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
-			opts.useBinaryProtocol = false;
-			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_types_text";
+			String channelName = "persisted:channelhistory_types_" + testParams.name;
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -371,10 +202,9 @@ public class RealtimeChannelHistoryTest {
 	public void channelhistory_types_forward() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_types_forward";
+			String channelName = "persisted:channelhistory_types_forward_" + testParams.name;
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -430,12 +260,11 @@ public class RealtimeChannelHistoryTest {
 	public void channelhistory_second_channel() {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions txOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions txOpts = createOptions(testVars.keys[0].keyStr);
 			txAbly = new AblyRealtime(txOpts);
-			ClientOptions rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions rxOpts = createOptions(testVars.keys[0].keyStr);
 			rxAbly = new AblyRealtime(rxOpts);
-			String channelName = "persisted:channelhistory_second_channel";
+			String channelName = "persisted:channelhistory_second_channel_" + testParams.name;
 	
 			/* create a channel */
 			final Channel txChannel = txAbly.channels.get(channelName);
@@ -485,67 +314,13 @@ public class RealtimeChannelHistoryTest {
 	 * persisted.
 	 */
 	@Test
-	public void channelhistory_wait_binary_b() {
+	public void channelhistory_wait_b() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_wait_binary_b";
-			String messageText = "Test message (channelhistory_wait_binary_b)";
-
-			/* create a channel */
-			final Channel channel = ably.channels.get(channelName);
-
-			/* attach */
-			channel.attach();
-			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
-
-			/* publish to the channel */
-			CompletionWaiter msgComplete = new CompletionWaiter();
-			channel.publish("test_event", messageText, msgComplete);
-
-			/* wait for the publish callback to be called */
-			msgComplete.waitFor();
-			assertTrue("Verify success callback was called", msgComplete.success);
-
-			/* wait for the history to be persisted */
-			try {
-				Thread.sleep(16000);
-			} catch(InterruptedException ie) {}
-
-			/* get the history for this channel */
-			PaginatedResult<Message> messages = channel.history(null);
-			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 1 message", messages.items().length, 1);
-
-			/* verify message contents */
-			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("single_history_binary: Unexpected exception instantiating library");
-		} finally {
-			if(ably != null)
-				ably.close();
-		}
-	}
-
-	/**
-	 * Send a single message on a channel using the text protocol and verify
-	 * that it can be retrieved using channel.history() after waiting for it
-	 * to be persisted.
-	 */
-	@Test
-	public void channelhistory_wait_text_b() {
-		AblyRealtime ably = null;
-		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
-			opts.useBinaryProtocol = false;
-			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_wait_text_b";
-			String messageText = "Test message (channelhistory_wait_text_b)";
+			String channelName = "persisted:channelhistory_wait_b_" + testParams.name;
+			String messageText = "Test message (channelhistory_wait_b)";
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -590,14 +365,13 @@ public class RealtimeChannelHistoryTest {
 	 * for it to be persisted.
 	 */
 	@Test
-	public void channelhistory_wait_binary_f() {
+	public void channelhistory_wait_f() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_wait_binary_f";
-			String messageText = "Test message (channelhistory_wait_binary_f)";
+			String channelName = "persisted:channelhistory_wait_f_" + testParams.name;
+			String messageText = "Test message (channelhistory_wait_f)";
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -642,14 +416,13 @@ public class RealtimeChannelHistoryTest {
 	 * retrieved using channel.history() without any further wait.
 	 */
 	@Test
-	public void channelhistory_mixed_binary_b() {
+	public void channelhistory_mixed_b() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_mixed_binary_b";
-			String messageText = "Test message (channelhistory_mixed_binary_b)";
+			String channelName = "persisted:channelhistory_mixed_b_" + testParams.name;
+			String messageText = "Test message (channelhistory_mixed_b)";
 			String persistEventName = "test_event (persisted)";
 			String liveEventName = "test_event (live)";
 
@@ -705,14 +478,13 @@ public class RealtimeChannelHistoryTest {
 	 * further wait.
 	 */
 	@Test
-	public void channelhistory_mixed_binary_f() {
+	public void channelhistory_mixed_f() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_mixed_binary_f";
-			String messageText = "Test message (channelhistory_mixed_binary_f)";
+			String channelName = "persisted:channelhistory_mixed_f_" + testParams.name;
+			String messageText = "Test message (channelhistory_mixed_f)";
 			String persistEventName = "test_event (persisted)";
 			String liveEventName = "test_event (live)";
 
@@ -768,10 +540,9 @@ public class RealtimeChannelHistoryTest {
 	public void channelhistory_limit_f() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_limit_f";
+			String channelName = "persisted:channelhistory_limit_f_" + testParams.name;
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -825,10 +596,9 @@ public class RealtimeChannelHistoryTest {
 	public void channelhistory_limit_b() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_limit_b";
+			String channelName = "persisted:channelhistory_limit_b_" + testParams.name;
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -886,10 +656,9 @@ public class RealtimeChannelHistoryTest {
 		try {
 			/* first, publish some messages */
 			long intervalStart = 0, intervalEnd = 0;
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_time_f";
+			String channelName = "persisted:channelhistory_time_f_" + testParams.name;
 	
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -958,10 +727,9 @@ public class RealtimeChannelHistoryTest {
 		try {
 			/* first, publish some messages */
 			long intervalStart = 0, intervalEnd = 0;
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_time_b";
+			String channelName = "persisted:channelhistory_time_b_" + testParams.name;
 	
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -1028,10 +796,9 @@ public class RealtimeChannelHistoryTest {
 	public void channelhistory_paginate_f() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_paginate_f";
+			String channelName = "persisted:channelhistory_paginate_f_" + testParams.name;
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -1117,10 +884,9 @@ public class RealtimeChannelHistoryTest {
 	public void channelhistory_paginate_b() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_paginate_b";
+			String channelName = "persisted:channelhistory_paginate_b_" + testParams.name;
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -1206,10 +972,9 @@ public class RealtimeChannelHistoryTest {
 	public void channelhistory_paginate_first_f() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_paginate_first_f";
+			String channelName = "persisted:channelhistory_paginate_first_f_" + testParams.name;
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -1295,10 +1060,9 @@ public class RealtimeChannelHistoryTest {
 	public void channelhistory_paginate_first_b() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_paginate_first_b";
+			String channelName = "persisted:channelhistory_paginate_first_b_" + testParams.name;
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -1387,12 +1151,11 @@ public class RealtimeChannelHistoryTest {
 	public void channelhistory_from_attach() {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
-			io.ably.lib.test.common.Setup.TestVars testVars = Setup.getTestVars();
-			ClientOptions txOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions txOpts = createOptions(testVars.keys[0].keyStr);
 			txAbly = new AblyRealtime(txOpts);
-			ClientOptions rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions rxOpts = createOptions(testVars.keys[0].keyStr);
 			rxAbly = new AblyRealtime(rxOpts);
-			String channelName = "persisted:channelhistory_from_attach";
+			String channelName = "persisted:channelhistory_from_attach_" + testParams.name;
 	
 			/* create a channel */
 			final Channel txChannel = txAbly.channels.get(channelName);
@@ -1476,12 +1239,11 @@ public class RealtimeChannelHistoryTest {
 	public void channelhistory_until_attach() {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
-			io.ably.lib.test.common.Setup.TestVars testVars = Setup.getTestVars();
-			ClientOptions txOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions txOpts = createOptions(testVars.keys[0].keyStr);
 			txAbly = new AblyRealtime(txOpts);
-			ClientOptions rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions rxOpts = createOptions(testVars.keys[0].keyStr);
 			rxAbly = new AblyRealtime(rxOpts);
-			String channelName = "persisted:channelhistory_until_attach";
+			String channelName = "persisted:channelhistory_until_attach_" + testParams.name;
 
 			/* create a channel */
 			final Channel txChannel = txAbly.channels.get(channelName);
@@ -1542,8 +1304,7 @@ public class RealtimeChannelHistoryTest {
 	 */
 	@Test(expected=AblyException.class)
 	public void channelhistory_until_attach_before_attached() throws AblyException {
-		io.ably.lib.test.common.Setup.TestVars testVars = Setup.getTestVars();
-		ClientOptions options = testVars.createOptions(testVars.keys[0].keyStr);
+		ClientOptions options = createOptions(testVars.keys[0].keyStr);
 		AblyRealtime ably = new AblyRealtime(options);
 
 		ably.channels.get("test").history(new Param[]{ new Param("untilAttach", "true") });
@@ -1557,8 +1318,7 @@ public class RealtimeChannelHistoryTest {
 	 */
 	@Test(expected=AblyException.class)
 	public void channelhistory_until_attach_invalid_value() throws AblyException {
-		io.ably.lib.test.common.Setup.TestVars testVars = Setup.getTestVars();
-		ClientOptions options = testVars.createOptions(testVars.keys[0].keyStr);
+		ClientOptions options = createOptions(testVars.keys[0].keyStr);
 		AblyRealtime ably = new AblyRealtime(options);
 
 		ably.channels.get("test").history(new Param[]{ new Param("untilAttach", "affirmative")});
@@ -1574,10 +1334,9 @@ public class RealtimeChannelHistoryTest {
 	public void channelhistory_islast() throws AblyException {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
-			String channelName = "persisted:channelhistory_islast";
+			String channelName = "persisted:channelhistory_islast_" + testParams.name;
 			int pageMessageCount = 10;
 
 			/* create a channel */

@@ -5,10 +5,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.Test;
 
 import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.common.Setup.TestVars;
 import io.ably.lib.transport.Defaults;
@@ -17,19 +17,7 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Log.LogHandler;
 
-import org.junit.Test;
-
-public class RealtimeInitTest {
-
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-		Setup.getTestVars();
-	}
-
-	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
-		Setup.clearTestVars();
-	}
+public class RealtimeInitTest extends ParameterizedTest {
 
 	/**
 	 * Init library with a key only
@@ -38,7 +26,6 @@ public class RealtimeInitTest {
 	public void init_key_string() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
 			ably = new AblyRealtime(testVars.keys[0].keyStr);
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -55,7 +42,6 @@ public class RealtimeInitTest {
 	public void init_key_opts() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
 			ably = new AblyRealtime(new ClientOptions(testVars.keys[0].keyStr));
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -72,7 +58,6 @@ public class RealtimeInitTest {
 	public void init_key() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 		} catch (AblyException e) {
@@ -90,7 +75,6 @@ public class RealtimeInitTest {
 	public void init_host() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			String hostExpected = "some.other.host";
 			opts.restHost = hostExpected;
@@ -111,7 +95,6 @@ public class RealtimeInitTest {
 	public void init_port() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.port = 9998;
 			opts.tlsPort = 9999;
@@ -132,7 +115,6 @@ public class RealtimeInitTest {
 	public void init_default_secure() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 			assertEquals("Unexpected port mismatch", Defaults.getPort(opts), Defaults.TLS_PORT);
@@ -151,7 +133,6 @@ public class RealtimeInitTest {
 	public void init_insecure() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.tls = false;
 			ably = new AblyRealtime(opts);
@@ -172,7 +153,6 @@ public class RealtimeInitTest {
 	public void init_log_handler() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.logHandler = new LogHandler() {
 				@Override
@@ -200,7 +180,6 @@ public class RealtimeInitTest {
 	public void init_log_level() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.logHandler = new LogHandler() {
 				@Override

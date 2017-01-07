@@ -5,19 +5,16 @@ import io.ably.lib.transport.Defaults;
 import io.ably.lib.transport.ITransport;
 import io.ably.lib.transport.WebSocketTransport;
 import io.ably.lib.types.ProtocolMessage;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.ConnectionState;
-import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.Helpers.MessageWaiter;
-import io.ably.lib.test.common.Setup.TestVars;
+import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
@@ -28,19 +25,9 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.*;
 
-public class RealtimeRecoverTest {
+public class RealtimeRecoverTest extends ParameterizedTest {
 
 	private static final String TAG = RealtimeRecoverTest.class.getName();
-
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-		Setup.getTestVars();
-	}
-
-	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
-		Setup.clearTestVars();
-	}
 
 	/**
 	 * Connect to the service using two library instances to set
@@ -58,8 +45,7 @@ public class RealtimeRecoverTest {
 		int messageCount = 5;
 		long delay = 200;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ablyRx = new AblyRealtime(opts);
 			ablyTx = new AblyRealtime(opts);
 
@@ -116,7 +102,7 @@ public class RealtimeRecoverTest {
 			assertTrue("Verify success from all message callbacks", errors.length == 0);				
 
 			/* establish a new rx connection with recover string, and wait for connection */
-			ClientOptions recoverOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions recoverOpts = createOptions(testVars.keys[0].keyStr);
 			recoverOpts.recover = recoverConnectionId + ':' + String.valueOf(recoverConnectionSerial);
 			ablyRxRecover = new AblyRealtime(recoverOpts);
 			(new ConnectionWaiter(ablyRxRecover.connection)).waitFor(ConnectionState.connected);
@@ -158,8 +144,7 @@ public class RealtimeRecoverTest {
 		int messageCount = 5;
 		long delay = 200;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ablyRx = new AblyRealtime(opts);
 			ablyTx = new AblyRealtime(opts);
 
@@ -216,7 +201,7 @@ public class RealtimeRecoverTest {
 			assertTrue("Verify success from all message callbacks", errors.length == 0);				
 
 			/* establish a new rx connection with recover string, and wait for connection */
-			ClientOptions recoverOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions recoverOpts = createOptions(testVars.keys[0].keyStr);
 			recoverOpts.recover = recoverConnectionKey + ':' + String.valueOf(recoverConnectionSerial);
 			ablyRxRecover = new AblyRealtime(recoverOpts);
 
@@ -254,8 +239,7 @@ public class RealtimeRecoverTest {
 		int messageCount = 5;
 		long delay = 200;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ablyRx = new AblyRealtime(opts);
 			ablyTx = new AblyRealtime(opts);
 
@@ -355,8 +339,7 @@ public class RealtimeRecoverTest {
 			MockWebsocketTransport.exceptionsThrown = 0;
 
 			Defaults.TRANSPORT = MockWebsocketFactory.class.getName();
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			opts.autoConnect = false;
 			ably = new AblyRealtime(opts);
 			ConnectionWaiter connWaiter = new ConnectionWaiter(ably.connection);

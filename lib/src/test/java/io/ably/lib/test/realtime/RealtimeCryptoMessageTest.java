@@ -8,34 +8,22 @@ import java.io.IOException;
 import javax.crypto.spec.IvParameterSpec;
 
 import io.ably.lib.types.*;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.test.common.Helpers;
+import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Setup;
-import io.ably.lib.test.common.Setup.TestVars;
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Crypto;
 import io.ably.lib.util.Crypto.CipherParams;
 
-public class RealtimeCryptoMessageTest {
+public class RealtimeCryptoMessageTest extends ParameterizedTest {
 
 	private static final String testDataFile128 = "ably-common/test-resources/crypto-data-128.json";
 	private static final String testDataFile256 = "ably-common/test-resources/crypto-data-256.json";
 	private static CryptoTestData testData128;
 	private static CryptoTestData testData256;
-
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-		Setup.getTestVars();
-	}
-
-	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
-		Setup.clearTestVars();
-	}
 
 	@Test
 	public void encrypt_message_128() {
@@ -47,8 +35,7 @@ public class RealtimeCryptoMessageTest {
 		}
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			byte[] key = Base64Coder.decode(testData128.key);
@@ -103,8 +90,7 @@ public class RealtimeCryptoMessageTest {
 		}
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			byte[] key = Base64Coder.decode(testData256.key);
@@ -159,8 +145,7 @@ public class RealtimeCryptoMessageTest {
 		}
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			byte[] key = Base64Coder.decode(testData128.key);
@@ -215,8 +200,7 @@ public class RealtimeCryptoMessageTest {
 		}
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			byte[] key = Base64Coder.decode(testData256.key);

@@ -4,28 +4,26 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth.AuthOptions;
 import io.ably.lib.rest.Auth.TokenDetails;
 import io.ably.lib.rest.Auth.TokenParams;
-import io.ably.lib.test.common.Setup;
+import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Setup.Key;
-import io.ably.lib.test.common.Setup.TestVars;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Capability;
 import io.ably.lib.types.ClientOptions;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+public class RestCapabilityTest extends ParameterizedTest {
 
-public class RestCapabilityTest {
+	private AblyRest ably;
 
-	private static AblyRest ably;
-
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-		TestVars testVars = Setup.getTestVars();
-		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+	@Before
+	public void setUpBefore() throws Exception {
+		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 		ably = new AblyRest(opts);
 	}
 
@@ -35,7 +33,7 @@ public class RestCapabilityTest {
 	@Test
 	public void authcapability0() {
 		try {
-			Key key = Setup.getTestVars().keys[1];
+			Key key = testVars.keys[1];
 			AuthOptions authOptions = new AuthOptions();
 			authOptions.key = key.keyStr;
 			TokenDetails tokenDetails = ably.auth.requestToken(null, authOptions);
@@ -53,7 +51,7 @@ public class RestCapabilityTest {
 	@Test
 	public void authcapability1() {
 		try {
-			Key key = Setup.getTestVars().keys[1];
+			Key key = testVars.keys[1];
 			AuthOptions authOptions = new AuthOptions();
 			authOptions.key = key.keyStr;
 			TokenParams tokenParams = new TokenParams();
@@ -72,7 +70,7 @@ public class RestCapabilityTest {
 	 */
 	@Test
 	public void authcapability2() {
-		Key key = Setup.getTestVars().keys[1];
+		Key key = testVars.keys[1];
 		AuthOptions authOptions = new AuthOptions();
 		authOptions.key = key.keyStr;
 		TokenParams tokenParams = new TokenParams();
@@ -92,7 +90,7 @@ public class RestCapabilityTest {
 	 */
 	@Test
 	public void authcapability3() {
-		Key key = Setup.getTestVars().keys[1];
+		Key key = testVars.keys[1];
 		AuthOptions authOptions = new AuthOptions();
 		authOptions.key = key.keyStr;
 		TokenParams tokenParams = new TokenParams();
@@ -113,7 +111,7 @@ public class RestCapabilityTest {
 	@Test
 	public void authcapability4() {
 		try {
-			Key key = Setup.getTestVars().keys[4];
+			Key key = testVars.keys[4];
 			AuthOptions authOptions = new AuthOptions();
 			authOptions.key = key.keyStr;
 			TokenParams tokenParams = new TokenParams();
@@ -137,7 +135,7 @@ public class RestCapabilityTest {
 	@Test
 	public void authcapability5() {
 		try {
-			Key key = Setup.getTestVars().keys[4];
+			Key key = testVars.keys[4];
 			AuthOptions authOptions = new AuthOptions();
 			authOptions.key = key.keyStr;
 			TokenParams tokenParams = new TokenParams();
@@ -162,7 +160,7 @@ public class RestCapabilityTest {
 	@Test
 	public void authcapability6() {
 		try {
-			Key key = Setup.getTestVars().keys[4];
+			Key key = testVars.keys[4];
 			AuthOptions authOptions = new AuthOptions();
 			authOptions.key = key.keyStr;
 			TokenParams tokenParams = new TokenParams();
@@ -182,7 +180,7 @@ public class RestCapabilityTest {
 	@Test
 	public void authcapability7() {
 		try {
-			Key key = Setup.getTestVars().keys[4];
+			Key key = testVars.keys[4];
 			AuthOptions authOptions = new AuthOptions();
 			authOptions.key = key.keyStr;
 			TokenParams tokenParams = new TokenParams();
@@ -206,7 +204,7 @@ public class RestCapabilityTest {
 	@Test
 	public void authcapability8() {
 		try {
-			Key key = Setup.getTestVars().keys[2];
+			Key key = testVars.keys[2];
 			AuthOptions authOptions = new AuthOptions();
 			authOptions.key = key.keyStr;
 			TokenParams tokenParams = new TokenParams();
@@ -224,7 +222,7 @@ public class RestCapabilityTest {
 	@Test
 	public void authcapability9() {
 		try {
-			Key key = Setup.getTestVars().keys[2];
+			Key key = testVars.keys[2];
 			AuthOptions authOptions = new AuthOptions();
 			authOptions.key = key.keyStr;
 			TokenParams tokenParams = new TokenParams();
@@ -242,7 +240,7 @@ public class RestCapabilityTest {
 	@Test
 	public void authcapability10() {
 		try {
-			Key key = Setup.getTestVars().keys[2];
+			Key key = testVars.keys[2];
 			AuthOptions authOptions = new AuthOptions();
 			authOptions.key = key.keyStr;
 			TokenParams tokenParams = new TokenParams();

@@ -8,7 +8,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import org.junit.AfterClass;
+import org.junit.Before;
 
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.AblyRealtime;
@@ -17,13 +17,12 @@ import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.TokenParams;
-import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
 import io.ably.lib.test.common.Helpers.PresenceWaiter;
 import io.ably.lib.test.common.Helpers.RawProtocolWaiter;
-import io.ably.lib.test.common.Setup.TestVars;
+import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.PaginatedResult;
@@ -32,26 +31,21 @@ import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Locale;
 
-public class RealtimePresenceHistoryTest {
+public class RealtimePresenceHistoryTest extends ParameterizedTest {
 
-	private static TestVars testVars;
-	private static long timeOffset;
-	private static AblyRest rest;
 	private static final String testClientId = "testClientId";
-	private static Auth.TokenDetails token;
+	private long timeOffset;
+	private AblyRest rest;
+	private Auth.TokenDetails token;
 
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-		testVars = Setup.getTestVars();
-
+	@Before
+	public void setUpBefore() throws Exception {
 		/* create tokens for specific clientIds */
-		ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-		testVars.fillInOptions(opts);
+		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 		rest = new AblyRest(opts);
 		token = rest.auth.requestToken(new TokenParams() {{ clientId = testClientId; }}, null);
 
@@ -60,28 +54,22 @@ public class RealtimePresenceHistoryTest {
 		timeOffset = timeFromService - System.currentTimeMillis();
 	}
 
-	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
-		Setup.clearTestVars();
-	}
-
 	/**
 	 * Send a single message on a channel and verify that it can be
 	 * retrieved using channel.history() without needing to wait for
 	 * it to be persisted.
 	 */
 	@Test
-	public void presencehistory_simple_binary() {
+	public void presencehistory_simpley() {
 		AblyRealtime ably = null;
 		try {
-			ClientOptions rtOpts = new ClientOptions();
-			testVars.fillInOptions(rtOpts);
+			ClientOptions rtOpts = createOptions();
 			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
 
-			String channelName = "persisted:presencehistory_simple_binary";
-			String messageText = "Test message (presencehistory_simple_binary)";
+			String channelName = "persisted:presencehistory_simple_" + testParams.name;
+			String messageText = "Test message (presencehistory_simple)";
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -116,121 +104,18 @@ public class RealtimePresenceHistoryTest {
 	}
 
 	/**
-	 * Send a single message on a channel and verify that it can be
-	 * retrieved using channel.history() without needing to wait for
-	 * it to be persisted.
-	 */
-	@Test
-	public void presencehistory_simple_text() {
-		AblyRealtime ably = null;
-		try {
-			ClientOptions rtOpts = new ClientOptions();
-			testVars.fillInOptions(rtOpts);
-			rtOpts.token = token.token;
-			rtOpts.clientId = testClientId;
-			rtOpts.useBinaryProtocol = false;
-			ably = new AblyRealtime(rtOpts);
-
-			String channelName = "persisted:presencehistory_simple_text";
-			String messageText = "Test message (presencehistory_simple_text)";
-
-			/* create a channel */
-			final Channel channel = ably.channels.get(channelName);
-
-			/* attach */
-			channel.attach();
-			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
-
-			/* enter the channel */
-			CompletionWaiter msgComplete = new CompletionWaiter();
-			channel.presence.enter(messageText, msgComplete);
-
-			/* wait for the enter callback to be called */
-			msgComplete.waitFor();
-			assertTrue("Verify success callback was called", msgComplete.success);
-
-			/* get the presence history for this channel */
-			PaginatedResult<PresenceMessage> messages = channel.presence.history(null);
-			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 1 message", messages.items().length, 1);
-
-			/* verify message contents */
-			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("presencehistory_simple_text: Unexpected exception instantiating library");
-		} finally {
-			if(ably != null)
-				ably.close();
-		}
-	}
-
-	/**
 	 * Publish events with data of various datatypes
 	 */
 	@Test
-	public void presencehistory_types_binary() {
+	public void presencehistory_types() {
 		AblyRealtime ably = null;
 		try {
-			ClientOptions rtOpts = new ClientOptions();
-			testVars.fillInOptions(rtOpts);
+			ClientOptions rtOpts = createOptions();
 			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
 
-			String channelName = "persisted:presencehistory_types_binary";
-
-			/* create a channel */
-			final Channel channel = ably.channels.get(channelName);
-
-			/* attach */
-			channel.attach();
-			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
-
-			/* publish enter events to the channel */
-			CompletionWaiter msgComplete = new CompletionWaiter();
-
-			channel.presence.enter("This is a string message payload", msgComplete);
-			channel.presence.enter("This is a byte[] message payload".getBytes(), msgComplete);
-
-			/* wait for the enter callback to be called */
-			msgComplete.waitFor();
-			assertTrue("Verify success callback was called", msgComplete.success);
-
-			/* get the history for this channel */
-			PaginatedResult<PresenceMessage> messages = channel.presence.history(null);
-			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 2 messages", messages.items().length, 2);
-
-			/* verify message contents and order */
-			assertEquals("Expect messages.asArray()[1] to be expected String", messages.items()[1].data, "This is a string message payload");
-			assertEquals("Expect messages.asArray()[0] to be expected byte[]", new String((byte[])messages.items()[0].data), "This is a byte[] message payload");
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("presencehistory_types: Unexpected exception");
-		} finally {
-			if(ably != null)
-				ably.close();
-		}
-	}
-
-	/**
-	 * Publish events with data of various datatypes
-	 */
-	@Test
-	public void presencehistory_types_text() {
-		AblyRealtime ably = null;
-		try {
-			ClientOptions rtOpts = new ClientOptions();
-			testVars.fillInOptions(rtOpts);
-			rtOpts.token = token.token;
-			rtOpts.clientId = testClientId;
-			rtOpts.useBinaryProtocol = false;
-			ably = new AblyRealtime(rtOpts);
-
-			String channelName = "persisted:presencehistory_types_text";
+			String channelName = "persisted:presencehistory_types_" + testParams.name;
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -274,12 +159,12 @@ public class RealtimePresenceHistoryTest {
 	public void presencehistory_types_forward() {
 		AblyRealtime ably = null;
 		try {
-			ClientOptions rtOpts = testVars.createOptions();
+			ClientOptions rtOpts = createOptions();
 			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
 
-			String channelName = "persisted:presencehistory_types_forward";
+			String channelName = "persisted:presencehistory_types_forward_" + testParams.name;
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -326,14 +211,14 @@ public class RealtimePresenceHistoryTest {
 	public void presencehistory_second_channel() {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
-			ClientOptions txOpts = testVars.createOptions();
+			ClientOptions txOpts = createOptions();
 			txOpts.token = token.token;
 			txOpts.clientId = testClientId;
 			txAbly = new AblyRealtime(txOpts);
 
-			ClientOptions rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions rxOpts = createOptions(testVars.keys[0].keyStr);
 			rxAbly = new AblyRealtime(rxOpts);
-			String channelName = "persisted:presencehistory_second_channel";
+			String channelName = "persisted:presencehistory_second_channel_" + testParams.name;
 	
 			/* create a channel */
 			final Channel txChannel = txAbly.channels.get(channelName);
@@ -383,15 +268,15 @@ public class RealtimePresenceHistoryTest {
 	 * persisted.
 	 */
 	@Test
-	public void presencehistory_wait_binary_b() {
+	public void presencehistory_wait_b() {
 		AblyRealtime ably = null;
 		try {
-			ClientOptions rtOpts = testVars.createOptions();
+			ClientOptions rtOpts = createOptions();
 			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
-			String channelName = "persisted:presencehistory_wait_binary_b";
-			String messageText = "Test message (presencehistory_wait_binary_b)";
+			String channelName = "persisted:presencehistory_wait_b_" + testParams.name;
+			String messageText = "Test message (presencehistory_wait_b)";
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -431,74 +316,20 @@ public class RealtimePresenceHistoryTest {
 	}
 
 	/**
-	 * Send a single message on a channel using the text protocol and verify
-	 * that it can be retrieved using channel.history() after waiting for it
-	 * to be persisted.
-	 */
-	@Test
-	public void presencehistory_wait_text_b() {
-		AblyRealtime ably = null;
-		try {
-			ClientOptions rtOpts = testVars.createOptions();
-			rtOpts.token = token.token;
-			rtOpts.clientId = testClientId;
-			rtOpts.useBinaryProtocol = false;
-			ably = new AblyRealtime(rtOpts);
-			String channelName = "persisted:presencehistory_wait_text_b";
-			String messageText = "Test message (presencehistory_wait_text_b)";
-
-			/* create a channel */
-			final Channel channel = ably.channels.get(channelName);
-
-			/* attach */
-			channel.attach();
-			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
-
-			/* enter the channel */
-			CompletionWaiter msgComplete = new CompletionWaiter();
-			channel.presence.enter(messageText, msgComplete);
-
-			/* wait for the enter callback to be called */
-			msgComplete.waitFor();
-			assertTrue("Verify success callback was called", msgComplete.success);
-
-			/* wait for the history to be persisted */
-			try {
-				Thread.sleep(16000);
-			} catch(InterruptedException ie) {}
-
-			/* get the history for this channel */
-			PaginatedResult<PresenceMessage> messages = channel.presence.history(null);
-			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 1 message", messages.items().length, 1);
-
-			/* verify message contents */
-			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("single_history_binary: Unexpected exception instantiating library");
-		} finally {
-			if(ably != null)
-				ably.close();
-		}
-	}
-
-	/**
 	 * Send a single message on a channel and verify that it can be
 	 * retrieved using channel.history(direction=forwards) after waiting
 	 * for it to be persisted.
 	 */
 	@Test
-	public void presencehistory_wait_binary_f() {
+	public void presencehistory_wait_f() {
 		AblyRealtime ably = null;
 		try {
-			ClientOptions rtOpts = testVars.createOptions();
+			ClientOptions rtOpts = createOptions();
 			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
-			String channelName = "persisted:presencehistory_wait_binary_f";
-			String messageText = "Test message (presencehistory_wait_binary_f)";
+			String channelName = "persisted:presencehistory_wait_f_" + testParams.name;
+			String messageText = "Test message (presencehistory_wait_f)";
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -543,14 +374,14 @@ public class RealtimePresenceHistoryTest {
 	 * retrieved using channel.history() without any further wait.
 	 */
 	@Test
-	public void presencehistory_mixed_binary_b() {
+	public void presencehistory_mixed_b() {
 		AblyRealtime ably = null;
 		try {
-			ClientOptions rtOpts = testVars.createOptions();
+			ClientOptions rtOpts = createOptions();
 			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
-			String channelName = "persisted:presencehistory_mixed_binary_b";
+			String channelName = "persisted:presencehistory_mixed_b_" + testParams.name;
 			String persistMessageText = "test_event (persisted)";
 			String liveMessageText = "test_event (live)";
 
@@ -603,14 +434,14 @@ public class RealtimePresenceHistoryTest {
 	 * further wait.
 	 */
 	@Test
-	public void presencehistory_mixed_binary_f() {
+	public void presencehistory_mixed_f() {
 		AblyRealtime ably = null;
 		try {
-			ClientOptions rtOpts = testVars.createOptions();
+			ClientOptions rtOpts = createOptions();
 			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
-			String channelName = "persisted:presencehistory_mixed_binary_f";
+			String channelName = "persisted:presencehistory_mixed_f_" + testParams.name;
 			String persistMessageText = "test_event (persisted)";
 			String liveMessageText = "test_event (live)";
 
@@ -663,11 +494,11 @@ public class RealtimePresenceHistoryTest {
 	public void presencehistory_limit_f() {
 		AblyRealtime ably = null;
 		try {
-			ClientOptions rtOpts = testVars.createOptions();
+			ClientOptions rtOpts = createOptions();
 			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
-			String channelName = "persisted:presencehistory_limit_f";
+			String channelName = "persisted:presencehistory_limit_f_" + testParams.name;
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -718,11 +549,11 @@ public class RealtimePresenceHistoryTest {
 	public void presencehistory_limit_b() {
 		AblyRealtime ably = null;
 		try {
-			ClientOptions rtOpts = testVars.createOptions();
+			ClientOptions rtOpts = createOptions();
 			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
-			String channelName = "persisted:presencehistory_limit_b";
+			String channelName = "persisted:presencehistory_limit_b_" + testParams.name;
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -776,11 +607,11 @@ public class RealtimePresenceHistoryTest {
 		try {
 			/* first, publish some messages */
 			long intervalStart = 0, intervalEnd = 0;
-			ClientOptions rtOpts = testVars.createOptions();
+			ClientOptions rtOpts = createOptions();
 			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
-			String channelName = "persisted:presencehistory_time_f";
+			String channelName = "persisted:presencehistory_time_f_" + testParams.name;
 	
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -843,11 +674,11 @@ public class RealtimePresenceHistoryTest {
 		try {
 			/* first, publish some messages */
 			long intervalStart = 0, intervalEnd = 0;
-			ClientOptions rtOpts = testVars.createOptions();
+			ClientOptions rtOpts = createOptions();
 			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
-			String channelName = "persisted:presencehistory_time_b";
+			String channelName = "persisted:presencehistory_time_b_" + testParams.name;
 	
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -908,11 +739,11 @@ public class RealtimePresenceHistoryTest {
 	public void presencehistory_paginate_f() {
 		AblyRealtime ably = null;
 		try {
-			ClientOptions rtOpts = testVars.createOptions();
+			ClientOptions rtOpts = createOptions();
 			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
-			String channelName = "persisted:presencehistory_paginate_f";
+			String channelName = "persisted:presencehistory_paginate_f_" + testParams.name;
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -981,11 +812,11 @@ public class RealtimePresenceHistoryTest {
 	public void presencehistory_paginate_b() {
 		AblyRealtime ably = null;
 		try {
-			ClientOptions rtOpts = testVars.createOptions();
+			ClientOptions rtOpts = createOptions();
 			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
-			String channelName = "persisted:presencehistory_paginate_b";
+			String channelName = "persisted:presencehistory_paginate_b_" + testParams.name;
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -1054,11 +885,11 @@ public class RealtimePresenceHistoryTest {
 	public void presencehistory_paginate_first_f() {
 		AblyRealtime ably = null;
 		try {
-			ClientOptions rtOpts = testVars.createOptions();
+			ClientOptions rtOpts = createOptions();
 			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
-			String channelName = "persisted:presencehistory_paginate_first_f";
+			String channelName = "persisted:presencehistory_paginate_first_f_" + testParams.name;
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -1127,11 +958,11 @@ public class RealtimePresenceHistoryTest {
 	public void presencehistory_paginate_first_b() {
 		AblyRealtime ably = null;
 		try {
-			ClientOptions rtOpts = testVars.createOptions();
+			ClientOptions rtOpts = createOptions();
 			rtOpts.token = token.token;
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
-			String channelName = "persisted:presencehistory_paginate_first_b";
+			String channelName = "persisted:presencehistory_paginate_first_b_" + testParams.name;
 
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
@@ -1194,7 +1025,7 @@ public class RealtimePresenceHistoryTest {
 	}
 
 	/**
-	 * Connect twice to the service, each using the default (binary) protocol.
+	 * Connect twice to the service.
 	 * Publish messages on one connection to a given channel; while in progress,
 	 * attach the second connection to the same channel and verify a message
 	 * history up to the point of attachment can be obtained. 
@@ -1203,17 +1034,17 @@ public class RealtimePresenceHistoryTest {
 	public void presencehistory_from_attach() {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
-			ClientOptions txOpts = testVars.createOptions();
+			ClientOptions txOpts = createOptions();
 			txOpts.token = token.token;
 			txOpts.clientId = testClientId;
 			txAbly = new AblyRealtime(txOpts);
 
 			DebugOptions rxOpts = new DebugOptions(testVars.keys[0].keyStr);
-			testVars.fillInOptions(rxOpts);
+			fillInOptions(rxOpts);
 			RawProtocolWaiter rawPresenceWaiter = new RawProtocolWaiter(Action.presence);
 			rxOpts.protocolListener = rawPresenceWaiter;
 			rxAbly = new AblyRealtime(rxOpts);
-			String channelName = "persisted:presencehistory_from_attach";
+			String channelName = "persisted:presencehistory_from_attach_" + testParams.name;
 	
 			/* create a channel */
 			final Channel txChannel = txAbly.channels.get(channelName);
@@ -1308,17 +1139,17 @@ public class RealtimePresenceHistoryTest {
 	public void presencehistory_until_attach() {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
-			ClientOptions txOpts = testVars.createOptions();
+			ClientOptions txOpts = createOptions();
 			txOpts.token = token.token;
 			txOpts.clientId = testClientId;
 			txAbly = new AblyRealtime(txOpts);
 
 			DebugOptions rxOpts = new DebugOptions(testVars.keys[0].keyStr);
-			testVars.fillInOptions(rxOpts);
+			fillInOptions(rxOpts);
 			RawProtocolWaiter rawPresenceWaiter = new RawProtocolWaiter(Action.presence);
 			rxOpts.protocolListener = rawPresenceWaiter;
 			rxAbly = new AblyRealtime(rxOpts);
-			String channelName = "persisted:presencehistory_until_attach";
+			String channelName = "persisted:presencehistory_until_attach_" + testParams.name;
 
 			/* create a channel */
 			final Channel txChannel = txAbly.channels.get(channelName);
@@ -1379,8 +1210,7 @@ public class RealtimePresenceHistoryTest {
 	 */
 	@Test(expected=AblyException.class)
 	public void presencehistory_until_attach_before_attached() throws AblyException {
-		io.ably.lib.test.common.Setup.TestVars testVars = Setup.getTestVars();
-		ClientOptions options = testVars.createOptions(testVars.keys[0].keyStr);
+		ClientOptions options = createOptions(testVars.keys[0].keyStr);
 		AblyRealtime ably = new AblyRealtime(options);
 
 		ably.channels.get("test").presence.history(new Param[]{ new Param("untilAttach", "true")});
@@ -1394,8 +1224,7 @@ public class RealtimePresenceHistoryTest {
 	 */
 	@Test(expected=AblyException.class)
 	public void presencehistory_until_attach_invalid_value() throws AblyException {
-		io.ably.lib.test.common.Setup.TestVars testVars = Setup.getTestVars();
-		ClientOptions options = testVars.createOptions(testVars.keys[0].keyStr);
+		ClientOptions options = createOptions(testVars.keys[0].keyStr);
 		AblyRealtime ably = new AblyRealtime(options);
 
 		ably.channels.get("test").presence.history(new Param[]{ new Param("untilAttach", "affirmative")});
@@ -1411,12 +1240,11 @@ public class RealtimePresenceHistoryTest {
 	public void presencehistory_islast() throws AblyException {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			opts.token = token.token;
 			opts.clientId = testClientId;
 			ably = new AblyRealtime(opts);
-			String channelName = "persisted:presencehistory_islast";
+			String channelName = "persisted:presencehistory_islast_" + testParams.name;
 			int pageMessageCount = 10;
 
 			/* create a channel */
