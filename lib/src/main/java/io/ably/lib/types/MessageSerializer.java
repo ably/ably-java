@@ -9,7 +9,7 @@ import org.msgpack.core.MessageUnpacker;
 
 import io.ably.lib.http.Http;
 import io.ably.lib.http.Http.BodyHandler;
-import io.ably.lib.http.Http.JSONRequestBody;
+import io.ably.lib.http.Http.JsonRequestBody;
 import io.ably.lib.http.Http.RequestBody;
 import io.ably.lib.util.Serialisation;
 
@@ -84,12 +84,12 @@ public class MessageSerializer {
 	 *            JSON encode
 	 ****************************************/
 	
-	public static RequestBody asJSONRequest(Message message) throws AblyException {
-		return asJSONRequest(new Message[] { message });
+	public static RequestBody asJsonRequest(Message message) throws AblyException {
+		return asJsonRequest(new Message[] { message });
 	}
 
-	public static RequestBody asJSONRequest(Message[] messages) {
-		return new JSONRequestBody(Serialisation.gson.toJson(messages));
+	public static RequestBody asJsonRequest(Message[] messages) {
+		return new JsonRequestBody(Serialisation.gson.toJson(messages));
 	}
 
 	/****************************************

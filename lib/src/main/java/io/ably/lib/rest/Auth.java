@@ -16,6 +16,7 @@ import com.google.gson.JsonParseException;
 import io.ably.lib.http.Http;
 import io.ably.lib.http.Http.ResponseHandler;
 import io.ably.lib.http.TokenAuth;
+import io.ably.lib.test.common.Helpers;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Capability;
 import io.ably.lib.types.ClientOptions;
@@ -205,14 +206,63 @@ public class Auth {
 		public TokenDetails(String token) { this.token = token; }
 
 		/**
-		 * Internal; convert a JSON response body to a TokenDetails.
+		 * Convert a JSON response body to a TokenDetails.
+		 * Deprecated: use fromJson() instead
 		 * @param json
 		 * @return
 		 */
+		@Deprecated
 		public static TokenDetails fromJSON(JsonObject json) {
 			return Serialisation.gson.fromJson(json, TokenDetails.class);
 		}
-	}
+
+		/**
+		 * Convert a JSON element response body to a TokenDetails.
+		 * @param json
+		 * @return
+		 */
+		public static TokenDetails fromJson(String json) {
+			return Serialisation.gson.fromJson(json, TokenDetails.class);
+		}
+
+		/**
+		 * Convert a JSON element response body to a TokenDetails.
+		 * @param json
+		 * @return
+		 */
+		public static TokenDetails fromJsonElement(JsonObject json) {
+			return Serialisation.gson.fromJson(json, TokenDetails.class);
+		}
+
+		/**
+		 * Convert a TokenDetails into a JSON object.
+		 */
+		public JsonObject asJsonElement() {
+			return (JsonObject)Serialisation.gson.toJsonTree(this);
+		}
+
+		/**
+		 * Convert a TokenDetails into a JSON string.
+		 */
+		public String asJson() {
+			return asJsonElement().toString();
+		}
+
+		/**
+		 * Check equality of a TokenDetails
+		 * @param obj
+		 */
+		@Override
+		public boolean equals(Object obj) {
+			TokenDetails details = (TokenDetails)obj;
+			return Helpers.equalNullableStrings(this.token, details.token) &
+					Helpers.equalNullableStrings(this.capability, details.capability) &
+					Helpers.equalNullableStrings(this.clientId, details.clientId) &
+					(this.issued == details.issued) &
+					(this.expires == details.expires);
+		}
+
+}
 
 	/**
 	 * A class providing parameters of a token request.
@@ -258,6 +308,19 @@ public class Auth {
 			if(clientId != null) params.add(new Param("client_id", clientId));
 			if(timestamp > 0) params.add(new Param("timestamp", String.valueOf(timestamp)));
 			return params;
+		}
+
+		/**
+		 * Check equality of a TokenParams
+		 * @param obj
+		 */
+		@Override
+		public boolean equals(Object obj) {
+			TokenParams params = (TokenParams)obj;
+			return (this.ttl == params.ttl) &
+					Helpers.equalNullableStrings(this.capability, params.capability) &
+					Helpers.equalNullableStrings(this.clientId, params.clientId) &
+					(this.timestamp == params.timestamp);
 		}
 
 		/**
@@ -323,19 +386,59 @@ public class Auth {
 		public String mac;
 
 		/**
-		 * Internal; convert a JSON response body to a TokenParams.
+		 * Convert a JSON serialisation to a TokenParams.
+		 * Deprecated: use fromJson() instead
 		 * @param json
 		 * @return
 		 */
+		@Deprecated
 		public static TokenRequest fromJSON(JsonObject json) {
 			return Serialisation.gson.fromJson(json, TokenRequest.class);
 		}
 
 		/**
-		 * Internal; convert a TokenParams into a JSON object.
+		 * Convert a parsed JSON response body to a TokenParams.
+		 * @param json
+		 * @return
 		 */
-		public JsonObject asJSON() {
+		public static TokenRequest fromJsonElement(JsonObject json) {
+			return Serialisation.gson.fromJson(json, TokenRequest.class);
+		}
+
+		/**
+		 * Convert a string JSON response body to a TokenParams.
+		 * @param json
+		 * @return
+		 */
+		public static TokenRequest fromJson(String json) {
+			return Serialisation.gson.fromJson(json, TokenRequest.class);
+		}
+
+		/**
+		 * Convert a TokenParams into a JSON object.
+		 */
+		public JsonObject asJsonElement() {
 			return (JsonObject)Serialisation.gson.toJsonTree(this);
+		}
+
+		/**
+		 * Convert a TokenParams into a JSON string.
+		 */
+		public String asJson() {
+			return asJsonElement().toString();
+		}
+
+		/**
+		 * Check equality of a TokenRequest
+		 * @param obj
+		 */
+		@Override
+		public boolean equals(Object obj) {
+			TokenRequest request = (TokenRequest)obj;
+			return super.equals(obj) &
+					Helpers.equalNullableStrings(this.keyName, request.keyName) &
+					Helpers.equalNullableStrings(this.nonce, request.nonce) &
+					Helpers.equalNullableStrings(this.mac, request.mac);
 		}
 	}
 
@@ -502,10 +605,10 @@ public class Auth {
 							JsonObject jsonObject = (JsonObject)json;
 							if(jsonObject.has("issued")) {
 								/* we assume this is a token details */
-								return TokenDetails.fromJSON(jsonObject);
+								return TokenDetails.fromJsonElement(jsonObject);
 							} else {
 								/* otherwise it's a signed token request */
-								return TokenRequest.fromJSON(jsonObject);
+								return TokenRequest.fromJsonElement(jsonObject);
 							}
 						} catch(JsonParseException e) {
 							throw AblyException.fromErrorInfo(new ErrorInfo("Unable to parse response from auth callback", 406, 40170));
@@ -533,13 +636,13 @@ public class Auth {
 		}
 
 		String tokenPath = "/keys/" + signedTokenRequest.keyName + "/requestToken";
-		return ably.http.post(tokenPath, tokenOptions.authHeaders, tokenOptions.authParams, new Http.JSONRequestBody(signedTokenRequest.asJSON().toString()), new ResponseHandler<TokenDetails>() {
+		return ably.http.post(tokenPath, tokenOptions.authHeaders, tokenOptions.authParams, new Http.JsonRequestBody(signedTokenRequest.asJsonElement().toString()), new ResponseHandler<TokenDetails>() {
 			@Override
 			public TokenDetails handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
 				try {
 					String jsonText = new String(body);
 					JsonObject json = (JsonObject)Serialisation.gsonParser.parse(jsonText);
-					return TokenDetails.fromJSON(json);
+					return TokenDetails.fromJsonElement(json);
 				} catch(JsonParseException e) {
 					throw AblyException.fromThrowable(e);
 				}

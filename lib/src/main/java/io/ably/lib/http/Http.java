@@ -116,9 +116,9 @@ public class Http {
 	/**
 	 * A RequestBody wrapping a JSON-serialisable object
 	 */
-	public static class JSONRequestBody implements RequestBody {
-		public JSONRequestBody(String jsonText) { this.jsonText = jsonText; }
-		public JSONRequestBody(Object ob) { this(Serialisation.gson.toJson(ob)); }
+	public static class JsonRequestBody implements RequestBody {
+		public JsonRequestBody(String jsonText) { this.jsonText = jsonText; }
+		public JsonRequestBody(Object ob) { this(Serialisation.gson.toJson(ob)); }
 
 		@Override
 		public byte[] getEncoded() { return (bytes != null) ? bytes : (bytes = jsonText.getBytes()); }

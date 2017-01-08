@@ -625,6 +625,14 @@ public class Helpers {
 		public ErrorInfo error;
 	}
 
+	public static boolean equalStrings(String one, String two) {
+		return one != null && one.equals(two);
+	}
+
+	public static boolean equalNullableStrings(String one, String two) {
+		return (one == null) ? (two == null) : one.equals(two);
+	}
+
 	public static class RandomGenerator {
 
 		private static Random random = new Random((new Date()).getTime());

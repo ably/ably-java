@@ -62,7 +62,7 @@ public class RestAppStatsTest extends ParameterizedTest {
 			}
 	
 			/* add stats for each of the minutes within the interval */
-			Stats[] testStats = StatsReader.readJSON(
+			Stats[] testStats = StatsReader.readJson(
 					'['
 					+   "{ \"intervalId\": \"" + intervalIds[0] + "\","
 					+     "\"inbound\": {\"realtime\":{\"messages\":{\"count\":50,\"data\":5000}}}"
@@ -76,7 +76,7 @@ public class RestAppStatsTest extends ParameterizedTest {
 					+ ']'
 				);
 
-			ably.http.post("/stats", HttpUtils.defaultAcceptHeaders(false), null, StatsWriter.asJSONRequest(testStats), null);
+			ably.http.post("/stats", HttpUtils.defaultAcceptHeaders(false), null, StatsWriter.asJsonRequest(testStats), null);
 		} catch (AblyException e) {}
 	}
 
