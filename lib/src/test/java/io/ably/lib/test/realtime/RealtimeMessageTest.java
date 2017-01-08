@@ -639,11 +639,10 @@ public class RealtimeMessageTest extends ParameterizedTest {
 		AblyRealtime realtimeSubscribeClientMsgPack = null;
 		AblyRealtime realtimeSubscribeClientJson = null;
 		try {
-			ClientOptions jsonOpts = testVars.createOptions(testVars.keys[0].keyStr);
-			jsonOpts.useBinaryProtocol = false;
+			ClientOptions jsonOpts = createOptions(testVars.keys[0].keyStr);
 
-			ClientOptions msgpackOpts = testVars.createOptions(testVars.keys[0].keyStr);
-			msgpackOpts.useBinaryProtocol = true;
+			ClientOptions msgpackOpts = createOptions(testVars.keys[0].keyStr);
+			msgpackOpts.useBinaryProtocol = !testParams.useBinaryProtocol;
 
 			AblyRest restPublishClient = new AblyRest(jsonOpts);
 			realtimeSubscribeClientMsgPack = new AblyRealtime(msgpackOpts);

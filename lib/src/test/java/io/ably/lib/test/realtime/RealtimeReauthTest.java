@@ -138,8 +138,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
 
 		try {
 			/* init ably for token */
-			final Setup.TestVars optsTestVars = Setup.getTestVars();
-			ClientOptions optsForToken = optsTestVars.createOptions(optsTestVars.keys[0].keyStr);
+			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
 			System.out.println("done init ably for token");
 
@@ -155,8 +154,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			assertNotNull("Expected token value", firstToken.token);
 
 			/* create ably realtime with tokenDetails and clientId */
-			final Setup.TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions();
+			ClientOptions opts = createOptions();
 			opts.clientId = testClientId;
 			opts.tokenDetails = firstToken;
 			AblyRealtime ablyRealtime = new AblyRealtime(opts);
@@ -225,8 +223,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
 
 		try {
 			/* init ably for token */
-			final Setup.TestVars optsTestVars = Setup.getTestVars();
-			ClientOptions optsForToken = optsTestVars.createOptions(optsTestVars.keys[0].keyStr);
+			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
 			System.out.println("done init ably for token");
 
@@ -241,8 +238,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			assertNotNull("Expected token value", firstToken.token);
 
 			/* create ably realtime with tokenDetails and clientId */
-			final Setup.TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions();
+			ClientOptions opts = createOptions();
 			opts.clientId = testClientId;
 			opts.tokenDetails = firstToken;
 			AblyRealtime ablyRealtime = new AblyRealtime(opts);
@@ -320,8 +316,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			final ArrayList<ConnectionStateListener.ConnectionStateChange> stateChangeHistory = new ArrayList<>();
 
 			/* init ably for token */
-			final Setup.TestVars optsTestVars = Setup.getTestVars();
-			ClientOptions optsForToken = optsTestVars.createOptions(optsTestVars.keys[0].keyStr);
+			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
 			System.out.println("done init ably for token");
 
@@ -332,8 +327,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			assertNotNull("Expected token value", firstToken.token);
 
 			/* create ably realtime with tokenDetails and clientId */
-			final Setup.TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions();
+			ClientOptions opts = createOptions();
 			opts.clientId = testClientId;
 			opts.tokenDetails = firstToken;
 			AblyRealtime ablyRealtime = new AblyRealtime(opts);
@@ -364,7 +358,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			/* fail getting the second token */
 			/* reauthorize and fail */
 			Auth.AuthOptions authOptions = new Auth.AuthOptions();
-			authOptions.key = optsTestVars.keys[0].keyStr;
+			authOptions.key = testVars.keys[0].keyStr;
 			authOptions.authUrl = "https://nonexistent-domain-abcdef.com";
 			try {
 				ablyRealtime.auth.authorize(null, authOptions);

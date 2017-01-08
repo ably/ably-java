@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.junit.Before;
+import org.junit.Test;
 
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.AblyRealtime;
@@ -30,8 +31,6 @@ import io.ably.lib.types.Param;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
-
-import org.junit.Test;
 
 import java.util.Locale;
 
@@ -84,7 +83,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 			channel.presence.enter(messageText, msgComplete);
 
 			/* wait for the enter callback to be called */
-			msgComplete.waitFor(2);
+			msgComplete.waitFor();
 			assertTrue("Verify success callback was called", msgComplete.success);
 
 			/* get the presence history for this channel */
