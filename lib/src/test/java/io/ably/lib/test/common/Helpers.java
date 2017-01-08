@@ -610,4 +610,31 @@ public class Helpers {
 		public T result;
 		public ErrorInfo error;
 	}
+
+	public static class RandomGenerator {
+
+		private static Random random = new Random((new Date()).getTime());
+		private static final char[] values = {'a','b','c','d','e','f','g','h','i','j',
+				'k','l','m','n','o','p','q','r','s','t',
+				'u','v','w','x','y','z','0','1','2','3',
+				'4','5','6','7','8','9'};
+
+		public static String generateRandomString(int length) {
+			char[] chars = new char[length];
+			for (int i = 0; i < length; i++) {
+				int idx = random.nextInt(values.length);
+				chars[i] = values[idx];
+			}
+			return new String(chars);
+		}
+
+		public static byte[] generateRandomBuffer(int length) {
+			byte[] buf = new byte[length];
+			for (int i = 0; i < length; i++) {
+				int idx = random.nextInt(256);
+				buf[i] = (byte)(idx - 128);
+			}
+			return buf;
+		}
+	}
 }

@@ -1,5 +1,6 @@
 package io.ably.lib.test.realtime;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -9,6 +10,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 
 import org.junit.Test;
@@ -28,6 +30,7 @@ import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.Helpers.MessageWaiter;
+import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.transport.ConnectionManager;
@@ -242,7 +245,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 	 * and attach, subscribe to an event, and publish multiple
 	 * messages on that channel
 	 */
-	private void _multiple_send(String channelName, int messageCount, long delay) {
+	private void _multiple_send(String channelName, int messageCount, int msgSize, boolean binary, long delay) {
 		AblyRealtime ably = null;
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -261,18 +264,49 @@ public class RealtimeMessageTest extends ParameterizedTest {
 
 			/* publish to the channel */
 			CompletionSet msgComplete = new CompletionSet();
-			for(int i = 0; i < messageCount; i++) {
-				channel.publish("test_event", "Test message (_multiple_send) " + i, msgComplete.add());
-				try { Thread.sleep(delay); } catch(InterruptedException e){}
+			if(binary) {
+				byte[][] messagesSent = new byte[messageCount][];
+				for(int i = 0; i < messageCount; i++) {
+					byte[] messageData = messagesSent[i] = Helpers.RandomGenerator.generateRandomBuffer(msgSize);
+					channel.publish("test_event", messageData, msgComplete.add());
+					try { Thread.sleep(delay); } catch(InterruptedException e){}
+				}
+
+				/* wait for the publish callback to be called */
+				ErrorInfo[] errors = msgComplete.waitFor();
+				assertTrue("Verify success from all message callbacks", errors.length == 0);
+
+				/* wait for the subscription callback to be called */
+				messageWaiter.waitFor(messageCount);
+
+				/* verify received message content */
+				List<Message> receivedMessages = messageWaiter.receivedMessages;
+				assertEquals("Verify message subscriptions all called", receivedMessages.size(), messageCount);
+				for(int i = 0; i < messageCount; i++) {
+					assertArrayEquals("Verify expected message contents", messagesSent[i], (byte[])receivedMessages.get(i).data);
+				}
+			} else {
+				String[] messagesSent = new String[messageCount];
+				for(int i = 0; i < messageCount; i++) {
+					String messageData = messagesSent[i] = Helpers.RandomGenerator.generateRandomString(msgSize);
+					channel.publish("test_event", messageData, msgComplete.add());
+					try { Thread.sleep(delay); } catch(InterruptedException e){}
+				}
+
+				/* wait for the publish callback to be called */
+				ErrorInfo[] errors = msgComplete.waitFor();
+				assertTrue("Verify success from all message callbacks", errors.length == 0);
+
+				/* wait for the subscription callback to be called */
+				messageWaiter.waitFor(messageCount);
+
+				/* verify received message content */
+				List<Message> receivedMessages = messageWaiter.receivedMessages;
+				assertEquals("Verify message subscriptions all called", receivedMessages.size(), messageCount);
+				for(int i = 0; i < messageCount; i++) {
+					assertEquals("Verify expected message contents", messagesSent[i], (String)receivedMessages.get(i).data);
+				}
 			}
-
-			/* wait for the publish callback to be called */
-			ErrorInfo[] errors = msgComplete.waitFor();
-			assertTrue("Verify success from all message callbacks", errors.length == 0);
-
-			/* wait for the subscription callback to be called */
-			messageWaiter.waitFor(messageCount);
-			assertEquals("Verify message subscriptions all called", messageWaiter.receivedMessages.size(), messageCount);
 
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -332,52 +366,73 @@ public class RealtimeMessageTest extends ParameterizedTest {
 	}
 
 	@Test
-	public void multiple_send_10_1000() {
+	public void multiple_send_10_1000_16_string() {
 		int messageCount = 10;
 		long delay = 1000L;
-		_multiple_send("multiple_send_10_1000_" + testParams.name, messageCount, delay);
+		_multiple_send("multiple_send_10_1000_16_string_" + testParams.name, messageCount, 16, false, delay);
+	}
+
+	@Test
+	public void multiple_send_10_1000_16_binary() {
+		int messageCount = 10;
+		long delay = 1000L;
+		_multiple_send("multiple_send_10_1000_16_binary_" + testParams.name, messageCount, 16, true, delay);
+	}
+
+	@Test
+	public void multiple_send_10_1000_512_string() {
+		int messageCount = 10;
+		long delay = 1000L;
+		_multiple_send("multiple_send_10_1000_512_string_" + testParams.name, messageCount, 512, false, delay);
+	}
+
+	@Test
+	public void multiple_send_10_1000_512_binary() {
+		int messageCount = 10;
+		long delay = 1000L;
+		_multiple_send("multiple_send_10_1000_512_binary_" + testParams.name, messageCount, 512, true, delay);
 	}
 
 	@Test
 	public void multiple_send_20_200() {
 		int messageCount = 20;
 		long delay = 200L;
-		_multiple_send("multiple_send_20_200_" + testParams.name, messageCount, delay);
+		_multiple_send("multiple_send_20_200_" + testParams.name, messageCount, 256, true, delay);
 	}
 
 	@Test
 	public void multiple_send_200_50() {
 		int messageCount = 200;
 		long delay = 50L;
-		_multiple_send("multiple_send_binary_200_50_" + testParams.name, messageCount, delay);
+		_multiple_send("multiple_send_binary_200_50_" + testParams.name, messageCount, 256, true, delay);
 	}
 
 	@Test
 	public void multiple_send_1000_10() {
 		int messageCount = 1000;
 		long delay = 10L;
-		_multiple_send("multiple_send_binary_1000_10_" + testParams.name, messageCount, delay);
+		_multiple_send("multiple_send_binary_1000_10_" + testParams.name, messageCount, 256, true, delay);
 	}
 
 	@Test
 	public void multiple_send_2000_5() {
 		int messageCount = 2000;
 		long delay = 5L;
-		_multiple_send("multiple_send_binary_2000_5_" + testParams.name, messageCount, delay);
+		_multiple_send("multiple_send_binary_2000_5_" + testParams.name, messageCount, 256, true, delay);
 	}
 
 	@Test
 	public void multiple_send_1000_2() {
 		int messageCount = 1000;
 		long delay = 2L;
-		_multiple_send("multiple_send_binary_1000_2_" + testParams.name, messageCount, delay);
+		_multiple_send("multiple_send_binary_1000_2_" + testParams.name, messageCount, 256, true, delay);
 	}
 
 	@Test
 	public void multiple_send_1000_1() {
 		int messageCount = 1000;
 		long delay = 1L;
-		_multiple_send("multiple_send_binary_1000_1_" + testParams.name, messageCount, delay);
+		_multiple_send("multiple_send_binary_1000_1_" + testParams.name, messageCount, 256, true, delay);
 	}
 
 	@Test
