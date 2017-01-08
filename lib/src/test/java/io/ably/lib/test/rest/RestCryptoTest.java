@@ -273,7 +273,7 @@ public class RestCryptoTest extends ParameterizedTest {
 
 		/* get the history for this channel */
 		try {
-			Channel rx_publish = ably.channels.get(channelName);
+			Channel rx_publish = ably_alt.channels.get(channelName);
 			PaginatedResult<Message> messages = rx_publish.history(null);
 			assertNotNull("Expected non-null messages", messages);
 			assertEquals("Expected 2 messages", messages.items().length, 2);
