@@ -2164,7 +2164,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				tokenDetails = wildcardToken;
 				clientId = testClientId1;
 			}};
-			testVars.fillInOptions(client1Opts);
+			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* wait until connected */

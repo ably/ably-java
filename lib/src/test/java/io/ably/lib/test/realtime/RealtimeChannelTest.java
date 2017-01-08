@@ -1018,8 +1018,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 	public void channel_state_on_connection_suspended() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 
 			ably = new AblyRealtime(opts);
 
@@ -1076,8 +1075,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 		final String channelName = "channel_server_initiated_attach_detach";
 
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 
 			/* Make test faster */
 			Defaults.realtimeRequestTimeout = 1000;
@@ -1153,8 +1151,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			Defaults.realtimeRequestTimeout = 1000;
 			MockWebsocketFactory.allowSend();
 
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			opts.channelRetryTimeout = 1000;
 
 			ably = new AblyRealtime(opts);

@@ -1237,7 +1237,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 	}
 
 	/**
-	 * Connect twice to the service, each using the default (binary) protocol.
+	 * Connect twice to the service.
 	 * Publish messages on one connection to a given channel; while in progress,
 	 * attach the second connection to the same channel and verify a message
 	 * history up to the point of attachment can be obtained.

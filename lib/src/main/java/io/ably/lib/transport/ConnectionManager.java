@@ -890,7 +890,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		notifyState(request);
 
 		/* send a close message on the transport, if connected */
-		if(connectionExist) {
+		if(connectionExist && transport != null) {
 			try {
 				transport.send(new ProtocolMessage(Action.close));
 			} catch (AblyException e) {
