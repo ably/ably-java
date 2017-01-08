@@ -207,8 +207,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 	 */
 	@Test
 	public void connectionmanager_reconnect_default_fallback() throws AblyException {
-		Setup.TestVars testVars = Setup.getTestVars();
-		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 		// Use a host that does not normally support fallback.
 		opts.realtimeHost = "nondefault.ably.io";
 		opts.environment = null;
