@@ -1,7 +1,5 @@
 package io.ably.lib.util;
 
 public class Platform {
-	public static boolean supportsMsgpack() {
-		return true;
-	}
+	public static final String name = "java";
 }

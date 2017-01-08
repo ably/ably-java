@@ -10,7 +10,6 @@ import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
 import io.ably.lib.types.*;
 import io.ably.lib.util.Log;
-import io.ably.lib.util.Platform;
 import io.ably.lib.util.Serialisation;
 
 /**
@@ -55,10 +54,6 @@ public class AblyRest {
 		this.options = options;
 
 		/* process options */
-		if(options.useBinaryProtocol && !Platform.supportsMsgpack()) {
-			options.useBinaryProtocol = false;
-		}
-
 		Log.setLevel(options.logLevel);
 		Log.setHandler(options.logHandler);
 		Log.i(getClass().getName(), "started");
