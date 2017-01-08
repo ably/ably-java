@@ -6,8 +6,8 @@ import static org.junit.Assert.*;
 
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.rest.AblyRest;
+import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Setup;
-import io.ably.lib.test.common.Setup.TestVars;
 import io.ably.lib.test.util.StatsWriter;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
@@ -18,58 +18,50 @@ import io.ably.lib.types.StatsReader;
 
 import java.util.Date;
 
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 @SuppressWarnings("deprecation")
-public class RestAppStatsTest {
+public class RestAppStatsTest extends ParameterizedTest {
 
-	private static AblyRest ably;
+	private AblyRest ably;
 	private static String[] intervalIds;
 
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-		TestVars testVars = Setup.getTestVars();
-		ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-		testVars.fillInOptions(opts);
+	@Before
+	public void setUpBefore() throws Exception {
+		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 		ably = new AblyRest(opts);
-
-		populateStats();
 	}
 
-	private static void createStats(Stats[] stats) {
+	@BeforeClass
+	public static void populateStats() {
 		try {
-			ably.http.post("/stats", HttpUtils.defaultAcceptHeaders(false), null, StatsWriter.asJSONRequest(stats), null);
-		} catch (AblyException e) {
-			e.printStackTrace();
-		}
-	}
-
-	private static void populateStats() {
-		/* get time, preferring time from Ably */
-		long currentTime = System.currentTimeMillis();
-		try {
-			currentTime = ably.time();
-		} catch (AblyException e) {}
-
-		/* round down to the start of the current minute */
-		Date currentDate = new Date(currentTime);
-		currentDate.setSeconds(0);
-		currentTime = currentDate.getTime();
-
-		/* Make it the same time last year, to avoid problems with the app
-		 * already having stats from other tests in the same test run. */
-		currentTime -= 365 * 24 * 3600 * 1000L;
-
-		/* get time bounds for test */
-		intervalIds = new String[3];
-		for(int i = 0; i < 3; i++) {
-			long intervalTime = currentTime + (i - 3) * 60 * 1000;
-			intervalIds[i] = Stats.toIntervalId(intervalTime, Stats.Granularity.minute);
-		}
-
-		/* add stats for each of the minutes within the interval */
-		try {
+			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr, Setup.TestParameters.TEXT);
+			AblyRest ably = new AblyRest(opts);
+			/* get time, preferring time from Ably */
+			long currentTime = System.currentTimeMillis();
+			try {
+				currentTime = ably.time();
+			} catch (AblyException e) {}
+	
+			/* round down to the start of the current minute */
+			Date currentDate = new Date(currentTime);
+			currentDate.setSeconds(0);
+			currentTime = currentDate.getTime();
+	
+			/* Make it the same time last year, to avoid problems with the app
+			 * already having stats from other tests in the same test run. */
+			currentTime -= 365 * 24 * 3600 * 1000L;
+	
+			/* get time bounds for test */
+			intervalIds = new String[3];
+			for(int i = 0; i < 3; i++) {
+				long intervalTime = currentTime + (i - 3) * 60 * 1000;
+				intervalIds[i] = Stats.toIntervalId(intervalTime, Stats.Granularity.minute);
+			}
+	
+			/* add stats for each of the minutes within the interval */
 			Stats[] testStats = StatsReader.readJSON(
 					'['
 					+   "{ \"intervalId\": \"" + intervalIds[0] + "\","
@@ -84,7 +76,7 @@ public class RestAppStatsTest {
 					+ ']'
 				);
 
-			createStats(testStats);
+			ably.http.post("/stats", HttpUtils.defaultAcceptHeaders(false), null, StatsWriter.asJSONRequest(testStats), null);
 		} catch (AblyException e) {}
 	}
 

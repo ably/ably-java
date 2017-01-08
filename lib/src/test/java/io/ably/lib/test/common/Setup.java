@@ -63,6 +63,32 @@ public class Setup {
 		public String notes;
 	}
 
+	public static class TestParameters {
+		public boolean useBinaryProtocol;
+		public String name;
+
+		public static TestParameters BINARY = new TestParameters(true, "binary_protocol");
+		public static TestParameters TEXT = new TestParameters(false, "text_protocol");
+
+		public TestParameters(boolean useBinaryProtocol, String name) {
+			this.useBinaryProtocol = useBinaryProtocol;
+			this.name = name;
+		}
+
+		public boolean equals(Object obj) {
+			TestParameters arg = (TestParameters)obj;
+			return arg.useBinaryProtocol == this.useBinaryProtocol;
+		}
+
+		public String toString() {
+			return name;
+		}
+
+		public static TestParameters getDefault() {
+			return BINARY;
+		}
+	}
+
 	public static class TestVars extends AppSpec {
 		public String restHost;
 		public String realtimeHost;
@@ -73,15 +99,33 @@ public class Setup {
 
 		public ClientOptions createOptions() {
 			ClientOptions opts = new ClientOptions();
-			fillInOptions(opts);
+			fillInOptions(opts, null);
 			return opts;
 		}
+
 		public ClientOptions createOptions(String key) throws AblyException {
-			ClientOptions opts = new ClientOptions(key);
-			fillInOptions(opts);
+			return createOptions(key, null);
+		}
+
+		public ClientOptions createOptions(TestParameters params) throws AblyException {
+			ClientOptions opts = new ClientOptions();
+			fillInOptions(opts, params);
 			return opts;
 		}
+
+		public ClientOptions createOptions(String key, TestParameters params) throws AblyException {
+			ClientOptions opts = new ClientOptions(key);
+			fillInOptions(opts, params);
+			return opts;
+		}
+
 		public void fillInOptions(ClientOptions opts) {
+			fillInOptions(opts, null);
+		}
+
+		public void fillInOptions(ClientOptions opts, TestParameters params) {
+			if(params == null) { params = TestParameters.getDefault(); }
+			opts.useBinaryProtocol = params.useBinaryProtocol;
 			opts.restHost = restHost;
 			opts.realtimeHost = realtimeHost;
 			opts.environment = environment;

@@ -4,31 +4,29 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
+import java.util.HashMap;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Channel;
-import io.ably.lib.test.common.Setup;
-import io.ably.lib.test.common.Setup.TestVars;
+import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 
-import java.util.HashMap;
+public class RestChannelHistoryTest extends ParameterizedTest {
 
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+	private AblyRest ably;
+	private long timeOffset;
 
-public class RestChannelHistoryTest {
-
-	private static AblyRest ably;
-	private static long timeOffset;
-
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-		TestVars testVars = Setup.getTestVars();
-		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+	@Before
+	public void setUpBefore() throws Exception {
+		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 		opts.useBinaryProtocol = false;
 		ably = new AblyRest(opts);
 		long timeFromService = ably.time();
@@ -41,7 +39,7 @@ public class RestChannelHistoryTest {
 	@Test
 	public void channelhistory_types() {
 		/* first, publish some messages */
-		Channel history0 = ably.channels.get("persisted:channelhistory_types");
+		Channel history0 = ably.channels.get("persisted:channelhistory_types_" + testParams.name);
 		try {
 			history0.publish("history0", "This is a string message payload");
 			history0.publish("history1", "This is a byte[] message payload".getBytes());
@@ -81,7 +79,7 @@ public class RestChannelHistoryTest {
 	@Test
 	public void channelhistory_multi_50_f() {
 		/* first, publish some messages */
-		Channel history1 = ably.channels.get("persisted:channelhistory_multi_50_f");
+		Channel history1 = ably.channels.get("persisted:channelhistory_multi_50_f_" + testParams.name);
 		for(int i = 0; i < 50; i++)
 		try {
 			history1.publish("history" + i,  String.valueOf(i));
@@ -117,7 +115,7 @@ public class RestChannelHistoryTest {
 	@Test
 	public void channelhistory_multi_50_b() {
 		/* first, publish some messages */
-		Channel history2 = ably.channels.get("persisted:channelhistory_multi_50_b");
+		Channel history2 = ably.channels.get("persisted:channelhistory_multi_50_b_" + testParams.name);
 		for(int i = 0; i < 50; i++)
 		try {
 			history2.publish("history" + i,  String.valueOf(i));
@@ -153,7 +151,7 @@ public class RestChannelHistoryTest {
 	@Test
 	public void channelhistory_limit_f() {
 		/* first, publish some messages */
-		Channel history3 = ably.channels.get("persisted:channelhistory_limit_f");
+		Channel history3 = ably.channels.get("persisted:channelhistory_limit_f_" + testParams.name);
 		for(int i = 0; i < 50; i++)
 		try {
 			history3.publish("history" + i,  String.valueOf(i));
@@ -189,7 +187,7 @@ public class RestChannelHistoryTest {
 	@Test
 	public void channelhistory_limit_b() {
 		/* first, publish some messages */
-		Channel history4 = ably.channels.get("persisted:channelhistory_limit_b");
+		Channel history4 = ably.channels.get("persisted:channelhistory_limit_b_" + testParams.name);
 		for(int i = 0; i < 50; i++)
 		try {
 			history4.publish("history" + i,  String.valueOf(i));
@@ -226,7 +224,7 @@ public class RestChannelHistoryTest {
 	public void channelhistory_time_f() {
 		/* first, publish some messages */
 		long intervalStart = 0, intervalEnd = 0;
-		Channel history5 = ably.channels.get("persisted:channelhistory_time_f");
+		Channel history5 = ably.channels.get("persisted:channelhistory_time_f_" + testParams.name);
 		/* send batches of messages with shprt inter-message delay */
 		try {
 			for(int i = 0; i < 20; i++) {
@@ -285,7 +283,7 @@ public class RestChannelHistoryTest {
 	public void channelhistory_time_b() {
 		/* first, publish some messages */
 		long intervalStart = 0, intervalEnd = 0;
-		Channel history6 = ably.channels.get("persisted:channelhistory_time_b");
+		Channel history6 = ably.channels.get("persisted:channelhistory_time_b_" + testParams.name);
 		/* send batches of messages with shprt inter-message delay */
 		try {
 			for(int i = 0; i < 20; i++) {
@@ -343,7 +341,7 @@ public class RestChannelHistoryTest {
 	@Test
 	public void channelhistory_paginate_f() {
 		/* first, publish some messages */
-		Channel history3 = ably.channels.get("persisted:channelhistory_paginate_f");
+		Channel history3 = ably.channels.get("persisted:channelhistory_paginate_f_" + testParams.name);
 		for(int i = 0; i < 50; i++)
 		try {
 			history3.publish("history" + i,  String.valueOf(i));
@@ -411,7 +409,7 @@ public class RestChannelHistoryTest {
 	@Test
 	public void channelhistory_paginate_b() {
 		/* first, publish some messages */
-		Channel history3 = ably.channels.get("persisted:channelhistory_paginate_b");
+		Channel history3 = ably.channels.get("persisted:channelhistory_paginate_b_" + testParams.name);
 		for(int i = 0; i < 50; i++)
 		try {
 			history3.publish("history" + i,  String.valueOf(i));
@@ -479,7 +477,7 @@ public class RestChannelHistoryTest {
 	@Test
 	public void channelhistory_paginate_first_f() {
 		/* first, publish some messages */
-		Channel history3 = ably.channels.get("persisted:channelhistory_paginate_first_f");
+		Channel history3 = ably.channels.get("persisted:channelhistory_paginate_first_f_" + testParams.name);
 		for(int i = 0; i < 50; i++)
 		try {
 			history3.publish("history" + i,  String.valueOf(i));
@@ -547,7 +545,7 @@ public class RestChannelHistoryTest {
 	@Test
 	public void channelhistory_paginate_first_b() {
 		/* first, publish some messages */
-		Channel history3 = ably.channels.get("persisted:channelhistory_paginate_first_b");
+		Channel history3 = ably.channels.get("persisted:channelhistory_paginate_first_b_" + testParams.name);
 		for(int i = 0; i < 50; i++)
 		try {
 			history3.publish("history" + i,  String.valueOf(i));
@@ -608,5 +606,4 @@ public class RestChannelHistoryTest {
 			return;
 		}
 	}
-
 }

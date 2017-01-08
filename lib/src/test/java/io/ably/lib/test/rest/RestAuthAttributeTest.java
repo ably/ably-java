@@ -1,22 +1,5 @@
 package io.ably.lib.test.rest;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.test.common.Setup;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.Capability;
-import io.ably.lib.types.ClientOptions;
-
-import static io.ably.lib.rest.Auth.AuthOptions;
-import static io.ably.lib.rest.Auth.TokenRequest;
-import static io.ably.lib.rest.Auth.TokenCallback;
-import static io.ably.lib.rest.Auth.TokenDetails;
-import static io.ably.lib.rest.Auth.TokenParams;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -26,16 +9,33 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.Auth.AuthOptions;
+import io.ably.lib.rest.Auth.TokenCallback;
+import io.ably.lib.rest.Auth.TokenDetails;
+import io.ably.lib.rest.Auth.TokenParams;
+import io.ably.lib.rest.Auth.TokenRequest;
+import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.Capability;
+import io.ably.lib.types.ClientOptions;
+
 /**
  * Created by VOstopolets on 9/3/16.
  */
-public class RestAuthAttributeTest {
+public class RestAuthAttributeTest extends ParameterizedTest {
 
-	private static AblyRest ably;
+	private AblyRest ably;
 
-	private static void setup() throws Exception {
-		Setup.TestVars testVars = Setup.getTestVars();
-		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+	@Before
+	public void setupClient() throws Exception {
+		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 		opts.clientId = "defaultClientId";
 		ably = new AblyRest(opts);
 	}
@@ -49,7 +49,6 @@ public class RestAuthAttributeTest {
 	@Test
 	public void auth_stores_options_params() {
 		try {
-			setup();
 			/* init custom TokenParams */
 			Capability capability = new Capability();
 			capability.addResource("testchannel", "subscribe");
@@ -62,10 +61,9 @@ public class RestAuthAttributeTest {
 			}};
 
 			/* init custom AuthOptions */
-			final Setup.TestVars testVars = Setup.getTestVars();
 			AuthOptions authOptions = new AuthOptions() {{
 				authCallback = new TokenCallback() {
-					private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
+					private AblyRest ably = new AblyRest(createOptions(testVars.keys[0].keyStr));
 
 					@Override
 					public Object getTokenRequest(TokenParams params) throws AblyException {
@@ -116,7 +114,6 @@ public class RestAuthAttributeTest {
 	@Test
 	public void auth_stores_options_exception_force() {
 		try {
-			setup();
 			/* authorise with default values */
 			TokenDetails tokenDetails1 = ably.auth.authorise(null, null);
 			final String token1 = tokenDetails1.token;
@@ -161,11 +158,9 @@ public class RestAuthAttributeTest {
 	@Test
 	public void auth_stores_options_exception_querytime() {
 		try {
-			setup();
 			final long fakeServerTime = -1000;
 			final String expectedClientId = "testClientId";
-			Setup.TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			opts.clientId = expectedClientId;
 			AblyRest ablyForTime = new AblyRest(opts) {
 				@Override
@@ -218,10 +213,8 @@ public class RestAuthAttributeTest {
 		final String expectedClientId = "clientIdForToken";
 		final long expectedTimestamp = 11111;
 		try {
-			setup();
 			/* init ably for token */
-			final Setup.TestVars testVars = Setup.getTestVars();
-			final ClientOptions optsForToken = testVars.createOptions(testVars.keys[0].keyStr);
+			final ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
 			optsForToken.clientId = expectedClientId;
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
 
@@ -289,7 +282,6 @@ public class RestAuthAttributeTest {
 	@Test
 	public void auth_authorise_force() {
 		try {
-			setup();
 			/* authorise with default options */
 			TokenDetails tokenDetails1 = ably.auth.authorise(null, null);
 

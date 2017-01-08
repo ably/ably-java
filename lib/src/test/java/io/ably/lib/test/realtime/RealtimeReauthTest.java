@@ -1,5 +1,11 @@
 package io.ably.lib.test.realtime;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import org.junit.Test;
 
 import io.ably.lib.realtime.AblyRealtime;
@@ -8,22 +14,16 @@ import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.test.common.Helpers;
-import io.ably.lib.test.common.Setup;
+import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Capability;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
 /**
  * Created by VOstopolets on 8/26/16.
  */
-public class RealtimeReauthTest {
+public class RealtimeReauthTest extends ParameterizedTest {
 
 	/**
 	 * RTC8 (0.8 spec)
@@ -41,8 +41,7 @@ public class RealtimeReauthTest {
 
 		try {
 			/* init ably for token */
-			final Setup.TestVars optsTestVars = Setup.getTestVars();
-			ClientOptions optsForToken = optsTestVars.createOptions(optsTestVars.keys[0].keyStr);
+			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
 			System.out.println("done init ably for token");
 
@@ -58,8 +57,7 @@ public class RealtimeReauthTest {
 			assertNotNull("Expected token value", firstToken.token);
 
 			/* create ably realtime with tokenDetails and clientId */
-			final Setup.TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions();
+			ClientOptions opts = createOptions();
 			opts.clientId = testClientId;
 			opts.tokenDetails = firstToken;
 			AblyRealtime ablyRealtime = new AblyRealtime(opts);
@@ -94,7 +92,7 @@ public class RealtimeReauthTest {
 
 			/* reauthorise */
 			Auth.AuthOptions authOptions = new Auth.AuthOptions();
-			authOptions.key = optsTestVars.keys[0].keyStr;
+			authOptions.key = testVars.keys[0].keyStr;
 			authOptions.tokenDetails = secondToken;
 			authOptions.force = true;
 			Auth.TokenDetails reauthTokenDetails = ablyRealtime.auth.authorise(authOptions, null);

@@ -4,18 +4,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.test.common.Helpers.AsyncWaiter;
-import io.ably.lib.test.common.Setup;
-import io.ably.lib.test.common.Setup.TestVars;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.Callback;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
-
 import org.junit.Test;
 
-public class RestTimeTest {
+import io.ably.lib.rest.AblyRest;
+import io.ably.lib.test.common.Helpers.AsyncWaiter;
+import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ClientOptions;
+
+public class RestTimeTest extends ParameterizedTest {
 
 	/**
 	 * Verify accuracy of time (to within 2 seconds of actual time)
@@ -23,13 +20,7 @@ public class RestTimeTest {
 	@Test
 	public void time0() {
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-			opts.restHost = testVars.restHost;
-			opts.environment = testVars.environment;
-			opts.port = testVars.port;
-			opts.tlsPort = testVars.tlsPort;
-			opts.tls = testVars.tls;
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			AblyRest ably = new AblyRest(opts);
 			long reportedTime = ably.time();
 			long actualTime = System.currentTimeMillis();
@@ -46,13 +37,7 @@ public class RestTimeTest {
 	@Test
 	public void time1() {
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = new ClientOptions();
-			opts.restHost = testVars.restHost;
-			opts.environment = testVars.environment;
-			opts.port = testVars.port;
-			opts.tlsPort = testVars.tlsPort;
-			opts.tls = testVars.tls;
+			ClientOptions opts = createOptions();
 			AblyRest ablyNoAuth = new AblyRest(opts);
 			ablyNoAuth.time();
 		} catch (AblyException e) {
@@ -67,11 +52,9 @@ public class RestTimeTest {
 	@Test
 	public void time2() {
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = new ClientOptions();
+			ClientOptions opts = createOptions();
+			opts.environment = null;
 			opts.restHost = "this.restHost.does.not.exist";
-			opts.port = testVars.port;
-			opts.tlsPort = testVars.tlsPort;
 			AblyRest ably = new AblyRest(opts);
 			ably.time();
 			fail("time2: Unexpected success getting time");
@@ -86,13 +69,7 @@ public class RestTimeTest {
 	@Test
 	public void time_async() {
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-			opts.restHost = testVars.restHost;
-			opts.environment = testVars.environment;
-			opts.port = testVars.port;
-			opts.tlsPort = testVars.tlsPort;
-			opts.tls = testVars.tls;
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			final AblyRest ably = new AblyRest(opts);
 			AsyncWaiter<Long> callback = new AsyncWaiter<Long>();
 			ably.timeAsync(callback);

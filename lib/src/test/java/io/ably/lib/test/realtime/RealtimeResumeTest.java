@@ -4,37 +4,24 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.ConnectionState;
-import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.Helpers.MessageWaiter;
-import io.ably.lib.test.common.Setup.TestVars;
+import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 
-public class RealtimeResumeTest {
+public class RealtimeResumeTest extends ParameterizedTest {
 
 	private static final String TAG = RealtimeResumeTest.class.getName();
-
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-		Setup.getTestVars();
-	}
-
-	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
-		Setup.clearTestVars();
-	}
 
 	/**
 	 * Connect to the service using two library instances to set
@@ -50,8 +37,7 @@ public class RealtimeResumeTest {
 		int messageCount = 5;
 		long delay = 200;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ablyRx = new AblyRealtime(opts);
 			ablyTx = new AblyRealtime(opts);
 
@@ -138,8 +124,7 @@ public class RealtimeResumeTest {
 		int messageCount = 5;
 		long delay = 200;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ablyRx = new AblyRealtime(opts);
 			ablyTx = new AblyRealtime(opts);
 
@@ -221,8 +206,7 @@ public class RealtimeResumeTest {
 		int messageCount = 5;
 		long delay = 200;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ablyRx = new AblyRealtime(opts);
 			ablyTx = new AblyRealtime(opts);
 
@@ -321,8 +305,7 @@ public class RealtimeResumeTest {
 		int messageCount = 5;
 		long delay = 200;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ablyRx = new AblyRealtime(opts);
 			ablyTx = new AblyRealtime(opts);
 
@@ -407,8 +390,7 @@ public class RealtimeResumeTest {
 		int messageCount = 5;
 		long delay = 200;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ablyRx = new AblyRealtime(opts);
 			ablyTx = new AblyRealtime(opts);
 

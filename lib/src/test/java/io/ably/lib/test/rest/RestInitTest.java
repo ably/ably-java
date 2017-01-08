@@ -92,7 +92,6 @@ public class RestInitTest {
 	/**
 	 * Init library with specified host
 	 */
-	@SuppressWarnings("unused")
 	@Test
 	public void init_host() {
 		try {

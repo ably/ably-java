@@ -1,37 +1,59 @@
 package io.ably.lib.test.realtime;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.emptyCollectionOf;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isOneOf;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.UUID;
 
-import io.ably.lib.realtime.*;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.realtime.Channel;
+import io.ably.lib.realtime.ChannelState;
+import io.ably.lib.realtime.ConnectionState;
+import io.ably.lib.realtime.Presence;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.TokenParams;
 import io.ably.lib.test.common.Helpers;
-import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.Helpers.PresenceWaiter;
-import io.ably.lib.test.common.Setup.TestVars;
-import io.ably.lib.types.*;
+import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.PaginatedResult;
+import io.ably.lib.types.Param;
+import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.PresenceMessage.Action;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+public class RealtimePresenceTest extends ParameterizedTest {
 
-public class RealtimePresenceTest {
-
-	private static TestVars testVars;
 	private static final String testClientId1 = "testClientId1";
 	private static final String testClientId2 = "testClientId2";
-	private static Auth.TokenDetails token1;
-	private static Auth.TokenDetails token2;
-	private static Auth.TokenDetails wildcardToken;
+	private Auth.TokenDetails token1;
+	private Auth.TokenDetails token2;
+	private Auth.TokenDetails wildcardToken;
 
 	private static PresenceMessage contains(PresenceMessage[] messages, String clientId) {
 		for(PresenceMessage message : messages)
@@ -54,8 +76,7 @@ public class RealtimePresenceTest {
 	private class TestChannel {
 		TestChannel() {
 			try {
-				ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-				testVars.fillInOptions(opts);
+				ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 				rest = new AblyRest(opts);
 				restChannel = rest.channels.get(channelName);
 				realtime = new AblyRealtime(opts);
@@ -77,22 +98,14 @@ public class RealtimePresenceTest {
 		io.ably.lib.realtime.Channel realtimeChannel;
 	}
 
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-		testVars = Setup.getTestVars();
-
+	@Before
+	public void setUpBefore() throws Exception {
 		/* create tokens for specific clientIds */
-		ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-		testVars.fillInOptions(opts);
+		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 		AblyRest rest = new AblyRest(opts);
 		token1 = rest.auth.requestToken(new TokenParams() {{ clientId = testClientId1; }}, null);
 		token2 = rest.auth.requestToken(new TokenParams() {{ clientId = testClientId2; }}, null);
 		wildcardToken = rest.auth.requestToken(new TokenParams() {{ clientId = "*"; }}, null);
-	}
-
-	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
-		Setup.clearTestVars();
 	}
 
 	/**
@@ -110,7 +123,7 @@ public class RealtimePresenceTest {
 				tokenDetails = token1;
 				clientId = testClientId1;
 			}};
-			testVars.fillInOptions(client1Opts);
+			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* wait until connected */
@@ -160,7 +173,7 @@ public class RealtimePresenceTest {
 				tokenDetails = token1;
 				clientId = testClientId1;
 			}};
-			testVars.fillInOptions(client1Opts);
+			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* wait until connected */
@@ -208,7 +221,7 @@ public class RealtimePresenceTest {
 				tokenDetails = token1;
 				clientId = testClientId1;
 			}};
-			testVars.fillInOptions(client1Opts);
+			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* get channel */
@@ -252,7 +265,7 @@ public class RealtimePresenceTest {
 				tokenDetails = token1;
 				clientId = testClientId1;
 			}};
-			testVars.fillInOptions(client1Opts);
+			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* get channel */
@@ -310,7 +323,7 @@ public class RealtimePresenceTest {
 				tokenDetails = token1;
 				clientId = testClientId1;
 			}};
-			testVars.fillInOptions(client1Opts);
+			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* get channel */
@@ -379,7 +392,7 @@ public class RealtimePresenceTest {
 				tokenDetails = token1;
 				clientId = testClientId1;
 			}};
-			testVars.fillInOptions(client1Opts);
+			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* get channel */
@@ -448,7 +461,7 @@ public class RealtimePresenceTest {
 				tokenDetails = token1;
 				clientId = testClientId1;
 			}};
-			testVars.fillInOptions(client1Opts);
+			fillInOptions(client1Opts);
 			client1Opts.useBinaryProtocol = true;
 			clientAbly1 = new AblyRealtime(client1Opts);
 
@@ -518,7 +531,7 @@ public class RealtimePresenceTest {
 				tokenDetails = token1;
 				clientId = testClientId1;
 			}};
-			testVars.fillInOptions(client1Opts);
+			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* get channel */
@@ -576,7 +589,7 @@ public class RealtimePresenceTest {
 				tokenDetails = token1;
 				clientId = testClientId1;
 			}};
-			testVars.fillInOptions(client1Opts);
+			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* get channel */
@@ -632,7 +645,7 @@ public class RealtimePresenceTest {
 				tokenDetails = token1;
 				clientId = testClientId1;
 			}};
-			testVars.fillInOptions(client1Opts);
+			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* wait until connected */
@@ -685,7 +698,7 @@ public class RealtimePresenceTest {
 				tokenDetails = token1;
 				clientId = testClientId1;
 			}};
-			testVars.fillInOptions(client1Opts);
+			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* wait until connected */
@@ -744,7 +757,7 @@ public class RealtimePresenceTest {
 				tokenDetails = token1;
 				clientId = testClientId1;
 			}};
-			testVars.fillInOptions(client1Opts);
+			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* wait until connected */
@@ -769,7 +782,7 @@ public class RealtimePresenceTest {
 				tokenDetails = token2;
 				clientId = testClientId2;
 			}};
-			testVars.fillInOptions(client2Opts);
+			fillInOptions(client2Opts);
 			clientAbly2 = new AblyRealtime(client2Opts);
 
 			/* wait until connected */
@@ -821,7 +834,7 @@ public class RealtimePresenceTest {
 				tokenDetails = wildcardToken;
 				clientId = testClientId1;
 			}};
-			testVars.fillInOptions(client1Opts);
+			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* wait until connected */
@@ -849,7 +862,7 @@ public class RealtimePresenceTest {
 				tokenDetails = token2;
 				clientId = testClientId2;
 			}};
-			testVars.fillInOptions(client2Opts);
+			fillInOptions(client2Opts);
 			clientAbly2 = new AblyRealtime(client2Opts);
 
 			/* wait until connected */
@@ -914,7 +927,7 @@ public class RealtimePresenceTest {
 				tokenDetails = token1;
 				clientId = testClientId1;
 			}};
-			testVars.fillInOptions(client1Opts);
+			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* get channel and attach */
@@ -930,7 +943,7 @@ public class RealtimePresenceTest {
 				tokenDetails = token2;
 				clientId = testClientId2;
 			}};
-			testVars.fillInOptions(client2Opts);
+			fillInOptions(client2Opts);
 			clientAbly2 = new AblyRealtime(client2Opts);
 
 			/* get channel and subscribe to presence */
@@ -982,7 +995,7 @@ public class RealtimePresenceTest {
 				tokenDetails = token1;
 				clientId = testClientId1;
 			}};
-			testVars.fillInOptions(client1Opts);
+			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* wait until connected */
@@ -1034,7 +1047,7 @@ public class RealtimePresenceTest {
 				tokenDetails = token1;
 				clientId = testClientId1;
 			}};
-			testVars.fillInOptions(client1Opts);
+			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* wait until connected */
@@ -1092,7 +1105,7 @@ public class RealtimePresenceTest {
 				tokenDetails = token1;
 				clientId = testClientId1;
 			}};
-			testVars.fillInOptions(client1Opts);
+			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* get channel and attach */
@@ -1108,7 +1121,7 @@ public class RealtimePresenceTest {
 				tokenDetails = token2;
 				clientId = testClientId2;
 			}};
-			testVars.fillInOptions(client2Opts);
+			fillInOptions(client2Opts);
 			clientAbly2 = new AblyRealtime(client2Opts);
 
 			/* get channel and subscribe to presence */
@@ -1158,7 +1171,7 @@ public class RealtimePresenceTest {
 				tokenDetails = wildcardToken;
 				clientId = testClientId1;
 			}};
-			testVars.fillInOptions(client1Opts);
+			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* get channel and attach */
@@ -1243,7 +1256,7 @@ public class RealtimePresenceTest {
 				tokenDetails = token1;
 				clientId = testClientId1;
 			}};
-			testVars.fillInOptions(client1Opts);
+			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
 			requiresClose = true;
 
@@ -1301,9 +1314,9 @@ public class RealtimePresenceTest {
 		String channelName = "test.presence.unsubscribe.all" + System.currentTimeMillis();
 
 		try {
-			ClientOptions option1 = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions option1 = createOptions(testVars.keys[0].keyStr);
 			option1.clientId = "emitter client";
-			ClientOptions option2 = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
 			option2.clientId = "receiver client";
 
 			ably1 = new AblyRealtime(option1);
@@ -1379,9 +1392,9 @@ public class RealtimePresenceTest {
 		String channelName = "test.presence.unsubscribe.single" + System.currentTimeMillis();
 
 		try {
-			ClientOptions option1 = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions option1 = createOptions(testVars.keys[0].keyStr);
 			option1.clientId = "emitter client";
-			ClientOptions option2 = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
 			option2.clientId = "receiver client";
 
 			ably1 = new AblyRealtime(option1);
@@ -1458,9 +1471,9 @@ public class RealtimePresenceTest {
 		String channelName = "test.presence.subscribe.all" + System.currentTimeMillis();
 
 		try {
-			ClientOptions option1 = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions option1 = createOptions(testVars.keys[0].keyStr);
 			option1.clientId = "emitter client";
-			ClientOptions option2 = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
 			option2.clientId = "receiver client";
 
 			ably1 = new AblyRealtime(option1);
@@ -1534,9 +1547,9 @@ public class RealtimePresenceTest {
 		EnumSet<PresenceMessage.Action> actions = EnumSet.of(Action.update, Action.leave);
 
 		try {
-			ClientOptions option1 = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions option1 = createOptions(testVars.keys[0].keyStr);
 			option1.clientId = "emitter client";
-			ClientOptions option2 = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
 			option2.clientId = "receiver client";
 
 			ably1 = new AblyRealtime(option1);
@@ -1612,9 +1625,9 @@ public class RealtimePresenceTest {
 		PresenceMessage.Action action = Action.enter;
 
 		try {
-			ClientOptions option1 = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions option1 = createOptions(testVars.keys[0].keyStr);
 			option1.clientId = "emitter client";
-			ClientOptions option2 = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
 			option2.clientId = "receiver client";
 
 			ably1 = new AblyRealtime(option1);
@@ -1683,8 +1696,7 @@ public class RealtimePresenceTest {
 	public void realtime_presence_attach_implicit_subscribe_fail() throws AblyException {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[1].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* wait until connected */
@@ -1721,8 +1733,7 @@ public class RealtimePresenceTest {
 	public void realtime_presence_attach_implicit_enter_fail() throws AblyException {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[1].keyStr);
 			opts.clientId = "theClient";
 			ably = new AblyRealtime(opts);
 
@@ -1761,8 +1772,7 @@ public class RealtimePresenceTest {
 	public void realtime_presence_attach_implicit_get_fail() throws AblyException {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[1].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* wait until connected */
@@ -1799,8 +1809,7 @@ public class RealtimePresenceTest {
 	public void realtime_presence_attach_implicit_enterclient_fail() throws AblyException {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[1].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* wait until connected */
@@ -1839,8 +1848,7 @@ public class RealtimePresenceTest {
 	public void realtime_presence_attach_implicit_updateclient_fail() throws AblyException {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[1].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* wait until connected */
@@ -1879,8 +1887,7 @@ public class RealtimePresenceTest {
 	public void realtime_presence_attach_implicit_leaveclient_fail() throws AblyException {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[1].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* wait until connected */
@@ -1916,8 +1923,7 @@ public class RealtimePresenceTest {
 	public void realtime_presence_get_throws_when_channel_failed() throws AblyException {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[1].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* wait until connected */

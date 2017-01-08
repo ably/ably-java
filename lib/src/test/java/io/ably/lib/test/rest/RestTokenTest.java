@@ -2,33 +2,32 @@ package io.ably.lib.test.rest;
 
 import static org.junit.Assert.*;
 
+import org.junit.Before;
+
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth.AuthOptions;
 import io.ably.lib.rest.Auth.TokenDetails;
 import io.ably.lib.rest.Auth.TokenParams;
-import io.ably.lib.test.common.Setup;
+import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Setup.Key;
-import io.ably.lib.test.common.Setup.TestVars;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Capability;
 import io.ably.lib.types.ClientOptions;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class RestTokenTest {
+public class RestTokenTest extends ParameterizedTest {
 
 	private static String permitAll;
 	private static AblyRest ably;
 	private static long timeOffset;
 
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
+	@Before
+	public void setUpBefore() throws Exception {
 		Capability capability = new Capability();
 		capability.addResource("*", "*");
 		permitAll = capability.toString();
-		TestVars testVars = Setup.getTestVars();
-		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 		ably = new AblyRest(opts);
 		long timeFromService = ably.time();
 		timeOffset = timeFromService - System.currentTimeMillis();
@@ -172,7 +171,7 @@ public class RestTokenTest {
 	@Test
 	public void authkey0() {
 		try {
-			Key key = Setup.getTestVars().keys[1];
+			Key key = testVars.keys[1];
 			AuthOptions authOptions = new AuthOptions();
 			authOptions.key = key.keyStr;
 			TokenDetails tokenDetails = ably.auth.requestToken(null, authOptions);

@@ -8,12 +8,11 @@ import static org.junit.Assert.fail;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
-import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
 import io.ably.lib.test.common.Helpers.MessageWaiter;
-import io.ably.lib.test.common.Setup.TestVars;
+import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ClientOptions;
@@ -25,38 +24,26 @@ import java.security.NoSuchAlgorithmException;
 
 import javax.crypto.KeyGenerator;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class RealtimeCryptoTest {
-
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-		Setup.getTestVars();
-	}
-
-	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
-		Setup.clearTestVars();
-	}
+public class RealtimeCryptoTest extends ParameterizedTest {
 
 	/**
-	 * Connect to the service using the default (binary) protocol
+	 * Connect to the service
 	 * and publish an encrypted message on that channel using
 	 * the default cipher params
 	 */
 	@Test
-	public void single_send_binary() {
+	public void single_send() {
+		String channelName = "single_send_" + testParams.name;
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* create a channel */
 			ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; }};
-			final Channel channel = ably.channels.get("subscribe_send_binary", channelOpts);
+			final Channel channel = ably.channels.get(channelName, channelOpts);
 
 			/* attach */
 			channel.attach();
@@ -92,67 +79,16 @@ public class RealtimeCryptoTest {
 	}
 
 	/**
-	 * Connect to the service using the text protocol
-	 * and publish an encrypted message on that channel using
-	 * the default cipher params
-	 */
-	@Test
-	public void single_send_text() {
-		AblyRealtime ably = null;
-		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
-			opts.useBinaryProtocol = false;
-			ably = new AblyRealtime(opts);
-
-			/* create a channel */
-			ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; }};
-			final Channel channel = ably.channels.get("subscribe_send_text", channelOpts);
-
-			/* attach */
-			channel.attach();
-			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
-
-			/* subscribe */
-			MessageWaiter messageWaiter =  new MessageWaiter(channel);
-
-			/* publish to the channel */
-			String messageText = "Test message (subscribe_send_binary)";
-			CompletionWaiter msgComplete = new CompletionWaiter();
-			channel.publish("test_event", messageText, msgComplete);
-
-			/* wait for the publish callback to be called */
-			msgComplete.waitFor();
-			assertTrue("Verify success callback was called", msgComplete.success);
-
-			/* wait for the subscription callback to be called */
-			messageWaiter.waitFor(1);
-			assertEquals("Verify message subscription was called", messageWaiter.receivedMessages.size(), 1);
-
-			/* check the correct plaintext recovered from the message */
-			assertTrue("Verify correct plaintext received", messageText.equals(messageWaiter.receivedMessages.get(0).data));
-
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("init0: Unexpected exception instantiating library");
-		} finally {
-			if(ably != null)
-				ably.close();
-		}
-	}
-
-	/**
-	 * Connect to the service using the default (binary) protocol
+	 * Connect to the service
 	 * and publish an encrypted message on that channel using
 	 * a 256-bit key
 	 */
 	@Test
-	public void single_send_binary_256() {
+	public void single_send_256() {
+		String channelName = "single_send_256_" + testParams.name;
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* create a key */
@@ -163,66 +99,7 @@ public class RealtimeCryptoTest {
 
 			/* create a channel */
 			ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; this.cipherParams = params; }};
-			final Channel channel = ably.channels.get("subscribe_send_binary", channelOpts);
-
-			/* attach */
-			channel.attach();
-			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
-
-			/* subscribe */
-			MessageWaiter messageWaiter =  new MessageWaiter(channel);
-
-			/* publish to the channel */
-			String messageText = "Test message (subscribe_send_binary)";
-			CompletionWaiter msgComplete = new CompletionWaiter();
-			channel.publish("test_event", messageText, msgComplete);
-
-			/* wait for the publish callback to be called */
-			msgComplete.waitFor();
-			assertTrue("Verify success callback was called", msgComplete.success);
-
-			/* wait for the subscription callback to be called */
-			messageWaiter.waitFor(1);
-			assertEquals("Verify message subscription was called", messageWaiter.receivedMessages.size(), 1);
-
-			/* check the correct plaintext recovered from the message */
-			assertTrue("Verify correct plaintext received", messageText.equals(messageWaiter.receivedMessages.get(0).data));
-
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("init0: Unexpected exception instantiating library");
-		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
-			fail("init0: Unexpected exception generating key");
-		} finally {
-			if(ably != null)
-				ably.close();
-		}
-	}
-
-	/**
-	 * Connect to the service using the text protocol
-	 * and publish an encrypted message on that channel using
-	 * a 256-bit key
-	 */
-	@Test
-	public void single_send_text_256() {
-		AblyRealtime ably = null;
-		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
-			ably = new AblyRealtime(opts);
-
-			/* create a key */
-			KeyGenerator keygen = KeyGenerator.getInstance("AES");
-	        keygen.init(256);
-	        byte[] key = keygen.generateKey().getEncoded();
-			final CipherParams params = Crypto.getDefaultParams(key);
-
-			/* create a channel */
-			ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; this.cipherParams = params; }};
-			final Channel channel = ably.channels.get("subscribe_send_binary", channelOpts);
+			final Channel channel = ably.channels.get(channelName, channelOpts);
 
 			/* attach */
 			channel.attach();
@@ -265,12 +142,10 @@ public class RealtimeCryptoTest {
 	 * and attach, subscribe to an event, and publish multiple
 	 * messages on that channel
 	 */
-	private void _multiple_send(String channelName, boolean useBinaryProtocol, int messageCount, long delay) {
+	private void _multiple_send(String channelName, int messageCount, long delay) {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
-			opts.useBinaryProtocol = useBinaryProtocol;
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* generate and remember message texts */
@@ -319,31 +194,17 @@ public class RealtimeCryptoTest {
 	}
 
 	@Test
-	public void multiple_send_binary_2_200() {
+	public void multiple_send_2_200() {
 		int messageCount = 2;
 		long delay = 200L;
-		_multiple_send("multiple_send_binary_2_200", false, messageCount, delay);
+		_multiple_send("multiple_send_binary_2_200_" + testParams.name, messageCount, delay);
 	}
 
 	@Test
-	public void multiple_send_text_2_200() {
-		int messageCount = 2;
-		long delay = 200L;
-		_multiple_send("multiple_send_text_2_200", true, messageCount, delay);
-	}
-
-	@Test
-	public void multiple_send_binary_20_100() {
+	public void multiple_send_20_100() {
 		int messageCount = 20;
 		long delay = 100L;
-		_multiple_send("multiple_send_binary_20_100", false, messageCount, delay);
-	}
-
-	@Test
-	public void multiple_send_text_20_100() {
-		int messageCount = 20;
-		long delay = 100L;
-		_multiple_send("multiple_send_text_20_100", true, messageCount, delay);
+		_multiple_send("multiple_send_binary_20_100_" + testParams.name, messageCount, delay);
 	}
 
 	/**
@@ -353,13 +214,13 @@ public class RealtimeCryptoTest {
 	 */
 	@Test
 	public void single_send_binary_text() {
+		String channelName = "single_send_binary_text_" + testParams.name;
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions txOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions txOpts = createOptions(testVars.keys[0].keyStr);
 			txAbly = new AblyRealtime(txOpts);
-			ClientOptions rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
-			rxOpts.useBinaryProtocol = false;
+			ClientOptions rxOpts = createOptions(testVars.keys[0].keyStr);
+			rxOpts.useBinaryProtocol = !testParams.useBinaryProtocol;
 			rxAbly = new AblyRealtime(rxOpts);
 
 			/* create a key */
@@ -367,9 +228,9 @@ public class RealtimeCryptoTest {
 
 			/* create a channel */
 			final ChannelOptions txChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params; }};
-			final Channel txChannel = txAbly.channels.get("single_send_binary_text", txChannelOpts);
+			final Channel txChannel = txAbly.channels.get(channelName, txChannelOpts);
 			ChannelOptions rxChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params; }};
-			final Channel rxChannel = rxAbly.channels.get("single_send_binary_text", rxChannelOpts);
+			final Channel rxChannel = rxAbly.channels.get(channelName, rxChannelOpts);
 
 			/* attach */
 			txChannel.attach();
@@ -408,67 +269,6 @@ public class RealtimeCryptoTest {
 	}
 
 	/**
-	 * Connect twice to the service, using the text protocol and the
-	 * default (binary) protocol. Publish an encrypted message on that channel using
-	 * the default cipher params and verify correct receipt.
-	 */
-	@Test
-	public void single_send_text_binary() {
-		AblyRealtime txAbly = null, rxAbly = null;
-		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions txOpts = testVars.createOptions(testVars.keys[0].keyStr);
-			txOpts.useBinaryProtocol = false;
-			txAbly = new AblyRealtime(txOpts);
-			ClientOptions rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
-			rxAbly = new AblyRealtime(rxOpts);
-
-			/* create a key */
-			final CipherParams params = Crypto.getDefaultParams();
-
-			/* create a channel */
-			final ChannelOptions txChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params; }};
-			final Channel txChannel = txAbly.channels.get("single_send_binary_text", txChannelOpts);
-			ChannelOptions rxChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params; }};
-			final Channel rxChannel = rxAbly.channels.get("single_send_binary_text", rxChannelOpts);
-
-			/* attach */
-			txChannel.attach();
-			rxChannel.attach();
-			(new ChannelWaiter(txChannel)).waitFor(ChannelState.attached);
-			(new ChannelWaiter(rxChannel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", txChannel.state, ChannelState.attached);
-			assertEquals("Verify attached state reached", rxChannel.state, ChannelState.attached);
-
-			/* subscribe */
-			MessageWaiter messageWaiter =  new MessageWaiter(rxChannel);
-
-			/* publish to the channel */
-			String messageText = "Test message (single_send_text_binary)";
-			CompletionWaiter msgComplete = new CompletionWaiter();
-			txChannel.publish("test_event", messageText, msgComplete);
-
-			/* wait for the publish callback to be called */
-			msgComplete.waitFor();
-			assertTrue("Verify success callback was called", msgComplete.success);
-
-			/* wait for the subscription callback to be called */
-			messageWaiter.waitFor(1);
-			assertEquals("Verify message subscription was called", messageWaiter.receivedMessages.size(), 1);
-
-			/* check the correct plaintext recovered from the message */
-			assertTrue("Verify correct plaintext received", messageText.equals(messageWaiter.receivedMessages.get(0).data));
-
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("init0: Unexpected exception instantiating library");
-		} finally {
-			if(txAbly != null)
-				txAbly.close();
-		}
-	}
-
-	/**
 	 * Connect twice to the service, using different cipher keys.
 	 * Publish an encrypted message on that channel using
 	 * the default cipher params and verify that the decrypt failure
@@ -478,10 +278,9 @@ public class RealtimeCryptoTest {
 	public void single_send_key_mismatch() {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions txOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions txOpts = createOptions(testVars.keys[0].keyStr);
 			txAbly = new AblyRealtime(txOpts);
-			ClientOptions rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions rxOpts = createOptions(testVars.keys[0].keyStr);
 			rxAbly = new AblyRealtime(rxOpts);
 
 			/* create a channel */
@@ -536,10 +335,9 @@ public class RealtimeCryptoTest {
 	public void single_send_unencrypted() {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions txOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions txOpts = createOptions(testVars.keys[0].keyStr);
 			txAbly = new AblyRealtime(txOpts);
-			ClientOptions rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions rxOpts = createOptions(testVars.keys[0].keyStr);
 			rxAbly = new AblyRealtime(rxOpts);
 
 			/* create a channel */
@@ -592,10 +390,9 @@ public class RealtimeCryptoTest {
 	public void single_send_encrypted_unhandled() {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions txOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions txOpts = createOptions(testVars.keys[0].keyStr);
 			txAbly = new AblyRealtime(txOpts);
-			ClientOptions rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions rxOpts = createOptions(testVars.keys[0].keyStr);
 			rxAbly = new AblyRealtime(rxOpts);
 
 			/* create a channel */
@@ -649,11 +446,10 @@ public class RealtimeCryptoTest {
 	public void set_cipher_params() {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions txOpts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions txOpts = createOptions(testVars.keys[0].keyStr);
 			txAbly = new AblyRealtime(txOpts);
-			ClientOptions rxOpts = testVars.createOptions(testVars.keys[0].keyStr);
-			rxOpts.useBinaryProtocol = false;
+			ClientOptions rxOpts = createOptions(testVars.keys[0].keyStr);
+			rxOpts.useBinaryProtocol = !testParams.useBinaryProtocol;
 			rxAbly = new AblyRealtime(rxOpts);
 
 			/* create a key */

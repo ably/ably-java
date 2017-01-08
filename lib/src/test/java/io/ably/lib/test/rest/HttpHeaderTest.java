@@ -1,28 +1,27 @@
 package io.ably.lib.test.rest;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
-import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Channel;
-import io.ably.lib.test.common.Setup;
+import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 
 /**
  * Created by VOstopolets on 8/17/16.
  */
-public class HttpHeaderTest {
+public class HttpHeaderTest extends ParameterizedTest {
 
 	private static SessionHandlerNanoHTTPD server;
 
@@ -61,8 +60,8 @@ public class HttpHeaderTest {
 	public void header_lib_channel_publish() {
 		try {
 			/* Init values for local server */
-			Setup.TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.environment = null;
 			opts.tls = false;
 			opts.port = server.getListeningPort();
 			opts.restHost = "localhost";

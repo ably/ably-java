@@ -1,31 +1,5 @@
 package io.ably.lib.test.realtime;
 
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.Channel;
-import io.ably.lib.realtime.Channel.MessageListener;
-import io.ably.lib.realtime.ChannelState;
-import io.ably.lib.realtime.ConnectionState;
-import io.ably.lib.test.common.Helpers;
-import io.ably.lib.test.common.Helpers.ChannelWaiter;
-import io.ably.lib.test.common.Helpers.ConnectionWaiter;
-import io.ably.lib.test.common.Setup;
-import io.ably.lib.test.common.Setup.TestVars;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.Message;
-import io.ably.lib.types.ProtocolMessage;
-import io.ably.lib.transport.ConnectionManager;
-import org.hamcrest.Matchers;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -35,7 +9,31 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class RealtimeChannelTest {
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
+import org.hamcrest.Matchers;
+import org.junit.Test;
+
+import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.realtime.Channel;
+import io.ably.lib.realtime.Channel.MessageListener;
+import io.ably.lib.realtime.ChannelState;
+import io.ably.lib.realtime.ConnectionState;
+import io.ably.lib.test.common.Helpers;
+import io.ably.lib.test.common.Helpers.ChannelWaiter;
+import io.ably.lib.test.common.Helpers.ConnectionWaiter;
+import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.transport.ConnectionManager;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Message;
+import io.ably.lib.types.ProtocolMessage;
+
+public class RealtimeChannelTest extends ParameterizedTest {
 
 	private Comparator<Message> messageComparator = new Comparator<Message>() {
 		@Override
@@ -45,26 +43,16 @@ public class RealtimeChannelTest {
 		}
 	};
 
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-		Setup.getTestVars();
-	}
-
-	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
-		Setup.clearTestVars();
-	}
-
 	/**
-	 * Connect to the service using the default (binary) protocol
-	 * and attach to a channel, confirming that the attached state is reached.
+	 * Connect to the service and attach to a channel,
+	 * confirming that the attached state is reached.
 	 */
 	@Test
-	public void attach_binary() {
+	public void attach() {
+		String channelName = "attach_" + testParams.name;
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* wait until connected */
@@ -72,39 +60,7 @@ public class RealtimeChannelTest {
 			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
 			/* create a channel and attach */
-			final Channel channel = ably.channels.get("attach_binary");
-			channel.attach();
-			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
-
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("init0: Unexpected exception instantiating library");
-		} finally {
-			if(ably != null)
-				ably.close();
-		}
-	}
-
-	/**
-	 * Connect to the service using the text protocol
-	 * and attach to a channel, confirming that the attached state is reached.
-	 */
-	@Test
-	public void attach_text() {
-		AblyRealtime ably = null;
-		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
-			opts.useBinaryProtocol = false;
-			ably = new AblyRealtime(opts);
-
-			/* wait until connected */
-			(new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
-			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
-
-			/* create a channel and attach */
-			final Channel channel = ably.channels.get("attach_text");
+			final Channel channel = ably.channels.get(channelName);
 			channel.attach();
 			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
@@ -123,43 +79,15 @@ public class RealtimeChannelTest {
 	 * and attach before the connected state is reached.
 	 */
 	@Test
-	public void attach_before_connect_binary() {
+	public void attach_before_connect() {
+		String channelName = "attach_before_connect_" + testParams.name;
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* create a channel and attach */
-			final Channel channel = ably.channels.get("attach_before_connect_binary");
-			channel.attach();
-			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
-
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("init0: Unexpected exception instantiating library");
-		} finally {
-			if(ably != null)
-				ably.close();
-		}
-	}
-
-	/**
-	 * Connect to the service using the text protocol
-	 * and attach before the connected state is reached.
-	 */
-	@Test
-	public void attach_before_connect_text() {
-		AblyRealtime ably = null;
-		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
-			opts.useBinaryProtocol = false;
-			ably = new AblyRealtime(opts);
-
-			/* create a channel and attach */
-			final Channel channel = ably.channels.get("attach_before_connect_text");
+			final Channel channel = ably.channels.get(channelName);
 			channel.attach();
 			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
@@ -178,15 +106,15 @@ public class RealtimeChannelTest {
 	 * and attach, then detach
 	 */
 	@Test
-	public void attach_detach_binary() {
+	public void attach_detach() {
+		String channelName = "attach_detach_" + testParams.name;
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* create a channel and attach */
-			final Channel channel = ably.channels.get("attach_detach_binary");
+			final Channel channel = ably.channels.get(channelName);
 			channel.attach();
 			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
@@ -206,52 +134,18 @@ public class RealtimeChannelTest {
 	}
 
 	/**
-	 * Connect to the service using the text protocol
-	 * and attach, then detach
-	 */
-	@Test
-	public void attach_detach_text() {
-		AblyRealtime ably = null;
-		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
-			opts.useBinaryProtocol = false;
-			ably = new AblyRealtime(opts);
-
-			/* create a channel and attach */
-			final Channel channel = ably.channels.get("attach_detach_text");
-			channel.attach();
-			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
-
-			/* detach */
-			channel.detach();
-			(new ChannelWaiter(channel)).waitFor(ChannelState.detached);
-			assertEquals("Verify detached state reached", channel.state, ChannelState.detached);
-
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("init0: Unexpected exception instantiating library");
-		} finally {
-			if(ably != null)
-				ably.close();
-		}
-	}
-
-	/**
-	 * Connect to the service using the default (binary) protocol
-	 * and attach, then subscribe and unsubscribe
+	 * Connect to the service and attach, then subscribe and unsubscribe
 	 */
 	@Test
 	public void subscribe_unsubscribe() {
+		String channelName = "subscribe_unsubscribe_" + testParams.name;
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* create a channel and attach */
-			final Channel channel = ably.channels.get("subscribe_unsubscribe");
+			final Channel channel = ably.channels.get(channelName);
 			channel.attach();
 			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
@@ -299,10 +193,9 @@ public class RealtimeChannelTest {
 		};
 
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions option1 = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions option1 = createOptions(testVars.keys[0].keyStr);
 			option1.clientId = "emitter client";
-			ClientOptions option2 = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
 			option2.clientId = "receiver client";
 
 			ably1 = new AblyRealtime(option1);
@@ -378,10 +271,9 @@ public class RealtimeChannelTest {
 		};
 
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions option1 = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions option1 = createOptions(testVars.keys[0].keyStr);
 			option1.clientId = "emitter client";
-			ClientOptions option2 = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
 			option2.clientId = "receiver client";
 
 			ably1 = new AblyRealtime(option1);
@@ -457,10 +349,9 @@ public class RealtimeChannelTest {
 		};
 
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions option1 = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions option1 = createOptions(testVars.keys[0].keyStr);
 			option1.clientId = "emitter client";
-			ClientOptions option2 = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
 			option2.clientId = "receiver client";
 
 			ably1 = new AblyRealtime(option1);
@@ -548,10 +439,9 @@ public class RealtimeChannelTest {
 		};
 
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions option1 = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions option1 = createOptions(testVars.keys[0].keyStr);
 			option1.clientId = "emitter client";
-			ClientOptions option2 = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
 			option2.clientId = "receiver client";
 
 			ably1 = new AblyRealtime(option1);
@@ -635,10 +525,9 @@ public class RealtimeChannelTest {
 		};
 
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions option1 = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions option1 = createOptions(testVars.keys[0].keyStr);
 			option1.clientId = "emitter client";
-			ClientOptions option2 = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
 			option2.clientId = "receiver client";
 
 			ably1 = new AblyRealtime(option1);
@@ -707,8 +596,7 @@ public class RealtimeChannelTest {
 	public void attach_fail() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[1].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* wait until connected */
@@ -739,8 +627,7 @@ public class RealtimeChannelTest {
 	public void attach_success_callback() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* wait until connected */
@@ -775,8 +662,7 @@ public class RealtimeChannelTest {
 	public void attach_fail_callback() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[1].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* wait until connected */
@@ -811,8 +697,7 @@ public class RealtimeChannelTest {
 	public void detach_success_callback_initialized() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* wait until connected */
@@ -847,8 +732,7 @@ public class RealtimeChannelTest {
 	public void detach_success_callback_attached() throws AblyException {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* wait until connected */
@@ -882,8 +766,7 @@ public class RealtimeChannelTest {
 	public void detach_success_callback_detaching() throws AblyException {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* wait until connected */
@@ -919,8 +802,7 @@ public class RealtimeChannelTest {
 	public void detach_success_callback_detached() throws AblyException {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* wait until connected */
@@ -964,8 +846,7 @@ public class RealtimeChannelTest {
 	public void attach_implicit_publish_fail() throws AblyException {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[1].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* wait until connected */
@@ -1003,8 +884,7 @@ public class RealtimeChannelTest {
 	public void attach_implicit_subscribe_fail() throws AblyException {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[1].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[1].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* wait until connected */
@@ -1029,8 +909,7 @@ public class RealtimeChannelTest {
 	public void ensure_detach_with_error_does_not_move_to_failed() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			/* wait until connected */
@@ -1064,8 +943,7 @@ public class RealtimeChannelTest {
 	public void detach_on_clean_connection_preserves_channel() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 
 			/* connect with these options to get a valid connection recover key */
 			ably = new AblyRealtime(opts);

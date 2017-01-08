@@ -1,12 +1,17 @@
 package io.ably.lib.test.rest;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.io.IOException;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.io.IOException;
 
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth.AuthMethod;
@@ -14,8 +19,7 @@ import io.ably.lib.rest.Auth.TokenCallback;
 import io.ably.lib.rest.Auth.TokenDetails;
 import io.ably.lib.rest.Auth.TokenParams;
 import io.ably.lib.rest.Channel;
-import io.ably.lib.test.common.Setup;
-import io.ably.lib.test.common.Setup.TestVars;
+import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.util.TokenServer;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
@@ -24,12 +28,7 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-public class RestAuthTest {
+public class RestAuthTest extends ParameterizedTest {
 
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
@@ -40,7 +39,6 @@ public class RestAuthTest {
 	@BeforeClass
 	public static void auth_start_tokenserver() {
 		try {
-			TestVars testVars = Setup.getTestVars();
 			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
 			AblyRest ably = new AblyRest(opts);
 			tokenServer = new TokenServer(ably, 8982);
@@ -69,7 +67,6 @@ public class RestAuthTest {
 	@Test
 	public void authinit0() {
 		try {
-			TestVars testVars = Setup.getTestVars();
 			AblyRest ably = new AblyRest(testVars.keys[0].keyStr);
 			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.basic);
 		} catch (AblyException e) {
@@ -84,8 +81,7 @@ public class RestAuthTest {
 	@Test
 	public void authinit0_useTokenAuth() {
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			opts.useTokenAuth = true;
 			AblyRest ably = new AblyRest(opts);
 			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
@@ -118,8 +114,7 @@ public class RestAuthTest {
 	@Test
 	public void authinit2() {
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = new ClientOptions();
+			ClientOptions opts = createOptions();
 			opts.restHost = testVars.restHost;
 			opts.environment = testVars.environment;
 			opts.port = testVars.port;
@@ -150,8 +145,7 @@ public class RestAuthTest {
 	@Test
 	public void authinit3() {
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			opts.clientId = "testClientId";
 			AblyRest ably = new AblyRest(opts);
 			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
@@ -167,8 +161,7 @@ public class RestAuthTest {
 	@Test
 	public void authinit4() {
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions optsForToken = new ClientOptions(testVars.keys[0].keyStr);
+			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
 			optsForToken.restHost = testVars.restHost;
 			optsForToken.environment = testVars.environment;
 			optsForToken.port = testVars.port;
@@ -197,8 +190,7 @@ public class RestAuthTest {
 	@Test
 	public void auth_authURL_tokenrequest() {
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = new ClientOptions();
+			ClientOptions opts = createOptions();
 			opts.restHost = testVars.restHost;
 			opts.environment = testVars.environment;
 			opts.port = testVars.port;
@@ -226,8 +218,7 @@ public class RestAuthTest {
 	@Test
 	public void auth_authURL_token() {
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = new ClientOptions();
+			ClientOptions opts = createOptions();
 			opts.restHost = testVars.restHost;
 			opts.environment = testVars.environment;
 			opts.port = testVars.port;
@@ -255,8 +246,7 @@ public class RestAuthTest {
 	@Test
 	public void auth_authURL_err() {
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = new ClientOptions();
+			ClientOptions opts = createOptions();
 			opts.restHost = testVars.restHost;
 			opts.environment = testVars.environment;
 			opts.port = testVars.port;
@@ -283,8 +273,7 @@ public class RestAuthTest {
 	@Test
 	public void auth_authURL_params() {
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = new ClientOptions();
+			ClientOptions opts = createOptions();
 			opts.restHost = testVars.restHost;
 			opts.environment = testVars.environment;
 			opts.port = testVars.port;
@@ -313,8 +302,7 @@ public class RestAuthTest {
 	@Test
 	public void auth_authURL_headers() {
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = new ClientOptions();
+			ClientOptions opts = createOptions();
 			opts.restHost = testVars.restHost;
 			opts.environment = testVars.environment;
 			opts.port = testVars.port;
@@ -343,11 +331,9 @@ public class RestAuthTest {
 	@Test
 	public void auth_authcallback_tokenrequest() {
 		try {
-			final TestVars testVars = Setup.getTestVars();
-
 			/* implement callback, using Ably instance with key */
 			TokenCallback authCallback = new TokenCallback() {
-				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
+				private AblyRest ably = new AblyRest(createOptions(testVars.keys[0].keyStr));
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
 					return ably.auth.createTokenRequest(null, params);
@@ -355,7 +341,7 @@ public class RestAuthTest {
 			};
 
 			/* create Ably instance without key */
-			ClientOptions opts = testVars.createOptions();
+			ClientOptions opts = createOptions();
 			opts.authCallback = authCallback;
 			AblyRest ably = new AblyRest(opts);
 
@@ -379,11 +365,9 @@ public class RestAuthTest {
 	@Test
 	public void auth_authcallback_tokendetails() {
 		try {
-			final TestVars testVars = Setup.getTestVars();
-
 			/* implement callback, using Ably instance with key */
 			TokenCallback authCallback = new TokenCallback() {
-				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
+				private AblyRest ably = new AblyRest(createOptions(testVars.keys[0].keyStr));
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
 					return ably.auth.requestToken(params, null);
@@ -391,7 +375,7 @@ public class RestAuthTest {
 			};
 
 			/* create Ably instance without key */
-			ClientOptions opts = testVars.createOptions();
+			ClientOptions opts = createOptions();
 			opts.authCallback = authCallback;
 			AblyRest ably = new AblyRest(opts);
 
@@ -414,11 +398,9 @@ public class RestAuthTest {
 	 */
 	@Test
 	public void auth_authcallback_tokenstring() throws AblyException {
-		final TestVars testVars = Setup.getTestVars();
-
 			/* implement callback, using Ably instance with key */
 		TokenCallback authCallback = new TokenCallback() {
-			private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
+			private AblyRest ably = new AblyRest(createOptions(testVars.keys[0].keyStr));
 			@Override
 			public Object getTokenRequest(TokenParams params) throws AblyException {
 				return ably.auth.requestToken(params, null).token;
@@ -426,7 +408,7 @@ public class RestAuthTest {
 		};
 
 			/* create Ably instance without key */
-		ClientOptions opts = testVars.createOptions();
+		ClientOptions opts = createOptions();
 		opts.authCallback = authCallback;
 		AblyRest ably = new AblyRest(opts);
 
@@ -446,8 +428,7 @@ public class RestAuthTest {
 	@Test
 	public void auth_authcallback_token_expire() {
 		try {
-			final TestVars testVars = Setup.getTestVars();
-			ClientOptions optsForToken = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
 			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 5000L; }}, null);
 			assertNotNull("Expected token value", tokenDetails.token);
@@ -466,7 +447,7 @@ public class RestAuthTest {
 			TokenGenerator authCallback = new TokenGenerator();
 
 			/* create Ably instance without key */
-			ClientOptions opts = testVars.createOptions();
+			ClientOptions opts = createOptions();
 			opts.token = tokenDetails.token;
 			opts.authCallback = authCallback;
 			AblyRest ably = new AblyRest(opts);
@@ -498,8 +479,6 @@ public class RestAuthTest {
 	@Test
 	public void auth_authcallback_err() {
 		try {
-			final TestVars testVars = Setup.getTestVars();
-
 			/* implement callback, using Ably instance with key */
 			TokenCallback authCallback = new TokenCallback() {
 				@Override
@@ -509,7 +488,7 @@ public class RestAuthTest {
 			};
 
 			/* create Ably instance without key */
-			ClientOptions opts = testVars.createOptions();
+			ClientOptions opts = createOptions();
 			opts.authCallback = authCallback;
 			AblyRest ably = new AblyRest(opts);
 
@@ -535,11 +514,9 @@ public class RestAuthTest {
 	@Test
 	public void auth_clientid_null_success() {
 		try {
-			final TestVars testVars = Setup.getTestVars();
-
 			/* implement callback, using Ably instance with key */
 			TokenCallback authCallback = new TokenCallback() {
-				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
+				private AblyRest ably = new AblyRest(createOptions(testVars.keys[0].keyStr));
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
 					return ably.auth.requestToken(params, null);
@@ -547,7 +524,7 @@ public class RestAuthTest {
 			};
 
 			/* create Ably instance without clientId */
-			ClientOptions options = testVars.createOptions();
+			ClientOptions options = createOptions();
 			options.clientId = null;
 			options.authCallback = authCallback;
 			AblyRest ably = new AblyRest(options);
@@ -598,11 +575,9 @@ public class RestAuthTest {
 		AblyRest ably = null;
 
 		try {
-			final TestVars testVars = Setup.getTestVars();
-
 			/* implement callback, using Ably instance with key */
 			TokenCallback authCallback = new TokenCallback() {
-				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
+				private AblyRest ably = new AblyRest(createOptions(testVars.keys[0].keyStr));
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
 					return ably.auth.requestToken(params, null);
@@ -610,7 +585,7 @@ public class RestAuthTest {
 			};
 
 			/* create Ably instance */
-			ClientOptions options = testVars.createOptions();
+			ClientOptions options = createOptions();
 			options.authCallback = authCallback;
 			ably = new AblyRest(options);
 
@@ -645,11 +620,9 @@ public class RestAuthTest {
 	@Test
 	public void auth_clientid_null_wildcard () {
 		try {
-			final TestVars testVars = Setup.getTestVars();
-
 			/* implement callback, using Ably instance with key */
 			TokenCallback authCallback = new TokenCallback() {
-				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
+				private AblyRest ably = new AblyRest(createOptions(testVars.keys[0].keyStr));
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
 					return ably.auth.requestToken(params, null);
@@ -657,7 +630,7 @@ public class RestAuthTest {
 			};
 
 			/* create Ably instance with wildcard clientId */
-			ClientOptions options = testVars.createOptions();
+			ClientOptions options = createOptions();
 			options.clientId = "*";
 			options.authCallback = authCallback;
 			AblyRest ably = new AblyRest(options);
@@ -706,11 +679,9 @@ public class RestAuthTest {
 	@Test
 	public void auth_clientid_explicit_wildcard () {
 		try {
-			final TestVars testVars = Setup.getTestVars();
-
 			/* implement callback, using Ably instance with key */
 			TokenCallback authCallback = new TokenCallback() {
-				private AblyRest ably = new AblyRest(testVars.createOptions(testVars.keys[0].keyStr));
+				private AblyRest ably = new AblyRest(createOptions(testVars.keys[0].keyStr));
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
 					return ably.auth.requestToken(params, null);
@@ -718,7 +689,7 @@ public class RestAuthTest {
 			};
 
 			/* create Ably instance with wildcard clientId */
-			ClientOptions options = testVars.createOptions();
+			ClientOptions options = createOptions();
 			options.clientId = "*";
 			options.authCallback = authCallback;
 			AblyRest ably = new AblyRest(options);
@@ -767,8 +738,7 @@ public class RestAuthTest {
 	@Test
 	public void auth_useTokenAuth() {
 		try {
-			final TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			opts.useTokenAuth = true;
 			AblyRest ably = new AblyRest(opts);
 			/* verify that we don't have a token yet. */
