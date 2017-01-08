@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import io.ably.lib.util.Log;
-import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 
@@ -34,7 +33,7 @@ public class PresenceSerializer {
 
 	public static PresenceMessage[] readMsgpack(byte[] packed) throws AblyException {
 		try {
-			MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(packed);
+			MessageUnpacker unpacker = Serialisation.msgpackUnpackerConfig.newUnpacker(packed);
 			return readMsgpackArray(unpacker);
 		} catch(IOException ioe) {
 			throw AblyException.fromThrowable(ioe);
@@ -48,7 +47,7 @@ public class PresenceSerializer {
 	static byte[] writeMsgpackArray(PresenceMessage[] messages) {
 		try {
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
-			MessagePacker packer = MessagePack.newDefaultPacker(out);
+			MessagePacker packer = Serialisation.msgpackPackerConfig.newPacker(out);
 			writeMsgpackArray(messages, packer);
 			packer.flush();
 			return out.toByteArray();

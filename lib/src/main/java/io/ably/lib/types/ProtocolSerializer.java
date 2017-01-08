@@ -3,7 +3,6 @@ package io.ably.lib.types;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 
@@ -17,7 +16,7 @@ public class ProtocolSerializer {
 	
 	public static ProtocolMessage readMsgpack(byte[] packed) throws AblyException {
 		try {
-			MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(packed);
+			MessageUnpacker unpacker = Serialisation.msgpackUnpackerConfig.newUnpacker(packed);
 			return ProtocolMessage.fromMsgpack(unpacker);
 		} catch (IOException ioe) {
 			throw AblyException.fromThrowable(ioe);
@@ -30,7 +29,7 @@ public class ProtocolSerializer {
 	
 	public static byte[] writeMsgpack(ProtocolMessage message) {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		MessagePacker packer = MessagePack.newDefaultPacker(out);
+		MessagePacker packer = Serialisation.msgpackPackerConfig.newPacker(out);
 		try {
 			message.writeMsgpack(packer);
 	
