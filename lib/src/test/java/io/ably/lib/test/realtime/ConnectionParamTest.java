@@ -1,32 +1,32 @@
 package io.ably.lib.test.realtime;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import fi.iki.elonen.NanoWSD;
-import io.ably.lib.test.rest.HttpHeaderTest;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.test.common.Helpers;
-import io.ably.lib.test.common.Setup;
+import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.test.rest.HttpHeaderTest;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ITransport;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 /**
  * Created by VOstopolets on 8/25/16.
  */
-public class ConnectionParamTest {
+public class ConnectionParamTest extends ParameterizedTest {
 
 	private static ParamHandlerNanoWsd server;
 
@@ -94,8 +94,7 @@ public class ConnectionParamTest {
 	@Test
 	public void connectionmanager_param_lib() throws AblyException {
 		/* Init values for local server */
-		Setup.TestVars testVars = Setup.getTestVars();
-		ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 		opts.tls = false;
 		opts.realtimeHost = "localhost";
 		opts.environment = null;
