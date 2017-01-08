@@ -218,6 +218,7 @@ public class Auth {
 
 		/**
 		 * Convert a JSON element response body to a TokenDetails.
+		 * Spec: TD7
 		 * @param json
 		 * @return
 		 */
@@ -407,6 +408,7 @@ public class Auth {
 
 		/**
 		 * Convert a string JSON response body to a TokenParams.
+		 * Spec: TE6
 		 * @param json
 		 * @return
 		 */
