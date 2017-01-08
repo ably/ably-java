@@ -383,7 +383,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			ably.channels.suspendAll(error);
 
 		/* set the new connection id */
-		connection.key = message.connectionKey;
+		connection.key = message.connectionDetails.connectionKey;
 		if (!message.connectionId.equals(connection.id)) {
 			/* The connection id has changed. Reset the message serial and the
 			 * pending message queue (which fails the messages currently in

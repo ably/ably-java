@@ -109,7 +109,6 @@ public class ProtocolMessage {
 	public String channel;
 	public String channelSerial;
 	public String connectionId;
-	public String connectionKey;
 	public Long connectionSerial;
 	public Long msgSerial;
 	public long timestamp;
@@ -167,8 +166,6 @@ public class ProtocolMessage {
 				channelSerial = unpacker.unpackString();
 			} else if(fieldName == "connectionId") {
 				connectionId = unpacker.unpackString();
-			} else if(fieldName == "connectionKey") {
-				connectionKey = unpacker.unpackString();
 			} else if(fieldName == "connectionSerial") {
 				connectionSerial = Long.valueOf(unpacker.unpackLong());
 			} else if(fieldName == "msgSerial") {
