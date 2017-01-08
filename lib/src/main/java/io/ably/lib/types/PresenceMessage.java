@@ -12,9 +12,10 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+
+import io.ably.lib.util.Log;
 
 /**
  * A class representing an individual presence update to be sent or received
@@ -109,7 +110,7 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
 			if(fieldName == "action") {
 				action = Action.findByValue(unpacker.unpackInt());
 			} else {
-				System.out.println("Unexpected field: " + fieldName);
+				Log.v(TAG, "Unexpected field: " + fieldName);
 				unpacker.skipValue();
 			}
 		}
@@ -136,4 +137,6 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
 			return json;
 		}		
 	}
+
+	private static final String TAG = PresenceMessage.class.getName();
 }
