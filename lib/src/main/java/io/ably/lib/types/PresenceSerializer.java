@@ -8,7 +8,7 @@ import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 
 import io.ably.lib.http.Http.BodyHandler;
-import io.ably.lib.http.Http.JSONRequestBody;
+import io.ably.lib.http.Http.JsonRequestBody;
 import io.ably.lib.http.Http.RequestBody;
 import io.ably.lib.util.Serialisation;
 
@@ -67,7 +67,7 @@ public class PresenceSerializer {
 	 *              JSON decode
 	 ****************************************/
 	
-	private static PresenceMessage[] readJSON(byte[] packed) throws IOException {
+	private static PresenceMessage[] readJson(byte[] packed) throws IOException {
 		return Serialisation.gson.fromJson(new String(packed), PresenceMessage[].class);
 	}
 
@@ -75,12 +75,12 @@ public class PresenceSerializer {
 	 *            JSON encode
 	 ****************************************/
 	
-	public static RequestBody asJSONRequest(PresenceMessage message) throws AblyException {
-		return asJSONRequest(new PresenceMessage[] { message });
+	public static RequestBody asJsonRequest(PresenceMessage message) throws AblyException {
+		return asJsonRequest(new PresenceMessage[] { message });
 	}
 
-	public static RequestBody asJSONRequest(PresenceMessage[] messages) {
-		return new JSONRequestBody(Serialisation.gson.toJson(messages));
+	public static RequestBody asJsonRequest(PresenceMessage[] messages) {
+		return new JsonRequestBody(Serialisation.gson.toJson(messages));
 	}
 
 	/****************************************
@@ -100,7 +100,7 @@ public class PresenceSerializer {
 			try {
 				PresenceMessage[] messages = null;
 				if("application/json".equals(contentType))
-					messages = readJSON(body);
+					messages = readJson(body);
 				else if("application/x-msgpack".equals(contentType))
 					messages = readMsgpack(body);
 				if(messages != null) {

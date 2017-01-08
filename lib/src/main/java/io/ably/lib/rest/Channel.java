@@ -50,7 +50,7 @@ public class Channel {
 	public void publish(String name, Object data) throws AblyException {
 		Message message = new Message(name, data);
 		message.encode(options);
-		RequestBody requestBody = ably.options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(message) : MessageSerializer.asJSONRequest(message);
+		RequestBody requestBody = ably.options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(message) : MessageSerializer.asJsonRequest(message);
 		ably.http.post(basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), null, requestBody, null);
 	}
 
@@ -65,7 +65,7 @@ public class Channel {
 	public void publish(Message[] messages) throws AblyException {
 		for(Message message : messages)
 			message.encode(options);
-		RequestBody requestBody = ably.options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(messages) : MessageSerializer.asJSONRequest(messages);
+		RequestBody requestBody = ably.options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(messages) : MessageSerializer.asJsonRequest(messages);
 		ably.http.post(basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), null, requestBody, null);
 	}
 
@@ -82,7 +82,7 @@ public class Channel {
 			listener.onError(e.errorInfo);
 			return;
 		}
-		RequestBody requestBody = ably.options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(messages) : MessageSerializer.asJSONRequest(messages);
+		RequestBody requestBody = ably.options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(messages) : MessageSerializer.asJsonRequest(messages);
 
 		ably.asyncHttp.post(basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), null, requestBody, null, new Callback<Void>() {
 			@Override

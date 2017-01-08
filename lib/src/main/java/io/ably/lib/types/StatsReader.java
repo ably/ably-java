@@ -11,15 +11,15 @@ import io.ably.lib.util.Serialisation;
  */
 public class StatsReader  {
 
-	public static Stats[] readJSON(byte[] jsonBytes) throws AblyException {
+	public static Stats[] readJson(byte[] jsonBytes) throws AblyException {
 		try {
-			return readJSON(new String(jsonBytes, "UTF-8"));
+			return readJson(new String(jsonBytes, "UTF-8"));
 		} catch (UnsupportedEncodingException e) {
 			throw AblyException.fromThrowable(e);
 		}
 	}
 
-	public static Stats[] readJSON(String packed) throws AblyException {
+	public static Stats[] readJson(String packed) throws AblyException {
 		return Serialisation.gson.fromJson(packed, Stats[].class);
 	}
 
@@ -27,7 +27,7 @@ public class StatsReader  {
 		@Override
 		public Stats[] handleResponseBody(String contentType, byte[] body) throws AblyException {
 			if("application/json".equals(contentType))
-				return readJSON(body);
+				return readJson(body);
 			return null;
 		}
 	};

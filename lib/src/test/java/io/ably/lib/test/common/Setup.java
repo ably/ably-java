@@ -7,7 +7,7 @@ import java.util.Date;
 import com.google.gson.Gson;
 
 import io.ably.lib.http.HttpUtils;
-import io.ably.lib.http.Http.JSONRequestBody;
+import io.ably.lib.http.Http.JsonRequestBody;
 import io.ably.lib.http.Http.ResponseHandler;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.test.loader.ResourceLoader;
@@ -18,7 +18,7 @@ import io.ably.lib.util.Serialisation;
 
 public class Setup {
 
-	public static Object loadJSON(String resourceName, Class<? extends Object> expectedType) throws IOException {
+	public static Object loadJson(String resourceName, Class<? extends Object> expectedType) throws IOException {
 		try {
 			byte[] jsonBytes = resourceLoader.read(resourceName);
 			return gson.fromJson(new String(jsonBytes), expectedType);
@@ -186,7 +186,7 @@ public class Setup {
 
 			Setup.AppSpec appSpec = null;
 			try {
-				appSpec = (Setup.AppSpec)loadJSON(specFile, Setup.AppSpec.class);
+				appSpec = (Setup.AppSpec)loadJson(specFile, Setup.AppSpec.class);
 				appSpec.notes = "Test app; created by ably-java realtime tests; date = " + new Date().toString();
 			} catch(IOException ioe) {
 				System.err.println("Unable to read spec file: " + ioe);
@@ -194,7 +194,7 @@ public class Setup {
 				System.exit(1);
 			}
 			try {
-				testVars = ably.http.post("/apps", null, null, new JSONRequestBody(appSpec), new ResponseHandler<TestVars>() {
+				testVars = ably.http.post("/apps", null, null, new JsonRequestBody(appSpec), new ResponseHandler<TestVars>() {
 					@Override
 					public TestVars handleResponse(int statusCode, String contentType, Collection<String> headers, byte[] body) throws AblyException {
 						TestVars result = (TestVars)Serialisation.gson.fromJson(new String(body), TestVars.class);
