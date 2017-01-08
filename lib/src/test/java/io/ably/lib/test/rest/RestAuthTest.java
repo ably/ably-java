@@ -814,6 +814,10 @@ public class RestAuthTest extends ParameterizedTest {
 		}
 	}
 
+	/**
+	 * Verify JSON serialisation and deserialisation of basic types
+	 * Spec: TE6, TD7
+	 */
 	@Test
 	public void auth_json_interop() {
 		/* create a token request */
