@@ -325,8 +325,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 	public void publish_channel_state() {
 		AblyRealtime ably = null;
 		try {
-			TestVars testVars = Setup.getTestVars();
-			ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
 			Channel pubChannel = ably.channels.get("publish_channel_state");
