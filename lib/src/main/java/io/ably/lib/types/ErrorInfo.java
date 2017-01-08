@@ -3,6 +3,8 @@ package io.ably.lib.types;
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessageUnpacker;
 
+import io.ably.lib.util.Log;
+
 import java.io.IOException;
 import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
@@ -80,7 +82,7 @@ public class ErrorInfo {
 			} else if(fieldName == "statusCode") {
 				statusCode = unpacker.unpackInt();
 			} else {
-				System.out.println("Unexpected field: " + fieldName);
+				Log.v(TAG, "Unexpected field: " + fieldName);
 				unpacker.skipValue();
 			}
 		}
@@ -110,4 +112,6 @@ public class ErrorInfo {
 	public static ErrorInfo fromResponseStatus(String statusLine, int statusCode) {
 		return new ErrorInfo(statusLine, statusCode, statusCode * 100);
 	}
+
+	private static final String TAG = ErrorInfo.class.getName();
 }
