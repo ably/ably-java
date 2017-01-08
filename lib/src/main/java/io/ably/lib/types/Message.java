@@ -12,6 +12,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
+import io.ably.lib.util.Log;
+
 /**
  * A class representing an individual message to be sent or received
  * via the Ably Realtime service.
@@ -83,7 +85,7 @@ public class Message extends BaseMessage {
 			if(fieldName == "name") {
 				name = unpacker.unpackString();
 			} else {
-				System.out.println("Unexpected field: " + fieldName);
+				Log.v(TAG, "Unexpected field: " + fieldName);
 				unpacker.skipValue();
 			}
 		}
@@ -102,4 +104,6 @@ public class Message extends BaseMessage {
 			return json;
 		}		
 	}
+
+	private static final String TAG = Message.class.getName();
 }

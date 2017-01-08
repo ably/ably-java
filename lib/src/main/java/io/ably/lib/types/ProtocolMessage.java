@@ -15,6 +15,8 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
+import io.ably.lib.util.Log;
+
 /**
  * A message sent and received over the Realtime protocol.
  * A ProtocolMessage always relates to a single channel only, but
@@ -182,7 +184,7 @@ public class ProtocolMessage {
 			} else if(fieldName == "connectionDetails") {
 				connectionDetails = ConnectionDetails.fromMsgpack(unpacker);
 			} else {
-				System.out.println("Unexpected field: " + fieldName);
+				Log.v(TAG, "Unexpected field: " + fieldName);
 				unpacker.skipValue();
 			}
 		}
@@ -205,4 +207,6 @@ public class ProtocolMessage {
 			return new JsonPrimitive(action.getValue());
 		}		
 	}
+
+	private static final String TAG = ProtocolMessage.class.getName();
 }

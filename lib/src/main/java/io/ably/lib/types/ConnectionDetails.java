@@ -3,6 +3,8 @@ package io.ably.lib.types;
 import java.io.IOException;
 
 import io.ably.lib.transport.Defaults;
+import io.ably.lib.util.Log;
+
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessageUnpacker;
 
@@ -41,7 +43,7 @@ public class ConnectionDetails {
 			} else if(fieldName == "maxIdleInterval") {
 				maxIdleInterval = unpacker.unpackLong();
 			} else {
-				System.out.println("Unexpected field: " + fieldName);
+				Log.v(TAG, "Unexpected field: " + fieldName);
 				unpacker.skipValue();
 			}
 		}
@@ -51,4 +53,6 @@ public class ConnectionDetails {
 	static ConnectionDetails fromMsgpack(MessageUnpacker unpacker) throws IOException {
 		return (new ConnectionDetails()).readMsgpack(unpacker);
 	}
+
+	private static final String TAG = ConnectionDetails.class.getName();
 }
