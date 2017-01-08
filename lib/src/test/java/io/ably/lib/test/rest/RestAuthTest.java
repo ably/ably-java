@@ -786,6 +786,7 @@ public class RestAuthTest extends ParameterizedTest {
 	public void auth_testQueryTime() {
 		try {
 			Auth.clearCachedServerTime();
+			nanoHTTPD.clearRequestHistory();
 			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.tls = false;
 			opts.restHost = "localhost";
@@ -830,6 +831,8 @@ public class RestAuthTest extends ParameterizedTest {
 			/* the only request supported here is /time */
 			return newFixedLengthResponse(String.format(Locale.US, "[%d]", System.currentTimeMillis()));
 		}
+
+		public void clearRequestHistory() { requestHistory.clear(); }
 
 		public List<String> getRequestHistory() { return requestHistory; }
 	}
