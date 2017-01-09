@@ -24,6 +24,7 @@ import io.ably.lib.rest.Auth.AuthMethod;
 import io.ably.lib.rest.Auth.TokenCallback;
 import io.ably.lib.rest.Auth.TokenDetails;
 import io.ably.lib.rest.Auth.TokenParams;
+import io.ably.lib.rest.Auth.TokenRequest;
 import io.ably.lib.rest.Channel;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.util.TokenServer;
@@ -807,6 +808,43 @@ public class RestAuthTest extends ParameterizedTest {
 					timeRequestCount++;
 
 			assertEquals("Verify number of time requests", timeRequestCount, 1);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("Unexpected exception");
+		}
+	}
+
+	/**
+	 * Verify JSON serialisation and deserialisation of basic types
+	 * Spec: TE6, TD7
+	 */
+	@Test
+	public void auth_json_interop() {
+		/* create a token request */
+		AblyRest ably;
+		TokenRequest tokenRequest;
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.clientId = "Test client id";
+			ably = new AblyRest(opts);
+			tokenRequest = ably.auth.createTokenRequest(new TokenParams() {{
+				ttl = 10000;
+				capability = "{\"*\": [\"*\"]}";
+			}}, null);
+			String serialisedTokenRequest = tokenRequest.asJson();
+			TokenRequest deserialisedTokenRequest = TokenRequest.fromJson(serialisedTokenRequest);
+			assertEquals("Verify token request is serialised and deserialised successfully", tokenRequest, deserialisedTokenRequest);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("Unexpected exception");
+			return;
+		}
+		/* create a token details */
+		try {
+			TokenDetails tokenDetails = ably.auth.requestToken(tokenRequest, null);
+			String serialisedTokenDetails = tokenDetails.asJson();
+			TokenDetails deserialisedTokenDetails = TokenDetails.fromJson(serialisedTokenDetails);
+			assertEquals("Verify token details is serialised and deserialised successfully", tokenDetails, deserialisedTokenDetails);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("Unexpected exception");

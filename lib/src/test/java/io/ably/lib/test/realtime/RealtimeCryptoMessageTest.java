@@ -28,7 +28,7 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 	@Test
 	public void encrypt_message_128() {
 		try {
-			testData128 = (CryptoTestData)Setup.loadJSON(testDataFile128, CryptoTestData.class);
+			testData128 = (CryptoTestData)Setup.loadJson(testDataFile128, CryptoTestData.class);
 		} catch (IOException e1) {
 			fail();
 			return;
@@ -83,7 +83,7 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 	@Test
 	public void encrypt_message_256() {
 		try {
-			testData256 = (CryptoTestData)Setup.loadJSON(testDataFile256, CryptoTestData.class);
+			testData256 = (CryptoTestData)Setup.loadJson(testDataFile256, CryptoTestData.class);
 		} catch (IOException e1) {
 			fail();
 			return;
@@ -138,7 +138,7 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 	@Test
 	public void decrypt_message_128() {
 		try {
-			testData128 = (CryptoTestData)Setup.loadJSON(testDataFile128, CryptoTestData.class);
+			testData128 = (CryptoTestData)Setup.loadJson(testDataFile128, CryptoTestData.class);
 		} catch (IOException e1) {
 			fail();
 			return;
@@ -193,7 +193,7 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 	@Test
 	public void decrypt_message_256() {
 		try {
-			testData256 = (CryptoTestData)Setup.loadJSON(testDataFile256, CryptoTestData.class);
+			testData256 = (CryptoTestData)Setup.loadJson(testDataFile256, CryptoTestData.class);
 		} catch (IOException e1) {
 			fail();
 			return;

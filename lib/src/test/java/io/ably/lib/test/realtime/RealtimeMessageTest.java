@@ -573,7 +573,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 	public void messages_encoding_fixtures() {
 		MessagesEncodingData fixtures;
 		try {
-			fixtures = (MessagesEncodingData)Setup.loadJSON(testMessagesEncodingFile, MessagesEncodingData.class);
+			fixtures = (MessagesEncodingData)Setup.loadJson(testMessagesEncodingFile, MessagesEncodingData.class);
 		} catch (IOException e) {
 			fail();
 			return;
@@ -593,7 +593,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 				/* subscribe */
 				MessageWaiter messageWaiter = new MessageWaiter(channel);
 
-				ably.http.post("/channels/" + channel.name + "/messages", null, null, new Http.JSONRequestBody(fixtureMessage), null);
+				ably.http.post("/channels/" + channel.name + "/messages", null, null, new Http.JsonRequestBody(fixtureMessage), null);
 
 				messageWaiter.waitFor(1);
 				channel.unsubscribe(messageWaiter);
@@ -628,7 +628,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 	public void messages_msgpack_and_json_encoding_is_compatible() {
 		MessagesEncodingData fixtures;
 		try {
-			fixtures = (MessagesEncodingData)Setup.loadJSON(testMessagesEncodingFile, MessagesEncodingData.class);
+			fixtures = (MessagesEncodingData)Setup.loadJson(testMessagesEncodingFile, MessagesEncodingData.class);
 		} catch (IOException e) {
 			fail();
 			return;
@@ -659,7 +659,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 				for (MessagesEncodingDataItem fixtureMessage : fixtures.messages) {
 					MessageWaiter messageWaiter = new MessageWaiter(realtimeSubscribeChannel);
 
-					restPublishClient.http.post("/channels/" + realtimeSubscribeChannel.name + "/messages", null, null, new Http.JSONRequestBody(fixtureMessage), null);
+					restPublishClient.http.post("/channels/" + realtimeSubscribeChannel.name + "/messages", null, null, new Http.JsonRequestBody(fixtureMessage), null);
 
 					messageWaiter.waitFor(1);
 					realtimeSubscribeChannel.unsubscribe(messageWaiter);
@@ -753,7 +753,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			testData.expectedType = "binary";
 			testData.expectedHexValue = "30313233343536373839";	/* hex for "0123456789" */
 
-			restPublishClient.http.post("/channels/" + realtimeSubscribeChannelJson.name + "/messages", null, null, new Http.JSONRequestBody(testData), null);
+			restPublishClient.http.post("/channels/" + realtimeSubscribeChannelJson.name + "/messages", null, null, new Http.JsonRequestBody(testData), null);
 
 			messageWaiter.waitFor(1);
 			realtimeSubscribeChannelJson.unsubscribe(messageWaiter);
