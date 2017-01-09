@@ -10,6 +10,7 @@ import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -121,7 +122,7 @@ public class Http {
 		public JSONRequestBody(Object ob) { this(Serialisation.gson.toJson(ob)); }
 
 		@Override
-		public byte[] getEncoded() { return (bytes != null) ? bytes : (bytes = jsonText.getBytes()); }
+		public byte[] getEncoded() { return (bytes != null) ? bytes : (bytes = jsonText.getBytes(StandardCharsets.UTF_8)); }
 		@Override
 		public String getContentType() { return JSON; }
 

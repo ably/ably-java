@@ -1,5 +1,6 @@
 package io.ably.lib.rest;
 
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -740,8 +741,8 @@ public class Auth {
 	private static final String hmac(String text, String key) {
 		try {
 			Mac mac = Mac.getInstance("HmacSHA256");
-			mac.init(new SecretKeySpec(key.getBytes(), "HmacSHA256"));
-			return new String(Base64Coder.encode(mac.doFinal(text.getBytes())));
+			mac.init(new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+			return new String(Base64Coder.encode(mac.doFinal(text.getBytes(StandardCharsets.UTF_8))));
 		} catch (GeneralSecurityException e) { Log.e("Auth.hmac", "Unexpected exception", e); return null; }
 	}
 
