@@ -9,6 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import io.ably.lib.http.Http.BodyHandler;
+import io.ably.lib.http.Http.RequestBody;
 import io.ably.lib.http.Http.ResponseHandler;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.AsyncPaginatedResult;
@@ -25,7 +26,7 @@ public class AsyncPaginatedQuery<T> implements ResponseHandler<AsyncPaginatedRes
 
 	/**
 	 * Construct a PaginatedQuery
-	 * 
+	 *
 	 * @param http. the http instance
 	 * @param path. the path of the resource being queried
 	 * @param headers. headers to pass into the first and all relative queries
@@ -33,10 +34,24 @@ public class AsyncPaginatedQuery<T> implements ResponseHandler<AsyncPaginatedRes
 	 * @param bodyHandler. handler to parse response bodies for first and all relative queries
 	 */
 	public AsyncPaginatedQuery(AsyncHttp http, String path, Param[] headers, Param[] params, BodyHandler<T> bodyHandler) {
+		this(http, path, headers, params, null, bodyHandler);
+	}
+
+	/**
+	 * Construct a PaginatedQuery
+	 *
+	 * @param http. the http instance
+	 * @param path. the path of the resource being queried
+	 * @param headers. headers to pass into the first and all relative queries
+	 * @param params. params to pass into the initial query
+	 * @param bodyHandler. handler to parse response bodies for first and all relative queries
+	 */
+	public AsyncPaginatedQuery(AsyncHttp http, String path, Param[] headers, Param[] params, RequestBody requestBody, BodyHandler<T> bodyHandler) {
 		this.http = http;
 		this.path = path;
 		this.headers = headers;
 		this.params = params;
+		this.requestBody = requestBody;
 		this.bodyHandler = bodyHandler;
 	}
 
@@ -47,6 +62,15 @@ public class AsyncPaginatedQuery<T> implements ResponseHandler<AsyncPaginatedRes
 	 */
 	public void get(Callback<AsyncPaginatedResult<T>> callback) {
 		http.get(path, headers, params, this, callback);
+	}
+
+	/**
+	 * Get the result of the first query
+	 * @param callback. On success returns A PaginatedResult<T> giving the
+	 * first page of results together with any available links to related results pages.
+	 */
+	public void exec(String method, Callback<AsyncPaginatedResult<T>> callback) {
+		http.exec(path, method, headers, params, requestBody, this, callback);
 	}
 
 	/**
@@ -151,5 +175,6 @@ public class AsyncPaginatedQuery<T> implements ResponseHandler<AsyncPaginatedRes
 	private String path;
 	private Param[] headers;
 	private Param[] params;
+	private RequestBody requestBody;
 	private BodyHandler<T> bodyHandler;
 }

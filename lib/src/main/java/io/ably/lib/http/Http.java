@@ -42,6 +42,7 @@ import io.ably.lib.util.Serialisation;
  */
 public class Http {
 	public static final String GET    = "GET";
+	public static final String PUT    = "PUT";
 	public static final String POST   = "POST";
 	public static final String DELETE = "DELETE";
 
@@ -245,6 +246,20 @@ public class Http {
 	}
 
 	/**
+	 * HTTP PUT for Ably host, with fallbacks
+	 * @param path
+	 * @param headers
+	 * @param params
+	 * @param requestBody
+	 * @param responseHandler
+	 * @return
+	 * @throws AblyException
+	 */
+	public <T> T put(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
+		return ablyHttpExecute(path, PUT, headers, params, requestBody, responseHandler);
+	}
+
+	/**
 	 * HTTP POST for Ably host, with fallbacks
 	 * @param path
 	 * @param headers
@@ -269,6 +284,21 @@ public class Http {
 	 */
 	public <T> T del(String path, Param[] headers, Param[] params, ResponseHandler<T> responseHandler) throws AblyException {
 		return ablyHttpExecute(path, DELETE, headers, params, null, responseHandler);
+	}
+
+	/**
+	 * HTTP request for Ably host, with fallbacks
+	 * @param path
+	 * @param method
+	 * @param headers
+	 * @param params
+	 * @param requestBody
+	 * @param responseHandler
+	 * @return
+	 * @throws AblyException
+	 */
+	public <T> T exec(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
+		return ablyHttpExecute(path, method, headers, params, requestBody, responseHandler);
 	}
 
 	/**************************
