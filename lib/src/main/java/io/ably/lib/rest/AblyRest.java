@@ -3,9 +3,12 @@ package io.ably.lib.rest;
 import java.util.Collection;
 import java.util.HashMap;
 
+import com.google.gson.JsonElement;
+
 import io.ably.lib.http.AsyncHttp;
 import io.ably.lib.http.AsyncPaginatedQuery;
 import io.ably.lib.http.Http;
+import io.ably.lib.http.Http.RequestBody;
 import io.ably.lib.http.Http.ResponseHandler;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
@@ -146,6 +149,51 @@ public class AblyRest {
 	 */
 	public void statsAsync(Param[] params, Callback<AsyncPaginatedResult<Stats>> callback)  {
 		(new AsyncPaginatedQuery<Stats>(asyncHttp, "/stats", HttpUtils.defaultAcceptHeaders(false), params, StatsReader.statsResponseHandler)).get(callback);
+	}
+
+	/**
+	 * Make a generic HTTP request for a collection of the given type
+	 * @param params query options: see Ably REST API documentation
+	 * for available options
+	 * @return a PaginatedResult of Stats records for the requested params
+	 * @throws AblyException
+	 */
+	public PaginatedResult<JsonElement> paginatedRequest(String method, String path, Param[] params, RequestBody body, Param[] headers) throws AblyException {
+		headers = HttpUtils.mergeHeaders(HttpUtils.defaultAcceptHeaders(false), headers);
+		return new PaginatedQuery<JsonElement>(http, path, headers, params, HttpUtils.jsonArrayResponseHandler).exec(method);
+	}
+
+	/**
+	 * Asynchronously obtain usage statistics for this application using the REST API.
+	 * @param params: the request params. See the Ably REST API
+	 * @param callback
+	 * @return
+	 */
+	public void paginatedRequestAsync(String method, String path, Param[] params, RequestBody body, Param[] headers, Callback<AsyncPaginatedResult<JsonElement>> callback)  {
+		headers = HttpUtils.mergeHeaders(HttpUtils.defaultAcceptHeaders(false), headers);
+		(new AsyncPaginatedQuery<JsonElement>(asyncHttp, path, headers, params, HttpUtils.jsonArrayResponseHandler)).exec(method, callback);
+	}
+
+	/**
+	 * Make a generic HTTP request for a collection of JsonElements
+	 * @param params query options: see Ably REST API documentation
+	 * for available options
+	 * @return a PaginatedResult of JsonElement records for the requested params
+	 * @throws AblyException
+	 */
+	public JsonElement request(String method, String path, Param[] params, RequestBody body, Param[] headers) throws AblyException {
+		headers = HttpUtils.mergeHeaders(HttpUtils.defaultAcceptHeaders(false), headers);
+		return http.exec(path, method, headers, params, body, HttpUtils.jsonResponseHandler);
+	}
+
+	/**
+	 * Asynchronously make a generic HTTP request for a JsonElement
+	 * @param params: the request params. See the Ably REST API
+	 * @param callback
+	 */
+	public void requestAsync(String method, String path, Param[] params, RequestBody requestBody, Param[] headers, Callback<JsonElement> callback)  {
+		headers = HttpUtils.mergeHeaders(HttpUtils.defaultAcceptHeaders(false), headers);
+		asyncHttp.exec(path, method, headers, params, requestBody, HttpUtils.jsonResponseHandler, callback);
 	}
 
 	/**
