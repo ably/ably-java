@@ -160,7 +160,7 @@ public class AblyRest {
 	 */
 	public PaginatedResult<JsonElement> paginatedRequest(String method, String path, Param[] params, RequestBody body, Param[] headers) throws AblyException {
 		headers = HttpUtils.mergeHeaders(HttpUtils.defaultAcceptHeaders(false), headers);
-		return new PaginatedQuery<JsonElement>(http, path, headers, params, HttpUtils.jsonArrayResponseHandler).exec(method);
+		return new PaginatedQuery<JsonElement>(http, path, headers, params, body, HttpUtils.jsonArrayResponseHandler).exec(method);
 	}
 
 	/**
@@ -171,7 +171,7 @@ public class AblyRest {
 	 */
 	public void paginatedRequestAsync(String method, String path, Param[] params, RequestBody body, Param[] headers, Callback<AsyncPaginatedResult<JsonElement>> callback)  {
 		headers = HttpUtils.mergeHeaders(HttpUtils.defaultAcceptHeaders(false), headers);
-		(new AsyncPaginatedQuery<JsonElement>(asyncHttp, path, headers, params, HttpUtils.jsonArrayResponseHandler)).exec(method, callback);
+		(new AsyncPaginatedQuery<JsonElement>(asyncHttp, path, headers, params, body, HttpUtils.jsonArrayResponseHandler)).exec(method, callback);
 	}
 
 	/**
