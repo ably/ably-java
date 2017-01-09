@@ -65,9 +65,12 @@ public class RestRequestTest extends ParameterizedTest {
 	@Test
 	public void request_simple() {
 		try {
-			JsonElement channelDetails = ably.request(Http.GET, channelPath, null, null, null);
+			PaginatedResult<JsonElement> channelResponse = ably.request(Http.GET, channelPath, null, null, null);
 			/* check it looks like a ChannelDetails */
-			assertNotNull("Verify a result is returned", channelDetails);
+			assertNotNull("Verify a result is returned", channelResponse);
+			JsonElement[] items = channelResponse.items();
+			assertEquals("Verify a single items is returned", items.length, 1);
+			JsonElement channelDetails = items[0];
 			assertTrue("Verify an object is returned", channelDetails.isJsonObject());
 			assertTrue("Verify id member is present", channelDetails.getAsJsonObject().has("id"));
 			assertEquals("Verify id member is channelName", channelName, channelDetails.getAsJsonObject().get("id").getAsString());
@@ -83,11 +86,14 @@ public class RestRequestTest extends ParameterizedTest {
 	 */
 	@Test
 	public void request_simple_async() {
-		ably.requestAsync(Http.GET, channelPath, null, null, null, new Callback<JsonElement>() {
+		ably.requestAsync(Http.GET, channelPath, null, null, null, new Callback<AsyncPaginatedResult<JsonElement>>() {
 			@Override
-			public void onSuccess(JsonElement channelDetails) {
+			public void onSuccess(AsyncPaginatedResult<JsonElement> result) {
 				/* check it looks like a ChannelDetails */
-				assertNotNull("Verify a result is returned", channelDetails);
+				assertNotNull("Verify a result is returned", result);
+				JsonElement[] items = result.items();
+				assertEquals("Verify a single items is returned", items.length, 1);
+				JsonElement channelDetails = items[0];
 				assertTrue("Verify an object is returned", channelDetails.isJsonObject());
 				assertTrue("Verify id member is present", channelDetails.getAsJsonObject().has("id"));
 				assertEquals("Verify id member is channelName", channelName, channelDetails.getAsJsonObject().get("id").getAsString());
@@ -106,7 +112,7 @@ public class RestRequestTest extends ParameterizedTest {
 	public void request_paginated() {
 		try {
 			Param[] params = new Param[] { new Param("prefix", channelNamePrefix) };
-			PaginatedResult<JsonElement> channels = ably.paginatedRequest(Http.GET, channelsPath, params, null, null);
+			PaginatedResult<JsonElement> channels = ably.request(Http.GET, channelsPath, params, null, null);
 			/* check it looks like an array of ChannelDetails */
 			assertNotNull("Verify a result is returned", channels);
 			JsonElement[] items = channels.items();
@@ -127,7 +133,7 @@ public class RestRequestTest extends ParameterizedTest {
 	@Test
 	public void request_paginated_async() {
 		Param[] params = new Param[] { new Param("prefix", channelNamePrefix) };
-		ably.paginatedRequestAsync(Http.GET, channelsPath, params, null, null, new Callback<AsyncPaginatedResult<JsonElement>>() {
+		ably.requestAsync(Http.GET, channelsPath, params, null, null, new Callback<AsyncPaginatedResult<JsonElement>>() {
 			@Override
 			public void onSuccess(AsyncPaginatedResult<JsonElement> result) {
 				/* check it looks like an array of ChannelDetails */
@@ -153,7 +159,7 @@ public class RestRequestTest extends ParameterizedTest {
 	public void request_paginated_limit() {
 		try {
 			Param[] params = new Param[] { new Param("prefix", channelNamePrefix), new Param("limit", "1") };
-			PaginatedResult<JsonElement> channels = ably.paginatedRequest(Http.GET, channelsPath, params, null, null);
+			PaginatedResult<JsonElement> channels = ably.request(Http.GET, channelsPath, params, null, null);
 			/* check it looks like an array of ChannelDetails */
 			assertNotNull("Verify a result is returned", channels);
 			JsonElement[] items = channels.items();
@@ -183,7 +189,7 @@ public class RestRequestTest extends ParameterizedTest {
 	@Test
 	public void request_paginated_async_limit() {
 		Param[] params = new Param[] { new Param("prefix", channelNamePrefix), new Param("limit", "1") };
-		ably.paginatedRequestAsync(Http.GET, channelsPath, params, null, null, new Callback<AsyncPaginatedResult<JsonElement>>() {
+		ably.requestAsync(Http.GET, channelsPath, params, null, null, new Callback<AsyncPaginatedResult<JsonElement>>() {
 			@Override
 			public void onSuccess(AsyncPaginatedResult<JsonElement> result) {
 				/* check it looks like an array of ChannelDetails */
@@ -256,9 +262,9 @@ public class RestRequestTest extends ParameterizedTest {
 		/* publish a message */
 		Message message = new Message("Test event", messageData);
 		JSONRequestBody requestBody = new JSONRequestBody(message);
-		ably.requestAsync(Http.POST, channelMessagesPath, null, requestBody, null, new Callback<JsonElement>() {
+		ably.requestAsync(Http.POST, channelMessagesPath, null, requestBody, null, new Callback<AsyncPaginatedResult<JsonElement>>() {
 			@Override
-			public void onSuccess(JsonElement result) {
+			public void onSuccess(AsyncPaginatedResult<JsonElement> result) {
 				/* wait to persist */
 				try { Thread.sleep(1000L); } catch(InterruptedException ie) {}
 
@@ -280,7 +286,7 @@ public class RestRequestTest extends ParameterizedTest {
 			@Override
 			public void onError(ErrorInfo reason) {
 				fail("request_post_async: Unexpected exception");
-			}				
+			}
 		});
 	}
 

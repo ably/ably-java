@@ -3,7 +3,6 @@ package io.ably.lib.http;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -12,7 +11,6 @@ import com.google.gson.JsonElement;
 
 import io.ably.lib.BuildConfig;
 import io.ably.lib.http.Http.BodyHandler;
-import io.ably.lib.http.Http.ResponseHandler;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Param;
 import io.ably.lib.util.Serialisation;
@@ -97,26 +95,16 @@ public class HttpUtils {
 			if(!"application/json".equals(contentType)) {
 				return null;
 			}
-			JsonElement jsonItems = Serialisation.gsonParser.parse(new String(body, StandardCharsets.UTF_8));
-			if(!jsonItems.isJsonArray()) {
-				return null;
+			JsonElement jsonBody = Serialisation.gsonParser.parse(new String(body, StandardCharsets.UTF_8));
+			if(!jsonBody.isJsonArray()) {
+				return new JsonElement[] { jsonBody };
 			}
-			JsonArray jsonArray = jsonItems.getAsJsonArray();
+			JsonArray jsonArray = jsonBody.getAsJsonArray();
 			JsonElement[] items = new JsonElement[jsonArray.size()];
 			for(int i = 0; i < items.length; i++) {
 				items[i] = jsonArray.get(i);
 			}
 			return items;
-		}
-	};
-
-	public static ResponseHandler<JsonElement> jsonResponseHandler = new ResponseHandler<JsonElement>() {
-		@Override
-		public JsonElement handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
-			if(!"application/json".equals(contentType)) {
-				return null;
-			}
-			return Serialisation.gsonParser.parse(new String(body, StandardCharsets.UTF_8));
 		}
 	};
 

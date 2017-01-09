@@ -152,48 +152,34 @@ public class AblyRest {
 	}
 
 	/**
-	 * Make a generic HTTP request for a collection of the given type
-	 * @param params query options: see Ably REST API documentation
-	 * for available options
-	 * @return a PaginatedResult of Stats records for the requested params
-	 * @throws AblyException
+	 * Make a generic HTTP request against an endpoint representing a collection
+	 * of some type; this is to provide a forward compatibility path for new APIs.
+	 * @param method: the HTTP method to use (see constants in io.ably.lib.http.Http)
+	 * @param path: the path component of the resource URI
+	 * @param params (optional; may be null): any parameters to send with the request; see API-specific documentation
+	 * @param body (optional; may be null): an instance of RequestBody; either a JSONRequestBody or ByteArrayRequestBody
+	 * @param headers (optional; may be null): any additional headers to send; see API-specific documentation
+	 * @return a page of results, each represented as a JsonElement
+	 * @throws AblyException if it was not possible to complete the request, or an error response was received
 	 */
-	public PaginatedResult<JsonElement> paginatedRequest(String method, String path, Param[] params, RequestBody body, Param[] headers) throws AblyException {
+	public PaginatedResult<JsonElement> request(String method, String path, Param[] params, RequestBody body, Param[] headers) throws AblyException {
 		headers = HttpUtils.mergeHeaders(HttpUtils.defaultAcceptHeaders(false), headers);
 		return new PaginatedQuery<JsonElement>(http, path, headers, params, body, HttpUtils.jsonArrayResponseHandler).exec(method);
 	}
 
 	/**
-	 * Asynchronously obtain usage statistics for this application using the REST API.
-	 * @param params: the request params. See the Ably REST API
-	 * @param callback
-	 * @return
+	 * Make an async generic HTTP request against an endpoint representing a collection
+	 * of some type; this is to provide a forward compatibility path for new APIs.
+	 * @param method: the HTTP method to use (see constants in io.ably.lib.http.Http)
+	 * @param path: the path component of the resource URI
+	 * @param params (optional; may be null): any parameters to send with the request; see API-specific documentation
+	 * @param body (optional; may be null): an instance of RequestBody; either a JSONRequestBody or ByteArrayRequestBody
+	 * @param headers (optional; may be null): any additional headers to send; see API-specific documentation
+	 * @param callback: called with the asynchronous result
 	 */
-	public void paginatedRequestAsync(String method, String path, Param[] params, RequestBody body, Param[] headers, Callback<AsyncPaginatedResult<JsonElement>> callback)  {
+	public void requestAsync(String method, String path, Param[] params, RequestBody body, Param[] headers, Callback<AsyncPaginatedResult<JsonElement>> callback)  {
 		headers = HttpUtils.mergeHeaders(HttpUtils.defaultAcceptHeaders(false), headers);
 		(new AsyncPaginatedQuery<JsonElement>(asyncHttp, path, headers, params, body, HttpUtils.jsonArrayResponseHandler)).exec(method, callback);
-	}
-
-	/**
-	 * Make a generic HTTP request for a collection of JsonElements
-	 * @param params query options: see Ably REST API documentation
-	 * for available options
-	 * @return a PaginatedResult of JsonElement records for the requested params
-	 * @throws AblyException
-	 */
-	public JsonElement request(String method, String path, Param[] params, RequestBody body, Param[] headers) throws AblyException {
-		headers = HttpUtils.mergeHeaders(HttpUtils.defaultAcceptHeaders(false), headers);
-		return http.exec(path, method, headers, params, body, HttpUtils.jsonResponseHandler);
-	}
-
-	/**
-	 * Asynchronously make a generic HTTP request for a JsonElement
-	 * @param params: the request params. See the Ably REST API
-	 * @param callback
-	 */
-	public void requestAsync(String method, String path, Param[] params, RequestBody requestBody, Param[] headers, Callback<JsonElement> callback)  {
-		headers = HttpUtils.mergeHeaders(HttpUtils.defaultAcceptHeaders(false), headers);
-		asyncHttp.exec(path, method, headers, params, requestBody, HttpUtils.jsonResponseHandler, callback);
 	}
 
 	/**
