@@ -18,6 +18,8 @@ import java.util.Map;
 
 import com.google.gson.JsonParseException;
 
+import io.ably.lib.debug.DebugOptions;
+import io.ably.lib.debug.DebugOptions.RawHttpListener;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.AuthMethod;
 import io.ably.lib.transport.Defaults;
@@ -87,13 +89,13 @@ public class Http {
 	/**
 	 * A type encapsulating an http response
 	 */
-	private static class Response {
-		int statusCode;
-		String statusLine;
-		Map<String,List<String>> headers;
-		String contentType;
-		int contentLength;
-		byte[] body;
+	public static class Response {
+		public int statusCode;
+		public String statusLine;
+		public Map<String,List<String>> headers;
+		public String contentType;
+		public int contentLength;
+		public byte[] body;
 
 		/**
 		 * Returns the value of the named header field.
@@ -429,12 +431,15 @@ public class Http {
 	<T> T httpExecute(HttpURLConnection conn, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, boolean withProxyCredentials, ResponseHandler<T> responseHandler) throws AblyException {
 		Response response;
 		boolean credentialsIncluded = false;
+		RawHttpListener rawHttpListener = null;
+		String id = null;
 		try {
 			/* prepare connection */
 			conn.setRequestMethod(method);
 			conn.setConnectTimeout(options.httpOpenTimeout);
 			conn.setReadTimeout(options.httpRequestTimeout);
 			conn.setDoInput(true);
+
 			if(withCredentials && authHeader != null) {
 				conn.setRequestProperty(AUTHORIZATION, authHeader);
 				credentialsIncluded = true;
@@ -457,24 +462,45 @@ public class Http {
 			conn.setRequestProperty(HttpUtils.X_ABLY_VERSION_HEADER, HttpUtils.X_ABLY_VERSION_VALUE);
 			conn.setRequestProperty(HttpUtils.X_ABLY_LIB_HEADER, HttpUtils.X_ABLY_LIB_VALUE);
 
+			/* prepare request body */
+			byte[] body = null;
+			if(requestBody != null) {
+				body = prepareRequestBody(requestBody, conn);
+				if (Log.level <= Log.VERBOSE)
+					Log.v(TAG, System.lineSeparator() + new String(body));
+			}
+
+			/* log raw request details */
+			Map<String, List<String>> requestProperties = conn.getRequestProperties();
 			if (Log.level <= Log.VERBOSE) {
 				Log.v(TAG, "HTTP request: " + conn.getURL() + " " + method);
 				if (credentialsIncluded)
 					Log.v(TAG, "  " + AUTHORIZATION + ": " + authHeader);
-				Map<String, List<String>> props = conn.getRequestProperties();
-				for (Map.Entry<String, List<String>> entry : props.entrySet())
+				for (Map.Entry<String, List<String>> entry : requestProperties.entrySet())
 					for (String val : entry.getValue())
 						Log.v(TAG, "  " + entry.getKey() + ": " + val);
 			}
-			/* send request body */
-			if(requestBody != null) {
-				writeRequestBody(requestBody, conn);
-				if (Log.level <= Log.VERBOSE)
-					Log.v(TAG, System.lineSeparator() + new String(requestBody.getEncoded()));
+
+			if(options instanceof DebugOptions) {
+				rawHttpListener = ((DebugOptions)options).httpListener;
+				if(rawHttpListener != null) {
+					id = String.valueOf(Math.random()).substring(2);
+					rawHttpListener.onRawHttpRequest(id, conn, method, (credentialsIncluded ? authHeader : null), requestProperties, requestBody);
+				}
 			}
 
+			/* send request body */
+			if(requestBody != null) {
+				writeRequestBody(body, conn);
+			}
 			response = readResponse(conn);
+			if(rawHttpListener != null) {
+				rawHttpListener.onRawHttpResponse(id, response);
+			}
 		} catch(IOException ioe) {
+			if(rawHttpListener != null) {
+				rawHttpListener.onRawHttpException(id, ioe);
+			}
 			throw AblyException.fromThrowable(ioe);
 		}
 
@@ -614,18 +640,21 @@ public class Http {
 	 * Emit the request body for an HTTP request
 	 * @param requestBody
 	 * @param conn
+	 * @return body
 	 * @throws IOException
 	 */
-	private void writeRequestBody(RequestBody requestBody, HttpURLConnection conn) throws IOException {
+	private byte[] prepareRequestBody(RequestBody requestBody, HttpURLConnection conn) throws IOException {
 		conn.setDoOutput(true);
 		byte[] body = requestBody.getEncoded();
 		int length = body.length;
 		conn.setFixedLengthStreamingMode(length);
 		conn.setRequestProperty(CONTENT_TYPE, requestBody.getContentType());
 		conn.setRequestProperty(CONTENT_LENGTH, Integer.toString(length));
+		return body;
+	}
+
+	private void writeRequestBody(byte[] body, HttpURLConnection conn) throws IOException {
 		OutputStream os = conn.getOutputStream();
-		if (Log.level <= Log.VERBOSE)
-			Log.v(TAG, System.lineSeparator() + new String(body));
 		os.write(body);
 	}
 
