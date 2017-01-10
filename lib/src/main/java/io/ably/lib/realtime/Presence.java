@@ -679,7 +679,7 @@ public class Presence {
 		 * false if the message is already superseded
 		 */
 		synchronized boolean put(PresenceMessage item) {
-			String key = memberKey(item);
+			String key = item.memberKey();
 			/* we've seen this member, so do not remove it at the end of sync */
 			if(residualMembers != null)
 				residualMembers.remove(key);
@@ -775,7 +775,7 @@ public class Presence {
 		 * @return
 		 */
 		synchronized boolean remove(PresenceMessage item) {
-			String key = memberKey(item);
+			String key = item.memberKey();
 			PresenceMessage existingItem = members.remove(key);
 			if(existingItem != null && existingItem.action == PresenceMessage.Action.absent)
 				return false;
@@ -821,15 +821,6 @@ public class Presence {
 				syncInProgress = false;
 			}
 			notifyAll();
-		}
-
-		/**
-		 * Get the member key for a given PresenceMessage.
-		 * @param message
-		 * @return
-		 */
-		private String memberKey(PresenceMessage message) {
-			return message.connectionId + ':' + message.clientId;
 		}
 
 		/**

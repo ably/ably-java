@@ -2087,13 +2087,15 @@ public class RealtimePresenceTest extends ParameterizedTest {
 						action = Action.update;
 						connectionId = "2";
 						id = "2:2:1";
+						timestamp = 1;
 					}},
-					/* Shouldn't pass newness test because of message serial */
+					/* Shouldn't pass newness test because of message serial, timestamp doesn't matter in this case */
 					new PresenceMessage() {{
 						clientId = "2";
 						action = Action.update;
 						connectionId = "2";
 						id = "2:1:1";
+						timestamp = 2;
 						data = wontPass;
 					}},
 					/* Shouldn't pass because of message index */
