@@ -45,9 +45,9 @@ public class RestRequestTest extends ParameterizedTest {
 	public void setUpBefore() throws Exception {
 		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 		setupAbly = new AblyRest(opts);
-		channelNamePrefix = "persisted:rest_request_";
-		channelName = "persisted:rest_request_test_" + testParams.name;
-		channelAltName = "persisted:rest_request_alt_" + testParams.name;
+		channelNamePrefix = "persisted:rest_request_" + testParams.name;
+		channelName = channelNamePrefix + "_channel";
+		channelAltName = channelNamePrefix + "_alt_channel";
 		channelsPath = "/channels";
 		channelPath = channelsPath + "/" + channelName;
 		channelMessagesPath = channelPath + "/messages";
@@ -188,6 +188,12 @@ public class RestRequestTest extends ParameterizedTest {
 			for(int i = 0; i < items.length; i++) {
 				assertTrue("Verify id member is a matching channelName", items[i].getAsJsonObject().get("id").getAsString().startsWith(channelNamePrefix));
 			}
+			/* check that there is either no next link, or no results from it */
+			if(channels.hasNext()) {
+				channels = channels.next();
+				items = channels.items();
+				assertEquals("Verify no further channels are returned", items.length, 0);
+			}
 		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("request_simple: Unexpected exception");
@@ -217,7 +223,24 @@ public class RestRequestTest extends ParameterizedTest {
 					for(int i = 0; i < items.length; i++) {
 						waiter.assertTrue(items[i].getAsJsonObject().get("id").getAsString().startsWith(channelNamePrefix));
 					}
-					waiter.resume();
+					/* check that there is either no next link, or no results from it */
+					if(!result.hasNext()) {
+						waiter.resume();
+						return;
+					}
+					result.next(new Callback<AsyncPaginatedResult<JsonElement>>() {
+						@Override
+						public void onSuccess(AsyncPaginatedResult<JsonElement> result) {
+							JsonElement[] items = result.items();
+							assertEquals("Verify no further channels are returned", items.length, 0);
+							waiter.resume();
+						}
+						@Override
+						public void onError(ErrorInfo reason) {
+							waiter.fail("request_paginated_async: Unexpected exception");
+							waiter.resume();
+						}
+					});
 				}
 				@Override
 				public void onError(ErrorInfo reason) {
@@ -262,9 +285,15 @@ public class RestRequestTest extends ParameterizedTest {
 			channels = channels.next();
 			assertNotNull("Verify a result is returned", channels);
 			items = channels.items();
-			assertTrue("Verify one channels is returned", items.length == 1);
+			assertTrue("Verify one channel is returned", items.length == 1);
 			for(int i = 0; i < items.length; i++) {
 				assertTrue("Verify id member is a matching channelName", items[i].getAsJsonObject().get("id").getAsString().startsWith(channelNamePrefix));
+			}
+			/* check that there is either no next link, or no results from it */
+			if(channels.hasNext()) {
+				channels = channels.next();
+				items = channels.items();
+				assertEquals("Verify no further channels are returned", items.length, 0);
 			}
 		} catch(AblyException e) {
 			e.printStackTrace();
@@ -306,18 +335,35 @@ public class RestRequestTest extends ParameterizedTest {
 							for(int i = 0; i < items.length; i++) {
 								waiter.assertTrue(items[i].getAsJsonObject().get("id").getAsString().startsWith(channelNamePrefix));
 							}
-							waiter.resume();
+							/* check that there is either no next link, or no results from it */
+							if(!result.hasNext()) {
+								waiter.resume();
+								return;
+							}
+							result.next(new Callback<AsyncPaginatedResult<JsonElement>>() {
+								@Override
+								public void onSuccess(AsyncPaginatedResult<JsonElement> result) {
+									JsonElement[] items = result.items();
+									assertEquals("Verify no further channels are returned", items.length, 0);
+									waiter.resume();
+								}
+								@Override
+								public void onError(ErrorInfo reason) {
+									waiter.fail("request_paginated_async_limit: Unexpected exception");
+									waiter.resume();
+								}
+							});
 						}
 						@Override
 						public void onError(ErrorInfo reason) {
-							waiter.fail("request_paginated_async: Unexpected exception");
+							waiter.fail("request_paginated_async_limit: Unexpected exception");
 							waiter.resume();
 						}
 					});
 				}
 				@Override
 				public void onError(ErrorInfo reason) {
-					waiter.fail("request_paginated_async: Unexpected exception");
+					waiter.fail("request_paginated_async_limit: Unexpected exception");
 					waiter.resume();
 				}
 			});
