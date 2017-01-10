@@ -10,4 +10,5 @@ dependencies {
   testCompile 'org.nanohttpd:nanohttpd-nanolets:2.2.0'
   testCompile 'org.nanohttpd:nanohttpd-websocket:2.2.0'
   testCompile 'org.mockito:mockito-core:1.10.19'
+  testCompile 'net.jodah:concurrentunit:0.4.2'
 }
