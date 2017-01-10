@@ -1,6 +1,5 @@
 package io.ably.lib.test.util;
 
-import io.ably.lib.test.realtime.RealtimeChannelTest;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ITransport;
 import io.ably.lib.transport.WebSocketTransport;
