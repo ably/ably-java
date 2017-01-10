@@ -1,6 +1,7 @@
 package io.ably.lib.http;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -72,6 +73,26 @@ public class HttpUtils {
 			}
 		}
 		return builder.toString();
+	}
+
+	public static Map<String, String> decodeParams(String query) {
+	    Map<String, String> params = new HashMap<String, String>();
+	    String[] pairs = query.split("&");
+        try {
+		    for (String pair : pairs) {
+		        int idx = pair.indexOf('=');
+				params.put(URLDecoder.decode(pair.substring(0, idx), "UTF-8"), URLDecoder.decode(pair.substring(idx + 1), "UTF-8"));
+			}
+        } catch (UnsupportedEncodingException e) {}
+	    return params;
+	}
+
+	public static Map<String, String> indexParams(Param[] paramArray) {
+	    Map<String, String> params = new HashMap<String, String>();
+	    for (Param param : paramArray) {
+			params.put(param.key, param.value);
+		}
+	    return params;
 	}
 
 	public static String encodeURIComponent(String input) {
