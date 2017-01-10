@@ -15,6 +15,7 @@ import io.ably.lib.test.common.Setup;
 @SuiteClasses({
 	HttpTest.class,
 	HttpHeaderTest.class,
+	RestRequestTest.class,
 	RestAppStatsTest.class,
 	RestInitTest.class,
 	RestTimeTest.class,

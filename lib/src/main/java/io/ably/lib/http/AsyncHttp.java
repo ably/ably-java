@@ -11,7 +11,6 @@ import java.util.concurrent.TimeoutException;
 
 import io.ably.lib.http.Http.RequestBody;
 import io.ably.lib.http.Http.ResponseHandler;
-import io.ably.lib.transport.Hosts;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
@@ -30,6 +29,19 @@ public class AsyncHttp extends ThreadPoolExecutor {
 	 */
 	public <T> Future<T> get(String path, Param[] headers, Param[] params, ResponseHandler<T> responseHandler, Callback<T> callback) {
 		return ablyHttpExecuteWithFallback(path, Http.GET, headers, params, null, responseHandler, callback);
+	}
+
+	/**
+	 * Async HTTP PUT for Ably host, with fallbacks
+	 * @param path
+	 * @param headers
+	 * @param params
+	 * @param requestBody
+	 * @param responseHandler
+	 * @param callback
+	 */
+	public <T> Future<T> put(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler, Callback<T> callback) {
+		return ablyHttpExecuteWithFallback(path, Http.PUT, headers, params, requestBody, responseHandler, callback);
 	}
 
 	/**
@@ -55,6 +67,20 @@ public class AsyncHttp extends ThreadPoolExecutor {
 	 */
 	public <T> Future<T> del(String path, Param[] headers, Param[] params, ResponseHandler<T> responseHandler, Callback<T> callback) {
 		return ablyHttpExecuteWithFallback(path, Http.DELETE, headers, params, null, responseHandler, callback);
+	}
+
+	/**
+	 * Async HTTP request for Ably host, with fallbacks
+	 * @param path
+	 * @param method
+	 * @param headers
+	 * @param params
+	 * @param requestBody
+	 * @param responseHandler
+	 * @param callback
+	 */
+	public <T> Future<T> exec(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler, Callback<T> callback) {
+		return ablyHttpExecuteWithFallback(path, method, headers, params, requestBody, responseHandler, callback);
 	}
 
 	/**************************
@@ -352,7 +378,7 @@ public class AsyncHttp extends ThreadPoolExecutor {
 			final ResponseHandler<T> responseHandler,
 			final Callback<T> callback) {
 
-		AblyRequestWithFallback<T> request = new AblyRequestWithFallback<>(path, method, headers, null, requestBody, responseHandler, callback);
+		AblyRequestWithFallback<T> request = new AblyRequestWithFallback<>(path, method, headers, params, requestBody, responseHandler, callback);
 		execute(request);
 		return request;
 	}
@@ -379,7 +405,7 @@ public class AsyncHttp extends ThreadPoolExecutor {
 			final ResponseHandler<T> responseHandler,
 			final Callback<T> callback) {
 
-		AblyRequestWithRetry<T> request = new AblyRequestWithRetry<>(host, path, method, headers, null, requestBody, responseHandler, callback);
+		AblyRequestWithRetry<T> request = new AblyRequestWithRetry<>(host, path, method, headers, params, requestBody, responseHandler, callback);
 		execute(request);
 		return request;
 	}

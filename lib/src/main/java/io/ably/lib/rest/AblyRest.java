@@ -3,9 +3,12 @@ package io.ably.lib.rest;
 import java.util.Collection;
 import java.util.HashMap;
 
+import com.google.gson.JsonElement;
+
 import io.ably.lib.http.AsyncHttp;
 import io.ably.lib.http.AsyncPaginatedQuery;
 import io.ably.lib.http.Http;
+import io.ably.lib.http.Http.RequestBody;
 import io.ably.lib.http.Http.ResponseHandler;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
@@ -146,6 +149,37 @@ public class AblyRest {
 	 */
 	public void statsAsync(Param[] params, Callback<AsyncPaginatedResult<Stats>> callback)  {
 		(new AsyncPaginatedQuery<Stats>(asyncHttp, "/stats", HttpUtils.defaultAcceptHeaders(false), params, StatsReader.statsResponseHandler)).get(callback);
+	}
+
+	/**
+	 * Make a generic HTTP request against an endpoint representing a collection
+	 * of some type; this is to provide a forward compatibility path for new APIs.
+	 * @param method: the HTTP method to use (see constants in io.ably.lib.http.Http)
+	 * @param path: the path component of the resource URI
+	 * @param params (optional; may be null): any parameters to send with the request; see API-specific documentation
+	 * @param body (optional; may be null): an instance of RequestBody; either a JSONRequestBody or ByteArrayRequestBody
+	 * @param headers (optional; may be null): any additional headers to send; see API-specific documentation
+	 * @return a page of results, each represented as a JsonElement
+	 * @throws AblyException if it was not possible to complete the request, or an error response was received
+	 */
+	public PaginatedResult<JsonElement> request(String method, String path, Param[] params, RequestBody body, Param[] headers) throws AblyException {
+		headers = HttpUtils.mergeHeaders(HttpUtils.defaultAcceptHeaders(false), headers);
+		return new PaginatedQuery<JsonElement>(http, path, headers, params, body, HttpUtils.jsonArrayResponseHandler).exec(method);
+	}
+
+	/**
+	 * Make an async generic HTTP request against an endpoint representing a collection
+	 * of some type; this is to provide a forward compatibility path for new APIs.
+	 * @param method: the HTTP method to use (see constants in io.ably.lib.http.Http)
+	 * @param path: the path component of the resource URI
+	 * @param params (optional; may be null): any parameters to send with the request; see API-specific documentation
+	 * @param body (optional; may be null): an instance of RequestBody; either a JSONRequestBody or ByteArrayRequestBody
+	 * @param headers (optional; may be null): any additional headers to send; see API-specific documentation
+	 * @param callback: called with the asynchronous result
+	 */
+	public void requestAsync(String method, String path, Param[] params, RequestBody body, Param[] headers, Callback<AsyncPaginatedResult<JsonElement>> callback)  {
+		headers = HttpUtils.mergeHeaders(HttpUtils.defaultAcceptHeaders(false), headers);
+		(new AsyncPaginatedQuery<JsonElement>(asyncHttp, path, headers, params, body, HttpUtils.jsonArrayResponseHandler)).exec(method, callback);
 	}
 
 	/**

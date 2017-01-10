@@ -1,8 +1,7 @@
 package io.ably.lib.transport;
 
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.debug.RawProtocolListener;
-import io.ably.lib.http.TokenAuth;
+import io.ably.lib.debug.DebugOptions.RawProtocolListener;
 import io.ably.lib.realtime.*;
 import io.ably.lib.transport.ITransport.ConnectListener;
 import io.ably.lib.transport.ITransport.TransportParams;

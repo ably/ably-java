@@ -1,6 +1,7 @@
 package io.ably.lib.http;
 
 import io.ably.lib.http.Http.BodyHandler;
+import io.ably.lib.http.Http.RequestBody;
 import io.ably.lib.http.Http.ResponseHandler;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
@@ -24,7 +25,7 @@ public class PaginatedQuery<T> implements ResponseHandler<PaginatedResult<T>> {
 
 	/**
 	 * Construct a PaginatedQuery
-	 * 
+	 *
 	 * @param http. the http instance
 	 * @param path. the path of the resource being queried
 	 * @param headers. headers to pass into the first and all relative queries
@@ -32,10 +33,24 @@ public class PaginatedQuery<T> implements ResponseHandler<PaginatedResult<T>> {
 	 * @param bodyHandler. handler to parse response bodies for first and all relative queries
 	 */
 	public PaginatedQuery(Http http, String path, Param[] headers, Param[] params, BodyHandler<T> bodyHandler) {
+		this(http, path, headers, params, null, bodyHandler);
+	}
+
+	/**
+	 * Construct a PaginatedQuery
+	 *
+	 * @param http. the http instance
+	 * @param path. the path of the resource being queried
+	 * @param headers. headers to pass into the first and all relative queries
+	 * @param params. params to pass into the initial query
+	 * @param bodyHandler. handler to parse response bodies for first and all relative queries
+	 */
+	public PaginatedQuery(Http http, String path, Param[] headers, Param[] params, RequestBody requestBody, BodyHandler<T> bodyHandler) {
 		this.http = http;
 		this.path = path;
 		this.headers = headers;
 		this.params = params;
+		this.requestBody = requestBody;
 		this.bodyHandler = bodyHandler;
 	}
 
@@ -47,6 +62,16 @@ public class PaginatedQuery<T> implements ResponseHandler<PaginatedResult<T>> {
 	 */
 	public PaginatedResult<T> get() throws AblyException {
 		return http.get(path, headers, params, this);
+	}
+
+	/**
+	 * Get the result of the first query
+	 * @return A PaginatedResult<T> giving the first page of results
+	 * together with any available links to related results pages.
+	 * @throws AblyException
+	 */
+	public PaginatedResult<T> exec(String method) throws AblyException {
+		return http.exec(path, method, headers, params, requestBody, this);
 	}
 
 	/**
@@ -145,5 +170,6 @@ public class PaginatedQuery<T> implements ResponseHandler<PaginatedResult<T>> {
 	private String path;
 	private Param[] headers;
 	private Param[] params;
+	private RequestBody requestBody;
 	private BodyHandler<T> bodyHandler;
 }

@@ -1,13 +1,20 @@
 package io.ably.lib.http;
 
 import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Field;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+
 import io.ably.lib.BuildConfig;
+import io.ably.lib.http.Http.BodyHandler;
+import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Param;
+import io.ably.lib.util.Serialisation;
 
 /**
  * HttpUtils: utility methods for Http operations
@@ -42,6 +49,17 @@ public class HttpUtils {
 		return headers;
 	}
 
+	public static Param[] mergeHeaders(Param[] target, Param[] src) {
+		Map<String, Param> merged = new HashMap<String, Param>();
+		if(target != null) {
+			for(Param param : target) { merged.put(param.key, param); }
+		}
+		if(src != null) {
+			for(Param param : src) { merged.put(param.key, param); }
+		}
+		return merged.values().toArray(new Param[merged.size()]);
+	}
+
 	public static String encodeParams(String path, Param[] params) {
 		StringBuilder builder = new StringBuilder(path);
 		if(params != null && params.length > 0) {
@@ -55,6 +73,26 @@ public class HttpUtils {
 			}
 		}
 		return builder.toString();
+	}
+
+	public static Map<String, String> decodeParams(String query) {
+	    Map<String, String> params = new HashMap<String, String>();
+	    String[] pairs = query.split("&");
+        try {
+		    for (String pair : pairs) {
+		        int idx = pair.indexOf('=');
+				params.put(URLDecoder.decode(pair.substring(0, idx), "UTF-8"), URLDecoder.decode(pair.substring(idx + 1), "UTF-8"));
+			}
+        } catch (UnsupportedEncodingException e) {}
+	    return params;
+	}
+
+	public static Map<String, String> indexParams(Param[] paramArray) {
+	    Map<String, String> params = new HashMap<String, String>();
+	    for (Param param : paramArray) {
+			params.put(param.key, param.value);
+		}
+	    return params;
 	}
 
 	public static String encodeURIComponent(String input) {
@@ -71,4 +109,24 @@ public class HttpUtils {
 		} catch (UnsupportedEncodingException e) {}
 		return null;
 	}
+
+	public static BodyHandler<JsonElement> jsonArrayResponseHandler = new BodyHandler<JsonElement>() {
+		@Override
+		public JsonElement[] handleResponseBody(String contentType, byte[] body) throws AblyException {
+			if(!"application/json".equals(contentType)) {
+				return null;
+			}
+			JsonElement jsonBody = Serialisation.gsonParser.parse(new String(body, StandardCharsets.UTF_8));
+			if(!jsonBody.isJsonArray()) {
+				return new JsonElement[] { jsonBody };
+			}
+			JsonArray jsonArray = jsonBody.getAsJsonArray();
+			JsonElement[] items = new JsonElement[jsonArray.size()];
+			for(int i = 0; i < items.length; i++) {
+				items[i] = jsonArray.get(i);
+			}
+			return items;
+		}
+	};
+
 }
