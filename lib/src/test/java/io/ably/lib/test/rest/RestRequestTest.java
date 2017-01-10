@@ -5,6 +5,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.concurrent.TimeoutException;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -26,6 +28,7 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
+import net.jodah.concurrentunit.Waiter;
 
 /* Spec: RSC19 */
 public class RestRequestTest extends ParameterizedTest {
@@ -109,6 +112,7 @@ public class RestRequestTest extends ParameterizedTest {
 	 */
 	@Test
 	public void request_simple_async() {
+		final Waiter waiter = new Waiter();
 		DebugOptions opts;
 		try {
 			opts = new DebugOptions(testVars.keys[0].keyStr);
@@ -122,27 +126,43 @@ public class RestRequestTest extends ParameterizedTest {
 				public void onSuccess(AsyncPaginatedResult<JsonElement> result) {
 
 					/* check it looks like a ChannelDetails */
-					assertNotNull("Verify a result is returned", result);
+					/* Verify a result is returned */
+					waiter.assertNotNull(result);
 					JsonElement[] items = result.items();
-					assertEquals("Verify a single items is returned", items.length, 1);
+					/* Verify a single items is returned */
+					waiter.assertEquals(items.length, 1);
 					JsonElement channelDetails = items[0];
-					assertTrue("Verify an object is returned", channelDetails.isJsonObject());
-					assertTrue("Verify id member is present", channelDetails.getAsJsonObject().has("id"));
-					assertEquals("Verify id member is channelName", channelName, channelDetails.getAsJsonObject().get("id").getAsString());
+					/* Verify an object is returned */
+					waiter.assertTrue(channelDetails.isJsonObject());
+					/* Verify id member is present */
+					waiter.assertTrue(channelDetails.getAsJsonObject().has("id"));
+					/* Verify id member is channelName */
+					waiter.assertEquals(channelName, channelDetails.getAsJsonObject().get("id").getAsString());
 
 					/* check request has expected attributes */
 					RawHttpRequest req = httpListener.values().iterator().next();
 					/* Spec: RSC19b */
-					assertNotNull("Verify Authorization header present", httpListener.getRequestHeader(req.id, "Authorization"));
+					/* Verify Authorization header present */
+					waiter.assertNotNull(httpListener.getRequestHeader(req.id, "Authorization"));
 					/* Spec: RSC19c */
-					assertTrue("Verify Accept header present", httpListener.getRequestHeader(req.id, "Accept").contains("application/json"));
-					assertTrue("Verify Content-Type header present", httpListener.getResponseHeader(req.id, "Content-Type").contains("application/json"));
+					/* Verify Accept header present */
+					waiter.assertTrue(httpListener.getRequestHeader(req.id, "Accept").contains("application/json"));
+					/* Verify Content-Type header present */
+					waiter.assertTrue(httpListener.getResponseHeader(req.id, "Content-Type").contains("application/json"));
+					waiter.resume();
 				}
 				@Override
 				public void onError(ErrorInfo reason) {
-					fail("request_simple_async: Unexpected exception");
+					waiter.fail("request_simple_async: Unexpected exception");
+					waiter.resume();
 				}
 			});
+
+			try {
+				waiter.await(15000);
+			} catch (TimeoutException e) {
+				fail("request_simple_async: Operation timed out");
+			}
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("request_simple_async: Unexpected exception");
@@ -180,6 +200,7 @@ public class RestRequestTest extends ParameterizedTest {
 	 */
 	@Test
 	public void request_paginated_async() {
+		final Waiter waiter = new Waiter();
 		try {
 			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
 			fillInOptions(opts);
@@ -190,18 +211,26 @@ public class RestRequestTest extends ParameterizedTest {
 				@Override
 				public void onSuccess(AsyncPaginatedResult<JsonElement> result) {
 					/* check it looks like an array of ChannelDetails */
-					assertNotNull("Verify a result is returned", result);
+					waiter.assertNotNull(result);
 					JsonElement[] items = result.items();
-					assertTrue("Verify at least two channels are returned", items.length >= 2);
+					waiter.assertTrue(items.length >= 2);
 					for(int i = 0; i < items.length; i++) {
-						assertTrue("Verify id member is a matching channelName", items[i].getAsJsonObject().get("id").getAsString().startsWith(channelNamePrefix));
+						waiter.assertTrue(items[i].getAsJsonObject().get("id").getAsString().startsWith(channelNamePrefix));
 					}
+					waiter.resume();
 				}
 				@Override
 				public void onError(ErrorInfo reason) {
-					fail("request_paginated_async: Unexpected exception");
+					waiter.fail("request_paginated_async: Unexpected exception");
+					waiter.resume();
 				}
 			});
+
+			try {
+				waiter.await(15000);
+			} catch (TimeoutException e) {
+				fail("request_paginated_async: Operation timed out");
+			}
 		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("request_paginated_async: Unexpected exception");
@@ -250,6 +279,7 @@ public class RestRequestTest extends ParameterizedTest {
 	 */
 	@Test
 	public void request_paginated_async_limit() {
+		final Waiter waiter = new Waiter();
 		try {
 			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
 			fillInOptions(opts);
@@ -260,34 +290,43 @@ public class RestRequestTest extends ParameterizedTest {
 				@Override
 				public void onSuccess(AsyncPaginatedResult<JsonElement> result) {
 					/* check it looks like an array of ChannelDetails */
-					assertNotNull("Verify a result is returned", result);
+					waiter.assertNotNull(result);
 					JsonElement[] items = result.items();
-					assertTrue("Verify one channel is returned", items.length == 1);
+					waiter.assertTrue(items.length == 1);
 					for(int i = 0; i < items.length; i++) {
-						assertTrue("Verify id member is a matching channelName", items[i].getAsJsonObject().get("id").getAsString().startsWith(channelNamePrefix));
+						waiter.assertTrue(items[i].getAsJsonObject().get("id").getAsString().startsWith(channelNamePrefix));
 					}
 					result.next(new Callback<AsyncPaginatedResult<JsonElement>>() {
 						@Override
 						public void onSuccess(AsyncPaginatedResult<JsonElement> result) {
 							/* check it looks like an array of ChannelDetails */
-							assertNotNull("Verify a result is returned", result);
+							waiter.assertNotNull(result);
 							JsonElement[] items = result.items();
-							assertTrue("Verify one channel is returned", items.length == 1);
+							waiter.assertTrue(items.length == 1);
 							for(int i = 0; i < items.length; i++) {
-								assertTrue("Verify id member is a matching channelName", items[i].getAsJsonObject().get("id").getAsString().startsWith(channelNamePrefix));
+								waiter.assertTrue(items[i].getAsJsonObject().get("id").getAsString().startsWith(channelNamePrefix));
 							}
+							waiter.resume();
 						}
 						@Override
 						public void onError(ErrorInfo reason) {
-							fail("request_paginated_async: Unexpected exception");
+							waiter.fail("request_paginated_async: Unexpected exception");
+							waiter.resume();
 						}
 					});
 				}
 				@Override
 				public void onError(ErrorInfo reason) {
-					fail("request_paginated_async: Unexpected exception");
+					waiter.fail("request_paginated_async: Unexpected exception");
+					waiter.resume();
 				}
 			});
+
+			try {
+				waiter.await(15000);
+			} catch (TimeoutException e) {
+				fail("request_paginated_async: Operation timed out");
+			}
 		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("request_paginated_async_limit: Unexpected exception");
@@ -346,6 +385,7 @@ public class RestRequestTest extends ParameterizedTest {
 	 */
 	@Test
 	public void request_post_async() {
+		final Waiter waiter = new Waiter();
 		final String messageData = "Test data (request_post_async)";
 		DebugOptions opts;
 		try {
@@ -371,28 +411,37 @@ public class RestRequestTest extends ParameterizedTest {
 						resultPage = setupAbly.channels.get(channelName).history(params);
 
 						/* check it looks like a result page */
-						assertNotNull("Verify a result is returned", resultPage);
-						assertTrue("Verify an single message is returned", resultPage.items().length == 1);
-						assertEquals("Verify returned message was the one posted", messageData, resultPage.items()[0].data);
+						waiter.assertNotNull(resultPage);
+						waiter.assertTrue(resultPage.items().length == 1);
+						waiter.assertEquals(messageData, resultPage.items()[0].data);
 
 						/* check request has expected attributes */
 						RawHttpRequest req = httpListener.values().iterator().next();
 						/* Spec: RSC19b */
-						assertNotNull("Verify Authorization header present", httpListener.getRequestHeader(req.id, "Authorization"));
+						waiter.assertNotNull(httpListener.getRequestHeader(req.id, "Authorization"));
 						/* Spec: RSC19c */
-						assertEquals("Verify Accept header present", httpListener.getRequestHeader(req.id, "Accept"), "application/json");
-						assertEquals("Verify Content-Type header present", httpListener.getRequestHeader(req.id, "Content-Type"), "application/json");
-						assertTrue("Verify Content-Type header present", httpListener.getResponseHeader(req.id, "Content-Type").contains("application/json"));
+						waiter.assertTrue(httpListener.getRequestHeader(req.id, "Accept").contains("application/json"));
+						waiter.assertTrue(httpListener.getRequestHeader(req.id, "Content-Type").contains("application/json"));
+						waiter.assertTrue(httpListener.getResponseHeader(req.id, "Content-Type").contains("application/json"));
+						waiter.resume();
 					} catch (AblyException e) {
 						e.printStackTrace();
-						fail("request_post_async: Unexpected exception");
+						waiter.fail("request_post_async: Unexpected exception");
+						waiter.resume();
 					}
 				}
 				@Override
 				public void onError(ErrorInfo reason) {
-					fail("request_post_async: Unexpected exception");
+					waiter.fail("request_post_async: Unexpected exception");
+					waiter.resume();
 				}
 			});
+
+			try {
+				waiter.await(15000);
+			} catch (TimeoutException e) {
+				fail("request_paginated_async: Operation timed out");
+			}
 		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("request_post_async: Unexpected exception");
@@ -426,6 +475,7 @@ public class RestRequestTest extends ParameterizedTest {
 	@Test
 	public void request_404_async() {
 		try {
+			final Waiter waiter = new Waiter();
 			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
 			fillInOptions(opts);
 			AblyRest ably = new AblyRest(opts);
@@ -433,13 +483,21 @@ public class RestRequestTest extends ParameterizedTest {
 			ably.requestAsync(Http.GET, "/non-existent-path", null, null, null, new Callback<AsyncPaginatedResult<JsonElement>>() {
 				@Override
 				public void onSuccess(AsyncPaginatedResult<JsonElement> result) {
-					fail("request_404_async: Expected an error");
+					waiter.fail("request_404_async: Expected an error");
+					waiter.resume();
 				}
 				@Override
 				public void onError(ErrorInfo reason) {
-					assertEquals("Verify expected status code in error response", reason.statusCode, 404);
+					waiter.assertEquals(reason.statusCode, 404);
+					waiter.resume();
 				}
 			});
+
+			try {
+				waiter.await(15000);
+			} catch (TimeoutException e) {
+				fail("request_404_async: Operation timed out");
+			}
 		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("request_404_async: Unexpected exception");
