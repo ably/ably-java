@@ -50,10 +50,10 @@ public class HttpHeaderTest extends ParameterizedTest {
 	 * should be included in all REST requests to the Ably endpoint
 	 * see {@link io.ably.lib.http.HttpUtils#X_ABLY_LIB_VALUE}
 	 * <p>
-	 * Spec: RSC7b
+	 * Spec: RSC7b, G4
 	 * </p>
 	 *
-	 * Spec: RSC7a: Must have the header X-Ably-Version: 0.8 (or whatever the
+	 * Spec: RSC7a: Must have the header X-Ably-Version: 0.9 (or whatever the
 	 * spec version is).
 	 */
 	@Test
