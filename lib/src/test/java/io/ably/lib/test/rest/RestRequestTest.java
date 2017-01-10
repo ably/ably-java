@@ -14,7 +14,7 @@ import com.google.gson.JsonElement;
 
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.http.Http;
-import io.ably.lib.http.Http.JSONRequestBody;
+import io.ably.lib.http.Http.JsonRequestBody;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Channel;
 import io.ably.lib.test.common.Helpers.RawHttpRequest;
@@ -350,7 +350,7 @@ public class RestRequestTest extends ParameterizedTest {
 
 			/* publish a message */
 			Message message = new Message("Test event", messageData);
-			JSONRequestBody requestBody = new JSONRequestBody(message);
+			JsonRequestBody requestBody = new JsonRequestBody(message);
 			ably.request(Http.POST, channelMessagesPath, null, requestBody, null);
 			RawHttpRequest req = httpListener.getLastRequest();
 
@@ -397,7 +397,7 @@ public class RestRequestTest extends ParameterizedTest {
 
 			/* publish a message */
 			Message message = new Message("Test event", messageData);
-			JSONRequestBody requestBody = new JSONRequestBody(message);
+			JsonRequestBody requestBody = new JsonRequestBody(message);
 			ably.requestAsync(Http.POST, channelMessagesPath, null, requestBody, null, new Callback<AsyncPaginatedResult<JsonElement>>() {
 				@Override
 				public void onSuccess(AsyncPaginatedResult<JsonElement> result) {
