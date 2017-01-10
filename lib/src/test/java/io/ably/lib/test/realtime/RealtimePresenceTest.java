@@ -2302,4 +2302,117 @@ public class RealtimePresenceTest extends ParameterizedTest {
 		}
 	}
 
+	/**
+	 * Test if presence sync works as it should
+	 * Tests RTP18a, RTP18b, RTP2f
+	 */
+	@Test
+	public void presence_sync() {
+		AblyRealtime ably = null;
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+
+			final String channelName = "presence_sync_test";
+
+			final Channel channel = ably.channels.get(channelName);
+			channel.attach();
+			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+			channelWaiter.waitFor(ChannelState.attached);
+
+			final PresenceMessage[] testPresence1 = new PresenceMessage[] {
+					/* Will be discarded because we'll start new sync with different channelSerial */
+					new PresenceMessage() {{
+						clientId = "1";
+						action = Action.enter;
+						connectionId = "1";
+						id = "1:0";
+					}}
+			};
+
+			final PresenceMessage[] testPresence2 = new PresenceMessage[] {
+					new PresenceMessage() {{
+						clientId = "2";
+						action = Action.enter;
+						connectionId = "2";
+						id = "2:1:0";
+					}},
+					/* Enter presence message here is newer than leave in the subsequent message */
+					new PresenceMessage() {{
+						clientId = "3";
+						action = Action.enter;
+						connectionId = "3";
+						id = "3:1:0";
+					}}
+			};
+
+			final PresenceMessage[] testPresence3 = new PresenceMessage[] {
+					new PresenceMessage() {{
+						clientId = "3";
+						action = Action.leave;
+						connectionId = "3";
+						id = "3:0:0";
+					}},
+					new PresenceMessage() {{
+						clientId = "4";
+						action = Action.enter;
+						connectionId = "4";
+						id = "4:1:1";
+					}},
+					new PresenceMessage() {{
+						clientId = "4";
+						action = Action.leave;
+						connectionId = "4";
+						id = "4:2:2";
+					}}
+			};
+
+			channel.presence.subscribe(Action.leave, new Presence.PresenceListener() {
+				@Override
+				public void onPresenceMessage(PresenceMessage message) {
+					try {
+						if (message.clientId.equals("4") && message.action == Action.leave)
+							assertEquals("Verify LEAVE message is recorded as ABSENT during sync",
+									channel.presence.get("4", false)[0].action, Action.absent);
+					} catch (InterruptedException|AblyException e) {}
+				}
+			});
+
+			ably.connection.connectionManager.onMessage(null, new ProtocolMessage() {{
+				action = Action.sync;
+				channel = channelName;
+				channelSerial = "1:1";
+				presence = testPresence1;
+			}});
+			ably.connection.connectionManager.onMessage(null, new ProtocolMessage() {{
+				action = Action.sync;
+				channel = channelName;
+				channelSerial = "2:1";
+				presence = testPresence2;
+			}});
+			ably.connection.connectionManager.onMessage(null, new ProtocolMessage() {{
+				action = Action.sync;
+				channel = channelName;
+				channelSerial = "2:";
+				presence = testPresence3;
+			}});
+
+			PresenceMessage[] resultingPresence = null;
+			try {
+				assertEquals("Verify incomplete sync was discarded", channel.presence.get("1", false).length, 0);
+				assertEquals("Verify client with id==2 is in presence map", channel.presence.get("2", false).length, 1);
+				assertEquals("Verify client with id==3 is in presence map", channel.presence.get("3", false).length, 1);
+				assertEquals("Verify nothing else is in presence map", channel.presence.get(false).length, 2);
+			} catch (InterruptedException e) {}
+
+
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("Unexpected exception running test: " + e.getMessage());
+		} finally {
+			if (ably != null)
+				ably.close();
+		}
+	}
+
 }

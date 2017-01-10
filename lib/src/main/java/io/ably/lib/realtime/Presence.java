@@ -13,14 +13,7 @@ import io.ably.lib.types.PresenceSerializer;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
 
-import java.util.Collection;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A class that provides access to presence operations and state for the
@@ -178,13 +171,29 @@ public class Presence {
 	 *
 	 */
 
+	/* End sync and emit leave messages for residual members */
+	void endSyncAndEmitLeaves() {
+		currentSyncChannelSerial = null;
+		List<PresenceMessage> residualMembers = presence.endSync();
+		for (PresenceMessage member: residualMembers)
+			member.action = PresenceMessage.Action.leave;
+		broadcastPresence(residualMembers.toArray(new PresenceMessage[residualMembers.size()]));
+	}
+
 	void setPresence(PresenceMessage[] messages, boolean broadcast, String syncChannelSerial) {
 		Log.v(TAG, "setPresence(); channel = " + channel.name + "; broadcast = " + broadcast + "; syncChannelSerial = " + syncChannelSerial);
 		String syncCursor = null;
 		if(syncChannelSerial != null) {
-			syncCursor = syncChannelSerial.substring(syncChannelSerial.indexOf(':'));
-			if(syncCursor.length() > 1)
+			int colonPos = syncChannelSerial.indexOf(':');
+			String serial = colonPos >= 0 ? syncChannelSerial.substring(0, colonPos) : syncChannelSerial;
+			/* Discard incomplete sync if serial has changed */
+			if (presence.syncInProgress && currentSyncChannelSerial != null && !currentSyncChannelSerial.equals(serial))
+				endSyncAndEmitLeaves();
+			syncCursor = syncChannelSerial.substring(colonPos);
+			if(syncCursor.length() > 1) {
 				presence.startSync();
+				currentSyncChannelSerial = serial;
+			}
 		}
 		for(PresenceMessage update : messages) {
 			boolean updateInternalPresence = update.connectionId.equals(channel.ably.connection.id);
@@ -219,7 +228,7 @@ public class Presence {
 
 		/* if this is the last message in a sequence of sync updates, end the sync */
 		if(syncChannelSerial == null || syncCursor.length() <= 1) {
-			presence.endSync();
+			endSyncAndEmitLeaves();
 			/**
 			 * (RTP5c2) If a SYNC is initiated as part of the attach, then once the SYNC is complete,
 			 * all members not present in the PresenceMap but present in the internal PresenceMap must
@@ -607,12 +616,10 @@ public class Presence {
 	 * attach / detach
 	 ************************************/
 
-	void setAttached() {
-		/**
-		 * Channel calls awaitSync() before setAttached() if the corresponding flag in message is set.
-		 * We use side effect of awaitSync() call to determine if sync is requested on attach
-		 */
-		syncAsResultOfAttach = presence.syncInProgress;
+	void setAttached(boolean hasPresence) {
+		if (hasPresence)
+			awaitSync();
+		syncAsResultOfAttach = hasPresence;
 		sendQueuedMessages();
 	}
 
@@ -776,6 +783,8 @@ public class Presence {
 		 */
 		synchronized boolean remove(PresenceMessage item) {
 			String key = item.memberKey();
+			if (hasNewerItem(key, item))
+				return false;
 			PresenceMessage existingItem = members.remove(key);
 			if(existingItem != null && existingItem.action == PresenceMessage.Action.absent)
 				return false;
@@ -797,10 +806,11 @@ public class Presence {
 		}
 
 		/**
-		 * Finish a sync sequence.
+		 * Finish a sync sequence. Returns "residual" items that were removed as a part of a sync
 		 */
-		synchronized void endSync() {
+		synchronized List<PresenceMessage> endSync() {
 			Log.v(TAG, "endSync(); channel = " + channel.name + "; syncInProgress = " + syncInProgress);
+			ArrayList<PresenceMessage> removedEntries = new ArrayList<>();
 			if(syncInProgress) {
 				/* we can now strip out the absent members, as we have
 				 * received all of the out-of-order sync messages */
@@ -812,8 +822,9 @@ public class Presence {
 				}
 				/* any members that were present at the start of the sync,
 				 * and have not been seen in sync, can be removed */
-				for(Iterator<String> it = residualMembers.iterator(); it.hasNext();) {
-					members.remove(it.next());
+				for(String itemKey: residualMembers) {
+					removedEntries.add(members.get(itemKey));
+					members.remove(itemKey);
 				}
 				residualMembers = null;
 	
@@ -821,6 +832,7 @@ public class Presence {
 				syncInProgress = false;
 			}
 			notifyAll();
+			return removedEntries;
 		}
 
 		/**
@@ -854,6 +866,8 @@ public class Presence {
 	private final Channel channel;
 	private final String clientId;
 
+	/* channel serial if sync is in progress */
+	private String currentSyncChannelSerial;
 	/* Sync in progress is a result of attach operation */
 	private boolean syncAsResultOfAttach;
 }
