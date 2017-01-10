@@ -17,7 +17,6 @@ import com.google.gson.JsonParseException;
 import io.ably.lib.http.Http;
 import io.ably.lib.http.Http.ResponseHandler;
 import io.ably.lib.http.TokenAuth;
-import io.ably.lib.test.common.Helpers;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Capability;
 import io.ably.lib.types.ClientOptions;
@@ -257,9 +256,9 @@ public class Auth {
 		@Override
 		public boolean equals(Object obj) {
 			TokenDetails details = (TokenDetails)obj;
-			return Helpers.equalNullableStrings(this.token, details.token) &
-					Helpers.equalNullableStrings(this.capability, details.capability) &
-					Helpers.equalNullableStrings(this.clientId, details.clientId) &
+			return equalNullableStrings(this.token, details.token) &
+					equalNullableStrings(this.capability, details.capability) &
+					equalNullableStrings(this.clientId, details.clientId) &
 					(this.issued == details.issued) &
 					(this.expires == details.expires);
 		}
@@ -320,8 +319,8 @@ public class Auth {
 		public boolean equals(Object obj) {
 			TokenParams params = (TokenParams)obj;
 			return (this.ttl == params.ttl) &
-					Helpers.equalNullableStrings(this.capability, params.capability) &
-					Helpers.equalNullableStrings(this.clientId, params.clientId) &
+					equalNullableStrings(this.capability, params.capability) &
+					equalNullableStrings(this.clientId, params.clientId) &
 					(this.timestamp == params.timestamp);
 		}
 
@@ -439,9 +438,9 @@ public class Auth {
 		public boolean equals(Object obj) {
 			TokenRequest request = (TokenRequest)obj;
 			return super.equals(obj) &
-					Helpers.equalNullableStrings(this.keyName, request.keyName) &
-					Helpers.equalNullableStrings(this.nonce, request.nonce) &
-					Helpers.equalNullableStrings(this.mac, request.mac);
+					equalNullableStrings(this.keyName, request.keyName) &
+					equalNullableStrings(this.nonce, request.nonce) &
+					equalNullableStrings(this.mac, request.mac);
 		}
 	}
 
@@ -842,7 +841,11 @@ public class Auth {
 	}
 
 	private static String random() { return String.format("%016d", (long)(Math.random() * 1E16)); }
-	
+
+	private static boolean equalNullableStrings(String one, String two) {
+		return (one == null) ? (two == null) : one.equals(two);
+	}
+
 	private static final String hmac(String text, String key) {
 		try {
 			Mac mac = Mac.getInstance("HmacSHA256");
