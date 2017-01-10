@@ -2181,11 +2181,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 		}
 	}
 
-	@Test
-	public void test_client_leave() {
-
-	}
-
 	/**
 	 * Enter large (>100) number of clients so there are several sync messages, disconnect transport
 	 * in the middle and verify channel is re-syncing presence messages after transport reconnect
