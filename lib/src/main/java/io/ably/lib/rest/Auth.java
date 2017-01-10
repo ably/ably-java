@@ -773,7 +773,7 @@ public class Auth {
 			break;
 		case token:
 			ensureValidAuth();
-			params = new Param[]{new Param("access_token", tokenAuth.getTokenDetails().token) };
+			params = new Param[]{new Param("accessToken", tokenAuth.getTokenDetails().token) };
 			break;
 		}
 		return params;

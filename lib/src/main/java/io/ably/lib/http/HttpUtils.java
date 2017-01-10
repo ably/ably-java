@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import io.ably.lib.BuildConfig;
 import io.ably.lib.types.Param;
 
 /**
@@ -18,13 +17,6 @@ import io.ably.lib.types.Param;
  *
  */
 public class HttpUtils {
-	/* Headers */
-	public static final String X_ABLY_VERSION_HEADER = "X-Ably-Version";
-	public static final String X_ABLY_VERSION_VALUE = "0.9";
-	public static final String X_ABLY_LIB_HEADER = "X-Ably-Lib";
-	public static final String X_ABLY_LIB_VALUE = String.format("%s-%s", BuildConfig.LIBRARY_NAME, BuildConfig.VERSION);
-
-	public static final String DEFAULT_FORMAT = "json";
 	public static Map<String, String> mimeTypes;
 	
 	static {

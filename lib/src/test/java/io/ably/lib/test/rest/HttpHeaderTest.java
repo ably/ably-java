@@ -11,10 +11,10 @@ import org.junit.Test;
 
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
-import io.ably.lib.http.HttpUtils;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Channel;
 import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 
@@ -48,7 +48,7 @@ public class HttpHeaderTest extends ParameterizedTest {
 	/**
 	 * The header X-Ably-Lib: [lib][.optional variant]?-[version]
 	 * should be included in all REST requests to the Ably endpoint
-	 * see {@link io.ably.lib.http.HttpUtils#X_ABLY_LIB_VALUE}
+	 * see {@link io.ably.lib.http.HttpUtils#ABLY_LIB_VERSION}
 	 * <p>
 	 * Spec: RSC7b, G4
 	 * </p>
@@ -78,15 +78,15 @@ public class HttpHeaderTest extends ParameterizedTest {
 			Map<String, String> headers = server.getHeaders();
 
 			/* Prepare checked header */
-			String ably_version_header = HttpUtils.X_ABLY_VERSION_HEADER.toLowerCase();
-			String ably_lib_header = HttpUtils.X_ABLY_LIB_HEADER.toLowerCase();
+			String ably_version_header = Defaults.ABLY_VERSION_HEADER.toLowerCase();
+			String ably_lib_header = Defaults.ABLY_LIB_HEADER.toLowerCase();
 
 			/* Check header */
 			Assert.assertNotNull("Expected headers", headers);
-			Assert.assertTrue(String.format("Expected header %s", HttpUtils.X_ABLY_VERSION_HEADER), headers.containsKey(ably_version_header));
-			Assert.assertEquals(headers.get(ably_version_header), "0.9");
-			Assert.assertTrue(String.format("Expected header %s", HttpUtils.X_ABLY_LIB_HEADER), headers.containsKey(ably_lib_header));
-			Assert.assertEquals(headers.get(ably_lib_header), HttpUtils.X_ABLY_LIB_VALUE);
+			Assert.assertTrue(String.format("Expected header %s", Defaults.ABLY_VERSION_HEADER), headers.containsKey(ably_version_header));
+			Assert.assertEquals(headers.get(ably_version_header), Defaults.ABLY_VERSION);
+			Assert.assertTrue(String.format("Expected header %s", Defaults.ABLY_LIB_HEADER), headers.containsKey(ably_lib_header));
+			Assert.assertEquals(headers.get(ably_lib_header), Defaults.ABLY_LIB_VERSION);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			Assert.fail("header_lib_channel_publish: Unexpected exception");

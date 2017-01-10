@@ -1,6 +1,5 @@
 package io.ably.lib.transport;
 
-import io.ably.lib.http.HttpUtils;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
@@ -34,9 +33,6 @@ public interface ITransport {
 	}
 
 	public static class TransportParams {
-		/* Param keys */
-		public static final String LIB_PARAM_KEY = "lib";
-
 		ClientOptions options;
 		String host;
 		int port;
@@ -51,33 +47,32 @@ public interface ITransport {
 
 		public Param[] getConnectParams(Param[] baseParams) {
 			List<Param> paramList = new ArrayList<Param>(Arrays.asList(baseParams));
-			paramList.add(new Param("v", HttpUtils.X_ABLY_VERSION_VALUE));
-			if(options.useBinaryProtocol)
-				paramList.add(new Param("format", "msgpack"));
+			paramList.add(new Param(Defaults.ABLY_VERSION_PARAM, Defaults.ABLY_VERSION));
+			paramList.add(new Param("format", (options.useBinaryProtocol ? "msgpack" : "json")));
 			if(!options.echoMessages)
 				paramList.add(new Param("echo", "false"));
 			if(connectionKey != null) {
 				mode = Mode.resume;
 				paramList.add(new Param("resume", connectionKey));
 				if(connectionSerial != null)
-					paramList.add(new Param("connection_serial", connectionSerial));
+					paramList.add(new Param("connectionSerial", connectionSerial));
 			} else if(options.recover != null) {
 				mode = Mode.recover;
 				Pattern recoverSpec = Pattern.compile("^([\\w\\-\\!]+):(\\-?\\d+)$");
 				Matcher match = recoverSpec.matcher(options.recover);
 				if(match.matches()) {
 					paramList.add(new Param("recover", match.group(1)));
-					paramList.add(new Param("connection_serial", match.group(2)));
+					paramList.add(new Param("connectionSerial", match.group(2)));
 				} else {
 					Log.e(TAG, "Invalid recover string specified");
 				}
 			}
 			if(options.clientId != null)
-				paramList.add(new Param("client_id", options.clientId));
+				paramList.add(new Param("clientId", options.clientId));
 			if(!heartbeats)
 				paramList.add(new Param("heartbeats", "false"));
 
-			paramList.add(new Param(LIB_PARAM_KEY, HttpUtils.X_ABLY_LIB_VALUE));
+			paramList.add(new Param(Defaults.ABLY_LIB_PARAM, Defaults.ABLY_LIB_VERSION));
 			Log.d(TAG, "getConnectParams: params = " + paramList);
 			return paramList.toArray(new Param[paramList.size()]);
 		}
