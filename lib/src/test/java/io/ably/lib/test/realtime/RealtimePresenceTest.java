@@ -2033,7 +2033,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 	/**
 	 * Test comparison for newness
-	 * Tests RTP2b* features
+	 * Tests RTP2a, RTP2b1, RTP2b2, RTP2d, RTP2g features
 	 */
 	@Test
 	public void realtime_presence_newness_comparison_test() throws AblyException {
@@ -2133,6 +2133,12 @@ public class RealtimePresenceTest extends ParameterizedTest {
 					PresenceMessage factualMsg = n < presenceMessages.size() ? presenceMessages.get(n++) : null;
 					assertTrue("Verify message passed newness test",
 							factualMsg != null && factualMsg.id.equals(testMsg.id));
+					assertEquals("Verify message was emitted on the presence object with original action",
+							factualMsg.action, testMsg.action);
+					try {
+						assertEquals("Verify message was added to the presence map and stored with PRESENT action",
+								presence.get(testMsg.clientId, false)[0].action, Action.present);
+					} catch (InterruptedException e) {}
 				}
 			}
 			assertEquals("Verify nothing else passed the newness test", n, presenceMessages.size());
