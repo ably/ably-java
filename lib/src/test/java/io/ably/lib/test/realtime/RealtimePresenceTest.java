@@ -257,6 +257,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 	/**
 	 * Enter, then leave, presence channel and await leave event
+	 * Verify that the item is removed from the presence map (RTP2e)
 	 */
 	@Test
 	public void enter_leave_simple() {
@@ -301,6 +302,10 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			/* verify leave callback called on completion */
 			leaveComplete.waitFor();
 			assertTrue("Verify leave callback called on completion", leaveComplete.success);
+
+			try {
+				assertEquals("Verify item is removed from the presence map", client1Channel.presence.get(testClientId1, false).length, 0);
+			} catch (InterruptedException e) {}
 
 		} catch(AblyException e) {
 			e.printStackTrace();
@@ -2032,11 +2037,11 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	}
 
 	/**
-	 * Test comparison for newness
-	 * Tests RTP2a, RTP2b1, RTP2b2, RTP2d, RTP2g features
+	 * Test presence message map behaviour (RTP2 features)
+	 * Tests RTP2a, RTP2b1, RTP2b2, RTP2c, RTP2d, RTP2g, RTP18c features
 	 */
 	@Test
-	public void realtime_presence_newness_comparison_test() throws AblyException {
+	public void realtime_presence_map_test() throws AblyException {
 		AblyRealtime ably = null;
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -2062,7 +2067,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				}
 			});
 
-			PresenceMessage[] testData = new PresenceMessage[] {
+			/* Test message newness criteria as described in RTP2b */
+			final PresenceMessage[] testData = new PresenceMessage[] {
 					new PresenceMessage() {{
 						clientId = "1";
 						action = Action.enter;
@@ -2142,11 +2148,42 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				}
 			}
 			assertEquals("Verify nothing else passed the newness test", n, presenceMessages.size());
+
+			/* Repeat the process now as a part of SYNC and verify everything is exactly the same */
+			Channel channel2 = ably.channels.get("sync_newness_comparison");
+			channel2.attach();
+			new ChannelWaiter(channel2).waitFor(ChannelState.attached);
+
+			/* Send all the presence data in one SYNC message without channelSerial (RTP18c) */
+			ProtocolMessage syncMessage = new ProtocolMessage() {{
+				channel = "sync_newness_comparison";
+				action = Action.sync;
+				presence = testData.clone();
+			}};
+			final ArrayList<PresenceMessage> syncPresenceMessages = new ArrayList<>();
+			channel2.presence.subscribe(new Presence.PresenceListener() {
+				@Override
+				public void onPresenceMessage(PresenceMessage messages) {
+					syncPresenceMessages.add(messages);
+				}
+			});
+			ably.connection.connectionManager.onMessage(null, syncMessage);
+
+			assertEquals("Verify result is the same in case of SYNC", syncPresenceMessages.size(), presenceMessages.size());
+			for (int i=0; i<syncPresenceMessages.size(); i++)
+				assertTrue("Verify result is the same in case of SYNC",
+						syncPresenceMessages.get(i).id.equals(presenceMessages.get(i).id) &&
+						syncPresenceMessages.get(i).action.equals(presenceMessages.get(i).action));
 		}
 		finally {
 			if (ably != null)
 				ably.close();
 		}
+	}
+
+	@Test
+	public void test_client_leave() {
+
 	}
 
 	/**

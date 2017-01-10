@@ -188,24 +188,35 @@ public class Presence {
 		}
 		for(PresenceMessage update : messages) {
 			boolean updateInternalPresence = update.connectionId.equals(channel.ably.connection.id);
+			boolean broadcastThisUpdate = broadcast;
+			PresenceMessage originalUpdate = update;
+
 			switch(update.action) {
 			case enter:
 			case update:
 				update = (PresenceMessage)update.clone();
 				update.action = PresenceMessage.Action.present;
 			case present:
-				broadcast &= presence.put(update);
+				broadcastThisUpdate &= presence.put(update);
 				if(updateInternalPresence)
 					internalPresence.put(update);
 				break;
 			case leave:
-				broadcast &= presence.remove(update);
+				broadcastThisUpdate &= presence.remove(update);
 				if(updateInternalPresence)
 					internalPresence.remove(update);
 				break;
 			case absent:
 			}
+
+			/*
+			 * RTP2g: Any incoming presence message that passes the newness check should be emitted on the
+			 * Presence object, with an event name set to its original action.
+			 */
+			if (broadcastThisUpdate)
+				broadcastPresence(new PresenceMessage[]{originalUpdate});
 		}
+
 		/* if this is the last message in a sequence of sync updates, end the sync */
 		if(syncChannelSerial == null || syncCursor.length() <= 1) {
 			presence.endSync();
@@ -249,9 +260,6 @@ public class Presence {
 				internalPresence.clear();
 			}
 		}
-
-		if(broadcast)
-			broadcastPresence(messages);
 	}
 
 	private void broadcastPresence(PresenceMessage[] messages) {
