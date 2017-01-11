@@ -21,15 +21,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
+import io.ably.lib.realtime.*;
 import org.junit.Before;
 import org.junit.Test;
 
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.Channel;
-import io.ably.lib.realtime.ChannelState;
-import io.ably.lib.realtime.CompletionListener;
-import io.ably.lib.realtime.ConnectionState;
-import io.ably.lib.realtime.Presence;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.TokenParams;
@@ -2461,6 +2456,120 @@ public class RealtimePresenceTest extends ParameterizedTest {
 		} finally {
 			if (ably != null)
 				ably.close();
+		}
+	}
+
+	/*
+	 * Test channel state change effect on presence
+	 * Tests RTP5a, RTP5b, RTP5c3
+	 */
+	@Test
+	public void presence_state_change () {
+		AblyRealtime ably = null;
+		String oldTransport = Defaults.TRANSPORT;
+		try {
+			Defaults.TRANSPORT = MockWebsocketFactory.class.getName();
+
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.autoConnect = false;	/* to queue presence messages */
+			ably = new AblyRealtime(opts);
+
+			final String channelName = "presence_state_change" + testParams.name;
+			Channel channel = ably.channels.get(channelName);
+			/*
+			 * This will queue the message, initiate channel attach and send it
+			 * when the channel becomes attached (to test RTP5c)
+			 */
+			channel.presence.enterClient(testClientId1);
+
+			/* Connect */
+			ably.connection.connect();
+
+			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+			channelWaiter.waitFor(ChannelState.attached);
+
+			PresenceWaiter presenceWaiter = new PresenceWaiter(channel);
+			presenceWaiter.waitFor(1);
+
+			PresenceMessage[] presenceMessages = channel.presence.get(false);
+			assertEquals(presenceMessages.length, 1);
+
+			MockWebsocketFactory.blockSend();
+			/* Inject something into internal presence map */
+			final String connId = ably.connection.id;
+			channel.presence.enterClient(testClientId2);
+
+			ProtocolMessage msg = new ProtocolMessage() {{
+					connectionId = connId;
+					action = ProtocolMessage.Action.sync;
+					channel = channelName;
+					presence = new PresenceMessage[] {
+							new PresenceMessage() {{
+								action = Action.present;
+								id = String.format("%s:0:0", connId);
+								timestamp = System.currentTimeMillis();
+								clientId = testClientId2;
+								connectionId = connId;
+							}}
+					};
+			}};
+			ably.connection.connectionManager.onMessage(null, msg);
+
+			MockWebsocketFactory.allowSend();
+
+			channel.detach();
+			channelWaiter.waitFor(ChannelState.detached);
+
+			/* Verify that presence map is cleared on DETACH (RTP5a) */
+			/* As a side effect this operation will initiate reattach of the channel but it doesn't matter here */
+			assertEquals("Verify presence map is cleared on DETACH", channel.presence.get(false).length, 0);
+
+			/*
+			 * Reconnect and verify that client2 is not automatically re-entered i.e.
+			 * internal presence map is cleared as well
+			 */
+			channel.attach();
+			Thread.sleep(500);
+			assertEquals("Verify internal presence map is cleared on DETACH", channel.presence.get(false).length, 0);
+
+			/* Test failure of presence re-enter */
+			MockWebsocketFactory.blockSend();
+			/* Let's add something to the presence map */
+			channel.presence.enterClient(testClientId2);
+			ably.connection.connectionManager.onMessage(null, msg);
+			MockWebsocketFactory.setMessageFilter(new MockWebsocketFactory.MessageFilter() {
+				@Override
+				public boolean matches(ProtocolMessage message) {
+					return message.action == ProtocolMessage.Action.presence;
+				}
+			});
+			MockWebsocketFactory.failSend();
+
+			final boolean[] reenterFailureReceived = new boolean[] {false};
+			channel.on(ChannelEvent.update, new ChannelStateListener() {
+				@Override
+				public void onChannelStateChanged(ChannelStateChange stateChange) {
+					if (stateChange.reason.code == 91004)
+						reenterFailureReceived[0] = true;
+				}
+			});
+
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+			ably.connection.connectionManager.requestState(ConnectionState.suspended);
+			connectionWaiter.waitFor(ConnectionState.suspended);
+			ably.connection.connectionManager.requestState(ConnectionState.connected);
+			connectionWaiter.waitFor(ConnectionState.connected);
+			Thread.sleep(500);
+
+			assertTrue("Verify re-enter presence message failed", reenterFailureReceived[0]);
+		} catch (AblyException|InterruptedException e) {
+			e.printStackTrace();
+			fail("Unexpected exception running test: " + e.getMessage());
+		} finally {
+			if (ably != null)
+				ably.close();
+			MockWebsocketFactory.allowSend();
+			Defaults.TRANSPORT = oldTransport;
 		}
 	}
 

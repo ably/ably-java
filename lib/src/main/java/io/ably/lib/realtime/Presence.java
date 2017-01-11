@@ -211,16 +211,20 @@ public class Presence {
 							@Override
 							public void onError(ErrorInfo reason) {
 									/*
-									 * (RTP5c3) If any of the automatic ENTER presence messages published in RTP5c2
-									 * fail, then an UPDATE event should be emitted on the channel, with a reason
-									 * set to the ErrorInfo received from realtime
+									 * (RTP5c3)  If any of the automatic ENTER presence messages published
+									 * in RTP5c2 fail, then an UPDATE event should be emitted on the channel
+									 * with resumed set to true and reason set to an ErrorInfo object with error
+									 * code value 91004 and the error message string containing the message
+									 * received from Ably (if applicable), the code received from Ably
+									 * (if applicable) and the explicit or implicit client_id of the PresenceMessage
 									 */
 								Log.e(TAG, String.format("Cannot automatically re-enter channel %s", channel.name));
-								channel.emitUpdate(reason, false);
+								channel.emitUpdate(new ErrorInfo(reason.message, 91004), true);
 							}
 						});
 					} catch(AblyException e) {
 						Log.e(TAG, String.format("Error automatically re-entering channel %s", channel.name));
+						channel.emitUpdate(new ErrorInfo(e.errorInfo.message, 91004), true);
 					}
 				}
 			}
@@ -599,6 +603,7 @@ public class Presence {
 			}
 			listener = mListener.isEmpty() ? null : mListener;
 		}
+		pendingPresence.clear();
 		try {
 			connectionManager.send(message, queueMessages, listener);
 		} catch(AblyException e) {
