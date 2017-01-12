@@ -2,10 +2,6 @@ package io.ably.lib.transport;
 
 import io.ably.lib.types.ClientOptions;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 public class Defaults {
 	public static final int PROTOCOL_VERSION        = 1;
 	public static final String[] HOST_FALLBACKS     = { "A.ably-realtime.com", "B.ably-realtime.com", "C.ably-realtime.com", "D.ably-realtime.com", "E.ably-realtime.com" };
