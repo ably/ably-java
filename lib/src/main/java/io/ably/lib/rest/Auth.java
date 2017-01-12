@@ -4,7 +4,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 import javax.crypto.Mac;
@@ -15,6 +14,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 
 import io.ably.lib.http.Http;
+import io.ably.lib.http.Http.Response;
 import io.ably.lib.http.Http.ResponseHandler;
 import io.ably.lib.http.TokenAuth;
 import io.ably.lib.types.AblyException;
@@ -587,8 +587,13 @@ public class Auth {
 			try {
 				authUrlResponse = ably.http.getUri(tokenOptions.authUrl, tokenOptions.authHeaders, requestParams, new ResponseHandler<Object>() {
 					@Override
-					public Object handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
+					public Object handleResponse(Response response, ErrorInfo error) throws AblyException {
+						if(error != null) {
+							throw AblyException.fromErrorInfo(error);
+						}
 						try {
+							String contentType = response.contentType;
+							byte[] body = response.body;
 							if(contentType != null) {
 								if(contentType.startsWith("text/plain")) {
 									/* assumed to be token string */
@@ -640,9 +645,12 @@ public class Auth {
 		String tokenPath = "/keys/" + signedTokenRequest.keyName + "/requestToken";
 		return ably.http.post(tokenPath, tokenOptions.authHeaders, tokenOptions.authParams, new Http.JsonRequestBody(signedTokenRequest.asJsonElement().toString()), new ResponseHandler<TokenDetails>() {
 			@Override
-			public TokenDetails handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
+			public TokenDetails handleResponse(Response response, ErrorInfo error) throws AblyException {
+				if(error != null) {
+					throw AblyException.fromErrorInfo(error);
+				}
 				try {
-					String jsonText = new String(body);
+					String jsonText = new String(response.body);
 					JsonObject json = (JsonObject)Serialisation.gsonParser.parse(jsonText);
 					return TokenDetails.fromJsonElement(json);
 				} catch(JsonParseException e) {

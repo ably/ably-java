@@ -795,9 +795,11 @@ public class RestAuthTest extends ParameterizedTest {
 			opts.queryTime = true;
 
 			AblyRest ably1 = new AblyRest(opts);
+			@SuppressWarnings("unused")
 			Auth.TokenRequest tr1 = ably1.auth.createTokenRequest(null, null);
 
 			AblyRest ably2 = new AblyRest(opts);
+			@SuppressWarnings("unused")
 			Auth.TokenRequest tr2 = ably2.auth.createTokenRequest(null, null);
 
 			List<String> requestHistory = nanoHTTPD.getRequestHistory();

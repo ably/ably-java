@@ -15,7 +15,7 @@ public interface PaginatedResult<T> {
 	T[] items();
 
 	/**
-	 * Obtain params required to perform the given relative query
+	 * Perform the given relative query
 	 */
 	PaginatedResult<T> first() throws AblyException;
 	PaginatedResult<T> current() throws AblyException;

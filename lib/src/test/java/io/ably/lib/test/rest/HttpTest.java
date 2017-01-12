@@ -39,6 +39,7 @@ import org.mockito.stubbing.Answer;
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
 import io.ably.lib.http.Http;
+import io.ably.lib.http.Http.ResponseHandler;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.test.util.StatusHandler;
 import io.ably.lib.transport.Defaults;
@@ -975,6 +976,8 @@ public class HttpTest {
 				String result = http.httpExecute(url, Http.GET, new Param[0], requestBody, null);
 			} catch (AblyException.HostFailedException e) {
 				hfe = e;
+			} catch (AblyException e) {
+				e.printStackTrace();
 			}
 
 			Assert.assertNotNull("Status code " + statusCode + " should throw an exception", hfe);
