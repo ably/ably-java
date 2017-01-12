@@ -546,6 +546,14 @@ public class Presence {
 		}
 	}
 
+	/**
+	 * (RTP13) Presence#syncComplete returns true if the initial SYNC operation has completed for
+	 * the members present on the channel
+	 */
+	public boolean syncComplete() {
+		return presence.syncComplete;
+	}
+
 	/************************************
 	 * history
 	 ************************************/
@@ -856,6 +864,7 @@ public class Presence {
 	
 				/* finish, notifying any waiters */
 				syncInProgress = false;
+				syncComplete = true;
 			}
 			notifyAll();
 			return removedEntries;
@@ -871,6 +880,7 @@ public class Presence {
 		}
 
 		private boolean syncInProgress;
+		private boolean syncComplete;
 		private Collection<String> residualMembers;
 		private final HashMap<String, PresenceMessage> members = new HashMap<String, PresenceMessage>();
 	}

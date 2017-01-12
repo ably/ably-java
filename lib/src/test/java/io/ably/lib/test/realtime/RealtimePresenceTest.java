@@ -2497,7 +2497,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 	/*
 	 * Test channel state change effect on presence
-	 * Tests RTP5a, RTP5b, RTP5c3
+	 * Tests RTP5a, RTP5b, RTP5c3, RTP16b
 	 */
 	@Test
 	public void presence_state_change () {
@@ -2515,6 +2515,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			/*
 			 * This will queue the message, initiate channel attach and send it
 			 * when the channel becomes attached (to test RTP5c)
+			 *
+			 * Also the connection state is INITIALIZED at the moment (to test RTP16b)
 			 */
 			channel.presence.enterClient(testClientId1);
 
@@ -2670,6 +2672,45 @@ public class RealtimePresenceTest extends ParameterizedTest {
 		} finally {
 			if (ably != null)
 				ably.close();
+		}
+	}
+
+	/**
+	 * Test if Presence.syncComplete() works. Enter client on one ably connection and
+	 * wait for initial SYNC on another connection.
+	 *
+	 * Tests RTP13
+	 */
+	@Test
+	public void sync_complete() {
+		AblyRealtime ably1 = null, ably2 = null;
+		final String channelName = "sync_complete" + testParams.name;
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			ably1 = new AblyRealtime(opts);
+			ably2 = new AblyRealtime(opts);
+
+			Channel channel1 = ably1.channels.get(channelName);
+			channel1.presence.enterClient(testClientId1);
+			new PresenceWaiter(Action.enter, channel1).waitFor(1);
+
+			Channel channel2 = ably2.channels.get(channelName);
+			assertFalse("Verify SYNC is not complete yet", channel2.presence.syncComplete());
+			channel2.attach();
+			/* Wait for the SYNC to complete */
+			new PresenceWaiter(Action.present, channel2).waitFor(1);
+			try {
+				channel2.presence.get(true);
+			} catch (InterruptedException e) {}
+			/* Initial SYNC should be complete at this point */
+			assertTrue("Verify SYNC is complete", channel2.presence.syncComplete());
+		} catch (AblyException e) {
+			fail("Unexpected exception");
+		} finally {
+			if (ably1 != null)
+				ably1.close();
+			if (ably2 != null)
+				ably2.close();
 		}
 	}
 
