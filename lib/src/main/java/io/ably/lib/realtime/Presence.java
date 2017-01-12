@@ -199,7 +199,8 @@ public class Presence {
 			syncAsResultOfAttach = false;
 			for (PresenceMessage item: internalPresence.values()) {
 				if (presence.put(item)) {
-						/* Message is new to presence map, send it */
+					/* Message is new to presence map, send it */
+					final String clientId = item.clientId;
 					try {
 						PresenceMessage itemToSend = (PresenceMessage)item.clone();
 						itemToSend.action = PresenceMessage.Action.enter;
@@ -218,13 +219,17 @@ public class Presence {
 									 * received from Ably (if applicable), the code received from Ably
 									 * (if applicable) and the explicit or implicit client_id of the PresenceMessage
 									 */
-								Log.e(TAG, String.format("Cannot automatically re-enter channel %s", channel.name));
-								channel.emitUpdate(new ErrorInfo(reason.message, 91004), true);
+								String errorString = String.format("Cannot automatically re-enter %s on channel %s (%s)",
+										clientId, channel.name, reason.message);
+								Log.e(TAG, errorString);
+								channel.emitUpdate(new ErrorInfo(errorString, 91004), true);
 							}
 						});
 					} catch(AblyException e) {
-						Log.e(TAG, String.format("Error automatically re-entering channel %s", channel.name));
-						channel.emitUpdate(new ErrorInfo(e.errorInfo.message, 91004), true);
+						String errorString = String.format("Cannot automatically re-enter %s on channel %s (%s)",
+								clientId, channel.name, e.errorInfo.message);
+						Log.e(TAG, errorString);
+						channel.emitUpdate(new ErrorInfo(errorString, 91004), true);
 					}
 				}
 			}

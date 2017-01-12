@@ -2064,7 +2064,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				PresenceMessage leaveMessage = leaveMessages.get(0);
 				assertTrue("Verify LEAVE message follows specs",
 						leaveMessage.clientId.equals(testClientId2) && leaveMessage.id == null &&
-								Math.abs(leaveMessage.timestamp-reconnectTimestamp) < 500);
+								Math.abs(leaveMessage.timestamp-reconnectTimestamp) < 500 &&
+								leaveMessage.data.equals(presenceData));
 
 				/* According to RTP5f there should be no presence event emitted for client1 */
 				assertFalse("Verify no presence event emitted on return from suspend on SYNC for client1",
@@ -2364,6 +2365,14 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
 			channelWaiter.waitFor(ChannelState.attached);
 
+			final ArrayList<PresenceMessage> presenceHistory = new ArrayList<>();
+			channel.presence.subscribe(new Presence.PresenceListener() {
+				@Override
+				public void onPresenceMessage(PresenceMessage messages) {
+					presenceHistory.add(messages);
+				}
+			});
+
 			final PresenceMessage[] testPresence1 = new PresenceMessage[] {
 					/* Will be discarded because we'll start new sync with different channelSerial */
 					new PresenceMessage() {{
@@ -2411,13 +2420,24 @@ public class RealtimePresenceTest extends ParameterizedTest {
 					}}
 			};
 
+			final boolean[] seenLeaveMessageAsAbsentForClient4 = new boolean[] {false};
 			channel.presence.subscribe(Action.leave, new Presence.PresenceListener() {
 				@Override
 				public void onPresenceMessage(PresenceMessage message) {
 					try {
-						if (message.clientId.equals("4") && message.action == Action.leave)
-							assertEquals("Verify LEAVE message is recorded as ABSENT during sync",
-									channel.presence.get("4", false)[0].action, Action.absent);
+						/*
+						 * Do not call it in states other than ATTACHED because of presence.get() side
+						 * effect of attaching channel
+						 */
+						if (message.clientId.equals("4") && message.action == Action.leave && channel.state == ChannelState.attached) {
+							/*
+							 * Client library won't return a presence message if it is stored as ABSENT
+							 * so the result of the presence.get() call should be empty. This is the
+							 * only case when get() called from PresenceListener.onPresenceMessage results
+							 * in an empty answer.
+							 */
+							seenLeaveMessageAsAbsentForClient4[0] = channel.presence.get("4", false).length == 0;
+						}
 					} catch (InterruptedException|AblyException e) {}
 				}
 			});
@@ -2441,7 +2461,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				presence = testPresence3;
 			}});
 
-			PresenceMessage[] resultingPresence = null;
 			try {
 				assertEquals("Verify incomplete sync was discarded", channel.presence.get("1", false).length, 0);
 				assertEquals("Verify client with id==2 is in presence map", channel.presence.get("2", false).length, 1);
@@ -2449,6 +2468,29 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				assertEquals("Verify nothing else is in presence map", channel.presence.get(false).length, 2);
 			} catch (InterruptedException e) {}
 
+			assertTrue("Verify LEAVE message for client with id==4 was stored as ABSENT", seenLeaveMessageAsAbsentForClient4[0]);
+
+			PresenceMessage[] correctPresenceHistory = new PresenceMessage[] {
+					/* client 1 enters (will later be discarded) */
+					new PresenceMessage(Action.enter, "1"),
+					/* client 2 enters */
+					new PresenceMessage(Action.enter, "2"),
+					/* client 3 enters and never leaves because of newness comparison for LEAVE fails */
+					new PresenceMessage(Action.enter, "3"),
+					/* client 4 enters and leaves */
+					new PresenceMessage(Action.enter, "4"),
+					new PresenceMessage(Action.leave, "4"),
+					/* client 1 is eliminated from the presence map because the first portion of SYNC is discarded */
+					new PresenceMessage(Action.leave, "1")
+			};
+
+			assertEquals("Verify number of presence messages", presenceHistory.size(), correctPresenceHistory.length);
+			for (int i=0; i<correctPresenceHistory.length; i++) {
+				PresenceMessage factualMsg = presenceHistory.get(i);
+				PresenceMessage correctMsg = correctPresenceHistory[i];
+				assertTrue("Verify presence message correctness",
+						factualMsg.clientId.equals(correctMsg.clientId) && factualMsg.action == correctMsg.action);
+			}
 
 		} catch (AblyException e) {
 			e.printStackTrace();
