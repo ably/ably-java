@@ -2,7 +2,6 @@ package io.ably.lib.realtime;
 
 import io.ably.lib.realtime.ConnectionStateListener.ConnectionStateChange;
 import io.ably.lib.transport.ConnectionManager;
-import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.util.EventEmitter;
 
