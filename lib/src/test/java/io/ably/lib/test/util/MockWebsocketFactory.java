@@ -17,16 +17,20 @@ public class MockWebsocketFactory implements ITransport.Factory {
 		return lastCreatedTransport;
 	}
 
-	public static void blockSend() {
+	public static void blockSend(MessageFilter filter) {
+		MockWebsocketTransport.messageFilter = filter;
 		MockWebsocketTransport.sendBehaviour = MockWebsocketTransport.SendBehaviour.block;
 	}
+	public static void blockSend() { blockSend(null); }
 	public static void allowSend() {
 		MockWebsocketTransport.messageFilter = null;
 		MockWebsocketTransport.sendBehaviour = MockWebsocketTransport.SendBehaviour.allow;
 	}
-	public static void failSend() {
+	public static void failSend(MessageFilter filter) {
+		MockWebsocketTransport.messageFilter = filter;
 		MockWebsocketTransport.sendBehaviour = MockWebsocketTransport.SendBehaviour.fail;
 	}
+	public static void failSend() { failSend(null); }
 	public static void setMessageFilter(MessageFilter filter) {
 		MockWebsocketTransport.messageFilter = filter;
 	}

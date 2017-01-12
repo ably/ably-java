@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.UUID;
 
 import io.ably.lib.realtime.*;
+import io.ably.lib.types.*;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -38,14 +39,7 @@ import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.util.MockWebsocketFactory;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.Defaults;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.PaginatedResult;
-import io.ably.lib.types.Param;
-import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.PresenceMessage.Action;
-import io.ably.lib.types.ProtocolMessage;
 
 public class RealtimePresenceTest extends ParameterizedTest {
 
@@ -2579,13 +2573,12 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			/* Let's add something to the presence map */
 			channel.presence.enterClient(testClientId2);
 			ably.connection.connectionManager.onMessage(null, msg);
-			MockWebsocketFactory.setMessageFilter(new MockWebsocketFactory.MessageFilter() {
+			MockWebsocketFactory.failSend(new MockWebsocketFactory.MessageFilter() {
 				@Override
 				public boolean matches(ProtocolMessage message) {
 					return message.action == ProtocolMessage.Action.presence;
 				}
 			});
-			MockWebsocketFactory.failSend();
 
 			final boolean[] reenterFailureReceived = new boolean[] {false};
 			channel.on(ChannelEvent.update, new ChannelStateListener() {
@@ -2612,6 +2605,71 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				ably.close();
 			MockWebsocketFactory.allowSend();
 			Defaults.TRANSPORT = oldTransport;
+		}
+	}
+
+	/**
+	 * Enter channel without subscribe permission, expect presence message from this connection
+	 * Test RTP17a
+	 *
+	 * Not functional yet
+	 */
+	//@Test
+	public void presence_without_subscribe_capability() throws AblyException {
+		String channelName = "presence_without_subscribe" + testParams.name;
+		AblyRealtime ably = null;
+		String presenceData = "presence_test_data";
+
+		try {
+			/* init ably for token */
+			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
+			final AblyRest ablyForToken = new AblyRest(optsForToken);
+
+			/* get first token */
+			Auth.TokenParams tokenParams = new Auth.TokenParams();
+			Capability capability = new Capability();
+			capability.addResource(channelName, "publish");
+			capability.addOperation(channelName, "presence");
+			//capability.addOperation(channelName, "subscribe");
+			tokenParams.capability = capability.toString();
+			tokenParams.clientId = testClientId1;
+
+			Auth.TokenDetails token = ablyForToken.auth.requestToken(tokenParams, null);
+			assertNotNull("Expected token value", token.token);
+
+			ClientOptions opts = createOptions();
+			opts.clientId = testClientId1;
+			opts.tokenDetails = token;
+			ably = new AblyRealtime(opts);
+
+			Channel channel = ably.channels.get(channelName);
+			channel.attach();
+
+			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+			channelWaiter.waitFor(ChannelState.attached);
+
+			channel.presence.enterClient(testClientId1, presenceData, new CompletionListener() {
+				@Override
+				public void onSuccess() {
+					System.out.println("Success");
+				}
+
+				@Override
+				public void onError(ErrorInfo reason) {
+					System.out.println("failure");
+				}
+			});
+			PresenceWaiter presenceWaiter = new PresenceWaiter(Action.enter, channel);
+			presenceWaiter.waitFor(1);
+
+			try {
+				PresenceMessage[] presenceMessages = channel.presence.get(testClientId1, false);
+				assertEquals("Verify total number of received presence messages", presenceMessages.length, 1);
+				assertEquals("Verify present message is valid", presenceMessages[0].data, presenceData);
+			} catch (InterruptedException e) {}
+		} finally {
+			if (ably != null)
+				ably.close();
 		}
 	}
 
