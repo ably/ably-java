@@ -13,7 +13,6 @@ import io.ably.lib.types.PresenceSerializer;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.EnumSet;
