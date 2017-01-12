@@ -2785,4 +2785,95 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				ably.close();
 		}
 	}
+
+	/**
+	 * Enter wrong client (mismatching one set in the token), check exception
+	 * Tests RTP8i
+	 */
+	@Test
+	public void presence_enter_mismatched_clientid() throws AblyException {
+		String channelName = "presence_enter_without_permission" + testParams.name;
+		AblyRealtime ably = null;
+
+		try {
+			/* init ably for token */
+			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
+			final AblyRest ablyForToken = new AblyRest(optsForToken);
+
+			/* get first token */
+			Auth.TokenParams tokenParams = new Auth.TokenParams();
+			Capability capability = new Capability();
+			capability.addResource(channelName, "publish");
+			capability.addOperation(channelName, "presence");
+			tokenParams.capability = capability.toString();
+			tokenParams.clientId = testClientId1;
+
+			Auth.TokenDetails token = ablyForToken.auth.requestToken(tokenParams, null);
+			assertNotNull("Expected token value", token.token);
+
+			ClientOptions opts = createOptions();
+			opts.clientId = testClientId1;
+			opts.tokenDetails = token;
+			ably = new AblyRealtime(opts);
+
+			Channel channel = ably.channels.get(channelName);
+			channel.attach();
+
+			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+			channelWaiter.waitFor(ChannelState.attached);
+
+			final boolean[] flags = new boolean[] {
+					false, /* callback called */
+					false  /* success? */
+			};
+
+			CompletionListener completionListener = new CompletionListener() {
+				@Override
+				public void onSuccess() {
+					synchronized (flags) {
+						flags[0] = true;  flags[1] = true;
+						flags.notify();
+					}
+				}
+
+				@Override
+				public void onError(ErrorInfo reason) {
+					synchronized (flags) {
+						flags[0] = true;  flags[1] = false;
+						flags.notify();
+					}
+				}
+			};
+
+			/* should succeed with testClientId1 */
+			channel.presence.enterClient(testClientId1, null, completionListener);
+			try {
+				synchronized (flags) {
+					while (!flags[0])
+						flags.wait();
+				}
+			} catch (InterruptedException e) {}
+
+			assertTrue("Verify completion callback was called", flags[0]);
+			assertTrue("Verify enter client succeeded", flags[1]);
+
+			/* should fail with testClientId2 */
+			flags[0] = false;
+			channel.presence.enterClient(testClientId2, null, completionListener);
+			try {
+				synchronized (flags) {
+					while (!flags[0])
+						flags.wait();
+				}
+			} catch (InterruptedException e) {}
+
+			assertTrue("Verify completion callback was called", flags[0]);
+			assertFalse("Verify enter client failed", flags[1]);
+
+		} finally {
+			if (ably != null)
+				ably.close();
+		}
+	}
+
 }
