@@ -6,7 +6,6 @@ import io.ably.lib.types.ErrorInfo;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 
 
 /**
