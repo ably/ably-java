@@ -1,18 +1,29 @@
 package io.ably.lib.rest;
 
-import java.util.Collection;
 import java.util.HashMap;
 
-import com.google.gson.JsonElement;
-
 import io.ably.lib.http.AsyncHttp;
+import io.ably.lib.http.AsyncHttpPaginatedQuery;
 import io.ably.lib.http.AsyncPaginatedQuery;
 import io.ably.lib.http.Http;
 import io.ably.lib.http.Http.RequestBody;
+import io.ably.lib.http.Http.Response;
 import io.ably.lib.http.Http.ResponseHandler;
+import io.ably.lib.http.HttpPaginatedQuery;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
-import io.ably.lib.types.*;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.AsyncHttpPaginatedResponse;
+import io.ably.lib.types.AsyncPaginatedResult;
+import io.ably.lib.types.Callback;
+import io.ably.lib.types.ChannelOptions;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.HttpPaginatedResponse;
+import io.ably.lib.types.PaginatedResult;
+import io.ably.lib.types.Param;
+import io.ably.lib.types.Stats;
+import io.ably.lib.types.StatsReader;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 
@@ -74,6 +85,8 @@ public class AblyRest {
 	 *
 	 */
 	public class Channels extends HashMap<String, Channel> {
+		private static final long serialVersionUID = 1L;
+
 		public Channel get(String channelName) {
 			try {
 				return get(channelName, null);
@@ -108,8 +121,11 @@ public class AblyRest {
 	public long time() throws AblyException {
 		return http.get("/time", HttpUtils.defaultAcceptHeaders(false), null, new ResponseHandler<Long>() {
 			@Override
-			public Long handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
-				return (Long)Serialisation.gson.fromJson(new String(body), Long[].class)[0];
+			public Long handleResponse(Response response, ErrorInfo error) throws AblyException {
+				if(error != null) {
+					throw AblyException.fromErrorInfo(error);
+				}
+				return (Long)Serialisation.gson.fromJson(new String(response.body), Long[].class)[0];
 			}}).longValue();
 	}
 
@@ -123,8 +139,11 @@ public class AblyRest {
 	public void timeAsync(Callback<Long> callback) {
 		asyncHttp.get("/time", HttpUtils.defaultAcceptHeaders(false), null, new ResponseHandler<Long>() {
 			@Override
-			public Long handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
-				return Serialisation.gson.fromJson(new String(body), Long[].class)[0];
+			public Long handleResponse(Response response, ErrorInfo error) throws AblyException {
+				if(error != null) {
+					throw AblyException.fromErrorInfo(error);
+				}
+				return Serialisation.gson.fromJson(new String(response.body), Long[].class)[0];
 			}
 		}, callback);
 	}
@@ -162,9 +181,9 @@ public class AblyRest {
 	 * @return a page of results, each represented as a JsonElement
 	 * @throws AblyException if it was not possible to complete the request, or an error response was received
 	 */
-	public PaginatedResult<JsonElement> request(String method, String path, Param[] params, RequestBody body, Param[] headers) throws AblyException {
+	public HttpPaginatedResponse request(String method, String path, Param[] params, RequestBody body, Param[] headers) throws AblyException {
 		headers = HttpUtils.mergeHeaders(HttpUtils.defaultAcceptHeaders(false), headers);
-		return new PaginatedQuery<JsonElement>(http, path, headers, params, body, HttpUtils.jsonArrayResponseHandler).exec(method);
+		return new HttpPaginatedQuery(http, method, path, headers, params, body).exec();
 	}
 
 	/**
@@ -177,9 +196,9 @@ public class AblyRest {
 	 * @param headers (optional; may be null): any additional headers to send; see API-specific documentation
 	 * @param callback: called with the asynchronous result
 	 */
-	public void requestAsync(String method, String path, Param[] params, RequestBody body, Param[] headers, Callback<AsyncPaginatedResult<JsonElement>> callback)  {
+	public void requestAsync(String method, String path, Param[] params, RequestBody body, Param[] headers, final AsyncHttpPaginatedResponse.Callback callback)  {
 		headers = HttpUtils.mergeHeaders(HttpUtils.defaultAcceptHeaders(false), headers);
-		(new AsyncPaginatedQuery<JsonElement>(asyncHttp, path, headers, params, body, HttpUtils.jsonArrayResponseHandler)).exec(method, callback);
+		(new AsyncHttpPaginatedQuery(asyncHttp, method, path, headers, params, body)).exec(callback);
 	}
 
 	/**

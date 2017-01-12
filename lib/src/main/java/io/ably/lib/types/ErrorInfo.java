@@ -97,7 +97,7 @@ public class ErrorInfo {
 		ErrorInfo errorInfo;
 		if(throwable instanceof UnknownHostException
 				|| throwable instanceof NoRouteToHostException) {
-			errorInfo = new ErrorInfo(throwable.getLocalizedMessage(), 404, 40400);
+			errorInfo = new ErrorInfo(throwable.getLocalizedMessage(), 500, 50002);
 		}
 		else if(throwable instanceof IOException) {
 			errorInfo = new ErrorInfo(throwable.getLocalizedMessage(), 500, 50000);

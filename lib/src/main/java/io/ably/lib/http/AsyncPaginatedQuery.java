@@ -4,12 +4,12 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Locale;
+import java.util.List;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import io.ably.lib.http.Http.BodyHandler;
 import io.ably.lib.http.Http.RequestBody;
+import io.ably.lib.http.Http.Response;
 import io.ably.lib.http.Http.ResponseHandler;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.AsyncPaginatedResult;
@@ -65,11 +65,20 @@ public class AsyncPaginatedQuery<T> implements ResponseHandler<AsyncPaginatedRes
 	}
 
 	/**
-	 * Get the result of the first query
+	 * Get the result of a query with the current params
 	 * @param callback. On success returns A PaginatedResult<T> giving the
 	 * first page of results together with any available links to related results pages.
 	 */
 	public void exec(String method, Callback<AsyncPaginatedResult<T>> callback) {
+		exec(method, params, callback);
+	}
+
+	/**
+	 * Get the result of a query with the given params
+	 * @param callback. On success returns A PaginatedResult<T> giving the
+	 * first page of results together with any available links to related results pages.
+	 */
+	public void exec(String method, Param[] params, Callback<AsyncPaginatedResult<T>> callback) {
 		http.exec(path, method, headers, params, requestBody, this, callback);
 	}
 
@@ -83,7 +92,7 @@ public class AsyncPaginatedQuery<T> implements ResponseHandler<AsyncPaginatedRes
 		private ResultPage(T[] contents, Collection<String> linkHeaders) {
 			this.contents = contents;
 			if(linkHeaders != null) {
-				HashMap<String, String> links = parseLinks(linkHeaders);
+				HashMap<String, String> links = PaginatedQuery.parseLinks(linkHeaders);
 				relFirst = links.get("first");
 				relCurrent = links.get("current");
 				relNext = links.get("next");
@@ -115,7 +124,7 @@ public class AsyncPaginatedQuery<T> implements ResponseHandler<AsyncPaginatedRes
 			}
 
 			/* we're expecting the format to be ./path-component?name=value&name=value... */
-			Matcher urlMatch = urlPattern.matcher(linkUrl);
+			Matcher urlMatch = PaginatedQuery.urlPattern.matcher(linkUrl);
 			if(!urlMatch.matches()) {
 				callback.onError(new ErrorInfo("Unexpected link URL format", 500, 50000));
 				return;
@@ -145,8 +154,12 @@ public class AsyncPaginatedQuery<T> implements ResponseHandler<AsyncPaginatedRes
 	}
 
 	@Override
-	public ResultPage handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
-		T[] responseContents = bodyHandler.handleResponseBody(contentType, body);
+	public AsyncPaginatedResult<T> handleResponse(Response response, ErrorInfo error) throws AblyException {
+		if(error != null) {
+			throw AblyException.fromErrorInfo(error);
+		}
+		T[] responseContents = bodyHandler.handleResponseBody(response.contentType, response.body);
+		List<String> linkHeaders = response.getHeaderFields(Http.LINK);
 		return new ResultPage(responseContents, linkHeaders);
 	}
 
@@ -154,27 +167,10 @@ public class AsyncPaginatedQuery<T> implements ResponseHandler<AsyncPaginatedRes
 	 * internal
 	 ****************/
 
-	private static Pattern linkPattern = Pattern.compile("\\s*<(.*)>;\\s*rel=\"(.*)\"");
-	private static Pattern urlPattern = Pattern.compile("\\./(.*)\\?(.*)");
-
-	private static HashMap<String, String> parseLinks(Collection<String> linkHeaders) {
-		HashMap<String, String> result = new HashMap<String, String>();
-		for(String link : linkHeaders) {
-			/* we're expecting the format to be <url>; rel="first current ..." */
-			Matcher linkMatch = linkPattern.matcher(link);
-			if(linkMatch.matches()) {
-				String linkUrl = linkMatch.group(1);
-				for (String linkRel : linkMatch.group(2).toLowerCase(Locale.ENGLISH).split("\\s"))
-					result.put(linkRel, linkUrl);
-			}
-		}
-		return result;
-	}
-
-	private AsyncHttp http;
-	private String path;
-	private Param[] headers;
-	private Param[] params;
-	private RequestBody requestBody;
-	private BodyHandler<T> bodyHandler;
+	private final AsyncHttp http;
+	private final String path;
+	private final Param[] headers;
+	private final Param[] params;
+	private final RequestBody requestBody;
+	private final BodyHandler<T> bodyHandler;
 }

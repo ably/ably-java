@@ -1,18 +1,19 @@
 package io.ably.lib.test.common;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Date;
 
 import com.google.gson.Gson;
 
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.Http.JsonRequestBody;
+import io.ably.lib.http.Http.Response;
 import io.ably.lib.http.Http.ResponseHandler;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.test.loader.ResourceLoader;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.util.Serialisation;
 
@@ -196,8 +197,12 @@ public class Setup {
 			try {
 				testVars = ably.http.post("/apps", null, null, new JsonRequestBody(appSpec), new ResponseHandler<TestVars>() {
 					@Override
-					public TestVars handleResponse(int statusCode, String contentType, Collection<String> headers, byte[] body) throws AblyException {
-						TestVars result = (TestVars)Serialisation.gson.fromJson(new String(body), TestVars.class);
+					public TestVars handleResponse(Response response, ErrorInfo error) throws AblyException {
+						if(error != null) {
+							throw AblyException.fromErrorInfo(error);
+						}
+
+						TestVars result = (TestVars)Serialisation.gson.fromJson(new String(response.body), TestVars.class);
 						result.restHost = host;
 						result.realtimeHost = wsHost;
 						result.environment = environment;

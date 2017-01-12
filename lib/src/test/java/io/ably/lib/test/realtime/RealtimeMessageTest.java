@@ -8,7 +8,6 @@ import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -20,6 +19,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
 
 import io.ably.lib.http.Http;
+import io.ably.lib.http.Http.Response;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
@@ -44,7 +44,6 @@ import io.ably.lib.util.Log;
 public class RealtimeMessageTest extends ParameterizedTest {
 
 	private static final String testMessagesEncodingFile = "ably-common/test-resources/messages-encoding.json";
-	private static final String TAG = RealtimeMessageTest.class.getName();
 	private static Gson gson = new Gson();
 
 	/**
@@ -608,8 +607,11 @@ public class RealtimeMessageTest extends ParameterizedTest {
 
 				MessagesEncodingDataItem persistedMessage = ably.http.get("/channels/" + channel.name + "/messages?limit=1", null, null, new Http.ResponseHandler<MessagesEncodingDataItem[]>() {
 					@Override
-					public MessagesEncodingDataItem[] handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
-						return gson.fromJson(new String(body), MessagesEncodingDataItem[].class);
+					public MessagesEncodingDataItem[] handleResponse(Response response, ErrorInfo error) throws AblyException {
+						if(error != null) {
+							throw AblyException.fromErrorInfo(error);
+						}
+						return gson.fromJson(new String(response.body), MessagesEncodingDataItem[].class);
 					}
 				})[0];
 				assertEquals("Verify persisted message encoding", fixtureMessage.encoding, persistedMessage.encoding);
@@ -697,8 +699,11 @@ public class RealtimeMessageTest extends ParameterizedTest {
 
 					MessagesEncodingDataItem persistedMessage = restRetrieveClient.http.get("/channels/" + restPublishChannel.name + "/messages?limit=1", null, null, new Http.ResponseHandler<MessagesEncodingDataItem[]>() {
 						@Override
-						public MessagesEncodingDataItem[] handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
-							return gson.fromJson(new String(body), MessagesEncodingDataItem[].class);
+						public MessagesEncodingDataItem[] handleResponse(Response response, ErrorInfo error) throws AblyException {
+							if(error != null) {
+								throw AblyException.fromErrorInfo(error);
+							}
+							return gson.fromJson(new String(response.body), MessagesEncodingDataItem[].class);
 						}
 					})[0];
 					assertEquals("Verify persisted message encoding", fixtureMessage.encoding, persistedMessage.encoding);

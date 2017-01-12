@@ -11,7 +11,6 @@ import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +52,7 @@ public class Http {
 	 * @param <T>
 	 */
 	public interface ResponseHandler<T> {
-		T handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException;
+		T handleResponse(Response response, ErrorInfo error) throws AblyException;
 	}
 
 	/**
@@ -213,8 +212,11 @@ public class Http {
 		try {
 			return httpExecute(new URL(url), GET, null, null, new ResponseHandler<byte[]>() {
 				@Override
-				public byte[] handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
-					return body;
+				public byte[] handleResponse(Response response, ErrorInfo error) throws AblyException {
+					if(error != null) {
+						throw AblyException.fromErrorInfo(error);
+					}
+					return response.body;
 				}});
 		} catch(IOException ioe) {
 			throw AblyException.fromThrowable(ioe);
@@ -561,7 +563,8 @@ public class Http {
 		}
 
 		if (response.statusCode >=500 && response.statusCode <= 504) {
-			throw AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus(response.statusLine, response.statusCode));
+			ErrorInfo error = ErrorInfo.fromResponseStatus(response.statusLine, response.statusCode);
+			throw AblyException.fromErrorInfo(error);
 		}
 
 		if(response.statusCode < 200 || response.statusCode >= 300) {
@@ -619,21 +622,23 @@ public class Http {
 					throw exception;
 				}
 			}
-			if(error != null) {
-				Log.e(TAG, "Error response from server: " + error);
-				throw AblyException.fromErrorInfo(error);
-			} else {
+			if(error == null) {
 				Log.e(TAG, "Error response from server: statusCode = " + response.statusCode + "; statusLine = " + response.statusLine);
-				throw AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus(response.statusLine, response.statusCode));
+				error = ErrorInfo.fromResponseStatus(response.statusLine, response.statusCode);
+			} else {
+				Log.e(TAG, "Error response from server: " + error);
 			}
+			if(responseHandler != null) {
+				return responseHandler.handleResponse(response, error);
+			}
+			throw AblyException.fromErrorInfo(error);
 		}
 
-		if(responseHandler == null) {
-			return null;
+		if(responseHandler != null) {
+			return responseHandler.handleResponse(response, null);
 		}
 
-		List<String> linkHeaders = response.getHeaderFields(LINK);
-		return responseHandler.handleResponse(response.statusCode, response.contentType, linkHeaders, response.body);
+		return null;
 	}
 
 	/**
@@ -818,7 +823,6 @@ public class Http {
 	private boolean isDisposed;
 
 	private static final String TAG                 = Http.class.getName();
-	private static final String LINK                = "Link";
 	private static final String ACCEPT              = "Accept";
 	private static final String CONTENT_TYPE        = "Content-Type";
 	private static final String CONTENT_LENGTH      = "Content-Length";
@@ -827,4 +831,5 @@ public class Http {
 	private static final String PROXY_AUTHENTICATE  = "Proxy-Authenticate";
 	private static final String AUTHORIZATION       = "Authorization";
 	private static final String PROXY_AUTHORIZATION = "Proxy-Authorization";
+	static final String         LINK                = "Link";
 }

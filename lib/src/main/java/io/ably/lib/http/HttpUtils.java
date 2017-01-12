@@ -3,18 +3,14 @@ package io.ably.lib.http;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
+import java.util.Map.Entry;
 
 import io.ably.lib.BuildConfig;
-import io.ably.lib.http.Http.BodyHandler;
-import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Param;
-import io.ably.lib.util.Serialisation;
 
 /**
  * HttpUtils: utility methods for Http operations
@@ -95,6 +91,16 @@ public class HttpUtils {
 	    return params;
 	}
 
+	public static Param[] toParamArray(Map<String, List<String>> indexedParams) {
+		List<Param> params = new ArrayList<Param>();
+		for(Entry<String, List<String>> entry : indexedParams.entrySet()) {
+			for(String value : entry.getValue()) {
+				params.add(new Param(entry.getKey(), value));
+			}
+		}
+		return params.toArray(new Param[params.size()]);
+	}
+
 	public static String encodeURIComponent(String input) {
 		try {
 			return URLEncoder.encode(input, "UTF-8")
@@ -109,24 +115,5 @@ public class HttpUtils {
 		} catch (UnsupportedEncodingException e) {}
 		return null;
 	}
-
-	public static BodyHandler<JsonElement> jsonArrayResponseHandler = new BodyHandler<JsonElement>() {
-		@Override
-		public JsonElement[] handleResponseBody(String contentType, byte[] body) throws AblyException {
-			if(!"application/json".equals(contentType)) {
-				return null;
-			}
-			JsonElement jsonBody = Serialisation.gsonParser.parse(new String(body, StandardCharsets.UTF_8));
-			if(!jsonBody.isJsonArray()) {
-				return new JsonElement[] { jsonBody };
-			}
-			JsonArray jsonArray = jsonBody.getAsJsonArray();
-			JsonElement[] items = new JsonElement[jsonArray.size()];
-			for(int i = 0; i < items.length; i++) {
-				items[i] = jsonArray.get(i);
-			}
-			return items;
-		}
-	};
 
 }
