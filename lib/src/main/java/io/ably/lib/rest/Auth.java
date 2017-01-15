@@ -814,9 +814,14 @@ public class Auth {
 		tokenParams = options.defaultTokenParams != null ?
 				options.defaultTokenParams : new TokenParams();
 
-		/* decide default auth method */
+		/* decide default auth method (spec: RSA4) */
 		if(authOptions.key != null) {
-			if(options.clientId == null && !options.useTokenAuth) {
+			if(options.clientId == null &&
+					!options.useTokenAuth &&
+					options.token == null &&
+					options.tokenDetails == null &&
+					options.authCallback == null &&
+					options.authUrl == null) {
 				/* we have the key and do not need to authenticate the client,
 				 * so default to using basic auth */
 				Log.i("Auth()", "anonymous, using basic auth");
