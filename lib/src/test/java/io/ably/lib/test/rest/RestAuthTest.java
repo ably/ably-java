@@ -161,9 +161,10 @@ public class RestAuthTest extends ParameterizedTest {
 
 	/**
 	 * Init library with a key and clientId; expect token auth to be chosen
+	 * Spec: RSA4
 	 */
 	@Test
-	public void authinit3() {
+	public void authinit_clientId_implies_token() {
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			opts.clientId = "testClientId";
@@ -171,7 +172,79 @@ public class RestAuthTest extends ParameterizedTest {
 			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
 		} catch (AblyException e) {
 			e.printStackTrace();
-			fail("authinit3: Unexpected exception instantiating library");
+			fail("authinit_clientId_implies_token: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Init library with a key and token; expect token auth to be chosen
+	 * Spec: RSA4
+	 */
+	@Test
+	public void authinit_token_implies_token() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.token = testVars.keys[0].keyStr;
+			AblyRest ably = new AblyRest(opts);
+			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("authinit_token_implies_token: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Init library with a key and tokenDetails; expect token auth to be chosen
+	 * Spec: RSA4
+	 */
+	@Test
+	public void authinit_tokendetails_implies_token() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.tokenDetails = new TokenDetails() {{ token = testVars.keys[0].keyStr; }};
+			AblyRest ably = new AblyRest(opts);
+			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("authinit_token_implies_token: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Init library with a key and authCallback; expect token auth to be chosen
+	 * Spec: RSA4
+	 */
+	@Test
+	public void authinit_authcallback_implies_token() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.authCallback = new TokenCallback() {
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					return null;
+				}};
+			AblyRest ably = new AblyRest(opts);
+			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("authinit_token_implies_token: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Init library with a key and authUrl; expect token auth to be chosen
+	 * Spec: RSA4
+	 */
+	@Test
+	public void authinit_authurl_implies_token() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.authUrl = "http://auth.url";
+			AblyRest ably = new AblyRest(opts);
+			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("authinit_token_implies_token: Unexpected exception instantiating library");
 		}
 	}
 
