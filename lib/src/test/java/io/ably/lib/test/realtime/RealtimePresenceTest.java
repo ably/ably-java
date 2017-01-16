@@ -2057,7 +2057,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				assertEquals("Verify exactly one LEAVE message was generated", leaveMessages.size(), 1);
 				PresenceMessage leaveMessage = leaveMessages.get(0);
 				assertTrue("Verify LEAVE message follows specs",
-						leaveMessage.clientId.equals(testClientId2) && leaveMessage.id == null &&
+						leaveMessage.action == Action.leave &&
+								leaveMessage.clientId.equals(testClientId2) && leaveMessage.id == null &&
 								Math.abs(leaveMessage.timestamp-reconnectTimestamp) < 500 &&
 								leaveMessage.data.equals(presenceData));
 
@@ -2695,7 +2696,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			new PresenceWaiter(Action.enter, channel1).waitFor(1);
 
 			Channel channel2 = ably2.channels.get(channelName);
-			assertFalse("Verify SYNC is not complete yet", channel2.presence.syncComplete());
+			assertFalse("Verify SYNC is not complete yet", channel2.presence.syncComplete);
 			channel2.attach();
 			/* Wait for the SYNC to complete */
 			new PresenceWaiter(Action.present, channel2).waitFor(1);
@@ -2703,7 +2704,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				channel2.presence.get(true);
 			} catch (InterruptedException e) {}
 			/* Initial SYNC should be complete at this point */
-			assertTrue("Verify SYNC is complete", channel2.presence.syncComplete());
+			assertTrue("Verify SYNC is complete", channel2.presence.syncComplete);
 		} catch (AblyException e) {
 			fail("Unexpected exception");
 		} finally {
@@ -2788,11 +2789,10 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 	/**
 	 * Enter wrong client (mismatching one set in the token), check exception
-	 * Tests RTP8i
 	 */
 	@Test
 	public void presence_enter_mismatched_clientid() throws AblyException {
-		String channelName = "presence_enter_without_permission" + testParams.name;
+		String channelName = "presence_enter_mismatched_clientid" + testParams.name;
 		AblyRealtime ably = null;
 
 		try {

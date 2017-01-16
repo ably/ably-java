@@ -546,14 +546,6 @@ public class Presence {
 		}
 	}
 
-	/**
-	 * (RTP13) Presence#syncComplete returns true if the initial SYNC operation has completed for
-	 * the members present on the channel
-	 */
-	public boolean syncComplete() {
-		return presence.syncComplete;
-	}
-
 	/************************************
 	 * history
 	 ************************************/
@@ -880,7 +872,6 @@ public class Presence {
 		}
 
 		private boolean syncInProgress;
-		private boolean syncComplete;
 		private Collection<String> residualMembers;
 		private final HashMap<String, PresenceMessage> members = new HashMap<String, PresenceMessage>();
 	}
@@ -906,4 +897,10 @@ public class Presence {
 	private String currentSyncChannelSerial;
 	/* Sync in progress is a result of attach operation */
 	private boolean syncAsResultOfAttach;
+
+	/**
+	 * (RTP13) Presence#syncComplete returns true if the initial SYNC operation has completed for
+	 * the members present on the channel
+	 */
+	public boolean syncComplete;
 }
