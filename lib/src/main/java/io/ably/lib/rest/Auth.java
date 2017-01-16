@@ -512,6 +512,7 @@ public class Auth {
 	/**
 	 * Alias of authorize() (0.9 RSA10l)
 	 */
+	@Deprecated
 	public TokenDetails authorise(TokenParams params, AuthOptions options) throws AblyException {
 		Log.w(TAG, "authorise() is deprecated and will be removed in 1.0. Please use authorize() instead");
 		return authorize(params, options);
