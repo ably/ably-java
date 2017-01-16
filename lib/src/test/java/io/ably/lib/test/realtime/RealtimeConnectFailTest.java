@@ -36,6 +36,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 	/**
 	 * Verify that the connection enters the failed state, after attempting
 	 * to connect with invalid app
+	 * Spec: RTN4f
 	 */
 	@Test
 	public void connect_fail_notfound_error() throws AblyException {
@@ -348,6 +349,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 
 	/**
 	 * Test that connection manager correctly fails messages set stored in message queue
+	 * Spec: RTN7c
 	 */
 
 	@Test
