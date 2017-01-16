@@ -1,5 +1,25 @@
 # Change Log
 
+## [v0.8.10](https://github.com/ably/ably-java/tree/HEAD)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v0.8.9...v0.8.10)
+
+**Implemented enhancements:**
+
+- Remove deprecated ProtocolMessage\#connectionKey [\#262](https://github.com/ably/ably-java/issues/262)
+- Add Proguard support [\#223](https://github.com/ably/ably-java/issues/223)
+
+**Closed issues:**
+
+- Add proguard warning for org.msgpack.core.buffer.\*\* [\#279](https://github.com/ably/ably-java/issues/279)
+- Add support for ConnectionDetails.connectionStateTtl [\#267](https://github.com/ably/ably-java/issues/267)
+- Msgpack truncates data member [\#261](https://github.com/ably/ably-java/issues/261)
+
+**Merged pull requests:**
+
+- Remove proguard warnings for missing dependencies of msgpack library [\#281](https://github.com/ably/ably-java/pull/281) ([paddybyers](https://github.com/paddybyers))
+- Update workaround for Android msgpack bugs [\#269](https://github.com/ably/ably-java/pull/269) ([paddybyers](https://github.com/paddybyers))
+
 ## [v0.8.9](https://github.com/ably/ably-java/tree/v0.8.9) (2017-01-01)
 [Full Changelog](https://github.com/ably/ably-java/compare/v0.8.8...v0.8.9)
 
