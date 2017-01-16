@@ -279,6 +279,7 @@ public class RestAuthTest extends ParameterizedTest {
 
 	/**
 	 * Verify authURL called and handled when returning token request
+	 * Spec: RSA8c
 	 */
 	@Test
 	public void auth_authURL_tokenrequest() {
@@ -307,6 +308,7 @@ public class RestAuthTest extends ParameterizedTest {
 
 	/**
 	 * Verify authURL called and handled when returning token
+	 * Spec: RSA8c
 	 */
 	@Test
 	public void auth_authURL_token() {
@@ -335,6 +337,7 @@ public class RestAuthTest extends ParameterizedTest {
 
 	/**
 	 * Verify authURL called and handled when returning error
+	 * Spec: RSA8c
 	 */
 	@Test
 	public void auth_authURL_err() {
@@ -362,6 +365,7 @@ public class RestAuthTest extends ParameterizedTest {
 
 	/**
 	 * Verify authURL is passed specified params
+	 * Spec: RSA8c3
 	 */
 	@Test
 	public void auth_authURL_params() {
@@ -391,6 +395,7 @@ public class RestAuthTest extends ParameterizedTest {
 
 	/**
 	 * Verify authURL is passed specified headers
+	 * Spec: RSA8c3
 	 */
 	@Test
 	public void auth_authURL_headers() {
@@ -420,6 +425,7 @@ public class RestAuthTest extends ParameterizedTest {
 
 	/**
 	 * Verify authCallback called and handled when returning {@code TokenRequest}
+	 * Spec: RSA8d
 	 */
 	@Test
 	public void auth_authcallback_tokenrequest() {
@@ -454,6 +460,7 @@ public class RestAuthTest extends ParameterizedTest {
 
 	/**
 	 * Verify authCallback called and handled when returning {@code TokenDetails}
+	 * Spec: RSA8d
 	 */
 	@Test
 	public void auth_authcallback_tokendetails() {
@@ -488,6 +495,7 @@ public class RestAuthTest extends ParameterizedTest {
 
 	/**
 	 * Verify authCallback called and handled when returning token string
+	 * Spec: RSA8d
 	 */
 	@Test
 	public void auth_authcallback_tokenstring() throws AblyException {
@@ -500,7 +508,7 @@ public class RestAuthTest extends ParameterizedTest {
 			}
 		};
 
-			/* create Ably instance without key */
+		/* create Ably instance without key */
 		ClientOptions opts = createOptions();
 		opts.authCallback = authCallback;
 		AblyRest ably = new AblyRest(opts);
