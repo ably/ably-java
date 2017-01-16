@@ -22,10 +22,11 @@ public class MockWebsocketFactory implements ITransport.Factory {
 		MockWebsocketTransport.sendBehaviour = MockWebsocketTransport.SendBehaviour.block;
 	}
 	public static void blockSend() { blockSend(null); }
-	public static void allowSend() {
-		MockWebsocketTransport.messageFilter = null;
+	public static void allowSend(MessageFilter filter) {
+		MockWebsocketTransport.messageFilter = filter;
 		MockWebsocketTransport.sendBehaviour = MockWebsocketTransport.SendBehaviour.allow;
 	}
+	public static void allowSend() { allowSend(null);}
 	public static void failSend(MessageFilter filter) {
 		MockWebsocketTransport.messageFilter = filter;
 		MockWebsocketTransport.sendBehaviour = MockWebsocketTransport.SendBehaviour.fail;
@@ -60,6 +61,8 @@ public class MockWebsocketFactory implements ITransport.Factory {
 		public void send(ProtocolMessage msg) throws AblyException {
 			switch (sendBehaviour) {
 				case allow:
+					if (messageFilter != null)
+						messageFilter.matches(msg);
 					super.send(msg);
 					break;
 				case block:

@@ -15,14 +15,13 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import io.ably.lib.realtime.*;
 import io.ably.lib.types.*;
+import io.ably.lib.util.Serialisation;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -1976,7 +1975,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				/*
 				 * On the first run to test RTP19a we don't enter client1 so the server on
 				 * return from suspend sees no presence data and sends ATTACHED without HAS_PRESENCE
-				 * The client then should remote all the members from the presence map and then
+				 * The client then should remove all the members from the presence map and then
 				 * re-enter client2. On the second loop run we enter client2 and receive ATTACHED with
 				 * HAS_PRESENCE
 				 */
@@ -2873,6 +2872,141 @@ public class RealtimePresenceTest extends ParameterizedTest {
 		} finally {
 			if (ably != null)
 				ably.close();
+		}
+	}
+
+	/**
+	 * Verify protocol messages sent on Presence.enter() follow specs if sent from correct state and
+	 * the call fails if sent from DETACHED state
+	 *
+	 * Tests RTP8c, RTP8g
+	 */
+	@Test
+	public void protocol_enter_message_format() throws AblyException, InterruptedException {
+		AblyRealtime ably = null;
+		String oldTransport = Defaults.TRANSPORT;
+
+		try {
+			final ArrayList<PresenceMessage> sentPresence = new ArrayList<>();
+			Defaults.TRANSPORT = MockWebsocketFactory.class.getName();
+			/* Allow send but record all the presence messages for later analysis */
+			MockWebsocketFactory.allowSend(new MockWebsocketFactory.MessageFilter() {
+				@Override
+				public boolean matches(ProtocolMessage message) {
+					if (message.action == ProtocolMessage.Action.presence && message.presence != null) {
+						synchronized (sentPresence) {
+							Collections.addAll(sentPresence, message.presence);
+							sentPresence.notify();
+						}
+					}
+					return true;
+				}
+			});
+
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.clientId = testClientId1;
+			ably = new AblyRealtime(opts);
+
+			Channel channel = ably.channels.get("protocol_enter_message_format" + testParams.name);
+			/* using testClientId1 */
+			channel.presence.enter(null, null);
+			channel.presence.enterClient(testClientId2);
+
+			synchronized (sentPresence) {
+				while (sentPresence.size() < 2)
+					sentPresence.wait();
+			}
+
+			assertEquals("Verify number of presence messages sent", sentPresence.size(), 2);
+			assertTrue("Verify presence messages follows spec",
+					sentPresence.get(0).action == Action.enter &&
+							sentPresence.get(0).clientId.equals(testClientId1) &&
+							sentPresence.get(1).action == Action.enter &&
+							sentPresence.get(1).clientId.equals(testClientId2)
+			);
+
+			channel.detach();
+			new ChannelWaiter(channel).waitFor(ChannelState.detached);
+
+			try {
+				channel.presence.enterClient("testClient3");
+				fail("Presence.enterClient() shouldn't succeed in detached state");
+			} catch (AblyException e) {}
+
+		} finally {
+			if (ably != null)
+				ably.close();
+			Defaults.TRANSPORT = oldTransport;
+		}
+	}
+
+	/*
+	 * Verify presence data is received and encoded/decoded correctly
+	 * Tests RTP8e
+	 */
+	@Test
+	public void presence_encoding() throws AblyException, InterruptedException {
+		AblyRealtime ably1 = null, ably2 = null;
+		try {
+			/* Set up two connections: one for entering, one for listening */
+			final String channelName = "presence_encoding" + testParams.name;
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			ably1 = new AblyRealtime(opts);
+			ably2 = new AblyRealtime(opts);
+
+			Channel channel1 = ably1.channels.get(channelName);
+			Channel channel2 = ably2.channels.get(channelName);
+
+			channel2.attach();
+			new ChannelWaiter(channel2).waitFor(ChannelState.attached);
+			final ArrayList<Object> receivedPresenceData = new ArrayList<>();
+			channel2.presence.subscribe(new Presence.PresenceListener() {
+				@Override
+				public void onPresenceMessage(PresenceMessage messages) {
+					synchronized (receivedPresenceData) {
+						receivedPresenceData.add(messages.data);
+						receivedPresenceData.notify();
+					}
+				}
+			});
+
+			String testStringData = "123";
+			byte[] testByteData = new byte[] {1, 2, 3};
+			JsonElement testJsonData = new JsonParser().parse("{\"var1\":\"val1\", \"var2\": \"val2\"}");
+
+			channel1.presence.enterClient("1", testStringData);
+			channel1.presence.enterClient("2", testByteData);
+			channel1.presence.enterClient("3", testJsonData);
+			synchronized (receivedPresenceData) {
+				while (receivedPresenceData.size() < 3)
+					receivedPresenceData.wait();
+			}
+
+			assertEquals("Verify number of received presence messages", receivedPresenceData.size(), 3);
+			assertEquals("Verify string data", receivedPresenceData.get(0), testStringData);
+			assertTrue("Verify byte[] data",
+					receivedPresenceData.get(1) instanceof byte[] &&
+					Arrays.equals((byte[])receivedPresenceData.get(1), testByteData));
+			assertEquals("Verify JSON data", receivedPresenceData.get(2), testJsonData);
+
+			/* use data from ENTER message */
+			channel1.presence.leaveClient("1");
+			/* use different data */
+			channel1.presence.leaveClient("2", "leave");
+
+			synchronized (receivedPresenceData) {
+				while (receivedPresenceData.size() < 5)
+					receivedPresenceData.wait();
+			}
+
+			assertEquals("Verify string data for enter message is used in leave message", receivedPresenceData.get(3), testStringData);
+			assertEquals("Verify overridden leave data", receivedPresenceData.get(4), "leave");
+
+		} finally {
+			if (ably1 != null)
+				ably1.close();
+			if (ably2 != null)
+				ably2.close();
 		}
 	}
 
