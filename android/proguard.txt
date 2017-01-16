@@ -1,3 +1,4 @@
 -keep public class io.ably.lib.transport.WebSocketTransport$Factory {*;}
 -keep class io.ably.lib.types.** {*;}
 -keep class org.msgpack.core.** {*;}
+-dontwarn org.msgpack.core.buffer.**
