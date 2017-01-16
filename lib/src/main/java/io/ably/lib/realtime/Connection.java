@@ -89,14 +89,17 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
 			emit(ConnectionEvent.update, ConnectionStateListener.ConnectionStateChange.createUpdateEvent(errorInfo));
 	}
 
+	@Deprecated
 	public void emit(ConnectionState state, ConnectionStateChange stateChange) {
 		super.emit(state.getConnectionEvent(), stateChange);
 	}
 
+	@Deprecated
 	public void on(ConnectionState state, ConnectionStateListener listener) {
 		super.on(state.getConnectionEvent(), listener);
 	}
 
+	@Deprecated
 	public void once(ConnectionState state, ConnectionStateListener listener) {
 		super.once(state.getConnectionEvent(), listener);
 	}
