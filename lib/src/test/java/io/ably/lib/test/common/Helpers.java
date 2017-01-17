@@ -1,5 +1,6 @@
 package io.ably.lib.test.common;
 
+import java.net.HttpURLConnection;
 import java.util.*;
 
 import com.google.gson.Gson;
@@ -7,7 +8,11 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-import io.ably.lib.debug.RawProtocolListener;
+import io.ably.lib.debug.DebugOptions.RawHttpListener;
+import io.ably.lib.debug.DebugOptions.RawProtocolListener;
+import io.ably.lib.http.Http.RequestBody;
+import io.ably.lib.http.Http.Response;
+import io.ably.lib.http.HttpUtils;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.Channel.MessageListener;
 import io.ably.lib.realtime.ChannelState;
@@ -48,6 +53,7 @@ public class Helpers {
 	 */
 	public static class CompletionWaiter implements CompletionListener {
 		public boolean success;
+		public int successCount = 0;
 		public ErrorInfo error;
 
 		/**
@@ -55,10 +61,15 @@ public class Helpers {
 		 */
 		public CompletionWaiter() {}
 
-		public synchronized ErrorInfo waitFor() {
-			while(!success && error == null)
+		public synchronized ErrorInfo waitFor(int count) {
+			while(successCount<count && error == null)
 				try { wait(); } catch(InterruptedException e) {}
+			success = successCount >= count;
 			return error;
+		}
+
+		public synchronized ErrorInfo waitFor() {
+			return waitFor(1);
 		}
 
 		/**
@@ -67,7 +78,7 @@ public class Helpers {
 		@Override
 		public void onSuccess() {
 			synchronized(this) {
-				success = true;
+				successCount++;
 				notifyAll();
 			}
 		}
@@ -330,7 +341,10 @@ public class Helpers {
 		 * @return
 		 */
 		public synchronized int getCount(ConnectionState state) {
-			return stateCounts.get(state).value;
+			Counter counter = stateCounts.get(state);
+			if (counter == null)
+				return 0;
+			return counter.value;
 		}
 
 		/**
@@ -339,6 +353,7 @@ public class Helpers {
 		 * meets their requirements.
 		 */
 		public synchronized void reset() {
+			Log.d(TAG, "reset()");
 			stateCounts = new HashMap<ConnectionState, Counter>();
 		}
 
@@ -351,6 +366,7 @@ public class Helpers {
 				reason = state.reason;
 				Counter counter = stateCounts.get(state.current); if(counter == null) stateCounts.put(state.current, (counter = new Counter()));
 				counter.incr();
+				Log.d(TAG, "onConnectionStateChanged(" + state.current + "): count now " + counter.value);
 				notify();
 			}
 		}
@@ -406,6 +422,7 @@ public class Helpers {
 	 *
 	 */
 	public static class ChannelWaiter implements ChannelStateListener {
+		private static final String TAG = ChannelWaiter.class.getName();
 
 		/**
 		 * Public API
@@ -421,8 +438,10 @@ public class Helpers {
 		 * @param state
 		 */
 		public synchronized ErrorInfo waitFor(ChannelState state) {
+			Log.d(TAG, "waitFor(" + state + ")");
 			while(channel.state != state)
 				try { wait(); } catch(InterruptedException e) {}
+			Log.d(TAG, "waitFor done: " + channel.state + ", " + channel.reason + ")");
 			return channel.reason;
 		}
 
@@ -430,7 +449,7 @@ public class Helpers {
 		 * ChannelStateListener interface
 		 */
 		@Override
-		public void onChannelStateChanged(ChannelState state, ErrorInfo reason) {
+		public void onChannelStateChanged(ChannelStateListener.ChannelStateChange stateChange) {
 			synchronized(this) { notify(); }
 		}
 
@@ -609,6 +628,127 @@ public class Helpers {
 
 		public T result;
 		public ErrorInfo error;
+	}
+
+	public static boolean equalStrings(String one, String two) {
+		return one != null && one.equals(two);
+	}
+
+	public static boolean equalNullableStrings(String one, String two) {
+		return (one == null) ? (two == null) : one.equals(two);
+	}
+
+	public static class RawHttpRequest {
+		public String id;
+		public HttpURLConnection conn;
+		public String method;
+		public String authHeader;
+		public Map<String, List<String>> requestHeaders;
+		public RequestBody requestBody;
+		public Response response;
+		public Throwable error;
+	}
+
+	public static class RawHttpTracker extends LinkedHashMap<String, RawHttpRequest> implements RawHttpListener {
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders,
+				RequestBody requestBody) {
+
+			/* duplicating if necessary, ensure lower-case versions of header names are present */
+			Map<String, List<String>> normalisedHeaders = new HashMap<String, List<String>>();
+			if(requestHeaders != null) {
+				normalisedHeaders.putAll(requestHeaders);
+				for(String header : requestHeaders.keySet()) {
+					normalisedHeaders.put(header.toLowerCase(), requestHeaders.get(header));
+				}
+			}
+			RawHttpRequest req = new RawHttpRequest();
+			req.id = id;
+			req.conn = conn;
+			req.method = method;
+			req.authHeader = authHeader;
+			req.requestHeaders = normalisedHeaders;
+			req.requestBody = requestBody;
+			put(id, req);
+		}
+
+		@Override
+		public void onRawHttpResponse(String id, Response response) {
+			/* duplicating if necessary, ensure lower-case versions of header names are present */
+			Map<String, List<String>> headers = response.headers;
+			Map<String, List<String>> normalisedHeaders = new HashMap<String, List<String>>();
+			if(headers != null) {
+				normalisedHeaders.putAll(headers);
+				for(String header : headers.keySet()) {
+					normalisedHeaders.put(header.toLowerCase(), headers.get(header));
+				}
+				response.headers = normalisedHeaders;
+			}
+
+			RawHttpRequest req = get(id);
+			if(req != null) {
+				req.response = response;
+			}
+		}
+
+		@Override
+		public void onRawHttpException(String id, Throwable t) {
+			RawHttpRequest req = get(id);
+			if(req != null) {
+				req.error = t;
+			}
+		}
+
+		public RawHttpRequest getFirstRequest() {
+			Collection<RawHttpRequest> reqs = values();
+			return (RawHttpRequest) reqs.toArray()[0];
+		}
+
+		public RawHttpRequest getLastRequest() {
+			Collection<RawHttpRequest> reqs = values();
+			return (RawHttpRequest) reqs.toArray()[reqs.size() - 1];
+		}
+
+		public String getRequestParam(String id, String param) {
+			String result = null;
+			RawHttpRequest req = get(id);
+			if(req != null) {
+				String query = req.conn.getURL().getQuery();
+				if(query != null && !query.isEmpty()) {
+					result = HttpUtils.decodeParams(query).get(param);
+				}
+			}
+			return result;
+		}
+
+		public List<String> getRequestHeader(String id, String header) {
+			List<String> result = null;
+			RawHttpRequest req = get(id);
+			if(req != null) {
+				header = header.toLowerCase();
+				if(header.equalsIgnoreCase("authorization")) {
+					result = Collections.singletonList(req.authHeader);
+				} else {
+					result = req.requestHeaders.get(header);
+				}
+			}
+			return result;
+		}
+
+		public List<String> getResponseHeader(String id, String header) {
+			List<String> result = null;
+			RawHttpRequest req = get(id);
+			if(req != null) {
+				header = header.toLowerCase();
+				List<String>headers = req.response.headers.get(header);
+				if(headers != null && headers.size() > 0) {
+					result = headers;
+				}
+			}
+			return result;
+		}
 	}
 
 	public static class RandomGenerator {

@@ -7,7 +7,7 @@ import io.ably.lib.types.Stats;
 import io.ably.lib.util.Serialisation;
 
 public class StatsWriter {
-	public static RequestBody asJSONRequest(Stats[] stats) throws AblyException {
-		return new Http.JSONRequestBody(Serialisation.gson.toJson(stats));
+	public static RequestBody asJsonRequest(Stats[] stats) throws AblyException {
+		return new Http.JsonRequestBody(Serialisation.gson.toJson(stats));
 	}
 }

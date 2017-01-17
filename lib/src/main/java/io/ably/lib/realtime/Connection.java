@@ -9,7 +9,7 @@ import io.ably.lib.util.EventEmitter;
  * A class representing the connection associated with an AblyRealtime instance.
  * The Connection object exposes the lifecycle and parameters of the realtime connection.
  */
-public class Connection extends EventEmitter<ConnectionState, ConnectionStateListener> {
+public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateListener> {
 
 	/**
 	 * The current state of this Connection.
@@ -80,11 +80,30 @@ public class Connection extends EventEmitter<ConnectionState, ConnectionStateLis
 	}
 
 	@Override
-	protected void apply(ConnectionStateListener listener, ConnectionState state, Object... args) {
+	protected void apply(ConnectionStateListener listener, ConnectionEvent event, Object... args) {
 		listener.onConnectionStateChanged((ConnectionStateChange)args[0]);
+	}
+
+	public void emitUpdate(ErrorInfo errorInfo) {
+		if (state == ConnectionState.connected)
+			emit(ConnectionEvent.update, ConnectionStateListener.ConnectionStateChange.createUpdateEvent(errorInfo));
+	}
+
+	@Deprecated
+	public void emit(ConnectionState state, ConnectionStateChange stateChange) {
+		super.emit(state.getConnectionEvent(), stateChange);
+	}
+
+	@Deprecated
+	public void on(ConnectionState state, ConnectionStateListener listener) {
+		super.on(state.getConnectionEvent(), listener);
+	}
+
+	@Deprecated
+	public void once(ConnectionState state, ConnectionStateListener listener) {
+		super.once(state.getConnectionEvent(), listener);
 	}
 
 	final AblyRealtime ably;
 	public final ConnectionManager connectionManager;
-
 }

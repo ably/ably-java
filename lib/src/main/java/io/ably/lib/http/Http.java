@@ -10,13 +10,15 @@ import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
-import java.util.Collection;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.google.gson.JsonParseException;
 
+import io.ably.lib.debug.DebugOptions;
+import io.ably.lib.debug.DebugOptions.RawHttpListener;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.AuthMethod;
 import io.ably.lib.transport.Defaults;
@@ -41,6 +43,7 @@ import io.ably.lib.util.Serialisation;
  */
 public class Http {
 	public static final String GET    = "GET";
+	public static final String PUT    = "PUT";
 	public static final String POST   = "POST";
 	public static final String DELETE = "DELETE";
 
@@ -49,7 +52,7 @@ public class Http {
 	 * @param <T>
 	 */
 	public interface ResponseHandler<T> {
-		T handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException;
+		T handleResponse(Response response, ErrorInfo error) throws AblyException;
 	}
 
 	/**
@@ -85,13 +88,13 @@ public class Http {
 	/**
 	 * A type encapsulating an http response
 	 */
-	private static class Response {
-		int statusCode;
-		String statusLine;
-		Map<String,List<String>> headers;
-		String contentType;
-		int contentLength;
-		byte[] body;
+	public static class Response {
+		public int statusCode;
+		public String statusLine;
+		public Map<String,List<String>> headers;
+		public String contentType;
+		public int contentLength;
+		public byte[] body;
 
 		/**
 		 * Returns the value of the named header field.
@@ -116,12 +119,12 @@ public class Http {
 	/**
 	 * A RequestBody wrapping a JSON-serialisable object
 	 */
-	public static class JSONRequestBody implements RequestBody {
-		public JSONRequestBody(String jsonText) { this.jsonText = jsonText; }
-		public JSONRequestBody(Object ob) { this(Serialisation.gson.toJson(ob)); }
+	public static class JsonRequestBody implements RequestBody {
+		public JsonRequestBody(String jsonText) { this.jsonText = jsonText; }
+		public JsonRequestBody(Object ob) { this(Serialisation.gson.toJson(ob)); }
 
 		@Override
-		public byte[] getEncoded() { return (bytes != null) ? bytes : (bytes = jsonText.getBytes()); }
+		public byte[] getEncoded() { return (bytes != null) ? bytes : (bytes = jsonText.getBytes(StandardCharsets.UTF_8)); }
 		@Override
 		public String getContentType() { return JSON; }
 
@@ -209,8 +212,11 @@ public class Http {
 		try {
 			return httpExecute(new URL(url), GET, null, null, new ResponseHandler<byte[]>() {
 				@Override
-				public byte[] handleResponse(int statusCode, String contentType, Collection<String> linkHeaders, byte[] body) throws AblyException {
-					return body;
+				public byte[] handleResponse(Response response, ErrorInfo error) throws AblyException {
+					if(error != null) {
+						throw AblyException.fromErrorInfo(error);
+					}
+					return response.body;
 				}});
 		} catch(IOException ioe) {
 			throw AblyException.fromThrowable(ioe);
@@ -244,6 +250,20 @@ public class Http {
 	}
 
 	/**
+	 * HTTP PUT for Ably host, with fallbacks
+	 * @param path
+	 * @param headers
+	 * @param params
+	 * @param requestBody
+	 * @param responseHandler
+	 * @return
+	 * @throws AblyException
+	 */
+	public <T> T put(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
+		return ablyHttpExecute(path, PUT, headers, params, requestBody, responseHandler);
+	}
+
+	/**
 	 * HTTP POST for Ably host, with fallbacks
 	 * @param path
 	 * @param headers
@@ -270,6 +290,21 @@ public class Http {
 		return ablyHttpExecute(path, DELETE, headers, params, null, responseHandler);
 	}
 
+	/**
+	 * HTTP request for Ably host, with fallbacks
+	 * @param path
+	 * @param method
+	 * @param headers
+	 * @param params
+	 * @param requestBody
+	 * @param responseHandler
+	 * @return
+	 * @throws AblyException
+	 */
+	public <T> T exec(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
+		return ablyHttpExecute(path, method, headers, params, requestBody, responseHandler);
+	}
+
 	/**************************
 	 *     Internal API
 	 **************************/
@@ -287,19 +322,16 @@ public class Http {
 		if(auth.getAuthMethod() == AuthMethod.basic) {
 			authHeader = "Basic " + Base64Coder.encodeString(auth.getBasicCredentials());
 		} else {
-			Auth.AuthOptions options = null;
-			if (renew) {
-				options = new Auth.AuthOptions();
-				options.force = true;
-			}
-
-			auth.authorise(options, null);
+			if (renew)
+				auth.renew();
+			else
+				auth.ensureValidAuth();
 			authHeader = "Bearer " + auth.getTokenAuth().getEncodedToken();
 		}
 		return authHeader;
 	}
 
-	void authorise(boolean renew) throws AblyException {
+	void authorize(boolean renew) throws AblyException {
 		getAuthorizationHeader(renew);
 	}
 
@@ -401,12 +433,15 @@ public class Http {
 	<T> T httpExecute(HttpURLConnection conn, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, boolean withProxyCredentials, ResponseHandler<T> responseHandler) throws AblyException {
 		Response response;
 		boolean credentialsIncluded = false;
+		RawHttpListener rawHttpListener = null;
+		String id = null;
 		try {
 			/* prepare connection */
 			conn.setRequestMethod(method);
 			conn.setConnectTimeout(options.httpOpenTimeout);
 			conn.setReadTimeout(options.httpRequestTimeout);
 			conn.setDoInput(true);
+
 			if(withCredentials && authHeader != null) {
 				conn.setRequestProperty(AUTHORIZATION, authHeader);
 				credentialsIncluded = true;
@@ -426,16 +461,48 @@ public class Http {
 			if(!acceptSet) { conn.setRequestProperty(ACCEPT, JSON); }
 
 			/* pass required headers */
-			conn.setRequestProperty(HttpUtils.X_ABLY_VERSION_HEADER, HttpUtils.X_ABLY_VERSION_VALUE);
-			conn.setRequestProperty(HttpUtils.X_ABLY_LIB_HEADER, HttpUtils.X_ABLY_LIB_VALUE);
+			conn.setRequestProperty(Defaults.ABLY_VERSION_HEADER, Defaults.ABLY_VERSION);
+			conn.setRequestProperty(Defaults.ABLY_LIB_HEADER, Defaults.ABLY_LIB_VERSION);
+
+			/* prepare request body */
+			byte[] body = null;
+			if(requestBody != null) {
+				body = prepareRequestBody(requestBody, conn);
+				if (Log.level <= Log.VERBOSE)
+					Log.v(TAG, System.lineSeparator() + new String(body));
+			}
+
+			/* log raw request details */
+			Map<String, List<String>> requestProperties = conn.getRequestProperties();
+			if (Log.level <= Log.VERBOSE) {
+				Log.v(TAG, "HTTP request: " + conn.getURL() + " " + method);
+				if (credentialsIncluded)
+					Log.v(TAG, "  " + AUTHORIZATION + ": " + authHeader);
+				for (Map.Entry<String, List<String>> entry : requestProperties.entrySet())
+					for (String val : entry.getValue())
+						Log.v(TAG, "  " + entry.getKey() + ": " + val);
+			}
+
+			if(options instanceof DebugOptions) {
+				rawHttpListener = ((DebugOptions)options).httpListener;
+				if(rawHttpListener != null) {
+					id = String.valueOf(Math.random()).substring(2);
+					rawHttpListener.onRawHttpRequest(id, conn, method, (credentialsIncluded ? authHeader : null), requestProperties, requestBody);
+				}
+			}
 
 			/* send request body */
 			if(requestBody != null) {
-				writeRequestBody(requestBody, conn);
+				writeRequestBody(body, conn);
 			}
-
 			response = readResponse(conn);
+			if(rawHttpListener != null) {
+				rawHttpListener.onRawHttpResponse(id, response);
+			}
 		} catch(IOException ioe) {
+			if(rawHttpListener != null) {
+				rawHttpListener.onRawHttpException(id, ioe);
+			}
 			throw AblyException.fromThrowable(ioe);
 		}
 
@@ -461,12 +528,12 @@ public class Http {
 			} catch(AuthRequiredException are) {
 				if(are.authChallenge != null && allowAblyAuth) {
 					if(authPending) {
-						authorise(false);
+						authorize(false);
 						authPending = false;
 						continue;
 					}
 					if(are.expired && renewPending) {
-						authorise(true);
+						authorize(true);
 						renewPending = false;
 						continue;
 					}
@@ -496,7 +563,8 @@ public class Http {
 		}
 
 		if (response.statusCode >=500 && response.statusCode <= 504) {
-			throw AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus(response.statusLine, response.statusCode));
+			ErrorInfo error = ErrorInfo.fromResponseStatus(response.statusLine, response.statusCode);
+			throw AblyException.fromErrorInfo(error);
 		}
 
 		if(response.statusCode < 200 || response.statusCode >= 300) {
@@ -554,36 +622,43 @@ public class Http {
 					throw exception;
 				}
 			}
-			if(error != null) {
-				Log.e(TAG, "Error response from server: " + error);
-				throw AblyException.fromErrorInfo(error);
-			} else {
+			if(error == null) {
 				Log.e(TAG, "Error response from server: statusCode = " + response.statusCode + "; statusLine = " + response.statusLine);
-				throw AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus(response.statusLine, response.statusCode));
+				error = ErrorInfo.fromResponseStatus(response.statusLine, response.statusCode);
+			} else {
+				Log.e(TAG, "Error response from server: " + error);
 			}
+			if(responseHandler != null) {
+				return responseHandler.handleResponse(response, error);
+			}
+			throw AblyException.fromErrorInfo(error);
 		}
 
-		if(responseHandler == null) {
-			return null;
+		if(responseHandler != null) {
+			return responseHandler.handleResponse(response, null);
 		}
 
-		List<String> linkHeaders = response.getHeaderFields(LINK);
-		return responseHandler.handleResponse(response.statusCode, response.contentType, linkHeaders, response.body);
+		return null;
 	}
 
 	/**
 	 * Emit the request body for an HTTP request
 	 * @param requestBody
 	 * @param conn
+	 * @return body
 	 * @throws IOException
 	 */
-	private void writeRequestBody(RequestBody requestBody, HttpURLConnection conn) throws IOException {
+	private byte[] prepareRequestBody(RequestBody requestBody, HttpURLConnection conn) throws IOException {
 		conn.setDoOutput(true);
 		byte[] body = requestBody.getEncoded();
 		int length = body.length;
 		conn.setFixedLengthStreamingMode(length);
 		conn.setRequestProperty(CONTENT_TYPE, requestBody.getContentType());
 		conn.setRequestProperty(CONTENT_LENGTH, Integer.toString(length));
+		return body;
+	}
+
+	private void writeRequestBody(byte[] body, HttpURLConnection conn) throws IOException {
 		OutputStream os = conn.getOutputStream();
 		os.write(body);
 	}
@@ -600,12 +675,16 @@ public class Http {
 		response.statusLine = connection.getResponseMessage();
 
 		/* Store all header field names in lower-case to eliminate case insensitivity */
+		Log.v(TAG, "HTTP response:");
 		Map<String, List<String>> caseSensitiveHeaders = connection.getHeaderFields();
 		response.headers = new HashMap<>(caseSensitiveHeaders.size(), 1f);
 
 		for (Map.Entry<String, List<String>> entry : caseSensitiveHeaders.entrySet()) {
 			if (entry.getKey() != null) {
 				response.headers.put(entry.getKey().toLowerCase(), entry.getValue());
+				if (Log.level <= Log.VERBOSE)
+					for (String val : entry.getValue())
+						Log.v(TAG, entry.getKey() + ": " + val);
 			}
 		}
 
@@ -621,6 +700,7 @@ public class Http {
 
 		try {
 			response.body = readInputStream(is, response.contentLength);
+			Log.v(TAG, System.lineSeparator() + new String(response.body));
 		} catch (NullPointerException e) {
 			/* nothing to read */
 		} finally {
@@ -743,7 +823,6 @@ public class Http {
 	private boolean isDisposed;
 
 	private static final String TAG                 = Http.class.getName();
-	private static final String LINK                = "Link";
 	private static final String ACCEPT              = "Accept";
 	private static final String CONTENT_TYPE        = "Content-Type";
 	private static final String CONTENT_LENGTH      = "Content-Length";
@@ -752,4 +831,5 @@ public class Http {
 	private static final String PROXY_AUTHENTICATE  = "Proxy-Authenticate";
 	private static final String AUTHORIZATION       = "Authorization";
 	private static final String PROXY_AUTHORIZATION = "Proxy-Authorization";
+	static final String         LINK                = "Link";
 }

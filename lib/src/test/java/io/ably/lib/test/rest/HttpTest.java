@@ -39,6 +39,7 @@ import org.mockito.stubbing.Answer;
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
 import io.ably.lib.http.Http;
+import io.ably.lib.http.Http.ResponseHandler;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.test.util.StatusHandler;
 import io.ably.lib.transport.Defaults;
@@ -232,7 +233,7 @@ public class HttpTest {
 	@Test
 	public void http_ably_execute_first_attempt_to_default() throws AblyException {
 		String hostExpectedPattern = PATTERN_HOST_FALLBACK;
-		ClientOptions options = new ClientOptions();
+		ClientOptions options = new ClientOptions("not:a.key");
 		options.httpMaxRetryCount = 1;
 		AblyRest ably = new AblyRest(options);
 
@@ -313,7 +314,7 @@ public class HttpTest {
 	@Test
 	public void http_ably_execute_overriden_host() throws AblyException {
 		final String fakeHost = "fake.ably.io";
-		ClientOptions options = new ClientOptions();
+		ClientOptions options = new ClientOptions("not:a.key");
 		options.restHost = fakeHost;
 		AblyRest ably = new AblyRest(options);
 
@@ -406,7 +407,7 @@ public class HttpTest {
 	 */
 	@Test
 	public void http_ably_execute_empty_fallback_array() throws AblyException {
-		ClientOptions options = new ClientOptions();
+		ClientOptions options = new ClientOptions("not:a.key");
 		options.fallbackHosts = new String[0];
 		AblyRest ably = new AblyRest(options);
 
@@ -483,7 +484,7 @@ public class HttpTest {
 		final String[] expectedFallbackHosts = new String[]{"f.ably-realtime.com", "g.ably-realtime.com", "h.ably-realtime.com", "i.ably-realtime.com", "j.ably-realtime.com"};
 		final List<String> fallbackHostsList = Arrays.asList(expectedFallbackHosts);
 
-		ClientOptions options = new ClientOptions();
+		ClientOptions options = new ClientOptions("not.a:key");
 		options.fallbackHosts = expectedFallbackHosts;
 		int expectedCallCount = options.httpMaxRetryCount + 1;
 		AblyRest ably = new AblyRest(options);
@@ -975,6 +976,8 @@ public class HttpTest {
 				String result = http.httpExecute(url, Http.GET, new Param[0], requestBody, null);
 			} catch (AblyException.HostFailedException e) {
 				hfe = e;
+			} catch (AblyException e) {
+				e.printStackTrace();
 			}
 
 			Assert.assertNotNull("Status code " + statusCode + " should throw an exception", hfe);

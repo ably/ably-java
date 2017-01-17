@@ -6,6 +6,9 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -13,11 +16,15 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import fi.iki.elonen.NanoHTTPD;
+import fi.iki.elonen.router.RouterNanoHTTPD;
 import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.AuthMethod;
 import io.ably.lib.rest.Auth.TokenCallback;
 import io.ably.lib.rest.Auth.TokenDetails;
 import io.ably.lib.rest.Auth.TokenParams;
+import io.ably.lib.rest.Auth.TokenRequest;
 import io.ably.lib.rest.Channel;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.util.TokenServer;
@@ -43,6 +50,17 @@ public class RestAuthTest extends ParameterizedTest {
 			AblyRest ably = new AblyRest(opts);
 			tokenServer = new TokenServer(ably, 8982);
 			tokenServer.start();
+
+			nanoHTTPD = new SessionHandlerNanoHTTPD(27335);
+			nanoHTTPD.start(NanoHTTPD.SOCKET_READ_TIMEOUT, true);
+
+			while (!nanoHTTPD.wasStarted()) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 			fail("auth_start_tokenserver: Unexpected exception starting server");
@@ -59,6 +77,8 @@ public class RestAuthTest extends ParameterizedTest {
 	public static void auth_stop_tokenserver() {
 		if(tokenServer != null)
 			tokenServer.stop();
+		if (nanoHTTPD != null)
+			nanoHTTPD.stop();
 	}
 
 	/**
@@ -72,6 +92,24 @@ public class RestAuthTest extends ParameterizedTest {
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("authinit0: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Init library with a key and tls=false results in an error
+	 * Spec: RSC18
+	 */
+	@Test
+	public void auth_basic_nontls() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.tls = false;
+			AblyRest ably = new AblyRest(opts);
+			ably.stats(null);
+			fail("Unexpected success calling with Basic auth over http");
+		} catch (AblyException e) {
+			e.printStackTrace();
+			assertEquals("Verify expected error code", e.errorInfo.statusCode, 401);
 		}
 	}
 
@@ -141,9 +179,10 @@ public class RestAuthTest extends ParameterizedTest {
 
 	/**
 	 * Init library with a key and clientId; expect token auth to be chosen
+	 * Spec: RSA4
 	 */
 	@Test
-	public void authinit3() {
+	public void authinit_clientId_implies_token() {
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			opts.clientId = "testClientId";
@@ -151,7 +190,79 @@ public class RestAuthTest extends ParameterizedTest {
 			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
 		} catch (AblyException e) {
 			e.printStackTrace();
-			fail("authinit3: Unexpected exception instantiating library");
+			fail("authinit_clientId_implies_token: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Init library with a key and token; expect token auth to be chosen
+	 * Spec: RSA4
+	 */
+	@Test
+	public void authinit_token_implies_token() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.token = testVars.keys[0].keyStr;
+			AblyRest ably = new AblyRest(opts);
+			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("authinit_token_implies_token: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Init library with a key and tokenDetails; expect token auth to be chosen
+	 * Spec: RSA4
+	 */
+	@Test
+	public void authinit_tokendetails_implies_token() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.tokenDetails = new TokenDetails() {{ token = testVars.keys[0].keyStr; }};
+			AblyRest ably = new AblyRest(opts);
+			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("authinit_token_implies_token: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Init library with a key and authCallback; expect token auth to be chosen
+	 * Spec: RSA4
+	 */
+	@Test
+	public void authinit_authcallback_implies_token() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.authCallback = new TokenCallback() {
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					return null;
+				}};
+			AblyRest ably = new AblyRest(opts);
+			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("authinit_token_implies_token: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Init library with a key and authUrl; expect token auth to be chosen
+	 * Spec: RSA4
+	 */
+	@Test
+	public void authinit_authurl_implies_token() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.authUrl = "http://auth.url";
+			AblyRest ably = new AblyRest(opts);
+			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("authinit_token_implies_token: Unexpected exception instantiating library");
 		}
 	}
 
@@ -186,6 +297,7 @@ public class RestAuthTest extends ParameterizedTest {
 
 	/**
 	 * Verify authURL called and handled when returning token request
+	 * Spec: RSA8c
 	 */
 	@Test
 	public void auth_authURL_tokenrequest() {
@@ -214,6 +326,7 @@ public class RestAuthTest extends ParameterizedTest {
 
 	/**
 	 * Verify authURL called and handled when returning token
+	 * Spec: RSA8c
 	 */
 	@Test
 	public void auth_authURL_token() {
@@ -242,6 +355,7 @@ public class RestAuthTest extends ParameterizedTest {
 
 	/**
 	 * Verify authURL called and handled when returning error
+	 * Spec: RSA8c
 	 */
 	@Test
 	public void auth_authURL_err() {
@@ -269,6 +383,7 @@ public class RestAuthTest extends ParameterizedTest {
 
 	/**
 	 * Verify authURL is passed specified params
+	 * Spec: RSA8c3
 	 */
 	@Test
 	public void auth_authURL_params() {
@@ -298,6 +413,7 @@ public class RestAuthTest extends ParameterizedTest {
 
 	/**
 	 * Verify authURL is passed specified headers
+	 * Spec: RSA8c3
 	 */
 	@Test
 	public void auth_authURL_headers() {
@@ -327,6 +443,7 @@ public class RestAuthTest extends ParameterizedTest {
 
 	/**
 	 * Verify authCallback called and handled when returning {@code TokenRequest}
+	 * Spec: RSA8d
 	 */
 	@Test
 	public void auth_authcallback_tokenrequest() {
@@ -336,7 +453,7 @@ public class RestAuthTest extends ParameterizedTest {
 				private AblyRest ably = new AblyRest(createOptions(testVars.keys[0].keyStr));
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
-					return ably.auth.createTokenRequest(null, params);
+					return ably.auth.createTokenRequest(params, null);
 				}
 			};
 
@@ -361,6 +478,7 @@ public class RestAuthTest extends ParameterizedTest {
 
 	/**
 	 * Verify authCallback called and handled when returning {@code TokenDetails}
+	 * Spec: RSA8d
 	 */
 	@Test
 	public void auth_authcallback_tokendetails() {
@@ -395,6 +513,7 @@ public class RestAuthTest extends ParameterizedTest {
 
 	/**
 	 * Verify authCallback called and handled when returning token string
+	 * Spec: RSA8d
 	 */
 	@Test
 	public void auth_authcallback_tokenstring() throws AblyException {
@@ -407,7 +526,7 @@ public class RestAuthTest extends ParameterizedTest {
 			}
 		};
 
-			/* create Ably instance without key */
+		/* create Ably instance without key */
 		ClientOptions opts = createOptions();
 		opts.authCallback = authCallback;
 		AblyRest ably = new AblyRest(opts);
@@ -502,6 +621,21 @@ public class RestAuthTest extends ParameterizedTest {
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("auth_authURL_token: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Verify library throws an error on initialistion if no auth details are provided
+	 * Spec: RSA14
+	 */
+	@Test
+	public void authinit_no_auth() {
+		try {
+			ClientOptions opts = new ClientOptions();
+			AblyRest ably = new AblyRest(opts);
+			fail("authinit_no_auth: Unexpected success instantiating library");
+		} catch (AblyException e) {
+			assertEquals("Verify exception thrown initialising library", e.errorInfo.code, 40000);
 		}
 	}
 
@@ -759,6 +893,102 @@ public class RestAuthTest extends ParameterizedTest {
 		}
 	}
 
+	/**
+	 * Test behaviour of queryTime parameter in ClientOpts. Time is requested from the Ably server only once,
+	 * cached value should be used afterwards
+	 */
+	@Test
+	public void auth_testQueryTime() {
+		try {
+			Auth.clearCachedServerTime();
+			nanoHTTPD.clearRequestHistory();
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
+			opts.tls = false;
+			opts.restHost = "localhost";
+			opts.port = nanoHTTPD.getListeningPort();
+			opts.queryTime = true;
+
+			AblyRest ably1 = new AblyRest(opts);
+			@SuppressWarnings("unused")
+			Auth.TokenRequest tr1 = ably1.auth.createTokenRequest(null, null);
+
+			AblyRest ably2 = new AblyRest(opts);
+			@SuppressWarnings("unused")
+			Auth.TokenRequest tr2 = ably2.auth.createTokenRequest(null, null);
+
+			List<String> requestHistory = nanoHTTPD.getRequestHistory();
+			/* search for all /time request in the list */
+			int timeRequestCount = 0;
+			for (String request: requestHistory)
+				if (request.contains("/time"))
+					timeRequestCount++;
+
+			assertEquals("Verify number of time requests", timeRequestCount, 1);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("Unexpected exception");
+		}
+	}
+
+	/**
+	 * Verify JSON serialisation and deserialisation of basic types
+	 * Spec: TE6, TD7
+	 */
+	@Test
+	public void auth_json_interop() {
+		/* create a token request */
+		AblyRest ably;
+		TokenRequest tokenRequest;
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.clientId = "Test client id";
+			ably = new AblyRest(opts);
+			tokenRequest = ably.auth.createTokenRequest(new TokenParams() {{
+				ttl = 10000;
+				capability = "{\"*\": [\"*\"]}";
+			}}, null);
+			String serialisedTokenRequest = tokenRequest.asJson();
+			TokenRequest deserialisedTokenRequest = TokenRequest.fromJson(serialisedTokenRequest);
+			assertEquals("Verify token request is serialised and deserialised successfully", tokenRequest, deserialisedTokenRequest);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("Unexpected exception");
+			return;
+		}
+		/* create a token details */
+		try {
+			TokenDetails tokenDetails = ably.auth.requestToken(tokenRequest, null);
+			String serialisedTokenDetails = tokenDetails.asJson();
+			TokenDetails deserialisedTokenDetails = TokenDetails.fromJson(serialisedTokenDetails);
+			assertEquals("Verify token details is serialised and deserialised successfully", tokenDetails, deserialisedTokenDetails);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("Unexpected exception");
+		}
+	}
 
 	private static TokenServer tokenServer;
+	private static SessionHandlerNanoHTTPD nanoHTTPD;
+
+	private static class SessionHandlerNanoHTTPD extends RouterNanoHTTPD {
+		private final ArrayList<String> requestHistory = new ArrayList<>();
+
+		public SessionHandlerNanoHTTPD(int port) {
+			super(port);
+		}
+
+		@Override
+		public Response serve(IHTTPSession session) {
+			synchronized (requestHistory) {
+				requestHistory.add(session.getUri());
+			}
+			/* the only request supported here is /time */
+			return newFixedLengthResponse(String.format(Locale.US, "[%d]", System.currentTimeMillis()));
+		}
+
+		public void clearRequestHistory() { requestHistory.clear(); }
+
+		public List<String> getRequestHistory() { return requestHistory; }
+	}
+
 }

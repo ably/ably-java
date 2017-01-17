@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import org.junit.Before;
 
 import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.AuthOptions;
 import io.ably.lib.rest.Auth.TokenDetails;
 import io.ably.lib.rest.Auth.TokenParams;
@@ -111,8 +112,12 @@ public class RestTokenTest extends ParameterizedTest {
 	@Test
 	public void authtime2() {
 		try {
+			Auth.clearCachedServerTime();
 			long requestTime = timeOffset + System.currentTimeMillis();
 			AuthOptions authOptions = new AuthOptions();
+			/* Unset fields in authOptions no longer inherit from stored values,
+			 * so we need to set up authOptions.key manually. */
+			authOptions.key = ably.options.key;
 			authOptions.queryTime = true;
 			TokenDetails tokenDetails = ably.auth.requestToken(null, authOptions);
 			assertNotNull("Expected token value", tokenDetails.token);

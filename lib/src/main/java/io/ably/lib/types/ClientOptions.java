@@ -152,9 +152,21 @@ public class ClientOptions extends AuthOptions {
 	public String[] fallbackHosts;
 
 	/**
+	 * Spec: TO3k7 Set to use default fallbackHosts even when overriding
+	 * environment or restHost/realtimeHost
+	 */
+	public boolean fallbackHostsUseDefault;
+
+	/**
 	 * When a TokenParams object is provided, it will override
 	 * the client library defaults described in TokenParams
 	 * Spec: TO3j11
 	 */
 	public TokenParams defaultTokenParams = new TokenParams();
+
+	/**
+	 * Channel reattach timeout
+	 * Spec: RTL13b
+	 */
+	public int channelRetryTimeout = Defaults.TIMEOUT_CHANNEL_RETRY;
 }
