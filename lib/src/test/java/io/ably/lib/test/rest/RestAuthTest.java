@@ -625,6 +625,21 @@ public class RestAuthTest extends ParameterizedTest {
 	}
 
 	/**
+	 * Verify library throws an error on initialistion if no auth details are provided
+	 * Spec: RSA14
+	 */
+	@Test
+	public void authinit_no_auth() {
+		try {
+			ClientOptions opts = new ClientOptions();
+			AblyRest ably = new AblyRest(opts);
+			fail("authinit_no_auth: Unexpected success instantiating library");
+		} catch (AblyException e) {
+			assertEquals("Verify exception thrown initialising library", e.errorInfo.code, 40000);
+		}
+	}
+
+	/**
 	 * Verify token details has null client id after authenticating with null client id,
 	 * the message gets published, and published message also does not contain a client id.<br>
 	 * <br>
