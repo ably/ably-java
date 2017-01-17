@@ -14,6 +14,7 @@ import io.ably.lib.test.common.Setup.TestVars;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Log.LogHandler;
 
@@ -90,6 +91,22 @@ public class RestInitTest {
 	}
 
 	/**
+	 * Init library with no authentication mechanism
+	 * Spec: RSC1
+	 */
+	@Test
+	public void init_no_auth() {
+		try {
+			ClientOptions opts = new ClientOptions();
+			new AblyRest(opts);
+			fail("init2: Unexpected success instantiating library");
+		} catch (AblyException e) {
+			ErrorInfo err = e.errorInfo;
+			assertEquals("Verify expected error code", err.statusCode, 400);
+		}
+	}
+
+	/**
 	 * Init library with specified host
 	 */
 	@Test
@@ -128,7 +145,7 @@ public class RestInitTest {
 	}
 
 	/**
-	 * Verify encrypted defaults to true
+	 * Verify tls defaults to true
 	 */
 	@SuppressWarnings("unused")
 	@Test
@@ -145,7 +162,7 @@ public class RestInitTest {
 	}
 
 	/**
-	 * Verify encrypted can be set to false
+	 * Verify tls can be set to false
 	 */
 	@SuppressWarnings("unused")
 	@Test
@@ -163,7 +180,24 @@ public class RestInitTest {
 	}
 
 	/**
+	 * Init with default log level
+	 * Spec: RSC2
+	 */
+	@Test
+	public void init_defaultLogLevel() {
+		try {
+			TestVars testVars = Setup.getTestVars();
+			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
+			assertEquals("Verify default log level is WARN", opts.logLevel, Log.WARN);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init8: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
 	 * Init with log handler; check called
+	 * Spec: RSC3, RSC4
 	 */
 	private boolean init8_logCalled;
 	@Test
