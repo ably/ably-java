@@ -37,7 +37,7 @@ public class RestTimeTest extends ParameterizedTest {
 	@Test
 	public void time1() {
 		try {
-			ClientOptions opts = createOptions();
+			ClientOptions opts = createOptions("not:a.key");
 			AblyRest ablyNoAuth = new AblyRest(opts);
 			ablyNoAuth.time();
 		} catch (AblyException e) {
@@ -52,7 +52,7 @@ public class RestTimeTest extends ParameterizedTest {
 	@Test
 	public void time2() {
 		try {
-			ClientOptions opts = createOptions();
+			ClientOptions opts = createOptions("not:a.key");
 			opts.environment = null;
 			opts.restHost = "this.restHost.does.not.exist";
 			AblyRest ably = new AblyRest(opts);
