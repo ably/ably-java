@@ -2936,6 +2936,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 		} finally {
 			if (ably != null)
 				ably.close();
+			/* reset filter */
+			MockWebsocketFactory.allowSend();
 			Defaults.TRANSPORT = oldTransport;
 		}
 	}
@@ -3009,5 +3011,4 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				ably2.close();
 		}
 	}
-
 }
