@@ -96,6 +96,24 @@ public class RestAuthTest extends ParameterizedTest {
 	}
 
 	/**
+	 * Init library with a key and tls=false results in an error
+	 * Spec: RSC18
+	 */
+	@Test
+	public void auth_basic_nontls() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.tls = false;
+			AblyRest ably = new AblyRest(opts);
+			ably.stats(null);
+			fail("Unexpected success calling with Basic auth over http");
+		} catch (AblyException e) {
+			e.printStackTrace();
+			assertEquals("Verify expected error code", e.errorInfo.statusCode, 401);
+		}
+	}
+
+	/**
 	 * Init library with useTokenAuth set
 	 */
 	@Test
