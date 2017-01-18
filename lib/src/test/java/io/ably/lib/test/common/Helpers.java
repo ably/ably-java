@@ -460,35 +460,52 @@ public class Helpers {
 	}
 
 	/**
-	 * A class that waits for raw protocol messages.
+	 * A class that listens for raw protocol messages sent and received on a realtime connection.
 	 *
 	 */
-	public static class RawProtocolWaiter implements RawProtocolListener {
+	public static class RawProtocolMonitor implements RawProtocolListener {
+		public Action sendAction;
+		public Action recvAction;
+		public List<ProtocolMessage> sentMessages;
 		public List<ProtocolMessage> receivedMessages;
-		public Action action;
 
 		/**
 		 * Public API
 		 */
-		public RawProtocolWaiter(Action action) {
-			this.action = action;
-			reset();
+		public static RawProtocolMonitor createReceiver(Action recvAction) {
+			return new RawProtocolMonitor(null, recvAction);
+		}
+
+		public static RawProtocolMonitor createSender(Action sendAction) {
+			return new RawProtocolMonitor(sendAction, null);
+		}
+
+		public static RawProtocolMonitor createMonitor(Action sendAction, Action recvAction) {
+			return new RawProtocolMonitor(sendAction, recvAction);
 		}
 
 		/**
 		 * Wait for a given number of messages
 		 * @param count
 		 */
-		public void waitFor() {
-			waitFor(1);
+		public void waitForRecv() {
+			waitForRecv(1);
+		}
+		public void waitForSend() {
+			waitForSend(1);
 		}
 
 		/**
 		 * Wait for a given number of messages
 		 * @param count
 		 */
-		public synchronized void waitFor(int count) {
+		public synchronized void waitForRecv(int count) {
 			while(receivedMessages.size() < count) {
+				try { wait(); } catch(InterruptedException e) {}
+			}
+		}
+		public synchronized void waitForSend(int count) {
+			while(sentMessages.size() < count) {
 				try { wait(); } catch(InterruptedException e) {}
 			}
 		}
@@ -499,6 +516,7 @@ public class Helpers {
 		 * meets their requirements.
 		 */
 		public synchronized void reset() {
+			sentMessages = new ArrayList<ProtocolMessage>();
 			receivedMessages = new ArrayList<ProtocolMessage>();
 		}
 
@@ -507,13 +525,29 @@ public class Helpers {
 		 * RawProtocolListener interface
 		 */
 		@Override
-		public void onRawMessage(ProtocolMessage message) {
-			if(message.action == action) {
+		public void onRawMessageRecv(ProtocolMessage message) {
+			if(message.action == recvAction) {
 				synchronized(this) {
 					receivedMessages.add(message);
 					notify();
 				}
 			}
+		}
+
+		@Override
+		public void onRawMessageSend(ProtocolMessage message) {
+			if(message.action == sendAction) {
+				synchronized(this) {
+					sentMessages.add(message);
+					notify();
+				}
+			}
+		}
+
+		private RawProtocolMonitor(Action sendAction, Action recvAction) {
+			this.sendAction = sendAction;
+			this.recvAction = recvAction;
+			reset();
 		}
 	}
 

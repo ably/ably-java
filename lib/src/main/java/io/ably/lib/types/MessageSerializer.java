@@ -76,7 +76,7 @@ public class MessageSerializer {
 	 *              JSON decode
 	 ****************************************/
 	
-	private static Message[] readJSON(byte[] packed) throws IOException {
+	public static Message[] readJSON(byte[] packed) throws IOException {
 		return Serialisation.gson.fromJson(new String(packed), Message[].class);
 	}
 

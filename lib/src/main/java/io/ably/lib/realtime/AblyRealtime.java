@@ -5,7 +5,6 @@ import java.util.Iterator;
 import java.util.Map;
 
 import io.ably.lib.rest.AblyRest;
-import io.ably.lib.transport.Defaults;
 import io.ably.lib.transport.ITransport;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
@@ -87,7 +86,7 @@ public class AblyRealtime extends AblyRest {
 	public class Channels extends HashMap<String, Channel> {
 		public Channels() {
 			/* remove all channels when the connection is closed, to avoid stalled state */
-			connection.on(ConnectionState.closed, new ConnectionStateListener() {
+			connection.on(ConnectionEvent.closed, new ConnectionStateListener() {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange state) {
 					Channels.this.clear();
