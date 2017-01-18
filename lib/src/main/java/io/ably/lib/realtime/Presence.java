@@ -26,20 +26,38 @@ public class Presence {
 	 ************************************/
 
 	/**
+	 * String parameter names to get() call with Param[] as an argument
+	 */
+	public final static String GET_WAITFORSYNC = "waitForSync";
+	public final static String GET_CLIENTID = "clientId";
+	public final static String GET_CONNECTIONID = "connectionId";
+
+	/**
+	 * Get the presence state for this channel. Take Param[] array as an argument
+	 * @param params
+	 * @return
+	 * @throws AblyException
+	 * @throws InterruptedException
+	 */
+	public synchronized PresenceMessage[] get(Param... params) throws InterruptedException, AblyException {
+		if (channel.state == ChannelState.failed) {
+			throw AblyException.fromErrorInfo(new ErrorInfo("channel operation failed (invalid channel state)", 90001));
+		}
+
+		channel.attach();
+		Collection<PresenceMessage> values = presence.get(params);
+		return values.toArray(new PresenceMessage[values.size()]);
+	}
+
+	/**
 	 * Get the presence state for this Channel. Implicitly attaches the
 	 * Channel. However, if the channel is in or moves to the FAILED
 	 * state before the operation succeeds, it will result in an error
 	 * @return: the current present members.
 	 * @throws AblyException
 	 */
-	public synchronized PresenceMessage[] get() throws AblyException {
-		if (channel.state == ChannelState.failed) {
-			throw AblyException.fromErrorInfo(new ErrorInfo("channel operation failed (invalid channel state)", 90001));
-		}
-
-		channel.attach();
-		Collection<PresenceMessage> values = presence.values();
-		return values.toArray(new PresenceMessage[values.size()]);
+	public synchronized PresenceMessage[] get() throws InterruptedException, AblyException {
+		return get(true);
 	}
 
 	/**
@@ -50,13 +68,7 @@ public class Presence {
 	 * @throws AblyException
 	 */
 	public synchronized PresenceMessage[] get(boolean wait) throws InterruptedException, AblyException {
-		if (channel.state == ChannelState.failed) {
-			throw AblyException.fromErrorInfo(new ErrorInfo("channel operation failed (invalid channel state)", 90001));
-		}
-
-		channel.attach();
-		Collection<PresenceMessage> values = presence.values(wait);
-		return values.toArray(new PresenceMessage[values.size()]);
+		return get(new Param(GET_WAITFORSYNC, String.valueOf(wait)));
 	}
 
 	/**
@@ -69,13 +81,7 @@ public class Presence {
 	 * @throws AblyException
 	 */
 	public synchronized PresenceMessage[] get(String clientId, boolean wait) throws InterruptedException, AblyException {
-		if (channel.state == ChannelState.failed) {
-			throw AblyException.fromErrorInfo(new ErrorInfo("channel operation failed (invalid channel state)", 90001));
-		}
-
-		channel.attach();
-		Collection<PresenceMessage> values = presence.getClient(clientId, wait);
-		return values.toArray(new PresenceMessage[values.size()]);
+		return get(new Param(GET_WAITFORSYNC, String.valueOf(wait)), new Param(GET_CLIENTID, clientId));
 	}
 
 	/**
@@ -650,6 +656,11 @@ public class Presence {
 	}
 
 	void setDetached(ErrorInfo reason) {
+		/* Interrupt get() call if needed */
+		synchronized (presence) {
+			presence.notifyAll();
+		}
+
 		/**
 		 * (RTP5a) If the channel enters the DETACHED or FAILED state then all queued presence
 		 * messages will fail immediately, and the PresenceMap and internal PresenceMap is cleared.
@@ -661,19 +672,16 @@ public class Presence {
 	}
 
 	void setSuspended(ErrorInfo reason) {
+		/* Interrupt get() call if needed */
+		synchronized (presence) {
+			presence.notifyAll();
+		}
+
 		/*
 		 * (RTP5f) If the channel enters the SUSPENDED state then all queued presence messages will fail
 		 * immediately, and the PresenceMap is maintained
 		 */
 		failQueuedMessages(reason);
-	}
-
-	/************************************
-	 * sync
-	 ************************************/
-
-	void awaitSync() {
-		presence.startSync();
 	}
 
 	/**
@@ -688,19 +696,69 @@ public class Presence {
 	 *
 	 */
 	private class PresenceMap {
+
 		/**
-		 * Get the current presence state for a given member key
-		 * @param key
-		 * @return
+		 * Wait for sync to be complete. If we are in attaching state wait for initial sync to
+		 * complete as well. Return false if wait was interrupted because channel transitioned to
+		 * state other than attached or attaching
 		 */
-		synchronized Collection<PresenceMessage> getClient(String clientId, boolean wait) throws InterruptedException {
-			Collection<PresenceMessage> result = new HashSet<PresenceMessage>();
-			for(Iterator<Map.Entry<String, PresenceMessage>> it = members.entrySet().iterator(); it.hasNext();) {
-				PresenceMessage entry = it.next().getValue();
-				if(entry.clientId.equals(clientId) && entry.action != PresenceMessage.Action.absent) {
-					result.add(entry);
+		synchronized void waitForSync() throws AblyException, InterruptedException {
+			boolean syncIsComplete = false;	/* temporary variable to avoid potential race conditions */
+			while((channel.state == ChannelState.attached || channel.state == ChannelState.attaching) &&
+					/* = (and not ==) is intentional */
+					!(syncIsComplete = (!syncInProgress && syncComplete)))
+				wait();
+
+			if (!syncIsComplete) {
+				/* invalid channel state */
+				int errorCode;
+				String errorMessage;
+
+				if (channel.state == ChannelState.suspended) {
+					/* (RTP11d) If the Channel is in the SUSPENDED state then the get function will by default,
+					 * or if waitForSync is set to true, result in an error with code 91005 and a message stating
+					 * that the presence state is out of sync due to the channel being in a SUSPENDED state */
+					errorCode = 91005;
+					errorMessage = String.format("Channel %s: presence state is out of sync due to the channel being in a SUSPENDED state", channel.name);
+				} else {
+					errorCode = 90001;
+					errorMessage = String.format("Channel %s: cannot get presence state because channel is in invalid state", channel.name);
+				}
+				Log.v(TAG, errorMessage);
+				throw AblyException.fromErrorInfo(new ErrorInfo(errorMessage, errorCode));
+			}
+		}
+
+		synchronized Collection<PresenceMessage> get(Param[] params) throws AblyException, InterruptedException {
+			boolean waitForSync = true;
+			String clientId = null;
+			String connectionId = null;
+
+			for (Param param: params) {
+				switch (param.key) {
+					case GET_WAITFORSYNC:
+						waitForSync = Boolean.valueOf(param.value);
+						break;
+					case GET_CLIENTID:
+						clientId = param.value;
+						break;
+					case GET_CONNECTIONID:
+						connectionId = param.value;
+						break;
 				}
 			}
+
+			HashSet<PresenceMessage> result = new HashSet<>();
+			if (waitForSync)
+				waitForSync();
+
+			for (Map.Entry<String, PresenceMessage> entry: members.entrySet()) {
+				PresenceMessage member = entry.getValue();
+				if ((clientId == null || member.clientId.equals(clientId)) &&
+						(connectionId == null || member.connectionId.equals(connectionId)))
+					result.add(member);
+			}
+
 			return result;
 		}
 
@@ -777,7 +835,7 @@ public class Presence {
 		 * @return
 		 */
 		synchronized Collection<PresenceMessage> values() {
-			try { return values(false); } catch (InterruptedException e) { return null; }
+			try { return values(false); } catch (InterruptedException|AblyException e) { return null; }
 		}
 
 		/**
@@ -786,11 +844,10 @@ public class Presence {
 		 * @return
 		 * @throws InterruptedException
 		 */
-		synchronized Collection<PresenceMessage> values(boolean wait) throws InterruptedException {
-			if(wait) {
-				while(syncInProgress) wait();
-			}
+		synchronized Collection<PresenceMessage> values(boolean wait) throws AblyException, InterruptedException {
 			Set<PresenceMessage> result = new HashSet<PresenceMessage>();
+			if(wait)
+				waitForSync();
 			result.addAll(members.values());
 			for(Iterator<PresenceMessage> it = result.iterator(); it.hasNext();) {
 				PresenceMessage entry = it.next();
@@ -856,8 +913,8 @@ public class Presence {
 	
 				/* finish, notifying any waiters */
 				syncInProgress = false;
-				syncComplete = true;
 			}
+			syncComplete = true;
 			notifyAll();
 			return removedEntries;
 		}
