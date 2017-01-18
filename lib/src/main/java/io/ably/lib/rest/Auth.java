@@ -848,9 +848,9 @@ public class Auth {
 		} else if(authOptions.tokenDetails != null) {
 			Log.i("Auth()", "using token auth with supplied token only");
 		} else {
-			/* this is not a hard error - but any operation that requires
-			 * authentication will fail */
-			Log.i("Auth()", "no authentication parameters supplied");
+			/* no means to authenticate (Spec: RSA14) */
+			Log.e("Auth()", "no authentication parameters supplied");
+			throw AblyException.fromErrorInfo(new ErrorInfo("No authentication parameters supplied", 400, 40000));
 		}
 	}
 

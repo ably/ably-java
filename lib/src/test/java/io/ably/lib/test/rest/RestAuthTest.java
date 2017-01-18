@@ -96,6 +96,24 @@ public class RestAuthTest extends ParameterizedTest {
 	}
 
 	/**
+	 * Init library with a key and tls=false results in an error
+	 * Spec: RSC18
+	 */
+	@Test
+	public void auth_basic_nontls() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.tls = false;
+			AblyRest ably = new AblyRest(opts);
+			ably.stats(null);
+			fail("Unexpected success calling with Basic auth over http");
+		} catch (AblyException e) {
+			e.printStackTrace();
+			assertEquals("Verify expected error code", e.errorInfo.statusCode, 401);
+		}
+	}
+
+	/**
 	 * Init library with useTokenAuth set
 	 */
 	@Test
@@ -603,6 +621,21 @@ public class RestAuthTest extends ParameterizedTest {
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("auth_authURL_token: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Verify library throws an error on initialistion if no auth details are provided
+	 * Spec: RSA14
+	 */
+	@Test
+	public void authinit_no_auth() {
+		try {
+			ClientOptions opts = new ClientOptions();
+			AblyRest ably = new AblyRest(opts);
+			fail("authinit_no_auth: Unexpected success instantiating library");
+		} catch (AblyException e) {
+			assertEquals("Verify exception thrown initialising library", e.errorInfo.code, 40000);
 		}
 	}
 
