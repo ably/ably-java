@@ -13,14 +13,7 @@ import io.ably.lib.types.PresenceSerializer;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
 
-import java.util.Collection;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A class that provides access to presence operations and state for the
@@ -178,80 +171,122 @@ public class Presence {
 	 *
 	 */
 
+	/* End sync and emit leave messages for residual members */
+	private void endSyncAndEmitLeaves() {
+		currentSyncChannelSerial = null;
+		List<PresenceMessage> residualMembers = presence.endSync();
+		for (PresenceMessage member: residualMembers) {
+			/*
+			 * RTP19: ... The PresenceMessage published should contain the original attributes of the presence
+			 * member with the action set to LEAVE, PresenceMessage#id set to null, and the timestamp set
+			 * to the current time ...
+			 */
+			member.action = PresenceMessage.Action.leave;
+			member.id = null;
+			member.timestamp = System.currentTimeMillis();
+		}
+		broadcastPresence(residualMembers.toArray(new PresenceMessage[residualMembers.size()]));
+
+		/**
+		 * (RTP5c2) If a SYNC is initiated as part of the attach, then once the SYNC is complete,
+		 * all members not present in the PresenceMap but present in the internal PresenceMap must
+		 * be re-entered automatically by the client using the clientId and data attributes from
+		 * each. The members re-entered automatically must be removed from the internal PresenceMap
+		 * ensuring that members present on the channel are constructed from presence events sent
+		 * from Ably since the channel became ATTACHED
+		 */
+		if (syncAsResultOfAttach) {
+			syncAsResultOfAttach = false;
+			for (PresenceMessage item: internalPresence.values()) {
+				if (presence.put(item)) {
+					/* Message is new to presence map, send it */
+					final String clientId = item.clientId;
+					try {
+						PresenceMessage itemToSend = (PresenceMessage)item.clone();
+						itemToSend.action = PresenceMessage.Action.enter;
+						updatePresence(itemToSend, new CompletionListener() {
+							@Override
+							public void onSuccess() {
+							}
+
+							@Override
+							public void onError(ErrorInfo reason) {
+									/*
+									 * (RTP5c3)  If any of the automatic ENTER presence messages published
+									 * in RTP5c2 fail, then an UPDATE event should be emitted on the channel
+									 * with resumed set to true and reason set to an ErrorInfo object with error
+									 * code value 91004 and the error message string containing the message
+									 * received from Ably (if applicable), the code received from Ably
+									 * (if applicable) and the explicit or implicit client_id of the PresenceMessage
+									 */
+								String errorString = String.format("Cannot automatically re-enter %s on channel %s (%s)",
+										clientId, channel.name, reason.message);
+								Log.e(TAG, errorString);
+								channel.emitUpdate(new ErrorInfo(errorString, 91004), true);
+							}
+						});
+					} catch(AblyException e) {
+						String errorString = String.format("Cannot automatically re-enter %s on channel %s (%s)",
+								clientId, channel.name, e.errorInfo.message);
+						Log.e(TAG, errorString);
+						channel.emitUpdate(new ErrorInfo(errorString, 91004), true);
+					}
+				}
+			}
+			internalPresence.clear();
+		}
+	}
+
 	void setPresence(PresenceMessage[] messages, boolean broadcast, String syncChannelSerial) {
 		Log.v(TAG, "setPresence(); channel = " + channel.name + "; broadcast = " + broadcast + "; syncChannelSerial = " + syncChannelSerial);
 		String syncCursor = null;
 		if(syncChannelSerial != null) {
-			syncCursor = syncChannelSerial.substring(syncChannelSerial.indexOf(':'));
-			if(syncCursor.length() > 1)
+			int colonPos = syncChannelSerial.indexOf(':');
+			String serial = colonPos >= 0 ? syncChannelSerial.substring(0, colonPos) : syncChannelSerial;
+			/* Discard incomplete sync if serial has changed */
+			if (presence.syncInProgress && currentSyncChannelSerial != null && !currentSyncChannelSerial.equals(serial))
+				endSyncAndEmitLeaves();
+			syncCursor = syncChannelSerial.substring(colonPos);
+			if(syncCursor.length() > 1) {
 				presence.startSync();
+				currentSyncChannelSerial = serial;
+			}
 		}
 		for(PresenceMessage update : messages) {
 			boolean updateInternalPresence = update.connectionId.equals(channel.ably.connection.id);
+			boolean broadcastThisUpdate = broadcast;
+			PresenceMessage originalUpdate = update;
+
 			switch(update.action) {
 			case enter:
 			case update:
 				update = (PresenceMessage)update.clone();
 				update.action = PresenceMessage.Action.present;
 			case present:
-				broadcast &= presence.put(update);
+				broadcastThisUpdate &= presence.put(update);
 				if(updateInternalPresence)
 					internalPresence.put(update);
 				break;
 			case leave:
-				broadcast &= presence.remove(update);
+				broadcastThisUpdate &= presence.remove(update);
 				if(updateInternalPresence)
 					internalPresence.remove(update);
 				break;
 			case absent:
 			}
+
+			/*
+			 * RTP2g: Any incoming presence message that passes the newness check should be emitted on the
+			 * Presence object, with an event name set to its original action.
+			 */
+			if (broadcastThisUpdate)
+				broadcastPresence(new PresenceMessage[]{originalUpdate});
 		}
+
 		/* if this is the last message in a sequence of sync updates, end the sync */
 		if(syncChannelSerial == null || syncCursor.length() <= 1) {
-			presence.endSync();
-			/**
-			 * (RTP5c2) If a SYNC is initiated as part of the attach, then once the SYNC is complete,
-			 * all members not present in the PresenceMap but present in the internal PresenceMap must
-			 * be re-entered automatically by the client using the clientId and data attributes from
-			 * each. The members re-entered automatically must be removed from the internal PresenceMap
-			 * ensuring that members present on the channel are constructed from presence events sent
-			 * from Ably since the channel became ATTACHED
-			 */
-			if (syncAsResultOfAttach) {
-				syncAsResultOfAttach = false;
-				for (PresenceMessage item: internalPresence.values()) {
-					if (presence.put(item)) {
-						/* Message is new to presence map, send it */
-						try {
-							PresenceMessage itemToSend = (PresenceMessage)item.clone();
-							itemToSend.action = PresenceMessage.Action.enter;
-							updatePresence(itemToSend, new CompletionListener() {
-								@Override
-								public void onSuccess() {
-								}
-
-								@Override
-								public void onError(ErrorInfo reason) {
-									/*
-									 * (RTP5c3) If any of the automatic ENTER presence messages published in RTP5c2
-									 * fail, then an UPDATE event should be emitted on the channel, with a reason
-									 * set to the ErrorInfo received from realtime
-									 */
-									Log.e(TAG, String.format("Cannot automatically re-enter channel %s", channel.name));
-									channel.emitUpdate(reason, false);
-								}
-							});
-						} catch(AblyException e) {
-							Log.e(TAG, String.format("Error automatically re-entering channel %s", channel.name));
-						}
-					}
-				}
-				internalPresence.clear();
-			}
+			endSyncAndEmitLeaves();
 		}
-
-		if(broadcast)
-			broadcastPresence(messages);
 	}
 
 	private void broadcastPresence(PresenceMessage[] messages) {
@@ -573,6 +608,7 @@ public class Presence {
 			}
 			listener = mListener.isEmpty() ? null : mListener;
 		}
+		pendingPresence.clear();
 		try {
 			connectionManager.send(message, queueMessages, listener);
 		} catch(AblyException e) {
@@ -599,12 +635,17 @@ public class Presence {
 	 * attach / detach
 	 ************************************/
 
-	void setAttached() {
-		/**
-		 * Channel calls awaitSync() before setAttached() if the corresponding flag in message is set.
-		 * We use side effect of awaitSync() call to determine if sync is requested on attach
-		 */
-		syncAsResultOfAttach = presence.syncInProgress;
+	void setAttached(boolean hasPresence) {
+		/* Start sync, if hasPresence is not set end sync immediately dropping all the current presence members */
+		presence.startSync();
+		syncAsResultOfAttach = true;
+		if (!hasPresence) {
+			/*
+			 * RTP19a  If the PresenceMap has existing members when an ATTACHED message is received without a
+			 * HAS_PRESENCE flag, the client library should emit a LEAVE event for each existing member ...
+			 */
+			endSyncAndEmitLeaves();
+		}
 		sendQueuedMessages();
 	}
 
@@ -622,10 +663,9 @@ public class Presence {
 	void setSuspended(ErrorInfo reason) {
 		/*
 		 * (RTP5f) If the channel enters the SUSPENDED state then all queued presence messages will fail
-		 * immediately, and the PresenceMap is cleared
+		 * immediately, and the PresenceMap is maintained
 		 */
 		failQueuedMessages(reason);
-		presence.clear();
 	}
 
 	/************************************
@@ -671,7 +711,7 @@ public class Presence {
 		 * false if the message is already superseded
 		 */
 		synchronized boolean put(PresenceMessage item) {
-			String key = memberKey(item);
+			String key = item.memberKey();
 			/* we've seen this member, so do not remove it at the end of sync */
 			if(residualMembers != null)
 				residualMembers.remove(key);
@@ -767,7 +807,9 @@ public class Presence {
 		 * @return
 		 */
 		synchronized boolean remove(PresenceMessage item) {
-			String key = memberKey(item);
+			String key = item.memberKey();
+			if (hasNewerItem(key, item))
+				return false;
 			PresenceMessage existingItem = members.remove(key);
 			if(existingItem != null && existingItem.action == PresenceMessage.Action.absent)
 				return false;
@@ -789,10 +831,11 @@ public class Presence {
 		}
 
 		/**
-		 * Finish a sync sequence.
+		 * Finish a sync sequence. Returns "residual" items that were removed as a part of a sync
 		 */
-		synchronized void endSync() {
+		synchronized List<PresenceMessage> endSync() {
 			Log.v(TAG, "endSync(); channel = " + channel.name + "; syncInProgress = " + syncInProgress);
+			ArrayList<PresenceMessage> removedEntries = new ArrayList<>();
 			if(syncInProgress) {
 				/* we can now strip out the absent members, as we have
 				 * received all of the out-of-order sync messages */
@@ -804,24 +847,19 @@ public class Presence {
 				}
 				/* any members that were present at the start of the sync,
 				 * and have not been seen in sync, can be removed */
-				for(Iterator<String> it = residualMembers.iterator(); it.hasNext();) {
-					members.remove(it.next());
+				for(String itemKey: residualMembers) {
+					/* clone presence message as it still can be in the internal presence map */
+					removedEntries.add((PresenceMessage)members.get(itemKey).clone());
+					members.remove(itemKey);
 				}
 				residualMembers = null;
 	
 				/* finish, notifying any waiters */
 				syncInProgress = false;
+				syncComplete = true;
 			}
 			notifyAll();
-		}
-
-		/**
-		 * Get the member key for a given PresenceMessage.
-		 * @param message
-		 * @return
-		 */
-		private String memberKey(PresenceMessage message) {
-			return message.connectionId + ':' + message.clientId;
+			return removedEntries;
 		}
 
 		/**
@@ -855,6 +893,14 @@ public class Presence {
 	private final Channel channel;
 	private final String clientId;
 
+	/* channel serial if sync is in progress */
+	private String currentSyncChannelSerial;
 	/* Sync in progress is a result of attach operation */
 	private boolean syncAsResultOfAttach;
+
+	/**
+	 * (RTP13) Presence#syncComplete returns true if the initial SYNC operation has completed for
+	 * the members present on the channel
+	 */
+	public boolean syncComplete;
 }

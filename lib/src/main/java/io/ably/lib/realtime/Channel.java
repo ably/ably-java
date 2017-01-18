@@ -239,11 +239,7 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 		} else {
 			setState(ChannelState.attached, message.error, resumed);
 			sendQueuedMessages();
-			if ((message.flags & (1 << Flag.has_presence.ordinal())) > 0) {
-				Log.v(TAG, "setAttached(); awaiting sync; channel = " + name);
-				presence.awaitSync();
-			}
-			presence.setAttached();
+			presence.setAttached((message.flags & (1 << Flag.has_presence.ordinal())) > 0);
 		}
 	}
 
