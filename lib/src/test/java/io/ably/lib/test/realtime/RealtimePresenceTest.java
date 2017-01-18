@@ -2931,7 +2931,9 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			try {
 				channel.presence.enterClient("testClient3");
 				fail("Presence.enterClient() shouldn't succeed in detached state");
-			} catch (AblyException e) {}
+			} catch (AblyException e) {
+				assertEquals("Verify exception error code", e.errorInfo.code, 91001 /* unable to enter presence channel (invalid channel state) */);
+			}
 
 		} finally {
 			if (ably != null)
