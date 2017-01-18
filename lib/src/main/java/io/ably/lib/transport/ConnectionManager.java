@@ -7,6 +7,7 @@ import io.ably.lib.transport.ITransport.ConnectListener;
 import io.ably.lib.transport.ITransport.TransportParams;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ConnectionDetails;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
@@ -444,7 +445,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			Log.v(TAG, "onMessage(): " + message.action + ": " + new String(ProtocolSerializer.writeJSON(message)));
 		try {
 			if(protocolListener != null)
-				protocolListener.onRawMessage(message);
+				protocolListener.onRawMessageRecv(message);
 			switch(message.action) {
 				case heartbeat:
 					onHeartbeat(message);
@@ -521,7 +522,8 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			ably.channels.suspendAll(error);
 
 		/* set the new connection id */
-		connection.key = message.connectionDetails.connectionKey;
+		ConnectionDetails connectionDetails = message.connectionDetails;
+		connection.key = connectionDetails.connectionKey;
 		if (!message.connectionId.equals(connection.id)) {
 			/* The connection id has changed. Reset the message serial and the
 			 * pending message queue (which fails the messages currently in
@@ -535,7 +537,15 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			connection.serial = message.connectionSerial.longValue();
 
 		/* Get any parameters from connectionDetails. */
-		maxIdleInterval = message.connectionDetails.maxIdleInterval;
+		maxIdleInterval = connectionDetails.maxIdleInterval;
+
+		/* set the clientId resolved from token, if any */
+		String clientId = connectionDetails.clientId;
+		try {
+			ably.auth.setClientId(clientId);
+		} catch (AblyException e) {
+			notifyState(transport, new StateIndication(ConnectionState.failed, e.errorInfo));
+		}
 
 		/* indicated connected state */
 		setSuspendTime();
@@ -960,6 +970,8 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 	@SuppressWarnings("unused")
 	private void sendImpl(ProtocolMessage message) throws AblyException {
+		if(protocolListener != null)
+			protocolListener.onRawMessageSend(message);
 		transport.send(message);
 	}
 
@@ -968,6 +980,8 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			message.msgSerial = msgSerial++;
 			pendingMessages.push(new QueuedMessage(message, listener));
 		}
+		if(protocolListener != null)
+			protocolListener.onRawMessageSend(message);
 		transport.send(message);
 	}
 

@@ -322,11 +322,12 @@ public class Http {
 		if(auth.getAuthMethod() == AuthMethod.basic) {
 			authHeader = "Basic " + Base64Coder.encodeString(auth.getBasicCredentials());
 		} else {
-			if (renew)
+			if (renew) {
 				auth.renew();
-			else
-				auth.ensureValidAuth();
-			authHeader = "Bearer " + auth.getTokenAuth().getEncodedToken();
+			} else {
+				auth.assertValidToken();
+			}
+			authHeader = "Bearer " + auth.getEncodedToken();
 		}
 		return authHeader;
 	}

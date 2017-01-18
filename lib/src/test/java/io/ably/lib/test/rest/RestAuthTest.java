@@ -2,13 +2,16 @@ package io.ably.lib.test.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -18,6 +21,8 @@ import org.junit.rules.ExpectedException;
 
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
+import io.ably.lib.debug.DebugOptions;
+import io.ably.lib.http.Http.RequestBody;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.AuthMethod;
@@ -32,6 +37,7 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
+import io.ably.lib.types.MessageSerializer;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 
@@ -89,6 +95,7 @@ public class RestAuthTest extends ParameterizedTest {
 		try {
 			AblyRest ably = new AblyRest(testVars.keys[0].keyStr);
 			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.basic);
+			assertEquals("Unexpected clientId mismatch", ably.auth.clientId, "*");
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("authinit0: Unexpected exception instantiating library");
@@ -105,6 +112,8 @@ public class RestAuthTest extends ParameterizedTest {
 			opts.useTokenAuth = true;
 			AblyRest ably = new AblyRest(opts);
 			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
+			/* Spec: RSA12a */
+			assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("authinit0point5: Unexpected exception instantiating library");
@@ -121,6 +130,8 @@ public class RestAuthTest extends ParameterizedTest {
 			opts.token = "this_is_not_really_a_token";
 			AblyRest ably = new AblyRest(opts);
 			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
+			/* Spec: RSA12a */
+			assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("authinit1: Unexpected exception instantiating library");
@@ -152,6 +163,8 @@ public class RestAuthTest extends ParameterizedTest {
 				ably.stats(null);
 			} catch(Throwable t) {}
 			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
+			/* Spec: RSA12a */
+			assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
 			assertTrue("Token callback not called", authinit2_cbCalled);
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -161,7 +174,7 @@ public class RestAuthTest extends ParameterizedTest {
 
 	/**
 	 * Init library with a key and clientId; expect token auth to be chosen
-	 * Spec: RSA4
+	 * Spec: RSA4, RSC17, RSA7b1
 	 */
 	@Test
 	public void authinit_clientId_implies_token() {
@@ -170,9 +183,33 @@ public class RestAuthTest extends ParameterizedTest {
 			opts.clientId = "testClientId";
 			AblyRest ably = new AblyRest(opts);
 			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
+			assertEquals("Unexpected clientId mismatch", ably.auth.clientId, "testClientId");
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("authinit_clientId_implies_token: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Init library with a key and token; verify Auth.clientId is null before
+	 * authorization and set following auth
+	 * Spec: RSA12b, RSA7b2
+	 */
+	@Test
+	public void auth_clientid_null_before_auth() {
+		try {
+			final String defaultClientId = "default clientId";
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.useTokenAuth = true;
+			opts.defaultTokenParams = new TokenParams() {{ this.clientId = defaultClientId; }};
+			AblyRest ably = new AblyRest(opts);
+			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
+			assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
+			ably.auth.authorize(null, null);
+			assertEquals("Unexpected clientId mismatch", ably.auth.clientId, defaultClientId);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("authinit_token_implies_token: Unexpected exception instantiating library");
 		}
 	}
 
@@ -187,6 +224,7 @@ public class RestAuthTest extends ParameterizedTest {
 			opts.token = testVars.keys[0].keyStr;
 			AblyRest ably = new AblyRest(opts);
 			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
+			assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("authinit_token_implies_token: Unexpected exception instantiating library");
@@ -204,6 +242,7 @@ public class RestAuthTest extends ParameterizedTest {
 			opts.tokenDetails = new TokenDetails() {{ token = testVars.keys[0].keyStr; }};
 			AblyRest ably = new AblyRest(opts);
 			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
+			assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("authinit_token_implies_token: Unexpected exception instantiating library");
@@ -225,6 +264,7 @@ public class RestAuthTest extends ParameterizedTest {
 				}};
 			AblyRest ably = new AblyRest(opts);
 			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
+			assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("authinit_token_implies_token: Unexpected exception instantiating library");
@@ -271,6 +311,7 @@ public class RestAuthTest extends ParameterizedTest {
 			opts.tls = testVars.tls;
 			AblyRest ably = new AblyRest(opts);
 			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
+			assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("authinit3: Unexpected exception instantiating library");
@@ -607,6 +648,97 @@ public class RestAuthTest extends ParameterizedTest {
 	}
 
 	/**
+	 * RSA7c: A clientId value of "*" provided in ClientOptions throws an exception
+	 */
+	@Test
+	public void auth_client_wildcard() {
+		ClientOptions opts;
+		try {
+			opts = createOptions();
+			opts.clientId = "*";
+			AblyRest ably = new AblyRest(opts);
+		} catch (AblyException e) {
+			assertEquals("Verify exception raised from disallowed wildcard clientId", e.errorInfo.code, 40000);
+		}
+	}
+
+	/**
+	 * RSA15a: Any clientId provided in ClientOptions must match any
+	 * non wildcard ('*') clientId value in TokenDetails
+	 * RSA15c: Following an auth request which uses a TokenDetails or TokenRequest
+	 * object that contains an incompatible clientId, the library should ... result
+	 * in an appropriate error response
+	 */
+	@Test
+	public void auth_client_match_token() {
+		TokenDetails tokenDetails = new TokenDetails() {{
+			clientId = "token clientId";
+			token = "not.really.a.token";
+		}};
+		ClientOptions opts;
+		try {
+			opts = createOptions();
+			opts.tokenDetails = tokenDetails;
+			opts.clientId = "options clientId";
+			AblyRest ably = new AblyRest(opts);
+		} catch (AblyException e) {
+			assertEquals("Verify exception raised from incompatible clientIds", e.errorInfo.code, 40101);
+		}
+	}
+
+	/**
+	 * RSA15a: Any clientId provided in ClientOptions must match any
+	 * non wildcard ('*') clientId value in TokenDetails
+	 * RSA15b: If the clientId from TokenDetails or connectionDetails contains
+	 * only a wildcard string '*', then the client is permitted to be either
+	 * unidentified or identified by providing
+	 * a clientId when communicating with Ably
+	 */
+	@Test
+	public void auth_client_match_token_wildcard() {
+		TokenDetails tokenDetails = new TokenDetails() {{
+			clientId = "*";
+			token = "not.really.a.token";
+		}};
+		ClientOptions opts;
+		try {
+			opts = createOptions();
+			opts.tokenDetails = tokenDetails;
+			opts.clientId = "options clientId";
+			AblyRest ably = new AblyRest(opts);
+			assertEquals("Verify given clientId is compatible with wildcard token clientId", ably.auth.clientId, "options clientId");
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_authURL_token: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * RSA15b: If the clientId from TokenDetails or connectionDetails contains
+	 * only a wildcard string '*', then the client is permitted to be either
+	 * unidentified or identified by providing
+	 * a clientId when communicating with Ably
+	 */
+	@Test
+	public void auth_client_null_match_token_wildcard() {
+		TokenDetails tokenDetails = new TokenDetails() {{
+			clientId = "*";
+			token = "not.really.a.token";
+		}};
+		ClientOptions opts;
+		try {
+			opts = createOptions();
+			opts.tokenDetails = tokenDetails;
+			opts.clientId = null;
+			AblyRest ably = new AblyRest(opts);
+			assertEquals("Verify given clientId is compatible with wildcard token clientId", ably.auth.clientId, "*");
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_authURL_token: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
 	 * Verify token details has null client id after authenticating with null client id,
 	 * the message gets published, and published message also does not contain a client id.<br>
 	 * <br>
@@ -632,7 +764,8 @@ public class RestAuthTest extends ParameterizedTest {
 
 			/* Fetch token */
 			TokenDetails tokenDetails = ably.auth.requestToken(null, null);
-			assertEquals("Auth#clientId is expected to be null", null, tokenDetails.clientId);
+			assertEquals("Auth#clientId is expected to be null", null, ably.auth.clientId);
+			assertEquals("TokenDetails#clientId is expected to be null", null, tokenDetails.clientId);
 
 			/* Publish message */
 			String messageName = "clientless";
@@ -693,30 +826,32 @@ public class RestAuthTest extends ParameterizedTest {
 			/* Create token with null clientId */
 			TokenParams tokenParams = new TokenParams() {{ clientId = null; }};
 			TokenDetails tokenDetails = ably.auth.requestToken(tokenParams, null);
-			assertEquals("Auth#clientId is expected to be null", null, tokenDetails.clientId);
+			assertEquals("TokenDetails#clientId is expected to be null", null, tokenDetails.clientId);
+			assertEquals("Auth#clientId is expected to be null", null, ably.auth.clientId);
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("auth_clientid_null_mismatch: Unexpected exception");
 		}
 
-		/* Publish a message with mismatching client id */
-		Message message = new Message(
-				"I", /* name */
-				"will", /* data */
-				"fail" /* mismatching client id */
-		);
-		Channel channel = ably.channels.get("test");
-
-		thrown.expect(AblyException.class);
-		thrown.expectMessage("Malformed message; mismatched clientId");
-		channel.publish(new Message[]{ message });
+		try {
+			/* Publish a message with mismatching client id */
+			Message message = new Message(
+					"I", /* name */
+					"will", /* data */
+					"fail" /* mismatching client id */
+			);
+			Channel channel = ably.channels.get("test");
+			channel.publish(new Message[]{ message });
+		} catch(AblyException e) {
+			assertEquals("Verify exception is raised with expected error code", e.errorInfo.code, 40012);
+		}
 	}
 
 	/**
 	 * Verify message with wildcard `*` client id gets published,
 	 * and contains null client id.<br>
 	 * <br>
-	 * Spec: RSA8f3
+	 * Spec: RSA8f3, RSA7b4
 	 */
 	@Test
 	public void auth_clientid_null_wildcard () {
@@ -726,19 +861,20 @@ public class RestAuthTest extends ParameterizedTest {
 				private AblyRest ably = new AblyRest(createOptions(testVars.keys[0].keyStr));
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
+					params.clientId = "*";
 					return ably.auth.requestToken(params, null);
 				}
 			};
 
 			/* create Ably instance with wildcard clientId */
 			ClientOptions options = createOptions();
-			options.clientId = "*";
 			options.authCallback = authCallback;
 			AblyRest ably = new AblyRest(options);
 
 			/* Fetch token */
-			TokenDetails tokenDetails = ably.auth.requestToken(null, null);
-			assertEquals("Auth#clientId is expected to be wildcard '*'", "*", tokenDetails.clientId);
+			TokenDetails tokenDetails = ably.auth.authorize(null, null);
+			assertEquals("TokenDetails#clientId is expected to be wildcard '*'", "*", tokenDetails.clientId);
+			assertEquals("Auth#clientId is expected to be wildcard '*'", "*", ably.auth.clientId);
 
 			/* Publish message */
 			String messageName = "wildcard";
@@ -785,19 +921,20 @@ public class RestAuthTest extends ParameterizedTest {
 				private AblyRest ably = new AblyRest(createOptions(testVars.keys[0].keyStr));
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
+					params.clientId = "*";
 					return ably.auth.requestToken(params, null);
 				}
 			};
 
 			/* create Ably instance with wildcard clientId */
 			ClientOptions options = createOptions();
-			options.clientId = "*";
 			options.authCallback = authCallback;
 			AblyRest ably = new AblyRest(options);
 
 			/* Fetch token */
-			TokenDetails tokenDetails = ably.auth.requestToken(null, null);
-			assertEquals("Auth#clientId is expected to be wildcard '*'", "*", tokenDetails.clientId);
+			TokenDetails tokenDetails = ably.auth.authorize(null, null);
+			assertEquals("TokenDetails#clientId is expected to be wildcard '*'", "*", tokenDetails.clientId);
+			assertEquals("Auth#clientId is expected to be wildcard '*'", "*", ably.auth.clientId);
 
 			/* Publish a message */
 			Message messagePublishee = new Message(
@@ -834,6 +971,244 @@ public class RestAuthTest extends ParameterizedTest {
 	}
 
 	/**
+	 * Verify message does not have explicit client id populated
+	 * when library is identified
+	 * Spec: RSA7a1
+	 */
+	@Test
+	public void auth_clientid_publish_implicit() {
+		try {
+			String clientId = "test clientId";
+			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
+			optsForToken.clientId = clientId;
+			AblyRest ablyForToken = new AblyRest(optsForToken);
+			TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, null);
+
+			final Message[] messages = new Message[1];
+
+			/* create Ably instance with clientId */
+			DebugOptions options = new DebugOptions(testVars.keys[0].keyStr) {{
+				this.httpListener = new RawHttpListener() {
+					@Override
+					public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader,
+							Map<String, List<String>> requestHeaders, RequestBody requestBody) {
+						try {
+							if(testParams.useBinaryProtocol) {
+								messages[0] = MessageSerializer.readMsgpack(requestBody.getEncoded())[0];
+							} else {
+								messages[0] = MessageSerializer.readJSON(requestBody.getEncoded())[0];
+							}
+						} catch (AblyException e) {
+							e.printStackTrace();
+							fail("auth_clientid_publish_implicit: Unexpected exception");
+						} catch (IOException e) {
+							e.printStackTrace();
+							fail("auth_clientid_publish_implicit: Unexpected exception");
+						}
+					}
+
+					@Override
+					public void onRawHttpResponse(String id, io.ably.lib.http.Http.Response response) {}
+
+					@Override
+					public void onRawHttpException(String id, Throwable t) {}
+				};
+			}};
+			fillInOptions(options);
+			options.tokenDetails = tokenDetails;
+			AblyRest ably = new AblyRest(options);
+
+			/* Publish a message */
+			Message messagePublishee = new Message(
+					"I have clientId",	/* name */
+					String.valueOf(System.currentTimeMillis()) /* data */
+			);
+
+			Channel channel = ably.channels.get("test_" + testParams.name);
+			channel.publish(new Message[] { messagePublishee });
+
+			/* Get sent message */
+			Message messagePublished = messages[0];
+			assertNull("Published message does not contain clientId", messagePublished.clientId);
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("auth_clientid_publish_implicit: Unexpected exception");
+		}
+	}
+
+	/**
+	 * Verify message does have explicit client id populated
+	 * when library is initialised as wildcard
+	 * Spec: RSA8f4
+	 */
+	@Test
+	public void auth_clientid_publish_explicit_in_message() {
+		try {
+			final String messageClientId = "test clientId";
+			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
+			AblyRest ablyForToken = new AblyRest(optsForToken);
+			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{
+				this.clientId = "*";
+			}}, null);
+
+			final Message[] messages = new Message[1];
+
+			/* create Ably instance with clientId */
+			DebugOptions options = new DebugOptions(testVars.keys[0].keyStr) {{
+				this.httpListener = new RawHttpListener() {
+					@Override
+					public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader,
+							Map<String, List<String>> requestHeaders, RequestBody requestBody) {
+						try {
+							if(testParams.useBinaryProtocol) {
+								messages[0] = MessageSerializer.readMsgpack(requestBody.getEncoded())[0];
+							} else {
+								messages[0] = MessageSerializer.readJSON(requestBody.getEncoded())[0];
+							}
+						} catch (AblyException e) {
+							e.printStackTrace();
+							fail("auth_clientid_publish_implicit: Unexpected exception");
+						} catch (IOException e) {
+							e.printStackTrace();
+							fail("auth_clientid_publish_implicit: Unexpected exception");
+						}
+					}
+
+					@Override
+					public void onRawHttpResponse(String id, io.ably.lib.http.Http.Response response) {}
+
+					@Override
+					public void onRawHttpException(String id, Throwable t) {}
+				};
+			}};
+			fillInOptions(options);
+			options.tokenDetails = tokenDetails;
+			AblyRest ably = new AblyRest(options);
+
+			/* Publish a message */
+			Message messagePublishee = new Message(
+					"I have clientId",	/* name */
+					String.valueOf(System.currentTimeMillis()), /* data */
+					messageClientId /* clientId */
+			);
+
+			Channel channel = ably.channels.get("test_" + testParams.name);
+			channel.publish(new Message[] { messagePublishee });
+
+			/* Get sent message */
+			Message messagePublished = messages[0];
+			assertEquals("Published message contains clientId", messagePublished.clientId, messageClientId);
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("auth_clientid_publish_explicit_in_message: Unexpected exception");
+		}
+	}
+
+	/**
+	 * Verify message with wildcard `*` client id gets published,
+	 * and contains null client id.<br>
+	 * <br>
+	 * Spec: RTL6e1
+	 */
+	@Test
+	public void auth_clientid_basic_null_wildcard() {
+		try {
+			/* create Ably instance with basic auth and no clientId */
+			ClientOptions options = createOptions(testVars.keys[0].keyStr);
+			AblyRest ably = new AblyRest(options);
+
+			/* Publish message */
+			String messageName = "wildcard";
+			String messageData = String.valueOf(System.currentTimeMillis());
+			String clientId = "message clientId";
+
+			Channel channel = ably.channels.get("auth_clientid_basic_null_wildcard_" + testParams.name);
+			Message message = new Message(messageName, messageData);
+			message.clientId = clientId;
+			channel.publish(new Message[] { message });
+
+			/* Fetch published message */
+			PaginatedResult<Message> result = channel.history(null);
+			Message[] messages = result.items();
+			Message publishedMessage = null;
+
+			for(int i = 0; i < messages.length; i++) {
+				Message msg = messages[i];
+
+				if(messageName.equals(msg.name) &&
+						messageData.equals(msg.data)) {
+					publishedMessage = message;
+					break;
+				}
+			}
+
+			assertNotNull("Recently published message expected to be accessible", publishedMessage);
+			assertEquals("Message#clientId is expected to be set", clientId, publishedMessage.clientId);
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("auth_clientid_basic_null_wildcard: Unexpected exception");
+		}
+	}
+
+	/**
+	 * Verify client id in token is populated from defaultTokenParams
+	 * when library is initialised without explicit clientId
+	 * Spec: RSA7a4
+	 */
+	@Test
+	public void auth_clientid_in_defaultparams() {
+		try {
+			final String defaultClientId = "default clientId";
+
+			/* create Ably instance with defaultTokenParams */
+			ClientOptions options = createOptions(testVars.keys[0].keyStr);
+			options.useTokenAuth = true;
+			options.defaultTokenParams = new TokenParams() {{ this.clientId = defaultClientId; }};
+			AblyRest ably = new AblyRest(options);
+
+			/* get a token with these default params */
+			ably.auth.authorize(null, null);
+
+			/* verify that clientId is set */
+			assertEquals("Verify expected clientId is set", ably.auth.clientId, defaultClientId);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("auth_clientid_in_defaultparams: Unexpected exception");
+		}
+	}
+
+	/**
+	 * Verify client id in token populated from ClientOptions
+	 * overriding any clientId in defaultTokenParams
+	 * Spec: RSA7a4
+	 */
+	@Test
+	public void auth_clientid_in_opts_overrides_defaultparams() {
+		try {
+			final String defaultClientId = "default clientId";
+			final String clientId = "options clientId";
+
+			/* create Ably instance with defaultTokenParams */
+			ClientOptions options = createOptions(testVars.keys[0].keyStr);
+			options.useTokenAuth = true;
+			options.clientId = clientId;
+			options.defaultTokenParams = new TokenParams() {{ this.clientId = defaultClientId; }};
+			AblyRest ably = new AblyRest(options);
+
+			/* get a token with these default params */
+			ably.auth.authorize(null, null);
+
+			/* verify that clientId is set */
+			assertEquals("Verify expected clientId is set", ably.auth.clientId, clientId);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("auth_clientid_in_defaultparams: Unexpected exception");
+		}
+	}
+
+	/**
 	 * Verify token auth used when useTokenAuth=true
 	 */
 	@Test
@@ -843,7 +1218,7 @@ public class RestAuthTest extends ParameterizedTest {
 			opts.useTokenAuth = true;
 			AblyRest ably = new AblyRest(opts);
 			/* verify that we don't have a token yet. */
-			assertTrue("Not expecting a token yet", ably.auth.getTokenAuth() == null || ably.auth.getTokenAuth().getTokenDetails() == null);
+			assertTrue("Not expecting a token yet", ably.auth.getTokenDetails() == null);
 			/* make a request that relies on the token */
 			try {
 				ably.stats(new Param[] { new Param("by", "hour"), new Param("limit", "1") });
@@ -852,8 +1227,8 @@ public class RestAuthTest extends ParameterizedTest {
 				fail("Unexpected exception requesting token");
 			}
 			/* verify that we have a token. */
-			assertTrue("Expected to use token auth", ably.auth.getTokenAuth().getTokenDetails() != null);
-			System.out.println("Token is " + ably.auth.getTokenAuth().getTokenDetails().token);
+			assertTrue("Expected to use token auth", ably.auth.getTokenDetails() != null);
+			System.out.println("Token is " + ably.auth.getTokenDetails().token);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("Unexpected exception instantiating library");

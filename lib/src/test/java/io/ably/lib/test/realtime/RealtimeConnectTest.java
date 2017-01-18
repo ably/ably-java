@@ -8,6 +8,7 @@ import org.junit.Test;
 
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.ConnectionState;
+import io.ably.lib.rest.Auth.AuthMethod;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.ParameterizedTest;
@@ -30,7 +31,7 @@ public class RealtimeConnectTest extends ParameterizedTest {
 
 			connectionWaiter.waitFor(ConnectionState.connected);
 			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
-			assertTrue("Not expecting token auth", ably.auth.getTokenAuth() == null);
+			assertTrue("Not expecting token auth", ably.auth.getAuthMethod() == AuthMethod.basic);
 
 			ably.close();
 			connectionWaiter.waitFor(ConnectionState.closed);
@@ -127,8 +128,8 @@ public class RealtimeConnectTest extends ParameterizedTest {
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 			connectionWaiter.waitFor(ConnectionState.connected);
 			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
-			assertTrue("Expected to use token auth", ably.auth.getTokenAuth() != null);
-			System.out.println("Token is " + ably.auth.getTokenAuth().getTokenDetails().token);
+			assertTrue("Expected to use token auth", ably.auth.getAuthMethod() == AuthMethod.token);
+			System.out.println("Token is " + ably.auth.getTokenDetails().token);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init1: Unexpected exception instantiating library");

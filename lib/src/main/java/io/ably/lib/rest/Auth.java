@@ -16,8 +16,8 @@ import com.google.gson.JsonParseException;
 import io.ably.lib.http.Http;
 import io.ably.lib.http.Http.Response;
 import io.ably.lib.http.Http.ResponseHandler;
-import io.ably.lib.http.TokenAuth;
 import io.ably.lib.types.AblyException;
+import io.ably.lib.types.BaseMessage;
 import io.ably.lib.types.Capability;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
@@ -453,6 +453,12 @@ public class Auth {
 	}
 
 	/**
+	 * The clientId for this library instance
+	 * Spec RSA7b
+	 */
+	public String clientId;
+
+	/**
 	 * Ensure valid auth credentials are present. This may rely in an already-known
 	 * and valid token, and will obtain a new token if necessary or explicitly
 	 * requested.
@@ -496,14 +502,15 @@ public class Auth {
 
 		/* RSA10e (as clarified in PR https://github.com/ably/docs/pull/186 )
 		 * Use supplied token or tokenDetails if any. */
-		if (authOptions.token != null)
+		if (authOptions.token != null) {
 			authOptions.tokenDetails = new TokenDetails(authOptions.token);
+		}
 		TokenDetails tokenDetails;
-		if (authOptions.tokenDetails != null) {
+		if(authOptions.tokenDetails != null) {
 			tokenDetails = authOptions.tokenDetails;
-			tokenAuth.setTokenDetails(tokenDetails);
+			setTokenDetails(tokenDetails);
 		} else {
-			tokenDetails = tokenAuthorize(params, options);
+			tokenDetails = assertValidToken(params, options, true);
 		}
 		ably.onAuthUpdated(tokenDetails.token, true);
 		return tokenDetails;
@@ -516,24 +523,6 @@ public class Auth {
 	public TokenDetails authorise(TokenParams params, AuthOptions options) throws AblyException {
 		Log.w(TAG, "authorise() is deprecated and will be removed in 1.0. Please use authorize() instead");
 		return authorize(params, options);
-	}
-
-	/**
-	 * Ensure we have a valid token.
-	 */
-	public TokenDetails ensureValidAuth() throws AblyException {
-		return tokenAuth.authorize(this.tokenParams, this.authOptions, /*force=*/false);
-	}
-
-	/**
-	 * Renew auth credentials.
-	 * Will obtain a new token, even if we already have an apparently valid one.
-	 * Authorization will use the parameters supplied on construction.
-	 */
-	public TokenDetails renew() throws AblyException {
-		TokenDetails tokenDetails = tokenAuthorize(this.tokenParams, this.authOptions);
-		ably.onAuthUpdated(tokenDetails.token, false);
-		return tokenDetails;
 	}
 
 	/**
@@ -773,8 +762,8 @@ public class Auth {
 			params = new Param[]{new Param("key", authOptions.key) };
 			break;
 		case token:
-			ensureValidAuth();
-			params = new Param[]{new Param("accessToken", tokenAuth.getTokenDetails().token) };
+			assertValidToken();
+			params = new Param[]{new Param("accessToken", getTokenDetails().token) };
 			break;
 		}
 		return params;
@@ -787,14 +776,21 @@ public class Auth {
 		return authOptions.copy();
 	}
 
-	public TokenAuth getTokenAuth() {
-		return tokenAuth;
+	/**
+	 * Renew auth credentials.
+	 * Will obtain a new token, even if we already have an apparently valid one.
+	 * Authorization will use the parameters supplied on construction.
+	 */
+	public TokenDetails renew() throws AblyException {
+		TokenDetails tokenDetails = assertValidToken(this.tokenParams, this.authOptions, true);
+		ably.onAuthUpdated(tokenDetails.token, false);
+		return tokenDetails;
 	}
 
 	public void onAuthError(ErrorInfo err) {
 		/* we're only interested in token expiry errors */
 		if(err.code >= 40140 && err.code < 40150)
-			tokenAuth.clear();
+			clearTokenDetails();
 	}
 
 	public static long timestamp() { return System.currentTimeMillis(); }
@@ -815,6 +811,18 @@ public class Auth {
 		tokenParams = options.defaultTokenParams != null ?
 				options.defaultTokenParams : new TokenParams();
 
+		/* set clientId (spec Rsa7b1) */
+		if(options.clientId != null) {
+			if(options.clientId.equals(WILDCARD_CLIENTID)) {
+				/* RSA7c */
+				throw AblyException.fromErrorInfo(new ErrorInfo("Disallowed wildcard clientId in ClientOptions", 400, 40000));
+			}
+			/* RSC17 */
+			setClientId(options.clientId);
+			/* RSA7a4 */
+			tokenParams.clientId = options.clientId;
+		}
+
 		/* decide default auth method (spec: RSA4) */
 		if(authOptions.key != null) {
 			if(options.clientId == null &&
@@ -828,16 +836,18 @@ public class Auth {
 				Log.i("Auth()", "anonymous, using basic auth");
 				this.method = AuthMethod.basic;
 				basicCredentials = authOptions.key;
+				setClientId(WILDCARD_CLIENTID);
 				return;
 			}
 		}
 		/* using token auth, but decide the method */
 		this.method = AuthMethod.token;
-		this.tokenAuth = new TokenAuth(this);
-		if(authOptions.token != null)
-			authOptions.tokenDetails = new TokenDetails(authOptions.token);
-		if(authOptions.tokenDetails != null)
-			tokenAuth.setTokenDetails(authOptions.tokenDetails);
+		if(authOptions.token != null) {
+			setTokenDetails(authOptions.token);
+		}
+		else if(authOptions.tokenDetails != null) {
+			setTokenDetails(authOptions.tokenDetails);
+		}
 
 		if(authOptions.authCallback != null) {
 			Log.i("Auth()", "using token auth with authCallback");
@@ -852,6 +862,62 @@ public class Auth {
 			 * authentication will fail */
 			Log.i("Auth()", "no authentication parameters supplied");
 		}
+	}
+
+	public TokenDetails getTokenDetails() {
+		Log.i("TokenAuth.getTokenDetails()", "");
+		return tokenDetails;
+	}
+
+	public String getEncodedToken() {
+		Log.i("TokenAuth.getEncodedToken()", "");
+		return encodedToken;
+	}
+
+	private void setTokenDetails(String token) throws AblyException {
+		Log.i("TokenAuth.setTokenDetails()", "");
+		this.tokenDetails = new TokenDetails(token);
+		this.encodedToken = Base64Coder.encodeString(token).replace("=", "");
+	}
+
+	private void setTokenDetails(TokenDetails tokenDetails) throws AblyException {
+		Log.i("TokenAuth.setTokenDetails()", "");
+		setClientId(tokenDetails.clientId);
+		this.tokenDetails = tokenDetails;
+		this.encodedToken = Base64Coder.encodeString(tokenDetails.token).replace("=", "");
+	}
+
+	private void clearTokenDetails() {
+		Log.i("TokenAuth.clearTokenDetails()", "");
+		this.tokenDetails = null;
+		this.encodedToken = null;
+	}
+
+	public TokenDetails assertValidToken() throws AblyException {
+		return assertValidToken(tokenParams, authOptions, false);
+	}
+
+	private TokenDetails assertValidToken(TokenParams params, AuthOptions options, boolean force) throws AblyException {
+		Log.i("Auth.assertValidToken()", "");
+		if(tokenDetails != null) {
+			if(tokenDetails.expires == 0 || tokenValid(tokenDetails)) {
+				if (!force) {
+					Log.i("Auth.assertValidToken()", "using cached token; expires = " + tokenDetails.expires);
+					return tokenDetails;
+				}
+			} else {
+				/* expired, so remove */
+				Log.i("Auth.assertValidToken()", "deleting expired token");
+				clearTokenDetails();
+			}
+		}
+		Log.i("Auth.authorize()", "requesting new token");
+		setTokenDetails(requestToken(params, options));
+		return tokenDetails;
+	}
+
+	private static boolean tokenValid(TokenDetails tokenDetails) {
+		return tokenDetails.expires > Auth.serverTimestamp();
 	}
 
 	private static String random() { return String.format("%016d", (long)(Math.random() * 1E16)); }
@@ -869,26 +935,73 @@ public class Auth {
 	}
 
 	/**
-	 * Authorize using token and notify connection of authentication errors if needed
-	 *
-	 * @param params
-	 * @param options
-	 * @return
+	 * Set the clientId, after first initialisation in the construction of the library
+	 * therefore an existing null value is significant - it means that ClientOptions.clientId
+	 * was null
+	 * @param clientId
 	 * @throws AblyException
 	 */
-	private TokenDetails tokenAuthorize(TokenParams params, AuthOptions options) throws AblyException {
-		try {
-			return tokenAuth.authorize(params, options, /*force=*/true);
+	public void setClientId(String clientId) throws AblyException {
+		if(this.clientId == null) {
+			/* RSA12a, RSA12b, RSA7b2, RSA7b3, RSA7b4: the given clientId is now our clientId */
+			this.clientId = clientId;
+			return;
 		}
-		catch (AblyException e) {
-			ErrorInfo authErrorInfo = new ErrorInfo();
-			authErrorInfo.code = 80019;
-			authErrorInfo.message = e.errorInfo.message;
-			authErrorInfo.statusCode = e.errorInfo.statusCode;
-			ably.onAuthError(authErrorInfo);
-			throw e;
+		/* now this.clientId != null */
+		if(this.clientId.equals(clientId)) {
+			/* this includes the wildcard case RSA7b4 */
+			return;
+		}
+		if(WILDCARD_CLIENTID.equals(clientId)) {
+			/* this signifies that the credentials permit the use of any specific clientId */
+			return;
+		}
+		throw AblyException.fromErrorInfo(new ErrorInfo("Unable to set different clientId from that given in options", 401, 40101));
+	}
+
+	public void checkClientId(BaseMessage msg, boolean allowNullClientId) throws AblyException {
+		/* RTL6g3 */
+		String msgClientId = msg.clientId;
+		if(msgClientId != null) {
+			if(msgClientId.equals(WILDCARD_CLIENTID)) {
+				throw AblyException.fromErrorInfo(new ErrorInfo("Invalid wildcard clientId specified in message", 400, 40000));
+			}
+
+			if(clientId == null) {
+				if(!allowNullClientId) {
+					throw AblyException.fromErrorInfo(new ErrorInfo("Incompatible clientId specified in message", 400, 40012));
+				}
+				/* RTL6g4: be lenient checking against a null clientId if we're not connected */
+				return;
+			}
+
+			if(!clientId.equals(msgClientId) && !clientId.equals(WILDCARD_CLIENTID)) {
+				throw AblyException.fromErrorInfo(new ErrorInfo("Incompatible clientId specified in message", 400, 40012));
+			}
 		}
 	}
+
+//	/**
+//	 * Authorize using token and notify connection of authentication errors if needed
+//	 *
+//	 * @param params
+//	 * @param options
+//	 * @return
+//	 * @throws AblyException
+//	 */
+//	private TokenDetails tokenAuthorize(TokenParams params, AuthOptions options) throws AblyException {
+//		try {
+//			return tokenAuth.authorize(params, options, /*force=*/true);
+//		}
+//		catch (AblyException e) {
+//			ErrorInfo authErrorInfo = new ErrorInfo();
+//			authErrorInfo.code = 80019;
+//			authErrorInfo.message = e.errorInfo.message;
+//			authErrorInfo.statusCode = e.errorInfo.statusCode;
+//			ably.onAuthError(authErrorInfo);
+//			throw e;
+//		}
+//	}
 
 	/**
 	 * Using time delta obtained before guess current server time
@@ -905,7 +1018,8 @@ public class Auth {
 	private AuthOptions authOptions;
 	private TokenParams tokenParams;
 	private String basicCredentials;
-	private TokenAuth tokenAuth;
+	private TokenDetails tokenDetails;
+	private String encodedToken;
 
 	/**
 	 * Time delta is server time minus client time, in milliseconds, MAX_VALUE if not obtained yet
@@ -917,6 +1031,7 @@ public class Auth {
 	 */
 	private static long nanoTimeDelta = System.currentTimeMillis() - System.nanoTime()/(1000*1000);
 
+	private static final String WILDCARD_CLIENTID = "*";
 	/**
 	 * For testing purposes we need method to clear cached timeDelta
 	 */

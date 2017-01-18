@@ -22,7 +22,7 @@ import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
 import io.ably.lib.test.common.Helpers.PresenceWaiter;
-import io.ably.lib.test.common.Helpers.RawProtocolWaiter;
+import io.ably.lib.test.common.Helpers.RawProtocolMonitor;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
@@ -1040,7 +1040,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 
 			DebugOptions rxOpts = new DebugOptions(testVars.keys[0].keyStr);
 			fillInOptions(rxOpts);
-			RawProtocolWaiter rawPresenceWaiter = new RawProtocolWaiter(Action.presence);
+			RawProtocolMonitor rawPresenceWaiter = RawProtocolMonitor.createReceiver(Action.presence);
 			rxOpts.protocolListener = rawPresenceWaiter;
 			rxAbly = new AblyRealtime(rxOpts);
 			String channelName = "persisted:presencehistory_from_attach_" + testParams.name;
@@ -1145,7 +1145,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 
 			DebugOptions rxOpts = new DebugOptions(testVars.keys[0].keyStr);
 			fillInOptions(rxOpts);
-			RawProtocolWaiter rawPresenceWaiter = new RawProtocolWaiter(Action.presence);
+			RawProtocolMonitor rawPresenceWaiter = RawProtocolMonitor.createReceiver(Action.presence);
 			rxOpts.protocolListener = rawPresenceWaiter;
 			rxAbly = new AblyRealtime(rxOpts);
 			String channelName = "persisted:presencehistory_until_attach_" + testParams.name;
