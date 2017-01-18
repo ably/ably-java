@@ -1,17 +1,13 @@
 package io.ably.lib.transport;
 
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.debug.RawProtocolListener;
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.Channel;
-import io.ably.lib.realtime.CompletionListener;
-import io.ably.lib.realtime.Connection;
-import io.ably.lib.realtime.ConnectionState;
-import io.ably.lib.realtime.ConnectionStateListener;
+import io.ably.lib.debug.DebugOptions.RawProtocolListener;
+import io.ably.lib.realtime.*;
 import io.ably.lib.transport.ITransport.ConnectListener;
 import io.ably.lib.transport.ITransport.TransportParams;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ConnectionDetails;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
@@ -94,6 +90,50 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		}
 	}
 
+	/*************************************
+	 * a class that listens for state change
+	 * events for in-place authorization
+	 *************************************/
+	public class ConnectionWaiter implements ConnectionStateListener {
+
+		/**
+		 * Public API
+		 */
+		public ConnectionWaiter() {
+			connection.on(this);
+		}
+
+		/**
+		 * Wait for a state change notification
+		 */
+		public synchronized ErrorInfo waitForChange() {
+			Log.d(TAG, "ConnectionWaiter.waitFor()");
+			if (change == null) {
+				try { wait(); } catch(InterruptedException e) {}
+			}
+			Log.d(TAG, "ConnectionWaiter.waitFor done: state=" + state + ")");
+			ErrorInfo reason = change.reason;
+			change = null;
+			return reason;
+		}
+
+		/**
+		 * ConnectionStateListener interface
+		 */
+		@Override
+		public void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange state) {
+			synchronized(this) {
+				change = state;
+				notify();
+			}
+		}
+
+		/**
+		 * Internal
+		 */
+		private ConnectionStateListener.ConnectionStateChange change;
+	}
+
 	/***********************
 	 * all state information
 	 ***********************/
@@ -155,9 +195,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 	/* This is only here for the benefit of ConnectionManagerTest. */
 	public String getHost() {
-		if(transport != null)
-			return transport.getHost();
-		return pendingConnect.host;
+		return lastUsedHost;
 	}
 	
 	/*********************
@@ -192,6 +230,10 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			change = new ConnectionStateListener.ConnectionStateChange(state.state, newState.state, newStateInfo.timeout, reason);
 			newStateInfo.host = newState.currentHost;
 			state = newStateInfo;
+
+			if (change.current != change.previous)
+				/* any state change clears pending reauth flag */
+				pendingReauth = false;
 		}
 
 		/* broadcast state change */
@@ -202,10 +244,37 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			sendQueuedMessages();
 			for(Channel channel : ably.channels.values())
 				channel.setConnected();
-		} else if(!state.queueEvents) {
-			failQueuedMessages(state.defaultErrorInfo);
-			for(Channel channel : ably.channels.values())
-				channel.setSuspended(state.defaultErrorInfo);
+		} else { 
+			if(!state.queueEvents)
+				failQueuedMessages(state.defaultErrorInfo);
+			for(Channel channel : ably.channels.values()) {
+				switch (state.state) {
+					case disconnected:
+						/* (RTL3e) If the connection state enters the
+						 * DISCONNECTED state, it will have no effect on the
+						 * channel states. */
+						break;
+					case failed:
+						/* (RTL3a) If the connection state enters the FAILED
+						 * state, then an ATTACHING or ATTACHED channel state
+						 * will transition to FAILED, set the
+						 * Channel#errorReason and emit the error event. */
+						channel.setConnectionFailed(change.reason);
+						break;
+					case closed:
+						/* (RTL3b) If the connection state enters the CLOSED
+						 * state, then an ATTACHING or ATTACHED channel state
+						 * will transition to DETACHED. */
+						channel.setConnectionClosed(state.defaultErrorInfo);
+						break;
+					case suspended:
+						/* (RTL3c) If the connection state enters the SUSPENDED
+						 * state, then an ATTACHING or ATTACHED channel state
+						 * will transition to SUSPENDED. */
+						channel.setSuspended(state.defaultErrorInfo);
+						break;
+				}
+			}
 		}
 	}
 
@@ -277,27 +346,83 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	}
 
 	/**
-	 * Authentication token changes for the current connection are possible when
-	 * the client is in the {@link ConnectionState#connected}, {@link ConnectionState#connecting}
-	 * or {@link ConnectionState#disconnected } states.
-	 *
-	 * In the current protocol version we are not able to update auth params on the fly;
-	 * so disconnect, and the new auth params will be used for subsequent reconnection
-	 * * <p>
-	 * Spec: RTC8 (reauthorise) (0.8 spec)
-	 * </p>
-	 *
+	 * (RTC8) For a realtime client, Auth.authorize instructs the library to
+	 * obtain a token using the provided tokenParams and authOptions and upgrade
+	 * the current connection to use that token; or if not currently connected,
+	 * to connect with the token.
 	 */
-	public void onAuthUpdated() {
-		switch (state.state){
-			case connected:
+	public void onAuthUpdated(String token, boolean waitForResponse) throws AblyException {
+		ConnectionWaiter waiter = new ConnectionWaiter();
+		if (state.state == ConnectionState.connected) {
+			/* (RTC8a) If the connection is in the CONNECTED state and
+			 * auth.authorize is called or Ably requests a re-authentication
+			 * (see RTN22), the client must obtain a new token, then send an
+			 * AUTH ProtocolMessage to Ably with an auth attribute
+			 * containing an AuthDetails object with the token string. */
+			try {
+				ProtocolMessage msg = new ProtocolMessage(ProtocolMessage.Action.auth);
+				msg.auth = new ProtocolMessage.AuthDetails(token);
+				send(msg, false, null);
+			} catch (AblyException e) {
+				/* The send failed. Close the transport; if a subsequent
+				 * reconnect succeeds, it will be with the new token. */
+				Log.v(TAG, "onAuthUpdated: closing transport after send failure");
+				transport.close(/*sendDisconnect=*/false);
+			}
+		} else {
+			if (state.state == ConnectionState.connecting) {
+				/* Close the connecting transport. */
+				Log.v(TAG, "onAuthUpdated: closing connecting transport");
+				transport.close(/*sendDisconnect=*/false);
+			}
+			/* Start a new connection attempt. */
+			connect();
+		}
+
+		if(!waitForResponse)
+			return;
+
+		/* Wait for a state transition into anything other than connecting or
+		 * disconnected. Note that this includes the case that the connection
+		 * was already connected, and the AUTH message prompted the server to
+		 * send another connected message. */
+		for (;;) {
+			ErrorInfo reason = waiter.waitForChange();
+			switch (state.state) {
+				case connected:
+					Log.v(TAG, "onAuthUpdated: got connected");
+					return;
+				case connecting:
+				case disconnected:
+					continue;
+				default:
+					/* suspended/closed/error: throw the error. */
+					Log.v(TAG, "onAuthUpdated: throwing exception");
+					throw AblyException.fromErrorInfo(reason);
+			}
+		}
+	}
+
+	/**
+	 * Called when where was an error during authentication attempt
+	 *
+	 * @param errorInfo Error associated with unsuccessful authentication
+	 */
+	public void onAuthError(ErrorInfo errorInfo) {
+		Log.i(TAG, String.format("onAuthError: (%d) %s", errorInfo.code, errorInfo.message));
+		switch (state.state) {
 			case connecting:
 				ITransport transport = this.transport;
-				if (transport != null) {
-					Log.v(TAG, "onAuthUpdated: closing transport");
-					transport.close(/*sendDisconnect=*/false);
-				}
+				if (transport != null)
+					/* onTransportUnavailable will send state change event and set transport to null */
+					onTransportUnavailable(transport, null, errorInfo);
 				break;
+
+			case connected:
+				/* stay connected but notify of authentication error */
+				connection.emitUpdate(errorInfo);
+				break;
+
 			default:
 				break;
 		}
@@ -307,12 +432,20 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	 * transport events/notifications
 	 ***************************************/
 
-	public void onMessage(ProtocolMessage message) throws AblyException {
+	/**
+	 * React on message from the transport
+	 * @param transport transport instance or null to bypass transport correctness check (for testing)
+	 * @param message
+	 * @throws AblyException
+	 */
+	public void onMessage(ITransport transport, ProtocolMessage message) throws AblyException {
+		if (transport != null && this.transport != transport)
+			return;
 		if (Log.level <= Log.VERBOSE)
-			Log.v(TAG, "onMessage(): " + new String(ProtocolSerializer.writeJSON(message)));
+			Log.v(TAG, "onMessage(): " + message.action + ": " + new String(ProtocolSerializer.writeJSON(message)));
 		try {
 			if(protocolListener != null)
-				protocolListener.onRawMessage(message);
+				protocolListener.onRawMessageRecv(message);
 			switch(message.action) {
 				case heartbeat:
 					onHeartbeat(message);
@@ -345,6 +478,12 @@ public class ConnectionManager implements Runnable, ConnectListener {
 					break;
 				case nack:
 					onNack(message);
+					break;
+				case auth:
+					synchronized (this) {
+						pendingReauth = true;
+						notify();
+					}
 					break;
 				default:
 					onChannelMessage(message);
@@ -383,7 +522,8 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			ably.channels.suspendAll(error);
 
 		/* set the new connection id */
-		connection.key = message.connectionDetails.connectionKey;
+		ConnectionDetails connectionDetails = message.connectionDetails;
+		connection.key = connectionDetails.connectionKey;
 		if (!message.connectionId.equals(connection.id)) {
 			/* The connection id has changed. Reset the message serial and the
 			 * pending message queue (which fails the messages currently in
@@ -397,7 +537,15 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			connection.serial = message.connectionSerial.longValue();
 
 		/* Get any parameters from connectionDetails. */
-		maxIdleInterval = message.connectionDetails.maxIdleInterval;
+		maxIdleInterval = connectionDetails.maxIdleInterval;
+
+		/* set the clientId resolved from token, if any */
+		String clientId = connectionDetails.clientId;
+		try {
+			ably.auth.setClientId(clientId);
+		} catch (AblyException e) {
+			notifyState(transport, new StateIndication(ConnectionState.failed, e.errorInfo));
+		}
 
 		/* indicated connected state */
 		setSuspendTime();
@@ -551,8 +699,14 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				break;
 			}
 		}
-		if(stateChange != null && stateChange.state != state.state)
-			setState(stateChange);
+		if(stateChange != null) {
+			if (stateChange.state != state.state) {
+				setState(stateChange);
+			} else if (stateChange.state == ConnectionState.connected) {
+				/* connected is special case because we want to deliver reauth notifications to listeners as an update */
+				connection.emitUpdate(null);
+			}
+		}
 	}
 
 	private void setSuspendTime() {
@@ -589,7 +743,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	}
 
 	private void tryWait(long timeout) {
-		if(requestedState == null && indicatedState == null)
+		if(requestedState == null && indicatedState == null && !pendingReauth)
 			try {
 				if(timeout == 0) wait();
 				else wait(timeout);
@@ -625,24 +779,54 @@ public class ConnectionManager implements Runnable, ConnectListener {
 						indicatedState = null;
 						break;
 					}
-	
+
 					/* if our state wants us to retry on timer expiry, do that */
 					if(state.retry) {
 						requestState(ConnectionState.connecting);
 						continue;
 					}
-	
+
+					if(pendingReauth) {
+						handleReauth();
+						break;
+					}
+
 					/* no indicated state or requested action, so the timer
 					 * expired while we were in the connecting/closing state */
 					stateChange = checkSuspend(new StateIndication(ConnectionState.disconnected, REASON_TIMEDOUT));
 				}
 			}
+
 			if(stateChange != null)
 				handleStateChange(stateChange);
 		}
 		synchronized(this) {
 			if(mgrThread == thisThread)
 				mgrThread = null;
+		}
+	}
+
+	private void handleReauth() {
+		pendingReauth = false;
+
+		if (state.state == ConnectionState.connected) {
+			Log.v(TAG, "Server initiated reauth");
+
+			ErrorInfo errorInfo = null;
+
+			/*
+			 * It is a server initiated reauth, it is issued while previous token is still valid for ~30 seconds,
+			 * we have to clear cached token and get a new one
+			 */
+			try {
+				ably.auth.renew();
+			} catch (AblyException e) {
+				errorInfo = e.errorInfo;
+			}
+
+			/* report error in UPDATE event */
+			if (state.state == ConnectionState.connected && errorInfo != null)
+				connection.emitUpdate(errorInfo);
 		}
 	}
 
@@ -659,7 +843,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		}
 		ably.auth.onAuthError(reason);
 		notifyState(new StateIndication(ConnectionState.disconnected, reason, null, transport.getHost()));
-		transport = null;
+		this.transport = null;
 	}
 
 	private class ConnectParams extends TransportParams {
@@ -684,6 +868,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			host = hosts.getHost();
 		pendingConnect = new ConnectParams(options);
 		pendingConnect.host = host;
+		lastUsedHost = host;
 
 		/* enter the connecting state */
 		notifyState(request);
@@ -714,7 +899,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		notifyState(request);
 
 		/* send a close message on the transport, if connected */
-		if(connectionExist) {
+		if(connectionExist && transport != null) {
 			try {
 				transport.send(new ProtocolMessage(Action.close));
 			} catch (AblyException e) {
@@ -785,6 +970,8 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 	@SuppressWarnings("unused")
 	private void sendImpl(ProtocolMessage message) throws AblyException {
+		if(protocolListener != null)
+			protocolListener.onRawMessageSend(message);
 		transport.send(message);
 	}
 
@@ -793,6 +980,8 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			message.msgSerial = msgSerial++;
 			pendingMessages.push(new QueuedMessage(message, listener));
 		}
+		if(protocolListener != null)
+			protocolListener.onRawMessageSend(message);
 		transport.send(message);
 	}
 
@@ -970,12 +1159,14 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	private StateInfo state;
 	private StateIndication indicatedState, requestedState;
 	private ConnectParams pendingConnect;
+	private boolean pendingReauth;
 	private ITransport transport;
 	private long suspendTime;
 	private long msgSerial;
 
 	/* for debug/test only */
 	private RawProtocolListener protocolListener;
+	private String lastUsedHost;
 
 	private static final long HEARTBEAT_TIMEOUT = 5000L;
 }

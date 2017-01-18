@@ -20,13 +20,21 @@ import org.junit.Test;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.Channel.MessageListener;
+import io.ably.lib.realtime.ChannelEvent;
 import io.ably.lib.realtime.ChannelState;
+import io.ably.lib.realtime.ChannelStateListener;
+import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.realtime.ConnectionState;
+import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.test.common.Setup;
+import io.ably.lib.test.common.Setup.TestVars;
 import io.ably.lib.transport.ConnectionManager;
+import io.ably.lib.test.util.MockWebsocketFactory;
+import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
@@ -151,7 +159,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
 
 			/* subscribe */
-			MessageListener testListener =  new MessageListener() {
+			MessageListener testListener = new MessageListener() {
 				@Override
 				public void onMessage(Message message) {
 				}};
@@ -926,10 +934,10 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			protoMessage.error = new ErrorInfo("test error", 123);
 
 			ConnectionManager connectionManager = ably.connection.connectionManager;
-			connectionManager.onMessage(protoMessage);
+			connectionManager.onMessage(null, protoMessage);
 
-			assertEquals("channel state should be detached now", channel.state, ChannelState.detached);
-			assertEquals("channel error reason should be set", channel.reason, protoMessage.error);
+			/* Because of (RTL13) channel should now be in either attaching or attached state */
+			assertNotEquals("channel state shouldn't be failed", channel.state, ChannelState.failed);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
@@ -991,9 +999,9 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			assertNotEquals("Verify new connection established", recoverConnectionId, ably.connection.id);
 			assertNotNull("Verify error was returned with connected state", ably.connection.reason);
 
-			/* verify existing channel is detached but not removed */
-			(new ChannelWaiter(channel)).waitFor(ChannelState.detached);
-			assertEquals("Verify attached state reached", channel.state, ChannelState.detached);
+			/* verify existing channel is failed but not removed */
+			(new ChannelWaiter(channel)).waitFor(ChannelState.failed);
+			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
 			assertTrue("Verify the original channel remains in the channel set", ably.channels.get(channelName) == channel);
 
 		} catch (AblyException e) {
@@ -1004,4 +1012,242 @@ public class RealtimeChannelTest extends ParameterizedTest {
 				ably.close();
 		}
 	}
+
+
+	@Test
+	public void channel_state_on_connection_suspended() {
+		AblyRealtime ably = null;
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			(new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel and attach */
+			final String channelName = "test_state_channel";
+			final Channel channel = ably.channels.get(channelName);
+			channel.attach();
+
+			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+			channelWaiter.waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			/* switch to suspended state */
+			ably.connection.connectionManager.requestState(ConnectionState.suspended);
+
+			channelWaiter.waitFor(ChannelState.suspended);
+			assertEquals("Verify suspended state reached", channel.state, ChannelState.suspended);
+
+			/* switch to connected state */
+			ably.connection.connectionManager.requestState(ConnectionState.connected);
+
+			channelWaiter.waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			/* switch to failed state */
+			ably.connection.connectionManager.requestState(ConnectionState.failed);
+
+			channelWaiter.waitFor(ChannelState.failed);
+			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
+
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("Unexpected exception");
+		} finally {
+			if (ably != null)
+				ably.close();
+		}
+	}
+
+	/*
+	 * Establish connection, attach channel, simulate sending attached and detached messages
+	 * from the server, test correct behaviour
+	 *
+	 * Tests RTL12, RTL13
+	 */
+	@Test
+	public void channel_server_initiated_attached_detached() throws AblyException {
+		AblyRealtime ably = null;
+		long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
+		final String channelName = "channel_server_initiated_attach_detach";
+
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+
+			/* Make test faster */
+			Defaults.realtimeRequestTimeout = 1000;
+			opts.channelRetryTimeout = 1000;
+
+			ably = new AblyRealtime(opts);
+
+			Channel channel = ably.channels.get(channelName);
+			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+
+			channel.attach();
+			channelWaiter.waitFor(ChannelState.attached);
+
+			final int[] updateEventsEmitted = new int[]{0};
+			final boolean[] resumedFlag = new boolean[]{true};
+			channel.on(ChannelEvent.update, new ChannelStateListener() {
+				@Override
+				public void onChannelStateChanged(ChannelStateChange stateChange) {
+					updateEventsEmitted[0]++;
+					resumedFlag[0] = stateChange.resumed;
+				}
+			});
+
+			/* Inject attached message as if received from the server */
+			ProtocolMessage attachedMessage = new ProtocolMessage() {{
+				action = Action.attached;
+				channel = channelName;
+				flags |= 1 << Flag.resumed.ordinal();
+			}};
+			ably.connection.connectionManager.onMessage(null, attachedMessage);
+
+			/* Inject detached message as if from the server */
+			ProtocolMessage detachedMessage = new ProtocolMessage() {{
+				action = Action.detached;
+				channel = channelName;
+			}};
+			ably.connection.connectionManager.onMessage(null, detachedMessage);
+
+			/* Channel should transition to attaching, then to attached */
+			channelWaiter.waitFor(ChannelState.attaching);
+			channelWaiter.waitFor(ChannelState.attached);
+
+			/* Verify received UPDATE message on channel */
+			assertEquals("Verify exactly one UPDATE event was emitted on the channel", updateEventsEmitted[0], 1);
+			assertTrue("Verify resumed flag set in UPDATE event", resumedFlag[0]);
+		} finally {
+			if (ably != null)
+				ably.close();
+			Defaults.realtimeRequestTimeout = oldRealtimeTimeout;
+		}
+	}
+
+	/*
+	 * Initiate connection, block send on transport to simulate network packet loss, try to attach, wait for
+	 * channel to eventually attach when send is re-enabled on transport.
+	 *
+	 * Then suspend connection, resume it and immediately block sending packets failing channel
+	 * reattach. Verify that the channel goes back to suspended state on timeout with correct error code.
+	 *
+	 * Try to detach channel while blocking send, channel should go back to attached state through detaching
+	 *
+	 * Tests features RTL4c, RTL4f, RTL5f, RTL5e
+	 */
+	@Test
+	public void channel_reattach_failed() {
+		AblyRealtime ably = null;
+		String oldTransportFractory = Defaults.TRANSPORT;
+		long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
+		try {
+			/* Mock transport to block send */
+			Defaults.TRANSPORT = MockWebsocketFactory.class.getName();
+			/* Reduce timeout for test to run faster */
+			Defaults.realtimeRequestTimeout = 1000;
+			MockWebsocketFactory.allowSend();
+
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.channelRetryTimeout = 1000;
+
+			ably = new AblyRealtime(opts);
+
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+			connectionWaiter.waitFor(ConnectionState.connected);
+
+			/* Block send() and attach */
+			MockWebsocketFactory.blockSend();
+
+			Channel channel = ably.channels.get("channel_reattach_test");
+			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+			channel.attach();
+
+			channelWaiter.waitFor(ChannelState.attaching);
+
+			/* Should get to suspended soon because send() is blocked */
+			channelWaiter.waitFor(ChannelState.suspended);
+
+			/* Re-enable send() and wait for channel to attach */
+			MockWebsocketFactory.allowSend();
+			channelWaiter.waitFor(ChannelState.attached);
+
+			/* Suspend connection: channel state should change to suspended */
+			ably.connection.connectionManager.requestState(ConnectionState.suspended);
+			channelWaiter.waitFor(ChannelState.suspended);
+
+			/* Reconnect and immediately block transport's send(). This should fail channel reattach */
+			ably.connection.once(ConnectionState.connected, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					MockWebsocketFactory.blockSend();
+				}
+			});
+			ably.connection.connectionManager.requestState(ConnectionState.connected);
+
+			/* Channel should move to attaching state */
+			channelWaiter.waitFor(ChannelState.attaching);
+			/*
+			 * Then within realtimeRequestTimeout interval it should get back to suspended
+			 */
+			channelWaiter.waitFor(ChannelState.suspended);
+
+			/* In channelRetryTimeout we should get back to attaching state again */
+			channelWaiter.waitFor(ChannelState.attaching);
+			/* And then suspended in another 1 second */
+			channelWaiter.waitFor(ChannelState.suspended);
+
+			/* Enable message sending again */
+			MockWebsocketFactory.allowSend();
+
+			/* And wait for attached state of the channel */
+			channelWaiter.waitFor(ChannelState.attached);
+
+			final ErrorInfo[] errorDetaching = new ErrorInfo[] {null};
+
+			/* Block and detach */
+			MockWebsocketFactory.blockSend();
+			channel.detach(new CompletionListener() {
+				@Override
+				public void onSuccess() {
+					fail("Detach succeeded");
+				}
+
+				@Override
+				public void onError(ErrorInfo reason) {
+					synchronized (errorDetaching) {
+						errorDetaching[0] = reason;
+						errorDetaching.notify();
+					}
+				}
+			});
+
+			/* Should get to detaching first */
+			channelWaiter.waitFor(ChannelState.detaching);
+			/* And then back to attached on timeout */
+			channelWaiter.waitFor(ChannelState.attached);
+			try {
+				synchronized (errorDetaching) {
+					if (errorDetaching[0] != null)
+						errorDetaching.wait(1000);
+				}
+			} catch (InterruptedException e) {}
+
+			assertNotNull("Verify detach operation failed", errorDetaching[0]);
+
+		} catch(AblyException e)  {
+			e.printStackTrace();
+			fail("Unexpected exception");
+		} finally {
+			if (ably != null)
+				ably.close();
+			/* Restore default values to run other tests */
+			Defaults.TRANSPORT = oldTransportFractory;
+			Defaults.realtimeRequestTimeout = oldRealtimeTimeout;
+		}
+	}
 }
+

@@ -6,7 +6,6 @@ import io.ably.lib.types.ErrorInfo;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 
 
 /**
@@ -18,6 +17,7 @@ public class Hosts {
 	private final String defaultHost;
 	private final String[] fallbackHosts;
 	private final boolean fallbackHostsIsDefault;
+	private final boolean fallbackHostsUseDefault;
 
 	/**
 	 * Create Hosts object
@@ -55,6 +55,7 @@ public class Hosts {
 		} else {
 			setHost(defaultHost);
 		}
+		fallbackHostsUseDefault = options.fallbackHostsUseDefault;
 		if (options.fallbackHosts == null) {
 			fallbackHosts = Arrays.copyOf(Defaults.HOST_FALLBACKS, Defaults.HOST_FALLBACKS.length);
 			fallbackHostsIsDefault = true;
@@ -62,6 +63,11 @@ public class Hosts {
 			/* RSC15a: use ClientOptions#fallbackHosts if set */
 			fallbackHosts = Arrays.copyOf(options.fallbackHosts, options.fallbackHosts.length);
 			fallbackHostsIsDefault = false;
+			if (options.fallbackHostsUseDefault) {
+				/* TO3k7: It is never valid to configure fallbackHost and set
+				 * fallbackHostsUseDefault to true */
+				throw AblyException.fromErrorInfo(new ErrorInfo("cannot set both fallbackHosts and fallbackHostsUseDefault options", 40000, 400));
+			}
 		}
 		/* RSC15a: shuffle the fallback hosts. */
 		Collections.shuffle(Arrays.asList(fallbackHosts));
@@ -97,9 +103,10 @@ public class Hosts {
 			return null;
 		int idx;
 		if (lastHost.equals(primaryHost)) {
-			/* RSC15b: only use fallback if the hostname has not been overridden
+			/* RSC15b, RTN17b: only use fallback if the hostname has not been overridden
+			 * or if ClientOptions#fallbackHostsUseDefault is true
 			 * or if ClientOptions#fallbackHosts was provided. */
-			if (!primaryHostIsDefault && fallbackHostsIsDefault)
+			if (!primaryHostIsDefault && !fallbackHostsUseDefault && fallbackHostsIsDefault)
 				return null;
 			idx = 0;
 		} else {

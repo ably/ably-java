@@ -18,7 +18,6 @@ import org.junit.Test;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
-//import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
@@ -121,8 +120,16 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 			channel.publish(message2);
 			channel.publish(messages34);
 
-			/* get the history for this channel */
-			PaginatedResult<Message> messages = channel.history(null);
+			/* Get history for the channel. Wait for no longer than 2 seconds for the history to be populated */
+			PaginatedResult<Message> messages;
+			int n = 0;
+			do {
+				messages = channel.history(null);
+				if (messages.items().length < 4) {
+					try { Thread.sleep(100); } catch (InterruptedException e) {}
+				}
+			} while (messages.items().length < 4 && ++n < 20);
+
 			assertNotNull("Expected non-null messages", messages);
 			assertEquals("Expected 4 message", messages.items().length, 4);
 
@@ -1230,7 +1237,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 	}
 
 	/**
-	 * Connect twice to the service, each using the default (binary) protocol.
+	 * Connect twice to the service.
 	 * Publish messages on one connection to a given channel; while in progress,
 	 * attach the second connection to the same channel and verify a message
 	 * history up to the point of attachment can be obtained.

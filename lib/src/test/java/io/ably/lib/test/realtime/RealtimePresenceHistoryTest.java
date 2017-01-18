@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.junit.Before;
+import org.junit.Test;
 
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.AblyRealtime;
@@ -21,7 +22,7 @@ import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
 import io.ably.lib.test.common.Helpers.PresenceWaiter;
-import io.ably.lib.test.common.Helpers.RawProtocolWaiter;
+import io.ably.lib.test.common.Helpers.RawProtocolMonitor;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
@@ -30,8 +31,6 @@ import io.ably.lib.types.Param;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
-
-import org.junit.Test;
 
 import java.util.Locale;
 
@@ -60,7 +59,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 	 * it to be persisted.
 	 */
 	@Test
-	public void presencehistory_simpley() {
+	public void presencehistory_simple() {
 		AblyRealtime ably = null;
 		try {
 			ClientOptions rtOpts = createOptions();
@@ -132,7 +131,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 			channel.presence.enter("This is a byte[] message payload".getBytes(), msgComplete);
 
 			/* wait for the enter callback to be called */
-			msgComplete.waitFor();
+			msgComplete.waitFor(2);
 			assertTrue("Verify success callback was called", msgComplete.success);
 
 			/* get the history for this channel */
@@ -181,7 +180,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 			channel.presence.enter("This is a byte[] message payload".getBytes(), msgComplete);
 
 			/* wait for the enter callback to be called */
-			msgComplete.waitFor();
+			msgComplete.waitFor(2);
 			assertTrue("Verify success callback was called", msgComplete.success);
 
 			/* get the history for this channel */
@@ -406,7 +405,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 			channel.presence.enter(liveMessageText, msgComplete);
 
 			/* wait for the publish callback to be called */
-			msgComplete.waitFor();
+			msgComplete.waitFor(2);
 			assertTrue("Verify success callback was called", msgComplete.success);
 
 			/* get the history for this channel */
@@ -466,7 +465,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 			channel.presence.enter(liveMessageText, msgComplete);
 
 			/* wait for the publish callback to be called */
-			msgComplete.waitFor();
+			msgComplete.waitFor(2);
 			assertTrue("Verify success callback was called", msgComplete.success);
 
 			/* get the history for this channel */
@@ -1041,7 +1040,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 
 			DebugOptions rxOpts = new DebugOptions(testVars.keys[0].keyStr);
 			fillInOptions(rxOpts);
-			RawProtocolWaiter rawPresenceWaiter = new RawProtocolWaiter(Action.presence);
+			RawProtocolMonitor rawPresenceWaiter = RawProtocolMonitor.createReceiver(Action.presence);
 			rxOpts.protocolListener = rawPresenceWaiter;
 			rxAbly = new AblyRealtime(rxOpts);
 			String channelName = "persisted:presencehistory_from_attach_" + testParams.name;
@@ -1146,7 +1145,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 
 			DebugOptions rxOpts = new DebugOptions(testVars.keys[0].keyStr);
 			fillInOptions(rxOpts);
-			RawProtocolWaiter rawPresenceWaiter = new RawProtocolWaiter(Action.presence);
+			RawProtocolMonitor rawPresenceWaiter = RawProtocolMonitor.createReceiver(Action.presence);
 			rxOpts.protocolListener = rawPresenceWaiter;
 			rxAbly = new AblyRealtime(rxOpts);
 			String channelName = "persisted:presencehistory_until_attach_" + testParams.name;

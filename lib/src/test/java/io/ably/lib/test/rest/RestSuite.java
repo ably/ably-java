@@ -15,6 +15,7 @@ import io.ably.lib.test.common.Setup;
 @SuiteClasses({
 	HttpTest.class,
 	HttpHeaderTest.class,
+	RestRequestTest.class,
 	RestAppStatsTest.class,
 	RestInitTest.class,
 	RestTimeTest.class,
@@ -22,6 +23,7 @@ import io.ably.lib.test.common.Setup;
 	RestAuthAttributeTest.class,
 	RestTokenTest.class,
 	RestCapabilityTest.class,
+	RestChannelTest.class,
 	RestChannelHistoryTest.class,
 	RestChannelPublishTest.class,
 	RestCryptoTest.class,
