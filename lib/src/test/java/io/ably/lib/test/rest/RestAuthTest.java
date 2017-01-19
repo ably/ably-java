@@ -318,10 +318,7 @@ public class RestAuthTest extends ParameterizedTest {
 			assertNotNull("Expected token value", tokenDetails.token);
 			ClientOptions opts = new ClientOptions();
 			opts.token = tokenDetails.token;
-			opts.restHost = testVars.restHost;
 			opts.environment = testVars.environment;
-			opts.port = testVars.port;
-			opts.tls = testVars.tls;
 			AblyRest ably = new AblyRest(opts);
 			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
 			assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
