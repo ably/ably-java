@@ -720,7 +720,20 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 	 */
 	public synchronized void publish(Message[] messages, CompletionListener listener) throws AblyException {
 		Log.v(TAG, "publish(Message[]); channel = " + this.name);
-		for(Message message : messages) message.encode(options);
+		boolean connected = (ably.connection.state == ConnectionState.connected);
+		try {
+			for(Message message : messages) {
+				/* RTL6g3: check validity of any clientId;
+				 * RTL6g4: be lenient with a null clientId if we're not connected */
+				ably.auth.checkClientId(message, !connected);
+				message.encode(options);
+			}
+		} catch(AblyException e) {
+			if(listener != null) {
+				listener.onError(e.errorInfo);
+			}
+			return;
+		}
 		ProtocolMessage msg = new ProtocolMessage(Action.message, this.name);
 		msg.messages = messages;
 		switch(state) {

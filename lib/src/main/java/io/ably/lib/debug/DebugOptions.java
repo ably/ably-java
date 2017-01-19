@@ -12,7 +12,8 @@ import io.ably.lib.types.ProtocolMessage;
 
 public class DebugOptions extends ClientOptions {
 	public interface RawProtocolListener {
-		public void onRawMessage(ProtocolMessage message);
+		public void onRawMessageSend(ProtocolMessage message);
+		public void onRawMessageRecv(ProtocolMessage message);
 	}
 
 	public interface RawHttpListener {
