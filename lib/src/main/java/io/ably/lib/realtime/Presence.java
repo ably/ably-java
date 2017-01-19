@@ -26,38 +26,34 @@ public class Presence {
 	 ************************************/
 
 	/**
-	 * String parameter names to get() call with Param[] as an argument
+	 * String parameter names for get() call with Param... as an argument
 	 */
 	public final static String GET_WAITFORSYNC = "waitForSync";
 	public final static String GET_CLIENTID = "clientId";
 	public final static String GET_CONNECTIONID = "connectionId";
 
 	/**
-	 * Get the presence state for this channel. Take Param[] array as an argument
+	 * Get the presence state for this channel. Take Param[] array as an argument.
+	 * Implicitly attaches the channel. However, if the channel is in or moves to the FAILED
+	 * state before the operation succeeds, it will result in an error
 	 * @param params
 	 * @return
 	 * @throws AblyException
 	 * @throws InterruptedException
 	 */
-	public synchronized PresenceMessage[] get(Param... params) throws InterruptedException, AblyException {
+	public synchronized PresenceMessage[] get(Param... params) throws AblyException {
 		if (channel.state == ChannelState.failed) {
 			throw AblyException.fromErrorInfo(new ErrorInfo("channel operation failed (invalid channel state)", 90001));
 		}
 
 		channel.attach();
-		Collection<PresenceMessage> values = presence.get(params);
-		return values.toArray(new PresenceMessage[values.size()]);
-	}
-
-	/**
-	 * Get the presence state for this Channel. Implicitly attaches the
-	 * Channel. However, if the channel is in or moves to the FAILED
-	 * state before the operation succeeds, it will result in an error
-	 * @return: the current present members.
-	 * @throws AblyException
-	 */
-	public synchronized PresenceMessage[] get() throws InterruptedException, AblyException {
-		return get(true);
+		try {
+			Collection<PresenceMessage> values = presence.get(params);
+			return values.toArray(new PresenceMessage[values.size()]);
+		} catch (InterruptedException e) {
+			Log.v(TAG, String.format("Channel %s: get() operation interrupted", channel.name));
+			throw AblyException.fromThrowable(e);
+		}
 	}
 
 	/**
@@ -67,7 +63,7 @@ public class Presence {
 	 * @return: the current present members.
 	 * @throws AblyException
 	 */
-	public synchronized PresenceMessage[] get(boolean wait) throws InterruptedException, AblyException {
+	public synchronized PresenceMessage[] get(boolean wait) throws AblyException {
 		return get(new Param(GET_WAITFORSYNC, String.valueOf(wait)));
 	}
 
@@ -80,7 +76,7 @@ public class Presence {
 	 * @throws InterruptedException
 	 * @throws AblyException
 	 */
-	public synchronized PresenceMessage[] get(String clientId, boolean wait) throws InterruptedException, AblyException {
+	public synchronized PresenceMessage[] get(String clientId, boolean wait) throws AblyException {
 		return get(new Param(GET_WAITFORSYNC, String.valueOf(wait)), new Param(GET_CLIENTID, clientId));
 	}
 

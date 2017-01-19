@@ -291,9 +291,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			leaveComplete.waitFor();
 			assertTrue("Verify leave callback called on completion", leaveComplete.success);
 
-			try {
-				assertEquals("Verify item is removed from the presence map", client1Channel.presence.get(testClientId1, false).length, 0);
-			} catch (InterruptedException e) {}
+			assertEquals("Verify item is removed from the presence map", client1Channel.presence.get(testClientId1, false).length, 0);
 
 		} catch(AblyException e) {
 			e.printStackTrace();
@@ -665,12 +663,10 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 			/* get presence set and verify client present */
 			presenceWaiter.waitFor(testClientId1);
-			try {
-				PresenceMessage[] presences = testChannel.realtimeChannel.presence.get(false);
-				PresenceMessage expectedPresent = contains(presences, testClientId1, Action.present);
-				assertNotNull("Verify expected client is in presence set", expectedPresent);
-				assertEquals(expectedPresent.data, enterString);
-			} catch (InterruptedException e) {}
+			PresenceMessage[] presences = testChannel.realtimeChannel.presence.get(false);
+			PresenceMessage expectedPresent = contains(presences, testClientId1, Action.present);
+			assertNotNull("Verify expected client is in presence set", expectedPresent);
+			assertEquals(expectedPresent.data, enterString);
 
 		} catch(AblyException e) {
 			e.printStackTrace();
@@ -726,11 +722,9 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			assertTrue("Verify leave callback called on completion", leaveComplete.success);
 
 			/* get presence set and verify client absent */
-			try {
-				PresenceMessage[] presences = testChannel.realtimeChannel.presence.get(false);
-				assertNull("Verify expected client is in presence set", contains(presences, testClientId1));
-			} catch (InterruptedException e) {}
-			
+			PresenceMessage[] presences = testChannel.realtimeChannel.presence.get(false);
+			assertNull("Verify expected client is in presence set", contains(presences, testClientId1));
+
 		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("Unexpected exception running test: " + e.getMessage());
@@ -797,13 +791,11 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			client2Waiter.waitFor(testClientId1, Action.present);
 
 			/* get presence set and verify client present */
-			try {
-				PresenceMessage[] presences = client2Channel.presence.get(false);
-				PresenceMessage expectedPresent = contains(presences, testClientId1, Action.present);
-				assertNotNull("Verify expected client is in presence set", expectedPresent);
-				assertEquals(expectedPresent.data, enterString);
-			} catch (InterruptedException e) {}
-			
+			PresenceMessage[] presences = client2Channel.presence.get(false);
+			PresenceMessage expectedPresent = contains(presences, testClientId1, Action.present);
+			assertNotNull("Verify expected client is in presence set", expectedPresent);
+			assertEquals(expectedPresent.data, enterString);
+
 		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("Unexpected exception running test: " + e.getMessage());
@@ -894,7 +886,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				String clientId = "client" + i;
 				assertTrue("Expected client with id " + clientId, memberIndex.containsKey(clientId));
 			}
-		} catch(AblyException|InterruptedException e) {
+		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
@@ -955,16 +947,14 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			waiter.waitFor(testClientId2, Action.enter);
 
 			/* get presence set and verify clients present */
-			try {
-				PresenceMessage[] presences = testChannel.realtimeChannel.presence.get(false);
-				PresenceMessage expectedPresent1 = contains(presences, testClientId1, Action.present);
-				PresenceMessage expectedPresent2 = contains(presences, testClientId2, Action.present);
-				assertNotNull("Verify expected clients are in presence set", expectedPresent1);
-				assertNotNull("Verify expected clients are in presence set", expectedPresent2);
-				assertEquals(expectedPresent1.data, enterString1);
-				assertEquals(expectedPresent2.data, enterString2);
-			} catch (InterruptedException e) {}
-			
+			PresenceMessage[] presences = testChannel.realtimeChannel.presence.get(false);
+			PresenceMessage expectedPresent1 = contains(presences, testClientId1, Action.present);
+			PresenceMessage expectedPresent2 = contains(presences, testClientId2, Action.present);
+			assertNotNull("Verify expected clients are in presence set", expectedPresent1);
+			assertNotNull("Verify expected clients are in presence set", expectedPresent2);
+			assertEquals(expectedPresent1.data, enterString1);
+			assertEquals(expectedPresent2.data, enterString2);
+
 		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("Unexpected exception running test: " + e.getMessage());
@@ -1779,10 +1769,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 			/* create a channel and subscribe */
 			final Channel channel = ably.channels.get("get_fail");
-			try {
-				channel.presence.get(false);
-				assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
-			} catch (InterruptedException e) {}
+			channel.presence.get(false);
+			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
 
 			ErrorInfo fail = new ChannelWaiter(channel).waitFor(ChannelState.failed);
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
@@ -1938,7 +1926,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			try {
 				channel.presence.get(false);
 				fail("Presence#get(...) should throw an exception when channel is in failed state");
-			} catch(InterruptedException e) {
 			} catch(AblyException e) {
 				assertThat(e.errorInfo.code, is(equalTo(90001)));
 				assertThat(e.errorInfo.message, is(equalTo("channel operation failed (invalid channel state)")));
@@ -2193,10 +2180,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 							factualMsg != null && factualMsg.id.equals(testMsg.id));
 					assertEquals("Verify message was emitted on the presence object with original action",
 							factualMsg.action, testMsg.action);
-					try {
-						assertEquals("Verify message was added to the presence map and stored with PRESENT action",
-								presence.get(testMsg.clientId, false)[0].action, Action.present);
-					} catch (InterruptedException e) {}
+					assertEquals("Verify message was added to the presence map and stored with PRESENT action",
+							presence.get(testMsg.clientId, false)[0].action, Action.present);
 				}
 			}
 			assertEquals("Verify nothing else passed the newness test", n, presenceMessages.size());
@@ -2443,7 +2428,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 							 */
 							seenLeaveMessageAsAbsentForClient4[0] = channel.presence.get("4", false).length == 0;
 						}
-					} catch (InterruptedException|AblyException e) {}
+					} catch (AblyException e) {}
 				}
 			});
 
@@ -2466,12 +2451,10 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				presence = testPresence3;
 			}});
 
-			try {
-				assertEquals("Verify incomplete sync was discarded", channel.presence.get("1", false).length, 0);
-				assertEquals("Verify client with id==2 is in presence map", channel.presence.get("2", false).length, 1);
-				assertEquals("Verify client with id==3 is in presence map", channel.presence.get("3", false).length, 1);
-				assertEquals("Verify nothing else is in presence map", channel.presence.get(false).length, 2);
-			} catch (InterruptedException e) {}
+			assertEquals("Verify incomplete sync was discarded", channel.presence.get("1", false).length, 0);
+			assertEquals("Verify client with id==2 is in presence map", channel.presence.get("2", false).length, 1);
+			assertEquals("Verify client with id==3 is in presence map", channel.presence.get("3", false).length, 1);
+			assertEquals("Verify nothing else is in presence map", channel.presence.get(false).length, 2);
 
 			assertTrue("Verify LEAVE message for client with id==4 was stored as ABSENT", seenLeaveMessageAsAbsentForClient4[0]);
 
@@ -2675,11 +2658,9 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			PresenceWaiter presenceWaiter = new PresenceWaiter(Action.enter, channel);
 			presenceWaiter.waitFor(1);
 
-			try {
-				PresenceMessage[] presenceMessages = channel.presence.get(testClientId1, false);
-				assertEquals("Verify total number of received presence messages", presenceMessages.length, 1);
-				assertEquals("Verify present message is valid", presenceMessages[0].data, presenceData);
-			} catch (InterruptedException e) {}
+			PresenceMessage[] presenceMessages = channel.presence.get(testClientId1, false);
+			assertEquals("Verify total number of received presence messages", presenceMessages.length, 1);
+			assertEquals("Verify present message is valid", presenceMessages[0].data, presenceData);
 		} finally {
 			if (ably != null)
 				ably.close();
@@ -2710,9 +2691,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			channel2.attach();
 			/* Wait for the SYNC to complete */
 			new PresenceWaiter(Action.present, channel2).waitFor(1);
-			try {
-				channel2.presence.get(true);
-			} catch (InterruptedException e) {}
+			channel2.presence.get(true);
 			/* Initial SYNC should be complete at this point */
 			assertTrue("Verify SYNC is complete", channel2.presence.syncComplete);
 		} catch (AblyException e) {
