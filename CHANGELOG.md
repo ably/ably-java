@@ -1,5 +1,13 @@
 # Change Log
 
+## [v0.8.11](https://github.com/ably/ably-java/tree/HEAD)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v0.8.10...v0.8.11)
+
+**Fixed bugs:**
+
+- 0.8.10 bug during dex translation [\#288](https://github.com/ably/ably-java/issues/288)
+
 ## [v0.8.10](https://github.com/ably/ably-java/tree/HEAD)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v0.8.9...v0.8.10)
@@ -21,6 +29,7 @@
 - Update workaround for Android msgpack bugs [\#269](https://github.com/ably/ably-java/pull/269) ([paddybyers](https://github.com/paddybyers))
 
 ## [v0.8.9](https://github.com/ably/ably-java/tree/v0.8.9) (2017-01-01)
+
 [Full Changelog](https://github.com/ably/ably-java/compare/v0.8.8...v0.8.9)
 
 **Fixed bugs:**
