@@ -981,28 +981,6 @@ public class Auth {
 		}
 	}
 
-//	/**
-//	 * Authorize using token and notify connection of authentication errors if needed
-//	 *
-//	 * @param params
-//	 * @param options
-//	 * @return
-//	 * @throws AblyException
-//	 */
-//	private TokenDetails tokenAuthorize(TokenParams params, AuthOptions options) throws AblyException {
-//		try {
-//			return tokenAuth.authorize(params, options, /*force=*/true);
-//		}
-//		catch (AblyException e) {
-//			ErrorInfo authErrorInfo = new ErrorInfo();
-//			authErrorInfo.code = 80019;
-//			authErrorInfo.message = e.errorInfo.message;
-//			authErrorInfo.statusCode = e.errorInfo.statusCode;
-//			ably.onAuthError(authErrorInfo);
-//			throw e;
-//		}
-//	}
-
 	/**
 	 * Using time delta obtained before guess current server time
 	 */
