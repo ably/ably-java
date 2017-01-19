@@ -828,7 +828,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = wildcardToken;
-				clientId = testClientId1;
 			}};
 			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
@@ -1157,7 +1156,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = wildcardToken;
-				clientId = testClientId1;
 			}};
 			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
@@ -2237,7 +2235,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = wildcardToken;
-				clientId = testClientId1;
 			}};
 			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
