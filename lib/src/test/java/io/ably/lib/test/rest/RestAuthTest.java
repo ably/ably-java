@@ -313,11 +313,6 @@ public class RestAuthTest extends ParameterizedTest {
 	public void authinit4() {
 		try {
 			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-			optsForToken.restHost = testVars.restHost;
-			optsForToken.environment = testVars.environment;
-			optsForToken.port = testVars.port;
-			optsForToken.tlsPort = testVars.tlsPort;
-			optsForToken.tls = testVars.tls;
 			AblyRest ablyForToken = new AblyRest(optsForToken);
 			TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, null);
 			assertNotNull("Expected token value", tokenDetails.token);
@@ -344,11 +339,7 @@ public class RestAuthTest extends ParameterizedTest {
 	public void auth_authURL_tokenrequest() {
 		try {
 			ClientOptions opts = createOptions();
-			opts.restHost = testVars.restHost;
 			opts.environment = testVars.environment;
-			opts.port = testVars.port;
-			opts.tlsPort = testVars.tlsPort;
-			opts.tls = testVars.tls;
 			opts.authUrl = "http://localhost:8982/get-token-request";
 			AblyRest ably = new AblyRest(opts);
 			/* make a call to trigger token request */
@@ -373,11 +364,7 @@ public class RestAuthTest extends ParameterizedTest {
 	public void auth_authURL_token() {
 		try {
 			ClientOptions opts = createOptions();
-			opts.restHost = testVars.restHost;
 			opts.environment = testVars.environment;
-			opts.port = testVars.port;
-			opts.tlsPort = testVars.tlsPort;
-			opts.tls = testVars.tls;
 			opts.authUrl = "http://localhost:8982/get-token";
 			AblyRest ably = new AblyRest(opts);
 			/* make a call to trigger token request */
@@ -402,11 +389,7 @@ public class RestAuthTest extends ParameterizedTest {
 	public void auth_authURL_err() {
 		try {
 			ClientOptions opts = createOptions();
-			opts.restHost = testVars.restHost;
 			opts.environment = testVars.environment;
-			opts.port = testVars.port;
-			opts.tlsPort = testVars.tlsPort;
-			opts.tls = testVars.tls;
 			opts.authUrl = "http://localhost:8982/404";
 			AblyRest ably = new AblyRest(opts);
 			/* make a call to trigger token request */
