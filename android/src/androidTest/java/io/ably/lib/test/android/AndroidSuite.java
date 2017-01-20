@@ -16,9 +16,9 @@ import java.util.Map;
 
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
-import io.ably.lib.http.HttpUtils;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.test.common.Setup;
+import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 
@@ -64,7 +64,7 @@ public class AndroidSuite {
 			Map<String, String> headers = server.getHeaders();
 
 			assertNotNull("Verify ably server was reached", headers);
-			String header = headers.get(HttpUtils.X_ABLY_LIB_HEADER.toLowerCase());
+			String header = headers.get(Defaults.ABLY_LIB_HEADER.toLowerCase());
 			assertTrue("Verify correct library header was passed to the server", header != null && header.startsWith("android"));
 		}
 		catch (AblyException e) {
