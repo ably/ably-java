@@ -22,17 +22,21 @@ public class AblyException extends Exception {
 	}
 
 	public static AblyException fromErrorInfo(ErrorInfo errorInfo) {
+		return fromErrorInfo(new Exception(errorInfo.message), errorInfo);
+	}
+
+	public static AblyException fromErrorInfo(Throwable t, ErrorInfo errorInfo) {
 		/* If status code is one of server error HTTP response codes */
 		if (errorInfo.statusCode >= 500 &&
 			errorInfo.statusCode <= 504) {
 			return new HostFailedException(
-					new Exception(errorInfo.message),
+					t,
 					errorInfo
 			);
 		}
 
 		return new AblyException(
-				new Exception(errorInfo.message),
+				t,
 				errorInfo);
 	}
 
