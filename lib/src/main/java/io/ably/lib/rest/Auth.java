@@ -855,7 +855,7 @@ public class Auth {
 			Log.i("Auth()", "using token auth with authUrl");
 		} else if(authOptions.key != null) {
 			Log.i("Auth()", "using token auth with client-side signing");
-		} else if(authOptions.tokenDetails != null) {
+		} else if(tokenDetails != null) {
 			Log.i("Auth()", "using token auth with supplied token only");
 		} else {
 			/* no means to authenticate (Spec: RSA14) */
