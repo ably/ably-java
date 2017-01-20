@@ -37,7 +37,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 	@Before
 	public void setupClient() throws Exception {
 		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-		opts.clientId = "defaultClientId";
+		opts.useTokenAuth = true;
 		ably = new AblyRest(opts);
 	}
 
@@ -77,6 +77,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 			/* authorise with custom options
 			 * Deliberate use of British spelling alias authorise() to check that
 			 * it works (0.9 RSA10l) */
+			@SuppressWarnings("deprecation")
 			TokenDetails tokenDetails1 = ably.auth.authorise(tokenParams, authOptions);
 
 			/* Verify that,
