@@ -3092,7 +3092,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	 *
 	 * Expect NACK from the server because client is unidentified
 	 *
-	 * Tests RTP8i, RTP8f
+	 * Tests RTP8i, RTP8f, partial tests for RTP9e, RTP10e
 	 */
 	@Test
 	public void enter_before_clientid_is_known() throws AblyException {
@@ -3133,6 +3133,22 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			} catch (AblyException e) {
 				assertEquals("Verify exception code", e.errorInfo.code, 91000);
 			}
+
+			/* and so should update() and leave() */
+			try {
+				channel.presence.update(null, null);
+				fail("update() should fail");
+			} catch (AblyException e) {
+				assertEquals("Verify exception code", e.errorInfo.code, 91000);
+			}
+
+			try {
+				channel.presence.leave(null, null);
+				fail("leave() should fail");
+			} catch (AblyException e) {
+				assertEquals("Verify exception code", e.errorInfo.code, 91000);
+			}
+
 		} finally {
 			if (ably != null)
 				ably.close();
