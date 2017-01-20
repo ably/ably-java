@@ -510,7 +510,14 @@ public class Auth {
 			tokenDetails = authOptions.tokenDetails;
 			setTokenDetails(tokenDetails);
 		} else {
-			tokenDetails = assertValidToken(params, options, true);
+			try {
+				tokenDetails = assertValidToken(params, options, true);
+			} catch (AblyException e) {
+				/* Give AblyRealtime a chance to update its state and emit an event according to RSA4c */
+				if (e.errorInfo.code == 80019)
+					ably.onAuthError(e.errorInfo);
+				throw e;
+			}
 		}
 		ably.onAuthUpdated(tokenDetails.token, true);
 		return tokenDetails;
