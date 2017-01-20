@@ -2907,7 +2907,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			assertEquals("Verify number of presence messages sent", sentPresence.size(), 2);
 			assertTrue("Verify presence messages follows spec",
 					sentPresence.get(0).action == Action.enter &&
-							sentPresence.get(0).clientId.equals(testClientId1) &&
+							sentPresence.get(0).clientId == null &&
 							sentPresence.get(1).action == Action.enter &&
 							sentPresence.get(1).clientId.equals(testClientId2)
 			);
@@ -3083,6 +3083,59 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				ably1.close();
 			if (ably2 != null)
 				ably2.close();
+		}
+	}
+
+	/**
+	 * Authenticate using wildcard token, initialize AblyRealtime so clientId is not known a priori,
+	 * call enter() without attaching first, start connection
+	 *
+	 * Expect NACK from the server because client is unidentified
+	 *
+	 * Tests RTP8i, RTP8f
+	 */
+	@Test
+	public void enter_before_clientid_is_known() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			ClientOptions restOpts = createOptions(testVars.keys[0].keyStr);
+			AblyRest ablyForToken = new AblyRest(restOpts);
+
+			/* Initialize connection so clientId is not known before actual connection */
+			Auth.TokenParams tokenParams = new Auth.TokenParams();
+			Capability capability = new Capability();
+			tokenParams.capability = capability.toString();
+			tokenParams.clientId = "*";
+
+			Auth.TokenDetails token = ablyForToken.auth.requestToken(tokenParams, null);
+			assertNotNull("Expected token value", token.token);
+
+			ClientOptions opts = createOptions();
+			opts.defaultTokenParams.clientId = "*";
+			opts.token = token.token;
+			opts.autoConnect = false;
+			ably = new AblyRealtime(opts);
+
+			/* enter without attaching first */
+			Channel channel = ably.channels.get("enter_before_clientid_is_known"+testParams.name);
+			CompletionWaiter completionWaiter = new CompletionWaiter();
+			channel.presence.enter(null, completionWaiter);
+
+			ably.connection.connect();
+
+			completionWaiter.waitFor(1);
+			assertFalse("Verify enter() failed", completionWaiter.success);
+
+			/* Now clientId is known to be "*" and subsequent enter() should fail immediately */
+			try {
+				channel.presence.enter(null, null);
+				fail("enter() should fail");
+			} catch (AblyException e) {
+				assertEquals("Verify exception code", e.errorInfo.code, 91000);
+			}
+		} finally {
+			if (ably != null)
+				ably.close();
 		}
 	}
 }
