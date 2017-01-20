@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Field;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
@@ -31,6 +30,7 @@ import io.ably.lib.types.Param;
 import io.ably.lib.types.ProxyOptions;
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.Platform;
 import io.ably.lib.util.Serialisation;
 
 /**
@@ -799,15 +799,12 @@ public class Http {
 
 	static {
 		/* if on Android, check version */
-		Field androidVersionField = null;
-		int androidVersion = 0;
-		try {
-	        androidVersionField = Class.forName("android.os.Build$VERSION").getField("SDK_INT");
-	        androidVersion = androidVersionField.getInt(androidVersionField);
-	    } catch (Exception e) {}
-		if(androidVersionField != null && androidVersion < 8) {
-			/* HTTP connection reuse which was buggy pre-froyo */
-			System.setProperty("http.keepAlive", "false");
+		if(Platform.getName().equals("android")) {
+			int androidVersion = Platform.getIntProperty("android-sdk-version", 0);
+			if(androidVersion < 8) {
+				/* HTTP connection reuse which was buggy pre-froyo */
+				System.setProperty("http.keepAlive", "false");
+			}
 		}
 	}
 

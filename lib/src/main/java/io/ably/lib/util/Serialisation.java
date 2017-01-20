@@ -29,7 +29,7 @@ public class Serialisation {
 		gsonBuilder.registerTypeAdapter(ProtocolMessage.Action.class, new ProtocolMessage.ActionSerializer());
 		gson = gsonBuilder.create();
 
-		msgpackPackerConfig = Platform.name.equals("android") ?
+		msgpackPackerConfig = Platform.getName().equals("android") ?
 				new PackerConfig().withSmallStringOptimizationThreshold(Integer.MAX_VALUE) :
 				MessagePack.DEFAULT_PACKER_CONFIG;
 

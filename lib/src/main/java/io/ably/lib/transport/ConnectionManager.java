@@ -13,6 +13,10 @@ import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.types.ProtocolSerializer;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.Platform;
+import io.ably.lib.util.Platform.PlatformEvent;
+import io.ably.lib.util.Platform.PlatformEventEmitter;
+import io.ably.lib.util.Platform.PlatformEventListener;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,7 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 
 
-public class ConnectionManager implements Runnable, ConnectListener {
+public class ConnectionManager implements Runnable, ConnectListener, PlatformEventListener {
 
 	private static final String TAG = ConnectionManager.class.getName();
 	private static final String INTERNET_CHECK_URL = "http://internet-up.ably-realtime.com/is-the-internet-up.txt";
@@ -187,6 +191,10 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		synchronized(this) {
 			setSuspendTime();
 		}
+		PlatformEventEmitter platformEvents = Platform.getEvents();
+		if(platformEvents != null) {
+			platformEvents.on(this);
+		}
 	}
 	
 	/*********************
@@ -272,6 +280,8 @@ public class ConnectionManager implements Runnable, ConnectListener {
 						 * state, then an ATTACHING or ATTACHED channel state
 						 * will transition to SUSPENDED. */
 						channel.setSuspended(state.defaultErrorInfo);
+						break;
+					default:
 						break;
 				}
 			}
@@ -922,6 +932,17 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			return ably.http.getUrlString(INTERNET_CHECK_URL).contains(INTERNET_CHECK_OK);
 		} catch(AblyException e) {
 			return false;
+		}
+	}
+
+	@Override
+	public void onPlatformEvent(PlatformEvent event, Object... args) {
+		switch(event) {
+		case NETWORK_UP:
+			connect();
+			break;
+		default:
+			break;
 		}
 	}
 
