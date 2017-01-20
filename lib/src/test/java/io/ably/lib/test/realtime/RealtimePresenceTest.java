@@ -291,9 +291,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			leaveComplete.waitFor();
 			assertTrue("Verify leave callback called on completion", leaveComplete.success);
 
-			try {
-				assertEquals("Verify item is removed from the presence map", client1Channel.presence.get(testClientId1, false).length, 0);
-			} catch (InterruptedException e) {}
+			assertEquals("Verify item is removed from the presence map", client1Channel.presence.get(testClientId1, false).length, 0);
 
 		} catch(AblyException e) {
 			e.printStackTrace();
@@ -665,11 +663,11 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 			/* get presence set and verify client present */
 			presenceWaiter.waitFor(testClientId1);
-			PresenceMessage[] presences = testChannel.realtimeChannel.presence.get();
+			PresenceMessage[] presences = testChannel.realtimeChannel.presence.get(false);
 			PresenceMessage expectedPresent = contains(presences, testClientId1, Action.present);
 			assertNotNull("Verify expected client is in presence set", expectedPresent);
 			assertEquals(expectedPresent.data, enterString);
-			
+
 		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("Unexpected exception running test: " + e.getMessage());
@@ -724,9 +722,9 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			assertTrue("Verify leave callback called on completion", leaveComplete.success);
 
 			/* get presence set and verify client absent */
-			PresenceMessage[] presences = testChannel.realtimeChannel.presence.get();
+			PresenceMessage[] presences = testChannel.realtimeChannel.presence.get(false);
 			assertNull("Verify expected client is in presence set", contains(presences, testClientId1));
-			
+
 		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("Unexpected exception running test: " + e.getMessage());
@@ -793,11 +791,11 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			client2Waiter.waitFor(testClientId1, Action.present);
 
 			/* get presence set and verify client present */
-			PresenceMessage[] presences = client2Channel.presence.get();
+			PresenceMessage[] presences = client2Channel.presence.get(false);
 			PresenceMessage expectedPresent = contains(presences, testClientId1, Action.present);
 			assertNotNull("Verify expected client is in presence set", expectedPresent);
 			assertEquals(expectedPresent.data, enterString);
-			
+
 		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("Unexpected exception running test: " + e.getMessage());
@@ -830,7 +828,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = wildcardToken;
-				clientId = testClientId1;
 			}};
 			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
@@ -888,7 +885,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				String clientId = "client" + i;
 				assertTrue("Expected client with id " + clientId, memberIndex.containsKey(clientId));
 			}
-		} catch(AblyException|InterruptedException e) {
+		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
@@ -949,14 +946,14 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			waiter.waitFor(testClientId2, Action.enter);
 
 			/* get presence set and verify clients present */
-			PresenceMessage[] presences = testChannel.realtimeChannel.presence.get();
+			PresenceMessage[] presences = testChannel.realtimeChannel.presence.get(false);
 			PresenceMessage expectedPresent1 = contains(presences, testClientId1, Action.present);
 			PresenceMessage expectedPresent2 = contains(presences, testClientId2, Action.present);
 			assertNotNull("Verify expected clients are in presence set", expectedPresent1);
 			assertNotNull("Verify expected clients are in presence set", expectedPresent2);
 			assertEquals(expectedPresent1.data, enterString1);
 			assertEquals(expectedPresent2.data, enterString2);
-			
+
 		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("Unexpected exception running test: " + e.getMessage());
@@ -1159,7 +1156,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = wildcardToken;
-				clientId = testClientId1;
 			}};
 			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
@@ -1771,7 +1767,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 			/* create a channel and subscribe */
 			final Channel channel = ably.channels.get("get_fail");
-			channel.presence.get();
+			channel.presence.get(false);
 			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
 
 			ErrorInfo fail = new ChannelWaiter(channel).waitFor(ChannelState.failed);
@@ -1926,7 +1922,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			new ChannelWaiter(channel).waitFor(ChannelState.failed);
 
 			try {
-				channel.presence.get();
+				channel.presence.get(false);
 				fail("Presence#get(...) should throw an exception when channel is in failed state");
 			} catch(AblyException e) {
 				assertThat(e.errorInfo.code, is(equalTo(90001)));
@@ -2182,10 +2178,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 							factualMsg != null && factualMsg.id.equals(testMsg.id));
 					assertEquals("Verify message was emitted on the presence object with original action",
 							factualMsg.action, testMsg.action);
-					try {
-						assertEquals("Verify message was added to the presence map and stored with PRESENT action",
-								presence.get(testMsg.clientId, false)[0].action, Action.present);
-					} catch (InterruptedException e) {}
+					assertEquals("Verify message was added to the presence map and stored with PRESENT action",
+							presence.get(testMsg.clientId, false)[0].action, Action.present);
 				}
 			}
 			assertEquals("Verify nothing else passed the newness test", n, presenceMessages.size());
@@ -2241,7 +2235,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			/* set up a connection with specific clientId */
 			ClientOptions client1Opts = new ClientOptions() {{
 				tokenDetails = wildcardToken;
-				clientId = testClientId1;
 			}};
 			fillInOptions(client1Opts);
 			clientAbly1 = new AblyRealtime(client1Opts);
@@ -2432,7 +2425,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 							 */
 							seenLeaveMessageAsAbsentForClient4[0] = channel.presence.get("4", false).length == 0;
 						}
-					} catch (InterruptedException|AblyException e) {}
+					} catch (AblyException e) {}
 				}
 			});
 
@@ -2455,12 +2448,10 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				presence = testPresence3;
 			}});
 
-			try {
-				assertEquals("Verify incomplete sync was discarded", channel.presence.get("1", false).length, 0);
-				assertEquals("Verify client with id==2 is in presence map", channel.presence.get("2", false).length, 1);
-				assertEquals("Verify client with id==3 is in presence map", channel.presence.get("3", false).length, 1);
-				assertEquals("Verify nothing else is in presence map", channel.presence.get(false).length, 2);
-			} catch (InterruptedException e) {}
+			assertEquals("Verify incomplete sync was discarded", channel.presence.get("1", false).length, 0);
+			assertEquals("Verify client with id==2 is in presence map", channel.presence.get("2", false).length, 1);
+			assertEquals("Verify client with id==3 is in presence map", channel.presence.get("3", false).length, 1);
+			assertEquals("Verify nothing else is in presence map", channel.presence.get(false).length, 2);
 
 			assertTrue("Verify LEAVE message for client with id==4 was stored as ABSENT", seenLeaveMessageAsAbsentForClient4[0]);
 
@@ -2664,11 +2655,9 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			PresenceWaiter presenceWaiter = new PresenceWaiter(Action.enter, channel);
 			presenceWaiter.waitFor(1);
 
-			try {
-				PresenceMessage[] presenceMessages = channel.presence.get(testClientId1, false);
-				assertEquals("Verify total number of received presence messages", presenceMessages.length, 1);
-				assertEquals("Verify present message is valid", presenceMessages[0].data, presenceData);
-			} catch (InterruptedException e) {}
+			PresenceMessage[] presenceMessages = channel.presence.get(testClientId1, false);
+			assertEquals("Verify total number of received presence messages", presenceMessages.length, 1);
+			assertEquals("Verify present message is valid", presenceMessages[0].data, presenceData);
 		} finally {
 			if (ably != null)
 				ably.close();
@@ -2699,9 +2688,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			channel2.attach();
 			/* Wait for the SYNC to complete */
 			new PresenceWaiter(Action.present, channel2).waitFor(1);
-			try {
-				channel2.presence.get(true);
-			} catch (InterruptedException e) {}
+			channel2.presence.get(true);
 			/* Initial SYNC should be complete at this point */
 			assertTrue("Verify SYNC is complete", channel2.presence.syncComplete);
 		} catch (AblyException e) {
@@ -3006,6 +2993,91 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			assertEquals("Verify string data for enter message is used in leave message", receivedPresenceData.get(3), testStringData);
 			assertEquals("Verify overridden leave data", receivedPresenceData.get(4), "leave");
 
+		} finally {
+			if (ably1 != null)
+				ably1.close();
+			if (ably2 != null)
+				ably2.close();
+		}
+	}
+
+	/*
+	 * Test Presence.get() filtering and syncToWait flag
+	 * Tests RTP11b, RTP11c, RTP11d
+	 */
+	@Test
+	public void presence_get() throws AblyException, InterruptedException {
+		AblyRealtime ably1 = null, ably2 = null;
+		try {
+			/* Set up two connections: one for entering, one for listening */
+			final String channelName = "presence_get" + testParams.name;
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			ably1 = new AblyRealtime(opts);
+			opts.autoConnect = false;
+			ably2 = new AblyRealtime(opts);
+
+			Channel channel1 = ably1.channels.get(channelName);
+			CompletionWaiter completionWaiter = new CompletionWaiter();
+			channel1.presence.enterClient("1", null, completionWaiter);
+			channel1.presence.enterClient("2", null, completionWaiter);
+			completionWaiter.waitFor(2);
+
+			Channel channel2 = ably2.channels.get(channelName);
+
+			/*
+			 * Wait with waitForSync set to false, should result in 0 members because autoConnect is set to false
+			 * This also tests implicit attach()
+			 */
+			PresenceMessage[] presenceMessages1 = channel2.presence.get(false);
+			assertEquals("Verify number of presence members before SYNC", presenceMessages1.length, 0);
+
+			ably2.connection.connect();
+
+			/* now that waitForSync is true it should get all the members entered on first connection */
+			PresenceMessage[] presenceMessages2 = channel2.presence.get(true);
+			assertEquals("Verify number of presence members after SYNC", presenceMessages2.length, 2);
+
+			/* enter third member from second connection */
+			channel2.presence.enterClient("3", null, completionWaiter);
+			completionWaiter.waitFor(3);
+
+			/* filter by clientId */
+			PresenceMessage[] presenceMessages3 = channel2.presence.get(new Param(Presence.GET_CLIENTID, "1"));
+			assertTrue("Verify clientId filter works",
+					presenceMessages3.length == 1 && presenceMessages3[0].clientId.equals("1"));
+
+			/* filter by connectionId */
+			PresenceMessage[] presenceMessages4 = channel2.presence.get(new Param(Presence.GET_CONNECTIONID, ably2.connection.id));
+			assertTrue("Verify connectionId filter works",
+					presenceMessages4.length == 1 && presenceMessages4[0].clientId.equals("3"));
+
+			/* filter by both clientId and connectionId */
+			PresenceMessage[] presenceMessages5 = channel2.presence.get(
+					new Param(Presence.GET_CONNECTIONID, ably1.connection.id),
+					new Param(Presence.GET_CLIENTID, "2")
+			);
+			PresenceMessage[] presenceMessages6 = channel2.presence.get(
+					new Param(Presence.GET_CONNECTIONID, ably2.connection.id),
+					new Param(Presence.GET_CLIENTID, "2")
+			);
+			assertTrue("Verify clientId+connectionId filter works",
+					presenceMessages5.length == 1 && presenceMessages5[0].clientId.equals("2") && presenceMessages6.length == 0);
+
+			/* go into suspended mode */
+			ably2.connection.connectionManager.requestState(ConnectionState.suspended);
+			new ConnectionWaiter(ably2.connection).waitFor(ConnectionState.suspended);
+
+			/* try with wait set to false, should get all the three members */
+			PresenceMessage[] presenceMessages7 = channel2.presence.get(false);
+			assertEquals("Verify Presence.get() with waitForSync set to false works in SUSPENDED state", presenceMessages7.length, 3);
+
+			/* try with wait set to true, should get exception */
+			try {
+				channel2.presence.get(true);
+				fail("Presence.get() with waitForSync=true shouldn't succeed in SUSPENDED state");
+			} catch (AblyException e) {
+				assertEquals("Verify correct error code for Presence.get() with waitForSync=true in SUSPENDED state", e.errorInfo.code, 91005);
+			}
 		} finally {
 			if (ably1 != null)
 				ably1.close();
