@@ -510,7 +510,13 @@ public class Auth {
 			tokenDetails = authOptions.tokenDetails;
 			setTokenDetails(tokenDetails);
 		} else {
-			tokenDetails = assertValidToken(params, options, true);
+			try {
+				tokenDetails = assertValidToken(params, options, true);
+			} catch (AblyException e) {
+				/* Give AblyRealtime a chance to update its state and emit an event according to RSA4c */
+				ably.onAuthError(e.errorInfo);
+				throw e;
+			}
 		}
 		ably.onAuthUpdated(tokenDetails.token, true);
 		return tokenDetails;
@@ -558,11 +564,7 @@ public class Auth {
 				else
 					throw AblyException.fromErrorInfo(new ErrorInfo("Invalid authCallback response", 40000, 400));
 			} catch(AblyException e) {
-				/* the auth callback threw an error */
-				ErrorInfo errorInfo = e.errorInfo;
-				if(errorInfo.code == 0) errorInfo.code = 40170;
-				if(errorInfo.statusCode == 0) errorInfo.statusCode = 401;
-				throw e;
+				throw AblyException.fromErrorInfo(e, new ErrorInfo("authCallback failed with an exception", 401, 80019));
 			}
 		} else if(tokenOptions.authUrl != null) {
 			Log.i("Auth.requestToken()", "using token auth with auth_url");
@@ -613,11 +615,7 @@ public class Auth {
 					}
 				});
 			} catch(AblyException e) {
-				/* the auth url request returned an error, or there was an error processing the response */
-				ErrorInfo errorInfo = e.errorInfo;
-				if(errorInfo.code == 0) errorInfo.code = 40170;
-				if(errorInfo.statusCode == 0) errorInfo.statusCode = 401;
-				throw e;
+				throw AblyException.fromErrorInfo(e, new ErrorInfo("authUrl failed with an exception", 401, 80019));
 			}
 			if(authUrlResponse instanceof TokenDetails) {
 				/* we're done */

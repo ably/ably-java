@@ -318,10 +318,7 @@ public class RestAuthTest extends ParameterizedTest {
 			assertNotNull("Expected token value", tokenDetails.token);
 			ClientOptions opts = new ClientOptions();
 			opts.token = tokenDetails.token;
-			opts.restHost = testVars.restHost;
 			opts.environment = testVars.environment;
-			opts.port = testVars.port;
-			opts.tls = testVars.tls;
 			AblyRest ably = new AblyRest(opts);
 			assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
 			assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
@@ -397,7 +394,8 @@ public class RestAuthTest extends ParameterizedTest {
 				ably.auth.requestToken(null, null);
 				fail("auth_authURL_err: Unexpected success requesting token");
 			} catch (AblyException e) {
-				assertEquals("Expected forwarded error code", e.errorInfo.code, 40170);
+				assertEquals("Expected error code", e.errorInfo.code, 80019);
+				assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.statusCode, 404);
 			}
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -426,8 +424,9 @@ public class RestAuthTest extends ParameterizedTest {
 				ably.auth.requestToken(null, null);
 				fail("auth_authURL_params: Unexpected success requesting token");
 			} catch (AblyException e) {
-				assertEquals("Expected forwarded error code", e.errorInfo.code, 40170);
-				assertTrue("Expected echoed header", e.errorInfo.message.indexOf("test-param=test-value") != -1);
+				assertEquals("Expected error code", e.errorInfo.code, 80019);
+				assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.code, 40170);
+				assertTrue("Expected echoed header", ((AblyException)e.getCause()).errorInfo.message.indexOf("test-param=test-value") != -1);
 			}
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -456,8 +455,9 @@ public class RestAuthTest extends ParameterizedTest {
 				ably.auth.requestToken(null, null);
 				fail("auth_authURL_headers: Unexpected success requesting token");
 			} catch (AblyException e) {
-				assertEquals("Expected forwarded error code", e.errorInfo.code, 40170);
-				assertTrue("Expected echoed header", e.errorInfo.message.indexOf("test-header=test-value") != -1);
+				assertEquals("Expected error code", e.errorInfo.code, 80019);
+				assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.code, 40170);
+				assertTrue("Expected echoed header", ((AblyException)e.getCause()).errorInfo.message.indexOf("test-header=test-value") != -1);
 			}
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -626,7 +626,7 @@ public class RestAuthTest extends ParameterizedTest {
 			TokenCallback authCallback = new TokenCallback() {
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
-					throw AblyException.fromErrorInfo(new ErrorInfo("test exception", 404, 0));
+					throw AblyException.fromErrorInfo(new ErrorInfo("test exception", 404, 12345));
 				}
 			};
 
@@ -640,7 +640,8 @@ public class RestAuthTest extends ParameterizedTest {
 				ably.auth.requestToken(null, null);
 				fail("auth_authURL_err: Unexpected success requesting token");
 			} catch (AblyException e) {
-				assertEquals("Expected forwarded error code", e.errorInfo.code, 40170);
+				assertEquals("Expected error code", e.errorInfo.code, 80019);
+				assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.code, 12345);
 			}
 		} catch (AblyException e) {
 			e.printStackTrace();
