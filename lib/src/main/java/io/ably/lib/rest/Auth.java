@@ -506,12 +506,24 @@ public class Auth {
 			authOptions.tokenDetails = new TokenDetails(authOptions.token);
 		}
 		TokenDetails tokenDetails;
-		if(authOptions.tokenDetails != null) {
-			tokenDetails = authOptions.tokenDetails;
-			setTokenDetails(tokenDetails);
-		} else {
-			tokenDetails = assertValidToken(params, options, true);
+		try {
+			if (authOptions.tokenDetails != null) {
+				tokenDetails = authOptions.tokenDetails;
+				setTokenDetails(tokenDetails);
+			} else {
+				tokenDetails = assertValidToken(params, options, true);
+			}
+		} catch (AblyException e) {
+			/*
+			 * (RSA4c1)An ErrorInfo with code 80019 and description of the underlying failure should be emitted
+			 * with the state change, in the errorReason and/or in the callback as appropriate
+			 */
+			ErrorInfo authErrorInfo = new ErrorInfo(e.errorInfo.message, 80019);
+			authErrorInfo.statusCode = e.errorInfo.statusCode;
+			ably.onAuthError(authErrorInfo);
+			throw e;
 		}
+
 		ably.onAuthUpdated(tokenDetails.token, true);
 		return tokenDetails;
 	}
