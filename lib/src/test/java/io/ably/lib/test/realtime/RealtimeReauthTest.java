@@ -263,6 +263,8 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			/* get second (bad) token */
 			tokenParams.clientId = badClientId;
 			Auth.TokenDetails secondToken = ablyForToken.auth.requestToken(tokenParams, null);
+			/* revert client id in details so it get sent to the server and not blocked at the client library level */
+			secondToken.clientId = testClientId;
 			System.out.println("got second token");
 			assertNotNull("Expected token value", secondToken.token);
 
