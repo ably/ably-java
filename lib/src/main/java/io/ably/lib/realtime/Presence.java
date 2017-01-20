@@ -3,6 +3,7 @@ package io.ably.lib.realtime;
 import io.ably.lib.http.Http.BodyHandler;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
+import io.ably.lib.rest.Auth;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
@@ -428,7 +429,7 @@ public class Presence {
 	 */
 	public void enterClient(String clientId, Object data, CompletionListener listener) throws AblyException {
 		Log.v(TAG, "enterClient(); channel = " + channel.name + "; clientId = " + (clientId != null ? clientId : "(null)"));
-		if (clientId == null && "*".equals(channel.ably.auth.clientId)) {
+		if (clientId == null && Auth.WILDCARD_CLIENTID.equals(channel.ably.auth.clientId)) {
 			String errorMessage = String.format("Channel %s: unable to enter presence channel (no clientId)", channel.name);
 			Log.v(TAG, errorMessage);
 			throw AblyException.fromErrorInfo(new ErrorInfo(errorMessage, 91000));
@@ -476,7 +477,7 @@ public class Presence {
 	 */
 	public void updateClient(String clientId, Object data, CompletionListener listener) throws AblyException {
 		Log.v(TAG, "updateClient(); channel = " + channel.name + "; clientId = " + clientId);
-		if (clientId == null && "*".equals(channel.ably.auth.clientId)) {
+		if (clientId == null && Auth.WILDCARD_CLIENTID.equals(channel.ably.auth.clientId)) {
 			String errorMessage = String.format("Channel %s: unable to update presence channel (no clientId)", channel.name);
 			Log.v(TAG, errorMessage);
 			throw AblyException.fromErrorInfo(new ErrorInfo(errorMessage, 91000));
@@ -516,7 +517,7 @@ public class Presence {
 	 */
 	public void leaveClient(String clientId, Object data, CompletionListener listener) throws AblyException {
 		Log.v(TAG, "leaveClient(); channel = " + channel.name + "; clientId = " + clientId);
-		if (clientId == null && "*".equals(channel.ably.auth.clientId)) {
+		if (clientId == null && Auth.WILDCARD_CLIENTID.equals(channel.ably.auth.clientId)) {
 			String errorMessage = String.format("Channel %s: unable to leave presence channel (no clientId)", channel.name);
 			Log.v(TAG, errorMessage);
 			throw AblyException.fromErrorInfo(new ErrorInfo(errorMessage, 91000));

@@ -1007,7 +1007,7 @@ public class Auth {
 	 */
 	private static long nanoTimeDelta = System.currentTimeMillis() - System.nanoTime()/(1000*1000);
 
-	private static final String WILDCARD_CLIENTID = "*";
+	public static final String WILDCARD_CLIENTID = "*";
 	/**
 	 * For testing purposes we need method to clear cached timeDelta
 	 */
