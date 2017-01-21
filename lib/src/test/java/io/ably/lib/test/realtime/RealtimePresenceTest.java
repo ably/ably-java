@@ -3125,6 +3125,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 			completionWaiter.waitFor(1);
 			assertFalse("Verify enter() failed", completionWaiter.success);
+			assertEquals("Verify error code", completionWaiter.error.code, 40012);
 
 			/* Now clientId is known to be "*" and subsequent enter() should fail immediately */
 			try {
