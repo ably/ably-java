@@ -91,11 +91,19 @@ public class Presence {
 	 * Subscribe to presence events on the associated Channel. This implicitly
 	 * attaches the Channel if it is not already attached.
 	 * @param listener: the listener to me notified on arrival of presence messages.
+	 * @param completionListener listener to be called on success/failure
 	 * @throws AblyException
 	 */
-	public void subscribe(PresenceListener listener) throws AblyException {
+	public void subscribe(PresenceListener listener, CompletionListener completionListener) throws AblyException {
+		implicitAttachOnSubscribe(completionListener);
 		listeners.add(listener);
-		channel.attach();
+	}
+
+	/**
+	 * Same as above without completion listener
+	 */
+	public void subscribe(PresenceListener listener) throws AblyException {
+		subscribe(listener, null);
 	}
 
 	/**
@@ -115,11 +123,19 @@ public class Presence {
 	 *
 	 * @param action to be observed
 	 * @param listener
+	 * @param completionListener listener to be called on success/failure
 	 * @throws AblyException
 	 */
-	public void subscribe(PresenceMessage.Action action, PresenceListener listener) throws AblyException {
+	public void subscribe(PresenceMessage.Action action, PresenceListener listener, CompletionListener completionListener) throws AblyException {
+		implicitAttachOnSubscribe(completionListener);
 		subscribeImpl(action, listener);
-		channel.attach();
+	}
+
+	/**
+	 * Same as above without completion listener
+	 */
+	public void subscribe(PresenceMessage.Action action, PresenceListener listener) throws AblyException {
+		subscribe(action, listener, null);
 	}
 
 	/**
@@ -138,13 +154,21 @@ public class Presence {
 	 *
 	 * @param actions to be observed
 	 * @param listener
+	 * @param completionListener listener to be called on success/failure
 	 * @throws AblyException
 	 */
-	public void subscribe(EnumSet<PresenceMessage.Action> actions, PresenceListener listener) throws AblyException {
+	public void subscribe(EnumSet<PresenceMessage.Action> actions, PresenceListener listener, CompletionListener completionListener) throws AblyException {
+		implicitAttachOnSubscribe(completionListener);
 		for (PresenceMessage.Action action : actions) {
 			subscribeImpl(action, listener);
 		}
-		channel.attach();
+	}
+
+	/**
+	 * Same as above without completion listener
+	 */
+	public void subscribe(EnumSet<PresenceMessage.Action> actions, PresenceListener listener) throws AblyException {
+		subscribe(actions, listener, null);
 	}
 
 	/**
@@ -172,6 +196,21 @@ public class Presence {
 	 * internal
 	 *
 	 */
+
+	/**
+	 * Implicitly attach channel on subscribe. Throw exception if channel is in failed state
+	 * @param completionListener
+	 * @throws AblyException
+	 */
+	private void implicitAttachOnSubscribe(CompletionListener completionListener) throws AblyException {
+		if (channel.state == ChannelState.failed) {
+			String erroString = String.format("Channel %s: subscribe in FAILED channel state", channel.name);
+			Log.v(TAG, erroString);
+			ErrorInfo errorInfo = new ErrorInfo(erroString, 90001);
+			throw AblyException.fromErrorInfo(errorInfo);
+		}
+		channel.attach(completionListener);
+	}
 
 	/* End sync and emit leave messages for residual members */
 	private void endSyncAndEmitLeaves() {

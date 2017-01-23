@@ -1288,6 +1288,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	 * when {@code Channel#unsubscribe()} with no argument gets called.
 	 * </p>
 	 *
+	 * Tests RTP7a
+	 *
 	 * @throws AblyException
 	 */
 	@Test
@@ -1683,20 +1685,35 @@ public class RealtimePresenceTest extends ParameterizedTest {
 		AblyRealtime ably = null;
 		try {
 			ClientOptions opts = createOptions(testVars.keys[1].keyStr);
+			opts.autoConnect = false;
 			ably = new AblyRealtime(opts);
 
-			/* wait until connected */
-			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
-			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+			Presence.PresenceListener presenceListener = new Presence.PresenceListener() {
+				@Override
+				public void onPresenceMessage(PresenceMessage messages) {
+				}
+			};
 
-			/* create a channel and subscribe */
+			/* create a channel and subscribe, implicitly initiate attach */
+			CompletionWaiter completionWaiter = new CompletionWaiter();
 			final Channel channel = ably.channels.get("subscribe_fail");
-			channel.presence.subscribe(null);
-			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
+			channel.presence.subscribe(presenceListener, completionWaiter);
 
-			ErrorInfo fail = new ChannelWaiter(channel).waitFor(ChannelState.failed);
+			ably.connection.connect();
+
+			completionWaiter.waitFor(1);
+			assertFalse("Verify subscribe failed", completionWaiter.success);
+			assertEquals("Verify subscribe failure error status", completionWaiter.error.statusCode, 401);
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-			assertEquals("Verify reason code gives correct failure reason", fail.statusCode, 401);
+
+			try {
+				channel.presence.subscribe(presenceListener);
+				fail("Presence.subscribe() shouldn't succeed");
+			} catch (AblyException e) {
+				assertEquals("Verify failure error code", e.errorInfo.code, 90001);
+			}
+
+
 		} finally {
 			if(ably != null)
 				ably.close();
@@ -1938,7 +1955,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	 * Test if after reattach when returning from suspended mode client re-enters the channel with the same data
 	 * @throws AblyException
 	 *
-	 * Tests RTP17, RTP19, RTP19a, RTP5f
+	 * Tests RTP17, RTP19, RTP19a, RTP5f, RTP6b
 	 */
 	@Test
 	public void realtime_presence_suspended_reenter() throws AblyException {
@@ -1992,6 +2009,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				}
 
 				final ArrayList<PresenceMessage> leaveMessages = new ArrayList<>();
+				/* Subscribe for message type, test RTP6b */
 				channel.presence.subscribe(Action.leave, new Presence.PresenceListener() {
 					@Override
 					public void onPresenceMessage(PresenceMessage messages) {
@@ -2073,7 +2091,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 	/**
 	 * Test presence message map behaviour (RTP2 features)
-	 * Tests RTP2a, RTP2b1, RTP2b2, RTP2c, RTP2d, RTP2g, RTP18c features
+	 * Tests RTP2a, RTP2b1, RTP2b2, RTP2c, RTP2d, RTP2g, RTP18c, RTP6a features
 	 */
 	@Test
 	public void realtime_presence_map_test() throws AblyException {
@@ -2091,6 +2109,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 			Presence presence = channel.presence;
 			final ArrayList<PresenceMessage> presenceMessages = new ArrayList<>();
+			/* Subscribe for all the message types, test RTP6a */
 			presence.subscribe(new Presence.PresenceListener() {
 				@Override
 				public void onPresenceMessage(PresenceMessage message) {
@@ -2933,7 +2952,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 	/*
 	 * Verify presence data is received and encoded/decoded correctly
-	 * Tests RTP8e
+	 * Tests RTP8e, RTP6a
 	 */
 	@Test
 	public void presence_encoding() throws AblyException, InterruptedException {
