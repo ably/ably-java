@@ -1684,20 +1684,52 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	public void realtime_presence_attach_implicit_subscribe_fail() throws AblyException {
 		AblyRealtime ably = null;
 		try {
-			ClientOptions opts = createOptions(testVars.keys[1].keyStr);
+			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
+			final AblyRest ablyForToken = new AblyRest(optsForToken);
+			final String channelName = "realtime_presence_attach_implicit_subscribe_fail" + testParams.name;
+
+			/* get first token */
+			Auth.TokenParams tokenParams = new Auth.TokenParams();
+			Capability capability = new Capability();
+			capability.addResource("otherchannel", "publish");
+			tokenParams.capability = capability.toString();
+			tokenParams.clientId = testClientId1;
+
+			Auth.TokenDetails token = ablyForToken.auth.requestToken(tokenParams, null);
+
+			/* get second token */
+			Auth.TokenParams tokenParams2 = new Auth.TokenParams();
+			Capability capability2 = new Capability();
+			capability2.addResource(channelName, "publish");
+			capability2.addOperation(channelName, "presence");
+			capability2.addOperation(channelName, "subscribe");
+			tokenParams2.capability = capability2.toString();
+			tokenParams2.clientId = testClientId1;
+
+			final Auth.TokenDetails token2 = ablyForToken.auth.requestToken(tokenParams2, null);
+			assertNotNull("Expected token value", token2.token);
+
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			opts.autoConnect = false;
+			opts.tokenDetails = token;
+			opts.clientId = testClientId1;
 			ably = new AblyRealtime(opts);
 
-			Presence.PresenceListener presenceListener = new Presence.PresenceListener() {
+			final ArrayList<PresenceMessage> presenceMessages = new ArrayList<>();
+			Presence.PresenceListener listener = new Presence.PresenceListener() {
 				@Override
 				public void onPresenceMessage(PresenceMessage messages) {
+					synchronized (presenceMessages) {
+						presenceMessages.add(messages);
+						presenceMessages.notify();
+					}
 				}
 			};
 
 			/* create a channel and subscribe, implicitly initiate attach */
 			CompletionWaiter completionWaiter = new CompletionWaiter();
-			final Channel channel = ably.channels.get("subscribe_fail");
-			channel.presence.subscribe(presenceListener, completionWaiter);
+			final Channel channel = ably.channels.get(channelName);
+			channel.presence.subscribe(listener, completionWaiter);
 
 			ably.connection.connect();
 
@@ -1707,12 +1739,51 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
 
 			try {
-				channel.presence.subscribe(presenceListener);
+				channel.presence.subscribe(new PresenceWaiter(channel));
 				fail("Presence.subscribe() shouldn't succeed");
 			} catch (AblyException e) {
 				assertEquals("Verify failure error code", e.errorInfo.code, 90001);
 			}
 
+			/* Change token to allow channel subscription so we can enter client and verify listener was set despite the failure */
+			final boolean[] authUpdated = new boolean[]{false};
+			ably.connection.on(ConnectionEvent.update, new ConnectionStateListener() {
+						@Override
+						public void onConnectionStateChanged(ConnectionStateChange state) {
+							synchronized (authUpdated) {
+								authUpdated[0] = true;
+								authUpdated.notify();
+							}
+						}
+					});
+
+
+			ably.auth.authorize(null, new Auth.AuthOptions() {{
+				tokenDetails = token2;
+			}});
+
+			try {
+				synchronized (authUpdated) {
+					while (!authUpdated[0])
+						authUpdated.wait();
+				}
+			} catch (InterruptedException e) {}
+
+			channel.attach();
+			new ChannelWaiter(channel).waitFor(ChannelState.attached);
+
+			/* Now to ensure listener was set despite the error we enter a client */
+			channel.presence.enter(null, null);
+			try {
+				synchronized (presenceMessages) {
+					while (presenceMessages.size() == 0)
+						presenceMessages.wait();
+				}
+			} catch (InterruptedException e) {}
+
+			assertTrue("Verify listener was set despite channel attach failure",
+					presenceMessages.size() == 1 &&
+					presenceMessages.get(0).action == Action.enter && presenceMessages.get(0).clientId.equals(testClientId1));
 
 		} finally {
 			if(ably != null)

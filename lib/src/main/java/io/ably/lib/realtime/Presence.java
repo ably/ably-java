@@ -204,9 +204,9 @@ public class Presence {
 	 */
 	private void implicitAttachOnSubscribe(CompletionListener completionListener) throws AblyException {
 		if (channel.state == ChannelState.failed) {
-			String erroString = String.format("Channel %s: subscribe in FAILED channel state", channel.name);
-			Log.v(TAG, erroString);
-			ErrorInfo errorInfo = new ErrorInfo(erroString, 90001);
+			String errorString = String.format("Channel %s: subscribe in FAILED channel state", channel.name);
+			Log.v(TAG, errorString);
+			ErrorInfo errorInfo = new ErrorInfo(errorString, 90001);
 			throw AblyException.fromErrorInfo(errorInfo);
 		}
 		channel.attach(completionListener);
