@@ -3,7 +3,6 @@ package io.ably.lib.realtime;
 import io.ably.lib.http.Http.BodyHandler;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
-import io.ably.lib.rest.Auth;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
@@ -348,7 +347,8 @@ public class Presence {
 	 * @throws AblyException
 	 */
 	public void enter(Object data, CompletionListener listener) throws AblyException {
-		enterClient(null, data, listener);
+		Log.v(TAG, "enter(); channel = " + channel.name);
+		updatePresence(new PresenceMessage(PresenceMessage.Action.enter, null, data), listener);
 	}
 
 	/**
@@ -361,7 +361,8 @@ public class Presence {
 	 * @throws AblyException
 	 */
 	public void update(Object data, CompletionListener listener) throws AblyException {
-		updateClient(null, data, listener);
+		Log.v(TAG, "update(); channel = " + channel.name);
+		updatePresence(new PresenceMessage(PresenceMessage.Action.update, null, data), listener);
 	}
 
 	/**
@@ -373,7 +374,8 @@ public class Presence {
 	 * @throws AblyException
 	 */
 	public void leave(Object data, CompletionListener listener) throws AblyException {
-		leaveClient(null, data, listener);
+		Log.v(TAG, "leave(); channel = " + channel.name);
+		updatePresence(new PresenceMessage(PresenceMessage.Action.leave, null, data), listener);
 	}
 
 	/**
@@ -383,7 +385,7 @@ public class Presence {
 	 * @throws AblyException
 	 */
 	public void leave(CompletionListener listener) throws AblyException {
-		leaveClient(null, null, listener);
+		leave(null, listener);
 	}
 
 	/**
@@ -428,12 +430,15 @@ public class Presence {
 	 * @throws AblyException
 	 */
 	public void enterClient(String clientId, Object data, CompletionListener listener) throws AblyException {
-		Log.v(TAG, "enterClient(); channel = " + channel.name + "; clientId = " + (clientId != null ? clientId : "(null)"));
-		if (clientId == null && Auth.WILDCARD_CLIENTID.equals(channel.ably.auth.clientId)) {
-			String errorMessage = String.format("Channel %s: unable to enter presence channel (no clientId)", channel.name);
+		if(clientId == null) {
+			String errorMessage = String.format("Channel %s: unable to enter presence channel (null clientId specified)", channel.name);
 			Log.v(TAG, errorMessage);
-			throw AblyException.fromErrorInfo(new ErrorInfo(errorMessage, 91000));
+			if(listener != null) {
+				listener.onError(new ErrorInfo(errorMessage, 40000));
+				return;
+			}
 		}
+		Log.v(TAG, "enterClient(); channel = " + channel.name + "; clientId = " + clientId);
 		updatePresence(new PresenceMessage(PresenceMessage.Action.enter, clientId, data), listener);
 	}
 
@@ -476,12 +481,15 @@ public class Presence {
 	 * @throws AblyException
 	 */
 	public void updateClient(String clientId, Object data, CompletionListener listener) throws AblyException {
-		Log.v(TAG, "updateClient(); channel = " + channel.name + "; clientId = " + clientId);
-		if (clientId == null && Auth.WILDCARD_CLIENTID.equals(channel.ably.auth.clientId)) {
-			String errorMessage = String.format("Channel %s: unable to update presence channel (no clientId)", channel.name);
+		if(clientId == null) {
+			String errorMessage = String.format("Channel %s: unable to update presence channel (null clientId specified)", channel.name);
 			Log.v(TAG, errorMessage);
-			throw AblyException.fromErrorInfo(new ErrorInfo(errorMessage, 91000));
+			if(listener != null) {
+				listener.onError(new ErrorInfo(errorMessage, 40000));
+				return;
+			}
 		}
+		Log.v(TAG, "updateClient(); channel = " + channel.name + "; clientId = " + clientId);
 		updatePresence(new PresenceMessage(PresenceMessage.Action.update, clientId, data), listener);
 	}
 
@@ -516,12 +524,15 @@ public class Presence {
 	 * @throws AblyException
 	 */
 	public void leaveClient(String clientId, Object data, CompletionListener listener) throws AblyException {
-		Log.v(TAG, "leaveClient(); channel = " + channel.name + "; clientId = " + clientId);
-		if (clientId == null && Auth.WILDCARD_CLIENTID.equals(channel.ably.auth.clientId)) {
-			String errorMessage = String.format("Channel %s: unable to leave presence channel (no clientId)", channel.name);
+		if(clientId == null) {
+			String errorMessage = String.format("Channel %s: unable to leave presence channel (null clientId specified)", channel.name);
 			Log.v(TAG, errorMessage);
-			throw AblyException.fromErrorInfo(new ErrorInfo(errorMessage, 91000));
+			if(listener != null) {
+				listener.onError(new ErrorInfo(errorMessage, 40000));
+				return;
+			}
 		}
+		Log.v(TAG, "leaveClient(); channel = " + channel.name + "; clientId = " + clientId);
 		updatePresence(new PresenceMessage(PresenceMessage.Action.leave, clientId, data), listener);
 	}
 
@@ -536,6 +547,18 @@ public class Presence {
 	public void updatePresence(PresenceMessage msg, CompletionListener listener) throws AblyException {
 		Log.v(TAG, "update(); channel = " + channel.name);
 
+		AblyRealtime ably = channel.ably;
+		boolean connected = (ably.connection.state == ConnectionState.connected);
+		String clientId;
+		try {
+			clientId = ably.auth.checkClientId(msg, false, !connected);
+		} catch(AblyException e) {
+			if(listener != null) {
+				listener.onError(e.errorInfo);
+			}
+			return;
+		}
+
 		msg.encode(null);
 		synchronized(channel) {
 			switch(channel.state) {
@@ -543,12 +566,11 @@ public class Presence {
 				channel.attach();
 			case attaching:
 				QueuedPresence queued = new QueuedPresence(msg, listener);
-				pendingPresence.put(msg.clientId, queued);
+				pendingPresence.put(clientId, queued);
 				break;
 			case attached:
 				ProtocolMessage message = new ProtocolMessage(ProtocolMessage.Action.presence, channel.name);
 				message.presence = new PresenceMessage[] { msg };
-				AblyRealtime ably = channel.ably;
 				ConnectionManager connectionManager = ably.connection.connectionManager;
 				connectionManager.send(message, ably.options.queueMessages, listener);
 				break;

@@ -53,13 +53,21 @@ public class Helpers {
 	 */
 	public static class CompletionWaiter implements CompletionListener {
 		public boolean success;
-		public int successCount = 0;
+		public int successCount;
 		public ErrorInfo error;
 
 		/**
 		 * Public API
 		 */
-		public CompletionWaiter() {}
+		public CompletionWaiter() {
+			reset();
+		}
+
+		public void reset() {
+			success = false;
+			successCount = 0;
+			error = null;
+		}
 
 		public synchronized ErrorInfo waitFor(int count) {
 			while(successCount<count && error == null)

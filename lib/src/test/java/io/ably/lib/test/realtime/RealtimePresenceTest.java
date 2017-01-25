@@ -21,7 +21,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import io.ably.lib.realtime.*;
 import io.ably.lib.types.*;
-import io.ably.lib.util.Serialisation;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -2736,37 +2735,11 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
 			channelWaiter.waitFor(ChannelState.attached);
 
-			final boolean[] flags = new boolean[] {
-					false, /* callback called */
-					false  /* success? */
-			};
-			channel.presence.enterClient(testClientId1, null, new CompletionListener() {
-				@Override
-				public void onSuccess() {
-					synchronized (flags) {
-						flags[0] = true;  flags[1] = true;
-						flags.notify();
-					}
-				}
+			CompletionWaiter enterWaiter = new CompletionWaiter();
+			channel.presence.enterClient(testClientId1, null, enterWaiter);
+			ErrorInfo enterError = enterWaiter.waitFor();
+			assertNotNull("Verify enter client failed", enterError);
 
-				@Override
-				public void onError(ErrorInfo reason) {
-					synchronized (flags) {
-						flags[0] = true;  flags[1] = false;
-						flags.notify();
-					}
-				}
-			});
-
-			try {
-				synchronized (flags) {
-					while (!flags[0])
-						flags.wait();
-				}
-			} catch (InterruptedException e) {}
-
-			assertTrue("Verify completion callback was called", flags[0]);
-			assertFalse("Verify enter client failed", flags[1]);
 		} finally {
 			if (ably != null)
 				ably.close();
@@ -2808,54 +2781,76 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
 			channelWaiter.waitFor(ChannelState.attached);
 
-			final boolean[] flags = new boolean[] {
-					false, /* callback called */
-					false  /* success? */
-			};
-
-			CompletionListener completionListener = new CompletionListener() {
-				@Override
-				public void onSuccess() {
-					synchronized (flags) {
-						flags[0] = true;  flags[1] = true;
-						flags.notify();
-					}
-				}
-
-				@Override
-				public void onError(ErrorInfo reason) {
-					synchronized (flags) {
-						flags[0] = true;  flags[1] = false;
-						flags.notify();
-					}
-				}
-			};
-
 			/* should succeed with testClientId1 */
-			channel.presence.enterClient(testClientId1, null, completionListener);
-			try {
-				synchronized (flags) {
-					while (!flags[0])
-						flags.wait();
-				}
-			} catch (InterruptedException e) {}
+			CompletionWaiter enterWaiter = new CompletionWaiter();
+			channel.presence.enterClient(testClientId1, null, enterWaiter);
+			ErrorInfo enterErr = enterWaiter.waitFor();
 
-			assertTrue("Verify completion callback was called", flags[0]);
-			assertTrue("Verify enter client succeeded", flags[1]);
+			assertNull("Verify enter client succeeded", enterErr);
 
 			/* should fail with testClientId2 */
-			flags[0] = false;
-			channel.presence.enterClient(testClientId2, null, completionListener);
-			try {
-				synchronized (flags) {
-					while (!flags[0])
-						flags.wait();
-				}
-			} catch (InterruptedException e) {}
+			enterWaiter.reset();
+			channel.presence.enterClient(testClientId2, null, enterWaiter);
+			enterErr = enterWaiter.waitFor();
 
-			assertTrue("Verify completion callback was called", flags[0]);
-			assertFalse("Verify enter client failed", flags[1]);
+			assertNotNull("Verify enter client failed", enterErr);
 
+		} finally {
+			if (ably != null)
+				ably.close();
+		}
+	}
+
+	/**
+	 * Attempt to enterClient() etc with a null clientId; check exception
+	 */
+	@Test
+	public void presence_enterclient_null_clientid() throws AblyException {
+		String channelName = "presence_enterclient_null_clientid_" + testParams.name;
+		AblyRealtime ably = null;
+
+		try {
+			/* init ably for token */
+			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
+			final AblyRest ablyForToken = new AblyRest(optsForToken);
+
+			/* get first token */
+			Auth.TokenParams tokenParams = new Auth.TokenParams();
+			tokenParams.clientId = testClientId1;
+
+			Auth.TokenDetails token = ablyForToken.auth.requestToken(tokenParams, null);
+			assertNotNull("Expected token value", token.token);
+
+			ClientOptions opts = createOptions(token.token);
+			opts.clientId = testClientId1;
+			ably = new AblyRealtime(opts);
+
+			Channel channel = ably.channels.get(channelName);
+			channel.attach();
+
+			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+			channelWaiter.waitFor(ChannelState.attached);
+			CompletionWaiter presenceWaiter = new CompletionWaiter();
+
+			/* should fail with null clientId */
+			channel.presence.enterClient(null, null, presenceWaiter);
+			ErrorInfo enterErr = presenceWaiter.waitFor();
+			assertNotNull("Verify error result", enterErr);
+			assertEquals("Verify error result with expected error code", enterErr.code, 40000);
+
+			/* should fail with null clientId */
+			presenceWaiter.reset();
+			channel.presence.leaveClient(null, null, presenceWaiter);
+			ErrorInfo leaveErr = presenceWaiter.waitFor();
+			assertNotNull("Verify error result", leaveErr);
+			assertEquals("Verify error result with expected error code", leaveErr.code, 40000);
+
+			/* should fail with null clientId */
+			presenceWaiter.reset();
+			channel.presence.updateClient(null, null, presenceWaiter);
+			ErrorInfo updateErr = presenceWaiter.waitFor();
+			assertNotNull("Verify error result", updateErr);
+			assertEquals("Verify error result with expected error code", updateErr.code, 40000);
 		} finally {
 			if (ably != null)
 				ably.close();
@@ -2894,22 +2889,84 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			opts.clientId = testClientId1;
 			ably = new AblyRealtime(opts);
 
-			Channel channel = ably.channels.get("protocol_enter_message_format" + testParams.name);
+			Channel channel = ably.channels.get("protocol_enter_message_format_" + testParams.name);
 			/* using testClientId1 */
 			channel.presence.enter(null, null);
-			channel.presence.enterClient(testClientId2);
 
 			synchronized (sentPresence) {
-				while (sentPresence.size() < 2)
+				while (sentPresence.size() < 1)
 					sentPresence.wait();
 			}
 
-			assertEquals("Verify number of presence messages sent", sentPresence.size(), 2);
+			assertEquals("Verify number of presence messages sent", sentPresence.size(), 1);
 			assertTrue("Verify presence messages follows spec",
 					sentPresence.get(0).action == Action.enter &&
-							sentPresence.get(0).clientId == null &&
-							sentPresence.get(1).action == Action.enter &&
-							sentPresence.get(1).clientId.equals(testClientId2)
+							sentPresence.get(0).clientId == null
+			);
+
+			channel.detach();
+			new ChannelWaiter(channel).waitFor(ChannelState.detached);
+
+			try {
+				channel.presence.enter(null, null);
+				fail("Presence.enter() shouldn't succeed in detached state");
+			} catch (AblyException e) {
+				assertEquals("Verify exception error code", e.errorInfo.code, 91001 /* unable to enter presence channel (invalid channel state) */);
+			}
+
+		} finally {
+			if (ably != null)
+				ably.close();
+			/* reset filter */
+			MockWebsocketFactory.allowSend();
+			Defaults.TRANSPORT = oldTransport;
+		}
+	}
+
+	/**
+	 * Verify protocol messages sent on Presence.enter() follow specs if sent from correct state and
+	 * the call fails if sent from DETACHED state
+	 *
+	 * Tests RTP8c, RTP8g
+	 */
+	@Test
+	public void protocol_enterclient_message_format() throws AblyException, InterruptedException {
+		AblyRealtime ably = null;
+		String oldTransport = Defaults.TRANSPORT;
+
+		try {
+			final ArrayList<PresenceMessage> sentPresence = new ArrayList<>();
+			Defaults.TRANSPORT = MockWebsocketFactory.class.getName();
+			/* Allow send but record all the presence messages for later analysis */
+			MockWebsocketFactory.allowSend(new MockWebsocketFactory.MessageFilter() {
+				@Override
+				public boolean matches(ProtocolMessage message) {
+					if (message.action == ProtocolMessage.Action.presence && message.presence != null) {
+						synchronized (sentPresence) {
+							Collections.addAll(sentPresence, message.presence);
+							sentPresence.notify();
+						}
+					}
+					return true;
+				}
+			});
+
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+
+			Channel channel = ably.channels.get("protocol_enterclient_message_format_" + testParams.name);
+			/* using testClientId2 */
+			channel.presence.enterClient(testClientId2);
+
+			synchronized (sentPresence) {
+				while (sentPresence.size() < 1)
+					sentPresence.wait();
+			}
+
+			assertEquals("Verify number of presence messages sent", sentPresence.size(), 1);
+			assertTrue("Verify presence messages follows spec",
+					sentPresence.get(0).action == Action.enter &&
+							sentPresence.get(0).clientId.equals(testClientId2)
 			);
 
 			channel.detach();
@@ -3128,27 +3185,24 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			assertEquals("Verify error code", completionWaiter.error.code, 40012);
 
 			/* Now clientId is known to be "*" and subsequent enter() should fail immediately */
-			try {
-				channel.presence.enter(null, null);
-				fail("enter() should fail");
-			} catch (AblyException e) {
-				assertEquals("Verify exception code", e.errorInfo.code, 91000);
-			}
+			completionWaiter.reset();
+			channel.presence.enter(null, completionWaiter);
+			completionWaiter.waitFor(1);
+			assertFalse("Verify enter() failed", completionWaiter.success);
+			assertEquals("Verify error code", completionWaiter.error.code, 91000);
 
 			/* and so should update() and leave() */
-			try {
-				channel.presence.update(null, null);
-				fail("update() should fail");
-			} catch (AblyException e) {
-				assertEquals("Verify exception code", e.errorInfo.code, 91000);
-			}
+			completionWaiter.reset();
+			channel.presence.update(null, completionWaiter);
+			completionWaiter.waitFor(1);
+			assertFalse("Verify update() failed", completionWaiter.success);
+			assertEquals("Verify error code", completionWaiter.error.code, 91000);
 
-			try {
-				channel.presence.leave(null, null);
-				fail("leave() should fail");
-			} catch (AblyException e) {
-				assertEquals("Verify exception code", e.errorInfo.code, 91000);
-			}
+			completionWaiter.reset();
+			channel.presence.leave(null, completionWaiter);
+			completionWaiter.waitFor(1);
+			assertFalse("Verify update() failed", completionWaiter.success);
+			assertEquals("Verify error code", completionWaiter.error.code, 91000);
 
 		} finally {
 			if (ably != null)

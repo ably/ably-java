@@ -50,7 +50,7 @@ public class Channel {
 	public void publish(String name, Object data) throws AblyException {
 		Message message = new Message(name, data);
 		/* RTL6g3 */
-		ably.auth.checkClientId(message, false);
+		ably.auth.checkClientId(message, true, true);
 		message.encode(options);
 		RequestBody requestBody = ably.options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(message) : MessageSerializer.asJsonRequest(message);
 		ably.http.post(basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), null, requestBody, null);
@@ -67,7 +67,7 @@ public class Channel {
 	public void publish(Message[] messages) throws AblyException {
 		for(Message message : messages) {
 			/* RTL6g3 */
-			ably.auth.checkClientId(message, false);
+			ably.auth.checkClientId(message, true, true);
 			message.encode(options);
 		}
 		RequestBody requestBody = ably.options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(messages) : MessageSerializer.asJsonRequest(messages);

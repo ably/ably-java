@@ -725,7 +725,7 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 			for(Message message : messages) {
 				/* RTL6g3: check validity of any clientId;
 				 * RTL6g4: be lenient with a null clientId if we're not connected */
-				ably.auth.checkClientId(message, !connected);
+				ably.auth.checkClientId(message, true, !connected);
 				message.encode(options);
 			}
 		} catch(AblyException e) {
