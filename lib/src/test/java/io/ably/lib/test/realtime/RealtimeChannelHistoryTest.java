@@ -1205,7 +1205,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 			/* get the channel history from the attachSerial when we get the attach indication */
 			(new ChannelWaiter(rxChannel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", rxChannel.state, ChannelState.attached);
-			assertNotNull("Verify attachSerial provided", rxChannel.attachSerial);
+			assertNotNull("Verify attachSerial provided", rxChannel.properties.attachSerial);
 
 			/* wait for the subscription callback to be called on the first received message */
 			messageWaiter.waitFor(1);
@@ -1216,7 +1216,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 			} catch (InterruptedException e) {}
 
 			/* get the history for this channel */
-			PaginatedResult<Message> messages = rxChannel.history(new Param[] { new Param("from_serial", rxChannel.attachSerial)});
+			PaginatedResult<Message> messages = rxChannel.history(new Param[] { new Param("from_serial", rxChannel.properties.attachSerial)});
 			assertNotNull("Expected non-null messages", messages);
 			assertTrue("Expected at least one message", messages.items().length >= 1);
 
@@ -1274,7 +1274,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 			rxChannel.attach();
 			new ChannelWaiter(rxChannel).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", rxChannel.state, ChannelState.attached);
-			assertNotNull("Verify attachSerial provided", rxChannel.attachSerial);
+			assertNotNull("Verify attachSerial provided", rxChannel.properties.attachSerial);
 
 			/* get the history for this channel */
 			PaginatedResult<Message> messages = rxChannel.history(new Param[] { new Param("untilAttach", "true") });

@@ -1087,7 +1087,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 			/* get the channel history from the attachSerial when we get the attach indication */
 			(new ChannelWaiter(rxChannel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", rxChannel.state, ChannelState.attached);
-			assertNotNull("Verify attachSerial provided", rxChannel.attachSerial);
+			assertNotNull("Verify attachSerial provided", rxChannel.properties.attachSerial);
 
 			/* the subscription callback will be called first on the "sync" presence message
 			 * delivered immediately following attach; so wait for this and then the first
@@ -1108,7 +1108,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 			assertTrue("Verify success callback was called", msgComplete.errors.isEmpty());
 
 			/* get the history for this channel */
-			PaginatedResult<PresenceMessage> messages = rxChannel.presence.history(new Param[] { new Param("from_serial", rxChannel.attachSerial)});
+			PaginatedResult<PresenceMessage> messages = rxChannel.presence.history(new Param[] { new Param("from_serial", rxChannel.properties.attachSerial)});
 			assertNotNull("Expected non-null messages", messages);
 			assertTrue("Expected at least one message", messages.items().length >= 1);
 
@@ -1172,7 +1172,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 			rxChannel.attach();
 			new ChannelWaiter(rxChannel).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", rxChannel.state, ChannelState.attached);
-			assertNotNull("Verify attachSerial provided", rxChannel.attachSerial);
+			assertNotNull("Verify attachSerial provided", rxChannel.properties.attachSerial);
 
 			/* get the history for this channel */
 			PaginatedResult<PresenceMessage> messages = rxChannel.presence.history(new Param[] { new Param("untilAttach", "true") });
