@@ -594,29 +594,38 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 	@Test
 	public void cipher_params() throws AblyException {
 		/* 128-bit key */
-		byte[] key = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+		/* {0xFF, 0xFE, 0xFD, 0xFC, 0xFB, 0xFA, 0xF9, 0xF8, 0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0}; */
+		byte[] key = {-1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15, -16};
 		/* Same key but encoded with Base64 */
-		String base64key = "AQIDBAUGBwgJCgsMDQ4PEA==";
+		String base64key = "//79/Pv6+fj39vX08/Lx8A==";
+		/* Same key but encoded in URL style (RFC 4648 s.5) */
+		String base64key2 = "__79_Pv6-fj39vX08_Lx8A==";
+
 		/* IV */
 		byte[] iv = {16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
 
 		final CipherParams params1 = Crypto.getDefaultParams(key); params1.ivSpec = new IvParameterSpec(iv);
 		final CipherParams params2 = Crypto.getDefaultParams(base64key); params2.ivSpec = new IvParameterSpec(iv);
 		final CipherParams params3 = Crypto.getDefaultParams(params1); params3.ivSpec = new IvParameterSpec(iv);
+		final CipherParams params4 = Crypto.getDefaultParams(base64key2); params4.ivSpec = new IvParameterSpec(iv);
 
 		assertTrue("Verify keyLength is calculated properly",
-				params1.keyLength == key.length*8 && params2.keyLength == key.length*8 && params3.keyLength == key.length*8);
+				params1.keyLength == key.length*8 && params2.keyLength == key.length*8 && params3.keyLength == key.length*8 && params4.keyLength == key.length*8);
 
 		byte[] plaintext = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
 		Crypto.ChannelCipher channelCipher1 = Crypto.getCipher(new ChannelOptions() {{ encrypted=true; cipherParams=params1; }});
 		Crypto.ChannelCipher channelCipher2 = Crypto.getCipher(new ChannelOptions() {{ encrypted=true; cipherParams=params2; }});
 		Crypto.ChannelCipher channelCipher3 = Crypto.getCipher(new ChannelOptions() {{ encrypted=true; cipherParams=params3; }});
+		Crypto.ChannelCipher channelCipher4 = Crypto.getCipher(new ChannelOptions() {{ encrypted=true; cipherParams=params4; }});
 
 		byte[] ciphertext1 = channelCipher1.encrypt(plaintext);
 		byte[] ciphertext2 = channelCipher2.encrypt(plaintext);
 		byte[] ciphertext3 = channelCipher3.encrypt(plaintext);
+		byte[] ciphertext4 = channelCipher4.encrypt(plaintext);
 
 		assertTrue("Verify all the cipertexts are equal",
-				Arrays.equals(ciphertext1, ciphertext2) && Arrays.equals(ciphertext1, ciphertext3));
+				Arrays.equals(ciphertext1, ciphertext2) &&
+						Arrays.equals(ciphertext1, ciphertext3) &&
+						Arrays.equals(ciphertext1, ciphertext4));
 	}
 }
