@@ -8,6 +8,7 @@ import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -33,6 +34,7 @@ import io.ably.lib.rest.Auth.TokenRequest;
 import io.ably.lib.rest.Channel;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.util.TokenServer;
+import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
@@ -404,6 +406,33 @@ public class RestAuthTest extends ParameterizedTest {
 	}
 
 	/**
+	 * Verify authURL called and handled when timing out
+	 * Spec: RSA8c, RSA4c
+	 */
+	@Test
+	public void auth_authURL_timeout() {
+		try {
+			ClientOptions opts = createOptions();
+			opts.environment = testVars.environment;
+			opts.authUrl = "http://localhost:8982/wait?delay=6000";
+			opts.realtimeRequestTimeout = 5000L;
+			AblyRest ably = new AblyRest(opts);
+			/* make a call to trigger token request */
+			try {
+				ably.auth.requestToken(null, null);
+				fail("auth_authURL_err: Unexpected success requesting token");
+			} catch (AblyException e) {
+				assertEquals("Expected error code", e.errorInfo.code, 80019);
+				assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.statusCode, 500);
+				assertTrue("Expected forwarded forwarded exception", (e.getCause().getCause()) instanceof SocketTimeoutException);
+			}
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_authURL_timeout: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
 	 * Verify authURL is passed specified params
 	 * Spec: RSA8c3
 	 */
@@ -425,7 +454,7 @@ public class RestAuthTest extends ParameterizedTest {
 				fail("auth_authURL_params: Unexpected success requesting token");
 			} catch (AblyException e) {
 				assertEquals("Expected error code", e.errorInfo.code, 80019);
-				assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.code, 40170);
+				assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.statusCode, 404);
 				assertTrue("Expected echoed header", ((AblyException)e.getCause()).errorInfo.message.indexOf("test-param=test-value") != -1);
 			}
 		} catch (AblyException e) {
@@ -456,7 +485,7 @@ public class RestAuthTest extends ParameterizedTest {
 				fail("auth_authURL_headers: Unexpected success requesting token");
 			} catch (AblyException e) {
 				assertEquals("Expected error code", e.errorInfo.code, 80019);
-				assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.code, 40170);
+				assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.statusCode, 404);
 				assertTrue("Expected echoed header", ((AblyException)e.getCause()).errorInfo.message.indexOf("test-header=test-value") != -1);
 			}
 		} catch (AblyException e) {
