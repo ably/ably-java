@@ -717,7 +717,12 @@ public class Http {
 		response.contentType = connection.getContentType();
 		response.contentLength = connection.getContentLength();
 
-		InputStream is = (response.statusCode >= 200 && response.statusCode < 300) ? connection.getInputStream() : connection.getErrorStream();
+		InputStream is = null;
+		try {
+			is = connection.getInputStream();
+		} catch (Throwable e) {}
+		if (is == null)
+			is = connection.getErrorStream();
 
 		try {
 			response.body = readInputStream(is, response.contentLength);
