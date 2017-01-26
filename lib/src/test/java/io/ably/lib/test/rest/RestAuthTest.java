@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import io.ably.lib.http.Http;
+import io.ably.lib.types.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -35,13 +37,6 @@ import io.ably.lib.rest.Channel;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.util.TokenServer;
 import io.ably.lib.transport.Defaults;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.Message;
-import io.ably.lib.types.MessageSerializer;
-import io.ably.lib.types.PaginatedResult;
-import io.ably.lib.types.Param;
 
 public class RestAuthTest extends ParameterizedTest {
 
@@ -354,6 +349,33 @@ public class RestAuthTest extends ParameterizedTest {
 			fail("auth_authURL_tokenrequest: Unexpected exception instantiating library");
 		}
 	}
+
+	/**
+	 * Verify authURL called and handled when returning token request, use POST method
+	 * Spec: RSA8c1b
+	 */
+	@Test
+	public void auth_authURL_tokenrequest_post() {
+		try {
+			ClientOptions opts = createOptions();
+			opts.environment = testVars.environment;
+			opts.authUrl = "http://localhost:8982/post-token-request";
+			opts.authMethod = Http.POST;
+			AblyRest ably = new AblyRest(opts);
+			/* make a call to trigger token request */
+			try {
+				TokenDetails tokenDetails = ably.auth.requestToken(null, null);
+				assertNotNull("Expected token value", tokenDetails.token);
+			} catch (AblyException e) {
+				e.printStackTrace();
+				fail("auth_authURL_tokenrequest: Unexpected exception requesting token");
+			}
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_authURL_tokenrequest: Unexpected exception instantiating library");
+		}
+	}
+
 
 	/**
 	 * Verify authURL called and handled when returning token

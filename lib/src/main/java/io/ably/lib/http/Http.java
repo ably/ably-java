@@ -1,15 +1,8 @@
 package io.ably.lib.http;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.lang.reflect.Field;
-import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
-import java.net.Proxy;
-import java.net.URL;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
@@ -145,6 +138,34 @@ public class Http {
 
 		private final byte[] bytes;
 		private final String contentType;
+	}
+
+	public static class FormRequestBody implements RequestBody {
+		public FormRequestBody(Param[] formData) { this.formData = formData; }
+
+		@Override
+		public byte[] getEncoded() {
+			try {
+				StringBuilder body = new StringBuilder();
+				for (int i = 0; i < formData.length; i++) {
+					if (i != 0)
+						body.append('&');
+					body.append(URLEncoder.encode(formData[i].key, "UTF-8"));
+					body.append('=');
+					body.append(URLEncoder.encode(formData[i].value, "UTF-8"));
+				}
+				return body.toString().getBytes("UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				return new byte[]{};
+			}
+		}
+
+		@Override
+		public String getContentType() {
+			return FORM_ENCODING;
+		}
+
+		private Param[] formData;
 	}
 
 	/*************************
@@ -696,8 +717,7 @@ public class Http {
 		response.contentType = connection.getContentType();
 		response.contentLength = connection.getContentLength();
 
-		int successStatusCode = (POST.equals(connection.getRequestMethod())) ? HttpURLConnection.HTTP_CREATED : HttpURLConnection.HTTP_OK;
-		InputStream is = (response.statusCode == successStatusCode) ? connection.getInputStream() : connection.getErrorStream();
+		InputStream is = (response.statusCode >= 200 && response.statusCode < 300) ? connection.getInputStream() : connection.getErrorStream();
 
 		try {
 			response.body = readInputStream(is, response.contentLength);
@@ -827,7 +847,8 @@ public class Http {
 	private static final String ACCEPT              = "Accept";
 	private static final String CONTENT_TYPE        = "Content-Type";
 	private static final String CONTENT_LENGTH      = "Content-Length";
-	private static final String JSON                =  "application/json";
+	private static final String JSON                = "application/json";
+	private static final String FORM_ENCODING       = "application/x-www-form-urlencoded";
 	private static final String WWW_AUTHENTICATE    = "WWW-Authenticate";
 	private static final String PROXY_AUTHENTICATE  = "Proxy-Authenticate";
 	private static final String AUTHORIZATION       = "Authorization";
