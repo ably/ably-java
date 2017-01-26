@@ -958,15 +958,15 @@ public class Auth {
 	}
 
 	/**
-	 * Verify that a messgae, possibly containing a clientId,
+	 * Verify that a message, possibly containing a clientId,
 	 * is compatible with Auth.clientId if it is set
 	 * @param msg
 	 * @param allowNullClientId: true if it is ok for there to be no resolved clientId
-	 * @param allowNullLibraryClientId: true if it is ok for the library to be unidentified
+	 * @param connected: true if connected; if false it is ok for the library to be unidentified
 	 * @return the resolved clientId
 	 * @throws AblyException
 	 */
-	public String checkClientId(BaseMessage msg, boolean allowNullClientId, boolean allowNullLibraryClientId) throws AblyException {
+	public String checkClientId(BaseMessage msg, boolean allowNullClientId, boolean connected) throws AblyException {
 		/* Check that the message doesn't contain the disallowed wildcard clientId
 		 * RTL6g3 */
 		String msgClientId = msg.clientId;
@@ -975,7 +975,7 @@ public class Auth {
 		}
 
 		/* Check that any clientId given in the message is compatible with the library clientId */
-		boolean undeterminedClientId = (clientId == null && allowNullLibraryClientId);
+		boolean undeterminedClientId = (clientId == null && !connected);
 		if(msgClientId != null) {
 			if(msgClientId.equals(clientId) || WILDCARD_CLIENTID.equals(clientId) || undeterminedClientId) {
 				/* RTL6g4: be lenient checking against a null clientId if we're not connected */

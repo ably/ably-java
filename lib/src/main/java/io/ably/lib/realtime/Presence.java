@@ -551,7 +551,7 @@ public class Presence {
 		boolean connected = (ably.connection.state == ConnectionState.connected);
 		String clientId;
 		try {
-			clientId = ably.auth.checkClientId(msg, false, !connected);
+			clientId = ably.auth.checkClientId(msg, false, connected);
 		} catch(AblyException e) {
 			if(listener != null) {
 				listener.onError(e.errorInfo);
