@@ -83,8 +83,7 @@ public class RealtimeRecoverTest extends ParameterizedTest {
 			 * NOTE this depends on knowledge of the internal structure
 			 * of the library, to simulate a dropped transport without
 			 * causing the connection itself to be disposed */
-			String recoverConnectionId = ablyRx.connection.key;
-			long recoverConnectionSerial = ablyRx.connection.serial;
+			String recoverConnectionKey = ablyRx.connection.recoveryKey;
 			ablyRx.connection.connectionManager.requestState(ConnectionState.failed);
 
 			/* wait */
@@ -103,7 +102,7 @@ public class RealtimeRecoverTest extends ParameterizedTest {
 
 			/* establish a new rx connection with recover string, and wait for connection */
 			ClientOptions recoverOpts = createOptions(testVars.keys[0].keyStr);
-			recoverOpts.recover = recoverConnectionId + ':' + String.valueOf(recoverConnectionSerial);
+			recoverOpts.recover = recoverConnectionKey;
 			ablyRxRecover = new AblyRealtime(recoverOpts);
 			(new ConnectionWaiter(ablyRxRecover.connection)).waitFor(ConnectionState.connected);
 
@@ -182,8 +181,7 @@ public class RealtimeRecoverTest extends ParameterizedTest {
 			 * NOTE this depends on knowledge of the internal structure
 			 * of the library, to simulate a dropped transport without
 			 * causing the connection itself to be disposed */
-			String recoverConnectionKey = ablyRx.connection.key;
-			long recoverConnectionSerial = ablyRx.connection.serial;
+			String recoverConnectionKey = ablyRx.connection.recoveryKey;
 			ablyRx.connection.connectionManager.requestState(ConnectionState.failed);
 
 			/* wait */
@@ -202,7 +200,7 @@ public class RealtimeRecoverTest extends ParameterizedTest {
 
 			/* establish a new rx connection with recover string, and wait for connection */
 			ClientOptions recoverOpts = createOptions(testVars.keys[0].keyStr);
-			recoverOpts.recover = recoverConnectionKey + ':' + String.valueOf(recoverConnectionSerial);
+			recoverOpts.recover = recoverConnectionKey;
 			ablyRxRecover = new AblyRealtime(recoverOpts);
 
 			/* subscribe to channel */

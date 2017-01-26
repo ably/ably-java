@@ -496,8 +496,11 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	}
 
 	private void onChannelMessage(ProtocolMessage message) {
-		if(message.connectionSerial != null)
+		if(message.connectionSerial != null) {
 			connection.serial = message.connectionSerial.longValue();
+			if (connection.key != null)
+				connection.recoveryKey = String.format("%s:%d", connection.key, message.connectionSerial);
+		}
 		ably.channels.onChannelMessage(transport, message);						
 	}
 
@@ -533,8 +536,11 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			msgSerial = 0;
 		}
 		connection.id = message.connectionId;
-		if(message.connectionSerial != null)
+		if(message.connectionSerial != null) {
 			connection.serial = message.connectionSerial.longValue();
+			if (connection.key != null)
+				connection.recoveryKey = String.format("%s:%d", connection.key, message.connectionSerial);
+		}
 
 		/* Get any parameters from connectionDetails. */
 		maxIdleInterval = connectionDetails.maxIdleInterval;

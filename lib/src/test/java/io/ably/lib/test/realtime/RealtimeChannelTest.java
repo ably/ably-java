@@ -961,8 +961,8 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
 			/* keep connection details and close */
-			String recoverConnectionId = ably.connection.key;
-			long recoverConnectionSerial = ably.connection.serial;
+			String oldConnectionKey = ably.connection.key;
+			String recoverConnectionKey = ably.connection.recoveryKey;
 			ably.close();
 
 			/* establish a new connection */
@@ -989,14 +989,14 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			try { Thread.sleep(2000L); } catch(InterruptedException e) {}
 
 			/* reconnect the connection; this time attempting to recover the (now-closed) recovery key */
-			ably.options.recover = recoverConnectionId + ':' + String.valueOf(recoverConnectionSerial);
+			ably.options.recover = recoverConnectionKey;
 			ably.connection.key = null;
 			ably.connection.connect();
 
 			/* wait until connected */
 			(new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
 			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
-			assertNotEquals("Verify new connection established", recoverConnectionId, ably.connection.id);
+			assertNotEquals("Verify new connection established", oldConnectionKey, ably.connection.id);
 			assertNotNull("Verify error was returned with connected state", ably.connection.reason);
 
 			/* verify existing channel is failed but not removed */
