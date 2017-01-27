@@ -1,5 +1,7 @@
 package io.ably.lib.rest;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
@@ -64,6 +66,13 @@ public class Auth {
 		 * a key
 		 */
 		public String authUrl;
+
+		/**
+		 * TO3j7: authMethod – The HTTP verb to be used when a request
+		 * is made by the library to the authUrl. Defaults to GET,
+		 * supports GET and POST
+		 */
+		public String authMethod;
 
 		/**
 		 * Full Ably key string as obtained from dashboard.
@@ -140,6 +149,7 @@ public class Auth {
 			AuthOptions result = new AuthOptions();
 			result.key = this.key;
 			result.authUrl = this.authUrl;
+			result.authMethod = this.authMethod;
 			result.authParams = this.authParams;
 			result.authHeaders = this.authHeaders;
 			result.token = this.token;
@@ -157,6 +167,7 @@ public class Auth {
 			AuthOptions result = new AuthOptions();
 			result.key = this.key;
 			result.authUrl = this.authUrl;
+			result.authMethod = this.authMethod;
 			result.authParams = this.authParams;
 			result.authHeaders = this.authHeaders;
 			result.token = this.token;
@@ -577,7 +588,7 @@ public class Auth {
 			/* the auth request can return either a signed token request as a TokenParams, or a TokenDetails */
 			Object authUrlResponse = null;
 			try {
-				authUrlResponse = ably.http.getUri(tokenOptions.authUrl, tokenOptions.authHeaders, requestParams, new ResponseHandler<Object>() {
+				ResponseHandler<Object> responseHandler = new ResponseHandler<Object>() {
 					@Override
 					public Object handleResponse(Response response, ErrorInfo error) throws AblyException {
 						if(error != null) {
@@ -613,7 +624,12 @@ public class Auth {
 							throw AblyException.fromErrorInfo(new ErrorInfo("Unable to parse response from auth callback", 406, 40170));
 						}
 					}
-				});
+				};
+
+				if (Http.POST.equals(tokenOptions.authMethod))
+					authUrlResponse = ably.http.postUri(tokenOptions.authUrl, tokenOptions.authHeaders, requestParams, responseHandler);
+				else
+					authUrlResponse = ably.http.getUri(tokenOptions.authUrl, tokenOptions.authHeaders, requestParams, responseHandler);
 			} catch(AblyException e) {
 				throw AblyException.fromErrorInfo(e, new ErrorInfo("authUrl failed with an exception", 401, 80019));
 			}

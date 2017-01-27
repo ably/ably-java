@@ -26,6 +26,8 @@
  */
 package io.ably.lib.test.util;
 
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -52,8 +54,29 @@ public class TokenServer extends NanoHTTPD {
     public Response serve(IHTTPSession session) {
         Method method = session.getMethod();
         String target = session.getUri();
-        Map<String, String> params = session.getParms();
         Map<String, String> headers = session.getHeaders();
+
+        if (method.equals(Method.POST)) {
+			try {
+				session.parseBody(new HashMap<String, String>());
+			} catch (IOException | ResponseException e) {
+				return error2Response(new ErrorInfo("Bad POST token request", 400, 40000));
+			}
+		}
+
+		Map<String, String> params = session.getParms();
+
+		if ((method.equals(Method.POST) && target.equals("/post-token-request")) ||
+				(method.equals(Method.GET) && target.equals("/get-token-request"))) {
+			TokenParams tokenParams = params2TokenParams(params);
+			try {
+				TokenRequest tokenRequest = ably.auth.createTokenRequest(tokenParams, null);
+				return json2Response(tokenRequest.asJsonElement());
+			} catch (AblyException e) {
+				e.printStackTrace();
+				return error2Response(e.errorInfo);
+			}
+		}
 
 		if (!method.equals(Method.GET)) {
 			return newFixedLengthResponse(Response.Status.METHOD_NOT_ALLOWED, MIME_PLAINTEXT, "Method not supported");
@@ -64,16 +87,6 @@ public class TokenServer extends NanoHTTPD {
 			try {
 				TokenDetails token = ably.auth.requestToken(tokenParams, null);
 				return json2Response(token);
-			} catch (AblyException e) {
-				e.printStackTrace();
-				return error2Response(e.errorInfo);
-			}
-		}
-		else if(target.equals("/get-token-request")) {
-			TokenParams tokenParams = params2TokenParams(params);
-			try {
-				TokenRequest tokenRequest = ably.auth.createTokenRequest(tokenParams, null);
-				return json2Response(tokenRequest.asJsonElement());
 			} catch (AblyException e) {
 				e.printStackTrace();
 				return error2Response(e.errorInfo);
