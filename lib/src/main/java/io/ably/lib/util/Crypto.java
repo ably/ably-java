@@ -62,6 +62,13 @@ public class Crypto {
 			this.keyLength = key.length * 8;
 			this.keySpec = new SecretKeySpec(key, algorithm.toUpperCase());
 		}
+
+		private CipherParams(String algorithm, int keyLength, SecretKeySpec keySpec, IvParameterSpec ivSpec) {
+			this.algorithm = algorithm;
+			this.keyLength = keyLength;
+			this.keySpec = keySpec;
+			this.ivSpec = ivSpec;
+		}
 	}
 
 	/**
@@ -90,6 +97,26 @@ public class Crypto {
 		try {
 			return getParams(DEFAULT_ALGORITHM, key);
 		} catch (NoSuchAlgorithmException e) { return null; }
+	}
+
+	/**
+	 * Obtain a default CipherParams using Base64-encoded key. Same as above, throws
+	 * IllegalArgumentException if base64Key is invalid
+	 *
+	 * @param base64Key
+	 * @return
+	 */
+	public static CipherParams getDefaultParams(String base64Key) {
+		return getDefaultParams(Base64Coder.decode(base64Key));
+	}
+
+	/**
+	 * Obtain default CipherParams using key and algorithm from other CipherParams object
+	 * @param params
+	 * @return
+	 */
+	public static CipherParams getDefaultParams(CipherParams params) {
+		return new CipherParams(params.algorithm, params.keyLength, params.keySpec, params.ivSpec);
 	}
 
 	public static CipherParams getParams(String algorithm, int keyLength) {
@@ -167,10 +194,9 @@ public class Crypto {
 				iv = params.ivSpec.getIV();
 				blockLength = iv.length;
 			}
-			catch (NoSuchAlgorithmException e) { throw AblyException.fromThrowable(e); }
-			catch (NoSuchPaddingException e) { throw AblyException.fromThrowable(e); }
-			catch (InvalidAlgorithmParameterException e) { throw AblyException.fromThrowable(e); }
-			catch (InvalidKeyException e) { throw AblyException.fromThrowable(e); }
+			catch (NoSuchAlgorithmException|NoSuchPaddingException|InvalidAlgorithmParameterException|InvalidKeyException e) {
+				throw AblyException.fromThrowable(e);
+			}
 		}
 
 		@Override
@@ -197,10 +223,10 @@ public class Crypto {
 				decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(ciphertext, 0, blockLength));
 				plaintext = decryptCipher.doFinal(ciphertext, blockLength, ciphertext.length - blockLength);
 			}
-			catch (InvalidKeyException e) { Log.e(TAG, "decrypt()", e); throw AblyException.fromThrowable(e); }
-			catch (InvalidAlgorithmParameterException e) { Log.e(TAG, "decrypt()", e); throw AblyException.fromThrowable(e); }
-			catch (IllegalBlockSizeException e) { Log.e(TAG, "decrypt()", e); throw AblyException.fromThrowable(e); }
-			catch (BadPaddingException e) { Log.e(TAG, "decrypt()", e); throw AblyException.fromThrowable(e); }
+			catch (InvalidKeyException|InvalidAlgorithmParameterException|IllegalBlockSizeException|BadPaddingException e) {
+				Log.e(TAG, "decrypt()", e);
+				throw AblyException.fromThrowable(e);
+			}
 			return plaintext;
 		}
 
