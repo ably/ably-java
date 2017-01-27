@@ -285,6 +285,19 @@ public class Http {
 	}
 
 	/**
+	 * HTTP POST with data in form encoding for non-Ably host
+	 * @param uri
+	 * @param headers
+	 * @param params
+	 * @param responseHandler
+	 * @return
+	 * @throws AblyException
+	 */
+	public <T> T postUri(String uri, Param[] headers, Param[] params, ResponseHandler<T> responseHandler) throws AblyException {
+		return httpExecute(buildURL(uri, null), POST, headers, new FormRequestBody(params), responseHandler);
+	}
+
+	/**
 	 * HTTP POST for Ably host, with fallbacks
 	 * @param path
 	 * @param headers

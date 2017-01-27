@@ -626,18 +626,10 @@ public class Auth {
 					}
 				};
 
-				if (Http.POST.equals(tokenOptions.authMethod)) {
-					URL postUrl = null;
-					try {
-						postUrl = new URL(tokenOptions.authUrl);
-					} catch (MalformedURLException e) {
-						throw AblyException.fromErrorInfo(new ErrorInfo("Malformed token URL", 40140));
-					}
-					authUrlResponse = ably.http.httpExecute(postUrl, Http.POST, tokenOptions.authHeaders, new Http.FormRequestBody(requestParams), responseHandler);
-				}
-				else {
+				if (Http.POST.equals(tokenOptions.authMethod))
+					authUrlResponse = ably.http.postUri(tokenOptions.authUrl, tokenOptions.authHeaders, requestParams, responseHandler);
+				else
 					authUrlResponse = ably.http.getUri(tokenOptions.authUrl, tokenOptions.authHeaders, requestParams, responseHandler);
-				}
 			} catch(AblyException e) {
 				throw AblyException.fromErrorInfo(e, new ErrorInfo("authUrl failed with an exception", 401, 80019));
 			}
