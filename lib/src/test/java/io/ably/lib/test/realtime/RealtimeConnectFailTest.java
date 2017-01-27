@@ -99,11 +99,20 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 	 */
 	@Test
 	public void connect_fail_suspended() {
+		int oldConnectTimeout = Defaults.TIMEOUT_CONNECT;
+		int oldDisconnectTimeout = Defaults.TIMEOUT_DISCONNECT;
+		int oldSuspendTimeout = Defaults.TIMEOUT_SUSPEND;
+		AblyRealtime ably = null;
 		try {
+			/* Make test a lot faster */
+			Defaults.TIMEOUT_CONNECT = 1000;
+			Defaults.TIMEOUT_DISCONNECT = 1500;
+			Defaults.TIMEOUT_SUSPEND = 5000;
+
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			opts.realtimeHost = "non.existent.host";
 			opts.environment = null;
-			AblyRealtime ably = new AblyRealtime(opts);
+			ably = new AblyRealtime(opts);
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
 			connectionWaiter.waitFor(ConnectionState.suspended);
@@ -115,13 +124,19 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 			} catch (InterruptedException e) {}
 			assertEquals("Verify suspended state is reached", ConnectionState.suspended, ably.connection.state);
 			assertTrue("Verify multiple connect attempts", connectionWaiter.getCount(ConnectionState.connecting) > 1);
-			assertTrue("Verify multiple connect attempts", connectionWaiter.getCount(ConnectionState.disconnected) > 1);
 			ably.close();
 			connectionWaiter.waitFor(ConnectionState.closed);
 			assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			/* Restore old timeout values */
+			Defaults.TIMEOUT_CONNECT = oldConnectTimeout;
+			Defaults.TIMEOUT_DISCONNECT = oldDisconnectTimeout;
+			Defaults.TIMEOUT_SUSPEND = oldSuspendTimeout;
+			if (ably != null)
+				ably.close();
 		}
 	}
 

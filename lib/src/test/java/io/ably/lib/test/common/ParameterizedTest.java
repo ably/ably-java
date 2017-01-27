@@ -4,6 +4,8 @@ import java.util.Arrays;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
@@ -48,4 +50,7 @@ public class ParameterizedTest {
 	protected void fillInOptions(ClientOptions opts) {
 		testVars.fillInOptions(opts, testParams);
 	}
+
+	@Rule
+	public Timeout globalTimeout = Timeout.seconds(60);
 }
