@@ -499,7 +499,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		if(message.connectionSerial != null) {
 			connection.serial = message.connectionSerial.longValue();
 			if (connection.key != null)
-				connection.recoveryKey = String.format("%s:%d", connection.key, message.connectionSerial);
+				connection.recoveryKey = connection.key + ":" + message.connectionSerial;
 		}
 		ably.channels.onChannelMessage(transport, message);						
 	}
@@ -539,7 +539,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		if(message.connectionSerial != null) {
 			connection.serial = message.connectionSerial.longValue();
 			if (connection.key != null)
-				connection.recoveryKey = String.format("%s:%d", connection.key, message.connectionSerial);
+				connection.recoveryKey = connection.key + ":" + message.connectionSerial;
 		}
 
 		/* Get any parameters from connectionDetails. */
