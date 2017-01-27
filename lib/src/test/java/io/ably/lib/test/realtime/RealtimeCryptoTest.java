@@ -628,4 +628,21 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 						Arrays.equals(ciphertext1, ciphertext3) &&
 						Arrays.equals(ciphertext1, ciphertext4));
 	}
+
+	/**
+	 * Test Crypto.generateRandomKey
+	 * Tests RSE2
+	 */
+	@Test public void generate_random_key() {
+		final int numberOfRandomKeys = 50;
+		final int randomKeyBits = 256;
+		byte[][] randomKeys = new byte[numberOfRandomKeys][];
+
+		for (int i=0; i<numberOfRandomKeys; i++) {
+			randomKeys[i] = Crypto.generateRandomKey(randomKeyBits);
+			assertEquals("Verify random data has correct length", randomKeys[i].length, (randomKeyBits + 7) / 8);
+			for (int j=0; j<i; j++)
+				assertFalse("Verify random data is unique", Arrays.equals(randomKeys[i], randomKeys[j]));
+		}
+	}
 }
