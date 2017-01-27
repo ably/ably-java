@@ -27,6 +27,12 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
 	public String key;
 
 	/**
+	 * RTN16b) Connection#recoveryKey is an attribute composed of the connection key and latest
+	 * serial received on the connection
+	 */
+	public String recoveryKey;
+
+	/**
 	 * A public identifier for this connection, used to identify
 	 * this member in presence events and message ids.
 	 */
@@ -60,6 +66,7 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
 	 */
 	public void close() {
 		key = null;
+		recoveryKey = null;
 		connectionManager.close();
 	}
 
