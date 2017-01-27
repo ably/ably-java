@@ -51,11 +51,9 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 	public ErrorInfo reason;
 
 	/**
-	 * A message identifier indicating the time of attachment to the channel;
-	 * used when recovering a message history to mesh exactly with messages
-	 * received on this channel subsequent to attachment.
+	 * Properties of Channel
 	 */
-	public String attachSerial;
+	public ChannelProperties properties = new ChannelProperties();
 
 	/***
 	 * internal
@@ -231,7 +229,7 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 		clearAttachTimers();
 		boolean resumed = (message.flags & ( 1 << Flag.resumed.ordinal())) != 0;
 		Log.v(TAG, "setAttached(); channel = " + name + ", resumed = " + resumed);
-		attachSerial = message.channelSerial;
+		properties.attachSerial = message.channelSerial;
 		if(state == ChannelState.attached) {
 			Log.v(TAG, String.format("Server initiated attach for channel %s", name));
 			/* emit UPDATE event according to RTL12 */
@@ -828,7 +826,7 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 						throw AblyException.fromErrorInfo(new ErrorInfo("option untilAttach requires the channel to be attached", 40000, 400));
 					}
 
-					params.add(new Param(KEY_FROM_SERIAL, channel.attachSerial));
+					params.add(new Param(KEY_FROM_SERIAL, channel.properties.attachSerial));
 				}
 				else if(!"false".equalsIgnoreCase(param.value)) {
 					throw AblyException.fromErrorInfo(new ErrorInfo("option untilAttach is invalid. \"true\" or \"false\" expected", 40000, 400));
