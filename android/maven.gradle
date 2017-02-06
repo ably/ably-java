@@ -60,13 +60,17 @@ task zipRelease(type: Zip) {
     archiveName "release-${version}.zip"
 }
 
-assembleRelease.doLast {
-    println "Release ${version} can be found at ${localReleaseDest}/"
-    println "Release ${version} zipped can be found ${buildDir}/release-${version}.zip"
-}
+tasks.whenTaskAdded { task ->
+    if (task.name == 'assembleRelease') {
+        task.doLast {
+            println "Release ${version} can be found at ${localReleaseDest}/"
+            println "Release ${version} zipped can be found ${buildDir}/release-${version}.zip"
+        }
 
-assembleRelease.dependsOn(uploadArchives)
-assembleRelease.dependsOn(zipRelease)
+        task.dependsOn(uploadArchives)
+        task.dependsOn(zipRelease)
+    }
+}
 
 task sourcesJar(type: Jar) {
      classifier = 'sources'

@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 
 import io.ably.lib.debug.DebugOptions;
@@ -37,6 +39,18 @@ public class Http {
 	public static final String PUT    = "PUT";
 	public static final String POST   = "POST";
 	public static final String DELETE = "DELETE";
+
+	public RequestBody requestBodyFromGson(JsonElement json) {
+		return Http.requestBodyFromGson(json, options.useBinaryProtocol);
+	}
+
+	public static RequestBody requestBodyFromGson(JsonElement json, boolean useBinaryProtocol) {
+		if (!useBinaryProtocol) {
+			return new JsonRequestBody(json);
+		}
+
+		return new ByteArrayRequestBody(Serialisation.gsonToMsgpack(json), "application/x-msgpack");
+	}
 
 	/**
 	 * Interface for an entity that performs type-specific processing on an http response

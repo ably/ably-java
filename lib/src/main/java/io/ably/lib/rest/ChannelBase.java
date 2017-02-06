@@ -26,7 +26,7 @@ import io.ably.lib.types.PresenceSerializer;
  * signify that there is a realtime connection or attachment
  * to that channel.
  */
-public class Channel {
+public abstract class ChannelBase {
 
 	/**
 	 * The Channel name
@@ -179,7 +179,7 @@ public class Channel {
 	 * @throws AblyException 
 	 ******************/
 	
-	Channel(AblyRest ably, String name, ChannelOptions options) throws AblyException {
+	ChannelBase(AblyRest ably, String name, ChannelOptions options) throws AblyException {
 		this.ably = ably;
 		this.name = name;
 		this.options = options;
