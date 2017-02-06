@@ -42,4 +42,13 @@ public class AblyRest extends AblyBase {
      */
     public void clearAndroidContext() { this.platform.clearAndroidContext(); }
 
+
+    public LocalDevice device(Context context) {
+        if (_device == null) {
+            _device = LocalDevice.load(context, this);
+        }
+        return _device;
+    }
+
+    private LocalDevice _device;
 }

@@ -43,7 +43,7 @@ public abstract class AblyBase {
 	public final Auth auth;
 	public final Channels channels;
 	public final Platform platform;
-
+	public final Push push;
 
 	/**
 	 * Instance the Ably library using a key only.
@@ -82,6 +82,7 @@ public abstract class AblyBase {
 		http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
 		channels = new Channels();
 		platform = new Platform(this);
+		push = new Push(this);
 	}
 
 	/**

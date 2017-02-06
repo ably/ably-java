@@ -28,7 +28,7 @@ import io.ably.lib.util.Crypto;
  * signify that there is a realtime connection or attachment
  * to that channel.
  */
-public class Channel {
+public class ChannelBase {
 
 	/**
 	 * The Channel name
@@ -209,7 +209,7 @@ public class Channel {
 	 * @throws AblyException 
 	 ******************/
 
-	Channel(AblyBase ably, String name, ChannelOptions options) throws AblyException {
+	ChannelBase(AblyBase ably, String name, ChannelOptions options) throws AblyException {
 		this.ably = ably;
 		this.name = name;
 		this.options = options;

@@ -55,6 +55,15 @@ public class Http {
         return new Request(execute);
     }
 
+    public <Result> Request<Result> failedRequest(final AblyException e) {
+        return new Request(new Execute<Result>() {
+            @Override
+            public void execute(HttpScheduler http, Callback<Result> callback) throws AblyException {
+                throw e;
+            }
+        });
+    }
+
     public interface Execute<Result> {
         public void execute(HttpScheduler http, Callback<Result> callback) throws AblyException;
     }
