@@ -61,6 +61,19 @@ public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
     }
 
     /**
+     * Async HTTP PATCH for Ably host, with fallbacks
+     * @param path
+     * @param headers
+     * @param params
+     * @param requestBody
+     * @param responseHandler
+     * @param callback
+     */
+    public <T> Future<T> patch(String path, Param[] headers, Param[] params, HttpCore.RequestBody requestBody, HttpCore.ResponseHandler<T> responseHandler, boolean requireAblyAuth, Callback<T> callback) {
+        return ablyHttpExecuteWithFallback(path, HttpConstants.Methods.PATCH, headers, params, requestBody, responseHandler, requireAblyAuth, callback);
+    }
+
+    /**
      * Async HTTP DEL for Ably host, with fallbacks
      * @param path
      * @param headers

@@ -11,11 +11,38 @@ public class Param {
 	public String value;
 
 	public static Param[] push(Param[] params, Param val) {
+		if (params == null) {
+			return new Param[] { val };
+		}
+
 		int len = params.length;
 		Param[] result = new Param[len + 1];
 		System.arraycopy(params, 0, result, 0, len);
 		result[len] = val;
 		return result;
+	}
+
+	public static Param[] push(Param[] params, String key, String value) {
+		return push(params, new Param(key, value));
+	}
+
+	public static Param[] set(Param[] params, Param val) {
+		if (params == null) {
+			return new Param[] { val };
+		}
+
+		for (int i = 0; i < params.length; i++) {
+			if (params[i].key.equals(val.key)) {
+				params[i] = val;
+				return params;
+			}
+		}
+
+		return push(params, val);
+	}
+
+	public static Param[] set(Param[] params, String key, String value) {
+		return set(params, new Param(key, value));
 	}
 
 	public static boolean containsKey(Param[] params, String key) {

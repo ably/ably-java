@@ -32,7 +32,7 @@ import io.ably.lib.util.Serialisation;
  * The top-level class to be instanced for the Ably REST library.
  *
  */
-public class AblyRest {
+public abstract class AblyRestBase {
 	
 	public final ClientOptions options;
 	final String clientId;
@@ -41,6 +41,7 @@ public class AblyRest {
 
 	public final Auth auth;
 	public final Channels channels;
+	public final Push push;
 
 
 	/**
@@ -51,7 +52,7 @@ public class AblyRest {
 	 * @param key; String key (obtained from application dashboard)
 	 * @throws AblyException
 	 */
-	public AblyRest(String key) throws AblyException {
+	public AblyRestBase(String key) throws AblyException {
 		this(new ClientOptions(key));
 	}
 
@@ -60,7 +61,7 @@ public class AblyRest {
 	 * @param options: see {@link io.ably.lib.types.ClientOptions} for options
 	 * @throws AblyException
 	 */
-	public AblyRest(ClientOptions options) throws AblyException {
+	public AblyRestBase(ClientOptions options) throws AblyException {
 		/* normalise options */
 		if(options == null) {
 			String msg = "no options provided";
@@ -75,10 +76,11 @@ public class AblyRest {
 		Log.i(getClass().getName(), "started");
 		this.clientId = options.clientId;
 
-		auth = new Auth(this, options);
+		auth = new Auth((AblyRest) this, options);
 		httpCore = new HttpCore(options, auth);
 		http = new Http(new AsyncHttpScheduler(httpCore), new SyncHttpScheduler(httpCore));
 		channels = new Channels();
+		push = new Push((AblyRest) this);
 	}
 
 	/**
@@ -101,7 +103,7 @@ public class AblyRest {
 				return channel;
 			}
 
-			channel = new Channel(AblyRest.this, channelName, channelOptions);
+			channel = new Channel((AblyRest)AblyRestBase.this, channelName, channelOptions);
 			super.put(channelName, channel);
 			return channel;
 		}

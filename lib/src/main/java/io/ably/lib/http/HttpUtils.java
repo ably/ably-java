@@ -1,5 +1,7 @@
 package io.ably.lib.http;
 
+import com.google.gson.JsonElement;
+
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -229,4 +231,12 @@ public class HttpUtils {
         private final String jsonText;
         private byte[] bytes;
     }
+
+    public static HttpCore.RequestBody requestBodyFromGson(JsonElement json, boolean useBinaryProtocol) {
+		if (!useBinaryProtocol) {
+			return new JsonRequestBody(json);
+		}
+
+		return new ByteArrayRequestBody(Serialisation.gsonToMsgpack(json), "application/x-msgpack");
+	}
 }

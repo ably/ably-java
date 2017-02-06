@@ -24,7 +24,7 @@ import java.math.BigInteger;
 import java.util.Map;
 import java.util.Set;
 
-import io.ably.lib.http.Http;
+import io.ably.lib.http.HttpCore;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
@@ -78,7 +78,7 @@ public class Serialisation {
 		public T fromJsonElement(JsonElement e);
 	}
 
-	public static class HttpResponseHandler<T> implements Http.ResponseHandler<T> {
+	public static class HttpResponseHandler<T> implements HttpCore.ResponseHandler<T> {
 		private final Class<T> klass;
 		private final FromJsonElement<T> converter;
 
@@ -96,7 +96,7 @@ public class Serialisation {
 		}
 
 		@Override
-		public T handleResponse(Http.Response response, ErrorInfo error) throws AblyException {
+		public T handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
 			if (error != null) {
 				throw AblyException.fromErrorInfo(error);
 			}
@@ -120,7 +120,7 @@ public class Serialisation {
 
 	public static HttpResponseHandler<JsonElement> httpResponseHandler = new HttpResponseHandler<JsonElement>();
 
-	public static class HttpBodyHandler<T> implements Http.BodyHandler<T> {
+	public static class HttpBodyHandler<T> implements HttpCore.BodyHandler<T> {
 		private final Class<T[]> klass;
 		private final FromJsonElement<T> converter;
 
