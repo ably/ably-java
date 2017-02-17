@@ -8,6 +8,7 @@ import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.Param;
+import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
@@ -77,82 +78,19 @@ public class Push {
         getStateMachine(context).handleEvent(ActivationStateMachine.CalledDeactivate.useCustomDeregisterer(useCustomDeregisterer, prefs));
     }
 
-    public void onNewRegistrationToken(Context context, RegistrationTokenType type, String token) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        RegistrationToken persisted = RegistrationToken.getPersisted(prefs);
-        if (persisted != null) {
-            if (persisted.type != type) {
-                Log.e(TAG, "trying to register device with " + type + ", but it was already registered with " + persisted.type);
+    public void onNewRegistrationToken(Context context, RegistrationToken.Type type, String token) {
+        RegistrationToken previous = rest.device(context).getRegistrationToken();
+        if (previous != null) {
+            if (previous.type != type) {
+                Log.e(TAG, "trying to register device with " + type + ", but it was already registered with " + previous.type);
                 return;
             }
-            if (persisted.token.equals(token)) {
+            if (previous.token.equals(token)) {
                 return;
             }
         }
-        getStateMachine(context).handleEvent(ActivationStateMachine.GotPushDeviceDetails.gotRegistrationToken(new RegistrationToken(type, token), prefs));
-    }
-
-    protected static class RegistrationToken {
-        public RegistrationTokenType type;
-        public String token;
-
-        private RegistrationToken(RegistrationTokenType type, String token) {
-            this.type = type;
-            this.token = token;
-        }
-
-        public static RegistrationToken getPersisted(SharedPreferences prefs) {
-            RegistrationTokenType type = RegistrationTokenType.fromInt(
-                    prefs.getInt(SharedPrefKeys.TOKEN_TYPE, -1));
-            if (type == null) {
-                return null;
-            }
-            String token = prefs.getString(SharedPrefKeys.TOKEN, null);
-            if (token == null) {
-                return null;
-            }
-            return new RegistrationToken(type, token);
-        }
-
-        public void persist(SharedPreferences prefs) {
-            prefs.edit()
-                .putInt(SharedPrefKeys.TOKEN_TYPE, this.type.toInt())
-                .putString(SharedPrefKeys.TOKEN, this.token)
-                .apply();
-        }
-
-        private class SharedPrefKeys {
-            private static final String TOKEN_TYPE = "ABLY_REGISTRATION_TOKEN_TYPE";
-            private static final String TOKEN = "ABLY_REGISTRATION_TOKEN";
-        }
-    }
-
-    public enum RegistrationTokenType {
-        GCM("gcm"),
-        FCM("fcm");
-
-        public String code;
-        RegistrationTokenType(String code) {
-            this.code = code;
-        }
-
-        public int toInt() {
-            RegistrationTokenType[] values = RegistrationTokenType.values();
-            for (int i = 0; i < values.length; i++) {
-                if (this == values[i]) {
-                    return i;
-                }
-            }
-            return -1;
-        }
-
-        public static RegistrationTokenType fromInt(int i) {
-            RegistrationTokenType[] values = RegistrationTokenType.values();
-            if (i < 0 || i >= values.length) {
-                return null;
-            }
-            return values[i];
-        }
+        rest.device(context).setAndPersistRegistrationToken(context, new RegistrationToken(type, token));
+        getStateMachine(context).handleEvent(new ActivationStateMachine.GotPushDeviceDetails());
     }
 
     /**
@@ -199,23 +137,7 @@ public class Push {
             }
         }
 
-        static class GotPushDeviceDetails extends Event {
-            private RegistrationToken token = null;
-
-            static GotPushDeviceDetails gotRegistrationToken(RegistrationToken token, SharedPreferences prefs) {
-                token.persist(prefs);
-                GotPushDeviceDetails e = new GotPushDeviceDetails();
-                e.token = token;
-                return e;
-            }
-
-            RegistrationToken getRegistrationToken(SharedPreferences prefs) {
-                if (this.token != null) {
-                    return this.token;
-                }
-                return RegistrationToken.getPersisted(prefs);
-            }
-        }
+        static class GotPushDeviceDetails extends Event {}
 
         static class GotUpdateToken extends Event {
             final String updateToken;
@@ -252,18 +174,15 @@ public class Push {
                     machine.callDeactivatedCallback(null);
                     return this;
                 } else if (event instanceof CalledActivate) {
-                    DeviceDetails device = rest.device != null ? rest.device : DeviceDetails.loadFromDevice(machine.context, rest);
+                    LocalDevice device = rest.device(machine.context);
 
-                     if (device.updateToken != null) {
+                    if (device.updateToken != null) {
                         // Already registered.
                         return new WaitingForNewPushDeviceDetails(machine);
                     }
 
-                    RegistrationToken token = RegistrationToken.getPersisted(machine.prefs);
-                    if (token != null) {
-                        GotPushDeviceDetails e = new GotPushDeviceDetails();
-                        e.token = token;
-                        machine.handleEvent(e);
+                    if (device.getRegistrationToken() != null) {
+                        machine.handleEvent(new GotPushDeviceDetails());
                     }
 
                     return new WaitingForPushDeviceDetails(machine);
@@ -281,10 +200,7 @@ public class Push {
                     machine.callDeactivatedCallback(null);
                     return new NotActivated(machine);
                 } else if (event instanceof GotPushDeviceDetails) {
-                    final DeviceDetails device = rest.device != null ? rest.device : DeviceDetails.loadFromDevice(machine.context, rest);
-                    RegistrationToken token = ((GotPushDeviceDetails) event).getRegistrationToken(machine.prefs);
-                    device.setRegistrationToken(token);
-                    rest.device = device;
+                    final DeviceDetails device = rest.device(machine.context);
 
                     if (machine.prefs.getBoolean(PersistKeys.USE_CUSTOM_REGISTERER, false)) {
                         machine.useCustomRegisterer(device, true);
@@ -316,9 +232,8 @@ public class Push {
                 if (event instanceof CalledActivate) {
                     return this;
                 } else if (event instanceof GotUpdateToken) {
-                    DeviceDetails device = rest.device != null ? rest.device : DeviceDetails.loadFromDevice(machine.context, rest);
+                    LocalDevice device = rest.device(machine.context);
                     device.setAndPersistUpdateToken(machine.context, ((GotUpdateToken) event).updateToken);
-                    rest.device = device;
                     machine.callActivatedCallback(null);
                     return new WaitingForNewPushDeviceDetails(machine);
                 } else if (event instanceof GettingUpdateTokenFailed) {
@@ -336,14 +251,11 @@ public class Push {
                     machine.callActivatedCallback(null);
                     return this;
                 } else if (event instanceof CalledDeactivate) {
-                    DeviceDetails device = rest.device != null ? rest.device : DeviceDetails.loadFromDevice(machine.context, rest);
+                    LocalDevice device = rest.device(machine.context);
                     deregister(machine, device);
                     return new WaitingForDeregistration(machine, this);
                 } else if (event instanceof GotPushDeviceDetails) {
-                    DeviceDetails device = rest.device != null ? rest.device : DeviceDetails.loadFromDevice(machine.context, rest);
-                    RegistrationToken token = ((GotPushDeviceDetails) event).getRegistrationToken(machine.prefs);
-                    device.setRegistrationToken(token);
-                    rest.device = device;
+                    DeviceDetails device = rest.device(machine.context);
 
                     updateRegistration(machine, device);
 
@@ -375,16 +287,10 @@ public class Push {
             public AfterRegistrationUpdateFailed(ActivationStateMachine machine) { super(machine); }
             State transition(Event event) {
                 if (event instanceof CalledActivate || event instanceof GotPushDeviceDetails) {
-                    DeviceDetails device = rest.device != null ? rest.device : DeviceDetails.loadFromDevice(machine.context, rest);
-                    RegistrationToken token = ((GotPushDeviceDetails) event).getRegistrationToken(machine.prefs);
-                    device.setRegistrationToken(token);
-                    rest.device = device;
-
-                    updateRegistration(machine, device);
+                    updateRegistration(machine, rest.device(machine.context));
                     return new WaitingForRegistrationUpdate(machine);
                 } else if (event instanceof CalledDeactivate) {
-                    DeviceDetails device = rest.device != null ? rest.device : DeviceDetails.loadFromDevice(machine.context, rest);
-                    deregister(machine, device);
+                    deregister(machine, rest.device(machine.context));
                     return new WaitingForDeregistration(machine, this);
                 }
                 return null;
@@ -403,7 +309,7 @@ public class Push {
                 if (event instanceof CalledDeactivate) {
                     return this;
                 } else if (event instanceof Deregistered) {
-                    DeviceDetails device = rest.device != null ? rest.device : DeviceDetails.loadFromDevice(machine.context, rest);
+                    LocalDevice device = rest.device(machine.context);
                     device.setAndPersistUpdateToken(machine.context, null);
                     machine.callDeactivatedCallback(null);
                     return new NotActivated(machine);

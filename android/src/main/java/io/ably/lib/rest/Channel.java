@@ -52,7 +52,7 @@ public class Channel extends ChannelBase {
         }
 
         private Http.RequestBody subscribeDeviceBody(Context context) throws AblyException {
-            DeviceDetails device = DeviceDetails.loadFromDevice(context, rest);
+            DeviceDetails device = rest.device(context);
             if (device == null || device.updateToken == null) {
                 // Alternatively, we could store a queue of pending subscriptions in the
                 // device storage. But then, in order to know if this subscription operation

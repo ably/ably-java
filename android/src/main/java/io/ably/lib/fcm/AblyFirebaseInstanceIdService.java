@@ -5,7 +5,7 @@ import android.util.Log;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.FirebaseInstanceIdService;
 import io.ably.lib.rest.AblyRest;
-import io.ably.lib.rest.Push;
+import io.ably.lib.types.RegistrationToken;
 
 /**
  * Created by tcard on 8/2/17.
@@ -17,6 +17,6 @@ public class AblyFirebaseInstanceIdService extends FirebaseInstanceIdService {
     public void onTokenRefresh(AblyRest rest) {
         String token = FirebaseInstanceId.getInstance().getToken();
         Log.i(TAG, "Firebase Refreshed token: " + token);
-        rest.push.onNewRegistrationToken(this, Push.RegistrationTokenType.FCM, token);
+        rest.push.onNewRegistrationToken(this, RegistrationToken.Type.FCM, token);
     }
 }

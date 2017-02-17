@@ -8,7 +8,7 @@ import io.ably.lib.types.ErrorInfo;
  * Created by tcard on 3/2/17.
  */
 
-public abstract class DeviceDetailsBase {
+public abstract class DeviceDetails {
     public String id;
     public String platform;
     public String formFactor;

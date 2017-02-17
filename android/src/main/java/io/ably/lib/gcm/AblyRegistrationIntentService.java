@@ -7,7 +7,7 @@ import com.google.android.gms.gcm.GoogleCloudMessaging;
 import com.google.android.gms.iid.InstanceID;
 
 import io.ably.lib.rest.AblyRest;
-import io.ably.lib.rest.Push;
+import io.ably.lib.types.RegistrationToken;
 
 public abstract class AblyRegistrationIntentService extends IntentService {
     protected static final String TAG = "AblyRegistrationIntent";
@@ -22,7 +22,7 @@ public abstract class AblyRegistrationIntentService extends IntentService {
             String token = instanceID.getToken(senderId,
                     GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
             Log.i(TAG, "GCM Registration Token: " + token);
-            rest.push.onNewRegistrationToken(this, Push.RegistrationTokenType.GCM, token);
+            rest.push.onNewRegistrationToken(this, RegistrationToken.Type.GCM, token);
         } catch (Exception e) {
             Log.d(TAG, "Failed to complete token refresh", e);
             // TODO: Retry with exponential backoff.
