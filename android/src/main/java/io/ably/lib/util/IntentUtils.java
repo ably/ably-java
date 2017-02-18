@@ -3,7 +3,7 @@ package io.ably.lib.util;
 import android.content.Intent;
 import io.ably.lib.types.ErrorInfo;
 
-public class IntentUtil {
+public class IntentUtils {
     public static void addErrorInfo(Intent intent, ErrorInfo error) {
         intent.putExtra("hasError", error != null);
         if (error != null) {

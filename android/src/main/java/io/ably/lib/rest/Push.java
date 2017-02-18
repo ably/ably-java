@@ -12,7 +12,7 @@ import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
-import io.ably.lib.util.IntentUtil;
+import io.ably.lib.util.IntentUtils;
 import android.content.SharedPreferences;
 import android.content.Context;
 import android.content.Intent;
@@ -352,7 +352,7 @@ public class Push {
 
         private void sendErrorIntent(String name, ErrorInfo error) {
             Intent intent = new Intent();
-            IntentUtil.addErrorInfo(intent, error);
+            IntentUtils.addErrorInfo(intent, error);
             sendIntent(name, intent);
         }
 
@@ -360,7 +360,7 @@ public class Push {
             registerOnceReceiver("PUSH_UPDATE_TOKEN", new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
-                    ErrorInfo error = IntentUtil.getErrorInfo(intent);
+                    ErrorInfo error = IntentUtils.getErrorInfo(intent);
                     if (error == null) {
                         Log.i(TAG, "custom registration for " + device.id);
                         if (isNew) {
@@ -388,7 +388,7 @@ public class Push {
             registerOnceReceiver("PUSH_DEVICE_DEREGISTERED", new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
-                    ErrorInfo error = IntentUtil.getErrorInfo(intent);
+                    ErrorInfo error = IntentUtils.getErrorInfo(intent);
                     if (error == null) {
                         Log.i(TAG, "custom deregistration for " + device.id);
                         handleEvent(new Deregistered());
