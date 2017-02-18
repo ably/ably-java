@@ -1,8 +1,12 @@
 package io.ably.lib.rest;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonElement;
 
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.http.Http;
+import io.ably.lib.util.Serialisation;
 
 /**
  * Created by tcard on 3/2/17.
@@ -63,4 +67,19 @@ public abstract class DeviceDetails {
         push.add("metadata", this.push.metadata);
         return json;
     }
+
+    public static DeviceDetails fromJsonObject(JsonObject o) {
+        return Serialisation.gson.fromJson(o, DeviceDetails.class);
+    }
+
+    private static Serialisation.FromJsonElement<DeviceDetails> fromJsonElement = new Serialisation.FromJsonElement<DeviceDetails>() {
+        @Override
+        public DeviceDetails fromJsonElement(JsonElement e) {
+            return fromJsonObject((JsonObject) e);
+        }
+    };
+
+    protected static Http.ResponseHandler<DeviceDetails> httpResponseHandler = new Serialisation.HttpResponseHandler<DeviceDetails>(DeviceDetails.class, fromJsonElement);
+
+    protected static Http.BodyHandler<DeviceDetails> httpBodyHandler = new Serialisation.HttpBodyHandler<DeviceDetails>(DeviceDetails[].class, fromJsonElement);
 }
