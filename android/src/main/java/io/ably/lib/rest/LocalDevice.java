@@ -7,6 +7,8 @@ import android.content.res.Configuration;
 import android.preference.PreferenceManager;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.RegistrationToken;
+import io.ably.lib.util.Serialisation;
+import io.ably.lib.http.HttpUtils;
 import io.azam.ulidj.ULID;
 import android.util.Log;
 
@@ -89,11 +91,13 @@ class LocalDevice extends DeviceDetails {
         prefs.edit().putString(SharedPrefKeys.UPDATE_TOKEN, token).apply();
     }
 
-    public void resetUpdateToken() throws AblyException {
+    public void resetUpdateToken(Context context) throws AblyException {
         if (this.id == null || this.updateToken == null) {
             return;
         }
-        // TODO
+
+        JsonObject response = rest.http.post("/push/deviceDetails/" + id + "/resetUpdateToken", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null, new Serialisation.HttpResponseHandler<JsonObject>());
+        setAndPersistUpdateToken(context, response.getAsJsonPrimitive("updateToken").getAsString());
     }
 
     private static boolean isTablet(Context context) {
