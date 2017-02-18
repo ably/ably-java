@@ -182,7 +182,7 @@ public class Serialisation {
 		}
 	}
 
-	private static void gsonToMsgpack(JsonElement json, MessagePacker packer) {
+	public static void gsonToMsgpack(JsonElement json, MessagePacker packer) {
 		if (json.isJsonArray()) {
 			gsonToMsgpack((JsonArray)json, packer);
 		} else if (json.isJsonObject()) {
@@ -249,7 +249,7 @@ public class Serialisation {
 		} catch(IOException e) {}
 	}
 
-	private static JsonElement msgpackToGson(Value value) {
+	public static JsonElement msgpackToGson(Value value) {
 		switch (value.getValueType()) {
 			case NIL:
 				return JsonNull.INSTANCE;

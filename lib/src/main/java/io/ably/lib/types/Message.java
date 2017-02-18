@@ -13,6 +13,7 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
 import io.ably.lib.util.Log;
+import io.ably.lib.util.Serialisation;
 
 /**
  * A class representing an individual message to be sent or received
@@ -26,6 +27,11 @@ public class Message extends BaseMessage {
 	public String name;
 
 	/**
+	 * Extras, if available
+	 */
+	public JsonObject extras;
+
+	/**
 	 * Default constructor
 	 */
 	public Message() {}
@@ -36,18 +42,30 @@ public class Message extends BaseMessage {
 	 * @param data
 	 */
 	public Message(String name, Object data) {
-		this(name, data, null);
+		this(name, data, null, null);
+	}
+
+
+	public Message(String name, Object data, String clientId) {
+		this(name, data, clientId, null);
+	}
+
+	public Message(String name, Object data, JsonObject extras) {
+		this(name, data, null, extras);
 	}
 
 	/**
 	 * Generic constructor
 	 * @param name
 	 * @param data
+	 * @param clientId
+	 * @param extras
 	 */
-	public Message(String name, Object data, String clientId) {
+	public Message(String name, Object data, String clientId, JsonObject extras) {
 		this.name = name;
 		this.clientId = clientId;
 		this.data = data;
+		this.extras = extras;
 	}
 
 	/**
@@ -66,11 +84,16 @@ public class Message extends BaseMessage {
 	void writeMsgpack(MessagePacker packer) throws IOException {
 		int fieldCount = super.countFields();
 		if(name != null) ++fieldCount;
+		if(extras != null) ++fieldCount;
 		packer.packMapHeader(fieldCount);
 		super.writeFields(packer);
 		if(name != null) {
 			packer.packString("name");
 			packer.packString(name);
+		}
+		if(extras != null) {
+			packer.packString("extras");
+			Serialisation.gsonToMsgpack(extras, packer);
 		}
 	}
 
@@ -84,6 +107,8 @@ public class Message extends BaseMessage {
 			if(super.readField(unpacker, fieldName, fieldFormat)) continue;
 			if(fieldName == "name") {
 				name = unpacker.unpackString();
+			} else if (fieldName == "extras") {
+				extras = (JsonObject)Serialisation.msgpackToGson(unpacker.unpackValue());
 			} else {
 				Log.v(TAG, "Unexpected field: " + fieldName);
 				unpacker.skipValue();
@@ -101,6 +126,7 @@ public class Message extends BaseMessage {
 		public JsonElement serialize(Message message, Type typeOfMessage, JsonSerializationContext ctx) {
 			JsonObject json = (JsonObject)super.serialize(message, typeOfMessage, ctx);
 			if(message.name != null) json.addProperty("name", message.name);
+			if(message.extras != null) json.add("extras", message.extras);
 			return json;
 		}		
 	}
