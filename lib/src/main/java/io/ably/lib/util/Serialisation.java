@@ -74,25 +74,109 @@ public class Serialisation {
 		}
 	}
 
-	public static class HttpResponseHandler<T extends JsonElement> implements Http.ResponseHandler<T> {
+	public interface FromJsonElement<T> {
+		public T fromJsonElement(JsonElement e);
+	}
+
+	public static class HttpResponseHandler<T> implements Http.ResponseHandler<T> {
+		private final Class<T> klass;
+		private final FromJsonElement<T> converter;
+
+		public HttpResponseHandler(Class<T> klass, FromJsonElement<T> converter) {
+			this.klass = klass;
+			this.converter = converter;
+		}
+
+		/**
+		 * If the target type extends JsonElement, we don't need to convert JsonElements to
+		 * it. We can just force-cast.
+		 */
+		public <U extends JsonElement> HttpResponseHandler() {
+			this(null, null);
+		}
+
 		@Override
 		public T handleResponse(Http.Response response, ErrorInfo error) throws AblyException {
 			if (error != null) {
 				throw AblyException.fromErrorInfo(error);
 			}
 			if ("application/json".equals(response.contentType)) {
-				return (T)jsonBytesToGson(response.body);
+				if (klass != null) {
+					return jsonBytesToGson(response.body, klass);
+				}
+				 // only if target type extends JsonElement
+				return (T) jsonBytesToGson(response.body);
 			} else if("application/x-msgpack".equals(response.contentType)) {
-				return (T)msgpackToGson(response.body);
+				if (converter != null) {
+					return converter.fromJsonElement(msgpackToGson(response.body));
+				}
+				 // only if target type extends JsonElement
+				return (T) msgpackToGson(response.body);
 			} else {
 				throw AblyException.fromThrowable(new Exception("unknown content type " + response.contentType));
 			}
 		}
 	}
 
+	public static HttpResponseHandler<JsonElement> httpResponseHandler = new HttpResponseHandler<JsonElement>();
+
+	public static class HttpBodyHandler<T> implements Http.BodyHandler<T> {
+		private final Class<T[]> klass;
+		private final FromJsonElement<T> converter;
+
+		public HttpBodyHandler(Class<T[]> klass, FromJsonElement<T> converter) {
+			this.klass = klass;
+			this.converter = converter;
+		}
+
+		/**
+		 * If the target type extends JsonElement, we don't need to convert JsonElements to
+		 * it. We can just force-cast.
+		 */
+		public <U extends JsonElement> HttpBodyHandler() {
+			this(null, null);
+		}
+
+		@Override
+		public T[] handleResponseBody(String contentType, byte[] body) throws AblyException {
+			JsonArray jsonArray;
+			if ("application/json".equals(contentType)) {
+				if (klass != null) {
+					return jsonBytesToGson(body, klass);
+				}
+				 // only if target type extends JsonElement
+				jsonArray = jsonBytesToGson(body, JsonArray.class);
+			} else if("application/x-msgpack".equals(contentType)) {
+				jsonArray = (JsonArray)msgpackToGson(body);
+			} else {
+				throw AblyException.fromThrowable(new Exception("unknown content type " + contentType));
+			}
+
+			Object[] array = new Object[jsonArray.size()];
+			int i = 0;
+			for (JsonElement elem : jsonArray) {
+				if (converter != null) {
+					array[i] = converter.fromJsonElement(elem);
+				} else {
+					 // only if target type extends JsonElement
+					array[i] = (T) elem;
+				}
+				i++;
+			}
+
+			return (T[])array;
+		}
+	}
+
+	public static HttpBodyHandler<JsonElement> httpBodyHandler = new HttpBodyHandler<JsonElement>();
+
 	public static JsonElement jsonBytesToGson(byte[] bytes) {
+		return jsonBytesToGson(bytes, JsonElement.class);
+	}
+
+	public static <T> T jsonBytesToGson(byte[] bytes, Class<T> klass) {
 		try {
-			return gson.fromJson(new String(bytes, "UTF-8"), JsonElement.class);
+			return gson.fromJson(new String(bytes, "UTF-8"), klass);
 		} catch (UnsupportedEncodingException e) {
 			return null;
 		}
