@@ -51,28 +51,44 @@ public class Channel extends ChannelBase {
             }
         }
 
-        private Http.RequestBody subscribeDeviceBody(Context context) throws AblyException {
-            DeviceDetails device = rest.device(context);
-            if (device == null || device.updateToken == null) {
-                // Alternatively, we could store a queue of pending subscriptions in the
-                // device storage. But then, in order to know if this subscription operation
-                // succeeded, you would have to add a BroadcastReceiver in AndroidManifest.xml.
-                // Arguably that encourages just ignoring any errors, and forcing you to listen
-                // to the broadcast after push.activate has finished before subscribing is
-                // more robust.
-                throw AblyException.fromThrowable(new Exception("cannot subscribe device before AblyRest.push.activate has finished"));
+        public void unsubscribeDevice(Context context) throws AblyException {
+            DeviceDetails device = getDevice(context);
+            rest.http.del("/push/channelSubscriptions?channel=" + channel.name + "&deviceId=" + device.id, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null);
+        }
+
+        public void unsubscribeDeviceAsync(Context context, CompletionListener listener) throws AblyException {
+            try {
+                DeviceDetails device = getDevice(context);
+                rest.asyncHttp.del("/push/channelSubscriptions?channel=" + channel.name + "&deviceId=" + device.id, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null, new CompletionListener.ToCallback(listener));
+            } catch (AblyException e) {
+                listener.onError(e.errorInfo);
             }
+        }
+
+        public void unsubscribeClient() throws AblyException {
+            String clientId = getClientId();
+            rest.http.del("/push/channelSubscriptions?channel=" + channel.name + "&clientId=" + clientId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null);
+        }
+
+        public void unsubscribeClientAsync(CompletionListener listener) throws AblyException {
+            try {
+                String clientId = getClientId();
+                rest.asyncHttp.del("/push/channelSubscriptions?channel=" + channel.name + "&clientId=" + clientId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null, new CompletionListener.ToCallback(listener));
+            } catch (AblyException e) {
+                listener.onError(e.errorInfo);
+            }
+        }
+
+        private Http.RequestBody subscribeDeviceBody(Context context) throws AblyException {
+            DeviceDetails device = getDevice(context);
             JsonObject bodyJson = new JsonObject();
             bodyJson.addProperty("deviceId", device.id);
             return subscriptionRequestBody(bodyJson);
         }
 
         private Http.RequestBody subscribeClientBody() throws AblyException {
-            if (rest.auth.clientId == null) {
-                throw AblyException.fromThrowable(new Exception("cannot subscribe from REST client with null client ID"));
-            }
             JsonObject bodyJson = new JsonObject();
-            bodyJson.addProperty("clientId", rest.auth.clientId);
+            bodyJson.addProperty("clientId", getClientId());
             return subscriptionRequestBody(bodyJson);
         }
 
@@ -87,6 +103,28 @@ public class Channel extends ChannelBase {
 
         private void postSubscriptionAsync(Http.RequestBody body, final CompletionListener listener) throws AblyException {
             rest.asyncHttp.post("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, null, new CompletionListener.ToCallback(listener));
+        }
+
+        private DeviceDetails getDevice(Context context) throws AblyException {
+            DeviceDetails device = rest.device(context);
+            if (device == null || device.updateToken == null) {
+                // Alternatively, we could store a queue of pending subscriptions in the
+                // device storage. But then, in order to know if this subscription operation
+                // succeeded, you would have to add a BroadcastReceiver in AndroidManifest.xml.
+                // Arguably that encourages just ignoring any errors, and forcing you to listen
+                // to the broadcast after push.activate has finished before subscribing is
+                // more robust.
+                throw AblyException.fromThrowable(new Exception("cannot subscribe device before AblyRest.push.activate has finished"));
+            }
+            return device;
+        }
+
+        private String getClientId() throws AblyException {
+            String clientId = rest.auth.clientId;
+            if (clientId == null) {
+                throw AblyException.fromThrowable(new Exception("cannot subscribe from REST client with null client ID"));
+            }
+            return clientId;
         }
     }
 }
