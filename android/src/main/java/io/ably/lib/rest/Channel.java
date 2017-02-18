@@ -86,16 +86,7 @@ public class Channel extends ChannelBase {
         }
 
         private void postSubscriptionAsync(Http.RequestBody body, final CompletionListener listener) throws AblyException {
-            rest.asyncHttp.post("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, null, new Callback<Void>() {
-                @Override
-                public void onSuccess(Void v) {
-                    listener.onSuccess();
-                }
-                @Override
-                public void onError(ErrorInfo reason) {
-                    listener.onError(reason);
-                }
-            });
+            rest.asyncHttp.post("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, null, new CompletionListener.ToCallback(listener));
         }
     }
 }

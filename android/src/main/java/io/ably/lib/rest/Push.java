@@ -39,12 +39,7 @@ public class Push {
     }
 
     public void publishAsync(Param[] recipient, JsonObject payload, final CompletionListener listener) {
-        rest.asyncHttp.post("/push/publish", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, publishBody(recipient, payload), null, new Callback<Void>() {
-            @Override
-            public void onSuccess(Void result) { listener.onSuccess(); }
-            @Override
-            public void onError(ErrorInfo reason) { listener.onError(reason); }
-        });
+        rest.asyncHttp.post("/push/publish", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, publishBody(recipient, payload), null, new CompletionListener.ToCallback(listener));
     }
 
     private Http.RequestBody publishBody(Param[] recipient, JsonObject payload) {
