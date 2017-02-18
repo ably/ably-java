@@ -41,6 +41,7 @@ public abstract class AblyRestBase {
 
 	public final Auth auth;
 	public final Channels channels;
+	public final Push push;
 
 	/**
 	 * Instance the Ably library using a key only.
@@ -78,6 +79,7 @@ public abstract class AblyRestBase {
 		http = new Http(options, auth);
 		asyncHttp = new AsyncHttp(http);
 		channels = new Channels();
+		push = new Push((AblyRest)this);
 	}
 
 	/**
