@@ -319,39 +319,55 @@ long serviceTime = ably.time();
 
 The library consists of JRE-specific library (in `java/`) and an Android-specific library (in `android/`). The libraries are largely common-sourced; the `lib/` directory contains the common parts.
 
+A gradle wrapper is included so these tasks can run without any prior installation of gradle. The Linux/OSX form of the commands, given below, is:
+
+    ./gradlew <task name>
+
+but on Windows there is a batch file:
+
+    gradlew.bat <task name>
+
 The JRE-specific library JAR is built with:
 
-    gradle java:jar
+    ./gradlew java:jar
 
 There is also a task to build a fat JAR containing the dependencies:
 
-    gradle java:fullJar
+    ./gradlew java:fullJar
 
 The Android-specific library AAR is built with:
 
-    gradle android:assemble
+    ./gradlew android:assemble
 
 (The `ANDROID_HOME` environment variable must be set appropriately.)
 
 ## Tests
 
+A gradle wrapper is included so these tasks can run without any prior installation of gradle. The Linux/OSX form of the commands, given below, is:
+
+    ./gradlew <task name>
+
+but on Windows there is a batch file:
+
+    gradlew.bat <task name>
+
 Tests are based on JUnit, and there are separate suites for the REST and Realtime libraries, with gradle tasks
 for the JRE-specific library:
 
-    gradle java:testRestSuite
+    ./gradlew java:testRestSuite
 
-    gradle java:testRealtimeSuite
+    ./gradlew java:testRealtimeSuite
 
 To run tests against a specific host, specify in the environment:
 
-    env ABLY_ENV=staging gradle testRealtimeSuite
+    env ABLY_ENV=staging ./gradlew testRealtimeSuite
 
 Tests will run against sandbox by default.
 
 Tests can be run on the Android-specific library. An Android device must be connected,
 either a real device or the Android emulator.
 
-    gradle android:connectedAndroidTest
+    ./gradlew android:connectedAndroidTest
 
 ## Release notes
 
@@ -368,7 +384,7 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 ### Publishing to JCenter (Maven)
 
 * Go to the home page for the package; eg https://bintray.com/ably-io/ably/ably-java. Select [New version](https://bintray.com/ably-io/ably/ably-java/new/version), enter the new version such as "0.8.10" in name and save
-* Run `gradle java:assembleRelease` locally to generate the files
+* Run `./gradlew java:assembleRelease` locally to generate the files
 * Open local relative folder such as `/lib/build/release/0.8.10/`
 * Then go to the new version in JFrog Bintray; eg https://bintray.com/ably-io/ably/ably-java/0.8.10, then click on the link to upload via the UI in the "Upload files" section
 * Type in `io/ably/ably-java/0.8.10` into "Target Repository Path" ensuring the correct version is included. The drag in the files in `java/build/release/0.8.10/`
@@ -392,7 +408,7 @@ To see what has changed in recent versions of Bundler, see the [CHANGELOG](CHANG
 1. Fork it
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Ensure you have added suitable tests and the test suite is passing(`gradle java:testRestSuite java:testRealtimeSuite android:connectedAndroidTest`)
+4. Ensure you have added suitable tests and the test suite is passing(`./gradlew java:testRestSuite java:testRealtimeSuite android:connectedAndroidTest`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create a new Pull Request
 
