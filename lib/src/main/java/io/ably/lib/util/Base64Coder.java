@@ -45,7 +45,10 @@ static {
 private static byte[]    map2 = new byte[128];
 static {
  for (int i=0; i<map2.length; i++) map2[i] = -1;
- for (int i=0; i<64; i++) map2[map1[i]] = (byte)i; }
+ for (int i=0; i<64; i++) map2[map1[i]] = (byte)i;
+ /* URL safe Base 64 decoding */
+ map2['-'] = map2['+']; map2['_'] = map2['/'];
+}
 
 /**
 * Encodes a string into Base64 format.

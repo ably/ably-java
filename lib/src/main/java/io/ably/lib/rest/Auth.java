@@ -1,5 +1,7 @@
 package io.ably.lib.rest;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
@@ -64,6 +66,13 @@ public class Auth {
 		 * a key
 		 */
 		public String authUrl;
+
+		/**
+		 * TO3j7: authMethod – The HTTP verb to be used when a request
+		 * is made by the library to the authUrl. Defaults to GET,
+		 * supports GET and POST
+		 */
+		public String authMethod;
 
 		/**
 		 * Full Ably key string as obtained from dashboard.
@@ -140,6 +149,7 @@ public class Auth {
 			AuthOptions result = new AuthOptions();
 			result.key = this.key;
 			result.authUrl = this.authUrl;
+			result.authMethod = this.authMethod;
 			result.authParams = this.authParams;
 			result.authHeaders = this.authHeaders;
 			result.token = this.token;
@@ -157,6 +167,7 @@ public class Auth {
 			AuthOptions result = new AuthOptions();
 			result.key = this.key;
 			result.authUrl = this.authUrl;
+			result.authMethod = this.authMethod;
 			result.authParams = this.authParams;
 			result.authHeaders = this.authHeaders;
 			result.token = this.token;
@@ -577,7 +588,7 @@ public class Auth {
 			/* the auth request can return either a signed token request as a TokenParams, or a TokenDetails */
 			Object authUrlResponse = null;
 			try {
-				authUrlResponse = ably.http.getUri(tokenOptions.authUrl, tokenOptions.authHeaders, requestParams, new ResponseHandler<Object>() {
+				ResponseHandler<Object> responseHandler = new ResponseHandler<Object>() {
 					@Override
 					public Object handleResponse(Response response, ErrorInfo error) throws AblyException {
 						if(error != null) {
@@ -613,7 +624,12 @@ public class Auth {
 							throw AblyException.fromErrorInfo(new ErrorInfo("Unable to parse response from auth callback", 406, 40170));
 						}
 					}
-				});
+				};
+
+				if (Http.POST.equals(tokenOptions.authMethod))
+					authUrlResponse = ably.http.postUri(tokenOptions.authUrl, tokenOptions.authHeaders, requestParams, responseHandler);
+				else
+					authUrlResponse = ably.http.getUri(tokenOptions.authUrl, tokenOptions.authHeaders, requestParams, responseHandler);
 			} catch(AblyException e) {
 				throw AblyException.fromErrorInfo(e, new ErrorInfo("authUrl failed with an exception", 401, 80019));
 			}
@@ -957,26 +973,44 @@ public class Auth {
 		throw AblyException.fromErrorInfo(new ErrorInfo("Unable to set different clientId from that given in options", 401, 40101));
 	}
 
-	public void checkClientId(BaseMessage msg, boolean allowNullClientId) throws AblyException {
-		/* RTL6g3 */
+	/**
+	 * Verify that a message, possibly containing a clientId,
+	 * is compatible with Auth.clientId if it is set
+	 * @param msg
+	 * @param allowNullClientId: true if it is ok for there to be no resolved clientId
+	 * @param connected: true if connected; if false it is ok for the library to be unidentified
+	 * @return the resolved clientId
+	 * @throws AblyException
+	 */
+	public String checkClientId(BaseMessage msg, boolean allowNullClientId, boolean connected) throws AblyException {
+		/* Check that the message doesn't contain the disallowed wildcard clientId
+		 * RTL6g3 */
 		String msgClientId = msg.clientId;
-		if(msgClientId != null) {
-			if(msgClientId.equals(WILDCARD_CLIENTID)) {
-				throw AblyException.fromErrorInfo(new ErrorInfo("Invalid wildcard clientId specified in message", 400, 40000));
-			}
-
-			if(clientId == null) {
-				if(!allowNullClientId) {
-					throw AblyException.fromErrorInfo(new ErrorInfo("Incompatible clientId specified in message", 400, 40012));
-				}
-				/* RTL6g4: be lenient checking against a null clientId if we're not connected */
-				return;
-			}
-
-			if(!clientId.equals(msgClientId) && !clientId.equals(WILDCARD_CLIENTID)) {
-				throw AblyException.fromErrorInfo(new ErrorInfo("Incompatible clientId specified in message", 400, 40012));
-			}
+		if(WILDCARD_CLIENTID.equals(msgClientId)) {
+			throw AblyException.fromErrorInfo(new ErrorInfo("Invalid wildcard clientId specified in message", 400, 40000));
 		}
+
+		/* Check that any clientId given in the message is compatible with the library clientId */
+		boolean undeterminedClientId = (clientId == null && !connected);
+		if(msgClientId != null) {
+			if(msgClientId.equals(clientId) || WILDCARD_CLIENTID.equals(clientId) || undeterminedClientId) {
+				/* RTL6g4: be lenient checking against a null clientId if we're not connected */
+				return msgClientId;
+			}
+			throw AblyException.fromErrorInfo(new ErrorInfo("Incompatible clientId specified in message", 400, 40012));
+		}
+
+		if(clientId == null || clientId.equals(WILDCARD_CLIENTID)) {
+			if(allowNullClientId || undeterminedClientId) {
+				/* the message is sent with no clientId */
+				return null;
+			}
+			/* this case only applies to presence, when allowNullClientId=false */
+			throw AblyException.fromErrorInfo(new ErrorInfo("Invalid attempt to enter with no clientId", 400, 91000));
+		}
+
+		/* the message is sent with no explicit clientId, but implicitly has the library clientId */
+		return clientId;
 	}
 
 	/**
@@ -1007,7 +1041,7 @@ public class Auth {
 	 */
 	private static long nanoTimeDelta = System.currentTimeMillis() - System.nanoTime()/(1000*1000);
 
-	private static final String WILDCARD_CLIENTID = "*";
+	public static final String WILDCARD_CLIENTID = "*";
 	/**
 	 * For testing purposes we need method to clear cached timeDelta
 	 */
