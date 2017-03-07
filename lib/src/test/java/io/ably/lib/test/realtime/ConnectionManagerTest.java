@@ -44,6 +44,8 @@ public class ConnectionManagerTest extends ParameterizedTest {
 		 */
 		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.connected));
 		assertThat(connectionManager.getHost(), is(equalTo(opts.environment + "-realtime.ably.io")));
+
+		ably.close();
 	}
 
 	/**
@@ -73,6 +75,8 @@ public class ConnectionManagerTest extends ParameterizedTest {
 		 */
 		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.disconnected));
 		assertThat(connectionManager.getHost(), is(equalTo(opts.realtimeHost)));
+
+		ably.close();
 	}
 
 	/**
@@ -113,6 +117,8 @@ public class ConnectionManagerTest extends ParameterizedTest {
 		 */
 		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.disconnected));
 		assertThat(connectionManager.getHost(), is(equalTo(opts.realtimeHost)));
+
+		connectionManager.close();
 	}
 
 	/**
@@ -149,6 +155,8 @@ public class ConnectionManagerTest extends ParameterizedTest {
 		 */
 		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.disconnected));
 		assertThat(connectionManager.getHost(), is(not(equalTo(opts.realtimeHost))));
+
+		ably.close();
 	}
 
 	/**
@@ -199,6 +207,8 @@ public class ConnectionManagerTest extends ParameterizedTest {
 		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.failed));
 		System.out.println("got failed");
 		assertThat(connectionManager.getHost(), is(equalTo("realtime.ably.io")));
+
+		ably.close();
 	}
 
 	/**
@@ -223,6 +233,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 		System.out.println("waiting for disconnected");
 		new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.disconnected);
 		System.out.println("got disconnected");
+		ably.close();
 
 		/* Verify that,
 		 *   - connectionManager is disconnected
@@ -230,5 +241,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 		 */
 		assertThat(connectionManager.getConnectionState().state, is(ConnectionState.disconnected));
 		assertThat(connectionManager.getHost(), is(not(equalTo(opts.realtimeHost))));
+
+		ably.close();
 	}
 }
