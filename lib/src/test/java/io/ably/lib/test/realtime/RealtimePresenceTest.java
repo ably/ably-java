@@ -3170,6 +3170,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			completionWaiter.waitFor(2);
 
 			Channel channel2 = ably2.channels.get(channelName);
+			PresenceWaiter waiter2 = new PresenceWaiter(channel2);
 
 			/*
 			 * Wait with waitForSync set to false, should result in 0 members because autoConnect is set to false
@@ -3187,6 +3188,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			/* enter third member from second connection */
 			channel2.presence.enterClient("3", null, completionWaiter);
 			completionWaiter.waitFor(3);
+			waiter2.waitFor(3);
 
 			/* filter by clientId */
 			PresenceMessage[] presenceMessages3 = channel2.presence.get(new Param(Presence.GET_CLIENTID, "1"));
