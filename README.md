@@ -17,13 +17,13 @@ Reference the library by including a compile dependency reference in your gradle
 For [Java](https://bintray.com/ably-io/ably/ably-java/_latestVersion):
 
 ```
-compile 'io.ably:ably-java:0.9.0'
+compile 'io.ably:ably-java:1.0.0'
 ```
 
 For [Android](https://bintray.com/ably-io/ably/ably-android/_latestVersion):
 
 ```
-compile 'io.ably:ably-android:0.9.0'
+compile 'io.ably:ably-android:1.0.0'
 ```
 
 The library is hosted on the [Jcenter repository](https://bintray.com/ably-io/ably), so you need to ensure that the repo is referenced also; IDEs will typically include this by default:
@@ -374,26 +374,26 @@ either a real device or the Android emulator.
 This library uses [semantic versioning](http://semver.org/). For each release, the following needs to be done:
 
 * Replace all references of the current version number with the new version number (check this file [README.md](./README.md) and [build.gradle](./build.gradle)) and commit the changes
-* Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to automate the update of the [CHANGELOG](./CHANGELOG.md). Once the CHANGELOG has completed, manually change the `Unreleased` heading and link with the current version number such as `v0.9.0`. Also ensure that the `Full Changelog` link points to the new version tag instead of the `HEAD`. Commit this change.
-* Add a tag and push to origin such as `git tag v0.9.0 && git push origin v0.9.0`
+* Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to automate the update of the [CHANGELOG](./CHANGELOG.md). Once the CHANGELOG has completed, manually change the `Unreleased` heading and link with the current version number such as `v1.0.0`. Also ensure that the `Full Changelog` link points to the new version tag instead of the `HEAD`. Commit this change.
+* Add a tag and push to origin such as `git tag v1.0.0 && git push origin v1.0.0`
 * Run `gradle java:assemble` to build the JRE-specific JARs for this release
 * Run `gradle android:assemble` to build the Android AAR for this release
-* Visit [https://github.com/ably/ably-java/tags](https://github.com/ably/ably-java/tags) and `Add release notes` for the release, then attach the generated JARs (`ably-java-0.9.0.jar` and `ably-java-0.9.0-full.jar`) in the folder `java/build/libs`,
-  and the generated AAR (`ably-android-0.9.0-release.aar` in the folder `android/build/outputs/aar`.
+* Visit [https://github.com/ably/ably-java/tags](https://github.com/ably/ably-java/tags) and `Add release notes` for the release, then attach the generated JARs (`ably-java-1.0.0.jar` and `ably-java-1.0.0-full.jar`) in the folder `java/build/libs`,
+  and the generated AAR (`ably-android-1.0.0-release.aar` in the folder `android/build/outputs/aar`.
 
 ### Publishing to JCenter (Maven)
 
-* Go to the home page for the package; eg https://bintray.com/ably-io/ably/ably-java. Select [New version](https://bintray.com/ably-io/ably/ably-java/new/version), enter the new version such as "0.9.0" in name and save
+* Go to the home page for the package; eg https://bintray.com/ably-io/ably/ably-java. Select [New version](https://bintray.com/ably-io/ably/ably-java/new/version), enter the new version such as "1.0.0" in name and save
 * Run `./gradlew java:assembleRelease` locally to generate the files
-* Open local relative folder such as `/lib/build/release/0.9.0/`
-* Then go to the new version in JFrog Bintray; eg https://bintray.com/ably-io/ably/ably-java/0.9.0, then click on the link to upload via the UI in the "Upload files" section
-* Type in `io/ably/ably-java/0.9.0` into "Target Repository Path" ensuring the correct version is included. The drag in the files in `java/build/release/0.9.0/`
-* You will see a notice "You have 8 unpublished item(s) for this version", make sure you click "Publish". Wait a few minutes and check that your version has all the necessary files at https://bintray.com/ably-io/ably/ably-java/0.9.0?sort=&order=#files/io/ably/ably-java/0.9.0 for example.
+* Open local relative folder such as `/lib/build/release/1.0.0/`
+* Then go to the new version in JFrog Bintray; eg https://bintray.com/ably-io/ably/ably-java/1.0.0, then click on the link to upload via the UI in the "Upload files" section
+* Type in `io/ably/ably-java/1.0.0` into "Target Repository Path" ensuring the correct version is included. The drag in the files in `java/build/release/1.0.0/`
+* You will see a notice "You have 8 unpublished item(s) for this version", make sure you click "Publish". Wait a few minutes and check that your version has all the necessary files at https://bintray.com/ably-io/ably/ably-java/1.0.0?sort=&order=#files/io/ably/ably-java/1.0.0 for example.
 * Update the README text in Bintray.
 
 Similarly for the Android release at https://bintray.com/ably-io/ably/ably-android.
 Run `gradle android:assembleRelease` locally to generate the files, and drag in the files in
-`android/build/release/0.9.0/`.
+`android/build/release/1.0.0/`.
 
 ## Support, feedback and troubleshooting
 
@@ -414,4 +414,4 @@ To see what has changed in recent versions of Bundler, see the [CHANGELOG](CHANG
 
 ## License
 
-Copyright (c) 2015-2016 Ably Real-time Ltd, Licensed under the Apache License, Version 2.0.  Refer to [LICENSE](LICENSE) for the license terms.
+Copyright (c) 2015-2017 Ably Real-time Ltd, Licensed under the Apache License, Version 2.0.  Refer to [LICENSE](LICENSE) for the license terms.

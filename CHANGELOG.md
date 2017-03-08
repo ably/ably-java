@@ -1,15 +1,15 @@
 # Change Log
 
-## [v0.9.0beta1](https://github.com/ably/ably-java/tree/v0.9.0beta1)
+## [v1.0.0](https://github.com/ably/ably-java/tree/v1.0.0)
 
-[Full Changelog](https://github.com/ably/ably-java/compare/v0.8.10...v0.9.0beta1)
+[Full Changelog](https://github.com/ably/ably-java/compare/v0.8.11...v1.0.0)
 
 **Implemented enhancements:**
 
-This is the first release of the 0.9 client library specification, which contains many extensions
+This is the first release of the 1.0 client library specification, which contains many extensions
 and fixes over the 0.8 specification.
 
-This is an early access beta release. Subsequent releases will contain a more detailed breakdown of changes.
+For further details, see [a summary of the changes in the 1.0 API](https://github.com/ably/docs/issues/235).
 
 ## [v0.8.10](https://github.com/ably/ably-java/tree/v0.8.10)
 
