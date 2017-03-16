@@ -627,7 +627,9 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 			for(MessageListener member : members)
 				try {
 					member.onMessage(message);
-				} catch(Throwable t) {}
+				} catch (Throwable t) {
+					Log.e(TAG, "Unexpected exception calling listener", t);
+				}
 		}
 	}
 
