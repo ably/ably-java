@@ -3,16 +3,26 @@ package io.ably.lib.test.realtime;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Connection;
+import io.ably.lib.realtime.ConnectionEvent;
 import io.ably.lib.realtime.ConnectionState;
+import io.ably.lib.realtime.ConnectionStateListener;
+import io.ably.lib.rest.Auth.AuthMethod;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
@@ -243,5 +253,139 @@ public class ConnectionManagerTest extends ParameterizedTest {
 		assertThat(connectionManager.getHost(), is(not(equalTo(opts.realtimeHost))));
 
 		ably.close();
+	}
+
+	/**
+	 * Connect, and then perform a close() from the calling ConnectionManager context;
+	 * verify that the closed state is reached, and the connectionmanager thread has exited
+	 */
+	@Test
+	public void close_from_connectionmanager() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			final AblyRealtime ably = new AblyRealtime(opts);
+			final Thread[] threadContainer = new Thread[1];
+			ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					ably.close();
+					threadContainer[0] = Thread.currentThread();
+				}
+			});
+
+			/* wait for cm thread to exit */
+			try {
+				Thread.sleep(2000L);
+			} catch(InterruptedException e) {}
+
+			assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
+			Thread.State cmThreadState = threadContainer[0].getState();
+			assertEquals("Verify cm thread has exited", cmThreadState, Thread.State.TERMINATED);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Connect, and then perform a close() from the calling ConnectionManager context;
+	 * verify that the closed state is reached, and the connectionmanager thread has exited
+	 */
+	@Test
+	public void open_from_dedicated_thread() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.autoConnect = false;
+			final AblyRealtime ably = new AblyRealtime(opts);
+			final Thread[] threadContainer = new Thread[1];
+			ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					threadContainer[0] = Thread.currentThread();
+				}
+			});
+
+			ExecutorService executor = Executors.newSingleThreadExecutor();
+			executor.submit(new Runnable() {
+				public void run() {
+					try {
+						ably.connection.connect();
+					} catch (Throwable t) {
+						t.printStackTrace();
+					}
+				}
+			});
+
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+
+			connectionWaiter.waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
+			assertTrue("Not expecting token auth", ably.auth.getAuthMethod() == AuthMethod.basic);
+
+			ably.close();
+			connectionWaiter.waitFor(ConnectionState.closed);
+			assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
+
+			/* wait for cm thread to exit */
+			try {
+				Thread.sleep(2000L);
+			} catch(InterruptedException e) {}
+
+			Thread.State cmThreadState = threadContainer[0].getState();
+			assertEquals("Verify cm thread has exited", cmThreadState, Thread.State.TERMINATED);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Connect, and then perform a close() from the calling ConnectionManager context;
+	 * verify that the closed state is reached, and the connectionmanager thread has exited
+	 */
+	@Test
+	public void close_from_dedicated_thread() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.autoConnect = false;
+			final AblyRealtime ably = new AblyRealtime(opts);
+			final Thread[] threadContainer = new Thread[1];
+			ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					threadContainer[0] = Thread.currentThread();
+				}
+			});
+
+			ably.connection.connect();
+			final ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+			connectionWaiter.waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
+
+			ExecutorService executor = Executors.newSingleThreadExecutor();
+			executor.submit(new Runnable() {
+				public void run() {
+					try {
+						ably.close();
+						connectionWaiter.waitFor(ConnectionState.closed);
+						assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
+
+						/* wait for cm thread to exit */
+						try {
+							Thread.sleep(2000L);
+						} catch(InterruptedException e) {}
+
+						Thread.State cmThreadState = threadContainer[0].getState();
+						assertEquals("Verify cm thread has exited", cmThreadState, Thread.State.TERMINATED);
+					} catch (Throwable t) {
+						t.printStackTrace();
+					}
+				}
+			});
+
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		}
 	}
 }
