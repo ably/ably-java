@@ -235,6 +235,7 @@ public class WebSocketTransport implements ITransport {
 				wsConnection = null;
 			}
 			connectionManager.notifyState(WebSocketTransport.this, new StateIndication(newState, reason));
+			dispose();
 		}
 
 		@Override
@@ -244,6 +245,14 @@ public class WebSocketTransport implements ITransport {
 			if(connectListener != null) {
 				connectListener.onTransportUnavailable(WebSocketTransport.this, params, new ErrorInfo(e.getMessage(), 503, 80000));
 				connectListener = null;
+			}
+		}
+
+		private void dispose() {
+			/* dispose timer */
+			if(timer != null) {
+				timer.cancel();
+				timer = null;
 			}
 		}
 
