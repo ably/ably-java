@@ -24,7 +24,7 @@ class LocalDevice extends DeviceDetails {
         LocalDevice device = new LocalDevice(rest);
         device.platform = "android";
         device.clientId = rest.auth.clientId;
-        device.formFactor = isTablet(context) ? "tablet" : "mobile";
+        device.formFactor = isTablet(context) ? "tablet" : "phone";
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
 
