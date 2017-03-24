@@ -4,6 +4,11 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Param;
+import io.ably.lib.types.PaginatedResult;
+import io.ably.lib.types.AsyncPaginatedResult;
+import io.ably.lib.http.PaginatedQuery;
+import io.ably.lib.http.AsyncPaginatedQuery;
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpUtils;
@@ -77,6 +82,24 @@ public class Channel extends ChannelBase {
             } catch (AblyException e) {
                 listener.onError(e.errorInfo);
             }
+        }
+
+        public PaginatedResult<Push.ChannelSubscription> getSubscriptions() throws AblyException {
+            return getSubscriptions(new Param[] {});
+        }
+
+        public PaginatedResult<Push.ChannelSubscription> getSubscriptions(Param[] params) throws AblyException {
+            params = Param.set(params, "channel", channel.name);
+            return new PaginatedQuery<Push.ChannelSubscription>(rest.http, "/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, Push.ChannelSubscription.httpBodyHandler).get();
+        }
+
+        public void getSubscriptionsAsync(Callback<AsyncPaginatedResult<Push.ChannelSubscription>> callback) throws AblyException {
+            getSubscriptionsAsync(new Param[] {}, callback);
+        }
+
+        public void getSubscriptionsAsync(Param[] params, Callback<AsyncPaginatedResult<Push.ChannelSubscription>> callback) throws AblyException {
+            params = Param.set(params, "channel", channel.name);
+            new AsyncPaginatedQuery<Push.ChannelSubscription>(rest.asyncHttp, "/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, Push.ChannelSubscription.httpBodyHandler).get(callback);
         }
 
         private Http.RequestBody subscribeDeviceBody(Context context) throws AblyException {
