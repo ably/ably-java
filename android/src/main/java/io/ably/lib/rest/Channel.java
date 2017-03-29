@@ -58,27 +58,29 @@ public class Channel extends ChannelBase {
 
         public void unsubscribeDevice(Context context) throws AblyException {
             DeviceDetails device = getDevice(context);
-            rest.http.del("/push/channelSubscriptions?channel=" + channel.name + "&deviceId=" + device.id, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null);
+            Param[] params = new Param[] { new Param("channel", channel.name), new Param("deviceId", device.id) };
+            rest.http.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null);
         }
 
         public void unsubscribeDeviceAsync(Context context, CompletionListener listener) throws AblyException {
             try {
                 DeviceDetails device = getDevice(context);
-                rest.asyncHttp.del("/push/channelSubscriptions?channel=" + channel.name + "&deviceId=" + device.id, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null, new CompletionListener.ToCallback(listener));
+                Param[] params = new Param[] { new Param("channel", channel.name), new Param("deviceId", device.id) };
+                rest.asyncHttp.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null, new CompletionListener.ToCallback(listener));
             } catch (AblyException e) {
                 listener.onError(e.errorInfo);
             }
         }
 
         public void unsubscribeClient() throws AblyException {
-            String clientId = getClientId();
-            rest.http.del("/push/channelSubscriptions?channel=" + channel.name + "&clientId=" + clientId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null);
+            Param[] params = new Param[] { new Param("channel", channel.name), new Param("clientId", getClientId()) };
+            rest.http.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null);
         }
 
         public void unsubscribeClientAsync(CompletionListener listener) throws AblyException {
             try {
-                String clientId = getClientId();
-                rest.asyncHttp.del("/push/channelSubscriptions?channel=" + channel.name + "&clientId=" + clientId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null, new CompletionListener.ToCallback(listener));
+                Param[] params = new Param[] { new Param("channel", channel.name), new Param("clientId", getClientId()) };
+                rest.asyncHttp.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null, new CompletionListener.ToCallback(listener));
             } catch (AblyException e) {
                 listener.onError(e.errorInfo);
             }
