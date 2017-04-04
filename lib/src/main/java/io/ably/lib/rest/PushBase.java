@@ -119,11 +119,11 @@ public class PushBase {
         }
 
         public PaginatedResult<String> listChannels(Param[] params) throws AblyException {
-            return new PaginatedQuery<String>(rest.http, "/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, StringUtils.httpBodyHandler).get();
+            return new PaginatedQuery<String>(rest.http, "/push/channels", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, StringUtils.httpBodyHandler).get();
         }
 
         public void listChannelsAsync(Param[] params, Callback<AsyncPaginatedResult<String>> callback) throws AblyException {
-            new AsyncPaginatedQuery<String>(rest.asyncHttp, "/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, StringUtils.httpBodyHandler).get(callback);
+            new AsyncPaginatedQuery<String>(rest.asyncHttp, "/push/channels", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, StringUtils.httpBodyHandler).get(callback);
         }
 
         ChannelSubscriptions(AblyRest rest) {
