@@ -6,6 +6,7 @@ import com.google.gson.JsonElement;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.http.Http;
+import io.ably.lib.util.JsonUtils;
 import io.ably.lib.util.Serialisation;
 
 /**
@@ -23,18 +24,14 @@ public abstract class DeviceDetails {
     public Push push;
 
     public static class Push {
-        public String transportType;
+        public JsonObject recipient;
         public String state;
         public ErrorInfo errorReason;
-        public JsonObject metadata;
 
         public JsonObject toJsonObject() {
             JsonObject o = new JsonObject();
 
-            o.addProperty("transportType", transportType);
-            if (metadata != null) {
-                o.add("metadata", metadata);
-            }
+            o.add("recipient", recipient);
 
             return o;
         }
@@ -60,12 +57,10 @@ public abstract class DeviceDetails {
         return o;
     }
 
-    public JsonObject pushMetadataJsonObject() {
-        JsonObject json = new JsonObject();
-        JsonObject push = new JsonObject();
-        json.add("push", push);
-        push.add("metadata", this.push.metadata);
-        return json;
+    public JsonObject pushRecipientJsonObject() {
+        return JsonUtils.object()
+                .add("push", JsonUtils.object()
+                    .add("recipient", this.push.recipient)).toJson();
     }
 
     public static DeviceDetails fromJsonObject(JsonObject o) {

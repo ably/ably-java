@@ -68,19 +68,43 @@ public class PushBase {
             rest.asyncHttp.put("/push/deviceRegistrations/" + device.id, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, DeviceDetails.httpResponseHandler, callback);
         }
 
-        public PaginatedResult<DeviceDetails> get(Param[] params) throws AblyException {
+        public DeviceDetails get(String deviceId) throws AblyException {
+            return rest.http.get("/push/deviceRegistrations/" + deviceId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, DeviceDetails.httpResponseHandler);
+        }
+
+        public void getAsync(String deviceId, final Callback<DeviceDetails> callback) {
+            rest.asyncHttp.get("/push/deviceRegistrations/" + deviceId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, DeviceDetails.httpResponseHandler, callback);
+        }
+
+        public PaginatedResult<DeviceDetails> list(Param[] params) throws AblyException {
             return new PaginatedQuery<DeviceDetails>(rest.http, "/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, DeviceDetails.httpBodyHandler).get();
         }
 
-        public void getAsync(Param[] params, Callback<AsyncPaginatedResult<DeviceDetails>> callback) throws AblyException {
+        public void listAsync(Param[] params, Callback<AsyncPaginatedResult<DeviceDetails>> callback) throws AblyException {
             new AsyncPaginatedQuery<DeviceDetails>(rest.asyncHttp, "/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, DeviceDetails.httpBodyHandler).get(callback);
         }
 
-        public void remove(Param[] params) throws AblyException {
+        public void remove(DeviceDetails device) throws AblyException {
+            remove(device.id);
+        }
+
+        public void removeAsync(DeviceDetails device, CompletionListener listener) throws AblyException {
+            removeAsync(device.id, listener);
+        }
+
+        public void remove(String deviceId) throws AblyException {
+            rest.http.del("/push/deviceRegistrations/" + deviceId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null);
+        }
+
+        public void removeAsync(String deviceId, CompletionListener listener) throws AblyException {
+            rest.asyncHttp.del("/push/deviceRegistrations/" + deviceId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null, new CompletionListener.ToCallback(listener));
+        }
+
+        public void removeWhere(Param[] params) throws AblyException {
             rest.http.del("/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null);
         }
 
-        public void removeAsync(Param[] params, CompletionListener listener) throws AblyException {
+        public void removeWhereAsync(Param[] params, CompletionListener listener) throws AblyException {
             rest.asyncHttp.del("/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null, new CompletionListener.ToCallback(listener));
         }
 
@@ -102,20 +126,30 @@ public class PushBase {
             rest.asyncHttp.put("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, ChannelSubscription.httpResponseHandler, callback);
         }
 
-        public PaginatedResult<ChannelSubscription> get(Param[] params) throws AblyException {
+        public PaginatedResult<ChannelSubscription> list(Param[] params) throws AblyException {
             return new PaginatedQuery<ChannelSubscription>(rest.http, "/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, ChannelSubscription.httpBodyHandler).get();
         }
 
-        public void getAsync(Param[] params, Callback<AsyncPaginatedResult<ChannelSubscription>> callback) throws AblyException {
+        public void listAsync(Param[] params, Callback<AsyncPaginatedResult<ChannelSubscription>> callback) throws AblyException {
             new AsyncPaginatedQuery<ChannelSubscription>(rest.asyncHttp, "/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, ChannelSubscription.httpBodyHandler).get(callback);
         }
 
-        public void remove(Param[] params) throws AblyException {
-            rest.http.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null);
+        public void remove(ChannelSubscription subscription) throws AblyException {
+            Param[] params = removeParams(subscription);
+            removeWhere(params);
         }
 
-        public void removeAsync(Param[] params, CompletionListener listener) throws AblyException {
-            rest.asyncHttp.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null, new CompletionListener.ToCallback(listener));
+        public void removeAsync(ChannelSubscription subscription, CompletionListener listener) throws AblyException {
+            Param[] params = removeParams(subscription);
+            removeWhereAsync(params, listener);
+        }
+
+        public void removeWhere(Param[] params) throws AblyException {
+            rest.http.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null);
+        }
+
+        public void removeWhereAsync(Param[] params, CompletionListener listener) throws AblyException {
+            rest.asyncHttp.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null, new CompletionListener.ToCallback(listener));
         }
 
         public PaginatedResult<String> listChannels(Param[] params) throws AblyException {
@@ -128,6 +162,18 @@ public class PushBase {
 
         ChannelSubscriptions(AblyRest rest) {
             this.rest = rest;
+        }
+
+        protected Param[] removeParams(ChannelSubscription subscription) throws AblyException {
+            Param[] params = new Param[] { new Param("channel", subscription.channel) };
+            if (subscription.deviceId != null) {
+                params = Param.push(params, "deviceId", subscription.deviceId);
+            } else if (subscription.clientId != null) {
+                params = Param.push(params, "clientId", subscription.clientId);
+            } else {
+                throw AblyException.fromThrowable(new Exception("ChannelSubscription cannot be for both a deviceId and a clientId"));
+            }
+            return params;
         }
 
         private final AblyRest rest;
@@ -183,5 +229,5 @@ public class PushBase {
     }
 
     protected final AblyRest rest;
-    protected final Admin admin;
+    public final Admin admin;
 }

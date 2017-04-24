@@ -55,13 +55,13 @@ class LocalDevice extends DeviceDetails {
         if (push == null) {
             return null;
         }
-        JsonObject metadata = push.metadata;
-        if (metadata == null) {
+        JsonObject recipient = push.recipient;
+        if (recipient == null) {
             return null;
         }
         return new RegistrationToken(
-            RegistrationToken.Type.fromCode(push.transportType),
-            metadata.get("registrationToken").getAsString()
+            RegistrationToken.Type.fromCode(recipient.get("transportType").getAsString()),
+            recipient.get("registrationToken").getAsString()
         );
     }
 
@@ -71,9 +71,9 @@ class LocalDevice extends DeviceDetails {
 
     private void setRegistrationToken(RegistrationToken.Type type, String token) {
         push = new DeviceDetails.Push();
-        push.transportType = type.code;
-        push.metadata = new JsonObject();
-        push.metadata.addProperty("registrationToken", token);
+        push.recipient = new JsonObject();
+        push.recipient.addProperty("transportType", type.code);
+        push.recipient.addProperty("registrationToken", token);
     }
 
     protected void setAndPersistRegistrationToken(Context context, RegistrationToken token) {

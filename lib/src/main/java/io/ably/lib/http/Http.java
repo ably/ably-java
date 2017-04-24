@@ -38,6 +38,7 @@ public class Http {
 	public static final String GET    = "GET";
 	public static final String PUT    = "PUT";
 	public static final String POST   = "POST";
+	public static final String PATCH  = "PATCH";
 	public static final String DELETE = "DELETE";
 
 	public RequestBody requestBodyFromGson(JsonElement json) {
@@ -294,6 +295,20 @@ public class Http {
 	 */
 	public <T> T put(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean requireAblyAuth) throws AblyException {
 		return ablyHttpExecute(path, PUT, headers, params, requestBody, responseHandler, requireAblyAuth);
+	}
+
+	/**
+	 * HTTP PATCH for Ably host, with fallbacks
+	 * @param path
+	 * @param headers
+	 * @param params
+	 * @param requestBody
+	 * @param responseHandler
+	 * @return
+	 * @throws AblyException
+	 */
+	public <T> T patch(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
+		return ablyHttpExecute(path, PATCH, headers, params, requestBody, responseHandler);
 	}
 
 	/**

@@ -394,8 +394,8 @@ public class Push extends PushBase {
             if (machine.prefs.getBoolean(PersistKeys.USE_CUSTOM_REGISTERER, false)) {
                 machine.useCustomRegisterer(device, false);
             } else {
-                Http.RequestBody body = machine.rest.http.requestBodyFromGson(device.pushMetadataJsonObject());
-                machine.rest.asyncHttp.put("/push/deviceRegistrations/" + device.id, HttpUtils.defaultAcceptHeaders(machine.rest.options.useBinaryProtocol), null, body, null, new Callback<Void>() {
+                Http.RequestBody body = machine.rest.http.requestBodyFromGson(device.pushRecipientJsonObject());
+                machine.rest.asyncHttp.patch("/push/deviceRegistrations/" + device.id, HttpUtils.defaultAcceptHeaders(machine.rest.options.useBinaryProtocol), null, body, null, new Callback<Void>() {
                     @Override
                     public void onSuccess(Void response) {
                         Log.i(TAG, "updated registration " + device.id);

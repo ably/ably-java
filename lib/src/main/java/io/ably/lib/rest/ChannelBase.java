@@ -26,7 +26,7 @@ import io.ably.lib.types.PresenceSerializer;
  * signify that there is a realtime connection or attachment
  * to that channel.
  */
-public abstract class ChannelBase {
+public class ChannelBase {
 
 	/**
 	 * The Channel name

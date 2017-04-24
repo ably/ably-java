@@ -45,6 +45,19 @@ public class AsyncHttp extends ThreadPoolExecutor {
 	}
 
 	/**
+	 * Async HTTP PATCH for Ably host, with fallbacks
+	 * @param path
+	 * @param headers
+	 * @param params
+	 * @param requestBody
+	 * @param responseHandler
+	 * @param callback
+	 */
+	public <T> Future<T> patch(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler, Callback<T> callback) {
+		return ablyHttpExecuteWithFallback(path, Http.PATCH, headers, params, requestBody, responseHandler, callback);
+	}
+
+	/**
 	 * Async HTTP POST for Ably host, with fallbacks
 	 * @param path
 	 * @param headers
