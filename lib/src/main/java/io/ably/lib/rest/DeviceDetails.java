@@ -25,7 +25,7 @@ public abstract class DeviceDetails {
 
     public static class Push {
         public JsonObject recipient;
-        public String state;
+        public State state;
         public ErrorInfo errorReason;
 
         public JsonObject toJsonObject() {
@@ -34,6 +34,45 @@ public abstract class DeviceDetails {
             o.add("recipient", recipient);
 
             return o;
+        }
+
+        public enum State {
+            ACTIVE("ACTIVE"),
+            FAILING("FAILING"),
+            FAILED("FAILED");
+
+            public String code;
+            State(String code) {
+                this.code = code;
+            }
+
+            public int toInt() {
+                State[] values = State.values();
+                for (int i = 0; i < values.length; i++) {
+                    if (this == values[i]) {
+                        return i;
+                    }
+                }
+                return -1;
+            }
+
+            public static State fromInt(int i) {
+                State[] values = State.values();
+                if (i < 0 || i >= values.length) {
+                    return null;
+                }
+                return values[i];
+            }
+
+            public static State fromCode(String code) {
+                State[] values = State.values();
+                for (State t : values) {
+                    if (t.code.equals(code)) {
+                        return t;
+                    }
+                }
+                return null;
+            }
         }
     }
 

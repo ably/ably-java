@@ -29,14 +29,10 @@ class LocalDevice extends DeviceDetails {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
 
         String id = prefs.getString(SharedPrefKeys.DEVICE_ID, null);
-        if (id == null) {
-            id = ULID.random();
-            boolean ok = prefs.edit().putString(SharedPrefKeys.DEVICE_ID, id).commit();
-            if (!ok) {
-                id = prefs.getString(SharedPrefKeys.DEVICE_ID, null);
-            }
-        }
         device.id = id;
+        if (id == null) {
+            device.resetId(context);
+        }
         device.updateToken = prefs.getString(SharedPrefKeys.UPDATE_TOKEN, null);
 
         RegistrationToken.Type type = RegistrationToken.Type.fromInt(
@@ -85,19 +81,29 @@ class LocalDevice extends DeviceDetails {
             .apply();
     }
 
-    protected void setAndPersistUpdateToken(Context context, String token) {
+    public void setUpdateToken(Context context, String token) {
         this.updateToken = token;
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         prefs.edit().putString(SharedPrefKeys.UPDATE_TOKEN, token).apply();
     }
 
-    public void resetUpdateToken(Context context) throws AblyException {
+    public void reissueUpdateToken(Context context) throws AblyException {
         if (this.id == null || this.updateToken == null) {
             return;
         }
 
         JsonObject response = rest.http.post("/push/deviceDetails/" + id + "/resetUpdateToken", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null, new Serialisation.HttpResponseHandler<JsonObject>());
-        setAndPersistUpdateToken(context, response.getAsJsonPrimitive("updateToken").getAsString());
+        setUpdateToken(context, response.getAsJsonPrimitive("updateToken").getAsString());
+    }
+
+    public void resetId(Context context) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+
+        id = ULID.random();
+        boolean ok = prefs.edit().putString(SharedPrefKeys.DEVICE_ID, id).commit();
+        if (!ok) {
+            id = prefs.getString(SharedPrefKeys.DEVICE_ID, null);
+        }
     }
 
     private static boolean isTablet(Context context) {

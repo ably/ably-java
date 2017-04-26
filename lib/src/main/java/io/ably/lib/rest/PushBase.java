@@ -2,7 +2,10 @@ package io.ably.lib.rest;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+
+import io.ably.lib.http.AsyncHttp;
 import io.ably.lib.http.Http;
+import io.ably.lib.http.HttpExecutor;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.types.AblyException;
@@ -26,35 +29,52 @@ public class PushBase {
         this.admin = new Admin(rest);
     }
 
-    public void publish(Param[] recipient, JsonObject payload) throws AblyException {
-        rest.http.post("/push/publish", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, publishBody(recipient, payload), null);
-    }
-
-    public void publishAsync(Param[] recipient, JsonObject payload, final CompletionListener listener) {
-        rest.asyncHttp.post("/push/publish", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, publishBody(recipient, payload), null, new CompletionListener.ToCallback(listener));
-    }
-
-    private Http.RequestBody publishBody(Param[] recipient, JsonObject payload) {
-        JsonObject recipientJson = new JsonObject();
-        for (Param param : recipient) {
-            recipientJson.addProperty(param.key, param.value);
-        }
-        JsonObject bodyJson = new JsonObject();
-        bodyJson.add("recipient", recipientJson);
-        for (Map.Entry<String, JsonElement> entry : payload.entrySet()) {
-            bodyJson.add(entry.getKey(), entry.getValue());
-        }
-        return rest.http.requestBodyFromGson(bodyJson);
-    }
-
     public static class Admin {
         public final DeviceRegistrations deviceRegistrations;
         public final ChannelSubscriptions channelSubscriptions;
 
         Admin(AblyRest rest) {
+            this.rest = rest;
             this.deviceRegistrations = new DeviceRegistrations(rest);
             this.channelSubscriptions = new ChannelSubscriptions(rest);
         }
+
+        public void publish(Param[] recipient, JsonObject payload) throws AblyException {
+            _publish(recipient, payload).sync();
+        }
+
+        public void publishAsync(Param[] recipient, JsonObject payload, final CompletionListener listener) {
+            _publish(recipient, payload).async(new CompletionListener.ToCallback(listener));
+        }
+
+        private HttpExecutor.Request<Void> _publish(final Param[] recipient, final JsonObject payload)  {
+            return rest.httpExecutor.request(new HttpExecutor.Plan<Void>() {
+                @Override
+                public void execute(AsyncHttp http, Callback<Void> callback) throws AblyException {
+                    if (recipient == null || recipient.length == 0) {
+                        throw AblyException.fromThrowable(new Exception("recipient cannot be empty"));
+                    }
+                    if (payload == null || payload.entrySet().isEmpty()) {
+                        throw AblyException.fromThrowable(new Exception("payload cannot be empty"));
+                    }
+
+                    JsonObject recipientJson = new JsonObject();
+                    for (Param param : recipient) {
+                        recipientJson.addProperty(param.key, param.value);
+                    }
+                    JsonObject bodyJson = new JsonObject();
+                    bodyJson.add("recipient", recipientJson);
+                    for (Map.Entry<String, JsonElement> entry : payload.entrySet()) {
+                        bodyJson.add(entry.getKey(), entry.getValue());
+                    }
+                    Http.RequestBody body = rest.http.requestBodyFromGson(bodyJson);
+
+                    http.post("/push/publish", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, null, callback);
+                }
+            });
+        }
+
+        private final AblyRest rest;
     }
 
     public static class DeviceRegistrations {

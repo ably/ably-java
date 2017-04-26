@@ -170,7 +170,8 @@ public class Push extends PushBase {
                     machine.callDeactivatedCallback(null);
                     return new NotActivated(machine);
                 } else if (event instanceof GotPushDeviceDetails) {
-                    final DeviceDetails device = rest.device(machine.context);
+                    final LocalDevice device = rest.device(machine.context);
+                    device.resetId(machine.context);
 
                     if (machine.prefs.getBoolean(PersistKeys.USE_CUSTOM_REGISTERER, false)) {
                         machine.useCustomRegisterer(device, true);
@@ -203,7 +204,7 @@ public class Push extends PushBase {
                     return this;
                 } else if (event instanceof GotUpdateToken) {
                     LocalDevice device = rest.device(machine.context);
-                    device.setAndPersistUpdateToken(machine.context, ((GotUpdateToken) event).updateToken);
+                    device.setUpdateToken(machine.context, ((GotUpdateToken) event).updateToken);
                     machine.callActivatedCallback(null);
                     return new WaitingForNewPushDeviceDetails(machine);
                 } else if (event instanceof GettingUpdateTokenFailed) {
@@ -280,7 +281,7 @@ public class Push extends PushBase {
                     return this;
                 } else if (event instanceof Deregistered) {
                     LocalDevice device = rest.device(machine.context);
-                    device.setAndPersistUpdateToken(machine.context, null);
+                    device.setUpdateToken(machine.context, null);
                     machine.callDeactivatedCallback(null);
                     return new NotActivated(machine);
                 } else if (event instanceof DeregistrationFailed) {

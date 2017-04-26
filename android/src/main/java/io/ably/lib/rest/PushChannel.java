@@ -22,26 +22,26 @@ public class PushChannel {
         this.rest = rest;
     }
 
-    public void subscribeClient() throws AblyException {
-        postSubscription(subscribeClientBody());
+    public void subscribeClient(Context context) throws AblyException {
+        postSubscription(subscribeClientBody(context));
     }
 
-    public void subscribeClientAsync(CompletionListener listener) {
+    public void subscribeClientAsync(Context context, CompletionListener listener) {
         try {
-            postSubscriptionAsync(subscribeClientBody(), listener);
+            postSubscriptionAsync(subscribeClientBody(context), listener);
         } catch (AblyException e) {
             listener.onError(e.errorInfo);
         }
     }
 
-    public void unsubscribeClient() throws AblyException {
-        Param[] params = new Param[] { new Param("channel", channel.name), new Param("clientId", getClientId()) };
+    public void unsubscribeClient(Context context) throws AblyException {
+        Param[] params = new Param[] { new Param("channel", channel.name), new Param("clientId", getClientId(context)) };
         rest.http.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null);
     }
 
-    public void unsubscribeClientAsync(CompletionListener listener) throws AblyException {
+    public void unsubscribeClientAsync(Context context, CompletionListener listener) throws AblyException {
         try {
-            Param[] params = new Param[] { new Param("channel", channel.name), new Param("clientId", getClientId()) };
+            Param[] params = new Param[] { new Param("channel", channel.name), new Param("clientId", getClientId(context)) };
             rest.asyncHttp.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null, new CompletionListener.ToCallback(listener));
         } catch (AblyException e) {
             listener.onError(e.errorInfo);
@@ -105,9 +105,9 @@ public class PushChannel {
         return params;
     } 
 
-    protected Http.RequestBody subscribeClientBody() throws AblyException {
+    protected Http.RequestBody subscribeClientBody(Context context) throws AblyException {
         JsonObject bodyJson = new JsonObject();
-        bodyJson.addProperty("clientId", getClientId());
+        bodyJson.addProperty("clientId", getClientId(context));
         return subscriptionRequestBody(bodyJson);
     }
 
@@ -124,10 +124,10 @@ public class PushChannel {
         rest.asyncHttp.post("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, null, new CompletionListener.ToCallback(listener));
     }
 
-    protected String getClientId() throws AblyException {
-        String clientId = rest.auth.clientId;
+    protected String getClientId(Context context) throws AblyException {
+        String clientId = getDevice(context).clientId;
         if (clientId == null) {
-            throw AblyException.fromThrowable(new Exception("cannot subscribe from REST client with null client ID"));
+            throw AblyException.fromThrowable(new Exception("cannot subscribe with null client ID"));
         }
         return clientId;
     }
@@ -148,7 +148,7 @@ public class PushChannel {
             // Arguably that encourages just ignoring any errors, and forcing you to listen
             // to the broadcast after push.activate has finished before subscribing is
             // more robust.
-            throw AblyException.fromThrowable(new Exception("cannot subscribe device before AblyRest.push.activate has finished"));
+            throw AblyException.fromThrowable(new Exception("cannot use device before AblyRest.push.activate has finished"));
         }
         return device;
     }
