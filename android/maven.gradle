@@ -39,10 +39,17 @@ uploadArchives {
             }
         }
 
-        // Exclude dependency on lib subproject.
         pom.whenConfigured {
             p -> p.dependencies = p.dependencies.findAll {
+                // Exclude dependency on lib subproject.
                 dep -> dep.artifactId != "lib"
+            }.findAll {
+                // Exclude Google services since we don't want to impose a particular
+                // version on users. Ideally we would specify a version range,
+                // but the Google services Gradle plugin doesn't seem to
+                // support that.
+                // TODO: Make sure this works when installing from Maven!
+                dep -> dep.artifactId != 'play-services-gcm' && dep.artifactId != 'firebase-messaging'
             }
         }
 
