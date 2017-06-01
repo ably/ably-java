@@ -5,10 +5,10 @@ import com.google.gson.JsonObject;
 
 import io.ably.lib.http.AsyncHttp;
 import io.ably.lib.http.Http;
-import io.ably.lib.http.HttpExecutor;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.PaginatedResult;
@@ -40,38 +40,39 @@ public class PushBase {
         }
 
         public void publish(Param[] recipient, JsonObject payload) throws AblyException {
-            _publish(recipient, payload).sync();
+            if (recipient == null || recipient.length == 0) {
+                throw AblyException.fromThrowable(new Exception("recipient cannot be empty"));
+            }
+            if (payload == null || payload.entrySet().isEmpty()) {
+                throw AblyException.fromThrowable(new Exception("payload cannot be empty"));
+            }
+            rest.http.post("/push/publish", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, publishBody(recipient, payload), null);
         }
 
         public void publishAsync(Param[] recipient, JsonObject payload, final CompletionListener listener) {
-            _publish(recipient, payload).async(new CompletionListener.ToCallback(listener));
+            Callback<Void> callback = new CompletionListener.ToCallback(listener);
+            if (recipient == null || recipient.length == 0) {
+                callback.onError(ErrorInfo.fromThrowable(new Exception("recipient cannot be empty")));
+                return;
+            }
+            if (payload == null || payload.entrySet().isEmpty()) {
+                callback.onError(ErrorInfo.fromThrowable(new Exception("payload cannot be empty")));
+                return;
+            }
+            rest.asyncHttp.post("/push/publish", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, publishBody(recipient, payload), null, callback);
         }
 
-        private HttpExecutor.Request<Void> _publish(final Param[] recipient, final JsonObject payload)  {
-            return rest.httpExecutor.request(new HttpExecutor.Plan<Void>() {
-                @Override
-                public void execute(AsyncHttp http, Callback<Void> callback) throws AblyException {
-                    if (recipient == null || recipient.length == 0) {
-                        throw AblyException.fromThrowable(new Exception("recipient cannot be empty"));
-                    }
-                    if (payload == null || payload.entrySet().isEmpty()) {
-                        throw AblyException.fromThrowable(new Exception("payload cannot be empty"));
-                    }
-
-                    JsonObject recipientJson = new JsonObject();
-                    for (Param param : recipient) {
-                        recipientJson.addProperty(param.key, param.value);
-                    }
-                    JsonObject bodyJson = new JsonObject();
-                    bodyJson.add("recipient", recipientJson);
-                    for (Map.Entry<String, JsonElement> entry : payload.entrySet()) {
-                        bodyJson.add(entry.getKey(), entry.getValue());
-                    }
-                    Http.RequestBody body = rest.http.requestBodyFromGson(bodyJson);
-
-                    http.post("/push/publish", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, null, callback);
-                }
-            });
+        private Http.RequestBody publishBody(Param[] recipient, JsonObject payload) {
+            JsonObject recipientJson = new JsonObject();
+            for (Param param : recipient) {
+                recipientJson.addProperty(param.key, param.value);
+            }
+            JsonObject bodyJson = new JsonObject();
+            bodyJson.add("recipient", recipientJson);
+            for (Map.Entry<String, JsonElement> entry : payload.entrySet()) {
+                bodyJson.add(entry.getKey(), entry.getValue());
+            }
+            return rest.http.requestBodyFromGson(bodyJson);
         }
 
         private final AblyRest rest;
