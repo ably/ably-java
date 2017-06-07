@@ -109,12 +109,9 @@ public class AblyRealtime extends AblyRest {
 		 * @return the channel
 		 */
 		public Channel get(String channelName) {
-			Channel channel = super.get(channelName);
-			if(channel == null) {
-				channel = new Channel(AblyRealtime.this, channelName);
-				put(channelName, channel);
-			}
-			return channel;
+			try {
+				return get(channelName, null);
+			} catch (AblyException e) { return null; }
 		}
 
 		/**
@@ -126,8 +123,15 @@ public class AblyRealtime extends AblyRest {
 		 * @throws AblyException
 		 */
 		public Channel get(String channelName, ChannelOptions channelOptions) throws AblyException {
-			Channel channel = get(channelName);
-			channel.setOptions(channelOptions);
+			Channel channel = super.get(channelName);
+			if (channel != null) {
+				if (channelOptions != null)
+					channel.setOptions(channelOptions);
+				return channel;
+			}
+
+			channel = new Channel(AblyRealtime.this, channelName, channelOptions);
+			super.put(channelName, channel);
 			return channel;
 		}
 
