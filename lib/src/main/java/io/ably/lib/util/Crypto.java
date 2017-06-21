@@ -20,7 +20,7 @@ import io.ably.lib.types.ErrorInfo;
 /**
  * Utility classes and interfaces for message payload encryption.
  *
- * This class supports AES/CBC/PKCS5 with a default key length of 128 bits
+ * This class supports AES/CBC/PKCS5 with a default key length of 256 bits
  * but supporting other key lengths. Other algorithms and chaining modes are
  * not supported directly, but supportable by extending/implementing the base
  * classes and interfaces here.
@@ -37,7 +37,7 @@ import io.ably.lib.types.ErrorInfo;
 public class Crypto {
 
 	public static final String DEFAULT_ALGORITHM = "aes";
-	public static final int DEFAULT_KEYLENGTH = 128; // bits
+	public static final int DEFAULT_KEYLENGTH = 256; // bits
 	public static final int DEFAULT_BLOCKLENGTH = 16; // bytes
 
 	/**
