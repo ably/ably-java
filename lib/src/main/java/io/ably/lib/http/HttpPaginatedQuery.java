@@ -2,7 +2,7 @@ package io.ably.lib.http;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -136,7 +136,7 @@ public class HttpPaginatedQuery implements ResponseHandler<HttpPaginatedResponse
 			if(!"application/json".equals(contentType)) {
 				throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected content type: " + contentType, 500, 50000));
 			}
-			JsonElement jsonBody = Serialisation.gsonParser.parse(new String(body, StandardCharsets.UTF_8));
+			JsonElement jsonBody = Serialisation.gsonParser.parse(new String(body, Charset.forName("UTF-8")));
 			if(!jsonBody.isJsonArray()) {
 				return new JsonElement[] { jsonBody };
 			}

@@ -2,7 +2,7 @@ package io.ably.lib.types;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
@@ -52,6 +52,6 @@ public class ProtocolSerializer {
 	 ****************************************/
 	
 	public static byte[] writeJSON(ProtocolMessage message) throws AblyException {
-		return Serialisation.gson.toJson(message).getBytes(StandardCharsets.UTF_8);
+		return Serialisation.gson.toJson(message).getBytes(Charset.forName("UTF-8"));
 	}
 }

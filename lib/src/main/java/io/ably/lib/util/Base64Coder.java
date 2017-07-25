@@ -1,6 +1,6 @@
 package io.ably.lib.util;
 
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 
 //Copyright 2003-2010 Christian d'Heureuse, Inventec Informatik AG, Zurich, Switzerland
 //www.source-code.biz, www.inventec.ch/chdh
@@ -57,7 +57,7 @@ static {
 * @return   A String containing the Base64 encoded data.
 */
 public static String encodeString (String s) {
-return new String(encode(s.getBytes(StandardCharsets.UTF_8))); }
+return new String(encode(s.getBytes(Charset.forName("UTF-8")))); }
 
 /**
 * Encodes a byte array into Base 64 format and breaks the output into lines of 76 characters.

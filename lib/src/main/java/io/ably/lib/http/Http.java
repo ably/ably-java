@@ -3,7 +3,7 @@ package io.ably.lib.http;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.net.*;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -117,7 +117,7 @@ public class Http {
 		public JsonRequestBody(Object ob) { this(Serialisation.gson.toJson(ob)); }
 
 		@Override
-		public byte[] getEncoded() { return (bytes != null) ? bytes : (bytes = jsonText.getBytes(StandardCharsets.UTF_8)); }
+		public byte[] getEncoded() { return (bytes != null) ? bytes : (bytes = jsonText.getBytes(Charset.forName("UTF-8"))); }
 		@Override
 		public String getContentType() { return JSON; }
 

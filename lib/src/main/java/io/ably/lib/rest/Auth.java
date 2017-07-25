@@ -2,7 +2,7 @@ package io.ably.lib.rest;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -943,8 +943,8 @@ public class Auth {
 	private static final String hmac(String text, String key) {
 		try {
 			Mac mac = Mac.getInstance("HmacSHA256");
-			mac.init(new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-			return new String(Base64Coder.encode(mac.doFinal(text.getBytes(StandardCharsets.UTF_8))));
+			mac.init(new SecretKeySpec(key.getBytes(Charset.forName("UTF-8")), "HmacSHA256"));
+			return new String(Base64Coder.encode(mac.doFinal(text.getBytes(Charset.forName("UTF-8")))));
 		} catch (GeneralSecurityException e) { Log.e("Auth.hmac", "Unexpected exception", e); return null; }
 	}
 
