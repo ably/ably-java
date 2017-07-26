@@ -4,6 +4,6 @@ set -ex
 export TERM=dumb
 
 ret=0
-gradle java:testRestSuite || ret=1
-gradle java:testRealtimeSuite || ret=1
+../gradlew java:testRestSuite || ret=1
+../gradlew java:testRealtimeSuite || ret=1
 exit $ret
