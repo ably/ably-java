@@ -31,6 +31,7 @@ public class HttpHeaderTest extends ParameterizedTest {
 		server = new SessionHandlerNanoHTTPD(27331);
 		server.start(NanoHTTPD.SOCKET_READ_TIMEOUT, true);
 
+		/* wait for server to start */
 		while (!server.wasStarted()) {
 			try {
 				Thread.sleep(100);
@@ -53,7 +54,7 @@ public class HttpHeaderTest extends ParameterizedTest {
 	 * Spec: RSC7b, G4
 	 * </p>
 	 *
-	 * Spec: RSC7a: Must have the header X-Ably-Version: 0.9 (or whatever the
+	 * Spec: RSC7a: Must have the header X-Ably-Version: 1.0 (or whatever the
 	 * spec version is).
 	 */
 	@Test
