@@ -5,7 +5,7 @@ import io.ably.lib.types.ClientOptions;
 
 public class Defaults {
 	/* versions */
-	public static final String ABLY_VERSION         = "0.9";
+	public static final String ABLY_VERSION         = "1.0";
 	public static final String ABLY_LIB_VERSION     = String.format("%s-%s", BuildConfig.LIBRARY_NAME, BuildConfig.VERSION);
 
 	/* params */
