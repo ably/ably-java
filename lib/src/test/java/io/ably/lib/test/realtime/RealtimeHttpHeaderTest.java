@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -14,7 +15,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import fi.iki.elonen.NanoHTTPD;
-import fi.iki.elonen.router.RouterNanoHTTPD;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.transport.Defaults;
@@ -152,7 +152,7 @@ public class RealtimeHttpHeaderTest extends ParameterizedTest {
 		}
 	}
 
-	private static class SessionHandlerNanoHTTPD extends RouterNanoHTTPD {
+	private static class SessionHandlerNanoHTTPD extends NanoHTTPD {
 		Map<String, List<String>> requestParameters;
 
 		SessionHandlerNanoHTTPD(int port) {
@@ -163,6 +163,7 @@ public class RealtimeHttpHeaderTest extends ParameterizedTest {
 		public Response serve(IHTTPSession session) {
 			if (requestParameters == null)
 				requestParameters = decodeParameters(session.getQueryParameterString());
+
 			return newFixedLengthResponse("Ignored response");
 		}
 

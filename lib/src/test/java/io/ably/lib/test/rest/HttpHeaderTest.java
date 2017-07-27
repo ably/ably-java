@@ -10,7 +10,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import fi.iki.elonen.NanoHTTPD;
-import fi.iki.elonen.router.RouterNanoHTTPD;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Channel;
 import io.ably.lib.test.common.ParameterizedTest;
@@ -94,8 +93,8 @@ public class HttpHeaderTest extends ParameterizedTest {
 		}
 	}
 
-	private static class SessionHandlerNanoHTTPD extends RouterNanoHTTPD {
-		public Map<String, String> headers;
+	private static class SessionHandlerNanoHTTPD extends NanoHTTPD {
+		Map<String, String> requestHeaders;
 
 		public SessionHandlerNanoHTTPD(int port) {
 			super(port);
@@ -103,12 +102,16 @@ public class HttpHeaderTest extends ParameterizedTest {
 
 		@Override
 		public Response serve(IHTTPSession session) {
-			headers = new HashMap<>(session.getHeaders());
+			requestHeaders = new HashMap<>(session.getHeaders());
+			int contentLength = Integer.parseInt(requestHeaders.get("content-length"));
+			try {
+				session.getInputStream().read(new byte[contentLength]);
+			} catch (IOException e) {}
 			return newFixedLengthResponse("Ignored response");
 		}
 
 		public Map<String, String> getHeaders() {
-			return headers;
+			return requestHeaders;
 		}
 	}
 }
