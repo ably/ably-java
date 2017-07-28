@@ -68,7 +68,7 @@ public class Auth {
 		public String authUrl;
 
 		/**
-		 * TO3j7: authMethod – The HTTP verb to be used when a request
+		 * TO3j7: authMethod: The HTTP verb to be used when a request
 		 * is made by the library to the authUrl. Defaults to GET,
 		 * supports GET and POST
 		 */

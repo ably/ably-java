@@ -865,7 +865,7 @@ public class Presence {
 			 * of its id, compare them by timestamp numerically. (This will be the case when one of them
 			 * is a 'synthesized leave' event sent by realtime to indicate a connection disconnected
 			 * unexpectedly 15s ago. Such messages will have an id that does not correspond to its
-			 * connectionId, as it wasn’t actually published by that connection
+			 * connectionId, as it wasn't actually published by that connection
 			 */
 			if(item.connectionId != null && existingItem.connectionId != null &&
 					(!item.id.startsWith(item.connectionId) || !existingItem.id.startsWith(existingItem.connectionId)))
