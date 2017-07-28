@@ -600,7 +600,8 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		boolean creating = false;
 		synchronized(this) {
 			if(mgrThread == null) {
-				mgrThread = new Thread(this);
+                mgrThread = new Thread(this, "Connection Manager");
+                mgrThread.setDaemon(true); // So it exists properly
 				state = states.get(ConnectionState.initialized);
 				creating = true;
 			}
@@ -706,12 +707,14 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			}
 		}
 		if(stateChange != null) {
-			if (stateChange.state != state.state) {
-				setState(stateChange);
-			} else if (stateChange.state == ConnectionState.connected) {
+			if (stateChange.state == ConnectionState.connected) {
 				/* connected is special case because we want to deliver reauth notifications to listeners as an update */
 				connection.emitUpdate(null);
-			}
+			} else if (stateChange.state == ConnectionState.closed && stateChange.reason == null) { // reason=null is invoked by close.
+                stopThread();
+            } else if (stateChange.state != state.state) {
+                setState(stateChange);
+            }
 		}
 	}
 
