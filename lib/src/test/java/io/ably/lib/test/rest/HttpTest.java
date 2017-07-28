@@ -31,6 +31,7 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.Timeout;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
@@ -56,6 +57,9 @@ public class HttpTest {
 	private static final String PATTERN_HOST_FALLBACK = "(?i)[a-e]\\.ably-realtime.com";
 	private static final String CUSTOM_PATTERN_HOST_FALLBACK = "(?i)[f-k]\\.ably-realtime.com";
 	private static final String[] CUSTOM_HOSTS = { "f.ably-realtime.com", "g.ably-realtime.com", "h.ably-realtime.com", "i.ably-realtime.com", "j.ably-realtime.com", "k.ably-realtime.com" };
+
+	@Rule
+	public Timeout testTimeout = Timeout.seconds(30);
 
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();

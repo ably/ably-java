@@ -13,7 +13,9 @@ import java.util.Locale;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
@@ -33,6 +35,9 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 
 	private AblyRealtime ably;
 	private long timeOffset;
+
+	@Rule
+	public Timeout testTimeout = Timeout.seconds(300);
 
 	@Before
 	public void setUpBefore() throws Exception {

@@ -20,13 +20,18 @@ import java.util.Date;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 @SuppressWarnings("deprecation")
 public class RestAppStatsTest extends ParameterizedTest {
 
 	private AblyRest ably;
 	private static String[] intervalIds;
+
+	@Rule
+	public Timeout testTimeout = Timeout.seconds(300);
 
 	@Before
 	public void setUpBefore() throws Exception {

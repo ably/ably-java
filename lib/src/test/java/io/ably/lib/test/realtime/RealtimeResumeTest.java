@@ -4,7 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
@@ -22,6 +24,9 @@ import io.ably.lib.types.ErrorInfo;
 public class RealtimeResumeTest extends ParameterizedTest {
 
 	private static final String TAG = RealtimeResumeTest.class.getName();
+
+	@Rule
+	public Timeout testTimeout = Timeout.seconds(60);
 
 	/**
 	 * Connect to the service using two library instances to set

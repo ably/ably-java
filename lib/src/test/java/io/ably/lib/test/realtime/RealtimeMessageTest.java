@@ -12,7 +12,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -45,6 +47,9 @@ public class RealtimeMessageTest extends ParameterizedTest {
 
 	private static final String testMessagesEncodingFile = "ably-common/test-resources/messages-encoding.json";
 	private static Gson gson = new Gson();
+
+	@Rule
+	public Timeout testTimeout = Timeout.seconds(30);
 
 	/**
 	 * Connect to the service and attach, subscribe to an event, and publish on that channel

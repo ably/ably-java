@@ -10,7 +10,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.CompletionListener;
@@ -32,6 +34,9 @@ import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
 
 public class RealtimeConnectFailTest extends ParameterizedTest {
+
+	@Rule
+	public Timeout testTimeout = Timeout.seconds(300);
 
 	/**
 	 * Verify that the connection enters the failed state, after attempting

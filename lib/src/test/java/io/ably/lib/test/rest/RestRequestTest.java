@@ -11,7 +11,9 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import com.google.gson.JsonElement;
 
@@ -44,6 +46,9 @@ public class RestRequestTest extends ParameterizedTest {
 	private String channelPath;
 	private String channelsPath;
 	private String channelMessagesPath;
+
+	@Rule
+	public Timeout testTimeout = Timeout.seconds(30);
 
 	@Before
 	public void setUpBefore() throws Exception {

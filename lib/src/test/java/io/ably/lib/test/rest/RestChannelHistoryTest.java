@@ -8,7 +8,9 @@ import java.util.HashMap;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Channel;
@@ -23,6 +25,9 @@ public class RestChannelHistoryTest extends ParameterizedTest {
 
 	private AblyRest ably;
 	private long timeOffset;
+
+	@Rule
+	public Timeout testTimeout = Timeout.seconds(300);
 
 	@Before
 	public void setUpBefore() throws Exception {

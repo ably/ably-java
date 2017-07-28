@@ -22,7 +22,9 @@ import com.google.gson.JsonParser;
 import io.ably.lib.realtime.*;
 import io.ably.lib.types.*;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
@@ -89,6 +91,9 @@ public class RealtimePresenceTest extends ParameterizedTest {
 		io.ably.lib.rest.Channel restChannel;
 		io.ably.lib.realtime.Channel realtimeChannel;
 	}
+
+	@Rule
+	public Timeout testTimeout = Timeout.seconds(300);
 
 	@Before
 	public void setUpBefore() throws Exception {

@@ -9,7 +9,9 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.AblyRealtime;
@@ -40,6 +42,9 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 	private long timeOffset;
 	private AblyRest rest;
 	private Auth.TokenDetails token;
+
+	@Rule
+	public Timeout testTimeout = Timeout.seconds(300);
 
 	@Before
 	public void setUpBefore() throws Exception {

@@ -21,6 +21,7 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.Timeout;
 
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
@@ -39,6 +40,9 @@ import io.ably.lib.test.util.TokenServer;
 import io.ably.lib.transport.Defaults;
 
 public class RestAuthTest extends ParameterizedTest {
+
+	@Rule
+	public Timeout testTimeout = Timeout.seconds(40);
 
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();

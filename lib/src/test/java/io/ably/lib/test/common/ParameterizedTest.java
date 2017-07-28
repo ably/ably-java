@@ -4,6 +4,8 @@ import java.util.Arrays;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
@@ -24,6 +26,9 @@ public class ParameterizedTest {
 
 	@Parameter
 	public Setup.TestParameters testParams;
+
+	@Rule
+	public Timeout testTimeout = Timeout.seconds(10);
 
 	protected static Setup.TestVars testVars;
 
