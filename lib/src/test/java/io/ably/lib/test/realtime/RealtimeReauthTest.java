@@ -10,7 +10,9 @@ import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
@@ -31,6 +33,9 @@ import io.ably.lib.types.ErrorInfo;
  * Created by VOstopolets on 8/26/16.
  */
 public class RealtimeReauthTest extends ParameterizedTest {
+
+	@Rule
+	public Timeout testTimeout = Timeout.seconds(60);
 
 	/**
 	 * RTC8a: In-place reauthorization on a connected connection.
