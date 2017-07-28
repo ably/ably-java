@@ -37,7 +37,7 @@ import io.ably.lib.types.ErrorInfo;
 public class Crypto {
 
 	public static final String DEFAULT_ALGORITHM = "aes";
-	public static final int DEFAULT_KEYLENGTH = 256; // bits
+	public static final int DEFAULT_KEYLENGTH = is256BitsSupported() ? 256 : 128; // bits
 	public static final int DEFAULT_BLOCKLENGTH = 16; // bytes
 
 	/**
@@ -287,6 +287,19 @@ public class Crypto {
 			new byte[] {15,15,15,15,15,15,15,15,15,15,15,15,15,15,15},
 			new byte[] {16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16}
 		};
+	}
+
+	/**
+	 * Determine whether or not 256-bit AES is supported. (If this determines that
+	 * it is not supported, install the JCE unlimited strength JCE extensions).
+	 * @return
+	 */
+	private static boolean is256BitsSupported() {
+		try {
+			return Cipher.getMaxAllowedKeyLength(DEFAULT_ALGORITHM) >= 256;
+		} catch (NoSuchAlgorithmException e) {
+			return false;
+		}
 	}
 
 	/**
