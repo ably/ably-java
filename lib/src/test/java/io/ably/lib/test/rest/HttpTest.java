@@ -48,6 +48,7 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
+import io.ably.lib.util.Log;
 
 /**
  * Created by gokhanbarisaker on 2/2/16.
@@ -968,7 +969,6 @@ public class HttpTest {
 	public void http_execute_response_50x() throws AblyException, MalformedURLException {
 		URL url;
 		Http http = new Http(new ClientOptions(), null);
-		Http.RequestBody requestBody = new Http.ByteArrayRequestBody(new byte[0], NanoHTTPD.MIME_PLAINTEXT);
 
 		AblyException.HostFailedException hfe;
 
@@ -977,7 +977,7 @@ public class HttpTest {
 			hfe = null;
 
 			try {
-				String result = http.httpExecute(url, Http.GET, new Param[0], requestBody, null);
+				String result = http.httpExecute(url, Http.GET, new Param[0], null, null);
 			} catch (AblyException.HostFailedException e) {
 				hfe = e;
 			} catch (AblyException e) {
@@ -1004,8 +1004,6 @@ public class HttpTest {
 	public void http_execute_response_non5xx() throws AblyException, MalformedURLException {
 		URL url;
 		Http http = new Http(new ClientOptions(), null);
-		Http.RequestBody requestBody = new Http.ByteArrayRequestBody(new byte[0], NanoHTTPD.MIME_PLAINTEXT);
-
 
         /* Informational 1xx */
 
@@ -1013,7 +1011,7 @@ public class HttpTest {
 			url = new URL("http://localhost:" + server.getListeningPort() + "/status/" + statusCode);
 
 			try {
-				http.httpExecute(url, Http.GET, new Param[0], requestBody, null);
+				http.httpExecute(url, Http.GET, new Param[0], null, null);
 			} catch (AblyException.HostFailedException e) {
 				Assert.fail("Informal status code " + statusCode + " shouldn't throw an exception");
 			} catch (Exception e) {
@@ -1028,7 +1026,7 @@ public class HttpTest {
 			url = new URL("http://localhost:" + server.getListeningPort() + "/status/" + statusCode);
 
 			try {
-				http.httpExecute(url, Http.GET, new Param[0], requestBody, null);
+				http.httpExecute(url, Http.GET, new Param[0], null, null);
 			} catch (AblyException.HostFailedException e) {
 				Assert.fail("Multiple choices status code " + statusCode + " shouldn't throw an exception");
 			} catch (Exception e) {
@@ -1043,7 +1041,7 @@ public class HttpTest {
 			url = new URL("http://localhost:" + server.getListeningPort() + "/status/" + statusCode);
 
 			try {
-				http.httpExecute(url, Http.GET, new Param[0], requestBody, null);
+				http.httpExecute(url, Http.GET, new Param[0], null, null);
 			} catch (AblyException.HostFailedException e) {
 				Assert.fail("Client error status code " + statusCode + " shouldn't throw an exception");
 			} catch (Exception e) {
@@ -1052,11 +1050,9 @@ public class HttpTest {
 		}
 	}
 
-
 	/*********************************************
 	 * Minions
 	 *********************************************/
-
 
 	static class GrumpyAnswer implements Answer<String> {
 		private int grumpinessLevel;
