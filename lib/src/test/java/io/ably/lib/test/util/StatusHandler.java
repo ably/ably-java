@@ -3,6 +3,7 @@ package io.ably.lib.test.util;
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 
@@ -15,7 +16,7 @@ public class StatusHandler extends RouterNanoHTTPD.DefaultStreamHandler {
 
     @Override
     public String getMimeType() {
-        return NanoHTTPD.MIME_PLAINTEXT;
+        return "application/json";
     }
 
     @Override
@@ -28,7 +29,7 @@ public class StatusHandler extends RouterNanoHTTPD.DefaultStreamHandler {
         String codeParam = urlParams.get("code");
         int code = Integer.parseInt(codeParam);
 
-        return newFixedLengthResponse(newStatus(code, ""), getMimeType(), "");
+        return newFixedLengthResponse(newStatus(code, ""), getMimeType(), "{code:" + codeParam + "}");
     }
 
     @Override
