@@ -4,13 +4,12 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import io.ably.lib.http.HttpAuth;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.test.common.ParameterizedTest;
-import io.ably.lib.test.common.Setup;
-import io.ably.lib.test.common.Setup.TestVars;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.PaginatedResult;
@@ -73,6 +72,7 @@ public class RestProxyTest extends ParameterizedTest {
 	 * Check access to stats API via proxy, non-TLS
 	 */
 	@Test
+	@Ignore("Proxy server not running")
 	public void proxy_simple_plain() {
 		try {
 			/* setup client */
@@ -99,6 +99,7 @@ public class RestProxyTest extends ParameterizedTest {
 	 * Check access to stats API via proxy
 	 */
 	@Test
+	@Ignore("Proxy server not running")
 	public void proxy_simple_tls() {
 		try {
 			/* setup client */
@@ -123,6 +124,7 @@ public class RestProxyTest extends ParameterizedTest {
 	 * Check access to stats API via proxy with authentication, non-tls
 	 */
 	@Test
+	@Ignore("Proxy server not running")
 	public void proxy_basic_auth_plain() {
 		try {
 			/* setup client */
