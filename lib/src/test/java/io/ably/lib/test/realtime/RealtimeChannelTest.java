@@ -16,7 +16,6 @@ import java.util.List;
 
 import org.hamcrest.Matchers;
 import org.junit.Test;
-
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.Channel.MessageListener;
@@ -30,8 +29,6 @@ import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.ParameterizedTest;
-import io.ably.lib.test.common.Setup;
-import io.ably.lib.test.common.Setup.TestVars;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.test.util.MockWebsocketFactory;
 import io.ably.lib.transport.Defaults;
@@ -986,7 +983,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			ably.connection.connectionManager.requestState(ConnectionState.failed);
 
 			/* wait */
-			try { Thread.sleep(2000L); } catch(InterruptedException e) {}
+			try { Thread.sleep(5000L); } catch(InterruptedException e) {}
 
 			/* reconnect the connection; this time attempting to recover the (now-closed) recovery key */
 			ably.options.recover = recoverConnectionKey;
@@ -1012,7 +1009,6 @@ public class RealtimeChannelTest extends ParameterizedTest {
 				ably.close();
 		}
 	}
-
 
 	@Test
 	public void channel_state_on_connection_suspended() {
