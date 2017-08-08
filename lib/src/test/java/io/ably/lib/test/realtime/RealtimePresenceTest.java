@@ -40,6 +40,7 @@ import io.ably.lib.test.util.MockWebsocketFactory;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.PresenceMessage.Action;
+import io.ably.lib.util.Log;
 
 public class RealtimePresenceTest extends ParameterizedTest {
 
@@ -2404,7 +2405,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			channelWaiter.waitFor(ChannelState.attached);
 
 			/* Wait for reconnect */
-			connectionWaiter.waitFor(ConnectionState.connecting, 2);
 			connectionWaiter.waitFor(ConnectionState.connected, 2);
 
 			client2Channel.presence.unsubscribe();
@@ -2701,7 +2701,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	 *
 	 * Not functional yet
 	 */
-	//@Test
+	@Test
 	public void presence_without_subscribe_capability() throws AblyException {
 		String channelName = "presence_without_subscribe" + testParams.name;
 		AblyRealtime ably = null;
@@ -2825,9 +2825,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			ably = new AblyRealtime(opts);
 
 			Channel channel = ably.channels.get(channelName);
-			channel.attach();
-
 			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+			channel.attach();
 			channelWaiter.waitFor(ChannelState.attached);
 
 			CompletionWaiter enterWaiter = new CompletionWaiter();
