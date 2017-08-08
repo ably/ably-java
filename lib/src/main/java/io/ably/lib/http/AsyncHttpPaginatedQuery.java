@@ -109,7 +109,9 @@ public class AsyncHttpPaginatedQuery implements ResponseHandler<AsyncHttpPaginat
 			try {
 				for(int i = 0; i < paramSpecs.length; i++) {
 					String[] split = paramSpecs[i].split("=");
-					params[i] = new Param(split[0], URLDecoder.decode(split[1], "UTF-8"));
+					String paramKey = split[0];
+					String paramValue = (split.length >= 2) ? split[1] : "";
+					params[i] = new Param(paramKey, URLDecoder.decode(paramValue, "UTF-8"));
 				}
 			} catch(UnsupportedEncodingException uee) {}
 			exec(params, callback);
