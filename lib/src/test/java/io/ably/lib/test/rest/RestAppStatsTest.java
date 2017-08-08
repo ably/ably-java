@@ -30,9 +30,6 @@ public class RestAppStatsTest extends ParameterizedTest {
 	private AblyRest ably;
 	private static String[] intervalIds;
 
-	@Rule
-	public Timeout testTimeout = Timeout.seconds(300);
-
 	@Before
 	public void setUpBefore() throws Exception {
 		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
