@@ -647,7 +647,7 @@ public class Auth {
 		}
 
 		String tokenPath = "/keys/" + signedTokenRequest.keyName + "/requestToken";
-		return ably.http.post(tokenPath, tokenOptions.authHeaders, tokenOptions.authParams, new Http.JsonRequestBody(signedTokenRequest.asJsonElement().toString()), new ResponseHandler<TokenDetails>() {
+		return ably.http.post(tokenPath, null, null, new Http.JsonRequestBody(signedTokenRequest.asJsonElement().toString()), new ResponseHandler<TokenDetails>() {
 			@Override
 			public TokenDetails handleResponse(Response response, ErrorInfo error) throws AblyException {
 				if(error != null) {
