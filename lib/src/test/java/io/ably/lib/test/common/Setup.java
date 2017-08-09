@@ -235,7 +235,7 @@ public class Setup {
 				opts.tlsPort = tlsPort;
 				opts.tls = true;
 				ably = new AblyRest(opts);
-				ably.http.del("/apps/" + testVars.appId, HttpUtils.defaultAcceptHeaders(false), null, null, false);
+				ably.http.del("/apps/" + testVars.appId, HttpUtils.defaultAcceptHeaders(false), null, null, true);
 			} catch (AblyException ae) {
 				System.err.println("Unable to delete test app: " + ae);
 				ae.printStackTrace();

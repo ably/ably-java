@@ -1,6 +1,7 @@
 package io.ably.lib.test.common;
 
 import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.*;
 
 import com.google.gson.Gson;
@@ -682,6 +683,7 @@ public class Helpers {
 
 	public static class RawHttpRequest {
 		public String id;
+		public URL url;
 		public HttpURLConnection conn;
 		public String method;
 		public String authHeader;
@@ -708,6 +710,7 @@ public class Helpers {
 			}
 			RawHttpRequest req = new RawHttpRequest();
 			req.id = id;
+			req.url = conn.getURL();
 			req.conn = conn;
 			req.method = method;
 			req.authHeader = authHeader;

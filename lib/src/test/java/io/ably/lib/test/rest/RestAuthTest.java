@@ -39,6 +39,7 @@ import io.ably.lib.rest.Auth.TokenParams;
 import io.ably.lib.rest.Auth.TokenRequest;
 import io.ably.lib.rest.Channel;
 import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.test.common.Helpers.RawHttpTracker;
 import io.ably.lib.test.util.TokenServer;
 
 public class RestAuthTest extends ParameterizedTest {
@@ -765,6 +766,104 @@ public class RestAuthTest extends ParameterizedTest {
 			fail("authinit_no_auth: Unexpected success instantiating library");
 		} catch (AblyException e) {
 			assertEquals("Verify exception thrown initialising library", e.errorInfo.code, 40000);
+		}
+	}
+
+	/**
+	 * Verify preemptive auth occurs when an API call is made using basic auth
+	 */
+	@Test
+	public void auth_preemptive_auth_basic() {
+		try {
+			/* create Ably instance with key */
+			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+			fillInOptions(opts);
+			RawHttpTracker httpListener = new RawHttpTracker();
+			opts.httpListener = httpListener;
+			AblyRest ably = new AblyRest(opts);
+
+			/* make a request that relies on authentication */
+			try {
+				ably.stats(new Param[] { new Param("by", "hour"), new Param("limit", "1") });
+			} catch (AblyException e) {
+				e.printStackTrace();
+				fail("auth_preemptive_auth_basic: Unexpected exception making API call");
+			}
+
+			/* verify that the request was sent once only with a basic auth header */
+			assertEquals("Verify one request made", httpListener.size(), 1);
+			assertTrue("Verify request had auth header", httpListener.getFirstRequest().authHeader.startsWith("Basic"));
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_preemptive_auth_basic: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Verify preemptive auth occurs when an API call is on an Ably instanced initialised with a token
+	 */
+	@Test
+	public void auth_preemptive_auth_given_token() {
+		try {
+			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
+			optsForToken.clientId = "testClientId";
+			AblyRest ablyForToken = new AblyRest(optsForToken);
+			TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, null);
+
+			/* create Ably instance with token */
+			DebugOptions opts = new DebugOptions(tokenDetails.token);
+			fillInOptions(opts);
+			RawHttpTracker httpListener = new RawHttpTracker();
+			opts.httpListener = httpListener;
+			AblyRest ably = new AblyRest(opts);
+
+			/* make a request that relies on authentication */
+			try {
+				ably.stats(new Param[] { new Param("by", "hour"), new Param("limit", "1") });
+			} catch (AblyException e) {
+				e.printStackTrace();
+				fail("auth_preemptive_auth_given_token: Unexpected exception making API call");
+			}
+
+			/* verify that the request was sent once only with a basic auth header */
+			assertEquals("Verify one request made", httpListener.size(), 1);
+			assertTrue("Verify request had auth header", httpListener.getFirstRequest().authHeader.startsWith("Bearer"));
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_preemptive_auth_given_token: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Verify preemptive auth occurs when an API call is on an Ably instanced with a key but using token auth
+	 */
+	@Test
+	public void auth_preemptive_auth_created_token() {
+		try {
+			/* create Ably instance with key */
+			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+			fillInOptions(opts);
+			opts.clientId = "testClientId";
+			opts.useTokenAuth = true;
+			RawHttpTracker httpListener = new RawHttpTracker();
+			opts.httpListener = httpListener;
+			AblyRest ably = new AblyRest(opts);
+
+			/* make a request that relies on authentication */
+			try {
+				ably.stats(new Param[] { new Param("by", "hour"), new Param("limit", "1") });
+			} catch (AblyException e) {
+				e.printStackTrace();
+				fail("auth_preemptive_auth_basic: Unexpected exception making API call");
+			}
+
+			/* verify that there were two requests: one to get a token, and one to make the API call */
+			assertEquals("Verify two requests made", httpListener.size(), 2);
+			assertTrue("Verify token request made", httpListener.getFirstRequest().url.getPath().endsWith("requestToken"));
+			assertTrue("Verify API request had auth header", httpListener.getLastRequest().authHeader.startsWith("Bearer"));
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_preemptive_auth_basic: Unexpected exception instantiating library");
 		}
 	}
 
