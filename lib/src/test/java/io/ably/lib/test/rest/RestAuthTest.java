@@ -1,6 +1,7 @@
 package io.ably.lib.test.rest;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -16,6 +17,8 @@ import java.util.Map;
 
 import io.ably.lib.http.Http;
 import io.ably.lib.types.*;
+import io.ably.lib.util.Log;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -37,7 +40,6 @@ import io.ably.lib.rest.Auth.TokenRequest;
 import io.ably.lib.rest.Channel;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.util.TokenServer;
-import io.ably.lib.transport.Defaults;
 
 public class RestAuthTest extends ParameterizedTest {
 
@@ -621,7 +623,7 @@ public class RestAuthTest extends ParameterizedTest {
 	}
 
 	/**
-	 * Verify authCallback called when token expires
+	 * Verify authCallback called when token expires; Ably initialised with token
 	 */
 	@Test
 	public void auth_authcallback_token_expire() {
@@ -665,6 +667,53 @@ public class RestAuthTest extends ParameterizedTest {
 
 			/* verify that the auth callback was called */
 			assertEquals("Expected token generator to be called", 1, authCallback.getCbCount());
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_authURL_tokenrequest: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Verify authCallback called when token expires; Ably initialised with key
+	 */
+	@Test
+	public void auth_authcallback_key_expire() {
+		try {
+			/* create Ably instance with key */
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.clientId = "testClientId";
+			opts.useTokenAuth = true;
+			opts.defaultTokenParams.ttl = 5000L;
+			AblyRest ably = new AblyRest(opts);
+
+			/* make a request that relies on the token */
+			System.out.println("auth_authcallback_key_expire: making first request");
+			try {
+				ably.stats(new Param[] { new Param("by", "hour"), new Param("limit", "1") });
+			} catch (AblyException e) {
+				e.printStackTrace();
+				fail("auth_authURL_tokenrequest: Unexpected exception requesting token");
+			}
+			String firstToken = ably.auth.getTokenDetails().token;
+
+			/* wait until token expires */
+			System.out.println("auth_authcallback_key_expire: sleeping");
+			try {
+				Thread.sleep(6000L);
+			} catch(InterruptedException ie) {}
+
+			/* make a request that relies on the token */
+			System.out.println("auth_authcallback_key_expire: making second request");
+			try {
+				ably.stats(new Param[] { new Param("by", "hour"), new Param("limit", "1") });
+			} catch (AblyException e) {
+				e.printStackTrace();
+				fail("auth_authURL_tokenrequest: Unexpected exception requesting token");
+			}
+			String secondToken = ably.auth.getTokenDetails().token;
+
+			/* verify that the token was renewed */
+			assertNotEquals("Verify token was renewed", firstToken, secondToken);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("auth_authURL_tokenrequest: Unexpected exception instantiating library");
