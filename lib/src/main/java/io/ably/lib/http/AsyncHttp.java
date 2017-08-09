@@ -27,8 +27,8 @@ public class AsyncHttp extends ThreadPoolExecutor {
 	 * @param responseHandler
 	 * @param callback
 	 */
-	public <T> Future<T> get(String path, Param[] headers, Param[] params, ResponseHandler<T> responseHandler, Callback<T> callback) {
-		return ablyHttpExecuteWithFallback(path, Http.GET, headers, params, null, responseHandler, callback);
+	public <T> Future<T> get(String path, Param[] headers, Param[] params, ResponseHandler<T> responseHandler, boolean requireAblyAuth, Callback<T> callback) {
+		return ablyHttpExecuteWithFallback(path, Http.GET, headers, params, null, responseHandler, requireAblyAuth, callback);
 	}
 
 	/**
@@ -40,8 +40,8 @@ public class AsyncHttp extends ThreadPoolExecutor {
 	 * @param responseHandler
 	 * @param callback
 	 */
-	public <T> Future<T> put(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler, Callback<T> callback) {
-		return ablyHttpExecuteWithFallback(path, Http.PUT, headers, params, requestBody, responseHandler, callback);
+	public <T> Future<T> put(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean requireAblyAuth, Callback<T> callback) {
+		return ablyHttpExecuteWithFallback(path, Http.PUT, headers, params, requestBody, responseHandler, requireAblyAuth, callback);
 	}
 
 	/**
@@ -53,8 +53,8 @@ public class AsyncHttp extends ThreadPoolExecutor {
 	 * @param responseHandler
 	 * @param callback
 	 */
-	public <T> Future<T> post(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler, Callback<T> callback) {
-		return ablyHttpExecuteWithFallback(path, Http.POST, headers, params, requestBody, responseHandler, callback);
+	public <T> Future<T> post(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean requireAblyAuth, Callback<T> callback) {
+		return ablyHttpExecuteWithFallback(path, Http.POST, headers, params, requestBody, responseHandler, requireAblyAuth, callback);
 	}
 
 	/**
@@ -65,8 +65,8 @@ public class AsyncHttp extends ThreadPoolExecutor {
 	 * @param responseHandler
 	 * @param callback
 	 */
-	public <T> Future<T> del(String path, Param[] headers, Param[] params, ResponseHandler<T> responseHandler, Callback<T> callback) {
-		return ablyHttpExecuteWithFallback(path, Http.DELETE, headers, params, null, responseHandler, callback);
+	public <T> Future<T> del(String path, Param[] headers, Param[] params, ResponseHandler<T> responseHandler, boolean requireAblyAuth, Callback<T> callback) {
+		return ablyHttpExecuteWithFallback(path, Http.DELETE, headers, params, null, responseHandler, requireAblyAuth, callback);
 	}
 
 	/**
@@ -79,8 +79,8 @@ public class AsyncHttp extends ThreadPoolExecutor {
 	 * @param responseHandler
 	 * @param callback
 	 */
-	public <T> Future<T> exec(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler, Callback<T> callback) {
-		return ablyHttpExecuteWithFallback(path, method, headers, params, requestBody, responseHandler, callback);
+	public <T> Future<T> exec(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean requireAblyAuth, Callback<T> callback) {
+		return ablyHttpExecuteWithFallback(path, method, headers, params, requestBody, responseHandler, requireAblyAuth, callback);
 	}
 
 	/**************************
@@ -132,15 +132,17 @@ public class AsyncHttp extends ThreadPoolExecutor {
 				final Param[] params,
 				final RequestBody requestBody,
 				final ResponseHandler<T> responseHandler,
+				final boolean requireAblyAuth,
 				final Callback<T> callback) {
 			super(method, headers, params, requestBody, true, responseHandler, callback);
 			this.host = host;
 			this.path = path;
+			this.requireAblyAuth = requireAblyAuth;
 		}
 		@Override
 		public void run() {
 			try {
-				result = httpExecuteWithRetry(host, path, true);
+				result = httpExecuteWithRetry(host, path, requireAblyAuth);
 				setResult(result);
 			} catch(AblyException e) {
 				setError(e.errorInfo);
@@ -150,6 +152,7 @@ public class AsyncHttp extends ThreadPoolExecutor {
 		}
 		private final String host;
 		private final String path;
+		private final Boolean requireAblyAuth;
 	}
 
 	/**
@@ -165,9 +168,11 @@ public class AsyncHttp extends ThreadPoolExecutor {
 				final Param[] params,
 				final RequestBody requestBody,
 				final ResponseHandler<T> responseHandler,
+				final boolean requireAblyAuth,
 				final Callback<T> callback) {
 			super(method, headers, params, requestBody, true, responseHandler, callback);
 			this.path = path;
+			this.requireAblyAuth = requireAblyAuth;
 		}
 		@Override
 		public void run() {
@@ -176,7 +181,7 @@ public class AsyncHttp extends ThreadPoolExecutor {
 
 			while(!isCancelled) {
 				try {
-					result = httpExecuteWithRetry(candidateHost, path, true);
+					result = httpExecuteWithRetry(candidateHost, path, requireAblyAuth);
 					setResult(result);
 					break;
 				} catch (AblyException.HostFailedException e) {
@@ -200,6 +205,7 @@ public class AsyncHttp extends ThreadPoolExecutor {
 			}
 		}
 		private final String path;
+		private final boolean requireAblyAuth;
 	}
 
 	/**
@@ -277,9 +283,9 @@ public class AsyncHttp extends ThreadPoolExecutor {
 		protected T httpExecuteWithRetry(URL url) throws AblyException {
 			return http.httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, false);
 		}
-		protected T httpExecuteWithRetry(String host, String path, boolean allowAblyAuth) throws AblyException {
+		protected T httpExecuteWithRetry(String host, String path, boolean requireAblyAuth) throws AblyException {
 			URL url = Http.buildURL(http.scheme, host, http.port, path, params);
-			return http.httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, allowAblyAuth);
+			return http.httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, requireAblyAuth);
 		}
 		protected void setResult(T result) {
 			synchronized(this) {
@@ -376,9 +382,10 @@ public class AsyncHttp extends ThreadPoolExecutor {
 			final Param[] params,
 			final RequestBody requestBody,
 			final ResponseHandler<T> responseHandler,
+			final boolean requireAblyAuth,
 			final Callback<T> callback) {
 
-		AblyRequestWithFallback<T> request = new AblyRequestWithFallback<>(path, method, headers, params, requestBody, responseHandler, callback);
+		AblyRequestWithFallback<T> request = new AblyRequestWithFallback<>(path, method, headers, params, requestBody, responseHandler, requireAblyAuth, callback);
 		execute(request);
 		return request;
 	}
@@ -403,9 +410,10 @@ public class AsyncHttp extends ThreadPoolExecutor {
 			final Param[] params,
 			final RequestBody requestBody,
 			final ResponseHandler<T> responseHandler,
+			final boolean requireAblyAuth,
 			final Callback<T> callback) {
 
-		AblyRequestWithRetry<T> request = new AblyRequestWithRetry<>(host, path, method, headers, params, requestBody, responseHandler, callback);
+		AblyRequestWithRetry<T> request = new AblyRequestWithRetry<>(host, path, method, headers, params, requestBody, responseHandler, requireAblyAuth, callback);
 		execute(request);
 		return request;
 	}

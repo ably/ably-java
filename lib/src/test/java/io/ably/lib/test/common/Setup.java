@@ -210,7 +210,7 @@ public class Setup {
 						result.tlsPort = tlsPort;
 						result.tls = true;
 						return result;
-					}});
+					}}, false);
 			} catch (AblyException ae) {
 				System.err.println("Unable to create test app: " + ae);
 				ae.printStackTrace();
@@ -235,7 +235,7 @@ public class Setup {
 				opts.tlsPort = tlsPort;
 				opts.tls = true;
 				ably = new AblyRest(opts);
-				ably.http.del("/apps/" + testVars.appId, HttpUtils.defaultAcceptHeaders(false), null, null);
+				ably.http.del("/apps/" + testVars.appId, HttpUtils.defaultAcceptHeaders(false), null, null, false);
 			} catch (AblyException ae) {
 				System.err.println("Unable to delete test app: " + ae);
 				ae.printStackTrace();

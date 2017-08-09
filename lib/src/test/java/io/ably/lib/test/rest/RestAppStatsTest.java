@@ -20,9 +20,7 @@ import java.util.Date;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.Timeout;
 
 @SuppressWarnings("deprecation")
 public class RestAppStatsTest extends ParameterizedTest {
@@ -78,7 +76,7 @@ public class RestAppStatsTest extends ParameterizedTest {
 					+ ']'
 				);
 
-			ably.http.post("/stats", HttpUtils.defaultAcceptHeaders(false), null, StatsWriter.asJsonRequest(testStats), null);
+			ably.http.post("/stats", HttpUtils.defaultAcceptHeaders(false), null, StatsWriter.asJsonRequest(testStats), null, true);
 		} catch (AblyException e) {}
 	}
 

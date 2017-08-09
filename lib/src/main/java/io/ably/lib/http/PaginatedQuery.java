@@ -62,7 +62,7 @@ public class PaginatedQuery<T> implements ResponseHandler<PaginatedResult<T>> {
 	 * @throws AblyException
 	 */
 	public PaginatedResult<T> get() throws AblyException {
-		return http.get(path, requestHeaders, requestParams, this);
+		return http.get(path, requestHeaders, requestParams, this, true);
 	}
 
 	/**
@@ -72,7 +72,7 @@ public class PaginatedQuery<T> implements ResponseHandler<PaginatedResult<T>> {
 	 * @throws AblyException
 	 */
 	public PaginatedResult<T> exec(String method) throws AblyException {
-		return http.exec(path, method, requestHeaders, requestParams, requestBody, this);
+		return http.exec(path, method, requestHeaders, requestParams, requestBody, this, true);
 	}
 
 	/**
@@ -118,7 +118,7 @@ public class PaginatedQuery<T> implements ResponseHandler<PaginatedResult<T>> {
 						params[i] = new Param(split[0], URLDecoder.decode(split[1], "UTF-8"));
 					}
 				} catch(UnsupportedEncodingException uee) {}
-				return http.get(path, requestHeaders, params, PaginatedQuery.this);
+				return http.get(path, requestHeaders, params, PaginatedQuery.this, true);
 			}
 			throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected link URL format", 500, 50000));
 		}

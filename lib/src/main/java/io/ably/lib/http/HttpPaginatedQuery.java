@@ -40,7 +40,7 @@ public class HttpPaginatedQuery implements ResponseHandler<HttpPaginatedResponse
 	 * @throws AblyException
 	 */
 	public HttpPaginatedResponse exec() throws AblyException {
-		return http.exec(path, method, requestHeaders, requestParams, requestBody, this);
+		return http.exec(path, method, requestHeaders, requestParams, requestBody, this, true);
 	}
 
 	/**
@@ -50,7 +50,7 @@ public class HttpPaginatedQuery implements ResponseHandler<HttpPaginatedResponse
 	 * @throws AblyException
 	 */
 	public HttpPaginatedResponse exec(Param[] params) throws AblyException {
-		return http.exec(path, method, requestHeaders, params, requestBody, this);
+		return http.exec(path, method, requestHeaders, params, requestBody, this, true);
 	}
 
 	@Override
