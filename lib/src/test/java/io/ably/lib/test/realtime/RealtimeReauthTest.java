@@ -17,17 +17,21 @@ import org.junit.rules.Timeout;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
+import io.ably.lib.realtime.ConnectionEvent;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
+import io.ably.lib.rest.Auth.TokenCallback;
+import io.ably.lib.rest.Auth.TokenDetails;
+import io.ably.lib.rest.Auth.TokenParams;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.ParameterizedTest;
-import io.ably.lib.test.common.Setup;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Capability;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.util.Log;
 
 /**
  * Created by VOstopolets on 8/26/16.
@@ -396,4 +400,135 @@ public class RealtimeReauthTest extends ParameterizedTest {
 		}
 	}
 
+	/**
+	 * Verify that the server issues reauth message 30 seconds before token expiration time, authCallback is
+	 * called to obtain new token and in-place re-authorization takes place with connection staying in connected
+	 * state. Also tests if UPDATE event is delivered on the connection
+	 *
+	 * Test for RTN4h, RTC8a1, RTN24 features
+	 */
+	@Test
+	public void reauth_token_expire_inplace_reauth() {
+		try {
+			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
+			optsForToken.logLevel = Log.VERBOSE;
+			final AblyRest ablyForToken = new AblyRest(optsForToken);
+			/* Server will send reauth message 30 seconds before token expiration time i.e. in 4 seconds */
+			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 34000L; }}, null);
+			assertNotNull("Expected token value", tokenDetails.token);
+
+			final boolean[] flags = new boolean[] {
+					false, /* authCallback is called */
+					false, /* state other than connected is reached */
+					false  /* update event was delivered */
+			};
+
+			/* create Ably realtime instance without key */
+			ClientOptions opts = createOptions();
+			opts.tokenDetails = tokenDetails;
+			opts.authCallback = new TokenCallback() {
+				/* implement callback, using Ably instance with key */
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					synchronized (flags) {
+						flags[0] = true;
+					}
+					return ablyForToken.auth.requestToken(params, null);
+				}
+			};
+			opts.logLevel = Log.VERBOSE;
+			AblyRealtime ably = new AblyRealtime(opts);
+
+			/* Test UPDATE event delivery */
+			ably.connection.on(ConnectionEvent.update, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					flags[2] = true;
+				}
+			});
+			ably.connection.on(new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					if (state.previous == ConnectionState.connected && state.current != ConnectionState.connected) {
+						synchronized (flags) {
+							flags[1] = true;
+							flags.notify();
+						}
+					}
+				}
+			});
+
+			synchronized (flags) {
+				try {
+					flags.wait(8000);
+				} catch (InterruptedException e) {}
+			}
+
+			assertTrue("Verify token generation was called", flags[0]);
+			assertFalse("Verify connection didn't leave connected state", flags[1]);
+			assertTrue("Verify UPDATE event was delivered", flags[2]);
+
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Verify that the server issues reauth message 30 seconds before token expiration time of a token =
+	 * derived from a locally-supplied key, authCallback is called to obtain new token and in-place
+	 * re-authorization takes place with connection staying in connected
+	 * state. Also tests if UPDATE event is delivered on the connection
+	 *
+	 * Test for RTN4h, RTC8a1, RTN24 features
+	 */
+	@Test
+	public void reauth_key_expire_inplace_reauth() {
+		try {
+			final boolean[] flags = new boolean[] {
+					false, /* state other than connected is reached */
+					false  /* update event was delivered */
+			};
+
+			/* create Ably realtime instance with key */
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.clientId = "testClientId";
+			opts.useTokenAuth = true;
+			opts.defaultTokenParams.ttl = 34000L;
+			opts.logLevel = Log.VERBOSE;
+			AblyRealtime ably = new AblyRealtime(opts);
+
+			/* Test UPDATE event delivery */
+			ably.connection.on(ConnectionEvent.update, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					flags[1] = true;
+				}
+			});
+			ably.connection.on(new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					if (state.previous == ConnectionState.connected && state.current != ConnectionState.connected) {
+						synchronized (flags) {
+							flags[0] = true;
+							flags.notify();
+						}
+					}
+				}
+			});
+
+			synchronized (flags) {
+				try {
+					flags.wait(8000);
+				} catch (InterruptedException e) {}
+			}
+
+			assertFalse("Verify connection didn't leave connected state", flags[0]);
+			assertTrue("Verify UPDATE event was delivered", flags[1]);
+
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		}
+	}
 }
