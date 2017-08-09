@@ -343,31 +343,8 @@ public class Http {
 	 *     Internal API
 	 **************************/
 
-	/**
-	 * Get the Authorization header, forcing the creation of a new token if requested
-	 * @param renew
-	 * @return
-	 * @throws AblyException
-	 */
-	private String getAuthorizationHeader(boolean renew) throws AblyException {
-		if(authHeader != null && !renew) {
-			return authHeader;
-		}
-		if(auth.getAuthMethod() == AuthMethod.basic) {
-			authHeader = "Basic " + Base64Coder.encodeString(auth.getBasicCredentials());
-		} else {
-			if (renew) {
-				auth.renew();
-			} else {
-				auth.assertValidToken();
-			}
-			authHeader = "Bearer " + auth.getEncodedToken();
-		}
-		return authHeader;
-	}
-
 	void authorize(boolean renew) throws AblyException {
-		getAuthorizationHeader(renew);
+		auth.assertAuthorizationHeader(renew);
 	}
 
 	synchronized void dispose() {
@@ -477,6 +454,7 @@ public class Http {
 			conn.setReadTimeout(options.httpRequestTimeout);
 			conn.setDoInput(true);
 
+			String authHeader = (auth != null) ? auth.getAuthorizationHeader() : null;
 			if(withCredentials && authHeader != null) {
 				conn.setRequestProperty(AUTHORIZATION, authHeader);
 				credentialsIncluded = true;
@@ -562,14 +540,14 @@ public class Http {
 				return httpExecute(url, getProxy(url), method, headers, requestBody, true, responseHandler);
 			} catch(AuthRequiredException are) {
 				if(are.authChallenge != null && allowAblyAuth) {
-					if(authPending) {
-						authorize(false);
-						authPending = false;
-						continue;
-					}
 					if(are.expired && renewPending) {
 						authorize(true);
 						renewPending = false;
+						continue;
+					}
+					if(authPending) {
+						authorize(false);
+						authPending = false;
 						continue;
 					}
 				}
@@ -855,7 +833,6 @@ public class Http {
 	final Hosts hosts;
 
 	private final Auth auth;
-	private String authHeader;
 	private final ProxyOptions proxyOptions;
 	private HttpAuth proxyAuth;
 	private Proxy proxy = Proxy.NO_PROXY;
