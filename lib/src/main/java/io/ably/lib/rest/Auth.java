@@ -1,7 +1,5 @@
 package io.ably.lib.rest;
 
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
@@ -905,6 +903,7 @@ public class Auth {
 		Log.i("TokenAuth.clearTokenDetails()", "");
 		this.tokenDetails = null;
 		this.encodedToken = null;
+		this.authHeader = null;
 	}
 
 	public TokenDetails assertValidToken() throws AblyException {
@@ -925,13 +924,39 @@ public class Auth {
 				clearTokenDetails();
 			}
 		}
-		Log.i("Auth.authorize()", "requesting new token");
+		Log.i("Auth.assertValidToken()", "requesting new token");
 		setTokenDetails(requestToken(params, options));
 		return tokenDetails;
 	}
 
 	private static boolean tokenValid(TokenDetails tokenDetails) {
 		return tokenDetails.expires > Auth.serverTimestamp();
+	}
+
+	/**
+	 * Get the Authorization header, forcing the creation of a new token if requested
+	 * @param forceRenew
+	 * @return
+	 * @throws AblyException
+	 */
+	public void assertAuthorizationHeader(boolean forceRenew) throws AblyException {
+		if(authHeader != null && !forceRenew) {
+			return;
+		}
+		if(getAuthMethod() == AuthMethod.basic) {
+			authHeader = "Basic " + Base64Coder.encodeString(getBasicCredentials());
+		} else {
+			if (forceRenew) {
+				renew();
+			} else {
+				assertValidToken();
+			}
+			authHeader = "Bearer " + getEncodedToken();
+		}
+	}
+
+	public String getAuthorizationHeader() {
+		return authHeader;
 	}
 
 	private static String random() { return String.format("%016d", (long)(Math.random() * 1E16)); }
@@ -1030,6 +1055,7 @@ public class Auth {
 	private String basicCredentials;
 	private TokenDetails tokenDetails;
 	private String encodedToken;
+	private String authHeader;
 
 	/**
 	 * Time delta is server time minus client time, in milliseconds, MAX_VALUE if not obtained yet
