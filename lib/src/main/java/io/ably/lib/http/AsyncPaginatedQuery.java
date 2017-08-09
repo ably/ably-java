@@ -61,7 +61,7 @@ public class AsyncPaginatedQuery<T> implements ResponseHandler<AsyncPaginatedRes
 	 * first page of results together with any available links to related results pages.
 	 */
 	public void get(Callback<AsyncPaginatedResult<T>> callback) {
-		http.get(path, headers, params, this, callback);
+		http.get(path, headers, params, this, true, callback);
 	}
 
 	/**
@@ -79,7 +79,7 @@ public class AsyncPaginatedQuery<T> implements ResponseHandler<AsyncPaginatedRes
 	 * first page of results together with any available links to related results pages.
 	 */
 	public void exec(String method, Param[] params, Callback<AsyncPaginatedResult<T>> callback) {
-		http.exec(path, method, headers, params, requestBody, this, callback);
+		http.exec(path, method, headers, params, requestBody, this, true, callback);
 	}
 
 	/**
@@ -138,7 +138,7 @@ public class AsyncPaginatedQuery<T> implements ResponseHandler<AsyncPaginatedRes
 					params[i] = new Param(split[0], URLDecoder.decode(split[1], "UTF-8"));
 				}
 			} catch(UnsupportedEncodingException uee) {}
-			http.get(path, headers, params, AsyncPaginatedQuery.this, callback);
+			http.get(path, headers, params, AsyncPaginatedQuery.this, true, callback);
 		}
 	
 		@Override

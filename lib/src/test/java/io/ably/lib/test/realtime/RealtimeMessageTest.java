@@ -597,7 +597,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 				/* subscribe */
 				MessageWaiter messageWaiter = new MessageWaiter(channel);
 
-				ably.http.post("/channels/" + channel.name + "/messages", null, null, new Http.JsonRequestBody(fixtureMessage), null);
+				ably.http.post("/channels/" + channel.name + "/messages", null, null, new Http.JsonRequestBody(fixtureMessage), null, true);
 
 				messageWaiter.waitFor(1);
 				channel.unsubscribe(messageWaiter);
@@ -618,7 +618,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 						}
 						return gson.fromJson(new String(response.body), MessagesEncodingDataItem[].class);
 					}
-				})[0];
+				}, true)[0];
 				assertEquals("Verify persisted message encoding", fixtureMessage.encoding, persistedMessage.encoding);
 				assertEquals("Verify persisted message data", fixtureMessage.data, persistedMessage.data);
 			}
@@ -666,7 +666,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 				for (MessagesEncodingDataItem fixtureMessage : fixtures.messages) {
 					MessageWaiter messageWaiter = new MessageWaiter(realtimeSubscribeChannel);
 
-					restPublishClient.http.post("/channels/" + realtimeSubscribeChannel.name + "/messages", null, null, new Http.JsonRequestBody(fixtureMessage), null);
+					restPublishClient.http.post("/channels/" + realtimeSubscribeChannel.name + "/messages", null, null, new Http.JsonRequestBody(fixtureMessage), null, true);
 
 					messageWaiter.waitFor(1);
 					realtimeSubscribeChannel.unsubscribe(messageWaiter);
@@ -710,7 +710,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 							}
 							return gson.fromJson(new String(response.body), MessagesEncodingDataItem[].class);
 						}
-					})[0];
+					}, true)[0];
 					assertEquals("Verify persisted message encoding", fixtureMessage.encoding, persistedMessage.encoding);
 					assertEquals("Verify persisted message data", fixtureMessage.data, persistedMessage.data);
 				}
@@ -763,7 +763,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			testData.expectedType = "binary";
 			testData.expectedHexValue = "30313233343536373839";	/* hex for "0123456789" */
 
-			restPublishClient.http.post("/channels/" + realtimeSubscribeChannelJson.name + "/messages", null, null, new Http.JsonRequestBody(testData), null);
+			restPublishClient.http.post("/channels/" + realtimeSubscribeChannelJson.name + "/messages", null, null, new Http.JsonRequestBody(testData), null, true);
 
 			messageWaiter.waitFor(1);
 			realtimeSubscribeChannelJson.unsubscribe(messageWaiter);

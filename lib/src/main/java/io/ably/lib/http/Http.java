@@ -13,7 +13,6 @@ import com.google.gson.JsonParseException;
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.debug.DebugOptions.RawHttpListener;
 import io.ably.lib.rest.Auth;
-import io.ably.lib.rest.Auth.AuthMethod;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.transport.Hosts;
 import io.ably.lib.types.AblyException;
@@ -22,7 +21,6 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ErrorResponse;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProxyOptions;
-import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 
@@ -266,8 +264,8 @@ public class Http {
 	 * @return
 	 * @throws AblyException
 	 */
-	public <T> T get(String path, Param[] headers, Param[] params, ResponseHandler<T> responseHandler) throws AblyException {
-		return ablyHttpExecute(path, GET, headers, params, null, responseHandler);
+	public <T> T get(String path, Param[] headers, Param[] params, ResponseHandler<T> responseHandler, boolean requireAblyAuth) throws AblyException {
+		return ablyHttpExecute(path, GET, headers, params, null, responseHandler, requireAblyAuth);
 	}
 
 	/**
@@ -280,8 +278,8 @@ public class Http {
 	 * @return
 	 * @throws AblyException
 	 */
-	public <T> T put(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
-		return ablyHttpExecute(path, PUT, headers, params, requestBody, responseHandler);
+	public <T> T put(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean requireAblyAuth) throws AblyException {
+		return ablyHttpExecute(path, PUT, headers, params, requestBody, responseHandler, requireAblyAuth);
 	}
 
 	/**
@@ -307,8 +305,8 @@ public class Http {
 	 * @return
 	 * @throws AblyException
 	 */
-	public <T> T post(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
-		return ablyHttpExecute(path, POST, headers, params, requestBody, responseHandler);
+	public <T> T post(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean requireAblyAuth) throws AblyException {
+		return ablyHttpExecute(path, POST, headers, params, requestBody, responseHandler, requireAblyAuth);
 	}
 
 	/**
@@ -320,8 +318,8 @@ public class Http {
 	 * @return
 	 * @throws AblyException
 	 */
-	public <T> T del(String path, Param[] headers, Param[] params, ResponseHandler<T> responseHandler) throws AblyException {
-		return ablyHttpExecute(path, DELETE, headers, params, null, responseHandler);
+	public <T> T del(String path, Param[] headers, Param[] params, ResponseHandler<T> responseHandler, boolean requireAblyAuth) throws AblyException {
+		return ablyHttpExecute(path, DELETE, headers, params, null, responseHandler, requireAblyAuth);
 	}
 
 	/**
@@ -335,8 +333,8 @@ public class Http {
 	 * @return
 	 * @throws AblyException
 	 */
-	public <T> T exec(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
-		return ablyHttpExecute(path, method, headers, params, requestBody, responseHandler);
+	public <T> T exec(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean requireAblyAuth) throws AblyException {
+		return ablyHttpExecute(path, method, headers, params, requestBody, responseHandler, requireAblyAuth);
 	}
 
 	/**************************
@@ -368,7 +366,7 @@ public class Http {
 	 * @return
 	 * @throws AblyException
 	 */
-	public <T> T ablyHttpExecute(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
+	public <T> T ablyHttpExecute(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean requireAblyAuth) throws AblyException {
 		String candidateHost = getHost();
 		int retryCountRemaining = hosts.getFallback(candidateHost) != null ? options.httpMaxRetryCount : 0;
 		URL url;
@@ -376,7 +374,7 @@ public class Http {
 		while(true) {
 			url = buildURL(scheme, candidateHost, port, path, params);
 			try {
-				return httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, true);
+				return httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, requireAblyAuth);
 			} catch (AblyException.HostFailedException e) {
 				if(--retryCountRemaining < 0)
 					throw e; /* reached httpMaxRetryCount */
@@ -533,21 +531,19 @@ public class Http {
 	 * @return
 	 * @throws AblyException
 	 */
-	public <T> T httpExecuteWithRetry(URL url, String method, Param[] headers, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean allowAblyAuth) throws AblyException {
-		boolean authPending = true, renewPending = true, proxyAuthPending = true;
+	public <T> T httpExecuteWithRetry(URL url, String method, Param[] headers, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean requireAblyAuth) throws AblyException {
+		boolean renewPending = true, proxyAuthPending = true;
+		if(requireAblyAuth) {
+			authorize(false);
+		}
 		while(true) {
 			try {
 				return httpExecute(url, getProxy(url), method, headers, requestBody, true, responseHandler);
 			} catch(AuthRequiredException are) {
-				if(are.authChallenge != null && allowAblyAuth) {
+				if(are.authChallenge != null && requireAblyAuth) {
 					if(are.expired && renewPending) {
 						authorize(true);
 						renewPending = false;
-						continue;
-					}
-					if(authPending) {
-						authorize(false);
-						authPending = false;
 						continue;
 					}
 				}

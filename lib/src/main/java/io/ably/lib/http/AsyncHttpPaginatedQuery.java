@@ -36,7 +36,7 @@ public class AsyncHttpPaginatedQuery implements ResponseHandler<AsyncHttpPaginat
 	}
 
 	public void exec(Param[] params, final AsyncHttpPaginatedResponse.Callback callback) {
-		http.exec(path, method, headers, params, requestBody, this, wrap(callback));
+		http.exec(path, method, headers, params, requestBody, this, true, wrap(callback));
 	}
 
 	/**

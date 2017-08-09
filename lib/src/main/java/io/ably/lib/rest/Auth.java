@@ -659,7 +659,7 @@ public class Auth {
 					throw AblyException.fromThrowable(e);
 				}
 			}
-		});
+		}, false);
 	}
 
 	/**

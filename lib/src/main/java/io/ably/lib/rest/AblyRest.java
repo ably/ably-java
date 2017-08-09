@@ -126,7 +126,7 @@ public class AblyRest {
 					throw AblyException.fromErrorInfo(error);
 				}
 				return (Long)Serialisation.gson.fromJson(new String(response.body), Long[].class)[0];
-			}}).longValue();
+			}}, false).longValue();
 	}
 
 	/**
@@ -145,7 +145,7 @@ public class AblyRest {
 				}
 				return Serialisation.gson.fromJson(new String(response.body), Long[].class)[0];
 			}
-		}, callback);
+		}, false, callback);
 	}
 
 	/**

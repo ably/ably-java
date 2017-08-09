@@ -146,7 +146,8 @@ public class HttpTest {
 					new Param[0], /* Ignore headers */
 					new Param[0], /* Ignore params */
 					null, /* Ignore requestBody */
-					null /* Ignore requestHandler */
+					null, /* Ignore requestHandler */
+					false /* Ignore requireAblyAuth */
 			);
 		} catch (AblyException e) {
 			/* Verify that,
@@ -207,7 +208,8 @@ public class HttpTest {
 					new Param[0], /* Ignore headers */
 					new Param[0], /* Ignore params */
 					null, /* Ignore requestBody */
-					null /* Ignore requestHandler */
+					null, /* Ignore requestHandler */
+					false /* Ignore requireAblyAuth */
 			);
 		} catch (AblyException.HostFailedException e) {
 			/* Verify that,
@@ -272,7 +274,8 @@ public class HttpTest {
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
 				mock(Http.RequestBody.class), /* Ignore */
-				mock(Http.ResponseHandler.class) /* Ignore */
+				mock(Http.ResponseHandler.class), /* Ignore */
+				false /* Ignore */
 		);
 
 		assertThat("Unexpected default primary host", url.getAllValues().get(0).getHost(), is(equalTo(Defaults.HOST_REST)));
@@ -285,7 +288,8 @@ public class HttpTest {
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
 				mock(Http.RequestBody.class), /* Ignore */
-				mock(Http.ResponseHandler.class) /* Ignore */
+				mock(Http.ResponseHandler.class), /* Ignore */
+				false /* Ignore */
 		);
 
 		/* Verify call causes captor to capture same arguments thrice.
@@ -354,7 +358,8 @@ public class HttpTest {
 					new Param[0], /* Ignore */
 					new Param[0], /* Ignore */
 					mock(Http.RequestBody.class), /* Ignore */
-					mock(Http.ResponseHandler.class) /* Ignore */
+					mock(Http.ResponseHandler.class), /* Ignore */
+					false /* Ignore */
 			);
 		} catch (AblyException e) {
 			/* Verify that,
@@ -373,7 +378,8 @@ public class HttpTest {
 					new Param[0], /* Ignore */
 					new Param[0], /* Ignore */
 					mock(Http.RequestBody.class), /* Ignore */
-					mock(Http.ResponseHandler.class) /* Ignore */
+					mock(Http.ResponseHandler.class), /* Ignore */
+					false /* Ignore */
 			);
 		} catch (AblyException e) {
 			/* Verify that,
@@ -447,7 +453,8 @@ public class HttpTest {
 					new Param[0], /* Ignore */
 					new Param[0], /* Ignore */
 					mock(Http.RequestBody.class), /* Ignore */
-					mock(Http.ResponseHandler.class) /* Ignore */
+					mock(Http.ResponseHandler.class), /* Ignore */
+					false /* Ignore */
 			);
 		} catch (AblyException e) {
 			/* Verify that,
@@ -524,7 +531,8 @@ public class HttpTest {
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
 				mock(Http.RequestBody.class), /* Ignore */
-				mock(Http.ResponseHandler.class) /* Ignore */
+				mock(Http.ResponseHandler.class), /* Ignore */
+				false /* Ignore */
 		);
 
 		/* Verify {code Http#httpExecute} have been called (httpMaxRetryCount + 1) times */
@@ -594,7 +602,8 @@ public class HttpTest {
 					new Param[0], /* Ignore headers */
 					new Param[0], /* Ignore params */
 					null, /* Ignore requestBody */
-					null /* Ignore requestHandler */
+					null, /* Ignore requestHandler */
+					false /* Ignore requireAblyAuth */
 			);
 		} catch (AblyException.HostFailedException e) {
 			/* Verify that,
@@ -653,7 +662,8 @@ public class HttpTest {
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
 				mock(Http.RequestBody.class), /* Ignore */
-				mock(Http.ResponseHandler.class) /* Ignore */
+				mock(Http.ResponseHandler.class), /* Ignore */
+				false /* Ignore */
 		);
 
 
@@ -722,7 +732,8 @@ public class HttpTest {
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
 				mock(Http.RequestBody.class), /* Ignore */
-				mock(Http.ResponseHandler.class) /* Ignore */
+				mock(Http.ResponseHandler.class), /* Ignore */
+				false /* Ignore */
 		);
 
 
@@ -791,7 +802,8 @@ public class HttpTest {
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
 				mock(Http.RequestBody.class), /* Ignore */
-				mock(Http.ResponseHandler.class) /* Ignore */
+				mock(Http.ResponseHandler.class), /* Ignore */
+				false /* Ignore */
 		);
 
 
@@ -866,7 +878,8 @@ public class HttpTest {
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
 				mock(Http.RequestBody.class), /* Ignore */
-				mock(Http.ResponseHandler.class) /* Ignore */
+				mock(Http.ResponseHandler.class), /* Ignore */
+				false /* Ignore */
 		);
 
         /* Verify there was a fallback with first call */
@@ -892,7 +905,8 @@ public class HttpTest {
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
 				mock(Http.RequestBody.class), /* Ignore */
-				mock(Http.ResponseHandler.class) /* Ignore */
+				mock(Http.ResponseHandler.class), /* Ignore */
+				false /* Ignore */
 		);
 
         /* Verify second call was called with http host */
@@ -950,7 +964,8 @@ public class HttpTest {
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
 				mock(Http.RequestBody.class), /* Ignore */
-				mock(Http.ResponseHandler.class) /* Ignore */
+				mock(Http.ResponseHandler.class), /* Ignore */
+				false /* Ignore */
 		);
 	}
 
