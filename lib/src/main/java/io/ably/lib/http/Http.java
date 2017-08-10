@@ -291,8 +291,8 @@ public class Http {
 	 * @return
 	 * @throws AblyException
 	 */
-	public <T> T postUri(String uri, Param[] headers, Param[] params, ResponseHandler<T> responseHandler) throws AblyException {
-		return httpExecute(buildURL(uri, null), POST, headers, new FormRequestBody(params), responseHandler);
+	public <T> T postUri(String uri, Param[] headers, Param[] queryParams, Param[] bodyParams, ResponseHandler<T> responseHandler) throws AblyException {
+		return httpExecute(buildURL(uri, queryParams), POST, headers, new FormRequestBody(bodyParams), responseHandler);
 	}
 
 	/**

@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
@@ -17,7 +18,6 @@ import java.util.Map;
 
 import io.ably.lib.http.Http;
 import io.ably.lib.types.*;
-import io.ably.lib.util.Log;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -444,7 +444,7 @@ public class RestAuthTest extends ParameterizedTest {
 			ClientOptions opts = createOptions();
 			opts.environment = testVars.environment;
 			opts.authUrl = "http://localhost:8982/wait?delay=6000";
-			opts.realtimeRequestTimeout = 5000L;
+			opts.httpRequestTimeout = 5000;
 			AblyRest ably = new AblyRest(opts);
 			/* make a call to trigger token request */
 			try {
@@ -462,64 +462,226 @@ public class RestAuthTest extends ParameterizedTest {
 	}
 
 	/**
-	 * Verify authURL is passed specified params
-	 * Spec: RSA8c3
+	 * Verify authURL is passed specified params in a GET
+	 * Spec: RSA8c1a
 	 */
 	@Test
-	public void auth_authURL_params() {
+	public void auth_authURL_authParams_get() {
 		try {
-			ClientOptions opts = createOptions();
-			opts.restHost = testVars.restHost;
-			opts.environment = testVars.environment;
-			opts.port = testVars.port;
-			opts.tlsPort = testVars.tlsPort;
-			opts.tls = testVars.tls;
-			opts.authUrl = "http://localhost:8982/echo-params";
+			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+			fillInOptions(opts);
+			RawHttpTracker httpListener = new RawHttpTracker();
+			opts.httpListener = httpListener;
+
+			opts.authUrl = "http://localhost:8982/get-token-request";
 			opts.authParams = new Param[]{new Param("test-param", "test-value")};
 			AblyRest ably = new AblyRest(opts);
+
 			/* make a call to trigger token request */
-			try {
-				ably.auth.requestToken(null, null);
-				fail("auth_authURL_params: Unexpected success requesting token");
-			} catch (AblyException e) {
-				assertEquals("Expected error code", e.errorInfo.code, 80019);
-				assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.statusCode, 404);
-				assertTrue("Expected echoed header", ((AblyException)e.getCause()).errorInfo.message.indexOf("test-param=test-value") != -1);
-			}
+			ably.auth.requestToken(null, null);
+
+			/* check request contained expected params */
+			assertTrue("Verify expected params passed to authURL", httpListener.getFirstRequest().url.getQuery().contains("test-param=test-value"));
 		} catch (AblyException e) {
 			e.printStackTrace();
-			fail("auth_authURL_params: Unexpected exception instantiating library");
+			fail("auth_authURL_authParams_get: Unexpected exception instantiating library");
 		}
 	}
 
 	/**
-	 * Verify authURL is passed specified headers
+	 * Verify authURL is passed specified params in a POST body
+	 * Spec: RSA8c1b
+	 */
+	@Test
+	public void auth_authURL_authParams_post() {
+		try {
+			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+			fillInOptions(opts);
+			RawHttpTracker httpListener = new RawHttpTracker();
+			opts.httpListener = httpListener;
+
+			opts.authUrl = "http://localhost:8982/post-token-request";
+			opts.authMethod = Http.POST;
+			opts.authParams = new Param[]{new Param("test-param", "test-value")};
+			AblyRest ably = new AblyRest(opts);
+
+			/* make a call to trigger token request */
+			ably.auth.requestToken(null, null);
+
+			/* check request contained expected params */
+			byte[] requestBody = httpListener.getFirstRequest().requestBody.getEncoded();
+			assertTrue("Verify expected params passed to authURL", (new String(requestBody, "UTF-8")).contains("test-param=test-value"));
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_authURL_authParams_post: Unexpected exception instantiating library");
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+			fail("auth_authURL_authParams_post: Unexpected exception decoding request body");
+		}
+	}
+
+	/**
+	 * Verify authURL is passed specified params in a GET
+	 * Spec: RSA8c1c
+	 */
+	@Test
+	public void auth_authURL_urlParams_get() {
+		try {
+			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+			fillInOptions(opts);
+			RawHttpTracker httpListener = new RawHttpTracker();
+			opts.httpListener = httpListener;
+
+			opts.authUrl = "http://localhost:8982/get-token-request?test-param=test-value";
+			AblyRest ably = new AblyRest(opts);
+
+			/* make a call to trigger token request */
+			ably.auth.requestToken(null, null);
+
+			/* check request contained expected params */
+			assertTrue("Verify expected params passed to authURL", httpListener.getFirstRequest().url.getQuery().contains("test-param=test-value"));
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_authURL_urlParams_get: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Verify authURL is passed specified params in a POST
+	 * Spec: RSA8c1c
+	 */
+	@Test
+	public void auth_authURL_urlParams_post() {
+		try {
+			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+			fillInOptions(opts);
+			RawHttpTracker httpListener = new RawHttpTracker();
+			opts.httpListener = httpListener;
+
+			opts.authUrl = "http://localhost:8982/post-token-request?test-param=test-value";
+			opts.authMethod = Http.POST;
+			AblyRest ably = new AblyRest(opts);
+
+			/* make a call to trigger token request */
+			ably.auth.requestToken(null, null);
+
+			/* check request contained expected params */
+			assertTrue("Verify expected params passed to authURL", httpListener.getFirstRequest().url.getQuery().contains("test-param=test-value"));
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_authURL_urlParams_post: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Verify authURL is passed specified params in a GET, with the specified precedence
+	 * Spec: RSA8c1c
+	 */
+	@Test
+	public void auth_authURL_urlParams_get_conflict() {
+		try {
+			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+			fillInOptions(opts);
+			RawHttpTracker httpListener = new RawHttpTracker();
+			opts.httpListener = httpListener;
+
+			opts.authUrl = "http://localhost:8982/get-token-request?test-param=test-value-urlParam";
+			opts.authParams = new Param[]{new Param("test-param", "test-value-authParam")};
+			AblyRest ably = new AblyRest(opts);
+
+			/* make a call to trigger token request */
+			ably.auth.requestToken(null, null);
+
+			/* check request contained expected params */
+			assertTrue("Verify expected params passed to authURL", httpListener.getFirstRequest().url.getQuery().contains("test-param=test-value-authParam"));
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_authURL_urlParams_get: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Verify tokenParams take precedence over authParams in authURL request
+	 * Spec: RSA8c2
+	 */
+	@Test
+	public void auth_authURL_authParams_get_conflict() {
+		try {
+			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+			fillInOptions(opts);
+			RawHttpTracker httpListener = new RawHttpTracker();
+			opts.httpListener = httpListener;
+
+			opts.authUrl = "http://localhost:8982/get-token-request";
+			opts.authParams = new Param[]{new Param("ttl", "500")};
+			AblyRest ably = new AblyRest(opts);
+
+			/* make a call to trigger token request */
+			ably.auth.requestToken(new TokenParams() {{
+				ttl = 300;
+			}}, null);
+
+			/* check request contained expected params */
+			assertTrue("Verify expected params passed to authURL", httpListener.getFirstRequest().url.getQuery().contains("ttl=300"));
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_authURL_urlParams_get: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Verify authURL is passed specified headers in a GET
 	 * Spec: RSA8c3
 	 */
 	@Test
-	public void auth_authURL_headers() {
+	public void auth_authURL_authHeaders_get() {
 		try {
-			ClientOptions opts = createOptions();
-			opts.restHost = testVars.restHost;
-			opts.environment = testVars.environment;
-			opts.port = testVars.port;
-			opts.tlsPort = testVars.tlsPort;
-			opts.tls = testVars.tls;
-			opts.authUrl = "http://localhost:8982/echo-headers";
+			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+			fillInOptions(opts);
+			RawHttpTracker httpListener = new RawHttpTracker();
+			opts.httpListener = httpListener;
+
+			opts.authUrl = "http://localhost:8982/get-token-request";
 			opts.authHeaders = new Param[]{new Param("test-header", "test-value")};
 			AblyRest ably = new AblyRest(opts);
+
 			/* make a call to trigger token request */
-			try {
-				ably.auth.requestToken(null, null);
-				fail("auth_authURL_headers: Unexpected success requesting token");
-			} catch (AblyException e) {
-				assertEquals("Expected error code", e.errorInfo.code, 80019);
-				assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.statusCode, 404);
-				assertTrue("Expected echoed header", ((AblyException)e.getCause()).errorInfo.message.indexOf("test-header=test-value") != -1);
-			}
+			ably.auth.requestToken(null, null);
+
+			/* check request contained expected params */
+			List<String> headers = httpListener.getFirstRequest().requestHeaders.get("test-header");
+			assertTrue("Verify expected headers passed to authURL", headers.contains("test-value"));
 		} catch (AblyException e) {
 			e.printStackTrace();
-			fail("auth_authURL_headers: Unexpected exception instantiating library");
+			fail("auth_authURL_authHeaders_get: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Verify authURL is passed specified headers in a POST
+	 * Spec: RSA8c3
+	 */
+	@Test
+	public void auth_authURL_authHeaders_post() {
+		try {
+			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+			fillInOptions(opts);
+			RawHttpTracker httpListener = new RawHttpTracker();
+			opts.httpListener = httpListener;
+
+			opts.authUrl = "http://localhost:8982/get-token-request";
+			opts.authHeaders = new Param[]{new Param("test-header", "test-value")};
+			AblyRest ably = new AblyRest(opts);
+
+			/* make a call to trigger token request */
+			ably.auth.requestToken(null, null);
+
+			/* check request contained expected params */
+			List<String> headers = httpListener.getFirstRequest().requestHeaders.get("test-header");
+			assertTrue("Verify expected headers passed to authURL", headers.contains("test-value"));
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_authURL_authHeaders_post: Unexpected exception instantiating library");
 		}
 	}
 
@@ -762,7 +924,7 @@ public class RestAuthTest extends ParameterizedTest {
 	public void authinit_no_auth() {
 		try {
 			ClientOptions opts = new ClientOptions();
-			AblyRest ably = new AblyRest(opts);
+			new AblyRest(opts);
 			fail("authinit_no_auth: Unexpected success instantiating library");
 		} catch (AblyException e) {
 			assertEquals("Verify exception thrown initialising library", e.errorInfo.code, 40000);
@@ -876,7 +1038,7 @@ public class RestAuthTest extends ParameterizedTest {
 		try {
 			opts = createOptions();
 			opts.clientId = "*";
-			AblyRest ably = new AblyRest(opts);
+			new AblyRest(opts);
 		} catch (AblyException e) {
 			assertEquals("Verify exception raised from disallowed wildcard clientId", e.errorInfo.code, 40000);
 		}
@@ -900,7 +1062,7 @@ public class RestAuthTest extends ParameterizedTest {
 			opts = createOptions();
 			opts.tokenDetails = tokenDetails;
 			opts.clientId = "options clientId";
-			AblyRest ably = new AblyRest(opts);
+			new AblyRest(opts);
 		} catch (AblyException e) {
 			assertEquals("Verify exception raised from incompatible clientIds", e.errorInfo.code, 40101);
 		}

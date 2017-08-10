@@ -1,10 +1,10 @@
 package io.ably.lib.rest;
 
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -16,6 +16,7 @@ import com.google.gson.JsonParseException;
 import io.ably.lib.http.Http;
 import io.ably.lib.http.Http.Response;
 import io.ably.lib.http.Http.ResponseHandler;
+import io.ably.lib.http.HttpUtils;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.BaseMessage;
 import io.ably.lib.types.Capability;
@@ -311,12 +312,12 @@ public class Auth {
 		 * Internal; convert a TokenParams to a collection of Params
 		 * @return
 		 */
-		public List<Param> asParams() {
-			List<Param> params = new ArrayList<Param>();
-			if(ttl > 0) params.add(new Param("ttl", String.valueOf(ttl)));
-			if(capability != null) params.add(new Param("capability", capability));
-			if(clientId != null) params.add(new Param("client_id", clientId));
-			if(timestamp > 0) params.add(new Param("timestamp", String.valueOf(timestamp)));
+		public Map<String, Param> asMap() {
+			Map<String, Param> params = new HashMap<String, Param>();
+			if(ttl > 0) params.put("ttl", new Param("ttl", String.valueOf(ttl)));
+			if(capability != null) params.put("capability", new Param("capability", capability));
+			if(clientId != null) params.put("clientId", new Param("clientId", clientId));
+			if(timestamp > 0) params.put("timestamp", new Param("timestamp", String.valueOf(timestamp)));
 			return params;
 		}
 
@@ -577,11 +578,6 @@ public class Auth {
 			}
 		} else if(tokenOptions.authUrl != null) {
 			Log.i("Auth.requestToken()", "using token auth with auth_url");
-			/* append any custom params to token params */
-			List<Param> tokenParams = params.asParams();
-			if(tokenOptions.authParams != null)
-				tokenParams.addAll(Arrays.asList(tokenOptions.authParams));
-			Param[] requestParams = tokenParams.toArray(new Param[tokenParams.size()]);
 
 			/* the auth request can return either a signed token request as a TokenParams, or a TokenDetails */
 			Object authUrlResponse = null;
@@ -595,6 +591,9 @@ public class Auth {
 						try {
 							String contentType = response.contentType;
 							byte[] body = response.body;
+							if(body == null || body.length == 0) {
+								return null;
+							}
 							if(contentType != null) {
 								if(contentType.startsWith("text/plain")) {
 									/* assumed to be token string */
@@ -624,12 +623,34 @@ public class Auth {
 					}
 				};
 
-				if (Http.POST.equals(tokenOptions.authMethod))
-					authUrlResponse = ably.http.postUri(tokenOptions.authUrl, tokenOptions.authHeaders, requestParams, responseHandler);
-				else
-					authUrlResponse = ably.http.getUri(tokenOptions.authUrl, tokenOptions.authHeaders, requestParams, responseHandler);
+				/* append all relevant params to token params */
+				Map<String, Param> urlParams = null;
+				URL authUrl = HttpUtils.parseUrl(authOptions.authUrl);
+				String queryString = authUrl.getQuery();
+				if(queryString != null && !queryString.isEmpty()) {
+					urlParams = HttpUtils.decodeParams(queryString);
+				}
+				Map<String, Param> tokenParams = params.asMap();
+				if(tokenOptions.authParams != null) {
+					for(Param p : tokenOptions.authParams) {
+						/* (RSA8c2) TokenParams take precedence over any configured
+						 * authParams when a name conflict occurs */
+						if(!tokenParams.containsKey(p.key)) {
+							tokenParams.put(p.key, p);
+						}
+					}
+				}
+				if (Http.POST.equals(tokenOptions.authMethod)) {
+					authUrlResponse = ably.http.postUri(tokenOptions.authUrl, tokenOptions.authHeaders, HttpUtils.flattenParams(urlParams), HttpUtils.flattenParams(tokenParams), responseHandler);
+				} else {
+					Map<String, Param> requestParams = (urlParams != null) ? HttpUtils.mergeParams(urlParams, tokenParams) : tokenParams;
+					authUrlResponse = ably.http.getUri(tokenOptions.authUrl, tokenOptions.authHeaders, HttpUtils.flattenParams(requestParams), responseHandler);
+				}
 			} catch(AblyException e) {
 				throw AblyException.fromErrorInfo(e, new ErrorInfo("authUrl failed with an exception", 401, 80019));
+			}
+			if(authUrlResponse == null) {
+				throw AblyException.fromErrorInfo(null, new ErrorInfo("Empty response received from authUrl", 401, 80019));
 			}
 			if(authUrlResponse instanceof TokenDetails) {
 				/* we're done */
@@ -864,6 +885,8 @@ public class Auth {
 		if(authOptions.authCallback != null) {
 			Log.i("Auth()", "using token auth with authCallback");
 		} else if(authOptions.authUrl != null) {
+			/* verify configured URL parses */
+			HttpUtils.parseUrl(authOptions.authUrl);
 			Log.i("Auth()", "using token auth with authUrl");
 		} else if(authOptions.key != null) {
 			Log.i("Auth()", "using token auth with client-side signing");

@@ -92,12 +92,6 @@ public class TokenServer extends NanoHTTPD {
 				return error2Response(e.errorInfo);
 			}
 		}
-		else if(target.equals("/echo-params")) {
-			return params2ErrorResponse(params, Response.Status.NOT_FOUND);
-		}
-		else if(target.equals("/echo-headers")) {
-			return params2ErrorResponse(headers, Response.Status.NOT_FOUND);
-		}
 		else if(target.equals("/404")) {
 			return error2Response(new ErrorInfo("Not found", 404, 0));
 		}

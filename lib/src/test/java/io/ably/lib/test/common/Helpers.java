@@ -762,7 +762,7 @@ public class Helpers {
 			if(req != null) {
 				String query = req.conn.getURL().getQuery();
 				if(query != null && !query.isEmpty()) {
-					result = HttpUtils.decodeParams(query).get(param);
+					result = HttpUtils.decodeParams(query).get(param).value;
 				}
 			}
 			return result;

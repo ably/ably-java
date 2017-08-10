@@ -1,6 +1,8 @@
 package io.ably.lib.http;
 
 import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -9,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Param;
 
 /**
@@ -18,7 +21,7 @@ import io.ably.lib.types.Param;
  */
 public class HttpUtils {
 	public static Map<String, String> mimeTypes;
-	
+
 	static {
 		mimeTypes = new HashMap<String, String>();
 		mimeTypes.put("json", "application/json");
@@ -63,24 +66,49 @@ public class HttpUtils {
 		return builder.toString();
 	}
 
-	public static Map<String, String> decodeParams(String query) {
-	    Map<String, String> params = new HashMap<String, String>();
-	    String[] pairs = query.split("&");
-        try {
-		    for (String pair : pairs) {
-		        int idx = pair.indexOf('=');
-				params.put(URLDecoder.decode(pair.substring(0, idx), "UTF-8"), URLDecoder.decode(pair.substring(idx + 1), "UTF-8"));
-			}
-        } catch (UnsupportedEncodingException e) {}
-	    return params;
+	public static URL parseUrl(String url) throws AblyException {
+		try {
+			return new URL(url);
+		} catch (MalformedURLException e) {
+			throw AblyException.fromThrowable(e);
+		}
 	}
 
-	public static Map<String, String> indexParams(Param[] paramArray) {
-	    Map<String, String> params = new HashMap<String, String>();
-	    for (Param param : paramArray) {
-			params.put(param.key, param.value);
+	public static Map<String, Param> decodeParams(String query) {
+		Map<String, Param> params = new HashMap<String, Param>();
+		String[] pairs = query.split("&");
+		try {
+			for (String pair : pairs) {
+				int idx = pair.indexOf('=');
+				String key = URLDecoder.decode(pair.substring(0, idx), "UTF-8"),
+						value = URLDecoder.decode(pair.substring(idx + 1), "UTF-8");
+				params.put(key, new Param(key, value));
+			}
+		} catch (UnsupportedEncodingException e) {}
+		return params;
+	}
+
+	public static Map<String, Param> indexParams(Param[] paramArray) {
+		Map<String, Param> params = new HashMap<String, Param>();
+		for (Param param : paramArray) {
+			params.put(param.key, param);
 		}
-	    return params;
+		return params;
+	}
+
+	public static Map<String, Param> mergeParams(Map<String, Param> target, Map<String, Param> src) {
+		for(Param p : src.values()) {
+			target.put(p.key, p);
+		}
+		return target;
+	}
+
+	public static Param[] flattenParams(Map<String, Param> map) {
+		Param[] result = null;
+		if(map != null) {
+			result = map.values().toArray(new Param[map.size()]);
+		}
+		return result;
 	}
 
 	public static Param[] toParamArray(Map<String, List<String>> indexedParams) {
@@ -96,14 +124,14 @@ public class HttpUtils {
 	public static String encodeURIComponent(String input) {
 		try {
 			return URLEncoder.encode(input, "UTF-8")
-				.replaceAll(" ", "%20")
-				.replaceAll("!", "%21")
-				.replaceAll("'", "%27")
-				.replaceAll("\\(", "%28")
-				.replaceAll("\\)", "%29")
-				.replaceAll("\\+", "%2B")
-				.replaceAll("\\:", "%3A")
-				.replaceAll("~", "%7E");
+					.replaceAll(" ", "%20")
+					.replaceAll("!", "%21")
+					.replaceAll("'", "%27")
+					.replaceAll("\\(", "%28")
+					.replaceAll("\\)", "%29")
+					.replaceAll("\\+", "%2B")
+					.replaceAll("\\:", "%3A")
+					.replaceAll("~", "%7E");
 		} catch (UnsupportedEncodingException e) {}
 		return null;
 	}
