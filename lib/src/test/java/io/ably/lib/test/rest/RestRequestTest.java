@@ -96,8 +96,8 @@ public class RestRequestTest extends ParameterizedTest {
 			assertEquals("Verify statusCode is present", channelResponse.statusCode, 200);
 			assertTrue("Verify success is indicated", channelResponse.success);
 			assertNull("Verify no error is indicated", channelResponse.errorMessage);
-			Map<String, String> headers = HttpUtils.indexParams(channelResponse.headers);
-			assertEquals("Verify Content-Type header is present", headers.get("content-type"), "application/json");
+			Map<String, Param> headers = HttpUtils.indexParams(channelResponse.headers);
+			assertEquals("Verify Content-Type header is present", headers.get("content-type").value, "application/json");
 
 			/* check it looks like a ChannelDetails */
 			assertNotNull("Verify a result is returned", channelResponse);
@@ -145,8 +145,8 @@ public class RestRequestTest extends ParameterizedTest {
 					waiter.assertEquals(channelResponse.statusCode, 200);
 					waiter.assertTrue(channelResponse.success);
 					waiter.assertNull(channelResponse.errorMessage);
-					Map<String, String> headers = HttpUtils.indexParams(channelResponse.headers);
-					waiter.assertEquals(headers.get("content-type"), "application/json");
+					Map<String, Param> headers = HttpUtils.indexParams(channelResponse.headers);
+					waiter.assertEquals(headers.get("content-type").value, "application/json");
 
 					/* check it looks like a ChannelDetails */
 					/* Verify a result is returned */
@@ -203,8 +203,8 @@ public class RestRequestTest extends ParameterizedTest {
 			assertEquals("Verify statusCode is present", channelsResponse.statusCode, 200);
 			assertTrue("Verify success is indicated", channelsResponse.success);
 			assertNull("Verify no error is indicated", channelsResponse.errorMessage);
-			Map<String, String> headers = HttpUtils.indexParams(channelsResponse.headers);
-			assertEquals("Verify Content-Type header is present", headers.get("content-type"), "application/json");
+			Map<String, Param> headers = HttpUtils.indexParams(channelsResponse.headers);
+			assertEquals("Verify Content-Type header is present", headers.get("content-type").value, "application/json");
 
 			/* check it looks like an array of ChannelDetails */
 			assertNotNull("Verify a result is returned", channelsResponse);
@@ -248,8 +248,8 @@ public class RestRequestTest extends ParameterizedTest {
 					waiter.assertEquals(channelResponse.statusCode, 200);
 					waiter.assertTrue(channelResponse.success);
 					waiter.assertNull(channelResponse.errorMessage);
-					Map<String, String> headers = HttpUtils.indexParams(channelResponse.headers);
-					waiter.assertEquals(headers.get("content-type"), "application/json");
+					Map<String, Param> headers = HttpUtils.indexParams(channelResponse.headers);
+					waiter.assertEquals(headers.get("content-type").value, "application/json");
 
 					/* check it looks like an array of ChannelDetails */
 					waiter.assertNotNull(channelResponse);
@@ -315,8 +315,8 @@ public class RestRequestTest extends ParameterizedTest {
 			assertEquals("Verify statusCode is present", channelsResponse.statusCode, 200);
 			assertTrue("Verify success is indicated", channelsResponse.success);
 			assertNull("Verify no error is indicated", channelsResponse.errorMessage);
-			Map<String, String> headers = HttpUtils.indexParams(channelsResponse.headers);
-			assertEquals("Verify Content-Type header is present", headers.get("content-type"), "application/json");
+			Map<String, Param> headers = HttpUtils.indexParams(channelsResponse.headers);
+			assertEquals("Verify Content-Type header is present", headers.get("content-type").value, "application/json");
 
 			/* check it looks like an array of ChannelDetails */
 			assertNotNull("Verify a result is returned", channelsResponse);
@@ -379,8 +379,8 @@ public class RestRequestTest extends ParameterizedTest {
 					assertEquals("Verify statusCode is present", channelsResponse.statusCode, 200);
 					assertTrue("Verify success is indicated", channelsResponse.success);
 					assertNull("Verify no error is indicated", channelsResponse.errorMessage);
-					Map<String, String> headers = HttpUtils.indexParams(channelsResponse.headers);
-					assertEquals("Verify Content-Type header is present", headers.get("content-type"), "application/json");
+					Map<String, Param> headers = HttpUtils.indexParams(channelsResponse.headers);
+					assertEquals("Verify Content-Type header is present", headers.get("content-type").value, "application/json");
 
 					/* check it looks like an array of ChannelDetails */
 					waiter.assertNotNull(channelsResponse);
@@ -607,8 +607,8 @@ public class RestRequestTest extends ParameterizedTest {
 			assertEquals("Verify statusCode is present", errorResponse.statusCode, 404);
 			assertFalse("Verify non-success is indicated", errorResponse.success);
 			assertNotNull("Verify error is indicated", errorResponse.errorMessage);
-			Map<String, String> headers = HttpUtils.indexParams(errorResponse.headers);
-			assertEquals("Verify Content-Type header is present", headers.get("content-type"), "application/json");
+			Map<String, Param> headers = HttpUtils.indexParams(errorResponse.headers);
+			assertEquals("Verify Content-Type header is present", headers.get("content-type").value, "application/json");
 		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("request_404: Unexpected exception");
@@ -636,8 +636,8 @@ public class RestRequestTest extends ParameterizedTest {
 					waiter.assertFalse(response.success);
 					waiter.assertNotNull(response.errorMessage);
 					waiter.assertTrue(response.errorCode != 0);
-					Map<String, String> headers = HttpUtils.indexParams(response.headers);
-					waiter.assertEquals(headers.get("content-type"), "application/json");
+					Map<String, Param> headers = HttpUtils.indexParams(response.headers);
+					waiter.assertEquals(headers.get("content-type").value, "application/json");
 					waiter.resume();
 				}
 				@Override
