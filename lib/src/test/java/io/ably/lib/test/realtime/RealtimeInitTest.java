@@ -9,8 +9,6 @@ import org.junit.Test;
 
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.test.common.ParameterizedTest;
-import io.ably.lib.test.common.Setup;
-import io.ably.lib.test.common.Setup.TestVars;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
