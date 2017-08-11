@@ -1,5 +1,37 @@
 # Change Log
 
+## [v1.0.1](https://github.com/ably/ably-java/tree/v1.0.1)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.0.0...v1.0.1)
+
+**Implemented enhancements:**
+
+- Allow custom transportParams [\#327](https://github.com/ably/ably-java/issues/327)
+
+**Fixed bugs:**
+
+- authHeaders are being included in requests to non authUrl endpoints [\#331](https://github.com/ably/ably-java/issues/331)
+- 1.0.0 sending v=0.9 [\#324](https://github.com/ably/ably-java/issues/324)
+- 1.0 not automatically re-authing when token expires if initialized with key + clientId? [\#322](https://github.com/ably/ably-java/issues/322)
+
+**Closed issues:**
+
+- UTF-8 / ASCII detection issue in compile [\#334](https://github.com/ably/ably-java/issues/334)
+- Allow authUrl to contain querystring params [\#328](https://github.com/ably/ably-java/issues/328)
+- Dependency management for ably-android [\#316](https://github.com/ably/ably-java/issues/316)
+- Exceptions thrown in client onMessage callbacks are silently swallowed [\#314](https://github.com/ably/ably-java/issues/314)
+
+**Merged pull requests:**
+
+- Spec RTC1f: implement support for ClientOptions.transportParams [\#342](https://github.com/ably/ably-java/pull/342) ([paddybyers](https://github.com/paddybyers))
+- Implement spec for handling of queryParams in authURL [\#340](https://github.com/ably/ably-java/pull/340) ([paddybyers](https://github.com/paddybyers))
+- Preemptive HTTP authentication [\#339](https://github.com/ably/ably-java/pull/339) ([paddybyers](https://github.com/paddybyers))
+- Rest token renewal fix + tests [\#338](https://github.com/ably/ably-java/pull/338) ([paddybyers](https://github.com/paddybyers))
+- Don't send authHeaders or authParams in calls to requestToken [\#337](https://github.com/ably/ably-java/pull/337) ([paddybyers](https://github.com/paddybyers))
+- Replace StandardCharset.UTF-8 with Charset.forName\(“UTF-8”\) [\#333](https://github.com/ably/ably-java/pull/333) ([liuzhen2008](https://github.com/liuzhen2008))
+- Crypto default 256 bit length like all other libraries [\#329](https://github.com/ably/ably-java/pull/329) ([mattheworiordan](https://github.com/mattheworiordan))
+- Add log message if a client's listener throws an exception whilst handling a message [\#318](https://github.com/ably/ably-java/pull/318) ([paddybyers](https://github.com/paddybyers))
+
 ## [v1.0.0](https://github.com/ably/ably-java/tree/v1.0.0)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v0.8.11...v1.0.0)
