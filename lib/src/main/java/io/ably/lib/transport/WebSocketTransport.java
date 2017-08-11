@@ -323,7 +323,11 @@ public class WebSocketTransport implements ITransport {
 	}
 
 	public String toString() {
-		return WebSocketTransport.class.getName() + " [" + wsUri + "]";
+		return WebSocketTransport.class.getName() + " [" + getURL() + "]";
+	}
+
+	public String getURL() {
+		return wsUri;
 	}
 
 	/******************
