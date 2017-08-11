@@ -231,7 +231,7 @@ public class ProtocolMessage {
 				if(fieldName == "accessToken") {
 					accessToken = unpacker.unpackString();
 				} else {
-					System.out.println("Unexpected field: " + fieldName);
+					Log.v(TAG, "Unexpected field: " + fieldName);
 					unpacker.skipValue();
 				}
 			}
