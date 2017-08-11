@@ -6,6 +6,7 @@ package io.ably.lib.types;
 public class Param {
 
 	public Param(String key, String value) { this.key = key; this.value = value; }
+	public Param(String key, Object value) { this(key, value.toString()); }
 	public String key;
 	public String value;
 

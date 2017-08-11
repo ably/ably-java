@@ -838,6 +838,9 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 	@Override
 	public void onTransportAvailable(ITransport transport, TransportParams params) {
+		if(protocolListener != null) {
+			protocolListener.onRawConnect(transport.getURL());
+		}
 	}
 
 	@Override

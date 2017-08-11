@@ -72,6 +72,9 @@ public interface ITransport {
 			if(!heartbeats)
 				paramList.add(new Param("heartbeats", "false"));
 
+			if(options.transportParams != null) {
+				paramList.addAll(Arrays.asList(options.transportParams));
+			}
 			paramList.add(new Param(Defaults.ABLY_LIB_PARAM, Defaults.ABLY_LIB_VERSION));
 			Log.d(TAG, "getConnectParams: params = " + paramList);
 			return paramList.toArray(new Param[paramList.size()]);
@@ -106,6 +109,12 @@ public interface ITransport {
 	 * @throws IOException
 	 */
 	public void send(ProtocolMessage msg) throws AblyException;
+
+	/**
+	 * Get connection URL
+	 * @return
+	 */
+	public String getURL();
 
 	public String getHost();
 }

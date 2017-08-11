@@ -475,6 +475,7 @@ public class Helpers {
 	public static class RawProtocolMonitor implements RawProtocolListener {
 		public Action sendAction;
 		public Action recvAction;
+		public String connectUrl;
 		public List<ProtocolMessage> sentMessages;
 		public List<ProtocolMessage> receivedMessages;
 
@@ -551,6 +552,11 @@ public class Helpers {
 					notify();
 				}
 			}
+		}
+
+		@Override
+		public void onRawConnect(String url) {
+			connectUrl = url;
 		}
 
 		private RawProtocolMonitor(Action sendAction, Action recvAction) {

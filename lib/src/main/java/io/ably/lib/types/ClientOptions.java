@@ -169,4 +169,10 @@ public class ClientOptions extends AuthOptions {
 	 * Spec: RTL13b
 	 */
 	public int channelRetryTimeout = Defaults.TIMEOUT_CHANNEL_RETRY;
+
+	/**
+	 * Additional parameters to be sent in the querystring when initiating a realtime connection
+	 */
+	public Param[] transportParams;
+
 }
