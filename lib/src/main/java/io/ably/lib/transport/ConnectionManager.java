@@ -844,6 +844,11 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 	@Override
 	public void onTransportAvailable(ITransport transport, TransportParams params) {
+		if (this.transport != transport) {
+			/* This is from a transport that we have already abandoned. */
+			Log.v(TAG, "onTransportAvailable: ignoring connection event from superseded transport");
+			return;
+		}
 		if(protocolListener != null) {
 			protocolListener.onRawConnect(transport.getURL());
 		}
@@ -853,7 +858,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	public synchronized void onTransportUnavailable(ITransport transport, TransportParams params, ErrorInfo reason) {
 		if (this.transport != transport) {
 			/* This is from a transport that we have already abandoned. */
-			Log.v(TAG, "onTransportUnavailable: wrong transport");
+			Log.v(TAG, "onTransportUnavailable: ignoring disconnection event from superseded transport");
 			return;
 		}
 		ably.auth.onAuthError(reason);
@@ -909,18 +914,24 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	}
 
 	private void closeImpl(StateIndication request) {
-		boolean connectionExist = state.state == ConnectionState.connected;
 		/* enter the closing state */
 		notifyState(request);
 
-		/* send a close message on the transport, if connected */
-		if(connectionExist && transport != null) {
-			try {
-				transport.send(new ProtocolMessage(Action.close));
-			} catch (AblyException e) {
-				transport.abort(e.errorInfo);
+		/* close or abort transport */
+		if(transport != null) {
+			if(state.state == ConnectionState.connected) {
+				/* send a close message on the transport, if connected */
+				try {
+					Log.v(TAG, "Requesting connection close");
+					transport.send(new ProtocolMessage(Action.close));
+				} catch (AblyException e) {
+					transport.abort(e.errorInfo);
+				}
+			} else {
+				/* just abort the transport */
+				Log.v(TAG, "Aborting incomplete transport due to close()");
+				transport.abort(REASON_CLOSED);
 			}
-			return;
 		}
 		notifyState(new StateIndication(ConnectionState.closed, null));
 	}
