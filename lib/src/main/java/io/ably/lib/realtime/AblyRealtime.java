@@ -54,6 +54,14 @@ public class AblyRealtime extends AblyRest {
 	}
 
 	/**
+	 * Initiate a connection.
+	 * {@link Connection#connect}.
+	 */
+	public void connect() {
+		connection.connect();
+	}
+
+	/**
 	 * Close this instance. This closes the connection.
 	 * The connection can be re-opened by calling
 	 * {@link Connection#connect}.
