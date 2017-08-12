@@ -1,6 +1,7 @@
 package io.ably.lib.test.realtime;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -182,6 +183,34 @@ public class RealtimeConnectTest extends ParameterizedTest {
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("connect_with_transport_params: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Initiate a connect using AblyRealtime.connect()
+	 */
+	@Test
+	public void realtime_connect_proxy() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.autoConnect = false;
+			AblyRealtime ably = new AblyRealtime(opts);
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+
+			/* verify no connection happens */
+			assertFalse("Verify no connection happens", connectionWaiter.waitFor(ConnectionState.connected, 1, 1000L));
+
+			/* trigger connection */
+			ably.connect();
+			connectionWaiter.waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
+
+			ably.close();
+			connectionWaiter.waitFor(ConnectionState.closed);
+			assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("realtime_connect_proxy: Unexpected exception instantiating library");
 		}
 	}
 
