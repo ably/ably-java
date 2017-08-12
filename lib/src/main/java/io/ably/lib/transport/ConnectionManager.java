@@ -289,13 +289,15 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	}
 
 	synchronized void notifyState(ITransport transport, StateIndication state) {
-		if(this.transport == transport) {
-			/* if this transition signifies the end of the transport, clear the transport */
-			if(states.get(state.state).terminal)
-				this.transport = null;
-			notifyState(state);
-		} else
-			Log.v(TAG, "notifyState: wrong transport");
+		if(this.transport != transport) {
+			Log.v(TAG, "notifyState: notification received for superseded transport");
+			return;
+		}
+		/* if this transition signifies the end of the transport, clear the transport */
+		if(states.get(state.state).terminal) {
+			this.transport = null;
+		}
+		notifyState(state);
 	}
 
 	synchronized void notifyState(StateIndication state) {
@@ -994,28 +996,33 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		throw AblyException.fromErrorInfo(state.defaultErrorInfo);
 	}
 
-	@SuppressWarnings("unused")
-	private void sendImpl(ProtocolMessage message) throws AblyException {
-		if(protocolListener != null)
-			protocolListener.onRawMessageSend(message);
-		transport.send(message);
-	}
-
 	private void sendImpl(ProtocolMessage message, CompletionListener listener) throws AblyException {
+		if(transport == null) {
+			Log.v(TAG, "sendImpl(): Discarding message; transport unavailable");
+			return;
+		}
 		if(ProtocolMessage.ackRequired(message)) {
 			message.msgSerial = msgSerial++;
 			pendingMessages.push(new QueuedMessage(message, listener));
 		}
-		if(protocolListener != null)
+		if(protocolListener != null) {
 			protocolListener.onRawMessageSend(message);
+		}
 		transport.send(message);
 	}
 
 	private void sendImpl(QueuedMessage msg) throws AblyException {
+		if(transport == null) {
+			Log.v(TAG, "sendImpl(): Discarding message; transport unavailable");
+			return;
+		}
 		ProtocolMessage message = msg.msg;
 		if(ProtocolMessage.ackRequired(message)) {
 			message.msgSerial = msgSerial++;
 			pendingMessages.push(msg);
+		}
+		if(protocolListener != null) {
+			protocolListener.onRawMessageSend(message);
 		}
 		transport.send(message);
 	}
