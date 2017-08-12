@@ -214,4 +214,31 @@ public class RealtimeConnectTest extends ParameterizedTest {
 		}
 	}
 
+	/**
+	 * Close the connection whilst in the connecting state, verifying that the
+	 * connection is closed down
+	 */
+	@Test
+	public void close_when_connecting() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			AblyRealtime ably = new AblyRealtime(opts);
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+
+			connectionWaiter.waitFor(ConnectionState.connecting);
+			assertEquals("Verify connecting state is reached", ConnectionState.connecting, ably.connection.state);
+
+			ably.close();
+			connectionWaiter.waitFor(ConnectionState.closed);
+			assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
+
+			/* wait to see if a further state change occurs */
+			try { Thread.sleep(2000L); } catch(InterruptedException e) {}
+			assertEquals("Verify closed state is unchanged", ConnectionState.closed, ably.connection.state);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("close_when_connecting: Unexpected exception instantiating library");
+		}
+	}
+
 }
