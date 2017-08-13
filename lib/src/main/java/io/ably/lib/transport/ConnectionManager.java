@@ -627,6 +627,12 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	private void handleStateRequest() {
 		boolean handled = false;
 		switch(requestedState.state) {
+		case disconnected:
+			if(transport != null) {
+				transport.close(false);
+				handled = true;
+			}
+			break;
 		case failed:
 			if(transport != null) {
 				transport.abort(requestedState.reason);
