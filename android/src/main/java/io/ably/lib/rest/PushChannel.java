@@ -36,13 +36,13 @@ public class PushChannel {
 
     public void unsubscribeClient(Context context) throws AblyException {
         Param[] params = new Param[] { new Param("channel", channel.name), new Param("clientId", getClientId(context)) };
-        rest.http.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null);
+        rest.http.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null, true);
     }
 
     public void unsubscribeClientAsync(Context context, CompletionListener listener) throws AblyException {
         try {
             Param[] params = new Param[] { new Param("channel", channel.name), new Param("clientId", getClientId(context)) };
-            rest.asyncHttp.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null, new CompletionListener.ToCallback(listener));
+            rest.asyncHttp.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null, true, new CompletionListener.ToCallback(listener));
         } catch (AblyException e) {
             listener.onError(e.errorInfo);
         }
@@ -63,14 +63,14 @@ public class PushChannel {
     public void unsubscribeDevice(Context context) throws AblyException {
         DeviceDetails device = getDevice(context);
         Param[] params = new Param[] { new Param("channel", channel.name), new Param("deviceId", device.id) };
-        rest.http.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null);
+        rest.http.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null, true);
     }
 
     public void unsubscribeDeviceAsync(Context context, CompletionListener listener) throws AblyException {
         try {
             DeviceDetails device = getDevice(context);
             Param[] params = new Param[] { new Param("channel", channel.name), new Param("deviceId", device.id) };
-            rest.asyncHttp.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null, new CompletionListener.ToCallback(listener));
+            rest.asyncHttp.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null, true, new CompletionListener.ToCallback(listener));
         } catch (AblyException e) {
             listener.onError(e.errorInfo);
         }
@@ -117,11 +117,11 @@ public class PushChannel {
     }
 
     protected void postSubscription(Http.RequestBody body) throws AblyException {
-        rest.http.post("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, null);
+        rest.http.post("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, null, true);
     }
 
     protected void postSubscriptionAsync(Http.RequestBody body, final CompletionListener listener) throws AblyException {
-        rest.asyncHttp.post("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, null, new CompletionListener.ToCallback(listener));
+        rest.asyncHttp.post("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, null, true, new CompletionListener.ToCallback(listener));
     }
 
     protected String getClientId(Context context) throws AblyException {

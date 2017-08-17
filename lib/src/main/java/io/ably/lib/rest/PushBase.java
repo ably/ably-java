@@ -46,7 +46,7 @@ public class PushBase {
             if (payload == null || payload.entrySet().isEmpty()) {
                 throw AblyException.fromThrowable(new Exception("payload cannot be empty"));
             }
-            rest.http.post("/push/publish", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, publishBody(recipient, payload), null);
+            rest.http.post("/push/publish", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, publishBody(recipient, payload), null, true);
         }
 
         public void publishAsync(Param[] recipient, JsonObject payload, final CompletionListener listener) {
@@ -59,7 +59,7 @@ public class PushBase {
                 callback.onError(ErrorInfo.fromThrowable(new Exception("payload cannot be empty")));
                 return;
             }
-            rest.asyncHttp.post("/push/publish", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, publishBody(recipient, payload), null, callback);
+            rest.asyncHttp.post("/push/publish", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, publishBody(recipient, payload), null, true, callback);
         }
 
         private Http.RequestBody publishBody(Param[] recipient, JsonObject payload) {
@@ -81,20 +81,20 @@ public class PushBase {
     public static class DeviceRegistrations {
         public DeviceDetails save(DeviceDetails device) throws AblyException {
             Http.RequestBody body = rest.http.requestBodyFromGson(device.toJsonObject());
-            return rest.http.put("/push/deviceRegistrations/" + device.id, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, DeviceDetails.httpResponseHandler);
+            return rest.http.put("/push/deviceRegistrations/" + device.id, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, DeviceDetails.httpResponseHandler, true);
         }
 
         public void saveAsync(DeviceDetails device, final Callback<DeviceDetails> callback) {
             Http.RequestBody body = rest.http.requestBodyFromGson(device.toJsonObject());
-            rest.asyncHttp.put("/push/deviceRegistrations/" + device.id, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, DeviceDetails.httpResponseHandler, callback);
+            rest.asyncHttp.put("/push/deviceRegistrations/" + device.id, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, DeviceDetails.httpResponseHandler, true, callback);
         }
 
         public DeviceDetails get(String deviceId) throws AblyException {
-            return rest.http.get("/push/deviceRegistrations/" + deviceId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, DeviceDetails.httpResponseHandler);
+            return rest.http.get("/push/deviceRegistrations/" + deviceId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, DeviceDetails.httpResponseHandler, true);
         }
 
         public void getAsync(String deviceId, final Callback<DeviceDetails> callback) {
-            rest.asyncHttp.get("/push/deviceRegistrations/" + deviceId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, DeviceDetails.httpResponseHandler, callback);
+            rest.asyncHttp.get("/push/deviceRegistrations/" + deviceId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, DeviceDetails.httpResponseHandler, true, callback);
         }
 
         public PaginatedResult<DeviceDetails> list(Param[] params) throws AblyException {
@@ -114,19 +114,19 @@ public class PushBase {
         }
 
         public void remove(String deviceId) throws AblyException {
-            rest.http.del("/push/deviceRegistrations/" + deviceId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null);
+            rest.http.del("/push/deviceRegistrations/" + deviceId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null, true);
         }
 
         public void removeAsync(String deviceId, CompletionListener listener) throws AblyException {
-            rest.asyncHttp.del("/push/deviceRegistrations/" + deviceId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null, new CompletionListener.ToCallback(listener));
+            rest.asyncHttp.del("/push/deviceRegistrations/" + deviceId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null, true, new CompletionListener.ToCallback(listener));
         }
 
         public void removeWhere(Param[] params) throws AblyException {
-            rest.http.del("/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null);
+            rest.http.del("/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null, true);
         }
 
         public void removeWhereAsync(Param[] params, CompletionListener listener) throws AblyException {
-            rest.asyncHttp.del("/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null, new CompletionListener.ToCallback(listener));
+            rest.asyncHttp.del("/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null, true, new CompletionListener.ToCallback(listener));
         }
 
         DeviceRegistrations(AblyRest rest) {
@@ -139,12 +139,12 @@ public class PushBase {
     public static class ChannelSubscriptions {
         public void save(ChannelSubscription subscription) throws AblyException {
             Http.RequestBody body = rest.http.requestBodyFromGson(subscription.toJsonObject());
-            rest.http.post("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, ChannelSubscription.httpResponseHandler);
+            rest.http.post("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, ChannelSubscription.httpResponseHandler, true);
         }
 
         public void saveAsync(ChannelSubscription subscription, final Callback<ChannelSubscription> callback) {
             Http.RequestBody body = rest.http.requestBodyFromGson(subscription.toJsonObject());
-            rest.asyncHttp.put("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, ChannelSubscription.httpResponseHandler, callback);
+            rest.asyncHttp.put("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, ChannelSubscription.httpResponseHandler, true, callback);
         }
 
         public PaginatedResult<ChannelSubscription> list(Param[] params) throws AblyException {
@@ -166,11 +166,11 @@ public class PushBase {
         }
 
         public void removeWhere(Param[] params) throws AblyException {
-            rest.http.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null);
+            rest.http.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null, true);
         }
 
         public void removeWhereAsync(Param[] params, CompletionListener listener) throws AblyException {
-            rest.asyncHttp.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null, new CompletionListener.ToCallback(listener));
+            rest.asyncHttp.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null, true, new CompletionListener.ToCallback(listener));
         }
 
         public PaginatedResult<String> listChannels(Param[] params) throws AblyException {

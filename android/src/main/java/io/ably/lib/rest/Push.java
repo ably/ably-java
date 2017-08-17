@@ -177,7 +177,7 @@ public class Push extends PushBase {
                         machine.useCustomRegisterer(device, true);
                     } else {
                         Http.RequestBody body = rest.http.requestBodyFromGson(device.toJsonObject());
-                        rest.asyncHttp.post("/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, new Serialisation.HttpResponseHandler<JsonObject>(), new Callback<JsonObject>() {
+                        rest.asyncHttp.post("/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, new Serialisation.HttpResponseHandler<JsonObject>(), true, new Callback<JsonObject>() {
                             @Override
                             public void onSuccess(JsonObject response) {
                                 Log.i(TAG, "registered " + device.id);
@@ -396,7 +396,7 @@ public class Push extends PushBase {
                 machine.useCustomRegisterer(device, false);
             } else {
                 Http.RequestBody body = machine.rest.http.requestBodyFromGson(device.pushRecipientJsonObject());
-                machine.rest.asyncHttp.patch("/push/deviceRegistrations/" + device.id, HttpUtils.defaultAcceptHeaders(machine.rest.options.useBinaryProtocol), null, body, null, new Callback<Void>() {
+                machine.rest.asyncHttp.patch("/push/deviceRegistrations/" + device.id, HttpUtils.defaultAcceptHeaders(machine.rest.options.useBinaryProtocol), null, body, null, true, new Callback<Void>() {
                     @Override
                     public void onSuccess(Void response) {
                         Log.i(TAG, "updated registration " + device.id);
@@ -415,7 +415,7 @@ public class Push extends PushBase {
             if (machine.prefs.getBoolean(PersistKeys.USE_CUSTOM_DEREGISTERER, false)) {
                 machine.useCustomDeregisterer(device);
             } else {
-                machine.rest.asyncHttp.del("/push/deviceRegistrations?deviceId=" + device.id, HttpUtils.defaultAcceptHeaders(machine.rest.options.useBinaryProtocol), null, null, new Callback<Void>() {
+                machine.rest.asyncHttp.del("/push/deviceRegistrations?deviceId=" + device.id, HttpUtils.defaultAcceptHeaders(machine.rest.options.useBinaryProtocol), null, null, true, new Callback<Void>() {
                     @Override
                     public void onSuccess(Void response) {
                         Log.i(TAG, "deregistered " + device.id);

@@ -307,8 +307,8 @@ public class Http {
 	 * @return
 	 * @throws AblyException
 	 */
-	public <T> T patch(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler) throws AblyException {
-		return ablyHttpExecute(path, PATCH, headers, params, requestBody, responseHandler);
+	public <T> T patch(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean requireAblyAuth) throws AblyException {
+		return ablyHttpExecute(path, PATCH, headers, params, requestBody, responseHandler, requireAblyAuth);
 	}
 
 	/**

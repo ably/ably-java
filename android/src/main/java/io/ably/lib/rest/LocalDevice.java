@@ -92,7 +92,7 @@ class LocalDevice extends DeviceDetails {
             return;
         }
 
-        JsonObject response = rest.http.post("/push/deviceDetails/" + id + "/resetUpdateToken", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null, new Serialisation.HttpResponseHandler<JsonObject>());
+        JsonObject response = rest.http.post("/push/deviceDetails/" + id + "/resetUpdateToken", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null, new Serialisation.HttpResponseHandler<JsonObject>(), true);
         setUpdateToken(context, response.getAsJsonPrimitive("updateToken").getAsString());
     }
 

@@ -53,8 +53,8 @@ public class AsyncHttp extends ThreadPoolExecutor {
 	 * @param responseHandler
 	 * @param callback
 	 */
-	public <T> Future<T> patch(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler, Callback<T> callback) {
-		return ablyHttpExecuteWithFallback(path, Http.PATCH, headers, params, requestBody, responseHandler, callback);
+	public <T> Future<T> patch(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean requireAblyAuth, Callback<T> callback) {
+		return ablyHttpExecuteWithFallback(path, Http.PATCH, headers, params, requestBody, responseHandler, requireAblyAuth, callback);
 	}
 
 	/**
