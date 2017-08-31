@@ -1,5 +1,7 @@
 package io.ably.lib.rest;
 
+import io.ably.lib.http.AnySyncHttp;
+import io.ably.lib.http.CallbackfulHttp;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
 import io.ably.lib.realtime.CompletionListener;
@@ -64,14 +66,8 @@ public class Channel {
 	 * @param messages: array of messages to publish.
 	 * @throws AblyException
 	 */
-	public void publish(Message[] messages) throws AblyException {
-		for(Message message : messages) {
-			/* RTL6g3 */
-			ably.auth.checkClientId(message, true, false);
-			message.encode(options);
-		}
-		RequestBody requestBody = ably.options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(messages) : MessageSerializer.asJsonRequest(messages);
-		ably.http.post(basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), null, requestBody, null, true);
+	public void publish(final Message[] messages) throws AblyException {
+		publishAnySync(messages).sync();
 	}
 
 	/**
@@ -79,21 +75,24 @@ public class Channel {
 	 * @param messages
 	 * @param listener
 	 */
-	public void publishAsync(Message[] messages, final CompletionListener listener) {
-		try {
-			for(Message message : messages)
-				message.encode(options);
-		} catch(AblyException e) {
-			listener.onError(e.errorInfo);
-			return;
-		}
-		RequestBody requestBody = ably.options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(messages) : MessageSerializer.asJsonRequest(messages);
+	public void publishAsync(final Message[] messages, final CompletionListener listener) {
+		publishAnySync(messages).async(new CompletionListener.ToCallback(listener));
+	}
 
-		ably.asyncHttp.post(basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), null, requestBody, null, true, new Callback<Void>() {
+	private AnySyncHttp.Request<Void> publishAnySync(final Message[] messages) {
+		return ably.anySyncHttp.request(new AnySyncHttp.Execute<Void>() {
 			@Override
-			public void onSuccess(Void result) { listener.onSuccess(); }
-			@Override
-			public void onError(ErrorInfo reason) { listener.onError(reason); }			
+			public void execute(CallbackfulHttp http, final Callback<Void> callback) throws AblyException {
+				for(Message message : messages) {
+					/* RTL6g3 */
+					ably.auth.checkClientId(message, true, false);
+					message.encode(options);
+				}
+
+				RequestBody requestBody = ably.options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(messages) : MessageSerializer.asJsonRequest(messages);
+
+				http.post(basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), null, requestBody, null, true, callback);
+			}
 		});
 	}
 
