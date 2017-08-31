@@ -2,7 +2,9 @@ package io.ably.lib.rest;
 
 import java.util.HashMap;
 
+import io.ably.lib.http.AnySyncHttp;
 import io.ably.lib.http.AsyncHttp;
+import io.ably.lib.http.SyncHttp;
 import io.ably.lib.http.AsyncHttpPaginatedQuery;
 import io.ably.lib.http.AsyncPaginatedQuery;
 import io.ably.lib.http.Http;
@@ -24,6 +26,7 @@ import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.Stats;
 import io.ably.lib.types.StatsReader;
+import io.ably.lib.util.CurrentThreadExecutor;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 
@@ -38,6 +41,8 @@ public class AblyRest {
 	final String clientId;
 	public final Http http;
 	public final AsyncHttp asyncHttp;
+	public final SyncHttp syncHttp;
+	public final AnySyncHttp anySyncHttp;
 
 	public final Auth auth;
 	public final Channels channels;
@@ -77,6 +82,8 @@ public class AblyRest {
 		auth = new Auth(this, options);
 		http = new Http(options, auth);
 		asyncHttp = new AsyncHttp(http);
+		syncHttp = new SyncHttp(http);
+		anySyncHttp = new AnySyncHttp(asyncHttp, syncHttp);
 		channels = new Channels();
 	}
 
