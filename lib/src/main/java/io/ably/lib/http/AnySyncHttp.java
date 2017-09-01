@@ -17,18 +17,16 @@ public class AnySyncHttp {
         this.syncHttp = syncHttp;
     }
 
-    public static class Request<Result> {
-        private final AnySyncHttp anySyncHttp;
+    public class Request<Result> {
         private final Execute<Result> execute;
 
-        Request(AnySyncHttp anySyncHttp, Execute<Result> execute) {
-            this.anySyncHttp = anySyncHttp;
+        Request(Execute<Result> execute) {
             this.execute = execute;
         }
-        
+
         public Result sync() throws AblyException {
             final SyncExecuteResult<Result> result = new SyncExecuteResult<>();
-            execute.execute(anySyncHttp.syncHttp, new Callback<Result>() {
+            execute.execute(AnySyncHttp.this.syncHttp, new Callback<Result>() {
                 @Override
                 public void onSuccess(Result r) {
                     result.ok = r;
@@ -47,23 +45,23 @@ public class AnySyncHttp {
 
         public void async(Callback<Result> callback) {
             try {
-                execute.execute(anySyncHttp.asyncHttp, callback);
+                execute.execute(AnySyncHttp.this.asyncHttp, callback);
             } catch (AblyException e) {
                 callback.onError(e.errorInfo);
             }
         }
-
-        private static class SyncExecuteResult<Result> {
-            public Result ok = null;
-            public ErrorInfo error = null;
-        }
     }
 
     public <Result> Request<Result> request(Execute<Result> execute) {
-        return new Request(this, execute);
+        return new Request(execute);
     }
 
     public interface Execute<Result> {
         public void execute(CallbackfulHttp http, Callback<Result> callback) throws AblyException;
+    }
+
+    private static class SyncExecuteResult<Result> {
+        public Result ok = null;
+        public ErrorInfo error = null;
     }
 }
