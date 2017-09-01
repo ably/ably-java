@@ -27,23 +27,22 @@ public class AnySyncHttp {
         }
         
         public Result sync() throws AblyException {
-            final Object[] result = new Object[1];
-            final ErrorInfo[] error = new ErrorInfo[1];
+            final SyncExecuteResult<Result> result = new SyncExecuteResult<>();
             execute.execute(anySyncHttp.syncHttp, new Callback<Result>() {
                 @Override
                 public void onSuccess(Result r) {
-                    result[0] = r;
+                    result.ok = r;
                 }
 
                 @Override
                 public void onError(ErrorInfo e) {
-                    error[0] = e;
+                    result.error = e;
                 }
             });
-            if (error[0] != null) {
-                throw AblyException.fromErrorInfo(error[0]);
+            if (result.error != null) {
+                throw AblyException.fromErrorInfo(result.error);
             }
-            return (Result) result[0];
+            return result.ok;
         }
 
         public void async(Callback<Result> callback) {
@@ -52,6 +51,11 @@ public class AnySyncHttp {
             } catch (AblyException e) {
                 callback.onError(e.errorInfo);
             }
+        }
+
+        private static class SyncExecuteResult<Result> {
+            public Result ok = null;
+            public ErrorInfo error = null;
         }
     }
 
