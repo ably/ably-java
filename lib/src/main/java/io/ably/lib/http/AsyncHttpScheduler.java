@@ -4,9 +4,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-public class AsyncHttp extends CallbackfulHttp<ThreadPoolExecutor> {
-	public AsyncHttp(Http http) {
-		super(http, new ThreadPoolExecutor(DEFAULT_POOL_SIZE, MAX_POOL_SIZE, KEEP_ALIVE_TIME, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>()));
+/**
+ * A HttpScheduler that uses a thread pool to run HTTP operations.
+ */
+public class AsyncHttpScheduler extends HttpScheduler<ThreadPoolExecutor> {
+	public AsyncHttpScheduler(HttpCore httpCore) {
+		super(httpCore, new ThreadPoolExecutor(DEFAULT_POOL_SIZE, MAX_POOL_SIZE, KEEP_ALIVE_TIME, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>()));
 	}
 
 	public void setThreadPoolSize(int size) {
@@ -28,5 +31,5 @@ public class AsyncHttp extends CallbackfulHttp<ThreadPoolExecutor> {
 	private static final long KEEP_ALIVE_TIME = 2000L;
 	private static final long SHUTDOWN_TIME = 5000L;
 
-	protected static final String TAG = AsyncHttp.class.getName();
+	protected static final String TAG = AsyncHttpScheduler.class.getName();
 }

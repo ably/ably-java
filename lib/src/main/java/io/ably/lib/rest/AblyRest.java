@@ -2,15 +2,13 @@ package io.ably.lib.rest;
 
 import java.util.HashMap;
 
-import io.ably.lib.http.AnySyncHttp;
-import io.ably.lib.http.AsyncHttp;
-import io.ably.lib.http.SyncHttp;
+import io.ably.lib.http.AsyncHttpScheduler;
+import io.ably.lib.http.Http;
+import io.ably.lib.http.HttpCore;
+import io.ably.lib.http.HttpScheduler;
+import io.ably.lib.http.SyncHttpScheduler;
 import io.ably.lib.http.AsyncHttpPaginatedQuery;
 import io.ably.lib.http.AsyncPaginatedQuery;
-import io.ably.lib.http.Http;
-import io.ably.lib.http.Http.RequestBody;
-import io.ably.lib.http.Http.Response;
-import io.ably.lib.http.Http.ResponseHandler;
 import io.ably.lib.http.HttpPaginatedQuery;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
@@ -26,7 +24,6 @@ import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.Stats;
 import io.ably.lib.types.StatsReader;
-import io.ably.lib.util.CurrentThreadExecutor;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 
@@ -40,12 +37,11 @@ public class AblyRest {
 	public final ClientOptions options;
 	final String clientId;
 	public final Http http;
-	public final AsyncHttp asyncHttp;
-	public final SyncHttp syncHttp;
-	public final AnySyncHttp anySyncHttp;
+	public final HttpCore httpCore;
 
 	public final Auth auth;
 	public final Channels channels;
+
 
 	/**
 	 * Instance the Ably library using a key only.
@@ -80,10 +76,8 @@ public class AblyRest {
 		this.clientId = options.clientId;
 
 		auth = new Auth(this, options);
-		http = new Http(options, auth);
-		asyncHttp = new AsyncHttp(http);
-		syncHttp = new SyncHttp(http);
-		anySyncHttp = new AnySyncHttp(asyncHttp, syncHttp);
+		httpCore = new HttpCore(options, auth);
+		http = new Http(new AsyncHttpScheduler(httpCore), new SyncHttpScheduler(httpCore));
 		channels = new Channels();
 	}
 
@@ -126,14 +120,7 @@ public class AblyRest {
 	 * @throws AblyException
 	 */
 	public long time() throws AblyException {
-		return http.get("/time", HttpUtils.defaultAcceptHeaders(false), null, new ResponseHandler<Long>() {
-			@Override
-			public Long handleResponse(Response response, ErrorInfo error) throws AblyException {
-				if(error != null) {
-					throw AblyException.fromErrorInfo(error);
-				}
-				return (Long)Serialisation.gson.fromJson(new String(response.body), Long[].class)[0];
-			}}, false).longValue();
+		return timeImpl().sync().longValue();
 	}
 
 	/**
@@ -144,15 +131,24 @@ public class AblyRest {
 	 * @param callback
 	 */
 	public void timeAsync(Callback<Long> callback) {
-		asyncHttp.get("/time", HttpUtils.defaultAcceptHeaders(false), null, new ResponseHandler<Long>() {
+		timeImpl().async(callback);
+	}
+
+	private Http.Request<Long> timeImpl() {
+		return http.request(new Http.Execute<Long>() {
 			@Override
-			public Long handleResponse(Response response, ErrorInfo error) throws AblyException {
-				if(error != null) {
-					throw AblyException.fromErrorInfo(error);
-				}
-				return Serialisation.gson.fromJson(new String(response.body), Long[].class)[0];
+			public void execute(HttpScheduler http, Callback<Long> callback) throws AblyException {
+				http.get("/time", HttpUtils.defaultAcceptHeaders(false), null, new HttpCore.ResponseHandler<Long>() {
+					@Override
+					public Long handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
+						if(error != null) {
+							throw AblyException.fromErrorInfo(error);
+						}
+						return Serialisation.gson.fromJson(new String(response.body), Long[].class)[0];
+					}
+				}, false, callback);
 			}
-		}, false, callback);
+		});
 	}
 
 	/**
@@ -174,13 +170,13 @@ public class AblyRest {
 	 * @return
 	 */
 	public void statsAsync(Param[] params, Callback<AsyncPaginatedResult<Stats>> callback)  {
-		(new AsyncPaginatedQuery<Stats>(asyncHttp, "/stats", HttpUtils.defaultAcceptHeaders(false), params, StatsReader.statsResponseHandler)).get(callback);
+		(new AsyncPaginatedQuery<Stats>(http, "/stats", HttpUtils.defaultAcceptHeaders(false), params, StatsReader.statsResponseHandler)).get(callback);
 	}
 
 	/**
 	 * Make a generic HTTP request against an endpoint representing a collection
 	 * of some type; this is to provide a forward compatibility path for new APIs.
-	 * @param method: the HTTP method to use (see constants in io.ably.lib.http.Http)
+	 * @param method: the HTTP method to use (see constants in io.ably.lib.httpCore.HttpCore)
 	 * @param path: the path component of the resource URI
 	 * @param params (optional; may be null): any parameters to send with the request; see API-specific documentation
 	 * @param body (optional; may be null): an instance of RequestBody; either a JSONRequestBody or ByteArrayRequestBody
@@ -188,7 +184,7 @@ public class AblyRest {
 	 * @return a page of results, each represented as a JsonElement
 	 * @throws AblyException if it was not possible to complete the request, or an error response was received
 	 */
-	public HttpPaginatedResponse request(String method, String path, Param[] params, RequestBody body, Param[] headers) throws AblyException {
+	public HttpPaginatedResponse request(String method, String path, Param[] params, HttpCore.RequestBody body, Param[] headers) throws AblyException {
 		headers = HttpUtils.mergeHeaders(HttpUtils.defaultAcceptHeaders(false), headers);
 		return new HttpPaginatedQuery(http, method, path, headers, params, body).exec();
 	}
@@ -196,16 +192,16 @@ public class AblyRest {
 	/**
 	 * Make an async generic HTTP request against an endpoint representing a collection
 	 * of some type; this is to provide a forward compatibility path for new APIs.
-	 * @param method: the HTTP method to use (see constants in io.ably.lib.http.Http)
+	 * @param method: the HTTP method to use (see constants in io.ably.lib.httpCore.HttpCore)
 	 * @param path: the path component of the resource URI
 	 * @param params (optional; may be null): any parameters to send with the request; see API-specific documentation
 	 * @param body (optional; may be null): an instance of RequestBody; either a JSONRequestBody or ByteArrayRequestBody
 	 * @param headers (optional; may be null): any additional headers to send; see API-specific documentation
 	 * @param callback: called with the asynchronous result
 	 */
-	public void requestAsync(String method, String path, Param[] params, RequestBody body, Param[] headers, final AsyncHttpPaginatedResponse.Callback callback)  {
+	public void requestAsync(String method, String path, Param[] params, HttpCore.RequestBody body, Param[] headers, final AsyncHttpPaginatedResponse.Callback callback)  {
 		headers = HttpUtils.mergeHeaders(HttpUtils.defaultAcceptHeaders(false), headers);
-		(new AsyncHttpPaginatedQuery(asyncHttp, method, path, headers, params, body)).exec(callback);
+		(new AsyncHttpPaginatedQuery(http, method, path, headers, params, body)).exec(callback);
 	}
 
 	/**

@@ -7,8 +7,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import io.ably.lib.http.Http.RequestBody;
-import io.ably.lib.http.Http.ResponseHandler;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
@@ -16,10 +14,13 @@ import io.ably.lib.types.Param;
 import io.ably.lib.util.Log;
 
 /**
- * Created by tcard on 31/8/17.
+ * HttpScheduler schedules HttpCore operations to an Executor, exposing a generic async API.
+ *
+ * Internal; use Http instead.
+ *
+ * @param <Executor> The Executor that will run blocking operations.
  */
-
-public class CallbackfulHttp<Executor extends java.util.concurrent.Executor> {
+public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
 
     /**
      * Async HTTP GET for Ably host, with fallbacks
@@ -29,8 +30,8 @@ public class CallbackfulHttp<Executor extends java.util.concurrent.Executor> {
      * @param responseHandler
      * @param callback
      */
-    public <T> Future<T> get(String path, Param[] headers, Param[] params, Http.ResponseHandler<T> responseHandler, boolean requireAblyAuth, Callback<T> callback) {
-        return ablyHttpExecuteWithFallback(path, Http.GET, headers, params, null, responseHandler, requireAblyAuth, callback);
+    public <T> Future<T> get(String path, Param[] headers, Param[] params, HttpCore.ResponseHandler<T> responseHandler, boolean requireAblyAuth, Callback<T> callback) {
+        return ablyHttpExecuteWithFallback(path, HttpConstants.Methods.GET, headers, params, null, responseHandler, requireAblyAuth, callback);
     }
 
     /**
@@ -42,8 +43,8 @@ public class CallbackfulHttp<Executor extends java.util.concurrent.Executor> {
      * @param responseHandler
      * @param callback
      */
-    public <T> Future<T> put(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean requireAblyAuth, Callback<T> callback) {
-        return ablyHttpExecuteWithFallback(path, Http.PUT, headers, params, requestBody, responseHandler, requireAblyAuth, callback);
+    public <T> Future<T> put(String path, Param[] headers, Param[] params, HttpCore.RequestBody requestBody, HttpCore.ResponseHandler<T> responseHandler, boolean requireAblyAuth, Callback<T> callback) {
+        return ablyHttpExecuteWithFallback(path, HttpConstants.Methods.PUT, headers, params, requestBody, responseHandler, requireAblyAuth, callback);
     }
 
     /**
@@ -55,8 +56,8 @@ public class CallbackfulHttp<Executor extends java.util.concurrent.Executor> {
      * @param responseHandler
      * @param callback
      */
-    public <T> Future<T> post(String path, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean requireAblyAuth, Callback<T> callback) {
-        return ablyHttpExecuteWithFallback(path, Http.POST, headers, params, requestBody, responseHandler, requireAblyAuth, callback);
+    public <T> Future<T> post(String path, Param[] headers, Param[] params, HttpCore.RequestBody requestBody, HttpCore.ResponseHandler<T> responseHandler, boolean requireAblyAuth, Callback<T> callback) {
+        return ablyHttpExecuteWithFallback(path, HttpConstants.Methods.POST, headers, params, requestBody, responseHandler, requireAblyAuth, callback);
     }
 
     /**
@@ -67,8 +68,8 @@ public class CallbackfulHttp<Executor extends java.util.concurrent.Executor> {
      * @param responseHandler
      * @param callback
      */
-    public <T> Future<T> del(String path, Param[] headers, Param[] params, ResponseHandler<T> responseHandler, boolean requireAblyAuth, Callback<T> callback) {
-        return ablyHttpExecuteWithFallback(path, Http.DELETE, headers, params, null, responseHandler, requireAblyAuth, callback);
+    public <T> Future<T> del(String path, Param[] headers, Param[] params, HttpCore.ResponseHandler<T> responseHandler, boolean requireAblyAuth, Callback<T> callback) {
+        return ablyHttpExecuteWithFallback(path, HttpConstants.Methods.DELETE, headers, params, null, responseHandler, requireAblyAuth, callback);
     }
 
     /**
@@ -81,7 +82,7 @@ public class CallbackfulHttp<Executor extends java.util.concurrent.Executor> {
      * @param responseHandler
      * @param callback
      */
-    public <T> Future<T> exec(String path, String method, Param[] headers, Param[] params, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean requireAblyAuth, Callback<T> callback) {
+    public <T> Future<T> exec(String path, String method, Param[] headers, Param[] params, HttpCore.RequestBody requestBody, HttpCore.ResponseHandler<T> responseHandler, boolean requireAblyAuth, Callback<T> callback) {
         return ablyHttpExecuteWithFallback(path, method, headers, params, requestBody, responseHandler, requireAblyAuth, callback);
     }
 
@@ -99,9 +100,9 @@ public class CallbackfulHttp<Executor extends java.util.concurrent.Executor> {
                 final String method,
                 final Param[] headers,
                 final Param[] params,
-                final RequestBody requestBody,
+                final HttpCore.RequestBody requestBody,
                 final boolean withCredentials,
-                final ResponseHandler<T> responseHandler,
+                final HttpCore.ResponseHandler<T> responseHandler,
                 final Callback<T> callback) {
             super(method, headers, params, requestBody, withCredentials, responseHandler, callback);
             this.url = url;
@@ -132,8 +133,8 @@ public class CallbackfulHttp<Executor extends java.util.concurrent.Executor> {
                 final String method,
                 final Param[] headers,
                 final Param[] params,
-                final RequestBody requestBody,
-                final ResponseHandler<T> responseHandler,
+                final HttpCore.RequestBody requestBody,
+                final HttpCore.ResponseHandler<T> responseHandler,
                 final boolean requireAblyAuth,
                 final Callback<T> callback) {
             super(method, headers, params, requestBody, true, responseHandler, callback);
@@ -168,8 +169,8 @@ public class CallbackfulHttp<Executor extends java.util.concurrent.Executor> {
                 final String method,
                 final Param[] headers,
                 final Param[] params,
-                final RequestBody requestBody,
-                final ResponseHandler<T> responseHandler,
+                final HttpCore.RequestBody requestBody,
+                final HttpCore.ResponseHandler<T> responseHandler,
                 final boolean requireAblyAuth,
                 final Callback<T> callback) {
             super(method, headers, params, requestBody, true, responseHandler, callback);
@@ -178,8 +179,8 @@ public class CallbackfulHttp<Executor extends java.util.concurrent.Executor> {
         }
         @Override
         public void run() {
-            String candidateHost = http.getHost();
-            int retryCountRemaining = http.hosts.getFallback(candidateHost) != null ? http.options.httpMaxRetryCount : 0;
+            String candidateHost = httpCore.getHost();
+            int retryCountRemaining = httpCore.hosts.getFallback(candidateHost) != null ? httpCore.options.httpMaxRetryCount : 0;
 
             while(!isCancelled) {
                 try {
@@ -192,7 +193,7 @@ public class CallbackfulHttp<Executor extends java.util.concurrent.Executor> {
                         break;
                     }
                     Log.d(TAG, "Connection failed to host `" + candidateHost + "`. Searching for new host...");
-                    candidateHost = http.hosts.getFallback(candidateHost);
+                    candidateHost = httpCore.hosts.getFallback(candidateHost);
                     if (candidateHost == null) {
                         setError(e.errorInfo);
                         break;
@@ -219,9 +220,9 @@ public class CallbackfulHttp<Executor extends java.util.concurrent.Executor> {
                 final String method,
                 final Param[] headers,
                 final Param[] params,
-                final RequestBody requestBody,
+                final HttpCore.RequestBody requestBody,
                 final boolean withCredentials,
-                final ResponseHandler<T> responseHandler,
+                final HttpCore.ResponseHandler<T> responseHandler,
                 final Callback<T> callback) {
             this.method = method;
             this.headers = headers;
@@ -283,11 +284,11 @@ public class CallbackfulHttp<Executor extends java.util.concurrent.Executor> {
          **************************/
 
         protected T httpExecuteWithRetry(URL url) throws AblyException {
-            return http.httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, false);
+            return HttpCore.httpExecuteWithRetry(httpCore, url, method, headers, requestBody, responseHandler, false);
         }
         protected T httpExecuteWithRetry(String host, String path, boolean requireAblyAuth) throws AblyException {
-            URL url = Http.buildURL(http.scheme, host, http.port, path, params);
-            return http.httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, requireAblyAuth);
+            URL url = HttpUtils.buildURL(httpCore.scheme, host, httpCore.port, path, params);
+            return HttpCore.httpExecuteWithRetry(httpCore, url, method, headers, requestBody, responseHandler, requireAblyAuth);
         }
         protected void setResult(T result) {
             synchronized(this) {
@@ -325,15 +326,15 @@ public class CallbackfulHttp<Executor extends java.util.concurrent.Executor> {
         protected final String method;
         protected final Param[] headers;
         protected final Param[] params;
-        protected final RequestBody requestBody;
-        protected final ResponseHandler<T> responseHandler;
+        protected final HttpCore.RequestBody requestBody;
+        protected final HttpCore.ResponseHandler<T> responseHandler;
         protected final Callback<T> callback;
         protected boolean isCancelled = false;
         protected boolean isDone = false;
     }
 
-    protected CallbackfulHttp(Http http, Executor executor) {
-        this.http = http;
+    protected HttpScheduler(HttpCore httpCore, Executor executor) {
+        this.httpCore = httpCore;
         this.executor = executor;
     }
 
@@ -352,9 +353,9 @@ public class CallbackfulHttp<Executor extends java.util.concurrent.Executor> {
             final URL url,
             final String method,
             final Param[] headers,
-            final Http.RequestBody requestBody,
+            final HttpCore.RequestBody requestBody,
             final boolean withCredentials,
-            final Http.ResponseHandler<T> responseHandler,
+            final HttpCore.ResponseHandler<T> responseHandler,
             final Callback<T> callback) {
 
         UrlRequest<T> request = new UrlRequest<>(url, method, headers, null, requestBody, withCredentials, responseHandler, callback);
@@ -378,8 +379,8 @@ public class CallbackfulHttp<Executor extends java.util.concurrent.Executor> {
             final String method,
             final Param[] headers,
             final Param[] params,
-            final Http.RequestBody requestBody,
-            final Http.ResponseHandler<T> responseHandler,
+            final HttpCore.RequestBody requestBody,
+            final HttpCore.ResponseHandler<T> responseHandler,
             final boolean requireAblyAuth,
             final Callback<T> callback) {
 
@@ -406,8 +407,8 @@ public class CallbackfulHttp<Executor extends java.util.concurrent.Executor> {
             final String method,
             final Param[] headers,
             final Param[] params,
-            final Http.RequestBody requestBody,
-            final Http.ResponseHandler<T> responseHandler,
+            final HttpCore.RequestBody requestBody,
+            final HttpCore.ResponseHandler<T> responseHandler,
             final boolean requireAblyAuth,
             final Callback<T> callback) {
 
@@ -417,7 +418,8 @@ public class CallbackfulHttp<Executor extends java.util.concurrent.Executor> {
     }
 
     protected final Executor executor;
-    private final Http http;
+    private final HttpCore httpCore;
 
-    protected static final String TAG = CallbackfulHttp.class.getName();
+    protected static final String TAG = HttpScheduler.class.getName();
+
 }

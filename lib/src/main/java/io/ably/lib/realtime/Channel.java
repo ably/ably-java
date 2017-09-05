@@ -1,8 +1,9 @@
 package io.ably.lib.realtime;
 
+import io.ably.lib.http.BasePaginatedQuery;
+import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
-import io.ably.lib.http.Http.BodyHandler;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ConnectionManager.QueuedMessage;
 import io.ably.lib.transport.Defaults;
@@ -862,10 +863,22 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 	 * @throws AblyException
 	 */
 	public PaginatedResult<Message> history(Param[] params) throws AblyException {
-		params = replacePlaceholderParams(this, params);
+		return historyImpl(params).sync();
+	}
 
-		BodyHandler<Message> bodyHandler = MessageSerializer.getMessageResponseHandler(options);
-		return new PaginatedQuery<>(ably.http, basePath + "/history", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
+	public void historyAsync(Param[] params, Callback<AsyncPaginatedResult<Message>> callback) {
+		historyImpl(params).async(callback);
+	}
+
+	private BasePaginatedQuery.ResultRequest<Message> historyImpl(Param[] params) {
+		try {
+			params = replacePlaceholderParams(this, params);
+		} catch (AblyException e) {
+			return new BasePaginatedQuery.ResultRequest.Failed<Message>(e);
+		}
+
+		HttpCore.BodyHandler<Message> bodyHandler = MessageSerializer.getMessageResponseHandler(options);
+		return new BasePaginatedQuery<Message>(ably.http, basePath + "/history", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
 	}
 
 	/************************************

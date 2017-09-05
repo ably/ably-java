@@ -4,8 +4,7 @@ import java.net.HttpURLConnection;
 import java.util.List;
 import java.util.Map;
 
-import io.ably.lib.http.Http.RequestBody;
-import io.ably.lib.http.Http.Response;
+import io.ably.lib.http.HttpCore;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ProtocolMessage;
@@ -18,8 +17,8 @@ public class DebugOptions extends ClientOptions {
 	}
 
 	public interface RawHttpListener {
-		public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, RequestBody requestBody);
-		public void onRawHttpResponse(String id, Response response);
+		public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody);
+		public void onRawHttpResponse(String id, HttpCore.Response response);
 		public void onRawHttpException(String id, Throwable t);
 	}
 

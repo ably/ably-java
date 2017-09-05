@@ -2,7 +2,7 @@ package io.ably.lib.types;
 
 import java.io.UnsupportedEncodingException;
 
-import io.ably.lib.http.Http.BodyHandler;
+import io.ably.lib.http.HttpCore;
 import io.ably.lib.util.Serialisation;
 
 /**
@@ -23,7 +23,7 @@ public class StatsReader  {
 		return Serialisation.gson.fromJson(packed, Stats[].class);
 	}
 
-	public static BodyHandler<Stats> statsResponseHandler = new BodyHandler<Stats>() {
+	public static HttpCore.BodyHandler<Stats> statsResponseHandler = new HttpCore.BodyHandler<Stats>() {
 		@Override
 		public Stats[] handleResponseBody(String contentType, byte[] body) throws AblyException {
 			if("application/json".equals(contentType))

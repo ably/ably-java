@@ -2,6 +2,7 @@ package io.ably.lib.transport;
 
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
+import io.ably.lib.http.HttpHelpers;
 import io.ably.lib.realtime.*;
 import io.ably.lib.transport.ITransport.ConnectListener;
 import io.ably.lib.transport.ITransport.TransportParams;
@@ -515,9 +516,9 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		 *    back), set http to the same as realtime.
 		 */
 		if (pendingConnect.host == options.realtimeHost)
-			ably.http.setHost(options.restHost);
+			ably.httpCore.setHost(options.restHost);
 		else
-			ably.http.setHost(pendingConnect.host);
+			ably.httpCore.setHost(pendingConnect.host);
 
 		/* if there was a (non-fatal) connection error
 		 * that invalidates an existing connection id, then
@@ -947,7 +948,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	 */
 	protected boolean checkConnectivity() {
 		try {
-			return ably.http.getUrlString(INTERNET_CHECK_URL).contains(INTERNET_CHECK_OK);
+			return HttpHelpers.getUrlString(ably.httpCore, INTERNET_CHECK_URL).contains(INTERNET_CHECK_OK);
 		} catch(AblyException e) {
 			return false;
 		}

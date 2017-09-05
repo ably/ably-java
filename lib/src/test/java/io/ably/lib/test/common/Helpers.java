@@ -11,8 +11,7 @@ import com.google.gson.JsonObject;
 
 import io.ably.lib.debug.DebugOptions.RawHttpListener;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
-import io.ably.lib.http.Http.RequestBody;
-import io.ably.lib.http.Http.Response;
+import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.Channel.MessageListener;
@@ -694,8 +693,8 @@ public class Helpers {
 		public String method;
 		public String authHeader;
 		public Map<String, List<String>> requestHeaders;
-		public RequestBody requestBody;
-		public Response response;
+		public HttpCore.RequestBody requestBody;
+		public HttpCore.Response response;
 		public Throwable error;
 	}
 
@@ -704,7 +703,7 @@ public class Helpers {
 
 		@Override
 		public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders,
-				RequestBody requestBody) {
+				HttpCore.RequestBody requestBody) {
 
 			/* duplicating if necessary, ensure lower-case versions of header names are present */
 			Map<String, List<String>> normalisedHeaders = new HashMap<String, List<String>>();
@@ -726,7 +725,7 @@ public class Helpers {
 		}
 
 		@Override
-		public void onRawHttpResponse(String id, Response response) {
+		public void onRawHttpResponse(String id, HttpCore.Response response) {
 			/* duplicating if necessary, ensure lower-case versions of header names are present */
 			Map<String, List<String>> headers = response.headers;
 			Map<String, List<String>> normalisedHeaders = new HashMap<String, List<String>>();
