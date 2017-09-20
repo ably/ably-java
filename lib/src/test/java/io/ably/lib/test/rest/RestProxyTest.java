@@ -72,12 +72,11 @@ public class RestProxyTest extends ParameterizedTest {
 	 * Check access to stats API via proxy, non-TLS
 	 */
 	@Test
-	@Ignore("Proxy server not running")
 	public void proxy_simple_plain() {
 		try {
 			/* setup client */
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-			opts.clientId = "testClientId"; /* force use of token auth */
+			opts.useTokenAuth = true; /* force use of token auth */
 			opts.tls = false;
 			opts.proxy = new ProxyOptions() {{
 				host = "sandbox-proxy.ably.io";
@@ -99,7 +98,6 @@ public class RestProxyTest extends ParameterizedTest {
 	 * Check access to stats API via proxy
 	 */
 	@Test
-	@Ignore("Proxy server not running")
 	public void proxy_simple_tls() {
 		try {
 			/* setup client */
@@ -124,12 +122,11 @@ public class RestProxyTest extends ParameterizedTest {
 	 * Check access to stats API via proxy with authentication, non-tls
 	 */
 	@Test
-	@Ignore("Proxy server not running")
 	public void proxy_basic_auth_plain() {
 		try {
 			/* setup client */
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-			opts.clientId = "testClientId";
+			opts.useTokenAuth = true; /* force use of token auth */
 			opts.tls = false;
 			opts.proxy = new ProxyOptions() {{
 				host = "sandbox-proxy.ably.io";
@@ -152,12 +149,12 @@ public class RestProxyTest extends ParameterizedTest {
 	/**
 	 * Check access to stats API via proxy with authentication, non-tls
 	 */
-	//@Test
+	@Test
 	public void proxy_digest_auth_plain() {
 		try {
 			/* setup client */
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-			opts.clientId = "testClientId";
+			opts.useTokenAuth = true; /* force use of token auth */
 			opts.tls = false;
 			opts.proxy = new ProxyOptions() {{
 				host = "sandbox-proxy.ably.io";
@@ -179,9 +176,10 @@ public class RestProxyTest extends ParameterizedTest {
 	}
 
 	/**
-	 * Check access to stats API via proxy with authentication, tls
+	 * Check access to stats API via proxy with basic authentication, tls
 	 */
-	//@Test
+	@Test
+	@Ignore("Tunnelling not suopported")
 	public void proxy_basic_auth_tls() {
 		try {
 			/* setup client */
@@ -200,6 +198,34 @@ public class RestProxyTest extends ParameterizedTest {
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("proxy_basic_auth_tls: Unexpected exception");
+			return;
+		}
+	}
+
+	/**
+	 * Check access to stats API via proxy with digest authentication, tls
+	 */
+	@Test
+	@Ignore("Tunnelling not suopported")
+	public void proxy_digest_auth_tls() {
+		try {
+			/* setup client */
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.proxy = new ProxyOptions() {{
+				host = "sandbox-proxy.ably.io";
+				port = 6129;
+				username = "ably-digest";
+				password = "password";
+				prefAuthType = HttpAuth.Type.DIGEST;
+			}};
+			AblyRest ably = new AblyRest(opts);
+
+			/* attempt the call, expecting no exception */
+			PaginatedResult<Stats> stats = ably.stats(null);
+			assertNotNull("Expected non-null stats", stats);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("proxy_digest_auth_tls: Unexpected exception");
 			return;
 		}
 	}
