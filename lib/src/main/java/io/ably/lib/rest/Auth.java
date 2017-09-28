@@ -288,6 +288,8 @@ public class Auth {
 		 * is successful, the TTL of the returned token will be less
 		 * than or equal to this value depending on application settings
 		 * and the attributes of the issuing key.
+		 *
+		 * 0 means Ably will set it to the default value.
 		 */
 		public long ttl;
 
@@ -433,7 +435,14 @@ public class Auth {
 		 * Convert a TokenParams into a JSON object.
 		 */
 		public JsonObject asJsonElement() {
-			return (JsonObject)Serialisation.gson.toJsonTree(this);
+			JsonObject o = (JsonObject)Serialisation.gson.toJsonTree(this);
+			if (this.ttl == 0) {
+				o.remove("ttl");
+			}
+			if (this.capability != null && this.capability.isEmpty()) {
+				o.remove("capability");
+			}
+			return o;
 		}
 
 		/**

@@ -1691,6 +1691,32 @@ public class RestAuthTest extends ParameterizedTest {
 		}
 	}
 
+	/**
+	 * Verify TokenRequest as JSON TTL and capability are omitted if not explicitly set to nonzero.
+	 * Spec: RSA5, RSA6
+	 */
+	@Test
+	public void auth_token_request_json_omitted_defaults() {
+		AblyRest ably;
+		TokenRequest tokenRequest;
+		try {
+			for (String cap : new String[] {null, ""}) {
+				ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+				opts.clientId = "Test client id";
+				ably = new AblyRest(opts);
+				tokenRequest = ably.auth.createTokenRequest(new TokenParams() {{
+					capability = cap;
+				}}, null);
+				String serialisedTokenRequest = tokenRequest.asJson();
+				assertTrue("Verify token request has no ttl", !serialisedTokenRequest.contains("ttl"));
+				assertTrue("Verify token request has no capability", !serialisedTokenRequest.contains("capability"));
+			}
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("Unexpected exception");
+		}
+	}
+
 	private static TokenServer tokenServer;
 	private static SessionHandlerNanoHTTPD nanoHTTPD;
 
