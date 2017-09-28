@@ -29,8 +29,8 @@ public class Hosts {
 	 *
 	 * The fallback and environment processing here is used when the Hosts
 	 * object is used by a ConnectionManager (for a realtime connection) or by
-	 * an Http for a rest connection. The case where the Hosts object is used
-	 * by an Http that is being used by a ConnectionManager goes through this
+	 * an HttpCore for a rest connection. The case where the Hosts object is used
+	 * by an HttpCore that is being used by a ConnectionManager goes through this
 	 * code, but the results are ignored because ConnectionManager then calls
 	 * setHost() and fallback is not used.
 	 */
@@ -76,8 +76,8 @@ public class Hosts {
 	/**
 	 * set primary hostname
 	 *
-	 * This gets called when the Hosts object is being used by an Http that is
-	 * the http connection for a ConnectionManager.
+	 * This gets called when the Hosts object is being used by an HttpCore that is
+	 * the httpCore connection for a ConnectionManager.
 	 */
 	public void setHost(String primaryHost) {
 		this.primaryHost = primaryHost;

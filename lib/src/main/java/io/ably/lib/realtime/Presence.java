@@ -1,10 +1,13 @@
 package io.ably.lib.realtime;
 
-import io.ably.lib.http.Http.BodyHandler;
+import io.ably.lib.http.BasePaginatedQuery;
+import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyException;
+import io.ably.lib.types.AsyncPaginatedResult;
+import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
@@ -633,11 +636,23 @@ public class Presence {
 	 * @throws AblyException
 	 */
 	public PaginatedResult<PresenceMessage> history(Param[] params) throws AblyException {
-		params = Channel.replacePlaceholderParams(channel, params);
+		return historyImpl(params).sync();
+	}
+
+	public void historyAsync(Param[] params, Callback<AsyncPaginatedResult<PresenceMessage>> callback) {
+		historyImpl(params).async(callback);
+	}
+
+	private BasePaginatedQuery.ResultRequest<PresenceMessage> historyImpl(Param[] params) {
+		try {
+			params = Channel.replacePlaceholderParams(channel, params);
+		} catch (AblyException e) {
+			return new BasePaginatedQuery.ResultRequest.Failed<PresenceMessage>(e);
+		}
 
 		AblyRealtime ably = channel.ably;
-		BodyHandler<PresenceMessage> bodyHandler = PresenceSerializer.getPresenceResponseHandler(channel.options);
-		return new PaginatedQuery<>(ably.http, channel.basePath + "/presence/history", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
+		HttpCore.BodyHandler<PresenceMessage> bodyHandler = PresenceSerializer.getPresenceResponseHandler(channel.options);
+		return new BasePaginatedQuery<PresenceMessage>(ably.http, channel.basePath + "/presence/history", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
 	}
 
 	/**

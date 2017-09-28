@@ -1,5 +1,6 @@
 package io.ably.lib.realtime;
 
+import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 
 /**
@@ -39,6 +40,24 @@ public interface CompletionListener {
 				try {
 					member.onError(reason);
 				} catch(Throwable t) {}
+		}
+	}
+
+
+	public static class ToCallback implements Callback<Void> {
+		private CompletionListener listener;
+		public ToCallback(CompletionListener listener) {
+			this.listener = listener;
+		}
+
+		@Override
+		public void onSuccess(Void v) {
+			listener.onSuccess();
+		}
+
+		@Override
+		public void onError(ErrorInfo reason) {
+			listener.onError(reason);
 		}
 	}
 }

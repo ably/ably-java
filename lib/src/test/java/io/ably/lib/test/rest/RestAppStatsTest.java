@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 
+import io.ably.lib.http.HttpHelpers;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.test.common.ParameterizedTest;
@@ -76,7 +77,7 @@ public class RestAppStatsTest extends ParameterizedTest {
 					+ ']'
 				);
 
-			ably.http.post("/stats", HttpUtils.defaultAcceptHeaders(false), null, StatsWriter.asJsonRequest(testStats), null, true);
+			HttpHelpers.postSync(ably.http, "/stats", HttpUtils.defaultAcceptHeaders(false), null, StatsWriter.asJsonRequest(testStats), null, true);
 		} catch (AblyException e) {}
 	}
 

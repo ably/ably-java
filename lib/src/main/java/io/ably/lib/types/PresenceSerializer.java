@@ -3,13 +3,12 @@ package io.ably.lib.types;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+import io.ably.lib.http.HttpCore;
+import io.ably.lib.http.HttpUtils;
 import io.ably.lib.util.Log;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 
-import io.ably.lib.http.Http.BodyHandler;
-import io.ably.lib.http.Http.JsonRequestBody;
-import io.ably.lib.http.Http.RequestBody;
 import io.ably.lib.util.Serialisation;
 
 /**
@@ -75,23 +74,23 @@ public class PresenceSerializer {
 	 *            JSON encode
 	 ****************************************/
 	
-	public static RequestBody asJsonRequest(PresenceMessage message) throws AblyException {
+	public static HttpCore.RequestBody asJsonRequest(PresenceMessage message) throws AblyException {
 		return asJsonRequest(new PresenceMessage[] { message });
 	}
 
-	public static RequestBody asJsonRequest(PresenceMessage[] messages) {
-		return new JsonRequestBody(Serialisation.gson.toJson(messages));
+	public static HttpCore.RequestBody asJsonRequest(PresenceMessage[] messages) {
+		return new HttpUtils.JsonRequestBody(Serialisation.gson.toJson(messages));
 	}
 
 	/****************************************
 	 *              BodyHandler
 	 ****************************************/
 	
-	public static BodyHandler<PresenceMessage> getPresenceResponseHandler(ChannelOptions opts) {
+	public static HttpCore.BodyHandler<PresenceMessage> getPresenceResponseHandler(ChannelOptions opts) {
 		return opts == null ? presenceResponseHandler : new PresenceBodyHandler(opts);
 	}
 
-	private static class PresenceBodyHandler implements BodyHandler<PresenceMessage> {
+	private static class PresenceBodyHandler implements HttpCore.BodyHandler<PresenceMessage> {
 
 		public PresenceBodyHandler(ChannelOptions opts) { this.opts = opts; }
 
@@ -121,7 +120,7 @@ public class PresenceSerializer {
 		private ChannelOptions opts;
 	}
 
-	private static BodyHandler<PresenceMessage> presenceResponseHandler = new PresenceBodyHandler(null);
+	private static HttpCore.BodyHandler<PresenceMessage> presenceResponseHandler = new PresenceBodyHandler(null);
 
 	private static final String TAG = PresenceSerializer.class.getName();
 }

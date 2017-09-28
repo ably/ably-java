@@ -5,13 +5,15 @@ import java.util.Date;
 
 import com.google.gson.Gson;
 
+import io.ably.lib.http.Http;
+import io.ably.lib.http.HttpCore;
+import io.ably.lib.http.HttpScheduler;
 import io.ably.lib.http.HttpUtils;
-import io.ably.lib.http.Http.JsonRequestBody;
-import io.ably.lib.http.Http.Response;
-import io.ably.lib.http.Http.ResponseHandler;
+import io.ably.lib.http.HttpHelpers;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.test.loader.ResourceLoader;
 import io.ably.lib.types.AblyException;
+import io.ably.lib.types.Callback;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.PresenceMessage;
@@ -195,9 +197,9 @@ public class Setup {
 				System.exit(1);
 			}
 			try {
-				testVars = ably.http.post("/apps", null, null, new JsonRequestBody(appSpec), new ResponseHandler<TestVars>() {
+				testVars = HttpHelpers.postSync(ably.http, "/apps", null, null, new HttpUtils.JsonRequestBody(appSpec), new HttpCore.ResponseHandler<TestVars>() {
 					@Override
-					public TestVars handleResponse(Response response, ErrorInfo error) throws AblyException {
+					public TestVars handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
 						if(error != null) {
 							throw AblyException.fromErrorInfo(error);
 						}
@@ -235,7 +237,12 @@ public class Setup {
 				opts.tlsPort = tlsPort;
 				opts.tls = true;
 				ably = new AblyRest(opts);
-				ably.http.del("/apps/" + testVars.appId, HttpUtils.defaultAcceptHeaders(false), null, null, true);
+				ably.http.request(new Http.Execute<Void>() {
+					@Override
+					public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
+						http.del("/apps/" + testVars.appId, HttpUtils.defaultAcceptHeaders(false), null, null, true, callback);
+					}
+				}).sync();
 			} catch (AblyException ae) {
 				System.err.println("Unable to delete test app: " + ae);
 				ae.printStackTrace();

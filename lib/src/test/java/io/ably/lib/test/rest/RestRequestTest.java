@@ -18,8 +18,7 @@ import org.junit.rules.Timeout;
 import com.google.gson.JsonElement;
 
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.http.Http;
-import io.ably.lib.http.Http.JsonRequestBody;
+import io.ably.lib.http.HttpConstants;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Channel;
@@ -90,7 +89,7 @@ public class RestRequestTest extends ParameterizedTest {
 
 			Param[] testParams = new Param[] { new Param("testParam", "testValue") };
 			Param[] testHeaders = new Param[] { new Param("x-test-header", "testValue") };
-			HttpPaginatedResponse channelResponse = ably.request(Http.GET, channelPath, testParams, null, testHeaders);
+			HttpPaginatedResponse channelResponse = ably.request(HttpConstants.Methods.GET, channelPath, testParams, null, testHeaders);
 
 			/* check HttpPagninatedResponse details are present */
 			assertEquals("Verify statusCode is present", channelResponse.statusCode, 200);
@@ -137,7 +136,7 @@ public class RestRequestTest extends ParameterizedTest {
 			opts.httpListener = httpListener;
 			AblyRest ably = new AblyRest(opts);
 
-			ably.requestAsync(Http.GET, channelPath, null, null, null, new AsyncHttpPaginatedResponse.Callback() {
+			ably.requestAsync(HttpConstants.Methods.GET, channelPath, null, null, null, new AsyncHttpPaginatedResponse.Callback() {
 				@Override
 				public void onResponse(AsyncHttpPaginatedResponse channelResponse) {
 
@@ -197,7 +196,7 @@ public class RestRequestTest extends ParameterizedTest {
 			AblyRest ably = new AblyRest(opts);
 
 			Param[] params = new Param[] { new Param("prefix", channelNamePrefix) };
-			HttpPaginatedResponse channelsResponse = ably.request(Http.GET, channelsPath, params, null, null);
+			HttpPaginatedResponse channelsResponse = ably.request(HttpConstants.Methods.GET, channelsPath, params, null, null);
 
 			/* check HttpPagninatedResponse details are present */
 			assertEquals("Verify statusCode is present", channelsResponse.statusCode, 200);
@@ -240,7 +239,7 @@ public class RestRequestTest extends ParameterizedTest {
 			AblyRest ably = new AblyRest(opts);
 
 			Param[] params = new Param[] { new Param("prefix", channelNamePrefix) };
-			ably.requestAsync(Http.GET, channelsPath, params, null, null, new AsyncHttpPaginatedResponse.Callback() {
+			ably.requestAsync(HttpConstants.Methods.GET, channelsPath, params, null, null, new AsyncHttpPaginatedResponse.Callback() {
 				@Override
 				public void onResponse(AsyncHttpPaginatedResponse channelResponse) {
 
@@ -309,7 +308,7 @@ public class RestRequestTest extends ParameterizedTest {
 			AblyRest ably = new AblyRest(opts);
 
 			Param[] params = new Param[] { new Param("prefix", channelNamePrefix), new Param("limit", "1") };
-			HttpPaginatedResponse channelsResponse = ably.request(Http.GET, channelsPath, params, null, null);
+			HttpPaginatedResponse channelsResponse = ably.request(HttpConstants.Methods.GET, channelsPath, params, null, null);
 
 			/* check HttpPagninatedResponse details are present */
 			assertEquals("Verify statusCode is present", channelsResponse.statusCode, 200);
@@ -371,7 +370,7 @@ public class RestRequestTest extends ParameterizedTest {
 			AblyRest ably = new AblyRest(opts);
 
 			Param[] params = new Param[] { new Param("prefix", channelNamePrefix), new Param("limit", "1") };
-			ably.requestAsync(Http.GET, channelsPath, params, null, null, new AsyncHttpPaginatedResponse.Callback() {
+			ably.requestAsync(HttpConstants.Methods.GET, channelsPath, params, null, null, new AsyncHttpPaginatedResponse.Callback() {
 				@Override
 				public void onResponse(AsyncHttpPaginatedResponse channelsResponse) {
 
@@ -480,8 +479,8 @@ public class RestRequestTest extends ParameterizedTest {
 
 			/* publish a message */
 			Message message = new Message("Test event", messageData);
-			JsonRequestBody requestBody = new JsonRequestBody(message);
-			HttpPaginatedResponse publishResponse = ably.request(Http.POST, channelMessagesPath, null, requestBody, null);
+			HttpUtils.JsonRequestBody requestBody = new HttpUtils.JsonRequestBody(message);
+			HttpPaginatedResponse publishResponse = ably.request(HttpConstants.Methods.POST, channelMessagesPath, null, requestBody, null);
 			RawHttpRequest req = httpListener.getLastRequest();
 
 			/* check HttpPagninatedResponse details are present */
@@ -533,8 +532,8 @@ public class RestRequestTest extends ParameterizedTest {
 
 			/* publish a message */
 			Message message = new Message("Test event", messageData);
-			JsonRequestBody requestBody = new JsonRequestBody(message);
-			ably.requestAsync(Http.POST, channelMessagesPath, null, requestBody, null, new AsyncHttpPaginatedResponse.Callback() {
+			HttpUtils.JsonRequestBody requestBody = new HttpUtils.JsonRequestBody(message);
+			ably.requestAsync(HttpConstants.Methods.POST, channelMessagesPath, null, requestBody, null, new AsyncHttpPaginatedResponse.Callback() {
 				@Override
 				public void onResponse(AsyncHttpPaginatedResponse publishResponse) {
 
@@ -601,7 +600,7 @@ public class RestRequestTest extends ParameterizedTest {
 			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
 			fillInOptions(opts);
 			AblyRest ably = new AblyRest(opts);
-			HttpPaginatedResponse errorResponse = ably.request(Http.GET, "/non-existent-path", null, null, null);
+			HttpPaginatedResponse errorResponse = ably.request(HttpConstants.Methods.GET, "/non-existent-path", null, null, null);
 
 			/* check HttpPaginatedResponse details are present */
 			assertEquals("Verify statusCode is present", errorResponse.statusCode, 404);
@@ -627,7 +626,7 @@ public class RestRequestTest extends ParameterizedTest {
 			fillInOptions(opts);
 			AblyRest ably = new AblyRest(opts);
 
-			ably.requestAsync(Http.GET, "/non-existent-path", null, null, null, new AsyncHttpPaginatedResponse.Callback() {
+			ably.requestAsync(HttpConstants.Methods.GET, "/non-existent-path", null, null, null, new AsyncHttpPaginatedResponse.Callback() {
 				@Override
 				public void onResponse(AsyncHttpPaginatedResponse response) {
 
@@ -672,7 +671,7 @@ public class RestRequestTest extends ParameterizedTest {
 			opts.environment = "non.existent.env";
 			AblyRest ably = new AblyRest(opts);
 
-			ably.request(Http.GET, "/", null, null, null);
+			ably.request(HttpConstants.Methods.GET, "/", null, null, null);
 			fail("request_500: Expected an exception");
 		} catch(AblyException e) {
 			assertEquals("Verify expected status code in error response", e.errorInfo.statusCode, 500);
@@ -693,7 +692,7 @@ public class RestRequestTest extends ParameterizedTest {
 			opts.environment = "non.existent.env";
 			AblyRest ably = new AblyRest(opts);
 
-			ably.requestAsync(Http.GET, "/", null, null, null, new AsyncHttpPaginatedResponse.Callback() {
+			ably.requestAsync(HttpConstants.Methods.GET, "/", null, null, null, new AsyncHttpPaginatedResponse.Callback() {
 				@Override
 				public void onResponse(AsyncHttpPaginatedResponse response) {
 					waiter.fail("request_500_async: Expected an error");

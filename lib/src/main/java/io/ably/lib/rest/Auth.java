@@ -14,11 +14,14 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 
 import io.ably.lib.http.Http;
-import io.ably.lib.http.Http.Response;
-import io.ably.lib.http.Http.ResponseHandler;
+import io.ably.lib.http.HttpConstants;
+import io.ably.lib.http.HttpCore;
+import io.ably.lib.http.HttpHelpers;
+import io.ably.lib.http.HttpScheduler;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.BaseMessage;
+import io.ably.lib.types.Callback;
 import io.ably.lib.types.Capability;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
@@ -138,7 +141,7 @@ public class Auth {
 
 		/**
 		 * Stores the AuthOptions arguments as defaults for subsequent authorizations
-		 * with the exception of the attributes {@link AuthOptions#timeStamp} and
+		 * with the exception of the attributes {@link AuthOptions#timestamp()} and
 		 * {@link AuthOptions#queryTime}
 		 * <p>
 		 * Spec: RSA10g
@@ -582,9 +585,9 @@ public class Auth {
 			/* the auth request can return either a signed token request as a TokenParams, or a TokenDetails */
 			Object authUrlResponse = null;
 			try {
-				ResponseHandler<Object> responseHandler = new ResponseHandler<Object>() {
+				HttpCore.ResponseHandler<Object> responseHandler = new HttpCore.ResponseHandler<Object>() {
 					@Override
-					public Object handleResponse(Response response, ErrorInfo error) throws AblyException {
+					public Object handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
 						if(error != null) {
 							throw AblyException.fromErrorInfo(error);
 						}
@@ -640,11 +643,11 @@ public class Auth {
 						}
 					}
 				}
-				if (Http.POST.equals(tokenOptions.authMethod)) {
-					authUrlResponse = ably.http.postUri(tokenOptions.authUrl, tokenOptions.authHeaders, HttpUtils.flattenParams(urlParams), HttpUtils.flattenParams(tokenParams), responseHandler);
+				if (HttpConstants.Methods.POST.equals(tokenOptions.authMethod)) {
+					authUrlResponse = HttpHelpers.postUri(ably.httpCore, tokenOptions.authUrl, tokenOptions.authHeaders, HttpUtils.flattenParams(urlParams), HttpUtils.flattenParams(tokenParams), responseHandler);
 				} else {
 					Map<String, Param> requestParams = (urlParams != null) ? HttpUtils.mergeParams(urlParams, tokenParams) : tokenParams;
-					authUrlResponse = ably.http.getUri(tokenOptions.authUrl, tokenOptions.authHeaders, HttpUtils.flattenParams(requestParams), responseHandler);
+					authUrlResponse = HttpHelpers.getUri(ably.httpCore, tokenOptions.authUrl, tokenOptions.authHeaders, HttpUtils.flattenParams(requestParams), responseHandler);
 				}
 			} catch(AblyException e) {
 				throw AblyException.fromErrorInfo(e, new ErrorInfo("authUrl failed with an exception", 401, 80019));
@@ -666,9 +669,9 @@ public class Auth {
 		}
 
 		String tokenPath = "/keys/" + signedTokenRequest.keyName + "/requestToken";
-		return ably.http.post(tokenPath, null, null, new Http.JsonRequestBody(signedTokenRequest.asJsonElement().toString()), new ResponseHandler<TokenDetails>() {
+		return HttpHelpers.postSync(ably.http, tokenPath, null, null, new HttpUtils.JsonRequestBody(signedTokenRequest.asJsonElement().toString()), new HttpCore.ResponseHandler<TokenDetails>() {
 			@Override
-			public TokenDetails handleResponse(Response response, ErrorInfo error) throws AblyException {
+			public TokenDetails handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
 				if(error != null) {
 					throw AblyException.fromErrorInfo(error);
 				}

@@ -1,16 +1,17 @@
 package io.ably.lib.rest;
 
+import io.ably.lib.http.BasePaginatedQuery;
+import io.ably.lib.http.Http;
+import io.ably.lib.http.HttpScheduler;
+import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.http.AsyncPaginatedQuery;
-import io.ably.lib.http.Http.BodyHandler;
-import io.ably.lib.http.Http.RequestBody;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.AsyncPaginatedResult;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ChannelOptions;
-import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.MessageSerializer;
 import io.ably.lib.types.PaginatedResult;
@@ -48,12 +49,23 @@ public class Channel {
 	 * @throws AblyException
 	 */
 	public void publish(String name, Object data) throws AblyException {
-		Message message = new Message(name, data);
-		/* RTL6g3 */
-		ably.auth.checkClientId(message, true, false);
-		message.encode(options);
-		RequestBody requestBody = ably.options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(message) : MessageSerializer.asJsonRequest(message);
-		ably.http.post(basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), null, requestBody, null, true);
+		publishImpl(name, data).sync();
+	}
+
+	/**
+	 * Publish a message on this channel using the REST API.
+	 * Since the REST API is stateless, this request is made independently
+	 * of any other request on this or any other channel.
+	 * @param name: the event name
+	 * @param data: the message payload; see {@link io.ably.types.Data} for
+	 * @param listener
+	 */
+	public void publishAsync(String name, Object data, CompletionListener listener) {
+		publishImpl(name, data).async(new CompletionListener.ToCallback(listener));
+	}
+
+	private Http.Request<Void> publishImpl(String name, Object data) {
+		return publishImpl(new Message[] {new Message(name, data)});
 	}
 
 	/**
@@ -64,14 +76,8 @@ public class Channel {
 	 * @param messages: array of messages to publish.
 	 * @throws AblyException
 	 */
-	public void publish(Message[] messages) throws AblyException {
-		for(Message message : messages) {
-			/* RTL6g3 */
-			ably.auth.checkClientId(message, true, false);
-			message.encode(options);
-		}
-		RequestBody requestBody = ably.options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(messages) : MessageSerializer.asJsonRequest(messages);
-		ably.http.post(basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), null, requestBody, null, true);
+	public void publish(final Message[] messages) throws AblyException {
+		publishImpl(messages).sync();
 	}
 
 	/**
@@ -79,21 +85,24 @@ public class Channel {
 	 * @param messages
 	 * @param listener
 	 */
-	public void publishAsync(Message[] messages, final CompletionListener listener) {
-		try {
-			for(Message message : messages)
-				message.encode(options);
-		} catch(AblyException e) {
-			listener.onError(e.errorInfo);
-			return;
-		}
-		RequestBody requestBody = ably.options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(messages) : MessageSerializer.asJsonRequest(messages);
+	public void publishAsync(final Message[] messages, final CompletionListener listener) {
+		publishImpl(messages).async(new CompletionListener.ToCallback(listener));
+	}
 
-		ably.asyncHttp.post(basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), null, requestBody, null, true, new Callback<Void>() {
+	private Http.Request<Void> publishImpl(final Message[] messages) {
+		return ably.http.request(new Http.Execute<Void>() {
 			@Override
-			public void onSuccess(Void result) { listener.onSuccess(); }
-			@Override
-			public void onError(ErrorInfo reason) { listener.onError(reason); }			
+			public void execute(HttpScheduler http, final Callback<Void> callback) throws AblyException {
+				for(Message message : messages) {
+					/* RTL6g3 */
+					ably.auth.checkClientId(message, true, false);
+					message.encode(options);
+				}
+
+				HttpCore.RequestBody requestBody = ably.options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(messages) : MessageSerializer.asJsonRequest(messages);
+
+				http.post(basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), null, requestBody, null, true, callback);
+			}
 		});
 	}
 
@@ -107,8 +116,7 @@ public class Channel {
 	 * @throws AblyException
 	 */
 	public PaginatedResult<Message> history(Param[] params) throws AblyException {
-		BodyHandler<Message> bodyHandler = MessageSerializer.getMessageResponseHandler(options);
-		return new PaginatedQuery<Message>(ably.http, basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
+		return historyImpl(params).sync();
 	}
 
 	/**
@@ -117,9 +125,13 @@ public class Channel {
 	 * @param callback
 	 * @return
 	 */
-	public void historyAsync(Param[] params, Callback<AsyncPaginatedResult<Message>> callback)  {
-		BodyHandler<Message> bodyHandler = MessageSerializer.getMessageResponseHandler(options);
-		(new AsyncPaginatedQuery<Message>(ably.asyncHttp, basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler)).get(callback);
+	public void historyAsync(Param[] params, Callback<AsyncPaginatedResult<Message>> callback) {
+		historyImpl(params).async(callback);
+	}
+
+	private BasePaginatedQuery.ResultRequest<Message> historyImpl(Param[] params) {
+		HttpCore.BodyHandler<Message> bodyHandler = MessageSerializer.getMessageResponseHandler(options);
+		return (new BasePaginatedQuery<Message>(ably.http, basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler)).get();
 	}
 
 	/**
@@ -136,8 +148,7 @@ public class Channel {
 		 * @throws AblyException 
 		 */
 		public PaginatedResult<PresenceMessage> get(Param[] params) throws AblyException {
-			BodyHandler<PresenceMessage> bodyHandler = PresenceSerializer.getPresenceResponseHandler(options);
-			return new PaginatedQuery<PresenceMessage>(ably.http, basePath + "/presence", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
+			return getImpl(params).sync();
 		}
 
 		/**
@@ -145,8 +156,12 @@ public class Channel {
 		 * @param callback: on success returns the currently present members.
 		 */
 		public void getAsync(Param[] params, Callback<AsyncPaginatedResult<PresenceMessage>> callback) {
-			BodyHandler<PresenceMessage> bodyHandler = PresenceSerializer.getPresenceResponseHandler(options);
-			(new AsyncPaginatedQuery<PresenceMessage>(ably.asyncHttp, basePath + "/presence", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler)).get(callback);
+			getImpl(params).async(callback);
+		}
+
+		private BasePaginatedQuery.ResultRequest<PresenceMessage> getImpl(Param[] params) {
+			HttpCore.BodyHandler<PresenceMessage> bodyHandler = PresenceSerializer.getPresenceResponseHandler(options);
+			return (new BasePaginatedQuery<PresenceMessage>(ably.http, basePath + "/presence", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler)).get();
 		}
 
 		/**
@@ -155,21 +170,24 @@ public class Channel {
 		 * not just this instance.
 		 * @param params: the request params. See the Ably REST API
 		 * documentation for more details.
-		 * @param callback: on success returns an array of PresenceMessages for this Channel.
 		 */
 		public PaginatedResult<PresenceMessage> history(Param[] params) throws AblyException {
-			BodyHandler<PresenceMessage> bodyHandler = PresenceSerializer.getPresenceResponseHandler(options);
-			return new PaginatedQuery<PresenceMessage>(ably.http, basePath + "/presence/history", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
+			return historyImpl(params).sync();
 		}
+
 		/**
 		 * Asynchronously obtain recent history for this channel using the REST API.
 		 * @param params: the request params. See the Ably REST API
 		 * @param callback
 		 * @return
 		 */
-		public void historyAsync(Param[] params, Callback<AsyncPaginatedResult<PresenceMessage>> callback)  {
-			BodyHandler<PresenceMessage> bodyHandler = PresenceSerializer.getPresenceResponseHandler(options);
-			(new AsyncPaginatedQuery<PresenceMessage>(ably.asyncHttp, basePath + "/presence/history", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler)).get(callback);
+		public void historyAsync(Param[] params, Callback<AsyncPaginatedResult<PresenceMessage>> callback) {
+			historyImpl(params).async(callback);
+		}
+
+		private BasePaginatedQuery.ResultRequest<PresenceMessage> historyImpl(Param[] params) {
+			HttpCore.BodyHandler<PresenceMessage> bodyHandler = PresenceSerializer.getPresenceResponseHandler(options);
+			return (new BasePaginatedQuery<PresenceMessage>(ably.http, basePath + "/presence/history", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler)).get();
 		}
 
 	}

@@ -8,20 +8,16 @@ import java.util.regex.Matcher;
 
 import com.google.gson.JsonElement;
 
-import io.ably.lib.http.Http.BodyHandler;
-import io.ably.lib.http.Http.RequestBody;
-import io.ably.lib.http.Http.Response;
-import io.ably.lib.http.Http.ResponseHandler;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.AsyncHttpPaginatedResponse;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 
-public class AsyncHttpPaginatedQuery implements ResponseHandler<AsyncHttpPaginatedResponse> {
+public class AsyncHttpPaginatedQuery implements HttpCore.ResponseHandler<AsyncHttpPaginatedResponse> {
 
-	public AsyncHttpPaginatedQuery(AsyncHttp http, String method, String path, Param[] headers, Param[] params,
-			RequestBody requestBody) {
+	public AsyncHttpPaginatedQuery(Http http, String method, String path, Param[] headers, Param[] params,
+								   HttpCore.RequestBody requestBody) {
 		this.http = http;
 		this.method = method;
 		this.path = path;
@@ -35,8 +31,14 @@ public class AsyncHttpPaginatedQuery implements ResponseHandler<AsyncHttpPaginat
 		exec(params, callback);
 	}
 
-	public void exec(Param[] params, final AsyncHttpPaginatedResponse.Callback callback) {
-		http.exec(path, method, headers, params, requestBody, this, true, wrap(callback));
+	public void exec(final Param[] params, final AsyncHttpPaginatedResponse.Callback callback) {
+		final HttpCore.ResponseHandler<AsyncHttpPaginatedResponse> responseHandler = this;
+		http.request(new Http.Execute<AsyncHttpPaginatedResponse>() {
+			@Override
+			public void execute(HttpScheduler http, Callback<AsyncHttpPaginatedResponse> callback) throws AblyException {
+				http.exec(path, method, headers, params, requestBody, responseHandler, true, callback);
+			}
+		}).async(wrap(callback));
 	}
 
 	/**
@@ -46,7 +48,7 @@ public class AsyncHttpPaginatedQuery implements ResponseHandler<AsyncHttpPaginat
 	public class AsyncHttpPaginatedResult extends AsyncHttpPaginatedResponse {
 		private JsonElement[] contents;
 
-		private AsyncHttpPaginatedResult(Response response, ErrorInfo error) {
+		private AsyncHttpPaginatedResult(HttpCore.Response response, ErrorInfo error) {
 			statusCode = response.statusCode;
 			headers = HttpUtils.toParamArray(response.headers);
 			if(error != null) {
@@ -64,12 +66,16 @@ public class AsyncHttpPaginatedQuery implements ResponseHandler<AsyncHttpPaginat
 				}
 			}
 
-			List<String> linkHeaders = response.getHeaderFields(Http.LINK);
+			List<String> linkHeaders = response.getHeaderFields(HttpConstants.Headers.LINK);
 			if(linkHeaders != null) {
-				HashMap<String, String> links = PaginatedQuery.parseLinks(linkHeaders);
+				HashMap<String, String> links = BasePaginatedQuery.parseLinks(linkHeaders);
 				relFirst = links.get("first");
 				relCurrent = links.get("current");
 				relNext = links.get("next");
+			} else {
+				relFirst = null;
+				relCurrent = null;
+				relNext = null;
 			}
 		}
 
@@ -98,7 +104,7 @@ public class AsyncHttpPaginatedQuery implements ResponseHandler<AsyncHttpPaginat
 			}
 
 			/* we're expecting the format to be ./path-component?name=value&name=value... */
-			Matcher urlMatch = PaginatedQuery.urlPattern.matcher(linkUrl);
+			Matcher urlMatch = BasePaginatedQuery.urlPattern.matcher(linkUrl);
 			if(!urlMatch.matches()) {
 				callback.onError(new ErrorInfo("Unexpected link URL format", 500, 50000));
 				return;
@@ -126,11 +132,11 @@ public class AsyncHttpPaginatedQuery implements ResponseHandler<AsyncHttpPaginat
 		@Override
 		public boolean hasNext() { return relNext != null; }
 
-		private String relFirst, relCurrent, relNext;
+		private final String relFirst, relCurrent, relNext;
 	}
 
 	@Override
-	public AsyncHttpPaginatedResponse handleResponse(Response response, ErrorInfo error) {
+	public AsyncHttpPaginatedResponse handleResponse(HttpCore.Response response, ErrorInfo error) {
 		return new AsyncHttpPaginatedResult(response, error);
 	}
 
@@ -147,11 +153,11 @@ public class AsyncHttpPaginatedQuery implements ResponseHandler<AsyncHttpPaginat
 		};
 	}
 
-	private final AsyncHttp http;
+	private final Http http;
 	private final String method;
 	private final String path;
 	private final Param[] headers;
 	private final Param[] params;
-	private final RequestBody requestBody;
-	private final BodyHandler<JsonElement> bodyHandler;
+	private final HttpCore.RequestBody requestBody;
+	private final HttpCore.BodyHandler<JsonElement> bodyHandler;
 }

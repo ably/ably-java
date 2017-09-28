@@ -10,20 +10,17 @@ import java.util.regex.Matcher;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 
-import io.ably.lib.http.Http.BodyHandler;
-import io.ably.lib.http.Http.RequestBody;
-import io.ably.lib.http.Http.Response;
-import io.ably.lib.http.Http.ResponseHandler;
 import io.ably.lib.types.AblyException;
+import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.HttpPaginatedResponse;
 import io.ably.lib.types.Param;
 import io.ably.lib.util.Serialisation;
 
-public class HttpPaginatedQuery implements ResponseHandler<HttpPaginatedResponse> {
+public class HttpPaginatedQuery implements HttpCore.ResponseHandler<HttpPaginatedResponse> {
 
 	public HttpPaginatedQuery(Http http, String method, String path, Param[] headers, Param[] params,
-			RequestBody requestBody) {
+							  HttpCore.RequestBody requestBody) {
 		this.http = http;
 		this.method = method;
 		this.path = path;
@@ -40,7 +37,7 @@ public class HttpPaginatedQuery implements ResponseHandler<HttpPaginatedResponse
 	 * @throws AblyException
 	 */
 	public HttpPaginatedResponse exec() throws AblyException {
-		return http.exec(path, method, requestHeaders, requestParams, requestBody, this, true);
+		return exec(requestParams);
 	}
 
 	/**
@@ -49,19 +46,25 @@ public class HttpPaginatedQuery implements ResponseHandler<HttpPaginatedResponse
 	 * together with any available links to related results pages.
 	 * @throws AblyException
 	 */
-	public HttpPaginatedResponse exec(Param[] params) throws AblyException {
-		return http.exec(path, method, requestHeaders, params, requestBody, this, true);
+	public HttpPaginatedResponse exec(final Param[] params) throws AblyException {
+		final HttpCore.ResponseHandler<HttpPaginatedResponse> responseHandler = this;
+		return http.request(new Http.Execute<HttpPaginatedResponse>() {
+			@Override
+			public void execute(HttpScheduler http, Callback<HttpPaginatedResponse> callback) throws AblyException {
+				http.exec(path, method, requestHeaders, params, requestBody, responseHandler, true, callback);
+			}
+		}).sync();
 	}
 
 	@Override
-	public HttpPaginatedResponse handleResponse(Response response, ErrorInfo error) throws AblyException {
+	public HttpPaginatedResponse handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
 		return new HttpPaginatedResult(response, error);
 	}
 
 	public class HttpPaginatedResult extends HttpPaginatedResponse {
 		private JsonElement[] contents;
 
-		private HttpPaginatedResult(Response response, ErrorInfo error) throws AblyException {
+		private HttpPaginatedResult(HttpCore.Response response, ErrorInfo error) throws AblyException {
 			statusCode = response.statusCode;
 			headers = HttpUtils.toParamArray(response.headers);
 			if(error != null) {
@@ -74,9 +77,9 @@ public class HttpPaginatedQuery implements ResponseHandler<HttpPaginatedResponse
 				}
 			}
 
-			List<String> linkHeaders = response.getHeaderFields(Http.LINK);
+			List<String> linkHeaders = response.getHeaderFields(HttpConstants.Headers.LINK);
 			if(linkHeaders != null) {
-				HashMap<String, String> links = PaginatedQuery.parseLinks(linkHeaders);
+				HashMap<String, String> links = BasePaginatedQuery.parseLinks(linkHeaders);
 				relFirst = links.get("first");
 				relCurrent = links.get("current");
 				relNext = links.get("next");
@@ -98,7 +101,7 @@ public class HttpPaginatedQuery implements ResponseHandler<HttpPaginatedResponse
 		private HttpPaginatedResponse execRel(String linkUrl) throws AblyException {
 			if(linkUrl == null) return null;
 			/* we're expecting the format to be ./path-component?name=value&name=value... */
-			Matcher urlMatch = PaginatedQuery.urlPattern.matcher(linkUrl);
+			Matcher urlMatch = BasePaginatedQuery.urlPattern.matcher(linkUrl);
 			if(urlMatch.matches()) {
 				String[] paramSpecs = urlMatch.group(2).split("&");
 				Param[] params = new Param[paramSpecs.length];
@@ -132,7 +135,7 @@ public class HttpPaginatedQuery implements ResponseHandler<HttpPaginatedResponse
 		}		
 	}
 
-	static final BodyHandler<JsonElement> jsonArrayResponseHandler = new BodyHandler<JsonElement>() {
+	static final HttpCore.BodyHandler<JsonElement> jsonArrayResponseHandler = new HttpCore.BodyHandler<JsonElement>() {
 		@Override
 		public JsonElement[] handleResponseBody(String contentType, byte[] body) throws AblyException {
 			if(!"application/json".equals(contentType)) {
@@ -156,6 +159,6 @@ public class HttpPaginatedQuery implements ResponseHandler<HttpPaginatedResponse
 	private final String path;
 	private final Param[] requestHeaders;
 	private final Param[] requestParams;
-	private final RequestBody requestBody;
-	private final BodyHandler<JsonElement> bodyHandler;
+	private final HttpCore.RequestBody requestBody;
+	private final HttpCore.BodyHandler<JsonElement> bodyHandler;
 }

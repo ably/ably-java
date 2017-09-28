@@ -3,14 +3,12 @@ package io.ably.lib.types;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+import io.ably.lib.http.HttpCore;
+import io.ably.lib.http.HttpUtils;
 import io.ably.lib.util.Log;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 
-import io.ably.lib.http.Http;
-import io.ably.lib.http.Http.BodyHandler;
-import io.ably.lib.http.Http.JsonRequestBody;
-import io.ably.lib.http.Http.RequestBody;
 import io.ably.lib.util.Serialisation;
 
 /**
@@ -45,12 +43,12 @@ public class MessageSerializer {
 	 *            Msgpack encode
 	 ****************************************/
 
-	public static RequestBody asMsgpackRequest(Message message) throws AblyException {
+	public static HttpCore.RequestBody asMsgpackRequest(Message message) throws AblyException {
 		return asMsgpackRequest(new Message[] { message });
 	}
 
-	public static RequestBody asMsgpackRequest(Message[] messages) {
-		return new Http.ByteArrayRequestBody(writeMsgpackArray(messages), "application/x-msgpack");
+	public static HttpCore.RequestBody asMsgpackRequest(Message[] messages) {
+		return new HttpUtils.ByteArrayRequestBody(writeMsgpackArray(messages), "application/x-msgpack");
 	}
 
 	static byte[] writeMsgpackArray(Message[] messages) {
@@ -84,23 +82,23 @@ public class MessageSerializer {
 	 *            JSON encode
 	 ****************************************/
 	
-	public static RequestBody asJsonRequest(Message message) throws AblyException {
+	public static HttpCore.RequestBody asJsonRequest(Message message) throws AblyException {
 		return asJsonRequest(new Message[] { message });
 	}
 
-	public static RequestBody asJsonRequest(Message[] messages) {
-		return new JsonRequestBody(Serialisation.gson.toJson(messages));
+	public static HttpCore.RequestBody asJsonRequest(Message[] messages) {
+		return new HttpUtils.JsonRequestBody(Serialisation.gson.toJson(messages));
 	}
 
 	/****************************************
 	 *              BodyHandler
 	 ****************************************/
 	
-	public static BodyHandler<Message> getMessageResponseHandler(ChannelOptions opts) {
+	public static HttpCore.BodyHandler<Message> getMessageResponseHandler(ChannelOptions opts) {
 		return opts == null ? messageResponseHandler : new MessageBodyHandler(opts);
 	}
 
-	private static class MessageBodyHandler implements BodyHandler<Message> {
+	private static class MessageBodyHandler implements HttpCore.BodyHandler<Message> {
 
 		public MessageBodyHandler(ChannelOptions opts) { this.opts = opts; }
 
@@ -130,7 +128,7 @@ public class MessageSerializer {
 		private ChannelOptions opts;
 	}
 
-	private static BodyHandler<Message> messageResponseHandler = new MessageBodyHandler(null);
+	private static HttpCore.BodyHandler<Message> messageResponseHandler = new MessageBodyHandler(null);
 
 	private static final String TAG = MessageSerializer.class.getName();
 }

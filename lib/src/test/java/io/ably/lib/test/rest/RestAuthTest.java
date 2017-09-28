@@ -16,7 +16,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import io.ably.lib.http.Http;
+import io.ably.lib.http.HttpConstants;
+import io.ably.lib.http.HttpCore;
 import io.ably.lib.types.*;
 
 import org.junit.AfterClass;
@@ -29,7 +30,6 @@ import org.junit.rules.Timeout;
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.http.Http.RequestBody;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.AuthMethod;
@@ -117,7 +117,7 @@ public class RestAuthTest extends ParameterizedTest {
 			opts.tls = false;
 			AblyRest ably = new AblyRest(opts);
 			ably.stats(null);
-			fail("Unexpected success calling with Basic auth over http");
+			fail("Unexpected success calling with Basic auth over httpCore");
 		} catch (AblyException e) {
 			e.printStackTrace();
 			assertEquals("Verify expected error code", e.errorInfo.statusCode, 401);
@@ -367,7 +367,7 @@ public class RestAuthTest extends ParameterizedTest {
 			ClientOptions opts = createOptions();
 			opts.environment = testVars.environment;
 			opts.authUrl = "http://localhost:8982/post-token-request";
-			opts.authMethod = Http.POST;
+			opts.authMethod = HttpConstants.Methods.POST;
 			AblyRest ably = new AblyRest(opts);
 			/* make a call to trigger token request */
 			try {
@@ -501,7 +501,7 @@ public class RestAuthTest extends ParameterizedTest {
 			opts.httpListener = httpListener;
 
 			opts.authUrl = "http://localhost:8982/post-token-request";
-			opts.authMethod = Http.POST;
+			opts.authMethod = HttpConstants.Methods.POST;
 			opts.authParams = new Param[]{new Param("test-param", "test-value")};
 			AblyRest ably = new AblyRest(opts);
 
@@ -559,7 +559,7 @@ public class RestAuthTest extends ParameterizedTest {
 			opts.httpListener = httpListener;
 
 			opts.authUrl = "http://localhost:8982/post-token-request?test-param=test-value";
-			opts.authMethod = Http.POST;
+			opts.authMethod = HttpConstants.Methods.POST;
 			AblyRest ably = new AblyRest(opts);
 
 			/* make a call to trigger token request */
@@ -1373,7 +1373,7 @@ public class RestAuthTest extends ParameterizedTest {
 				this.httpListener = new RawHttpListener() {
 					@Override
 					public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader,
-							Map<String, List<String>> requestHeaders, RequestBody requestBody) {
+							Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
 						try {
 							if(testParams.useBinaryProtocol) {
 								messages[0] = MessageSerializer.readMsgpack(requestBody.getEncoded())[0];
@@ -1390,7 +1390,7 @@ public class RestAuthTest extends ParameterizedTest {
 					}
 
 					@Override
-					public void onRawHttpResponse(String id, io.ably.lib.http.Http.Response response) {}
+					public void onRawHttpResponse(String id, HttpCore.Response response) {}
 
 					@Override
 					public void onRawHttpException(String id, Throwable t) {}
@@ -1440,7 +1440,7 @@ public class RestAuthTest extends ParameterizedTest {
 				this.httpListener = new RawHttpListener() {
 					@Override
 					public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader,
-							Map<String, List<String>> requestHeaders, RequestBody requestBody) {
+							Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
 						try {
 							if(testParams.useBinaryProtocol) {
 								messages[0] = MessageSerializer.readMsgpack(requestBody.getEncoded())[0];
@@ -1457,7 +1457,7 @@ public class RestAuthTest extends ParameterizedTest {
 					}
 
 					@Override
-					public void onRawHttpResponse(String id, io.ably.lib.http.Http.Response response) {}
+					public void onRawHttpResponse(String id, HttpCore.Response response) {}
 
 					@Override
 					public void onRawHttpException(String id, Throwable t) {}
