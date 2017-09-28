@@ -34,7 +34,7 @@ public class HttpCore {
 	public HttpCore(ClientOptions options, Auth auth) throws AblyException {
 		this.options = options;
 		this.auth = auth;
-		this.scheme = options.tls ? "https://" : "httpCore://";
+		this.scheme = options.tls ? "https://" : "http://";
 		this.port = Defaults.getPort(options);
 		this.hosts = new Hosts(options.restHost, Defaults.HOST_REST, options);
 
@@ -50,6 +50,42 @@ public class HttpCore {
 				String proxyPassword = proxyOptions.password;
 				if(proxyPassword == null) { throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy password", 40000, 400)); }
 				proxyAuth = new HttpAuth(proxyUser, proxyPassword, proxyOptions.prefAuthType);
+			}
+		}
+	}
+
+	/**
+	 * Make a synchronous HTTP request specified by URL and proxy, retrying if necessary on WWW-Authenticate
+	 * @param url
+	 * @param method
+	 * @param headers
+	 * @param requestBody
+	 * @param responseHandler
+	 * @return
+	 * @throws AblyException
+	 */
+	public <T> T httpExecuteWithRetry(URL url, String method, Param[] headers, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean requireAblyAuth) throws AblyException {
+		boolean renewPending = true, proxyAuthPending = true;
+		if(requireAblyAuth) {
+			authorize(false);
+		}
+		while(true) {
+			try {
+				return httpExecute(url, getProxy(url), method, headers, requestBody, true, responseHandler);
+			} catch(AuthRequiredException are) {
+				if(are.authChallenge != null && requireAblyAuth) {
+					if(are.expired && renewPending) {
+						authorize(true);
+						renewPending = false;
+						continue;
+					}
+				}
+				if(are.proxyAuthChallenge != null && proxyAuthPending && proxyAuth != null) {
+					proxyAuth.processAuthenticateHeaders(are.proxyAuthChallenge);
+					proxyAuthPending = false;
+					continue;
+				}
+				throw are;
 			}
 		}
 	}
@@ -206,43 +242,6 @@ public class HttpCore {
 		}
 
 		return handleResponse(conn, credentialsIncluded, response, responseHandler);
-	}
-
-	/**
-	 * Make a synchronous HTTP request specified by URL and proxy, retrying if necessary on WWW-Authenticate
-	 * @param httpCore
-	 * @param url
-	 * @param method
-	 * @param headers
-	 * @param requestBody
-	 * @param responseHandler
-	 * @return
-	 * @throws AblyException
-	 */
-	public static <T> T httpExecuteWithRetry(HttpCore httpCore, URL url, String method, Param[] headers, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean requireAblyAuth) throws AblyException {
-		boolean renewPending = true, proxyAuthPending = true;
-		if(requireAblyAuth) {
-			httpCore.authorize(false);
-		}
-		while(true) {
-			try {
-				return httpCore.httpExecute(url, httpCore.getProxy(url), method, headers, requestBody, true, responseHandler);
-			} catch(AuthRequiredException are) {
-				if(are.authChallenge != null && requireAblyAuth) {
-					if(are.expired && renewPending) {
-						httpCore.authorize(true);
-						renewPending = false;
-						continue;
-					}
-				}
-				if(are.proxyAuthChallenge != null && proxyAuthPending && httpCore.proxyAuth != null) {
-					httpCore.proxyAuth.processAuthenticateHeaders(are.proxyAuthChallenge);
-					proxyAuthPending = false;
-					continue;
-				}
-				throw are;
-			}
-		}
 	}
 
 	/**

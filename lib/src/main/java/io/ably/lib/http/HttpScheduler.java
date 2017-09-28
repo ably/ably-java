@@ -284,11 +284,11 @@ public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
          **************************/
 
         protected T httpExecuteWithRetry(URL url) throws AblyException {
-            return HttpCore.httpExecuteWithRetry(httpCore, url, method, headers, requestBody, responseHandler, false);
+            return httpCore.httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, false);
         }
         protected T httpExecuteWithRetry(String host, String path, boolean requireAblyAuth) throws AblyException {
             URL url = HttpUtils.buildURL(httpCore.scheme, host, httpCore.port, path, params);
-            return HttpCore.httpExecuteWithRetry(httpCore, url, method, headers, requestBody, responseHandler, requireAblyAuth);
+            return httpCore.httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, requireAblyAuth);
         }
         protected void setResult(T result) {
             synchronized(this) {

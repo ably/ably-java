@@ -77,7 +77,7 @@ public class RealtimeInitTest extends ParameterizedTest {
 			String hostExpected = "some.other.host";
 			opts.restHost = hostExpected;
 			ably = new AblyRealtime(opts);
-			assertEquals("Unexpected host mismatch", hostExpected, ably.http.getHost());
+			assertEquals("Unexpected host mismatch", hostExpected, ably.httpCore.getHost());
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init4: Unexpected exception instantiating library");

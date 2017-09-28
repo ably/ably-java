@@ -21,7 +21,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
 
 import io.ably.lib.http.Http;
-import io.ably.lib.http.Http.Response;
+import io.ably.lib.http.HttpCore;
+import io.ably.lib.http.HttpHelpers;
+import io.ably.lib.http.HttpScheduler;
+import io.ably.lib.http.HttpUtils;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
@@ -37,6 +40,7 @@ import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyException;
+import io.ably.lib.types.Callback;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
@@ -49,7 +53,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 	private static Gson gson = new Gson();
 
 	@Rule
-	public Timeout testTimeout = Timeout.seconds(30);
+	public Timeout testTimeout = Timeout.seconds(300);
 
 	/**
 	 * Connect to the service and attach, subscribe to an event, and publish on that channel
@@ -597,7 +601,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 				/* subscribe */
 				MessageWaiter messageWaiter = new MessageWaiter(channel);
 
-				ably.http.post("/channels/" + channel.name + "/messages", null, null, new Http.JsonRequestBody(fixtureMessage), null, true);
+				HttpHelpers.postSync(ably.http, "/channels/" + channel.name + "/messages", null, null, new HttpUtils.JsonRequestBody(fixtureMessage), null, true);
 
 				messageWaiter.waitFor(1);
 				channel.unsubscribe(messageWaiter);
@@ -610,15 +614,21 @@ public class RealtimeMessageTest extends ParameterizedTest {
 				channel.publish(receivedMessage, msgComplete);
 				msgComplete.waitFor();
 
-				MessagesEncodingDataItem persistedMessage = ably.http.get("/channels/" + channel.name + "/messages?limit=1", null, null, new Http.ResponseHandler<MessagesEncodingDataItem[]>() {
+				MessagesEncodingDataItem persistedMessage =	ably.http.request(new Http.Execute<MessagesEncodingDataItem[]>() {
 					@Override
-					public MessagesEncodingDataItem[] handleResponse(Response response, ErrorInfo error) throws AblyException {
-						if(error != null) {
-							throw AblyException.fromErrorInfo(error);
-						}
-						return gson.fromJson(new String(response.body), MessagesEncodingDataItem[].class);
+					public void execute(HttpScheduler http, Callback<MessagesEncodingDataItem[]> callback) throws AblyException {
+						http.get("/channels/" + channel.name + "/messages?limit=1", null, null, new HttpCore.ResponseHandler<MessagesEncodingDataItem[]>() {
+							@Override
+							public MessagesEncodingDataItem[] handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
+								if(error != null) {
+									throw AblyException.fromErrorInfo(error);
+								}
+								return gson.fromJson(new String(response.body), MessagesEncodingDataItem[].class);
+							}
+						}, true, callback);
 					}
-				}, true)[0];
+				}).sync()[0];
+
 				assertEquals("Verify persisted message encoding", fixtureMessage.encoding, persistedMessage.encoding);
 				assertEquals("Verify persisted message data", fixtureMessage.data, persistedMessage.data);
 			}
@@ -666,7 +676,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 				for (MessagesEncodingDataItem fixtureMessage : fixtures.messages) {
 					MessageWaiter messageWaiter = new MessageWaiter(realtimeSubscribeChannel);
 
-					restPublishClient.http.post("/channels/" + realtimeSubscribeChannel.name + "/messages", null, null, new Http.JsonRequestBody(fixtureMessage), null, true);
+					HttpHelpers.postSync(restPublishClient.http, "/channels/" + realtimeSubscribeChannel.name + "/messages", null, null, new HttpUtils.JsonRequestBody(fixtureMessage), null, true);
 
 					messageWaiter.waitFor(1);
 					realtimeSubscribeChannel.unsubscribe(messageWaiter);
@@ -699,18 +709,24 @@ public class RealtimeMessageTest extends ParameterizedTest {
 					data = ((JsonPrimitive)data).getAsString();
 				}
 
-				for (io.ably.lib.rest.Channel restPublishChannel : new io.ably.lib.rest.Channel[]{restPublishChannelMsgPack, restPublishChannelJson}) {
+				for (final io.ably.lib.rest.Channel restPublishChannel : new io.ably.lib.rest.Channel[]{restPublishChannelMsgPack, restPublishChannelJson}) {
 					restPublishChannel.publish("event", data);
 
-					MessagesEncodingDataItem persistedMessage = restRetrieveClient.http.get("/channels/" + restPublishChannel.name + "/messages?limit=1", null, null, new Http.ResponseHandler<MessagesEncodingDataItem[]>() {
+					MessagesEncodingDataItem persistedMessage = restRetrieveClient.http.request(new Http.Execute<MessagesEncodingDataItem[]>() {
 						@Override
-						public MessagesEncodingDataItem[] handleResponse(Response response, ErrorInfo error) throws AblyException {
-							if(error != null) {
-								throw AblyException.fromErrorInfo(error);
-							}
-							return gson.fromJson(new String(response.body), MessagesEncodingDataItem[].class);
+						public void execute(HttpScheduler http, Callback<MessagesEncodingDataItem[]> callback) throws AblyException {
+							http.get("/channels/" + restPublishChannel.name + "/messages?limit=1", null, null, new HttpCore.ResponseHandler<MessagesEncodingDataItem[]>() {
+								@Override
+								public MessagesEncodingDataItem[] handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
+									if(error != null) {
+										throw AblyException.fromErrorInfo(error);
+									}
+									return gson.fromJson(new String(response.body), MessagesEncodingDataItem[].class);
+								}
+							}, true, callback);
 						}
-					}, true)[0];
+					}).sync()[0];
+
 					assertEquals("Verify persisted message encoding", fixtureMessage.encoding, persistedMessage.encoding);
 					assertEquals("Verify persisted message data", fixtureMessage.data, persistedMessage.data);
 				}
@@ -763,7 +779,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			testData.expectedType = "binary";
 			testData.expectedHexValue = "30313233343536373839";	/* hex for "0123456789" */
 
-			restPublishClient.http.post("/channels/" + realtimeSubscribeChannelJson.name + "/messages", null, null, new Http.JsonRequestBody(testData), null, true);
+			HttpHelpers.postSync(restPublishClient.http, "/channels/" + realtimeSubscribeChannelJson.name + "/messages", null, null, new HttpUtils.JsonRequestBody(testData), null, true);
 
 			messageWaiter.waitFor(1);
 			realtimeSubscribeChannelJson.unsubscribe(messageWaiter);

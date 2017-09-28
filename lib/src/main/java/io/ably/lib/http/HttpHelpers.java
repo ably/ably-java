@@ -3,7 +3,6 @@ package io.ably.lib.http;
 import java.io.IOException;
 import java.net.URL;
 
-import io.ably.lib.rest.Auth;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
@@ -33,7 +32,7 @@ public class HttpHelpers {
 		while(true) {
 			url = buildURL(httpCore.scheme, candidateHost, httpCore.port, path, params);
 			try {
-				return HttpCore.httpExecuteWithRetry(httpCore, url, method, headers, requestBody, responseHandler, requireAblyAuth);
+				return httpCore.httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, requireAblyAuth);
 			} catch (AblyException.HostFailedException e) {
 				if(--retryCountRemaining < 0)
 					throw e; /* reached httpMaxRetryCount */
@@ -119,7 +118,7 @@ public class HttpHelpers {
 	 * @throws AblyException
 	 */
 	public static <T> T httpExecute(HttpCore httpCore, URL url, String method, Param[] headers, HttpCore.RequestBody requestBody, HttpCore.ResponseHandler<T> responseHandler) throws AblyException {
-		return HttpCore.httpExecuteWithRetry(httpCore, url, method, headers, requestBody, responseHandler, false);
+		return httpCore.httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, false);
 	}
 
 	public static <T> T postSync(final Http http, final String path, final Param[] headers, final Param[] params, final HttpCore.RequestBody requestBody, final HttpCore.ResponseHandler<T> responseHandler, final boolean requireAblyAuth) throws AblyException {
