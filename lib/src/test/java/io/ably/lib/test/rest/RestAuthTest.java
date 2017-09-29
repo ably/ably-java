@@ -1717,6 +1717,47 @@ public class RestAuthTest extends ParameterizedTest {
 		}
 	}
 
+	/**
+	 * Verify that renewing the token when useTokenAuth is true doesn't use the old (expired) token.
+	 */
+	@Test
+	public void auth_renew_token_bearer_auth() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.useTokenAuth = true;
+			opts.defaultTokenParams = new TokenParams() {{
+				ttl = 100;
+			}};
+			AblyRest ably = new AblyRest(opts);
+
+			// Any request will issue a new token with the defaultTokenParams and use it.
+
+			ably.channels.get("test").history(null);
+			TokenDetails oldToken = ably.auth.getTokenDetails();
+
+			// Sleep until old token expires, then ensure it did.
+
+			Thread.sleep(110);
+			ClientOptions optsWithOldToken = createOptions();
+			optsWithOldToken.tokenDetails = oldToken;
+			AblyRest ablyWithOldToken = new AblyRest(optsWithOldToken);
+			try {
+				ablyWithOldToken.channels.get("test").history(null);
+				fail("expected old token to be expired already");
+			} catch(AblyException e) {}
+
+			// The library should now renew the token using the key.
+
+			ably.channels.get("test").history(null);
+			TokenDetails newToken = ably.auth.getTokenDetails();
+
+			assertNotEquals(oldToken.token, newToken.token);
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Unexpected exception");
+		}
+	}
+
 	private static TokenServer tokenServer;
 	private static SessionHandlerNanoHTTPD nanoHTTPD;
 

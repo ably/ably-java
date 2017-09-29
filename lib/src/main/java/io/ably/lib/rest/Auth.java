@@ -948,11 +948,9 @@ public class Auth {
 	private TokenDetails assertValidToken(TokenParams params, AuthOptions options, boolean force) throws AblyException {
 		Log.i("Auth.assertValidToken()", "");
 		if(tokenDetails != null) {
-			if(tokenDetails.expires == 0 || tokenValid(tokenDetails)) {
-				if (!force) {
-					Log.i("Auth.assertValidToken()", "using cached token; expires = " + tokenDetails.expires);
-					return tokenDetails;
-				}
+			if(!force && (tokenDetails.expires == 0 || tokenValid(tokenDetails))) {
+				Log.i("Auth.assertValidToken()", "using cached token; expires = " + tokenDetails.expires);
+				return tokenDetails;
 			} else {
 				/* expired, so remove */
 				Log.i("Auth.assertValidToken()", "deleting expired token");
