@@ -26,9 +26,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import java.util.ArrayDeque;
 import java.lang.reflect.Constructor;
 
-/**
- * Created by tcard on 3/2/17.
- */
+
 public class Push extends PushBase {
     public Push(AblyRest rest) {
         super(rest);

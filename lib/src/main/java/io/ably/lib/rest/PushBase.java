@@ -21,9 +21,7 @@ import io.ably.lib.util.StringUtils;
 
 import java.util.Map;
 
-/**
- * Created by tcard on 3/2/17.
- */
+
 public class PushBase {
     public PushBase(AblyRest rest) {
         this.rest = rest;

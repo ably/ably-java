@@ -9,9 +9,7 @@ import io.ably.lib.http.HttpCore;
 import io.ably.lib.util.JsonUtils;
 import io.ably.lib.util.Serialisation;
 
-/**
- * Created by tcard on 3/2/17.
- */
+
 
 public abstract class DeviceDetails {
     public String id;

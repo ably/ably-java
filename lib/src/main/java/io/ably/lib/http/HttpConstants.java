@@ -1,8 +1,6 @@
 package io.ably.lib.http;
 
-/**
- * Created by tcard on 04/09/2017.
- */
+
 public class HttpConstants {
     static class ContentTypes {
         static final String JSON                = "application/json";
