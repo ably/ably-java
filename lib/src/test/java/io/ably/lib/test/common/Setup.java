@@ -18,6 +18,7 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.util.Serialisation;
+import io.ably.lib.debug.DebugOptions;
 
 public class Setup {
 
@@ -42,6 +43,7 @@ public class Setup {
 	public static class Namespace {
 		public String id;
 		public boolean persisted;
+		public boolean pushEnabled;
 		public int status;
 	}
 
@@ -100,24 +102,24 @@ public class Setup {
 		public int tlsPort;
 		public boolean tls;
 
-		public ClientOptions createOptions() {
-			ClientOptions opts = new ClientOptions();
+		public DebugOptions createOptions() {
+			DebugOptions opts = new DebugOptions();
 			fillInOptions(opts, null);
 			return opts;
 		}
 
-		public ClientOptions createOptions(String key) throws AblyException {
+		public DebugOptions createOptions(String key) throws AblyException {
 			return createOptions(key, null);
 		}
 
-		public ClientOptions createOptions(TestParameters params) throws AblyException {
-			ClientOptions opts = new ClientOptions();
+		public DebugOptions createOptions(TestParameters params) throws AblyException {
+			DebugOptions opts = new DebugOptions();
 			fillInOptions(opts, params);
 			return opts;
 		}
 
-		public ClientOptions createOptions(String key, TestParameters params) throws AblyException {
-			ClientOptions opts = new ClientOptions(key);
+		public DebugOptions createOptions(String key, TestParameters params) throws AblyException {
+			DebugOptions opts = new DebugOptions(key);
 			fillInOptions(opts, params);
 			return opts;
 		}

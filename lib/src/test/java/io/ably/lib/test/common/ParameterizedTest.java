@@ -11,8 +11,10 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
+import jdk.nashorn.internal.runtime.Debug;
 
 @RunWith(Parameterized.class)
 public class ParameterizedTest {
@@ -42,11 +44,11 @@ public class ParameterizedTest {
 		Setup.clearTestVars();
 	}
 
-	protected ClientOptions createOptions() throws AblyException {
+	protected DebugOptions createOptions() throws AblyException {
 		return testVars.createOptions(testParams);
 	}
 
-	protected ClientOptions createOptions(String key) throws AblyException {
+	protected DebugOptions createOptions(String key) throws AblyException {
 		return testVars.createOptions(key, testParams);
 	}
 

@@ -1700,7 +1700,7 @@ public class RestAuthTest extends ParameterizedTest {
 		AblyRest ably;
 		TokenRequest tokenRequest;
 		try {
-			for (String cap : new String[] {null, ""}) {
+			for (final String cap : new String[] {null, ""}) {
 				ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 				opts.clientId = "Test client id";
 				ably = new AblyRest(opts);

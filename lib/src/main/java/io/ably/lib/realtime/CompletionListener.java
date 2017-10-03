@@ -60,4 +60,22 @@ public interface CompletionListener {
 			listener.onError(reason);
 		}
 	}
+
+	public static class FromCallback implements CompletionListener {
+		private final Callback<Void> callback;
+
+		public FromCallback(Callback<Void> callback) {
+			this.callback = callback;
+		}
+
+		@Override
+		public void onSuccess() {
+			callback.onSuccess(null);
+		}
+
+		@Override
+		public void onError(ErrorInfo reason) {
+			callback.onError(reason);
+		}
+	}
 }

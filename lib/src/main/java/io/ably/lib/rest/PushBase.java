@@ -10,6 +10,7 @@ import io.ably.lib.http.HttpUtils;
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
+import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.AsyncPaginatedResult;
@@ -293,6 +294,23 @@ public class PushBase {
             }
 
             return o;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof ChannelSubscription)) {
+                return false;
+            }
+            ChannelSubscription other = (ChannelSubscription) o;
+            JsonObject thisJson = this.toJsonObject();
+            JsonObject otherJson = other.toJsonObject();
+
+            return thisJson.equals(otherJson);
+        }
+
+        @Override
+        public String toString() {
+            return this.toJsonObject().toString();
         }
 
         public static ChannelSubscription fromJsonObject(JsonObject o) {

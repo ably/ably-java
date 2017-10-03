@@ -17,4 +17,24 @@ public interface Callback<T> {
 	 * @param reason: information about the error.
 	 */
 	public void onError(ErrorInfo reason);
+
+	public abstract static class Map<T, U> implements Callback<T> {
+		private final Callback<U> callback;
+
+		public abstract U map(T result);
+
+		public Map(Callback<U> callback) {
+			this.callback = callback;
+		}
+
+		@Override
+		public void onSuccess(T result) {
+			callback.onSuccess(map(result));
+		}
+
+		@Override
+		public void onError(ErrorInfo reason) {
+			callback.onError(reason);
+		}
+	}
 }
