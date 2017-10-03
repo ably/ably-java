@@ -5,9 +5,7 @@ import com.google.gson.JsonObject;
 
 import java.util.HashMap;
 
-/**
- * Created by tcard on 20/04/2017.
- */
+
 
 public class JsonUtils {
     public static JsonUtilsObject object() {

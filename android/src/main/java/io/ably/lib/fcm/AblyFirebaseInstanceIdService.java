@@ -7,10 +7,6 @@ import com.google.firebase.iid.FirebaseInstanceIdService;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.types.RegistrationToken;
 
-/**
- * Created by tcard on 8/2/17.
- */
-
 public class AblyFirebaseInstanceIdService extends FirebaseInstanceIdService {
     private static String TAG = "AblyFirebaseInstanceId";
 
