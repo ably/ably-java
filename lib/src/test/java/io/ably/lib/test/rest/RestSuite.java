@@ -30,7 +30,8 @@ import io.ably.lib.test.common.Setup;
 	RestCryptoTest.class,
 	RestPresenceTest.class,
 	RestProxyTest.class,
-	RestErrorTest.class
+	RestErrorTest.class,
+	RestPushTest.class
 })
 public class RestSuite {
 

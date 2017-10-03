@@ -3,6 +3,8 @@ package io.ably.lib.test.common;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.regex.Pattern;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -22,6 +24,7 @@ import io.ably.lib.realtime.Connection;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.realtime.Presence.PresenceListener;
+import io.ably.lib.rest.Push;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.BaseMessage;
@@ -33,7 +36,52 @@ import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.util.Log;
 
+import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 public class Helpers {
+
+	public static <T> void assertArrayUnorderedEquals(T[] expected, T[] got) {
+		Set<T> expectedSet = new CopyOnWriteArraySet<T>(Arrays.asList(expected));
+		Set<T> gotSet = new CopyOnWriteArraySet<T>(Arrays.asList(got));
+		assertEquals(expectedSet, gotSet);
+	}
+
+	public static <T> T expectedError(AblyFunction<Void, T> f, String expectedError) {
+		return expectedError(f, expectedError, 0);
+	}
+
+	public static <T> T expectedError(AblyFunction<Void, T> f, String expectedError, int expectedStatusCode) {
+		return expectedError(f, expectedError, expectedStatusCode, 0);
+	}
+
+	public static <T> T expectedError(AblyFunction<Void, T> f, String expectedError, int expectedStatusCode, int expectedCode) {
+		try {
+			T result = f.apply(null);
+			assertEquals(null, expectedError);
+			return result;
+		} catch (AblyException e) {
+			try {
+				assertNotNull(String.format("got error \"%s\", none expected", e.errorInfo.message), expectedError);
+				assertEquals(String.format("expected to match \"%s\", got \"%s\"", expectedError, e.errorInfo.message), true, Pattern.compile(expectedError).matcher(e.errorInfo.message).find());
+				if (expectedCode > 0) {
+					assertEquals(expectedCode, e.errorInfo.code);
+				}
+				if (expectedStatusCode > 0) {
+					assertEquals(expectedStatusCode, e.errorInfo.statusCode);
+				}
+			} catch(AssertionError ae) {
+				e.printStackTrace();
+				throw ae;
+			}
+		}
+		return null;
+	}
+
+	public static void assertInstanceOf(Class<?> c, Object o) {
+		assertTrue(String.format("expected object of class %s to be instance of %s", o.getClass().getName(), c.getName()), c.isInstance(o));
+	}
 
 	/**
 	 * Trivial container for an int as counter.
@@ -128,6 +176,7 @@ public class Helpers {
 		 * @param event
 		 */
 		public MessageWaiter(Channel channel, String event) {
+			reset();
 			try {
 				channel.subscribe(event, this);
 			} catch(AblyException e) {}
@@ -653,22 +702,23 @@ public class Helpers {
 	}
 
 	public static class AsyncWaiter<T> implements Callback<T> {
-
 		@Override
 		public synchronized void onSuccess(T result) {
 			this.result = result;
+			gotResult = true;
 			notify();
 		}
 
 		@Override
 		public synchronized void onError(ErrorInfo error) {
 			this.error = error;
+			gotResult = true;
 			notify();
 		}
 
 		public synchronized void waitFor() {
 			try {
-				while(result == null && error == null) {
+				while(!gotResult) {
 					wait();
 				}
 			} catch(InterruptedException e) {}
@@ -676,6 +726,7 @@ public class Helpers {
 
 		public T result;
 		public ErrorInfo error;
+		private boolean gotResult = false;
 	}
 
 	public static boolean equalStrings(String one, String two) {
@@ -826,5 +877,37 @@ public class Helpers {
 			}
 			return buf;
 		}
+	}
+
+	public abstract static class SyncAndAsync<Arg, T> {
+		public abstract T getSync(Arg arg) throws AblyException;
+		public abstract void getAsync(Arg arg, Callback<T> callback);
+		public abstract void then(AblyFunction<Arg, T> get) throws AblyException;
+
+		public void run() throws AblyException {
+			then(new AblyFunction<Arg, T>() {
+				@Override
+				public T apply(Arg arg) throws AblyException {
+					return getSync(arg);
+				}
+			});
+
+			then(new AblyFunction<Arg, T>() {
+				@Override
+				public T apply(Arg arg) throws AblyException {
+					AsyncWaiter<T> callback = new AsyncWaiter<T>();
+					getAsync(arg, callback);
+					callback.waitFor();
+					if (callback.error != null) {
+						throw AblyException.fromErrorInfo(callback.error);
+					}
+					return callback.result;
+				}
+			});
+		}
+	}
+
+	public interface AblyFunction<Arg, Result> {
+		public Result apply(Arg arg) throws AblyException;
 	}
 }

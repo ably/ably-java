@@ -22,6 +22,8 @@ public class DebugOptions extends ClientOptions {
 		public void onRawHttpException(String id, String method, Throwable t);
 	}
 
+	public DebugOptions() { super(); }
+
 	public DebugOptions(String key) throws AblyException { super(key); }
 
 	public RawProtocolListener protocolListener;

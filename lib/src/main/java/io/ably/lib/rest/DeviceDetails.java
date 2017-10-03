@@ -11,7 +11,7 @@ import io.ably.lib.util.Serialisation;
 
 
 
-public abstract class DeviceDetails {
+public class DeviceDetails {
     public String id;
     public String platform;
     public String formFactor;
@@ -98,6 +98,33 @@ public abstract class DeviceDetails {
         return JsonUtils.object()
                 .add("push", JsonUtils.object()
                     .add("recipient", this.push.recipient)).toJson();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof DeviceDetails)) {
+            return false;
+        }
+        DeviceDetails other = (DeviceDetails) o;
+        JsonObject thisJson = this.toJsonObject();
+        JsonObject otherJson = other.toJsonObject();
+
+        if (this.updateToken == null) {
+            // Disregard update token if
+            otherJson.remove("updateToken");
+        }
+        if ((this.metadata == null || this.metadata.entrySet().isEmpty()) && (other.metadata == null || other.metadata.entrySet().isEmpty())) {
+            // Empty metadata == null metadata.
+            thisJson.remove("updateToken");
+            otherJson.remove("updateToken");
+        }
+
+        return thisJson.equals(otherJson);
+    }
+
+    @Override
+    public String toString() {
+        return this.toJsonObject().toString();
     }
 
     public static DeviceDetails fromJsonObject(JsonObject o) {
