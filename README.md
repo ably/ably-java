@@ -369,17 +369,20 @@ either a real device or the Android emulator.
 
     ./gradlew android:connectedAndroidTest
 
-## Release notes
+## Release process
 
 This library uses [semantic versioning](http://semver.org/). For each release, the following needs to be done:
+
+### Release notes
 
 * Replace all references of the current version number with the new version number (check this file [README.md](./README.md) and [build.gradle](./build.gradle)) and commit the changes
 * Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to automate the update of the [CHANGELOG](./CHANGELOG.md). Once the CHANGELOG has completed, manually change the `Unreleased` heading and link with the current version number such as `v1.0.1`. Also ensure that the `Full Changelog` link points to the new version tag instead of the `HEAD`. Commit this change.
 * Add a tag and push to origin such as `git tag v1.0.1 && git push origin v1.0.1`
+
+### Build release
+
 * Run `gradle java:assemble` to build the JRE-specific JARs for this release
 * Run `gradle android:assemble` to build the Android AAR for this release
-* Visit [https://github.com/ably/ably-java/tags](https://github.com/ably/ably-java/tags) and `Add release notes` for the release, then attach the generated JARs (`ably-java-1.0.1.jar` and `ably-java-1.0.1-full.jar`) in the folder `java/build/libs`,
-  and the generated AAR (`ably-android-1.0.1-release.aar` in the folder `android/build/outputs/aar`.
 
 ### Publishing to JCenter (Maven)
 
@@ -390,6 +393,10 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 * Type in `io/ably/ably-java/1.0.1` into "Target Repository Path" ensuring the correct version is included. The drag in the files in `java/build/release/1.0.1/`
 * You will see a notice "You have 8 unpublished item(s) for this version", make sure you click "Publish". Wait a few minutes and check that your version has all the necessary files at https://bintray.com/ably-io/ably/ably-java/1.0.1?sort=&order=#files/io/ably/ably-java/1.0.1 for example.
 * Update the README text in Bintray.
+
+### Create release on Github
+
+* Visit [https://github.com/ably/ably-java/tags](https://github.com/ably/ably-java/tags) and `Add release notes` for the release including links to the changelog entry and the JCenter releases.
 
 Similarly for the Android release at https://bintray.com/ably-io/ably/ably-android.
 Run `gradle android:assembleRelease` locally to generate the files, and drag in the files in
