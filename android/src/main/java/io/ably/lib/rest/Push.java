@@ -3,6 +3,7 @@ package io.ably.lib.rest;
 import com.google.gson.JsonObject;
 
 import io.ably.lib.http.Http;
+import io.ably.lib.http.HttpConstants;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpScheduler;
 import io.ably.lib.http.HttpUtils;
@@ -12,6 +13,7 @@ import io.ably.lib.types.Function;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 import io.ably.lib.util.IntentUtils;
@@ -151,14 +153,17 @@ public class Push extends PushBase {
 
                     if (device.updateToken != null) {
                         // Already registered.
+                        machine.pendingEvents.add(new CalledActivate());
                         return new WaitingForNewPushDeviceDetails(machine);
                     }
 
                     if (device.getRegistrationToken() != null) {
-                        machine.handleEvent(new GotPushDeviceDetails());
+                        machine.pendingEvents.add(new GotPushDeviceDetails());
                     }
 
                     return new WaitingForPushDeviceDetails(machine);
+                } else if (event instanceof GotPushDeviceDetails) {
+                    return this;
                 }
                 return null;
             }
@@ -177,7 +182,6 @@ public class Push extends PushBase {
                     machine.callDeactivatedCallback(null);
                     return new NotActivated(machine);
                 } else if (event instanceof GotPushDeviceDetails) {
-                    device.resetId(machine.context);
                     final LocalDevice device = machine.getDevice();
 
                     if (machine.prefs.getBoolean(PersistKeys.USE_CUSTOM_REGISTERER, false)) {
@@ -187,7 +191,7 @@ public class Push extends PushBase {
                         machine.rest.http.request(new Http.Execute<JsonObject>() {
                             @Override
                             public void execute(HttpScheduler http, Callback<JsonObject> callback) throws AblyException {
-                                http.post("/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, new Serialisation.HttpResponseHandler<JsonObject>(), true, callback);
+                                http.post("/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, body, new Serialisation.HttpResponseHandler<JsonObject>(), true, callback);
                             }
                         }).async(new Callback<JsonObject>() {
                             @Override
@@ -411,7 +415,9 @@ public class Push extends PushBase {
                 machine.rest.http.request(new Http.Execute<Void>() {
                     @Override
                     public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
-                        http.patch("/push/deviceRegistrations/" + device.id, HttpUtils.defaultAcceptHeaders(machine.rest.options.useBinaryProtocol), null, body, null, true, callback);
+                        Param[] headers = HttpUtils.defaultAcceptHeaders(machine.rest.options.useBinaryProtocol);
+                        headers = Param.push(headers, HttpConstants.Headers.AUTHORIZATION, "Bearer " + Base64Coder.encodeString(device.updateToken));
+                        http.patch("/push/deviceRegistrations/" + device.id, headers, params, body, null, false, callback);
                     }
                 }).async(new Callback<Void>() {
                     @Override

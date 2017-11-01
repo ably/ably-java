@@ -19,6 +19,7 @@ import org.msgpack.value.Value;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Map;
@@ -152,7 +153,7 @@ public class Serialisation {
 				throw AblyException.fromThrowable(new Exception("unknown content type " + contentType));
 			}
 
-			Object[] array = new Object[jsonArray.size()];
+			T[] array = klass.cast(Array.newInstance(klass.getComponentType(), jsonArray.size()));
 			int i = 0;
 			for (JsonElement elem : jsonArray) {
 				if (converter != null) {
@@ -164,7 +165,7 @@ public class Serialisation {
 				i++;
 			}
 
-			return (T[])array;
+			return array;
 		}
 	}
 
