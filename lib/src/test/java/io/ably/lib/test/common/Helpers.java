@@ -30,11 +30,14 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.BaseMessage;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.ErrorResponse;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
+import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.Serialisation;
 
 import static junit.framework.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
@@ -81,6 +84,37 @@ public class Helpers {
 
 	public static void assertInstanceOf(Class<?> c, Object o) {
 		assertTrue(String.format("expected object of class %s to be instance of %s", o.getClass().getName(), c.getName()), c.isInstance(o));
+	}
+
+	public static void assertSize(int expected, Collection<?> c) {
+		int size = c.size();
+		assertEquals(String.format("expected collection to have size %d, got %d: %s", expected, size, c), expected, size);
+	}
+
+	public static <T> void assertSize(int expected, T[] c) {
+		int size = c.length;
+		assertEquals(String.format("expected array to have size %d, got %d: %s", expected, size, c), expected, size);
+	}
+
+	public static HttpCore.Response httpResponseFromErrorInfo(final ErrorInfo errorInfo) {
+		HttpCore.Response response = new HttpCore.Response();
+		response.contentType = "application/json";
+		response.statusCode = errorInfo.statusCode > 0 ? errorInfo.statusCode : 400;
+		response.body = Serialisation.gson.toJson(new ErrorResponse() {{
+			error = errorInfo;
+		}}, ErrorResponse.class).getBytes();
+		return response;
+	}
+
+	public static String tokenFromAuthHeader(String authHeader) {
+		if (!authHeader.startsWith("Bearer ")) {
+			return null;
+		}
+
+		String token64 = authHeader.substring("Bearer ".length());
+		String token = Base64Coder.decodeString(token64);
+
+		return token;
 	}
 
 	/**
