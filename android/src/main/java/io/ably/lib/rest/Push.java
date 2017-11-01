@@ -8,6 +8,7 @@ import io.ably.lib.http.HttpScheduler;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
+import io.ably.lib.types.Function;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.types.ErrorInfo;
@@ -146,7 +147,7 @@ public class Push extends PushBase {
                     machine.callDeactivatedCallback(null);
                     return this;
                 } else if (event instanceof CalledActivate) {
-                    LocalDevice device = rest.device(machine.context);
+                    LocalDevice device = machine.getDevice();
 
                     if (device.updateToken != null) {
                         // Already registered.
@@ -163,6 +164,10 @@ public class Push extends PushBase {
             }
         }
 
+        protected LocalDevice getDevice() {
+            return rest.device(context);
+        }
+
         public static class WaitingForPushDeviceDetails extends PersistentState {
             public WaitingForPushDeviceDetails(ActivationStateMachine machine) { super(machine); }
             public State transition(final Event event) {
@@ -172,8 +177,8 @@ public class Push extends PushBase {
                     machine.callDeactivatedCallback(null);
                     return new NotActivated(machine);
                 } else if (event instanceof GotPushDeviceDetails) {
-                    final LocalDevice device = rest.device(machine.context);
                     device.resetId(machine.context);
+                    final LocalDevice device = machine.getDevice();
 
                     if (machine.prefs.getBoolean(PersistKeys.USE_CUSTOM_REGISTERER, false)) {
                         machine.useCustomRegisterer(device, true);
@@ -210,7 +215,7 @@ public class Push extends PushBase {
                 if (event instanceof CalledActivate) {
                     return this;
                 } else if (event instanceof GotUpdateToken) {
-                    LocalDevice device = rest.device(machine.context);
+                    LocalDevice device = machine.getDevice();
                     device.setUpdateToken(machine.context, ((GotUpdateToken) event).updateToken);
                     machine.callActivatedCallback(null);
                     return new WaitingForNewPushDeviceDetails(machine);
@@ -229,11 +234,11 @@ public class Push extends PushBase {
                     machine.callActivatedCallback(null);
                     return this;
                 } else if (event instanceof CalledDeactivate) {
-                    LocalDevice device = rest.device(machine.context);
+                    LocalDevice device = machine.getDevice();
                     deregister(machine, device);
                     return new WaitingForDeregistration(machine, this);
                 } else if (event instanceof GotPushDeviceDetails) {
-                    DeviceDetails device = rest.device(machine.context);
+                    DeviceDetails device = machine.getDevice();
 
                     updateRegistration(machine, device);
 
@@ -265,10 +270,10 @@ public class Push extends PushBase {
             public AfterRegistrationUpdateFailed(ActivationStateMachine machine) { super(machine); }
             public State transition(Event event) {
                 if (event instanceof CalledActivate || event instanceof GotPushDeviceDetails) {
-                    updateRegistration(machine, rest.device(machine.context));
+                    updateRegistration(machine, machine.getDevice());
                     return new WaitingForRegistrationUpdate(machine);
                 } else if (event instanceof CalledDeactivate) {
-                    deregister(machine, rest.device(machine.context));
+                    deregister(machine, machine.getDevice());
                     return new WaitingForDeregistration(machine, this);
                 }
                 return null;
@@ -287,7 +292,7 @@ public class Push extends PushBase {
                 if (event instanceof CalledDeactivate) {
                     return this;
                 } else if (event instanceof Deregistered) {
-                    LocalDevice device = rest.device(machine.context);
+                    LocalDevice device = machine.getDevice();
                     device.setUpdateToken(machine.context, null);
                     machine.callDeactivatedCallback(null);
                     return new NotActivated(machine);
@@ -572,9 +577,16 @@ public class Push extends PushBase {
         private static final String TAG = "AblyActivation";
     }
 
-    private synchronized ActivationStateMachine getStateMachine(Context context) {
+    public Function.Binary<Context, AblyRest, ActivationStateMachine> getMachine = new Function.Binary<Context, AblyRest, ActivationStateMachine>() {
+        @Override
+        public ActivationStateMachine call(Context context, AblyRest rest) {
+            return new ActivationStateMachine(context, rest);
+        }
+    };
+
+    public synchronized ActivationStateMachine getStateMachine(Context context) {
         if (ActivationStateMachine.INSTANCE == null) {
-            ActivationStateMachine.INSTANCE = new ActivationStateMachine(context, rest);
+            ActivationStateMachine.INSTANCE = getMachine.call(context, rest);
         }
         return ActivationStateMachine.INSTANCE;
     }
