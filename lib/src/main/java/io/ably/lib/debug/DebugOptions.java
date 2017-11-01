@@ -17,7 +17,7 @@ public class DebugOptions extends ClientOptions {
 	}
 
 	public interface RawHttpListener {
-		public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody);
+		public HttpCore.Response onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody);
 		public void onRawHttpResponse(String id, HttpCore.Response response);
 		public void onRawHttpException(String id, Throwable t);
 	}

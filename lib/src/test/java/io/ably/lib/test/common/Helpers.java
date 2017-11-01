@@ -785,10 +785,11 @@ public class Helpers {
 
 	public static class RawHttpTracker extends LinkedHashMap<String, RawHttpRequest> implements RawHttpListener {
 		private static final long serialVersionUID = 1L;
+		public HttpCore.Response mockResponse = null;
 
 		@Override
-		public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders,
-				HttpCore.RequestBody requestBody) {
+		public HttpCore.Response onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders,
+												  HttpCore.RequestBody requestBody) {
 
 			/* duplicating if necessary, ensure lower-case versions of header names are present */
 			Map<String, List<String>> normalisedHeaders = new HashMap<String, List<String>>();
@@ -807,6 +808,10 @@ public class Helpers {
 			req.requestHeaders = normalisedHeaders;
 			req.requestBody = requestBody;
 			put(id, req);
+
+			HttpCore.Response response = mockResponse;
+			mockResponse = null;
+			return response;
 		}
 
 		@Override

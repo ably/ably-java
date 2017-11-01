@@ -222,7 +222,10 @@ public class HttpCore {
 				rawHttpListener = ((DebugOptions)options).httpListener;
 				if(rawHttpListener != null) {
 					id = String.valueOf(Math.random()).substring(2);
-					rawHttpListener.onRawHttpRequest(id, conn, method, (credentialsIncluded ? authHeader : null), requestProperties, requestBody);
+					response = rawHttpListener.onRawHttpRequest(id, conn, method, (credentialsIncluded ? authHeader : null), requestProperties, requestBody);
+					if (response != null) {
+						return handleResponse(conn, credentialsIncluded, response, responseHandler);
+					}
 				}
 			}
 
