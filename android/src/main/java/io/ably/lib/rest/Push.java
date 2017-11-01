@@ -92,56 +92,56 @@ public class Push extends PushBase {
      * reified States of this state machine, we do it anyway for uniformness, and to more
      * straightforwardly implement the abstract state machine from the spec.
      */
-    static class ActivationStateMachine {
-        static ActivationStateMachine INSTANCE = null;
+    public static class ActivationStateMachine {
+        public static ActivationStateMachine INSTANCE = null;
 
-        static class CalledActivate extends Event {
-            static CalledActivate useCustomRegisterer(boolean use, SharedPreferences prefs) {
+        public static class CalledActivate extends Event {
+            public static CalledActivate useCustomRegisterer(boolean use, SharedPreferences prefs) {
                 prefs.edit().putBoolean(PersistKeys.USE_CUSTOM_REGISTERER, use).apply();
                 return new CalledActivate();
             }
         }
 
-        static class CalledDeactivate extends Event {
+        public static class CalledDeactivate extends Event {
             static CalledDeactivate useCustomDeregisterer(boolean use, SharedPreferences prefs) {
                 prefs.edit().putBoolean(PersistKeys.USE_CUSTOM_DEREGISTERER, use).apply();
                 return new CalledDeactivate();
             }
         }
 
-        static class GotPushDeviceDetails extends Event {}
+        public static class GotPushDeviceDetails extends Event {}
 
-        static class GotUpdateToken extends Event {
+        public static class GotUpdateToken extends Event {
             final String updateToken;
             GotUpdateToken(String token) { this.updateToken = token; }
         }
 
-        static class GettingUpdateTokenFailed extends ErrorEvent {
+        public static class GettingUpdateTokenFailed extends ErrorEvent {
             GettingUpdateTokenFailed(ErrorInfo reason) { super(reason); }
         }
 
-        static class RegistrationUpdated extends Event {}
+        public static class RegistrationUpdated extends Event {}
 
-        static class UpdatingRegistrationFailed extends ErrorEvent {
-            UpdatingRegistrationFailed(ErrorInfo reason) { super(reason); }
+        public static class UpdatingRegistrationFailed extends ErrorEvent {
+            public UpdatingRegistrationFailed(ErrorInfo reason) { super(reason); }
         }
 
-        static class Deregistered extends Event {}
+        public static class Deregistered extends Event {}
 
-        static class DeregistrationFailed extends ErrorEvent {
-            DeregistrationFailed(ErrorInfo reason) { super(reason); }
+        public static class DeregistrationFailed extends ErrorEvent {
+            public DeregistrationFailed(ErrorInfo reason) { super(reason); }
         }
 
-        private abstract static class Event {};
+        public abstract static class Event {};
 
-        private abstract static class ErrorEvent extends Event {
+        public abstract static class ErrorEvent extends Event {
             final ErrorInfo reason;
             ErrorEvent(ErrorInfo reason) { this.reason = reason; }
         }
 
-        private static class NotActivated extends PersistentState {
+        public static class NotActivated extends PersistentState {
             public NotActivated(ActivationStateMachine machine) { super(machine); }
-            State transition(Event event) {
+            public State transition(Event event) {
                 if (event instanceof CalledDeactivate) {
                     machine.callDeactivatedCallback(null);
                     return this;
@@ -163,9 +163,9 @@ public class Push extends PushBase {
             }
         }
 
-        private static class WaitingForPushDeviceDetails extends PersistentState {
+        public static class WaitingForPushDeviceDetails extends PersistentState {
             public WaitingForPushDeviceDetails(ActivationStateMachine machine) { super(machine); }
-            State transition(final Event event) {
+            public State transition(final Event event) {
                 if (event instanceof CalledActivate) {
                     return this;
                 } else if (event instanceof CalledDeactivate) {
@@ -204,9 +204,9 @@ public class Push extends PushBase {
             }
         }
 
-        private static class WaitingForUpdateToken extends State {
+        public static class WaitingForUpdateToken extends State {
             public WaitingForUpdateToken(ActivationStateMachine machine) { super(machine); }
-            State transition(Event event) {
+            public State transition(Event event) {
                 if (event instanceof CalledActivate) {
                     return this;
                 } else if (event instanceof GotUpdateToken) {
@@ -222,9 +222,9 @@ public class Push extends PushBase {
             }
         }
 
-        private static class WaitingForNewPushDeviceDetails extends PersistentState {
+        public static class WaitingForNewPushDeviceDetails extends PersistentState {
             public WaitingForNewPushDeviceDetails(ActivationStateMachine machine) { super(machine); }
-            State transition(Event event) {
+            public State transition(Event event) {
                 if (event instanceof CalledActivate) {
                     machine.callActivatedCallback(null);
                     return this;
@@ -243,9 +243,9 @@ public class Push extends PushBase {
             }
         }
 
-        private static class WaitingForRegistrationUpdate extends State {
+        public static class WaitingForRegistrationUpdate extends State {
             public WaitingForRegistrationUpdate(ActivationStateMachine machine) { super(machine); }
-            State transition(Event event) {
+            public State transition(Event event) {
                 if (event instanceof CalledActivate) {
                     machine.callActivatedCallback(null);
                     return this;
@@ -261,9 +261,9 @@ public class Push extends PushBase {
             }
         }
 
-        private static class AfterRegistrationUpdateFailed extends PersistentState {
+        public static class AfterRegistrationUpdateFailed extends PersistentState {
             public AfterRegistrationUpdateFailed(ActivationStateMachine machine) { super(machine); }
-            State transition(Event event) {
+            public State transition(Event event) {
                 if (event instanceof CalledActivate || event instanceof GotPushDeviceDetails) {
                     updateRegistration(machine, rest.device(machine.context));
                     return new WaitingForRegistrationUpdate(machine);
@@ -275,7 +275,7 @@ public class Push extends PushBase {
             }
         }
 
-        private static class WaitingForDeregistration extends State {
+        public static class WaitingForDeregistration extends State {
             private State previousState;
 
             public WaitingForDeregistration(ActivationStateMachine machine, State previousState) {
@@ -283,7 +283,7 @@ public class Push extends PushBase {
                 this.previousState = previousState;
             }
 
-            State transition(Event event) {
+            public State transition(Event event) {
                 if (event instanceof CalledDeactivate) {
                     return this;
                 } else if (event instanceof Deregistered) {
@@ -299,7 +299,7 @@ public class Push extends PushBase {
             }
         }
 
-        private static abstract class State {
+        public static abstract class State {
             protected final ActivationStateMachine machine;
             protected final AblyRest rest;
 
@@ -309,7 +309,7 @@ public class Push extends PushBase {
                 rest = machine.rest;
             }
 
-            abstract State transition(Event event);
+            public abstract State transition(Event event);
         }
 
         private static abstract class PersistentState extends State {
@@ -450,10 +450,10 @@ public class Push extends PushBase {
         private final Context context;
         private final AblyRest rest;
         private final SharedPreferences prefs;
-        private State current;
-        private ArrayDeque<Event> pendingEvents;
+        public State current;
+        public ArrayDeque<Event> pendingEvents;
 
-        ActivationStateMachine(Context context, AblyRest rest) {
+        protected ActivationStateMachine(Context context, AblyRest rest) {
             this.context = context;
             this.rest = rest;
             this.prefs = PreferenceManager.getDefaultSharedPreferences(context);
@@ -519,9 +519,7 @@ public class Push extends PushBase {
             SharedPreferences.Editor editor = prefs.edit();
 
             if (current instanceof PersistentState) {
-                // editor.putString(PersistKeys.CURRENT_STATE, current.getClass().getName());
-                String className = current.getClass().getName();
-                editor.putString(PersistKeys.CURRENT_STATE, className);
+                editor.putString(PersistKeys.CURRENT_STATE, current.getClass().getName());
             }
 
             editor.putInt(PersistKeys.PENDING_EVENTS_LENGTH, pendingEvents.size());
@@ -564,11 +562,11 @@ public class Push extends PushBase {
         }
 
         private static class PersistKeys {
-            private static final String CURRENT_STATE = "ABLY_PUSH_CURRENT_STATE";
-            private static final String PENDING_EVENTS_LENGTH = "ABLY_PUSH_PENDING_EVENTS_LENGTH";
-            private static final String PENDING_EVENTS_PREFIX = "ABLY_PUSH_PENDING_EVENTS";
-            private static final String USE_CUSTOM_REGISTERER = "ABLY_PUSH_USE_CUSTOM_REGISTERER";
-            private static final String USE_CUSTOM_DEREGISTERER = "ABLY_PUSH_USE_CUSTOM_DEREGISTERER";
+            static final String CURRENT_STATE = "ABLY_PUSH_CURRENT_STATE";
+            static final String PENDING_EVENTS_LENGTH = "ABLY_PUSH_PENDING_EVENTS_LENGTH";
+            static final String PENDING_EVENTS_PREFIX = "ABLY_PUSH_PENDING_EVENTS";
+            static final String USE_CUSTOM_REGISTERER = "ABLY_PUSH_USE_CUSTOM_REGISTERER";
+            static final String USE_CUSTOM_DEREGISTERER = "ABLY_PUSH_USE_CUSTOM_DEREGISTERER";
         }
 
         private static final String TAG = "AblyActivation";
