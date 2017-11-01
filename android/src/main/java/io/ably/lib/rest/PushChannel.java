@@ -1,5 +1,6 @@
 package io.ably.lib.rest;
 
+import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.Param;
@@ -71,7 +72,11 @@ public class PushChannel {
         return rest.http.request(new Http.Execute<Void>() {
             @Override
             public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
-                http.post("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, null, true, callback);
+                Param[] params = null;
+                if (rest.options.pushFullWait) {
+                    params = Param.push(params, "fullWait", "true");
+                }
+                http.post("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, body, null, true, callback);
             }
         });
     }
@@ -111,11 +116,15 @@ public class PushChannel {
         }
     }
 
-    protected Http.Request<Void> delSubscription(final Param[] params) {
+    protected Http.Request<Void> delSubscription(Param[] params) {
+        if (rest.options.pushFullWait) {
+            params = Param.push(params, "fullWait", "true");
+        }
+        final Param[] finalParams = params;
         return rest.http.request(new Http.Execute<Void>() {
             @Override
             public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
-                http.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null, true, callback);
+                http.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), finalParams, null, true, callback);
             }
         });
     }

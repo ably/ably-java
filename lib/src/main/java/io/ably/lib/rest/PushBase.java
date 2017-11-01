@@ -69,7 +69,12 @@ public class PushBase {
                     }
                     HttpCore.RequestBody body = HttpUtils.requestBodyFromGson(bodyJson, rest.options.useBinaryProtocol);
 
-                    http.post("/push/publish", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, null, true, callback);
+                    Param[] params = null;
+                    if (rest.options.pushFullWait) {
+                        params = Param.push(params, "fullWait", "true");
+                    }
+
+                    http.post("/push/publish", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, body, null, true, callback);
                 }
             });
         }
@@ -91,7 +96,11 @@ public class PushBase {
             return rest.http.request(new Http.Execute<DeviceDetails>() {
                 @Override
                 public void execute(HttpScheduler http, Callback<DeviceDetails> callback) throws AblyException {
-                    http.put("/push/deviceRegistrations/" + device.id, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, DeviceDetails.httpResponseHandler, true, callback);
+                    Param[] params = null;
+                    if (rest.options.pushFullWait) {
+                        params = Param.push(params, "fullWait", "true");
+                    }
+                    http.put("/push/deviceRegistrations/" + device.id, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, body, DeviceDetails.httpResponseHandler, true, callback);
                 }
             });
         }
@@ -108,7 +117,11 @@ public class PushBase {
             return rest.http.request(new Http.Execute<DeviceDetails>() {
                 @Override
                 public void execute(HttpScheduler http, Callback<DeviceDetails> callback) throws AblyException {
-                    http.get("/push/deviceRegistrations/" + deviceId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, DeviceDetails.httpResponseHandler, true, callback);
+                    Param[] params = null;
+                    if (rest.options.pushFullWait) {
+                        params = Param.push(params, "fullWait", "true");
+                    }
+                    http.get("/push/deviceRegistrations/" + deviceId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, DeviceDetails.httpResponseHandler, true, callback);
                 }
             });
         }
@@ -145,7 +158,11 @@ public class PushBase {
             return rest.http.request(new Http.Execute<Void>() {
                 @Override
                 public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
-                    http.del("/push/deviceRegistrations/" + deviceId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null, true, callback);
+                    Param[] params = null;
+                    if (rest.options.pushFullWait) {
+                        params = Param.push(params, "fullWait", "true");
+                    }
+                    http.del("/push/deviceRegistrations/" + deviceId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null, true, callback);
                 }
             });
         }
@@ -158,11 +175,15 @@ public class PushBase {
             removeWhereImpl(params).async(new CompletionListener.ToCallback(listener));
         }
 
-        protected Http.Request<Void> removeWhereImpl(final Param[] params) {
+        protected Http.Request<Void> removeWhereImpl(Param[] params) {
+            if (rest.options.pushFullWait) {
+                params = Param.push(params, "fullWait", "true");
+            }
+            final Param[] finalParams = params;
             return rest.http.request(new Http.Execute<Void>() {
                 @Override
                 public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
-                    http.del("/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null, true, callback);
+                    http.del("/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), finalParams, null, true, callback);
                 }
             });
         }
@@ -188,7 +209,11 @@ public class PushBase {
             return rest.http.request(new Http.Execute<ChannelSubscription>() {
                 @Override
                 public void execute(HttpScheduler http, Callback<ChannelSubscription> callback) throws AblyException {
-                    http.post("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, body, ChannelSubscription.httpResponseHandler, true, callback);
+                    Param[] params = null;
+                    if (rest.options.pushFullWait) {
+                        params = Param.push(params, "fullWait", "true");
+                    }
+                    http.post("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, body, ChannelSubscription.httpResponseHandler, true, callback);
                 }
             });
         }
@@ -235,11 +260,15 @@ public class PushBase {
             removeWhereImpl(params).async(new CompletionListener.ToCallback(listener));
         }
 
-        protected Http.Request<Void> removeWhereImpl(final Param[] params) {
+        protected Http.Request<Void> removeWhereImpl(Param[] params) {
+            if (rest.options.pushFullWait) {
+                params = Param.push(params, "fullWait", "true");
+            }
+            final Param[] finalParams = params;
             return rest.http.request(new Http.Execute<Void>() {
                 @Override
                 public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
-                    http.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null, true, callback);
+                    http.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), finalParams, null, true, callback);
                 }
             });
         }

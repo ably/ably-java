@@ -188,4 +188,10 @@ public class ClientOptions extends AuthOptions {
 	 * Allows the caller to specify a non-default size for the asyncHttp threadpool
 	 */
 	public int asyncHttpThreadpoolSize = Defaults.HTTP_ASYNC_THREADPOOL_SIZE;
+
+	/**
+	 * Whether to tell Ably to wait for push REST requests to fully wait for all their effects
+	 * before responding.
+	 */
+	public boolean pushFullWait = false;
 }
