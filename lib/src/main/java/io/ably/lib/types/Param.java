@@ -46,12 +46,16 @@ public class Param {
 	}
 
 	public static boolean containsKey(Param[] params, String key) {
+		return getFirst(params, key) != null;
+	}
+
+	public static String getFirst(Param[] params, String key) {
 		if(params == null)
-			return false;
+			return null;
 		for(Param param : params)
 			if(param.key.equals(key))
-				return true;
-		return false;
+				return param.value;
+		return null;
 	}
 
 	@Override
