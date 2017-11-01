@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.preference.PreferenceManager;
 import io.ably.lib.types.AblyException;
+import io.ably.lib.types.Function;
 import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.types.Callback;
 import io.ably.lib.util.Serialisation;
@@ -15,7 +16,9 @@ import io.ably.lib.http.HttpUtils;
 import io.azam.ulidj.ULID;
 import android.util.Log;
 
-class LocalDevice extends DeviceDetails {
+import java.lang.reflect.Field;
+
+public class LocalDevice extends DeviceDetails {
     private final AblyRest rest;
 
     private LocalDevice(AblyRest rest) {
@@ -25,29 +28,31 @@ class LocalDevice extends DeviceDetails {
 
     protected static LocalDevice load(Context context, AblyRest rest) {
         LocalDevice device = new LocalDevice(rest);
-        device.platform = "android";
-        device.clientId = rest.auth.clientId;
-        device.formFactor = isTablet(context) ? "tablet" : "phone";
+        device.loadPersisted(context, rest);
+        return device;
+    }
+
+    protected void loadPersisted(Context context, AblyRest rest) {
+        this.platform = "android";
+        this.clientId = rest.auth.clientId;
+        this.formFactor = isTablet(context) ? "tablet" : "phone";
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
 
         String id = prefs.getString(SharedPrefKeys.DEVICE_ID, null);
-        device.id = id;
+        this.id = id;
         if (id == null) {
-            device.resetId(context);
+            this.resetId(context);
         }
-        device.updateToken = prefs.getString(SharedPrefKeys.UPDATE_TOKEN, null);
+        this.updateToken = prefs.getString(SharedPrefKeys.UPDATE_TOKEN, null);
 
         RegistrationToken.Type type = RegistrationToken.Type.fromInt(
             prefs.getInt(SharedPrefKeys.TOKEN_TYPE, -1));
+        RegistrationToken token = null;
         if (type != null) {
-            String token = prefs.getString(SharedPrefKeys.TOKEN, null);
-            if (token != null) {
-                device.setRegistrationToken(type, token);
-            }
+            token = new RegistrationToken(type, prefs.getString(SharedPrefKeys.TOKEN, null));
         }
-
-        return device;
+        this.setRegistrationToken(token);
     }
 
     protected RegistrationToken getRegistrationToken() {
@@ -65,14 +70,17 @@ class LocalDevice extends DeviceDetails {
     }
 
     private void setRegistrationToken(RegistrationToken token) {
-        setRegistrationToken(token.type, token.token);
+        push = new DeviceDetails.Push();
+        if (token == null) {
+            return;
+        }
+        push.recipient = new JsonObject();
+        push.recipient.addProperty("transportType", token.type.code);
+        push.recipient.addProperty("registrationToken", token.token);
     }
 
     private void setRegistrationToken(RegistrationToken.Type type, String token) {
-        push = new DeviceDetails.Push();
-        push.recipient = new JsonObject();
-        push.recipient.addProperty("transportType", type.code);
-        push.recipient.addProperty("registrationToken", token);
+        setRegistrationToken(new RegistrationToken(type, token));
     }
 
     protected void setAndPersistRegistrationToken(Context context, RegistrationToken token) {
@@ -114,6 +122,24 @@ class LocalDevice extends DeviceDetails {
         }
     }
 
+    // Returns a function to be called if the editing succeeds, to refresh the object's fields.
+    public Function<Context, Void> reset(SharedPreferences.Editor editor) {
+        for (Field f : SharedPrefKeys.class.getDeclaredFields()) {
+            try {
+                editor.remove((String) f.get(null));
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return new Function<Context, Void>() {
+            @Override
+            public Void call(Context context) {
+                LocalDevice.this.loadPersisted(context, rest);
+                return null;
+            }
+        };
+    }
+
     private static boolean isTablet(Context context) {
         return (context.getResources().getConfiguration().screenLayout
                 & Configuration.SCREENLAYOUT_SIZE_MASK)
@@ -121,9 +147,9 @@ class LocalDevice extends DeviceDetails {
     }
 
     private static class SharedPrefKeys {
-        private static final String DEVICE_ID = "ABLY_DEVICE_ID";
-        private static final String UPDATE_TOKEN = "ABLY_DEVICE_UPDATE_TOKEN";
-        private static final String TOKEN_TYPE = "ABLY_REGISTRATION_TOKEN_TYPE";
-        private static final String TOKEN = "ABLY_REGISTRATION_TOKEN";
+        static final String DEVICE_ID = "ABLY_DEVICE_ID";
+        static final String UPDATE_TOKEN = "ABLY_DEVICE_UPDATE_TOKEN";
+        static final String TOKEN_TYPE = "ABLY_REGISTRATION_TOKEN_TYPE";
+        static final String TOKEN = "ABLY_REGISTRATION_TOKEN";
     }
 }
