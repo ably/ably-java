@@ -23,9 +23,9 @@ import android.content.BroadcastReceiver;
 import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 
+import java.lang.reflect.Field;
 import java.util.ArrayDeque;
 import java.lang.reflect.Constructor;
-
 
 public class Push extends PushBase {
     public Push(AblyRest rest) {
@@ -493,6 +493,26 @@ public class Push extends PushBase {
             }
 
             persist();
+        }
+
+        public boolean reset() {
+            SharedPreferences.Editor editor = prefs.edit();
+            for (Field f : PersistKeys.class.getDeclaredFields()) {
+                try {
+                    editor.remove((String) f.get(null));
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            LocalDevice device = getDevice();
+            Function<Context, Void> refreshDevice = device.reset(editor);
+            boolean committed = editor.commit();
+            if (committed) {
+                current = getPersistedState();
+                pendingEvents = getPersistedPendingEvents();
+                refreshDevice.call(context);
+            }
+            return committed;
         }
 
         private void persist() {
