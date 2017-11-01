@@ -160,7 +160,7 @@ public class Setup {
 			if(System.getenv("ABLY_PORT") != null) {
 				port = Integer.valueOf(System.getenv("ABLY_PORT"));
 				tlsPort = Integer.valueOf(System.getenv("ABLY_TLS_PORT"));
-			} else if(host != null && host.contains("local")) {
+			} else if((host != null && host.contains("local")) || environment.equals("local")) {
 				port = 8080;
 				tlsPort = 8081;
 			} else {
