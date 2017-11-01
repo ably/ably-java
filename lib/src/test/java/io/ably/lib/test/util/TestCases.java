@@ -5,6 +5,7 @@ import java.util.regex.Pattern;
 
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.types.AblyException;
+import io.ably.lib.util.Log;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -23,6 +24,7 @@ public class TestCases {
     public void run() throws Exception {
         for (final Base testCase : testCases) {
             try {
+                Log.i("TestCase", "starting: " + testCase.name);
                 Helpers.expectedError(new Helpers.AblyFunction<Void, Void>() {
                     @Override
                     public Void apply(Void aVoid) throws AblyException {
@@ -41,6 +43,8 @@ public class TestCases {
                 throw new Exception("in test case \"" + testCase.name + "\"", e);
             } catch (Error e) {
                 throw new Error("in test case \"" + testCase.name + "\"", e);
+            } finally {
+                Log.i("TestCase", "ended: " + testCase.name);
             }
         }
     }

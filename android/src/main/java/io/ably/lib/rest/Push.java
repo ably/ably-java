@@ -482,7 +482,7 @@ public class Push extends PushBase {
                 return;
             }
 
-            Log.d(TAG, String.format("transition: %s -> %s", current.getClass().getSimpleName(), maybeNext.getClass().getSimpleName()));
+            Log.d(TAG, String.format("transition: %s -(%s)-> %s", current.getClass().getSimpleName(), event.getClass().getSimpleName(), maybeNext.getClass().getSimpleName()));
             current = maybeNext;
 
             while (true) {
@@ -491,7 +491,7 @@ public class Push extends PushBase {
                     break;
                 }
 
-                Log.d(TAG, "attempting to consume pending event: " + event.getClass().getSimpleName());
+                Log.d(TAG, "attempting to consume pending event: " + pending.getClass().getSimpleName());
 
                 maybeNext = current.transition(pending);
                 if (maybeNext == null) {
@@ -499,7 +499,7 @@ public class Push extends PushBase {
                 }
                 pendingEvents.poll();
 
-                Log.d(TAG, String.format("transition: %s -> %s", current.getClass().getSimpleName(), maybeNext.getClass().getSimpleName()));
+                Log.d(TAG, String.format("transition: %s -(%s)-> %s", current.getClass().getSimpleName(), pending.getClass().getSimpleName(), maybeNext.getClass().getSimpleName()));
                 current = maybeNext;
             }
 
