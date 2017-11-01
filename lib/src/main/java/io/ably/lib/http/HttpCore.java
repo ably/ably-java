@@ -185,7 +185,10 @@ public class HttpCore {
 			conn.setReadTimeout(options.httpRequestTimeout);
 			conn.setDoInput(true);
 
-			String authHeader = (auth != null) ? auth.getAuthorizationHeader() : null;
+			String authHeader = Param.getFirst(headers, HttpConstants.Headers.AUTHORIZATION);
+			if (authHeader == null && auth != null) {
+				authHeader = auth.getAuthorizationHeader();
+			}
 			if(withCredentials && authHeader != null) {
 				conn.setRequestProperty(HttpConstants.Headers.AUTHORIZATION, authHeader);
 				credentialsIncluded = true;
