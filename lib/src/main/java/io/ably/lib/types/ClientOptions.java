@@ -175,4 +175,10 @@ public class ClientOptions extends AuthOptions {
 	 */
 	public Param[] transportParams;
 
+	/**
+	 * Whether to tell Ably to wait for push REST requests to fully wait for all their effects
+	 * before responding.
+	 */
+	public boolean pushFullWait = false;
+
 }

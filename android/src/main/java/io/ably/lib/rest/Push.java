@@ -191,6 +191,10 @@ public class Push extends PushBase {
                         machine.rest.http.request(new Http.Execute<JsonObject>() {
                             @Override
                             public void execute(HttpScheduler http, Callback<JsonObject> callback) throws AblyException {
+                                Param[] params = null;
+                                if (machine.rest.options.pushFullWait) {
+                                    params = Param.push(params, "fullWait", "true");
+                                }
                                 http.post("/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, body, new Serialisation.HttpResponseHandler<JsonObject>(), true, callback);
                             }
                         }).async(new Callback<JsonObject>() {
@@ -417,6 +421,12 @@ public class Push extends PushBase {
                     public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
                         Param[] headers = HttpUtils.defaultAcceptHeaders(machine.rest.options.useBinaryProtocol);
                         headers = Param.push(headers, HttpConstants.Headers.AUTHORIZATION, "Bearer " + Base64Coder.encodeString(device.updateToken));
+
+                        Param[] params = null;
+                        if (machine.rest.options.pushFullWait) {
+                            params = Param.push(params, "fullWait", "true");
+                        }
+
                         http.patch("/push/deviceRegistrations/" + device.id, headers, params, body, null, false, callback);
                     }
                 }).async(new Callback<Void>() {
@@ -441,7 +451,11 @@ public class Push extends PushBase {
                 machine.rest.http.request(new Http.Execute<Void>() {
                     @Override
                     public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
-                        http.del("/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(machine.rest.options.useBinaryProtocol), Param.push(null, "deviceId", device.id), null, true, callback);
+                        Param[] params = Param.push(null, "deviceId", device.id);
+                        if (machine.rest.options.pushFullWait) {
+                            params = Param.push(params, "fullWait", "true");
+                        }
+                        http.del("/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(machine.rest.options.useBinaryProtocol), params, null, true, callback);
                     }
                 }).async(new Callback<Void>() {
                     @Override
