@@ -113,5 +113,16 @@ public class ErrorInfo {
 		return new ErrorInfo(statusLine, statusCode, statusCode * 100);
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof ErrorInfo)) {
+			return false;
+		}
+		ErrorInfo other = (ErrorInfo) o;
+		return code == other.code &&
+				statusCode == other.statusCode &&
+				(message == other.message || (message != null && message.equals(other.message)));
+	}
+
 	private static final String TAG = ErrorInfo.class.getName();
 }
