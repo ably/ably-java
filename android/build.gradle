@@ -1,5 +1,6 @@
 buildscript {
     repositories {
+        mavenCentral()
         jcenter()
     }
     dependencies {
@@ -12,6 +13,12 @@ apply from: '../common.gradle'
 
 ext {
     artifactId = 'ably-android'
+}
+
+allprojects {
+    repositories {
+        jcenter({url="http://jcenter.bintray.com/"})
+    }
 }
 
 android {
@@ -27,7 +34,7 @@ android {
         versionName version
         setProperty("archivesBaseName", "ably-android-$versionName")
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-        testInstrumentationRunnerArgument "class", "io.ably.lib.test.rest.RestSuite,io.ably.lib.test.realtime.RealtimeSuite,io.ably.lib.test.android.AndroidSuite"
+        testInstrumentationRunnerArgument "class", "io.ably.lib.test.rest.RestSuite,io.ably.lib.test.realtime.RealtimeSuite,io.ably.lib.test.android.AndroidSuite,io.ably.lib.test.android.AndroidPushTest"
         testInstrumentationRunnerArgument "timeout_msec", "150000"
         consumerProguardFiles 'proguard.txt'
     }
