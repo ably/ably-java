@@ -785,7 +785,9 @@ public class Helpers {
 
 	public static class RawHttpTracker extends LinkedHashMap<String, RawHttpRequest> implements RawHttpListener {
 		private static final long serialVersionUID = 1L;
+		private boolean locked = false;
 		public HttpCore.Response mockResponse = null;
+		private AsyncWaiter<RawHttpRequest> requestWaiter = null;
 
 		@Override
 		public HttpCore.Response onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders,
@@ -808,6 +810,27 @@ public class Helpers {
 			req.requestHeaders = normalisedHeaders;
 			req.requestBody = requestBody;
 			put(id, req);
+
+			if (requestWaiter != null) {
+				AsyncWaiter<RawHttpRequest> w = requestWaiter;
+				requestWaiter = null;
+				w.onSuccess(req);
+			}
+
+			while (true) {
+				boolean l;
+				synchronized (this) {
+					l = locked;
+				}
+				if (!l) {
+					break;
+				}
+				try {
+					synchronized (this) {
+						wait();
+					}
+				} catch (InterruptedException e) {}
+			}
 
 			HttpCore.Response response = mockResponse;
 			mockResponse = null;
@@ -888,6 +911,24 @@ public class Helpers {
 				}
 			}
 			return result;
+		}
+
+		public void lockRequests() {
+			synchronized (this) {
+				locked = true;
+			}
+		}
+
+		public void unlockRequests() {
+			synchronized (this) {
+				locked = false;
+				notifyAll();
+			}
+		}
+
+		public AsyncWaiter<RawHttpRequest> getRequestWaiter() {
+			requestWaiter = new AsyncWaiter<>();
+			return requestWaiter;
 		}
 	}
 
