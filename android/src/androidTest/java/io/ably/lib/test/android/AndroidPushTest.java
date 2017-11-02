@@ -20,6 +20,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 import io.ably.lib.debug.DebugOptions;
+import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Channel;
@@ -45,6 +46,7 @@ import io.ably.lib.rest.Push.ActivationStateMachine.WaitingForPushDeviceDetails;
 import io.ably.lib.rest.Push.ActivationStateMachine.WaitingForRegistrationUpdate;
 import io.ably.lib.rest.Push.ActivationStateMachine.WaitingForUpdateToken;
 import io.ably.lib.rest.PushBase;
+import io.ably.lib.rest.PushChannel;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Helpers.AsyncWaiter;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
@@ -791,6 +793,16 @@ public class AndroidPushTest extends AndroidTestCase {
         testCases.add(new TestCase("with client ID", true));
 
         testCases.run();
+    }
+
+    public void test_Realtime_push_interface() throws Exception {
+        AblyRealtime realtime = new AblyRealtime(new ClientOptions() {{
+            autoConnect = false;
+            key = "madeup";
+        }});
+        assertInstanceOf(LocalDevice.class, realtime.device(getContext()));
+        assertInstanceOf(Push.class, realtime.push);
+        assertInstanceOf(PushChannel.class, realtime.channels.get("test").push);
     }
 
     private void moveToAfterRegistrationUpdateFailed() {
