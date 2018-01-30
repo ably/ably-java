@@ -1,12 +1,22 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.3.2'
+    }
+}
+
 apply plugin: 'com.android.library'
+apply from: '../common.gradle'
 
 ext {
     artifactId = 'ably-android'
 }
 
 android {
-    compileSdkVersion 24
-    buildToolsVersion '24.0.2'
+    compileSdkVersion 27
+    buildToolsVersion '27.0.3'
 
     defaultConfig {
         buildConfigField 'String', 'LIBRARY_NAME', '"android"'
