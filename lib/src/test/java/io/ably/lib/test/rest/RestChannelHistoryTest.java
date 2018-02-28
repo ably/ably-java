@@ -230,7 +230,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
 		/* first, publish some messages */
 		long intervalStart = 0, intervalEnd = 0;
 		Channel history5 = ably.channels.get("persisted:channelhistory_time_f_" + testParams.name);
-		/* send batches of messages with shprt inter-message delay */
+		/* send batches of messages with short inter-message delay */
 		try {
 			for(int i = 0; i < 20; i++) {
 				history5.publish("history" + i, String.valueOf(i));
