@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 public interface ITransport {
 
 	public static final String TAG = ITransport.class.getName();
-	
+
 	public interface Factory {
 		/**
 		 * Obtain and instance of this transport based on the specified options.
