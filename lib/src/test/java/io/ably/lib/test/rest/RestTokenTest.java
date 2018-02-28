@@ -102,7 +102,7 @@ public class RestTokenTest extends ParameterizedTest {
 			ably.auth.requestToken(tokenParams, null);
 			fail("Expected token request rejection");
 		} catch(AblyException e) {
-			assertEquals("Unexpected error code", e.errorInfo.code, 40101);
+			assertEquals("Unexpected error code", e.errorInfo.code, 40104);
 		}
 	}
 
