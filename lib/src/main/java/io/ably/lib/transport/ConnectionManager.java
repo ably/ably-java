@@ -63,7 +63,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			this.currentHost = currentHost;
 		}
 	}
-	
+
 	/*************************************
 	 * a class encapsulating state machine
 	 * information for a given state
@@ -189,7 +189,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			setSuspendTime();
 		}
 	}
-	
+
 	/*********************
 	 * host management
 	 *********************/
@@ -198,7 +198,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	public String getHost() {
 		return lastUsedHost;
 	}
-	
+
 	/*********************
 	 * state management
 	 *********************/
@@ -221,7 +221,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	public synchronized StateInfo getConnectionState() {
 		return state;
 	}
-	
+
 	private void setState(StateIndication newState) {
 		Log.v(TAG, "setState(): setting " + newState.state);
 		ConnectionStateListener.ConnectionStateChange change;
@@ -232,9 +232,10 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			newStateInfo.host = newState.currentHost;
 			state = newStateInfo;
 
-			if (change.current != change.previous)
+			if(change.current != change.previous) {
 				/* any state change clears pending reauth flag */
 				pendingReauth = false;
+			}
 		}
 
 		/* broadcast state change */
@@ -243,11 +244,13 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		/* if now connected, send queued messages, etc */
 		if(state.sendEvents) {
 			sendQueuedMessages();
-			for(Channel channel : ably.channels.values())
+			for(Channel channel : ably.channels.values()) {
 				channel.setConnected();
+			}
 		} else { 
-			if(!state.queueEvents)
+			if(!state.queueEvents) {
 				failQueuedMessages(state.defaultErrorInfo);
+			}
 			for(Channel channel : ably.channels.values()) {
 				switch (state.state) {
 					case disconnected:
@@ -326,7 +329,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 						pending = heartbeatWaiters.contains(this);
 						if(pending)
 							try { heartbeatWaiters.wait(HEARTBEAT_TIMEOUT); } catch(InterruptedException ie) {}
-	
+
 						pending = heartbeatWaiters.remove(this);
 					}
 					if(pending)
@@ -618,15 +621,6 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		return creating;
 	}
 
-	private void stopThread() {
-		synchronized(this) {
-			if(mgrThread != null) {
-				mgrThread.interrupt();
-				mgrThread = null;
-			}
-		}
-	}
-
 	private void handleStateRequest() {
 		boolean handled = false;
 		switch(requestedState.state) {
@@ -693,12 +687,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			case closed:
 			case failed:
 				/* terminal states */
-				if(transport != null) {
-					transport.close(false);
-					transport = null;
-				}
 				stateChange = null;
-				stopThread();
 				break;
 			case connected:
 				/* we were connected, so retry immediately */
@@ -758,18 +747,29 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	}
 
 	private void tryWait(long timeout) {
-		if(requestedState == null && indicatedState == null && !pendingReauth)
+		if(requestedState == null && indicatedState == null && !pendingReauth) {
 			try {
-				if(timeout == 0) wait();
-				else wait(timeout);
+				if(timeout == 0) {
+					wait();
+				} else {
+					wait(timeout);
+				}
 			} catch (InterruptedException e) {}
+		}
 	}
 
 	public void run() {
-		StateIndication stateChange;
 		Thread thisThread = Thread.currentThread();
 		while(!state.terminal) {
-			stateChange = null;
+
+			/*
+			 * Until we've reached a terminal state we:
+			 * - get a state change;
+			 * - enact that change
+			 */
+			StateIndication stateChange = null;
+
+			/* Hold the lock until we obtain a state change */
 			synchronized(this) {
 				/* if we're initialising, then tell the starting thread that
 				 * we're ready to receive events */
@@ -778,15 +778,17 @@ public class ConnectionManager implements Runnable, ConnectListener {
 						thisThread.notify();
 					}
 				}
-	
-				while(stateChange == null) {
+
+				while(!state.terminal && stateChange == null) {
+					/* wait for a state change event or for expiry of the current state */
 					tryWait(state.timeout);
+
 					/* if during the wait some action was requested, handle it */
 					if(requestedState != null) {
 						handleStateRequest();
 						continue;
 					}
-	
+
 					/* if during the wait we were told that a transition
 					 * needs to be enacted, handle that (outside the lock) */
 					if(indicatedState != null) {
@@ -812,12 +814,21 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				}
 			}
 
-			if(stateChange != null)
+			/* Enact the change without the lock */
+			if(stateChange != null) {
 				handleStateChange(stateChange);
+			}
 		}
+
+		/* we're in a terminal state; exit this thread */
 		synchronized(this) {
-			if(mgrThread == thisThread)
+			if(mgrThread == thisThread) {
 				mgrThread = null;
+				if(transport != null) {
+					transport.close(false);
+					transport = null;
+				}
+			}
 		}
 	}
 
@@ -840,8 +851,9 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			}
 
 			/* report error in UPDATE event */
-			if (state.state == ConnectionState.connected && errorInfo != null)
+			if (state.state == ConnectionState.connected && errorInfo != null) {
 				connection.emitUpdate(errorInfo);
+			}
 		}
 	}
 
@@ -917,12 +929,14 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	}
 
 	private void closeImpl(StateIndication request) {
+		boolean isConnected = state.state == ConnectionState.connected;
+
 		/* enter the closing state */
 		notifyState(request);
 
 		/* close or abort transport */
 		if(transport != null) {
-			if(state.state == ConnectionState.connected) {
+			if(isConnected) {
 				/* send a close message on the transport, if connected */
 				try {
 					Log.v(TAG, "Requesting connection close");
