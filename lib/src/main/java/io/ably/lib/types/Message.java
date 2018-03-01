@@ -77,18 +77,16 @@ public class Message extends BaseMessage {
 	Message readMsgpack(MessageUnpacker unpacker) throws IOException {
 		int fieldCount = unpacker.unpackMapHeader();
 		for(int i = 0; i < fieldCount; i++) {
-			String fieldName = unpacker.unpackString();
+			String fieldName = unpacker.unpackString().intern();
 			MessageFormat fieldFormat = unpacker.getNextFormat();
 			if(fieldFormat.equals(MessageFormat.NIL)) { unpacker.unpackNil(); continue; }
 
 			if(super.readField(unpacker, fieldName, fieldFormat)) { continue; }
-			switch(fieldName) {
-				case "name":
-					name = unpacker.unpackString();
-					break;
-				default:
-					Log.v(TAG, "Unexpected field: " + fieldName);
-					unpacker.skipValue();
+			if(fieldName.equals("name")) {
+				name = unpacker.unpackString();
+			} else {
+				Log.v(TAG, "Unexpected field: " + fieldName);
+				unpacker.skipValue();
 			}
 		}
 		return this;

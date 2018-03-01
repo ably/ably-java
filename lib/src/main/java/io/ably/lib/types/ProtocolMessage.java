@@ -156,7 +156,7 @@ public class ProtocolMessage {
 	ProtocolMessage readMsgpack(MessageUnpacker unpacker) throws IOException {
 		int fieldCount = unpacker.unpackMapHeader();
 		for(int i = 0; i < fieldCount; i++) {
-			String fieldName = unpacker.unpackString();
+			String fieldName = unpacker.unpackString().intern();
 			MessageFormat fieldFormat = unpacker.getNextFormat();
 			if(fieldFormat.equals(MessageFormat.NIL)) { unpacker.unpackNil(); continue; }
 
@@ -240,7 +240,7 @@ public class ProtocolMessage {
 		AuthDetails readMsgpack(MessageUnpacker unpacker) throws IOException {
 			int fieldCount = unpacker.unpackMapHeader();
 			for(int i = 0; i < fieldCount; i++) {
-				String fieldName = unpacker.unpackString();
+				String fieldName = unpacker.unpackString().intern();
 				MessageFormat fieldFormat = unpacker.getNextFormat();
 				if(fieldFormat.equals(MessageFormat.NIL)) { unpacker.unpackNil(); continue; }
 
