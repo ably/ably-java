@@ -481,35 +481,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
 		_multiple_send("multiple_send_binary_1000_10_" + testParams.name, messageCount, 256, true, delay);
 	}
 
-	@Test
-	public void multiple_send_2000_5() {
-		int messageCount = 2000;
-		long delay = 5L;
-		_multiple_send("multiple_send_binary_2000_5_" + testParams.name, messageCount, 256, true, delay);
-	}
-
-	@Test
-	public void multiple_send_1000_2() {
-		int messageCount = 1000;
-		long delay = 2L;
-		_multiple_send("multiple_send_binary_1000_2_" + testParams.name, messageCount, 256, true, delay);
-	}
-
-	@Test
-	public void multiple_send_1000_1() {
-		int messageCount = 1000;
-		long delay = 1L;
-		_multiple_send("multiple_send_binary_1000_1_" + testParams.name, messageCount, 256, true, delay);
-	}
-
-	@Test
-	public void multiple_send_1000_20_5() {
-		int messageCount = 1000;
-		int batchCount = 20;
-		long batchDelay = 5L;
-		_multiple_send_batch("multiple_send_binary_1000_20_5_" + testParams.name, messageCount, batchCount, batchDelay);
-	}
-
 	/**
 	 * Connect to the service
 	 * using credentials that are unable to publish,and attach.
