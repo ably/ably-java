@@ -1,5 +1,39 @@
 # Change Log
 
+## [v1.0.2](https://github.com/ably/ably-java/tree/v1.0.2)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.0.1...v1.0.2)
+
+**Implemented enhancements:**
+
+- Implement AblyRealtime.connect\(\) [\#305](https://github.com/ably/ably-java/issues/305)
+- Auth header included in HTTP requests [\#166](https://github.com/ably/ably-java/issues/166)
+- autoConnect & useTokenAuth [\#27](https://github.com/ably/ably-java/issues/27)
+- authParams & authMethod ClientOptions [\#25](https://github.com/ably/ably-java/issues/25)
+
+**Fixed bugs:**
+
+- When using token auth with client-side signing, renewing a token is broken [\#350](https://github.com/ably/ably-java/issues/350)
+- Remove calls to System.xxx.println\(\) [\#217](https://github.com/ably/ably-java/issues/217)
+- Race condition when lib is closed soon after being instantiated [\#319](https://github.com/ably/ably-java/issues/319)
+- Crash inside a library [\#309](https://github.com/ably/ably-java/issues/309)
+- Android System.out: \(ERROR\): io.ably.lib.transport.WebSocketTransport: No activity for 25000ms, closing connection [\#306](https://github.com/ably/ably-java/issues/306)
+- RSC19 is not implemented according to the spec in 0.9 [\#278](https://github.com/ably/ably-java/issues/278)
+- Invalid binary error message [\#247](https://github.com/ably/ably-java/issues/247)
+
+**Merged pull requests:**
+
+- Fix connectionmgr regressions [\#368](https://github.com/ably/ably-java/pull/368) ([paddybyers](https://github.com/paddybyers))
+- Avoid depending on reference equality of interned strings and literals; this seems to fail sometimes on Android [\#367](https://github.com/ably/ably-java/pull/367) ([paddybyers](https://github.com/paddybyers))
+- Update to latest gradle and tools plugins [\#362](https://github.com/ably/ably-java/pull/362) ([paddybyers](https://github.com/paddybyers))
+- Auth.assertValidToken: always remove old token when force == true. [\#354](https://github.com/ably/ably-java/pull/354) ([tcard](https://github.com/tcard))
+- Omit TTL in TokenRequest as JSON if unset. [\#353](https://github.com/ably/ably-java/pull/353) ([tcard](https://github.com/tcard))
+- Add ability to generalize over a HTTP request being async or not. [\#347](https://github.com/ably/ably-java/pull/347) ([tcard](https://github.com/tcard))
+- Implement and add test for AblyRealtime.connect\(\) [\#345](https://github.com/ably/ably-java/pull/345) ([paddybyers](https://github.com/paddybyers))
+- Connectionmgr sync transport [\#344](https://github.com/ably/ably-java/pull/344) ([paddybyers](https://github.com/paddybyers))
+- Fix issue where a close\(\) would not abort an existing in-progress connection [\#343](https://github.com/ably/ably-java/pull/343) ([paddybyers](https://github.com/paddybyers))
+- New test RealtimeResumeTest.resume\_none [\#204](https://github.com/ably/ably-java/pull/204) ([trenouf](https://github.com/trenouf))
+
 ## [v1.0.1](https://github.com/ably/ably-java/tree/v1.0.1)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.0.0...v1.0.1)
