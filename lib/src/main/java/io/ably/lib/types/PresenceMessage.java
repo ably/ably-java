@@ -102,16 +102,18 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
 	PresenceMessage readMsgpack(MessageUnpacker unpacker) throws IOException {
 		int fieldCount = unpacker.unpackMapHeader();
 		for(int i = 0; i < fieldCount; i++) {
-			String fieldName = unpacker.unpackString().intern();
+			String fieldName = unpacker.unpackString();
 			MessageFormat fieldFormat = unpacker.getNextFormat();
 			if(fieldFormat.equals(MessageFormat.NIL)) { unpacker.unpackNil(); continue; }
 
-			if(super.readField(unpacker, fieldName, fieldFormat)) continue;
-			if(fieldName == "action") {
-				action = Action.findByValue(unpacker.unpackInt());
-			} else {
-				Log.v(TAG, "Unexpected field: " + fieldName);
-				unpacker.skipValue();
+			if(super.readField(unpacker, fieldName, fieldFormat)) { continue; }
+			switch(fieldName) {
+				case "action":
+					action = Action.findByValue(unpacker.unpackInt());
+					break;
+				default:
+					Log.v(TAG, "Unexpected field: " + fieldName);
+					unpacker.skipValue();
 			}
 		}
 		return this;

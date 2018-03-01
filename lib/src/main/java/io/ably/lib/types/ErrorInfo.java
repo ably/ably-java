@@ -71,19 +71,23 @@ public class ErrorInfo {
 	ErrorInfo readMsgpack(MessageUnpacker unpacker) throws IOException {
 		int fieldCount = unpacker.unpackMapHeader();
 		for(int i = 0; i < fieldCount; i++) {
-			String fieldName = unpacker.unpackString().intern();
+			String fieldName = unpacker.unpackString();
 			MessageFormat fieldFormat = unpacker.getNextFormat();
 			if(fieldFormat.equals(MessageFormat.NIL)) { unpacker.unpackNil(); continue; }
 
-			if(fieldName == "message") {
-				message = unpacker.unpackString();
-			} else if(fieldName == "code") {
-				code = unpacker.unpackInt();
-			} else if(fieldName == "statusCode") {
-				statusCode = unpacker.unpackInt();
-			} else {
-				Log.v(TAG, "Unexpected field: " + fieldName);
-				unpacker.skipValue();
+			switch(fieldName) {
+				case "message":
+					message = unpacker.unpackString();
+					break;
+				case "code":
+					code = unpacker.unpackInt();
+					break;
+				case "statusCode":
+					statusCode = unpacker.unpackInt();
+					break;
+				default:
+					Log.v(TAG, "Unexpected field: " + fieldName);
+					unpacker.skipValue();
 			}
 		}
 		return this;

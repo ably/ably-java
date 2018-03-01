@@ -156,43 +156,59 @@ public class ProtocolMessage {
 	ProtocolMessage readMsgpack(MessageUnpacker unpacker) throws IOException {
 		int fieldCount = unpacker.unpackMapHeader();
 		for(int i = 0; i < fieldCount; i++) {
-			String fieldName = unpacker.unpackString().intern();
+			String fieldName = unpacker.unpackString();
 			MessageFormat fieldFormat = unpacker.getNextFormat();
 			if(fieldFormat.equals(MessageFormat.NIL)) { unpacker.unpackNil(); continue; }
 
-			if(fieldName == "action") {
-				action = Action.findByValue(unpacker.unpackInt());
-			} else if(fieldName == "flags") {
-				flags = unpacker.unpackInt();
-			} else if(fieldName == "count") {
-				count = unpacker.unpackInt();
-			} else if(fieldName == "error") {
-				error = ErrorInfo.fromMsgpack(unpacker);
-			} else if(fieldName == "id") {
-				id = unpacker.unpackString();
-			} else if(fieldName == "channel") {
-				channel = unpacker.unpackString();
-			} else if(fieldName == "channelSerial") {
-				channelSerial = unpacker.unpackString();
-			} else if(fieldName == "connectionId") {
-				connectionId = unpacker.unpackString();
-			} else if(fieldName == "connectionSerial") {
-				connectionSerial = Long.valueOf(unpacker.unpackLong());
-			} else if(fieldName == "msgSerial") {
-				msgSerial = Long.valueOf(unpacker.unpackLong());
-			} else if(fieldName == "timestamp") {
-				timestamp = unpacker.unpackLong();
-			} else if(fieldName == "messages") {
-				messages = MessageSerializer.readMsgpackArray(unpacker);
-			} else if(fieldName == "presence") {
-				presence = PresenceSerializer.readMsgpackArray(unpacker);
-			} else if(fieldName == "connectionDetails") {
-				connectionDetails = ConnectionDetails.fromMsgpack(unpacker);
-			} else if(fieldName == "auth") {
-				auth = AuthDetails.fromMsgpack(unpacker);
-			} else {
-				Log.v(TAG, "Unexpected field: " + fieldName);
-				unpacker.skipValue();
+			switch(fieldName) {
+				case "action":
+					action = Action.findByValue(unpacker.unpackInt());
+					break;
+				case "flags":
+					flags = unpacker.unpackInt();
+					break;
+				case "count":
+					count = unpacker.unpackInt();
+					break;
+				case "error":
+					error = ErrorInfo.fromMsgpack(unpacker);
+					break;
+				case "id":
+					id = unpacker.unpackString();
+					break;
+				case "channel":
+					channel = unpacker.unpackString();
+					break;
+				case "channelSerial":
+					channelSerial = unpacker.unpackString();
+					break;
+				case "connectionId":
+					connectionId = unpacker.unpackString();
+					break;
+				case "connectionSerial":
+					connectionSerial = Long.valueOf(unpacker.unpackLong());
+					break;
+				case "msgSerial":
+					msgSerial = Long.valueOf(unpacker.unpackLong());
+					break;
+				case "timestamp":
+					timestamp = unpacker.unpackLong();
+					break;
+				case "messages":
+					messages = MessageSerializer.readMsgpackArray(unpacker);
+					break;
+				case "presence":
+					presence = PresenceSerializer.readMsgpackArray(unpacker);
+					break;
+				case "connectionDetails":
+					connectionDetails = ConnectionDetails.fromMsgpack(unpacker);
+					break;
+				case "auth":
+					auth = AuthDetails.fromMsgpack(unpacker);
+					break;
+				default:
+					Log.v(TAG, "Unexpected field: " + fieldName);
+					unpacker.skipValue();
 			}
 		}
 		return this;
@@ -212,7 +228,7 @@ public class ProtocolMessage {
 		@Override
 		public JsonElement serialize(Action action, Type t, JsonSerializationContext ctx) {
 			return new JsonPrimitive(action.getValue());
-		}		
+		}
 	}
 
 	public static class AuthDetails {
@@ -224,15 +240,17 @@ public class ProtocolMessage {
 		AuthDetails readMsgpack(MessageUnpacker unpacker) throws IOException {
 			int fieldCount = unpacker.unpackMapHeader();
 			for(int i = 0; i < fieldCount; i++) {
-				String fieldName = unpacker.unpackString().intern();
+				String fieldName = unpacker.unpackString();
 				MessageFormat fieldFormat = unpacker.getNextFormat();
 				if(fieldFormat.equals(MessageFormat.NIL)) { unpacker.unpackNil(); continue; }
 
-				if(fieldName == "accessToken") {
-					accessToken = unpacker.unpackString();
-				} else {
-					Log.v(TAG, "Unexpected field: " + fieldName);
-					unpacker.skipValue();
+				switch(fieldName) {
+					case "accessToken":
+						accessToken = unpacker.unpackString();
+						break;
+					default:
+						Log.v(TAG, "Unexpected field: " + fieldName);
+						unpacker.skipValue();
 				}
 			}
 			return this;
