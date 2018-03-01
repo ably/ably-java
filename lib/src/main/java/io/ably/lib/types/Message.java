@@ -77,16 +77,18 @@ public class Message extends BaseMessage {
 	Message readMsgpack(MessageUnpacker unpacker) throws IOException {
 		int fieldCount = unpacker.unpackMapHeader();
 		for(int i = 0; i < fieldCount; i++) {
-			String fieldName = unpacker.unpackString().intern();
+			String fieldName = unpacker.unpackString();
 			MessageFormat fieldFormat = unpacker.getNextFormat();
 			if(fieldFormat.equals(MessageFormat.NIL)) { unpacker.unpackNil(); continue; }
 
-			if(super.readField(unpacker, fieldName, fieldFormat)) continue;
-			if(fieldName == "name") {
-				name = unpacker.unpackString();
-			} else {
-				Log.v(TAG, "Unexpected field: " + fieldName);
-				unpacker.skipValue();
+			if(super.readField(unpacker, fieldName, fieldFormat)) { continue; }
+			switch(fieldName) {
+				case "name":
+					name = unpacker.unpackString();
+					break;
+				default:
+					Log.v(TAG, "Unexpected field: " + fieldName);
+					unpacker.skipValue();
 			}
 		}
 		return this;
@@ -102,7 +104,7 @@ public class Message extends BaseMessage {
 			JsonObject json = (JsonObject)super.serialize(message, typeOfMessage, ctx);
 			if(message.name != null) json.addProperty("name", message.name);
 			return json;
-		}		
+		}
 	}
 
 	private static final String TAG = Message.class.getName();

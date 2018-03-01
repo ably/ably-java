@@ -24,27 +24,35 @@ public class ConnectionDetails {
 	ConnectionDetails readMsgpack(MessageUnpacker unpacker) throws IOException {
 		int fieldCount = unpacker.unpackMapHeader();
 		for(int i = 0; i < fieldCount; i++) {
-			String fieldName = unpacker.unpackString().intern();
+			String fieldName = unpacker.unpackString();
 			MessageFormat fieldFormat = unpacker.getNextFormat();
 			if(fieldFormat.equals(MessageFormat.NIL)) { unpacker.unpackNil(); continue; }
 
-			if(fieldName == "clientId") {
-				clientId = unpacker.unpackString();
-			} else if(fieldName == "connectionKey") {
-				connectionKey = unpacker.unpackString();
-			} else if(fieldName == "serverId") {
-				serverId = unpacker.unpackString();
-			} else if(fieldName == "maxMessageSize") {
-				maxMessageSize = unpacker.unpackLong();
-			} else if(fieldName == "maxInboundRate") {
-				maxInboundRate = unpacker.unpackLong();
-			} else if(fieldName == "maxFrameSize") {
-				maxFrameSize = unpacker.unpackLong();
-			} else if(fieldName == "maxIdleInterval") {
-				maxIdleInterval = unpacker.unpackLong();
-			} else {
-				Log.v(TAG, "Unexpected field: " + fieldName);
-				unpacker.skipValue();
+			switch(fieldName) {
+				case "clientId":
+					clientId = unpacker.unpackString();
+					break;
+				case "connectionKey":
+					connectionKey = unpacker.unpackString();
+					break;
+				case "serverId":
+					serverId = unpacker.unpackString();
+					break;
+				case "maxMessageSize":
+					maxMessageSize = unpacker.unpackLong();
+					break;
+				case "maxInboundRate":
+					maxInboundRate = unpacker.unpackLong();
+					break;
+				case "maxFrameSize":
+					maxFrameSize = unpacker.unpackLong();
+					break;
+				case "maxIdleInterval":
+					maxIdleInterval = unpacker.unpackLong();
+					break;
+				default:
+					Log.v(TAG, "Unexpected field: " + fieldName);
+					unpacker.skipValue();
 			}
 		}
 		return this;

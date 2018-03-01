@@ -173,7 +173,7 @@ public class BaseMessage implements Cloneable {
 			if(message.clientId != null) json.addProperty("clientId", message.clientId);
 			if(message.connectionId != null) json.addProperty("connectionId", message.connectionId);
 			return json;
-		}		
+		}
 	}
 
 	/* Msgpack processing */
