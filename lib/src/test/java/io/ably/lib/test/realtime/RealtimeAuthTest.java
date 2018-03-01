@@ -65,6 +65,8 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
 			/* check expected clientId */
 			assertEquals("Auth#clientId is expected to be null", null, ablyRealtime.auth.clientId);
+
+			ablyRealtime.close();
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail();
@@ -107,6 +109,8 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
 			/* check expected clientId */
 			assertEquals("Auth#clientId is expected to be null", null, ablyRealtime.auth.clientId);
+
+			ablyRealtime.close();
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail();
@@ -147,6 +151,8 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
 			/* check expected clientId */
 			assertEquals("Auth#clientId is expected to be set", clientId, ablyRealtime.auth.clientId);
+
+			ablyRealtime.close();
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail();
@@ -191,6 +197,8 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
 			/* check expected clientId */
 			assertEquals("Auth#clientId is expected to be set", "options clientId", ablyRealtime.auth.clientId);
+
+			ablyRealtime.close();
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail();
@@ -235,6 +243,8 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
 			/* check expected clientId */
 			assertEquals("Auth#clientId is expected to be set", "options clientId", ablyRealtime.auth.clientId);
+
+			ablyRealtime.close();
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail();
@@ -277,6 +287,8 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
 			/* check expected clientId */
 			assertEquals("Auth#clientId is expected to be set", "*", ablyRealtime.auth.clientId);
+
+			ablyRealtime.close();
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail();
@@ -319,6 +331,8 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
 			/* check expected clientId */
 			assertEquals("Auth#clientId is expected to be set", "*", ablyRealtime.auth.clientId);
+
+			ablyRealtime.close();
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail();
@@ -358,6 +372,8 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
 			/* check expected clientId */
 			assertEquals("Auth#clientId is expected to be set", "options clientId", ablyRealtime.auth.clientId);
+
+			ablyRealtime.close();
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail();
@@ -397,6 +413,8 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
 			/* check expected clientId */
 			assertEquals("Auth#clientId is expected to be set", "options clientId", ablyRealtime.auth.clientId);
+
+			ablyRealtime.close();
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail();
@@ -585,6 +603,8 @@ public class RealtimeAuthTest extends ParameterizedTest {
 			/* Get received message */
 			messageReceived = protocolListener.receivedMessages.get(0).messages[0];
 			assertEquals("Received message does contain clientId", messageReceived.clientId, clientId);
+
+			ably.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("auth_clientid_publish_implicit: Unexpected exception");
@@ -669,6 +689,8 @@ public class RealtimeAuthTest extends ParameterizedTest {
 			/* Get received message */
 			messageReceived = protocolListener.receivedMessages.get(0).messages[0];
 			assertEquals("Received message does contain clientId", messageReceived.clientId, clientId);
+
+			ably.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("auth_clientid_publish_implicit: Unexpected exception");

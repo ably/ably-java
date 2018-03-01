@@ -223,25 +223,25 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 			ClientOptions rxOpts = createOptions(testVars.keys[0].keyStr);
 			rxAbly = new AblyRealtime(rxOpts);
 			String channelName = "persisted:presencehistory_second_channel_" + testParams.name;
-	
+
 			/* create a channel */
 			final Channel txChannel = txAbly.channels.get(channelName);
 			final Channel rxChannel = rxAbly.channels.get(channelName);
-	
+
 			/* attach sender */
 			txChannel.attach();
 			(new ChannelWaiter(txChannel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", txChannel.state, ChannelState.attached);
-	
+
 			/* enter the channel */
 			String messageText = "Test message (presencehistory_second_channel)";
 			CompletionWaiter msgComplete = new CompletionWaiter();
 			txChannel.presence.enter(messageText, msgComplete);
-	
+
 			/* wait for the enter callback to be called */
 			msgComplete.waitFor();
 			assertTrue("Verify success callback was called", msgComplete.success);
-	
+
 			/* attach receiver */
 			rxChannel.attach();
 			(new ChannelWaiter(rxChannel)).waitFor(ChannelState.attached);
@@ -254,7 +254,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 
 			/* verify message contents */
 			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
-	
+
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("presencehistory_second_channel: Unexpected exception instantiating library");
@@ -616,15 +616,15 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 			rtOpts.clientId = testClientId;
 			ably = new AblyRealtime(rtOpts);
 			String channelName = "persisted:presencehistory_time_f_" + testParams.name;
-	
+
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
-	
+
 			/* attach */
 			channel.attach();
 			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
-	
+
 			/* send batches of messages with shprt inter-message delay */
 			CompletionSet msgComplete = new CompletionSet();
 			for(int i = 0; i < 20; i++) {
@@ -686,12 +686,12 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 	
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
-	
+
 			/* attach */
 			channel.attach();
 			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
-	
+
 			/* send batches of messages with shprt inter-message delay */
 			CompletionSet msgComplete = new CompletionSet();
 			for(int i = 0; i < 20; i++) {
@@ -1049,16 +1049,16 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 			rxOpts.protocolListener = rawPresenceWaiter;
 			rxAbly = new AblyRealtime(rxOpts);
 			String channelName = "persisted:presencehistory_from_attach_" + testParams.name;
-	
+
 			/* create a channel */
 			final Channel txChannel = txAbly.channels.get(channelName);
 			final Channel rxChannel = rxAbly.channels.get(channelName);
-	
+
 			/* attach sender */
 			txChannel.attach();
 			(new ChannelWaiter(txChannel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", txChannel.state, ChannelState.attached);
-	
+
 			/* publish messages to the channel */
 			final CompletionSet msgComplete = new CompletionSet();
 			Thread publisherThread = new Thread() {
@@ -1121,7 +1121,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 			int earliestReceivedOnConnection = Integer.valueOf((String)firstReceivedRealtimeMessage.data);
 			int latestReceivedInHistory = Integer.valueOf((String)messages.items()[0].data);
 			assertEquals("Verify that the history and received messages meet", earliestReceivedOnConnection, latestReceivedInHistory + 1);
-	
+
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("presencehistory_from_attach: Unexpected exception instantiating library");
@@ -1218,6 +1218,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 		AblyRealtime ably = new AblyRealtime(options);
 
 		ably.channels.get("test").presence.history(new Param[]{ new Param("untilAttach", "true")});
+		ably.close();
 	}
 
 	/**
@@ -1232,6 +1233,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 		AblyRealtime ably = new AblyRealtime(options);
 
 		ably.channels.get("test").presence.history(new Param[]{ new Param("untilAttach", "affirmative")});
+		ably.close();
 	}
 
 	/**

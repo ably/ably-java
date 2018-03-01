@@ -125,6 +125,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			/* Verify that the connection never disconnected (0.9 in-place authorization) */
 			assertTrue("Expected in-place authorization", connectionWaiter.getCount(ConnectionState.connecting) == 0);
 
+			ablyRealtime.close();
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail();
@@ -212,6 +213,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			assertTrue("Expected channel to fail quickly", System.currentTimeMillis() - before < 2000);
 			System.out.println("got failed channel state: " + err);
 
+			ablyRealtime.close();
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail();
@@ -309,6 +311,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			assertEquals("Verify connected state is reached", ConnectionState.connected, ablyRealtime.connection.state);
 			System.out.println("connected");
 
+			ablyRealtime.close();
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail();
@@ -393,7 +396,6 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			}
 
 			ablyRealtime.close();
-
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail();
@@ -468,6 +470,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			assertFalse("Verify connection didn't leave connected state", flags[1]);
 			assertTrue("Verify UPDATE event was delivered", flags[2]);
 
+			ably.close();
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
@@ -526,6 +529,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			assertFalse("Verify connection didn't leave connected state", flags[0]);
 			assertTrue("Verify UPDATE event was delivered", flags[1]);
 
+			ably.close();
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
