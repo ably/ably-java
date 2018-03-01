@@ -915,7 +915,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 					channel.publish("history" + i, String.valueOf(i), msgComplete.add());
 				} catch(AblyException e) {
 					e.printStackTrace();
-					fail("channelhistory_paginate_f: Unexpected exception");
+					fail("channelhistory_paginate_b: Unexpected exception");
 					return;
 				}
 			}
@@ -1361,7 +1361,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 
 			/* publish to the channel */
 			CompletionSet msgComplete = new CompletionSet();
-			for (int i = 0; i < (pageMessageCount * 2); i++) {
+			for (int i = 0; i < (pageMessageCount * 2 - 1); i++) {
 				channel.publish("history" + i, String.valueOf(i), msgComplete.add());
 			}
 
@@ -1380,7 +1380,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 			/* get next page */
 			messages = messages.next();
 			assertNotNull("Expected non-null messages", messages);
-			assertEquals("Expected 10 messages", messages.items().length, pageMessageCount);
+			assertEquals("Expected 9 messages", messages.items().length, pageMessageCount - 1);
 
 			/* Verify that current page is the last */
 			assertThat(messages.isLast(), is(true));

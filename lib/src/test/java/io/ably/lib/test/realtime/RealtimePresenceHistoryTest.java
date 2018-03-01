@@ -1261,7 +1261,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 
 			/* publish to the channel */
 			CompletionSet msgComplete = new CompletionSet();
-			for (int i = 0; i < (pageMessageCount * 2); i++) {
+			for (int i = 0; i < (pageMessageCount * 2 - 1); i++) {
 				channel.presence.update(String.valueOf(i), msgComplete.add());
 			}
 
@@ -1274,11 +1274,12 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 			assertNotNull("Expected non-null messages", messages);
 			assertEquals("Expected " + pageMessageCount + " messages", messages.items().length, pageMessageCount);
 
-			/* Verify that current page is the last */
+			/* Verify that current page is not the last */
 			assertThat(messages.isLast(), is(false));
 
 			/* get next page */
 			messages = messages.next();
+			--pageMessageCount;
 			assertNotNull("Expected non-null messages", messages);
 			assertEquals("Expected " + pageMessageCount + " messages", messages.items().length, pageMessageCount);
 
