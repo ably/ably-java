@@ -17,13 +17,13 @@ Reference the library by including a compile dependency reference in your gradle
 For [Java](https://bintray.com/ably-io/ably/ably-java/_latestVersion):
 
 ```
-compile 'io.ably:ably-java:1.0.1'
+compile 'io.ably:ably-java:1.0.2'
 ```
 
 For [Android](https://bintray.com/ably-io/ably/ably-android/_latestVersion):
 
 ```
-compile 'io.ably:ably-android:1.0.1'
+compile 'io.ably:ably-android:1.0.2'
 ```
 
 The library is hosted on the [Jcenter repository](https://bintray.com/ably-io/ably), so you need to ensure that the repo is referenced also; IDEs will typically include this by default:
