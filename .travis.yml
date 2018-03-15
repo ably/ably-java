@@ -39,6 +39,4 @@ before_install:
   - if [ "$BUILD_ANDROID" = "false" ]; then sudo hostname "$(hostname | cut -c1-63)"; fi
   - if [ "$BUILD_ANDROID" = "false" ]; then sudo sed -i -e "s/^\\(127\\.0\\.0\\.1.*\\)/\\1 $(hostname | cut -c1-63)/" /etc/hosts; fi
   - if [ "$BUILD_ANDROID" = "false" ]; then cat /etc/hosts; fi
-
-install: true
   - if [ "$BUILD_ANDROID" = "true" ]; then yes | sdkmanager "platforms;android-22"; fi
