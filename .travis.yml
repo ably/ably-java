@@ -1,5 +1,5 @@
 language: android
-sudo: required
+sudo: true
 android:
   components:
     - platform-tools
@@ -40,3 +40,11 @@ before_install:
   - if [ "$BUILD_ANDROID" = "false" ]; then sudo sed -i -e "s/^\\(127\\.0\\.0\\.1.*\\)/\\1 $(hostname | cut -c1-63)/" /etc/hosts; fi
   - if [ "$BUILD_ANDROID" = "false" ]; then cat /etc/hosts; fi
   - if [ "$BUILD_ANDROID" = "true" ]; then yes | sdkmanager "platforms;android-22"; fi
+  # taken from https://github.com/gretty-gradle-plugin/gretty/commit/f680ab388bf1f7a46f505ee2fe1a4a29e9a0a41e
+  - sudo apt-get -qq update
+  - sudo apt-get install -y zip curl locate libbcprov-java
+  - |
+    sudo ln -s /usr/share/java/bcprov.jar /usr/lib/jvm/java-7-openjdk-amd64/jre/lib/ext/bcprov.jar \
+    && sudo awk -F . -v OFS=. 'BEGIN{n=2}/^security\.provider/ {split($3, posAndEquals, "=");$3=n++"="posAndEquals[2];print;next} 1' /etc/java-7-openjdk/security/java.security > /tmp/java.security \
+    && sudo echo "security.provider.1=org.bouncycastle.jce.provider.BouncyCastleProvider" >> /tmp/java.security \
+    && sudo mv /tmp/java.security /etc/java-7-openjdk/security/java.security
