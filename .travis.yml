@@ -14,8 +14,11 @@ jdk:
   - openjdk7
 
 env:
-  - BUILD_ANDROID=false
-  - BUILD_ANDROID=true
+  global:
+    - QEMU_AUDIO_DRV=none
+  matrix:
+    - BUILD_ANDROID=false
+    - BUILD_ANDROID=true
 
 matrix:
   exclude:
