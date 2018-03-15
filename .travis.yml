@@ -22,14 +22,6 @@ matrix:
     - jdk: openjdk7
       env: BUILD_ANDROID=true
 
-cache:
-  directories:
-    - $HOME/.gradle/caches/4.5
-    - $HOME/.gradle/caches/jars-1
-    - $HOME/.gradle/daemon
-    - $HOME/.gradle/native
-    - $HOME/.gradle/wrapper
-
 before_script:
   - if [ "$BUILD_ANDROID" = "true" ]; then echo no | android create avd --force -n test -t android-22 --abi armeabi-v7a; fi
   - if [ "$BUILD_ANDROID" = "true" ]; then emulator -avd test -no-skin -no-audio -no-window & fi
