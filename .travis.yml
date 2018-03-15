@@ -26,8 +26,8 @@ matrix:
       env: BUILD_ANDROID=true
 
 before_script:
-  - if [ "$BUILD_ANDROID" = "true" ]; then echo no | android create avd --force -n test -t android-22 --abi armeabi-v7a; fi
-  - if [ "$BUILD_ANDROID" = "true" ]; then emulator -avd test -no-skin -no-audio -no-window & fi
+  - if [ "$BUILD_ANDROID" = "true" ]; then echo no | android create avd -f -n test -t android-22 --abi armeabi-v7a; fi
+  - if [ "$BUILD_ANDROID" = "true" ]; then emulator -avd test -no-window & fi
   - if [ "$BUILD_ANDROID" = "true" ]; then android-wait-for-emulator; fi
   - if [ "$BUILD_ANDROID" = "true" ]; then adb shell input keyevent 82 & fi
 
