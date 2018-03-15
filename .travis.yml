@@ -31,7 +31,7 @@ before_script:
   - if [ "$BUILD_ANDROID" = "true" ]; then android-wait-for-emulator; fi
   - if [ "$BUILD_ANDROID" = "true" ]; then adb shell input keyevent 82 & fi
 
-script: if [ "$BUILD_ANDROID" = "true" ]; then ./gradlew connectedAndroidTest; else ret=0; ./gradlew java:testRealtimeSuite || ret=1; ./gradlew java:testRestSuite || ret=1; exit $ret; fi
+script: if [ "$BUILD_ANDROID" = "true" ]; then ./ci/run-android-tests.sh; else ./ci/run-java-tests.sh; fi
 
 # Buffer overflow patch. Source: https://github.com/travis-ci/travis-ci/issues/5227#issuecomment-165135711
 before_install:
