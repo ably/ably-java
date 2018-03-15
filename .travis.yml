@@ -41,3 +41,4 @@ before_install:
   - if [ "$BUILD_ANDROID" = "false" ]; then cat /etc/hosts; fi
 
 install: true
+  - if [ "$BUILD_ANDROID" = "true" ]; then yes | sdkmanager "platforms;android-22"; fi
