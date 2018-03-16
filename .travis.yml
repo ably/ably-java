@@ -48,3 +48,16 @@ before_install:
     && sudo awk -F . -v OFS=. 'BEGIN{n=2}/^security\.provider/ {split($3, posAndEquals, "=");$3=n++"="posAndEquals[2];print;next} 1' /etc/java-7-openjdk/security/java.security > /tmp/java.security \
     && sudo echo "security.provider.1=org.bouncycastle.jce.provider.BouncyCastleProvider" >> /tmp/java.security \
     && sudo mv /tmp/java.security /etc/java-7-openjdk/security/java.security
+
+notifications:
+  slack:
+    rooms:
+      - secure: EK0WQz1q0PGExQmiTokVnRZTzrBEtULoF3Q05SsrYWlwBy+8r+kFuToWDY8914R2ReKEjozCgtuwx3cuEF01ITW8pnNER1ogQuGVAwz8x73fOndPdJxGRJaCAdy4S2uG4JmRqECtihNnNjlbkQZst4lNsVhtnQF32x7M6f4bLkg=
+    on_success: change
+    on_failure: always
+  email:
+    recipients:
+      - paddy@ably.io
+      - cesare@ably.io
+    on_success: change
+    on_failure: always

@@ -1,1 +1,1 @@
-./gradlew connectedAndroidTest --info
+./gradlew connectedAndroidTest
