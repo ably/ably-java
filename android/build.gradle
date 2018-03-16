@@ -16,6 +16,18 @@ ext {
 
 project.ext.preDexLibs = !project.hasProperty('disablePreDex')
 
+subprojects {
+    project.plugins.whenPluginAdded { plugin ->
+        if (rootProject.ext.has('preDexLibs')) {
+            if ("com.android.build.gradle.AppPlugin".equals(plugin.class.name)) {
+                project.android.dexOptions.preDexLibraries = rootProject.ext.preDexLibs
+            } else if ("com.android.build.gradle.LibraryPlugin".equals(plugin.class.name)) {
+                project.android.dexOptions.preDexLibraries = rootProject.ext.preDexLibs
+            }
+        }
+    }
+}
+
 android {
     compileSdkVersion 22
     buildToolsVersion '27.0.3'
