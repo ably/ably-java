@@ -1,43 +1,37 @@
 language: android
+sudo: true
 android:
   components:
     - platform-tools
     - tools
     - build-tools-27.0.3
     - android-22
-    - android-24
-    - android-25
     - extra-android-m2repository
     - sys-img-armeabi-v7a-android-22
-    
+
 jdk:
   - oraclejdk8
   - openjdk7
 
 env:
-  - BUILD_ANDROID=false
-  - BUILD_ANDROID=true
+  global:
+    - QEMU_AUDIO_DRV=none
+  matrix:
+    - BUILD_ANDROID=false
+    - BUILD_ANDROID=true
 
 matrix:
   exclude:
     - jdk: openjdk7
       env: BUILD_ANDROID=true
 
-cache:
-  directories:
-    - $HOME/.gradle/caches/4.5
-    - $HOME/.gradle/caches/jars-1
-    - $HOME/.gradle/daemon
-    - $HOME/.gradle/native
-    - $HOME/.gradle/wrapper
-
 before_script:
-  - if [ "$BUILD_ANDROID" = "true" ]; then echo no | android create avd --force -n test -t android-22 --abi armeabi-v7a; fi
-  - if [ "$BUILD_ANDROID" = "true" ]; then emulator -avd test -no-skin -no-audio -no-window & fi
+  - if [ "$BUILD_ANDROID" = "true" ]; then echo no | android create avd -f -n test -t android-22 --abi armeabi-v7a; fi
+  - if [ "$BUILD_ANDROID" = "true" ]; then emulator -avd test -no-window & fi
   - if [ "$BUILD_ANDROID" = "true" ]; then android-wait-for-emulator; fi
   - if [ "$BUILD_ANDROID" = "true" ]; then adb shell input keyevent 82 & fi
 
-script: if [ "$BUILD_ANDROID" = "true" ]; then ./gradlew connectedAndroidTest; else ret=0; ./gradlew java:testRealtimeSuite || ret=1; ./gradlew java:testRestSuite || ret=1; exit $ret; fi
+script: if [ "$BUILD_ANDROID" = "true" ]; then ./ci/run-android-tests.sh; else ./ci/run-java-tests.sh; fi
 
 # Buffer overflow patch. Source: https://github.com/travis-ci/travis-ci/issues/5227#issuecomment-165135711
 before_install:
@@ -45,5 +39,30 @@ before_install:
   - if [ "$BUILD_ANDROID" = "false" ]; then sudo hostname "$(hostname | cut -c1-63)"; fi
   - if [ "$BUILD_ANDROID" = "false" ]; then sudo sed -i -e "s/^\\(127\\.0\\.0\\.1.*\\)/\\1 $(hostname | cut -c1-63)/" /etc/hosts; fi
   - if [ "$BUILD_ANDROID" = "false" ]; then cat /etc/hosts; fi
+  - if [ "$BUILD_ANDROID" = "true" ]; then yes | sdkmanager "platforms;android-22"; fi
+  # taken from https://github.com/gretty-gradle-plugin/gretty/commit/f680ab388bf1f7a46f505ee2fe1a4a29e9a0a41e
+  - sudo apt-get -qq update
+  - sudo apt-get install -y zip curl locate libbcprov-java
+  - |
+    sudo ln -s /usr/share/java/bcprov.jar /usr/lib/jvm/java-7-openjdk-amd64/jre/lib/ext/bcprov.jar \
+    && sudo awk -F . -v OFS=. 'BEGIN{n=2}/^security\.provider/ {split($3, posAndEquals, "=");$3=n++"="posAndEquals[2];print;next} 1' /etc/java-7-openjdk/security/java.security > /tmp/java.security \
+    && sudo echo "security.provider.1=org.bouncycastle.jce.provider.BouncyCastleProvider" >> /tmp/java.security \
+    && sudo mv /tmp/java.security /etc/java-7-openjdk/security/java.security
 
-install: true
+notifications:
+  slack:
+    rooms:
+      - secure: EK0WQz1q0PGExQmiTokVnRZTzrBEtULoF3Q05SsrYWlwBy+8r+kFuToWDY8914R2ReKEjozCgtuwx3cuEF01ITW8pnNER1ogQuGVAwz8x73fOndPdJxGRJaCAdy4S2uG4JmRqECtihNnNjlbkQZst4lNsVhtnQF32x7M6f4bLkg=
+    on_success: change
+    on_failure: always
+  email:
+    recipients:
+      - paddy@ably.io
+      - cesare@ably.io
+    on_success: change
+    on_failure: always
+
+branches:
+  only:
+  - master
+  - develop
