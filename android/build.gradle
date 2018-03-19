@@ -12,11 +12,19 @@ apply from: '../common.gradle'
 
 ext {
     artifactId = 'ably-android'
+    travisBuild = System.getenv("TRAVIS") == "true"
+    // allows for -Dpre-dex=false to be set
+    preDexEnabled = "true".equals(System.getProperty("pre-dex", "true"))
 }
 
 android {
     compileSdkVersion 22
     buildToolsVersion '27.0.3'
+
+    dexOptions {
+     // Skip pre-dexing when running on Travis CI or when disabled via -Dpre-dex=false.
+     preDexLibraries = preDexEnabled && !travisBuild
+   }
 
     defaultConfig {
         buildConfigField 'String', 'LIBRARY_NAME', '"android"'
