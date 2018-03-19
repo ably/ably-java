@@ -1,1 +1,1 @@
-./gradlew connectedAndroidTest -PdisablePreDex
+./gradlew clean connectedAndroidTest -PdisablePreDex
