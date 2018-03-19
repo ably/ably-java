@@ -131,11 +131,7 @@ public class BaseMessage implements Cloneable {
 					encoding = ((encoding == null) ? "" : encoding + "/") + "utf-8";
 				}
 			} else if(!(data instanceof byte[])) {
-				if (opts != null && opts.encrypted) {
-					throw AblyException.fromErrorInfo(new ErrorInfo("Invalid message data or encoding", 400, 40013));
-				} else {
-					Log.e(TAG, "Message data must be either `byte[]`, `String` or `JSONElement`; implicit coercion of other types to String is deprecated and throws from v.0.9 on.\nPlease check the documentation (https://www.ably.io/documentation/realtime/types#message).");
-				}
+				throw AblyException.fromErrorInfo(new ErrorInfo("Invalid message data or encoding", 400, 40013));
 			}
 		}
 		if (opts != null && opts.encrypted) {
