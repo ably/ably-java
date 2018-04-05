@@ -6,6 +6,19 @@
 
 A Java Realtime and REST client library for [Ably Realtime](https://www.ably.io), the realtime messaging and data delivery service.
 
+## Supported Platforms
+
+This SDK supports the following platforms:
+
+**Java:** Java 7+
+
+**Android:** android-19 or newer as a target SDK, android-16 or newer as a target platform
+
+We regression-test the library against a selection of Java and Android platforms (which will change over time, but usually consists of the versions that are supported upstream). Please refer to [.travis.yml](./.travis.yml) for the set of versions that currently undergo CI testing..
+
+We'll happily support (and investigate reported problems with) any reasonably-widely-used platform, Java or Android.
+If you find any compatibility issues, please [do raise an issue](https://github.com/ably/ably-java/issues/new) in this repository or [contact Ably customer support](https://support.ably.io/) for advice.
+
 ## Documentation
 
 Visit https://www.ably.io/documentation for a complete API reference and more examples.
