@@ -625,7 +625,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
 
-			/* send batches of messages with shprt inter-message delay */
+			/* send batches of messages with short inter-message delay */
 			CompletionSet msgComplete = new CompletionSet();
 			for(int i = 0; i < 20; i++) {
 				channel.presence.enter(String.valueOf(i), msgComplete.add());
