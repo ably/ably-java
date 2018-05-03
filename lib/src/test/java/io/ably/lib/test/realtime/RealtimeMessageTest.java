@@ -845,6 +845,8 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			LogLine capturedLine = capturedLog.get(0);
 			assertTrue(capturedLine.tag.contains("ably"));
 			assertTrue(capturedLine.msg.contains("Message data must be either `byte[]`, `String` or `JSONElement`; implicit coercion of other types to String is deprecated"));
+		} catch (Throwable t) {
+			fail("reject_invalid_message_data: Unexpected exception");
 		} finally {
 			Log.setHandler(originalLogHandler);
 			Log.setLevel(originalLogLevel);
