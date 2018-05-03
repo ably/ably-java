@@ -120,7 +120,6 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 			} catch (InterruptedException e) {}
 			assertEquals("Verify suspended state is reached", ConnectionState.suspended, ably.connection.state);
 			assertTrue("Verify multiple connect attempts", connectionWaiter.getCount(ConnectionState.connecting) > 1);
-			assertTrue("Verify multiple connect attempts", connectionWaiter.getCount(ConnectionState.disconnected) > 1);
 			ably.close();
 			connectionWaiter.waitFor(ConnectionState.closed);
 			assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
