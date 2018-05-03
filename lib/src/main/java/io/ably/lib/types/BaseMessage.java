@@ -131,6 +131,7 @@ public class BaseMessage implements Cloneable {
 					encoding = ((encoding == null) ? "" : encoding + "/") + "utf-8";
 				}
 			} else if(!(data instanceof byte[])) {
+				Log.d(TAG, "Message data must be either `byte[]`, `String` or `JSONElement`; implicit coercion of other types to String is deprecated");
 				throw AblyException.fromErrorInfo(new ErrorInfo("Invalid message data or encoding", 400, 40013));
 			}
 		}
