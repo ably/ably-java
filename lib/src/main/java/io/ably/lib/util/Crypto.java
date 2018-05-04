@@ -201,6 +201,7 @@ public class Crypto {
 				encryptCipher = Cipher.getInstance(transformation);
 				encryptCipher.init(Cipher.ENCRYPT_MODE, params.keySpec, params.ivSpec);
 				decryptCipher = Cipher.getInstance(transformation);
+				decryptCipher.init(Cipher.DECRYPT_MODE, params.keySpec, params.ivSpec);
 				iv = params.ivSpec.getIV();
 				blockLength = iv.length;
 			}
@@ -210,7 +211,7 @@ public class Crypto {
 		}
 
 		@Override
-		public byte[] encrypt(byte[] plaintext) {
+		public byte[] encrypt(byte[] plaintext) throws AblyException {
 			if(plaintext == null) return null;
 			int plaintextLength = plaintext.length;
 			int paddedLength = getPaddedLength(plaintextLength);
@@ -220,7 +221,13 @@ public class Crypto {
 			System.arraycopy(plaintext, 0, cipherIn, 0, plaintextLength);
 			System.arraycopy(pkcs5Padding[padding], 0, cipherIn, plaintextLength, padding);
 			System.arraycopy(getIv(), 0, ciphertext, 0, blockLength);
-			byte[] cipherOut = encryptCipher.update(cipherIn);
+			byte[] cipherOut = new byte[0];
+			try {
+				cipherOut = encryptCipher.doFinal(cipherIn);
+			} catch (IllegalBlockSizeException|BadPaddingException e) {
+				Log.e(TAG, "encrypt()", e);
+				throw AblyException.fromThrowable(e);
+			}
 			System.arraycopy(cipherOut, 0, ciphertext, blockLength, paddedLength);
 			return ciphertext;
 		}
@@ -230,10 +237,9 @@ public class Crypto {
 			if(ciphertext == null) return null;
 			byte[] plaintext = null;
 			try {
-				decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(ciphertext, 0, blockLength));
 				plaintext = decryptCipher.doFinal(ciphertext, blockLength, ciphertext.length - blockLength);
 			}
-			catch (InvalidKeyException|InvalidAlgorithmParameterException|IllegalBlockSizeException|BadPaddingException e) {
+			catch (IllegalBlockSizeException|BadPaddingException e) {
 				Log.e(TAG, "decrypt()", e);
 				throw AblyException.fromThrowable(e);
 			}
@@ -252,8 +258,13 @@ public class Crypto {
 		 * @return
 		 */
 		private byte[] getIv() {
-			if(iv == null)
-				return encryptCipher.update(emptyBlock);
+			if(iv == null) {
+				try {
+					return encryptCipher.doFinal(emptyBlock);
+				} catch (IllegalBlockSizeException|BadPaddingException e) {
+					e.printStackTrace();
+				}
+			}
 
 			byte[] result = iv;
 			iv = null;
