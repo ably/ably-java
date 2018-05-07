@@ -187,6 +187,7 @@ public class Crypto {
 	 */
 	private static class CBCCipher implements ChannelCipher {
 		private final SecretKeySpec keySpec;
+		private final IvParameterSpec ivSpec;
 		private final Cipher encryptCipher;
 		private final Cipher decryptCipher;
 		private final String algorithm;
@@ -198,10 +199,10 @@ public class Crypto {
 			try {
 				algorithm = params.algorithm + '-' + params.keyLength + "-cbc";
 				keySpec = params.keySpec;
+				ivSpec = params.ivSpec;
 				encryptCipher = Cipher.getInstance(transformation);
 				encryptCipher.init(Cipher.ENCRYPT_MODE, params.keySpec, params.ivSpec);
 				decryptCipher = Cipher.getInstance(transformation);
-				decryptCipher.init(Cipher.DECRYPT_MODE, params.keySpec, params.ivSpec);
 				iv = params.ivSpec.getIV();
 				blockLength = iv.length;
 			}
@@ -237,9 +238,10 @@ public class Crypto {
 			if(ciphertext == null) return null;
 			byte[] plaintext = null;
 			try {
+				decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
 				plaintext = decryptCipher.doFinal(ciphertext, blockLength, ciphertext.length - blockLength);
 			}
-			catch (IllegalBlockSizeException|BadPaddingException e) {
+			catch (InvalidKeyException|InvalidAlgorithmParameterException|IllegalBlockSizeException|BadPaddingException e) {
 				Log.e(TAG, "decrypt()", e);
 				throw AblyException.fromThrowable(e);
 			}
