@@ -264,7 +264,7 @@ public class Crypto {
 				try {
 					return encryptCipher.doFinal(emptyBlock);
 				} catch (IllegalBlockSizeException|BadPaddingException e) {
-					e.printStackTrace();
+					Log.e(TAG, "getIv()", e);
 				}
 			}
 
