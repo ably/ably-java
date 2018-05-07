@@ -221,7 +221,7 @@ public class Crypto {
 			System.arraycopy(plaintext, 0, cipherIn, 0, plaintextLength);
 			System.arraycopy(pkcs5Padding[padding], 0, cipherIn, plaintextLength, padding);
 			System.arraycopy(getIv(), 0, ciphertext, 0, blockLength);
-			byte[] cipherOut = new byte[0];
+			byte[] cipherOut;
 			try {
 				cipherOut = encryptCipher.doFinal(cipherIn);
 			} catch (IllegalBlockSizeException|BadPaddingException e) {
