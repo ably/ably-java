@@ -8,6 +8,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.lang.reflect.Field;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -383,6 +384,34 @@ public class ConnectionManagerTest extends ParameterizedTest {
 				}
 			});
 
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Connect and then verify that the connection manager has the default value for connectionStateTtl;
+	 */
+	@Test
+	public void connection_details_has_ttl() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			final AblyRealtime ably = new AblyRealtime(opts);
+			ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					assertEquals(1, 1);
+					try {
+						Field field = ably.connection.connectionManager.getClass().getDeclaredField("connectionStateTtl");
+						field.setAccessible(true);
+						assertEquals("Verify connectionStateTtl has the default value", field.get(ably.connection.connectionManager), 120000L);
+					} catch (NoSuchFieldException|IllegalAccessException e) {
+						fail("Unexpected exception in checking connectionStateTtl");
+					}
+					ably.close();
+				}
+			});
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
