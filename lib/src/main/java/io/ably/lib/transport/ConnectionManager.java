@@ -152,6 +152,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	}};
 
 	long maxIdleInterval;
+	long connectionStateTtl;
 
 	public ErrorInfo getStateErrorInfo() {
 		return state.defaultErrorInfo;
@@ -550,6 +551,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 		/* Get any parameters from connectionDetails. */
 		maxIdleInterval = connectionDetails.maxIdleInterval;
+		connectionStateTtl = connectionDetails.connectionStateTtl;
 
 		/* set the clientId resolved from token, if any */
 		String clientId = connectionDetails.clientId;
