@@ -20,6 +20,7 @@ public class ConnectionDetails {
 
 	ConnectionDetails() {
 		maxIdleInterval = Defaults.maxIdleInterval;
+		connectionStateTtl = Defaults.connectionStateTtl;
 	}
 
 	ConnectionDetails readMsgpack(MessageUnpacker unpacker) throws IOException {
