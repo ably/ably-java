@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -412,6 +413,47 @@ public class ConnectionManagerTest extends ParameterizedTest {
 					ably.close();
 				}
 			});
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * RTN15g1, RTN15g2. Connect, disconnect, reconnect after (ttl + idle interval) period has passed,
+	 * check that the connection is a new one;
+	 */
+	@Test
+	public void connection_has_new_id_when_reconnecting_after_statettl_plus_idleinterval_has_passed() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			final AblyRealtime ably = new AblyRealtime(opts);
+			ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					try {
+						Field connectionStateField = ably.connection.connectionManager.getClass().getDeclaredField("connectionStateTtl");
+						connectionStateField.setAccessible(true);
+						connectionStateField.setLong(ably.connection.connectionManager, 1000L);
+						Field maxIdleField = ably.connection.connectionManager.getClass().getDeclaredField("maxIdleInterval");
+						maxIdleField.setAccessible(true);
+						maxIdleField.setLong(ably.connection.connectionManager, 1000L);
+						ably.connection.connectionManager.requestState(ConnectionState.disconnected);
+					} catch (NoSuchFieldException|IllegalAccessException e) {
+						fail("Unexpected exception in checking connectionStateTtl");
+					}
+				}
+			});
+
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+			connectionWaiter.waitFor(ConnectionState.connected);
+			String firstConnectionId = ably.connection.id;
+			connectionWaiter.waitFor(ConnectionState.disconnected);
+			ably.connect();
+			connectionWaiter.waitFor(ConnectionState.connected);
+			String secondConnectionId = ably.connection.id;
+			assertNotEquals("connection has a different id", firstConnectionId, secondConnectionId);
+			ably.close();
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
