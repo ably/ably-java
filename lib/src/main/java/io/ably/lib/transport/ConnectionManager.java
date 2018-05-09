@@ -205,6 +205,19 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	 *********************/
 
 	public void connect() {
+
+		if (transport != null) {
+			long intervalSinceLastActivity = System.currentTimeMillis() - transport.getLastActivity();
+			if (intervalSinceLastActivity > (maxIdleInterval + connectionStateTtl)) {
+				connection.id = null;
+				connection.key = null;
+				connection.recoveryKey = null;
+				startThread();
+				requestState(ConnectionState.connecting);
+				return;
+			}
+		}
+
 		boolean connectionExist = state.state == ConnectionState.connected;
 		boolean connectionAttemptInProgress = (requestedState != null && requestedState.state == ConnectionState.connecting) ||
 				state.state == ConnectionState.connecting;
