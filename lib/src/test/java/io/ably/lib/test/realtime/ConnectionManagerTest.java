@@ -465,4 +465,38 @@ public class ConnectionManagerTest extends ParameterizedTest {
 			fail("init0: Unexpected exception instantiating library");
 		}
 	}
+
+	/**
+	 * RTN15g1, RTN15g2. Connect, disconnect, reconnect before (ttl + idle interval) period has passed,
+	 * check that the connection is the same;
+	 */
+	@Test
+	public void connection_has_same_id_when_reconnecting_before_statettl_plus_idleinterval_has_passed() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			final AblyRealtime ably = new AblyRealtime(opts);
+			ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					try {
+						Thread.sleep(1000L);
+					} catch(InterruptedException e) {}
+					ably.connection.connectionManager.requestState(ConnectionState.disconnected);
+				}
+			});
+
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+			connectionWaiter.waitFor(ConnectionState.connected);
+			String firstConnectionId = ably.connection.id;
+			connectionWaiter.waitFor(ConnectionState.disconnected);
+			ably.connect();
+			connectionWaiter.waitFor(ConnectionState.connected);
+			String secondConnectionId = ably.connection.id;
+			assertEquals("connection has the same id", firstConnectionId, secondConnectionId);
+			ably.close();
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		}
+	}
 }
