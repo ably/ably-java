@@ -153,6 +153,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 	long maxIdleInterval;
 	long connectionStateTtl = Defaults.connectionStateTtl;
+	private long failedAuthAttempts = 0;
 
 	public ErrorInfo getStateErrorInfo() {
 		return state.defaultErrorInfo;
@@ -581,6 +582,9 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 	private synchronized void onError(ProtocolMessage message) {
 		connection.key = null;
+		if((message.error.code >= 40140) && (message.error.code < 40150)) {
+			failedAuthAttempts += 1;
+		}
 		ConnectionState destinationState = isFatalError(message.error) ? ConnectionState.failed : ConnectionState.disconnected;
 		notifyState(transport, new StateIndication(destinationState, message.error));
 	}
@@ -1183,7 +1187,12 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	private boolean isFatalError(ErrorInfo err) {
 		if(err.code != 0) {
 			/* token errors are assumed to be recoverable */
-			if((err.code >= 40140) && (err.code < 40150)) { return false; }
+			if((err.code >= 40140) && (err.code < 40150)) {
+				if (failedAuthAttempts >= 1) {
+					return true;
+				}
+				return false;
+			}
 			/* 400 codes assumed to be fatal */
 			if((err.code >= 40000) && (err.code < 50000)) { return true; }
 		}

@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -406,17 +407,13 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 	 * Allow token to expire and try to authorize with already expired token after that. Test that the connection state
 	 * is changed in the correct way and without duplicates:
 	 *
-	 * connecting -> connected -> disconnected -> connecting -> disconnected -> failed
+	 * connecting -> connected -> disconnected -> connecting -> failed
 	 */
 	@Test
 	public void connect_reauth_failure_state_flow_test() {
-		AblyRealtime ablyRealtime = null;
-		AblyRest ablyRest = null;
+
 		try {
-			/* To trigger the bug when connection is going to suspended if total connection time is more than
-			 * TIMEOUT_SUSPEND we set TIMEOUT_SUSPEND to smaller value
-			 */
-			Defaults.TIMEOUT_SUSPEND = 5000;
+			AblyRest ablyRest = null;
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 
 			ablyRest = new AblyRest(opts);
@@ -434,7 +431,24 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 				}
 			};
 			optsForRealtime.tokenDetails = tokenDetails;
-			ablyRealtime = new AblyRealtime(optsForRealtime);
+			final AblyRealtime ablyRealtime = new AblyRealtime(optsForRealtime);
+
+			ablyRealtime.connection.on(ConnectionState.connected, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					/* To go quicker into a disconnected state we use a
+					 * smaller value for connectionStateTtl
+					 */
+					try {
+						Field field = ablyRealtime.connection.connectionManager.getClass().getDeclaredField("connectionStateTtl");
+						field.setAccessible(true);
+						field.setLong(ablyRealtime.connection.connectionManager, 5000L);
+					} catch (NoSuchFieldException|IllegalAccessException e) {
+						fail("Unexpected exception in checking connectionStateTtl");
+					}
+
+				}
+			});
 
 			(new ConnectionWaiter(ablyRealtime.connection)).waitFor(ConnectionState.connected);
 
@@ -453,7 +467,6 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 			List<ConnectionState> correctHistory = Arrays.asList(
 					ConnectionState.disconnected,
 					ConnectionState.connecting,
-					ConnectionState.disconnected,
 					ConnectionState.failed
 			);
 
@@ -461,14 +474,10 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 			synchronized (stateHistory) {
 				assertTrue("Verifying state change history", stateHistory.equals(correctHistory));
 			}
-
+            ablyRealtime.close();
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
-		} finally {
-			Defaults.TIMEOUT_SUSPEND = 120000;
-			if (ablyRealtime != null)
-				ablyRealtime.close();
 		}
 	}
 
@@ -479,12 +488,10 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 	public void connect_auth_failure_and_suspend_test() {
 		AblyRealtime ablyRealtime = null;
 		AblyRest ablyRest = null;
-		int oldSuspendTimeout = Defaults.TIMEOUT_SUSPEND;
 		int oldDisconnectTimeout = Defaults.TIMEOUT_DISCONNECT;
 
 		try {
 			/* Make test faster */
-			Defaults.TIMEOUT_SUSPEND = 2000;
 			Defaults.TIMEOUT_DISCONNECT = 1000;
 
 			final int[] numberOfAuthCalls = new int[] {0};
@@ -532,7 +539,6 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
-			Defaults.TIMEOUT_SUSPEND = oldSuspendTimeout;
 			Defaults.TIMEOUT_DISCONNECT = oldDisconnectTimeout;
 			if (ablyRealtime != null)
 				ablyRealtime.close();
