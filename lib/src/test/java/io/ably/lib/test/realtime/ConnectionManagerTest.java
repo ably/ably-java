@@ -428,17 +428,20 @@ public class ConnectionManagerTest extends ParameterizedTest {
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			final AblyRealtime ably = new AblyRealtime(opts);
+			final long newTtl = 1000L;
+			final long newIdleInterval = 1000L;
+			/* We want this greater than newTtl + newIdleInterval */
+			final long intervalBeforeReconnecting = 3000L;
 			ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange state) {
 					try {
 						Field connectionStateField = ably.connection.connectionManager.getClass().getDeclaredField("connectionStateTtl");
 						connectionStateField.setAccessible(true);
-						connectionStateField.setLong(ably.connection.connectionManager, 1000L);
+						connectionStateField.setLong(ably.connection.connectionManager, newTtl);
 						Field maxIdleField = ably.connection.connectionManager.getClass().getDeclaredField("maxIdleInterval");
 						maxIdleField.setAccessible(true);
-						maxIdleField.setLong(ably.connection.connectionManager, 1000L);
-						ably.connection.connectionManager.requestState(ConnectionState.disconnected);
+						maxIdleField.setLong(ably.connection.connectionManager, newIdleInterval);
 					} catch (NoSuchFieldException|IllegalAccessException e) {
 						fail("Unexpected exception in checking connectionStateTtl");
 					}
@@ -448,7 +451,10 @@ public class ConnectionManagerTest extends ParameterizedTest {
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 			connectionWaiter.waitFor(ConnectionState.connected);
 			String firstConnectionId = ably.connection.id;
-			connectionWaiter.waitFor(ConnectionState.disconnected);
+			ably.connection.connectionManager.requestState(ConnectionState.disconnected);
+			try {
+				Thread.sleep(intervalBeforeReconnecting);
+			} catch(InterruptedException e) {}
 			ably.connect();
 			connectionWaiter.waitFor(ConnectionState.connected);
 			String secondConnectionId = ably.connection.id;
