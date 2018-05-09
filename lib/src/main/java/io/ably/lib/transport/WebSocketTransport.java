@@ -139,6 +139,14 @@ public class WebSocketTransport implements ITransport {
 		return params.host;
 	}
 
+	@Override
+	public long getLastActivity() {
+		if (wsConnection != null) {
+			return wsConnection.lastActivityTime;
+		}
+		return 0;
+	}
+
 	/**************************
 	 * WebSocketHandler methods
 	 **************************/
