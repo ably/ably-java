@@ -145,14 +145,14 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		put(ConnectionState.connecting, new StateInfo(ConnectionState.connecting, true, false, false, false, Defaults.TIMEOUT_CONNECT, null));
 		put(ConnectionState.connected, new StateInfo(ConnectionState.connected, false, true, false, false, 0, null));
 		put(ConnectionState.disconnected, new StateInfo(ConnectionState.disconnected, true, false, false, true, Defaults.TIMEOUT_DISCONNECT, REASON_DISCONNECTED));
-		put(ConnectionState.suspended, new StateInfo(ConnectionState.suspended, false, false, false, true, Defaults.TIMEOUT_SUSPEND, REASON_SUSPENDED));
+		put(ConnectionState.suspended, new StateInfo(ConnectionState.suspended, false, false, false, true, Defaults.connectionStateTtl, REASON_SUSPENDED));
 		put(ConnectionState.closing, new StateInfo(ConnectionState.closing, false, false, false, false, Defaults.TIMEOUT_CONNECT, REASON_CLOSED));
 		put(ConnectionState.closed, new StateInfo(ConnectionState.closed, false, false, true, false, 0, REASON_CLOSED));
 		put(ConnectionState.failed, new StateInfo(ConnectionState.failed, false, false, true, false, 0, REASON_FAILED));
 	}};
 
 	long maxIdleInterval;
-	long connectionStateTtl;
+	long connectionStateTtl = Defaults.connectionStateTtl;
 
 	public ErrorInfo getStateErrorInfo() {
 		return state.defaultErrorInfo;
@@ -716,7 +716,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	}
 
 	private void setSuspendTime() {
-		suspendTime = (System.currentTimeMillis() + Defaults.TIMEOUT_SUSPEND);
+		suspendTime = (System.currentTimeMillis() + connectionStateTtl);
 	}
 
 	private StateIndication checkSuspend(StateIndication stateChange) {
