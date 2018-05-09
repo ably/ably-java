@@ -207,7 +207,8 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	public void connect() {
 
 		if (transport != null) {
-			long intervalSinceLastActivity = System.currentTimeMillis() - transport.getLastActivity();
+			long now = System.currentTimeMillis();
+			long intervalSinceLastActivity = now - lastActivity;
 			if (intervalSinceLastActivity > (maxIdleInterval + connectionStateTtl)) {
 				connection.id = null;
 				connection.key = null;
@@ -464,6 +465,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		if (Log.level <= Log.VERBOSE)
 			Log.v(TAG, "onMessage(): " + message.action + ": " + new String(ProtocolSerializer.writeJSON(message)));
 		try {
+			lastActivity = System.currentTimeMillis();
 			if(protocolListener != null)
 				protocolListener.onRawMessageRecv(message);
 			switch(message.action) {
@@ -1226,6 +1228,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	private ITransport transport;
 	private long suspendTime;
 	private long msgSerial;
+	private long lastActivity;
 
 	/* for debug/test only */
 	private RawProtocolListener protocolListener;

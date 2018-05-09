@@ -118,6 +118,4 @@ public interface ITransport {
 
 	public String getHost();
 
-	public long getLastActivity();
-
 }
