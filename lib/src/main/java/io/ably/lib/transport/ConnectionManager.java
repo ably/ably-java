@@ -206,19 +206,6 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 	public void connect() {
 
-		if (transport != null) {
-			long now = System.currentTimeMillis();
-			long intervalSinceLastActivity = now - lastActivity;
-			if (intervalSinceLastActivity > (maxIdleInterval + connectionStateTtl)) {
-				connection.id = null;
-				connection.key = null;
-				connection.recoveryKey = null;
-				startThread();
-				requestState(ConnectionState.connecting);
-				return;
-			}
-		}
-
 		boolean connectionExist = state.state == ConnectionState.connected;
 		boolean connectionAttemptInProgress = (requestedState != null && requestedState.state == ConnectionState.connecting) ||
 				state.state == ConnectionState.connecting;
@@ -684,12 +671,29 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		requestedState = null;
 	}
 
+	private boolean isConnectionStale() {
+	    if (lastActivity == 0) {
+	        return false;
+        }
+		long now = System.currentTimeMillis();
+		long intervalSinceLastActivity = now - lastActivity;
+		return intervalSinceLastActivity > (maxIdleInterval + connectionStateTtl);
+	}
+
 	private void handleStateChange(StateIndication stateChange) {
 		/* if we have had a disconnected state indication
 		 * from the transport then we have to decide whether
 		 * to transition to closed, disconnected to suspended depending
 		 * on when we last had a successful connection */
 		if(stateChange.state == ConnectionState.disconnected) {
+			if (isConnectionStale()) {
+				/* RTN15g1, RTN15g2 Force a new connection if the previous one is stale */
+				connection.id = null;
+				connection.key = null;
+				connection.recoveryKey = null;
+				requestState(ConnectionState.suspended);
+				return;
+			}
 			switch(state.state) {
 			case connecting:
 				stateChange = checkSuspend(stateChange);
