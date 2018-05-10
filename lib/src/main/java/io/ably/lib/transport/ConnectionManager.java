@@ -151,7 +151,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		put(ConnectionState.failed, new StateInfo(ConnectionState.failed, false, false, true, false, 0, REASON_FAILED));
 	}};
 
-	long maxIdleInterval;
+	long maxIdleInterval = Defaults.maxIdleInterval;
 	long connectionStateTtl = Defaults.connectionStateTtl;
 	private long failedAuthAttempts = 0;
 
@@ -1188,6 +1188,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		if(err.code != 0) {
 			/* token errors are assumed to be recoverable */
 			if((err.code >= 40140) && (err.code < 40150)) {
+				/* unless one auth attempt has already been made and has failed */
 				if (failedAuthAttempts >= 1) {
 					return true;
 				}
