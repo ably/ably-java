@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -21,6 +22,9 @@ import io.ably.lib.realtime.Connection;
 import io.ably.lib.realtime.ConnectionEvent;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.realtime.ConnectionStateListener;
+import io.ably.lib.realtime.Channel;
+import io.ably.lib.realtime.ChannelState;
+import io.ably.lib.realtime.ChannelStateListener;
 import io.ably.lib.rest.Auth.AuthMethod;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.ParameterizedTest;
@@ -450,16 +454,30 @@ public class ConnectionManagerTest extends ParameterizedTest {
 
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 			connectionWaiter.waitFor(ConnectionState.connected);
-			String firstConnectionId = ably.connection.id;
-			ably.connection.connectionManager.requestState(ConnectionState.disconnected);
+			final String firstConnectionId = ably.connection.id;
+
+			/* Wait for ttl + idle timer to pass then disconnect */
 			try {
 				Thread.sleep(intervalBeforeReconnecting);
 			} catch(InterruptedException e) {}
+			ably.connection.connectionManager.requestState(ConnectionState.disconnected);
+
+			/* Since newTtl + newIdleInterval has passed we expect the connection to go into a suspended state */
+			connectionWaiter.waitFor(ConnectionState.suspended);
+
 			ably.connect();
-			connectionWaiter.waitFor(ConnectionState.connected);
-			String secondConnectionId = ably.connection.id;
-			assertNotEquals("connection has a different id", firstConnectionId, secondConnectionId);
-			ably.close();
+
+			ably.connection.once(ConnectionEvent.connected, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					assertEquals("Client has reconnected", ConnectionState.connected, state.current);
+					String secondConnectionId = ably.connection.id;
+					assertNotNull(secondConnectionId);
+					assertNotEquals("connection has a different id", firstConnectionId, secondConnectionId);
+					ably.close();
+				}
+			});
+
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
@@ -475,6 +493,25 @@ public class ConnectionManagerTest extends ParameterizedTest {
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			final AblyRealtime ably = new AblyRealtime(opts);
+
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+			connectionWaiter.waitFor(ConnectionState.connected);
+			String firstConnectionId = ably.connection.id;
+			ably.connection.connectionManager.requestState(ConnectionState.disconnected);
+
+			/* Wait for a connected state after the disconnection triggered above */
+			connectionWaiter.waitFor(ConnectionState.connected);
+
+			String secondConnectionId = ably.connection.id;
+			assertNotNull(secondConnectionId);
+			assertEquals("connection has the same id", firstConnectionId, secondConnectionId);
+			ably.close();
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		}
+	}
+
 			ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange state) {
