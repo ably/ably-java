@@ -512,25 +512,76 @@ public class ConnectionManagerTest extends ParameterizedTest {
 		}
 	}
 
+	/**
+	 * RTN15g3. Connect, attach some channels, disconnect, reconnect after (ttl + idle interval) period has passed,
+	 * check that the client reconnects to the same channels using the new connection;
+	 */
+	@Test
+	public void channels_are_reattached_after_reconnecting_when_statettl_plus_idleinterval_has_passed() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			final AblyRealtime ably = new AblyRealtime(opts);
+			final long newTtl = 1000L;
+			final long newIdleInterval = 1000L;
+			/* We want this greater than newTtl + newIdleInterval */
+			final long intervalBeforeReconnecting = 3000L;
+			final String channelName = "test-reattach-after-ttl";
 			ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange state) {
 					try {
-						Thread.sleep(1000L);
-					} catch(InterruptedException e) {}
-					ably.connection.connectionManager.requestState(ConnectionState.disconnected);
+						Field connectionStateField = ably.connection.connectionManager.getClass().getDeclaredField("connectionStateTtl");
+						connectionStateField.setAccessible(true);
+						connectionStateField.setLong(ably.connection.connectionManager, newTtl);
+						Field maxIdleField = ably.connection.connectionManager.getClass().getDeclaredField("maxIdleInterval");
+						maxIdleField.setAccessible(true);
+						maxIdleField.setLong(ably.connection.connectionManager, newIdleInterval);
+					} catch (NoSuchFieldException|IllegalAccessException e) {
+						fail("Unexpected exception in checking connectionStateTtl");
+					}
 				}
 			});
 
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 			connectionWaiter.waitFor(ConnectionState.connected);
-			String firstConnectionId = ably.connection.id;
-			connectionWaiter.waitFor(ConnectionState.disconnected);
+			final String firstConnectionId = ably.connection.id;
+
+			/* Attach to channel */
+			final Channel channel = ably.channels.get(channelName);
+			channel.once(ChannelState.attached, new ChannelStateListener() {
+				@Override
+				public void onChannelStateChanged(ChannelStateChange stateChange) {
+					System.out.println("Channel attached for the first time");
+					assertEquals("Channel is attached", stateChange.current, ChannelState.attached);
+				}
+			});
+			channel.attach();
+
+            /* Before disconnecting wait that newTtl + newIdleInterval has passed */
+            try {
+                Thread.sleep(intervalBeforeReconnecting);
+            } catch(InterruptedException e) {}
+			ably.connection.connectionManager.requestState(ConnectionState.disconnected);
+
+            /* Since newTtl + newIdleInterval has passed we expect the connection to go into a suspended state */
+            connectionWaiter.waitFor(ConnectionState.suspended);
+
 			ably.connect();
-			connectionWaiter.waitFor(ConnectionState.connected);
-			String secondConnectionId = ably.connection.id;
-			assertEquals("connection has the same id", firstConnectionId, secondConnectionId);
-			ably.close();
+			ably.connection.once(ConnectionEvent.connected, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					String secondConnectionId = ably.connection.id;
+					assertNotNull(secondConnectionId);
+					assertNotEquals("connection has a different id", firstConnectionId, secondConnectionId);
+					channel.once(ChannelState.attached, new ChannelStateListener() {
+						@Override
+						public void onChannelStateChanged(ChannelStateChange stateChange) {
+							System.out.println("Channel reattached after a new connection has been established");
+							ably.close();
+						}
+					});
+				}
+			});
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
