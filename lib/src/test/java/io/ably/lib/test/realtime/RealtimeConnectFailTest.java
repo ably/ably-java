@@ -407,7 +407,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 	 * Allow token to expire and try to authorize with already expired token after that. Test that the connection state
 	 * is changed in the correct way and without duplicates:
 	 *
-	 * connecting -> connected -> disconnected -> connecting -> failed
+	 * connecting -> connected -> disconnected -> connecting -> disconnected -> connecting -> disconnected
 	 */
 	@Test
 	public void connect_reauth_failure_state_flow_test() {
@@ -437,44 +437,47 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange state) {
 					/* To go quicker into a disconnected state we use a
-					 * smaller value for connectionStateTtl
+					 * smaller value for maxIdleInterval
 					 */
 					try {
-						Field field = ablyRealtime.connection.connectionManager.getClass().getDeclaredField("connectionStateTtl");
+						Field field = ablyRealtime.connection.connectionManager.getClass().getDeclaredField("maxIdleInterval");
 						field.setAccessible(true);
 						field.setLong(ablyRealtime.connection.connectionManager, 5000L);
 					} catch (NoSuchFieldException|IllegalAccessException e) {
 						fail("Unexpected exception in checking connectionStateTtl");
 					}
-
 				}
 			});
 
 			(new ConnectionWaiter(ablyRealtime.connection)).waitFor(ConnectionState.connected);
-
+			// TODO: improve by collecting and testing also auth attempts
+			final List<ConnectionState> correctHistory = Arrays.asList(
+					ConnectionState.disconnected,
+					ConnectionState.connecting,
+					ConnectionState.disconnected,
+					ConnectionState.connecting,
+					ConnectionState.disconnected
+			);
+			final int maxDisconnections = 3;
 			ablyRealtime.connection.on(new ConnectionStateListener() {
+				int disconnections = 0;
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange state) {
 					synchronized (stateHistory) {
 						stateHistory.add(state.current);
+						if (state.current == ConnectionState.disconnected) {
+							disconnections++;
+							if (disconnections == maxDisconnections) {
+								assertTrue("Verifying state change history", stateHistory.equals(correctHistory));
+								ablyRealtime.close();
+							}
+						}
 					}
 				}
 			});
 
 			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ablyRealtime.connection);
-			connectionWaiter.waitFor(ConnectionState.failed);
-
-			List<ConnectionState> correctHistory = Arrays.asList(
-					ConnectionState.disconnected,
-					ConnectionState.connecting,
-					ConnectionState.failed
-			);
-
-			System.out.println(stateHistory.toString());
-			synchronized (stateHistory) {
-				assertTrue("Verifying state change history", stateHistory.equals(correctHistory));
-			}
-            ablyRealtime.close();
+			connectionWaiter.waitFor(ConnectionState.closed);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
