@@ -671,13 +671,22 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		requestedState = null;
 	}
 
-	private boolean isConnectionStale() {
-	    if (lastActivity == 0) {
+	private boolean checkConnectionStale() {
+	    if(lastActivity == 0) {
 	        return false;
         }
 		long now = System.currentTimeMillis();
 		long intervalSinceLastActivity = now - lastActivity;
-		return intervalSinceLastActivity > (maxIdleInterval + connectionStateTtl);
+		if(intervalSinceLastActivity > (maxIdleInterval + connectionStateTtl)) {
+			/* RTN15g1, RTN15g2 Force a new connection if the previous one is stale */
+			if(connection.id != null) {
+				connection.id = null;
+				connection.key = null;
+				connection.recoveryKey = null;
+			}
+			return true;
+		}
+		return false;
 	}
 
 	private void handleStateChange(StateIndication stateChange) {
@@ -686,11 +695,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		 * to transition to closed, disconnected to suspended depending
 		 * on when we last had a successful connection */
 		if(stateChange.state == ConnectionState.disconnected) {
-			if (isConnectionStale()) {
-				/* RTN15g1, RTN15g2 Force a new connection if the previous one is stale */
-				connection.id = null;
-				connection.key = null;
-				connection.recoveryKey = null;
+			if(checkConnectionStale()) {
 				requestState(ConnectionState.suspended);
 				return;
 			}
@@ -922,6 +927,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		String host = request.fallback;
 		if (host == null)
 			host = hosts.getHost();
+		checkConnectionStale();
 		pendingConnect = new ConnectParams(options);
 		pendingConnect.host = host;
 		lastUsedHost = host;
