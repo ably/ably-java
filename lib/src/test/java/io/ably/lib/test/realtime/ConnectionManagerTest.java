@@ -431,11 +431,13 @@ public class ConnectionManagerTest extends ParameterizedTest {
 	public void connection_has_new_id_when_reconnecting_after_statettl_plus_idleinterval_has_passed() {
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.realtimeRequestTimeout = 2000L;
 			final AblyRealtime ably = new AblyRealtime(opts);
 			final long newTtl = 1000L;
 			final long newIdleInterval = 1000L;
 			/* We want this greater than newTtl + newIdleInterval */
-			final long intervalBeforeReconnecting = 3000L;
+			final long waitInDisconnectedState = 3000L;
+
 			ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange state) {
@@ -456,18 +458,27 @@ public class ConnectionManagerTest extends ParameterizedTest {
 			connectionWaiter.waitFor(ConnectionState.connected);
 			final String firstConnectionId = ably.connection.id;
 
-			/* Wait for ttl + idle timer to pass then disconnect */
-			try {
-				Thread.sleep(intervalBeforeReconnecting);
-			} catch(InterruptedException e) {}
+			ably.connection.once(ConnectionEvent.disconnected, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					synchronized (ably.connection.connectionManager) {
+						try {
+							/* The client will try to reconnect right away after disconnection.
+							 * We want it to stay into a disconnected state long enough
+							 * so that the connection becomes stale.
+							 */
+							ably.connection.connectionManager.wait(waitInDisconnectedState);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+			});
+
 			ably.connection.connectionManager.requestState(ConnectionState.disconnected);
+			connectionWaiter.waitFor(ConnectionState.disconnected);
 
-			/* Since newTtl + newIdleInterval has passed we expect the connection to go into a suspended state */
-			connectionWaiter.waitFor(ConnectionState.suspended);
-
-			ably.connect();
-
-			ably.connection.once(ConnectionEvent.connected, new ConnectionStateListener() {
+            ably.connection.once(ConnectionEvent.connected, new ConnectionStateListener() {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange state) {
 					assertEquals("Client has reconnected", ConnectionState.connected, state.current);
@@ -477,6 +488,8 @@ public class ConnectionManagerTest extends ParameterizedTest {
 					ably.close();
 				}
 			});
+
+			connectionWaiter.waitFor(ConnectionState.connected);
 
 		} catch (AblyException e) {
 			e.printStackTrace();
