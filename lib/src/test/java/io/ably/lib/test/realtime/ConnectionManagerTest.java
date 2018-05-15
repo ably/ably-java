@@ -401,7 +401,6 @@ public class ConnectionManagerTest extends ParameterizedTest {
 			ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange state) {
-					assertEquals(1, 1);
 					try {
 						Field field = ably.connection.connectionManager.getClass().getDeclaredField("connectionStateTtl");
 						field.setAccessible(true);
