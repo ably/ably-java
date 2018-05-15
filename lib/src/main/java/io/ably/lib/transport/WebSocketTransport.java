@@ -258,6 +258,7 @@ public class WebSocketTransport implements ITransport {
 
 		private void flagActivity() {
 			lastActivityTime = System.currentTimeMillis();
+			connectionManager.setLastActivity(lastActivityTime);
 			if (timer == null && connectionManager.maxIdleInterval != 0) {
 				/* No timer currently running because previously there was no
 				 * maxIdleInterval configured, but now there is a

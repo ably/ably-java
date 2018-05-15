@@ -451,7 +451,6 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		if (Log.level <= Log.VERBOSE)
 			Log.v(TAG, "onMessage(): " + message.action + ": " + new String(ProtocolSerializer.writeJSON(message)));
 		try {
-			lastActivity = System.currentTimeMillis();
 			if(protocolListener != null)
 				protocolListener.onRawMessageRecv(message);
 			switch(message.action) {
@@ -993,6 +992,10 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		} catch(AblyException e) {
 			return false;
 		}
+	}
+
+	protected void setLastActivity(long lastActivityTime) {
+		this.lastActivity = lastActivityTime;
 	}
 
 	/******************
