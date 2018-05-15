@@ -569,6 +569,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 				}
 			});
 			channel.attach();
+			(new Helpers.ChannelWaiter(channel)).waitFor(ChannelState.attached);
 
 			/* Before disconnecting wait that newTtl + newIdleInterval has passed */
 			try {
