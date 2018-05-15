@@ -595,6 +595,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 					});
 				}
 			});
+			connectionWaiter.waitFor(ConnectionState.closed);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
