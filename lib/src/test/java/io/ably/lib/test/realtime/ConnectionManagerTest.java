@@ -478,7 +478,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 			ably.connection.connectionManager.requestState(ConnectionState.disconnected);
 			connectionWaiter.waitFor(ConnectionState.disconnected);
 
-            ably.connection.once(ConnectionEvent.connected, new ConnectionStateListener() {
+			ably.connection.once(ConnectionEvent.connected, new ConnectionStateListener() {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange state) {
 					assertEquals("Client has reconnected", ConnectionState.connected, state.current);
@@ -570,15 +570,14 @@ public class ConnectionManagerTest extends ParameterizedTest {
 			});
 			channel.attach();
 
-            /* Before disconnecting wait that newTtl + newIdleInterval has passed */
-            try {
-                Thread.sleep(intervalBeforeReconnecting);
-            } catch(InterruptedException e) {}
+			/* Before disconnecting wait that newTtl + newIdleInterval has passed */
+			try {
+				Thread.sleep(intervalBeforeReconnecting);
+			} catch(InterruptedException e) {}
 			ably.connection.connectionManager.requestState(ConnectionState.disconnected);
 
-            /* Since newTtl + newIdleInterval has passed we expect the connection to go into a suspended state */
-            connectionWaiter.waitFor(ConnectionState.suspended);
-
+			/* Since newTtl + newIdleInterval has passed we expect the connection to go into a suspended state */
+			connectionWaiter.waitFor(ConnectionState.suspended);
 			ably.connect();
 			ably.connection.once(ConnectionEvent.connected, new ConnectionStateListener() {
 				@Override
