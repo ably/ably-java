@@ -489,7 +489,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 				}
 			});
 
-			connectionWaiter.waitFor(ConnectionState.connected);
+			connectionWaiter.waitFor(ConnectionState.closed);
 
 		} catch (AblyException e) {
 			e.printStackTrace();
