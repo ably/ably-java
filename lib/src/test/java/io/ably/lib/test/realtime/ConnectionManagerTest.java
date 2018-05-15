@@ -25,6 +25,7 @@ import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.ChannelStateListener;
+import io.ably.lib.realtime.ChannelEvent;
 import io.ably.lib.rest.Auth.AuthMethod;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.ParameterizedTest;
@@ -537,7 +538,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 			final long newTtl = 1000L;
 			final long newIdleInterval = 1000L;
 			/* We want this greater than newTtl + newIdleInterval */
-			final long intervalBeforeReconnecting = 3000L;
+			final long waitInDisconnectedState = 3000L;
 			final String channelName = "test-reattach-after-ttl";
 			ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
 				@Override
@@ -571,31 +572,38 @@ public class ConnectionManagerTest extends ParameterizedTest {
 			channel.attach();
 			(new Helpers.ChannelWaiter(channel)).waitFor(ChannelState.attached);
 
-			/* Before disconnecting wait that newTtl + newIdleInterval has passed */
-			try {
-				Thread.sleep(intervalBeforeReconnecting);
-			} catch(InterruptedException e) {}
-			ably.connection.connectionManager.requestState(ConnectionState.disconnected);
-
-			/* Since newTtl + newIdleInterval has passed we expect the connection to go into a suspended state */
-			connectionWaiter.waitFor(ConnectionState.suspended);
-			ably.connect();
-			ably.connection.once(ConnectionEvent.connected, new ConnectionStateListener() {
+			ably.connection.once(ConnectionEvent.disconnected, new ConnectionStateListener() {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange state) {
+					synchronized (ably.connection.connectionManager) {
+						try {
+							/* The client will try to reconnect right away after disconnection.
+							 * We want it to stay into a disconnected state long enough
+							 * so that the connection becomes stale.
+							 */
+							ably.connection.connectionManager.wait(waitInDisconnectedState);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+			});
+
+			ably.connection.connectionManager.requestState(ConnectionState.disconnected);
+			connectionWaiter.waitFor(ConnectionState.disconnected);
+
+			channel.on(ChannelEvent.update, new ChannelStateListener() {
+				@Override
+				public void onChannelStateChanged(ChannelStateChange stateChange) {
+					System.out.println("Channel reattached after a new connection has been established");
 					String secondConnectionId = ably.connection.id;
 					assertNotNull(secondConnectionId);
 					assertNotEquals("connection has a different id", firstConnectionId, secondConnectionId);
-					channel.once(ChannelState.attached, new ChannelStateListener() {
-						@Override
-						public void onChannelStateChanged(ChannelStateChange stateChange) {
-							System.out.println("Channel reattached after a new connection has been established");
-							ably.close();
-						}
-					});
+					assertEquals("Resumed is false", stateChange.resumed, false);
+					ably.close();
 				}
 			});
-			connectionWaiter.waitFor(ConnectionState.closed);
+			(new Helpers.ConnectionWaiter(ably.connection)).waitFor(ConnectionState.closed);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
