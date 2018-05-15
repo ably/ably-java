@@ -679,6 +679,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		if(intervalSinceLastActivity > (maxIdleInterval + connectionStateTtl)) {
 			/* RTN15g1, RTN15g2 Force a new connection if the previous one is stale */
 			if(connection.id != null) {
+				Log.v(TAG, "Clearing the old stale connection");
 				connection.id = null;
 				connection.key = null;
 				connection.recoveryKey = null;
