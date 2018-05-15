@@ -408,9 +408,10 @@ public class ConnectionManagerTest extends ParameterizedTest {
 					} catch (NoSuchFieldException|IllegalAccessException e) {
 						fail("Unexpected exception in checking connectionStateTtl");
 					}
-					ably.close();
 				}
 			});
+			new Helpers.ConnectionManagerWaiter(ably.connection.connectionManager).waitFor(ConnectionState.connected);
+			ably.close();
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
