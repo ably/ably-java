@@ -61,9 +61,12 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 	 *
 	 */
 	private void setState(ChannelState newState, ErrorInfo reason) {
-		setState(newState, reason, false);
+		setState(newState, reason, false, true);
 	}
 	private void setState(ChannelState newState, ErrorInfo reason, boolean resumed) {
+		setState(newState, reason, resumed, true);
+	}
+	private void setState(ChannelState newState, ErrorInfo reason, boolean resumed, boolean notifyStateChange) {
 		Log.v(TAG, "setState(): channel = " + name + "; setting " + newState);
 		ChannelStateListener.ChannelStateChange stateChange;
 		synchronized(this) {
@@ -72,8 +75,10 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 			this.reason = stateChange.reason;
 		}
 
-		/* broadcast state change */
-		emit(newState, stateChange);
+		if(notifyStateChange) {
+			/* broadcast state change */
+			emit(newState, stateChange);
+		}
 	}
 
 	/************************************
@@ -115,13 +120,12 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 		/* check preconditions */
 		switch(state) {
 			case attaching:
-				if (listener != null) {
+				if(listener != null) {
 					on(new ChannelStateCompletionListener(listener, ChannelState.attached, ChannelState.failed));
 				}
-
 				return;
 			case attached:
-				if (listener != null) {
+				if(listener != null) {
 					listener.onSuccess();
 				}
 				return;
@@ -321,7 +325,7 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 								return;
 							attachTimer = null;
 							if(state == ChannelState.attaching) {
-								setSuspended(new ErrorInfo(errorMessage, 91200));
+								setSuspended(new ErrorInfo(errorMessage, 91200), true);
 								reattachAfterTimeout();
 							}
 						}
@@ -450,14 +454,18 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 
 	/** (RTL3c) If the connection state enters the SUSPENDED state, then an
 	 * ATTACHING or ATTACHED channel state will transition to SUSPENDED.
+	 * (RTN15c3) The client library should initiate an attach for channels
+	 *  that are in the SUSPENDED state. For all channels in the ATTACHING
+	 *  or ATTACHED state, the client library should fail any previously queued
+	 *  messages for that channel and initiate a new attach.
 	 * This also gets called when a connection enters CONNECTED but with a
 	 * non-fatal error for a failed reconnect (RTN16e). */
-	public synchronized void setSuspended(ErrorInfo reason) {
+	public synchronized void setSuspended(ErrorInfo reason, boolean notifyStateChange) {
 		clearAttachTimers();
 		if (state == ChannelState.attached || state == ChannelState.attaching) {
 			Log.v(TAG, "setSuspended(); channel = " + name);
-			setState(ChannelState.suspended, reason);
-			failQueuedMessages(reason);		
+			setState(ChannelState.suspended, reason, false, notifyStateChange);
+			failQueuedMessages(reason);
 			presence.setSuspended(reason);
 		}
 	}
