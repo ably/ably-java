@@ -276,7 +276,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 						/* (RTL3c) If the connection state enters the SUSPENDED
 						 * state, then an ATTACHING or ATTACHED channel state
 						 * will transition to SUSPENDED. */
-						channel.setSuspended(state.defaultErrorInfo);
+						channel.setSuspended(state.defaultErrorInfo, true);
 						break;
 				}
 			}
@@ -526,10 +526,12 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 		/* if there was a (non-fatal) connection error
 		 * that invalidates an existing connection id, then
-		 * remove all channels attached to the previous id */
+		 * suspend all channels attached to the previous id;
+		 * this will be reattached in setConnection() */
 		ErrorInfo error = message.error;
-		if(error != null && !message.connectionId.equals(connection.id))
-			ably.channels.suspendAll(error);
+		if(error != null && !message.connectionId.equals(connection.id)) {
+			ably.channels.suspendAll(error, false);
+		}
 
 		/* set the new connection id */
 		ConnectionDetails connectionDetails = message.connectionDetails;
@@ -715,9 +717,11 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				stateChange = null;
 				break;
 			case connected:
-				/* we were connected, so retry immediately */
 				setSuspendTime();
-				requestState(ConnectionState.connecting);
+				/* we were connected, so retry immediately */
+				if(!suppressRetry) {
+					requestState(ConnectionState.connecting);
+				}
 				break;
 			case suspended:
 				/* Don't allow a second disconnected to make the state come out of suspended. */
@@ -823,7 +827,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 					}
 
 					/* if our state wants us to retry on timer expiry, do that */
-					if(state.retry) {
+					if(state.retry && !suppressRetry) {
 						requestState(ConnectionState.connecting);
 						continue;
 					}
@@ -1205,6 +1209,15 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	}
 
 	/*******************
+	 * for tests only
+	 ******************/
+
+	void disconnectAndSuppressRetries() {
+		requestState(ConnectionState.disconnected);
+		suppressRetry = true;
+	}
+
+	/*******************
 	 * internal
 	 ******************/
 
@@ -1238,6 +1251,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	private StateIndication indicatedState, requestedState;
 	private ConnectParams pendingConnect;
 	private boolean pendingReauth;
+	private boolean suppressRetry; /* for tests only; modified via reflection */
 	private ITransport transport;
 	private long suspendTime;
 	private long msgSerial;
