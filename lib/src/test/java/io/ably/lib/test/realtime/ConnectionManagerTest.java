@@ -11,6 +11,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -30,6 +32,7 @@ import io.ably.lib.rest.Auth.AuthMethod;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
+import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
@@ -562,6 +565,12 @@ public class ConnectionManagerTest extends ParameterizedTest {
 
 			/* Attach to channel */
 			final Channel channel = ably.channels.get(channelName);
+			channel.on(new ChannelStateListener() {
+				@Override
+				public void onChannelStateChanged(ChannelStateChange stateChange) {
+					System.out.println("======================= state is " + stateChange.current);
+				}
+			});
 			channel.once(ChannelState.attached, new ChannelStateListener() {
 				@Override
 				public void onChannelStateChanged(ChannelStateChange stateChange) {
@@ -569,30 +578,36 @@ public class ConnectionManagerTest extends ParameterizedTest {
 					assertEquals("Channel is attached", stateChange.current, ChannelState.attached);
 				}
 			});
+
+			/* attach and wait for the channel to be attached */
 			channel.attach();
-			(new Helpers.ChannelWaiter(channel)).waitFor(ChannelState.attached);
+			ChannelWaiter channelWaiter = new Helpers.ChannelWaiter(channel);
+			channelWaiter.waitFor(ChannelState.attached);
 
-			ably.connection.once(ConnectionEvent.disconnected, new ConnectionStateListener() {
-				@Override
-				public void onConnectionStateChanged(ConnectionStateChange state) {
-					synchronized (ably.connection.connectionManager) {
-						try {
-							/* The client will try to reconnect right away after disconnection.
-							 * We want it to stay into a disconnected state long enough
-							 * so that the connection becomes stale.
-							 */
-							ably.connection.connectionManager.wait(waitInDisconnectedState);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-					}
-				}
-			});
+			/* suppress automatic retries by the connection manager */
+			try {
+				Method method = ably.connection.connectionManager.getClass().getDeclaredMethod("disconnectAndSuppressRetries");
+				method.setAccessible(true);
+				method.invoke(ably.connection.connectionManager);
+			} catch (NoSuchMethodException|IllegalAccessException|InvocationTargetException e) {
+				fail("Unexpected exception in suppressing retries");
+			}
 
-			ably.connection.connectionManager.requestState(ConnectionState.disconnected);
 			connectionWaiter.waitFor(ConnectionState.disconnected);
+			assertEquals("Disconnected state was not reached", ConnectionState.disconnected, ably.connection.state);
+			System.out.println("=============================== DISCONNECTED ");
 
-			channel.on(ChannelEvent.update, new ChannelStateListener() {
+			try { Thread.sleep(waitInDisconnectedState); } catch(InterruptedException e) {}
+
+			ably.connection.connect();
+			connectionWaiter.waitFor(ConnectionState.connected);
+
+			/* verify a new connection was assigned */
+			assertNotEquals("A new connection was created", firstConnectionId, ably.connection.id);
+			System.out.println("=============================== connection is new " + firstConnectionId + " " + ably.connection.id);
+			System.out.println("channel state is " + channel.state);
+
+			channel.once(ChannelEvent.attached, new ChannelStateListener() {
 				@Override
 				public void onChannelStateChanged(ChannelStateChange stateChange) {
 					System.out.println("Channel reattached after a new connection has been established");
@@ -603,7 +618,10 @@ public class ConnectionManagerTest extends ParameterizedTest {
 					ably.close();
 				}
 			});
+            (new Helpers.ChannelWaiter(channel)).waitFor(ChannelState.attached);
+			/*  */
 			(new Helpers.ConnectionWaiter(ably.connection)).waitFor(ConnectionState.closed);
+
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
