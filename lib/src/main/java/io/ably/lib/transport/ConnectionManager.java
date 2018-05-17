@@ -508,7 +508,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			if (connection.key != null)
 				connection.recoveryKey = connection.key + ":" + message.connectionSerial;
 		}
-		ably.channels.onChannelMessage(transport, message);						
+		ably.channels.onChannelMessage(transport, message);
 	}
 
 	private synchronized void onConnected(ProtocolMessage message) {
@@ -519,17 +519,28 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		 *  - otherwise (the realtime host has been overridden or has fallen
 		 *    back), set http to the same as realtime.
 		 */
-		if (pendingConnect.host == options.realtimeHost)
+		if (pendingConnect.host == options.realtimeHost) {
 			ably.httpCore.setHost(options.restHost);
-		else
+		} else {
 			ably.httpCore.setHost(pendingConnect.host);
+		}
 
-		/* if there was a (non-fatal) connection error
-		 * that invalidates an existing connection id, then
-		 * suspend all channels attached to the previous id;
+		/* if the returned connection id differs from
+		 * the existing connection id, then this means
+		 * we need to suspend all existing attachments to
+		 * the old connection.
+		 * If realtime did not reply with an error, it
+		 * signifies that this was a result of an earlier
+		 * connection being invalidated due to being stale.
+		 *
+		 * Suspend all channels attached to the previous id;
 		 * this will be reattached in setConnection() */
 		ErrorInfo error = message.error;
-		if(error != null && !message.connectionId.equals(connection.id)) {
+		if(connection.id != null && !message.connectionId.equals(connection.id)) {
+			/* we need to suspend the original connection */
+			if(error == null) {
+				error = REASON_SUSPENDED;
+			}
 			ably.channels.suspendAll(error, false);
 		}
 
@@ -678,10 +689,12 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		long now = System.currentTimeMillis();
 		long intervalSinceLastActivity = now - lastActivity;
 		if(intervalSinceLastActivity > (maxIdleInterval + connectionStateTtl)) {
-			/* RTN15g1, RTN15g2 Force a new connection if the previous one is stale */
-			if(connection.id != null) {
-				Log.v(TAG, "Clearing the old stale connection");
-				connection.id = null;
+			/* RTN15g1, RTN15g2 Force a new connection if the previous one is stale;
+			 * Clearing connection.key will ensure that we don't attempt to resume;
+			 * leaving the original connection.id will mean that we notice at
+			 * connection time that the connectionId has changed */
+			if(connection.key != null) {
+				Log.v(TAG, "Clearing stale connection key to suppress resume");
 				connection.key = null;
 				connection.recoveryKey = null;
 			}
