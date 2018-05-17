@@ -531,7 +531,8 @@ public class ConnectionManagerTest extends ParameterizedTest {
 
 	/**
 	 * RTN15g3. Connect, attach some channels, disconnect, reconnect after (ttl + idle interval) period has passed,
-	 * check that the client reconnects to the same channels using the new connection;
+	 * check that the client reconnects with a different connection and that the channels attached during the first
+	 * connection are correctly reattached;
 	 */
 	@Test
 	public void channels_are_reattached_after_reconnecting_when_statettl_plus_idleinterval_has_passed() {
@@ -565,17 +566,11 @@ public class ConnectionManagerTest extends ParameterizedTest {
 
 			/* Attach to channel */
 			final Channel channel = ably.channels.get(channelName);
-			channel.on(new ChannelStateListener() {
-				@Override
-				public void onChannelStateChanged(ChannelStateChange stateChange) {
-					System.out.println("======================= state is " + stateChange.current);
-				}
-			});
 			channel.once(ChannelState.attached, new ChannelStateListener() {
 				@Override
 				public void onChannelStateChanged(ChannelStateChange stateChange) {
 					System.out.println("Channel attached for the first time");
-					assertEquals("Channel is attached", stateChange.current, ChannelState.attached);
+					assertEquals("Channel was not attached", stateChange.current, ChannelState.attached);
 				}
 			});
 
@@ -595,33 +590,25 @@ public class ConnectionManagerTest extends ParameterizedTest {
 
 			connectionWaiter.waitFor(ConnectionState.disconnected);
 			assertEquals("Disconnected state was not reached", ConnectionState.disconnected, ably.connection.state);
-			System.out.println("=============================== DISCONNECTED ");
 
+			/* Wait for the connection to go stale, then reconnect */
 			try { Thread.sleep(waitInDisconnectedState); } catch(InterruptedException e) {}
-
 			ably.connection.connect();
 			connectionWaiter.waitFor(ConnectionState.connected);
 
-			/* verify a new connection was assigned */
-			assertNotEquals("A new connection was created", firstConnectionId, ably.connection.id);
-			System.out.println("=============================== connection is new " + firstConnectionId + " " + ably.connection.id);
-			System.out.println("channel state is " + channel.state);
-
+			/* Verify the connection is new and that channel is reattached with resumed false. Then close. */
 			channel.once(ChannelEvent.attached, new ChannelStateListener() {
 				@Override
 				public void onChannelStateChanged(ChannelStateChange stateChange) {
 					System.out.println("Channel reattached after a new connection has been established");
 					String secondConnectionId = ably.connection.id;
 					assertNotNull(secondConnectionId);
-					assertNotEquals("connection has a different id", firstConnectionId, secondConnectionId);
-					assertEquals("Resumed is false", stateChange.resumed, false);
+					assertNotEquals("Connection has the same id", firstConnectionId, secondConnectionId);
+					assertEquals("Resumed is true and should be false", stateChange.resumed, false);
 					ably.close();
 				}
 			});
-            (new Helpers.ChannelWaiter(channel)).waitFor(ChannelState.attached);
-			/*  */
 			(new Helpers.ConnectionWaiter(ably.connection)).waitFor(ConnectionState.closed);
-
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
