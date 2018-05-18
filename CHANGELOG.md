@@ -1,5 +1,30 @@
 # Change Log
 
+## [1.0.3](https://github.com/ably/ably-java/tree/1.0.3)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.0.2...1.0.3)
+
+**Implemented enhancements:**
+
+- Document supported platforms [\#363](https://github.com/ably/ably-java/issues/363)
+
+**Fixed bugs:**
+
+- Received messages have no event names [\#366](https://github.com/ably/ably-java/issues/366)
+- Tests failing because of "no output in the last 10m" [\#330](https://github.com/ably/ably-java/issues/330)
+
+**Merged pull requests:**
+
+- Prevent Travis timeout on Android tests [\#391](https://github.com/ably/ably-java/pull/391) ([funkyboy](https://github.com/funkyboy))
+- Add connection freshness check [\#390](https://github.com/ably/ably-java/pull/390) ([funkyboy](https://github.com/funkyboy))
+- Add connectionStateTtl [\#389](https://github.com/ably/ably-java/pull/389) ([funkyboy](https://github.com/funkyboy))
+- Fix invalid data test [\#385](https://github.com/ably/ably-java/pull/385) ([funkyboy](https://github.com/funkyboy))
+- Update README with supported platforms [\#380](https://github.com/ably/ably-java/pull/380) ([funkyboy](https://github.com/funkyboy))
+- Fix creation of ErrorInfo when authCallback is invalid [\#378](https://github.com/ably/ably-java/pull/378) ([funkyboy](https://github.com/funkyboy))
+- Use exception instead of deprecation notice [\#376](https://github.com/ably/ably-java/pull/376) ([funkyboy](https://github.com/funkyboy))
+- Add/fix Travis tests [\#372](https://github.com/ably/ably-java/pull/372) ([funkyboy](https://github.com/funkyboy))
+- Fix android:assembleRelease [\#370](https://github.com/ably/ably-java/pull/370) ([paddybyers](https://github.com/paddybyers))
+
 ## [v1.0.2](https://github.com/ably/ably-java/tree/v1.0.2)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.0.1...v1.0.2)
