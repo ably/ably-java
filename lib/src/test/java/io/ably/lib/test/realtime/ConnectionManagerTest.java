@@ -465,39 +465,27 @@ public class ConnectionManagerTest extends ParameterizedTest {
 			connectionWaiter.waitFor(ConnectionState.connected);
 			final String firstConnectionId = ably.connection.id;
 
-			ably.connection.once(ConnectionEvent.disconnected, new ConnectionStateListener() {
-				@Override
-				public void onConnectionStateChanged(ConnectionStateChange state) {
-					synchronized (ably.connection.connectionManager) {
-						try {
-							/* The client will try to reconnect right away after disconnection.
-							 * We want it to stay into a disconnected state long enough
-							 * so that the connection becomes stale.
-							 */
-							ably.connection.connectionManager.wait(waitInDisconnectedState);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-					}
-				}
-			});
-
-			ably.connection.connectionManager.requestState(ConnectionState.disconnected);
+			/* suppress automatic retries by the connection manager and disconnect */
+			try {
+				Method method = ably.connection.connectionManager.getClass().getDeclaredMethod("disconnectAndSuppressRetries");
+				method.setAccessible(true);
+				method.invoke(ably.connection.connectionManager);
+			} catch (NoSuchMethodException|IllegalAccessException|InvocationTargetException e) {
+				fail("Unexpected exception in suppressing retries");
+			}
 			connectionWaiter.waitFor(ConnectionState.disconnected);
+			assertEquals("Disconnected state was not reached", ConnectionState.disconnected, ably.connection.state);
 
-			ably.connection.once(ConnectionEvent.connected, new ConnectionStateListener() {
-				@Override
-				public void onConnectionStateChanged(ConnectionStateChange state) {
-					assertEquals("Client has reconnected", ConnectionState.connected, state.current);
-					String secondConnectionId = ably.connection.id;
-					assertNotNull(secondConnectionId);
-					assertNotEquals("connection has a different id", firstConnectionId, secondConnectionId);
-					ably.close();
-				}
-			});
+			/* Wait for the connection to go stale, then reconnect */
+			try { Thread.sleep(waitInDisconnectedState); } catch(InterruptedException e) {}
+			ably.connection.connect();
+			connectionWaiter.waitFor(ConnectionState.connected);
+			assertEquals("Connected state was not reached", ConnectionState.connected, ably.connection.state);
 
-			connectionWaiter.waitFor(ConnectionState.closed);
-
+			/* Verify the connection is new */
+			assertNotNull(ably.connection.id);
+			assertNotEquals("Connection has the same id", firstConnectionId, ably.connection.id);
+			ably.close();
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
