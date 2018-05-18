@@ -410,9 +410,11 @@ public class ConnectionManagerTest extends ParameterizedTest {
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			final AblyRealtime ably = new AblyRealtime(opts);
+			final boolean[] callbackWasRun = new boolean[1];
 			ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange state) {
+					callbackWasRun[0] = true;
 					try {
 						Field field = ably.connection.connectionManager.getClass().getDeclaredField("connectionStateTtl");
 						field.setAccessible(true);
@@ -423,6 +425,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 				}
 			});
 			new Helpers.ConnectionManagerWaiter(ably.connection.connectionManager).waitFor(ConnectionState.connected);
+			assertTrue("Connected callback was not run", callbackWasRun[0]);
 			ably.close();
 		} catch (AblyException e) {
 			e.printStackTrace();
