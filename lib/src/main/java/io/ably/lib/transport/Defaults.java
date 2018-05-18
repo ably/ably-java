@@ -26,7 +26,6 @@ public class Defaults {
 	/* Timeouts */
 	public static int TIMEOUT_CONNECT               = 15000;
 	public static int TIMEOUT_DISCONNECT            = 30000;
-	public static int TIMEOUT_SUSPEND               = 120000;
 	public static int TIMEOUT_CHANNEL_RETRY			= 15000;
 
 	/* TO313 */
@@ -37,6 +36,8 @@ public class Defaults {
 	public static long realtimeRequestTimeout = 10000L;
 	/* CD2h (but no default in the spec) */
 	public static long maxIdleInterval = 20000L;
+	/* DF1a */
+	public static long connectionStateTtl = 60000L;
 
 	public static final String[] TRANSPORTS         = new String[]{"web_socket"};
 	public static String TRANSPORT = "io.ably.lib.transport.WebSocketTransport$Factory";

@@ -16,9 +16,11 @@ public class ConnectionDetails {
 	public Long maxInboundRate;
 	public Long maxFrameSize;
 	public Long maxIdleInterval;
+	public Long connectionStateTtl;
 
 	ConnectionDetails() {
 		maxIdleInterval = Defaults.maxIdleInterval;
+		connectionStateTtl = Defaults.connectionStateTtl;
 	}
 
 	ConnectionDetails readMsgpack(MessageUnpacker unpacker) throws IOException {
@@ -49,6 +51,9 @@ public class ConnectionDetails {
 					break;
 				case "maxIdleInterval":
 					maxIdleInterval = unpacker.unpackLong();
+					break;
+				case "connectionStateTtl":
+					connectionStateTtl = unpacker.unpackLong();
 					break;
 				default:
 					Log.v(TAG, "Unexpected field: " + fieldName);

@@ -145,13 +145,14 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		put(ConnectionState.connecting, new StateInfo(ConnectionState.connecting, true, false, false, false, Defaults.TIMEOUT_CONNECT, null));
 		put(ConnectionState.connected, new StateInfo(ConnectionState.connected, false, true, false, false, 0, null));
 		put(ConnectionState.disconnected, new StateInfo(ConnectionState.disconnected, true, false, false, true, Defaults.TIMEOUT_DISCONNECT, REASON_DISCONNECTED));
-		put(ConnectionState.suspended, new StateInfo(ConnectionState.suspended, false, false, false, true, Defaults.TIMEOUT_SUSPEND, REASON_SUSPENDED));
+		put(ConnectionState.suspended, new StateInfo(ConnectionState.suspended, false, false, false, true, Defaults.connectionStateTtl, REASON_SUSPENDED));
 		put(ConnectionState.closing, new StateInfo(ConnectionState.closing, false, false, false, false, Defaults.TIMEOUT_CONNECT, REASON_CLOSED));
 		put(ConnectionState.closed, new StateInfo(ConnectionState.closed, false, false, true, false, 0, REASON_CLOSED));
 		put(ConnectionState.failed, new StateInfo(ConnectionState.failed, false, false, true, false, 0, REASON_FAILED));
 	}};
 
-	long maxIdleInterval;
+	long maxIdleInterval = Defaults.maxIdleInterval;
+	long connectionStateTtl = Defaults.connectionStateTtl;
 
 	public ErrorInfo getStateErrorInfo() {
 		return state.defaultErrorInfo;
@@ -275,7 +276,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 						/* (RTL3c) If the connection state enters the SUSPENDED
 						 * state, then an ATTACHING or ATTACHED channel state
 						 * will transition to SUSPENDED. */
-						channel.setSuspended(state.defaultErrorInfo);
+						channel.setSuspended(state.defaultErrorInfo, true);
 						break;
 				}
 			}
@@ -507,7 +508,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			if (connection.key != null)
 				connection.recoveryKey = connection.key + ":" + message.connectionSerial;
 		}
-		ably.channels.onChannelMessage(transport, message);						
+		ably.channels.onChannelMessage(transport, message);
 	}
 
 	private synchronized void onConnected(ProtocolMessage message) {
@@ -518,17 +519,30 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		 *  - otherwise (the realtime host has been overridden or has fallen
 		 *    back), set http to the same as realtime.
 		 */
-		if (pendingConnect.host == options.realtimeHost)
+		if (pendingConnect.host == options.realtimeHost) {
 			ably.httpCore.setHost(options.restHost);
-		else
+		} else {
 			ably.httpCore.setHost(pendingConnect.host);
+		}
 
-		/* if there was a (non-fatal) connection error
-		 * that invalidates an existing connection id, then
-		 * remove all channels attached to the previous id */
+		/* if the returned connection id differs from
+		 * the existing connection id, then this means
+		 * we need to suspend all existing attachments to
+		 * the old connection.
+		 * If realtime did not reply with an error, it
+		 * signifies that this was a result of an earlier
+		 * connection being invalidated due to being stale.
+		 *
+		 * Suspend all channels attached to the previous id;
+		 * this will be reattached in setConnection() */
 		ErrorInfo error = message.error;
-		if(error != null && !message.connectionId.equals(connection.id))
-			ably.channels.suspendAll(error);
+		if(connection.id != null && !message.connectionId.equals(connection.id)) {
+			/* we need to suspend the original connection */
+			if(error == null) {
+				error = REASON_SUSPENDED;
+			}
+			ably.channels.suspendAll(error, false);
+		}
 
 		/* set the new connection id */
 		ConnectionDetails connectionDetails = message.connectionDetails;
@@ -550,6 +564,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 
 		/* Get any parameters from connectionDetails. */
 		maxIdleInterval = connectionDetails.maxIdleInterval;
+		connectionStateTtl = connectionDetails.connectionStateTtl;
 
 		/* set the clientId resolved from token, if any */
 		String clientId = connectionDetails.clientId;
@@ -667,12 +682,37 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		requestedState = null;
 	}
 
+	private boolean checkConnectionStale() {
+	    if(lastActivity == 0) {
+	        return false;
+	    }
+		long now = System.currentTimeMillis();
+		long intervalSinceLastActivity = now - lastActivity;
+		if(intervalSinceLastActivity > (maxIdleInterval + connectionStateTtl)) {
+			/* RTN15g1, RTN15g2 Force a new connection if the previous one is stale;
+			 * Clearing connection.key will ensure that we don't attempt to resume;
+			 * leaving the original connection.id will mean that we notice at
+			 * connection time that the connectionId has changed */
+			if(connection.key != null) {
+				Log.v(TAG, "Clearing stale connection key to suppress resume");
+				connection.key = null;
+				connection.recoveryKey = null;
+			}
+			return true;
+		}
+		return false;
+	}
+
 	private void handleStateChange(StateIndication stateChange) {
 		/* if we have had a disconnected state indication
 		 * from the transport then we have to decide whether
 		 * to transition to closed, disconnected to suspended depending
 		 * on when we last had a successful connection */
 		if(stateChange.state == ConnectionState.disconnected) {
+			if(checkConnectionStale()) {
+				requestState(ConnectionState.suspended);
+				return;
+			}
 			switch(state.state) {
 			case connecting:
 				stateChange = checkSuspend(stateChange);
@@ -690,9 +730,11 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				stateChange = null;
 				break;
 			case connected:
-				/* we were connected, so retry immediately */
 				setSuspendTime();
-				requestState(ConnectionState.connecting);
+				/* we were connected, so retry immediately */
+				if(!suppressRetry) {
+					requestState(ConnectionState.connecting);
+				}
 				break;
 			case suspended:
 				/* Don't allow a second disconnected to make the state come out of suspended. */
@@ -714,7 +756,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	}
 
 	private void setSuspendTime() {
-		suspendTime = (System.currentTimeMillis() + Defaults.TIMEOUT_SUSPEND);
+		suspendTime = (System.currentTimeMillis() + connectionStateTtl);
 	}
 
 	private StateIndication checkSuspend(StateIndication stateChange) {
@@ -798,7 +840,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 					}
 
 					/* if our state wants us to retry on timer expiry, do that */
-					if(state.retry) {
+					if(state.retry && !suppressRetry) {
 						requestState(ConnectionState.connecting);
 						continue;
 					}
@@ -901,6 +943,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		String host = request.fallback;
 		if (host == null)
 			host = hosts.getHost();
+		checkConnectionStale();
 		pendingConnect = new ConnectParams(options);
 		pendingConnect.host = host;
 		lastUsedHost = host;
@@ -966,6 +1009,10 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		} catch(AblyException e) {
 			return false;
 		}
+	}
+
+	protected void setLastActivity(long lastActivityTime) {
+		this.lastActivity = lastActivityTime;
 	}
 
 	/******************
@@ -1175,6 +1222,15 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	}
 
 	/*******************
+	 * for tests only
+	 ******************/
+
+	void disconnectAndSuppressRetries() {
+		requestState(ConnectionState.disconnected);
+		suppressRetry = true;
+	}
+
+	/*******************
 	 * internal
 	 ******************/
 
@@ -1208,9 +1264,11 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	private StateIndication indicatedState, requestedState;
 	private ConnectParams pendingConnect;
 	private boolean pendingReauth;
+	private boolean suppressRetry; /* for tests only; modified via reflection */
 	private ITransport transport;
 	private long suspendTime;
 	private long msgSerial;
+	private long lastActivity;
 
 	/* for debug/test only */
 	private RawProtocolListener protocolListener;

@@ -159,10 +159,10 @@ public class AblyRealtime extends AblyRest {
 			channel.onChannelMessage(msg);
 		}
 
-		public void suspendAll(ErrorInfo error) {
+		public void suspendAll(ErrorInfo error, boolean notifyStateChange) {
 			for(Iterator<Map.Entry<String, Channel>> it = entrySet().iterator(); it.hasNext(); ) {
 				Map.Entry<String, Channel> entry = it.next();
-				entry.getValue().setSuspended(error);
+				entry.getValue().setSuspended(error, notifyStateChange);
 			}
 		}
 	}

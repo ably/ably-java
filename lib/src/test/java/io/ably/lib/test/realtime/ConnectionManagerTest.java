@@ -4,10 +4,18 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -19,10 +27,15 @@ import io.ably.lib.realtime.Connection;
 import io.ably.lib.realtime.ConnectionEvent;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.realtime.ConnectionStateListener;
+import io.ably.lib.realtime.Channel;
+import io.ably.lib.realtime.ChannelState;
+import io.ably.lib.realtime.ChannelStateListener;
+import io.ably.lib.realtime.ChannelEvent;
 import io.ably.lib.rest.Auth.AuthMethod;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
+import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
@@ -383,6 +396,229 @@ public class ConnectionManagerTest extends ParameterizedTest {
 				}
 			});
 
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Connect and then verify that the connection manager has the default value for connectionStateTtl;
+	 */
+	@Test
+	public void connection_details_has_ttl() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			final AblyRealtime ably = new AblyRealtime(opts);
+			final boolean[] callbackWasRun = new boolean[1];
+			ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					callbackWasRun[0] = true;
+					try {
+						Field field = ably.connection.connectionManager.getClass().getDeclaredField("connectionStateTtl");
+						field.setAccessible(true);
+						assertEquals("Verify connectionStateTtl has the default value", field.get(ably.connection.connectionManager), 120000L);
+					} catch (NoSuchFieldException|IllegalAccessException e) {
+						fail("Unexpected exception in checking connectionStateTtl");
+					}
+				}
+			});
+			new Helpers.ConnectionManagerWaiter(ably.connection.connectionManager).waitFor(ConnectionState.connected);
+			assertTrue("Connected callback was not run", callbackWasRun[0]);
+			ably.close();
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * RTN15g1, RTN15g2. Connect, disconnect, reconnect after (ttl + idle interval) period has passed,
+	 * check that the connection is a new one;
+	 */
+	@Test
+	public void connection_has_new_id_when_reconnecting_after_statettl_plus_idleinterval_has_passed() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.realtimeRequestTimeout = 2000L;
+			final AblyRealtime ably = new AblyRealtime(opts);
+			final long newTtl = 1000L;
+			final long newIdleInterval = 1000L;
+			/* We want this greater than newTtl + newIdleInterval */
+			final long waitInDisconnectedState = 3000L;
+
+			ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					try {
+						Field connectionStateField = ably.connection.connectionManager.getClass().getDeclaredField("connectionStateTtl");
+						connectionStateField.setAccessible(true);
+						connectionStateField.setLong(ably.connection.connectionManager, newTtl);
+						Field maxIdleField = ably.connection.connectionManager.getClass().getDeclaredField("maxIdleInterval");
+						maxIdleField.setAccessible(true);
+						maxIdleField.setLong(ably.connection.connectionManager, newIdleInterval);
+					} catch (NoSuchFieldException|IllegalAccessException e) {
+						fail("Unexpected exception in checking connectionStateTtl");
+					}
+				}
+			});
+
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+			connectionWaiter.waitFor(ConnectionState.connected);
+			final String firstConnectionId = ably.connection.id;
+
+			/* suppress automatic retries by the connection manager and disconnect */
+			try {
+				Method method = ably.connection.connectionManager.getClass().getDeclaredMethod("disconnectAndSuppressRetries");
+				method.setAccessible(true);
+				method.invoke(ably.connection.connectionManager);
+			} catch (NoSuchMethodException|IllegalAccessException|InvocationTargetException e) {
+				fail("Unexpected exception in suppressing retries");
+			}
+			connectionWaiter.waitFor(ConnectionState.disconnected);
+			assertEquals("Disconnected state was not reached", ConnectionState.disconnected, ably.connection.state);
+
+			/* Wait for the connection to go stale, then reconnect */
+			try { Thread.sleep(waitInDisconnectedState); } catch(InterruptedException e) {}
+			ably.connection.connect();
+			connectionWaiter.waitFor(ConnectionState.connected);
+			assertEquals("Connected state was not reached", ConnectionState.connected, ably.connection.state);
+
+			/* Verify the connection is new */
+			assertNotNull(ably.connection.id);
+			assertNotEquals("Connection has the same id", firstConnectionId, ably.connection.id);
+			ably.close();
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * RTN15g1, RTN15g2. Connect, disconnect, reconnect before (ttl + idle interval) period has passed,
+	 * check that the connection is the same;
+	 */
+	@Test
+	public void connection_has_same_id_when_reconnecting_before_statettl_plus_idleinterval_has_passed() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			final AblyRealtime ably = new AblyRealtime(opts);
+
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+			connectionWaiter.waitFor(ConnectionState.connected);
+			String firstConnectionId = ably.connection.id;
+			ably.connection.connectionManager.requestState(ConnectionState.disconnected);
+
+			/* Wait for a connected state after the disconnection triggered above */
+			connectionWaiter.waitFor(ConnectionState.connected);
+
+			String secondConnectionId = ably.connection.id;
+			assertNotNull(secondConnectionId);
+			assertEquals("connection has the same id", firstConnectionId, secondConnectionId);
+			ably.close();
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * RTN15g3. Connect, attach some channels, disconnect, reconnect after (ttl + idle interval) period has passed,
+	 * check that the client reconnects with a different connection and that the channels attached during the first
+	 * connection are correctly reattached;
+	 */
+	@Test
+	public void channels_are_reattached_after_reconnecting_when_statettl_plus_idleinterval_has_passed() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			final AblyRealtime ably = new AblyRealtime(opts);
+			final long newTtl = 1000L;
+			final long newIdleInterval = 1000L;
+			/* We want this greater than newTtl + newIdleInterval */
+			final long waitInDisconnectedState = 3000L;
+			final List<String> attachedChannelHistory = new ArrayList<String>();
+			final List<String> expectedAttachedChannelHistory = Arrays.asList("attaching", "attached", "attaching", "attached");
+			final List<String> suspendedChannelHistory = new ArrayList<String>();
+			final List<String> expectedSuspendedChannelHistory = Arrays.asList("attaching", "attached");
+			ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					try {
+						Field connectionStateField = ably.connection.connectionManager.getClass().getDeclaredField("connectionStateTtl");
+						connectionStateField.setAccessible(true);
+						connectionStateField.setLong(ably.connection.connectionManager, newTtl);
+						Field maxIdleField = ably.connection.connectionManager.getClass().getDeclaredField("maxIdleInterval");
+						maxIdleField.setAccessible(true);
+						maxIdleField.setLong(ably.connection.connectionManager, newIdleInterval);
+					} catch (NoSuchFieldException|IllegalAccessException e) {
+						fail("Unexpected exception in checking connectionStateTtl");
+					}
+				}
+			});
+
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+			connectionWaiter.waitFor(ConnectionState.connected);
+			final String firstConnectionId = ably.connection.id;
+
+			/* Prepare channels */
+			final Channel attachedChannel = ably.channels.get("test-reattach-after-ttl");
+			ChannelWaiter attachedChannelWaiter = new Helpers.ChannelWaiter(attachedChannel);
+			attachedChannel.on(new ChannelStateListener() {
+				@Override
+				public void onChannelStateChanged(ChannelStateChange stateChange) {
+					attachedChannelHistory.add(stateChange.current.name());
+				}
+			});
+			final Channel suspendedChannel = ably.channels.get("test-reattach-suspended-after-ttl");
+			suspendedChannel.state = ChannelState.suspended;
+			ChannelWaiter suspendedChannelWaiter = new Helpers.ChannelWaiter(suspendedChannel);
+			suspendedChannel.on(new ChannelStateListener() {
+				@Override
+				public void onChannelStateChanged(ChannelStateChange stateChange) {
+					suspendedChannelHistory.add(stateChange.current.name());
+				}
+			});
+
+			/* attach first channel and wait for it to be attached */
+			attachedChannel.attach();
+			attachedChannelWaiter.waitFor(ChannelState.attached);
+
+			/* suppress automatic retries by the connection manager and disconnect */
+			try {
+				Method method = ably.connection.connectionManager.getClass().getDeclaredMethod("disconnectAndSuppressRetries");
+				method.setAccessible(true);
+				method.invoke(ably.connection.connectionManager);
+			} catch (NoSuchMethodException|IllegalAccessException|InvocationTargetException e) {
+				fail("Unexpected exception in suppressing retries");
+			}
+			connectionWaiter.waitFor(ConnectionState.disconnected);
+			assertEquals("Disconnected state was not reached", ConnectionState.disconnected, ably.connection.state);
+
+			/* Wait for the connection to go stale, then reconnect */
+			try { Thread.sleep(waitInDisconnectedState); } catch(InterruptedException e) {}
+			ably.connection.connect();
+			connectionWaiter.waitFor(ConnectionState.connected);
+			assertEquals("Connected state was not reached", ConnectionState.connected, ably.connection.state);
+
+			/* Verify the connection is new */
+			assertNotNull(ably.connection.id);
+			assertNotEquals("Connection has the same id", firstConnectionId, ably.connection.id);
+
+			/* Verify that the attached channel is reattached with resumed false */
+			attachedChannel.once(ChannelEvent.attached, new ChannelStateListener() {
+				@Override
+				public void onChannelStateChanged(ChannelStateChange stateChange) {
+					assertEquals("Resumed is true and should be false", stateChange.resumed, false);
+				}
+			});
+
+			/* Wait for both channels to reattach and verify state histories match the expected ones */
+			attachedChannelWaiter.waitFor(ChannelState.attached);
+			suspendedChannelWaiter.waitFor(ChannelState.attached);
+			assertEquals("Attached channel histories do not match", attachedChannelHistory, expectedAttachedChannelHistory);
+			assertEquals("Suspended channel histories do not match", suspendedChannelHistory, expectedSuspendedChannelHistory);
+			ably.close();
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
