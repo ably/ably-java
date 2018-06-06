@@ -16,7 +16,6 @@ import java.util.Map;
 
 public class RestJWTTest extends ParameterizedTest {
 
-	private static String echoServer = "https://ably-echoserver.herokuapp.com/createJWT"; // TODO: change this
 	private AblyRest restJWTRequester;
 	private ClientOptions jwtRequesterOptions;
 	private ClientOptions options;
@@ -153,20 +152,6 @@ public class RestJWTTest extends ParameterizedTest {
 			fail("Failure in fetching a JWT token" + e);
 			return null;
 		}
-	}
-
-	/**
-	 * Helper method to merge auth parameters
-	 */
-	private static Param[] mergeParams(Param[] target, Param[] src) {
-		Map<String, Param> merged = new HashMap<String, Param>();
-		if(target != null) {
-			for(Param param : target) { merged.put(param.key, param); }
-		}
-		if(src != null) {
-			for(Param param : src) { merged.put(param.key, param); }
-		}
-		return merged.values().toArray(new Param[merged.size()]);
 	}
 
 }
