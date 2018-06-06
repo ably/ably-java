@@ -607,7 +607,7 @@ public class Auth {
 								return null;
 							}
 							if(contentType != null) {
-								if(contentType.startsWith("text/plain")) {
+								if(contentType.startsWith("text/plain") || contentType.startsWith("application/jwt")) {
 									/* assumed to be token string */
 									String token = new String(body);
 									return new TokenDetails(token);
