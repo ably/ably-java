@@ -2,11 +2,13 @@ package io.ably.lib.test.realtime;
 
 import static org.junit.Assert.*;
 
+import io.ably.lib.debug.DebugOptions;
+import io.ably.lib.debug.DebugOptions.RawProtocolListener;
 import io.ably.lib.test.common.Setup.Key;
-import io.ably.lib.types.*;
 import org.junit.Before;
 import org.junit.Test;
 
+import io.ably.lib.types.*;
 import io.ably.lib.realtime.*;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth.*;
@@ -28,6 +30,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
 	Param[] keys = new Param[]{ new Param("keyName", key.keyName), new Param("keySecret", key.keySecret) };
 	Param[] clientIdParam = new Param[] { new Param("clientId", clientId) };
 	Param[] shortTokenTtl = new Param[] { new Param("expiresIn", 5) };
+	Param[] mediumTokenTtl = new Param[] { new Param("expiresIn", 35) };
 	private final String susbcribeOnlyCapability = "{\"" + channelName + "\": [\"subscribe\"]}";
 	private final String publishCapability = "{\"" + channelName + "\": [\"publish\"]}";
 
@@ -189,7 +192,79 @@ public class RealtimeJWTTest extends ParameterizedTest {
 	}
 
 	/**
-	 * Helper to fetch a token with params via authUrl
+	 * Request a JWT with a ttl of 35 seconds and
+	 * verify that the client reauths without going through a disconnected state.
+	 */
+	@Test
+	public void auth_jwt_with_client_than_reauths_without_disconnecting() {
+		try {
+			final String[] tokens = new String[1];
+			final boolean[] authMessages = new boolean[] { false };
+
+			/* create ably realtime with authUrl and params that include a ttl of 35 seconds */
+			DebugOptions options = new DebugOptions(testVars.keys[0].keyStr);
+			options.environment = "sandbox";
+			options.authUrl = echoServer;
+			options.authParams = mergeParams(keys, mediumTokenTtl);
+			options.protocolListener = new RawProtocolListener() {
+				@Override
+				public void onRawConnect(String url) { }
+				@Override
+				public void onRawMessageSend(ProtocolMessage message) { }
+				@Override
+				public void onRawMessageRecv(ProtocolMessage message) {
+					if (message.action == ProtocolMessage.Action.auth) {
+						authMessages[0] = true;
+					}
+				}
+			};
+			final AblyRealtime ablyRealtime = new AblyRealtime(options);
+
+			/* Once connected for the first time capture the assigned token */
+			ablyRealtime.connection.once(ConnectionEvent.connected, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange stateChange) {
+					assertEquals("State is not connected", ConnectionState.connected, stateChange.current);
+					synchronized (tokens) {
+						tokens[0] = ablyRealtime.auth.getTokenDetails().token;
+					}
+				}
+			});
+
+			/* Fail if the disconnected state is ever reached */
+			ablyRealtime.connection.once(ConnectionEvent.disconnected, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange stateChange) {
+					fail("Should NOT enter the disconnected state");
+				}
+			});
+
+			/* Once receiving the update event check that the token is a new one
+			 * and verify the auth protocol message has been received. */
+			ablyRealtime.connection.on(ConnectionEvent.update, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					assertNotEquals("Token should not be the same", tokens[0], ablyRealtime.auth.getTokenDetails().token);
+					assertTrue("Auth protocol message has not been received", authMessages[0]);
+					ablyRealtime.close();
+				}
+			});
+
+			/* wait for connected state */
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ablyRealtime.connection);
+			connectionWaiter.waitFor(ConnectionState.connected);
+			assertEquals("Connected state was NOT reached", ConnectionState.connected, ablyRealtime.connection.state);
+
+			/* wait for closed state */
+			connectionWaiter.waitFor(ConnectionState.closed);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	/**
+	 * Helper to fetch a token with params and capability via authUrl
 	 */
 	private String getToken(Param[] params, String capability) {
 		jwtRequesterOptions.authParams = params;
