@@ -193,7 +193,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
 
 	/**
 	 * Request a JWT with a ttl of 35 seconds and
-	 * verify that the client reauths without going through a disconnected state.
+	 * verify that the client reauths without going through a disconnected state. (RTC8a4)
 	 */
 	@Test
 	public void auth_jwt_with_client_than_reauths_without_disconnecting() {

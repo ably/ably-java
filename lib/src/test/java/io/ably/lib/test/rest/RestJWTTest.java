@@ -35,7 +35,7 @@ public class RestJWTTest extends ParameterizedTest {
 	}
 
 	/**
-	 * Base request of a JWT token
+	 * Base request of a JWT token (RSA8g RSA8c)
 	 */
 	@Test
 	public void authjwtrequest() {
@@ -51,7 +51,7 @@ public class RestJWTTest extends ParameterizedTest {
 	}
 
 	/**
-	 * Base request of a JWT token with wrong credentials
+	 * Base request of a JWT token with wrong credentials (RSA8g RSA8c)
 	 */
 	@Test
 	public void authjwtrequestwrongkeys() {
@@ -67,7 +67,7 @@ public class RestJWTTest extends ParameterizedTest {
 	}
 
 	/**
-	 * Request of a JWT token that embeds and Ably token
+	 * Request of a JWT token that embeds and Ably token (RSC1 RSC1a RSC1c RSA3d)
 	 */
 	@Test
 	public void authjwtrequestembeddedtoken() {
@@ -83,7 +83,7 @@ public class RestJWTTest extends ParameterizedTest {
 	}
 
 	/**
-	 * Request of a JWT token that embeds and Ably token and is encrypted
+	 * Request of a JWT token that embeds and Ably token and is encrypted (RSC1 RSC1a RSC1c RSA3d)
 	 */
 	@Test
 	public void authjwtrequestembeddedtokenencrypted() {
@@ -99,7 +99,7 @@ public class RestJWTTest extends ParameterizedTest {
 	}
 
 	/**
-	 * Request of a JWT token that is returned with application/jwt content type
+	 * Request of a JWT token that is returned with application/jwt content type (RSA4f, RSA8c)
 	 */
 	@Test
 	public void authjwtrequestreturntype() {
@@ -115,7 +115,7 @@ public class RestJWTTest extends ParameterizedTest {
 	}
 
 	/**
-	 * Request of a JWT token via authCallback
+	 * Request of a JWT token via authCallback (RSA8g)
 	 */
 	@Test
 	public void authjwtrequestauthcallback() {
