@@ -113,7 +113,7 @@ public class RestJWTTest extends ParameterizedTest {
 			TokenCallback authCallback = new TokenCallback() {
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
-					return restJWTRequester.auth.createTokenRequest(params, null);
+					return restJWTRequester.auth.requestToken(params, null);
 				}
 			};
 			ClientOptions optionsWithCallback = createOptions();
