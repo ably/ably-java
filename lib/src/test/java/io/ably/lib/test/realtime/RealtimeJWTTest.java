@@ -33,12 +33,6 @@ public class RealtimeJWTTest extends ParameterizedTest {
 	private final String susbcribeOnlyCapability = "{\"" + channelName + "\": [\"subscribe\"]}";
 	private final String publishCapability = "{\"" + channelName + "\": [\"publish\"]}";
 
-	@Before
-	public void setUpBefore() throws Exception {
-		jwtRequesterOptions = createOptions(testVars.keys[0].keyStr);
-		jwtRequesterOptions.authUrl = echoServer;
-	}
-
 	/**
 	 * Request a JWT that specifies a clientId
 	 * Verifies that the clientId matches the one requested
@@ -264,8 +258,10 @@ public class RealtimeJWTTest extends ParameterizedTest {
 	 * Helper to create ClientOptions with a JWT token fetched via authUrl according to the parameters
 	 */
 	private ClientOptions buildClientOptions(Param[] params, String capability) {
-		jwtRequesterOptions.authParams = params;
 		try {
+			jwtRequesterOptions = createOptions(testVars.keys[0].keyStr);
+			jwtRequesterOptions.authUrl = echoServer;
+			jwtRequesterOptions.authParams = params;
 			restJWTRequester = new AblyRest(jwtRequesterOptions);
 			TokenParams t = new TokenParams();
 			if (capability != null) {
