@@ -371,17 +371,22 @@ public class RealtimeJWTTest extends ParameterizedTest {
 	 */
 	private ClientOptions buildClientOptions(Param[] params, String capability) {
 		try {
-			jwtRequesterOptions = createOptions(testVars.keys[0].keyStr);
-			jwtRequesterOptions.authUrl = echoServer;
-			jwtRequesterOptions.authParams = params;
-			restJWTRequester = new AblyRest(jwtRequesterOptions);
-			TokenParams t = new TokenParams();
-			if (capability != null) {
-				t.capability = capability;
-			}
-			TokenDetails tokenDetails = restJWTRequester.auth.requestToken(t, null);
+			final String[] resultToken = new String[1];
+			AblyRest rest = new AblyRest(createOptions(testVars.keys[0].keyStr));
+			HttpHelpers.getUri(rest.httpCore, echoServer, null, params, new ResponseHandler() {
+				@Override
+				public Object handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
+					try {
+						resultToken[0] = new String(response.body, "UTF-8");
+					} catch (UnsupportedEncodingException e) {
+						e.printStackTrace();
+						fail("Error in fetching a JWT token " + e);
+					}
+					return null;
+				}
+			});
 			ClientOptions realtimeOptions = createOptions();
-			realtimeOptions.token = tokenDetails.token;
+			realtimeOptions.token = resultToken[0];
 			return realtimeOptions;
 		} catch (AblyException e) {
 			fail("Failure in fetching a JWT token to create ClientOptions " + e);
