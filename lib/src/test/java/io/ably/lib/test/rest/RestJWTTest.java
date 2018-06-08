@@ -110,9 +110,11 @@ public class RestJWTTest extends ParameterizedTest {
 	public void auth_jwt_request_authcallback() {
 		try {
 			restJWTRequester = new AblyRest(createOptions(testVars.keys[0].keyStr));
+			final boolean[] callbackCalled = new boolean[] { false };
 			TokenCallback authCallback = new TokenCallback() {
 				@Override
 				public Object getTokenRequest(TokenParams params) throws AblyException {
+					callbackCalled[0] = true;
 					return restJWTRequester.auth.requestToken(params, null);
 				}
 			};
@@ -121,6 +123,7 @@ public class RestJWTTest extends ParameterizedTest {
 			AblyRest client = new AblyRest(optionsWithCallback);
 			PaginatedResult<Stats> stats = client.stats(null);
 			assertNotNull("Stats should not be null", stats);
+			assertTrue("Callback was not called", callbackCalled[0]);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("auth_jwt_request_authcallback: Unexpected exception");
