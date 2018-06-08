@@ -4,6 +4,9 @@ import static org.junit.Assert.*;
 
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
+import io.ably.lib.http.HttpCore;
+import io.ably.lib.http.HttpCore.*;
+import io.ably.lib.http.HttpHelpers;
 import io.ably.lib.test.common.Setup.Key;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,7 +18,8 @@ import io.ably.lib.rest.Auth.*;
 import io.ably.lib.test.common.Helpers.*;
 import io.ably.lib.test.common.ParameterizedTest;
 
-import java.util.UUID;
+import java.io.UnsupportedEncodingException;
+import java.util.*;
 
 
 public class RealtimeJWTTest extends ParameterizedTest {
@@ -238,6 +242,109 @@ public class RealtimeJWTTest extends ParameterizedTest {
 			ablyRealtime.connection.on(ConnectionEvent.update, new ConnectionStateListener() {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange state) {
+					assertNotEquals("Token should not be the same", tokens[0], ablyRealtime.auth.getTokenDetails().token);
+					assertTrue("Auth protocol message has not been received", authMessages[0]);
+					updateEvents[0] = true;
+					ablyRealtime.close();
+				}
+			});
+
+			/* wait for connected state */
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ablyRealtime.connection);
+			connectionWaiter.waitFor(ConnectionState.connected);
+			assertEquals("Connected state was NOT reached", ConnectionState.connected, ablyRealtime.connection.state);
+
+			/* wait for closed state */
+			connectionWaiter.waitFor(ConnectionState.closed);
+			assertTrue("Update event not received", updateEvents[0]);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail();
+		}
+	}
+
+	/**
+	 * Request a JWT with a ttl of 35 seconds and
+	 * verify that the client reauths without going through a disconnected state using an authCallback. (RTC8a4)
+	 */
+	@Test
+	public void auth_jwt_with_client_than_reauths_without_disconnecting_via_authCallback() {
+		try {
+			final String[] tokens = new String[1];
+			final boolean[] authMessages = new boolean[] { false };
+			final boolean[] updateEvents = new boolean[] { false };
+			final List<Boolean> callbackCalled = new ArrayList<Boolean>();
+
+			/* authCallback that with params that include a ttl of 35 seconds */
+			TokenCallback authCallback = new TokenCallback() {
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					final String[] resultToken = new String[1];
+					AblyRest rest = new AblyRest(createOptions(testVars.keys[0].keyStr));
+					HttpHelpers.getUri(rest.httpCore, echoServer, new Param[]{}, mergeParams(keys, mediumTokenTtl), new ResponseHandler() {
+						@Override
+						public Object handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
+							try {
+								callbackCalled.add(true);
+								resultToken[0] = new String(response.body, "UTF-8");
+							} catch (UnsupportedEncodingException e) {
+								e.printStackTrace();
+								fail("Error in fetching a JWT token using authCallback");
+							}
+							return null;
+						}
+					});
+					return resultToken[0];
+				}
+			};
+
+			/* create ably realtime with authCallback defined above */
+			DebugOptions options = new DebugOptions(testVars.keys[0].keyStr);
+			options.environment = createOptions().environment;
+			options.authCallback = authCallback;
+			options.protocolListener = new RawProtocolListener() {
+				@Override
+				public void onRawConnect(String url) { }
+				@Override
+				public void onRawMessageSend(ProtocolMessage message) { }
+				@Override
+				public void onRawMessageRecv(ProtocolMessage message) {
+					if (message.action == ProtocolMessage.Action.auth) {
+						authMessages[0] = true;
+					}
+				}
+			};
+			final AblyRealtime ablyRealtime = new AblyRealtime(options);
+
+			/* Once connected for the first time capture the assigned token and
+			* verify the callback has been called once */
+			ablyRealtime.connection.once(ConnectionEvent.connected, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange stateChange) {
+					assertTrue("Callback not called the first time", callbackCalled.get(0));
+					assertEquals("State is not connected", ConnectionState.connected, stateChange.current);
+					synchronized (tokens) {
+						tokens[0] = ablyRealtime.auth.getTokenDetails().token;
+					}
+				}
+			});
+
+			/* Fail if the disconnected state is ever reached */
+			ablyRealtime.connection.once(ConnectionEvent.disconnected, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange stateChange) {
+					ablyRealtime.close();
+					fail("Should NOT enter the disconnected state");
+				}
+			});
+
+			/* Once receiving the update event check that the token is a new one,
+			 * verify the auth protocol message has been received and verify the callback has been called twice. */
+			ablyRealtime.connection.on(ConnectionEvent.update, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					assertTrue("Callback not called the second time", callbackCalled.get(1));
+					assertEquals("Callback not called 2 times", callbackCalled.size(), 2);
 					assertNotEquals("Token should not be the same", tokens[0], ablyRealtime.auth.getTokenDetails().token);
 					assertTrue("Auth protocol message has not been received", authMessages[0]);
 					updateEvents[0] = true;
