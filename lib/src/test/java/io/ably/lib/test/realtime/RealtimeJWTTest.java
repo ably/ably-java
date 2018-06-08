@@ -86,6 +86,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
 			channel.publish(messageName, null, new CompletionListener() {
 				@Override
 				public void onSuccess() {
+					ablyRealtime.close();
 					fail("It should not succeed");
 				}
 
@@ -137,6 +138,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
 
 				@Override
 				public void onError(ErrorInfo reason) {
+					ablyRealtime.close();
 					fail("Publish should not fail");
 				}
 			});
