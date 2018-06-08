@@ -2,6 +2,7 @@ package io.ably.lib.test.rest;
 
 import static org.junit.Assert.*;
 
+import io.ably.lib.http.*;
 import io.ably.lib.test.common.Setup.Key;
 import org.junit.Test;
 
@@ -10,10 +11,10 @@ import io.ably.lib.types.*;
 import io.ably.lib.rest.Auth.*;
 import io.ably.lib.test.common.ParameterizedTest;
 
+import java.io.UnsupportedEncodingException;
+
 public class RestJWTTest extends ParameterizedTest {
 
-	private AblyRest restJWTRequester;
-	private ClientOptions jwtRequesterOptions;
 	private Key key = testVars.keys[0];
 	Param[] validKeys = new Param[]{ new Param("keyName", key.keyName), new Param("keySecret", key.keySecret) };
 	Param[] invalidKeys = new Param[]{ new Param("keyName", key.keyName), new Param("keySecret", "invalidinvalid") };
@@ -109,7 +110,7 @@ public class RestJWTTest extends ParameterizedTest {
 	@Test
 	public void auth_jwt_request_authcallback() {
 		try {
-			restJWTRequester = new AblyRest(createOptions(testVars.keys[0].keyStr));
+			final AblyRest restJWTRequester = new AblyRest(createOptions(testVars.keys[0].keyStr));
 			final boolean[] callbackCalled = new boolean[] { false };
 			TokenCallback authCallback = new TokenCallback() {
 				@Override
@@ -136,12 +137,21 @@ public class RestJWTTest extends ParameterizedTest {
 	private ClientOptions buildClientOptions(Param[] params) {
 		try {
 			ClientOptions options = createOptions();
-			jwtRequesterOptions = createOptions(testVars.keys[0].keyStr);
-			jwtRequesterOptions.authUrl = echoServer;
-			jwtRequesterOptions.authParams = params;
-			restJWTRequester = new AblyRest(jwtRequesterOptions);
-			TokenDetails tokenDetails = restJWTRequester.auth.requestToken(null, null);
-			options.token = tokenDetails.token;
+			final String[] resultToken = new String[1];
+			AblyRest rest = new AblyRest(createOptions(testVars.keys[0].keyStr));
+			HttpHelpers.getUri(rest.httpCore, echoServer, null, params, new HttpCore.ResponseHandler() {
+				@Override
+				public Object handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
+					try {
+						resultToken[0] = new String(response.body, "UTF-8");
+					} catch (UnsupportedEncodingException e) {
+						e.printStackTrace();
+						fail("Error in fetching a JWT token " + e);
+					}
+					return null;
+				}
+			});
+			options.token = resultToken[0];
 			return options;
 		} catch (AblyException e) {
 			fail("Failure in fetching a JWT token" + e);
