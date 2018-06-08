@@ -22,7 +22,6 @@ public class RealtimeJWTTest extends ParameterizedTest {
 
 	private AblyRest restJWTRequester;
 	private ClientOptions jwtRequesterOptions;
-	private ClientOptions realtimeOptions;
 	private Key key = testVars.keys[0];
 	private final String clientId = "testJWTClientID";
 	private final String channelName = "testJWTChannel" + UUID.randomUUID().toString();
@@ -38,7 +37,6 @@ public class RealtimeJWTTest extends ParameterizedTest {
 	public void setUpBefore() throws Exception {
 		jwtRequesterOptions = createOptions(testVars.keys[0].keyStr);
 		jwtRequesterOptions.authUrl = echoServer;
-		realtimeOptions = createOptions();
 	}
 
 	/**
@@ -49,7 +47,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
 	public void auth_clientid_match_the_one_requested_in_jwt() {
 		try {
 			/* create ably realtime with JWT token */
-			realtimeOptions.token = getToken(mergeParams(keys, clientIdParam), null);
+			ClientOptions realtimeOptions = buildClientOptions(mergeParams(keys, clientIdParam), null);
 			assertNotNull("Expected token value", realtimeOptions.token);
 			AblyRealtime ablyRealtime = new AblyRealtime(realtimeOptions);
 
@@ -76,7 +74,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
 	public void auth_jwt_with_subscribe_only_capability() {
 		try {
 			/* create ably realtime with JWT token that has subscribe-only capabilities */
-			realtimeOptions.token = getToken(keys, susbcribeOnlyCapability);
+			ClientOptions realtimeOptions = buildClientOptions(keys, susbcribeOnlyCapability);
 			assertNotNull("Expected token value", realtimeOptions.token);
 			final AblyRealtime ablyRealtime = new AblyRealtime(realtimeOptions);
 
@@ -120,7 +118,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
 	public void auth_jwt_with_publish_capability() {
 		try {
 			/* create ably realtime with JWT token that has publish capabilities */
-			realtimeOptions.token = getToken(keys, publishCapability);
+			ClientOptions realtimeOptions = buildClientOptions(keys, publishCapability);
 			assertNotNull("Expected token value", realtimeOptions.token);
 			final AblyRealtime ablyRealtime = new AblyRealtime(realtimeOptions);
 
@@ -163,7 +161,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
 	public void auth_jwt_with_token_that_expires() {
 		try {
 			/* create ably realtime with JWT token that expires in 5 seconds */
-			realtimeOptions.token = getToken(mergeParams(keys, shortTokenTtl), null);
+			ClientOptions realtimeOptions = buildClientOptions(mergeParams(keys, shortTokenTtl), null);
 			assertNotNull("Expected token value", realtimeOptions.token);
 			final AblyRealtime ablyRealtime = new AblyRealtime(realtimeOptions);
 
@@ -263,9 +261,9 @@ public class RealtimeJWTTest extends ParameterizedTest {
 	}
 
 	/**
-	 * Helper to fetch a token with params and capability via authUrl
+	 * Helper to create ClientOptions with a JWT token fetched via authUrl according to the parameters
 	 */
-	private String getToken(Param[] params, String capability) {
+	private ClientOptions buildClientOptions(Param[] params, String capability) {
 		jwtRequesterOptions.authParams = params;
 		try {
 			restJWTRequester = new AblyRest(jwtRequesterOptions);
@@ -274,9 +272,11 @@ public class RealtimeJWTTest extends ParameterizedTest {
 				t.capability = capability;
 			}
 			TokenDetails tokenDetails = restJWTRequester.auth.requestToken(t, null);
-			return tokenDetails.token;
+			ClientOptions realtimeOptions = createOptions();
+			realtimeOptions.token = tokenDetails.token;
+			return realtimeOptions;
 		} catch (AblyException e) {
-			fail("Failure in fetching a JWT token" + e);
+			fail("Failure in fetching a JWT token to create ClientOptions " + e);
 			return null;
 		}
 	}
