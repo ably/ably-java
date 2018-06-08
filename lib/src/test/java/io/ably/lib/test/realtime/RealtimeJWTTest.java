@@ -38,8 +38,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
 	public void setUpBefore() throws Exception {
 		jwtRequesterOptions = createOptions(testVars.keys[0].keyStr);
 		jwtRequesterOptions.authUrl = echoServer;
-		realtimeOptions = new ClientOptions();
-		realtimeOptions.environment = "sandbox";
+		realtimeOptions = createOptions();
 	}
 
 	/**
@@ -203,7 +202,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
 
 			/* create ably realtime with authUrl and params that include a ttl of 35 seconds */
 			DebugOptions options = new DebugOptions(testVars.keys[0].keyStr);
-			options.environment = "sandbox";
+			options.environment = createOptions().environment;
 			options.authUrl = echoServer;
 			options.authParams = mergeParams(keys, mediumTokenTtl);
 			options.protocolListener = new RawProtocolListener() {

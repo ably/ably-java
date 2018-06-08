@@ -30,8 +30,7 @@ public class RestJWTTest extends ParameterizedTest {
 	public void setUpBefore() throws Exception {
 		jwtRequesterOptions = createOptions(testVars.keys[0].keyStr);
 		jwtRequesterOptions.authUrl = echoServer;
-		options = new ClientOptions();
-		options.environment = "sandbox";
+		options = createOptions();
 	}
 
 	/**
@@ -127,9 +126,8 @@ public class RestJWTTest extends ParameterizedTest {
 					return restJWTRequester.auth.createTokenRequest(params, null);
 				}
 			};
-			ClientOptions optionsWithCallback = new ClientOptions();
+			ClientOptions optionsWithCallback = createOptions();
 			optionsWithCallback.authCallback = authCallback;
-			optionsWithCallback.environment = "sandbox";
 			AblyRest client = new AblyRest(optionsWithCallback);
 			PaginatedResult<Stats> stats = client.stats(null);
 			assertNotNull("Stats should not be null", stats);
