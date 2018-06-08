@@ -3,7 +3,6 @@ package io.ably.lib.test.rest;
 import static org.junit.Assert.*;
 
 import io.ably.lib.test.common.Setup.Key;
-import org.junit.Before;
 import org.junit.Test;
 
 import io.ably.lib.rest.AblyRest;
@@ -11,14 +10,10 @@ import io.ably.lib.types.*;
 import io.ably.lib.rest.Auth.*;
 import io.ably.lib.test.common.ParameterizedTest;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public class RestJWTTest extends ParameterizedTest {
 
 	private AblyRest restJWTRequester;
 	private ClientOptions jwtRequesterOptions;
-	private ClientOptions options;
 	private Key key = testVars.keys[0];
 	Param[] validKeys = new Param[]{ new Param("keyName", key.keyName), new Param("keySecret", key.keySecret) };
 	Param[] invalidKeys = new Param[]{ new Param("keyName", key.keyName), new Param("keySecret", "invalidinvalid") };
@@ -26,20 +21,13 @@ public class RestJWTTest extends ParameterizedTest {
 	Param[] tokenEmbeddedAndEncrypted = new Param[]{ new Param("jwtType", "embedded"), new Param("encrypted", 1) };
 	Param[] jwtReturnType = new Param[]{ new Param("returnType", "jwt") };
 
-	@Before
-	public void setUpBefore() throws Exception {
-		jwtRequesterOptions = createOptions(testVars.keys[0].keyStr);
-		jwtRequesterOptions.authUrl = echoServer;
-		options = createOptions();
-	}
-
 	/**
 	 * Base request of a JWT token (RSA8g RSA8c)
 	 */
 	@Test
 	public void authjwtrequest() {
 		try {
-			options.token = getTokenWithParams(validKeys);
+			ClientOptions options = buildClientOptions(validKeys);
 			AblyRest client = new AblyRest(options);
 			PaginatedResult<Stats> stats = client.stats(null);
 			assertNotNull("Stats should not be null", stats);
@@ -55,7 +43,7 @@ public class RestJWTTest extends ParameterizedTest {
 	@Test
 	public void authjwtrequestwrongkeys() {
 		try {
-			options.token = getTokenWithParams(invalidKeys);
+			ClientOptions options = buildClientOptions(invalidKeys);
 			AblyRest client = new AblyRest(options);
 			PaginatedResult<Stats> stats = client.stats(null);
 		} catch (AblyException e) {
@@ -71,7 +59,7 @@ public class RestJWTTest extends ParameterizedTest {
 	@Test
 	public void authjwtrequestembeddedtoken() {
 		try {
-			options.token = getTokenWithParams(mergeParams(validKeys, tokenEmbedded));
+			ClientOptions options = buildClientOptions(mergeParams(validKeys, tokenEmbedded));
 			AblyRest client = new AblyRest(options);
 			PaginatedResult<Stats> stats = client.stats(null);
 			assertNotNull("Stats should not be null", stats);
@@ -87,7 +75,7 @@ public class RestJWTTest extends ParameterizedTest {
 	@Test
 	public void authjwtrequestembeddedtokenencrypted() {
 		try {
-			options.token = getTokenWithParams(mergeParams(validKeys, tokenEmbeddedAndEncrypted));
+			ClientOptions options = buildClientOptions(mergeParams(validKeys, tokenEmbeddedAndEncrypted));
 			AblyRest client = new AblyRest(options);
 			PaginatedResult<Stats> stats = client.stats(null);
 			assertNotNull("Stats should not be null", stats);
@@ -103,7 +91,7 @@ public class RestJWTTest extends ParameterizedTest {
 	@Test
 	public void authjwtrequestreturntype() {
 		try {
-			options.token = getTokenWithParams(mergeParams(validKeys, jwtReturnType));
+			ClientOptions options = buildClientOptions(mergeParams(validKeys, jwtReturnType));
 			AblyRest client = new AblyRest(options);
 			PaginatedResult<Stats> stats = client.stats(null);
 			assertNotNull("Stats should not be null", stats);
@@ -140,12 +128,16 @@ public class RestJWTTest extends ParameterizedTest {
 	/**
 	 * Helper to fetch a token with params via authUrl
 	 */
-	private String getTokenWithParams(Param[] params) {
-		jwtRequesterOptions.authParams = params;
+	private ClientOptions buildClientOptions(Param[] params) {
 		try {
+			ClientOptions options = createOptions();
+			jwtRequesterOptions = createOptions(testVars.keys[0].keyStr);
+			jwtRequesterOptions.authUrl = echoServer;
+			jwtRequesterOptions.authParams = params;
 			restJWTRequester = new AblyRest(jwtRequesterOptions);
 			TokenDetails tokenDetails = restJWTRequester.auth.requestToken(null, null);
-			return tokenDetails.token;
+			options.token = tokenDetails.token;
+			return options;
 		} catch (AblyException e) {
 			fail("Failure in fetching a JWT token" + e);
 			return null;
