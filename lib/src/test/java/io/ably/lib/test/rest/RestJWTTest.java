@@ -25,7 +25,7 @@ public class RestJWTTest extends ParameterizedTest {
 	 * Base request of a JWT token (RSA8g RSA8c)
 	 */
 	@Test
-	public void authjwtrequest() {
+	public void auth_jwt_request() {
 		try {
 			ClientOptions options = buildClientOptions(validKeys);
 			AblyRest client = new AblyRest(options);
@@ -33,7 +33,7 @@ public class RestJWTTest extends ParameterizedTest {
 			assertNotNull("Stats should not be null", stats);
 		} catch (AblyException e) {
 			e.printStackTrace();
-			fail("authjwtrequest: Unexpected exception");
+			fail("auth_jwt_request: Unexpected exception");
 		}
 	}
 
@@ -41,7 +41,7 @@ public class RestJWTTest extends ParameterizedTest {
 	 * Base request of a JWT token with wrong credentials (RSA8g RSA8c)
 	 */
 	@Test
-	public void authjwtrequestwrongkeys() {
+	public void auth_jwt_request_wrong_keys() {
 		try {
 			ClientOptions options = buildClientOptions(invalidKeys);
 			AblyRest client = new AblyRest(options);
@@ -57,7 +57,7 @@ public class RestJWTTest extends ParameterizedTest {
 	 * Request of a JWT token that embeds and Ably token (RSC1 RSC1a RSC1c RSA3d)
 	 */
 	@Test
-	public void authjwtrequestembeddedtoken() {
+	public void auth_jwt_request_embedded_token() {
 		try {
 			ClientOptions options = buildClientOptions(mergeParams(validKeys, tokenEmbedded));
 			AblyRest client = new AblyRest(options);
@@ -65,7 +65,7 @@ public class RestJWTTest extends ParameterizedTest {
 			assertNotNull("Stats should not be null", stats);
 		} catch (AblyException e) {
 			e.printStackTrace();
-			fail("authjwtrequestembeddedtoken: Unexpected exception");
+			fail("auth_jwt_request_embedded_token: Unexpected exception");
 		}
 	}
 
@@ -73,7 +73,7 @@ public class RestJWTTest extends ParameterizedTest {
 	 * Request of a JWT token that embeds and Ably token and is encrypted (RSC1 RSC1a RSC1c RSA3d)
 	 */
 	@Test
-	public void authjwtrequestembeddedtokenencrypted() {
+	public void auth_jwt_request_embedded_token_encrypted() {
 		try {
 			ClientOptions options = buildClientOptions(mergeParams(validKeys, tokenEmbeddedAndEncrypted));
 			AblyRest client = new AblyRest(options);
@@ -81,7 +81,7 @@ public class RestJWTTest extends ParameterizedTest {
 			assertNotNull("Stats should not be null", stats);
 		} catch (AblyException e) {
 			e.printStackTrace();
-			fail("authjwtrequestembeddedtokenencrypted: Unexpected exception");
+			fail("auth_jwt_request_embedded_token_encrypted: Unexpected exception");
 		}
 	}
 
@@ -89,7 +89,7 @@ public class RestJWTTest extends ParameterizedTest {
 	 * Request of a JWT token that is returned with application/jwt content type (RSA4f, RSA8c)
 	 */
 	@Test
-	public void authjwtrequestreturntype() {
+	public void auth_jwt_request_returntype() {
 		try {
 			ClientOptions options = buildClientOptions(mergeParams(validKeys, jwtReturnType));
 			AblyRest client = new AblyRest(options);
@@ -97,7 +97,7 @@ public class RestJWTTest extends ParameterizedTest {
 			assertNotNull("Stats should not be null", stats);
 		} catch (AblyException e) {
 			e.printStackTrace();
-			fail("authjwtrequestreturntype: Unexpected exception");
+			fail("auth_jwt_request_returntype: Unexpected exception");
 		}
 	}
 
@@ -105,7 +105,7 @@ public class RestJWTTest extends ParameterizedTest {
 	 * Request of a JWT token via authCallback (RSA8g)
 	 */
 	@Test
-	public void authjwtrequestauthcallback() {
+	public void auth_jwt_request_authcallback() {
 		try {
 			restJWTRequester = new AblyRest(createOptions(testVars.keys[0].keyStr));
 			TokenCallback authCallback = new TokenCallback() {
@@ -121,7 +121,7 @@ public class RestJWTTest extends ParameterizedTest {
 			assertNotNull("Stats should not be null", stats);
 		} catch (AblyException e) {
 			e.printStackTrace();
-			fail("authjwtrequestauthcallback: Unexpected exception");
+			fail("auth_jwt_request_authcallback: Unexpected exception");
 		}
 	}
 
