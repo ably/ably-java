@@ -193,6 +193,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
 		try {
 			final String[] tokens = new String[1];
 			final boolean[] authMessages = new boolean[] { false };
+			final boolean[] updateEvents = new boolean[] { false };
 
 			/* create ably realtime with authUrl and params that include a ttl of 35 seconds */
 			DebugOptions options = new DebugOptions(testVars.keys[0].keyStr);
@@ -239,6 +240,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
 				public void onConnectionStateChanged(ConnectionStateChange state) {
 					assertNotEquals("Token should not be the same", tokens[0], ablyRealtime.auth.getTokenDetails().token);
 					assertTrue("Auth protocol message has not been received", authMessages[0]);
+					updateEvents[0] = true;
 					ablyRealtime.close();
 				}
 			});
@@ -250,6 +252,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
 
 			/* wait for closed state */
 			connectionWaiter.waitFor(ConnectionState.closed);
+			assertTrue("Update event not received", updateEvents[0]);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail();
