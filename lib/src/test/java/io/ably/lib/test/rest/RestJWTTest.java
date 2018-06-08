@@ -91,7 +91,9 @@ public class RestJWTTest extends ParameterizedTest {
 	@Test
 	public void auth_jwt_request_returntype() {
 		try {
-			ClientOptions options = buildClientOptions(mergeParams(validKeys, jwtReturnType));
+			ClientOptions options = createOptions();
+			options.authUrl = echoServer;
+			options.authParams = mergeParams(validKeys, jwtReturnType);
 			AblyRest client = new AblyRest(options);
 			PaginatedResult<Stats> stats = client.stats(null);
 			assertNotNull("Stats should not be null", stats);
