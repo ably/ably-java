@@ -34,7 +34,7 @@ public class ParameterizedTest {
 	public Timeout testTimeout = Timeout.seconds(10);
 
 	protected static Setup.TestVars testVars;
-	protected final String echoServer = "https://ably-echoserver.herokuapp.com/createJWT";
+	protected final String echoServer = "https://echo.ably.io/createJWT";
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
