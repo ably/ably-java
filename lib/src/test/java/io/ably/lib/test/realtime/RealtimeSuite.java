@@ -18,6 +18,7 @@ import io.ably.lib.test.common.Setup;
 	EventEmitterTest.class,
 	RealtimeHttpHeaderTest.class,
 	RealtimeAuthTest.class,
+	RealtimeJWTTest.class,
 	RealtimeReauthTest.class,
 	RealtimeInitTest.class,
 	RealtimeConnectTest.class,

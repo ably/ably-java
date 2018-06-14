@@ -1,7 +1,10 @@
 package io.ably.lib.test.common;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
+import io.ably.lib.types.Param;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -31,6 +34,7 @@ public class ParameterizedTest {
 	public Timeout testTimeout = Timeout.seconds(10);
 
 	protected static Setup.TestVars testVars;
+	protected final String echoServer = "https://echo.ably.io/createJWT";
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
@@ -53,4 +57,19 @@ public class ParameterizedTest {
 	protected void fillInOptions(ClientOptions opts) {
 		testVars.fillInOptions(opts, testParams);
 	}
+
+	/**
+	 * Helper method to merge auth parameters
+	 */
+	protected static Param[] mergeParams(Param[] target, Param[] src) {
+		Map<String, Param> merged = new HashMap<String, Param>();
+		if(target != null) {
+			for(Param param : target) { merged.put(param.key, param); }
+		}
+		if(src != null) {
+			for(Param param : src) { merged.put(param.key, param); }
+		}
+		return merged.values().toArray(new Param[merged.size()]);
+	}
+
 }
