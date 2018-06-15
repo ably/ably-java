@@ -10,6 +10,7 @@ android:
     - sys-img-armeabi-v7a-android-22
 
 jdk:
+  - oraclejdk9
   - oraclejdk8
   - openjdk7
 
@@ -23,6 +24,8 @@ env:
 matrix:
   exclude:
     - jdk: openjdk7
+      env: BUILD_ANDROID=true
+    - jdk: oraclejdk9
       env: BUILD_ANDROID=true
 
 before_script:
