@@ -167,6 +167,7 @@ public class BaseMessage implements Cloneable {
 				}
 				if(encoding != null) json.addProperty("encoding", encoding);
 			}
+			if(message.id != null) json.addProperty("id", message.id);
 			if(message.clientId != null) json.addProperty("clientId", message.clientId);
 			if(message.connectionId != null) json.addProperty("connectionId", message.connectionId);
 			return json;
@@ -206,6 +207,7 @@ public class BaseMessage implements Cloneable {
 	protected int countFields() {
 		int fieldCount = 0;
 		if(timestamp > 0) ++fieldCount;
+		if(id != null) ++fieldCount;
 		if(clientId != null) ++fieldCount;
 		if(connectionId != null) ++fieldCount;
 		if(encoding != null) ++fieldCount;
@@ -217,6 +219,10 @@ public class BaseMessage implements Cloneable {
 		if(timestamp > 0) {
 			packer.packString("timestamp");
 			packer.packLong(timestamp);
+		}
+		if(id != null) {
+			packer.packString("id");
+			packer.packString(id);
 		}
 		if(clientId != null) {
 			packer.packString("clientId");
