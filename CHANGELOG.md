@@ -1,5 +1,22 @@
 # Change Log
 
+## [1.0.4](https://github.com/ably/ably-java/tree/v1.0.4)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.0.3...v1.0.4)
+
+**Implemented enhancements:**
+
+- Add support for JWT [\#384](https://github.com/ably/ably-java/issues/384)
+- Allow to specify a message id when publishing a message with REST [\#396](https://github.com/ably/ably-java/pull/396) ([paddybyers](https://github.com/paddybyers))
+
+**Closed issues:**
+
+- Maven devpendency failed [\#383](https://github.com/ably/ably-java/issues/383)
+
+**Merged pull requests:**
+
+- Add support for JWT [\#393](https://github.com/ably/ably-java/pull/393) ([funkyboy](https://github.com/funkyboy))
+
 ## [1.0.3](https://github.com/ably/ably-java/tree/1.0.3)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.0.2...1.0.3)
