@@ -457,10 +457,10 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 
 * Go to the home page for the package; eg https://bintray.com/ably-io/ably/ably-java. Select [New version](https://bintray.com/ably-io/ably/ably-java/new/version), enter the new version such as "1.0.4" in name and save
 * Run `./gradlew java:assembleRelease` locally to generate the files
-* Open local relative folder such as `/lib/build/release/1.0.4/`
+* Open local relative folder such as `./java/build/release/1.0.4/io/ably/ably-java/1.0.4`
 * Then go to the new version in JFrog Bintray; eg https://bintray.com/ably-io/ably/ably-java/1.0.4, then click on the link to upload via the UI in the "Upload files" section
-* Type in `io/ably/ably-java/1.0.4` into "Target Repository Path" ensuring the correct version is included. The drag in the files in `java/build/release/1.0.4/`
-* You will see a notice "You have 8 unpublished item(s) for this version", make sure you click "Publish". Wait a few minutes and check that your version has all the necessary files at https://bintray.com/ably-io/ably/ably-java/1.0.4?sort=&order=#files/io/ably/ably-java/1.0.4 for example.
+* Type in `io/ably/ably-java/1.0.4` into "Target Repository Path" ensuring the correct version is included. The drag in the files in `java/build/release/1.0.4/`. Upload all the `.jar` files and the `.pom` file.
+* You will see a notice "You have 4 unpublished item(s) for this version", make sure you click "Publish". Wait a few minutes and check that your version has all the necessary files at https://bintray.com/ably-io/ably/ably-java/1.0.4?sort=&order=#files/io/ably/ably-java/1.0.4 for example.
 * Update the README text in Bintray.
 
 ### Create release on Github
@@ -469,7 +469,7 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 
 Similarly for the Android release at https://bintray.com/ably-io/ably/ably-android.
 Run `gradle android:assembleRelease` locally to generate the files, and drag in the files in
-`android/build/release/1.0.4/`.
+`./android/build/release/1.0.4/io/ably/ably-java/1.0.4`. In this case upload the `.jar` files, the `.pom` file and the `.aar` file.
 
 ## Support, feedback and troubleshooting
 
