@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import java.util.HashMap;
+import java.util.UUID;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -44,7 +45,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
 	@Test
 	public void channelhistory_types() {
 		/* first, publish some messages */
-		Channel history0 = ably.channels.get("persisted:channelhistory_types_" + testParams.name);
+		Channel history0 = ably.channels.get("persisted:channelhistory_types_" + UUID.randomUUID().toString() + "_" + testParams.name);
 		try {
 			history0.publish("history0", "This is a string message payload");
 			history0.publish("history1", "This is a byte[] message payload".getBytes());
