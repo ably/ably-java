@@ -39,7 +39,7 @@ import io.ably.lib.util.Log;
 public class RealtimeReauthTest extends ParameterizedTest {
 
 	@Rule
-	public Timeout testTimeout = Timeout.seconds(60);
+	public Timeout testTimeout = Timeout.seconds(90);
 
 	/**
 	 * RTC8a: In-place reauthorization on a connected connection.
