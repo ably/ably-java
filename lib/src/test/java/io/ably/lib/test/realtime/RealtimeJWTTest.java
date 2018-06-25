@@ -180,7 +180,6 @@ public class RealtimeJWTTest extends ParameterizedTest {
 					ablyRealtime.close();
 				}
 			});
-			connectionWaiter.waitFor(ConnectionState.disconnected);
 			connectionWaiter.waitFor(ConnectionState.closed);
 		} catch (AblyException e) {
 			e.printStackTrace();
