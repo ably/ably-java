@@ -15,7 +15,7 @@ import io.ably.lib.types.ClientOptions;
 public class RestTimeTest extends ParameterizedTest {
 
 	/**
-	 * Verify accuracy of time (to within 2 seconds of actual time)
+	 * Verify accuracy of time (to within 60 seconds of actual time)
 	 */
 	@Test
 	public void time0() {
@@ -24,7 +24,7 @@ public class RestTimeTest extends ParameterizedTest {
 			AblyRest ably = new AblyRest(opts);
 			long reportedTime = ably.time();
 			long actualTime = System.currentTimeMillis();
-			assertTrue(Math.abs(actualTime - reportedTime) < 2000);
+			assertTrue(Math.abs(actualTime - reportedTime) < 60000);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("time0: Unexpected exception getting time");
@@ -81,7 +81,7 @@ public class RestTimeTest extends ParameterizedTest {
 				fail("time_async: No time value returned");
 			} else {
 				long actualTime = System.currentTimeMillis();
-				assertTrue(Math.abs(actualTime - callback.result) < 2000);
+				assertTrue(Math.abs(actualTime - callback.result) < 60000);
 			}
 		} catch(AblyException e) {
 			fail("time_async: Unexpected exception instancing Ably REST library");
