@@ -19,7 +19,9 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.mockito.Mockito;
 
 import io.ably.lib.realtime.AblyRealtime;
@@ -45,6 +47,10 @@ import io.ably.lib.types.ClientOptions;
  * Created by gokhanbarisaker on 3/9/16.
  */
 public class ConnectionManagerTest extends ParameterizedTest {
+
+	@Rule
+	public Timeout testTimeout = Timeout.seconds(30);
+
 	/**
 	 * <p>
 	 * Verifies that ably connects to default host,
