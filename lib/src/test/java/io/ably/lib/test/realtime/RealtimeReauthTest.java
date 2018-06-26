@@ -306,7 +306,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			System.out.println("authorizing with good token");
 			Auth.TokenDetails reauthTokenDetails = ablyRealtime.auth.authorize(null, authOptions);
 			System.out.println("authorized with first token");
-			assertNotNull("Expected token value", secondToken.token);
+			assertNotNull("Expected token value", reauthTokenDetails.token);
 			connectionWaiter.waitFor(ConnectionState.connected);
 			assertEquals("Verify connected state is reached", ConnectionState.connected, ablyRealtime.connection.state);
 			System.out.println("connected");
