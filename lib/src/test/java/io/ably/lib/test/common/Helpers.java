@@ -301,10 +301,10 @@ public class Helpers {
 		 * @return error info
 		 */
 		public synchronized ErrorInfo waitFor(ConnectionState state) {
-			Log.d(TAG, "waitFor(state=" + state + ")");
+			Log.d(TAG, "waitFor(state=" + state.getConnectionEvent().name() + ")");
 			while(connection.state != state)
 				try { wait(); } catch(InterruptedException e) {}
-			Log.d(TAG, "waitFor done: state=" + connection.state + ")");
+			Log.d(TAG, "waitFor done: state=" + connection.state.getConnectionEvent().name() + ")");
 			return reason;
 		}
 
@@ -314,11 +314,11 @@ public class Helpers {
 		 * @param count
 		 */
 		public synchronized void waitFor(ConnectionState state, int count) {
-			Log.d(TAG, "waitFor(state=" + state + ", count=" + count + ")");
+			Log.d(TAG, "waitFor(state=" + state.getConnectionEvent().name() + ", count=" + count + ")");
 
 			while(getStateCount(state) < count)
 				try { wait(); } catch(InterruptedException e) {}
-			Log.d(TAG, "waitFor done: state=" + connection.state + ", count=" + getStateCount(state) + ")");
+			Log.d(TAG, "waitFor done: state=" + connection.state.getConnectionEvent().name() + ", count=" + getStateCount(state) + ")");
 		}
 
 		/**
@@ -330,7 +330,7 @@ public class Helpers {
 		 * @return true if state was reached
 		 */
 		public synchronized boolean waitFor(ConnectionState state, int count, long time) {
-			Log.d(TAG, "waitFor(state=" + state + ", count=" + count + ", time=" + time + ")");
+			Log.d(TAG, "waitFor(state=" + state.getConnectionEvent().name() + ", count=" + count + ", time=" + time + ")");
 			long targetTime = System.currentTimeMillis() + time;
 			long remaining = time;
 			while(getStateCount(state) < count && remaining > 0) {
@@ -338,7 +338,7 @@ public class Helpers {
 				remaining = targetTime - System.currentTimeMillis();
 			}
 			int stateCount = getStateCount(state);
-			Log.d(TAG, "waitFor done: state=" + connection.state +
+			Log.d(TAG, "waitFor done: state=" + connection.state.getConnectionEvent().name() +
 					", count=" + Integer.toString(stateCount)+ ")");
 			return stateCount >= count;
 		}
