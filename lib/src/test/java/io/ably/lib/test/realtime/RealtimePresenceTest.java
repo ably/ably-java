@@ -2175,8 +2175,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
-
-			Channel channel = ably.channels.get("newness_comparison");
+			final String channelName = "newness_comparison_" + testParams.name;
+			Channel channel = ably.channels.get(channelName);
 			channel.attach();
 			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
 			channelWaiter.waitFor(ChannelState.attached);
@@ -2257,7 +2257,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 			for (final PresenceMessage msg: testData) {
 				ProtocolMessage protocolMessage = new ProtocolMessage() {{
-						channel = "newness_comparison";
+						channel = channelName;
 						action = Action.presence;
 						presence = new PresenceMessage[]{msg};
 					}};
@@ -2280,13 +2280,14 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			assertEquals("Verify nothing else passed the newness test", n, presenceMessages.size());
 
 			/* Repeat the process now as a part of SYNC and verify everything is exactly the same */
-			Channel channel2 = ably.channels.get("sync_newness_comparison");
+			final String channel2Name = "sync_newness_comparison_" + testParams.name;
+			Channel channel2 = ably.channels.get(channel2Name);
 			channel2.attach();
 			new ChannelWaiter(channel2).waitFor(ChannelState.attached);
 
 			/* Send all the presence data in one SYNC message without channelSerial (RTP18c) */
 			ProtocolMessage syncMessage = new ProtocolMessage() {{
-				channel = "sync_newness_comparison";
+				channel = channel2Name;
 				action = Action.sync;
 				presence = testData.clone();
 			}};
