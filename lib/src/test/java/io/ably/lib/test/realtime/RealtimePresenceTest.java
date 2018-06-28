@@ -2192,7 +2192,10 @@ public class RealtimePresenceTest extends ParameterizedTest {
 					synchronized (presenceMessages) {
 						assertNotEquals("Verify wrong message didn't pass the newness test",
 								message.data, wontPass);
-						presenceMessages.add(message);
+						// To exclude leave messages that sometimes sneak in let's collect only enter and update messages
+						if (message.action == Action.enter || message.action == Action.update) {
+							presenceMessages.add(message);
+						}
 					}
 				}
 			});
