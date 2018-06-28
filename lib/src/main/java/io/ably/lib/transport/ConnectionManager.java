@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 
 
-public class ConnectionManager implements Runnable, ConnectListener {
+public class ConnectionManager implements ConnectListener {
 
 	private static final String TAG = ConnectionManager.class.getName();
 	private static final String INTERNET_CHECK_URL = "http://internet-up.ably-realtime.com/is-the-internet-up.txt";
@@ -223,12 +223,24 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		return state;
 	}
 
-	private void setState(StateIndication newState) {
-		Log.v(TAG, "setState(): setting " + newState.state);
+	/**
+	 * Set the state the given state
+	 * @param newState
+	 * @return changed
+	 */
+	private boolean setState(StateIndication newState) {
 		ConnectionStateListener.ConnectionStateChange change;
 		StateInfo newStateInfo = states.get(newState.state);
 		synchronized(this) {
-			ErrorInfo reason = newState.reason; if(reason == null) reason = newStateInfo.defaultErrorInfo;
+			if(newState.state == state.state) {
+				Log.v(TAG, "setState(): unchanged " + newState.state);
+				return false;
+			}
+			ErrorInfo reason = newState.reason;
+			if(reason == null) {
+				reason = newStateInfo.defaultErrorInfo;
+			}
+			Log.v(TAG, "setState(): setting " + newState.state + "; reason " + reason);
 			change = new ConnectionStateListener.ConnectionStateChange(state.state, newState.state, newStateInfo.timeout, reason);
 			newStateInfo.host = newState.currentHost;
 			state = newStateInfo;
@@ -236,6 +248,10 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			if(change.current != change.previous) {
 				/* any state change clears pending reauth flag */
 				pendingReauth = false;
+			}
+			if(state.terminal) {
+				clearTransport();
+				stopThread();
 			}
 		}
 
@@ -281,6 +297,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				}
 			}
 		}
+		return true;
 	}
 
 	public void requestState(ConnectionState state) {
@@ -446,13 +463,16 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	 * @throws AblyException
 	 */
 	public void onMessage(ITransport transport, ProtocolMessage message) throws AblyException {
-		if (transport != null && this.transport != transport)
+		if (transport != null && this.transport != transport) {
 			return;
-		if (Log.level <= Log.VERBOSE)
-			Log.v(TAG, "onMessage(): " + message.action + ": " + new String(ProtocolSerializer.writeJSON(message)));
+		}
+		if (Log.level <= Log.VERBOSE) {
+			Log.v(TAG, "onMessage() (transport = " + transport + "): " + message.action + ": " + new String(ProtocolSerializer.writeJSON(message)));
+		}
 		try {
-			if(protocolListener != null)
+			if(protocolListener != null) {
 				protocolListener.onRawMessageRecv(message);
+			}
 			switch(message.action) {
 				case heartbeat:
 					onHeartbeat(message);
@@ -621,7 +641,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		boolean creating = false;
 		synchronized(this) {
 			if(mgrThread == null) {
-				mgrThread = new Thread(this);
+				mgrThread = new CMThread();
 				state = states.get(ConnectionState.initialized);
 				creating = true;
 			}
@@ -634,6 +654,13 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		}
 
 		return creating;
+	}
+
+	private void stopThread() {
+		if(mgrThread != null) {
+			mgrThread.setExiting();
+			mgrThread = null;
+		}
 	}
 
 	private void handleStateRequest() {
@@ -746,9 +773,8 @@ public class ConnectionManager implements Runnable, ConnectListener {
 			}
 		}
 		if(stateChange != null) {
-			if (stateChange.state != state.state) {
-				setState(stateChange);
-			} else if (stateChange.state == ConnectionState.connected) {
+			boolean changed = setState(stateChange);
+			if (!changed && stateChange.state == ConnectionState.connected) {
 				/* connected is special case because we want to deliver reauth notifications to listeners as an update */
 				connection.emitUpdate(null);
 			}
@@ -800,75 +826,72 @@ public class ConnectionManager implements Runnable, ConnectListener {
 		}
 	}
 
-	public void run() {
-		Thread thisThread = Thread.currentThread();
-		while(!state.terminal) {
+	class CMThread extends Thread {
 
-			/*
-			 * Until we've reached a terminal state we:
-			 * - get a state change;
-			 * - enact that change
-			 */
-			StateIndication stateChange = null;
-
-			/* Hold the lock until we obtain a state change */
-			synchronized(this) {
-				/* if we're initialising, then tell the starting thread that
-				 * we're ready to receive events */
-				if(state.state == ConnectionState.initialized) {
-					synchronized(thisThread) {
-						thisThread.notify();
-					}
-				}
-
-				while(!state.terminal && stateChange == null) {
-					/* wait for a state change event or for expiry of the current state */
-					tryWait(state.timeout);
-
-					/* if during the wait some action was requested, handle it */
-					if(requestedState != null) {
-						handleStateRequest();
-						continue;
-					}
-
-					/* if during the wait we were told that a transition
-					 * needs to be enacted, handle that (outside the lock) */
-					if(indicatedState != null) {
-						stateChange = indicatedState;
-						indicatedState = null;
-						break;
-					}
-
-					/* if our state wants us to retry on timer expiry, do that */
-					if(state.retry && !suppressRetry) {
-						requestState(ConnectionState.connecting);
-						continue;
-					}
-
-					if(pendingReauth) {
-						handleReauth();
-						break;
-					}
-
-					/* no indicated state or requested action, so the timer
-					 * expired while we were in the connecting/closing state */
-					stateChange = checkSuspend(new StateIndication(ConnectionState.disconnected, REASON_TIMEDOUT));
-				}
-			}
-
-			/* Enact the change without the lock */
-			if(stateChange != null) {
-				handleStateChange(stateChange);
-			}
+		private boolean exiting = false;
+		private void setExiting() {
+			exiting = true;
 		}
 
-		/* we're in a terminal state; exit this thread */
-		synchronized(this) {
-			if(mgrThread == thisThread) {
-				mgrThread = null;
-				if(transport != null) {
-					transport.close(false);
-					transport = null;
+		public void run() {
+			ConnectionManager cm = ConnectionManager.this;
+			while(!exiting) {
+				/*
+				 * Until we're commited to exit we:
+				 * - get a state change;
+				 * - enact that change
+				 */
+				StateIndication stateChange = null;
+
+				/* Hold the lock until we obtain a state change */
+				synchronized(cm) {
+					/* if we're initialising, then tell the starting thread that
+					 * we're ready to receive events */
+					if (state.state == ConnectionState.initialized) {
+						synchronized(this) {
+							notify();
+						}
+					}
+
+					while(!exiting && stateChange == null) {
+						/* wait for a state change event or for expiry of the current state */
+						tryWait(state.timeout);
+
+						/* if during the wait some action was requested, handle it */
+						if (requestedState != null) {
+							handleStateRequest();
+							continue;
+						}
+
+						/* if during the wait we were told that a transition
+						 * needs to be enacted, handle that (outside the lock) */
+						if (indicatedState != null) {
+							stateChange = indicatedState;
+							indicatedState = null;
+							break;
+						}
+
+						/* if our state wants us to retry on timer expiry, do that */
+						if (state.retry && !suppressRetry) {
+							requestState(ConnectionState.connecting);
+							continue;
+						}
+
+						if (pendingReauth) {
+							handleReauth();
+							break;
+						}
+
+						/* no indicated state or requested action, so the timer
+						 * expired while we were in the connecting/closing state */
+						stateChange = checkSuspend(new StateIndication(ConnectionState.disconnected, REASON_TIMEDOUT));
+					}
+				}
+				if(exiting) { break; }
+
+				/* Enact the change without the lock */
+				if (stateChange != null) {
+					handleStateChange(stateChange);
 				}
 			}
 		}
@@ -992,8 +1015,16 @@ public class ConnectionManager implements Runnable, ConnectListener {
 				Log.v(TAG, "Aborting incomplete transport due to close()");
 				transport.abort(REASON_CLOSED);
 			}
+			transport = null;
 		}
 		notifyState(new StateIndication(ConnectionState.closed, null));
+	}
+
+	private void clearTransport() {
+		if(transport != null) {
+			transport.close(false);
+			transport = null;
+		}
 	}
 
 	/**
@@ -1250,7 +1281,6 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	 * private members
 	 ******************/
 
-	private Thread mgrThread;
 	final AblyRealtime ably;
 	private final ClientOptions options;
 	private final Connection connection;
@@ -1260,6 +1290,7 @@ public class ConnectionManager implements Runnable, ConnectListener {
 	private final HashSet<Object> heartbeatWaiters = new HashSet<Object>();
 	private final Hosts hosts;
 
+	private CMThread mgrThread;
 	private StateInfo state;
 	private StateIndication indicatedState, requestedState;
 	private ConnectParams pendingConnect;
