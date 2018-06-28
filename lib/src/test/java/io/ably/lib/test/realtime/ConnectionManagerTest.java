@@ -301,6 +301,46 @@ public class ConnectionManagerTest extends ParameterizedTest {
 	}
 
 	/**
+	 * Connect, and then perform a close();
+	 * verify that the closed state is reached, and immediately
+	 * reconnect; verify that it reconnects successfully
+	 */
+	@Test
+	public void connectionmanager_restart_race() {
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			final AblyRealtime ably = new AblyRealtime(opts);
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+
+			ably.connection.once(ConnectionEvent.connected, new ConnectionStateListener() {
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					ably.close();
+				}
+			});
+
+			connectionWaiter.waitFor(ConnectionState.closed);
+			assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
+			connectionWaiter.reset();
+
+			/* reconnect */
+			ably.connect();
+
+			/* verify the connection is reestablished */
+			connectionWaiter.waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
+
+			/* close the connection */
+			ably.close();
+			connectionWaiter.waitFor(ConnectionState.closed);
+			assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
 	 * Connect, and then perform a close() from the calling ConnectionManager context;
 	 * verify that the closed state is reached, and the connectionmanager thread has exited
 	 */
