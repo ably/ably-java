@@ -2306,6 +2306,10 @@ public class RealtimePresenceTest extends ParameterizedTest {
 						syncPresenceMessages.get(i).id.equals(presenceMessages.get(i).id) &&
 						syncPresenceMessages.get(i).action.equals(presenceMessages.get(i).action));
 		}
+		catch (AblyException e) {
+			System.out.println("Ably exception thrown in realtime_presence_map_test " + e);
+			fail("Ably exception thrown in realtime_presence_map_test " + e);
+		}
 		finally {
 			if (ably != null)
 				ably.close();
