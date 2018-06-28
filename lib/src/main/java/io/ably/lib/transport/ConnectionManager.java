@@ -1011,9 +1011,9 @@ public class ConnectionManager implements ConnectListener {
 					transport.abort(e.errorInfo);
 				}
 			} else {
-				/* just abort the transport */
+				/* just close the transport */
 				Log.v(TAG, "Aborting incomplete transport due to close()");
-				transport.abort(REASON_CLOSED);
+				transport.close(false);
 			}
 			transport = null;
 		}
