@@ -742,15 +742,15 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 			String channelName = "persisted:channelhistory_time_b_" + testParams.name;
-	
+
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
-	
+
 			/* attach */
 			channel.attach();
 			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
-	
+
 			/* send batches of messages with shprt inter-message delay */
 			CompletionSet msgComplete = new CompletionSet();
 			for(int i = 0; i < 20; i++) {
