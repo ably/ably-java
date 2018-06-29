@@ -277,25 +277,25 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 			ClientOptions rxOpts = createOptions(testVars.keys[0].keyStr);
 			rxAbly = new AblyRealtime(rxOpts);
 			String channelName = "persisted:channelhistory_second_channel_" + testParams.name;
-	
+
 			/* create a channel */
 			final Channel txChannel = txAbly.channels.get(channelName);
 			final Channel rxChannel = rxAbly.channels.get(channelName);
-	
+
 			/* attach sender */
 			txChannel.attach();
 			(new ChannelWaiter(txChannel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", txChannel.state, ChannelState.attached);
-	
+
 			/* publish to the channel */
 			String messageText = "Test message (channelhistory_second_channel)";
 			CompletionWaiter msgComplete = new CompletionWaiter();
 			txChannel.publish("test_event", messageText, msgComplete);
-	
+
 			/* wait for the publish callback to be called */
 			msgComplete.waitFor();
 			assertTrue("Verify success callback was called", msgComplete.success);
-	
+
 			/* attach receiver */
 			rxChannel.attach();
 			(new ChannelWaiter(rxChannel)).waitFor(ChannelState.attached);
@@ -308,7 +308,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 
 			/* verify message contents */
 			assertEquals("Expect correct message text", messages.items()[0].data, messageText);
-	
+
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
@@ -671,15 +671,15 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 			String channelName = "persisted:channelhistory_time_f_" + testParams.name;
-	
+
 			/* create a channel */
 			final Channel channel = ably.channels.get(channelName);
-	
+
 			/* attach */
 			channel.attach();
 			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
-	
+
 			/* send batches of messages with shprt inter-message delay */
 			CompletionSet msgComplete = new CompletionSet();
 			for(int i = 0; i < 20; i++) {
@@ -1218,7 +1218,9 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 			/* wait for the publisher thread to complete */
 			try {
 				publisherThread.join();
-			} catch (InterruptedException e) {}
+			} catch (InterruptedException e) {
+				fail("channelhistory_from_attach: exception in publisher thread");
+			}
 
 			/* get the history for this channel */
 			PaginatedResult<Message> messages = rxChannel.history(new Param[] { new Param("from_serial", rxChannel.properties.attachSerial)});
