@@ -26,9 +26,14 @@ import java.util.Arrays;
 import javax.crypto.KeyGenerator;
 import javax.crypto.spec.IvParameterSpec;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 public class RealtimeCryptoTest extends ParameterizedTest {
+
+	@Rule
+	public Timeout testTimeout = Timeout.seconds(30);
 
 	/**
 	 * Connect to the service
