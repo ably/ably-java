@@ -608,7 +608,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 			final String firstConnectionId = ably.connection.id;
 
 			/* Prepare channels */
-			final Channel attachedChannel = ably.channels.get("test-reattach-after-ttl");
+			final Channel attachedChannel = ably.channels.get("test-reattach-after-ttl" + testParams.name);
 			ChannelWaiter attachedChannelWaiter = new Helpers.ChannelWaiter(attachedChannel);
 			attachedChannel.on(new ChannelStateListener() {
 				@Override
@@ -616,7 +616,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 					attachedChannelHistory.add(stateChange.current.name());
 				}
 			});
-			final Channel suspendedChannel = ably.channels.get("test-reattach-suspended-after-ttl");
+			final Channel suspendedChannel = ably.channels.get("test-reattach-suspended-after-ttl" + testParams.name);
 			suspendedChannel.state = ChannelState.suspended;
 			ChannelWaiter suspendedChannelWaiter = new Helpers.ChannelWaiter(suspendedChannel);
 			suspendedChannel.on(new ChannelStateListener() {
