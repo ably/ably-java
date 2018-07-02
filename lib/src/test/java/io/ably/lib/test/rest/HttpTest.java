@@ -59,7 +59,7 @@ public class HttpTest {
 	private static final int TEST_SERVER_PORT = 27331;
 
 	@Rule
-	public Timeout testTimeout = Timeout.seconds(30);
+	public Timeout testTimeout = Timeout.seconds(60);
 
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
