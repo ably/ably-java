@@ -20,8 +20,11 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
+import org.junit.rules.Timeout;
 
 public class RealtimeConnectTest extends ParameterizedTest {
+
+	public Timeout testTimeout = Timeout.seconds(30);
 
 	/**
 	 * Perform a simple connect to the service and confirm that the connected state is reached.
