@@ -49,7 +49,7 @@ import io.ably.lib.types.ClientOptions;
 public class ConnectionManagerTest extends ParameterizedTest {
 
 	@Rule
-	public Timeout testTimeout = Timeout.seconds(30);
+	public Timeout testTimeout = Timeout.seconds(60);
 
 	/**
 	 * <p>
