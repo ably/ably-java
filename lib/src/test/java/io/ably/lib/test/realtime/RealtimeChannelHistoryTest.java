@@ -11,10 +11,7 @@ import static org.junit.Assert.fail;
 import java.util.HashMap;
 import java.util.Locale;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.Timeout;
 
 import io.ably.lib.realtime.AblyRealtime;
@@ -1160,6 +1157,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 	 * history up to the point of attachment can be obtained. 
 	 */
 	@Test
+	@Ignore("Fails due to issues in sandbox. See https://github.com/ably/realtime/issues/1834 for details.")
 	public void channelhistory_from_attach() {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
