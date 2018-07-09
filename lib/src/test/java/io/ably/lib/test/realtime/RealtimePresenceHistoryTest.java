@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -1035,6 +1036,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 	 * history up to the point of attachment can be obtained. 
 	 */
 	@Test
+	@Ignore("Fails due to issues in sandbox. See https://github.com/ably/realtime/issues/1845 for details.")
 	public void presencehistory_from_attach() {
 		AblyRealtime txAbly = null, rxAbly = null;
 		try {
