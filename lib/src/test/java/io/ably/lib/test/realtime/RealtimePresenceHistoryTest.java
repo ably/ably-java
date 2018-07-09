@@ -1084,7 +1084,9 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 			/* wait 2 seconds */
 			try {
 				Thread.sleep(2000L);
-			} catch(InterruptedException ie) {}
+			} catch(InterruptedException ie) {
+				fail("presencehistory_from_attach: exception in publisher thread");
+			}
 
 			/* subscribe; this will trigger the attach */
 			PresenceWaiter presenceWaiter =  new PresenceWaiter(rxChannel);
