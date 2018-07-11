@@ -1821,7 +1821,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
 			/* create a channel and subscribe */
-			final Channel channel = ably.channels.get("enter_fail");
+			final Channel channel = ably.channels.get("enter_fail_" + testParams.name);
 			CompletionWaiter completionWaiter = new CompletionWaiter();
 			channel.presence.enter("Lorem Ipsum", completionWaiter);
 			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
@@ -1896,7 +1896,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
 			/* create a channel and subscribe */
-			final Channel channel = ably.channels.get("enterclient_fail");
+			final Channel channel = ably.channels.get("enterclient_fail_" + testParams.name);
 			CompletionWaiter completionWaiter = new CompletionWaiter();
 			channel.presence.enterClient("theClient", "Lorem Ipsum", completionWaiter);
 			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
@@ -1935,7 +1935,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
 			/* create a channel and subscribe */
-			final Channel channel = ably.channels.get("updateclient_fail");
+			final Channel channel = ably.channels.get("updateclient_fail_" + testParams.name);
 			CompletionWaiter completionWaiter = new CompletionWaiter();
 			channel.presence.updateClient("theClient", "Lorem Ipsum", completionWaiter);
 			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
@@ -1974,7 +1974,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
 			/* create a channel and subscribe */
-			final Channel channel = ably.channels.get("leaveclient_fail");
+			final Channel channel = ably.channels.get("leaveclient_fail+" + testParams.name);
 			CompletionWaiter completionWaiter = new CompletionWaiter();
 			channel.presence.leaveClient("theClient", "Lorem Ipsum", completionWaiter);
 			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
@@ -1982,6 +1982,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 			ErrorInfo errorInfo = completionWaiter.waitFor();
 
+			new ChannelWaiter(channel).waitFor(ChannelState.failed);
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
 			assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
 		} finally {
