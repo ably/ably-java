@@ -249,17 +249,17 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 	private void setDetached(ErrorInfo reason) {
 		clearAttachTimers();
 		Log.v(TAG, "setDetached(); channel = " + name);
+		presence.setDetached(reason);
 		setState(ChannelState.detached, reason);
 		failQueuedMessages(reason);
-		presence.setDetached(reason);
 	}
 
 	private void setFailed(ErrorInfo reason) {
 		clearAttachTimers();
 		Log.v(TAG, "setFailed(); channel = " + name);
+		presence.setDetached(reason);
 		setState(ChannelState.failed, reason);
 		failQueuedMessages(reason);
-		presence.setDetached(reason);
 	}
 
 	/* Timer for attach operation */
@@ -464,9 +464,9 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 		clearAttachTimers();
 		if (state == ChannelState.attached || state == ChannelState.attaching) {
 			Log.v(TAG, "setSuspended(); channel = " + name);
+			presence.setSuspended(reason);
 			setState(ChannelState.suspended, reason, false, notifyStateChange);
 			failQueuedMessages(reason);
-			presence.setSuspended(reason);
 		}
 	}
 
