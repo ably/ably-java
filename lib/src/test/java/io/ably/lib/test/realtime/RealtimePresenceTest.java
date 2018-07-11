@@ -1828,6 +1828,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 			ErrorInfo errorInfo = completionWaiter.waitFor();
 
+			new ChannelWaiter(channel).waitFor(ChannelState.failed);
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
 			assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
 		} finally {
@@ -1903,6 +1904,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 			ErrorInfo errorInfo = completionWaiter.waitFor();
 
+			new ChannelWaiter(channel).waitFor(ChannelState.failed);
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
 			assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
 		} finally {
@@ -1942,6 +1944,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 			ErrorInfo errorInfo = completionWaiter.waitFor();
 
+			new ChannelWaiter(channel).waitFor(ChannelState.failed);
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
 			assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
 		} finally {
