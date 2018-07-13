@@ -3,8 +3,7 @@ package io.ably.lib.test.rest;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
@@ -23,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import io.ably.lib.test.util.TimeHandler;
+import io.ably.lib.types.*;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.AfterClass;
@@ -45,10 +46,6 @@ import io.ably.lib.http.HttpHelpers;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.test.util.StatusHandler;
 import io.ably.lib.transport.Defaults;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.Param;
 
 /**
  * Created by gokhanbarisaker on 2/2/16.
@@ -58,6 +55,8 @@ public class HttpTest {
 	private static final String PATTERN_HOST_FALLBACK = "(?i)[a-e]\\.ably-realtime.com";
 	private static final String CUSTOM_PATTERN_HOST_FALLBACK = "(?i)[f-k]\\.ably-realtime.com";
 	private static final String[] CUSTOM_HOSTS = { "f.ably-realtime.com", "g.ably-realtime.com", "h.ably-realtime.com", "i.ably-realtime.com", "j.ably-realtime.com", "k.ably-realtime.com" };
+	private static final String TEST_SERVER_HOST = "localhost";
+	private static final int TEST_SERVER_PORT = 27331;
 
 	@Rule
 	public Timeout testTimeout = Timeout.seconds(30);
@@ -69,8 +68,9 @@ public class HttpTest {
 
 	@BeforeClass
 	public static void setUp() throws IOException {
-		server = new RouterNanoHTTPD(27331);
+		server = new RouterNanoHTTPD(TEST_SERVER_PORT);
 		server.addRoute("/status/:code", StatusHandler.class);
+		server.addRoute("/time", TimeHandler.class);
 		server.start(NanoHTTPD.SOCKET_READ_TIMEOUT, true);
 
 		while (!server.wasStarted()) {
@@ -1028,7 +1028,7 @@ public class HttpTest {
 			try {
 				HttpHelpers.httpExecute(httpCore, url, HttpConstants.Methods.GET, new Param[0], null, null);
 			} catch (AblyException.HostFailedException e) {
-				Assert.fail("Informal status code " + statusCode + " shouldn't throw an exception");
+				fail("Informal status code " + statusCode + " shouldn't throw an exception");
 			} catch (Exception e) {
                 /* non HostFailedExceptions are ignored */
 			}
@@ -1043,7 +1043,7 @@ public class HttpTest {
 			try {
 				HttpHelpers.httpExecute(httpCore, url, HttpConstants.Methods.GET, new Param[0], null, null);
 			} catch (AblyException.HostFailedException e) {
-				Assert.fail("Multiple choices status code " + statusCode + " shouldn't throw an exception");
+				fail("Multiple choices status code " + statusCode + " shouldn't throw an exception");
 			} catch (Exception e) {
                 /* non HostFailedExceptions are ignored */
 			}
@@ -1058,10 +1058,91 @@ public class HttpTest {
 			try {
 				HttpHelpers.httpExecute(httpCore, url, HttpConstants.Methods.GET, new Param[0], null, null);
 			} catch (AblyException.HostFailedException e) {
-				Assert.fail("Client error status code " + statusCode + " shouldn't throw an exception");
+				fail("Client error status code " + statusCode + " shouldn't throw an exception");
 			} catch (Exception e) {
                 /* non HostFailedExceptions are ignored */
 			}
+		}
+	}
+
+	@Test
+	public void test_asynchttp_concurrent_default_notqueued() {
+		test_asynchttp_concurrent(0, 64, 5000, 20000);
+	}
+
+	@Test
+	public void test_asynchttp_concurrent_default_queued() {
+		test_asynchttp_concurrent(0, 128, 10000, 25000);
+	}
+
+	@Test
+	public void test_asynchttp_concurrent_10_notqueued() {
+		test_asynchttp_concurrent(10, 10, 5000, 20000);
+	}
+
+	@Test
+	public void test_asynchttp_concurrent_11_queued() {
+		test_asynchttp_concurrent(10, 11, 10000, 25000);
+	}
+
+	private void test_asynchttp_concurrent(int poolSize, int requestCount, int expectedMinDuration, int expectedMaxDuration) {
+		try {
+			ClientOptions options = new ClientOptions("not.a:key");
+			options.tls = false;
+			options.restHost = TEST_SERVER_HOST;
+			options.port = TEST_SERVER_PORT;
+			if(poolSize > 0) {
+				options.asyncHttpThreadpoolSize = poolSize;
+			}
+			final AblyRest ablyRest = new AblyRest(options);
+
+			final Object waiter = new Object();
+			final long startTime = System.currentTimeMillis();
+			final int[] counter = new int[1];
+			final boolean[] error = new boolean[1];
+
+			/* start parallel requests */
+			for(int i = 0; i < requestCount; i++) {
+				ablyRest.timeAsync(new Callback<Long>() {
+					@Override
+					public void onSuccess(Long result) {
+						synchronized(waiter) {
+							counter[0]++;
+							waiter.notify();
+						}
+					}
+
+					@Override
+					public void onError(ErrorInfo reason) {
+						synchronized(waiter) {
+							counter[0]++;
+							error[0] = true;
+							waiter.notify();
+						}
+						fail("Unexpected error: " + reason.message);
+					}
+				});
+			}
+
+			/* wait for all requests to complete */
+			while(counter[0] < requestCount) {
+				synchronized(waiter) {
+					try {
+						waiter.wait();
+					} catch(InterruptedException ie) {}
+				}
+			}
+
+			/* assert */
+			assertEquals("Verify all requests completed", counter[0], requestCount);
+			assertFalse("Verify there were no errors", error[0]);
+
+			long endTime = System.currentTimeMillis(), duration = endTime - startTime;
+			assertTrue("Verify duration at least minimum", duration >= expectedMinDuration);
+			assertTrue("Verify duration at most maximum", duration <= expectedMaxDuration);
+
+		} catch(AblyException ae) {
+			ae.printStackTrace();
 		}
 	}
 

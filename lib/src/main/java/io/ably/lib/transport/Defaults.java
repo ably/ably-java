@@ -42,6 +42,7 @@ public class Defaults {
 	public static final String[] TRANSPORTS         = new String[]{"web_socket"};
 	public static String TRANSPORT = "io.ably.lib.transport.WebSocketTransport$Factory";
 	public static final int HTTP_MAX_RETRY_COUNT    = 3;
+	public static final int HTTP_ASYNC_THREADPOOL_SIZE = 64;
 
 	public static int getPort(ClientOptions options) {
 		return options.tls

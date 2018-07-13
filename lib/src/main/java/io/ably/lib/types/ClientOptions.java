@@ -175,4 +175,8 @@ public class ClientOptions extends AuthOptions {
 	 */
 	public Param[] transportParams;
 
+	/**
+	 * Allows the caller to specify a non-default size for the asyncHttp threadpool
+	 */
+	public int asyncHttpThreadpoolSize = Defaults.HTTP_ASYNC_THREADPOOL_SIZE;
 }
