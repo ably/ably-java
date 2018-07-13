@@ -77,7 +77,7 @@ public class AblyRest {
 
 		auth = new Auth(this, options);
 		httpCore = new HttpCore(options, auth);
-		http = new Http(new AsyncHttpScheduler(httpCore), new SyncHttpScheduler(httpCore));
+		http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
 		channels = new Channels();
 	}
 
