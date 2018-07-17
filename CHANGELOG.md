@@ -1,5 +1,23 @@
 # Change Log
 
+## [1.0.5](https://github.com/ably/ably-java/tree/v1.0.5)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.0.4...v1.0.5)
+
+**Fixed bugs:**
+
+- Async HTTP thread pool issues [\#405](https://github.com/ably/ably-java/issues/405)
+
+**Merged pull requests:**
+
+- Fix problem with the asyncHttp threadpool [\#408](https://github.com/ably/ably-java/pull/408) ([paddybyers](https://github.com/paddybyers))
+- Exit with a non zero code if any of the two suites \(realtime or rest\) fails [\#407](https://github.com/ably/ably-java/pull/407) ([funkyboy](https://github.com/funkyboy))
+- Fix some flaky tests [\#406](https://github.com/ably/ably-java/pull/406) ([funkyboy](https://github.com/funkyboy))
+- Fix cm thread exit [\#404](https://github.com/ably/ably-java/pull/404) ([paddybyers](https://github.com/paddybyers))
+- Trigger Travis when a branch name ends with -ci [\#402](https://github.com/ably/ably-java/pull/402) ([funkyboy](https://github.com/funkyboy))
+- Add fast forward description in release process [\#401](https://github.com/ably/ably-java/pull/401) ([funkyboy](https://github.com/funkyboy))
+- Improve release description [\#400](https://github.com/ably/ably-java/pull/400) ([funkyboy](https://github.com/funkyboy))
+
 ## [1.0.4](https://github.com/ably/ably-java/tree/v1.0.4)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.0.3...v1.0.4)
