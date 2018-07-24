@@ -136,6 +136,7 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 			throw AblyException.fromErrorInfo(connectionManager.getStateErrorInfo());
 
 		/* send attach request and pending state */
+		Log.v(TAG, "attach(); channel = " + name + "; sending ATTACH request");
 		ProtocolMessage attachMessage = new ProtocolMessage(Action.attach, this.name);
 		try {
 			if (listener != null) {
@@ -944,16 +945,33 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 		case detach:
 		case detached:
 			ChannelState oldState = state;
-			setDetached((msg.error != null) ? msg.error : REASON_NOT_ATTACHED);
-			if(oldState == ChannelState.attaching || oldState == ChannelState.attached || oldState == ChannelState.suspended) {
-				/* Unexpected detach, reattach when possible */
-				Log.v(TAG, String.format("Server initiated detach for channel %s", name));
-				try {
-					attachWithTimeout(null);
-				} catch (AblyException e) {
+			switch(oldState) {
+				case attached:
+					/* Unexpected detach, reattach when possible */
+					setDetached((msg.error != null) ? msg.error : REASON_NOT_ATTACHED);
+					Log.v(TAG, String.format("Server initiated detach for channel %s; attempting reattach", name));
+					try {
+						attachWithTimeout(null);
+					} catch (AblyException e) {
 					/* Send message error */
-					setDetached(e.errorInfo);
-				}
+						setDetached(e.errorInfo);
+					}
+					break;
+				case attaching:
+					/* RTL13b says we need to be suspended, but continue to retry */
+					Log.v(TAG, String.format("Server initiated detach for channel %s whilst attaching; moving to suspended", name));
+					setSuspended(msg.error, true);
+					reattachAfterTimeout();
+					break;
+				case detaching:
+					setDetached((msg.error != null) ? msg.error : REASON_NOT_ATTACHED);
+					break;
+				case detached:
+				case suspended:
+				case failed:
+				default:
+					/* do nothing */
+					break;
 			}
 			break;
 		case message:
