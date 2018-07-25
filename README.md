@@ -473,7 +473,7 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 
 Similarly for the Android release at https://bintray.com/ably-io/ably/ably-android.
 Run `gradle android:assembleRelease` locally to generate the files, and drag in the files in
-`./android/build/release/1.0.6/io/ably/ably-java/1.0.6`. In this case upload the `.jar` files, the `.pom` file and the `.aar` file.
+`./android/build/release/1.0.6/io/ably/ably-android/1.0.6`. In this case upload the `.jar` files, the `.pom` file and the `.aar` file.
 
 ## Support, feedback and troubleshooting
 
