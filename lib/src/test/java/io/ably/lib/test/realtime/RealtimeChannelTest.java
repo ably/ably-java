@@ -1049,7 +1049,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 	 * Establish connection, attach channel, simulate sending attached and detached messages
 	 * from the server, test correct behaviour
 	 *
-	 * Tests RTL12, RTL13
+	 * Tests RTL12, RTL13a
 	 */
 	@Test
 	public void channel_server_initiated_attached_detached() throws AblyException {
@@ -1243,8 +1243,9 @@ public class RealtimeChannelTest extends ParameterizedTest {
 	 * Tests features RTL4c, RTL4f, RTL5f, RTL5e
 	 */
 	@Test
-	public void channel_reattach_failed() {
+	public void channel_attach_retry_failed() {
 		AblyRealtime ably = null;
+		String channelName = "channel_attach_retry_failed_" + testParams.name;
 		String oldTransportFractory = Defaults.TRANSPORT;
 		long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
 		try {
@@ -1265,7 +1266,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			/* Block send() and attach */
 			MockWebsocketFactory.blockSend();
 
-			Channel channel = ably.channels.get("channel_reattach_test");
+			Channel channel = ably.channels.get(channelName);
 			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
 			channel.attach();
 
@@ -1352,5 +1353,146 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			Defaults.realtimeRequestTimeout = oldRealtimeTimeout;
 		}
 	}
-}
 
+	/*
+	 * Initiate connection, and attach to a channel. Simulate a server-initiated detach of the channel
+	 * and verify that the client attempts to reattach. Block the transport to prevent that from
+	 * succeeding. Verify that the channel enters the suspended state with the appropriate error.
+	 *
+	 * Tests features RTL13b
+	 */
+	@Test
+	public void channel_reattach_failed_timeout() {
+		AblyRealtime ably = null;
+		final String channelName = "channel_reattach_failed_timeout_" + testParams.name;
+		String oldTransportFractory = Defaults.TRANSPORT;
+		long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
+		try {
+			/* Mock transport to block send */
+			Defaults.TRANSPORT = MockWebsocketFactory.class.getName();
+			/* Reduce timeout for test to run faster */
+			Defaults.realtimeRequestTimeout = 1000;
+			MockWebsocketFactory.allowSend();
+
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.channelRetryTimeout = 1000;
+
+			ably = new AblyRealtime(opts);
+
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+			connectionWaiter.waitFor(ConnectionState.connected);
+
+			Channel channel = ably.channels.get(channelName);
+			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+			channel.attach();
+
+			channelWaiter.waitFor(ChannelState.attached);
+
+			/* Block send() */
+			MockWebsocketFactory.blockSend();
+
+			/* Inject detached message as if from the server */
+			ProtocolMessage detachedMessage = new ProtocolMessage() {{
+				action = Action.detached;
+				channel = channelName;
+			}};
+			ably.connection.connectionManager.onMessage(null, detachedMessage);
+
+			/* Should get to suspended soon because send() is blocked */
+			ErrorInfo suspendReason = channelWaiter.waitFor(ChannelState.suspended);
+			assertEquals("Verify the suspended event contains the detach reason", 91200, suspendReason.code);
+
+			/* Unblock send(), and expect a transition to attached */
+			MockWebsocketFactory.allowSend();
+			channelWaiter.waitFor(ChannelState.attached);
+
+		} catch(AblyException e)  {
+			e.printStackTrace();
+			fail("channel_reattach_failed_timeout: unexpected exception");
+		} finally {
+			if (ably != null) {
+				ably.close();
+			}
+			/* Restore default values to run other tests */
+			Defaults.TRANSPORT = oldTransportFractory;
+			Defaults.realtimeRequestTimeout = oldRealtimeTimeout;
+		}
+	}
+
+	/*
+	 * Initiate connection, and attach to a channel. Simulate a server-initiated detach of the channel
+	 * and verify that the client attempts to reattach. Block the transport and respond instead with
+	 * an attach error. Verify that the channel enters the suspended state with the appropriate error.
+	 *
+	 * Tests features RTL13b
+	 */
+	@Test
+	public void channel_reattach_failed_error() {
+		AblyRealtime ably = null;
+		final String channelName = "channel_reattach_failed_error_" + testParams.name;
+		final int errorCode = 12345;
+		String oldTransportFractory = Defaults.TRANSPORT;
+		long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
+		try {
+			/* Mock transport to block send */
+			Defaults.TRANSPORT = MockWebsocketFactory.class.getName();
+			/* Reduce timeout for test to run faster */
+			Defaults.realtimeRequestTimeout = 5000;
+			MockWebsocketFactory.allowSend();
+
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.channelRetryTimeout = 1000;
+
+			ably = new AblyRealtime(opts);
+
+			ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+			connectionWaiter.waitFor(ConnectionState.connected);
+
+			Channel channel = ably.channels.get(channelName);
+			ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+			channel.attach();
+
+			channelWaiter.waitFor(ChannelState.attached);
+
+			/* Block send() */
+			MockWebsocketFactory.blockSend();
+
+			/* Inject detached message as if from the server */
+			ProtocolMessage detachedMessage = new ProtocolMessage() {{
+				action = Action.detached;
+				channel = channelName;
+				error = new ErrorInfo("Test error", errorCode);
+			}};
+			ably.connection.connectionManager.onMessage(null, detachedMessage);
+
+			/* wait for the client reattempt attachment */
+			channelWaiter.waitFor(ChannelState.attaching);
+
+			/* Inject detached+error message as if from the server */
+			ProtocolMessage errorMessage = new ProtocolMessage() {{
+				action = Action.detached;
+				channel = channelName;
+				error = new ErrorInfo("Test error", errorCode);
+			}};
+			ably.connection.connectionManager.onMessage(null, errorMessage);
+
+			/* Should get to suspended soon because there was an error response to the attach attempt */
+			ErrorInfo suspendReason = channelWaiter.waitFor(ChannelState.suspended);
+			assertEquals("Verify the suspended event contains the detach reason", errorCode, suspendReason.code);
+
+			/* Unblock send(), and expect a transition to attached */
+			MockWebsocketFactory.allowSend();
+			channelWaiter.waitFor(ChannelState.attached);
+
+		} catch(AblyException e)  {
+			e.printStackTrace();
+			fail("Unexpected exception");
+		} finally {
+			if (ably != null)
+				ably.close();
+			/* Restore default values to run other tests */
+			Defaults.TRANSPORT = oldTransportFractory;
+			Defaults.realtimeRequestTimeout = oldRealtimeTimeout;
+		}
+	}
+}
