@@ -1408,10 +1408,11 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
 		} catch(AblyException e)  {
 			e.printStackTrace();
-			fail("Unexpected exception");
+			fail("channel_reattach_failed_timeout: unexpected exception");
 		} finally {
-			if (ably != null)
+			if (ably != null) {
 				ably.close();
+			}
 			/* Restore default values to run other tests */
 			Defaults.TRANSPORT = oldTransportFractory;
 			Defaults.realtimeRequestTimeout = oldRealtimeTimeout;

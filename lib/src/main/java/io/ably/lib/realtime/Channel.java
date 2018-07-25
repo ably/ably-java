@@ -954,6 +954,7 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 						attachWithTimeout(null);
 					} catch (AblyException e) {
 					/* Send message error */
+						Log.e(TAG, "Attempting reattach threw exception", e);
 						setDetached(e.errorInfo);
 					}
 					break;
