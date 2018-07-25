@@ -1,5 +1,17 @@
 # Change Log
 
+## [1.0.6](https://github.com/ably/ably-java/tree/1.0.6)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.0.5...1.0.6)
+
+**Fixed bugs:**
+
+- ably-java gets into a channel attach retry loop [\#410](https://github.com/ably/ably-java/issues/410)
+
+**Merged pull requests:**
+
+- RTL13b: ensure that detached+error responses form the server do not result in a busy loop of attach requests [\#411](https://github.com/ably/ably-java/pull/411) ([paddybyers](https://github.com/paddybyers))
+
 ## [1.0.5](https://github.com/ably/ably-java/tree/v1.0.5)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.0.4...v1.0.5)
