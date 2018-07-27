@@ -45,6 +45,7 @@ public class RestPushTest extends ParameterizedTest {
     private static DeviceDetails deviceDetails1ClientA;
     private static DeviceDetails deviceDetails2ClientA;
     private static DeviceDetails deviceDetails3ClientB;
+    private static DeviceDetails deviceDetails4ClientC;
     private static DeviceDetails[] allDeviceDetails;
 
     private static ChannelSubscription subscriptionFooDevice1;
@@ -53,6 +54,7 @@ public class RestPushTest extends ParameterizedTest {
     private static ChannelSubscription subscriptionFooClientA;
     private static ChannelSubscription subscriptionFooClientB;
     private static ChannelSubscription subscriptionBarClientB;
+    private static ChannelSubscription subscriptionFooDevice4;
     private static ChannelSubscription[] allSubscriptions;
 
     private static Helpers.RawHttpTracker httpTracker;
@@ -119,11 +121,24 @@ public class RestPushTest extends ParameterizedTest {
                                 .add("registrationToken", "qux")))
                 .toJson());
 
+        deviceDetails4ClientC = DeviceDetails.fromJsonObject(JsonUtils.object()
+                .add("id", "deviceDetails4ClientC")
+                .add("platform", "android")
+                .add("formFactor", "tablet")
+                .add("clientId", "clientC")
+                .add("metadata", JsonUtils.object())
+                .add("push", JsonUtils.object()
+                        .add("recipient", JsonUtils.object()
+                                .add("transportType", "gcm")
+                                .add("registrationToken", "qux")))
+                .toJson());
+
         allDeviceDetails = new DeviceDetails[]{
                 deviceDetails,
                 deviceDetails1ClientA,
                 deviceDetails2ClientA,
-                deviceDetails3ClientB
+                deviceDetails3ClientB,
+                deviceDetails4ClientC
         };
 
         for (DeviceDetails device : allDeviceDetails) {
@@ -136,6 +151,7 @@ public class RestPushTest extends ParameterizedTest {
         subscriptionFooClientA = ChannelSubscription.forClientId("pushenabled:foo", "clientA");
         subscriptionFooClientB = ChannelSubscription.forClientId("pushenabled:foo", "clientB");
         subscriptionBarClientB = ChannelSubscription.forClientId("pushenabled:bar", "clientB");
+        subscriptionFooDevice4 = ChannelSubscription.forDevice("pushenabled:foo", "deviceDetails4ClientC");
 
         allSubscriptions = new ChannelSubscription[]{
                 subscriptionFooDevice1,
@@ -143,7 +159,8 @@ public class RestPushTest extends ParameterizedTest {
                 subscriptionBarDevice2,
                 subscriptionFooClientA,
                 subscriptionFooClientB,
-                subscriptionBarClientB
+                subscriptionBarClientB,
+                subscriptionFooDevice4
         };
 
         for (ChannelSubscription sub : allSubscriptions) {
@@ -580,8 +597,8 @@ public class RestPushTest extends ParameterizedTest {
 
         testCases.add(new TestCase(
                 "by deviceId",
-                Param.push(null, "deviceId", deviceDetails1ClientA.id),
-                new ChannelSubscription[]{subscriptionFooDevice1},
+                Param.push(null, "deviceId", deviceDetails4ClientC.id),
+                new ChannelSubscription[]{subscriptionFooDevice4},
                 null, 0));
         testCases.add(new TestCase(
                 "by clientId A",
