@@ -11,6 +11,7 @@ import io.ably.lib.http.HttpScheduler;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.HttpHelpers;
 import io.ably.lib.rest.AblyRest;
+import io.ably.lib.test.loader.ArgumentLoader;
 import io.ably.lib.test.loader.ResourceLoader;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
@@ -144,21 +145,22 @@ public class Setup {
 
 	private static TestVars __getTestVars() {
 		if(testVars == null) {
-			host = System.getenv("ABLY_REST_HOST");
-			environment = System.getenv("ABLY_ENV");
-			if(environment == null)
+			host = argumentLoader.getTestArgument("ABLY_REST_HOST");
+			environment = argumentLoader.getTestArgument("ABLY_ENV");
+			if(environment == null) {
 				environment = "sandbox";
+			}
 
 			if(host != null) {
-				wsHost = System.getenv("ABLY_REALTIME_HOST");
+				wsHost = argumentLoader.getTestArgument("ABLY_REALTIME_HOST");
 				if(wsHost == null)
 					wsHost = host;
 			}
 
-			if(System.getenv("ABLY_PORT") != null) {
-				port = Integer.valueOf(System.getenv("ABLY_PORT"));
-				tlsPort = Integer.valueOf(System.getenv("ABLY_TLS_PORT"));
-			} else if(host != null && host.contains("local")) {
+			if(argumentLoader.getTestArgument("ABLY_PORT") != null) {
+				port = Integer.valueOf(argumentLoader.getTestArgument("ABLY_PORT"));
+				tlsPort = Integer.valueOf(argumentLoader.getTestArgument("ABLY_TLS_PORT"));
+			} else if((host != null && host.contains("local")) || environment.equals("local")) {
 				port = 8080;
 				tlsPort = 8081;
 			} else {
@@ -253,9 +255,11 @@ public class Setup {
 	}
 
 	static {
+		argumentLoader = new ArgumentLoader();
 		resourceLoader = new ResourceLoader();
 	}
 
+	private static ArgumentLoader argumentLoader;
 	private static ResourceLoader resourceLoader;
 	private static final String specFile = "local/testAppSpec.json";
 
