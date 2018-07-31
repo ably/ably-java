@@ -14,6 +14,8 @@ import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.types.ProtocolSerializer;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.NetworkConnectivity.NetworkConnectivityListener;
+import io.ably.lib.util.Platform;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -210,7 +212,7 @@ public class ConnectionManager implements ConnectListener {
 				state.state == ConnectionState.connecting;
 
 		if(!connectionExist && !connectionAttemptInProgress) {
-			startThread(); // Start thread if not already started.
+			startup(); // Start thread if not already started.
 			requestState(ConnectionState.connecting);
 		}
 	}
@@ -251,7 +253,7 @@ public class ConnectionManager implements ConnectListener {
 			}
 			if(state.terminal) {
 				clearTransport();
-				stopThread();
+				shutdown();
 			}
 		}
 
@@ -633,11 +635,21 @@ public class ConnectionManager implements ConnectListener {
 		}
 	}
 
-	/**************************
-	 * ConnectionManager thread
-	 **************************/
+	/******************************
+	 * ConnectionManager lifecycle
+	 ******************************/
 
-	private boolean startThread() {
+	private void startup() {
+		startThread();
+		startConnectivityListener();
+	}
+
+	private void shutdown() {
+		stopConnectivityListener();
+		stopThread();
+	}
+
+	private void startThread() {
 		boolean creating = false;
 		synchronized(this) {
 			if(mgrThread == null) {
@@ -652,8 +664,6 @@ public class ConnectionManager implements ConnectListener {
 				try { mgrThread.wait(); } catch(InterruptedException ie) {}
 			}
 		}
-
-		return creating;
 	}
 
 	private void stopThread() {
@@ -1252,6 +1262,33 @@ public class ConnectionManager implements ConnectListener {
 
 	}
 
+	/***********************
+	 * Network connectivity
+	 **********************/
+
+	private class CMConnectivityListener implements NetworkConnectivityListener {
+
+		@Override
+		public void onNetworkAvailable() {
+
+		}
+
+		@Override
+		public void onNetworkUnavailable(ErrorInfo reason) {
+
+		}
+	}
+
+	private void startConnectivityListener() {
+		connectivityListener = new CMConnectivityListener();
+		Platform.getNetworkConnectvity().addListener(connectivityListener);
+	}
+
+	private void stopConnectivityListener() {
+		Platform.getNetworkConnectvity().removeListener(connectivityListener);
+		connectivityListener = null;
+	}
+
 	/*******************
 	 * for tests only
 	 ******************/
@@ -1300,6 +1337,7 @@ public class ConnectionManager implements ConnectListener {
 	private long suspendTime;
 	private long msgSerial;
 	private long lastActivity;
+	private CMConnectivityListener connectivityListener;
 
 	/* for debug/test only */
 	private RawProtocolListener protocolListener;
