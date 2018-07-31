@@ -68,9 +68,10 @@ import static io.ably.lib.test.common.Helpers.assertInstanceOf;
 import static io.ably.lib.test.common.Helpers.assertSize;
 
 public class AndroidPushTest extends AndroidTestCase {
-    private static AblyRest rest;
     private static Helpers.RawHttpTracker httpTracker;
+    private static AblyRest rest;
     private static TestActivationStateMachine machine;
+    private static AblyRest adminRest;
 
     public static Test suite() {
         TestSuite suite = new TestSuite();
@@ -101,6 +102,9 @@ public class AndroidPushTest extends AndroidTestCase {
         };
         machine = (TestActivationStateMachine) rest.push.getStateMachine(getContext());
         assertTrue(machine.reset());
+
+        adminRest = new AblyRest(options);
+        adminRest.auth.authorize(new Auth.TokenParams() {{ clientId = Auth.WILDCARD_CLIENTID; }}, null);
     }
 
     // RSH2a
@@ -626,7 +630,9 @@ public class AndroidPushTest extends AndroidTestCase {
 
     // RSH4b2
     public void test_PushChannel_subscribeClient_ok() throws AblyException {
-        rest.auth.setClientId("testClient");
+        final String testClientId = "testClient";
+        rest.auth.setClientId(testClientId);
+        rest.auth.authorize(new Auth.TokenParams() {{ clientId = testClientId; }}, null);
         machine.reset();
         
         Channel channel = rest.channels.get("pushenabled:foo");
@@ -698,7 +704,9 @@ public class AndroidPushTest extends AndroidTestCase {
 
     // RSH4d2
     public void test_PushChannel_unsubscribeClient_ok() throws AblyException {
-        rest.auth.setClientId("testClient");
+        final String testClientId = "testClient";
+        rest.auth.setClientId(testClientId);
+        rest.auth.authorize(new Auth.TokenParams() {{ clientId = testClientId; }}, null);
         machine.reset();
         
         Channel channel = rest.channels.get("pushenabled:foo");
@@ -735,10 +743,14 @@ public class AndroidPushTest extends AndroidTestCase {
             @Override
             public void run() throws Exception {
                 if (useClientId) {
-                    rest.auth.setClientId("testClient");
-                    machine.reset();
+                    final String testClientId = "testClient";
+                    rest.auth.setClientId(testClientId);
+                    rest.auth.authorize(new Auth.TokenParams() {{ clientId = testClientId; }}, null);
+                } else {
+                    rest.auth.authorize(null, null);
                 }
 
+                machine.reset();
                 registerAndWait();
                 DeviceDetails otherDevice = DeviceDetails.fromJsonObject(JsonUtils.object()
                         .add("id", "other")
@@ -763,10 +775,10 @@ public class AndroidPushTest extends AndroidTestCase {
                 };
 
                 try {
-                    rest.push.admin.deviceRegistrations.save(otherDevice);
+                    adminRest.push.admin.deviceRegistrations.save(otherDevice);
 
                     for (PushBase.ChannelSubscription sub : fixtures) {
-                        rest.push.admin.channelSubscriptions.save(sub);
+                        adminRest.push.admin.channelSubscriptions.save(sub);
                     }
 
                     Push.ChannelSubscription[] got = rest.channels.get("pushenabled:foo").push.listSubscriptions(getContext()).items();
@@ -779,9 +791,9 @@ public class AndroidPushTest extends AndroidTestCase {
 
                     assertArrayUnorderedEquals(expected.toArray(), got);
                 } finally {
-                    rest.push.admin.deviceRegistrations.remove(otherDevice);
+                    adminRest.push.admin.deviceRegistrations.remove(otherDevice);
                     for (PushBase.ChannelSubscription sub : fixtures) {
-                        rest.push.admin.channelSubscriptions.remove(sub);
+                        adminRest.push.admin.channelSubscriptions.remove(sub);
                     }
                 }
             }
