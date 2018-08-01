@@ -494,8 +494,8 @@ public class HttpCore {
 		}
 	}
 
-	final String scheme;
-	final int port;
+	public final String scheme;
+	public final int port;
 	final ClientOptions options;
 	final Hosts hosts;
 

@@ -59,6 +59,18 @@ public class RestPushTest extends ParameterizedTest {
 
     private static Helpers.RawHttpTracker httpTracker;
 
+    private static JsonObject testPayload = JsonUtils.object()
+            .add("data", JsonUtils.object()
+                .add("foo", "bar"))
+            .add("notification", JsonUtils.object()
+                .add("body", null)
+                .add("collapseKey", null)
+                .add("icon", null)
+                .add("sound", null)
+                .add("title", null)
+                .add("ttl", null)
+        ).toJson();
+
     @Rule
     public Timeout testTimeout = Timeout.seconds(60);
 
@@ -222,7 +234,7 @@ public class RestPushTest extends ParameterizedTest {
                         messages.waitFor(1, 10000);
 
                         assertEquals(1, messages.receivedMessages.size());
-                        assertEquals(payload, messages.receivedMessages.get(0).data);
+                        assertEquals(payload.toString(), messages.receivedMessages.get(0).data);
                     }
                 }.run();
             }
@@ -231,10 +243,13 @@ public class RestPushTest extends ParameterizedTest {
         TestCases testCases = new TestCases();
         testCases.add(new TestCase(
                 "ok",
-                Param.set(null, "ablyChannel", "pushenabled:push_admin_publish-ok"),
-                JsonUtils.object()
-                        .add("data", JsonUtils.object()
-                                .add("foo", "bar")).toJson(),
+                new Param[]{
+                        new Param("transportType", "ablyChannel"),
+                        new Param("channel", "pushenabled:push_admin_publish-ok"),
+                        new Param("ablyKey", testVars.keys[0].keyStr),
+                        new Param("ablyUrl", String.format("%s%s:%d", rest.httpCore.scheme, rest.httpCore.getHost(), rest.httpCore.port)),
+                },
+                testPayload,
                 null));
         testCases.add(new TestCase(
                 "bad recipient",

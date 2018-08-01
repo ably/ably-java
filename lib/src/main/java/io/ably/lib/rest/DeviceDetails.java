@@ -9,15 +9,12 @@ import io.ably.lib.http.HttpCore;
 import io.ably.lib.util.JsonUtils;
 import io.ably.lib.util.Serialisation;
 
-
-
 public class DeviceDetails {
     public String id;
     public String platform;
     public String formFactor;
     public String clientId;
     public JsonObject metadata;
-    public String updateToken;
 
     public Push push;
 
@@ -84,9 +81,6 @@ public class DeviceDetails {
         if (metadata != null) {
             o.add("metadata", metadata);
         }
-        if (updateToken != null) {
-            o.addProperty("updateToken", updateToken);
-        }
         if (push != null) {
             o.add("push", push.toJsonObject());
         }
@@ -109,14 +103,14 @@ public class DeviceDetails {
         JsonObject thisJson = this.toJsonObject();
         JsonObject otherJson = other.toJsonObject();
 
-        if (this.updateToken == null) {
-            // Disregard update token if
-            otherJson.remove("updateToken");
-        }
+        // Disregard device token
+        thisJson.remove("deviceSecret");
+        otherJson.remove("deviceSecret");
+
         if ((this.metadata == null || this.metadata.entrySet().isEmpty()) && (other.metadata == null || other.metadata.entrySet().isEmpty())) {
             // Empty metadata == null metadata.
-            thisJson.remove("updateToken");
-            otherJson.remove("updateToken");
+            thisJson.remove("metadata");
+            otherJson.remove("metadata");
         }
 
         return thisJson.equals(otherJson);

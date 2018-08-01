@@ -20,7 +20,9 @@ public class JsonUtils {
         }
 
         public JsonUtilsObject add(String key, Object value) {
-            if (value instanceof JsonElement) {
+            if (value == null) {
+                json.add(key, null);
+            } else if (value instanceof JsonElement) {
                 json.add(key, (JsonElement) value);
             } else if (value instanceof String) {
                 json.addProperty(key, (String) value);

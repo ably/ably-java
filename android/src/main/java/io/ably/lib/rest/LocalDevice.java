@@ -5,25 +5,35 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.preference.PreferenceManager;
-import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Function;
 import io.ably.lib.types.RegistrationToken;
-import io.ably.lib.types.Callback;
-import io.ably.lib.util.Serialisation;
-import io.ably.lib.http.Http;
-import io.ably.lib.http.HttpScheduler;
-import io.ably.lib.http.HttpUtils;
+import io.ably.lib.util.Base64Coder;
 import io.azam.ulidj.ULID;
-import android.util.Log;
 
 import java.lang.reflect.Field;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 
 public class LocalDevice extends DeviceDetails {
+    public String deviceSecret;
+    public String deviceIdentityToken;
+
     private final AblyRest rest;
 
     private LocalDevice(AblyRest rest) {
         super();
         this.rest = rest;
+        this.push = new DeviceDetails.Push();
+    }
+
+    public JsonObject toJsonObject() {
+        JsonObject o = super.toJsonObject();
+        if (deviceSecret != null) {
+            o.addProperty("deviceSecret", deviceSecret);
+        }
+
+        return o;
     }
 
     protected static LocalDevice load(Context context, AblyRest rest) {
@@ -44,15 +54,18 @@ public class LocalDevice extends DeviceDetails {
         if (id == null) {
             this.resetId(context);
         }
-        this.updateToken = prefs.getString(SharedPrefKeys.UPDATE_TOKEN, null);
+        this.deviceIdentityToken = prefs.getString(SharedPrefKeys.DEVICE_TOKEN, null);
 
         RegistrationToken.Type type = RegistrationToken.Type.fromInt(
             prefs.getInt(SharedPrefKeys.TOKEN_TYPE, -1));
+
         RegistrationToken token = null;
         if (type != null) {
             token = new RegistrationToken(type, prefs.getString(SharedPrefKeys.TOKEN, null));
+            if(token != null) {
+                setRegistrationToken(token);
+            }
         }
-        this.setRegistrationToken(token);
     }
 
     protected RegistrationToken getRegistrationToken() {
@@ -70,10 +83,6 @@ public class LocalDevice extends DeviceDetails {
     }
 
     private void setRegistrationToken(RegistrationToken token) {
-        push = new DeviceDetails.Push();
-        if (token == null) {
-            return;
-        }
         push.recipient = new JsonObject();
         push.recipient.addProperty("transportType", token.type.code);
         push.recipient.addProperty("registrationToken", token.token);
@@ -92,34 +101,20 @@ public class LocalDevice extends DeviceDetails {
             .apply();
     }
 
-    public void setUpdateToken(Context context, String token) {
-        this.updateToken = token;
+    public void setDeviceToken(Context context, String token) {
+        this.deviceIdentityToken = token;
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        prefs.edit().putString(SharedPrefKeys.UPDATE_TOKEN, token).apply();
+        prefs.edit().putString(SharedPrefKeys.DEVICE_TOKEN, token).apply();
     }
 
-    public void reissueUpdateToken(Context context) throws AblyException {
-        if (this.id == null || this.updateToken == null) {
-            return;
-        }
-
-        JsonObject response = rest.http.request(new Http.Execute<JsonObject>() {
-            @Override
-            public void execute(HttpScheduler http, Callback<JsonObject> callback) throws AblyException {
-                http.post("/push/deviceDetails/" + id + "/resetUpdateToken", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), null, null, new Serialisation.HttpResponseHandler<JsonObject>(), true, callback);
-            }
-        }).sync();
-        setUpdateToken(context, response.getAsJsonPrimitive("updateToken").getAsString());
-    }
-
-    public void resetId(Context context) {
+    public boolean resetId(Context context) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = prefs.edit();
 
-        id = ULID.random();
-        boolean ok = prefs.edit().putString(SharedPrefKeys.DEVICE_ID, id).commit();
-        if (!ok) {
-            id = prefs.getString(SharedPrefKeys.DEVICE_ID, null);
-        }
+        editor.putString(SharedPrefKeys.DEVICE_ID, (id = ULID.random()));
+        editor.putString(SharedPrefKeys.DEVICE_SECRET, (deviceSecret = generateSecret()));
+
+        return editor.commit();
     }
 
     // Returns a function to be called if the editing succeeds, to refresh the object's fields.
@@ -148,8 +143,20 @@ public class LocalDevice extends DeviceDetails {
 
     private static class SharedPrefKeys {
         static final String DEVICE_ID = "ABLY_DEVICE_ID";
-        static final String UPDATE_TOKEN = "ABLY_DEVICE_UPDATE_TOKEN";
+        static final String DEVICE_SECRET = "ABLY_DEVICE_SECRET";
+        static final String DEVICE_TOKEN = "ABLY_DEVICE_IDENTITY_TOKEN";
         static final String TOKEN_TYPE = "ABLY_REGISTRATION_TOKEN_TYPE";
         static final String TOKEN = "ABLY_REGISTRATION_TOKEN";
+    }
+
+    private static String generateSecret() {
+        byte[] entropy = new byte[64];
+        (new SecureRandom()).nextBytes(entropy);
+        MessageDigest digest = null;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {}
+        byte[] encodedhash = digest.digest(entropy);
+        return Base64Coder.encode(encodedhash).toString();
     }
 }

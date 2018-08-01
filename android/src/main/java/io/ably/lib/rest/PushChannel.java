@@ -170,8 +170,8 @@ public class PushChannel {
     }
 
     protected DeviceDetails getDevice(Context context) throws AblyException {
-        DeviceDetails device = rest.device(context);
-        if (device == null || device.updateToken == null) {
+        LocalDevice localDevice = rest.device(context);
+        if (localDevice == null || localDevice.deviceIdentityToken == null) {
             // Alternatively, we could store a queue of pending subscriptions in the
             // device storage. But then, in order to know if this subscription operation
             // succeeded, you would have to add a BroadcastReceiver in AndroidManifest.xml.
@@ -180,7 +180,7 @@ public class PushChannel {
             // more robust.
             throw AblyException.fromThrowable(new Exception("cannot use device before AblyRest.push.activate has finished"));
         }
-        return device;
+        return localDevice;
     }
 }
 

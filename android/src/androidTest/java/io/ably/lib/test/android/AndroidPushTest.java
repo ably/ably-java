@@ -13,8 +13,6 @@ import junit.framework.TestSuite;
 
 import junit.framework.Test;
 
-import org.junit.After;
-
 import java.util.ArrayList;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -33,9 +31,9 @@ import io.ably.lib.rest.Push.ActivationStateMachine.CalledDeactivate;
 import io.ably.lib.rest.Push.ActivationStateMachine.Deregistered;
 import io.ably.lib.rest.Push.ActivationStateMachine.DeregistrationFailed;
 import io.ably.lib.rest.Push.ActivationStateMachine.Event;
-import io.ably.lib.rest.Push.ActivationStateMachine.GettingUpdateTokenFailed;
+import io.ably.lib.rest.Push.ActivationStateMachine.GettingDeviceRegistrationFailed;
 import io.ably.lib.rest.Push.ActivationStateMachine.GotPushDeviceDetails;
-import io.ably.lib.rest.Push.ActivationStateMachine.GotUpdateToken;
+import io.ably.lib.rest.Push.ActivationStateMachine.GotDeviceRegistration;
 import io.ably.lib.rest.Push.ActivationStateMachine.NotActivated;
 import io.ably.lib.rest.Push.ActivationStateMachine.RegistrationUpdated;
 import io.ably.lib.rest.Push.ActivationStateMachine.State;
@@ -44,7 +42,7 @@ import io.ably.lib.rest.Push.ActivationStateMachine.WaitingForDeregistration;
 import io.ably.lib.rest.Push.ActivationStateMachine.WaitingForNewPushDeviceDetails;
 import io.ably.lib.rest.Push.ActivationStateMachine.WaitingForPushDeviceDetails;
 import io.ably.lib.rest.Push.ActivationStateMachine.WaitingForRegistrationUpdate;
-import io.ably.lib.rest.Push.ActivationStateMachine.WaitingForUpdateToken;
+import io.ably.lib.rest.Push.ActivationStateMachine.WaitingForDeviceRegistration;
 import io.ably.lib.rest.PushBase;
 import io.ably.lib.rest.PushChannel;
 import io.ably.lib.test.common.Helpers;
@@ -60,7 +58,6 @@ import io.ably.lib.types.Param;
 import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.util.IntentUtils;
 import io.ably.lib.util.JsonUtils;
-import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 
 import static io.ably.lib.test.common.Helpers.assertArrayUnorderedEquals;
@@ -150,12 +147,12 @@ public class AndroidPushTest extends AndroidTestCase {
     }
 
     // RSH3a2a
-    public void test_NotActivated_on_CalledActivate_with_updateToken() throws InterruptedException {
+    public void test_NotActivated_on_CalledActivate_with_DeviceToken() throws InterruptedException {
         LocalDevice device = rest.device(getContext());
-        device.setUpdateToken(getContext(), "foo");
+        device.setDeviceToken(getContext(), "foo");
 
         assertNotNull(device.id);
-        assertEquals("foo", device.updateToken);
+        assertEquals("foo", device.deviceIdentityToken);
 
         State state = new NotActivated(machine);
         State to = state.transition(new CalledActivate());
@@ -233,15 +230,15 @@ public class AndroidPushTest extends AndroidTestCase {
         class TestCase extends TestCases.Base {
             private final ErrorInfo registerError;
             private final boolean useCustomRegisterer;
-            private final String updateToken;
+            private final String deviceIdentityToken;
             private final Class<? extends Event> expectedEvent;
             private final Class<? extends State> expectedState;
 
-            public TestCase(String name, boolean useCustomRegisterer, ErrorInfo error, String updateToken, Class<? extends Event> expectedEvent, Class<? extends State> expectedState) {
+            public TestCase(String name, boolean useCustomRegisterer, ErrorInfo error, String deviceIdentityToken, Class<? extends Event> expectedEvent, Class<? extends State> expectedState) {
                 super(name, null);
                 this.useCustomRegisterer = useCustomRegisterer;
                 this.registerError = error;
-                this.updateToken = updateToken;
+                this.deviceIdentityToken = deviceIdentityToken;
                 this.expectedEvent = expectedEvent;
                 this.expectedState = expectedState;
             }
@@ -266,7 +263,7 @@ public class AndroidPushTest extends AndroidTestCase {
                         }
 
                         requestWaiter = httpTracker.getRequestWaiter();
-                        // Block until we've checked the intermediate WaitingForUpdateToken state,
+                        // Block until we've checked the intermediate WaitingForDeviceRegistration state,
                         // before the request's response causes another state transition.
                         // Otherwise, our test would be racing against the request.
                         httpTracker.lockRequests();
@@ -291,9 +288,9 @@ public class AndroidPushTest extends AndroidTestCase {
 
                     // RSH3b3d
                     assertSize(0, machine.pendingEvents);
-                    assertInstanceOf(WaitingForUpdateToken.class, machine.current);
+                    assertInstanceOf(WaitingForDeviceRegistration.class, machine.current);
 
-                    // Now wait for next event, when we've got an updateToken or an error.
+                    // Now wait for next event, when we've got an deviceIdentityToken or an error.
                     handled = machine.getEventHandledWaiter();
                     BlockingQueue<Event> events = machine.getEventReceiver(1);
 
@@ -302,9 +299,9 @@ public class AndroidPushTest extends AndroidTestCase {
                         if (registerError != null) {
                             IntentUtils.addErrorInfo(intent, registerError);
                         } else {
-                            intent.putExtra("updateToken", updateToken);
+                            intent.putExtra("deviceIdentityToken", deviceIdentityToken);
                         }
-                        sendBroadcast("PUSH_UPDATE_TOKEN", intent);
+                        sendBroadcast("PUSH_DEVICE_REGISTERED", intent);
                     } else {
                         httpTracker.unlockRequests();
                     }
@@ -314,10 +311,10 @@ public class AndroidPushTest extends AndroidTestCase {
 
                     // RSH3c2a
                     if (useCustomRegisterer) {
-                        assertEquals(updateToken, rest.device(getContext()).updateToken);
+                        assertEquals(deviceIdentityToken, rest.device(getContext()).deviceIdentityToken);
                     } else if (registerError == null) {
-                        // No error expected, so updateToken should've been set by the server.
-                        assertNotNull(rest.device(getContext()).updateToken);
+                        // No error expected, so deviceIdentityToken should've been set by the server.
+                        assertNotNull(rest.device(getContext()).deviceIdentityToken);
 
                     }
 
@@ -338,15 +335,15 @@ public class AndroidPushTest extends AndroidTestCase {
         testCases.add(new TestCase(
                 "ok with custom registerer",
                 true,
-                null, "testUpdateToken",
-                GotUpdateToken.class, // RSH3b3c
+                null, "testDeviceToken",
+                GotDeviceRegistration.class, // RSH3b3c
                 WaitingForNewPushDeviceDetails.class /* RSH3c2c */));
 
         testCases.add(new TestCase(
                 "ok with default registerer",
                 false,
-                null, "testUpdateToken",
-                GotUpdateToken.class, // RSH3b3c
+                null, "testDeviceToken",
+                GotDeviceRegistration.class, // RSH3b3c
                 WaitingForNewPushDeviceDetails.class /* RSH3c2c */));
 
         // RSH3c3
@@ -354,28 +351,28 @@ public class AndroidPushTest extends AndroidTestCase {
                 "failing with custom registerer",
                 true,
                 new ErrorInfo("testError", 123), null,
-                GettingUpdateTokenFailed.class, // RSH3b3c
+                GettingDeviceRegistrationFailed.class, // RSH3b3c
                 NotActivated.class /* RSH3c3b */));
 
         testCases.add(new TestCase(
                 "failing with default registerer",
                 false,
                 new ErrorInfo("testError", 123), null,
-                GettingUpdateTokenFailed.class, // RSH3b3c
+                GettingDeviceRegistrationFailed.class, // RSH3b3c
                 NotActivated.class /* RSH3c3b */));
 
         testCases.run();
     }
 
     // RSH3c1
-    public void test_WaitingForUpdateToken_on_CalledActivate() {
-        State state = new WaitingForUpdateToken(machine);
+    public void test_WaitingForDeviceRegistration_on_CalledActivate() {
+        State state = new WaitingForDeviceRegistration(machine);
         State to = state.transition(new CalledActivate());
 
         assertSize(0, machine.pendingEvents);
 
         // RSH3c1a
-        assertInstanceOf(WaitingForUpdateToken.class, to);
+        assertInstanceOf(WaitingForDeviceRegistration.class, to);
     }
 
     // RSH3d1
@@ -521,7 +518,7 @@ public class AndroidPushTest extends AndroidTestCase {
     public void test_WaitingForDeregistration_on_Deregistered() throws Exception {
         State state = new WaitingForDeregistration(machine, null);
 
-        rest.device(getContext()).setUpdateToken(getContext(), "test");
+        rest.device(getContext()).setDeviceToken(getContext(), "test");
         final Helpers.AsyncWaiter<Intent> waiter = broadcastWaiter("PUSH_DEACTIVATE");
 
         State to = state.transition(new Deregistered());
@@ -531,7 +528,7 @@ public class AndroidPushTest extends AndroidTestCase {
         assertNull(waiter.error);
 
         // RSH3g2a
-        assertNull(rest.device(getContext()).updateToken);
+        assertNull(rest.device(getContext()).deviceIdentityToken);
 
         // RSH3g2c
         assertSize(0, machine.pendingEvents);
@@ -829,7 +826,7 @@ public class AndroidPushTest extends AndroidTestCase {
 
         Intent intent = new Intent();
         IntentUtils.addErrorInfo(intent, new ErrorInfo("intentional", 123));
-        sendBroadcast("PUSH_UPDATE_TOKEN", intent);
+        sendBroadcast("PUSH_DEVICE_REGISTERED", intent);
 
         failedWaiter.waitFor();
     }
@@ -892,20 +889,21 @@ public class AndroidPushTest extends AndroidTestCase {
         }
 
         @Override
-        public synchronized void handleEvent(Event event) {
+        public synchronized boolean handleEvent(Event event) {
             if (events != null) {
                 try {
                     events.put(event);
                 } catch (InterruptedException e) {}
             }
 
-            super.handleEvent(event);
+            boolean ok = super.handleEvent(event);
 
             if (waiter != null && waiter.shouldFire(current, event)) {
                 CompletionWaiter w = waiter;
                 waiter = null;
                 w.onSuccess();
             }
+            return ok;
         }
 
         @Override
@@ -1064,10 +1062,10 @@ public class AndroidPushTest extends AndroidTestCase {
 
                     if (deregisterError == null) {
                         // RSH3g2a
-                        assertNull(rest.device(getContext()).updateToken);
+                        assertNull(rest.device(getContext()).deviceIdentityToken);
                     } else {
                         // RSH3g3a
-                        assertNotNull(rest.device(getContext()).updateToken);
+                        assertNotNull(rest.device(getContext()).deviceIdentityToken);
                     }
 
                     // RSH3g2b, RSH3g3a
@@ -1180,7 +1178,7 @@ public class AndroidPushTest extends AndroidTestCase {
                                                         .add("registrationToken", updatedRegistrationToken))).toJson().toString(),
                                 Serialisation.msgpackToGson(request.requestBody.getEncoded()).toString());
                         String authToken = Helpers.tokenFromAuthHeader(request.authHeader);
-                        assertEquals(rest.device(getContext()).updateToken, authToken);
+                        assertEquals(rest.device(getContext()).deviceIdentityToken, authToken);
                     }
 
                     // RSH3d3d
@@ -1195,7 +1193,7 @@ public class AndroidPushTest extends AndroidTestCase {
                         if (updateError != null) {
                             IntentUtils.addErrorInfo(intent, updateError);
                         }
-                        sendBroadcast("PUSH_UPDATE_TOKEN", intent);
+                        sendBroadcast("PUSH_DEVICE_REGISTERED", intent);
                     } else {
                         httpTracker.unlockRequests();
                     }

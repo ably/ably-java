@@ -114,13 +114,13 @@ public class Push extends PushBase {
 
         public static class GotPushDeviceDetails extends Event {}
 
-        public static class GotUpdateToken extends Event {
-            final String updateToken;
-            GotUpdateToken(String token) { this.updateToken = token; }
+        public static class GotDeviceRegistration extends Event {
+            final String deviceIdentityToken;
+            GotDeviceRegistration(String token) { this.deviceIdentityToken = token; }
         }
 
-        public static class GettingUpdateTokenFailed extends ErrorEvent {
-            GettingUpdateTokenFailed(ErrorInfo reason) { super(reason); }
+        public static class GettingDeviceRegistrationFailed extends ErrorEvent {
+            GettingDeviceRegistrationFailed(ErrorInfo reason) { super(reason); }
         }
 
         public static class RegistrationUpdated extends Event {}
@@ -135,9 +135,9 @@ public class Push extends PushBase {
             public DeregistrationFailed(ErrorInfo reason) { super(reason); }
         }
 
-        public abstract static class Event {};
+        public abstract static class Event {}
 
-        public abstract static class ErrorEvent extends Event {
+        abstract static class ErrorEvent extends Event {
             final ErrorInfo reason;
             ErrorEvent(ErrorInfo reason) { this.reason = reason; }
         }
@@ -151,7 +151,7 @@ public class Push extends PushBase {
                 } else if (event instanceof CalledActivate) {
                     LocalDevice device = machine.getDevice();
 
-                    if (device.updateToken != null) {
+                    if (device.deviceIdentityToken != null) {
                         // Already registered.
                         machine.pendingEvents.add(new CalledActivate());
                         return new WaitingForNewPushDeviceDetails(machine);
@@ -169,7 +169,7 @@ public class Push extends PushBase {
             }
         }
 
-        protected LocalDevice getDevice() {
+        LocalDevice getDevice() {
             return rest.device(context);
         }
 
@@ -192,8 +192,8 @@ public class Push extends PushBase {
                             @Override
                             public void execute(HttpScheduler http, Callback<JsonObject> callback) throws AblyException {
                                 Param[] params = null;
-                                if (machine.rest.options.pushFullWait) {
-                                    params = Param.push(params, "fullWait", "true");
+                                if(machine.rest.options.pushFullWait) {
+                                    params = Param.push(null, "fullWait", "true");
                                 }
                                 http.post("/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, body, new Serialisation.HttpResponseHandler<JsonObject>(), true, callback);
                             }
@@ -201,34 +201,39 @@ public class Push extends PushBase {
                             @Override
                             public void onSuccess(JsonObject response) {
                                 Log.i(TAG, "registered " + device.id);
-                                machine.handleEvent(new GotUpdateToken(response.getAsJsonPrimitive("updateToken").getAsString()));
+                                JsonObject deviceIdentityTokenJson = response.getAsJsonObject("deviceIdentityToken");
+                                if(deviceIdentityTokenJson == null) {
+                                    machine.handleEvent(new GettingDeviceRegistrationFailed(new ErrorInfo("Invalid deviceIdentityToken in response", 40000, 400)));
+                                } else {
+                                    machine.handleEvent(new GotDeviceRegistration(deviceIdentityTokenJson.getAsJsonPrimitive("token").getAsString()));
+                                }
                             }
                             @Override
                             public void onError(ErrorInfo reason) {
                                 Log.e(TAG, "error registering " + device.id + ": " + reason.toString());
-                                machine.handleEvent(new GettingUpdateTokenFailed(reason));
+                                machine.handleEvent(new GettingDeviceRegistrationFailed(reason));
                             }
                         });
                     }
 
-                    return new WaitingForUpdateToken(machine);
+                    return new WaitingForDeviceRegistration(machine);
                 }
                 return null;
             }
         }
 
-        public static class WaitingForUpdateToken extends State {
-            public WaitingForUpdateToken(ActivationStateMachine machine) { super(machine); }
+        public static class WaitingForDeviceRegistration extends State {
+            public WaitingForDeviceRegistration(ActivationStateMachine machine) { super(machine); }
             public State transition(Event event) {
                 if (event instanceof CalledActivate) {
                     return this;
-                } else if (event instanceof GotUpdateToken) {
+                } else if (event instanceof GotDeviceRegistration) {
                     LocalDevice device = machine.getDevice();
-                    device.setUpdateToken(machine.context, ((GotUpdateToken) event).updateToken);
+                    device.setDeviceToken(machine.context, ((GotDeviceRegistration) event).deviceIdentityToken);
                     machine.callActivatedCallback(null);
                     return new WaitingForNewPushDeviceDetails(machine);
-                } else if (event instanceof GettingUpdateTokenFailed) {
-                    machine.callActivatedCallback(((GettingUpdateTokenFailed) event).reason);
+                } else if (event instanceof GettingDeviceRegistrationFailed) {
+                    machine.callActivatedCallback(((GettingDeviceRegistrationFailed) event).reason);
                     return new NotActivated(machine);
                 }
                 return null;
@@ -246,7 +251,7 @@ public class Push extends PushBase {
                     deregister(machine, device);
                     return new WaitingForDeregistration(machine, this);
                 } else if (event instanceof GotPushDeviceDetails) {
-                    DeviceDetails device = machine.getDevice();
+                    LocalDevice device = machine.getDevice();
 
                     updateRegistration(machine, device);
 
@@ -301,7 +306,7 @@ public class Push extends PushBase {
                     return this;
                 } else if (event instanceof Deregistered) {
                     LocalDevice device = machine.getDevice();
-                    device.setUpdateToken(machine.context, null);
+                    device.setDeviceToken(machine.context, null);
                     machine.callDeactivatedCallback(null);
                     return new NotActivated(machine);
                 } else if (event instanceof DeregistrationFailed) {
@@ -348,21 +353,21 @@ public class Push extends PushBase {
         }
 
         private void useCustomRegisterer(final DeviceDetails device, final boolean isNew) {
-            registerOnceReceiver("PUSH_UPDATE_TOKEN", new BroadcastReceiver() {
+            registerOnceReceiver("PUSH_DEVICE_REGISTERED", new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
                     ErrorInfo error = IntentUtils.getErrorInfo(intent);
                     if (error == null) {
                         Log.i(TAG, "custom registration for " + device.id);
                         if (isNew) {
-                            handleEvent(new GotUpdateToken(intent.getStringExtra("updateToken")));
+                            handleEvent(new GotDeviceRegistration(intent.getStringExtra("deviceIdentityToken")));
                         } else {
                             handleEvent(new RegistrationUpdated());
                         }
                     } else {
                         Log.e(TAG, "error from custom registration for " + device.id + ": " + error.toString());
                         if (isNew) {
-                            handleEvent(new GettingUpdateTokenFailed(error));
+                            handleEvent(new GettingDeviceRegistrationFailed(error));
                         } else {
                             handleEvent(new UpdatingRegistrationFailed(error));
                         }
@@ -411,7 +416,7 @@ public class Push extends PushBase {
             LocalBroadcastManager.getInstance(context.getApplicationContext()).registerReceiver(onceReceiver, filter);
         }
 
-        private static void updateRegistration(final ActivationStateMachine machine, final DeviceDetails device) {
+        private static void updateRegistration(final ActivationStateMachine machine, final LocalDevice device) {
             if (machine.prefs.getBoolean(PersistKeys.USE_CUSTOM_REGISTERER, false)) {
                 machine.useCustomRegisterer(device, false);
             } else {
@@ -420,7 +425,7 @@ public class Push extends PushBase {
                     @Override
                     public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
                         Param[] headers = HttpUtils.defaultAcceptHeaders(machine.rest.options.useBinaryProtocol);
-                        headers = Param.push(headers, HttpConstants.Headers.AUTHORIZATION, "Bearer " + Base64Coder.encodeString(device.updateToken));
+                        headers = Param.push(headers, HttpConstants.Headers.AUTHORIZATION, "Bearer " + Base64Coder.encodeString(device.deviceIdentityToken));
 
                         Param[] params = null;
                         if (machine.rest.options.pushFullWait) {
@@ -486,14 +491,14 @@ public class Push extends PushBase {
             pendingEvents = getPersistedPendingEvents();
         }
 
-        public synchronized void handleEvent(Event event) {
+        public synchronized boolean handleEvent(Event event) {
             Log.d(TAG, String.format("handling event %s from %s", event.getClass().getSimpleName(), current.getClass().getSimpleName()));
 
             State maybeNext = current.transition(event);
             if (maybeNext == null) {
                 Log.d(TAG, "enqueuing event: " + event.getClass().getSimpleName());
                 pendingEvents.add(event);
-                return;
+                return true;
             }
 
             Log.d(TAG, String.format("transition: %s -(%s)-> %s", current.getClass().getSimpleName(), event.getClass().getSimpleName(), maybeNext.getClass().getSimpleName()));
@@ -517,7 +522,7 @@ public class Push extends PushBase {
                 current = maybeNext;
             }
 
-            persist();
+            return persist();
         }
 
         public boolean reset() {
@@ -540,7 +545,7 @@ public class Push extends PushBase {
             return committed;
         }
 
-        private void persist() {
+        private boolean persist() {
             SharedPreferences.Editor editor = prefs.edit();
 
             if (current instanceof PersistentState) {
@@ -558,7 +563,7 @@ public class Push extends PushBase {
                 i++;
             }
 
-            boolean ok = editor.commit();
+            return editor.commit();
         }
 
         private State getPersistedState() {
