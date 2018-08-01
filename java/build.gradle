@@ -1,95 +1,85 @@
 buildscript {
-  repositories {
-    jcenter()
-  }
+    repositories {
+        jcenter()
+    }
 }
-
 plugins {
-  id 'de.fuerstenau.buildconfig' version '1.1.8'
+    id 'de.fuerstenau.buildconfig' version '1.1.8'
 }
-
 apply plugin: 'java'
 apply plugin: 'idea'
 apply from: '../common.gradle'
 apply from: 'maven.gradle'
-
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
-
 apply from: '../dependencies.gradle'
-
 buildConfig {
-  packageName 'io.ably.lib'
-  clsName 'BuildConfig'
-  buildConfigField 'String', 'LIBRARY_NAME', 'java'
+    packageName 'io.ably.lib'
+    clsName 'BuildConfig'
+    buildConfigField 'String', 'LIBRARY_NAME', 'java'
 }
-
 sourceSets {
-  main {
-    java {
-      srcDirs = ['src/main/java', '../lib/src/main/java']
+    main {
+        java {
+            srcDirs = ['src/main/java', '../lib/src/main/java']
+        }
     }
-  }
-  test {
-    java {
-      srcDirs = ['src/test/java', '../lib/src/test/java']
+    test {
+        java {
+            srcDirs = ['src/test/java', '../lib/src/test/java']
+        }
     }
-  }
 }
-
 // Default jar: add io.ably classes from :lib dependency.
 jar {
-  baseName = 'ably-java'
-  from {
-    configurations.compile.collect {
-      it.isDirectory() ? it : zipTree(it)
+    baseName = 'ably-java'
+    from {
+        configurations.compile.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
     }
-  }
-  includes = ['**/io/ably/**']
-  includeEmptyDirs false
-  exclude 'META-INF/**'
+    includes = ['**/io/ably/**']
+    includeEmptyDirs false
+    exclude 'META-INF/**'
 }
-
 // fullJar: add all classes from dependencies transitively.
 task fullJar(type: Jar) {
-  baseName = 'ably-java'
-  classifier = 'full'
-  from {
-    configurations.compile.collect {
-      it.isDirectory() ? it : zipTree(it)
+    baseName = 'ably-java'
+    classifier = 'full'
+    from {
+        configurations.compile.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
     }
-  }
-  with jar
-  exclude 'META-INF/**'
+    with jar
+    exclude 'META-INF/**'
 }
-
 assemble.dependsOn fullJar
-
 configurations {
-  fullConfiguration
-  testsConfiguration
+    fullConfiguration
+    testsConfiguration
 }
-
 artifacts {
-  fullConfiguration fullJar
+    fullConfiguration fullJar
 }
-
 task testRealtimeSuite(type: Test) {
-  filter {
-    includeTestsMatching "*RealtimeSuite"
-  }
-  beforeTest { descriptor ->
-    logger.lifecycle("Running test: " + descriptor)
-  }
-  outputs.upToDateWhen { false }
+    filter {
+        includeTestsMatching "*RealtimeSuite"
+    }
+    beforeTest { descriptor ->
+        logger.lifecycle("Running test: " + descriptor)
+    }
+    outputs.upToDateWhen { false }
+}
+task testRestSuite(type: Test) {
+    filter {
+        includeTestsMatching "*RestSuite"
+    }
+    beforeTest { descriptor ->
+        logger.lifecycle("Running test: " + descriptor)
+    }
+    outputs.upToDateWhen { false }
+}
+dependencies {
 }
 
-task testRestSuite(type: Test) {
-  filter {
-    includeTestsMatching "*RestSuite"
-  }
-  beforeTest { descriptor ->
-    logger.lifecycle("Running test: " + descriptor)
-  }
-  outputs.upToDateWhen { false }
-}
