@@ -1,5 +1,16 @@
 # Change Log
 
+## [v1.0.7](https://github.com/ably/ably-java/tree/v1.0.7) (2018-08-16)
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.0.6...v1.0.7)
+
+**Closed issues:**
+
+- IllegalStateException scheduling transport activity timer [\#418](https://github.com/ably/ably-java/issues/418)
+
+**Merged pull requests:**
+
+- Handle exceptions in activity timer task, and when attempting to reschedule the timer [\#419](https://github.com/ably/ably-java/pull/419) ([paddybyers](https://github.com/paddybyers))
+
 ## [1.0.6](https://github.com/ably/ably-java/tree/1.0.6)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.0.5...1.0.6)
