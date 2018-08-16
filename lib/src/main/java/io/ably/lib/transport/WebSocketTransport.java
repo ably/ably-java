@@ -291,7 +291,11 @@ public class WebSocketTransport implements ITransport {
 							timer = new Timer();
 					}
 				}
-				timer.schedule(new WsClientTimerTask(this), next - now);
+				try {
+					timer.schedule(new WsClientTimerTask(this), next - now);
+				} catch(IllegalStateException ise) {
+					Log.e(TAG, "Unexpected exception scheduling activity timer", ise);
+				}
 			} else {
 				/* Timeout has been reached. Close the connection. */
 				Log.e(TAG, "No activity for " + timeout + "ms, closing connection");
@@ -310,7 +314,11 @@ public class WebSocketTransport implements ITransport {
 			}
 
 			public void run() {
-				client.checkActivity();
+				try {
+					client.checkActivity();
+				} catch(Throwable t) {
+					Log.e(TAG, "Unexpected exception in activity timer handler", t);
+				}
 			}
 		}
 
