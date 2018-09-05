@@ -446,8 +446,9 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 
 * Create a branch for the release, named like `release-1.0.6`
 * Replace all references of the current version number with the new version number (check this file [README.md](./README.md) and [common.gradle](./common.gradle)) and commit the changes
-* Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to automate the update of the [CHANGELOG](./CHANGELOG.md). Once the CHANGELOG has completed, manually change the `Unreleased` heading and link with the current version number such as `v1.0.4`. Also ensure that the `Full Changelog` link points to the new version tag instead of the `HEAD`. Commit this change.
-* Add a tag and push to origin such as `git tag v1.0.4; git push origin v1.0.4`
+* Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to update the [CHANGELOG](./CHANGELOG.md): `github_changelog_generator -u ably -p ably-java --header-label="# Changelog" --release-branch=release-1.0.6 --future-release=v1.0.6` 
+* Commit [CHANGELOG](./CHANGELOG.md)
+* Add a tag and push to origin such as `git tag v1.0.6; git push origin v1.0.6`
 * Make a PR against `develop`
 * Once the PR is approved, merge it into `develop`
 * Fast-forward the master branch: `git checkout master && git merge --ff-only develop && git push origin master`
