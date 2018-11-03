@@ -104,8 +104,8 @@ public class RestRequestTest extends ParameterizedTest {
 			assertEquals("Verify a single items is returned", items.length, 1);
 			JsonElement channelDetails = items[0];
 			assertTrue("Verify an object is returned", channelDetails.isJsonObject());
-			assertTrue("Verify id member is present", channelDetails.getAsJsonObject().has("id"));
-			assertEquals("Verify id member is channelName", channelName, channelDetails.getAsJsonObject().get("id").getAsString());
+			assertTrue("Verify channelId member is present", channelDetails.getAsJsonObject().has("channelId"));
+			assertEquals("Verify channelId member is channelName", channelName, channelDetails.getAsJsonObject().get("channelId").getAsString());
 
 			/* check request has expected attributes; use last request in case of challenges preceding sending auth header */
 			RawHttpRequest req = httpListener.getLastRequest();
@@ -154,8 +154,8 @@ public class RestRequestTest extends ParameterizedTest {
 					waiter.assertEquals(items.length, 1);
 					JsonElement channelDetails = items[0];
 					waiter.assertTrue(channelDetails.isJsonObject());
-					waiter.assertTrue(channelDetails.getAsJsonObject().has("id"));
-					waiter.assertEquals(channelName, channelDetails.getAsJsonObject().get("id").getAsString());
+					waiter.assertTrue(channelDetails.getAsJsonObject().has("channelId"));
+					waiter.assertEquals(channelName, channelDetails.getAsJsonObject().get("channelId").getAsString());
 
 					/* check request has expected attributes */
 					RawHttpRequest req = httpListener.values().iterator().next();
@@ -210,7 +210,7 @@ public class RestRequestTest extends ParameterizedTest {
 			JsonElement[] items = channelsResponse.items();
 			assertTrue("Verify at least two channels are returned", items.length >= 2);
 			for(int i = 0; i < items.length; i++) {
-				assertTrue("Verify id member is a matching channelName", items[i].getAsJsonObject().get("id").getAsString().startsWith(channelNamePrefix));
+				assertTrue("Verify channelId member is a matching channelName", items[i].getAsJsonObject().get("channelId").getAsString().startsWith(channelNamePrefix));
 			}
 
 			/* check that there is either no next link, or no results from it */
@@ -255,7 +255,7 @@ public class RestRequestTest extends ParameterizedTest {
 					JsonElement[] items = channelResponse.items();
 					waiter.assertTrue(items.length >= 2);
 					for(int i = 0; i < items.length; i++) {
-						waiter.assertTrue(items[i].getAsJsonObject().get("id").getAsString().startsWith(channelNamePrefix));
+						waiter.assertTrue(items[i].getAsJsonObject().get("channelId").getAsString().startsWith(channelNamePrefix));
 					}
 					/* check that there is either no next link, or no results from it */
 					if(!channelResponse.hasNext()) {
@@ -322,7 +322,7 @@ public class RestRequestTest extends ParameterizedTest {
 			JsonElement[] items = channelsResponse.items();
 			assertTrue("Verify one channel is returned", items.length == 1);
 			for(int i = 0; i < items.length; i++) {
-				assertTrue("Verify id member is a matching channelName", items[i].getAsJsonObject().get("id").getAsString().startsWith(channelNamePrefix));
+				assertTrue("Verify channelId member is a matching channelName", items[i].getAsJsonObject().get("channelId").getAsString().startsWith(channelNamePrefix));
 			}
 
 			/* get next page */
@@ -331,7 +331,7 @@ public class RestRequestTest extends ParameterizedTest {
 			items = channelsResponse.items();
 			assertTrue("Verify one channel is returned", items.length == 1);
 			for(int i = 0; i < items.length; i++) {
-				assertTrue("Verify id member is a matching channelName", items[i].getAsJsonObject().get("id").getAsString().startsWith(channelNamePrefix));
+				assertTrue("Verify channelId member is a matching channelName", items[i].getAsJsonObject().get("channelId").getAsString().startsWith(channelNamePrefix));
 			}
 
 			/* get first page */
@@ -340,7 +340,7 @@ public class RestRequestTest extends ParameterizedTest {
 			items = channelsResponse.items();
 			assertTrue("Verify one channel is returned", items.length == 1);
 			for(int i = 0; i < items.length; i++) {
-				assertTrue("Verify id member is a matching channelName", items[i].getAsJsonObject().get("id").getAsString().startsWith(channelNamePrefix));
+				assertTrue("Verify channelId member is a matching channelName", items[i].getAsJsonObject().get("channelId").getAsString().startsWith(channelNamePrefix));
 			}
 
 			/* check that there is either no next link, or no results from it */
@@ -386,7 +386,7 @@ public class RestRequestTest extends ParameterizedTest {
 					JsonElement[] items = channelsResponse.items();
 					waiter.assertTrue(items.length == 1);
 					for(int i = 0; i < items.length; i++) {
-						waiter.assertTrue(items[i].getAsJsonObject().get("id").getAsString().startsWith(channelNamePrefix));
+						waiter.assertTrue(items[i].getAsJsonObject().get("channelId").getAsString().startsWith(channelNamePrefix));
 					}
 					channelsResponse.next(new AsyncHttpPaginatedResponse.Callback() {
 						@Override
@@ -396,7 +396,7 @@ public class RestRequestTest extends ParameterizedTest {
 							JsonElement[] items = channelsResponse.items();
 							waiter.assertTrue(items.length == 1);
 							for(int i = 0; i < items.length; i++) {
-								waiter.assertTrue(items[i].getAsJsonObject().get("id").getAsString().startsWith(channelNamePrefix));
+								waiter.assertTrue(items[i].getAsJsonObject().get("channelId").getAsString().startsWith(channelNamePrefix));
 							}
 
 							/* check that there is a first link */
@@ -407,7 +407,7 @@ public class RestRequestTest extends ParameterizedTest {
 									JsonElement[] items = firstResponse.items();
 									waiter.assertTrue(items.length == 1);
 									for(int i = 0; i < items.length; i++) {
-										waiter.assertTrue(items[i].getAsJsonObject().get("id").getAsString().startsWith(channelNamePrefix));
+										waiter.assertTrue(items[i].getAsJsonObject().get("channelId").getAsString().startsWith(channelNamePrefix));
 									}
 
 									/* check that there is either no next link, or no results from it */
