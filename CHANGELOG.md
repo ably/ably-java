@@ -1,4 +1,23 @@
-# Change Log
+# Changelog
+
+## [v1.0.8](https://github.com/ably/ably-java/tree/v1.0.8) (2018-11-03)
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.0.7...v1.0.8)
+
+**Implemented enhancements:**
+
+- Ensure request method accepts UPDATE, PATCH & DELETE verbs [\#416](https://github.com/ably/ably-java/issues/416)
+
+**Fixed bugs:**
+
+- Error in release mode due to missing proguard exclusion [\#427](https://github.com/ably/ably-java/issues/427)
+- Exception when failing to decode a message with unexpected payload type [\#425](https://github.com/ably/ably-java/issues/425)
+
+## [v1.0.7](https://github.com/ably/ably-java/tree/v1.0.7) (2018-08-16)
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.0.6...v1.0.7)
+
+**Closed issues:**
+
+- IllegalStateException scheduling transport activity timer [\#418](https://github.com/ably/ably-java/issues/418)
 
 ## [v1.0.7](https://github.com/ably/ably-java/tree/v1.0.7) (2018-08-16)
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.0.6...v1.0.7)
