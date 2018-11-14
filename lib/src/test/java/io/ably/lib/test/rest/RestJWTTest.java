@@ -16,11 +16,13 @@ import java.io.UnsupportedEncodingException;
 public class RestJWTTest extends ParameterizedTest {
 
 	private Key key = testVars.keys[0];
+	Param[] environment = new Param[]{ new Param("environment", testVars.environment) };
 	Param[] validKeys = new Param[]{ new Param("keyName", key.keyName), new Param("keySecret", key.keySecret) };
 	Param[] invalidKeys = new Param[]{ new Param("keyName", key.keyName), new Param("keySecret", "invalidinvalid") };
 	Param[] tokenEmbedded = new Param[]{ new Param("jwtType", "embedded") };
 	Param[] tokenEmbeddedAndEncrypted = new Param[]{ new Param("jwtType", "embedded"), new Param("encrypted", 1) };
 	Param[] jwtReturnType = new Param[]{ new Param("returnType", "jwt") };
+	private static final String echoServer = "https://echo.ably.io/createJWT";
 
 	/**
 	 * Base request of a JWT token (RSA8g RSA8c)
@@ -50,7 +52,7 @@ public class RestJWTTest extends ParameterizedTest {
 		} catch (AblyException e) {
 			assertEquals("Unexpected code from exception", 40144, e.errorInfo.code);
 			assertEquals("Unexpected statusCode from exception", 401, e.errorInfo.statusCode);
-			assertEquals("Error message not matching the expected one", "Error verifying JWT; err = invalid signature", e.errorInfo.message);
+			assertTrue("Error message not matching the expected one", e.errorInfo.message.contains("Error verifying JWT; err = invalid signature"));
 		}
 	}
 
@@ -60,7 +62,7 @@ public class RestJWTTest extends ParameterizedTest {
 	@Test
 	public void auth_jwt_request_embedded_token() {
 		try {
-			ClientOptions options = buildClientOptions(mergeParams(validKeys, tokenEmbedded));
+			ClientOptions options = buildClientOptions(mergeParams(new Param[][]{environment, validKeys, tokenEmbedded}));
 			AblyRest client = new AblyRest(options);
 			PaginatedResult<Stats> stats = client.stats(null);
 			assertNotNull("Stats should not be null", stats);
@@ -76,7 +78,7 @@ public class RestJWTTest extends ParameterizedTest {
 	@Test
 	public void auth_jwt_request_embedded_token_encrypted() {
 		try {
-			ClientOptions options = buildClientOptions(mergeParams(validKeys, tokenEmbeddedAndEncrypted));
+			ClientOptions options = buildClientOptions(mergeParams(new Param[][]{environment, validKeys, tokenEmbeddedAndEncrypted}));
 			AblyRest client = new AblyRest(options);
 			PaginatedResult<Stats> stats = client.stats(null);
 			assertNotNull("Stats should not be null", stats);
@@ -94,7 +96,7 @@ public class RestJWTTest extends ParameterizedTest {
 		try {
 			ClientOptions options = createOptions();
 			options.authUrl = echoServer;
-			options.authParams = mergeParams(validKeys, jwtReturnType);
+			options.authParams = mergeParams(new Param[][]{environment, validKeys, jwtReturnType});
 			AblyRest client = new AblyRest(options);
 			PaginatedResult<Stats> stats = client.stats(null);
 			assertNotNull("Stats should not be null", stats);
