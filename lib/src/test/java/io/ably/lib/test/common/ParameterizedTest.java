@@ -34,7 +34,6 @@ public class ParameterizedTest {
 	public Timeout testTimeout = Timeout.seconds(10);
 
 	protected static Setup.TestVars testVars;
-	protected final String echoServer = "https://echo.ably.io/createJWT";
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
@@ -61,15 +60,18 @@ public class ParameterizedTest {
 	/**
 	 * Helper method to merge auth parameters
 	 */
-	protected static Param[] mergeParams(Param[] target, Param[] src) {
+	protected static Param[] mergeParams(Param[][] items) {
 		Map<String, Param> merged = new HashMap<String, Param>();
-		if(target != null) {
-			for(Param param : target) { merged.put(param.key, param); }
-		}
-		if(src != null) {
-			for(Param param : src) { merged.put(param.key, param); }
+		for(Param[] item : items) {
+			if(item != null) {
+				for(Param param : item) { merged.put(param.key, param); }
+			}
 		}
 		return merged.values().toArray(new Param[merged.size()]);
+	}
+
+	protected static Param[] mergeParams(Param[] target, Param[] src) {
+		return mergeParams(new Param[][]{target, src});
 	}
 
 }

@@ -36,6 +36,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
 	Param[] mediumTokenTtl = new Param[] { new Param("expiresIn", 35) };
 	private final String susbcribeOnlyCapability = "{\"" + channelName + "\": [\"subscribe\"]}";
 	private final String publishCapability = "{\"" + channelName + "\": [\"publish\"]}";
+	private static final String echoServer = "https://echo.ably.io/createJWT";
 
 	/**
 	 * Request a JWT that specifies a clientId
@@ -176,7 +177,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange stateChange) {
 					assertEquals("Unexpected connection stage change", 40142, stateChange.reason.code);
-					assertEquals("Unexpected error message", "Key/token status changed (expire)", stateChange.reason.message);
+					assertTrue("Unexpected error message", stateChange.reason.message.contains("Key/token status changed (expire)"));
 					ablyRealtime.close();
 				}
 			});
