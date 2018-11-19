@@ -1390,10 +1390,10 @@ public class RestAuthTest extends ParameterizedTest {
 					}
 
 					@Override
-					public void onRawHttpResponse(String id, HttpCore.Response response) {}
+					public void onRawHttpResponse(String id, String method, HttpCore.Response response) {}
 
 					@Override
-					public void onRawHttpException(String id, Throwable t) {}
+					public void onRawHttpException(String id, String method, Throwable t) {}
 				};
 			}};
 			fillInOptions(options);
@@ -1457,10 +1457,10 @@ public class RestAuthTest extends ParameterizedTest {
 					}
 
 					@Override
-					public void onRawHttpResponse(String id, HttpCore.Response response) {}
+					public void onRawHttpResponse(String id, String method, HttpCore.Response response) {}
 
 					@Override
-					public void onRawHttpException(String id, Throwable t) {}
+					public void onRawHttpException(String id, String method, Throwable t) {}
 				};
 			}};
 			fillInOptions(options);

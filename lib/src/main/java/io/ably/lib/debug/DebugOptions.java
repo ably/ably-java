@@ -18,8 +18,8 @@ public class DebugOptions extends ClientOptions {
 
 	public interface RawHttpListener {
 		public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody);
-		public void onRawHttpResponse(String id, HttpCore.Response response);
-		public void onRawHttpException(String id, Throwable t);
+		public void onRawHttpResponse(String id, String method, HttpCore.Response response);
+		public void onRawHttpException(String id, String method, Throwable t);
 	}
 
 	public DebugOptions(String key) throws AblyException { super(key); }

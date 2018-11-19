@@ -299,6 +299,12 @@ public class Crypto {
 		};
 	}
 
+	public static String getRandomMessageId() {
+		byte[] entropy = new byte[9];
+		secureRandom.nextBytes(entropy);
+		return Base64Coder.encode(entropy).toString();
+	}
+
 	/**
 	 * Determine whether or not 256-bit AES is supported. (If this determines that
 	 * it is not supported, install the JCE unlimited strength JCE extensions).

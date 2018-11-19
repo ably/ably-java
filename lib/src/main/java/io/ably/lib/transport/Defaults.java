@@ -3,9 +3,12 @@ package io.ably.lib.transport;
 import io.ably.lib.BuildConfig;
 import io.ably.lib.types.ClientOptions;
 
+import java.text.DecimalFormat;
+
 public class Defaults {
 	/* versions */
-	public static final String ABLY_VERSION         = "1.0";
+	public static final float ABLY_VERSION_NUMBER   = 1.0f;
+	public static final String ABLY_VERSION         = new DecimalFormat("0.0").format(ABLY_VERSION_NUMBER);
 	public static final String ABLY_LIB_VERSION     = String.format("%s-%s", BuildConfig.LIBRARY_NAME, BuildConfig.VERSION);
 
 	/* params */

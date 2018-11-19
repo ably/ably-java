@@ -18,6 +18,7 @@ import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.PresenceSerializer;
+import io.ably.lib.util.Crypto;
 
 /**
  * A class representing a Channel in the Ably REST API.
@@ -93,10 +94,21 @@ public class Channel {
 		return ably.http.request(new Http.Execute<Void>() {
 			@Override
 			public void execute(HttpScheduler http, final Callback<Void> callback) throws AblyException {
+				/* handle message ids */
+				boolean hasClientSuppliedId = false;
 				for(Message message : messages) {
+					/* RSL1k2 */
+					hasClientSuppliedId |= (message.id != null);
 					/* RTL6g3 */
 					ably.auth.checkClientId(message, true, false);
 					message.encode(options);
+				}
+				if(!hasClientSuppliedId && ably.options.idempotentRestPublishing) {
+					/* RSL1k1: populate the message id with a library-generated id */
+					String messageId = Crypto.getRandomMessageId();
+					for (int i = 0; i < messages.length; i++) {
+						messages[i].id = messageId + ':' + i;
+					}
 				}
 
 				HttpCore.RequestBody requestBody = ably.options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(messages) : MessageSerializer.asJsonRequest(messages);

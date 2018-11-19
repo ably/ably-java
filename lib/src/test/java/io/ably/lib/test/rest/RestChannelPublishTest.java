@@ -3,11 +3,20 @@ package io.ably.lib.test.rest;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.net.HttpURLConnection;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import io.ably.lib.debug.DebugOptions;
+import io.ably.lib.http.HttpCore;
+import io.ably.lib.rest.Auth;
+import io.ably.lib.types.*;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -16,12 +25,6 @@ import io.ably.lib.rest.Channel;
 import io.ably.lib.test.common.Helpers.AsyncWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.ParameterizedTest;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.AsyncPaginatedResult;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.Message;
-import io.ably.lib.types.PaginatedResult;
 
 public class RestChannelPublishTest extends ParameterizedTest {
 
@@ -36,7 +39,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
 	/**
 	 * Publish events with data of various datatypes using text protocol
 	 */
-	@Test
+	//@Test
 	public void channelpublish() {
 		/* first, publish some messages */
 		String channelName = "persisted:channelpublish_" + testParams.name;
@@ -71,7 +74,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
 	/**
 	 * Publish events using the async publish API
 	 */
-	@Test
+	//@Test
 	public void channelpublish_async() {
 		/* first, publish some messages */
 		String channelName = "persisted:channelpublish_async_" + testParams.name;
@@ -109,4 +112,317 @@ public class RestChannelPublishTest extends ParameterizedTest {
 		assertEquals("Expect pub_text to be expected String", messageContents.get("pub_text"), textPayload);
 		assertThat("Expect pub_binary to be expected byte[]", (byte[])messageContents.get("pub_binary"), equalTo(binaryPayload));
 	}
+
+	/**
+	 * Verify processing of a client-supplied message id
+	 */
+	@Test
+	public void channel_idempotent_publish_client_generated_single() {
+
+		String channelName = "persisted:channel_idempotent_publish_client_generated_single_" + testParams.name;
+		Channel pubChannel;
+		final Message messageWithId = new Message("name_withId", "data_withId");
+		messageWithId.id = "client_generated_id";
+		try {
+			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+			fillInOptions(opts);
+			opts.useBinaryProtocol = true;
+			opts.httpListener = new DebugOptions.RawHttpListener() {
+				@Override
+				public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
+					/* verify request body contains the supplied ids */
+					try {
+						if(method.equalsIgnoreCase("POST")) {
+							Message[] requestedMessages = MessageSerializer.readMsgpack(requestBody.getEncoded());
+							assertEquals(requestedMessages[0].id, messageWithId.id);
+						}
+					} catch (AblyException e) {
+						e.printStackTrace();
+					}
+				}
+
+				@Override
+				public void onRawHttpResponse(String id, String method, HttpCore.Response response) {}
+
+				@Override
+				public void onRawHttpException(String id, String method, Throwable t) {}
+			};
+			AblyRest ably = new AblyRest(opts);
+
+			/* first, publish messages */
+			pubChannel = ably.channels.get(channelName);
+			pubChannel.publish(new Message[]{messageWithId});
+		} catch(AblyException e) {
+			e.printStackTrace();
+			fail("channel_idempotent_publish_client_generated_single: Unexpected exception");
+			return;
+		}
+
+		/* get the history for this channel */
+		try {
+            PaginatedResult<Message> messages = pubChannel.history(new Param[]{new Param("direction", "forwards")});
+			assertNotNull("Expected non-null messages", messages);
+			assertEquals("Expected 1 message", messages.items().length, 1);
+			assertEquals(messages.items()[0].id, messageWithId.id);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("channel_idempotent_publish_client_generated_single: Unexpected exception");
+			return;
+		}
+	}
+
+	/**
+	 * Verify processing of a client-supplied message id
+	 */
+	@Test
+	public void channel_idempotent_publish_client_generated_multiple() {
+
+		String channelName = "persisted:channel_idempotent_publish_client_generated_multiple_" + testParams.name;
+		Channel pubChannel;
+		final Message messageWithId0 = new Message("name_withId", "data_withId");
+		messageWithId0.id = "client_generated_id:0";
+		final Message messageWithId1 = new Message("name_withId", "data_withId");
+		messageWithId1.id = "client_generated_id:1";
+		try {
+			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+			fillInOptions(opts);
+			opts.useBinaryProtocol = true;
+			opts.httpListener = new DebugOptions.RawHttpListener() {
+				@Override
+				public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
+					/* verify request body contains the supplied ids */
+					try {
+						if(method.equalsIgnoreCase("POST")) {
+							Message[] requestedMessages = MessageSerializer.readMsgpack(requestBody.getEncoded());
+							assertEquals(requestedMessages[0].id, messageWithId0.id);
+							assertEquals(requestedMessages[1].id, messageWithId1.id);
+						}
+					} catch (AblyException e) {
+						e.printStackTrace();
+					}
+				}
+
+				@Override
+				public void onRawHttpResponse(String id, String method, HttpCore.Response response) {}
+
+				@Override
+				public void onRawHttpException(String id, String method, Throwable t) {}
+			};
+			AblyRest ably = new AblyRest(opts);
+
+			/* first, publish messages */
+			pubChannel = ably.channels.get(channelName);
+			pubChannel.publish(new Message[]{messageWithId0, messageWithId1});
+		} catch(AblyException e) {
+			e.printStackTrace();
+			fail("channel_idempotent_publish_client_generated_multiple: Unexpected exception");
+			return;
+		}
+
+		/* get the history for this channel */
+		try {
+			PaginatedResult<Message> messages = pubChannel.history(new Param[]{new Param("direction", "forwards")});
+			assertNotNull("Expected non-null messages", messages);
+			assertEquals("Expected 2 messages", messages.items().length, 2);
+			assertEquals(messages.items()[0].id, messageWithId0.id);
+			assertEquals(messages.items()[1].id, messageWithId1.id);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("channel_idempotent_publish_client_generated_multiple: Unexpected exception");
+			return;
+		}
+	}
+
+	static class FailFirstRequest implements DebugOptions.RawHttpListener {
+		int postRequestCount = 0;
+		final String expectedId;
+
+		FailFirstRequest() {
+			this.expectedId = null;
+		}
+
+		FailFirstRequest(String expectedId) {
+			this.expectedId = expectedId;
+		}
+
+		@Override
+		public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
+			/* verify request body contains the supplied ids */
+			try {
+				if(method.equalsIgnoreCase("POST")) {
+					++postRequestCount;
+					Message[] requestedMessages = MessageSerializer.readMsgpack(requestBody.getEncoded());
+					if(expectedId != null) {
+						assertEquals(requestedMessages[0].id, expectedId);
+					}
+				}
+			} catch (AblyException e) {}
+		}
+
+		@Override
+		public void onRawHttpResponse(String id, String method, HttpCore.Response response) {
+			if(method.equalsIgnoreCase("POST") && postRequestCount == 1) {
+				response.statusCode = 500;
+			}
+		}
+
+		@Override
+		public void onRawHttpException(String id, String method, Throwable t) {}
+	}
+
+	/**
+	 * Verify processing of a client-supplied message id
+	 * Spec: RSL1k5
+	 */
+	@Test
+	public void channel_idempotent_publish_client_generated_retried() {
+		String channelName = "persisted:channel_idempotent_publish_client_generated_retried_" + testParams.name;
+
+		final Message messageWithId = new Message("name_withId", "data_withId");
+		messageWithId.id = "client_generated_id";
+		FailFirstRequest requestListener = new FailFirstRequest(messageWithId.id);
+
+		try {
+			final ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
+			final AblyRest ablyForToken = new AblyRest(optsForToken);
+			Auth.AuthOptions restAuthOptions = new Auth.AuthOptions() {{
+				key = optsForToken.key;
+				queryTime = true;
+			}};
+
+			Auth.TokenDetails tokenDetails = ablyForToken.auth.requestToken(new Auth.TokenParams() {{ ttl = 8000L; }}, restAuthOptions);
+
+			DebugOptions opts = new DebugOptions(tokenDetails.token);
+			fillInOptions(opts);
+			opts.useBinaryProtocol = true;
+			opts.httpListener = requestListener;
+			/* generate a fallback which resolves to the same address, which the library will treat as a different host */
+			opts.fallbackHosts = new String[]{ablyForToken.httpCore.getHost().toUpperCase()};
+			AblyRest ably = new AblyRest(opts);
+
+			/* publish message */
+			Channel pubChannel = ably.channels.get(channelName);
+			pubChannel.publish(new Message[]{messageWithId});
+
+			/* get the history for this channel */
+			PaginatedResult<Message> messages = pubChannel.history(new Param[]{new Param("direction", "forwards")});
+			assertEquals("Expected 2 requests", requestListener.postRequestCount, 2);
+			assertNotNull("Expected non-null messages", messages);
+			assertEquals("Expected 1 message", messages.items().length, 1);
+			assertEquals(messages.items()[0].id, messageWithId.id);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("channel_idempotent_publish_client_generated_retried: Unexpected exception");
+			return;
+		}
+	}
+
+	/**
+	 * Verify processing of a library-generated message id
+	 */
+	@Test
+	public void channel_idempotent_publish_library_generated_multiple() {
+
+		String channelName = "persisted:channel_idempotent_publish_library_generated_multiple_" + testParams.name;
+		Channel pubChannel;
+		final Message messageWithId0 = new Message("name0", "data0");
+		final Message messageWithId1 = new Message("name1", "data1");
+		try {
+			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+			fillInOptions(opts);
+			opts.idempotentRestPublishing = true;
+			opts.useBinaryProtocol = true;
+			opts.httpListener = new DebugOptions.RawHttpListener() {
+				@Override
+				public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
+					/* verify request body contains the library-generated ids */
+					try {
+						if(method.equalsIgnoreCase("POST")) {
+							Message[] requestedMessages = MessageSerializer.readMsgpack(requestBody.getEncoded());
+							assertTrue(requestedMessages[0].id.endsWith(":0"));
+							assertTrue(requestedMessages[1].id.endsWith(":1"));
+						}
+					} catch (AblyException e) {
+						e.printStackTrace();
+					}
+				}
+
+				@Override
+				public void onRawHttpResponse(String id, String method, HttpCore.Response response) {}
+
+				@Override
+				public void onRawHttpException(String id, String method, Throwable t) {}
+			};
+			AblyRest ably = new AblyRest(opts);
+
+			/* first, publish messages */
+			pubChannel = ably.channels.get(channelName);
+			pubChannel.publish(new Message[]{messageWithId0, messageWithId1});
+		} catch(AblyException e) {
+			e.printStackTrace();
+			fail("channel_idempotent_publish_client_generated_multiple: Unexpected exception");
+			return;
+		}
+
+		/* get the history for this channel */
+		try {
+			PaginatedResult<Message> messages = pubChannel.history(new Param[]{new Param("direction", "forwards")});
+			assertNotNull("Expected non-null messages", messages);
+			assertEquals("Expected 2 messages", messages.items().length, 2);
+			assertEquals(messages.items()[0].id, messageWithId0.id);
+			assertEquals(messages.items()[1].id, messageWithId1.id);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("channel_idempotent_publish_client_generated_multiple: Unexpected exception");
+			return;
+		}
+	}
+
+	/**
+	 * Verify processing of a library-generated message id
+	 * Spec: RSL1k4
+	 */
+	@Test
+	public void channel_idempotent_publish_library_generated_retried() {
+		String channelName = "persisted:channel_idempotent_publish_library_generated_retried_" + testParams.name;
+
+		final Message messageWithId = new Message("name0", "data0");
+		FailFirstRequest requestListener = new FailFirstRequest();
+
+		try {
+			final ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
+			final AblyRest ablyForToken = new AblyRest(optsForToken);
+			Auth.AuthOptions restAuthOptions = new Auth.AuthOptions() {{
+				key = optsForToken.key;
+				queryTime = true;
+			}};
+
+			Auth.TokenDetails tokenDetails = ablyForToken.auth.requestToken(new Auth.TokenParams() {{ ttl = 8000L; }}, restAuthOptions);
+
+			DebugOptions opts = new DebugOptions(tokenDetails.token);
+			fillInOptions(opts);
+			opts.idempotentRestPublishing = true;
+			opts.useBinaryProtocol = true;
+			opts.httpListener = requestListener;
+			/* generate a fallback which resolves to the same address, which the library will treat as a different host */
+			opts.fallbackHosts = new String[]{ablyForToken.httpCore.getHost().toUpperCase()};
+			AblyRest ably = new AblyRest(opts);
+
+			/* publish message */
+			Channel pubChannel = ably.channels.get(channelName);
+			pubChannel.publish(new Message[]{messageWithId});
+
+			/* get the history for this channel */
+			PaginatedResult<Message> messages = pubChannel.history(new Param[]{new Param("direction", "forwards")});
+			assertEquals("Expected 2 requests", requestListener.postRequestCount, 2);
+			assertNotNull("Expected non-null messages", messages);
+			assertEquals("Expected 1 message", messages.items().length, 1);
+			assertEquals(messages.items()[0].id, messageWithId.id);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("channel_idempotent_publish_library_generated_retried: Unexpected exception");
+			return;
+		}
+	}
+
 }
