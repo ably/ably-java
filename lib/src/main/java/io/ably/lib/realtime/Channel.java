@@ -730,7 +730,13 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 	 */
 	public synchronized void publish(Message[] messages, CompletionListener listener) throws AblyException {
 		Log.v(TAG, "publish(Message[]); channel = " + this.name);
-		boolean connected = (ably.connection.state == ConnectionState.connected);
+		ConnectionManager connectionManager = ably.connection.connectionManager;
+		ConnectionManager.StateInfo connectionState = connectionManager.getConnectionState();
+		boolean queueMessages = ably.options.queueMessages;
+		if(!connectionManager.isActive() || (connectionState.queueEvents && !queueMessages)) {
+			throw AblyException.fromErrorInfo(connectionState.defaultErrorInfo);
+		}
+		boolean connected = (connectionState.sendEvents);
 		try {
 			for(Message message : messages) {
 				/* RTL6g3: check validity of any clientId;
@@ -747,20 +753,11 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 		ProtocolMessage msg = new ProtocolMessage(Action.message, this.name);
 		msg.messages = messages;
 		switch(state) {
-		case initialized:
-			attach();
-		case attaching:
-			/* queue the message for later send */
-			queuedMessages.add(new QueuedMessage(msg, listener));
-			break;
-		case detaching:
-		case detached:
 		case failed:
 		case suspended:
-			throw AblyException.fromErrorInfo(new ErrorInfo("Unable to publish in detached, failed or suspended state", 400, 40000));
-		case attached:
-			ConnectionManager connectionManager = ably.connection.connectionManager;
-			connectionManager.send(msg, ably.options.queueMessages, listener);
+			throw AblyException.fromErrorInfo(new ErrorInfo("Unable to publish in failed or suspended state", 400, 40000));
+		default:
+			connectionManager.send(msg, queueMessages, listener);
 		}
 	}
 

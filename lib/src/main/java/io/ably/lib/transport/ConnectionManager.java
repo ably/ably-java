@@ -72,9 +72,9 @@ public class ConnectionManager implements ConnectListener {
 	public static class StateInfo {
 		public final ConnectionState state;
 		public final ErrorInfo defaultErrorInfo;
+		public final boolean queueEvents;
+		public final boolean sendEvents;
 
-		final boolean queueEvents;
-		final boolean sendEvents;
 		final boolean terminal;
 		final boolean retry;
 		final long timeout;
