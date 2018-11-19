@@ -540,9 +540,9 @@ public class ConnectionManager implements ConnectListener {
 		 *    back), set http to the same as realtime.
 		 */
 		if (pendingConnect.host == options.realtimeHost) {
-			ably.httpCore.setHost(options.restHost);
+			ably.httpCore.setPreferredHost(options.restHost);
 		} else {
-			ably.httpCore.setHost(pendingConnect.host);
+			ably.httpCore.setPreferredHost(pendingConnect.host);
 		}
 
 		/* if the returned connection id differs from
@@ -964,8 +964,9 @@ public class ConnectionManager implements ConnectListener {
 		 * checkSuspend has already chosen a fallback host at random */
 
 		String host = request.fallback;
-		if (host == null)
-			host = hosts.getHost();
+		if (host == null) {
+			host = hosts.getPreferredHost();
+		}
 		checkConnectionStale();
 		pendingConnect = new ConnectParams(options);
 		pendingConnect.host = host;

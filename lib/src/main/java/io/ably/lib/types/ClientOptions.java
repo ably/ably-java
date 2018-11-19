@@ -158,6 +158,10 @@ public class ClientOptions extends AuthOptions {
 	public boolean fallbackHostsUseDefault;
 
 	/**
+	 * Spec: TO3l10
+	 */
+	public long fallbackRetryTimeout = Defaults.fallbackRetryTimeout;
+	/**
 	 * When a TokenParams object is provided, it will override
 	 * the client library defaults described in TokenParams
 	 * Spec: TO3j11

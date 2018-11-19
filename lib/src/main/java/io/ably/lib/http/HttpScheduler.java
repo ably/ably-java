@@ -192,13 +192,14 @@ public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
         }
         @Override
         public void run() {
-            String candidateHost = httpCore.getHost();
-            int retryCountRemaining = httpCore.hosts.getFallback(candidateHost) != null ? httpCore.options.httpMaxRetryCount : 0;
+            String candidateHost = httpCore.hosts.getPreferredHost();
+            int retryCountRemaining = (httpCore.hosts.fallbackHostsRemaining(candidateHost) > 0) ? httpCore.options.httpMaxRetryCount : 0;
 
             while(!isCancelled) {
                 try {
                     result = httpExecuteWithRetry(candidateHost, path, requireAblyAuth);
                     setResult(result);
+                    httpCore.hosts.setPreferredHost(candidateHost, true);
                     break;
                 } catch (AblyException.HostFailedException e) {
                     if(--retryCountRemaining < 0) {

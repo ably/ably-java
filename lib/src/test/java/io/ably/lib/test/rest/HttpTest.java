@@ -24,6 +24,7 @@ import java.util.List;
 
 import io.ably.lib.test.util.TimeHandler;
 import io.ably.lib.types.*;
+import io.ably.lib.util.Log;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.AfterClass;
@@ -137,8 +138,6 @@ public class HttpTest {
 			}
 		}.setUrlArgumentStack(urlHostArgumentStack);
 
-		httpCore.setHost(Defaults.HOST_REST);
-
 		try {
 			HttpHelpers.ablyHttpExecute(
 					httpCore, "/path/to/fallback", /* Ignore path */
@@ -171,7 +170,7 @@ public class HttpTest {
 	}
 
 	/**
-	 * Validates that fallbacks are disabled when ClientOpitons#fallbackHosts are set to empty and the only host used is Defaults#HOST_REST
+	 * Validates that fallbacks are disabled when ClientOptions#fallbackHosts are set to empty and the only host used is Defaults#HOST_REST
 	 * @throws AblyException
      */
 
@@ -198,8 +197,6 @@ public class HttpTest {
 				return this;
 			}
 		}.setUrlArgumentStack(urlHostArgumentStack);
-
-		httpCore.setHost(Defaults.HOST_REST);
 
 		try {
 			HttpHelpers.ablyHttpExecute(
@@ -229,10 +226,10 @@ public class HttpTest {
 	 * <strong>This method mocks the API behavior</strong>
 	 * <p>
 	 * Validates {@link HttpCore} is using first attempt to default primary host
-	 * for every new HTTP request, even if a previous request to that endpoint has failed.
+	 * for every new HTTP request, after expiry of any fallbackRetryTimeout.
 	 * </p>
 	 * <p>
-	 * Spec: RSC15e
+	 * Spec: RSC15e, RSC15f
 	 * </p>
 	 *
 	 * @throws AblyException
@@ -242,6 +239,7 @@ public class HttpTest {
 		String hostExpectedPattern = PATTERN_HOST_FALLBACK;
 		ClientOptions options = new ClientOptions("not:a.key");
 		options.httpMaxRetryCount = 1;
+		options.fallbackRetryTimeout = 100;
 		AblyRest ably = new AblyRest(options);
 
 		HttpCore httpCore = Mockito.spy(new HttpCore(ably.options, ably.auth));
@@ -281,6 +279,11 @@ public class HttpTest {
 		assertThat("Unexpected default primary host", url.getAllValues().get(0).getHost(), is(equalTo(Defaults.HOST_REST)));
 		assertThat("Unexpected host fallback", url.getAllValues().get(1).getHost().matches(hostExpectedPattern), is(true));
 		assertThat("Unexpected response", responseActual, is(equalTo(responseExpected)));
+
+		/* wait for expiry of fallbackRetryTimeout */
+		try {
+			Thread.sleep(200L);
+		} catch(InterruptedException ie) {}
 
 		String responseActual2 = (String) HttpHelpers.ablyHttpExecute(
 				httpCore, "", /* Ignore */
@@ -593,8 +596,6 @@ public class HttpTest {
 			}
 		}.setUrlArgumentStack(urlHostArgumentStack);
 
-		httpCore.setHost(Defaults.HOST_REST);
-
 		try {
 			HttpHelpers.ablyHttpExecute(
 					httpCore, "/path/to/fallback", /* Ignore path */
@@ -640,7 +641,6 @@ public class HttpTest {
 
 		String responseExpected = "Lorem Ipsum";
 		String hostExpected = Defaults.HOST_REST;
-		httpCore.setHost(hostExpected);
 		ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
 
         /* Partially mock httpCore */
@@ -704,7 +704,6 @@ public class HttpTest {
 		String hostExpectedPattern = PATTERN_HOST_FALLBACK;
 		String responseExpected = "Lorem Ipsum";
 		ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
-		httpCore.setHost(Defaults.HOST_REST);
 
         /* Partially mock httpCore */
 		Answer answer = new GrumpyAnswer(
@@ -775,7 +774,6 @@ public class HttpTest {
 		String hostExpectedPattern = PATTERN_HOST_FALLBACK;
 		String responseExpected = "Lorem Ipsum";
 		ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
-		httpCore.setHost(Defaults.HOST_REST);
 
         /* Partially mock httpCore */
 		Answer answer = new GrumpyAnswer(
@@ -836,21 +834,24 @@ public class HttpTest {
 	/**
 	 * <strong>This method mocks the API behavior</strong>
 	 * <p>
-	 * Validates {@code HttpCore} is using its host (non-fallback-host) first
-	 * when a consecutive call happens
+	 * Validates {@code HttpCore} is using its a successful fallback host first
+	 * when a consecutive call happens within the fallbackRetryTimeout, so long
+	 * as calls to that fallback continue to succeed
 	 * </p>
 	 * <p>
-	 * Spec: -
+	 * Spec: RSC15f
 	 * </p>
 	 *
 	 * @throws Exception
 	 */
 	@Test
-	public void http_execute_consecutivecall() throws Exception {
-		HttpCore httpCore = Mockito.spy(new HttpCore(new ClientOptions(), null));
+	public void http_execute_fallback_success_timeout_unexpired() throws Exception {
+		ClientOptions opts = new ClientOptions();
+		opts.fallbackRetryTimeout = 2000L;
+		opts.logLevel = Log.VERBOSE;
+		HttpCore httpCore = Mockito.spy(new HttpCore(opts, null));
 
 		String hostExpected = Defaults.HOST_REST;
-		httpCore.setHost(hostExpected);
 		ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
 
         /* Partially mock httpCore */
@@ -883,9 +884,13 @@ public class HttpTest {
 		);
 
         /* Verify there was a fallback with first call */
-		assertThat(url.getValue().getHost().matches(PATTERN_HOST_FALLBACK), is(true));
+		String successFallback = url.getValue().getHost();
+		assertThat(successFallback.matches(PATTERN_HOST_FALLBACK), is(true));
 
-        /* Update behavior to perform a call without a fallback */
+		/* wait for a short time, but not enough for the fallbackRetryTimeout to expire */
+		try { Thread.sleep(200L); } catch(InterruptedException ie) {}
+
+		/* Update behavior to succeed on next attempt */
 		url = ArgumentCaptor.forClass(URL.class);
 		doReturn("Lorem Ipsum") /* Return some response string that we will ignore */
 				.when(httpCore) /* when following method is executed on {@code HttpCore} instance */
@@ -909,7 +914,182 @@ public class HttpTest {
 				false /* Ignore */
 		);
 
-        /* Verify second call was called with httpCore host */
+        /* Verify second call was called with the cached fallback host */
+		assertThat(url.getValue().getHost().equals(successFallback), is(true));
+	}
+
+	/**
+	 * <strong>This method mocks the API behavior</strong>
+	 * <p>
+	 * Validates {@code HttpCore} reverts to using the primary endpoint
+	 * if a request to a preferred fallback fails (after initially succeeding
+	 * and being cached)
+	 * </p>
+	 * <p>
+	 * Spec: RSC15f
+	 * </p>
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void http_execute_fallback_failure_timeout_unexpired() throws Exception {
+		ClientOptions opts = new ClientOptions();
+		opts.fallbackRetryTimeout = 2000L;
+		HttpCore httpCore = Mockito.spy(new HttpCore(opts, null));
+
+		String primaryHost = Defaults.HOST_REST;
+		ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
+
+		/* Partially mock httpCore */
+		Answer answer = new GrumpyAnswer(
+				1, /* Throw exception once */
+				AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+				"Lorem Ipsum" /* Ignore */
+		);
+
+		doAnswer(answer) /* Behave as defined above */
+				.when(httpCore) /* when following method is executed on {@code HttpCore} instance */
+				.httpExecute(
+						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+						any(Proxy.class), /* Ignore */
+						anyString(), /* Ignore */
+						aryEq(new Param[0]), /* Ignore */
+						any(HttpCore.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
+						any(HttpCore.ResponseHandler.class) /* Ignore */
+				);
+
+		HttpHelpers.ablyHttpExecute(
+				httpCore, "", /* Ignore */
+				"", /* Ignore */
+				new Param[0], /* Ignore */
+				new Param[0], /* Ignore */
+				mock(HttpCore.RequestBody.class), /* Ignore */
+				mock(HttpCore.ResponseHandler.class), /* Ignore */
+				false /* Ignore */
+		);
+
+		/* Verify there was a fallback with first call */
+		String failFallback = url.getValue().getHost();
+		assertThat(failFallback.matches(PATTERN_HOST_FALLBACK), is(true));
+
+		/* wait for a short time, but not enough for the fallbackRetryTimeout to expire */
+		try { Thread.sleep(200L); } catch(InterruptedException ie) {}
+
+		/* reset the mocked response so that the next request fails */
+		answer = new GrumpyAnswer(
+				1, /* Throw exception once */
+				AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+				"Lorem Ipsum" /* Ignore */
+		);
+
+		doAnswer(answer) /* Behave as defined above */
+				.when(httpCore) /* when following method is executed on {@code HttpCore} instance */
+				.httpExecute(
+						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+						any(Proxy.class), /* Ignore */
+						anyString(), /* Ignore */
+						aryEq(new Param[0]), /* Ignore */
+						any(HttpCore.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
+						any(HttpCore.ResponseHandler.class) /* Ignore */
+				);
+
+		HttpHelpers.ablyHttpExecute(
+				httpCore, "", /* Ignore */
+				"", /* Ignore */
+				new Param[0], /* Ignore */
+				new Param[0], /* Ignore */
+				mock(HttpCore.RequestBody.class), /* Ignore */
+				mock(HttpCore.ResponseHandler.class), /* Ignore */
+				false /* Ignore */
+		);
+
+		/* Verify second call was called with httpCore host */
+		assertThat(url.getValue().getHost().equals(primaryHost), is(true));
+	}
+
+	/**
+	 * <strong>This method mocks the API behavior</strong>
+	 * <p>
+	 * Validates {@code HttpCore} is using the primary host first
+	 * when a consecutive call happens after the fallbackRetryTimeout
+	 * </p>
+	 * <p>
+	 * Spec: RSC15f
+	 * </p>
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void http_execute_fallback_timeout_expired() throws Exception {
+		ClientOptions opts = new ClientOptions();
+		opts.fallbackRetryTimeout = 2000L;
+		HttpCore httpCore = Mockito.spy(new HttpCore(opts, null));
+
+		String hostExpected = Defaults.HOST_REST;
+		ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
+
+		/* Partially mock httpCore */
+		Answer answer = new GrumpyAnswer(
+				1, /* Throw exception once (1) */
+				AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+				"Lorem Ipsum" /* Ignore */
+		);
+
+		doAnswer(answer) /* Behave as defined above */
+				.when(httpCore) /* when following method is executed on {@code HttpCore} instance */
+				.httpExecute(
+						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+						any(Proxy.class), /* Ignore */
+						anyString(), /* Ignore */
+						aryEq(new Param[0]), /* Ignore */
+						any(HttpCore.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
+						any(HttpCore.ResponseHandler.class) /* Ignore */
+				);
+
+		HttpHelpers.ablyHttpExecute(
+				httpCore, "", /* Ignore */
+				"", /* Ignore */
+				new Param[0], /* Ignore */
+				new Param[0], /* Ignore */
+				mock(HttpCore.RequestBody.class), /* Ignore */
+				mock(HttpCore.ResponseHandler.class), /* Ignore */
+				false /* Ignore */
+		);
+
+		/* Verify there was a fallback with first call */
+		assertThat(url.getValue().getHost().matches(PATTERN_HOST_FALLBACK), is(true));
+
+		/* wait for the fallbackRetryTimeout to expire */
+		try { Thread.sleep(2000L); } catch(InterruptedException ie) {}
+
+		/* Update behavior to perform a call without a fallback */
+		url = ArgumentCaptor.forClass(URL.class);
+		doReturn("Lorem Ipsum") /* Return some response string that we will ignore */
+				.when(httpCore) /* when following method is executed on {@code HttpCore} instance */
+				.httpExecute(
+						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+						any(Proxy.class), /* Ignore */
+						anyString(), /* Ignore */
+						aryEq(new Param[0]), /* Ignore */
+						any(HttpCore.RequestBody.class), /* Ignore */
+						anyBoolean(), /* Ignore */
+						any(HttpCore.ResponseHandler.class) /* Ignore */
+				);
+
+		HttpHelpers.ablyHttpExecute(
+				httpCore, "", /* Ignore */
+				"", /* Ignore */
+				new Param[0], /* Ignore */
+				new Param[0], /* Ignore */
+				mock(HttpCore.RequestBody.class), /* Ignore */
+				mock(HttpCore.ResponseHandler.class), /* Ignore */
+				false /* Ignore */
+		);
+
+		/* Verify second call was called with httpCore host */
 		assertThat(url.getValue().getHost().equals(hostExpected), is(true));
 	}
 

@@ -13,11 +13,15 @@ import java.util.Collections;
  */
 public class Hosts {
 	private String primaryHost;
+	private String prefHost;
+	private long prefHostExpiry;
 	boolean primaryHostIsDefault;
 	private final String defaultHost;
 	private final String[] fallbackHosts;
 	private final boolean fallbackHostsIsDefault;
 	private final boolean fallbackHostsUseDefault;
+	private final long fallbackRetryTimeout;
+
 
 	/**
 	 * Create Hosts object
@@ -37,7 +41,7 @@ public class Hosts {
 	public Hosts(String primaryHost, String defaultHost, ClientOptions options) throws AblyException {
 		this.defaultHost = defaultHost;
 		if (primaryHost != null) {
-			setHost(primaryHost);
+			setPrimaryHost(primaryHost);
 			if (options.environment != null) {
 				/* TO3k2: It is never valid to provide both a restHost and environment value
 				 * TO3k3: It is never valid to provide both a realtimeHost and environment value */
@@ -51,9 +55,9 @@ public class Hosts {
 			 * of ClientOptions.restHost or ClientOptions.realtimeHost (as
 			 * appropriate). The spec is not clear on which one should take
 			 * precedence. */
-			setHost(options.environment + "-" + defaultHost);
+			setPrimaryHost(options.environment + "-" + defaultHost);
 		} else {
-			setHost(defaultHost);
+			setPrimaryHost(defaultHost);
 		}
 		fallbackHostsUseDefault = options.fallbackHostsUseDefault;
 		if (options.fallbackHosts == null) {
@@ -71,24 +75,61 @@ public class Hosts {
 		}
 		/* RSC15a: shuffle the fallback hosts. */
 		Collections.shuffle(Arrays.asList(fallbackHosts));
+		fallbackRetryTimeout = options.fallbackRetryTimeout;
 	}
 
 	/**
 	 * set primary hostname
-	 *
-	 * This gets called when the Hosts object is being used by an HttpCore that is
-	 * the httpCore connection for a ConnectionManager.
 	 */
-	public void setHost(String primaryHost) {
+	private void setPrimaryHost(String primaryHost) {
 		this.primaryHost = primaryHost;
 		primaryHostIsDefault = primaryHost.equalsIgnoreCase(defaultHost);
 	}
 
 	/**
+	 * set preferred hostname, which might not be the primary
+	 */
+	public void setPreferredHost(String prefHost, boolean temporary) {
+		if(prefHost.equals(this.prefHost)) {
+			/* a successful request against a fallback; don't update the expiry time */
+			return;
+		}
+		if(prefHost.equals(this.primaryHost)) {
+			/* a successful request against the primary host; reset */
+			clearPreferredHost();
+		} else {
+			this.prefHost = prefHost;
+			this.prefHostExpiry = temporary ? System.currentTimeMillis() + fallbackRetryTimeout : 0;
+		}
+	}
+
+	private void clearPreferredHost() {
+		this.prefHost = null;
+		this.prefHostExpiry = 0;
+	}
+
+	/**
 	 * Get primary host name
 	 */
-	public String getHost() {
+	public String getPrimaryHost() {
 		return primaryHost;
+	}
+
+	/**
+	 * Get preferred host name (taking into account any affinity to a fallback: see RSC15f)
+	 */
+	public String getPreferredHost() {
+		checkPreferredHostExpiry();
+		return (prefHost == null) ? primaryHost : prefHost;
+	}
+
+	private String checkPreferredHostExpiry() {
+		/* reset if expired */
+		if(prefHostExpiry > 0 && prefHostExpiry <= System.currentTimeMillis()) {
+			prefHostExpiry = 0;
+			prefHost = null;
+		}
+		return prefHost;
 	}
 
 	/**
@@ -109,16 +150,31 @@ public class Hosts {
 			if (!primaryHostIsDefault && !fallbackHostsUseDefault && fallbackHostsIsDefault)
 				return null;
 			idx = 0;
+		} else if(lastHost.equals(checkPreferredHostExpiry())) {
+			/* RSC15f: there was a failure on an unexpired, cached fallback; so try again using the primary */
+			clearPreferredHost();
+			return primaryHost;
 		} else {
 			/* Onto next fallback. */
 			idx = Arrays.asList(fallbackHosts).indexOf(lastHost);
-			if (idx < 0)
+			if (idx < 0) {
 				return null;
+			}
 			++idx;
 		}
-		if (idx >= fallbackHosts.length)
+		if (idx >= fallbackHosts.length) {
 			return null;
+		}
 		return fallbackHosts[idx];
 	}
-}
 
+	public int fallbackHostsRemaining(String candidateHost) {
+		if(fallbackHosts == null) {
+			return 0;
+		}
+		if(candidateHost.equals(primaryHost) || candidateHost.equals(prefHost)) {
+			return fallbackHosts.length;
+		}
+		return fallbackHosts.length - Arrays.asList(fallbackHosts).indexOf(candidateHost) - 1;
+	}
+}

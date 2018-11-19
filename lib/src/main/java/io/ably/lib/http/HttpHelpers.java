@@ -25,14 +25,16 @@ public class HttpHelpers {
 	 * @throws AblyException
 	 */
 	public static <T> T ablyHttpExecute(HttpCore httpCore, String path, String method, Param[] headers, Param[] params, HttpCore.RequestBody requestBody, HttpCore.ResponseHandler<T> responseHandler, boolean requireAblyAuth) throws AblyException {
-		String candidateHost = httpCore.getHost();
-		int retryCountRemaining = httpCore.hosts.getFallback(candidateHost) != null ? httpCore.options.httpMaxRetryCount : 0;
+		String candidateHost = httpCore.hosts.getPreferredHost();
+		int retryCountRemaining = (httpCore.hosts.fallbackHostsRemaining(candidateHost) > 0) ? httpCore.options.httpMaxRetryCount : 0;
 		URL url;
 
 		while(true) {
 			url = buildURL(httpCore.scheme, candidateHost, httpCore.port, path, params);
 			try {
-				return httpCore.httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, requireAblyAuth);
+				T result = httpCore.httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, requireAblyAuth);
+				httpCore.hosts.setPreferredHost(candidateHost, true);
+				return result;
 			} catch (AblyException.HostFailedException e) {
 				if(--retryCountRemaining < 0)
 					throw e; /* reached httpMaxRetryCount */
