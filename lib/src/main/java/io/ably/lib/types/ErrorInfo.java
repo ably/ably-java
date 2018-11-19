@@ -31,6 +31,11 @@ public class ErrorInfo {
 	public String message;
 
 	/**
+	 * Link to specification detail for this error code, where available. Spec TI4.
+	 */
+	public String href;
+
+	/**
 	 * Public no-argument constructor for msgpack
 	 */
 	public ErrorInfo() {}
@@ -54,16 +59,23 @@ public class ErrorInfo {
 	public ErrorInfo(String message, int statusCode, int code) {
 		this(message, code);
 		this.statusCode = statusCode;
+		if(code > 0) {
+			this.href = href(code);
+		}
 	}
 
 	public String toString() {
 		StringBuilder result = new StringBuilder("[ErrorInfo");
-		if(message != null)
-			result.append(" message = ").append(message);
-		if(code > 0)
-			result.append(" code = ").append(code);
-		if(statusCode > 0)
-			result.append(" statusCode = ").append(statusCode);
+		result.append(" message=").append(logMessage());
+		if(code > 0) {
+			result.append(" code=").append(code);
+		}
+		if(statusCode > 0) {
+			result.append(" statusCode=").append(statusCode);
+		}
+		if(href != null) {
+			result.append(" href=").append(href);
+		}
 		result.append(']');
 		return result.toString();
 	}
@@ -84,6 +96,9 @@ public class ErrorInfo {
 					break;
 				case "statusCode":
 					statusCode = unpacker.unpackInt();
+					break;
+				case "href":
+					href = unpacker.unpackString();
 					break;
 				default:
 					Log.v(TAG, "Unexpected field: " + fieldName);
@@ -117,5 +132,21 @@ public class ErrorInfo {
 		return new ErrorInfo(statusLine, statusCode, statusCode * 100);
 	}
 
+	/* Spec: TI5 */
+	private String logMessage() {
+		String errHref = null, logMessage = message == null ? "" : message;
+		if(href != null) {
+			errHref = href;
+		} else if(code > 0) {
+			errHref = href(code);
+		}
+		if(errHref != null && !logMessage.contains(errHref)) {
+			logMessage += " (See " + errHref + ")";
+		}
+		return logMessage;
+	}
+
+	private static String href(int code) { return HREF_BASE + String.valueOf(code); }
+	private static final String HREF_BASE = "https://help.ably.io/error/";
 	private static final String TAG = ErrorInfo.class.getName();
 }

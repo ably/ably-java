@@ -328,11 +328,10 @@ public class HttpCore {
 				}
 			}
 			if(error == null) {
-				Log.e(TAG, "Error response from server: statusCode = " + response.statusCode + "; statusLine = " + response.statusLine);
 				error = ErrorInfo.fromResponseStatus(response.statusLine, response.statusCode);
 			} else {
-				Log.e(TAG, "Error response from server: " + error);
 			}
+			Log.e(TAG, "Error response from server: err = " + error.toString());
 			if(responseHandler != null) {
 				return responseHandler.handleResponse(response, error);
 			}
