@@ -725,7 +725,7 @@ public class Helpers {
 		}
 
 		@Override
-		public void onRawHttpResponse(String id, HttpCore.Response response) {
+		public void onRawHttpResponse(String id, String method, HttpCore.Response response) {
 			/* duplicating if necessary, ensure lower-case versions of header names are present */
 			Map<String, List<String>> headers = response.headers;
 			Map<String, List<String>> normalisedHeaders = new HashMap<String, List<String>>();
@@ -744,7 +744,7 @@ public class Helpers {
 		}
 
 		@Override
-		public void onRawHttpException(String id, Throwable t) {
+		public void onRawHttpException(String id, String method, Throwable t) {
 			RawHttpRequest req = get(id);
 			if(req != null) {
 				req.error = t;

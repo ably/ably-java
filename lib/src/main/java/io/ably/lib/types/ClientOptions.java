@@ -126,6 +126,11 @@ public class ClientOptions extends AuthOptions {
 	public String environment;
 
 	/**
+	 * Spec: TO3n
+	 */
+	public boolean idempotentRestPublishing = (Defaults.ABLY_VERSION_NUMBER >= 1.2);
+
+	/**
 	 * Spec: TO313
 	 */
 	public int httpOpenTimeout = Defaults.TIMEOUT_HTTP_OPEN;

@@ -241,11 +241,12 @@ public class HttpCore {
 			}
 			response = readResponse(conn);
 			if(rawHttpListener != null) {
-				rawHttpListener.onRawHttpResponse(id, response);
+				rawHttpListener.onRawHttpResponse(id, method, response);
 			}
 		} catch(IOException ioe) {
+			ioe.printStackTrace();
 			if(rawHttpListener != null) {
-				rawHttpListener.onRawHttpException(id, ioe);
+				rawHttpListener.onRawHttpException(id, method, ioe);
 			}
 			throw AblyException.fromThrowable(ioe);
 		}
