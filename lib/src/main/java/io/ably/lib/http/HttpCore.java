@@ -95,8 +95,8 @@ public class HttpCore {
 	 *
 	 * @param host URL string
 	 */
-	public void setHost(String host) {
-		hosts.setHost(host);
+	public void setPreferredHost(String host) {
+		hosts.setPreferredHost(host, false);
 	}
 
 	/**
@@ -104,8 +104,17 @@ public class HttpCore {
 	 *
 	 * @return
      */
-	public String getHost() {
-		return hosts.getHost();
+	public String getPreferredHost() {
+		return hosts.getPreferredHost();
+	}
+
+	/**
+	 * Gets host for this HTTP client
+	 *
+	 * @return
+	 */
+	public String getPrimaryHost() {
+		return hosts.getPrimaryHost();
 	}
 
 	/**************************

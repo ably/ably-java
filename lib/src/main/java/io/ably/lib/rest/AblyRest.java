@@ -33,7 +33,7 @@ import io.ably.lib.util.Serialisation;
  *
  */
 public class AblyRest {
-	
+
 	public final ClientOptions options;
 	final String clientId;
 	public final Http http;
