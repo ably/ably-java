@@ -3,18 +3,16 @@ package io.ably.lib.http;
 import java.io.IOException;
 import java.net.URL;
 
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.Callback;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.Param;
+import io.ably.lib.types.*;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.Serialisation;
 
 import static io.ably.lib.http.HttpUtils.buildURL;
 
 public class HttpHelpers {
 	/**
 	 * Make a synchronous HTTP request to an Ably endpoint, using the Ably auth credentials and fallback hosts if necessary
-	 * @param httpCore
+	 * @param http
 	 * @param path
 	 * @param method
 	 * @param headers
@@ -24,27 +22,13 @@ public class HttpHelpers {
 	 * @return
 	 * @throws AblyException
 	 */
-	public static <T> T ablyHttpExecute(HttpCore httpCore, String path, String method, Param[] headers, Param[] params, HttpCore.RequestBody requestBody, HttpCore.ResponseHandler<T> responseHandler, boolean requireAblyAuth) throws AblyException {
-		String candidateHost = httpCore.hosts.getPreferredHost();
-		int retryCountRemaining = (httpCore.hosts.fallbackHostsRemaining(candidateHost) > 0) ? httpCore.options.httpMaxRetryCount : 0;
-		URL url;
-
-		while(true) {
-			url = buildURL(httpCore.scheme, candidateHost, httpCore.port, path, params);
-			try {
-				T result = httpCore.httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, requireAblyAuth);
-				httpCore.hosts.setPreferredHost(candidateHost, true);
-				return result;
-			} catch (AblyException.HostFailedException e) {
-				if(--retryCountRemaining < 0)
-					throw e; /* reached httpMaxRetryCount */
-				Log.d(TAG, "Connection failed to host `" + candidateHost + "`. Searching for new host...");
-				candidateHost = httpCore.hosts.getFallback(candidateHost);
-				if (candidateHost == null)
-					throw e; /* run out of fallback hosts */
-				Log.d(TAG, "Switched to `" + candidateHost + "`.");
+	public static <T> T ablyHttpExecute(Http http, final String path, final String method, final Param[] headers, final Param[] params, final HttpCore.RequestBody requestBody, final HttpCore.ResponseHandler<T> responseHandler, final boolean requireAblyAuth) throws AblyException {
+		return http.request(new Http.Execute<T>() {
+			@Override
+			public void execute(HttpScheduler http, Callback<T> callback) throws AblyException {
+				http.exec(path, method, headers, params, requestBody, responseHandler, requireAblyAuth, callback);
 			}
-		}
+		}).sync();
 	}
 
 	private static final String TAG = HttpHelpers.class.getName();

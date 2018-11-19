@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import io.ably.lib.http.*;
 import io.ably.lib.test.util.TimeHandler;
 import io.ably.lib.types.*;
 import io.ably.lib.util.Log;
@@ -41,9 +42,6 @@ import org.mockito.stubbing.Answer;
 
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
-import io.ably.lib.http.HttpConstants;
-import io.ably.lib.http.HttpCore;
-import io.ably.lib.http.HttpHelpers;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.test.util.StatusHandler;
 import io.ably.lib.transport.Defaults;
@@ -138,9 +136,10 @@ public class HttpTest {
 			}
 		}.setUrlArgumentStack(urlHostArgumentStack);
 
+		Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
 		try {
 			HttpHelpers.ablyHttpExecute(
-					httpCore, "/path/to/fallback", /* Ignore path */
+					http, "/path/to/fallback", /* Ignore path */
 					HttpConstants.Methods.GET, /* Ignore method */
 					new Param[0], /* Ignore headers */
 					new Param[0], /* Ignore params */
@@ -198,9 +197,10 @@ public class HttpTest {
 			}
 		}.setUrlArgumentStack(urlHostArgumentStack);
 
+		Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
 		try {
 			HttpHelpers.ablyHttpExecute(
-					httpCore, "/path/to/fallback", /* Ignore path */
+					http, "/path/to/fallback", /* Ignore path */
 					HttpConstants.Methods.GET, /* Ignore method */
 					new Param[0], /* Ignore headers */
 					new Param[0], /* Ignore params */
@@ -266,8 +266,9 @@ public class HttpTest {
 						any(HttpCore.ResponseHandler.class) /* Ignore */
 				);
 
+		Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
 		String responseActual = (String) HttpHelpers.ablyHttpExecute(
-				httpCore, "", /* Ignore */
+				http, "", /* Ignore */
 				"", /* Ignore */
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
@@ -286,7 +287,7 @@ public class HttpTest {
 		} catch(InterruptedException ie) {}
 
 		String responseActual2 = (String) HttpHelpers.ablyHttpExecute(
-				httpCore, "", /* Ignore */
+				http, "", /* Ignore */
 				"", /* Ignore */
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
@@ -354,9 +355,10 @@ public class HttpTest {
 						any(HttpCore.ResponseHandler.class) /* Ignore */
 				);
 
+		Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
 		try {
 			HttpHelpers.ablyHttpExecute(
-					httpCore, "", /* Ignore */
+					http, "", /* Ignore */
 					"", /* Ignore */
 					new Param[0], /* Ignore */
 					new Param[0], /* Ignore */
@@ -376,7 +378,7 @@ public class HttpTest {
 
 		try {
 			HttpHelpers.ablyHttpExecute(
-					httpCore, "", /* Ignore */
+					http, "", /* Ignore */
 					"", /* Ignore */
 					new Param[0], /* Ignore */
 					new Param[0], /* Ignore */
@@ -449,9 +451,10 @@ public class HttpTest {
 						any(HttpCore.ResponseHandler.class) /* Ignore */
 				);
 
+		Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
 		try {
 			HttpHelpers.ablyHttpExecute(
-					httpCore, "", /* Ignore */
+					http, "", /* Ignore */
 					"", /* Ignore */
 					new Param[0], /* Ignore */
 					new Param[0], /* Ignore */
@@ -528,8 +531,9 @@ public class HttpTest {
 						any(HttpCore.ResponseHandler.class) /* Ignore */
 				);
 
+		Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
 		String responseActual = (String) HttpHelpers.ablyHttpExecute(
-				httpCore, "", /* Ignore */
+				http, "", /* Ignore */
 				"", /* Ignore */
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
@@ -596,9 +600,10 @@ public class HttpTest {
 			}
 		}.setUrlArgumentStack(urlHostArgumentStack);
 
+		Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
 		try {
 			HttpHelpers.ablyHttpExecute(
-					httpCore, "/path/to/fallback", /* Ignore path */
+					http, "/path/to/fallback", /* Ignore path */
 					HttpConstants.Methods.GET, /* Ignore method */
 					new Param[0], /* Ignore headers */
 					new Param[0], /* Ignore params */
@@ -656,8 +661,9 @@ public class HttpTest {
 						any(HttpCore.ResponseHandler.class) /* Ignore */
 				);
 
+		Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
 		String responseActual = (String) HttpHelpers.ablyHttpExecute(
-				httpCore, "", /* Ignore */
+				http, "", /* Ignore */
 				"", /* Ignore */
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
@@ -725,8 +731,9 @@ public class HttpTest {
 				);
 
         /* Call method with real parameters */
+		Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
 		String responseActual = (String) HttpHelpers.ablyHttpExecute(
-				httpCore, "", /* Ignore */
+				http, "", /* Ignore */
 				"", /* Ignore */
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
@@ -794,8 +801,9 @@ public class HttpTest {
 						any(HttpCore.ResponseHandler.class) /* Ignore */
 				);
 
+		Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
 		String responseActual = (String) HttpHelpers.ablyHttpExecute(
-				httpCore, "", /* Ignore */
+				http, "", /* Ignore */
 				"", /* Ignore */
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
@@ -873,8 +881,9 @@ public class HttpTest {
 						any(HttpCore.ResponseHandler.class) /* Ignore */
 				);
 
+		Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
 		HttpHelpers.ablyHttpExecute(
-				httpCore, "", /* Ignore */
+				http, "", /* Ignore */
 				"", /* Ignore */
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
@@ -905,7 +914,7 @@ public class HttpTest {
 				);
 
 		HttpHelpers.ablyHttpExecute(
-				httpCore, "", /* Ignore */
+				http, "", /* Ignore */
 				"", /* Ignore */
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
@@ -959,8 +968,9 @@ public class HttpTest {
 						any(HttpCore.ResponseHandler.class) /* Ignore */
 				);
 
+		Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
 		HttpHelpers.ablyHttpExecute(
-				httpCore, "", /* Ignore */
+				http, "", /* Ignore */
 				"", /* Ignore */
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
@@ -996,7 +1006,7 @@ public class HttpTest {
 				);
 
 		HttpHelpers.ablyHttpExecute(
-				httpCore, "", /* Ignore */
+				http, "", /* Ignore */
 				"", /* Ignore */
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
@@ -1049,8 +1059,9 @@ public class HttpTest {
 						any(HttpCore.ResponseHandler.class) /* Ignore */
 				);
 
+		Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
 		HttpHelpers.ablyHttpExecute(
-				httpCore, "", /* Ignore */
+				http, "", /* Ignore */
 				"", /* Ignore */
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
@@ -1080,7 +1091,7 @@ public class HttpTest {
 				);
 
 		HttpHelpers.ablyHttpExecute(
-				httpCore, "", /* Ignore */
+				http, "", /* Ignore */
 				"", /* Ignore */
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
@@ -1138,8 +1149,9 @@ public class HttpTest {
          */
 		thrown.expect(AblyException.HostFailedException.class);
 
+		Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
 		HttpHelpers.ablyHttpExecute(
-				httpCore, "", /* Ignore */
+				http, "", /* Ignore */
 				"", /* Ignore */
 				new Param[0], /* Ignore */
 				new Param[0], /* Ignore */
