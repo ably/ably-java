@@ -825,39 +825,171 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
 	/**
 	 * <p>
-	 * Validate publish will result in an error, when the channel moves
-	 * to the FAILED state before the operation succeeds
+	 * Validate publish will succeed without triggering an attach when connected
+	 * if not already attached
 	 * </p>
 	 * <p>
-	 * Spec: RTL6c3
+	 * Spec: RTL6c1
 	 * </p>
 	 *
-	 * @throws AblyException
 	 */
 	@Test
-	public void attach_implicit_publish_fail() throws AblyException {
-		AblyRealtime ably = null;
+	public void transient_publish_connected() throws AblyException {
+		AblyRealtime pubAbly = null, subAbly = null;
+		String channelName = "transient_publish_connected_" + testParams.name;
 		try {
-			ClientOptions opts = createOptions(testVars.keys[1].keyStr);
-			ably = new AblyRealtime(opts);
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			subAbly = new AblyRealtime(opts);
 
 			/* wait until connected */
-			new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
-			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+			new ConnectionWaiter(subAbly.connection).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", subAbly.connection.state, ConnectionState.connected);
 
 			/* create a channel and subscribe */
-			final Channel channel = ably.channels.get("publish_fail");
+			final Channel subChannel = subAbly.channels.get(channelName);
+			Helpers.MessageWaiter messageWaiter = new Helpers.MessageWaiter(subChannel);
+
+			pubAbly = new AblyRealtime(opts);
+			new ConnectionWaiter(pubAbly.connection).waitFor(ConnectionState.connected);
 			Helpers.CompletionWaiter completionWaiter = new Helpers.CompletionWaiter();
-			channel.publish("Lorem", "Ipsum!", completionWaiter);
-			assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
+			final Channel pubChannel = pubAbly.channels.get(channelName);
+			pubChannel.publish("Lorem", "Ipsum!", completionWaiter);
+			assertEquals("Verify channel remains in initialized state", pubChannel.state, ChannelState.initialized);
 
 			ErrorInfo errorInfo = completionWaiter.waitFor();
+			assertEquals("Verify channel remains in initialized state", pubChannel.state, ChannelState.initialized);
 
-			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-			assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
+			messageWaiter.waitFor(1);
+			assertEquals("Verify expected message received", messageWaiter.receivedMessages.get(0).name, "Lorem");
 		} finally {
-			if(ably != null)
-				ably.close();
+			if(pubAbly != null) {
+				pubAbly.close();
+			}
+			if(subAbly != null) {
+				subAbly.close();
+			}
+		}
+	}
+
+	/**
+	 * <p>
+	 * Validate publish will succeed without triggering an attach when connecting
+	 * if not already attached
+	 * </p>
+	 * <p>
+	 * Spec: RTL6c2
+	 * </p>
+	 *
+	 */
+	@Test
+	public void transient_publish_connecting() throws AblyException {
+		AblyRealtime pubAbly = null, subAbly = null;
+		String channelName = "transient_publish_connecting_" + testParams.name;
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			subAbly = new AblyRealtime(opts);
+
+			/* wait until connected */
+			new ConnectionWaiter(subAbly.connection).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", subAbly.connection.state, ConnectionState.connected);
+
+			/* create a channel and subscribe */
+			final Channel subChannel = subAbly.channels.get(channelName);
+			Helpers.MessageWaiter messageWaiter = new Helpers.MessageWaiter(subChannel);
+
+			pubAbly = new AblyRealtime(opts);
+			final Channel pubChannel = pubAbly.channels.get(channelName);
+			Helpers.CompletionWaiter completionWaiter = new Helpers.CompletionWaiter();
+			pubChannel.publish("Lorem", "Ipsum!", completionWaiter);
+			assertEquals("Verify channel remains in initialized state", pubChannel.state, ChannelState.initialized);
+
+			ErrorInfo errorInfo = completionWaiter.waitFor();
+			assertEquals("Verify channel remains in initialized state", pubChannel.state, ChannelState.initialized);
+
+			messageWaiter.waitFor(1);
+			assertEquals("Verify expected message received", messageWaiter.receivedMessages.get(0).name, "Lorem");
+		} finally {
+			if(pubAbly != null) {
+				pubAbly.close();
+			}
+			if(subAbly != null) {
+				subAbly.close();
+			}
+		}
+	}
+
+	/**
+	 * <p>
+	 * Validate publish will fail when connection is failed
+	 * </p>
+	 * <p>
+	 * Spec: RTL6c4
+	 * </p>
+	 *
+	 */
+	@Test
+	public void transient_publish_connection_failed() {
+		AblyRealtime pubAbly = null;
+		String channelName = "transient_publish_connection_failed_" + testParams.name;
+		try {
+			ClientOptions opts = createOptions("not:a.key");
+			pubAbly = new AblyRealtime(opts);
+			new ConnectionWaiter(pubAbly.connection).waitFor(ConnectionState.failed);
+			assertEquals("Verify failed state reached", pubAbly.connection.state, ConnectionState.failed);
+
+			final Channel pubChannel = pubAbly.channels.get(channelName);
+			Helpers.CompletionWaiter completionWaiter = new Helpers.CompletionWaiter();
+			try {
+				pubChannel.publish("Lorem", "Ipsum!", completionWaiter);
+				fail("failed to raise expected exception");
+			} catch(AblyException e) {
+			}
+		} catch(AblyException e) {
+			fail("unexpected exception");
+		} finally {
+			if(pubAbly != null) {
+				pubAbly.close();
+			}
+		}
+	}
+
+	/**
+	 * <p>
+	 * Validate publish will fail when channel is failed
+	 * </p>
+	 * <p>
+	 * Spec: RTL6c4
+	 * </p>
+	 *
+	 */
+	@Test
+	public void transient_publish_channel_failed() {
+		AblyRealtime pubAbly = null;
+		String channelName = "transient_publish_channel_failed_" + testParams.name;
+		try {
+			ClientOptions opts = createOptions(testVars.keys[1].keyStr);
+			pubAbly = new AblyRealtime(opts);
+			new ConnectionWaiter(pubAbly.connection).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", pubAbly.connection.state, ConnectionState.connected);
+
+			final Channel pubChannel = pubAbly.channels.get(channelName);
+			Helpers.ChannelWaiter channelWaiter = new Helpers.ChannelWaiter(pubChannel);
+			pubChannel.attach();
+			channelWaiter.waitFor(ChannelState.failed);
+
+			Helpers.CompletionWaiter completionWaiter = new Helpers.CompletionWaiter();
+			try {
+				pubChannel.publish("Lorem", "Ipsum!", completionWaiter);
+				fail("failed to raise expected exception");
+			} catch(AblyException e) {
+				assertEquals(pubChannel.state, ChannelState.failed);
+			}
+		} catch(AblyException e) {
+			fail("unexpected exception");
+		} finally {
+			if(pubAbly != null) {
+				pubAbly.close();
+			}
 		}
 	}
 
