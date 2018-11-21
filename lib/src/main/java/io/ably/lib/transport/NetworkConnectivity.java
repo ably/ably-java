@@ -1,4 +1,4 @@
-package io.ably.lib.util;
+package io.ably.lib.transport;
 
 import io.ably.lib.types.ErrorInfo;
 
@@ -33,4 +33,6 @@ public abstract class NetworkConnectivity {
 	}
 
 	protected static Set<NetworkConnectivityListener> listeners = new HashSet<NetworkConnectivityListener>();
+
+	public static class DefaultNetworkConnectivity extends NetworkConnectivity {}
 }

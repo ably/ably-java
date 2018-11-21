@@ -28,14 +28,18 @@ public class AblyRest extends AblyBase {
 
     /**
      * Get the Android Context for this instance
-     * @return
+     * @return context
      */
-    public Context getAndroidContext() { return context; }
+    public Context getAndroidContext() { return this.platform.getAndroidContext(); }
 
     /**
      * Set the Android Context for this instance
      */
-    public void setAndroidContext(Context context) { this.context = context; }
+    public void setAndroidContext(Context context) { this.platform.setAndroidContext(context); }
 
-    private Context context;
+    /**
+     * Clear the Android Context for this instance
+     */
+    public void clearAndroidContext() { this.platform.clearAndroidContext(); }
+
 }
