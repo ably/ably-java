@@ -14,8 +14,8 @@ import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.types.ProtocolSerializer;
 import io.ably.lib.util.Log;
-import io.ably.lib.util.NetworkConnectivity.NetworkConnectivityListener;
-import io.ably.lib.util.Platform;
+import io.ably.lib.transport.NetworkConnectivity.NetworkConnectivityListener;
+import io.ably.lib.platform.Platform;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -1270,22 +1270,34 @@ public class ConnectionManager implements ConnectListener {
 
 		@Override
 		public void onNetworkAvailable() {
-
+			Log.i(TAG, "onNetworkAvailable()");
+			ConnectionManager cm = ConnectionManager.this;
+			ConnectionState currentState = cm.state.state;
+			if(currentState == ConnectionState.disconnected || currentState == ConnectionState.suspended) {
+				Log.i(TAG, "onNetworkAvailable(): initiating reconnect");
+				cm.connect();
+			}
 		}
 
 		@Override
 		public void onNetworkUnavailable(ErrorInfo reason) {
-
+			Log.i(TAG, "onNetworkAvailable(); reason = " + reason.toString());
+			ConnectionManager cm = ConnectionManager.this;
+			ConnectionState currentState = cm.state.state;
+			if(currentState == ConnectionState.connected || currentState == ConnectionState.connecting) {
+				Log.i(TAG, "onNetworkAvailable(): closing connected transport");
+				cm.requestState(new StateIndication(ConnectionState.disconnected, reason));
+			}
 		}
 	}
 
 	private void startConnectivityListener() {
 		connectivityListener = new CMConnectivityListener();
-		Platform.getNetworkConnectvity().addListener(connectivityListener);
+		ably.platform.getNetworkConnectvity().addListener(connectivityListener);
 	}
 
 	private void stopConnectivityListener() {
-		Platform.getNetworkConnectvity().removeListener(connectivityListener);
+		ably.platform.getNetworkConnectvity().removeListener(connectivityListener);
 		connectivityListener = null;
 	}
 

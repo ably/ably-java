@@ -1,5 +1,6 @@
 package io.ably.lib.util;
 
+import io.ably.lib.platform.Platform;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePack.PackerConfig;
 import org.msgpack.core.MessagePack.UnpackerConfig;
