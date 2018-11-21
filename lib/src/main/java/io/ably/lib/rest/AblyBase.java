@@ -25,15 +25,16 @@ import io.ably.lib.types.Param;
 import io.ably.lib.types.Stats;
 import io.ably.lib.types.StatsReader;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.Platform;
 import io.ably.lib.util.Serialisation;
 
 /**
- * AblyRest
+ * AblyBase
  * The top-level class to be instanced for the Ably REST library.
  *
  */
-public class AblyRest {
-	
+public abstract class AblyBase {
+
 	public final ClientOptions options;
 	final String clientId;
 	public final Http http;
@@ -51,7 +52,7 @@ public class AblyRest {
 	 * @param key; String key (obtained from application dashboard)
 	 * @throws AblyException
 	 */
-	public AblyRest(String key) throws AblyException {
+	public AblyBase(String key) throws AblyException {
 		this(new ClientOptions(key));
 	}
 
@@ -60,7 +61,7 @@ public class AblyRest {
 	 * @param options: see {@link io.ably.lib.types.ClientOptions} for options
 	 * @throws AblyException
 	 */
-	public AblyRest(ClientOptions options) throws AblyException {
+	public AblyBase(ClientOptions options) throws AblyException {
 		/* normalise options */
 		if(options == null) {
 			String msg = "no options provided";
@@ -101,7 +102,7 @@ public class AblyRest {
 				return channel;
 			}
 
-			channel = new Channel(AblyRest.this, channelName, channelOptions);
+			channel = new Channel(AblyBase.this, channelName, channelOptions);
 			super.put(channelName, channel);
 			return channel;
 		}

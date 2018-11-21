@@ -850,7 +850,7 @@ public class Auth {
 	 * @param options
 	 * @throws AblyException
 	 */
-	Auth(AblyRest ably, ClientOptions options) throws AblyException {
+	Auth(AblyBase ably, ClientOptions options) throws AblyException {
 		this.ably = ably;
 		authOptions = options;
 		tokenParams = options.defaultTokenParams != null ?
@@ -1081,7 +1081,7 @@ public class Auth {
 	}
 
 	private static final String TAG = Auth.class.getName();
-	private final AblyRest ably;
+	private final AblyBase ably;
 	private final AuthMethod method;
 	private AuthOptions authOptions;
 	private TokenParams tokenParams;
