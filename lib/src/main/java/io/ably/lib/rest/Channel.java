@@ -208,8 +208,8 @@ public class Channel {
 	 * internal
 	 * @throws AblyException 
 	 ******************/
-	
-	Channel(AblyRest ably, String name, ChannelOptions options) throws AblyException {
+
+	Channel(AblyBase ably, String name, ChannelOptions options) throws AblyException {
 		this.ably = ably;
 		this.name = name;
 		this.options = options;
@@ -217,7 +217,7 @@ public class Channel {
 		this.presence = new Presence();
 	}
 
-	private final AblyRest ably;
+	private final AblyBase ably;
 	private final String basePath;
 	ChannelOptions options;
 
