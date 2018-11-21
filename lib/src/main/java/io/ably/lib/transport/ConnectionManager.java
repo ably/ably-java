@@ -1294,11 +1294,11 @@ public class ConnectionManager implements ConnectListener {
 
 	private void startConnectivityListener() {
 		connectivityListener = new CMConnectivityListener();
-		ably.platform.getNetworkConnectvity().addListener(connectivityListener);
+		ably.platform.getNetworkConnectivity().addListener(connectivityListener);
 	}
 
 	private void stopConnectivityListener() {
-		ably.platform.getNetworkConnectvity().removeListener(connectivityListener);
+		ably.platform.getNetworkConnectivity().removeListener(connectivityListener);
 		connectivityListener = null;
 	}
 

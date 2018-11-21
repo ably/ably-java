@@ -81,7 +81,7 @@ public abstract class AblyBase {
 		httpCore = new HttpCore(options, auth);
 		http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
 		channels = new Channels();
-		platform = new Platform();
+		platform = new Platform(this);
 	}
 
 	/**
