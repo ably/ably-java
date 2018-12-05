@@ -13,6 +13,7 @@ import io.ably.lib.http.HttpPaginatedQuery;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
 import io.ably.lib.platform.Platform;
+import io.ably.lib.push.Push;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.AsyncHttpPaginatedResponse;
 import io.ably.lib.types.AsyncPaginatedResult;
@@ -81,7 +82,7 @@ public abstract class AblyBase {
 		httpCore = new HttpCore(options, auth);
 		http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
 		channels = new Channels();
-		platform = new Platform(this);
+		platform = new Platform();
 		push = new Push(this);
 	}
 

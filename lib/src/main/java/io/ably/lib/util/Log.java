@@ -28,7 +28,6 @@ public class Log {
 	 * Default log handler class that sends output to System.out.
 	 * This is public as a convenience to allow simple subclasses
 	 * to output to other PrintStrems.
-	 *
 	 */
 	public static class DefaultHandler implements LogHandler {
 		@Override
@@ -38,46 +37,46 @@ public class Log {
 
 		protected void println(PrintStream stream, int severity, String tag, String msg, Throwable tr) {
 			stream.print("(" + severities[severity] + "): ");
-			if(tag != null && tag.length() != 0)
+			if (tag != null && tag.length() != 0)
 				stream.print(tag + ": ");
-			if(msg != null && msg.length() != 0)
+			if (msg != null && msg.length() != 0)
 				stream.print(msg);
 			stream.println();
-			if(tr != null) {
+			if (tr != null) {
 				tr.printStackTrace(stream);
 			}
 		}
 	}
 
 	/**
-     * Priority constant to suppress all logging.
-     */
-    public static final int NONE = 99;
+	 * Priority constant to suppress all logging.
+	 */
+	public static final int NONE = 99;
 
 	/**
-     * Priority constant; use Log.v.
-     */
-    public static final int VERBOSE = 2;
+	 * Priority constant; use Log.v.
+	 */
+	public static final int VERBOSE = 2;
 
-    /**
-     * Priority constant; use Log.d.
-     */
-    public static final int DEBUG = 3;
+	/**
+	 * Priority constant; use Log.d.
+	 */
+	public static final int DEBUG = 3;
 
-    /**
-     * Priority constant; use Log.i.
-     */
-    public static final int INFO = 4;
+	/**
+	 * Priority constant; use Log.i.
+	 */
+	public static final int INFO = 4;
 
-    /**
-     * Priority constant; use Log.w.
-     */
-    public static final int WARN = 5;
+	/**
+	 * Priority constant; use Log.w.
+	 */
+	public static final int WARN = 5;
 
-    /**
-     * Priority constant; use Log.e.
-     */
-    public static final int ERROR = 6;
+	/**
+	 * Priority constant; use Log.e.
+	 */
+	public static final int ERROR = 6;
 
 	public static int v(String tag, String msg) {
 		print(VERBOSE, tag, msg, null);
@@ -134,18 +133,24 @@ public class Log {
 		return 0;
 	}
 
-    public static void setLevel(int level) { Log.level = (level != 0) ? level : defaultLevel; }
-    public static final int defaultLevel = WARN;
-    public static int level = defaultLevel;
+	public static void setLevel(int level) {
+		Log.level = (level != 0) ? level : defaultLevel;
+	}
 
-    public static void setHandler(LogHandler handler) { Log.handler = (handler != null) ? handler : defaultHandler; }
-    public static final LogHandler defaultHandler = new DefaultHandler();
-    public static LogHandler handler = defaultHandler;
+	public static final int defaultLevel = WARN;
+	public static int level = defaultLevel;
+
+	public static void setHandler(LogHandler handler) {
+		Log.handler = (handler != null) ? handler : defaultHandler;
+	}
+
+	public static final LogHandler defaultHandler = new DefaultHandler();
+	public static LogHandler handler = defaultHandler;
 
 	private static String[] severities = new String[]{"", "", "VERBOSE", "DEBUG", "INFO", "WARN", "ERROR", "ASSERT"};
-	
+
 	private static void print(int severity, String tag, String msg, Throwable tr) {
-		if(severity >= level) {
+		if (severity >= level) {
 			handler.println(severity, tag, msg, tr);
 		}
 	}

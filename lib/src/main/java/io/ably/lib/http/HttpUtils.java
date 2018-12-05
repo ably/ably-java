@@ -141,98 +141,98 @@ public class HttpUtils {
 	}
 
 	private static void appendParams(StringBuilder uri, Param[] params) {
-        if(params != null && params.length > 0) {
-            uri.append('?').append(params[0].key).append('=').append(params[0].value);
-            for(int i = 1; i < params.length; i++) {
-                uri.append('&').append(params[i].key).append('=').append(params[i].value);
-            }
-        }
-    }
+		if(params != null && params.length > 0) {
+			uri.append('?').append(params[0].key).append('=').append(params[0].value);
+			for(int i = 1; i < params.length; i++) {
+				uri.append('&').append(params[i].key).append('=').append(params[i].value);
+			}
+		}
+	}
 
 	static URL buildURL(String scheme, String host, int port, String path, Param[] params) {
-        StringBuilder builder = new StringBuilder(scheme).append(host).append(':').append(port).append(path);
-        appendParams(builder, params);
+		StringBuilder builder = new StringBuilder(scheme).append(host).append(':').append(port).append(path);
+		appendParams(builder, params);
 
-        URL result = null;
-        try {
-            result = new URL(builder.toString());
-        } catch (MalformedURLException e) {}
-        return result;
-    }
+		URL result = null;
+		try {
+			result = new URL(builder.toString());
+		} catch (MalformedURLException e) {}
+		return result;
+	}
 
 	static URL buildURL(String uri, Param[] params) {
-        StringBuilder builder = new StringBuilder(uri);
-        appendParams(builder, params);
+		StringBuilder builder = new StringBuilder(uri);
+		appendParams(builder, params);
 
-        URL result = null;
-        try {
-            result = new URL(builder.toString());
-        } catch (MalformedURLException e) {}
-        return result;
-    }
+		URL result = null;
+		try {
+			result = new URL(builder.toString());
+		} catch (MalformedURLException e) {}
+		return result;
+	}
 
 	/**
-     * A RequestBody wrapping a byte array
-     */
-    public static class ByteArrayRequestBody implements HttpCore.RequestBody {
-        public ByteArrayRequestBody(byte[] bytes, String contentType) { this.bytes = bytes; this.contentType = contentType; }
+	 * A RequestBody wrapping a byte array
+	 */
+	public static class ByteArrayRequestBody implements HttpCore.RequestBody {
+		public ByteArrayRequestBody(byte[] bytes, String contentType) { this.bytes = bytes; this.contentType = contentType; }
 
-        @Override
-        public byte[] getEncoded() { return bytes; }
-        @Override
-        public String getContentType() { return contentType; }
+		@Override
+		public byte[] getEncoded() { return bytes; }
+		@Override
+		public String getContentType() { return contentType; }
 
-        private final byte[] bytes;
-        private final String contentType;
-    }
+		private final byte[] bytes;
+		private final String contentType;
+	}
 
 	public static class FormRequestBody implements HttpCore.RequestBody {
-        public FormRequestBody(Param[] formData) {
-            this.formData = formData;
-        }
+		public FormRequestBody(Param[] formData) {
+			this.formData = formData;
+		}
 
-        @Override
-        public byte[] getEncoded() {
-            try {
-                StringBuilder body = new StringBuilder();
-                for (int i = 0; i < formData.length; i++) {
-                    if (i != 0)
-                        body.append('&');
-                    body.append(URLEncoder.encode(formData[i].key, "UTF-8"));
-                    body.append('=');
-                    body.append(URLEncoder.encode(formData[i].value, "UTF-8"));
-                }
-                return body.toString().getBytes("UTF-8");
-            } catch (UnsupportedEncodingException e) {
-                return new byte[]{};
-            }
-        }
+		@Override
+		public byte[] getEncoded() {
+			try {
+				StringBuilder body = new StringBuilder();
+				for (int i = 0; i < formData.length; i++) {
+					if (i != 0)
+						body.append('&');
+					body.append(URLEncoder.encode(formData[i].key, "UTF-8"));
+					body.append('=');
+					body.append(URLEncoder.encode(formData[i].value, "UTF-8"));
+				}
+				return body.toString().getBytes("UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				return new byte[]{};
+			}
+		}
 
-        @Override
-        public String getContentType() {
-            return HttpConstants.ContentTypes.FORM_ENCODING;
-        }
+		@Override
+		public String getContentType() {
+			return HttpConstants.ContentTypes.FORM_ENCODING;
+		}
 
-        private Param[] formData;
-    }
+		private Param[] formData;
+	}
 
 	/**
-     * A RequestBody wrapping a JSON-serialisable object
-     */
-    public static class JsonRequestBody implements HttpCore.RequestBody {
-        public JsonRequestBody(String jsonText) { this.jsonText = jsonText; }
-        public JsonRequestBody(Object ob) { this(Serialisation.gson.toJson(ob)); }
+	 * A RequestBody wrapping a JSON-serialisable object
+	 */
+	public static class JsonRequestBody implements HttpCore.RequestBody {
+		public JsonRequestBody(String jsonText) { this.jsonText = jsonText; }
+		public JsonRequestBody(Object ob) { this(Serialisation.gson.toJson(ob)); }
 
-        @Override
-        public byte[] getEncoded() { return (bytes != null) ? bytes : (bytes = jsonText.getBytes(Charset.forName("UTF-8"))); }
-        @Override
-        public String getContentType() { return HttpConstants.ContentTypes.JSON; }
+		@Override
+		public byte[] getEncoded() { return (bytes != null) ? bytes : (bytes = jsonText.getBytes(Charset.forName("UTF-8"))); }
+		@Override
+		public String getContentType() { return HttpConstants.ContentTypes.JSON; }
 
-        private final String jsonText;
-        private byte[] bytes;
-    }
+		private final String jsonText;
+		private byte[] bytes;
+	}
 
-    public static HttpCore.RequestBody requestBodyFromGson(JsonElement json, boolean useBinaryProtocol) {
+	public static HttpCore.RequestBody requestBodyFromGson(JsonElement json, boolean useBinaryProtocol) {
 		if (!useBinaryProtocol) {
 			return new JsonRequestBody(json);
 		}

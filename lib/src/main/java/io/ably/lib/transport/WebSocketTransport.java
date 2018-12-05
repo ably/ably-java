@@ -28,7 +28,7 @@ import org.java_websocket.WebSocket;
 public class WebSocketTransport implements ITransport {
 
 	private static final String TAG = WebSocketTransport.class.getName();
-	
+
 	/******************
 	 * public factory API
 	 ******************/

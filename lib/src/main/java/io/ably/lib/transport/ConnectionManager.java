@@ -720,9 +720,9 @@ public class ConnectionManager implements ConnectListener {
 	}
 
 	private boolean checkConnectionStale() {
-	    if(lastActivity == 0) {
-	        return false;
-	    }
+		if(lastActivity == 0) {
+			return false;
+		}
 		long now = System.currentTimeMillis();
 		long intervalSinceLastActivity = now - lastActivity;
 		if(intervalSinceLastActivity > (maxIdleInterval + connectionStateTtl)) {
