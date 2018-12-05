@@ -1,57 +1,49 @@
 package io.ably.lib.platform;
 
 import android.content.Context;
+import io.ably.lib.push.ActivationContext;
+import io.ably.lib.push.ActivationStateMachine;
+import io.ably.lib.push.Push;
 import io.ably.lib.rest.AblyBase;
+import io.ably.lib.push.LocalDevice;
 import io.ably.lib.transport.NetworkConnectivity;
+import io.ably.lib.transport.NetworkConnectivity.DelegatedNetworkConnectivity;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ErrorInfo;
 
 import java.util.WeakHashMap;
 
 public class Platform {
 	public static final String name = "android";
 
-	public Platform(AblyBase ably) {
-		this.ably = ably;
-		networkConnectivity = new AndroidNetworkConnectivity();
+	public Platform() {}
+
+	public Context getApplicationContext() {
+		return applicationContext;
 	}
 	/**
-	 * Get the Android Context for this instance
+	 * Set the Android Context for this instance
+	 */
+	public void setAndroidContext(Context context) throws AblyException {
+		context = context.getApplicationContext();
+		if(applicationContext != null) {
+			if(context == applicationContext) {
+				return;
+			}
+			throw AblyException.fromErrorInfo(new ErrorInfo("Incompatible application context set", 40000, 400));
+		}
+		applicationContext = context;
+		AndroidNetworkConnectivity.getNetworkConnectivity(context).addListener(this.networkConnectivity);
+	}
+
+	/**
+	 * Get the NetworkConnectivity tracker instance for this context
 	 * @return
 	 */
-	public Context getAndroidContext() { return context; }
-
-	/**
-	 * Set the Android Context for this instance, replacing any existing context
-	 */
-	public void setAndroidContext(Context context) {
-		if(this.context != context) {
-			clearAndroidContext();
-			this.context = context;
-			networkConnectivity.activate(context);
-			ablyInstanceByContext.put(context, ably);
-		}
-	}
-
-	/**
-	 * Clear the Android Context for this instance
-	 */
-	public void clearAndroidContext() {
-		if(context != null) {
-			networkConnectivity.deactivate(context);
-			context = null;
-			ablyInstanceByContext.remove(context);
-		}
-	}
-
 	public NetworkConnectivity getNetworkConnectivity() {
 		return networkConnectivity;
 	}
 
-	public static AblyBase getAblyForContext(Context context) {
-		return ablyInstanceByContext.get(context);
-	}
-
-	private Context context;
-	private final AblyBase ably;
-	private final AndroidNetworkConnectivity networkConnectivity;
-	private static WeakHashMap<Context, AblyBase> ablyInstanceByContext = new WeakHashMap<Context, AblyBase>();
+	private Context applicationContext;
+	private final DelegatedNetworkConnectivity networkConnectivity = new DelegatedNetworkConnectivity();
 }

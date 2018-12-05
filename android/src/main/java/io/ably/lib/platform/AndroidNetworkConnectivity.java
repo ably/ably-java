@@ -9,18 +9,45 @@ import android.net.NetworkInfo;
 import io.ably.lib.transport.NetworkConnectivity;
 import io.ably.lib.types.ErrorInfo;
 
+import java.util.WeakHashMap;
+
 public class AndroidNetworkConnectivity extends NetworkConnectivity {
 
-	AndroidNetworkConnectivity() {}
-
-	void activate(Context context) {
-		networkStateReceiver = new NetworkStateReceiver();
-		context.registerReceiver(networkStateReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+	AndroidNetworkConnectivity(Context applicationContext) {
+		this.applicationContext = applicationContext;
 	}
 
-	void deactivate(Context context) {
-		context.unregisterReceiver(networkStateReceiver);
-		networkStateReceiver = null;
+	public static AndroidNetworkConnectivity getNetworkConnectivity(Context applicationContext) {
+		AndroidNetworkConnectivity networkConnectivity;
+		synchronized (contexts) {
+			networkConnectivity = contexts.get(applicationContext);
+			if(networkConnectivity == null) {
+				contexts.put(applicationContext, (networkConnectivity = new AndroidNetworkConnectivity(applicationContext)));
+			}
+		}
+		return networkConnectivity;
+	}
+
+	protected void onNonempty() {
+		activate();
+	}
+
+	protected void onEmpty() {
+		deactivate();
+	}
+
+	private void activate() {
+		if(networkStateReceiver == null && applicationContext != null) {
+			networkStateReceiver = new NetworkStateReceiver();
+			applicationContext.registerReceiver(networkStateReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+		}
+	}
+
+	private void deactivate() {
+		if(networkStateReceiver != null) {
+			applicationContext.unregisterReceiver(networkStateReceiver);
+			networkStateReceiver = null;
+		}
 	}
 
 	private class NetworkStateReceiver extends BroadcastReceiver {
@@ -43,5 +70,8 @@ public class AndroidNetworkConnectivity extends NetworkConnectivity {
 		}
 	}
 
+	private final Context applicationContext;
 	private NetworkStateReceiver networkStateReceiver;
+
+	private static WeakHashMap<Context, AndroidNetworkConnectivity> contexts = new WeakHashMap<Context, AndroidNetworkConnectivity>();
 }

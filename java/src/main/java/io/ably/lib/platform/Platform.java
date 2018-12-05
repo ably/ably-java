@@ -6,16 +6,11 @@ import io.ably.lib.transport.NetworkConnectivity;
 public class Platform {
 	public static final String name = "java";
 
-	public Platform(AblyBase ably) {
-	}
+	public Platform() {}
 
 	public NetworkConnectivity getNetworkConnectivity() {
-		if(networkConnectivity != null) {
-			return networkConnectivity;
-		} else {
-			return (networkConnectivity = new NetworkConnectivity.DefaultNetworkConnectivity());
-		}
+		return networkConnectivity;
 	}
 
-	private NetworkConnectivity networkConnectivity;
+	private final NetworkConnectivity networkConnectivity = new NetworkConnectivity.DefaultNetworkConnectivity();
 }
