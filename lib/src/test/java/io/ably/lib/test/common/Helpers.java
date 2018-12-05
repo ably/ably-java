@@ -24,7 +24,6 @@ import io.ably.lib.realtime.Connection;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.realtime.Presence.PresenceListener;
-import io.ably.lib.rest.Push;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.BaseMessage;

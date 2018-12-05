@@ -64,7 +64,6 @@ public class HttpTest {
 	public ExpectedException thrown = ExpectedException.none();
 	private static RouterNanoHTTPD server;
 
-
 	@BeforeClass
 	public static void setUp() throws IOException {
 		server = new RouterNanoHTTPD(TEST_SERVER_PORT);
@@ -171,7 +170,7 @@ public class HttpTest {
 	/**
 	 * Validates that fallbacks are disabled when ClientOptions#fallbackHosts are set to empty and the only host used is Defaults#HOST_REST
 	 * @throws AblyException
-     */
+	 */
 
 	@Test
 	public void http_ably_execute_null_fallbacks() throws AblyException {
@@ -247,7 +246,7 @@ public class HttpTest {
 		String responseExpected = "Lorem Ipsum";
 		ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
 
-        /* Partially mock httpCore */
+		/* Partially mock httpCore */
 		Answer answer = new GrumpyAnswer(
 				1, /* Throw exception */
 				AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
@@ -336,7 +335,7 @@ public class HttpTest {
 		String responseExpected = "Lorem Ipsum";
 		ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
 
-        /* Partially mock httpCore */
+		/* Partially mock httpCore */
 		Answer answer = new GrumpyAnswer(
 				1, /* Throw exception */
 				AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
@@ -432,7 +431,7 @@ public class HttpTest {
 		String responseExpected = "Lorem Ipsum";
 		ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
 
-        /* Partially mock httpCore */
+		/* Partially mock httpCore */
 		Answer answer = new GrumpyAnswer(
 				2, /* Throw exception twice (2) */
 				AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
@@ -648,7 +647,7 @@ public class HttpTest {
 		String hostExpected = Defaults.HOST_REST;
 		ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
 
-        /* Partially mock httpCore */
+		/* Partially mock httpCore */
 		doReturn(responseExpected) /* Provide response */
 				.when(httpCore) /* when following method is executed on {@code HttpCore} instance */
 				.httpExecute(
@@ -673,10 +672,10 @@ public class HttpTest {
 		);
 
 
-        /* Verify
+		/* Verify
 		 *   - httpCore call executed once,
-         *   - with given host,
-         *   - and delivered expected response */
+		 *   - with given host,
+		 *   - and delivered expected response */
 		verify(httpCore, times(1))
 				.httpExecute( /* Just validating call counter. Ignore following parameters */
 						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
@@ -711,7 +710,7 @@ public class HttpTest {
 		String responseExpected = "Lorem Ipsum";
 		ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
 
-        /* Partially mock httpCore */
+		/* Partially mock httpCore */
 		Answer answer = new GrumpyAnswer(
 				1, /* Throw exception once (1) */
 				AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
@@ -730,7 +729,7 @@ public class HttpTest {
 						any(HttpCore.ResponseHandler.class) /* Ignore */
 				);
 
-        /* Call method with real parameters */
+		/* Call method with real parameters */
 		Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
 		String responseActual = (String) HttpHelpers.ablyHttpExecute(
 				http, "", /* Ignore */
@@ -743,10 +742,10 @@ public class HttpTest {
 		);
 
 
-        /* Verify
+		/* Verify
 		 *   - httpCore call executed twice (one for prod host and 1 for fallback),
-         *   - last call performed against a fallback host,
-         *   - and fallback host delivered expected response */
+		 *   - last call performed against a fallback host,
+		 *   - and fallback host delivered expected response */
 
 		verify(httpCore, times(2))
 				.httpExecute( /* Just validating call counter. Ignore following parameters */
@@ -782,7 +781,7 @@ public class HttpTest {
 		String responseExpected = "Lorem Ipsum";
 		ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
 
-        /* Partially mock httpCore */
+		/* Partially mock httpCore */
 		Answer answer = new GrumpyAnswer(
 				2, /* Throw exception twice (2) */
 				AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
@@ -813,11 +812,11 @@ public class HttpTest {
 		);
 
 
-        /* Verify
-         *   - httpCore call executed thrice,
-         *   - with 2 fallback hosts,
-         *   - each host having a unique value,
-         *   - and delivered expected response */
+		/* Verify
+		 *   - httpCore call executed thrice,
+		 *   - with 2 fallback hosts,
+		 *   - each host having a unique value,
+		 *   - and delivered expected response */
 
 		assertThat(url.getAllValues().get(1).getHost().matches(hostExpectedPattern), is(true));
 		assertThat(url.getAllValues().get(2).getHost().matches(hostExpectedPattern), is(true));
@@ -825,8 +824,8 @@ public class HttpTest {
 
 		assertThat(responseActual, is(equalTo(responseExpected)));
 
-        /* Verify call causes captor to capture same arguments twice.
-         * Do the validation, after we completed the {@code ArgumentCaptor} related assertions */
+		/* Verify call causes captor to capture same arguments twice.
+		 * Do the validation, after we completed the {@code ArgumentCaptor} related assertions */
 		verify(httpCore, times(3))
 				.httpExecute( /* Just validating call counter. Ignore following parameters */
 						url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
@@ -862,7 +861,7 @@ public class HttpTest {
 		String hostExpected = Defaults.HOST_REST;
 		ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
 
-        /* Partially mock httpCore */
+		/* Partially mock httpCore */
 		Answer answer = new GrumpyAnswer(
 				1, /* Throw exception once (1) */
 				AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
@@ -892,7 +891,7 @@ public class HttpTest {
 				false /* Ignore */
 		);
 
-        /* Verify there was a fallback with first call */
+		/* Verify there was a fallback with first call */
 		String successFallback = url.getValue().getHost();
 		assertThat(successFallback.matches(PATTERN_HOST_FALLBACK), is(true));
 
@@ -923,7 +922,7 @@ public class HttpTest {
 				false /* Ignore */
 		);
 
-        /* Verify second call was called with the cached fallback host */
+		/* Verify second call was called with the cached fallback host */
 		assertThat(url.getValue().getHost().equals(successFallback), is(true));
 	}
 
@@ -1124,7 +1123,7 @@ public class HttpTest {
 		ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
 		int excessiveFallbackCount = options.httpMaxRetryCount + 1;
 
-        /* Partially mock httpCore */
+		/* Partially mock httpCore */
 		Answer answer = new GrumpyAnswer(
 				excessiveFallbackCount, /* Throw exception more than httpMaxRetryCount number of times */
 				AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
@@ -1144,9 +1143,9 @@ public class HttpTest {
 				);
 
 
-        /* Verify
-         *   - ably exception with 50x status code is thrown
-         */
+		/* Verify
+		 *   - ably exception with 50x status code is thrown
+		 */
 		thrown.expect(AblyException.HostFailedException.class);
 
 		Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
@@ -1212,7 +1211,7 @@ public class HttpTest {
 		URL url;
 		HttpCore httpCore = new HttpCore(new ClientOptions(), null);
 
-        /* Informational 1xx */
+		/* Informational 1xx */
 
 		for (int statusCode = 100; statusCode <= 101; statusCode++) {
 			url = new URL("http://localhost:" + server.getListeningPort() + "/status/" + statusCode);
@@ -1222,12 +1221,12 @@ public class HttpTest {
 			} catch (AblyException.HostFailedException e) {
 				fail("Informal status code " + statusCode + " shouldn't throw an exception");
 			} catch (Exception e) {
-                /* non HostFailedExceptions are ignored */
+				/* non HostFailedExceptions are ignored */
 			}
 		}
 
 
-        /* Informational 3xx */
+		/* Informational 3xx */
 
 		for (int statusCode = 300; statusCode <= 307; statusCode++) {
 			url = new URL("http://localhost:" + server.getListeningPort() + "/status/" + statusCode);
@@ -1237,12 +1236,12 @@ public class HttpTest {
 			} catch (AblyException.HostFailedException e) {
 				fail("Multiple choices status code " + statusCode + " shouldn't throw an exception");
 			} catch (Exception e) {
-                /* non HostFailedExceptions are ignored */
+				/* non HostFailedExceptions are ignored */
 			}
 		}
 
 
-        /* Informational 4xx */
+		/* Informational 4xx */
 
 		for (int statusCode = 400; statusCode <= 417; statusCode++) {
 			url = new URL("http://localhost:" + server.getListeningPort() + "/status/" + statusCode);
@@ -1252,7 +1251,7 @@ public class HttpTest {
 			} catch (AblyException.HostFailedException e) {
 				fail("Client error status code " + statusCode + " shouldn't throw an exception");
 			} catch (Exception e) {
-                /* non HostFailedExceptions are ignored */
+				/* non HostFailedExceptions are ignored */
 			}
 		}
 	}

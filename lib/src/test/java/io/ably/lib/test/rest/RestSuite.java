@@ -46,9 +46,9 @@ public class RestSuite {
 	}
 
 	public static void main(String[] args) {
-	    Result result = JUnitCore.runClasses(RestSuite.class);
-	    for(Failure failure : result.getFailures()) {
-	      System.out.println(failure.toString());
-	    }
+		Result result = JUnitCore.runClasses(RestSuite.class);
+		for(Failure failure : result.getFailures()) {
+		  System.out.println(failure.toString());
+		}
 	}
 }
