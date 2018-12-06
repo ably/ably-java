@@ -39,7 +39,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
 	/**
 	 * Publish events with data of various datatypes using text protocol
 	 */
-	//@Test
+	@Test
 	public void channelpublish() {
 		/* first, publish some messages */
 		String channelName = "persisted:channelpublish_" + testParams.name;
@@ -74,7 +74,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
 	/**
 	 * Publish events using the async publish API
 	 */
-	//@Test
+	@Test
 	public void channelpublish_async() {
 		/* first, publish some messages */
 		String channelName = "persisted:channelpublish_async_" + testParams.name;
@@ -297,7 +297,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
 			opts.useBinaryProtocol = true;
 			opts.httpListener = requestListener;
 			/* generate a fallback which resolves to the same address, which the library will treat as a different host */
-			opts.fallbackHosts = new String[]{ablyForToken.httpCore.getHost().toUpperCase()};
+			opts.fallbackHosts = new String[]{ablyForToken.httpCore.getPrimaryHost().toUpperCase()};
 			AblyRest ably = new AblyRest(opts);
 
 			/* publish message */
@@ -405,7 +405,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
 			opts.useBinaryProtocol = true;
 			opts.httpListener = requestListener;
 			/* generate a fallback which resolves to the same address, which the library will treat as a different host */
-			opts.fallbackHosts = new String[]{ablyForToken.httpCore.getHost().toUpperCase()};
+			opts.fallbackHosts = new String[]{ablyForToken.httpCore.getPrimaryHost().toUpperCase()};
 			AblyRest ably = new AblyRest(opts);
 
 			/* publish message */
