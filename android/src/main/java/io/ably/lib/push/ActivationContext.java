@@ -59,6 +59,13 @@ public class ActivationContext {
 		return (ably = new AblyRest(deviceIdentityToken));
 	}
 
+	String getClientId() {
+		if(ably == null) {
+			return null;
+		}
+		return ably.auth.clientId;
+	}
+
 	public void onNewRegistrationToken(RegistrationToken.Type type, String token) {
 		LocalDevice localDevice = getLocalDevice();
 		RegistrationToken previous = localDevice.getRegistrationToken();
@@ -78,14 +85,12 @@ public class ActivationContext {
 
 	public void reset() {
 		ably = null;
-		if(activationStateMachine != null) {
-			activationStateMachine.reset();
-			activationStateMachine = null;
-		}
-		if(localDevice != null) {
-			localDevice.reset();
-			localDevice = null;
-		}
+
+		getActivationStateMachine().reset();
+		activationStateMachine = null;
+
+		getLocalDevice().reset();
+		localDevice = null;
 	}
 
 	public static ActivationContext getActivationContext(Context applicationContext) {

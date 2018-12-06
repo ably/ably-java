@@ -10,6 +10,7 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.util.Log;
 
 public class Push extends PushBase {
+
 	public Push(AblyBase rest) {
 		super(rest);
 	}
@@ -18,22 +19,22 @@ public class Push extends PushBase {
 		activate(false);
 	}
 
-	public void activate(boolean useCustomRegisterer) throws AblyException {
-		Log.v(TAG, "activate(): useCustomRegisterer " + useCustomRegisterer);
+	public void activate(boolean useCustomRegistrar) throws AblyException {
+		Log.v(TAG, "activate(): useCustomRegistrar " + useCustomRegistrar);
 		Context context = getApplicationContext();
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-		getStateMachine().handleEvent(ActivationStateMachine.CalledActivate.useCustomRegisterer(useCustomRegisterer, prefs));
+		getStateMachine().handleEvent(ActivationStateMachine.CalledActivate.useCustomRegistrar(useCustomRegistrar, prefs));
 	}
 
 	public void deactivate() throws AblyException {
 		deactivate(false);
 	}
 
-	public void deactivate(boolean useCustomDeregisterer) throws AblyException {
-		Log.v(TAG, "deactivate(): useCustomDeregisterer " + useCustomDeregisterer);
+	public void deactivate(boolean useCustomRegistrar) throws AblyException {
+		Log.v(TAG, "deactivate(): useCustomRegistrar " + useCustomRegistrar);
 		Context context = getApplicationContext();
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-		getStateMachine().handleEvent(ActivationStateMachine.CalledDeactivate.useCustomDeregisterer(useCustomDeregisterer, prefs));
+		getStateMachine().handleEvent(ActivationStateMachine.CalledDeactivate.useCustomRegistrar(useCustomRegistrar, prefs));
 	}
 
 	synchronized ActivationStateMachine getStateMachine() throws AblyException {

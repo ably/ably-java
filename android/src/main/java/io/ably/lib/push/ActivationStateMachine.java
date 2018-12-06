@@ -21,15 +21,15 @@ import java.util.ArrayDeque;
 
 public class ActivationStateMachine {
 	public static class CalledActivate extends ActivationStateMachine.Event {
-		public static ActivationStateMachine.CalledActivate useCustomRegisterer(boolean use, SharedPreferences prefs) {
-			prefs.edit().putBoolean(ActivationStateMachine.PersistKeys.USE_CUSTOM_REGISTERER, use).apply();
+		public static ActivationStateMachine.CalledActivate useCustomRegistrar(boolean useCustomRegistrar, SharedPreferences prefs) {
+			prefs.edit().putBoolean(ActivationStateMachine.PersistKeys.PUSH_CUSTOM_REGISTRAR, useCustomRegistrar).apply();
 			return new ActivationStateMachine.CalledActivate();
 		}
 	}
 
 	public static class CalledDeactivate extends ActivationStateMachine.Event {
-		static ActivationStateMachine.CalledDeactivate useCustomDeregisterer(boolean use, SharedPreferences prefs) {
-			prefs.edit().putBoolean(ActivationStateMachine.PersistKeys.USE_CUSTOM_DEREGISTERER, use).apply();
+		static ActivationStateMachine.CalledDeactivate useCustomRegistrar(boolean useCustomRegistrar, SharedPreferences prefs) {
+			prefs.edit().putBoolean(ActivationStateMachine.PersistKeys.PUSH_CUSTOM_REGISTRAR, useCustomRegistrar).apply();
 			return new ActivationStateMachine.CalledDeactivate();
 		}
 	}
@@ -102,8 +102,9 @@ public class ActivationStateMachine {
 			} else if (event instanceof ActivationStateMachine.GotPushDeviceDetails) {
 				final LocalDevice device = machine.getDevice();
 
-				if (machine.activationContext.getPreferences().getBoolean(ActivationStateMachine.PersistKeys.USE_CUSTOM_REGISTERER, false)) {
-					machine.useCustomRegisterer(device, true);
+				boolean useCustomRegistrar = machine.activationContext.getPreferences().getBoolean(ActivationStateMachine.PersistKeys.PUSH_CUSTOM_REGISTRAR, false);
+				if (useCustomRegistrar) {
+					machine.invokeCustomRegistration(device, true);
 				} else {
 					final AblyRest ably;
 					try {
@@ -280,7 +281,13 @@ public class ActivationStateMachine {
 		sendIntent(name, intent);
 	}
 
-	private void useCustomRegisterer(final DeviceDetails device, final boolean isNew) {
+	private void invokeDefaultRegistration(final DeviceDetails device, final boolean isNew) {
+	}
+
+	private void invokeDefaultDeregistration(final DeviceDetails device) {
+	}
+
+	private void invokeCustomRegistration(final DeviceDetails device, final boolean isNew) {
 		registerOnceReceiver("PUSH_DEVICE_REGISTERED", new BroadcastReceiver() {
 			@Override
 			public void onReceive(Context context, Intent intent) {
@@ -308,7 +315,7 @@ public class ActivationStateMachine {
 		sendIntent("PUSH_REGISTER_DEVICE", intent);
 	}
 
-	private void useCustomDeregisterer(final DeviceDetails device) {
+	private void invokeCustomDeregistration(final DeviceDetails device) {
 		registerOnceReceiver("PUSH_DEVICE_DEREGISTERED", new BroadcastReceiver() {
 			@Override
 			public void onReceive(Context context, Intent intent) {
@@ -346,8 +353,9 @@ public class ActivationStateMachine {
 
 	private static void updateRegistration(final ActivationStateMachine machine) {
 		final LocalDevice device = machine.activationContext.getLocalDevice();
-		if (machine.activationContext.getPreferences().getBoolean(ActivationStateMachine.PersistKeys.USE_CUSTOM_REGISTERER, false)) {
-			machine.useCustomRegisterer(device, false);
+		boolean useCustomRegistrar = machine.activationContext.getPreferences().getBoolean(ActivationStateMachine.PersistKeys.PUSH_CUSTOM_REGISTRAR, false);
+		if (useCustomRegistrar) {
+			machine.invokeCustomRegistration(device, false);
 		} else {
 			final AblyRest ably;
 			try {
@@ -389,8 +397,8 @@ public class ActivationStateMachine {
 
 	private static void deregister(final ActivationStateMachine machine) {
 		final LocalDevice device = machine.activationContext.getLocalDevice();
-		if (machine.activationContext.getPreferences().getBoolean(ActivationStateMachine.PersistKeys.USE_CUSTOM_DEREGISTERER, false)) {
-			machine.useCustomDeregisterer(device);
+		if (machine.activationContext.getPreferences().getBoolean(ActivationStateMachine.PersistKeys.PUSH_CUSTOM_REGISTRAR, false)) {
+			machine.invokeCustomDeregistration(device);
 		} else {
 			final AblyRest ably;
 			try {
@@ -533,8 +541,7 @@ public class ActivationStateMachine {
 		static final String CURRENT_STATE = "ABLY_PUSH_CURRENT_STATE";
 		static final String PENDING_EVENTS_LENGTH = "ABLY_PUSH_PENDING_EVENTS_LENGTH";
 		static final String PENDING_EVENTS_PREFIX = "ABLY_PUSH_PENDING_EVENTS";
-		static final String USE_CUSTOM_REGISTERER = "ABLY_PUSH_USE_CUSTOM_REGISTERER";
-		static final String USE_CUSTOM_DEREGISTERER = "ABLY_PUSH_USE_CUSTOM_DEREGISTERER";
+		static final String PUSH_CUSTOM_REGISTRAR = "ABLY_PUSH_REGISTRATION_HANDLER";
 	}
 
 	private static final String TAG = "AblyActivation";

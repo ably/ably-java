@@ -4,9 +4,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.preference.PreferenceManager;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.iid.FirebaseInstanceId;
-import com.google.firebase.iid.InstanceIdResult;
 import com.google.gson.JsonObject;
 import io.ably.lib.rest.DeviceDetails;
 import io.ably.lib.types.AblyException;
@@ -49,7 +46,7 @@ public class LocalDevice extends DeviceDetails {
 
 	private void loadPersisted() throws AblyException {
 		this.platform = "android";
-		this.clientId = activationContext.getAbly().auth.clientId;
+		this.clientId = activationContext.getClientId();
 		this.formFactor = isTablet(activationContext.getContext()) ? "tablet" : "phone";
 
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
@@ -64,49 +61,18 @@ public class LocalDevice extends DeviceDetails {
 		}
 		this.deviceIdentityToken = prefs.getString(SharedPrefKeys.DEVICE_TOKEN, null);
 
-		RegistrationToken.Type type = RegistrationToken.Type.fromInt(
-			prefs.getInt(SharedPrefKeys.TOKEN_TYPE, RegistrationToken.Type.FCM.ordinal()));
+		RegistrationToken.Type type = RegistrationToken.Type.fromOrdinal(
+			prefs.getInt(SharedPrefKeys.TOKEN_TYPE, -1));
 
 		Log.d(TAG, "loadPersisted(): token type = " + type);
-
-		RegistrationToken token = null;
-		String tokenString = prefs.getString(SharedPrefKeys.TOKEN, null);
-		if(tokenString == null) {
-			Log.v(TAG, "loadPersisted(); Initiating platform token request; type = " + type);
-			tokenString = getPlatformRegistrationToken(type);
-		}
-
-		if(tokenString != null) {
-			Log.d(TAG, "loadPersisted(): token string = " + tokenString);
-			token = new RegistrationToken(type, tokenString);
-			setRegistrationToken(token);
-		}
-	}
-
-	private String getPlatformRegistrationToken(RegistrationToken.Type type) {
-		switch(type) {
-		case UNKNOWN:
-			Log.e(TAG, "getPlatformRegistrationToken(); UNKNOWN type requested");
-			return null;
-		case GCM:
-			Log.e(TAG, "getPlatformRegistrationToken(); GCM type requested, but no longer supported");
-			return null;
-		case FCM:
-			try {
-				Task<InstanceIdResult> fcmTokenResult = FirebaseInstanceId.getInstance().getInstanceId();
-				if (fcmTokenResult.isComplete()) {
-					Log.d(TAG, "getPlatformRegistrationToken(); FCM token obtained directly");
-					return fcmTokenResult.getResult().getToken();
-				} else {
-					Log.d(TAG, "getPlatformRegistrationToken(); FCM token not locally available");
-					return null;
-				}
-			} catch(Exception e) {
-				Log.d(TAG, "getPlatformRegistrationToken(); unexpected exception attempting to get FCM token; make sure to call FirebaseApp.initializeApp(Context) in the app", e);
-				return null;
+		if(type != null) {
+			RegistrationToken token = null;
+			String tokenString = prefs.getString(SharedPrefKeys.TOKEN, null);
+			if(tokenString != null) {
+				Log.d(TAG, "loadPersisted(): token string = " + tokenString);
+				token = new RegistrationToken(type, tokenString);
+				setRegistrationToken(token);
 			}
-		default:
-			return null;
 		}
 	}
 
@@ -116,14 +82,14 @@ public class LocalDevice extends DeviceDetails {
 			return null;
 		}
 		return new RegistrationToken(
-			RegistrationToken.Type.fromCode(recipient.get("transportType").getAsString()),
+			RegistrationToken.Type.fromName(recipient.get("transportType").getAsString()),
 			recipient.get("registrationToken").getAsString()
 		);
 	}
 
 	private void setRegistrationToken(RegistrationToken token) {
 		push.recipient = new JsonObject();
-		push.recipient.addProperty("transportType", token.type.code);
+		push.recipient.addProperty("transportType", token.type.toName());
 		push.recipient.addProperty("registrationToken", token.token);
 	}
 
@@ -132,7 +98,7 @@ public class LocalDevice extends DeviceDetails {
 		setRegistrationToken(token);
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
 		prefs.edit()
-			.putInt(SharedPrefKeys.TOKEN_TYPE, token.type.toInt())
+			.putInt(SharedPrefKeys.TOKEN_TYPE, token.type.ordinal())
 			.putString(SharedPrefKeys.TOKEN, token.token)
 			.apply();
 	}
