@@ -1,13 +1,14 @@
 package io.ably.lib.test.realtime;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import org.junit.Test;
 
 import java.util.HashMap;
 
-import org.junit.Test;
-
 import io.ably.lib.util.EventEmitter;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class EventEmitterTest {
 
@@ -174,5 +175,31 @@ public class EventEmitterTest {
 		assertNull(listener.counts.get(MyEvents.event_0));
 		assertNull(listener.counts.get(MyEvents.event_1));
 	}
+
+    @Test
+    public void test_listener_in_listener() {
+        final MyEmitter emitter = new MyEmitter();
+
+        emitter.on(MyEvents.event_0, new MyListener() {
+            @Override
+            public void onMyThingHappened(MyEventPayload theThing) {
+                emitter.on(MyEvents.event_0, new CountingListener() {
+                    @Override
+                    public void onMyThingHappened(MyEventPayload theThing) {
+                        super.onMyThingHappened(theThing);
+                        assertEquals(theThing.event, MyEvents.event_0);
+                        //Only second event is fired.
+                        assertEquals(theThing.message, "firstEventAndSecondEvent");
+                    }
+                });
+
+                assertTrue(theThing.message.contains("firstEvent"));
+
+            }
+        });
+
+        emitter.emit(MyEvents.event_0, "firstEvent");
+        emitter.emit(MyEvents.event_0, "firstEventAndSecondEvent");
+    }
 
 }

@@ -82,8 +82,10 @@ public abstract class EventEmitter<Event, Listener> {
 	 * @param args the arguments to pass to listeners
 	 */
 	public synchronized void emit(Event event, Object... args) {
-		for (int i = listeners.size() - 1; i >= 0; i--) {
-			apply(listeners.get(i), event, args);
+		List<Listener> clonedListeners = new ArrayList<>();
+		clonedListeners.addAll(listeners);
+		for (int i = clonedListeners.size() - 1; i >= 0; i--) {
+			apply(clonedListeners.get(i), event, args);
 		}
 
 		for(Iterator<Map.Entry<Listener, Filter>> it = filters.entrySet().iterator(); it.hasNext(); )
