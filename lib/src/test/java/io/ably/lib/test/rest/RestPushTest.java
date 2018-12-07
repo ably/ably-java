@@ -245,7 +245,7 @@ public class RestPushTest extends ParameterizedTest {
 						new Param("transportType", "ablyChannel"),
 						new Param("channel", "pushenabled:push_admin_publish-ok"),
 						new Param("ablyKey", testVars.keys[0].keyStr),
-						new Param("ablyUrl", String.format("%s%s:%d", rest.httpCore.scheme, rest.httpCore.getHost(), rest.httpCore.port)),
+						new Param("ablyUrl", String.format("%s%s:%d", rest.httpCore.scheme, rest.httpCore.getPrimaryHost(), rest.httpCore.port)),
 				},
 				testPayload,
 				null));

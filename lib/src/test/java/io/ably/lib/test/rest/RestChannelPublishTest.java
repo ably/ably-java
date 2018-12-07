@@ -129,7 +129,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
 			opts.useBinaryProtocol = true;
 			opts.httpListener = new DebugOptions.RawHttpListener() {
 				@Override
-				public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
+				public HttpCore.Response onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
 					/* verify request body contains the supplied ids */
 					try {
 						if(method.equalsIgnoreCase("POST")) {
@@ -139,6 +139,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
 					} catch (AblyException e) {
 						e.printStackTrace();
 					}
+					return null;
 				}
 
 				@Override
@@ -189,7 +190,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
 			opts.useBinaryProtocol = true;
 			opts.httpListener = new DebugOptions.RawHttpListener() {
 				@Override
-				public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
+				public HttpCore.Response onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
 					/* verify request body contains the supplied ids */
 					try {
 						if(method.equalsIgnoreCase("POST")) {
@@ -200,6 +201,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
 					} catch (AblyException e) {
 						e.printStackTrace();
 					}
+					return null;
 				}
 
 				@Override
@@ -246,7 +248,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
 		}
 
 		@Override
-		public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
+		public HttpCore.Response onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
 			/* verify request body contains the supplied ids */
 			try {
 				if(method.equalsIgnoreCase("POST")) {
@@ -257,6 +259,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
 					}
 				}
 			} catch (AblyException e) {}
+			return null;
 		}
 
 		@Override
@@ -334,7 +337,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
 			opts.useBinaryProtocol = true;
 			opts.httpListener = new DebugOptions.RawHttpListener() {
 				@Override
-				public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
+				public HttpCore.Response onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
 					/* verify request body contains the library-generated ids */
 					try {
 						if(method.equalsIgnoreCase("POST")) {
@@ -345,6 +348,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
 					} catch (AblyException e) {
 						e.printStackTrace();
 					}
+					return null;
 				}
 
 				@Override
