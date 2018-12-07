@@ -21,8 +21,8 @@ public class MessageSerializer {
 	/****************************************
 	 *            Msgpack decode
 	 ****************************************/
-	
-	static Message[] readMsgpackArray(MessageUnpacker unpacker) throws IOException {
+
+	public static Message[] readMsgpackArray(MessageUnpacker unpacker) throws IOException {
 		int count = unpacker.unpackArrayHeader();
 		Message[] result = new Message[count];
 		for(int i = 0; i < count; i++)
@@ -51,7 +51,7 @@ public class MessageSerializer {
 		return new HttpUtils.ByteArrayRequestBody(writeMsgpackArray(messages), "application/x-msgpack");
 	}
 
-	static byte[] writeMsgpackArray(Message[] messages) {
+	public static byte[] writeMsgpackArray(Message[] messages) {
 		try {
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
 			MessagePacker packer = Serialisation.msgpackPackerConfig.newPacker(out);
@@ -61,7 +61,7 @@ public class MessageSerializer {
 		} catch(IOException e) { return null; }
 	}
 
-	static void writeMsgpackArray(Message[] messages, MessagePacker packer) {
+	public static void writeMsgpackArray(Message[] messages, MessagePacker packer) {
 		try {
 			int count = messages.length;
 			packer.packArrayHeader(count);
@@ -73,7 +73,7 @@ public class MessageSerializer {
 	/****************************************
 	 *              JSON decode
 	 ****************************************/
-	
+
 	public static Message[] readJSON(byte[] packed) throws IOException {
 		return Serialisation.gson.fromJson(new String(packed), Message[].class);
 	}
@@ -81,7 +81,7 @@ public class MessageSerializer {
 	/****************************************
 	 *            JSON encode
 	 ****************************************/
-	
+
 	public static HttpCore.RequestBody asJsonRequest(Message message) throws AblyException {
 		return asJsonRequest(new Message[] { message });
 	}
@@ -93,7 +93,7 @@ public class MessageSerializer {
 	/****************************************
 	 *              BodyHandler
 	 ****************************************/
-	
+
 	public static HttpCore.BodyHandler<Message> getMessageResponseHandler(ChannelOptions opts) {
 		return opts == null ? messageResponseHandler : new MessageBodyHandler(opts);
 	}

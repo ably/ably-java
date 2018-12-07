@@ -21,8 +21,8 @@ public class PresenceSerializer {
 	/****************************************
 	 *            Msgpack decode
 	 ****************************************/
-	
-	static PresenceMessage[] readMsgpackArray(MessageUnpacker unpacker) throws IOException {
+
+	public static PresenceMessage[] readMsgpackArray(MessageUnpacker unpacker) throws IOException {
 		int count = unpacker.unpackArrayHeader();
 		PresenceMessage[] result = new PresenceMessage[count];
 		for(int i = 0; i < count; i++)
@@ -43,7 +43,7 @@ public class PresenceSerializer {
 	 *            Msgpack encode
 	 ****************************************/
 
-	static byte[] writeMsgpackArray(PresenceMessage[] messages) {
+	public static byte[] writeMsgpackArray(PresenceMessage[] messages) {
 		try {
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
 			MessagePacker packer = Serialisation.msgpackPackerConfig.newPacker(out);
@@ -53,7 +53,7 @@ public class PresenceSerializer {
 		} catch(IOException e) { return null; }
 	}
 
-	static void writeMsgpackArray(PresenceMessage[] messages, MessagePacker packer) {
+	public static void writeMsgpackArray(PresenceMessage[] messages, MessagePacker packer) {
 		try {
 			int count = messages.length;
 			packer.packArrayHeader(count);
@@ -65,7 +65,7 @@ public class PresenceSerializer {
 	/****************************************
 	 *              JSON decode
 	 ****************************************/
-	
+
 	private static PresenceMessage[] readJson(byte[] packed) throws IOException {
 		return Serialisation.gson.fromJson(new String(packed), PresenceMessage[].class);
 	}
@@ -73,7 +73,7 @@ public class PresenceSerializer {
 	/****************************************
 	 *            JSON encode
 	 ****************************************/
-	
+
 	public static HttpCore.RequestBody asJsonRequest(PresenceMessage message) throws AblyException {
 		return asJsonRequest(new PresenceMessage[] { message });
 	}
@@ -85,7 +85,7 @@ public class PresenceSerializer {
 	/****************************************
 	 *              BodyHandler
 	 ****************************************/
-	
+
 	public static HttpCore.BodyHandler<PresenceMessage> getPresenceResponseHandler(ChannelOptions opts) {
 		return opts == null ? presenceResponseHandler : new PresenceBodyHandler(opts);
 	}
