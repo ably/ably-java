@@ -124,10 +124,12 @@ public class LocalDevice extends DeviceDetails {
 		Log.v(TAG, "reset()");
 		SharedPreferences.Editor editor = activationContext.getPreferences().edit();
 		for (Field f : SharedPrefKeys.class.getDeclaredFields()) {
-			try {
-				editor.remove((String) f.get(null));
-			} catch (IllegalAccessException e) {
-				throw new RuntimeException(e);
+			if(f.getName().startsWith("ABLY")) {
+				try {
+					editor.remove((String) f.get(null));
+				} catch (IllegalAccessException e) {
+					throw new RuntimeException(e);
+				}
 			}
 		}
 		editor.commit();
