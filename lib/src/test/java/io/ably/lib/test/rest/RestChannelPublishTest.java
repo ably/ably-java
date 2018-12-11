@@ -18,6 +18,7 @@ import io.ably.lib.http.HttpCore;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.types.*;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import io.ably.lib.rest.AblyRest;
@@ -274,6 +275,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
 	 * Verify processing of a client-supplied message id
 	 * Spec: RSL1k5
 	 */
+	@Ignore
 	@Test
 	public void channel_idempotent_publish_client_generated_retried() {
 		String channelName = "persisted:channel_idempotent_publish_client_generated_retried_" + testParams.name;
@@ -382,6 +384,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
 	 * Verify processing of a library-generated message id
 	 * Spec: RSL1k4
 	 */
+	@Ignore
 	@Test
 	public void channel_idempotent_publish_library_generated_retried() {
 		String channelName = "persisted:channel_idempotent_publish_library_generated_retried_" + testParams.name;
