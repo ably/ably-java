@@ -281,12 +281,6 @@ public class ActivationStateMachine {
 		sendIntent(name, intent);
 	}
 
-	private void invokeDefaultRegistration(final DeviceDetails device, final boolean isNew) {
-	}
-
-	private void invokeDefaultDeregistration(final DeviceDetails device) {
-	}
-
 	private void invokeCustomRegistration(final DeviceDetails device, final boolean isNew) {
 		registerOnceReceiver("PUSH_DEVICE_REGISTERED", new BroadcastReceiver() {
 			@Override
