@@ -2,6 +2,7 @@ package io.ably.lib.rest;
 
 import java.util.HashMap;
 
+import io.ably.annotation.Experimental;
 import io.ably.lib.http.AsyncHttpScheduler;
 import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
@@ -224,15 +225,17 @@ public class AblyRest {
 	 * independent requests.
 	 * @throws AblyException
 	 */
-	public PublishResponse[] publish(Message.Batch[] pubSpecs, ChannelOptions channelOptions) throws AblyException {
-		return publishImpl(pubSpecs, channelOptions).sync();
+	@Experimental
+	public PublishResponse[] publishBatch(Message.Batch[] pubSpecs, ChannelOptions channelOptions) throws AblyException {
+		return publishBatchImpl(pubSpecs, channelOptions).sync();
 	}
 
-	public void publishAsync(Message.Batch[] pubSpecs, ChannelOptions channelOptions, final Callback<PublishResponse[]> callback) throws AblyException {
-		publishImpl(pubSpecs, channelOptions).async(callback);
+	@Experimental
+	public void publishBatchAsync(Message.Batch[] pubSpecs, ChannelOptions channelOptions, final Callback<PublishResponse[]> callback) throws AblyException {
+		publishBatchImpl(pubSpecs, channelOptions).async(callback);
 	}
 
-	private Http.Request<PublishResponse[]> publishImpl(final Message.Batch[] pubSpecs, ChannelOptions channelOptions) throws AblyException {
+	private Http.Request<PublishResponse[]> publishBatchImpl(final Message.Batch[] pubSpecs, ChannelOptions channelOptions) throws AblyException {
 		boolean hasClientSuppliedId = false;
 		for(Message.Batch spec : pubSpecs) {
 			for(Message message : spec.messages) {

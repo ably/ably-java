@@ -50,7 +50,7 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
 		Message.Batch payload = new Message.Batch(channels, Collections.singleton(message));
 
 		try {
-			PublishResponse[] result = ably.publish(new Message.Batch[] { payload }, null);
+			PublishResponse[] result = ably.publishBatch(new Message.Batch[] { payload }, null);
 		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("bulkpublish_multiple_channels_simple: Unexpected exception");
@@ -125,7 +125,7 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
 		}
 
 		try {
-			ably.publish(payload.toArray(new Message.Batch[payload.size()]), null);
+			ably.publishBatch(payload.toArray(new Message.Batch[payload.size()]), null);
 		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("bulk_publish_multiple_channels_multiple_messages: Unexpected exception");
