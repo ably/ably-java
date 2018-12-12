@@ -15,7 +15,7 @@ import java.io.IOException;
 public class PublishResponse {
 	public ErrorInfo error;
 	public String channel;
-	public String id;
+	public String messageId;
 
 	private static PublishResponse[] fromJSONArray(byte[] json) {
 		return Serialisation.gson.fromJson(new String(json), PublishResponse[].class);
@@ -53,8 +53,8 @@ public class PublishResponse {
 				case "channel":
 					channel = unpacker.unpackString();
 					break;
-				case "id":
-					id = unpacker.unpackString();
+				case "messageId":
+					messageId = unpacker.unpackString();
 					break;
 				default:
 					Log.v(TAG, "Unexpected field: " + fieldName);

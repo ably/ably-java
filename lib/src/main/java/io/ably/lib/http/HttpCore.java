@@ -273,10 +273,22 @@ public class HttpCore {
 			throw AblyException.fromErrorInfo(error);
 		}
 
-		if(response.statusCode < 200 || response.statusCode >= 300) {
-			/* get any in-body error details */
-			ErrorInfo error = null;
-			if(response.body != null && response.body.length > 0) {
+		if(response.statusCode >= 200 && response.statusCode < 300) {
+			return (responseHandler != null) ? responseHandler.handleResponse(response, null) : null;
+		}
+
+		/* get any in-body error details */
+		ErrorInfo error = null;
+		if(response.body != null && response.body.length > 0) {
+			if(response.contentType != null && response.contentType.contains("msgpack")) {
+				try {
+					error = ErrorInfo.fromMsgpackBody(response.body);
+				} catch (IOException e) {
+					/* error pages aren't necessarily going to satisfy our Accept criteria ... */
+					System.err.println("Unable to parse msgpack error response");
+				}
+			} else {
+				/* assume json */
 				String bodyText = new String(response.body);
 				try {
 					ErrorResponse errorResponse = ErrorResponse.fromJSON(bodyText);
@@ -288,62 +300,56 @@ public class HttpCore {
 					System.err.println("Error message in unexpected format: " + bodyText);
 				}
 			}
+		}
 
-			/* handle error details in header instead of body */
-			if(error == null) {
-				String errorCodeHeader = conn.getHeaderField("X-Ably-ErrorCode");
-				String errorMessageHeader = conn.getHeaderField("X-Ably-ErrorMessage");
-				if(errorCodeHeader != null) {
-					try {
-						error = new ErrorInfo(errorMessageHeader, response.statusCode, Integer.parseInt(errorCodeHeader));
-					} catch(NumberFormatException e) {}
-				}
+		/* handle error details in header */
+		if(error == null) {
+			String errorCodeHeader = conn.getHeaderField("X-Ably-ErrorCode");
+			String errorMessageHeader = conn.getHeaderField("X-Ably-ErrorMessage");
+			if(errorCodeHeader != null) {
+				try {
+					error = new ErrorInfo(errorMessageHeader, response.statusCode, Integer.parseInt(errorCodeHeader));
+				} catch(NumberFormatException e) {}
 			}
+		}
 
-			/* handle www-authenticate */
-			if(response.statusCode == 401) {
-				boolean stale = (error != null && error.code == 40140);
-				List<String> wwwAuthHeaders = response.getHeaderFields(HttpConstants.Headers.WWW_AUTHENTICATE);
-				if(wwwAuthHeaders != null && wwwAuthHeaders.size() > 0) {
-					Map<HttpAuth.Type, String> headersByType = HttpAuth.sortAuthenticateHeaders(wwwAuthHeaders);
-					String tokenHeader = headersByType.get(HttpAuth.Type.X_ABLY_TOKEN);
-					if(tokenHeader != null) { stale |= (tokenHeader.indexOf("stale") > -1); }
-					AuthRequiredException exception = new AuthRequiredException(null, error);
-					exception.authChallenge = headersByType;
-					if(stale) {
-						exception.expired = true;
-						throw exception;
-					}
-					if(!credentialsIncluded) {
-						throw exception;
-					}
+		/* handle www-authenticate */
+		if(response.statusCode == 401) {
+			boolean stale = (error != null && error.code == 40140);
+			List<String> wwwAuthHeaders = response.getHeaderFields(HttpConstants.Headers.WWW_AUTHENTICATE);
+			if(wwwAuthHeaders != null && wwwAuthHeaders.size() > 0) {
+				Map<HttpAuth.Type, String> headersByType = HttpAuth.sortAuthenticateHeaders(wwwAuthHeaders);
+				String tokenHeader = headersByType.get(HttpAuth.Type.X_ABLY_TOKEN);
+				if(tokenHeader != null) { stale |= (tokenHeader.indexOf("stale") > -1); }
+				AuthRequiredException exception = new AuthRequiredException(null, error);
+				exception.authChallenge = headersByType;
+				if(stale) {
+					exception.expired = true;
+					throw exception;
 				}
-			}
-			/* handle proxy-authenticate */
-			if(response.statusCode == 407) {
-				List<String> proxyAuthHeaders = response.getHeaderFields(HttpConstants.Headers.PROXY_AUTHENTICATE);
-				if(proxyAuthHeaders != null && proxyAuthHeaders.size() > 0) {
-					AuthRequiredException exception = new AuthRequiredException(null, error);
-					exception.proxyAuthChallenge = HttpAuth.sortAuthenticateHeaders(proxyAuthHeaders);
+				if(!credentialsIncluded) {
 					throw exception;
 				}
 			}
-			if(error == null) {
-				error = ErrorInfo.fromResponseStatus(response.statusLine, response.statusCode);
-			} else {
-			}
-			Log.e(TAG, "Error response from server: err = " + error.toString());
-			if(responseHandler != null) {
-				return responseHandler.handleResponse(response, error);
-			}
-			throw AblyException.fromErrorInfo(error);
 		}
-
+		/* handle proxy-authenticate */
+		if(response.statusCode == 407) {
+			List<String> proxyAuthHeaders = response.getHeaderFields(HttpConstants.Headers.PROXY_AUTHENTICATE);
+			if(proxyAuthHeaders != null && proxyAuthHeaders.size() > 0) {
+				AuthRequiredException exception = new AuthRequiredException(null, error);
+				exception.proxyAuthChallenge = HttpAuth.sortAuthenticateHeaders(proxyAuthHeaders);
+				throw exception;
+			}
+		}
+		if(error == null) {
+			error = ErrorInfo.fromResponseStatus(response.statusLine, response.statusCode);
+		} else {
+		}
+		Log.e(TAG, "Error response from server: err = " + error.toString());
 		if(responseHandler != null) {
-			return responseHandler.handleResponse(response, null);
+			return responseHandler.handleResponse(response, error);
 		}
-
-		return null;
+		throw AblyException.fromErrorInfo(error);
 	}
 
 	/**

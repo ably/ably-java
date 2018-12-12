@@ -1,5 +1,6 @@
 package io.ably.lib.types;
 
+import io.ably.lib.util.Serialisation;
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessageUnpacker;
 
@@ -106,6 +107,31 @@ public class ErrorInfo {
 			}
 		}
 		return this;
+	}
+
+	public static ErrorInfo fromMsgpackBody(byte[] msgpack) throws IOException {
+		MessageUnpacker unpacker = Serialisation.msgpackUnpackerConfig.newUnpacker(msgpack);
+		return fromMsgpackBody(unpacker);
+	}
+
+	private static ErrorInfo fromMsgpackBody(MessageUnpacker unpacker) throws IOException {
+		int fieldCount = unpacker.unpackMapHeader();
+		ErrorInfo error = null;
+		for(int i = 0; i < fieldCount; i++) {
+			String fieldName = unpacker.unpackString().intern();
+			MessageFormat fieldFormat = unpacker.getNextFormat();
+			if(fieldFormat.equals(MessageFormat.NIL)) { unpacker.unpackNil(); continue; }
+
+			switch(fieldName) {
+				case "error":
+					error = ErrorInfo.fromMsgpack(unpacker);
+					break;
+				default:
+					Log.v(TAG, "Unexpected field: " + fieldName);
+					unpacker.skipValue();
+			}
+		}
+		return error;
 	}
 
 	static ErrorInfo fromMsgpack(MessageUnpacker unpacker) throws IOException {
