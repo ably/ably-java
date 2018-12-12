@@ -196,28 +196,6 @@ public class AblyRest {
 	}
 
 	/**
-	 * Authentication token has changed. waitForResult is true if there is a need to
-	 * wait for server response to auth request
-	 */
-
-	/**
-	 * Override this method in AblyRealtime and pass updated token to ConnectionManager
-	 * @param token new token
-	 * @param waitForResponse wait for server response before returning from method
-	 * @throws AblyException
-	 */
-	protected void onAuthUpdated(String token, boolean waitForResponse) throws AblyException {
-		/* Default is to do nothing. Overridden by subclass. */
-	}
-
-	/**
-	 * Authentication error occurred
-	 */
-	protected void onAuthError(ErrorInfo errorInfo) {
-		/* Default is to do nothing. Overridden by subclass. */
-	}
-
-	/**
 	 * Publish a messages on one or more channels. When there are
 	 * messages to be sent on multiple channels simultaneously,
 	 * it is more efficient to use this method to publish them in
@@ -261,7 +239,7 @@ public class AblyRest {
 				http.post("/messages", HttpUtils.defaultAcceptHeaders(options.useBinaryProtocol), null, requestBody, new HttpCore.ResponseHandler<PublishResponse[]>() {
 					@Override
 					public PublishResponse[] handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
-						if(error != null) {
+						if(error != null && error.code != 40020) {
 							throw AblyException.fromErrorInfo(error);
 						}
 						return PublishResponse.getBulkPublishResponseHandler(response.statusCode).handleResponseBody(response.contentType, response.body);
@@ -269,5 +247,27 @@ public class AblyRest {
 				}, true, callback);
 			}
 		});
+	}
+
+	/**
+	 * Authentication token has changed. waitForResult is true if there is a need to
+	 * wait for server response to auth request
+	 */
+
+	/**
+	 * Override this method in AblyRealtime and pass updated token to ConnectionManager
+	 * @param token new token
+	 * @param waitForResponse wait for server response before returning from method
+	 * @throws AblyException
+	 */
+	protected void onAuthUpdated(String token, boolean waitForResponse) throws AblyException {
+		/* Default is to do nothing. Overridden by subclass. */
+	}
+
+	/**
+	 * Authentication error occurred
+	 */
+	protected void onAuthError(ErrorInfo errorInfo) {
+		/* Default is to do nothing. Overridden by subclass. */
 	}
 }

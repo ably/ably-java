@@ -1,29 +1,20 @@
 package io.ably.lib.test.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
 
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.*;
-import org.junit.Before;
-import org.junit.Test;
 
 import io.ably.lib.rest.AblyRest;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public class RestChannelBulkPublishTest extends ParameterizedTest  {
-
-	private AblyRest ably;
-
-	@Before
-	public void setUpBefore() throws Exception {
-		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-		ably = new AblyRest(opts);
-	}
 
 	/**
 	 * Publish a single message on multiple channels
@@ -38,27 +29,33 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
 	 * 
 	 * It publishes the given message on all of the given channels.
 	 */
+	@Ignore // until idempotent publishing is enabled
 	@Test
 	public void bulk_publish_multiple_channels_simple() {
-		/* first, publish some messages */
-		int channelCount = 5;
-		ArrayList<String> channels = new ArrayList<String>();
-		for(int i = 0; i < channelCount; i++)
-			channels.add("persisted:" + randomString());
-
-		Message message = new Message(null, "bulk_publish_multiple_channels_simple");
-		Message.Batch payload = new Message.Batch(channels, Collections.singleton(message));
-
 		try {
+			/* setup library instance */
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			AblyRest ably = new AblyRest(opts);
+
+			/* first, publish some messages */
+			int channelCount = 5;
+			ArrayList<String> channels = new ArrayList<String>();
+			for(int i = 0; i < channelCount; i++) {
+				channels.add("persisted:" + randomString());
+			}
+
+			Message message = new Message(null, "bulk_publish_multiple_channels_simple");
+			String messageId = message.id = randomString();
+			Message.Batch payload = new Message.Batch(channels, Collections.singleton(message));
+
 			PublishResponse[] result = ably.publishBatch(new Message.Batch[] { payload }, null);
-		} catch(AblyException e) {
-			e.printStackTrace();
-			fail("bulkpublish_multiple_channels_simple: Unexpected exception");
-			return;
-		}
+			for(PublishResponse response : result) {
+				assertEquals("Verify expected response id", response.messageId, messageId);
+				assertTrue("Verify expected channel name", channels.contains(response.channel));
+				assertNull("Verify no publish error", response.error);
+			}
 
-		/* get the history for this channel */
-		try {
+			/* get the history for this channel */
 			for(String channel : channels) {
 				PaginatedResult<Message> messages = ably.channels.get(channel).history(null);
 				assertNotNull("Expected non-null messages", messages);
@@ -103,48 +100,117 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
 	 */
 	@Test
 	public void bulk_publish_multiple_channels_multiple_messages() {
-		/* first, publish some messages */
-		int channelCount = 5;
-		int messageCount = 6;
-		String baseMessageText = "bulk_publish_multiple_channels_multiple_messages";
-		ArrayList<Message.Batch> payload = new ArrayList<Message.Batch>();
-
-		ArrayList<String> rndMessageTexts = new ArrayList<String>();
-		for(int i = 0; i < messageCount; i++) {
-			rndMessageTexts.add(randomString());
-		}
-
-		ArrayList<String> channels = new ArrayList<String>();
-		for(int i = 0; i < channelCount; i++) {
-			String channel = "persisted:" + randomString();
-			channels.add(channel);
-			ArrayList<Message> messages = new ArrayList<Message>();
-			for(int j = 0; j < messageCount; j++)
-				messages.add(new Message(null, baseMessageText + '-' + channel + '-' + rndMessageTexts.get(j)));
-			payload.add(new Message.Batch(Collections.singleton(channel), messages));
-		}
-
 		try {
-			ably.publishBatch(payload.toArray(new Message.Batch[payload.size()]), null);
-		} catch(AblyException e) {
-			e.printStackTrace();
-			fail("bulk_publish_multiple_channels_multiple_messages: Unexpected exception");
-			return;
-		}
+			/* setup library instance */
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.idempotentRestPublishing = true;
+			AblyRest ably = new AblyRest(opts);
 
-		/* get the history for this channel */
-		try {
+			/* first, publish some messages */
+			int channelCount = 5;
+			int messageCount = 6;
+			String baseMessageText = "bulk_publish_multiple_channels_multiple_messages";
+			ArrayList<Message.Batch> payload = new ArrayList<Message.Batch>();
+
+			ArrayList<String> rndMessageTexts = new ArrayList<String>();
+			for(int i = 0; i < messageCount; i++) {
+				rndMessageTexts.add(randomString());
+			}
+
+			ArrayList<String> channels = new ArrayList<String>();
+			for(int i = 0; i < channelCount; i++) {
+				String channel = "persisted:" + randomString();
+				channels.add(channel);
+				ArrayList<Message> messages = new ArrayList<Message>();
+				for(int j = 0; j < messageCount; j++) {
+					messages.add(new Message(null, baseMessageText + '-' + channel + '-' + rndMessageTexts.get(j)));
+				}
+				payload.add(new Message.Batch(Collections.singleton(channel), messages));
+			}
+
+			PublishResponse[] result = ably.publishBatch(payload.toArray(new Message.Batch[payload.size()]), null);
+			for(PublishResponse response : result) {
+				assertNotNull("Verify expected response id", response.messageId);
+				assertTrue("Verify expected channel name", channels.contains(response.channel));
+				assertNull("Verify no publish error", response.error);
+			}
+
+			/* get the history for this channel */
 			for(String channel : channels) {
 				PaginatedResult<Message> messages = ably.channels.get(channel).history(new Param[] {new Param("direction", "forwards")});
 				assertNotNull("Expected non-null messages", messages);
 				assertEquals("Expected correct number of messages", messages.items().length, messageCount);
 				/* verify message contents */
-				for(int i = 0; i < messageCount; i++)
+				for(int i = 0; i < messageCount; i++) {
 					assertEquals("Expect message data to be expected String", messages.items()[i].data, baseMessageText + '-' + channel + '-' + rndMessageTexts.get(i));
+				}
 			}
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("bulk_publish_multiple_channels_multiple_messages: Unexpected exception");
+			return;
+		}
+	}
+
+	/**
+	 * Publish a single message on multiple channels, using credentials
+	 * that are only able to publish to a subset of the channels
+	 *
+	 * The payload constructed has the form
+	 * [
+	 *   {
+	 *     channel: [ <channel 0>, <channel 1>, ... ],
+	 *     message: [{ data: <message text> }]
+	 *   }
+	 * ]
+	 *
+	 * It attempts to publishe the given message on all of the given channels.
+	 */
+	@Ignore // until idempotent publishing is enabled
+	@Test
+	public void bulk_publish_multiple_channels_partial_error() {
+		try {
+			/* setup library instance */
+			ClientOptions opts = createOptions(testVars.keys[6].keyStr);
+			AblyRest ably = new AblyRest(opts);
+
+			/* first, publish some messages */
+			String baseChannelName = "persisted:" + testParams.name + ":channel";
+			int channelCount = 5;
+			ArrayList<String> channels = new ArrayList<String>();
+			for(int i = 0; i < channelCount; i++) {
+				channels.add(baseChannelName + i);
+			}
+
+			Message message = new Message(null, "bulk_publish_multiple_channels_partial_error");
+			String messageId = message.id = randomString();
+			Message.Batch payload = new Message.Batch(channels, Collections.singleton(message));
+
+			PublishResponse[] result = ably.publishBatch(new Message.Batch[] { payload }, null);
+			for(PublishResponse response : result) {
+				if((baseChannelName + "1").compareTo(response.channel) >= 0) {
+					assertEquals("Verify expected response id", response.messageId, messageId);
+					assertTrue("Verify expected channel name", channels.contains(response.channel));
+					assertNull("Verify no publish error", response.error);
+				} else {
+					assertNotNull("Verify expected publish error", response.error);
+					assertEquals("Verify expected publish error code", response.error.code, 40160);
+				}
+			}
+
+			/* get the history for this channel */
+			for(String channel : channels) {
+				if((baseChannelName + "1").compareTo(channel) >= 0) {
+					PaginatedResult<Message> messages = ably.channels.get(channel).history(null);
+					assertNotNull("Expected non-null messages", messages);
+					assertEquals("Expected 1 message", messages.items().length, 1);
+					/* verify message contents */
+					assertEquals("Expect message data to be expected String", messages.items()[0].data, message.data);
+				}
+			}
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("bulkpublish_multiple_channels_simple: Unexpected exception");
 			return;
 		}
 	}

@@ -16,6 +16,9 @@
 		{
 			"privileged": true,
 			"capability": "{\"channel0\":[\"publish\"],\"channel1\":[\"publish\"],\"channel2\":[\"publish\",\"subscribe\"],\"channel3\":[\"subscribe\"],\"channel4\":[\"presence\",\"publish\",\"subscribe\"],\"channel5\":[\"presence\"],\"channel6\":[\"*\"]}"
+		},
+		{
+			"capability": "{\"persisted:text_protocol:channel0\":[\"publish\",\"subscribe\",\"history\"],\"persisted:text_protocol:channel1\":[\"publish\",\"subscribe\",\"history\"],\"persisted:binary_protocol:channel0\":[\"publish\",\"subscribe\",\"history\"],\"persisted:binary_protocol:channel1\":[\"publish\",\"subscribe\",\"history\"],\"persisted:*\":[\"subscribe\",\"history\"]}"
 		}
 	],
 	"namespaces": [

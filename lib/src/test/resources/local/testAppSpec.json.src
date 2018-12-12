@@ -40,6 +40,15 @@
 				channel5:['presence'],
 				channel6:['*']
 			})
+		},
+		{   /* key 6, has permissions for selected persisted channels */
+			capability: JSON.stringify({
+				'persisted:text_protocol:channel0':['publish', 'subscribe','history'],
+				'persisted:text_protocol:channel1':['publish', 'subscribe','history'],
+				'persisted:binary_protocol:channel0':['publish', 'subscribe','history'],
+				'persisted:binary_protocol:channel1':['publish', 'subscribe','history'],
+				'persisted:*':['subscribe','history']
+			})
 		}
 	],
 	namespaces: [
