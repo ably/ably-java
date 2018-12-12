@@ -101,9 +101,13 @@ public abstract class EventEmitter<Event, Listener> {
             apply(listener, event, args);
         }
 
-        for (Iterator<Map.Entry<Listener, Filter>> it = filters.entrySet().iterator(); it.hasNext(); )
-            if (it.next().getValue().apply(event, args))
-                it.remove();
+        Map<Listener, Filter> clonedFilters = new HashMap<>(filters);
+        for (Iterator<Map.Entry<Listener, Filter>> it = clonedFilters.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<Listener, Filter> entry = it.next();
+            if (entry.getValue().apply(event, args)) {
+                filters.remove(entry.getKey());
+            }
+        }
     }
 
     protected abstract void apply(Listener listener, Event event, Object... args);
