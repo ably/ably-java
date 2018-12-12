@@ -1,13 +1,14 @@
 package io.ably.lib.test.realtime;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import org.junit.Test;
 
 import java.util.HashMap;
 
-import org.junit.Test;
-
 import io.ably.lib.util.EventEmitter;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class EventEmitterTest {
 
@@ -175,4 +176,187 @@ public class EventEmitterTest {
 		assertNull(listener.counts.get(MyEvents.event_1));
 	}
 
+
+	/**
+	 * Register event listeners inside the listener and ensure they are not called during that event.
+	 */
+	@Test
+	public void on_all_events_listener_in_listener() {
+		final MyEmitter emitter = new MyEmitter();
+
+
+		final CountingListener allEventsListener = new CountingListener();
+
+		emitter.on(MyEvents.event_0, new MyListener() {
+			@Override
+			public void onMyThingHappened(MyEventPayload theThing) {
+				//Add a listener here.
+				emitter.on(allEventsListener);
+				assertTrue(theThing.message.contains("fireEvent"));
+
+			}
+		});
+
+		emitter.emit(MyEvents.event_0, "fireEvent");
+		emitter.emit(MyEvents.event_0, "fireEvent");
+
+		assertEquals(allEventsListener.counts.get(MyEvents.event_0), Integer.valueOf(1));
+	}
+
+
+	/**
+	 * Register event listener "once" inside the listener and ensure they are not called during that event.
+	 */
+	@Test
+	public void once_all_events_listener_in_listener() {
+		final MyEmitter emitter = new MyEmitter();
+
+
+		final CountingListener allEventsListener = new CountingListener();
+
+		final CountingListener event0Listener = new CountingListener() {
+			@Override
+			public void onMyThingHappened(MyEventPayload theThing) {
+				super.onMyThingHappened(theThing);
+				//Add a "once" listener in event0. We ensure it's added only once.
+				if ("event_0_first".equalsIgnoreCase(theThing.message)) {
+					emitter.once(allEventsListener);
+				}
+
+				assertTrue(theThing.message.contains("event_0"));
+			}
+		};
+
+		emitter.on(MyEvents.event_0, event0Listener);
+
+		emitter.emit(MyEvents.event_0, "event_0_first");
+		//Let's fire "once" added listener
+		emitter.emit(MyEvents.event_0, "event_0_second");
+		//We fire once again.
+		emitter.emit(MyEvents.event_0, "event_0_third");
+
+
+		assertEquals(allEventsListener.counts.get(MyEvents.event_0), Integer.valueOf(1));
+	}
+
+
+	/**
+	 * Register event listener "once" inside the listener and ensure they are not called during that event.
+	 */
+	@Test
+	public void once_event_specific_listener_in_listener() {
+		final MyEmitter emitter = new MyEmitter();
+
+
+		final CountingListener event0Listener = new CountingListener();
+		final CountingListener event1Listener = new CountingListener();
+
+		emitter.on(MyEvents.event_0, new MyListener() {
+			@Override
+			public void onMyThingHappened(MyEventPayload theThing) {
+				//Add a "once" listener here.
+				emitter.once(MyEvents.event_0, event0Listener);
+				emitter.once(MyEvents.event_1, event1Listener);
+				assertTrue(theThing.message.contains("fireEvent"));
+			}
+		});
+
+		emitter.emit(MyEvents.event_0, "fireEvent1");
+		//Let's fire "once" added listener
+		emitter.emit(MyEvents.event_0, "fireEvent2");
+		//Once listener should not called again.
+		emitter.emit(MyEvents.event_0, "fireEvent3");
+
+		assertEquals(event0Listener.counts.get(MyEvents.event_0), Integer.valueOf(1));
+		assertNull(event1Listener.counts.get(MyEvents.event_1));
+	}
+
+	/**
+	 * Register a specific event listener inside the listener and ensure they are not called during that event.
+	 */
+	@Test
+	public void on_specific_event_listener_in_listener() {
+		final MyEmitter emitter = new MyEmitter();
+
+		final CountingListener event0Listener = new CountingListener();
+		final CountingListener event1Listener = new CountingListener();
+
+		emitter.on(MyEvents.event_0, new MyListener() {
+			@Override
+			public void onMyThingHappened(MyEventPayload theThing) {
+				emitter.on(MyEvents.event_0, event0Listener);
+				emitter.on(MyEvents.event_1, event1Listener);
+				assertTrue(theThing.message.contains("fireEvent"));
+
+			}
+		});
+
+		emitter.emit(MyEvents.event_0, "fireEvent");
+		emitter.emit(MyEvents.event_0, "fireEvent");
+
+		assertEquals(event0Listener.counts.get(MyEvents.event_0), Integer.valueOf(1));
+		assertNull(event1Listener.counts.get(MyEvents.event_1));
+	}
+
+
+	/**
+	 * Remove "off" an all events listener inside the listener and ensure they are not called during that event.
+	 */
+	@Test
+	public void off_all_events_listener_in_listener() {
+		final MyEmitter emitter = new MyEmitter();
+
+
+		final CountingListener allEventsListener = new CountingListener();
+
+		//This is called once.
+		emitter.on(allEventsListener);
+
+		emitter.on(MyEvents.event_0, new MyListener() {
+			@Override
+			public void onMyThingHappened(MyEventPayload theThing) {
+				//Turn off here.
+				emitter.off(allEventsListener);
+				assertTrue(theThing.message.contains("fireEvent"));
+			}
+		});
+
+		emitter.emit(MyEvents.event_0, "fireEvent");
+		emitter.emit(MyEvents.event_0, "fireEvent");
+
+		assertEquals(allEventsListener.counts.get(MyEvents.event_0), Integer.valueOf(1));
+	}
+
+
+	/**
+	 * "off" event specific listeners inside the listener and ensure they are not called during that event.
+	 */
+
+	@Test
+	public void off_specific_event_listener_in_listener() {
+		final MyEmitter emitter = new MyEmitter();
+
+
+		final CountingListener event0Listener = new CountingListener();
+		final CountingListener event1Listener = new CountingListener();
+
+		//This is called once.
+		emitter.on(MyEvents.event_0, event0Listener);
+
+		emitter.on(MyEvents.event_0, new MyListener() {
+			@Override
+			public void onMyThingHappened(MyEventPayload theThing) {
+				//Turn off here.
+				emitter.off(MyEvents.event_0, event0Listener);
+				emitter.off(MyEvents.event_1, event1Listener);
+				assertTrue(theThing.message.contains("fireEvent"));
+			}
+		});
+
+		emitter.emit(MyEvents.event_0, "fireEvent");
+		emitter.emit(MyEvents.event_0, "fireEvent");
+
+		assertEquals(event0Listener.counts.get(MyEvents.event_0), Integer.valueOf(1));
+		assertNull(event1Listener.counts.get(MyEvents.event_1));
+	}
 }
