@@ -1,5 +1,6 @@
 package io.ably.lib.types;
 
+import com.google.gson.annotations.SerializedName;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
@@ -14,7 +15,8 @@ import java.io.IOException;
 
 public class PublishResponse {
 	public ErrorInfo error;
-	public String channel;
+	@SerializedName("channel")
+	public String channelId;
 	public String messageId;
 
 	private static PublishResponse[] fromJSONArray(byte[] json) {
@@ -51,7 +53,8 @@ public class PublishResponse {
 					error = ErrorInfo.fromMsgpack(unpacker);
 					break;
 				case "channel":
-					channel = unpacker.unpackString();
+				case "channelId":
+					channelId = unpacker.unpackString();
 					break;
 				case "messageId":
 					messageId = unpacker.unpackString();

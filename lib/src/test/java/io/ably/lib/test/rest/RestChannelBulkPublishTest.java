@@ -39,24 +39,24 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
 
 			/* first, publish some messages */
 			int channelCount = 5;
-			ArrayList<String> channels = new ArrayList<String>();
+			ArrayList<String> channelIds = new ArrayList<String>();
 			for(int i = 0; i < channelCount; i++) {
-				channels.add("persisted:" + randomString());
+				channelIds.add("persisted:" + randomString());
 			}
 
 			Message message = new Message(null, "bulk_publish_multiple_channels_simple");
 			String messageId = message.id = randomString();
-			Message.Batch payload = new Message.Batch(channels, Collections.singleton(message));
+			Message.Batch payload = new Message.Batch(channelIds, Collections.singleton(message));
 
 			PublishResponse[] result = ably.publishBatch(new Message.Batch[] { payload }, null);
 			for(PublishResponse response : result) {
 				assertEquals("Verify expected response id", response.messageId, messageId);
-				assertTrue("Verify expected channel name", channels.contains(response.channel));
+				assertTrue("Verify expected channel name", channelIds.contains(response.channelId));
 				assertNull("Verify no publish error", response.error);
 			}
 
 			/* get the history for this channel */
-			for(String channel : channels) {
+			for(String channel : channelIds) {
 				PaginatedResult<Message> messages = ably.channels.get(channel).history(null);
 				assertNotNull("Expected non-null messages", messages);
 				assertEquals("Expected 1 message", messages.items().length, 1);
@@ -117,10 +117,10 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
 				rndMessageTexts.add(randomString());
 			}
 
-			ArrayList<String> channels = new ArrayList<String>();
+			ArrayList<String> channelIds = new ArrayList<String>();
 			for(int i = 0; i < channelCount; i++) {
 				String channel = "persisted:" + randomString();
-				channels.add(channel);
+				channelIds.add(channel);
 				ArrayList<Message> messages = new ArrayList<Message>();
 				for(int j = 0; j < messageCount; j++) {
 					messages.add(new Message(null, baseMessageText + '-' + channel + '-' + rndMessageTexts.get(j)));
@@ -131,12 +131,12 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
 			PublishResponse[] result = ably.publishBatch(payload.toArray(new Message.Batch[payload.size()]), null);
 			for(PublishResponse response : result) {
 				assertNotNull("Verify expected response id", response.messageId);
-				assertTrue("Verify expected channel name", channels.contains(response.channel));
+				assertTrue("Verify expected channel name", channelIds.contains(response.channelId));
 				assertNull("Verify no publish error", response.error);
 			}
 
 			/* get the history for this channel */
-			for(String channel : channels) {
+			for(String channel : channelIds) {
 				PaginatedResult<Message> messages = ably.channels.get(channel).history(new Param[] {new Param("direction", "forwards")});
 				assertNotNull("Expected non-null messages", messages);
 				assertEquals("Expected correct number of messages", messages.items().length, messageCount);
@@ -177,20 +177,20 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
 			/* first, publish some messages */
 			String baseChannelName = "persisted:" + testParams.name + ":channel";
 			int channelCount = 5;
-			ArrayList<String> channels = new ArrayList<String>();
+			ArrayList<String> channelIds = new ArrayList<String>();
 			for(int i = 0; i < channelCount; i++) {
-				channels.add(baseChannelName + i);
+				channelIds.add(baseChannelName + i);
 			}
 
 			Message message = new Message(null, "bulk_publish_multiple_channels_partial_error");
 			String messageId = message.id = randomString();
-			Message.Batch payload = new Message.Batch(channels, Collections.singleton(message));
+			Message.Batch payload = new Message.Batch(channelIds, Collections.singleton(message));
 
 			PublishResponse[] result = ably.publishBatch(new Message.Batch[] { payload }, null);
 			for(PublishResponse response : result) {
-				if((baseChannelName + "1").compareTo(response.channel) >= 0) {
+				if((baseChannelName + "1").compareTo(response.channelId) >= 0) {
 					assertEquals("Verify expected response id", response.messageId, messageId);
-					assertTrue("Verify expected channel name", channels.contains(response.channel));
+					assertTrue("Verify expected channel name", channelIds.contains(response.channelId));
 					assertNull("Verify no publish error", response.error);
 				} else {
 					assertNotNull("Verify expected publish error", response.error);
@@ -199,7 +199,7 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
 			}
 
 			/* get the history for this channel */
-			for(String channel : channels) {
+			for(String channel : channelIds) {
 				if((baseChannelName + "1").compareTo(channel) >= 0) {
 					PaginatedResult<Message> messages = ably.channels.get(channel).history(null);
 					assertNotNull("Expected non-null messages", messages);
