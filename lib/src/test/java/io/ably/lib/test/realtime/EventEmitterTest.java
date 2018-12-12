@@ -231,11 +231,49 @@ public class EventEmitterTest {
 
         final CountingListener allEventsListener = new CountingListener();
 
+        final CountingListener event0Listener = new CountingListener() {
+            @Override
+            public void onMyThingHappened(MyEventPayload theThing) {
+                super.onMyThingHappened(theThing);
+                //Add a "once" listener in event0. We ensure it's added only once.
+                if ("event_0_first".equalsIgnoreCase(theThing.message)) {
+                    emitter.once(allEventsListener);
+                }
+
+                assertTrue(theThing.message.contains("event_0"));
+            }
+        };
+
+        emitter.on(MyEvents.event_0, event0Listener);
+
+        emitter.emit(MyEvents.event_0, "event_0_first");
+        //Let's fire "once" added listener
+        emitter.emit(MyEvents.event_0, "event_0_second");
+        //We fire once again.
+        emitter.emit(MyEvents.event_0, "event_0_third");
+
+
+        assertEquals(allEventsListener.counts.get(MyEvents.event_0), Integer.valueOf(1));
+    }
+
+
+    /**
+     * Register event listener "once" inside the listener and ensure they are not called during that event.
+     */
+    @Test
+    public void once_event_specific_listener_in_listener() {
+        final MyEmitter emitter = new MyEmitter();
+
+
+        final CountingListener event0Listener = new CountingListener();
+        final CountingListener event1Listener = new CountingListener();
+
         emitter.on(MyEvents.event_0, new MyListener() {
             @Override
             public void onMyThingHappened(MyEventPayload theThing) {
                 //Add a "once" listener here.
-                emitter.once(allEventsListener);
+                emitter.once(MyEvents.event_0, event0Listener);
+                emitter.once(MyEvents.event_1, event1Listener);
                 assertTrue(theThing.message.contains("fireEvent"));
             }
         });
@@ -246,7 +284,8 @@ public class EventEmitterTest {
         //Once listener should not called again.
         emitter.emit(MyEvents.event_0, "fireEvent3");
 
-        assertEquals(allEventsListener.counts.get(MyEvents.event_0), Integer.valueOf(1));
+        assertEquals(event0Listener.counts.get(MyEvents.event_0), Integer.valueOf(1));
+        assertNull(event1Listener.counts.get(MyEvents.event_1));
     }
 
     /**
