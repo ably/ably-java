@@ -1,5 +1,24 @@
 # Change Log
 
+## [v1.0.10](https://github.com/ably/ably-java/tree/v1.0.10)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.0.9...v1.0.10)
+
+**Implemented enhancements:**
+
+- Add support for remembered REST fallback host [\#431](https://github.com/ably/ably-java/issues/431)
+- Update idempotent REST according to spec [\#413](https://github.com/ably/ably-java/issues/413)
+
+**Closed issues:**
+
+- EventEmitter: mutations of `listeners` within a listener callback shouldn't crash [\#424](https://github.com/ably/ably-java/issues/424)
+
+**Merged pull requests:**
+
+- Implemented RTE6a specification [\#444](https://github.com/ably/ably-java/pull/444) ([amsurana](https://github.com/amsurana))
+- Add .editorconfig [\#443](https://github.com/ably/ably-java/pull/443) ([paddybyers](https://github.com/paddybyers))
+- Add support for bulk rest publish API [\#439](https://github.com/ably/ably-java/pull/439) ([paddybyers](https://github.com/paddybyers))
+
 ## [v1.0.9](https://github.com/ably/ably-java/tree/v1.0.9) (2018-12-11)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.0.8...v1.0.9)
