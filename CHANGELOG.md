@@ -1,4 +1,40 @@
-# Changelog
+# Change Log
+
+## [v1.0.10](https://github.com/ably/ably-java/tree/v1.0.10)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.0.9...v1.0.10)
+
+**Implemented enhancements:**
+
+- Add support for remembered REST fallback host [\#431](https://github.com/ably/ably-java/issues/431)
+- Update idempotent REST according to spec [\#413](https://github.com/ably/ably-java/issues/413)
+
+**Closed issues:**
+
+- EventEmitter: mutations of `listeners` within a listener callback shouldn't crash [\#424](https://github.com/ably/ably-java/issues/424)
+
+**Merged pull requests:**
+
+- Implemented RTE6a specification [\#444](https://github.com/ably/ably-java/pull/444) ([amsurana](https://github.com/amsurana))
+- Add .editorconfig [\#443](https://github.com/ably/ably-java/pull/443) ([paddybyers](https://github.com/paddybyers))
+- Add support for bulk rest publish API [\#439](https://github.com/ably/ably-java/pull/439) ([paddybyers](https://github.com/paddybyers))
+
+## [v1.0.9](https://github.com/ably/ably-java/tree/v1.0.9) (2018-12-11)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.0.8...v1.0.9)
+
+**Closed issues:**
+
+- Idempotent publishing is not enabled in the upcoming 1.1 release [\#438](https://github.com/ably/ably-java/issues/438)
+
+**Merged pull requests:**
+
+- Expose msgpack serialisers/deserialisers for Message, PresenceMessage [\#440](https://github.com/ably/ably-java/pull/440) ([paddybyers](https://github.com/paddybyers))
+- RTL6c: implement transient realtime publishing [\#436](https://github.com/ably/ably-java/pull/436) ([paddybyers](https://github.com/paddybyers))
+- Implement idempotent REST publishing [\#435](https://github.com/ably/ably-java/pull/435) ([paddybyers](https://github.com/paddybyers))
+- Add support for ErrorInfo.href \(TI4/TI5\) [\#434](https://github.com/ably/ably-java/pull/434) ([paddybyers](https://github.com/paddybyers))
+-  RSC15f: implement fallback affinity [\#433](https://github.com/ably/ably-java/pull/433) ([paddybyers](https://github.com/paddybyers))
+- Pass the environment option into echoserver JWT requests [\#432](https://github.com/ably/ably-java/pull/432) ([paddybyers](https://github.com/paddybyers))
 
 ## [v1.0.8](https://github.com/ably/ably-java/tree/v1.0.8) (2018-11-03)
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.0.7...v1.0.8)
@@ -7,17 +43,17 @@
 
 - Ensure request method accepts UPDATE, PATCH & DELETE verbs [\#416](https://github.com/ably/ably-java/issues/416)
 
-**Fixed bugs:**
+**Closed issues:**
 
 - Error in release mode due to missing proguard exclusion [\#427](https://github.com/ably/ably-java/issues/427)
 - Exception when failing to decode a message with unexpected payload type [\#425](https://github.com/ably/ably-java/issues/425)
+- Recover resume not working [\#423](https://github.com/ably/ably-java/issues/423)
 
-## [v1.0.7](https://github.com/ably/ably-java/tree/v1.0.7) (2018-08-16)
-[Full Changelog](https://github.com/ably/ably-java/compare/v1.0.6...v1.0.7)
+**Merged pull requests:**
 
-**Closed issues:**
-
-- IllegalStateException scheduling transport activity timer [\#418](https://github.com/ably/ably-java/issues/418)
+- Proguard: exclude Auth inner classes [\#428](https://github.com/ably/ably-java/pull/428) ([paddybyers](https://github.com/paddybyers))
+- Handle unexpected data type when decoding a message [\#426](https://github.com/ably/ably-java/pull/426) ([paddybyers](https://github.com/paddybyers))
+- Update CHANGELOG generation instructions [\#421](https://github.com/ably/ably-java/pull/421) ([ORBAT](https://github.com/ORBAT))
 
 ## [v1.0.7](https://github.com/ably/ably-java/tree/v1.0.7) (2018-08-16)
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.0.6...v1.0.7)

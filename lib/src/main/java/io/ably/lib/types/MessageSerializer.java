@@ -21,8 +21,8 @@ public class MessageSerializer {
 	/****************************************
 	 *            Msgpack decode
 	 ****************************************/
-	
-	static Message[] readMsgpackArray(MessageUnpacker unpacker) throws IOException {
+
+	public static Message[] readMsgpackArray(MessageUnpacker unpacker) throws IOException {
 		int count = unpacker.unpackArrayHeader();
 		Message[] result = new Message[count];
 		for(int i = 0; i < count; i++)
@@ -51,7 +51,7 @@ public class MessageSerializer {
 		return new HttpUtils.ByteArrayRequestBody(writeMsgpackArray(messages), "application/x-msgpack");
 	}
 
-	static byte[] writeMsgpackArray(Message[] messages) {
+	public static byte[] writeMsgpackArray(Message[] messages) {
 		try {
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
 			MessagePacker packer = Serialisation.msgpackPackerConfig.newPacker(out);
@@ -61,7 +61,7 @@ public class MessageSerializer {
 		} catch(IOException e) { return null; }
 	}
 
-	static void writeMsgpackArray(Message[] messages, MessagePacker packer) {
+	public static void writeMsgpackArray(Message[] messages, MessagePacker packer) {
 		try {
 			int count = messages.length;
 			packer.packArrayHeader(count);
@@ -70,10 +70,33 @@ public class MessageSerializer {
 		} catch(IOException e) {}
 	}
 
+	public static HttpCore.RequestBody asMsgpackRequest(Message.Batch[] pubSpecs) {
+		return new HttpUtils.ByteArrayRequestBody(writeMsgpackArray(pubSpecs), "application/x-msgpack");
+	}
+
+	static byte[] writeMsgpackArray(Message.Batch[] pubSpecs) {
+		try {
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			MessagePacker packer = Serialisation.msgpackPackerConfig.newPacker(out);
+			writeMsgpackArray(pubSpecs, packer);
+			packer.flush();
+			return out.toByteArray();
+		} catch(IOException e) { return null; }
+	}
+
+	static void writeMsgpackArray(Message.Batch[] pubSpecs, MessagePacker packer) throws IOException {
+		try {
+			int count = pubSpecs.length;
+			packer.packArrayHeader(count);
+			for(Message.Batch spec : pubSpecs)
+				spec.writeMsgpack(packer);
+		} catch(IOException e) {}
+	}
+
 	/****************************************
 	 *              JSON decode
 	 ****************************************/
-	
+
 	public static Message[] readJSON(byte[] packed) throws IOException {
 		return Serialisation.gson.fromJson(new String(packed), Message[].class);
 	}
@@ -81,7 +104,7 @@ public class MessageSerializer {
 	/****************************************
 	 *            JSON encode
 	 ****************************************/
-	
+
 	public static HttpCore.RequestBody asJsonRequest(Message message) throws AblyException {
 		return asJsonRequest(new Message[] { message });
 	}
@@ -90,10 +113,14 @@ public class MessageSerializer {
 		return new HttpUtils.JsonRequestBody(Serialisation.gson.toJson(messages));
 	}
 
+	public static HttpCore.RequestBody asJSONRequest(Message.Batch[] pubSpecs) {
+		return new HttpUtils.JsonRequestBody(Serialisation.gson.toJson(pubSpecs));
+	}
+
 	/****************************************
 	 *              BodyHandler
 	 ****************************************/
-	
+
 	public static HttpCore.BodyHandler<Message> getMessageResponseHandler(ChannelOptions opts) {
 		return opts == null ? messageResponseHandler : new MessageBodyHandler(opts);
 	}
@@ -129,6 +156,5 @@ public class MessageSerializer {
 	}
 
 	private static HttpCore.BodyHandler<Message> messageResponseHandler = new MessageBodyHandler(null);
-
 	private static final String TAG = MessageSerializer.class.getName();
 }

@@ -2,6 +2,7 @@ package io.ably.lib.types;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.Collection;
 
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePacker;
@@ -115,6 +116,43 @@ public class Message extends BaseMessage {
 			}
 		}
 		return this;
+	}
+
+	/**
+	 * A specification for a collection of messages to be sent using the batch API
+	 * @author paddy
+	 *
+	 */
+	public static class Batch {
+		public String[] channels;
+		public Message[] messages;
+
+		public Batch(String channel, Message[] messages) {
+			if(channel == null || channel.isEmpty()) throw new IllegalArgumentException("A Batch spec cannot have an empty set of channels");
+			if(messages == null || messages.length == 0) throw new IllegalArgumentException("A Batch spec cannot have an empty set of messages");
+			this.channels = new String[] { channel };
+			this.messages = messages;
+		}
+
+		public Batch(String[] channels, Message[] messages) {
+			if(channels == null || channels.length == 0) throw new IllegalArgumentException("A Batch spec cannot have an empty set of channels");
+			if(messages == null || messages.length == 0) throw new IllegalArgumentException("A Batch spec cannot have an empty set of messages");
+			this.channels = channels;
+			this.messages = messages;
+		}
+
+		public Batch(Collection<String> channels, Collection<Message> messages) {
+			this(channels.toArray(new String[channels.size()]), messages.toArray(new Message[messages.size()]));
+		}
+
+		public void writeMsgpack(MessagePacker packer) throws IOException {
+			packer.packMapHeader(2);
+			packer.packString("channels");
+			packer.packArrayHeader(channels.length);
+			for(String ch : channels) packer.packString(ch);
+			packer.packString("messages");
+			MessageSerializer.writeMsgpackArray(messages, packer);
+		}
 	}
 
 	static Message fromMsgpack(MessageUnpacker unpacker) throws IOException {

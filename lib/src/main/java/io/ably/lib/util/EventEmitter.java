@@ -82,13 +82,24 @@ public abstract class EventEmitter<Event, Listener> {
 	 * @param args the arguments to pass to listeners
 	 */
 	public synchronized void emit(Event event, Object... args) {
-		for (int i = listeners.size() - 1; i >= 0; i--) {
-			apply(listeners.get(i), event, args);
+		/*
+		 * The set of listeners called by emit must not change over the course of the emit
+		 * Refer RTE6a part of Spec for more details.
+		 * To address this issue, we clone the listeners before calling emit.
+		 */
+		List<Listener> clonedListeners = new ArrayList<>(listeners);
+
+		for (Listener listener : clonedListeners) {
+			apply(listener, event, args);
 		}
 
-		for(Iterator<Map.Entry<Listener, Filter>> it = filters.entrySet().iterator(); it.hasNext(); )
-			if(it.next().getValue().apply(event, args))
-				it.remove();
+		Map<Listener, Filter> clonedFilters = new HashMap<>(filters);
+		for (Iterator<Map.Entry<Listener, Filter>> it = clonedFilters.entrySet().iterator(); it.hasNext(); ) {
+			Map.Entry<Listener, Filter> entry = it.next();
+			if (entry.getValue().apply(event, args)) {
+				filters.remove(entry.getKey());
+			}
+		}
 	}
 
 	protected abstract void apply(Listener listener, Event event, Object... args);

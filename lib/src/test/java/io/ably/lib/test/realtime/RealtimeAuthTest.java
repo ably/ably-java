@@ -619,6 +619,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
 	 */
 	@Test
 	public void auth_clientid_publish_explicit_before_identified() {
+		AblyRealtime ably = null;
 		try {
 			String clientId = "test clientId";
 			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
@@ -632,7 +633,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
 			fillInOptions(options);
 			options.token = tokenDetails.token;
 			options.protocolListener = protocolListener;
-			AblyRealtime ably = new AblyRealtime(options);
+			ably = new AblyRealtime(options);
 
 			/* verify we don't yet know the implied clientId */
 			assertNull("Verify clientId is unknown", ably.auth.clientId);
@@ -646,6 +647,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
 					String.valueOf(System.currentTimeMillis()),
 					clientId /* clientId */
 			);
+			channel.attach();
 			channel.publish(new Message[] { messageToPublish });
 
 			/* wait until connected and attached */
@@ -689,11 +691,13 @@ public class RealtimeAuthTest extends ParameterizedTest {
 			/* Get received message */
 			messageReceived = protocolListener.receivedMessages.get(0).messages[0];
 			assertEquals("Received message does contain clientId", messageReceived.clientId, clientId);
-
-			ably.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("auth_clientid_publish_implicit: Unexpected exception");
+		} finally {
+			if(ably != null) {
+				ably.close();
+			}
 		}
 	}
 }
