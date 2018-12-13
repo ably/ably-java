@@ -176,14 +176,12 @@ public class EventEmitterTest {
 		assertNull(listener.counts.get(MyEvents.event_1));
 	}
 
-
 	/**
 	 * Register event listeners inside the listener and ensure they are not called during that event.
 	 */
 	@Test
 	public void on_all_events_listener_in_listener() {
 		final MyEmitter emitter = new MyEmitter();
-
 
 		final CountingListener allEventsListener = new CountingListener();
 
@@ -203,14 +201,12 @@ public class EventEmitterTest {
 		assertEquals(allEventsListener.counts.get(MyEvents.event_0), Integer.valueOf(1));
 	}
 
-
 	/**
 	 * Register event listener "once" inside the listener and ensure they are not called during that event.
 	 */
 	@Test
 	public void once_all_events_listener_in_listener() {
 		final MyEmitter emitter = new MyEmitter();
-
 
 		final CountingListener allEventsListener = new CountingListener();
 
@@ -235,10 +231,8 @@ public class EventEmitterTest {
 		//We fire once again.
 		emitter.emit(MyEvents.event_0, "event_0_third");
 
-
 		assertEquals(allEventsListener.counts.get(MyEvents.event_0), Integer.valueOf(1));
 	}
-
 
 	/**
 	 * Register event listener "once" inside the listener and ensure they are not called during that event.
@@ -247,11 +241,10 @@ public class EventEmitterTest {
 	public void once_event_specific_listener_in_listener() {
 		final MyEmitter emitter = new MyEmitter();
 
-
 		final CountingListener event0Listener = new CountingListener();
 		final CountingListener event1Listener = new CountingListener();
 
-		emitter.on(MyEvents.event_0, new MyListener() {
+		emitter.once(MyEvents.event_0, new MyListener() {
 			@Override
 			public void onMyThingHappened(MyEventPayload theThing) {
 				//Add a "once" listener here.
@@ -287,7 +280,6 @@ public class EventEmitterTest {
 				emitter.on(MyEvents.event_0, event0Listener);
 				emitter.on(MyEvents.event_1, event1Listener);
 				assertTrue(theThing.message.contains("fireEvent"));
-
 			}
 		});
 
@@ -298,14 +290,12 @@ public class EventEmitterTest {
 		assertNull(event1Listener.counts.get(MyEvents.event_1));
 	}
 
-
 	/**
 	 * Remove "off" an all events listener inside the listener and ensure they are not called during that event.
 	 */
 	@Test
 	public void off_all_events_listener_in_listener() {
 		final MyEmitter emitter = new MyEmitter();
-
 
 		final CountingListener allEventsListener = new CountingListener();
 
@@ -327,7 +317,6 @@ public class EventEmitterTest {
 		assertEquals(allEventsListener.counts.get(MyEvents.event_0), Integer.valueOf(1));
 	}
 
-
 	/**
 	 * "off" event specific listeners inside the listener and ensure they are not called during that event.
 	 */
@@ -335,7 +324,6 @@ public class EventEmitterTest {
 	@Test
 	public void off_specific_event_listener_in_listener() {
 		final MyEmitter emitter = new MyEmitter();
-
 
 		final CountingListener event0Listener = new CountingListener();
 		final CountingListener event1Listener = new CountingListener();
