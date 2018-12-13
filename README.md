@@ -6,6 +6,10 @@
 
 A Java Realtime and REST client library for [Ably Realtime](https://www.ably.io), the realtime messaging and data delivery service.
 
+## Beta notice
+
+This is a beta release of the Ably 1.1 library specification. A stable 1.1.0 release will be made in due course.
+
 ## Supported Platforms
 
 This SDK supports the following platforms:
@@ -30,13 +34,13 @@ Reference the library by including a compile dependency reference in your gradle
 For [Java](https://bintray.com/ably-io/ably/ably-java/_latestVersion):
 
 ```
-compile 'io.ably:ably-java:1.0.10'
+compile 'io.ably:ably-java:1.1.0-RC1'
 ```
 
 For [Android](https://bintray.com/ably-io/ably/ably-android/_latestVersion):
 
 ```
-compile 'io.ably:ably-android:1.0.10'
+compile 'io.ably:ably-android:1.1.0-RC1'
 ```
 
 The library is hosted on the [Jcenter repository](https://bintray.com/ably-io/ably), so you need to ensure that the repo is referenced also; IDEs will typically include this by default:
@@ -55,6 +59,10 @@ For Java, JRE 7 or later is required. Note that the [Java Unlimited JCE extensio
 must be installed in the Java runtime environment.
 
 For Android, 4.0 (API level 14) or later is required.
+
+## Feature support
+
+This library targets the Ably 1.1 client library specification and supports all principal 1.1 features.
 
 ## Using the Realtime API ##
 
@@ -222,7 +230,6 @@ If you are interested with specific events, it is possible with providing extra 
 channel.on(ChannelState.attached, listener);
 ```
 
-
 ## Using the REST API ##
 
 ### Introduction ###
@@ -265,7 +272,6 @@ channel.publishAsync(messages, new CompletionListener() {
 	}
 });
 ```
-
 
 ### Querying the history ###
 
@@ -327,6 +333,81 @@ while(result.hasNext()) {
 ```java
 long serviceTime = ably.time();
 ```
+
+## Using the Push API
+
+### Delivering push notifications
+
+See https://www.ably.io/documentation/general/push/publish for detail.
+
+Ably provides two models for delivering push notifications to devices.
+
+To publish a message to a channel including a push payload:
+
+```
+Message message = new Message("example", "realtime data");
+message.extras = io.ably.lib.util.JsonUtils.object()
+    .add("push", io.ably.lib.util.JsonUtils.object()
+        .add("notification", io.ably.lib.util.JsonUtils.object()
+            .add("title", "Hello from Ably!")
+            .add("body", "Example push notification from Ably."))
+        .add("data", io.ably.lib.util.JsonUtils.object()
+            .add("foo", "bar")
+            .add("baz", "qux")));
+
+rest.channels.get("pushenabled:foo").publishAsync(message, new CompletionListener() {
+    @Override
+    public void onSuccess() {}
+
+    @Override
+    public void onError(ErrorInfo errorInfo) {
+        // Handle error.
+    }
+});
+```
+
+To publish a push payload directly to a registered device:
+
+```
+Param[] recipient = new Param[]{new Param("deviceId", "xxxxxxxxxxx");
+
+JsonObject payload = io.ably.lib.util.JsonUtils.object()
+        .add("notification", io.ably.lib.util.JsonUtils.object()
+            .add("title", "Hello from Ably!")
+            .add("body", "Example push notification from Ably."))
+        .add("data", io.ably.lib.util.JsonUtils.object()
+            .add("foo", "bar")
+            .add("baz", "qux")));
+
+rest.push.admin.publishAsync(recipient, payload, , new CompletionListener() {
+	 @Override
+	 public void onSuccess() {}
+ 
+	 @Override
+	 public void onError(ErrorInfo errorInfo) {
+		 // Handle error.
+	 }
+ });
+```
+
+### Activating a device and receiving notifications (Android only)
+
+See https://www.ably.io/documentation/general/push/activate-subscribe for detail.
+In order to enable an app as a recipent of Ably push messages:
+
+- register your app with Firebase Cloud Messaging (FCM) and configure the FCM credentials in the app dashboard;
+- include a service derived from `FirebaseMessagingService` and ensure it is started;
+- include a method to handle registration notifications from Android, such as including a service derived from `AblyFirebaseInstanceIdService` and ensure it is started;
+- initialise the device as an active push recipient:
+
+```
+realtime.setAndroidContext(context);
+realtime.push.activate();
+```
+
+### Managing devices and subscriptions
+
+See https://www.ably.io/documentation/general/push/admin for details of the push admin API.
 
 ## Building ##
 
@@ -444,9 +525,9 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 
 ### Release notes
 
-* Create a branch for the release, named like `release-1.0.10`
+* Create a branch for the release, named like `release-1.1.0`
 * Replace all references of the current version number with the new version number (check this file [README.md](./README.md) and [common.gradle](./common.gradle)) and commit the changes
-* Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to update the [CHANGELOG](./CHANGELOG.md): `github_changelog_generator -u ably -p ably-java --header-label="# Changelog" --release-branch=release-1.0.10 --future-release=v1.0.8` 
+* Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to update the [CHANGELOG](./CHANGELOG.md): `github_changelog_generator -u ably -p ably-java --header-label="# Changelog" --release-branch=release-1.1.0 --future-release=v1.0.8` 
 * Commit [CHANGELOG](./CHANGELOG.md)
 * Add a tag and push to origin such as `git tag v1.0.7; git push origin v1.0.7`
 * Make a PR against `develop`
@@ -460,12 +541,12 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 
 ### Publishing to JCenter (Maven)
 
-* Go to the home page for the package; eg https://bintray.com/ably-io/ably/ably-java. Select [New version](https://bintray.com/ably-io/ably/ably-java/new/version), enter the new version such as "1.0.10" in name and save
+* Go to the home page for the package; eg https://bintray.com/ably-io/ably/ably-java. Select [New version](https://bintray.com/ably-io/ably/ably-java/new/version), enter the new version such as "1.1.0" in name and save
 * Run `./gradlew java:assembleRelease` locally to generate the files
-* Open local relative folder such as `./java/build/release/1.0.10/io/ably/ably-java/1.0.10`
-* Then go to the new version in JFrog Bintray; eg https://bintray.com/ably-io/ably/ably-java/1.0.10, then click on the link to upload via the UI in the "Upload files" section
-* Type in `io/ably/ably-java/1.0.10` into "Target Repository Path" ensuring the correct version is included. The drag in the files in `java/build/release/1.0.10/`. Upload all the `.jar` files and the `.pom` file.
-* You will see a notice "You have 4 unpublished item(s) for this version", make sure you click "Publish". Wait a few minutes and check that your version has all the necessary files at https://bintray.com/ably-io/ably/ably-java/1.0.10?sort=&order=#files/io/ably/ably-java/1.0.10 for example.
+* Open local relative folder such as `./java/build/release/1.1.0/io/ably/ably-java/1.1.0`
+* Then go to the new version in JFrog Bintray; eg https://bintray.com/ably-io/ably/ably-java/1.1.0, then click on the link to upload via the UI in the "Upload files" section
+* Type in `io/ably/ably-java/1.1.0` into "Target Repository Path" ensuring the correct version is included. The drag in the files in `java/build/release/1.1.0/`. Upload all the `.jar` files and the `.pom` file.
+* You will see a notice "You have 4 unpublished item(s) for this version", make sure you click "Publish". Wait a few minutes and check that your version has all the necessary files at https://bintray.com/ably-io/ably/ably-java/1.1.0?sort=&order=#files/io/ably/ably-java/1.1.0 for example.
 * Update the README text in Bintray.
 
 ### Create release on Github
@@ -474,7 +555,7 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 
 Similarly for the Android release at https://bintray.com/ably-io/ably/ably-android.
 Run `gradle android:assembleRelease` locally to generate the files, and drag in the files in
-`./android/build/release/1.0.10/io/ably/ably-android/1.0.10`. In this case upload the `.jar` files, the `.pom` file and the `.aar` file.
+`./android/build/release/1.1.0/io/ably/ably-android/1.1.0`. In this case upload the `.jar` files, the `.pom` file and the `.aar` file.
 
 ## Support, feedback and troubleshooting
 
