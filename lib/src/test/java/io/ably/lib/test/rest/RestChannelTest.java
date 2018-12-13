@@ -21,7 +21,7 @@ import java.util.Iterator;
 public class RestChannelTest {
 	/**
 	 * Test if ably.channel.get() returns same object if the same name is given
-	 * Tests RTN2, RTN3
+	 * Tests RTN2, RTN3, RSN3a, RSN4a
 	 */
 	@Test
 	public void channel_object_caching() throws AblyException {

@@ -120,7 +120,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
 	/**
 	 * Init library with a key and token; verify Auth.clientId is null before
 	 * connection
-	 * Spec: RSA12b, RSA7b2, RSA7b3
+	 * Spec: RSA12b, RSA7b2, RSA7b3, RTC4a
 	 */
 	@Test
 	public void auth_clientid_null_before_auth() {
@@ -493,7 +493,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
 	/**
 	 * Verify message does not have explicit client id populated
 	 * when library is identified
-	 * Spec: RTL6g1a,RTL6g1b,RTL6g2,RTL6g3
+	 * Spec: RTL6g1a,RTL6g1b,RTL6g2,RTL6g3,RSA7e1
 	 */
 	@Test
 	public void auth_clientid_publish_implicit() {

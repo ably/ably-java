@@ -1355,7 +1355,7 @@ public class RestAuthTest extends ParameterizedTest {
 	/**
 	 * Verify message does not have explicit client id populated
 	 * when library is identified
-	 * Spec: RSA7a1
+	 * Spec: RSA7a1,RSL1g1a
 	 */
 	@Test
 	public void auth_clientid_publish_implicit() {
@@ -1537,7 +1537,7 @@ public class RestAuthTest extends ParameterizedTest {
 	/**
 	 * Verify client id in token is populated from defaultTokenParams
 	 * when library is initialised without explicit clientId
-	 * Spec: RSA7a4
+	 * Spec: RSA7a4, RSA7d
 	 */
 	@Test
 	public void auth_clientid_in_defaultparams() {
@@ -1565,7 +1565,7 @@ public class RestAuthTest extends ParameterizedTest {
 	/**
 	 * Verify client id in token populated from ClientOptions
 	 * overriding any clientId in defaultTokenParams
-	 * Spec: RSA7a4
+	 * Spec: RSA7a4, RSA7d
 	 */
 	@Test
 	public void auth_clientid_in_opts_overrides_defaultparams() {
@@ -1622,6 +1622,7 @@ public class RestAuthTest extends ParameterizedTest {
 	/**
 	 * Test behaviour of queryTime parameter in ClientOpts. Time is requested from the Ably server only once,
 	 * cached value should be used afterwards
+	 * Spec: RSA9a
 	 */
 	@Test
 	public void auth_testQueryTime() {

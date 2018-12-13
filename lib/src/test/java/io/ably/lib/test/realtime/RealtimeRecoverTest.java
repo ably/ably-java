@@ -37,6 +37,7 @@ public class RealtimeRecoverTest extends ParameterizedTest {
 	 * and explicitly wait for the connection before re-attaching the channel.
 	 * verify that the messages sent whilst disconnected are delivered
 	 * on recover
+	 * Spec: RTN16a,RTN16b
 	 */
 	@Test
 	public void recover_disconnected() {
@@ -135,6 +136,7 @@ public class RealtimeRecoverTest extends ParameterizedTest {
 	 * without an explicit wait for connection.
 	 * verify that the messages sent whilst disconnected are delivered
 	 * on recover
+	 * Spec: RTN16a,RTN16b
 	 */
 	@Test
 	public void recover_implicit_connect() {

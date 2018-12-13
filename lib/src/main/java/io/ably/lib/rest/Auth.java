@@ -566,8 +566,10 @@ public class Auth {
 		tokenOptions = (tokenOptions == null) ? this.authOptions : tokenOptions.copy();
 		params = (params == null) ? this.tokenParams : params.copy();
 
-		if(params.clientId == null)
+		/* Spec: RSA7d */
+		if(params.clientId == null) {
 			params.clientId = ably.clientId;
+		}
 		params.capability = Capability.c14n(params.capability);
 
 		/* get the signed token request */
