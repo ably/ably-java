@@ -1,19 +1,22 @@
 package io.ably.lib.types;
 
-import java.io.IOException;
-import java.lang.reflect.Type;
-import java.util.Collection;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.util.Collection;
 
 import io.ably.lib.util.Log;
+import io.ably.lib.util.Serialisation;
 
 /**
  * A class representing an individual message to be sent or received
@@ -32,7 +35,7 @@ public class Message extends BaseMessage {
 	public Message() {}
 
 	/**
-	 * Construct a message from event name and data 
+	 * Construct a message from event name and data
 	 * @param name
 	 * @param data
 	 */
@@ -132,6 +135,39 @@ public class Message extends BaseMessage {
 
 	static Message fromMsgpack(MessageUnpacker unpacker) throws IOException {
 		return (new Message()).readMsgpack(unpacker);
+	}
+
+	public static Message fromEncoded(JsonElement messageObject, ChannelOptions channelOptions) throws MessageDecodeException {
+		try {
+
+			Message message = Serialisation.gson.fromJson(messageObject, Message.class);
+			message.decode(channelOptions);
+			return message;
+
+		} catch (Exception e) {
+			throw MessageDecodeException.fromDescription(e.getMessage());
+		}
+	}
+
+
+	public static Message[] fromEncodedArray(JsonArray messageArray, ChannelOptions channelOptions) throws MessageDecodeException {
+		try {
+
+			Message[] messages = new Message[messageArray.size()];
+			for (int index = 0; index < messageArray.size(); index++) {
+				JsonElement jsonElement = messageArray.get(index);
+
+				if (!jsonElement.isJsonObject()) {
+					throw new JsonParseException("Not all JSON elements are of type JSON Object.");
+				}
+
+				messages[index] = fromEncoded(jsonElement, channelOptions);
+			}
+
+			return messages;
+		} catch (Exception e) {
+			throw MessageDecodeException.fromDescription(e.getMessage());
+		}
 	}
 
 	public static class Serializer extends BaseMessage.Serializer implements JsonSerializer<Message> {

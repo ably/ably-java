@@ -1,24 +1,18 @@
 package io.ably.lib.test.realtime;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
 
 import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
@@ -30,12 +24,12 @@ import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.rest.AblyRest;
+import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.Helpers.MessageWaiter;
-import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.transport.ConnectionManager;
@@ -44,8 +38,16 @@ import io.ably.lib.types.Callback;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
+import io.ably.lib.types.MessageDecodeException;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.Serialisation;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class RealtimeMessageTest extends ParameterizedTest {
 
@@ -817,4 +819,19 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			this.tr = tr;
 		}
 	}
+
+	@Test
+	public void message_from_encoded_object() throws MessageDecodeException, AblyException {
+
+		Message sendMsg = new Message("test_from_encoded_method", "MDEyMzQ1Njc4OQ==");
+		sendMsg.encoding = "base64";
+		sendMsg.encode(null);
+
+		Message receivedMsg = Message.fromEncoded(Serialisation.gson.toJsonTree(sendMsg), null);
+
+		assertEquals(receivedMsg.name, sendMsg.name);
+		assertArrayEquals((byte[]) receivedMsg.data, "0123456789".getBytes());
+
+	}
+
 }
