@@ -143,6 +143,7 @@ public class Message extends BaseMessage {
 			message.decode(channelOptions);
 			return message;
 		} catch (Exception e) {
+			e.printStackTrace();
 			throw MessageDecodeException.fromDescription(e.getMessage());
 		}
 	}
@@ -153,6 +154,7 @@ public class Message extends BaseMessage {
 			message.decode(channelOptions);
 			return message;
 		} catch (Exception e) {
+			e.printStackTrace();
 			throw MessageDecodeException.fromDescription(e.getMessage());
 		}
 	}
@@ -169,10 +171,10 @@ public class Message extends BaseMessage {
 			}
 			return messages;
 		} catch (Exception e) {
+			e.printStackTrace();
 			throw MessageDecodeException.fromDescription(e.getMessage());
 		}
 	}
-
 
 	public static class Serializer extends BaseMessage.Serializer implements JsonSerializer<Message> {
 		@Override
