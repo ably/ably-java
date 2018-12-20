@@ -137,38 +137,42 @@ public class Message extends BaseMessage {
 		return (new Message()).readMsgpack(unpacker);
 	}
 
-	public static Message fromEncoded(JsonElement messageObject, ChannelOptions channelOptions) throws MessageDecodeException {
+	public static Message fromEncoded(JsonObject messageObject, ChannelOptions channelOptions) throws MessageDecodeException {
 		try {
-
 			Message message = Serialisation.gson.fromJson(messageObject, Message.class);
 			message.decode(channelOptions);
 			return message;
-
 		} catch (Exception e) {
 			throw MessageDecodeException.fromDescription(e.getMessage());
 		}
 	}
 
+	public static Message fromEncoded(String messageObject, ChannelOptions channelOptions) throws MessageDecodeException {
+		try {
+			Message message = Serialisation.gson.fromJson(messageObject, Message.class);
+			message.decode(channelOptions);
+			return message;
+		} catch (Exception e) {
+			throw MessageDecodeException.fromDescription(e.getMessage());
+		}
+	}
 
 	public static Message[] fromEncodedArray(JsonArray messageArray, ChannelOptions channelOptions) throws MessageDecodeException {
 		try {
-
 			Message[] messages = new Message[messageArray.size()];
 			for (int index = 0; index < messageArray.size(); index++) {
 				JsonElement jsonElement = messageArray.get(index);
-
 				if (!jsonElement.isJsonObject()) {
 					throw new JsonParseException("Not all JSON elements are of type JSON Object.");
 				}
-
-				messages[index] = fromEncoded(jsonElement, channelOptions);
+				messages[index] = fromEncoded(jsonElement.getAsJsonObject(), channelOptions);
 			}
-
 			return messages;
 		} catch (Exception e) {
 			throw MessageDecodeException.fromDescription(e.getMessage());
 		}
 	}
+
 
 	public static class Serializer extends BaseMessage.Serializer implements JsonSerializer<Message> {
 		@Override
