@@ -4,14 +4,11 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Collection;
 
+import com.google.gson.*;
+import io.ably.lib.util.Serialisation;
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
-
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 
 import io.ably.lib.util.Log;
 
@@ -132,6 +129,44 @@ public class Message extends BaseMessage {
 
 	static Message fromMsgpack(MessageUnpacker unpacker) throws IOException {
 		return (new Message()).readMsgpack(unpacker);
+	}
+
+	public static Message fromEncoded(JsonObject messageObject, ChannelOptions channelOptions) throws MessageDecodeException {
+		try {
+			Message message = Serialisation.gson.fromJson(messageObject, Message.class);
+			message.decode(channelOptions);
+			return message;
+		} catch(Exception e) {
+			e.printStackTrace();
+			throw MessageDecodeException.fromDescription(e.getMessage());
+		}
+	}
+
+	public static Message fromEncoded(String messageObject, ChannelOptions channelOptions) throws MessageDecodeException {
+		try {
+			JsonObject jsonObject = Serialisation.gson.fromJson(messageObject, JsonObject.class);
+			return fromEncoded(jsonObject.getAsJsonObject(), channelOptions);
+		}catch(Exception e){
+			e.printStackTrace();
+			throw MessageDecodeException.fromDescription(e.getMessage());
+		}
+	}
+
+	public static Message[] fromEncodedArray(JsonArray messageArray, ChannelOptions channelOptions) throws MessageDecodeException {
+		try {
+			Message[] messages = new Message[messageArray.size()];
+			for(int index = 0; index < messageArray.size(); index++) {
+				JsonElement jsonElement = messageArray.get(index);
+				if(!jsonElement.isJsonObject()) {
+					throw new JsonParseException("Not all JSON elements are of type JSON Object.");
+				}
+				messages[index] = fromEncoded(jsonElement.getAsJsonObject(), channelOptions);
+			}
+			return messages;
+		} catch(Exception e) {
+			e.printStackTrace();
+			throw MessageDecodeException.fromDescription(e.getMessage());
+		}
 	}
 
 	public static class Serializer extends BaseMessage.Serializer implements JsonSerializer<Message> {
