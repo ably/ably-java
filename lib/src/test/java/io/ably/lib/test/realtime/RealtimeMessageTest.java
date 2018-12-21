@@ -12,13 +12,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
+import com.google.gson.*;
+import io.ably.lib.util.Serialisation;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
 
 import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
@@ -816,5 +814,88 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			this.msg = msg;
 			this.tr = tr;
 		}
+	}
+
+	/**
+	 * To Test Message.fromEncoded(JsonObject) and Message.fromEncoded(String)
+	 * @throws AblyException
+	 */
+	@Test
+	public void message_from_encoded_json_object() throws AblyException {
+
+		//Test Base64 data decoding in Message.fromEncoded(JsonObject)
+		Message sendMsg = new Message("test_from_encoded_method", "0123456789".getBytes());
+		sendMsg.clientId = "client-id";
+		sendMsg.connectionId = "connection-id";
+		sendMsg.timestamp = System.currentTimeMillis();
+		sendMsg.encode(null);
+
+		Message receivedMsg = Message.fromEncoded(Serialisation.gson.toJsonTree(sendMsg).getAsJsonObject(), null);
+
+		assertEquals(receivedMsg.name, sendMsg.name);
+		assertArrayEquals((byte[]) receivedMsg.data, "0123456789".getBytes());
+
+		//Test JSON Data decoding in Message.fromEncoded(JsonObject)
+		JsonObject person = new JsonObject();
+		person.addProperty("name", "Amit");
+		person.addProperty("country", "Interlaken Ost");
+
+		Message userDetails = new Message("user_details", person);
+		userDetails.encode(null);
+		Message decodedMessage1 = Message.fromEncoded(Serialisation.gson.toJsonTree(userDetails).getAsJsonObject(), null);
+
+		assertEquals(userDetails.name, decodedMessage1.name);
+		assertEquals(person, decodedMessage1.data);
+
+		//Test Message.fromEncoded(String)
+		Message decodedMessage2 = Message.fromEncoded(Serialisation.gson.toJson(userDetails), null);
+		assertEquals(userDetails.name, decodedMessage2.name);
+		assertEquals(person, decodedMessage2.data);
+
+
+		//Test invalid case.
+		try{
+			//We pass invalid Message object
+			Message.fromEncoded(person, null);
+		}catch(Exception e){
+			//ignore as we are expecting it to fail.
+		}
+
+	}
+
+	/**
+	 * To test Message.fromEncoded(JsonArray)
+	 * @throws AblyException
+	 */
+	@Test
+	public void messages_from_encoded_json_array() throws AblyException {
+
+		JsonArray fixtures = null;
+		MessagesData testMessages = null;
+		try {
+			testMessages = (MessagesData) Setup.loadJson(testMessagesEncodingFile, MessagesData.class);
+			JsonObject jsonObject = (JsonObject) Setup.loadJson(testMessagesEncodingFile, JsonObject.class);
+			//We use this as-is for decoding purposes.
+			fixtures = jsonObject.getAsJsonArray("messages");
+		} catch(IOException e) {
+			fail();
+			return;
+		}
+
+		Message[] decodedMessages = Message.fromEncodedArray(fixtures, null);
+		for(int index = 0; index < decodedMessages.length; index++) {
+			Message testInputMsg = testMessages.messages[index];
+			testInputMsg.decode(null);
+			if(testInputMsg.data instanceof byte[]) {
+				assertArrayEquals((byte[]) testInputMsg.data, (byte[]) decodedMessages[index].data);
+			} else {
+				assertEquals(testInputMsg.data, decodedMessages[index].data);
+			}
+		}
+
+	}
+
+	static class MessagesData {
+		public Message[] messages;
 	}
 }
