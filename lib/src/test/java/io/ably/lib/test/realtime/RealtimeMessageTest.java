@@ -841,7 +841,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
 		assertEquals(receivedMsg.name, sendMsg.name);
 		assertArrayEquals((byte[]) receivedMsg.data, "0123456789".getBytes());
 
-
 		/*Test JSON Data decoding in Message.fromEncoded(JsonObject)*/
 		JsonObject person = new JsonObject();
 		person.addProperty("name", "Amit");
@@ -896,7 +895,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
 				assertEquals(testInputMsg.data, decodedMessages[index].data);
 			}
 		}
-
 		/*Test Message.fromEncodedArray(String)*/
 		String fixturesArray = Serialisation.gson.toJson(fixtures);
 		Message[] decodedMessages2 = Message.fromEncodedArray(fixturesArray, null);
