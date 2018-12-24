@@ -837,7 +837,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
 		sendMsg.encode(null);
 
 		Message receivedMsg = Message.fromEncoded(Serialisation.gson.toJsonTree(sendMsg).getAsJsonObject(), null);
-
 		assertEquals(receivedMsg.name, sendMsg.name);
 		assertArrayEquals((byte[]) receivedMsg.data, "0123456789".getBytes());
 
