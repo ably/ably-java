@@ -26,10 +26,11 @@ public class Message extends BaseMessage {
 	/**
 	 * Default constructor
 	 */
-	public Message() {}
+	public Message() {
+	}
 
 	/**
-	 * Construct a message from event name and data 
+	 * Construct a message from event name and data
 	 * @param name
 	 * @param data
 	 */
@@ -77,9 +78,14 @@ public class Message extends BaseMessage {
 		for(int i = 0; i < fieldCount; i++) {
 			String fieldName = unpacker.unpackString().intern();
 			MessageFormat fieldFormat = unpacker.getNextFormat();
-			if(fieldFormat.equals(MessageFormat.NIL)) { unpacker.unpackNil(); continue; }
+			if(fieldFormat.equals(MessageFormat.NIL)) {
+				unpacker.unpackNil();
+				continue;
+			}
 
-			if(super.readField(unpacker, fieldName, fieldFormat)) { continue; }
+			if(super.readField(unpacker, fieldName, fieldFormat)) {
+				continue;
+			}
 			if(fieldName.equals("name")) {
 				name = unpacker.unpackString();
 			} else {
@@ -93,7 +99,6 @@ public class Message extends BaseMessage {
 	/**
 	 * A specification for a collection of messages to be sent using the batch API
 	 * @author paddy
-	 *
 	 */
 	public static class Batch {
 		public String[] channels;
@@ -102,7 +107,7 @@ public class Message extends BaseMessage {
 		public Batch(String channel, Message[] messages) {
 			if(channel == null || channel.isEmpty()) throw new IllegalArgumentException("A Batch spec cannot have an empty set of channels");
 			if(messages == null || messages.length == 0) throw new IllegalArgumentException("A Batch spec cannot have an empty set of messages");
-			this.channels = new String[] { channel };
+			this.channels = new String[]{channel};
 			this.messages = messages;
 		}
 
@@ -131,27 +136,51 @@ public class Message extends BaseMessage {
 		return (new Message()).readMsgpack(unpacker);
 	}
 
-	public static Message fromEncoded(JsonObject messageObject, ChannelOptions channelOptions) throws MessageDecodeException {
+	/**
+	 * Refer Spec TM3 <br>
+	 * An alternative constructor that take an Message-JSON object and a channelOptions (optional), and return a Message
+	 * @param messageJson
+	 * @param channelOptions
+	 * @return
+	 * @throws MessageDecodeException
+	 */
+	public static Message fromEncoded(JsonObject messageJson, ChannelOptions channelOptions) throws MessageDecodeException {
 		try {
-			Message message = Serialisation.gson.fromJson(messageObject, Message.class);
+			Message message = Serialisation.gson.fromJson(messageJson, Message.class);
 			message.decode(channelOptions);
 			return message;
 		} catch(Exception e) {
-			e.printStackTrace();
+			Log.e(Message.class.getName(), e.getMessage(), e);
 			throw MessageDecodeException.fromDescription(e.getMessage());
 		}
 	}
 
-	public static Message fromEncoded(String messageObject, ChannelOptions channelOptions) throws MessageDecodeException {
+	/**
+	 * Refer Spec TM3 <br>
+	 * An alternative constructor that takes a Stringified Message-JSON and a channelOptions (optional), and return a Message
+	 * @param messageJson
+	 * @param channelOptions
+	 * @return
+	 * @throws MessageDecodeException
+	 */
+	public static Message fromEncoded(String messageJson, ChannelOptions channelOptions) throws MessageDecodeException {
 		try {
-			JsonObject jsonObject = Serialisation.gson.fromJson(messageObject, JsonObject.class);
+			JsonObject jsonObject = Serialisation.gson.fromJson(messageJson, JsonObject.class);
 			return fromEncoded(jsonObject.getAsJsonObject(), channelOptions);
-		}catch(Exception e){
-			e.printStackTrace();
+		} catch(Exception e) {
+			Log.e(Message.class.getName(), e.getMessage(), e);
 			throw MessageDecodeException.fromDescription(e.getMessage());
 		}
 	}
 
+	/**
+	 * Refer Spec TM3 <br>
+	 * An alternative constructor that takes a Messages JsonArray and a channelOptions (optional), and return array of Messages.
+	 * @param messageArray
+	 * @param channelOptions
+	 * @return
+	 * @throws MessageDecodeException
+	 */
 	public static Message[] fromEncodedArray(JsonArray messageArray, ChannelOptions channelOptions) throws MessageDecodeException {
 		try {
 			Message[] messages = new Message[messageArray.size()];
@@ -169,10 +198,27 @@ public class Message extends BaseMessage {
 		}
 	}
 
+	/**
+	 *
+	 * @param messagesArray
+	 * @param channelOptions
+	 * @return
+	 * @throws MessageDecodeException
+	 */
+	public static Message[] fromEncodedArray(String messagesArray, ChannelOptions channelOptions) throws MessageDecodeException {
+		try {
+			JsonArray jsonArray = Serialisation.gson.fromJson(messagesArray, JsonArray.class);
+			return fromEncodedArray(jsonArray, channelOptions);
+		} catch(Exception e) {
+			e.printStackTrace();
+			throw MessageDecodeException.fromDescription(e.getMessage());
+		}
+	}
+
 	public static class Serializer extends BaseMessage.Serializer implements JsonSerializer<Message> {
 		@Override
 		public JsonElement serialize(Message message, Type typeOfMessage, JsonSerializationContext ctx) {
-			JsonObject json = (JsonObject)super.serialize(message, typeOfMessage, ctx);
+			JsonObject json = (JsonObject) super.serialize(message, typeOfMessage, ctx);
 			if(message.name != null) json.addProperty("name", message.name);
 			return json;
 		}
