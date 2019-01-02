@@ -1629,4 +1629,66 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			Defaults.realtimeRequestTimeout = oldRealtimeTimeout;
 		}
 	}
+
+	/**
+	 * Initiate an attach when not connected; verify that the given listener is called
+	 * with the attach error
+	 */
+	@Test
+	public void attach_exception_listener_called() {
+		try {
+			final String channelName = "attach_exception_listener_called_" + testParams.name;
+
+			/* init Ably */
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			AblyRealtime ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			(new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+			/* create a channel; put into failed state */
+			ably.connection.connectionManager.requestState(new ConnectionManager.StateIndication(ConnectionState.failed, new ErrorInfo("Test error", 400, 12345)));
+			(new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.failed);
+			assertEquals("Verify failed state reached", ably.connection.state, ConnectionState.failed);
+
+			/* attempt to attach */
+			Channel channel = ably.channels.get(channelName);
+			final ErrorInfo[] listenerError = new ErrorInfo[1];
+			synchronized(listenerError) {
+				channel.attach(new CompletionListener() {
+					@Override
+					public void onSuccess() {
+						synchronized (listenerError) {
+							listenerError.notify();
+						}
+						fail("Unexpected attach success");
+					}
+
+					@Override
+					public void onError(ErrorInfo reason) {
+						synchronized (listenerError) {
+							listenerError[0] = reason;
+							listenerError.notify();
+						}
+					}
+				});
+
+				/* wait until the listener is called */
+				while(listenerError[0] == null) {
+					try { listenerError.wait(); } catch(InterruptedException e) {}
+				}
+			}
+
+			/* verify that the listener was called with an error */
+			assertNotNull("Verify the error callback was called", listenerError[0]);
+			assertEquals("Verify the given error is indicated", listenerError[0].code, 12345);
+
+			/* tidy */
+			ably.close();
+		} catch(AblyException e) {
+			fail(e.getMessage());
+		}
+
+	}
 }
