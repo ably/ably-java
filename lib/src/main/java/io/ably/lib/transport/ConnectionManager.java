@@ -155,7 +155,7 @@ public class ConnectionManager implements ConnectListener {
 	long connectionStateTtl = Defaults.connectionStateTtl;
 
 	public ErrorInfo getStateErrorInfo() {
-		return state.defaultErrorInfo;
+		return stateError != null ? stateError : state.defaultErrorInfo;
 	}
 
 	public boolean isActive() {
@@ -244,6 +244,7 @@ public class ConnectionManager implements ConnectListener {
 			change = new ConnectionStateListener.ConnectionStateChange(state.state, newState.state, newStateInfo.timeout, reason);
 			newStateInfo.host = newState.currentHost;
 			state = newStateInfo;
+			stateError = reason;
 
 			if(change.current != change.previous) {
 				/* any state change clears pending reauth flag */
@@ -1293,6 +1294,7 @@ public class ConnectionManager implements ConnectListener {
 
 	private CMThread mgrThread;
 	private StateInfo state;
+	private ErrorInfo stateError;
 	private StateIndication indicatedState, requestedState;
 	private ConnectParams pendingConnect;
 	private boolean pendingReauth;
