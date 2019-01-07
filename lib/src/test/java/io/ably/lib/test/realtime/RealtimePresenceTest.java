@@ -6,21 +6,19 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
+import java.io.IOException;
 import java.util.*;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.ably.lib.realtime.*;
+import io.ably.lib.test.common.Setup;
 import io.ably.lib.types.*;
+import io.ably.lib.util.Serialisation;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,6 +42,7 @@ import io.ably.lib.util.Log;
 
 public class RealtimePresenceTest extends ParameterizedTest {
 
+	private static final String testMessagesEncodingFile = "ably-common/test-resources/presence-messages-encoding.json";
 	private static final String testClientId1 = "testClientId1";
 	private static final String testClientId2 = "testClientId2";
 	private Auth.TokenDetails token1;
@@ -3316,5 +3315,90 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			if (ably != null)
 				ably.close();
 		}
+	}
+
+	/**
+	 * To Test PresenceMessage.fromEncoded(JsonObject, ChannelOptions) and PresenceMessage.fromEncoded(String, ChannelOptions)
+	 * Refer Spec TP4
+	 * @throws AblyException
+	 */
+	@Test
+	public void message_from_encoded_json_object() throws AblyException {
+		ChannelOptions options = null;
+		byte[] data = "0123456789".getBytes();
+		PresenceMessage encoded = new PresenceMessage(Action.present, "client-123");
+		encoded.data = data;
+		encoded.encode(options);
+
+		PresenceMessage decoded = PresenceMessage.fromEncoded(Serialisation.gson.toJson(encoded), options);
+		assertEquals(encoded.clientId, decoded.clientId);
+		assertArrayEquals(data, (byte[]) decoded.data);
+
+		/*Test JSON Data decoding in PresenceMessage.fromEncoded(JsonObject)*/
+		JsonObject person = new JsonObject();
+		person.addProperty("name", "Amit");
+		person.addProperty("country", "Interlaken Ost");
+
+		PresenceMessage userDetails = new PresenceMessage(Action.absent, "client-123", person);
+		userDetails.encode(options);
+
+		PresenceMessage decodedMessage1 = PresenceMessage.fromEncoded(Serialisation.gson.toJsonTree(userDetails).getAsJsonObject(), null);
+		assertEquals(person, decodedMessage1.data);
+
+		/*Test PresenceMessage.fromEncoded(String)*/
+		PresenceMessage decodedMessage2 = PresenceMessage.fromEncoded(Serialisation.gson.toJson(userDetails), options);
+		assertEquals(person, decodedMessage2.data);
+
+		/*Test invalid case.*/
+		try {
+			//We pass invalid PresenceMessage object
+			PresenceMessage.fromEncoded(person, options);
+			fail();
+		} catch(Exception e) {/*ignore as we are expecting it to fail.*/}
+	}
+
+	/**
+	 * To test PresenceMessage.fromEncodedArray(JsonArray, ChannelOptions) and PresenceMessage.fromEncodedArray(String, ChannelOptions)
+	 * Refer Spec. TP4
+	 * @throws AblyException
+	 */
+	@Test
+	public void messages_from_encoded_json_array() throws AblyException {
+		JsonArray fixtures = null;
+		MessagesData testMessages = null;
+		try {
+			testMessages = (MessagesData) Setup.loadJson(testMessagesEncodingFile, MessagesData.class);
+			JsonObject jsonObject = (JsonObject) Setup.loadJson(testMessagesEncodingFile, JsonObject.class);
+			//We use this as-is for decoding purposes.
+			fixtures = jsonObject.getAsJsonArray("messages");
+		} catch(IOException e) {
+			fail();
+			return;
+		}
+		PresenceMessage[] decodedMessages = PresenceMessage.fromEncodedArray(fixtures, null);
+		for(int index = 0; index < decodedMessages.length; index++) {
+			PresenceMessage testInputMsg = testMessages.messages[index];
+			testInputMsg.decode(null);
+			if(testInputMsg.data instanceof byte[]) {
+				assertArrayEquals((byte[]) testInputMsg.data, (byte[]) decodedMessages[index].data);
+			} else {
+				assertEquals(testInputMsg.data, decodedMessages[index].data);
+			}
+		}
+		/*Test PresenceMessage.fromEncodedArray(String)*/
+		String fixturesArray = Serialisation.gson.toJson(fixtures);
+		PresenceMessage[] decodedMessages2 = PresenceMessage.fromEncodedArray(fixturesArray, null);
+		for(int index = 0; index < decodedMessages2.length; index++) {
+			PresenceMessage testInputMsg = testMessages.messages[index];
+			if(testInputMsg.data instanceof byte[]) {
+				assertArrayEquals((byte[]) testInputMsg.data, (byte[]) decodedMessages2[index].data);
+			} else {
+				assertEquals(testInputMsg.data, decodedMessages2[index].data);
+			}
+		}
+	}
+
+	static class MessagesData {
+		public PresenceMessage[] messages;
 	}
 }
