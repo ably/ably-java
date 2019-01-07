@@ -6,21 +6,19 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
+import java.io.IOException;
 import java.util.*;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.ably.lib.realtime.*;
+import io.ably.lib.test.common.Setup;
 import io.ably.lib.types.*;
+import io.ably.lib.util.Serialisation;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,10 +38,10 @@ import io.ably.lib.test.util.MockWebsocketFactory;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.PresenceMessage.Action;
-import io.ably.lib.util.Log;
 
 public class RealtimePresenceTest extends ParameterizedTest {
 
+	private static final String testMessagesEncodingFile = "ably-common/test-resources/messages-encoding.json";
 	private static final String testClientId1 = "testClientId1";
 	private static final String testClientId2 = "testClientId2";
 	private Auth.TokenDetails token1;
@@ -78,7 +76,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				realtimeChannel = realtime.channels.get(channelName);
 				realtimeChannel.attach();
 				(new ChannelWaiter(realtimeChannel)).waitFor(ChannelState.attached);
-			} catch(AblyException ae) {}
+			} catch(AblyException ae) {
+			}
 		}
 
 		void dispose() {
@@ -101,9 +100,15 @@ public class RealtimePresenceTest extends ParameterizedTest {
 		/* create tokens for specific clientIds */
 		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 		AblyRest rest = new AblyRest(opts);
-		token1 = rest.auth.requestToken(new TokenParams() {{ clientId = testClientId1; }}, null);
-		token2 = rest.auth.requestToken(new TokenParams() {{ clientId = testClientId2; }}, null);
-		wildcardToken = rest.auth.requestToken(new TokenParams() {{ clientId = "*"; }}, null);
+		token1 = rest.auth.requestToken(new TokenParams() {{
+			clientId = testClientId1;
+		}}, null);
+		token2 = rest.auth.requestToken(new TokenParams() {{
+			clientId = testClientId2;
+		}}, null);
+		wildcardToken = rest.auth.requestToken(new TokenParams() {{
+			clientId = "*";
+		}}, null);
 	}
 
 	/**
@@ -818,7 +823,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	 * Attach to channel, enter presence channel with large number of clientIds,
 	 * then initiate second connection, seeing existing members in sync subsequent
 	 * to second attach response
-	 *
+	 * <p>
 	 * Test RTP4
 	 */
 	@Test
@@ -881,7 +886,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			assertEquals("Expected " + clientCount + " messages", members.length, clientCount);
 
 			/* index received messages */
-			for(PresenceMessage member: members)
+			for(PresenceMessage member : members)
 				memberIndex.put(member.clientId, member);
 
 			/* verify that all clientIds were received */
@@ -904,7 +909,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 	/**
 	 * Attach and enter channel on two connections, seeing
-	 * both members in presence returned by realtime get() */
+	 * both members in presence returned by realtime get()
+	 */
 	@Test
 	public void realtime_enter_multiple() {
 		AblyRealtime clientAbly1 = null;
@@ -1083,7 +1089,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 	/**
 	 * Attach and enter channel on two connections, seeing
-	 * both members in presence returned by rest get() */
+	 * both members in presence returned by rest get()
+	 */
 	@Test
 	public void rest_enter_multiple() {
 		AblyRealtime clientAbly1 = null;
@@ -1148,7 +1155,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 	/**
 	 * Attach and enter channel multiple times on a single connection,
-	 * retrieving members using paginated rest get() */
+	 * retrieving members using paginated rest get()
+	 */
 	@Test
 	public void rest_paginated_get() {
 		AblyRealtime clientAbly1 = null;
@@ -1172,14 +1180,17 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			CompletionSet enterComplete = new CompletionSet();
 			for(int i = 0; i < clientCount; i++) {
 				client1Channel.presence.enterClient("client" + i, "Test data (rest_paginated_get) " + i, enterComplete.add());
-				try { Thread.sleep(delay); } catch(InterruptedException e){}
+				try {
+					Thread.sleep(delay);
+				} catch(InterruptedException e) {
+				}
 			}
 			enterComplete.waitFor();
 			assertTrue("Verify enter callback called on completion", enterComplete.errors.isEmpty());
 
 			/* get the presence for this channel */
 			HashMap<String, PresenceMessage> memberIndex = new HashMap<String, PresenceMessage>();
-			PaginatedResult<PresenceMessage> members = testChannel.restChannel.presence.get(new Param[] { new Param("limit", "10") });
+			PaginatedResult<PresenceMessage> members = testChannel.restChannel.presence.get(new Param[]{new Param("limit", "10")});
 			assertNotNull("Expected non-null messages", members);
 			assertEquals("Expected 10 messages", members.items().length, 10);
 
@@ -1292,9 +1303,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	 * Validates channel removes all subscribers,
 	 * when {@code Channel#unsubscribe()} with no argument gets called.
 	 * </p>
-	 *
+	 * <p>
 	 * Tests RTP7a
-	 *
 	 * @throws AblyException
 	 */
 	@Test
@@ -1362,8 +1372,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			 */
 			assertThat(receivedMessageStack, is(emptyCollectionOf(PresenceMessage.class)));
 		} finally {
-			if (ably1 != null) ably1.close();
-			if (ably2 != null) ably2.close();
+			if(ably1 != null) ably1.close();
+			if(ably2 != null) ably2.close();
 		}
 	}
 
@@ -1372,7 +1382,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	 * Validates channel removes a subscriber,
 	 * when {@code Channel#unsubscribe()} gets called with a listener.
 	 * </p>
-	 *
 	 * @throws AblyException
 	 */
 	@Test
@@ -1440,8 +1449,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			 */
 			assertThat(receivedMessageStack, is(emptyCollectionOf(PresenceMessage.class)));
 		} finally {
-			if (ably1 != null) ably1.close();
-			if (ably2 != null) ably2.close();
+			if(ably1 != null) ably1.close();
+			if(ably2 != null) ably2.close();
 		}
 	}
 
@@ -1451,7 +1460,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	 * when they entered to the same channel and observing client subscribed
 	 * to multiple actions.
 	 * </p>
-	 *
 	 * @throws AblyException
 	 */
 	@Test
@@ -1511,12 +1519,12 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			 *	- we received all actions
 			 */
 			assertThat(receivedMessageStack.size(), is(equalTo(4)));
-			for (PresenceMessage message : receivedMessageStack) {
+			for(PresenceMessage message : receivedMessageStack) {
 				assertThat(message.action, isOneOf(Action.enter, Action.update, Action.leave));
 			}
 		} finally {
-			if (ably1 != null) ably1.close();
-			if (ably2 != null) ably2.close();
+			if(ably1 != null) ably1.close();
+			if(ably2 != null) ably2.close();
 		}
 	}
 
@@ -1526,7 +1534,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	 * when they entered to the same channel and observing client subscribed
 	 * to multiple actions.
 	 * </p>
-	 *
 	 * @throws AblyException
 	 */
 	@Test
@@ -1560,7 +1567,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			channel2.presence.subscribe(actions, new Presence.PresenceListener() {
 				@Override
 				public void onPresenceMessage(PresenceMessage message) {
-					synchronized (receivedMessageStack) {
+					synchronized(receivedMessageStack) {
 						receivedMessageStack.add(message);
 						receivedMessageStack.notify();
 					}
@@ -1577,24 +1584,25 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			 * is emitted from emitter client (ably1)
 			 */
 			try {
-				synchronized (receivedMessageStack) {
-					while (receivedMessageStack.size() == 0 ||
-							!receivedMessageStack.get(receivedMessageStack.size()-1).clientId.equals(ably1.options.clientId) ||
-							receivedMessageStack.get(receivedMessageStack.size()-1).action != Action.leave)
+				synchronized(receivedMessageStack) {
+					while(receivedMessageStack.size() == 0 ||
+							!receivedMessageStack.get(receivedMessageStack.size() - 1).clientId.equals(ably1.options.clientId) ||
+							receivedMessageStack.get(receivedMessageStack.size() - 1).action != Action.leave)
 						receivedMessageStack.wait();
 				}
-			} catch(InterruptedException e) {}
+			} catch(InterruptedException e) {
+			}
 
 			/* Validate that,
 			 *	- we received specific actions
 			 */
 			assertThat(receivedMessageStack.size(), is(equalTo(3)));
-			for (PresenceMessage message : receivedMessageStack) {
+			for(PresenceMessage message : receivedMessageStack) {
 				assertTrue(actions.contains(message.action));
 			}
 		} finally {
-			if (ably1 != null) ably1.close();
-			if (ably2 != null) ably2.close();
+			if(ably1 != null) ably1.close();
+			if(ably2 != null) ably2.close();
 		}
 	}
 
@@ -1604,7 +1612,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	 * when they entered to the same channel and observing client subscribed
 	 * to a single action.
 	 * </p>
-	 *
 	 * @throws AblyException
 	 */
 	@Test
@@ -1664,12 +1671,12 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			 *	- we received specific actions
 			 */
 			assertThat(receivedMessageStack, is(not(empty())));
-			for (PresenceMessage message : receivedMessageStack) {
+			for(PresenceMessage message : receivedMessageStack) {
 				assertThat(message.action, is(equalTo(action)));
 			}
 		} finally {
-			if (ably1 != null) ably1.close();
-			if (ably2 != null) ably2.close();
+			if(ably1 != null) ably1.close();
+			if(ably2 != null) ably2.close();
 		}
 	}
 
@@ -1682,7 +1689,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	 * <p>
 	 * Spec: RTP6c
 	 * </p>
-	 *
 	 * @throws AblyException
 	 */
 	@Test
@@ -1724,7 +1730,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			Presence.PresenceListener listener = new Presence.PresenceListener() {
 				@Override
 				public void onPresenceMessage(PresenceMessage messages) {
-					synchronized (presenceMessages) {
+					synchronized(presenceMessages) {
 						presenceMessages.add(messages);
 						presenceMessages.notify();
 					}
@@ -1746,33 +1752,33 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			try {
 				channel.presence.subscribe(new PresenceWaiter(channel));
 				fail("Presence.subscribe() shouldn't succeed");
-			} catch (AblyException e) {
+			} catch(AblyException e) {
 				assertEquals("Verify failure error code", e.errorInfo.code, 90001);
 			}
 
 			/* Change token to allow channel subscription so we can enter client and verify listener was set despite the failure */
 			final boolean[] authUpdated = new boolean[]{false};
 			ably.connection.on(ConnectionEvent.update, new ConnectionStateListener() {
-						@Override
-						public void onConnectionStateChanged(ConnectionStateChange state) {
-							synchronized (authUpdated) {
-								authUpdated[0] = true;
-								authUpdated.notify();
-							}
-						}
-					});
-
+				@Override
+				public void onConnectionStateChanged(ConnectionStateChange state) {
+					synchronized(authUpdated) {
+						authUpdated[0] = true;
+						authUpdated.notify();
+					}
+				}
+			});
 
 			ably.auth.authorize(null, new Auth.AuthOptions() {{
 				tokenDetails = token2;
 			}});
 
 			try {
-				synchronized (authUpdated) {
-					while (!authUpdated[0])
+				synchronized(authUpdated) {
+					while(!authUpdated[0])
 						authUpdated.wait();
 				}
-			} catch (InterruptedException e) {}
+			} catch(InterruptedException e) {
+			}
 
 			channel.attach();
 			new ChannelWaiter(channel).waitFor(ChannelState.attached);
@@ -1780,15 +1786,16 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			/* Now to ensure listener was set despite the error we enter a client */
 			channel.presence.enter(null, null);
 			try {
-				synchronized (presenceMessages) {
-					while (presenceMessages.size() == 0)
+				synchronized(presenceMessages) {
+					while(presenceMessages.size() == 0)
 						presenceMessages.wait();
 				}
-			} catch (InterruptedException e) {}
+			} catch(InterruptedException e) {
+			}
 
 			assertTrue("Verify listener was set despite channel attach failure",
 					presenceMessages.size() == 1 &&
-					presenceMessages.get(0).action == Action.enter && presenceMessages.get(0).clientId.equals(testClientId1));
+							presenceMessages.get(0).action == Action.enter && presenceMessages.get(0).clientId.equals(testClientId1));
 
 		} finally {
 			if(ably != null)
@@ -1805,7 +1812,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	 * <p>
 	 * Spec: RTP8d
 	 * </p>
-	 *
 	 * @throws AblyException
 	 */
 	@Test
@@ -1845,7 +1851,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	 * <p>
 	 * Spec: RTP11b
 	 * </p>
-	 *
 	 * @throws AblyException
 	 */
 	@Test
@@ -1882,7 +1887,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	 * <p>
 	 * Spec: RTP15e
 	 * </p>
-	 *
 	 * @throws AblyException
 	 */
 	@Test
@@ -1922,7 +1926,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	 * <p>
 	 * Spec: RTP15e
 	 * </p>
-	 *
 	 * @throws AblyException
 	 */
 	@Test
@@ -1962,7 +1965,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	 * <p>
 	 * Spec: RTP15e
 	 * </p>
-	 *
 	 * @throws AblyException
 	 */
 	@Test
@@ -1999,7 +2001,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	 * Validate {@code Presence#get(...)} throws an exception, when the channel
 	 * is in the FAILED state
 	 * </p>
-	 *
 	 * @throws AblyException
 	 */
 	@Test
@@ -2033,9 +2034,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 	/**
 	 * Test if after reattach when returning from suspended mode client re-enters the channel with the same data
-	 * @throws AblyException
-	 *
-	 * Tests RTP17, RTP19, RTP19a, RTP5f, RTP6b
+	 * @throws AblyException Tests RTP17, RTP19, RTP19a, RTP5f, RTP6b
 	 */
 	@Test
 	public void realtime_presence_suspended_reenter() throws AblyException {
@@ -2046,7 +2045,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 
-			for (int i=0; i<2; i++) {
+			for(int i = 0; i < 2; i++) {
 				final String channelName = "presence_suspended_reenter" + testParams.name + String.valueOf(i);
 
 				MockWebsocketFactory.allowSend();
@@ -2072,8 +2071,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				 * re-enter client2. On the second loop run we enter client2 and receive ATTACHED with
 				 * HAS_PRESENCE
 				 */
-				final boolean[] wrongPresenceEmitted = new boolean[] {false};
-				if (i == 1) {
+				final boolean[] wrongPresenceEmitted = new boolean[]{false};
+				if(i == 1) {
 					CompletionWaiter completionWaiter = new CompletionWaiter();
 					channel.presence.enterClient(testClientId1, presenceData, completionWaiter);
 					completionWaiter.waitFor();
@@ -2082,7 +2081,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 					channel.presence.subscribe(new Presence.PresenceListener() {
 						@Override
 						public void onPresenceMessage(PresenceMessage messages) {
-							if (messages.clientId.equals(testClientId1))
+							if(messages.clientId.equals(testClientId1))
 								wrongPresenceEmitted[0] = true;
 						}
 					});
@@ -2138,13 +2137,13 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 				try {
 					Thread.sleep(500);
-				} catch (InterruptedException e) {
+				} catch(InterruptedException e) {
 				}
 
 				AblyRest ablyRest = new AblyRest(opts);
 				io.ably.lib.rest.Channel restChannel = ablyRest.channels.get(channelName);
 				assertEquals("Verify presence data is received by the server",
-						restChannel.presence.get(null).items().length, i==0 ? 1 : 2);
+						restChannel.presence.get(null).items().length, i == 0 ? 1:2);
 
 				/* In both cases we should have one leave message in the leaveMessages */
 				assertEquals("Verify exactly one LEAVE message was generated", leaveMessages.size(), 1);
@@ -2152,7 +2151,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				assertTrue("Verify LEAVE message follows specs",
 						leaveMessage.action == Action.leave &&
 								leaveMessage.clientId.equals(testClientId2) && leaveMessage.id == null &&
-								Math.abs(leaveMessage.timestamp-reconnectTimestamp) < 500 &&
+								Math.abs(leaveMessage.timestamp - reconnectTimestamp) < 500 &&
 								leaveMessage.data.equals(presenceData));
 
 				/* According to RTP5f there should be no presence event emitted for client1 */
@@ -2193,11 +2192,11 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			presence.subscribe(new Presence.PresenceListener() {
 				@Override
 				public void onPresenceMessage(PresenceMessage message) {
-					synchronized (presenceMessages) {
+					synchronized(presenceMessages) {
 						assertNotEquals("Verify wrong message didn't pass the newness test",
 								message.data, wontPass);
 						// To exclude leave messages that sometimes sneak in let's collect only enter and update messages
-						if (message.action == Action.enter || message.action == Action.update) {
+						if(message.action == Action.enter || message.action == Action.update) {
 							presenceMessages.add(message);
 						}
 					}
@@ -2205,7 +2204,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			});
 
 			/* Test message newness criteria as described in RTP2b */
-			final PresenceMessage[] testData = new PresenceMessage[] {
+			final PresenceMessage[] testData = new PresenceMessage[]{
 					new PresenceMessage() {{
 						clientId = "1";
 						action = Action.enter;
@@ -2262,20 +2261,20 @@ public class RealtimePresenceTest extends ParameterizedTest {
 					}}
 			};
 
-			for (final PresenceMessage msg: testData) {
+			for(final PresenceMessage msg : testData) {
 				ProtocolMessage protocolMessage = new ProtocolMessage() {{
-						channel = channelName;
-						action = Action.presence;
-						presence = new PresenceMessage[]{msg};
-					}};
+					channel = channelName;
+					action = Action.presence;
+					presence = new PresenceMessage[]{msg};
+				}};
 
 				ably.connection.connectionManager.onMessage(null, protocolMessage);
 			}
 
 			int n = 0;
-			for (PresenceMessage testMsg: testData) {
-				if (testMsg.data != wontPass) {
-					PresenceMessage factualMsg = n < presenceMessages.size() ? presenceMessages.get(n++) : null;
+			for(PresenceMessage testMsg : testData) {
+				if(testMsg.data != wontPass) {
+					PresenceMessage factualMsg = n < presenceMessages.size() ? presenceMessages.get(n++):null;
 					assertTrue("Verify message passed newness test",
 							factualMsg != null && factualMsg.id.equals(testMsg.id));
 					assertEquals("Verify message was emitted on the presence object with original action",
@@ -2308,17 +2307,15 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			ably.connection.connectionManager.onMessage(null, syncMessage);
 
 			assertEquals("Verify result is the same in case of SYNC", syncPresenceMessages.size(), presenceMessages.size());
-			for (int i=0; i<syncPresenceMessages.size(); i++)
+			for(int i = 0; i < syncPresenceMessages.size(); i++)
 				assertTrue("Verify result is the same in case of SYNC",
 						syncPresenceMessages.get(i).id.equals(presenceMessages.get(i).id) &&
-						syncPresenceMessages.get(i).action.equals(presenceMessages.get(i).action));
-		}
-		catch (AblyException e) {
+								syncPresenceMessages.get(i).action.equals(presenceMessages.get(i).action));
+		} catch(AblyException e) {
 			System.out.println("Ably exception thrown in realtime_presence_map_test " + e);
 			fail("Ably exception thrown in realtime_presence_map_test " + e);
-		}
-		finally {
-			if (ably != null)
+		} finally {
+			if(ably != null)
 				ably.close();
 		}
 	}
@@ -2326,7 +2323,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	/**
 	 * Enter large (>100) number of clients so there are several sync messages, disconnect transport
 	 * in the middle and verify channel is re-syncing presence messages after transport reconnect
-	 *
+	 * <p>
 	 * Tests RTP3
 	 */
 	@Test
@@ -2393,7 +2390,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 						client2Channel.presence.subscribe(new Presence.PresenceListener() {
 							@Override
 							public void onPresenceMessage(PresenceMessage messages) {
-								if (!disconnectedTransport[0]) {
+								if(!disconnectedTransport[0]) {
 									MockWebsocketFactory.lastCreatedTransport.close(false);
 									connectionManager.onTransportUnavailable(MockWebsocketFactory.lastCreatedTransport,
 											null, new ErrorInfo("Mock", 40000));
@@ -2403,8 +2400,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 								presenceCount[0]++;
 							}
 						});
-					}
-					catch (AblyException e) {
+					} catch(AblyException e) {
 					}
 				}
 
@@ -2425,7 +2421,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			try {
 				Thread.sleep(500);
 				assertEquals("Verify number of received presence messages", client2Channel.presence.get(true).length, clientCount);
-			} catch (InterruptedException e) {}
+			} catch(InterruptedException e) {
+			}
 
 		} catch(AblyException e) {
 			e.printStackTrace();
@@ -2466,7 +2463,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				}
 			});
 
-			final PresenceMessage[] testPresence1 = new PresenceMessage[] {
+			final PresenceMessage[] testPresence1 = new PresenceMessage[]{
 					/* Will be discarded because we'll start new sync with different channelSerial */
 					new PresenceMessage() {{
 						clientId = "1";
@@ -2476,7 +2473,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 					}}
 			};
 
-			final PresenceMessage[] testPresence2 = new PresenceMessage[] {
+			final PresenceMessage[] testPresence2 = new PresenceMessage[]{
 					new PresenceMessage() {{
 						clientId = "2";
 						action = Action.enter;
@@ -2492,7 +2489,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 					}}
 			};
 
-			final PresenceMessage[] testPresence3 = new PresenceMessage[] {
+			final PresenceMessage[] testPresence3 = new PresenceMessage[]{
 					new PresenceMessage() {{
 						clientId = "3";
 						action = Action.leave;
@@ -2513,7 +2510,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 					}}
 			};
 
-			final boolean[] seenLeaveMessageAsAbsentForClient4 = new boolean[] {false};
+			final boolean[] seenLeaveMessageAsAbsentForClient4 = new boolean[]{false};
 			channel.presence.subscribe(Action.leave, new Presence.PresenceListener() {
 				@Override
 				public void onPresenceMessage(PresenceMessage message) {
@@ -2522,7 +2519,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 						 * Do not call it in states other than ATTACHED because of presence.get() side
 						 * effect of attaching channel
 						 */
-						if (message.clientId.equals("4") && message.action == Action.leave && channel.state == ChannelState.attached) {
+						if(message.clientId.equals("4") && message.action == Action.leave && channel.state == ChannelState.attached) {
 							/*
 							 * Client library won't return a presence message if it is stored as ABSENT
 							 * so the result of the presence.get() call should be empty. This is the
@@ -2531,7 +2528,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 							 */
 							seenLeaveMessageAsAbsentForClient4[0] = channel.presence.get("4", false).length == 0;
 						}
-					} catch (AblyException e) {}
+					} catch(AblyException e) {
+					}
 				}
 			});
 
@@ -2561,7 +2559,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 			assertTrue("Verify LEAVE message for client with id==4 was stored as ABSENT", seenLeaveMessageAsAbsentForClient4[0]);
 
-			PresenceMessage[] correctPresenceHistory = new PresenceMessage[] {
+			PresenceMessage[] correctPresenceHistory = new PresenceMessage[]{
 					/* client 1 enters (will later be discarded) */
 					new PresenceMessage(Action.enter, "1"),
 					/* client 2 enters */
@@ -2576,18 +2574,18 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			};
 
 			assertEquals("Verify number of presence messages", presenceHistory.size(), correctPresenceHistory.length);
-			for (int i=0; i<correctPresenceHistory.length; i++) {
+			for(int i = 0; i < correctPresenceHistory.length; i++) {
 				PresenceMessage factualMsg = presenceHistory.get(i);
 				PresenceMessage correctMsg = correctPresenceHistory[i];
 				assertTrue("Verify presence message correctness",
 						factualMsg.clientId.equals(correctMsg.clientId) && factualMsg.action == correctMsg.action);
 			}
 
-		} catch (AblyException e) {
+		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
-			if (ably != null)
+			if(ably != null)
 				ably.close();
 		}
 	}
@@ -2597,14 +2595,14 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	 * Tests RTP5a, RTP5b, RTP5c3, RTP16b
 	 */
 	@Test
-	public void presence_state_change () {
+	public void presence_state_change() {
 		AblyRealtime ably = null;
 		String oldTransport = Defaults.TRANSPORT;
 		try {
 			Defaults.TRANSPORT = MockWebsocketFactory.class.getName();
 
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-			opts.autoConnect = false;	/* to queue presence messages */
+			opts.autoConnect = false;    /* to queue presence messages */
 			ably = new AblyRealtime(opts);
 
 			final String channelName = "presence_state_change" + testParams.name;
@@ -2635,18 +2633,18 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			channel.presence.enterClient(testClientId2);
 
 			ProtocolMessage msg = new ProtocolMessage() {{
-					connectionId = connId;
-					action = ProtocolMessage.Action.sync;
-					channel = channelName;
-					presence = new PresenceMessage[] {
-							new PresenceMessage() {{
-								action = Action.present;
-								id = String.format("%s:0:0", connId);
-								timestamp = System.currentTimeMillis();
-								clientId = testClientId2;
-								connectionId = connId;
-							}}
-					};
+				connectionId = connId;
+				action = ProtocolMessage.Action.sync;
+				channel = channelName;
+				presence = new PresenceMessage[]{
+						new PresenceMessage() {{
+							action = Action.present;
+							id = String.format("%s:0:0", connId);
+							timestamp = System.currentTimeMillis();
+							clientId = testClientId2;
+							connectionId = connId;
+						}}
+				};
 			}};
 			ably.connection.connectionManager.onMessage(null, msg);
 
@@ -2679,11 +2677,11 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				}
 			});
 
-			final boolean[] reenterFailureReceived = new boolean[] {false};
+			final boolean[] reenterFailureReceived = new boolean[]{false};
 			channel.on(ChannelEvent.update, new ChannelStateListener() {
 				@Override
 				public void onChannelStateChanged(ChannelStateChange stateChange) {
-					if (stateChange.reason.code == 91004)
+					if(stateChange.reason.code == 91004)
 						reenterFailureReceived[0] = true;
 				}
 			});
@@ -2696,11 +2694,11 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			Thread.sleep(500);
 
 			assertTrue("Verify re-enter presence message failed", reenterFailureReceived[0]);
-		} catch (AblyException|InterruptedException e) {
+		} catch(AblyException | InterruptedException e) {
 			e.printStackTrace();
 			fail("Unexpected exception running test: " + e.getMessage());
 		} finally {
-			if (ably != null)
+			if(ably != null)
 				ably.close();
 			MockWebsocketFactory.allowSend();
 			Defaults.TRANSPORT = oldTransport;
@@ -2710,7 +2708,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	/**
 	 * Enter channel without subscribe permission, expect presence message from this connection
 	 * Test RTP17a
-	 *
+	 * <p>
 	 * Not functional yet
 	 */
 	@Test
@@ -2765,7 +2763,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			assertEquals("Verify total number of received presence messages", presenceMessages.length, 1);
 			assertEquals("Verify present message is valid", presenceMessages[0].data, presenceData);
 		} finally {
-			if (ably != null)
+			if(ably != null)
 				ably.close();
 		}
 	}
@@ -2773,7 +2771,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	/**
 	 * Test if Presence.syncComplete() works. Enter client on one ably connection and
 	 * wait for initial SYNC on another connection.
-	 *
+	 * <p>
 	 * Tests RTP13
 	 */
 	@Test
@@ -2797,12 +2795,12 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			channel2.presence.get(true);
 			/* Initial SYNC should be complete at this point */
 			assertTrue("Verify SYNC is complete", channel2.presence.syncComplete);
-		} catch (AblyException e) {
+		} catch(AblyException e) {
 			fail("Unexpected exception");
 		} finally {
-			if (ably1 != null)
+			if(ably1 != null)
 				ably1.close();
-			if (ably2 != null)
+			if(ably2 != null)
 				ably2.close();
 		}
 	}
@@ -2824,7 +2822,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			/* get first token */
 			Auth.TokenParams tokenParams = new Auth.TokenParams();
 			Capability capability = new Capability();
-			capability.addResource(channelName, "publish");	/* no presence permission! */
+			capability.addResource(channelName, "publish");    /* no presence permission! */
 			tokenParams.capability = capability.toString();
 			tokenParams.clientId = testClientId1;
 
@@ -2847,7 +2845,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			assertNotNull("Verify enter client failed", enterError);
 
 		} finally {
-			if (ably != null)
+			if(ably != null)
 				ably.close();
 		}
 	}
@@ -2902,7 +2900,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			assertNotNull("Verify enter client failed", enterErr);
 
 		} finally {
-			if (ably != null)
+			if(ably != null)
 				ably.close();
 		}
 	}
@@ -2958,7 +2956,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			assertNotNull("Verify error result", updateErr);
 			assertEquals("Verify error result with expected error code", updateErr.code, 40000);
 		} finally {
-			if (ably != null)
+			if(ably != null)
 				ably.close();
 		}
 	}
@@ -2966,7 +2964,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	/**
 	 * Verify protocol messages sent on Presence.enter() follow specs if sent from correct state and
 	 * the call fails if sent from DETACHED state
-	 *
+	 * <p>
 	 * Tests RTP8c, RTP8g
 	 */
 	@Test
@@ -2981,8 +2979,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			MockWebsocketFactory.allowSend(new MockWebsocketFactory.MessageFilter() {
 				@Override
 				public boolean matches(ProtocolMessage message) {
-					if (message.action == ProtocolMessage.Action.presence && message.presence != null) {
-						synchronized (sentPresence) {
+					if(message.action == ProtocolMessage.Action.presence && message.presence != null) {
+						synchronized(sentPresence) {
 							Collections.addAll(sentPresence, message.presence);
 							sentPresence.notify();
 						}
@@ -2999,8 +2997,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			/* using testClientId1 */
 			channel.presence.enter(null, null);
 
-			synchronized (sentPresence) {
-				while (sentPresence.size() < 1)
+			synchronized(sentPresence) {
+				while(sentPresence.size() < 1)
 					sentPresence.wait();
 			}
 
@@ -3016,12 +3014,12 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			try {
 				channel.presence.enter(null, null);
 				fail("Presence.enter() shouldn't succeed in detached state");
-			} catch (AblyException e) {
+			} catch(AblyException e) {
 				assertEquals("Verify exception error code", e.errorInfo.code, 91001 /* unable to enter presence channel (invalid channel state) */);
 			}
 
 		} finally {
-			if (ably != null)
+			if(ably != null)
 				ably.close();
 			/* reset filter */
 			MockWebsocketFactory.allowSend();
@@ -3032,7 +3030,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	/**
 	 * Verify protocol messages sent on Presence.enter() follow specs if sent from correct state and
 	 * the call fails if sent from DETACHED state
-	 *
+	 * <p>
 	 * Tests RTP8c, RTP8g
 	 */
 	@Test
@@ -3047,8 +3045,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			MockWebsocketFactory.allowSend(new MockWebsocketFactory.MessageFilter() {
 				@Override
 				public boolean matches(ProtocolMessage message) {
-					if (message.action == ProtocolMessage.Action.presence && message.presence != null) {
-						synchronized (sentPresence) {
+					if(message.action == ProtocolMessage.Action.presence && message.presence != null) {
+						synchronized(sentPresence) {
 							Collections.addAll(sentPresence, message.presence);
 							sentPresence.notify();
 						}
@@ -3064,8 +3062,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			/* using testClientId2 */
 			channel.presence.enterClient(testClientId2);
 
-			synchronized (sentPresence) {
-				while (sentPresence.size() < 1)
+			synchronized(sentPresence) {
+				while(sentPresence.size() < 1)
 					sentPresence.wait();
 			}
 
@@ -3081,12 +3079,12 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			try {
 				channel.presence.enterClient("testClient3");
 				fail("Presence.enterClient() shouldn't succeed in detached state");
-			} catch (AblyException e) {
+			} catch(AblyException e) {
 				assertEquals("Verify exception error code", e.errorInfo.code, 91001 /* unable to enter presence channel (invalid channel state) */);
 			}
 
 		} finally {
-			if (ably != null)
+			if(ably != null)
 				ably.close();
 			/* reset filter */
 			MockWebsocketFactory.allowSend();
@@ -3117,7 +3115,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			channel2.presence.subscribe(new Presence.PresenceListener() {
 				@Override
 				public void onPresenceMessage(PresenceMessage messages) {
-					synchronized (receivedPresenceData) {
+					synchronized(receivedPresenceData) {
 						receivedPresenceData.add(messages.data);
 						receivedPresenceData.notify();
 					}
@@ -3125,14 +3123,14 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			});
 
 			String testStringData = "123";
-			byte[] testByteData = new byte[] {1, 2, 3};
+			byte[] testByteData = new byte[]{1, 2, 3};
 			JsonElement testJsonData = new JsonParser().parse("{\"var1\":\"val1\", \"var2\": \"val2\"}");
 
 			channel1.presence.enterClient("1", testStringData);
 			channel1.presence.enterClient("2", testByteData);
 			channel1.presence.enterClient("3", testJsonData);
-			synchronized (receivedPresenceData) {
-				while (receivedPresenceData.size() < 3)
+			synchronized(receivedPresenceData) {
+				while(receivedPresenceData.size() < 3)
 					receivedPresenceData.wait();
 			}
 
@@ -3140,7 +3138,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			assertEquals("Verify string data", receivedPresenceData.get(0), testStringData);
 			assertTrue("Verify byte[] data",
 					receivedPresenceData.get(1) instanceof byte[] &&
-					Arrays.equals((byte[])receivedPresenceData.get(1), testByteData));
+							Arrays.equals((byte[]) receivedPresenceData.get(1), testByteData));
 			assertEquals("Verify JSON data", receivedPresenceData.get(2), testJsonData);
 
 			/* use data from ENTER message */
@@ -3148,8 +3146,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			/* use different data */
 			channel1.presence.leaveClient("2", "leave");
 
-			synchronized (receivedPresenceData) {
-				while (receivedPresenceData.size() < 5)
+			synchronized(receivedPresenceData) {
+				while(receivedPresenceData.size() < 5)
 					receivedPresenceData.wait();
 			}
 
@@ -3157,9 +3155,9 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			assertEquals("Verify overridden leave data", receivedPresenceData.get(4), "leave");
 
 		} finally {
-			if (ably1 != null)
+			if(ably1 != null)
 				ably1.close();
-			if (ably2 != null)
+			if(ably2 != null)
 				ably2.close();
 		}
 	}
@@ -3240,13 +3238,13 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			try {
 				channel2.presence.get(true);
 				fail("Presence.get() with waitForSync=true shouldn't succeed in SUSPENDED state");
-			} catch (AblyException e) {
+			} catch(AblyException e) {
 				assertEquals("Verify correct error code for Presence.get() with waitForSync=true in SUSPENDED state", e.errorInfo.code, 91005);
 			}
 		} finally {
-			if (ably1 != null)
+			if(ably1 != null)
 				ably1.close();
-			if (ably2 != null)
+			if(ably2 != null)
 				ably2.close();
 		}
 	}
@@ -3254,9 +3252,9 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	/**
 	 * Authenticate using wildcard token, initialize AblyRealtime so clientId is not known a priori,
 	 * call enter() without attaching first, start connection
-	 *
+	 * <p>
 	 * Expect NACK from the server because client is unidentified
-	 *
+	 * <p>
 	 * Tests RTP8i, RTP8f, partial tests for RTP9e, RTP10e
 	 */
 	@Test
@@ -3282,7 +3280,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			ably = new AblyRealtime(opts);
 
 			/* enter without attaching first */
-			Channel channel = ably.channels.get("enter_before_clientid_is_known"+testParams.name);
+			Channel channel = ably.channels.get("enter_before_clientid_is_known" + testParams.name);
 			CompletionWaiter completionWaiter = new CompletionWaiter();
 			channel.presence.enter(null, completionWaiter);
 
@@ -3313,8 +3311,94 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			assertEquals("Verify error code", completionWaiter.error.code, 91000);
 
 		} finally {
-			if (ably != null)
+			if(ably != null)
 				ably.close();
 		}
+	}
+
+	/**
+	 * To Test PresenceMessage.fromEncoded(JsonObject, ChannelOptions) and PresenceMessage.fromEncoded(String, ChannelOptions)
+	 * Refer Spec TP4
+	 * @throws AblyException
+	 */
+	@Test
+	public void message_from_encoded_json_object() throws AblyException {
+		ChannelOptions options = null;
+		byte[] data = "0123456789".getBytes();
+		PresenceMessage encoded = new PresenceMessage(Action.present, "client-123");
+		encoded.data = data;
+		encoded.encode(options);
+
+		PresenceMessage decoded = PresenceMessage.fromEncoded(Serialisation.gson.toJson(encoded), options);
+		assertEquals(encoded.clientId, decoded.clientId);
+		assertArrayEquals(data, (byte[]) decoded.data);
+
+		/*Test JSON Data decoding in PresenceMessage.fromEncoded(JsonObject)*/
+		JsonObject person = new JsonObject();
+		person.addProperty("name", "Amit");
+		person.addProperty("country", "Interlaken Ost");
+
+		PresenceMessage userDetails = new PresenceMessage(Action.absent, "client-123", person);
+		userDetails.encode(options);
+
+		PresenceMessage decodedMessage1 = PresenceMessage.fromEncoded(Serialisation.gson.toJsonTree(userDetails).getAsJsonObject(), null);
+		assertEquals(person, decodedMessage1.data);
+
+		/*Test PresenceMessage.fromEncoded(String)*/
+		PresenceMessage decodedMessage2 = PresenceMessage.fromEncoded(Serialisation.gson.toJson(userDetails), options);
+		assertEquals(person, decodedMessage2.data);
+
+		/*Test invalid case.*/
+		try {
+			//We pass invalid PresenceMessage object
+			PresenceMessage.fromEncoded(person, options);
+			fail();
+		} catch(Exception e) {/*ignore as we are expecting it to fail.*/}
+	}
+
+	/**
+	 * To test PresenceMessage.fromEncodedArray(JsonArray, ChannelOptions) and PresenceMessage.fromEncodedArray(String, ChannelOptions)
+	 * Refer Spec. TP4
+	 * @throws AblyException
+	 */
+	@Test
+	public void messages_from_encoded_json_array() throws AblyException {
+		JsonArray fixtures = null;
+		MessagesData testMessages = null;
+		try {
+			testMessages = (MessagesData) Setup.loadJson(testMessagesEncodingFile, MessagesData.class);
+			JsonObject jsonObject = (JsonObject) Setup.loadJson(testMessagesEncodingFile, JsonObject.class);
+			//We use this as-is for decoding purposes.
+			fixtures = jsonObject.getAsJsonArray("messages");
+		} catch(IOException e) {
+			fail();
+			return;
+		}
+
+		PresenceMessage[] decodedMessages = PresenceMessage.fromEncodedArray(fixtures, null);
+		for(int index = 0; index < decodedMessages.length; index++) {
+			PresenceMessage testInputMsg = testMessages.messages[index];
+			testInputMsg.decode(null);
+			if(testInputMsg.data instanceof byte[]) {
+				assertArrayEquals((byte[]) testInputMsg.data, (byte[]) decodedMessages[index].data);
+			} else {
+				assertEquals(testInputMsg.data, decodedMessages[index].data);
+			}
+		}
+		/*Test PresenceMessage.fromEncodedArray(String)*/
+		String fixturesArray = Serialisation.gson.toJson(fixtures);
+		PresenceMessage[] decodedMessages2 = PresenceMessage.fromEncodedArray(fixturesArray, null);
+		for(int index = 0; index < decodedMessages2.length; index++) {
+			PresenceMessage testInputMsg = testMessages.messages[index];
+			if(testInputMsg.data instanceof byte[]) {
+				assertArrayEquals((byte[]) testInputMsg.data, (byte[]) decodedMessages2[index].data);
+			} else {
+				assertEquals(testInputMsg.data, decodedMessages2[index].data);
+			}
+		}
+	}
+
+	static class MessagesData {
+		public PresenceMessage[] messages;
 	}
 }

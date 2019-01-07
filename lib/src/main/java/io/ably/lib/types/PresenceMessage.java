@@ -3,17 +3,11 @@ package io.ably.lib.types;
 import java.io.IOException;
 import java.lang.reflect.Type;
 
+import com.google.gson.*;
+import io.ably.lib.util.Serialisation;
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
-
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 
 import io.ably.lib.util.Log;
 
@@ -119,6 +113,89 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
 
 	static PresenceMessage fromMsgpack(MessageUnpacker unpacker) throws IOException {
 		return (new PresenceMessage()).readMsgpack(unpacker);
+	}
+
+	/**
+	 * Refer Spec TP4 <br>
+	 * An alternative constructor that take an PresenceMessage-JSON object and a channelOptions (optional), and return a PresenceMessage
+	 * @param messageJsonObject
+	 * @param channelOptions
+	 * @return
+	 * @throws MessageDecodeException
+	 */
+	public static PresenceMessage fromEncoded(JsonObject messageJsonObject, ChannelOptions channelOptions) throws MessageDecodeException {
+		try {
+			PresenceMessage presenceMessage = Serialisation.gson.fromJson(messageJsonObject, PresenceMessage.class);
+			presenceMessage.decode(channelOptions);
+			if(presenceMessage.action == null){
+				throw MessageDecodeException.fromDescription("Action cannot be empty/null");
+			}
+			return presenceMessage;
+		} catch(Exception e) {
+			Log.e(PresenceMessage.class.getName(), e.getMessage(), e);
+			throw MessageDecodeException.fromDescription(e.getMessage());
+		}
+	}
+
+	/**
+	 * Refer Spec TP4 <br>
+	 * An alternative constructor that takes a Stringified PresenceMessage-JSON and a channelOptions (optional), and return a PresenceMessage
+	 * @param messageJson
+	 * @param channelOptions
+	 * @return
+	 * @throws MessageDecodeException
+	 */
+	public static PresenceMessage fromEncoded(String messageJson, ChannelOptions channelOptions) throws MessageDecodeException {
+		try {
+			JsonObject jsonObject = Serialisation.gson.fromJson(messageJson, JsonObject.class);
+			return fromEncoded(jsonObject, channelOptions);
+		} catch(Exception e) {
+			Log.e(PresenceMessage.class.getName(), e.getMessage(), e);
+			throw MessageDecodeException.fromDescription(e.getMessage());
+		}
+	}
+
+	/**
+	 * Refer Spec TP4 <br>
+	 * An alternative constructor that takes a PresenceMessage JsonArray and a channelOptions (optional), and return array of PresenceMessages.
+	 * @param presenceMsgArray
+	 * @param channelOptions
+	 * @return
+	 * @throws MessageDecodeException
+	 */
+	public static PresenceMessage[] fromEncodedArray(JsonArray presenceMsgArray, ChannelOptions channelOptions) throws MessageDecodeException {
+		try {
+			PresenceMessage[] messages = new PresenceMessage[presenceMsgArray.size()];
+			for(int index = 0; index < presenceMsgArray.size(); index++) {
+				JsonElement jsonElement = presenceMsgArray.get(index);
+				if(!jsonElement.isJsonObject()) {
+					throw new JsonParseException("Not all JSON elements are of type JSON Object.");
+				}
+				messages[index] = fromEncoded(jsonElement.getAsJsonObject(), channelOptions);
+			}
+			return messages;
+		} catch(Exception e) {
+			e.printStackTrace();
+			throw MessageDecodeException.fromDescription(e.getMessage());
+		}
+	}
+
+	/**
+	 * Refer Spec TP4 <br>
+	 * An alternative constructor that takes a Stringified PresenceMessages Array and a channelOptions (optional), and return array of PresenceMessages.
+	 * @param presenceMsgArray
+	 * @param channelOptions
+	 * @return
+	 * @throws MessageDecodeException
+	 */
+	public static PresenceMessage[] fromEncodedArray(String presenceMsgArray, ChannelOptions channelOptions) throws MessageDecodeException {
+		try {
+			JsonArray jsonArray = Serialisation.gson.fromJson(presenceMsgArray, JsonArray.class);
+			return fromEncodedArray(jsonArray, channelOptions);
+		} catch(Exception e) {
+			e.printStackTrace();
+			throw MessageDecodeException.fromDescription(e.getMessage());
+		}
 	}
 
 	public static class ActionSerializer implements JsonDeserializer<Action> {
