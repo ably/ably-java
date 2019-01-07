@@ -175,7 +175,7 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
 			}
 			return messages;
 		} catch(Exception e) {
-			e.printStackTrace();
+			Log.e(PresenceMessage.class.getName(), e.getMessage(), e);
 			throw MessageDecodeException.fromDescription(e.getMessage());
 		}
 	}
@@ -193,7 +193,7 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
 			JsonArray jsonArray = Serialisation.gson.fromJson(presenceMsgArray, JsonArray.class);
 			return fromEncodedArray(jsonArray, channelOptions);
 		} catch(Exception e) {
-			e.printStackTrace();
+			Log.e(PresenceMessage.class.getName(), e.getMessage(), e);
 			throw MessageDecodeException.fromDescription(e.getMessage());
 		}
 	}
