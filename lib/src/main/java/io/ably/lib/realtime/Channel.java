@@ -304,7 +304,14 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 	 * set up timer to reattach it later
 	 */
 	synchronized private void attachWithTimeout(final CompletionListener listener) throws AblyException {
-		final Timer currentAttachTimer = new Timer();
+		Timer currentAttachTimer;
+		try {
+			currentAttachTimer = new Timer();
+		} catch(Throwable t) {
+			/* an exception instancing the timer can arise because the runtime is exiting */
+			callCompletionListenerError(listener, ErrorInfo.fromThrowable(t));
+			return;
+		}
 		attachTimer = currentAttachTimer;
 
 		try {
@@ -331,6 +338,7 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 			return;
 		}
 
+		final Timer inProgressTimer = currentAttachTimer;
 		attachTimer.schedule(
 				new TimerTask() {
 					@Override
@@ -338,7 +346,7 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 						String errorMessage = String.format("Attach timed out for channel %s", name);
 						Log.v(TAG, errorMessage);
 						synchronized (Channel.this) {
-							if(attachTimer != currentAttachTimer)
+							if(attachTimer != inProgressTimer)
 								return;
 							attachTimer = null;
 							if(state == ChannelState.attaching) {
@@ -355,14 +363,21 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 	 * try to attach the channel
 	 */
 	synchronized private void reattachAfterTimeout() {
-		final Timer currentReattachTimer = new Timer();
+		Timer currentReattachTimer;
+		try {
+			currentReattachTimer = new Timer();
+		} catch(Throwable t) {
+			/* an exception instancing the timer can arise because the runtime is exiting */
+			return;
+		}
 		reattachTimer = currentReattachTimer;
 
+		final Timer inProgressTimer = currentReattachTimer;
 		reattachTimer.schedule(new TimerTask() {
 			@Override
 			public void run() {
 				synchronized (Channel.this) {
-					if (currentReattachTimer != reattachTimer)
+					if (inProgressTimer != reattachTimer)
 						return;
 					reattachTimer = null;
 					if (state == ChannelState.suspended) {
@@ -383,7 +398,14 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 	 */
 	synchronized private void detachWithTimeout(final CompletionListener listener) {
 		final ChannelState originalState = state;
-		final Timer currentDetachTimer = new Timer();
+		Timer currentDetachTimer;
+		try {
+			currentDetachTimer = new Timer();
+		} catch(Throwable t) {
+			/* an exception instancing the timer can arise because the runtime is exiting */
+			callCompletionListenerError(listener, ErrorInfo.fromThrowable(t));
+			return;
+		}
 		attachTimer = currentDetachTimer;
 
 		try {
@@ -409,11 +431,12 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 			return;
 		}
 
+		final Timer inProgressTimer = currentDetachTimer;
 		attachTimer.schedule(new TimerTask() {
 			@Override
 			public void run() {
 				synchronized (Channel.this) {
-					if (currentDetachTimer != attachTimer)
+					if (inProgressTimer != attachTimer)
 						return;
 					attachTimer = null;
 					if (state == ChannelState.detaching) {
