@@ -43,6 +43,10 @@ public class Defaults {
 	public static long maxIdleInterval = 20000L;
 	/* DF1a */
 	public static long connectionStateTtl = 60000L;
+	/* TO3l8 64KB*/
+	public static long maxMessageSize = 65536;
+	/* TO3l9 512KB*/
+	public static long maxFrameSize = 524288;
 
 	public static final String[] TRANSPORTS         = new String[]{"web_socket"};
 	public static String TRANSPORT = "io.ably.lib.transport.WebSocketTransport$Factory";

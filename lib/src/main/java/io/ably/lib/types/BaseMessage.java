@@ -248,5 +248,25 @@ public class BaseMessage implements Cloneable {
 		}
 	}
 
+	public int size(){
+		int total = 0;
+		Object dataClone = data;
+		int dataSize = 0;
+		if(data != null) {
+			if(data instanceof JsonElement) {
+				dataSize = Serialisation.gson.toJson((JsonElement)data).length();
+			} else if(data instanceof byte[]){
+				dataSize = ((byte[])dataClone).length;
+			} else if(data instanceof String){
+				dataSize = ((String) data).length();
+			}
+		}
+		total += dataSize;
+		if(clientId!=null){
+			total+=clientId.length();
+		}
+		return total;
+	}
+
 	private static final String TAG = BaseMessage.class.getName();
 }

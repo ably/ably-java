@@ -138,6 +138,13 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
 		}		
 	}
 
+	public static long getMessagesSize(PresenceMessage[] messages){
+		long total =0;
+		for(PresenceMessage message: messages){
+			total+=message.size();
+		}
+		return total;
+	}
 	/**
 	 * Get the member key for the PresenceMessage.
 	 * @return

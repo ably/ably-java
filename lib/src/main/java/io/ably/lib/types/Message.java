@@ -64,6 +64,15 @@ public class Message extends BaseMessage {
 		return result.toString();
 	}
 
+	public int size(){
+		int total = super.size();
+		if(name!=null){
+			total += name.length();
+		}
+
+		return total;
+	}
+
 	void writeMsgpack(MessagePacker packer) throws IOException {
 		int fieldCount = super.countFields();
 		if(name != null) ++fieldCount;
@@ -141,6 +150,14 @@ public class Message extends BaseMessage {
 			if(message.name != null) json.addProperty("name", message.name);
 			return json;
 		}
+	}
+
+	public static long getMessagesSize(Message[] messages){
+		long total =0;
+		for(Message message: messages){
+			total+=message.size();
+		}
+		return total;
 	}
 
 	private static final String TAG = Message.class.getName();

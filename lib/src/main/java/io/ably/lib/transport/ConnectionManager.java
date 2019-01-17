@@ -6,13 +6,8 @@ import io.ably.lib.http.HttpHelpers;
 import io.ably.lib.realtime.*;
 import io.ably.lib.transport.ITransport.ConnectListener;
 import io.ably.lib.transport.ITransport.TransportParams;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ConnectionDetails;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.types.*;
 import io.ably.lib.types.ProtocolMessage.Action;
-import io.ably.lib.types.ProtocolSerializer;
 import io.ably.lib.util.Log;
 
 import java.util.ArrayList;
@@ -153,6 +148,8 @@ public class ConnectionManager implements ConnectListener {
 
 	long maxIdleInterval = Defaults.maxIdleInterval;
 	long connectionStateTtl = Defaults.connectionStateTtl;
+	long maxFrameSize = Defaults.maxFrameSize;
+	long maxMessageSize = Defaults.maxMessageSize;
 
 	public ErrorInfo getStateErrorInfo() {
 		return stateError != null ? stateError : state.defaultErrorInfo;
@@ -265,7 +262,7 @@ public class ConnectionManager implements ConnectListener {
 			for(Channel channel : ably.channels.values()) {
 				channel.setConnected();
 			}
-		} else { 
+		} else {
 			if(!state.queueEvents) {
 				failQueuedMessages(state.defaultErrorInfo);
 			}
@@ -586,6 +583,8 @@ public class ConnectionManager implements ConnectListener {
 		/* Get any parameters from connectionDetails. */
 		maxIdleInterval = connectionDetails.maxIdleInterval;
 		connectionStateTtl = connectionDetails.connectionStateTtl;
+		maxMessageSize = connectionDetails.maxMessageSize;
+		maxFrameSize = connectionDetails.maxFrameSize;
 
 		/* set the clientId resolved from token, if any */
 		String clientId = connectionDetails.clientId;
@@ -1075,7 +1074,7 @@ public class ConnectionManager implements ConnectListener {
 				if(queueSize > 0) {
 					QueuedMessage lastQueued = queuedMessages.get(queueSize - 1);
 					ProtocolMessage lastMessage = lastQueued.msg;
-					if(ProtocolMessage.mergeTo(lastMessage, msg)) {
+					if(checkMerge(lastMessage, msg)) {
 						if(!lastQueued.isMerged) {
 							lastQueued.listener = new CompletionListener.Multicaster(lastQueued.listener);
 							lastQueued.isMerged = true;
@@ -1089,6 +1088,61 @@ public class ConnectionManager implements ConnectListener {
 			}
 		}
 		throw AblyException.fromErrorInfo(state.defaultErrorInfo);
+	}
+
+	private boolean checkMerge(ProtocolMessage dest, ProtocolMessage src) {
+		boolean result = false;
+		Action action;
+		if(dest.channel == src.channel) {
+			if((action = dest.action) == src.action) {
+				switch(action) {
+					case message: {
+						Message[] srcMessages = src.messages;
+						Message[] destMessages = dest.messages;
+						long destMessagesSize = Message.getMessagesSize(destMessages);
+						/* RTL6d1 */
+						if (destMessagesSize >= maxMessageSize) {
+							break;
+						}
+						int count =0;
+						for (count = 0; count < srcMessages.length; count++) {
+							int size = srcMessages[count].size();
+							if ((destMessagesSize += size) > maxMessageSize) {
+								break;
+							}
+						}
+						Message[] mergedMessages = dest.messages = new Message[destMessages.length + count];
+						System.arraycopy(mergedMessages, 0, destMessages, 0, destMessages.length);
+						System.arraycopy(mergedMessages, destMessages.length, srcMessages, 0, count);
+						result = true;
+					}
+					break;
+					case presence: {
+						PresenceMessage[] srcMessages = src.presence;
+						PresenceMessage[] destMessages = dest.presence;
+						long destMessagesSize = PresenceMessage.getMessagesSize(destMessages);
+						/* RTL6d1 */
+						if (destMessagesSize >= maxMessageSize) {
+							break;
+						}
+						int count =0;
+						for (count = 0; count < srcMessages.length; count++) {
+							int size = srcMessages[count].size();
+							if ((destMessagesSize += size) > maxMessageSize) {
+								break;
+							}
+						}
+						PresenceMessage[] mergedMessages = dest.presence = new PresenceMessage[destMessages.length + srcMessages.length];
+						System.arraycopy(mergedMessages, 0, destMessages, 0, destMessages.length);
+						System.arraycopy(mergedMessages, destMessages.length, srcMessages, 0, count);
+						result = true;
+					}
+					break;
+					default:
+				}
+			}
+		}
+		return result;
 	}
 
 	private void sendImpl(ProtocolMessage message, CompletionListener listener) throws AblyException {
