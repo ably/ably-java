@@ -1112,8 +1112,8 @@ public class ConnectionManager implements ConnectListener {
 							}
 						}
 						Message[] mergedMessages = dest.messages = new Message[destMessages.length + count];
-						System.arraycopy(mergedMessages, 0, destMessages, 0, destMessages.length);
-						System.arraycopy(mergedMessages, destMessages.length, srcMessages, 0, count);
+						System.arraycopy(destMessages, 0, mergedMessages, 0, destMessages.length);
+						System.arraycopy(srcMessages, 0, mergedMessages, destMessages.length, count);
 						result = true;
 					}
 					break;
@@ -1133,8 +1133,8 @@ public class ConnectionManager implements ConnectListener {
 							}
 						}
 						PresenceMessage[] mergedMessages = dest.presence = new PresenceMessage[destMessages.length + srcMessages.length];
-						System.arraycopy(mergedMessages, 0, destMessages, 0, destMessages.length);
-						System.arraycopy(mergedMessages, destMessages.length, srcMessages, 0, count);
+						System.arraycopy(destMessages, 0, mergedMessages, 0, destMessages.length);
+						System.arraycopy(srcMessages, 0, mergedMessages, destMessages.length, count);
 						result = true;
 					}
 					break;
