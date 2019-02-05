@@ -1097,6 +1097,9 @@ public class ConnectionManager implements ConnectListener {
 			if((action = dest.action) == src.action) {
 				switch(action) {
 					case message: {
+						if(dest.messages == null || dest.messages.length == 0){
+							break;
+						}
 						Message[] srcMessages = src.messages;
 						Message[] destMessages = dest.messages;
 						long destMessagesSize = Message.getMessagesSize(destMessages);
@@ -1118,6 +1121,9 @@ public class ConnectionManager implements ConnectListener {
 					}
 					break;
 					case presence: {
+						if(dest.messages == null || dest.messages.length == 0){
+							break;
+						}
 						PresenceMessage[] srcMessages = src.presence;
 						PresenceMessage[] destMessages = dest.presence;
 						long destMessagesSize = PresenceMessage.getMessagesSize(destMessages);
