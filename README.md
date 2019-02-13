@@ -4,7 +4,7 @@
 |---------|------|
 | [ ![Download](https://api.bintray.com/packages/ably-io/ably/ably-android/images/download.svg) ](https://bintray.com/ably-io/ably/ably-android/_latestVersion) | [ ![Download](https://api.bintray.com/packages/ably-io/ably/ably-java/images/download.svg) ](https://bintray.com/ably-io/ably/ably-java/_latestVersion) |
 
-A Java Realtime and REST client library for [Ably Realtime](https://www.ably.io), the realtime messaging and data delivery service.
+A Java Realtime and REST client library for [Ably Realtime](https://www.ably.io), the realtime messaging and data delivery service. You can visit the [Feature Support Matrix](https://www.ably.io/feature-support-matrix) to see the list of all the available features.
 
 ## Supported Platforms
 
