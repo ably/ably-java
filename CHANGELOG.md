@@ -1,5 +1,13 @@
 # Change Log
 
+## [v1.0.12](https://github.com/ably/ably-java/tree/v1.0.12) (2019-02-13)
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.0.11...v1.0.12)
+
+**Merged pull requests:**
+
+- Implemented feature Spec - TP4 [\#451](https://github.com/ably/ably-java/pull/451) ([amsurana](https://github.com/amsurana))
+- Implemented Spec: TM3, Message.fromEncoded [\#446](https://github.com/ably/ably-java/pull/446) ([amsurana](https://github.com/amsurana))
+
 ## [v1.0.11](https://github.com/ably/ably-java/tree/v1.0.11)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.0.10...v1.0.11)
