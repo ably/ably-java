@@ -3,7 +3,6 @@ package io.ably.lib.realtime;
 import io.ably.lib.http.BasePaginatedQuery;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
-import io.ably.lib.http.PaginatedQuery;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ConnectionManager.QueuedMessage;
 import io.ably.lib.transport.Defaults;
@@ -125,15 +124,14 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 				}
 				return;
 			case attached:
-				if(listener != null) {
-					listener.onSuccess();
-				}
+				callCompletionListenerSuccess(listener);
 				return;
 			default:
 		}
 		ConnectionManager connectionManager = ably.connection.connectionManager;
-		if(!connectionManager.isActive())
+		if(!connectionManager.isActive()) {
 			throw AblyException.fromErrorInfo(connectionManager.getStateErrorInfo());
+		}
 
 		/* send attach request and pending state */
 		Log.v(TAG, "attach(); channel = " + name + "; sending ATTACH request");
@@ -177,9 +175,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		switch(state) {
 			case initialized:
 			case detached: {
-				if(listener != null) {
-					listener.onSuccess();
-				}
+				callCompletionListenerSuccess(listener);
 				return;
 			}
 			case detaching:
@@ -231,6 +227,26 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	 * internal
 	 *
 	 */
+	private static void callCompletionListenerSuccess(CompletionListener listener) {
+		if(listener != null) {
+			try {
+				listener.onSuccess();
+			} catch(Throwable t) {
+				Log.e(TAG, "Unexpected exception calling CompletionListener", t);
+			}
+		}
+	}
+
+	private static void callCompletionListenerError(CompletionListener listener, ErrorInfo err) {
+		if(listener != null) {
+			try {
+				listener.onError(err);
+			} catch(Throwable t) {
+				Log.e(TAG, "Unexpected exception calling CompletionListener", t);
+			}
+		}
+	}
+
 	private void setAttached(ProtocolMessage message) {
 		clearAttachTimers();
 		boolean resumed = (message.flags & ( 1 << Flag.resumed.ordinal())) != 0;
@@ -288,7 +304,14 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	 * set up timer to reattach it later
 	 */
 	synchronized private void attachWithTimeout(final CompletionListener listener) throws AblyException {
-		final Timer currentAttachTimer = new Timer();
+		Timer currentAttachTimer;
+		try {
+			currentAttachTimer = new Timer();
+		} catch(Throwable t) {
+			/* an exception instancing the timer can arise because the runtime is exiting */
+			callCompletionListenerError(listener, ErrorInfo.fromThrowable(t));
+			return;
+		}
 		attachTimer = currentAttachTimer;
 
 		try {
@@ -296,25 +319,26 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 				@Override
 				public void onSuccess() {
 					clearAttachTimers();
-					if (listener != null)
-						listener.onSuccess();
+					callCompletionListenerSuccess(listener);
 				}
 
 				@Override
 				public void onError(ErrorInfo reason) {
 					clearAttachTimers();
-					if (listener != null)
-						listener.onError(reason);
+					callCompletionListenerError(listener, reason);
 				}
 			});
 		} catch(AblyException e) {
 			attachTimer = null;
+			callCompletionListenerError(listener, e.errorInfo);
 		}
 
-		if(attachTimer == null)
+		if(attachTimer == null) {
 			/* operation has already succeeded or failed, no need to set the timer */
 			return;
+		}
 
+		final Timer inProgressTimer = currentAttachTimer;
 		attachTimer.schedule(
 				new TimerTask() {
 					@Override
@@ -322,8 +346,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 						String errorMessage = String.format("Attach timed out for channel %s", name);
 						Log.v(TAG, errorMessage);
 						synchronized (ChannelBase.this) {
-							if(attachTimer != currentAttachTimer)
+							if(attachTimer != inProgressTimer) {
 								return;
+							}
 							attachTimer = null;
 							if(state == ChannelState.attaching) {
 								setSuspended(new ErrorInfo(errorMessage, 91200), true);
@@ -339,15 +364,23 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	 * try to attach the channel
 	 */
 	synchronized private void reattachAfterTimeout() {
-		final Timer currentReattachTimer = new Timer();
+		Timer currentReattachTimer;
+		try {
+			currentReattachTimer = new Timer();
+		} catch(Throwable t) {
+			/* an exception instancing the timer can arise because the runtime is exiting */
+			return;
+		}
 		reattachTimer = currentReattachTimer;
 
+		final Timer inProgressTimer = currentReattachTimer;
 		reattachTimer.schedule(new TimerTask() {
 			@Override
 			public void run() {
 				synchronized (ChannelBase.this) {
-					if (currentReattachTimer != reattachTimer)
+					if (inProgressTimer != reattachTimer) {
 						return;
+					}
 					reattachTimer = null;
 					if (state == ChannelState.suspended) {
 						try {
@@ -365,9 +398,16 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	 * Try to detach the channel. If the server doesn't confirm the detach operation within realtime
 	 * request timeout return channel to previous state
 	 */
-	synchronized private void detachWithTimeout(final CompletionListener listener) throws AblyException {
+	synchronized private void detachWithTimeout(final CompletionListener listener) {
 		final ChannelState originalState = state;
-		final Timer currentDetachTimer = new Timer();
+		Timer currentDetachTimer;
+		try {
+			currentDetachTimer = new Timer();
+		} catch(Throwable t) {
+			/* an exception instancing the timer can arise because the runtime is exiting */
+			callCompletionListenerError(listener, ErrorInfo.fromThrowable(t));
+			return;
+		}
 		attachTimer = currentDetachTimer;
 
 		try {
@@ -375,36 +415,36 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 				@Override
 				public void onSuccess() {
 					clearAttachTimers();
-					if (listener != null)
-						listener.onSuccess();
+					callCompletionListenerSuccess(listener);
 				}
 
 				@Override
 				public void onError(ErrorInfo reason) {
 					clearAttachTimers();
-					if (listener != null)
-						listener.onError(reason);
+					callCompletionListenerError(listener, reason);
 				}
 			});
 		} catch (AblyException e) {
 			attachTimer = null;
 		}
 
-		if(attachTimer == null)
+		if(attachTimer == null) {
 			/* operation has already succeeded or failed, no need to set the timer */
 			return;
+		}
 
+		final Timer inProgressTimer = currentDetachTimer;
 		attachTimer.schedule(new TimerTask() {
 			@Override
 			public void run() {
 				synchronized (ChannelBase.this) {
-					if (currentDetachTimer != attachTimer)
+					if (inProgressTimer != attachTimer) {
 						return;
+					}
 					attachTimer = null;
 					if (state == ChannelState.detaching) {
 						ErrorInfo reason = new ErrorInfo("Detach operation timed out", 90007);
-						if(listener != null)
-							listener.onError(reason);
+						callCompletionListenerError(listener, reason);
 						setState(originalState, reason);
 					}
 				}
@@ -473,7 +513,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
 	@Override
 	protected void apply(ChannelStateListener listener, ChannelEvent event, Object... args) {
-		listener.onChannelStateChanged((ChannelStateListener.ChannelStateChange)args[0]);
+		try {
+			listener.onChannelStateChanged((ChannelStateListener.ChannelStateChange)args[0]);
+		} catch (Throwable t) {
+			Log.e(TAG, "Unexpected exception calling ChannelStateListener", t);
+		}
 	}
 
 	static ErrorInfo REASON_NOT_ATTACHED = new ErrorInfo("Channel not attached", 400, 90001);
@@ -745,9 +789,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 				message.encode(options);
 			}
 		} catch(AblyException e) {
-			if(listener != null) {
-				listener.onError(e.errorInfo);
-			}
+			callCompletionListenerError(listener, e.errorInfo);
 			return;
 		}
 		ProtocolMessage msg = new ProtocolMessage(Action.message, this.name);
@@ -793,8 +835,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		}
 
 		/* Call completion callbacks for failed messages without holding the lock */
-		for (FailedMessage failed: failedMessages)
-			failed.msg.listener.onError(failed.reason);
+		for (FailedMessage failed: failedMessages) {
+			callCompletionListenerError(failed.msg.listener, failed.reason);
+		}
 	}
 
 	private void failQueuedMessages(ErrorInfo reason) {
@@ -810,11 +853,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		}
 
 		for(FailedMessage failed : failedMessages) {
-			try {
-				failed.msg.listener.onError(failed.reason);
-			} catch (Throwable t) {
-				Log.e(TAG, "failQueuedMessages(): Unexpected exception calling listener", t);
-			}
+			callCompletionListenerError(failed.msg.listener, failed.reason);
 		}
 	}
 

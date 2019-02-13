@@ -12,13 +12,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
+import com.google.gson.*;
+import io.ably.lib.util.Serialisation;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
 
 import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
@@ -74,7 +72,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
 
 			/* subscribe */
-			MessageWaiter messageWaiter =  new MessageWaiter(channel);
+			MessageWaiter messageWaiter = new MessageWaiter(channel);
 
 			/* publish to the channel */
 			CompletionWaiter msgComplete = new CompletionWaiter();
@@ -88,7 +86,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			messageWaiter.waitFor(1);
 			assertEquals("Verify message subscription was called", messageWaiter.receivedMessages.size(), 1);
 
-		} catch (AblyException e) {
+		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
@@ -99,7 +97,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 
 	/**
 	 * Connect to the service on two connections;
-	 *  attach, subscribe to an event, publish on one
+	 * attach, subscribe to an event, publish on one
 	 * connection and confirm receipt on the other.
 	 */
 	@Test
@@ -126,8 +124,8 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			assertEquals("Verify attached state reached", rxChannel.state, ChannelState.attached);
 
 			/* subscribe on both connections */
-			MessageWaiter txMessageWaiter =  new MessageWaiter(txChannel);
-			MessageWaiter rxMessageWaiter =  new MessageWaiter(rxChannel);
+			MessageWaiter txMessageWaiter = new MessageWaiter(txChannel);
+			MessageWaiter rxMessageWaiter = new MessageWaiter(rxChannel);
 
 			/* publish to the channel */
 			CompletionWaiter msgComplete = new CompletionWaiter();
@@ -145,7 +143,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			txMessageWaiter.waitFor(1, 1000L);
 			assertEquals("Verify tx message subscription was not called", txMessageWaiter.receivedMessages.size(), 0);
 
-		} catch (AblyException e) {
+		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("single_send_binary_noecho: Unexpected exception instantiating library");
 		} finally {
@@ -172,7 +170,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			final Channel channel = ably.channels.get(channelName);
 
 			/* subscribe */
-			MessageWaiter messageWaiter =  new MessageWaiter(channel);
+			MessageWaiter messageWaiter = new MessageWaiter(channel);
 
 			/* verify attached state is reached */
 			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
@@ -190,7 +188,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			messageWaiter.waitFor(1);
 			assertEquals("Verify message subscription was called", messageWaiter.receivedMessages.size(), 1);
 
-		} catch (AblyException e) {
+		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
@@ -219,7 +217,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
 
 			/* subscribe */
-			MessageWaiter messageWaiter =  new MessageWaiter(channel);
+			MessageWaiter messageWaiter = new MessageWaiter(channel);
 
 			/* publish to the channel */
 			CompletionSet msgComplete = new CompletionSet();
@@ -228,7 +226,10 @@ public class RealtimeMessageTest extends ParameterizedTest {
 				for(int i = 0; i < messageCount; i++) {
 					byte[] messageData = messagesSent[i] = Helpers.RandomGenerator.generateRandomBuffer(msgSize);
 					channel.publish("test_event", messageData, msgComplete.add());
-					try { Thread.sleep(delay); } catch(InterruptedException e){}
+					try {
+						Thread.sleep(delay);
+					} catch(InterruptedException e) {
+					}
 				}
 
 				/* wait for the publish callback to be called */
@@ -242,14 +243,17 @@ public class RealtimeMessageTest extends ParameterizedTest {
 				List<Message> receivedMessages = messageWaiter.receivedMessages;
 				assertEquals("Verify message subscriptions all called", receivedMessages.size(), messageCount);
 				for(int i = 0; i < messageCount; i++) {
-					assertArrayEquals("Verify expected message contents", messagesSent[i], (byte[])receivedMessages.get(i).data);
+					assertArrayEquals("Verify expected message contents", messagesSent[i], (byte[]) receivedMessages.get(i).data);
 				}
 			} else {
 				String[] messagesSent = new String[messageCount];
 				for(int i = 0; i < messageCount; i++) {
 					String messageData = messagesSent[i] = Helpers.RandomGenerator.generateRandomString(msgSize);
 					channel.publish("test_event", messageData, msgComplete.add());
-					try { Thread.sleep(delay); } catch(InterruptedException e){}
+					try {
+						Thread.sleep(delay);
+					} catch(InterruptedException e) {
+					}
 				}
 
 				/* wait for the publish callback to be called */
@@ -263,11 +267,11 @@ public class RealtimeMessageTest extends ParameterizedTest {
 				List<Message> receivedMessages = messageWaiter.receivedMessages;
 				assertEquals("Verify message subscriptions all called", receivedMessages.size(), messageCount);
 				for(int i = 0; i < messageCount; i++) {
-					assertEquals("Verify expected message contents", messagesSent[i], (String)receivedMessages.get(i).data);
+					assertEquals("Verify expected message contents", messagesSent[i], (String) receivedMessages.get(i).data);
 				}
 			}
 
-		} catch (AblyException e) {
+		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("channelName: Unexpected exception instantiating library");
 		} finally {
@@ -303,7 +307,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			boolean error = false;
 			try {
 				pubChannel.publish(new Message("name2", "data2"));
-			} catch (AblyException e) {
+			} catch(AblyException e) {
 				error = true;
 			}
 			assertTrue("Verify exception was thrown on publishing in suspended state", error);
@@ -320,16 +324,16 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			error = false;
 			try {
 				pubChannel.publish(new Message("name4", "data4"));
-			} catch (AblyException e) {
+			} catch(AblyException e) {
 				error = true;
 			}
 			assertTrue("Verify exception was thrown on publishing in failed state", error);
 
-		} catch (AblyException e) {
+		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("Unexpected exception");
 		} finally {
-			if (ably != null)
+			if(ably != null)
 				ably.close();
 		}
 
@@ -355,15 +359,17 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
 
 			/* subscribe */
-			MessageWaiter messageWaiter =  new MessageWaiter(channel);
+			MessageWaiter messageWaiter = new MessageWaiter(channel);
 
 			/* publish to the channel */
 			CompletionSet msgComplete = new CompletionSet();
-			for(int i = 0; i < (int)(messageCount / batchCount); i++) {
+			for(int i = 0; i < (int) (messageCount / batchCount); i++) {
 				for(int j = 0; j < batchCount; j++) {
 					channel.publish("test_event", "Test message (_multiple_send_batch) " + i * batchCount + j, msgComplete.add());
 				}
-				try { Thread.sleep(batchDelay); } catch(InterruptedException e){}
+				try {
+					Thread.sleep(batchDelay);
+				} catch(InterruptedException e) {/*ignore*/}
 			}
 
 			/* wait for the publish callback to be called */
@@ -374,7 +380,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			messageWaiter.waitFor(messageCount);
 			assertEquals("Verify message subscriptions all called", messageWaiter.receivedMessages.size(), messageCount);
 
-		} catch (AblyException e) {
+		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("channelName: Unexpected exception instantiating library");
 		} finally {
@@ -461,7 +467,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			ErrorInfo fail = msgComplete.waitFor();
 			assertEquals("Verify error callback was called", fail.statusCode, 401);
 
-		} catch (AblyException e) {
+		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("single_error_binary: Unexpected exception instantiating library");
 		} finally {
@@ -490,7 +496,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			// On disconnected we retry right away since we're connected, so we can only
 			// check that the state is not failed.
 			assertNotEquals("connection state should not be failed", ably.connection.state, ConnectionState.failed);
-		} catch (AblyException e) {
+		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
@@ -503,8 +509,8 @@ public class RealtimeMessageTest extends ParameterizedTest {
 	public void messages_encoding_fixtures() {
 		MessagesEncodingData fixtures;
 		try {
-			fixtures = (MessagesEncodingData)Setup.loadJson(testMessagesEncodingFile, MessagesEncodingData.class);
-		} catch (IOException e) {
+			fixtures = (MessagesEncodingData) Setup.loadJson(testMessagesEncodingFile, MessagesEncodingData.class);
+		} catch(IOException e) {
 			fail();
 			return;
 		}
@@ -519,7 +525,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
 
-			for (MessagesEncodingDataItem fixtureMessage : fixtures.messages) {
+			for(MessagesEncodingDataItem fixtureMessage : fixtures.messages) {
 				/* subscribe */
 				MessageWaiter messageWaiter = new MessageWaiter(channel);
 
@@ -536,7 +542,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 				channel.publish(receivedMessage, msgComplete);
 				msgComplete.waitFor();
 
-				MessagesEncodingDataItem persistedMessage =	ably.http.request(new Http.Execute<MessagesEncodingDataItem[]>() {
+				MessagesEncodingDataItem persistedMessage = ably.http.request(new Http.Execute<MessagesEncodingDataItem[]>() {
 					@Override
 					public void execute(HttpScheduler http, Callback<MessagesEncodingDataItem[]> callback) throws AblyException {
 						http.get("/channels/" + channel.name + "/messages?limit=1", null, null, new HttpCore.ResponseHandler<MessagesEncodingDataItem[]>() {
@@ -554,11 +560,11 @@ public class RealtimeMessageTest extends ParameterizedTest {
 				assertEquals("Verify persisted message encoding", fixtureMessage.encoding, persistedMessage.encoding);
 				assertEquals("Verify persisted message data", fixtureMessage.data, persistedMessage.data);
 			}
-		} catch (AblyException e) {
+		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
-			if (ably != null)
+			if(ably != null)
 				ably.close();
 		}
 	}
@@ -567,8 +573,8 @@ public class RealtimeMessageTest extends ParameterizedTest {
 	public void messages_msgpack_and_json_encoding_is_compatible() {
 		MessagesEncodingData fixtures;
 		try {
-			fixtures = (MessagesEncodingData)Setup.loadJson(testMessagesEncodingFile, MessagesEncodingData.class);
-		} catch (IOException e) {
+			fixtures = (MessagesEncodingData) Setup.loadJson(testMessagesEncodingFile, MessagesEncodingData.class);
+		} catch(IOException e) {
 			fail();
 			return;
 		}
@@ -590,12 +596,12 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			final Channel realtimeSubscribeChannelMsgPack = realtimeSubscribeClientMsgPack.channels.get("test-subscribe");
 			final Channel realtimeSubscribeChannelJson = realtimeSubscribeClientJson.channels.get("test-subscribe");
 
-			for (Channel realtimeSubscribeChannel : new Channel[]{realtimeSubscribeChannelMsgPack, realtimeSubscribeChannelJson}) {
+			for(Channel realtimeSubscribeChannel : new Channel[]{realtimeSubscribeChannelMsgPack, realtimeSubscribeChannelJson}) {
 				realtimeSubscribeChannel.attach();
 				(new ChannelWaiter(realtimeSubscribeChannel)).waitFor(ChannelState.attached);
 				assertEquals("Verify attached state reached", realtimeSubscribeChannel.state, ChannelState.attached);
 
-				for (MessagesEncodingDataItem fixtureMessage : fixtures.messages) {
+				for(MessagesEncodingDataItem fixtureMessage : fixtures.messages) {
 					MessageWaiter messageWaiter = new MessageWaiter(realtimeSubscribeChannel);
 
 					HttpHelpers.postSync(restPublishClient.http, "/channels/" + realtimeSubscribeChannel.name + "/messages", null, null, new HttpUtils.JsonRequestBody(fixtureMessage), null, true);
@@ -609,7 +615,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 				}
 			}
 
-			for (AblyRealtime realtimeSubscribeClient : new AblyRealtime[]{realtimeSubscribeClientMsgPack, realtimeSubscribeClientJson}) {
+			for(AblyRealtime realtimeSubscribeClient : new AblyRealtime[]{realtimeSubscribeClientMsgPack, realtimeSubscribeClientJson}) {
 				realtimeSubscribeClient.close();
 				realtimeSubscribeClient = null;
 			}
@@ -623,15 +629,15 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			final io.ably.lib.rest.Channel restPublishChannelMsgPack = restPublishClientMsgPack.channels.get("test-publish");
 			final io.ably.lib.rest.Channel restPublishChannelJson = restPublishClientJson.channels.get("test-publish");
 
-			for (MessagesEncodingDataItem fixtureMessage : fixtures.messages) {
+			for(MessagesEncodingDataItem fixtureMessage : fixtures.messages) {
 				Object data = fixtureMessage.expectedValue;
-				if (fixtureMessage.expectedHexValue != null) {
+				if(fixtureMessage.expectedHexValue != null) {
 					data = hexStringToByteArray(fixtureMessage.expectedHexValue);
-				} else if (data instanceof JsonPrimitive) {
-					data = ((JsonPrimitive)data).getAsString();
+				} else if(data instanceof JsonPrimitive) {
+					data = ((JsonPrimitive) data).getAsString();
 				}
 
-				for (final io.ably.lib.rest.Channel restPublishChannel : new io.ably.lib.rest.Channel[]{restPublishChannelMsgPack, restPublishChannelJson}) {
+				for(final io.ably.lib.rest.Channel restPublishChannel : new io.ably.lib.rest.Channel[]{restPublishChannelMsgPack, restPublishChannelJson}) {
 					restPublishChannel.publish("event", data);
 
 					MessagesEncodingDataItem persistedMessage = restRetrieveClient.http.request(new Http.Execute<MessagesEncodingDataItem[]>() {
@@ -653,13 +659,13 @@ public class RealtimeMessageTest extends ParameterizedTest {
 					assertEquals("Verify persisted message data", fixtureMessage.data, persistedMessage.data);
 				}
 			}
-		} catch (AblyException e) {
+		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
-			if (realtimeSubscribeClientMsgPack != null)
+			if(realtimeSubscribeClientMsgPack != null)
 				realtimeSubscribeClientMsgPack.close();
-			if (realtimeSubscribeClientJson != null)
+			if(realtimeSubscribeClientJson != null)
 				realtimeSubscribeClientJson.close();
 		}
 	}
@@ -677,7 +683,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			apiOptions.logHandler = new Log.LogHandler() {
 				@Override
 				public void println(int severity, String tag, String msg, Throwable tr) {
-					synchronized (log) {
+					synchronized(log) {
 						log.add(String.format(Locale.US, "%s: %s", tag, msg));
 					}
 				}
@@ -695,11 +701,11 @@ public class RealtimeMessageTest extends ParameterizedTest {
 
 			MessageWaiter messageWaiter = new MessageWaiter(realtimeSubscribeChannelJson);
 
-			MessagesEncodingDataItem	testData = new MessagesEncodingDataItem();
-			testData.data = "MDEyMzQ1Njc4OQ==";					/* Base64("0123456789") */
+			MessagesEncodingDataItem testData = new MessagesEncodingDataItem();
+			testData.data = "MDEyMzQ1Njc4OQ==";                    /* Base64("0123456789") */
 			testData.encoding = "utf-8/cipher+aes-128-cbc/base64";
 			testData.expectedType = "binary";
-			testData.expectedHexValue = "30313233343536373839";	/* hex for "0123456789" */
+			testData.expectedHexValue = "30313233343536373839";    /* hex for "0123456789" */
 
 			HttpHelpers.postSync(restPublishClient.http, "/channels/" + realtimeSubscribeChannelJson.name + "/messages", null, null, new HttpUtils.JsonRequestBody(testData), null, true);
 
@@ -711,36 +717,34 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			expectDataToMatch(testData, receivedMessage);
 			assertEquals("Verify resulting encoding", receivedMessage.encoding, "utf-8/cipher+aes-128-cbc");
 
-			synchronized (log) {
+			synchronized(log) {
 				boolean foundErrorMessage = false;
-				for (String logMessage: log) {
-					if (logMessage.contains("encryption is not set up"))
+				for(String logMessage : log) {
+					if(logMessage.contains("encryption is not set up"))
 						foundErrorMessage = true;
 				}
 				assertTrue("Verify logged error messages", foundErrorMessage);
 			}
-		}
-		catch (AblyException e) {
+		} catch(AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
-		}
-		finally {
-			if (realtimeSubscribeClient != null)
+		} finally {
+			if(realtimeSubscribeClient != null)
 				realtimeSubscribeClient.close();
 		}
 	}
 
 	private void expectDataToMatch(MessagesEncodingDataItem fixtureMessage, Message receivedMessage) {
-		if (fixtureMessage.expectedType.equals("string")) {
+		if(fixtureMessage.expectedType.equals("string")) {
 			assertEquals("Verify decoded message data", fixtureMessage.expectedValue.getAsString(), receivedMessage.data);
-		} else if (fixtureMessage.expectedType.equals("jsonObject")) {
+		} else if(fixtureMessage.expectedType.equals("jsonObject")) {
 			assertEquals("Verify decoded message data", fixtureMessage.expectedValue.getAsJsonObject(), receivedMessage.data);
-		} else if (fixtureMessage.expectedType.equals("jsonArray")) {
+		} else if(fixtureMessage.expectedType.equals("jsonArray")) {
 			assertEquals("Verify decoded message data", fixtureMessage.expectedValue.getAsJsonArray(), receivedMessage.data);
-		} else if (fixtureMessage.expectedType.equals("binary")) {
-			byte[] receivedData = (byte[])receivedMessage.data;
+		} else if(fixtureMessage.expectedType.equals("binary")) {
+			byte[] receivedData = (byte[]) receivedMessage.data;
 			StringBuilder sb = new StringBuilder(receivedData.length * 2);
-			for (byte b : receivedData) {
+			for(byte b : receivedData) {
 				sb.append(String.format("%02x", b & 0xff));
 			}
 			String receivedDataHex = sb.toString();
@@ -753,9 +757,9 @@ public class RealtimeMessageTest extends ParameterizedTest {
 	public static byte[] hexStringToByteArray(String s) {
 		int len = s.length();
 		byte[] data = new byte[len / 2];
-		for (int i = 0; i < len; i += 2) {
+		for(int i = 0; i < len; i += 2) {
 			data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-					+ Character.digit(s.charAt(i+1), 16));
+					+ Character.digit(s.charAt(i + 1), 16));
 		}
 		return data;
 	}
@@ -789,14 +793,14 @@ public class RealtimeMessageTest extends ParameterizedTest {
 
 		try {
 			message.encode(null);
-		} catch (AblyException e) {
+		} catch(AblyException e) {
 			assertEquals(null, message.encoding);
 			assertEquals(data, message.data);
 			assertEquals(1, capturedLog.size());
 			LogLine capturedLine = capturedLog.get(0);
 			assertTrue(capturedLine.tag.contains("ably"));
 			assertTrue(capturedLine.msg.contains("Message data must be either `byte[]`, `String` or `JSONElement`; implicit coercion of other types to String is deprecated"));
-		} catch (Throwable t) {
+		} catch(Throwable t) {
 			fail("reject_invalid_message_data: Unexpected exception");
 		} finally {
 			Log.setHandler(originalLogHandler);
@@ -816,5 +820,94 @@ public class RealtimeMessageTest extends ParameterizedTest {
 			this.msg = msg;
 			this.tr = tr;
 		}
+	}
+
+	/**
+	 * To Test Message.fromEncoded(JsonObject, ChannelOptions) and Message.fromEncoded(String, ChannelOptions)
+	 * Refer Spec TM3
+	 * @throws AblyException
+	 */
+	@Test
+	public void message_from_encoded_json_object() throws AblyException {
+		/*Test Base64 data decoding in Message.fromEncoded(JsonObject)*/
+		Message sendMsg = new Message("test_from_encoded_method", "0123456789".getBytes());
+		sendMsg.clientId = "client-id";
+		sendMsg.connectionId = "connection-id";
+		sendMsg.timestamp = System.currentTimeMillis();
+		sendMsg.encode(null);
+
+		Message receivedMsg = Message.fromEncoded(Serialisation.gson.toJsonTree(sendMsg).getAsJsonObject(), null);
+		assertEquals(receivedMsg.name, sendMsg.name);
+		assertArrayEquals((byte[]) receivedMsg.data, "0123456789".getBytes());
+
+		/*Test JSON Data decoding in Message.fromEncoded(JsonObject)*/
+		JsonObject person = new JsonObject();
+		person.addProperty("name", "Amit");
+		person.addProperty("country", "Interlaken Ost");
+
+		Message userDetails = new Message("user_details", person);
+		userDetails.encode(null);
+		Message decodedMessage1 = Message.fromEncoded(Serialisation.gson.toJsonTree(userDetails).getAsJsonObject(), null);
+
+		assertEquals(userDetails.name, decodedMessage1.name);
+		assertEquals(person, decodedMessage1.data);
+
+		/*Test Message.fromEncoded(String)*/
+		Message decodedMessage2 = Message.fromEncoded(Serialisation.gson.toJson(userDetails), null);
+		assertEquals(userDetails.name, decodedMessage2.name);
+		assertEquals(person, decodedMessage2.data);
+
+		/*Test invalid case.*/
+		try {
+			//We pass invalid Message object
+			Message.fromEncoded(person, null);
+			fail();
+		} catch(Exception e) {/*ignore as we are expecting it to fail.*/}
+	}
+
+	/**
+	 * To test Message.fromEncodedArray(JsonArray, ChannelOptions) and Message.fromEncodedArray(String, ChannelOptions)
+	 * Refer Spec. TM3
+	 * @throws AblyException
+	 */
+	@Test
+	public void messages_from_encoded_json_array() throws AblyException {
+		JsonArray fixtures = null;
+		MessagesData testMessages = null;
+		try {
+			testMessages = (MessagesData) Setup.loadJson(testMessagesEncodingFile, MessagesData.class);
+			JsonObject jsonObject = (JsonObject) Setup.loadJson(testMessagesEncodingFile, JsonObject.class);
+			//We use this as-is for decoding purposes.
+			fixtures = jsonObject.getAsJsonArray("messages");
+		} catch(IOException e) {
+			fail();
+			return;
+		}
+
+		Message[] decodedMessages = Message.fromEncodedArray(fixtures, null);
+		for(int index = 0; index < decodedMessages.length; index++) {
+			Message testInputMsg = testMessages.messages[index];
+			testInputMsg.decode(null);
+			if(testInputMsg.data instanceof byte[]) {
+				assertArrayEquals((byte[]) testInputMsg.data, (byte[]) decodedMessages[index].data);
+			} else {
+				assertEquals(testInputMsg.data, decodedMessages[index].data);
+			}
+		}
+		/*Test Message.fromEncodedArray(String)*/
+		String fixturesArray = Serialisation.gson.toJson(fixtures);
+		Message[] decodedMessages2 = Message.fromEncodedArray(fixturesArray, null);
+		for(int index = 0; index < decodedMessages2.length; index++) {
+			Message testInputMsg = testMessages.messages[index];
+			if(testInputMsg.data instanceof byte[]) {
+				assertArrayEquals((byte[]) testInputMsg.data, (byte[]) decodedMessages2[index].data);
+			} else {
+				assertEquals(testInputMsg.data, decodedMessages2[index].data);
+			}
+		}
+	}
+
+	static class MessagesData {
+		public Message[] messages;
 	}
 }

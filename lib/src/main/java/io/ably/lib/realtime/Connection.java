@@ -4,6 +4,7 @@ import io.ably.lib.realtime.ConnectionStateListener.ConnectionStateChange;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.util.EventEmitter;
+import io.ably.lib.util.Log;
 
 /**
  * A class representing the connection associated with an AblyRealtime instance.
@@ -88,7 +89,11 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
 
 	@Override
 	protected void apply(ConnectionStateListener listener, ConnectionEvent event, Object... args) {
-		listener.onConnectionStateChanged((ConnectionStateChange)args[0]);
+		try {
+			listener.onConnectionStateChanged((ConnectionStateChange)args[0]);
+		} catch (Throwable t) {
+			Log.e(TAG, "Unexpected exception calling ConnectionStateListener", t);
+		}
 	}
 
 	public void emitUpdate(ErrorInfo errorInfo) {
@@ -111,6 +116,7 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
 		super.once(state.getConnectionEvent(), listener);
 	}
 
+	private static final String TAG = Connection.class.getName();
 	final AblyRealtime ably;
 	public final ConnectionManager connectionManager;
 }

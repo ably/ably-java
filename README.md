@@ -6,10 +6,6 @@
 
 A Java Realtime and REST client library for [Ably Realtime](https://www.ably.io), the realtime messaging and data delivery service.
 
-## Beta notice
-
-This is a beta release of the Ably 1.1 library specification. A stable 1.1.0 release will be made in due course.
-
 ## Supported Platforms
 
 This SDK supports the following platforms:
@@ -34,13 +30,13 @@ Reference the library by including a compile dependency reference in your gradle
 For [Java](https://bintray.com/ably-io/ably/ably-java/_latestVersion):
 
 ```
-compile 'io.ably:ably-java:1.1.0-RC1'
+compile 'io.ably:ably-java:1.1.0'
 ```
 
 For [Android](https://bintray.com/ably-io/ably/ably-android/_latestVersion):
 
 ```
-compile 'io.ably:ably-android:1.1.0-RC1'
+compile 'io.ably:ably-android:1.1.0'
 ```
 
 The library is hosted on the [Jcenter repository](https://bintray.com/ably-io/ably), so you need to ensure that the repo is referenced also; IDEs will typically include this by default:
@@ -529,7 +525,7 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 * Replace all references of the current version number with the new version number (check this file [README.md](./README.md) and [common.gradle](./common.gradle)) and commit the changes
 * Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to update the [CHANGELOG](./CHANGELOG.md): `github_changelog_generator -u ably -p ably-java --header-label="# Changelog" --release-branch=release-1.1.0 --future-release=v1.0.8` 
 * Commit [CHANGELOG](./CHANGELOG.md)
-* Add a tag and push to origin such as `git tag v1.0.7; git push origin v1.0.7`
+* Add a tag and push to origin such as `git tag v1.1.0; git push origin v1.1.0`
 * Make a PR against `develop`
 * Once the PR is approved, merge it into `develop`
 * Fast-forward the master branch: `git checkout master && git merge --ff-only develop && git push origin master`
@@ -576,4 +572,4 @@ To see what has changed in recent versions of Bundler, see the [CHANGELOG](CHANG
 
 ## License
 
-Copyright (c) 2015-2018 Ably Real-time Ltd, Licensed under the Apache License, Version 2.0.  Refer to [LICENSE](LICENSE) for the license terms.
+Copyright (c) 2015-2019 Ably Real-time Ltd, Licensed under the Apache License, Version 2.0.  Refer to [LICENSE](LICENSE) for the license terms.

@@ -2,11 +2,38 @@
 
 ## [v1.1.0](https://github.com/ably/ably-java/tree/v1.1.0)
 
-[Full Changelog](https://github.com/ably/ably-java/compare/v1.0.10...v1.1.0)
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.0.12...v1.1.0)
 
 **Implemented enhancements:**
 
 - Android push implementation [\#308](https://github.com/ably/ably-java/issues/308)
+
+## [v1.0.12](https://github.com/ably/ably-java/tree/v1.0.12) (2019-02-13)
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.0.11...v1.0.12)
+
+**Merged pull requests:**
+
+- Implemented feature Spec - TP4 [\#451](https://github.com/ably/ably-java/pull/451) ([amsurana](https://github.com/amsurana))
+- Implemented Spec: TM3, Message.fromEncoded [\#446](https://github.com/ably/ably-java/pull/446) ([amsurana](https://github.com/amsurana))
+
+## [v1.0.11](https://github.com/ably/ably-java/tree/v1.0.11)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.0.10...v1.0.11)
+
+**Fixed bugs:**
+
+- InternalError when attempting to create a reattach timer [\#452](https://github.com/ably/ably-java/issues/452)
+- Realtime Channel: exceptions thrown when attempting attach do not result in the client listener being called [\#448](https://github.com/ably/ably-java/issues/448)
+
+**Closed issues:**
+
+- ConcurrentModificationException in 1.0 [\#321](https://github.com/ably/ably-java/issues/321)
+
+**Merged pull requests:**
+
+- Make the Channels collection a ConcurrentHashMap to permit mutation o… [\#454](https://github.com/ably/ably-java/pull/454) ([paddybyers](https://github.com/paddybyers))
+- Wrap construction of Timer instances to handle exceptions … [\#453](https://github.com/ably/ably-java/pull/453) ([paddybyers](https://github.com/paddybyers))
+- Attach exception handling [\#449](https://github.com/ably/ably-java/pull/449) ([paddybyers](https://github.com/paddybyers))
 
 ## [v1.0.10](https://github.com/ably/ably-java/tree/v1.0.10)
 

@@ -287,14 +287,21 @@ public class WebSocketTransport implements ITransport {
 				Log.v(TAG, "checkActivity: ok");
 				if (timer == null) {
 					synchronized(this) {
-						if (timer == null)
-							timer = new Timer();
+						if (timer == null) {
+							try {
+								timer = new Timer();
+							} catch(Throwable t) {
+								Log.e(TAG, "Unexpected exception creating activity timer", t);
+							}
+						}
 					}
 				}
-				try {
-					timer.schedule(new WsClientTimerTask(this), next - now);
-				} catch(IllegalStateException ise) {
-					Log.e(TAG, "Unexpected exception scheduling activity timer", ise);
+				if(timer != null) {
+					try {
+						timer.schedule(new WsClientTimerTask(this), next - now);
+					} catch(IllegalStateException ise) {
+						Log.e(TAG, "Unexpected exception scheduling activity timer", ise);
+					}
 				}
 			} else {
 				/* Timeout has been reached. Close the connection. */

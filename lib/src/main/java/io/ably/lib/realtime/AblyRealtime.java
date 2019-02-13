@@ -1,8 +1,8 @@
 package io.ably.lib.realtime;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.transport.ITransport;
@@ -91,7 +91,7 @@ public class AblyRealtime extends AblyRest {
 	 *
 	 */
 	@SuppressWarnings("serial")
-	public class Channels extends HashMap<String, Channel> {
+	public class Channels extends ConcurrentHashMap<String, Channel> {
 		public Channels() {
 			/* remove all channels when the connection is closed, to avoid stalled state */
 			connection.on(ConnectionEvent.closed, new ConnectionStateListener() {
