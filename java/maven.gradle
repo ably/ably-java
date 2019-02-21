@@ -43,7 +43,7 @@ uploadArchives {
         // Exclude test dependencies
         pom.whenConfigured {
             p -> p.dependencies = p.dependencies.findAll {
-                dep -> dep.scope == 'compile'
+                dep -> dep.scope == 'runtime'
             }
         }
 

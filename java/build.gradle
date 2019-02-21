@@ -3,21 +3,27 @@ buildscript {
         jcenter()
     }
 }
+
 plugins {
     id 'de.fuerstenau.buildconfig' version '1.1.8'
 }
+
 apply plugin: 'java'
 apply plugin: 'idea'
 apply from: '../common.gradle'
 apply from: 'maven.gradle'
+
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
+
 apply from: '../dependencies.gradle'
+
 buildConfig {
     packageName 'io.ably.lib'
     clsName 'BuildConfig'
     buildConfigField 'String', 'LIBRARY_NAME', 'java'
 }
+
 sourceSets {
     main {
         java {
@@ -30,6 +36,7 @@ sourceSets {
         }
     }
 }
+
 // Default jar: add io.ably classes from :lib dependency.
 jar {
     baseName = 'ably-java'
@@ -42,6 +49,7 @@ jar {
     includeEmptyDirs false
     exclude 'META-INF/**'
 }
+
 // fullJar: add all classes from dependencies transitively.
 task fullJar(type: Jar) {
     baseName = 'ably-java'
@@ -54,14 +62,18 @@ task fullJar(type: Jar) {
     with jar
     exclude 'META-INF/**'
 }
+
 assemble.dependsOn fullJar
+
 configurations {
     fullConfiguration
     testsConfiguration
 }
+
 artifacts {
     fullConfiguration fullJar
 }
+
 task testRealtimeSuite(type: Test) {
     filter {
         includeTestsMatching "*RealtimeSuite"
@@ -71,6 +83,7 @@ task testRealtimeSuite(type: Test) {
     }
     outputs.upToDateWhen { false }
 }
+
 task testRestSuite(type: Test) {
     filter {
         includeTestsMatching "*RestSuite"
@@ -80,6 +93,3 @@ task testRestSuite(type: Test) {
     }
     outputs.upToDateWhen { false }
 }
-dependencies {
-}
-
