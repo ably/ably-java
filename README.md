@@ -328,6 +328,46 @@ while(result.hasNext()) {
 long serviceTime = ably.time();
 ```
 
+### Logging ###
+
+You can get log output from the library by modifying the log level:
+
+```java
+import io.ably.lib.util.Log;
+
+ClientOptions opts = new ClientOptions(key);
+opts.logLevel = Log.VERBOSE;
+AblyRest ably = new AblyRest(opts);
+...
+```
+
+By default, log output will go to `System.out` for the java library, and logcat for Android.
+
+You can redirect the log output to a logger of your own by specifying a custom log handler:
+
+```java
+import io.ably.lib.util.Log.LogHandler;
+
+ClientOptions opts = new ClientOptions(key);
+opts.logHandler = new LogHandler() {
+	public void println(int severity, String tag, String msg, Throwable tr) {
+		/* handle log output here ... */
+	}
+};
+AblyRest ably = new AblyRest(opts);
+...
+```
+
+Note that any logger you specify in this way has global scope - it will set as a static of the library
+and will apply to all Ably library instances. If you need to release your custom logger so that it can be
+garbage-collected, you need to clear that static reference:
+
+```java
+import io.ably.lib.util.Log;
+
+Log.setHandler(null);
+```
+
 ## Building ##
 
 The library consists of JRE-specific library (in `java/`) and an Android-specific library (in `android/`). The libraries are largely common-sourced; the `lib/` directory contains the common parts.
