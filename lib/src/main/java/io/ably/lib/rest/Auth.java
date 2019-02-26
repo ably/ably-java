@@ -674,7 +674,7 @@ public class Auth {
 			Log.i("Auth.requestToken()", "using token auth with client-side signing");
 			signedTokenRequest = createTokenRequest(params, tokenOptions);
 		} else {
-			throw AblyException.fromErrorInfo(new ErrorInfo("Auth.requestToken(): options must include valid authentication parameters", 400, 40000));
+			throw AblyException.fromErrorInfo(new ErrorInfo("Auth.requestToken(): options must include valid authentication parameters", 400, 40106));
 		}
 
 		String tokenPath = "/keys/" + signedTokenRequest.keyName + "/requestToken";
@@ -963,7 +963,8 @@ public class Auth {
 	}
 
 	private static boolean tokenValid(TokenDetails tokenDetails) {
-		return tokenDetails.expires > Auth.serverTimestamp();
+		/* RSA4b1: only perform a local check for token validity if we have time sync with the server */
+		return (timeDelta == Long.MAX_VALUE) || (tokenDetails.expires > Auth.serverTimestamp());
 	}
 
 	/**
