@@ -1,11 +1,10 @@
 package io.ably.lib.push;
 
 import android.content.Context;
-import android.util.Log;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.FirebaseInstanceIdService;
-import com.google.firebase.messaging.FirebaseMessagingService;
 import io.ably.lib.types.RegistrationToken;
+import io.ably.lib.util.Log;
 
 public class AblyFirebaseInstanceIdService extends FirebaseInstanceIdService {
 
@@ -22,7 +21,9 @@ public class AblyFirebaseInstanceIdService extends FirebaseInstanceIdService {
 	 * @param token
 	 */
 	public static void onNewRegistrationToken(Context context, String token) {
-		Log.i(TAG, "Firebase Refreshed token: " + token);
+		if(token != null && token.length() > 10) {
+			Log.i(TAG, "Firebase token registered: " + token.substring(0,10));
+		}
 		ActivationContext.getActivationContext(context.getApplicationContext()).onNewRegistrationToken(RegistrationToken.Type.FCM, token);
 	}
 
