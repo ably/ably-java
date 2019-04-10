@@ -13,33 +13,48 @@ public abstract class NetworkConnectivity {
 	}
 
 	public void addListener(NetworkConnectivityListener listener) {
-		boolean wasEmpty = listeners.isEmpty();
-		listeners.add(listener);
+		boolean wasEmpty;
+		synchronized (this) {
+			wasEmpty = listeners.isEmpty();
+			listeners.add(listener);
+		}
 		if(wasEmpty) {
 			onNonempty();
 		}
 	}
 
 	public void removeListener(NetworkConnectivityListener listener) {
-		listeners.remove(listener);
-		if(listeners.isEmpty()) {
+		boolean isEmpty;
+		synchronized (this) {
+			listeners.remove(listener);
+			isEmpty = listeners.isEmpty();
+		}
+		if(isEmpty) {
 			onEmpty();
 		}
 	}
 
 	protected void notifyNetworkAvailable() {
-		for(NetworkConnectivityListener listener: listeners) {
+		NetworkConnectivityListener[] allListeners;
+		synchronized(this) {
+			allListeners = listeners.toArray(new NetworkConnectivityListener[listeners.size()]);
+		}
+		for(NetworkConnectivityListener listener: allListeners) {
 			listener.onNetworkAvailable();
 		}
 	}
 
 	protected void notifyNetworkUnavailable(ErrorInfo reason) {
-		for(NetworkConnectivityListener listener: listeners) {
+		NetworkConnectivityListener[] allListeners;
+		synchronized(this) {
+			allListeners = listeners.toArray(new NetworkConnectivityListener[listeners.size()]);
+		}
+		for(NetworkConnectivityListener listener: allListeners) {
 			listener.onNetworkUnavailable(reason);
 		}
 	}
 
-	protected boolean isEmpty() {
+	protected synchronized boolean isEmpty() {
 		return listeners.isEmpty();
 	}
 
