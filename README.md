@@ -4,7 +4,7 @@
 |---------|------|
 | [ ![Download](https://api.bintray.com/packages/ably-io/ably/ably-android/images/download.svg) ](https://bintray.com/ably-io/ably/ably-android/_latestVersion) | [ ![Download](https://api.bintray.com/packages/ably-io/ably/ably-java/images/download.svg) ](https://bintray.com/ably-io/ably/ably-java/_latestVersion) |
 
-A Java Realtime and REST client library for [Ably Realtime](https://www.ably.io), the realtime messaging and data delivery service.
+A Java Realtime and REST client library for [Ably Realtime](https://www.ably.io), the realtime messaging and data delivery service. This library currently targets the [Ably 1.1 client library specification](https://www.ably.io/documentation/client-lib-development-guide/features/). You can jump to the '[Known Limitations](#known-limitations)' section to see the features this client library does not yet support or [view our client library SDKs feature support matrix](https://www.ably.io/download/sdk-feature-support-matrix) to see the list of all the available features.
 
 ## Supported Platforms
 
@@ -328,6 +328,46 @@ while(result.hasNext()) {
 
 ```java
 long serviceTime = ably.time();
+```
+
+### Logging ###
+
+You can get log output from the library by modifying the log level:
+
+```java
+import io.ably.lib.util.Log;
+
+ClientOptions opts = new ClientOptions(key);
+opts.logLevel = Log.VERBOSE;
+AblyRest ably = new AblyRest(opts);
+...
+```
+
+By default, log output will go to `System.out` for the java library, and logcat for Android.
+
+You can redirect the log output to a logger of your own by specifying a custom log handler:
+
+```java
+import io.ably.lib.util.Log.LogHandler;
+
+ClientOptions opts = new ClientOptions(key);
+opts.logHandler = new LogHandler() {
+	public void println(int severity, String tag, String msg, Throwable tr) {
+		/* handle log output here ... */
+	}
+};
+AblyRest ably = new AblyRest(opts);
+...
+```
+
+Note that any logger you specify in this way has global scope - it will set as a static of the library
+and will apply to all Ably library instances. If you need to release your custom logger so that it can be
+garbage-collected, you need to clear that static reference:
+
+```java
+import io.ably.lib.util.Log;
+
+Log.setHandler(null);
 ```
 
 ## Using the Push API
