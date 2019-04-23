@@ -77,7 +77,7 @@ public class ConnectionManager implements ConnectListener {
 
 		final boolean terminal;
 		final boolean retry;
-		final long timeout;
+		public long timeout;
 		String host;
 
 		StateInfo(ConnectionState state, boolean queueEvents, boolean sendEvents, boolean terminal, boolean retry, long timeout, ErrorInfo defaultErrorInfo) {
@@ -615,8 +615,10 @@ public class ConnectionManager implements ConnectListener {
 
 	private synchronized void onError(ProtocolMessage message) {
 		connection.key = null;
-		ConnectionState destinationState = isFatalError(message.error) ? ConnectionState.failed : ConnectionState.disconnected;
-		notifyState(transport, new StateIndication(destinationState, message.error));
+		ErrorInfo reason = message.error;
+		ably.auth.onAuthError(reason);
+		ConnectionState destinationState = isFatalError(reason) ? ConnectionState.failed : ConnectionState.disconnected;
+		notifyState(transport, new StateIndication(destinationState, reason));
 	}
 
 	private void onAck(ProtocolMessage message) {
