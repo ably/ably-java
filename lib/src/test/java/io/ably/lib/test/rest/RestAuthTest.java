@@ -18,6 +18,7 @@ import java.util.Map;
 
 import io.ably.lib.http.HttpConstants;
 import io.ably.lib.http.HttpCore;
+import io.ably.lib.test.common.Helpers;
 import io.ably.lib.types.*;
 
 import org.junit.AfterClass;
@@ -1845,6 +1846,62 @@ public class RestAuthTest extends ParameterizedTest {
 				assertEquals("Verify API request failed with token expiry error", httpListener.getFirstRequest().response.headers.get("x-ably-errorcode").get(0), "40142");
 				assertEquals("Verify that API request failed with credentials error", e.errorInfo.code, 40106);
 			}
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_local_token_expiry_check_nosync: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Verify that if a local token validity check suppressed because queryTime == false
+	 * this does not prevent token renewal by an auth callback when a request fails
+	 * Spec: RSA4b1
+	 */
+	@Test
+	public void auth_local_token_expiry_check_nosync_retried() {
+		try {
+			/* get a TokenDetails and allow to expire */
+			final String testKey = testVars.keys[0].keyStr;
+			ClientOptions optsForToken = createOptions(testKey);
+			optsForToken.queryTime = false;
+			final AblyRest ablyForToken = new AblyRest(optsForToken);
+
+			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams(){{ ttl = 100L; }}, null);
+
+			/* clear the cached server time (it is static so shared between library instances) */
+			Auth.clearCachedServerTime();
+
+			/* create Ably instance with token details */
+			DebugOptions opts = new DebugOptions();
+			fillInOptions(opts);
+			opts.queryTime = false;
+			opts.tokenDetails = tokenDetails;
+			opts.authCallback = new TokenCallback() {
+				@Override
+				public Object getTokenRequest(TokenParams params) throws AblyException {
+					return ablyForToken.auth.createTokenRequest(params, null);
+				}
+			};
+
+			RawHttpTracker httpListener = new RawHttpTracker();
+			opts.httpListener = httpListener;
+			AblyRest ably = new AblyRest(opts);
+
+			/* wait for the token to expire */
+			try { Thread.sleep(200L); } catch(InterruptedException ie) {}
+
+			/* make a request that relies on authentication */
+			try {
+				ably.stats(new Param[] { new Param("by", "hour"), new Param("limit", "1") });
+			} catch (AblyException e) {
+				fail("auth_local_token_expiry_check_nosync: API call unexpectedly failed");
+				return;
+			}
+			assertEquals("Verify API request attempted", httpListener.size(), 3);
+			for(Helpers.RawHttpRequest x : httpListener.values()) {
+				System.out.println(x.url.toString());
+			}
+			assertEquals("Verify API request failed with token expiry error", httpListener.getFirstRequest().response.headers.get("x-ably-errorcode").get(0), "40142");
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("auth_local_token_expiry_check_nosync: Unexpected exception instantiating library");
