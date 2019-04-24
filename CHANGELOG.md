@@ -1,6 +1,19 @@
 # Change Log
 
+## [v1.0.14](https://github.com/ably/ably-java/tree/v1.0.14)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.0.13...v1.0.14)
+
+**Merged pull requests:**
+
+- ConnectionManager: ensure that cached token details are cleared on any connection error [\#471](https://github.com/ably/ably-java/pull/471) ([paddybyers](https://github.com/paddybyers))
+
+**Fixed bugs:**
+
+- Expired token never renewed [\#470](https://github.com/ably/ably-java/issues/470)
+
 ## [v1.0.13](https://github.com/ably/ably-java/tree/v1.0.12) (2019-04-10)
+
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.0.12...v1.0.13)
 
 **Merged pull requests:**
@@ -14,6 +27,7 @@
 - Improve handling of clock skew [\#462](https://github.com/ably/ably-java/issues/462)
 
 ## [v1.0.12](https://github.com/ably/ably-java/tree/v1.0.12) (2019-02-13)
+
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.0.11...v1.0.12)
 
 **Merged pull requests:**
