@@ -1,5 +1,13 @@
 # Change Log
 
+## [v1.1.0](https://github.com/ably/ably-java/tree/v1.1.0)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.0.12...v1.1.0)
+
+**Implemented enhancements:**
+
+- Android push implementation [\#308](https://github.com/ably/ably-java/issues/308)
+
 ## [v1.0.12](https://github.com/ably/ably-java/tree/v1.0.12) (2019-02-13)
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.0.11...v1.0.12)
 

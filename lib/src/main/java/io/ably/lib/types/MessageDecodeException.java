@@ -7,12 +7,12 @@ public class MessageDecodeException extends AblyException {
 	private static final long serialVersionUID = 1L;
 
 	private MessageDecodeException(Throwable e, String description) {
-        super(e, new ErrorInfo(description, 91200));
-    }
+		super(e, new ErrorInfo(description, 91200));
+	}
 
-    public static MessageDecodeException fromDescription(String description) {
-        return new MessageDecodeException(
-                new Exception(description),
-                description);
-    }
+	public static MessageDecodeException fromDescription(String description) {
+		return new MessageDecodeException(
+				new Exception(description),
+				description);
+	}
 }

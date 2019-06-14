@@ -44,7 +44,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 	/**
 	 * Stores the AuthOptions and TokenParams arguments as defaults for subsequent authorizations
 	 * <p>
-	 * Spec: RSA10g
+	 * Spec: RSA10g,RSA10j
 	 * </p>
 	 */
 	@Test

@@ -31,7 +31,8 @@ import io.ably.lib.test.common.Setup;
 	RestCryptoTest.class,
 	RestPresenceTest.class,
 	RestProxyTest.class,
-	RestErrorTest.class
+	RestErrorTest.class,
+	RestPushTest.class
 })
 public class RestSuite {
 
@@ -46,9 +47,9 @@ public class RestSuite {
 	}
 
 	public static void main(String[] args) {
-	    Result result = JUnitCore.runClasses(RestSuite.class);
-	    for(Failure failure : result.getFailures()) {
-	      System.out.println(failure.toString());
-	    }
+		Result result = JUnitCore.runClasses(RestSuite.class);
+		for(Failure failure : result.getFailures()) {
+		  System.out.println(failure.toString());
+		}
 	}
 }

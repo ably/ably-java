@@ -103,6 +103,7 @@ public class HttpCore {
 	 * Gets host for this HTTP client
 	 *
 	 * @return
+
      */
 	public String getPreferredHost() {
 		return hosts.getPreferredHost();
@@ -185,7 +186,10 @@ public class HttpCore {
 			conn.setReadTimeout(options.httpRequestTimeout);
 			conn.setDoInput(true);
 
-			String authHeader = (auth != null) ? auth.getAuthorizationHeader() : null;
+			String authHeader = Param.getFirst(headers, HttpConstants.Headers.AUTHORIZATION);
+			if (authHeader == null && auth != null) {
+				authHeader = auth.getAuthorizationHeader();
+			}
 			if(withCredentials && authHeader != null) {
 				conn.setRequestProperty(HttpConstants.Headers.AUTHORIZATION, authHeader);
 				credentialsIncluded = true;
@@ -231,7 +235,10 @@ public class HttpCore {
 				rawHttpListener = ((DebugOptions)options).httpListener;
 				if(rawHttpListener != null) {
 					id = String.valueOf(Math.random()).substring(2);
-					rawHttpListener.onRawHttpRequest(id, conn, method, (credentialsIncluded ? authHeader : null), requestProperties, requestBody);
+					response = rawHttpListener.onRawHttpRequest(id, conn, method, (credentialsIncluded ? authHeader : null), requestProperties, requestBody);
+					if (response != null) {
+						return handleResponse(conn, credentialsIncluded, response, responseHandler);
+					}
 				}
 			}
 
@@ -485,17 +492,17 @@ public class HttpCore {
 		Field androidVersionField = null;
 		int androidVersion = 0;
 		try {
-	        androidVersionField = Class.forName("android.os.Build$VERSION").getField("SDK_INT");
-	        androidVersion = androidVersionField.getInt(androidVersionField);
-	    } catch (Exception e) {}
+			androidVersionField = Class.forName("android.os.Build$VERSION").getField("SDK_INT");
+			androidVersion = androidVersionField.getInt(androidVersionField);
+		} catch (Exception e) {}
 		if(androidVersionField != null && androidVersion < 8) {
 			/* HTTP connection reuse which was buggy pre-froyo */
 			System.setProperty("httpCore.keepAlive", "false");
 		}
 	}
 
-	final String scheme;
-	final int port;
+	public final String scheme;
+	public final int port;
 	final ClientOptions options;
 	final Hosts hosts;
 
@@ -508,70 +515,70 @@ public class HttpCore {
 	private static final String TAG = HttpCore.class.getName();
 
 	/**
-     * Interface for an entity that supplies an httpCore request body
-     */
-    public static interface RequestBody {
-        byte[] getEncoded();
-        String getContentType();
-    }
+	 * Interface for an entity that supplies an httpCore request body
+	 */
+	public static interface RequestBody {
+		byte[] getEncoded();
+		String getContentType();
+	}
 
 	/**
-     * Interface for an entity that performs type-specific processing on an httpCore response body
-     * @param <T>
-     */
-    public static interface BodyHandler<T> {
-        T[] handleResponseBody(String contentType, byte[] body) throws AblyException;
-    }
+	 * Interface for an entity that performs type-specific processing on an httpCore response body
+	 * @param <T>
+	 */
+	public static interface BodyHandler<T> {
+		T[] handleResponseBody(String contentType, byte[] body) throws AblyException;
+	}
 
 	/**
-     * Interface for an entity that performs type-specific processing on an httpCore response
-     * @param <T>
-     */
-    public static interface ResponseHandler<T> {
-        T handleResponse(Response response, ErrorInfo error) throws AblyException;
-    }
+	 * Interface for an entity that performs type-specific processing on an httpCore response
+	 * @param <T>
+	 */
+	public static interface ResponseHandler<T> {
+		T handleResponse(Response response, ErrorInfo error) throws AblyException;
+	}
 
 	/**
-     * A type encapsulating an httpCore response
-     */
-    public static class Response {
-        public int statusCode;
-        public String statusLine;
-        public Map<String,List<String>> headers;
-        public String contentType;
-        public int contentLength;
-        public byte[] body;
+	 * A type encapsulating an httpCore response
+	 */
+	public static class Response {
+		public int statusCode;
+		public String statusLine;
+		public Map<String,List<String>> headers;
+		public String contentType;
+		public int contentLength;
+		public byte[] body;
 
-        /**
-         * Returns the value of the named header field.
-         * <p>
-         * If called on a connection that sets the same header multiple times
-         * with possibly different values, only the last value is returned.
-         *
-         *
-         * @param   name   the name of a header field.
-         * @return  the value of the named header field, or {@code null}
-         *          if there is no such field in the header.
-         */
-        public List<String> getHeaderFields(String name) {
-            if(headers == null) {
-                return null;
-            }
+		/**
+		 * Returns the value of the named header field.
+		 * <p>
+		 * If called on a connection that sets the same header multiple times
+		 * with possibly different values, only the last value is returned.
+		 *
+		 *
+		 * @param   name   the name of a header field.
+		 * @return  the value of the named header field, or {@code null}
+		 *          if there is no such field in the header.
+		 */
+		public List<String> getHeaderFields(String name) {
+			if(headers == null) {
+				return null;
+			}
 
-            return headers.get(name.toLowerCase());
-        }
-    }
+			return headers.get(name.toLowerCase());
+		}
+	}
 
 	/**
-     * Exception signifying that an httpCore request failed with a WWW-Authenticate response
-     */
-    public static class AuthRequiredException extends AblyException {
-        private static final long serialVersionUID = 1L;
-        public AuthRequiredException(Throwable throwable, ErrorInfo reason) {
-            super(throwable, reason);
-        }
-        public boolean expired;
-        public Map<HttpAuth.Type, String> authChallenge;
-        public Map<HttpAuth.Type, String> proxyAuthChallenge;
-    }
+	 * Exception signifying that an httpCore request failed with a WWW-Authenticate response
+	 */
+	public static class AuthRequiredException extends AblyException {
+		private static final long serialVersionUID = 1L;
+		public AuthRequiredException(Throwable throwable, ErrorInfo reason) {
+			super(throwable, reason);
+		}
+		public boolean expired;
+		public Map<HttpAuth.Type, String> authChallenge;
+		public Map<HttpAuth.Type, String> proxyAuthChallenge;
+	}
 }

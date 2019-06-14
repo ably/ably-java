@@ -860,7 +860,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 		/*Test invalid case.*/
 		try {
 			//We pass invalid Message object
-			Message.fromEncoded(person, null);
+			Message.fromEncoded("[]", null);
 			fail();
 		} catch(Exception e) {/*ignore as we are expecting it to fail.*/}
 	}

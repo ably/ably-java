@@ -1355,7 +1355,7 @@ public class RestAuthTest extends ParameterizedTest {
 	/**
 	 * Verify message does not have explicit client id populated
 	 * when library is identified
-	 * Spec: RSA7a1
+	 * Spec: RSA7a1,RSL1g1a
 	 */
 	@Test
 	public void auth_clientid_publish_implicit() {
@@ -1372,8 +1372,8 @@ public class RestAuthTest extends ParameterizedTest {
 			DebugOptions options = new DebugOptions(testVars.keys[0].keyStr) {{
 				this.httpListener = new RawHttpListener() {
 					@Override
-					public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader,
-							Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
+					public HttpCore.Response onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader,
+															  Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
 						try {
 							if(testParams.useBinaryProtocol) {
 								messages[0] = MessageSerializer.readMsgpack(requestBody.getEncoded())[0];
@@ -1387,6 +1387,7 @@ public class RestAuthTest extends ParameterizedTest {
 							e.printStackTrace();
 							fail("auth_clientid_publish_implicit: Unexpected exception");
 						}
+						return null;
 					}
 
 					@Override
@@ -1439,8 +1440,8 @@ public class RestAuthTest extends ParameterizedTest {
 			DebugOptions options = new DebugOptions(testVars.keys[0].keyStr) {{
 				this.httpListener = new RawHttpListener() {
 					@Override
-					public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader,
-							Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
+					public HttpCore.Response onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader,
+															  Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
 						try {
 							if(testParams.useBinaryProtocol) {
 								messages[0] = MessageSerializer.readMsgpack(requestBody.getEncoded())[0];
@@ -1454,6 +1455,7 @@ public class RestAuthTest extends ParameterizedTest {
 							e.printStackTrace();
 							fail("auth_clientid_publish_implicit: Unexpected exception");
 						}
+						return null;
 					}
 
 					@Override
@@ -1535,7 +1537,7 @@ public class RestAuthTest extends ParameterizedTest {
 	/**
 	 * Verify client id in token is populated from defaultTokenParams
 	 * when library is initialised without explicit clientId
-	 * Spec: RSA7a4
+	 * Spec: RSA7a4, RSA7d
 	 */
 	@Test
 	public void auth_clientid_in_defaultparams() {
@@ -1563,7 +1565,7 @@ public class RestAuthTest extends ParameterizedTest {
 	/**
 	 * Verify client id in token populated from ClientOptions
 	 * overriding any clientId in defaultTokenParams
-	 * Spec: RSA7a4
+	 * Spec: RSA7a4, RSA7d
 	 */
 	@Test
 	public void auth_clientid_in_opts_overrides_defaultparams() {
@@ -1620,6 +1622,7 @@ public class RestAuthTest extends ParameterizedTest {
 	/**
 	 * Test behaviour of queryTime parameter in ClientOpts. Time is requested from the Ably server only once,
 	 * cached value should be used afterwards
+	 * Spec: RSA9a
 	 */
 	@Test
 	public void auth_testQueryTime() {
@@ -1755,6 +1758,99 @@ public class RestAuthTest extends ParameterizedTest {
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("Unexpected exception");
+		}
+	}
+
+	/**
+	 * Verify that a local token validity check is made if queryTime == true
+	 * and local time is in sync with server
+	 * Spec: RSA4b1
+	 */
+	@Test
+	public void auth_local_token_expiry_check_sync() {
+		try {
+			/* get a TokenDetails and allow to expire */
+			final String testKey = testVars.keys[0].keyStr;
+			ClientOptions optsForToken = createOptions(testKey);
+			optsForToken.queryTime = true;
+			AblyRest ablyForToken = new AblyRest(optsForToken);
+
+			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams(){{ ttl = 100L; }}, null);
+
+			/* create Ably instance with token details */
+			DebugOptions opts = new DebugOptions();
+			fillInOptions(opts);
+			opts.queryTime = true;
+			opts.tokenDetails = tokenDetails;
+			RawHttpTracker httpListener = new RawHttpTracker();
+			opts.httpListener = httpListener;
+			AblyRest ably = new AblyRest(opts);
+
+			/* sync this library instance to server by creating a token request */
+			ably.auth.createTokenRequest(null, new Auth.AuthOptions() {{ key = testKey; }});
+
+			/* wait for the token to expire */
+			try { Thread.sleep(200L); } catch(InterruptedException ie) {}
+
+			/* make a request that relies on authentication */
+			try {
+				ably.stats(new Param[] { new Param("by", "hour"), new Param("limit", "1") });
+				fail("auth_local_token_expiry_check_sync: API call unexpectedly succeeded");
+				return;
+			} catch (AblyException e) {
+				assertEquals("Verify that API request failed with credentials error", e.errorInfo.code, 40106);
+				assertEquals("Verify no API request attempted", httpListener.size(), 0);
+			}
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_local_token_expiry_check_sync: Unexpected exception instantiating library");
+		}
+	}
+
+	/**
+	 * Verify that a local token validity check is not made if queryTime == false
+	 * and local time is not in sync with server
+	 * Spec: RSA4b1
+	 */
+	@Test
+	public void auth_local_token_expiry_check_nosync() {
+		try {
+			/* get a TokenDetails and allow to expire */
+			final String testKey = testVars.keys[0].keyStr;
+			ClientOptions optsForToken = createOptions(testKey);
+			optsForToken.queryTime = true;
+			AblyRest ablyForToken = new AblyRest(optsForToken);
+
+			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams(){{ ttl = 100L; }}, null);
+
+			/* clear the cached server time (it is static so shared between library instances) */
+			Auth.clearCachedServerTime();
+
+			/* create Ably instance with token details */
+			DebugOptions opts = new DebugOptions();
+			fillInOptions(opts);
+			opts.queryTime = false;
+			opts.tokenDetails = tokenDetails;
+			RawHttpTracker httpListener = new RawHttpTracker();
+			opts.httpListener = httpListener;
+			AblyRest ably = new AblyRest(opts);
+
+			/* wait for the token to expire */
+			try { Thread.sleep(200L); } catch(InterruptedException ie) {}
+
+			/* make a request that relies on authentication */
+			try {
+				ably.stats(new Param[] { new Param("by", "hour"), new Param("limit", "1") });
+				fail("auth_local_token_expiry_check_nosync: API call unexpectedly succeeded");
+				return;
+			} catch (AblyException e) {
+				assertEquals("Verify API request attempted", httpListener.size(), 1);
+				assertEquals("Verify API request failed with token expiry error", httpListener.getFirstRequest().response.headers.get("x-ably-errorcode").get(0), "40142");
+				assertEquals("Verify that API request failed with credentials error", e.errorInfo.code, 40106);
+			}
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("auth_local_token_expiry_check_nosync: Unexpected exception instantiating library");
 		}
 	}
 

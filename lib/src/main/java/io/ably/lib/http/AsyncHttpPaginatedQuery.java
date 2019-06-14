@@ -60,8 +60,9 @@ public class AsyncHttpPaginatedQuery implements HttpCore.ResponseHandler<AsyncHt
 					try {
 						contents = bodyHandler.handleResponseBody(response.contentType, response.body);
 					} catch (AblyException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						success = false;
+						errorCode = e.errorInfo.code;
+						errorMessage = e.errorInfo.message;
 					}
 				}
 			}

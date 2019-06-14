@@ -13,21 +13,21 @@ import io.ably.lib.http.Http;
  * @param <T>
  */
 public interface BasePaginatedResult<T> {
-    /**
-     * Get the contents as an array of component type
-     */
-    T[] items();
+	/**
+	 * Get the contents as an array of component type
+	 */
+	T[] items();
 
-    /**
-     * Perform the given relative query
-     */
-    Http.Request<BasePaginatedResult<T>> first();
-    Http.Request<BasePaginatedResult<T>> current();
-    Http.Request<BasePaginatedResult<T>> next();
+	/**
+	 * Perform the given relative query
+	 */
+	Http.Request<BasePaginatedResult<T>> first();
+	Http.Request<BasePaginatedResult<T>> current();
+	Http.Request<BasePaginatedResult<T>> next();
 
-    boolean hasFirst();
-    boolean hasCurrent();
-    boolean hasNext();
+	boolean hasFirst();
+	boolean hasCurrent();
+	boolean hasNext();
 
-    boolean isLast();
+	boolean isLast();
 }

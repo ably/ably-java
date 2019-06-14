@@ -17,12 +17,14 @@ public class DebugOptions extends ClientOptions {
 	}
 
 	public interface RawHttpListener {
-		public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody);
+		public HttpCore.Response onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody);
 		public void onRawHttpResponse(String id, String method, HttpCore.Response response);
 		public void onRawHttpException(String id, String method, Throwable t);
 	}
 
-	public DebugOptions(String key) throws AblyException { super(key); }
+	public DebugOptions() { super(); pushFullWait = true; }
+
+	public DebugOptions(String key) throws AblyException { super(key); pushFullWait = true; }
 
 	public RawProtocolListener protocolListener;
 	public RawHttpListener httpListener;

@@ -87,8 +87,8 @@ public class RestCryptoTest extends ParameterizedTest {
 		try {
 			/* create a key */
 			KeyGenerator keygen = KeyGenerator.getInstance("AES");
-	        keygen.init(256);
-	        byte[] key = keygen.generateKey().getEncoded();
+			keygen.init(256);
+			byte[] key = keygen.generateKey().getEncoded();
 			final CipherParams params = Crypto.getDefaultParams(key);
 
 			/* create a channel */

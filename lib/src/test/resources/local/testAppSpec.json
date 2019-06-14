@@ -25,6 +25,10 @@
 		{
 			"id": "persisted",
 			"persisted": true
+		},
+		{
+			"id": "pushenabled",
+			"pushEnabled": true
 		}
 	],
 	"channels": [

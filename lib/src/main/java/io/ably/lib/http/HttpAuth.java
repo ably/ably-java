@@ -171,16 +171,16 @@ public class HttpAuth {
 	}
 
 	private static HashMap<String, String> splitAuthFields(String detailsString) {
-        HashMap<String, String> values = new HashMap<String, String>();
-        String keyValueArray[] = detailsString.split(",");
-        for (String keyval : keyValueArray) {
-            if (keyval.contains("=")) {
-                String key = keyval.substring(0, keyval.indexOf("="));
-                String value = keyval.substring(keyval.indexOf("=") + 1);
-                values.put(key.trim(), value.replaceAll("\"", "").trim());
-            }
-        }
-        return values;
+		HashMap<String, String> values = new HashMap<String, String>();
+		String keyValueArray[] = detailsString.split(",");
+		for (String keyval : keyValueArray) {
+			if (keyval.contains("=")) {
+				String key = keyval.substring(0, keyval.indexOf("="));
+				String value = keyval.substring(keyval.indexOf("=") + 1);
+				values.put(key.trim(), value.replaceAll("\"", "").trim());
+			}
+		}
+		return values;
 	}
 
 	private static String digestBytes(byte[] buf) {
@@ -208,11 +208,11 @@ public class HttpAuth {
 		return sb.toString();
 	}
 
-    private static String getClientNonce() {
-        String fmtDate = (new SimpleDateFormat("yyyy:MM:dd:hh:mm:ss")).format(new Date());
-        Integer randomInt = (new Random(100000)).nextInt();
-        return digestString(fmtDate + randomInt.toString()).substring(0,  8);
-    }
+	private static String getClientNonce() {
+		String fmtDate = (new SimpleDateFormat("yyyy:MM:dd:hh:mm:ss")).format(new Date());
+		Integer randomInt = (new Random(100000)).nextInt();
+		return digestString(fmtDate + randomInt.toString()).substring(0,  8);
+	}
 
 	private static MessageDigest md5 = null;
 	static {

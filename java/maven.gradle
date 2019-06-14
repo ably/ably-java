@@ -43,7 +43,7 @@ uploadArchives {
         // Exclude test dependencies
         pom.whenConfigured {
             p -> p.dependencies = p.dependencies.findAll {
-                dep -> dep.scope == 'compile'
+                dep -> dep.scope == 'runtime'
             }
         }
 
@@ -58,9 +58,11 @@ task zipRelease(type: Zip) {
     archiveName "release-${version}.zip"
 }
 
-task assembleRelease << {
-    println "Release ${version} can be found at ${localReleaseDest}/"
-    println "Release ${version} zipped can be found ${buildDir}/release-${version}.zip"
+task assembleRelease {
+    doLast {
+        println "Release ${version} can be found at ${localReleaseDest}/"
+        println "Release ${version} zipped can be found ${buildDir}/release-${version}.zip"
+    }
 }
 
 assembleRelease.dependsOn(uploadArchives)

@@ -13,17 +13,19 @@ import io.ably.lib.http.AsyncPaginatedQuery;
 import io.ably.lib.http.HttpPaginatedQuery;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
+import io.ably.lib.platform.Platform;
+import io.ably.lib.push.Push;
 import io.ably.lib.types.*;
 import io.ably.lib.util.Crypto;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 
 /**
- * AblyRest
+ * AblyBase
  * The top-level class to be instanced for the Ably REST library.
  *
  */
-public class AblyRest {
+public abstract class AblyBase {
 
 	public final ClientOptions options;
 	final String clientId;
@@ -32,7 +34,8 @@ public class AblyRest {
 
 	public final Auth auth;
 	public final Channels channels;
-
+	public final Platform platform;
+	public final Push push;
 
 	/**
 	 * Instance the Ably library using a key only.
@@ -42,7 +45,7 @@ public class AblyRest {
 	 * @param key; String key (obtained from application dashboard)
 	 * @throws AblyException
 	 */
-	public AblyRest(String key) throws AblyException {
+	public AblyBase(String key) throws AblyException {
 		this(new ClientOptions(key));
 	}
 
@@ -51,7 +54,7 @@ public class AblyRest {
 	 * @param options: see {@link io.ably.lib.types.ClientOptions} for options
 	 * @throws AblyException
 	 */
-	public AblyRest(ClientOptions options) throws AblyException {
+	public AblyBase(ClientOptions options) throws AblyException {
 		/* normalise options */
 		if(options == null) {
 			String msg = "no options provided";
@@ -70,6 +73,8 @@ public class AblyRest {
 		httpCore = new HttpCore(options, auth);
 		http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
 		channels = new Channels();
+		platform = new Platform();
+		push = new Push(this);
 	}
 
 	/**
@@ -92,7 +97,7 @@ public class AblyRest {
 				return channel;
 			}
 
-			channel = new Channel(AblyRest.this, channelName, channelOptions);
+			channel = new Channel(AblyBase.this, channelName, channelOptions);
 			super.put(channelName, channel);
 			return channel;
 		}

@@ -566,8 +566,10 @@ public class Auth {
 		tokenOptions = (tokenOptions == null) ? this.authOptions : tokenOptions.copy();
 		params = (params == null) ? this.tokenParams : params.copy();
 
-		if(params.clientId == null)
+		/* Spec: RSA7d */
+		if(params.clientId == null) {
 			params.clientId = ably.clientId;
+		}
 		params.capability = Capability.c14n(params.capability);
 
 		/* get the signed token request */
@@ -674,7 +676,7 @@ public class Auth {
 			Log.i("Auth.requestToken()", "using token auth with client-side signing");
 			signedTokenRequest = createTokenRequest(params, tokenOptions);
 		} else {
-			throw AblyException.fromErrorInfo(new ErrorInfo("Auth.requestToken(): options must include valid authentication parameters", 400, 40000));
+			throw AblyException.fromErrorInfo(new ErrorInfo("Auth.requestToken(): options must include valid authentication parameters", 400, 40106));
 		}
 
 		String tokenPath = "/keys/" + signedTokenRequest.keyName + "/requestToken";
@@ -850,7 +852,7 @@ public class Auth {
 	 * @param options
 	 * @throws AblyException
 	 */
-	Auth(AblyRest ably, ClientOptions options) throws AblyException {
+	Auth(AblyBase ably, ClientOptions options) throws AblyException {
 		this.ably = ably;
 		authOptions = options;
 		tokenParams = options.defaultTokenParams != null ?
@@ -963,7 +965,8 @@ public class Auth {
 	}
 
 	private static boolean tokenValid(TokenDetails tokenDetails) {
-		return tokenDetails.expires > Auth.serverTimestamp();
+		/* RSA4b1: only perform a local check for token validity if we have time sync with the server */
+		return (timeDelta == Long.MAX_VALUE) || (tokenDetails.expires > Auth.serverTimestamp());
 	}
 
 	/**
@@ -1081,7 +1084,7 @@ public class Auth {
 	}
 
 	private static final String TAG = Auth.class.getName();
-	private final AblyRest ably;
+	private final AblyBase ably;
 	private final AuthMethod method;
 	private AuthOptions authOptions;
 	private TokenParams tokenParams;

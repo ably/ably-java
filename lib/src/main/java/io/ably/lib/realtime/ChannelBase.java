@@ -22,7 +22,7 @@ import java.util.*;
  * attachment to the channel.
  *
  */
-public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
+public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStateListener> {
 
 	/************************************
 	 * ChannelState and state management
@@ -345,9 +345,10 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 					public void run() {
 						String errorMessage = String.format("Attach timed out for channel %s", name);
 						Log.v(TAG, errorMessage);
-						synchronized (Channel.this) {
-							if(attachTimer != inProgressTimer)
+						synchronized (ChannelBase.this) {
+							if(attachTimer != inProgressTimer) {
 								return;
+							}
 							attachTimer = null;
 							if(state == ChannelState.attaching) {
 								setSuspended(new ErrorInfo(errorMessage, 91200), true);
@@ -376,9 +377,10 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 		reattachTimer.schedule(new TimerTask() {
 			@Override
 			public void run() {
-				synchronized (Channel.this) {
-					if (inProgressTimer != reattachTimer)
+				synchronized (ChannelBase.this) {
+					if (inProgressTimer != reattachTimer) {
 						return;
+					}
 					reattachTimer = null;
 					if (state == ChannelState.suspended) {
 						try {
@@ -435,9 +437,10 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 		attachTimer.schedule(new TimerTask() {
 			@Override
 			public void run() {
-				synchronized (Channel.this) {
-					if (inProgressTimer != attachTimer)
+				synchronized (ChannelBase.this) {
+					if (inProgressTimer != attachTimer) {
 						return;
+					}
 					attachTimer = null;
 					if (state == ChannelState.detaching) {
 						ErrorInfo reason = new ErrorInfo("Detach operation timed out", 90007);
@@ -914,7 +917,7 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 
 	private BasePaginatedQuery.ResultRequest<Message> historyImpl(Param[] params) {
 		try {
-			params = replacePlaceholderParams(this, params);
+			params = replacePlaceholderParams((Channel) this, params);
 		} catch (AblyException e) {
 			return new BasePaginatedQuery.ResultRequest.Failed<Message>(e);
 		}
@@ -950,22 +953,23 @@ public class Channel extends EventEmitter<ChannelEvent, ChannelStateListener> {
 		@Override
 		public void onChannelStateChanged(ChannelStateListener.ChannelStateChange stateChange) {
 			if(stateChange.current.equals(successState)) {
-				Channel.this.off(this);
+				ChannelBase.this.off(this);
 				completionListener.onSuccess();
 			}
 			else if(stateChange.current.equals(failureState)) {
-				Channel.this.off(this);
+				ChannelBase.this.off(this);
 				completionListener.onError(reason);
 			}
 		}
 	}
 
-	Channel(AblyRealtime ably, String name) {
+	ChannelBase(AblyRealtime ably, String name, ChannelOptions options) throws AblyException {
 		Log.v(TAG, "RealtimeChannel(); channel = " + name);
 		this.ably = ably;
 		this.name = name;
 		this.basePath = "/channels/" + HttpUtils.encodeURIComponent(name);
-		this.presence = new Presence(this);
+		this.setOptions(options);
+		this.presence = new Presence((Channel) this);
 		state = ChannelState.initialized;
 		queuedMessages = new ArrayList<QueuedMessage>();
 	}

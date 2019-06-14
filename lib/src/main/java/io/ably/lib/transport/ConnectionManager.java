@@ -14,6 +14,8 @@ import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.types.ProtocolSerializer;
 import io.ably.lib.util.Log;
+import io.ably.lib.transport.NetworkConnectivity.NetworkConnectivityListener;
+import io.ably.lib.platform.Platform;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -210,7 +212,7 @@ public class ConnectionManager implements ConnectListener {
 				state.state == ConnectionState.connecting;
 
 		if(!connectionExist && !connectionAttemptInProgress) {
-			startThread(); // Start thread if not already started.
+			startup(); // Start thread if not already started.
 			requestState(ConnectionState.connecting);
 		}
 	}
@@ -252,7 +254,7 @@ public class ConnectionManager implements ConnectListener {
 			}
 			if(state.terminal) {
 				clearTransport();
-				stopThread();
+				shutdown();
 			}
 		}
 
@@ -634,11 +636,21 @@ public class ConnectionManager implements ConnectListener {
 		}
 	}
 
-	/**************************
-	 * ConnectionManager thread
-	 **************************/
+	/******************************
+	 * ConnectionManager lifecycle
+	 ******************************/
 
-	private boolean startThread() {
+	private void startup() {
+		startThread();
+		startConnectivityListener();
+	}
+
+	private void shutdown() {
+		stopConnectivityListener();
+		stopThread();
+	}
+
+	private void startThread() {
 		boolean creating = false;
 		synchronized(this) {
 			if(mgrThread == null) {
@@ -653,8 +665,6 @@ public class ConnectionManager implements ConnectListener {
 				try { mgrThread.wait(); } catch(InterruptedException ie) {}
 			}
 		}
-
-		return creating;
 	}
 
 	private void stopThread() {
@@ -711,9 +721,9 @@ public class ConnectionManager implements ConnectListener {
 	}
 
 	private boolean checkConnectionStale() {
-	    if(lastActivity == 0) {
-	        return false;
-	    }
+		if(lastActivity == 0) {
+			return false;
+		}
 		long now = System.currentTimeMillis();
 		long intervalSinceLastActivity = now - lastActivity;
 		if(intervalSinceLastActivity > (maxIdleInterval + connectionStateTtl)) {
@@ -1254,6 +1264,45 @@ public class ConnectionManager implements ConnectListener {
 
 	}
 
+	/***********************
+	 * Network connectivity
+	 **********************/
+
+	private class CMConnectivityListener implements NetworkConnectivityListener {
+
+		@Override
+		public void onNetworkAvailable() {
+			Log.i(TAG, "onNetworkAvailable()");
+			ConnectionManager cm = ConnectionManager.this;
+			ConnectionState currentState = cm.state.state;
+			if(currentState == ConnectionState.disconnected || currentState == ConnectionState.suspended) {
+				Log.i(TAG, "onNetworkAvailable(): initiating reconnect");
+				cm.connect();
+			}
+		}
+
+		@Override
+		public void onNetworkUnavailable(ErrorInfo reason) {
+			Log.i(TAG, "onNetworkAvailable(); reason = " + reason.toString());
+			ConnectionManager cm = ConnectionManager.this;
+			ConnectionState currentState = cm.state.state;
+			if(currentState == ConnectionState.connected || currentState == ConnectionState.connecting) {
+				Log.i(TAG, "onNetworkAvailable(): closing connected transport");
+				cm.requestState(new StateIndication(ConnectionState.disconnected, reason));
+			}
+		}
+	}
+
+	private void startConnectivityListener() {
+		connectivityListener = new CMConnectivityListener();
+		ably.platform.getNetworkConnectivity().addListener(connectivityListener);
+	}
+
+	private void stopConnectivityListener() {
+		ably.platform.getNetworkConnectivity().removeListener(connectivityListener);
+		connectivityListener = null;
+	}
+
 	/*******************
 	 * for tests only
 	 ******************/
@@ -1303,6 +1352,7 @@ public class ConnectionManager implements ConnectListener {
 	private long suspendTime;
 	private long msgSerial;
 	private long lastActivity;
+	private CMConnectivityListener connectivityListener;
 
 	/* for debug/test only */
 	private RawProtocolListener protocolListener;

@@ -51,12 +51,12 @@ public class TokenServer extends NanoHTTPD {
 	}
 
 	@Override
-    public Response serve(IHTTPSession session) {
-        Method method = session.getMethod();
-        String target = session.getUri();
-        Map<String, String> headers = session.getHeaders();
+	public Response serve(IHTTPSession session) {
+		Method method = session.getMethod();
+		String target = session.getUri();
+		Map<String, String> headers = session.getHeaders();
 
-        if (method.equals(Method.POST)) {
+		if (method.equals(Method.POST)) {
 			try {
 				session.parseBody(new HashMap<String, String>());
 			} catch (IOException | ResponseException e) {

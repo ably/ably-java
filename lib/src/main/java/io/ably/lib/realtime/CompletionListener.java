@@ -2,6 +2,7 @@ package io.ably.lib.realtime;
 
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Callback;
 
 /**
  * An interface allowing a client to be notified of the outcome
@@ -43,7 +44,6 @@ public interface CompletionListener {
 		}
 	}
 
-
 	public static class ToCallback implements Callback<Void> {
 		private CompletionListener listener;
 		public ToCallback(CompletionListener listener) {
@@ -58,6 +58,24 @@ public interface CompletionListener {
 		@Override
 		public void onError(ErrorInfo reason) {
 			listener.onError(reason);
+		}
+	}
+
+	public static class FromCallback implements CompletionListener {
+		private final Callback<Void> callback;
+
+		public FromCallback(Callback<Void> callback) {
+			this.callback = callback;
+		}
+
+		@Override
+		public void onSuccess() {
+			callback.onSuccess(null);
+		}
+
+		@Override
+		public void onError(ErrorInfo reason) {
+			callback.onError(reason);
 		}
 	}
 }

@@ -3,6 +3,8 @@ package io.ably.lib.test.common;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.regex.Pattern;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -27,13 +29,92 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.BaseMessage;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.ErrorResponse;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
+import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.Serialisation;
+
+import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class Helpers {
+
+	public static <T> void assertArrayUnorderedEquals(T[] expected, T[] got) {
+		Set<T> expectedSet = new CopyOnWriteArraySet<T>(Arrays.asList(expected));
+		Set<T> gotSet = new CopyOnWriteArraySet<T>(Arrays.asList(got));
+		assertEquals(expectedSet, gotSet);
+	}
+
+	public static <T> T expectedError(AblyFunction<Void, T> f, String expectedError) {
+		return expectedError(f, expectedError, 0);
+	}
+
+	public static <T> T expectedError(AblyFunction<Void, T> f, String expectedError, int expectedStatusCode) {
+		return expectedError(f, expectedError, expectedStatusCode, 0);
+	}
+
+	public static <T> T expectedError(AblyFunction<Void, T> f, String expectedError, int expectedStatusCode, int expectedCode) {
+		try {
+			T result = f.apply(null);
+			assertEquals(null, expectedError);
+			return result;
+		} catch (AblyException e) {
+			try {
+				assertNotNull(String.format("got error \"%s\", none expected", e.errorInfo.message), expectedError);
+				assertEquals(String.format("expected to match \"%s\", got \"%s\"", expectedError, e.errorInfo.message), true, Pattern.compile(expectedError).matcher(e.errorInfo.message).find());
+				if (expectedCode > 0) {
+					assertEquals(expectedCode, e.errorInfo.code);
+				}
+				if (expectedStatusCode > 0) {
+					assertEquals(expectedStatusCode, e.errorInfo.statusCode);
+				}
+			} catch(AssertionError ae) {
+				e.printStackTrace();
+				throw ae;
+			}
+		}
+		return null;
+	}
+
+	public static void assertInstanceOf(Class<?> c, Object o) {
+		assertTrue(String.format("expected object of class %s to be instance of %s", o.getClass().getName(), c.getName()), c.isInstance(o));
+	}
+
+	public static void assertSize(int expected, Collection<?> c) {
+		int size = c.size();
+		assertEquals(String.format("expected collection to have size %d, got %d: %s", expected, size, c), expected, size);
+	}
+
+	public static <T> void assertSize(int expected, T[] c) {
+		int size = c.length;
+		assertEquals(String.format("expected array to have size %d, got %d: %s", expected, size, c), expected, size);
+	}
+
+	public static HttpCore.Response httpResponseFromErrorInfo(final ErrorInfo errorInfo) {
+		HttpCore.Response response = new HttpCore.Response();
+		response.contentType = "application/json";
+		response.statusCode = errorInfo.statusCode > 0 ? errorInfo.statusCode : 400;
+		response.body = Serialisation.gson.toJson(new ErrorResponse() {{
+			error = errorInfo;
+		}}, ErrorResponse.class).getBytes();
+		return response;
+	}
+
+	public static String tokenFromAuthHeader(String authHeader) {
+		if (!authHeader.startsWith("Bearer ")) {
+			return null;
+		}
+
+		String token64 = authHeader.substring("Bearer ".length());
+		String token = Base64Coder.decodeString(token64);
+
+		return token;
+	}
 
 	/**
 	 * Trivial container for an int as counter.
@@ -128,6 +209,7 @@ public class Helpers {
 		 * @param event
 		 */
 		public MessageWaiter(Channel channel, String event) {
+			reset();
 			try {
 				channel.subscribe(event, this);
 			} catch(AblyException e) {}
@@ -653,22 +735,23 @@ public class Helpers {
 	}
 
 	public static class AsyncWaiter<T> implements Callback<T> {
-
 		@Override
 		public synchronized void onSuccess(T result) {
 			this.result = result;
+			gotResult = true;
 			notify();
 		}
 
 		@Override
 		public synchronized void onError(ErrorInfo error) {
 			this.error = error;
+			gotResult = true;
 			notify();
 		}
 
 		public synchronized void waitFor() {
 			try {
-				while(result == null && error == null) {
+				while(!gotResult) {
 					wait();
 				}
 			} catch(InterruptedException e) {}
@@ -676,6 +759,7 @@ public class Helpers {
 
 		public T result;
 		public ErrorInfo error;
+		private boolean gotResult = false;
 	}
 
 	public static boolean equalStrings(String one, String two) {
@@ -700,10 +784,13 @@ public class Helpers {
 
 	public static class RawHttpTracker extends LinkedHashMap<String, RawHttpRequest> implements RawHttpListener {
 		private static final long serialVersionUID = 1L;
+		private boolean locked = false;
+		public HttpCore.Response mockResponse = null;
+		private AsyncWaiter<RawHttpRequest> requestWaiter = null;
 
 		@Override
-		public void onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders,
-				HttpCore.RequestBody requestBody) {
+		public HttpCore.Response onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders,
+												  HttpCore.RequestBody requestBody) {
 
 			/* duplicating if necessary, ensure lower-case versions of header names are present */
 			Map<String, List<String>> normalisedHeaders = new HashMap<String, List<String>>();
@@ -722,6 +809,31 @@ public class Helpers {
 			req.requestHeaders = normalisedHeaders;
 			req.requestBody = requestBody;
 			put(id, req);
+
+			if (requestWaiter != null) {
+				AsyncWaiter<RawHttpRequest> w = requestWaiter;
+				requestWaiter = null;
+				w.onSuccess(req);
+			}
+
+			while (true) {
+				boolean l;
+				synchronized (this) {
+					l = locked;
+				}
+				if (!l) {
+					break;
+				}
+				try {
+					synchronized (this) {
+						wait();
+					}
+				} catch (InterruptedException e) {}
+			}
+
+			HttpCore.Response response = mockResponse;
+			mockResponse = null;
+			return response;
 		}
 
 		@Override
@@ -799,6 +911,24 @@ public class Helpers {
 			}
 			return result;
 		}
+
+		public void lockRequests() {
+			synchronized (this) {
+				locked = true;
+			}
+		}
+
+		public void unlockRequests() {
+			synchronized (this) {
+				locked = false;
+				notifyAll();
+			}
+		}
+
+		public AsyncWaiter<RawHttpRequest> getRequestWaiter() {
+			requestWaiter = new AsyncWaiter<>();
+			return requestWaiter;
+		}
 	}
 
 	public static class RandomGenerator {
@@ -826,5 +956,37 @@ public class Helpers {
 			}
 			return buf;
 		}
+	}
+
+	public abstract static class SyncAndAsync<Arg, T> {
+		public abstract T getSync(Arg arg) throws AblyException;
+		public abstract void getAsync(Arg arg, Callback<T> callback);
+		public abstract void then(AblyFunction<Arg, T> get) throws AblyException;
+
+		public void run() throws AblyException {
+			then(new AblyFunction<Arg, T>() {
+				@Override
+				public T apply(Arg arg) throws AblyException {
+					return getSync(arg);
+				}
+			});
+
+			then(new AblyFunction<Arg, T>() {
+				@Override
+				public T apply(Arg arg) throws AblyException {
+					AsyncWaiter<T> callback = new AsyncWaiter<T>();
+					getAsync(arg, callback);
+					callback.waitFor();
+					if (callback.error != null) {
+						throw AblyException.fromErrorInfo(callback.error);
+					}
+					return callback.result;
+				}
+			});
+		}
+	}
+
+	public interface AblyFunction<Arg, Result> {
+		public Result apply(Arg arg) throws AblyException;
 	}
 }

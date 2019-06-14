@@ -123,9 +123,9 @@ public class Crypto {
 		if(algorithm == null) algorithm = DEFAULT_ALGORITHM;
 		try {
 			KeyGenerator keygen = KeyGenerator.getInstance(algorithm.toUpperCase());
-	        keygen.init(keyLength);
-	        byte[] key = keygen.generateKey().getEncoded();
-	        return getParams(algorithm, key);
+			keygen.init(keyLength);
+			byte[] key = keygen.generateKey().getEncoded();
+			return getParams(algorithm, key);
 		} catch(NoSuchAlgorithmException e) { return null; }
 
 	}
