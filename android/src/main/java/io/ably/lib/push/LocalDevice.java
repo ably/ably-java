@@ -4,18 +4,20 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.preference.PreferenceManager;
+
 import com.google.gson.JsonObject;
+
+import java.lang.reflect.Field;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+
 import io.ably.lib.rest.DeviceDetails;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Log;
 import io.azam.ulidj.ULID;
-
-import java.lang.reflect.Field;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 
 public class LocalDevice extends DeviceDetails {
 	public String deviceSecret;
@@ -124,13 +126,13 @@ public class LocalDevice extends DeviceDetails {
 		Log.v(TAG, "reset()");
 		SharedPreferences.Editor editor = activationContext.getPreferences().edit();
 		for (Field f : SharedPrefKeys.class.getDeclaredFields()) {
-			if(f.getName().startsWith("ABLY")) {
-				try {
-					editor.remove((String) f.get(null));
-				} catch (IllegalAccessException e) {
-					throw new RuntimeException(e);
-				}
+			//if(f.getName().startsWith("ABLY")) {
+			try {
+				editor.remove((String) f.get(null));
+			} catch (IllegalAccessException e) {
+				throw new RuntimeException(e);
 			}
+			//}
 		}
 		editor.commit();
 	}
