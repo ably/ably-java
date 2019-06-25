@@ -1,9 +1,23 @@
 package io.ably.lib.push;
 
-import android.content.*;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.support.v4.content.LocalBroadcastManager;
+
 import com.google.gson.JsonObject;
-import io.ably.lib.http.*;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.util.ArrayDeque;
+
+import io.ably.lib.http.Http;
+import io.ably.lib.http.HttpConstants;
+import io.ably.lib.http.HttpCore;
+import io.ably.lib.http.HttpScheduler;
+import io.ably.lib.http.HttpUtils;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.DeviceDetails;
 import io.ably.lib.types.AblyException;
@@ -14,10 +28,6 @@ import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.IntentUtils;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.util.ArrayDeque;
 
 public class ActivationStateMachine {
 	public static class CalledActivate extends ActivationStateMachine.Event {
@@ -476,13 +486,13 @@ public class ActivationStateMachine {
 	public boolean reset() {
 		SharedPreferences.Editor editor = activationContext.getPreferences().edit();
 		for (Field f : ActivationStateMachine.PersistKeys.class.getDeclaredFields()) {
-			if(f.getName().startsWith("ABLY")) {
+			//if(f.getName().startsWith("ABLY")) {
 				try {
-					editor.remove((String) f.get(null));
+					editor.remove((String) f.get(null)).apply();
 				} catch (IllegalAccessException e) {
 					throw new RuntimeException(e);
 				}
-			}
+			//}
 		}
 		return editor.commit();
 	}
