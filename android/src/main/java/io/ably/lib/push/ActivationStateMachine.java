@@ -486,13 +486,11 @@ public class ActivationStateMachine {
 	public boolean reset() {
 		SharedPreferences.Editor editor = activationContext.getPreferences().edit();
 		for (Field f : ActivationStateMachine.PersistKeys.class.getDeclaredFields()) {
-			//if(f.getName().startsWith("ABLY")) {
 				try {
-					editor.remove((String) f.get(null)).apply();
+					editor.remove((String) f.get(null));
 				} catch (IllegalAccessException e) {
 					throw new RuntimeException(e);
 				}
-			//}
 		}
 		return editor.commit();
 	}
