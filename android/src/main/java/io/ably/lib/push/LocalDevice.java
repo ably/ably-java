@@ -46,7 +46,7 @@ public class LocalDevice extends DeviceDetails {
 
 	private void loadPersisted() throws AblyException {
 		this.platform = "android";
-		this.clientId = activationContext.getClientId();
+		this.clientId = activationContext.clientId;
 		this.formFactor = isTablet(activationContext.getContext()) ? "tablet" : "phone";
 
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
@@ -133,6 +133,14 @@ public class LocalDevice extends DeviceDetails {
 			}
 		}
 		editor.commit();
+	}
+
+	void setClientId(String clientId) {
+		this.clientId = clientId;
+	}
+
+	boolean isRegistered() {
+		return (deviceIdentityToken != null);
 	}
 
 	private static boolean isTablet(Context context) {

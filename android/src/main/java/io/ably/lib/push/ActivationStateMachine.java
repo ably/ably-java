@@ -73,8 +73,7 @@ public class ActivationStateMachine {
 			} else if (event instanceof ActivationStateMachine.CalledActivate) {
 				LocalDevice device = machine.getDevice();
 
-				if (device.deviceIdentityToken != null) {
-					// Already registered.
+				if (device.isRegistered()) {
 					machine.pendingEvents.add(new ActivationStateMachine.CalledActivate());
 					return new ActivationStateMachine.WaitingForNewPushDeviceDetails(machine);
 				}
