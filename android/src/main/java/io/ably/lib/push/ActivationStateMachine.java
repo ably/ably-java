@@ -16,10 +16,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.ArrayDeque;
 
-import io.ably.lib.http.Http;
-import io.ably.lib.http.HttpCore;
-import io.ably.lib.http.HttpScheduler;
-import io.ably.lib.http.HttpUtils;
+import io.ably.lib.http.*;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.DeviceDetails;
 import io.ably.lib.types.*;
@@ -57,10 +54,10 @@ public class ActivationStateMachine {
 		GettingPushDeviceDetailsFailed(ErrorInfo reason) { super(reason); }
 	}
 
-	public static class RegistrationUpdated extends ActivationStateMachine.Event {}
+	public static class RegistrationSynced extends ActivationStateMachine.Event {}
 
-	public static class UpdatingRegistrationFailed extends ActivationStateMachine.ErrorEvent {
-		public UpdatingRegistrationFailed(ErrorInfo reason) { super(reason); }
+	public static class SyncRegistrationFailed extends ActivationStateMachine.ErrorEvent {
+		public SyncRegistrationFailed(ErrorInfo reason) { super(reason); }
 	}
 
 	public static class Deregistered extends ActivationStateMachine.Event {}
@@ -87,7 +84,8 @@ public class ActivationStateMachine {
 
 				if (device.isRegistered()) {
 					machine.pendingEvents.add(new ActivationStateMachine.CalledActivate());
-					return new ActivationStateMachine.WaitingForNewPushDeviceDetails(machine);
+					machine.validateRegistration();
+					return new ActivationStateMachine.WaitingForRegistrationSync(machine);
 				}
 
 				if (device.getRegistrationToken() != null) {
@@ -203,36 +201,36 @@ public class ActivationStateMachine {
 				machine.getDevice();
 				machine.updateRegistration();
 
-				return new ActivationStateMachine.WaitingForRegistrationUpdate(machine);
+				return new WaitingForRegistrationSync(machine);
 			}
 			return null;
 		}
 	}
 
-	public static class WaitingForRegistrationUpdate extends ActivationStateMachine.State {
-		public WaitingForRegistrationUpdate(ActivationStateMachine machine) { super(machine); }
+	public static class WaitingForRegistrationSync extends ActivationStateMachine.State {
+		public WaitingForRegistrationSync(ActivationStateMachine machine) { super(machine); }
 		public ActivationStateMachine.State transition(ActivationStateMachine.Event event) {
 			if (event instanceof ActivationStateMachine.CalledActivate) {
 				machine.callActivatedCallback(null);
 				return this;
-			} else if (event instanceof ActivationStateMachine.RegistrationUpdated) {
+			} else if (event instanceof RegistrationSynced) {
 				return new ActivationStateMachine.WaitingForNewPushDeviceDetails(machine);
-			} else if (event instanceof ActivationStateMachine.UpdatingRegistrationFailed) {
+			} else if (event instanceof SyncRegistrationFailed) {
 				// TODO: Here we could try to recover ourselves if the error is e. g.
 				// a networking error. Just notify the user for now.
-				machine.callUpdateRegistrationFailedCallback(((ActivationStateMachine.UpdatingRegistrationFailed) event).reason);
-				return new ActivationStateMachine.AfterRegistrationUpdateFailed(machine);
+				machine.callSyncRegistrationFailedCallback(((SyncRegistrationFailed) event).reason);
+				return new AfterRegistrationSyncFailed(machine);
 			}
 			return null;
 		}
 	}
 
-	public static class AfterRegistrationUpdateFailed extends ActivationStateMachine.PersistentState {
-		public AfterRegistrationUpdateFailed(ActivationStateMachine machine) { super(machine); }
+	public static class AfterRegistrationSyncFailed extends ActivationStateMachine.PersistentState {
+		public AfterRegistrationSyncFailed(ActivationStateMachine machine) { super(machine); }
 		public ActivationStateMachine.State transition(ActivationStateMachine.Event event) {
 			if (event instanceof ActivationStateMachine.CalledActivate || event instanceof ActivationStateMachine.GotPushDeviceDetails) {
-				machine.updateRegistration();
-				return new ActivationStateMachine.WaitingForRegistrationUpdate(machine);
+				machine.validateRegistration();
+				return new WaitingForRegistrationSync(machine);
 			} else if (event instanceof ActivationStateMachine.CalledDeactivate) {
 				machine.deregister();
 				return new ActivationStateMachine.WaitingForDeregistration(machine, this);
@@ -291,7 +289,7 @@ public class ActivationStateMachine {
 		sendErrorIntent("PUSH_DEACTIVATE", reason);
 	}
 
-	private void callUpdateRegistrationFailedCallback(ErrorInfo reason) {
+	private void callSyncRegistrationFailedCallback(ErrorInfo reason) {
 		sendErrorIntent("PUSH_UPDATE_FAILED", reason);
 	}
 
@@ -311,14 +309,14 @@ public class ActivationStateMachine {
 					if (isNew) {
 						handleEvent(new ActivationStateMachine.GotDeviceRegistration(intent.getStringExtra("deviceIdentityToken")));
 					} else {
-						handleEvent(new ActivationStateMachine.RegistrationUpdated());
+						handleEvent(new RegistrationSynced());
 					}
 				} else {
 					Log.e(TAG, "error from custom registration for " + device.id + ": " + error.toString());
 					if (isNew) {
 						handleEvent(new ActivationStateMachine.GettingDeviceRegistrationFailed(error));
 					} else {
-						handleEvent(new ActivationStateMachine.UpdatingRegistrationFailed(error));
+						handleEvent(new SyncRegistrationFailed(error));
 					}
 				}
 			}
@@ -394,7 +392,7 @@ public class ActivationStateMachine {
 			} catch(AblyException ae) {
 				ErrorInfo reason = ae.errorInfo;
 				Log.e(TAG, "exception registering " + device.id + ": " + reason.toString());
-				handleEvent(new ActivationStateMachine.UpdatingRegistrationFailed(reason));
+				handleEvent(new SyncRegistrationFailed(reason));
 				return;
 			}
 			final HttpCore.RequestBody body = HttpUtils.requestBodyFromGson(device.pushRecipientJsonObject(), ably.options.useBinaryProtocol);
@@ -412,12 +410,54 @@ public class ActivationStateMachine {
 				@Override
 				public void onSuccess(Void response) {
 					Log.i(TAG, "updated registration " + device.id);
-					handleEvent(new ActivationStateMachine.RegistrationUpdated());
+					handleEvent(new RegistrationSynced());
 				}
 				@Override
 				public void onError(ErrorInfo reason) {
 					Log.e(TAG, "error updating registration " + device.id + ": " + reason.toString());
-					handleEvent(new ActivationStateMachine.UpdatingRegistrationFailed(reason));
+					handleEvent(new SyncRegistrationFailed(reason));
+				}
+			});
+		}
+	}
+
+	private void validateRegistration() {
+		final LocalDevice device = activationContext.getLocalDevice();
+		/* TODO: verify that the existing registration is compatible with the present credentials */
+		boolean useCustomRegistrar = activationContext.getPreferences().getBoolean(ActivationStateMachine.PersistKeys.PUSH_CUSTOM_REGISTRAR, false);
+		if (useCustomRegistrar) {
+			invokeCustomRegistration(device, false);
+		} else {
+			final AblyRest ably;
+			try {
+				ably = activationContext.getAbly();
+			} catch(AblyException ae) {
+				ErrorInfo reason = ae.errorInfo;
+				Log.e(TAG, "exception validating registration for " + device.id + ": " + reason.toString());
+				handleEvent(new SyncRegistrationFailed(reason));
+				return;
+			}
+			ably.http.request(new Http.Execute<JsonObject>() {
+				@Override
+				public void execute(HttpScheduler http, Callback<JsonObject> callback) throws AblyException {
+					Param[] params = null;
+					if (ably.options.pushFullWait) {
+						params = Param.push(params, "fullWait", "true");
+					}
+
+					final HttpCore.RequestBody body = HttpUtils.requestBodyFromGson(device.toJsonObject(), ably.options.useBinaryProtocol);
+					http.put("/push/deviceRegistrations/" + device.id, ably.push.pushRequestHeaders(true), params, body, null, false, callback);
+				}
+			}).async(new Callback<JsonObject>() {
+				@Override
+				public void onSuccess(JsonObject response) {
+					Log.i(TAG, "updated registration " + device.id);
+					handleEvent(new RegistrationSynced());
+				}
+				@Override
+				public void onError(ErrorInfo reason) {
+					Log.e(TAG, "error validating registration " + device.id + ": " + reason.toString());
+					handleEvent(new SyncRegistrationFailed(reason));
 				}
 			});
 		}

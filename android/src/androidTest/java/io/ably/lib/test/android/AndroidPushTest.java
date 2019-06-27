@@ -10,7 +10,7 @@ import android.test.AndroidTestCase;
 
 import android.util.Log;
 import io.ably.lib.push.*;
-import io.ably.lib.push.ActivationStateMachine.AfterRegistrationUpdateFailed;
+import io.ably.lib.push.ActivationStateMachine.AfterRegistrationSyncFailed;
 import io.ably.lib.push.ActivationStateMachine.CalledActivate;
 import io.ably.lib.push.ActivationStateMachine.CalledDeactivate;
 import io.ably.lib.push.ActivationStateMachine.Deregistered;
@@ -20,14 +20,14 @@ import io.ably.lib.push.ActivationStateMachine.GettingDeviceRegistrationFailed;
 import io.ably.lib.push.ActivationStateMachine.GotDeviceRegistration;
 import io.ably.lib.push.ActivationStateMachine.GotPushDeviceDetails;
 import io.ably.lib.push.ActivationStateMachine.NotActivated;
-import io.ably.lib.push.ActivationStateMachine.RegistrationUpdated;
+import io.ably.lib.push.ActivationStateMachine.RegistrationSynced;
 import io.ably.lib.push.ActivationStateMachine.State;
 import io.ably.lib.push.ActivationStateMachine.WaitingForDeregistration;
 import io.ably.lib.push.ActivationStateMachine.WaitingForDeviceRegistration;
 import io.ably.lib.push.ActivationStateMachine.WaitingForNewPushDeviceDetails;
 import io.ably.lib.push.ActivationStateMachine.WaitingForPushDeviceDetails;
-import io.ably.lib.push.ActivationStateMachine.WaitingForRegistrationUpdate;
-import io.ably.lib.push.ActivationStateMachine.UpdatingRegistrationFailed;
+import io.ably.lib.push.ActivationStateMachine.WaitingForRegistrationSync;
+import io.ably.lib.push.ActivationStateMachine.SyncRegistrationFailed;
 import io.ably.lib.rest.DeviceDetails;
 import io.ably.lib.util.Base64Coder;
 import io.azam.ulidj.ULID;
@@ -111,14 +111,14 @@ public class AndroidPushTest extends AndroidTestCase {
 		}
 
 		private void moveToAfterRegistrationUpdateFailed() throws AblyException {
-			// Move to AfterRegistrationUpdateFailed by forcing an update failure.
+			// Move to AfterRegistrationSyncFailed by forcing an update failure.
 
 			rest.push.activate(true); // Just to set useCustomRegistrar to true.
 			AsyncWaiter<Intent> customRegisterer = broadcastWaiter("PUSH_REGISTER_DEVICE");
 			rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.FCM, "testTokenFailed");
 			customRegisterer.waitFor();
 
-			CompletionWaiter failedWaiter = machine.getTransitionedToWaiter(AfterRegistrationUpdateFailed.class);
+			CompletionWaiter failedWaiter = machine.getTransitionedToWaiter(AfterRegistrationSyncFailed.class);
 
 			Intent intent = new Intent();
 			IntentUtils.addErrorInfo(intent, new ErrorInfo("intentional", 123));
@@ -471,7 +471,7 @@ public class AndroidPushTest extends AndroidTestCase {
 	// RSH3e1
 	public void test_WaitingForRegistrationUpdate_on_CalledActivate() {
 		TestActivation activation = new TestActivation();
-		State state = new ActivationStateMachine.WaitingForRegistrationUpdate(activation.machine);
+		State state = new WaitingForRegistrationSync(activation.machine);
 
 		final AsyncWaiter<Intent> waiter = broadcastWaiter("PUSH_ACTIVATE");
 
@@ -484,15 +484,15 @@ public class AndroidPushTest extends AndroidTestCase {
 		assertSize(0, activation.machine.pendingEvents);
 
 		// RSH3e1b
-		assertInstanceOf(WaitingForRegistrationUpdate.class, to);
+		assertInstanceOf(WaitingForRegistrationSync.class, to);
 	}
 
 	// RSH3e2
 	public void test_WaitingForRegistrationUpdate_on_RegistrationUpdated() {
 		TestActivation activation = new TestActivation();
-		State state = new WaitingForRegistrationUpdate(activation.machine);
+		State state = new WaitingForRegistrationSync(activation.machine);
 
-		State to = state.transition(new RegistrationUpdated());
+		State to = state.transition(new RegistrationSynced());
 
 		// RSH3e2a
 		assertSize(0, activation.machine.pendingEvents);
@@ -502,12 +502,12 @@ public class AndroidPushTest extends AndroidTestCase {
 	// RSH3e3
 	public void test_WaitingForRegistrationUpdate_on_UpdatingRegistrationFailed() {
 		TestActivation activation = new TestActivation();
-		State state = new WaitingForRegistrationUpdate(activation.machine);
+		State state = new WaitingForRegistrationSync(activation.machine);
 		ErrorInfo reason = new ErrorInfo("test", 123);
 
 		final AsyncWaiter<Intent> waiter = broadcastWaiter("PUSH_UPDATE_FAILED");
 
-		State to = state.transition(new UpdatingRegistrationFailed(reason));
+		State to = state.transition(new SyncRegistrationFailed(reason));
 
 		// RSH3e3a
 		waiter.waitFor();
@@ -517,7 +517,7 @@ public class AndroidPushTest extends AndroidTestCase {
 		assertSize(0, activation.machine.pendingEvents);
 
 		// RSH3e3b
-		assertInstanceOf(AfterRegistrationUpdateFailed.class, to);
+		assertInstanceOf(AfterRegistrationSyncFailed.class, to);
 	}
 
 	// RSH3f1
@@ -551,7 +551,7 @@ public class AndroidPushTest extends AndroidTestCase {
 
 	// RSH3f1
 	public void test_AfterRegistrationUpdateFailed_on_CalledDeactivate() throws Exception {
-		new DeactivateTest(AfterRegistrationUpdateFailed.class) {
+		new DeactivateTest(AfterRegistrationSyncFailed.class) {
 			@Override
 			protected void setUpMachineState(TestCase testCase) throws AblyException {
 				testCase.testActivation.registerAndWait();
@@ -634,9 +634,9 @@ public class AndroidPushTest extends AndroidTestCase {
 
 		TestActivation activation1 = new TestActivation();
 		testCases.add(new TestCase(
-				"from AfterRegistrationUpdateFailed",
+				"from AfterRegistrationSyncFailed",
 				activation1,
-				new AfterRegistrationUpdateFailed(activation1.machine)));
+				new AfterRegistrationSyncFailed(activation1.machine)));
 
 		testCases.run();
 	}
@@ -1226,7 +1226,7 @@ public class AndroidPushTest extends AndroidTestCase {
 						testActivation.httpTracker.lockRequests();
 					}
 
-					CompletionWaiter updatingWaiter = testActivation.machine.getTransitionedToWaiter(WaitingForRegistrationUpdate.class);
+					CompletionWaiter updatingWaiter = testActivation.machine.getTransitionedToWaiter(WaitingForRegistrationSync.class);
 					String updatedRegistrationToken = sendInitialEvent(this);
 					updatingWaiter.waitFor();
 
@@ -1252,7 +1252,7 @@ public class AndroidPushTest extends AndroidTestCase {
 					}
 
 					// RSH3d3d
-					assertInstanceOf(WaitingForRegistrationUpdate.class, testActivation.machine.current);
+					assertInstanceOf(WaitingForRegistrationSync.class, testActivation.machine.current);
 
 					// Now wait for next event, after updated.
 					CompletionWaiter handled = testActivation.machine.getEventHandledWaiter();
@@ -1293,14 +1293,14 @@ public class AndroidPushTest extends AndroidTestCase {
 					"ok with custom registerer",
 					true,
 					null,
-					RegistrationUpdated.class,
+					RegistrationSynced.class,
 					WaitingForNewPushDeviceDetails.class));
 
 			testCases.add(new TestCase(
 					"ok with default registerer",
 					false,
 					null,
-					RegistrationUpdated.class,
+					RegistrationSynced.class,
 					WaitingForNewPushDeviceDetails.class));
 
 			// RSH3e3
@@ -1308,15 +1308,15 @@ public class AndroidPushTest extends AndroidTestCase {
 					"failing with custom registerer",
 					true,
 					new ErrorInfo("testError", 123),
-					UpdatingRegistrationFailed.class,
-					AfterRegistrationUpdateFailed.class));
+					SyncRegistrationFailed.class,
+					AfterRegistrationSyncFailed.class));
 
 			testCases.add(new TestCase(
 					"failing with default registerer",
 					false,
 					new ErrorInfo("testError", 123),
-					UpdatingRegistrationFailed.class,
-					AfterRegistrationUpdateFailed.class));
+					SyncRegistrationFailed.class,
+					AfterRegistrationSyncFailed.class));
 
 			testCases.run();
 		}
