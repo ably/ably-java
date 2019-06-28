@@ -1,4 +1,22 @@
 # Change Log
+## [v1.1.1](https://github.com/ably/ably-java/tree/v1.1.1) (2019-04-10)
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.1.0...v1.1.1)
+
+**Merged pull requests:**
+
+- NetworkConnectivity: ensure all accesses to listeners set are synchronised [\#469](https://github.com/ably/ably-java/pull/469) ([paddybyers](https://github.com/paddybyers))
+- Truncated firebase ID \(registration token\) logging [\#466](https://github.com/ably/ably-java/pull/466) ([amsurana](https://github.com/amsurana))
+- Auth RSA4b1 spec update: conditional token validity check [\#463](https://github.com/ably/ably-java/pull/463) ([paddybyers](https://github.com/paddybyers))
+- Add some notes about log options [\#461](https://github.com/ably/ably-java/pull/461) ([paddybyers](https://github.com/paddybyers))
+- Feature matrix linked from README [\#458](https://github.com/ably/ably-java/pull/458) ([Srushtika](https://github.com/Srushtika))
+
+**Implemented enhancements:**
+
+- Improve handling of clock skew [\#462](https://github.com/ably/ably-java/issues/462)
+
+**Closed issues:**
+
+- ConcurrentModificationException in 1.1 when running multiple library instances [\#468](https://github.com/ably/ably-java/issues/468)
 
 ## [v1.1.0](https://github.com/ably/ably-java/tree/v1.1.0)
 

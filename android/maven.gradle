@@ -56,8 +56,8 @@ uploadArchives {
         // Export files to local storage
         repository(url: "file://${localReleaseDest}")
 
-        // // Export to local Maven cache
-        // repository(url: repositories.mavenLocal().url)
+        // Export to local Maven cache
+        repository(url: repositories.mavenLocal().url)
     }
 }
 

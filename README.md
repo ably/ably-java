@@ -30,13 +30,13 @@ Reference the library by including a compile dependency reference in your gradle
 For [Java](https://bintray.com/ably-io/ably/ably-java/_latestVersion):
 
 ```
-compile 'io.ably:ably-java:1.1.0'
+compile 'io.ably:ably-java:1.1.1'
 ```
 
 For [Android](https://bintray.com/ably-io/ably/ably-android/_latestVersion):
 
 ```
-compile 'io.ably:ably-android:1.1.0'
+compile 'io.ably:ably-android:1.1.1'
 ```
 
 The library is hosted on the [Jcenter repository](https://bintray.com/ably-io/ably), so you need to ensure that the repo is referenced also; IDEs will typically include this by default:
@@ -561,9 +561,9 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 
 ### Release notes
 
-* Create a branch for the release, named like `release-1.1.0`
+* Create a branch for the release, named like `release-1.1.1`
 * Replace all references of the current version number with the new version number (check this file [README.md](./README.md) and [common.gradle](./common.gradle)) and commit the changes
-* Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to update the [CHANGELOG](./CHANGELOG.md): `github_changelog_generator -u ably -p ably-java --header-label="# Changelog" --release-branch=release-1.1.0 --future-release=v1.0.8` 
+* Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to update the [CHANGELOG](./CHANGELOG.md): `github_changelog_generator -u ably -p ably-java --header-label="# Changelog" --release-branch=release-1.1.1 --future-release=v1.0.8` 
 * Commit [CHANGELOG](./CHANGELOG.md)
 * Add a tag and push to origin such as `git tag v1.1.0; git push origin v1.1.0`
 * Make a PR against `develop`
@@ -577,12 +577,12 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 
 ### Publishing to JCenter (Maven)
 
-* Go to the home page for the package; eg https://bintray.com/ably-io/ably/ably-java. Select [New version](https://bintray.com/ably-io/ably/ably-java/new/version), enter the new version such as "1.1.0" in name and save
+* Go to the home page for the package; eg https://bintray.com/ably-io/ably/ably-java. Select [New version](https://bintray.com/ably-io/ably/ably-java/new/version), enter the new version such as "1.1.1" in name and save
 * Run `./gradlew java:assembleRelease` locally to generate the files
-* Open local relative folder such as `./java/build/release/1.1.0/io/ably/ably-java/1.1.0`
-* Then go to the new version in JFrog Bintray; eg https://bintray.com/ably-io/ably/ably-java/1.1.0, then click on the link to upload via the UI in the "Upload files" section
-* Type in `io/ably/ably-java/1.1.0` into "Target Repository Path" ensuring the correct version is included. The drag in the files in `java/build/release/1.1.0/`. Upload all the `.jar` files and the `.pom` file.
-* You will see a notice "You have 4 unpublished item(s) for this version", make sure you click "Publish". Wait a few minutes and check that your version has all the necessary files at https://bintray.com/ably-io/ably/ably-java/1.1.0?sort=&order=#files/io/ably/ably-java/1.1.0 for example.
+* Open local relative folder such as `./java/build/release/1.1.1/io/ably/ably-java/1.1.1`
+* Then go to the new version in JFrog Bintray; eg https://bintray.com/ably-io/ably/ably-java/1.1.1, then click on the link to upload via the UI in the "Upload files" section
+* Type in `io/ably/ably-java/1.1.1` into "Target Repository Path" ensuring the correct version is included. The drag in the files in `java/build/release/1.1.1/`. Upload all the `.jar` files and the `.pom` file.
+* You will see a notice "You have 4 unpublished item(s) for this version", make sure you click "Publish". Wait a few minutes and check that your version has all the necessary files at https://bintray.com/ably-io/ably/ably-java/1.1.1?sort=&order=#files/io/ably/ably-java/1.1.1 for example.
 * Update the README text in Bintray.
 
 ### Create release on Github
@@ -591,7 +591,7 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 
 Similarly for the Android release at https://bintray.com/ably-io/ably/ably-android.
 Run `gradle android:assembleRelease` locally to generate the files, and drag in the files in
-`./android/build/release/1.1.0/io/ably/ably-android/1.1.0`. In this case upload the `.jar` files, the `.pom` file and the `.aar` file.
+`./android/build/release/1.1.1/io/ably/ably-android/1.1.1`. In this case upload the `.jar` files, the `.pom` file and the `.aar` file.
 
 ## Support, feedback and troubleshooting
 
