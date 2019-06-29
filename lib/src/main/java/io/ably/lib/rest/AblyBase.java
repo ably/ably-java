@@ -275,4 +275,12 @@ public abstract class AblyBase {
 	protected void onAuthError(ErrorInfo errorInfo) {
 		/* Default is to do nothing. Overridden by subclass. */
 	}
+
+	/**
+	 * clientId set by late initialisation
+	 */
+	protected void onClientIdSet(String clientId) {
+		/* Default is to do nothing. Overridden by subclass. */
+	}
+
 }

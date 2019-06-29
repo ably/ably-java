@@ -48,7 +48,6 @@ public class LocalDevice extends DeviceDetails {
 
 	private void loadPersisted() throws AblyException {
 		this.platform = "android";
-		this.clientId = activationContext.getClientId();
 		this.formFactor = isTablet(activationContext.getContext()) ? "tablet" : "phone";
 
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
@@ -57,6 +56,8 @@ public class LocalDevice extends DeviceDetails {
 		this.id = id;
 		if(id != null) {
 			Log.v(TAG, "loadPersisted(): existing deviceId found; id: " + id);
+			clientId = prefs.getString(SharedPrefKeys.CLIENT_ID, activationContext.clientId);
+			deviceSecret = prefs.getString(SharedPrefKeys.DEVICE_SECRET, null);
 		} else {
 			this.resetId();
 			Log.v(TAG, "loadPersisted(): no existing deviceId found; generated id: " + this.id);
@@ -105,6 +106,12 @@ public class LocalDevice extends DeviceDetails {
 			.apply();
 	}
 
+	void setClientId(String clientId) {
+		this.clientId = clientId;
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
+		prefs.edit().putString(SharedPrefKeys.CLIENT_ID, clientId).apply();
+	}
+
 	public void setDeviceIdentityToken(String token) {
 		this.deviceIdentityToken = token;
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
@@ -117,6 +124,7 @@ public class LocalDevice extends DeviceDetails {
 		SharedPreferences.Editor editor = prefs.edit();
 
 		editor.putString(SharedPrefKeys.DEVICE_ID, (id = ULID.random()));
+		editor.putString(SharedPrefKeys.CLIENT_ID, (clientId = activationContext.clientId));
 		editor.putString(SharedPrefKeys.DEVICE_SECRET, (deviceSecret = generateSecret()));
 
 		return editor.commit();
@@ -135,6 +143,10 @@ public class LocalDevice extends DeviceDetails {
 		editor.commit();
 	}
 
+	boolean isRegistered() {
+		return (deviceIdentityToken != null);
+	}
+
 	private static boolean isTablet(Context context) {
 		return (context.getResources().getConfiguration().screenLayout
 				& Configuration.SCREENLAYOUT_SIZE_MASK)
@@ -143,6 +155,7 @@ public class LocalDevice extends DeviceDetails {
 
 	private static class SharedPrefKeys {
 		static final String DEVICE_ID = "ABLY_DEVICE_ID";
+		static final String CLIENT_ID = "ABLY_CLIENT_ID";
 		static final String DEVICE_SECRET = "ABLY_DEVICE_SECRET";
 		static final String DEVICE_TOKEN = "ABLY_DEVICE_IDENTITY_TOKEN";
 		static final String TOKEN_TYPE = "ABLY_REGISTRATION_TOKEN_TYPE";
