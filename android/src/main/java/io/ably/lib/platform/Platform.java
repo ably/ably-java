@@ -36,6 +36,10 @@ public class Platform {
 		AndroidNetworkConnectivity.getNetworkConnectivity(context).addListener(this.networkConnectivity);
 	}
 
+	public boolean hasApplicationContext() {
+		return applicationContext != null;
+	}
+
 	/**
 	 * Get the NetworkConnectivity tracker instance for this context
 	 * @return

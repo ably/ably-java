@@ -4,6 +4,7 @@ import android.content.Context;
 import io.ably.lib.push.LocalDevice;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
+import io.ably.lib.util.Log;
 
 public class AblyRest extends AblyBase {
 	/**
@@ -40,4 +41,20 @@ public class AblyRest extends AblyBase {
 	 * Set the Android Context for this instance
 	 */
 	public void setAndroidContext(Context context) throws AblyException { this.platform.setAndroidContext(context); }
+
+	/**
+	 * clientId set by late initialisation
+	 */
+	protected void onClientIdSet(String clientId) {
+		/* we only need to propagate any update to clientId if this is a late init */
+		if(push != null && platform.hasApplicationContext()) {
+			try {
+				push.getActivationContext().setClientId(clientId);
+			} catch(AblyException ae) {
+				Log.e(TAG, "unable to update local device state");
+			}
+		}
+	}
+
+	private static final String TAG = AblyRest.class.getName();
 }

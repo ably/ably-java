@@ -1020,6 +1020,7 @@ public class Auth {
 		if(this.clientId == null) {
 			/* RSA12a, RSA12b, RSA7b2, RSA7b3, RSA7b4: the given clientId is now our clientId */
 			this.clientId = clientId;
+			this.ably.onClientIdSet(clientId);
 			return;
 		}
 		/* now this.clientId != null */
