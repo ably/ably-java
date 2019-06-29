@@ -13,6 +13,12 @@ public class Push extends PushBase {
 
 	public Push(AblyBase rest) {
 		super(rest);
+		String clientId = rest.auth.clientId;
+		if(clientId != null) {
+			try {
+				getActivationContext().setClientId(clientId);
+			} catch(AblyException ae) {}
+		}
 	}
 
 	public void activate() throws AblyException {
