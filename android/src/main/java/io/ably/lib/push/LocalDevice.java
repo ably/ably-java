@@ -170,7 +170,7 @@ public class LocalDevice extends DeviceDetails {
 			digest = MessageDigest.getInstance("SHA-256");
 		} catch (NoSuchAlgorithmException e) {}
 		byte[] encodedhash = digest.digest(entropy);
-		return Base64Coder.encode(encodedhash).toString();
+		return Base64Coder.encodeToString(encodedhash);
 	}
 
 	private static final String TAG = LocalDevice.class.getName();
