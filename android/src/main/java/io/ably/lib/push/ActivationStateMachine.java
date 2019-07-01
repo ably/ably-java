@@ -92,6 +92,10 @@ public class ActivationStateMachine {
 					machine.pendingEvents.add(new ActivationStateMachine.GotPushDeviceDetails());
 				}
 
+				if(!device.isCreated()) {
+					device.create();
+				}
+
 				return new ActivationStateMachine.WaitingForPushDeviceDetails(machine);
 			} else if (event instanceof ActivationStateMachine.GotPushDeviceDetails) {
 				return this;

@@ -28,6 +28,8 @@ public class LocalDevice extends DeviceDetails {
 	public LocalDevice(ActivationContext activationContext) {
 		super();
 		Log.v(TAG, "LocalDevice(): initialising");
+		this.platform = "android";
+		this.formFactor = isTablet(activationContext.getContext()) ? "tablet" : "phone";
 		this.activationContext = activationContext;
 		this.push = new DeviceDetails.Push();
 		try {
@@ -47,9 +49,6 @@ public class LocalDevice extends DeviceDetails {
 	}
 
 	private void loadPersisted() throws AblyException {
-		this.platform = "android";
-		this.formFactor = isTablet(activationContext.getContext()) ? "tablet" : "phone";
-
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
 
 		String id = prefs.getString(SharedPrefKeys.DEVICE_ID, null);
@@ -58,9 +57,6 @@ public class LocalDevice extends DeviceDetails {
 			Log.v(TAG, "loadPersisted(): existing deviceId found; id: " + id);
 			clientId = prefs.getString(SharedPrefKeys.CLIENT_ID, activationContext.clientId);
 			deviceSecret = prefs.getString(SharedPrefKeys.DEVICE_SECRET, null);
-		} else {
-			this.resetId();
-			Log.v(TAG, "loadPersisted(): no existing deviceId found; generated id: " + this.id);
 		}
 		this.deviceIdentityToken = prefs.getString(SharedPrefKeys.DEVICE_TOKEN, null);
 
@@ -96,6 +92,10 @@ public class LocalDevice extends DeviceDetails {
 		push.recipient.addProperty("registrationToken", token.token);
 	}
 
+	private void clearRegistrationToken() {
+		push.recipient = null;
+	}
+
 	void setAndPersistRegistrationToken(RegistrationToken token) {
 		Log.v(TAG, "setAndPersistRegistrationToken(): token: " + token.token);
 		setRegistrationToken(token);
@@ -118,8 +118,12 @@ public class LocalDevice extends DeviceDetails {
 		prefs.edit().putString(SharedPrefKeys.DEVICE_TOKEN, token).apply();
 	}
 
-	public boolean resetId() {
-		Log.v(TAG, "resetId()");
+	boolean isCreated() {
+		return id != null;
+	}
+
+	boolean create() {
+		Log.v(TAG, "create()");
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
 		SharedPreferences.Editor editor = prefs.edit();
 
@@ -132,6 +136,12 @@ public class LocalDevice extends DeviceDetails {
 
 	public void reset() {
 		Log.v(TAG, "reset()");
+		this.id = null;
+		this.deviceSecret = null;
+		this.deviceIdentityToken = null;
+		this.clientId = null;
+		this.clearRegistrationToken();
+
 		SharedPreferences.Editor editor = activationContext.getPreferences().edit();
 		for (Field f : SharedPrefKeys.class.getDeclaredFields()) {
 			try {
