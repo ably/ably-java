@@ -14,7 +14,6 @@ import java.lang.reflect.Field;
 import java.util.ArrayDeque;
 
 import io.ably.lib.http.Http;
-import io.ably.lib.http.HttpConstants;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpScheduler;
 import io.ably.lib.http.HttpUtils;
@@ -24,7 +23,6 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
-import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.IntentUtils;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
@@ -136,6 +134,7 @@ public class ActivationStateMachine {
 							if(ably.options.pushFullWait) {
 								params = Param.push(null, "fullWait", "true");
 							}
+							/* this is authenticated using the Ably library credentials, plus the deviceSecret in the request body */
 							http.post("/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, body, new Serialisation.HttpResponseHandler<JsonObject>(), true, callback);
 						}
 					}).async(new Callback<JsonObject>() {
@@ -377,15 +376,15 @@ public class ActivationStateMachine {
 			ably.http.request(new Http.Execute<Void>() {
 				@Override
 				public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
-					Param[] headers = HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol);
-					headers = Param.push(headers, HttpConstants.Headers.AUTHORIZATION, "Bearer " + Base64Coder.encodeString(device.deviceIdentityToken));
+//					Param[] headers = HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol);
+//					headers = Param.push(headers, HttpConstants.Headers.AUTHORIZATION, "Bearer " + Base64Coder.encodeString(device.deviceIdentityToken));
 
 					Param[] params = null;
 					if (ably.options.pushFullWait) {
 						params = Param.push(params, "fullWait", "true");
 					}
 
-					http.patch("/push/deviceRegistrations/" + device.id, headers, params, body, null, false, callback);
+					http.patch("/push/deviceRegistrations/" + device.id, ably.push.pushRequestHeaders(true), params, body, null, true, callback);
 				}
 			}).async(new Callback<Void>() {
 				@Override
@@ -419,11 +418,11 @@ public class ActivationStateMachine {
 			ably.http.request(new Http.Execute<Void>() {
 				@Override
 				public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
-					Param[] params = Param.push(null, "deviceId", device.id);
+					Param[] params = new Param[0];
 					if (ably.options.pushFullWait) {
 						params = Param.push(params, "fullWait", "true");
 					}
-					http.del("/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, null, true, callback);
+					http.del("/push/deviceRegistrations/" + device.id, ably.push.pushRequestHeaders(true), params, null, true, callback);
 				}
 			}).async(new Callback<Void>() {
 				@Override
