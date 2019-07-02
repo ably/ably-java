@@ -90,7 +90,7 @@ public class PushBase {
 					if (rest.options.pushFullWait) {
 						params = Param.push(params, "fullWait", "true");
 					}
-					http.put("/push/deviceRegistrations/" + device.id, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, body, DeviceDetails.httpResponseHandler, true, callback);
+					http.put("/push/deviceRegistrations/" + device.id, rest.push.pushRequestHeaders(device.id), params, body, DeviceDetails.httpResponseHandler, true, callback);
 				}
 			});
 		}
@@ -111,7 +111,7 @@ public class PushBase {
 					if (rest.options.pushFullWait) {
 						params = Param.push(params, "fullWait", "true");
 					}
-					http.get("/push/deviceRegistrations/" + deviceId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, DeviceDetails.httpResponseHandler, true, callback);
+					http.get("/push/deviceRegistrations/" + deviceId, rest.push.pushRequestHeaders(deviceId), params, DeviceDetails.httpResponseHandler, true, callback);
 				}
 			});
 		}
@@ -152,7 +152,7 @@ public class PushBase {
 					if (rest.options.pushFullWait) {
 						params = Param.push(params, "fullWait", "true");
 					}
-					http.del("/push/deviceRegistrations/" + deviceId, HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, null, true, callback);
+					http.del("/push/deviceRegistrations/" + deviceId, rest.push.pushRequestHeaders(deviceId), params, null, true, callback);
 				}
 			});
 		}
@@ -203,7 +203,7 @@ public class PushBase {
 					if (rest.options.pushFullWait) {
 						params = Param.push(params, "fullWait", "true");
 					}
-					http.post("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, body, ChannelSubscription.httpResponseHandler, true, callback);
+					http.post("/push/channelSubscriptions", rest.push.pushRequestHeaders(subscription.deviceId), params, body, ChannelSubscription.httpResponseHandler, true, callback);
 				}
 			});
 		}
@@ -217,7 +217,8 @@ public class PushBase {
 		}
 
 		protected BasePaginatedQuery.ResultRequest<ChannelSubscription> listImpl(Param[] params) {
-			return new BasePaginatedQuery<Push.ChannelSubscription>(rest.http, "/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, ChannelSubscription.httpBodyHandler).get();
+			String deviceId = HttpUtils.getParam(params, "deviceId");
+			return new BasePaginatedQuery<Push.ChannelSubscription>(rest.http, "/push/channelSubscriptions", rest.push.pushRequestHeaders(deviceId), params, ChannelSubscription.httpBodyHandler).get();
 		}
 
 		public void remove(ChannelSubscription subscription) throws AblyException {
@@ -251,14 +252,16 @@ public class PushBase {
 		}
 
 		protected Http.Request<Void> removeWhereImpl(Param[] params) {
+			String deviceId = HttpUtils.getParam(params, "deviceId");
 			if (rest.options.pushFullWait) {
 				params = Param.push(params, "fullWait", "true");
 			}
+			final Param[] finalHeaders = rest.push.pushRequestHeaders(deviceId);
 			final Param[] finalParams = params;
 			return rest.http.request(new Http.Execute<Void>() {
 				@Override
 				public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
-					http.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), finalParams, null, true, callback);
+					http.del("/push/channelSubscriptions", finalHeaders, finalParams, null, true, callback);
 				}
 			});
 		}
@@ -272,7 +275,8 @@ public class PushBase {
 		}
 
 		protected BasePaginatedQuery.ResultRequest<String> listChannelsImpl(Param[] params) {
-			return new BasePaginatedQuery<String>(rest.http, "/push/channels", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, StringUtils.httpBodyHandler).get();
+			String deviceId = HttpUtils.getParam(params, "deviceId");
+			return new BasePaginatedQuery<String>(rest.http, "/push/channels", rest.push.pushRequestHeaders(deviceId), params, StringUtils.httpBodyHandler).get();
 		}
 
 		ChannelSubscriptions(AblyBase rest) {
@@ -346,6 +350,14 @@ public class PushBase {
 		protected static HttpCore.ResponseHandler<ChannelSubscription> httpResponseHandler = new Serialisation.HttpResponseHandler<ChannelSubscription>(ChannelSubscription.class, fromJsonElement);
 
 		protected static HttpCore.BodyHandler<ChannelSubscription> httpBodyHandler = new Serialisation.HttpBodyHandler<ChannelSubscription>(ChannelSubscription[].class, fromJsonElement);
+	}
+
+	Param[] pushRequestHeaders(boolean forLocalDevice) {
+		return HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol);
+	}
+
+	Param[] pushRequestHeaders(String deviceId) {
+		return pushRequestHeaders(false);
 	}
 
 	protected final AblyBase rest;

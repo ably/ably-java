@@ -17,6 +17,7 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Log;
+import io.ably.lib.types.Param;
 import io.azam.ulidj.ULID;
 
 public class LocalDevice extends DeviceDetails {
@@ -156,6 +157,12 @@ public class LocalDevice extends DeviceDetails {
 	boolean isRegistered() {
 		return (deviceIdentityToken != null);
 	}
+
+	Param[] deviceIdentityHeaders() {
+		return deviceIdentityToken != null ? new Param[]{new Param(DEVICE_IDENTITY_HEADER, Base64Coder.encodeString(deviceIdentityToken))} : null;
+	}
+
+	private static final String DEVICE_IDENTITY_HEADER = "X-Ably-DeviceToken";
 
 	private static boolean isTablet(Context context) {
 		return (context.getResources().getConfiguration().screenLayout
