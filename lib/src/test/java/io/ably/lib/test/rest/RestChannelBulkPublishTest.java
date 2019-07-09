@@ -29,7 +29,6 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
 	 * 
 	 * It publishes the given message on all of the given channels.
 	 */
-	@Ignore // until idempotent publishing is enabled
 	@Test
 	public void bulk_publish_multiple_channels_simple() {
 		try {
@@ -164,9 +163,9 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
 	 *   }
 	 * ]
 	 *
-	 * It attempts to publishe the given message on all of the given channels.
+	 * It attempts to publish the given message on all of the given channels.
 	 */
-	@Ignore // until idempotent publishing is enabled
+	@Ignore // awaiting channel member in error responses
 	@Test
 	public void bulk_publish_multiple_channels_partial_error() {
 		try {
