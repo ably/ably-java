@@ -1274,9 +1274,9 @@ public class ConnectionManager implements ConnectListener {
 
 		@Override
 		public void onNetworkAvailable() {
-			Log.i(TAG, "onNetworkAvailable()");
 			ConnectionManager cm = ConnectionManager.this;
 			ConnectionState currentState = cm.state.state;
+			Log.i(TAG, "onNetworkAvailable(): currentState = " + currentState.name());
 			if(currentState == ConnectionState.disconnected || currentState == ConnectionState.suspended) {
 				Log.i(TAG, "onNetworkAvailable(): initiating reconnect");
 				cm.connect();
@@ -1285,11 +1285,11 @@ public class ConnectionManager implements ConnectListener {
 
 		@Override
 		public void onNetworkUnavailable(ErrorInfo reason) {
-			Log.i(TAG, "onNetworkAvailable(); reason = " + reason.toString());
 			ConnectionManager cm = ConnectionManager.this;
 			ConnectionState currentState = cm.state.state;
+			Log.i(TAG, "onNetworkUnavailable(); currentState = " + currentState.name() + "; reason = " + reason.toString());
 			if(currentState == ConnectionState.connected || currentState == ConnectionState.connecting) {
-				Log.i(TAG, "onNetworkAvailable(): closing connected transport");
+				Log.i(TAG, "onNetworkUnavailable(): closing connected transport");
 				cm.requestState(new StateIndication(ConnectionState.disconnected, reason));
 			}
 		}
