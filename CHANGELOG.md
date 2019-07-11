@@ -1,4 +1,36 @@
 # Change Log
+
+## [v1.1.2](https://github.com/ably/ably-java/tree/v1.1.2)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.0.14...v1.1.1)
+
+**Implemented enhancements:**
+
+- ConnectionManager: ensure that cached token details are cleared on any connection error [\#487](https://github.com/ably/ably-java/pull/487) ([paddybyers](https://github.com/paddybyers))
+- Add interactive test notes to the README [\#486](https://github.com/ably/ably-java/issues/486)
+
+**Fixed bugs:**
+
+- Push problems with push-subscribe permission [\#484](https://github.com/ably/ably-java/issues/484)
+- Push: LocaDevice.deviceSecret serialisation issue [\#480](https://github.com/ably/ably-java/issues/480)
+- Push: LocalDevice.reset\(\) doesn't clear persisted device state [\#478](https://github.com/ably/ably-java/issues/478)
+- PUSH\_ACTIVATE intent broadcast is not always sent when activating push [\#477](https://github.com/ably/ably-java/issues/477)
+- Stop using deprecated FirebaseInstanceIdService [\#475](https://github.com/ably/ably-java/issues/475)
+- Expired token never renewed [\#470](https://github.com/ably/ably-java/issues/470)
+- Presence: fix a couple test regressions [\#490](https://github.com/ably/ably-java/pull/490) ([paddybyers](https://github.com/paddybyers))
+
+**Closed issues:**
+
+- Add RTN20 support - react to operating system network connectivity events [\#415](https://github.com/ably/ably-java/issues/415)
+- Exceptions when attempting to send with null WsClient [\#447](https://github.com/ably/ably-java/issues/447)
+
+**Merged pull requests:**
+
+- README: add a note about the push example/test app [\#491](https://github.com/ably/ably-java/pull/491) ([paddybyers](https://github.com/paddybyers))
+- Reenable REST publish tests that depend on idempotency [\#489](https://github.com/ably/ably-java/pull/489) ([paddybyers](https://github.com/paddybyers))
+- Push fixes for 112 [\#485](https://github.com/ably/ably-java/pull/485) ([paddybyers](https://github.com/paddybyers))
+- Local device reset fix [\#479](https://github.com/ably/ably-java/pull/479) ([amsurana](https://github.com/amsurana))
+
 ## [v1.1.1](https://github.com/ably/ably-java/tree/v1.1.1) (2019-04-10)
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.1.0...v1.1.1)
 
