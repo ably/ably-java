@@ -1648,16 +1648,18 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				}
 			}.setMessageStack(receivedMessageStack));
 
+			Helpers.PresenceWaiter waiter = new Helpers.PresenceWaiter(channel2);
+
 			/* Start emitting presence with ably client 1 (emitter) */
 			channel1.presence.enter("Hello, #2!", null);
-			channel1.presence.updatePresence(new PresenceMessage(Action.present, ably1.options.clientId), null);
+			channel1.presence.updatePresence(new PresenceMessage(Action.update, ably1.options.clientId), null);
 			channel1.presence.update("Lorem Ipsum", null);
 			channel1.presence.leave(null);
 
 			/* Wait until receiver client (ably2) observes {@code Action.leave}
 			 * is emitted from emitter client (ably1)
 			 */
-			new Helpers.PresenceWaiter(channel2).waitFor(ably1.options.clientId, Action.leave);
+			waiter.waitFor(ably1.options.clientId, Action.leave);
 
 			/* Validate that,
 			 *	- we received specific actions
