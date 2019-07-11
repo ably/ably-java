@@ -499,6 +499,12 @@ either a real device or the Android emulator.
 
     ./gradlew android:connectedAndroidTest
 
+### Interactive push tests
+
+End-to-end tests for push notifications (ie where the Android client is the target) can be tested interactively via a [separate app](https://github.com/ably/push-example-android).
+There are [instructions there](https://github.com/ably/push-example-android#using-this-app-yourself) for setting up the necessary FCM account, configuring the credentials and other parameters,
+in order to get end-to-end FCM notifications working.
+
 ## Developing this library with an IDE
 
 The gradle project files can be imported to create projects in IntelliJ IDEA, Eclipse and Android Studio.
