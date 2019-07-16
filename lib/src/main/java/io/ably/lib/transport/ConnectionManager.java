@@ -79,7 +79,7 @@ public class ConnectionManager implements ConnectListener {
 
 		final boolean terminal;
 		final boolean retry;
-		final long timeout;
+		public long timeout;
 		String host;
 
 		StateInfo(ConnectionState state, boolean queueEvents, boolean sendEvents, boolean terminal, boolean retry, long timeout, ErrorInfo defaultErrorInfo) {
@@ -617,8 +617,10 @@ public class ConnectionManager implements ConnectListener {
 
 	private synchronized void onError(ProtocolMessage message) {
 		connection.key = null;
-		ConnectionState destinationState = isFatalError(message.error) ? ConnectionState.failed : ConnectionState.disconnected;
-		notifyState(transport, new StateIndication(destinationState, message.error));
+		ErrorInfo reason = message.error;
+		ably.auth.onAuthError(reason);
+		ConnectionState destinationState = isFatalError(reason) ? ConnectionState.failed : ConnectionState.disconnected;
+		notifyState(transport, new StateIndication(destinationState, reason));
 	}
 
 	private void onAck(ProtocolMessage message) {
@@ -1272,9 +1274,9 @@ public class ConnectionManager implements ConnectListener {
 
 		@Override
 		public void onNetworkAvailable() {
-			Log.i(TAG, "onNetworkAvailable()");
 			ConnectionManager cm = ConnectionManager.this;
 			ConnectionState currentState = cm.state.state;
+			Log.i(TAG, "onNetworkAvailable(): currentState = " + currentState.name());
 			if(currentState == ConnectionState.disconnected || currentState == ConnectionState.suspended) {
 				Log.i(TAG, "onNetworkAvailable(): initiating reconnect");
 				cm.connect();
@@ -1283,11 +1285,11 @@ public class ConnectionManager implements ConnectListener {
 
 		@Override
 		public void onNetworkUnavailable(ErrorInfo reason) {
-			Log.i(TAG, "onNetworkAvailable(); reason = " + reason.toString());
 			ConnectionManager cm = ConnectionManager.this;
 			ConnectionState currentState = cm.state.state;
+			Log.i(TAG, "onNetworkUnavailable(); currentState = " + currentState.name() + "; reason = " + reason.toString());
 			if(currentState == ConnectionState.connected || currentState == ConnectionState.connecting) {
-				Log.i(TAG, "onNetworkAvailable(): closing connected transport");
+				Log.i(TAG, "onNetworkUnavailable(): closing connected transport");
 				cm.requestState(new StateIndication(ConnectionState.disconnected, reason));
 			}
 		}

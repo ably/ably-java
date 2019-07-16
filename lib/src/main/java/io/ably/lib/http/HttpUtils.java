@@ -125,6 +125,19 @@ public class HttpUtils {
 		return params.toArray(new Param[params.size()]);
 	}
 
+	public static String getParam(Param[] params, String key) {
+		String result = null;
+		if(params != null) {
+			for(Param p : params) {
+				if(key.equals(p.key)) {
+					result = p.value;
+					break;
+				}
+			}
+		}
+		return result;
+	}
+
 	public static String encodeURIComponent(String input) {
 		try {
 			return URLEncoder.encode(input, "UTF-8")

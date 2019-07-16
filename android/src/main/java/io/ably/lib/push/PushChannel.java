@@ -68,7 +68,7 @@ public class PushChannel {
 				if (rest.options.pushFullWait) {
 					params = Param.push(params, "fullWait", "true");
 				}
-				http.post("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, body, null, true, callback);
+				http.post("/push/channelSubscriptions", rest.push.pushRequestHeaders(true), params, body, null, true, callback);
 			}
 		});
 	}
@@ -116,7 +116,7 @@ public class PushChannel {
 		return rest.http.request(new Http.Execute<Void>() {
 			@Override
 			public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
-				http.del("/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), finalParams, null, true, callback);
+				http.del("/push/channelSubscriptions", rest.push.pushRequestHeaders(true), finalParams, null, true, callback);
 			}
 		});
 	}
@@ -150,7 +150,7 @@ public class PushChannel {
 		}
 		params = Param.set(params, "concatFilters", "true");
 
-		return new BasePaginatedQuery<Push.ChannelSubscription>(rest.http, "/push/channelSubscriptions", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, Push.ChannelSubscription.httpBodyHandler).get();
+		return new BasePaginatedQuery<Push.ChannelSubscription>(rest.http, "/push/channelSubscriptions", rest.push.pushRequestHeaders(true), params, Push.ChannelSubscription.httpBodyHandler).get();
 	}
 
 	protected String getClientId() throws AblyException {
@@ -175,4 +175,3 @@ public class PushChannel {
 		return localDevice;
 	}
 }
-

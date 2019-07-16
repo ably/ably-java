@@ -3,10 +3,12 @@ package io.ably.lib.push;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import io.ably.lib.http.HttpUtils;
 import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Param;
 import io.ably.lib.util.Log;
 
 public class Push extends PushBase {
@@ -57,6 +59,28 @@ public class Push extends PushBase {
 
 	public LocalDevice getLocalDevice() throws AblyException {
 		return getActivationContext().getLocalDevice();
+	}
+
+	@Override
+	Param[] pushRequestHeaders(boolean forLocalDevice) {
+		Param[] headers = super.pushRequestHeaders(forLocalDevice);
+		if(forLocalDevice) {
+			try {
+				Param[] deviceIdentityHeaders = getLocalDevice().deviceIdentityHeaders();
+				if(deviceIdentityHeaders != null) {
+					headers = HttpUtils.mergeHeaders(headers, deviceIdentityHeaders);
+				}
+			} catch (AblyException e) {}
+		}
+		return headers;
+	}
+
+	Param[] pushRequestHeaders(String deviceId) {
+		boolean forLocalDevice = false;
+		try {
+			forLocalDevice = deviceId != null && deviceId.equals(getLocalDevice().id);
+		} catch (AblyException e) {}
+		return pushRequestHeaders(forLocalDevice);
 	}
 
 	private static final String TAG = Push.class.getName();

@@ -791,24 +791,24 @@ public class Presence {
 					!(syncIsComplete = (!syncInProgress && syncComplete)))
 				wait();
 
-			if (!syncIsComplete) {
-				/* invalid channel state */
-				int errorCode;
-				String errorMessage;
+			/* invalid channel state */
+			int errorCode;
+			String errorMessage;
 
-				if (channel.state == ChannelState.suspended) {
-					/* (RTP11d) If the Channel is in the SUSPENDED state then the get function will by default,
-					 * or if waitForSync is set to true, result in an error with code 91005 and a message stating
-					 * that the presence state is out of sync due to the channel being in a SUSPENDED state */
-					errorCode = 91005;
-					errorMessage = String.format("Channel %s: presence state is out of sync due to the channel being in a SUSPENDED state", channel.name);
-				} else {
-					errorCode = 90001;
-					errorMessage = String.format("Channel %s: cannot get presence state because channel is in invalid state", channel.name);
-				}
-				Log.v(TAG, errorMessage);
-				throw AblyException.fromErrorInfo(new ErrorInfo(errorMessage, errorCode));
+			if (channel.state == ChannelState.suspended) {
+				/* (RTP11d) If the Channel is in the SUSPENDED state then the get function will by default,
+				 * or if waitForSync is set to true, result in an error with code 91005 and a message stating
+				 * that the presence state is out of sync due to the channel being in a SUSPENDED state */
+				errorCode = 91005;
+				errorMessage = String.format("Channel %s: presence state is out of sync due to the channel being in a SUSPENDED state", channel.name);
+			} else if(syncIsComplete) {
+				return;
+			} else {
+				errorCode = 90001;
+				errorMessage = String.format("Channel %s: cannot get presence state because channel is in invalid state", channel.name);
 			}
+			Log.v(TAG, errorMessage);
+			throw AblyException.fromErrorInfo(new ErrorInfo(errorMessage, errorCode));
 		}
 
 		synchronized Collection<PresenceMessage> get(Param[] params) throws AblyException, InterruptedException {

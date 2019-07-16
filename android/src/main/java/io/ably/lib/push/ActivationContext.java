@@ -42,6 +42,7 @@ public class ActivationContext {
 
 	public void setAbly(AblyRest ably) {
 		this.ably = ably;
+		this.clientId = ably.auth.clientId;
 	}
 
 	AblyRest getAbly() throws AblyException {
@@ -59,11 +60,19 @@ public class ActivationContext {
 		return (ably = new AblyRest(deviceIdentityToken));
 	}
 
-	String getClientId() {
-		if(ably == null) {
-			return null;
+	public boolean setClientId(String clientId) {
+		boolean updated = !clientId.equals(this.clientId);
+		if(updated) {
+			if(localDevice != null) {
+				localDevice.setClientId(clientId);
+				if(localDevice.isRegistered()) {
+					if(activationStateMachine != null) {
+						activationStateMachine.handleEvent(new ActivationStateMachine.GotPushDeviceDetails());
+					}
+				}
+			}
 		}
-		return ably.auth.clientId;
+		return updated;
 	}
 
 	public void onNewRegistrationToken(RegistrationToken.Type type, String token) {
@@ -113,6 +122,7 @@ public class ActivationContext {
 	}
 
 	protected AblyRest ably;
+	protected String clientId;
 	protected ActivationStateMachine activationStateMachine;
 	protected LocalDevice localDevice;
 	protected final SharedPreferences prefs;
