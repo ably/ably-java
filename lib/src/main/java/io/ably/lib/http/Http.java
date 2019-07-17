@@ -58,8 +58,14 @@ public class Http {
 	public <Result> Request<Result> failedRequest(final AblyException e) {
 		return new Request(new Execute<Result>() {
 			@Override
-			public void execute(HttpScheduler http, Callback<Result> callback) throws AblyException {
-				throw e;
+			public void execute(HttpScheduler http, final Callback<Result> callback) throws AblyException {
+				//throw e;
+			    http.executor.execute(new Runnable() {
+				@Override
+				public void run() {
+				    callback.onError(e.errorInfo);
+				}
+			    });
 			}
 		});
 	}
