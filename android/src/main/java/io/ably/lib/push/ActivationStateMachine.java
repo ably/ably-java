@@ -7,6 +7,10 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.support.v4.content.LocalBroadcastManager;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.InstanceIdResult;
 import com.google.gson.JsonObject;
 
 import java.lang.reflect.Constructor;
@@ -19,10 +23,7 @@ import io.ably.lib.http.HttpScheduler;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.DeviceDetails;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.Callback;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.Param;
+import io.ably.lib.types.*;
 import io.ably.lib.util.IntentUtils;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
@@ -51,6 +52,10 @@ public class ActivationStateMachine {
 
 	public static class GettingDeviceRegistrationFailed extends ActivationStateMachine.ErrorEvent {
 		GettingDeviceRegistrationFailed(ErrorInfo reason) { super(reason); }
+	}
+
+	public static class GettingPushDeviceDetailsFailed extends ActivationStateMachine.ErrorEvent {
+		GettingPushDeviceDetailsFailed(ErrorInfo reason) { super(reason); }
 	}
 
 	public static class RegistrationUpdated extends ActivationStateMachine.Event {}
@@ -88,6 +93,8 @@ public class ActivationStateMachine {
 
 				if (device.getRegistrationToken() != null) {
 					machine.pendingEvents.add(new ActivationStateMachine.GotPushDeviceDetails());
+				} else {
+					getRegistrationToken(machine);
 				}
 
 				if(!device.isCreated()) {
@@ -109,6 +116,9 @@ public class ActivationStateMachine {
 				return this;
 			} else if (event instanceof ActivationStateMachine.CalledDeactivate) {
 				machine.callDeactivatedCallback(null);
+				return new ActivationStateMachine.NotActivated(machine);
+			} else if (event instanceof ActivationStateMachine.GettingPushDeviceDetailsFailed) {
+				machine.callDeactivatedCallback(((ActivationStateMachine.GettingPushDeviceDetailsFailed)event).reason);
 				return new ActivationStateMachine.NotActivated(machine);
 			} else if (event instanceof ActivationStateMachine.GotPushDeviceDetails) {
 				final LocalDevice device = machine.getDevice();
@@ -246,7 +256,7 @@ public class ActivationStateMachine {
 				return this;
 			} else if (event instanceof ActivationStateMachine.Deregistered) {
 				LocalDevice device = machine.getDevice();
-				device.setDeviceIdentityToken(null);
+				device.reset();
 				machine.callDeactivatedCallback(null);
 				return new ActivationStateMachine.NotActivated(machine);
 			} else if (event instanceof ActivationStateMachine.DeregistrationFailed) {
@@ -357,6 +367,24 @@ public class ActivationStateMachine {
 		LocalBroadcastManager.getInstance(context).registerReceiver(onceReceiver, filter);
 	}
 
+	private static void getRegistrationToken(final ActivationStateMachine machine) {
+		FirebaseInstanceId.getInstance().getInstanceId()
+				.addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
+					@Override
+					public void onComplete(Task<InstanceIdResult> task) {
+						if(task.isSuccessful()) {
+							/* Get new Instance ID token */
+							String token = task.getResult().getToken();
+							Log.i(TAG, "getInstanceId completed with new token");
+							machine.activationContext.onNewRegistrationToken(RegistrationToken.Type.FCM, token);
+						} else {
+							Log.e(TAG, "getInstanceId failed", task.getException());
+							machine.handleEvent(new ActivationStateMachine.GettingPushDeviceDetailsFailed(ErrorInfo.fromThrowable(task.getException())));
+						}
+					}
+				});
+	}
+
 	private static void updateRegistration(final ActivationStateMachine machine) {
 		final LocalDevice device = machine.activationContext.getLocalDevice();
 		boolean useCustomRegistrar = machine.activationContext.getPreferences().getBoolean(ActivationStateMachine.PersistKeys.PUSH_CUSTOM_REGISTRAR, false);
@@ -376,9 +404,6 @@ public class ActivationStateMachine {
 			ably.http.request(new Http.Execute<Void>() {
 				@Override
 				public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
-//					Param[] headers = HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol);
-//					headers = Param.push(headers, HttpConstants.Headers.AUTHORIZATION, "Bearer " + Base64Coder.encodeString(device.deviceIdentityToken));
-
 					Param[] params = null;
 					if (ably.options.pushFullWait) {
 						params = Param.push(params, "fullWait", "true");
