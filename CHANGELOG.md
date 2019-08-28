@@ -1,5 +1,14 @@
 # Change Log
 
+## [v1.1.3](https://github.com/ably/ably-java/tree/v1.1.3)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.1.2...v1.1.3)
+
+**Merged pull requests:**
+
+- Push: delete all locally persisted state when deregistering [\#494](https://github.com/ably/ably-java/pull/494) ([paddybyers](https://github.com/paddybyers))
+- Async callback fix [\#493](https://github.com/ably/ably-java/pull/493) ([amsurana](https://github.com/amsurana))
+
 ## [v1.1.2](https://github.com/ably/ably-java/tree/v1.1.2)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.0.14...v1.1.1)
