@@ -3380,7 +3380,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 		PresenceMessage[] decodedMessages = PresenceMessage.fromEncodedArray(fixtures, null);
 		for(int index = 0; index < decodedMessages.length; index++) {
 			PresenceMessage testInputMsg = testMessages.messages[index];
-			testInputMsg.decode(null);
+			testInputMsg.decode((ChannelOptions)null);
 			if(testInputMsg.data instanceof byte[]) {
 				assertArrayEquals((byte[]) testInputMsg.data, (byte[]) decodedMessages[index].data);
 			} else {

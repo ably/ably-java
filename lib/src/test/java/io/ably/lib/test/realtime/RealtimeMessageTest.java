@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Locale;
 
 import com.google.gson.*;
+import io.ably.lib.types.*;
 import io.ably.lib.util.Serialisation;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,12 +38,6 @@ import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.transport.ConnectionManager;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.Callback;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.Message;
-import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
 
 public class RealtimeMessageTest extends ParameterizedTest {
@@ -887,7 +882,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 		Message[] decodedMessages = Message.fromEncodedArray(fixtures, null);
 		for(int index = 0; index < decodedMessages.length; index++) {
 			Message testInputMsg = testMessages.messages[index];
-			testInputMsg.decode(null);
+			testInputMsg.decode((ChannelOptions)null);
 			if(testInputMsg.data instanceof byte[]) {
 				assertArrayEquals((byte[]) testInputMsg.data, (byte[]) decodedMessages[index].data);
 			} else {

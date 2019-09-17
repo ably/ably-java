@@ -3,6 +3,8 @@ package io.ably.lib.types;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -69,12 +71,19 @@ public class BaseMessage implements Cloneable {
 	}
 
 	public void decode(ChannelOptions opts) throws MessageDecodeException {
+		decode(new EncodingDecodingContext(opts, new HashMap<String, AblyCodec>()));
+	}
+
+	public void decode(EncodingDecodingContext context) throws MessageDecodeException {
+
+		Object lastPayload = data;
+
 		if(encoding != null) {
 			String[] xforms = encoding.split("\\/");
-			int i = 0, j = xforms.length;
+			int lastProcessedEncodingIndex = 0, encodingsToProcess = xforms.length;
 			try {
-				while((i = j) > 0) {
-					Matcher match = xformPattern.matcher(xforms[--j]);
+				while((lastProcessedEncodingIndex = encodingsToProcess) > 0) {
+					Matcher match = xformPattern.matcher(xforms[--encodingsToProcess]);
 					if(!match.matches()) break;
 					switch(match.group(1)) {
 						case "base64":
@@ -83,6 +92,11 @@ public class BaseMessage implements Cloneable {
 							} catch (IllegalArgumentException e) {
 								throw MessageDecodeException.fromDescription("Invalid base64 data received");
 							}
+
+							if(lastProcessedEncodingIndex == xforms.length) {
+								lastPayload = data;
+							}
+
 							continue;
 
 						case "utf-8":
@@ -99,9 +113,9 @@ public class BaseMessage implements Cloneable {
 							continue;
 
 						case "cipher":
-							if(opts != null && opts.encrypted) {
+							if(context.channelOptions != null && context.channelOptions.encrypted) {
 								try {
-									data = opts.getCipher().decrypt((byte[]) data);
+									data = context.channelOptions.getCipher().decrypt((byte[]) data);
 								} catch(AblyException e) {
 									throw MessageDecodeException.fromDescription(e.errorInfo.message);
 								}
@@ -110,13 +124,25 @@ public class BaseMessage implements Cloneable {
 							else {
 								throw MessageDecodeException.fromDescription("Encrypted message received but encryption is not set up");
 							}
+						default:
+							AblyCodec userCodec = context.userProvidedCodecs.get(match.group(1));
+							if(userCodec != null) {
+								data = userCodec.decode(data, context);
+								if(Objects.equals(match.group(1),"vcdiff")) {
+									lastPayload = data;
+								}
+								continue;
+							}
+
 					}
 					break;
 				}
 			} finally {
-				encoding = (i <= 0) ? null : join(xforms, '/', 0, i);
+				encoding = (lastProcessedEncodingIndex <= 0) ? null : join(xforms, '/', 0, lastProcessedEncodingIndex);
 			}
 		}
+
+		context.baseEncodedPreviousPayload = lastPayload;
 	}
 
 	public void encode(ChannelOptions opts) throws AblyException {

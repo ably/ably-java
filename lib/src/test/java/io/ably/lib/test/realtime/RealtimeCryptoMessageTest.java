@@ -54,9 +54,9 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 				Message encryptedMessage = item.encrypted;
 
 				/* decode (ie remove any base64 encoding) */
-				testMessage.decode(null);
+				testMessage.decode((ChannelOptions)null);
 				try {
-					encryptedMessage.decode(null);
+					encryptedMessage.decode((ChannelOptions)null);
 				} catch (MessageDecodeException e) {}
 
 				/* reset channel cipher, to ensure it uses the given iv */
@@ -109,9 +109,9 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 				Message encryptedMessage = item.encrypted;
 
 				/* decode (ie remove any base64 encoding) */
-				testMessage.decode(null);
+				testMessage.decode((ChannelOptions)null);
 				try {
-					encryptedMessage.decode(null);
+					encryptedMessage.decode((ChannelOptions)null);
 				} catch (MessageDecodeException e) {}
 
 				/* reset channel cipher, to ensure it uses the given iv */
@@ -164,9 +164,9 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 				Message encryptedMessage = item.encrypted;
 
 				/* decode (ie remove any base64 encoding) */
-				testMessage.decode(null);
+				testMessage.decode((ChannelOptions)null);
 				try {
-					encryptedMessage.decode(null);
+					encryptedMessage.decode((ChannelOptions)null);
 				} catch (MessageDecodeException e) {}
 
 				/* reset channel cipher, to ensure it uses the given iv */
@@ -219,9 +219,9 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 				Message encryptedMessage = item.encrypted;
 
 				/* decode (ie remove any base64 encoding) */
-				testMessage.decode(null);
+				testMessage.decode((ChannelOptions)null);
 				try {
-					encryptedMessage.decode(null);
+					encryptedMessage.decode((ChannelOptions)null);
 				} catch (MessageDecodeException e) {}
 
 				/* reset channel cipher, to ensure it uses the given iv */
