@@ -127,9 +127,14 @@ public class BaseMessage implements Cloneable {
 						default:
 							AblyCodec userCodec = context.userProvidedCodecs.get(match.group(1));
 							if(userCodec != null) {
-								data = userCodec.decode(data, context);
-								if(Objects.equals(match.group(1),"vcdiff")) {
-									lastPayload = data;
+								try {
+									data = userCodec.decode(data, context);
+									if (Objects.equals(match.group(1), "vcdiff")) {
+										lastPayload = data;
+									}
+								}
+								catch (IOException ex) {
+									throw MessageDecodeException.fromDescription("Decoding failed for user provided codec " + match.group(1));
 								}
 								continue;
 							}
