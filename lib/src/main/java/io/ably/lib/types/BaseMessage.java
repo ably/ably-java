@@ -71,10 +71,10 @@ public class BaseMessage implements Cloneable {
 	}
 
 	public void decode(ChannelOptions opts) throws MessageDecodeException {
-		decode(new EncodingDecodingContext(opts, new HashMap<String, AblyCodec>()));
+		decode(new InternalEncodingDecodingContext(opts, new HashMap<String, AblyCodec>()));
 	}
 
-	public void decode(EncodingDecodingContext context) throws MessageDecodeException {
+	public void decode(InternalEncodingDecodingContext context) throws MessageDecodeException {
 
 		Object lastPayload = data;
 
@@ -128,12 +128,12 @@ public class BaseMessage implements Cloneable {
 							AblyCodec userCodec = context.userProvidedCodecs.get(match.group(1));
 							if(userCodec != null) {
 								try {
-									data = userCodec.decode(data, context);
+									data = userCodec.decode(data, new EncodingDecodingContext(context.channelOptions, match.group(0), context.baseEncodedPreviousPayload));
 									if (Objects.equals(match.group(1), "vcdiff")) {
 										lastPayload = data;
 									}
 								}
-								catch (IOException ex) {
+								catch (Exception ex) {
 									throw MessageDecodeException.fromDescription("Decoding failed for user provided codec " + match.group(1));
 								}
 								continue;

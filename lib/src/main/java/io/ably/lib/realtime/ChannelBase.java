@@ -972,7 +972,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		this.presence = new Presence((Channel) this);
 		state = ChannelState.initialized;
 		queuedMessages = new ArrayList<QueuedMessage>();
-		encodingDecodingContext = new EncodingDecodingContext(options, ably.options.userProvidedCodecs);
+		encodingDecodingContext = new InternalEncodingDecodingContext(options, ably.options.userProvidedCodecs);
 	}
 
 	void onChannelMessage(ProtocolMessage msg) {
@@ -1056,5 +1056,5 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	final String basePath;
 	ChannelOptions options;
 	String syncChannelSerial;
-	private final EncodingDecodingContext encodingDecodingContext;
+	private final InternalEncodingDecodingContext encodingDecodingContext;
 }
