@@ -199,7 +199,6 @@ public class WebSocketTransport implements ITransport {
 		@Override
 		public void onClose(int wsCode, String wsReason, boolean remote) {
 			Log.d(TAG, "onClose(): wsCode = " + wsCode + "; wsReason = " + wsReason + "; remote = " + remote);
-			flagActivity();
 			ConnectionState newState;
 			ErrorInfo reason;
 			switch(wsCode) {
