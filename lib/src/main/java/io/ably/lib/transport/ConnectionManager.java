@@ -542,6 +542,12 @@ public class ConnectionManager implements ConnectListener {
 		 *  - otherwise (the realtime host has been overridden or has fallen
 		 *    back), set http to the same as realtime.
 		 */
+		if (state!=null && state.state!=ConnectionState.connecting) {
+			return;
+		}
+		if (pendingConnect==null) {
+			return;
+		}
 		if (pendingConnect.host == options.realtimeHost) {
 			ably.httpCore.setPreferredHost(options.restHost);
 		} else {
