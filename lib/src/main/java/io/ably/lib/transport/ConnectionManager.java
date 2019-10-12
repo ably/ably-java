@@ -532,19 +532,6 @@ public class ConnectionManager implements ConnectListener {
 	}
 
 	private synchronized void onConnected(ProtocolMessage message) {
-		/* Set the http host to try and ensure that realtime and rest use the
-		 * same region:
-		 *  - if we're on the default realtime host, set http to the default
-		 *    rest host
-		 *  - otherwise (the realtime host has been overridden or has fallen
-		 *    back), set http to the same as realtime.
-		 */
-		if (pendingConnect.host == options.realtimeHost) {
-			ably.httpCore.setPreferredHost(options.restHost);
-		} else {
-			ably.httpCore.setPreferredHost(pendingConnect.host);
-		}
-
 		/* if the returned connection id differs from
 		 * the existing connection id, then this means
 		 * we need to suspend all existing attachments to
@@ -916,8 +903,8 @@ public class ConnectionManager implements ConnectListener {
 				errorInfo = e.errorInfo;
 			}
 
-			/* report error in UPDATE event */
-			if (state.state == ConnectionState.connected && errorInfo != null) {
+			/* report connection state in UPDATE event */
+			if (state.state == ConnectionState.connected) {
 				connection.emitUpdate(errorInfo);
 			}
 		}
