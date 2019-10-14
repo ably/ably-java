@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Locale;
 
 import com.google.gson.*;
-import io.ably.lib.types.*;
 import io.ably.lib.util.Serialisation;
 import org.junit.Rule;
 import org.junit.Test;

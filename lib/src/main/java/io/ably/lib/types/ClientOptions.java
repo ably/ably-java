@@ -197,5 +197,5 @@ public class ClientOptions extends AuthOptions {
 	public boolean pushFullWait = false;
 
 
-	public final Map<String, AblyCodec> userProvidedCodecs = new HashMap<>();
+	public final Map<String, AblyCodec> Codecs = new HashMap<>();
 }

@@ -125,7 +125,7 @@ public class BaseMessage implements Cloneable {
 								throw MessageDecodeException.fromDescription("Encrypted message received but encryption is not set up");
 							}
 						default:
-							AblyCodec userCodec = context.userProvidedCodecs.get(match.group(1));
+							AblyCodec userCodec = context.Codecs.get(match.group(1));
 							if(userCodec != null) {
 								try {
 									data = userCodec.decode(data, new EncodingDecodingContext(context.channelOptions, match.group(0), context.baseEncodedPreviousPayload));
