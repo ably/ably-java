@@ -239,9 +239,6 @@ public class WebSocketTransport implements ITransport {
 				reason = ConnectionManager.REASON_FAILED;
 				break;
 			}
-			synchronized(WebSocketTransport.this) {
-				wsConnection = null;
-			}
 			connectListener.onTransportUnavailable(WebSocketTransport.this, params, reason, newState);
 			dispose();
 		}
