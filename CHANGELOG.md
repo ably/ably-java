@@ -1,5 +1,13 @@
 # Change Log
 
+## [v1.1.5](https://github.com/ably/ably-java/tree/v1.1.5)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.1.4...v1.1.5)
+
+**Fixed bugs:**
+
+- WebSocketTransport: don't null the wsConnection in onClose\(\) [\#500](https://github.com/ably/ably-java/pull/500) ([paddybyers](https://github.com/paddybyers))
+
 ## [v1.1.4](https://github.com/ably/ably-java/tree/v1.1.4)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.1.3...v1.1.4)
