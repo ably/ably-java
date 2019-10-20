@@ -67,6 +67,8 @@ public class WebSocketTransport implements ITransport {
 			Param[] connectParams = params.getConnectParams(authParams);
 			if(connectParams.length > 0)
 				wsUri = HttpUtils.encodeParams(wsUri, connectParams);
+
+			Log.d(TAG, "connect(); wsUri = " + wsUri);
 			synchronized(this) {
 				wsConnection = new WsClient(URI.create(wsUri));
 				if(isTls) {
@@ -88,6 +90,7 @@ public class WebSocketTransport implements ITransport {
 
 	@Override
 	public void close(boolean sendClose) {
+		Log.d(TAG, "close(); sendClose = " + sendClose);
 		synchronized(this) {
 			if(wsConnection != null) {
 				if(sendClose) {
@@ -105,17 +108,19 @@ public class WebSocketTransport implements ITransport {
 
 	@Override
 	public void abort(ErrorInfo reason) {
+		Log.d(TAG, "abort(); reason = " + reason);
 		synchronized(this) {
 			if(wsConnection != null) {
 				wsConnection.close();
 				wsConnection = null;
 			}
 		}
-		connectionManager.notifyState(this, new StateIndication(ConnectionState.failed, reason));
+		connectListener.onTransportUnavailable(this, params, reason, ConnectionState.failed);
 	}
 
 	@Override
 	public void send(ProtocolMessage msg) throws AblyException {
+		Log.d(TAG, "send(); action = " + msg.action);
 		try {
 			if(channelBinaryMode) {
 				byte[] encodedMsg = ProtocolSerializer.writeMsgpack(msg);
@@ -151,17 +156,17 @@ public class WebSocketTransport implements ITransport {
 
 		@Override
 		public void onOpen(ServerHandshake handshakedata) {
-			if(connectListener != null) {
-				connectListener.onTransportAvailable(WebSocketTransport.this, params);
-				connectListener = null;
-			}
+			Log.d(TAG, "onOpen()");
+			connectListener.onTransportAvailable(WebSocketTransport.this, params);
 			flagActivity();
 		}
 
 		@Override
 		public void onMessage(ByteBuffer blob) {
 			try {
-				connectionManager.onMessage(WebSocketTransport.this, ProtocolSerializer.readMsgpack(blob.array()));
+				ProtocolMessage msg = ProtocolSerializer.readMsgpack(blob.array());
+				Log.d(TAG, "onMessage(): msg (binary) = " + msg);
+				connectionManager.onMessage(WebSocketTransport.this, msg);
 			} catch (AblyException e) {
 				String msg = "Unexpected exception processing received binary message";
 				Log.e(TAG, msg, e);
@@ -172,7 +177,9 @@ public class WebSocketTransport implements ITransport {
 		@Override
 		public void onMessage(String string) {
 			try {
-				connectionManager.onMessage(WebSocketTransport.this, ProtocolSerializer.fromJSON(string));
+				ProtocolMessage msg = ProtocolSerializer.fromJSON(string);
+				Log.d(TAG, "onMessage(): msg (text) = " + msg);
+				connectionManager.onMessage(WebSocketTransport.this, msg);
 			} catch (AblyException e) {
 				String msg = "Unexpected exception processing received text message";
 				Log.e(TAG, msg, e);
@@ -183,6 +190,7 @@ public class WebSocketTransport implements ITransport {
 		/* This allows us to detect a websocket ping, so we don't need Ably pings. */
 		@Override
 		public void onWebsocketPing( WebSocket conn, Framedata f ) {
+			Log.d(TAG, "onWebsocketPing()");
 			/* Call superclass to ensure the pong is sent. */
 			super.onWebsocketPing( conn, f );
 			flagActivity();
@@ -190,7 +198,7 @@ public class WebSocketTransport implements ITransport {
 
 		@Override
 		public void onClose(int wsCode, String wsReason, boolean remote) {
-			flagActivity();
+			Log.d(TAG, "onClose(): wsCode = " + wsCode + "; wsReason = " + wsReason + "; remote = " + remote);
 			ConnectionState newState;
 			ErrorInfo reason;
 			switch(wsCode) {
@@ -231,21 +239,13 @@ public class WebSocketTransport implements ITransport {
 				reason = ConnectionManager.REASON_FAILED;
 				break;
 			}
-			synchronized(WebSocketTransport.this) {
-				wsConnection = null;
-			}
-			connectionManager.notifyState(WebSocketTransport.this, new StateIndication(newState, reason));
+			connectListener.onTransportUnavailable(WebSocketTransport.this, params, reason, newState);
 			dispose();
 		}
 
 		@Override
 		public void onError(Exception e) {
-			String msg = "Unexpected exception in WsClient";
-			Log.e(TAG, msg, e);
-			if(connectListener != null) {
-				connectListener.onTransportUnavailable(WebSocketTransport.this, params, new ErrorInfo(e.getMessage(), 503, 80000));
-				connectListener = null;
-			}
+			connectListener.onTransportUnavailable(WebSocketTransport.this, params, new ErrorInfo(e.getMessage(), 503, 80000));
 		}
 
 		private void dispose() {

@@ -1,5 +1,13 @@
 # Change Log
 
+## [v1.1.4](https://github.com/ably/ably-java/tree/v1.1.4)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.1.3...v1.1.4)
+
+**Merged pull requests:**
+
+- Connectionmanager deadlock fix [\#497](https://github.com/ably/ably-java/pull/497) ([paddybyers](https://github.com/paddybyers))
+
 ## [v1.1.3](https://github.com/ably/ably-java/tree/v1.1.3)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.1.2...v1.1.3)

@@ -1,5 +1,6 @@
 package io.ably.lib.transport;
 
+import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
@@ -84,6 +85,7 @@ public interface ITransport {
 	public static interface ConnectListener {
 		public void onTransportAvailable(ITransport transport, TransportParams params);
 		public void onTransportUnavailable(ITransport transport, TransportParams params, ErrorInfo reason);
+		public void onTransportUnavailable(ITransport transport, TransportParams params, ErrorInfo reason, ConnectionState state);
 	}
 
 	/**

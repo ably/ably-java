@@ -264,41 +264,45 @@ public class ConnectionManager implements ConnectListener {
 		/* if now connected, send queued messages, etc */
 		if(state.sendEvents) {
 			sendQueuedMessages();
-			for(Channel channel : ably.channels.values()) {
-				channel.setConnected();
-			}
-		} else { 
-			if(!state.queueEvents) {
-				failQueuedMessages(state.defaultErrorInfo);
-			}
-			for(Channel channel : ably.channels.values()) {
-				switch (state.state) {
-					case disconnected:
-						/* (RTL3e) If the connection state enters the
-						 * DISCONNECTED state, it will have no effect on the
-						 * channel states. */
-						break;
-					case failed:
-						/* (RTL3a) If the connection state enters the FAILED
-						 * state, then an ATTACHING or ATTACHED channel state
-						 * will transition to FAILED, set the
-						 * Channel#errorReason and emit the error event. */
-						channel.setConnectionFailed(change.reason);
-						break;
-					case closed:
-						/* (RTL3b) If the connection state enters the CLOSED
-						 * state, then an ATTACHING or ATTACHED channel state
-						 * will transition to DETACHED. */
-						channel.setConnectionClosed(state.defaultErrorInfo);
-						break;
-					case suspended:
-						/* (RTL3c) If the connection state enters the SUSPENDED
-						 * state, then an ATTACHING or ATTACHED channel state
-						 * will transition to SUSPENDED. */
-						channel.setSuspended(state.defaultErrorInfo, true);
-						break;
+		} else if(!state.queueEvents) {
+			failQueuedMessages(state.defaultErrorInfo);
+		}
+		switch (state.state) {
+			case connected:
+				for(Channel channel : ably.channels.values()) {
+					channel.setConnected();
 				}
-			}
+				break;
+			case disconnected:
+				/* (RTL3e) If the connection state enters the
+				 * DISCONNECTED state, it will have no effect on the
+				 * channel states. */
+				break;
+			case failed:
+				/* (RTL3a) If the connection state enters the FAILED
+				 * state, then an ATTACHING or ATTACHED channel state
+				 * will transition to FAILED, set the
+				 * Channel#errorReason and emit the error event. */
+				for(Channel channel : ably.channels.values()) {
+					channel.setConnectionFailed(change.reason);
+				}
+				break;
+			case closed:
+				/* (RTL3b) If the connection state enters the CLOSED
+				 * state, then an ATTACHING or ATTACHED channel state
+				 * will transition to DETACHED. */
+				for(Channel channel : ably.channels.values()) {
+					channel.setConnectionClosed(state.defaultErrorInfo);
+				}
+				break;
+			case suspended:
+				/* (RTL3c) If the connection state enters the SUSPENDED
+				 * state, then an ATTACHING or ATTACHED channel state
+				 * will transition to SUSPENDED. */
+				for(Channel channel : ably.channels.values()) {
+					channel.setSuspended(state.defaultErrorInfo, true);
+				}
+				break;
 		}
 		return true;
 	}
@@ -308,32 +312,23 @@ public class ConnectionManager implements ConnectListener {
 	}
 
 	public synchronized void requestState(StateIndication state) {
-		Log.v(TAG, "requestState(): requesting " + state.state + "; id = " + connection.key);
+		Log.v(TAG, "requestState(): requesting " + state.state + "; id = " + connection.id);
 		requestedState = state;
 		notify();
 	}
 
-	synchronized void notifyState(ITransport transport, StateIndication state) {
-		if(this.transport != transport) {
-			Log.v(TAG, "notifyState: notification received for superseded transport");
-			return;
+	private synchronized void requestState(ITransport transport, StateIndication state) {
+		if(transport != null) {
+			if(this.transport != transport) {
+				Log.v(TAG, "requestState: notification received for superseded transport");
+				return;
+			}
+			/* if this transition signifies the end of the transport, clear the transport */
+			if(states.get(state.state).terminal) {
+				this.transport = null;
+			}
 		}
-		/* if this transition signifies the end of the transport, clear the transport */
-		if(states.get(state.state).terminal) {
-			this.transport = null;
-		}
-		notifyState(state);
-	}
-
-	synchronized void notifyState(StateIndication state) {
-		Log.v(TAG, "notifyState(): notifying " + state.state + "; id = " + connection.key);
-		if (Thread.currentThread() == mgrThread) {
-			handleStateChange(state);
-		}
-		else {
-			indicatedState = state;
-			notify();
-		}
+		requestState(state);
 	}
 
 	public void ping(final CompletionListener listener) {
@@ -482,16 +477,18 @@ public class ConnectionManager implements ConnectListener {
 					break;
 				case error:
 					ErrorInfo reason = message.error;
-					if(reason == null)
+					if(reason == null) {
 						Log.e(TAG, "onMessage(): ERROR message received (no error detail)");
-					else
+					} else {
 						Log.e(TAG, "onMessage(): ERROR message received; message = " + reason.message + "; code = " + reason.code);
+					}
 
-			/* an error message may signify an error state in a channel, or in the connection */
-					if(message.channel != null)
+					/* an error message may signify an error state in a channel, or in the connection */
+					if(message.channel != null) {
 						onChannelMessage(message);
-					else
+					} else {
 						onError(message);
+					}
 					break;
 				case connected:
 					onConnected(message);
@@ -535,19 +532,6 @@ public class ConnectionManager implements ConnectListener {
 	}
 
 	private synchronized void onConnected(ProtocolMessage message) {
-		/* Set the http host to try and ensure that realtime and rest use the
-		 * same region:
-		 *  - if we're on the default realtime host, set http to the default
-		 *    rest host
-		 *  - otherwise (the realtime host has been overridden or has fallen
-		 *    back), set http to the same as realtime.
-		 */
-		if (pendingConnect.host == options.realtimeHost) {
-			ably.httpCore.setPreferredHost(options.restHost);
-		} else {
-			ably.httpCore.setPreferredHost(pendingConnect.host);
-		}
-
 		/* if the returned connection id differs from
 		 * the existing connection id, then this means
 		 * we need to suspend all existing attachments to
@@ -594,12 +578,12 @@ public class ConnectionManager implements ConnectListener {
 		try {
 			ably.auth.setClientId(clientId);
 		} catch (AblyException e) {
-			notifyState(transport, new StateIndication(ConnectionState.failed, e.errorInfo));
+			requestState(transport, new StateIndication(ConnectionState.failed, e.errorInfo));
 		}
 
 		/* indicated connected state */
 		setSuspendTime();
-		notifyState(new StateIndication(ConnectionState.connected, error));
+		requestState(new StateIndication(ConnectionState.connected, error));
 	}
 
 	private synchronized void onDisconnected(ProtocolMessage message) {
@@ -611,7 +595,7 @@ public class ConnectionManager implements ConnectListener {
 			this.onError(message);
 		} else {
 			connection.key = null;
-			notifyState(new StateIndication(ConnectionState.closed, null));
+			requestState(new StateIndication(ConnectionState.closed, null));
 		}
 	}
 
@@ -620,7 +604,7 @@ public class ConnectionManager implements ConnectListener {
 		ErrorInfo reason = message.error;
 		ably.auth.onAuthError(reason);
 		ConnectionState destinationState = isFatalError(reason) ? ConnectionState.failed : ConnectionState.disconnected;
-		notifyState(transport, new StateIndication(destinationState, reason));
+		requestState(transport, new StateIndication(destinationState, reason));
 	}
 
 	private void onAck(ProtocolMessage message) {
@@ -676,50 +660,49 @@ public class ConnectionManager implements ConnectListener {
 		}
 	}
 
-	private void handleStateRequest() {
-		boolean handled = false;
-		switch(requestedState.state) {
+	/**
+	 * Handle a request to transition to a new state
+	 * @return StateIndication: the resulting state, if changed; null otherwise
+	 */
+	private StateIndication handleStateRequest() {
+		/* the resulting state will by default be that requested */
+		StateIndication transitionState = requestedState;
+
+		/* clear requestState here; actions below may trigger a subsequent state change */
+		requestedState = null;
+
+		/* handle connection request */
+		if(transitionState.state == ConnectionState.connecting) {
+			if(connectImpl(transitionState)) {
+				return transitionState;
+			} else {
+				return new StateIndication(ConnectionState.failed, new ErrorInfo("Connection failed; no host available", 404, 80000), null, requestedState.currentHost);
+			}
+		}
+		/* no other requests can move from a terminal state */
+		if(state.terminal) {
+			/* no change */
+			return null;
+		}
+
+		switch(transitionState.state) {
 		case disconnected:
 			if(transport != null) {
 				transport.close(false);
-				handled = true;
 			}
 			break;
 		case failed:
 			if(transport != null) {
-				transport.abort(requestedState.reason);
-				handled = true;
+				transport.abort(transitionState.reason);
 			}
-			break;
-		case closed:
-			/* if already failed, don't transition to closed */
-			if(state.state == ConnectionState.failed) {
-				handled = true;
-				break;
-			}
-
-			if(transport != null) {
-				transport.close(state.state == ConnectionState.connected);
-				handled = true;
-			}
-			break;
-		case connecting:
-			if(!connectImpl(requestedState)) {
-				indicatedState = new StateIndication(ConnectionState.failed, new ErrorInfo("Connection failed; no host available", 404, 80000), null, requestedState.currentHost);
-			}
-
-			handled = true;
 			break;
 		case closing:
-			closeImpl(requestedState);
-			handled = true;
+			closeImpl(transitionState);
+			break;
 		default:
+			break;
 		}
-		if(!handled) {
-			/* the transport wasn't there, so we just transition directly */
-			indicatedState = requestedState;
-		}
-		requestedState = null;
+		return transitionState;
 	}
 
 	private boolean checkConnectionStale() {
@@ -828,7 +811,7 @@ public class ConnectionManager implements ConnectListener {
 	}
 
 	private void tryWait(long timeout) {
-		if(requestedState == null && indicatedState == null && !pendingReauth) {
+		if(requestedState == null && !pendingReauth) {
 			try {
 				if(timeout == 0) {
 					wait();
@@ -871,28 +854,20 @@ public class ConnectionManager implements ConnectListener {
 						tryWait(state.timeout);
 
 						/* if during the wait some action was requested, handle it */
-						if (requestedState != null) {
-							handleStateRequest();
+						if (pendingReauth) {
+							handleReauth();
 							continue;
 						}
 
-						/* if during the wait we were told that a transition
-						 * needs to be enacted, handle that (outside the lock) */
-						if (indicatedState != null) {
-							stateChange = indicatedState;
-							indicatedState = null;
-							break;
+						if (requestedState != null) {
+							stateChange = handleStateRequest();
+							continue;
 						}
 
 						/* if our state wants us to retry on timer expiry, do that */
 						if (state.retry && !suppressRetry) {
 							requestState(ConnectionState.connecting);
 							continue;
-						}
-
-						if (pendingReauth) {
-							handleReauth();
-							break;
 						}
 
 						/* no indicated state or requested action, so the timer
@@ -928,8 +903,8 @@ public class ConnectionManager implements ConnectListener {
 				errorInfo = e.errorInfo;
 			}
 
-			/* report error in UPDATE event */
-			if (state.state == ConnectionState.connected && errorInfo != null) {
+			/* report connection state in UPDATE event */
+			if (state.state == ConnectionState.connected) {
 				connection.emitUpdate(errorInfo);
 			}
 		}
@@ -949,13 +924,26 @@ public class ConnectionManager implements ConnectListener {
 
 	@Override
 	public synchronized void onTransportUnavailable(ITransport transport, TransportParams params, ErrorInfo reason) {
+		this.onTransportUnavailable(transport, params, reason, ConnectionState.disconnected);
+	}
+
+	@Override
+	public synchronized void onTransportUnavailable(ITransport transport, TransportParams params, ErrorInfo reason, ConnectionState state) {
 		if (this.transport != transport) {
 			/* This is from a transport that we have already abandoned. */
 			Log.v(TAG, "onTransportUnavailable: ignoring disconnection event from superseded transport");
 			return;
 		}
+		if(reason == null) {
+			reason = states.get(state).defaultErrorInfo;
+		}
+		if(state == ConnectionState.failed) {
+			Log.e(TAG, "onTransportUnavailable: unexpected exception in WsClient: " + reason.message);
+		} else {
+			Log.i(TAG, "onTransportUnavailable: disconnected: " + reason.message);
+		}
 		ably.auth.onAuthError(reason);
-		notifyState(new StateIndication(ConnectionState.disconnected, reason, null, transport.getHost()));
+		requestState(new StateIndication(state, reason, null, transport.getHost()));
 		this.transport = null;
 	}
 
@@ -985,9 +973,6 @@ public class ConnectionManager implements ConnectListener {
 		pendingConnect.host = host;
 		lastUsedHost = host;
 
-		/* enter the connecting state */
-		notifyState(request);
-
 		/* try the connection */
 		ITransport transport;
 		try {
@@ -1011,9 +996,6 @@ public class ConnectionManager implements ConnectListener {
 	private void closeImpl(StateIndication request) {
 		boolean isConnected = state.state == ConnectionState.connected;
 
-		/* enter the closing state */
-		notifyState(request);
-
 		/* close or abort transport */
 		if(transport != null) {
 			if(isConnected) {
@@ -1026,12 +1008,12 @@ public class ConnectionManager implements ConnectListener {
 				}
 			} else {
 				/* just close the transport */
-				Log.v(TAG, "Aborting incomplete transport due to close()");
+				Log.v(TAG, "Closing incomplete transport");
 				transport.close(false);
 			}
 			transport = null;
 		}
-		notifyState(new StateIndication(ConnectionState.closed, null));
+		requestState(new StateIndication(ConnectionState.closed, null));
 	}
 
 	private void clearTransport() {
@@ -1346,7 +1328,7 @@ public class ConnectionManager implements ConnectListener {
 	private CMThread mgrThread;
 	private StateInfo state;
 	private ErrorInfo stateError;
-	private StateIndication indicatedState, requestedState;
+	private StateIndication requestedState;
 	private ConnectParams pendingConnect;
 	private boolean pendingReauth;
 	private boolean suppressRetry; /* for tests only; modified via reflection */
