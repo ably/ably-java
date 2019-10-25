@@ -2,6 +2,9 @@ package io.ably.lib.types;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePacker;
@@ -51,12 +54,22 @@ public class ProtocolMessage {
 	}
 
 	public enum Flag {
-		has_presence,
-		has_backlog,
-		resumed;
+		/* Channel attach state flags */
+		has_presence(0),
+		has_backlog(1),
+		resumed(2),
 
-		public int getValue() { return ordinal(); }
-		public static Flag findByValue(int value) { return values()[value]; }
+		/* Channel mode flags */
+		presence(16),
+		publish(17),
+		subscribe(18),
+		presence_subscribe(19),
+		local_presence_subscribe(20);
+
+		private int mask;
+		Flag(int offset) { this.mask = 1 << offset; }
+		public int getMask() { return this.mask; }
+		public static Flag[] getModes() { return new Flag[] { presence, publish, subscribe, presence_subscribe, local_presence_subscribe }; };
 	}
 
 	public static boolean mergeTo(ProtocolMessage dest, ProtocolMessage src) {
@@ -73,7 +86,7 @@ public class ProtocolMessage {
 						System.arraycopy(srcMessages, 0, mergedMessages, destMessages.length, srcMessages.length);
 						result = true;
 					}
-					break;					
+					break;
 				case presence: {
 						PresenceMessage[] srcMessages = src.presence;
 						PresenceMessage[] destMessages = dest.presence;
@@ -120,6 +133,31 @@ public class ProtocolMessage {
 	public PresenceMessage[] presence;
 	public ConnectionDetails connectionDetails;
 	public AuthDetails auth;
+	public ChannelParams params;
+
+	public boolean hasFlag(Flag flag) {
+		return (this.flags & flag.getMask()) == flag.getMask();
+	}
+
+	public void setFlag(Flag flag) {
+		this.flags |= flag.getMask();
+	}
+
+	public void encodeModesToFlags(String[] modes) {
+		for (String mode : modes) {
+			this.setFlag(Flag.valueOf(mode));
+		}
+	}
+
+	public String[] decodeModesFromFlags() {
+		List<String> result = new ArrayList<>();
+		for (Flag mode : Flag.getModes()) {
+			if (this.hasFlag(mode)) {
+				result.add(mode.name());
+			}
+		}
+		return result.toArray(new String[result.size()]);
+	}
 
 	void writeMsgpack(MessagePacker packer) throws IOException {
 		int fieldCount = 1; //action
@@ -128,6 +166,8 @@ public class ProtocolMessage {
 		if(messages != null) ++fieldCount;
 		if(presence != null) ++fieldCount;
 		if(auth != null) ++fieldCount;
+		if(flags != 0) ++fieldCount;
+		if(params != null) ++fieldCount;
 		packer.packMapHeader(fieldCount);
 		packer.packString("action");
 		packer.packInt(action.getValue());
@@ -150,6 +190,14 @@ public class ProtocolMessage {
 		if(auth != null) {
 			packer.packString("auth");
 			auth.writeMsgpack(packer);
+		}
+		if(flags != 0) {
+			packer.packString("flags");
+			packer.packInt(flags);
+		}
+		if(params != null) {
+			packer.packString("params");
+			params.writeMsgpack(packer);
 		}
 	}
 
@@ -205,6 +253,9 @@ public class ProtocolMessage {
 					break;
 				case "auth":
 					auth = AuthDetails.fromMsgpack(unpacker);
+					break;
+				case "params":
+					params = ChannelParams.fromMsgpack(unpacker);
 					break;
 				default:
 					Log.v(TAG, "Unexpected field: " + fieldName);
