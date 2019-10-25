@@ -110,23 +110,29 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	 * @throws AblyException
 	 */
 	public void attach(CompletionListener listener) throws  AblyException {
-		clearAttachTimers();
-		attachWithTimeout(listener);
+		this.attach(false, listener);
 	}
 
-	private void attachImpl(final CompletionListener listener) throws AblyException {
+	private void attach(boolean forceReattach, CompletionListener listener) throws AblyException {
+		clearAttachTimers();
+		attachWithTimeout(forceReattach, listener);
+	}
+
+	private void attachImpl(final boolean forceReattach, final CompletionListener listener) throws AblyException {
 		Log.v(TAG, "attach(); channel = " + name);
-		/* check preconditions */
-		switch(state) {
-			case attaching:
-				if(listener != null) {
-					on(new ChannelStateCompletionListener(listener, ChannelState.attached, ChannelState.failed));
-				}
-				return;
-			case attached:
-				callCompletionListenerSuccess(listener);
-				return;
-			default:
+		if(!forceReattach) {
+			/* check preconditions */
+			switch(state) {
+				case attaching:
+					if(listener != null) {
+						on(new ChannelStateCompletionListener(listener, ChannelState.attached, ChannelState.failed));
+					}
+					return;
+				case attached:
+					callCompletionListenerSuccess(listener);
+					return;
+				default:
+			}
 		}
 		ConnectionManager connectionManager = ably.connection.connectionManager;
 		if(!connectionManager.isActive()) {
@@ -136,6 +142,14 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		/* send attach request and pending state */
 		Log.v(TAG, "attach(); channel = " + name + "; sending ATTACH request");
 		ProtocolMessage attachMessage = new ProtocolMessage(Action.attach, this.name);
+		if(this.options != null) {
+			if(!this.options.params.isEmpty()) {
+				attachMessage.params = this.options.params;
+			}
+			if(!this.options.modes.isEmpty()) {
+				attachMessage.encodeModesToFlags(this.options.modes);
+			}
+		}
 		try {
 			if (listener != null) {
 				on(new ChannelStateCompletionListener(listener, ChannelState.attached, ChannelState.failed));
@@ -249,9 +263,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
 	private void setAttached(ProtocolMessage message) {
 		clearAttachTimers();
-		boolean resumed = (message.flags & ( 1 << Flag.resumed.ordinal())) != 0;
+		boolean resumed = message.hasFlag(Flag.resumed);
 		Log.v(TAG, "setAttached(); channel = " + name + ", resumed = " + resumed);
 		properties.attachSerial = message.channelSerial;
+		params = message.params;
+		modes = message.decodeModesFromFlags();
 		if(state == ChannelState.attached) {
 			Log.v(TAG, String.format("Server initiated attach for channel %s", name));
 			/* emit UPDATE event according to RTL12 */
@@ -259,7 +275,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		} else {
 			setState(ChannelState.attached, message.error, resumed);
 			sendQueuedMessages();
-			presence.setAttached((message.flags & (1 << Flag.has_presence.ordinal())) > 0);
+			presence.setAttached(message.hasFlag(Flag.has_presence));
 		}
 	}
 
@@ -299,11 +315,15 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		}
 	}
 
+	private void attachWithTimeout(final CompletionListener listener) throws AblyException {
+		this.attachWithTimeout(false, listener);
+	}
+
 	/**
 	 * Attach channel, if not attached within timeout set state to suspended and
 	 * set up timer to reattach it later
 	 */
-	synchronized private void attachWithTimeout(final CompletionListener listener) throws AblyException {
+	synchronized private void attachWithTimeout(final boolean forceReattach, final CompletionListener listener) throws AblyException {
 		Timer currentAttachTimer;
 		try {
 			currentAttachTimer = new Timer();
@@ -315,7 +335,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		attachTimer = currentAttachTimer;
 
 		try {
-			attachImpl(new CompletionListener() {
+			attachImpl(forceReattach, new CompletionListener() {
 				@Override
 				public void onSuccess() {
 					clearAttachTimers();
@@ -931,7 +951,31 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	 ************************************/
 
 	public void setOptions(ChannelOptions options) throws AblyException {
+		this.setOptions(options, null);
+	}
+
+	public void setOptions(ChannelOptions options, CompletionListener listener) throws AblyException {
 		this.options = options;
+		if(this.shouldReattachToSetOptions(options)) {
+			this.attach(true, listener);
+		} else {
+			callCompletionListenerSuccess(listener);
+		}
+	}
+
+	boolean shouldReattachToSetOptions(ChannelOptions options) {
+		/* TODO: Check if the new options are different than the old ones */
+		return
+			(this.state == ChannelState.attached || this.state == ChannelState.attaching) &&
+			(!options.modes.isEmpty() || !options.params.isEmpty());
+	}
+
+	public ChannelParams getParams() {
+		return this.params;
+	}
+
+	public ChannelModes getModes() {
+		return this.modes;
 	}
 
 	/************************************
@@ -1057,4 +1101,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	ChannelOptions options;
 	String syncChannelSerial;
 	DecodingContext decodingContext;
+	private ChannelParams params;
+	private ChannelModes modes;
 }

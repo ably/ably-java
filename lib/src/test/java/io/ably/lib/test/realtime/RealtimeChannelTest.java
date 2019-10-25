@@ -125,6 +125,203 @@ public class RealtimeChannelTest extends ParameterizedTest {
 		}
 	}
 
+	/*@Test*/
+	public void attach_with_channel_params_channels_get() {
+		String channelName = "attach_with_channel_params_channels_get_" + testParams.name;
+		AblyRealtime ably = null;
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			(new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ConnectionState.connected, ably.connection.state);
+
+			ChannelOptions options = new ChannelOptions();
+			options.params.put("modes", "subscribe");
+			options.params.put("delta", "vcdiff");
+
+			/* create a channel and attach */
+			final Channel channel = ably.channels.get(channelName, options);
+			channel.attach();
+			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
+			assertEquals("Verify channel params", channel.getParams(), options.params);
+			assertArrayEquals("Verify channel modes", new ChannelMode[] { ChannelMode.subscribe }, channel.getModes().toArray());
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/*@Test*/
+	public void attach_with_channel_params_set_options() {
+		String channelName = "attach_with_channel_params_set_options_" + testParams.name;
+		AblyRealtime ably = null;
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			(new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ConnectionState.connected, ably.connection.state);
+
+			ChannelOptions options = new ChannelOptions();
+			options.params.put("modes", "subscribe");
+			options.params.put("delta", "vcdiff");
+
+			/* create a channel and attach */
+			final Channel channel = ably.channels.get(channelName);
+			channel.setOptions(options);
+			channel.attach();
+			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
+			assertEquals("Verify channel params", channel.getParams(), options.params);
+			assertArrayEquals("Verify channel modes", new ChannelMode[] { ChannelMode.subscribe }, channel.getModes().toArray());
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/*@Test*/
+	public void channels_get_should_throw_when_would_cause_reattach() {
+		String channelName = "channels_get_should_throw_when_would_cause_reattach_" + testParams.name;
+		AblyRealtime ably = null;
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			(new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ConnectionState.connected, ably.connection.state);
+
+			ChannelOptions options = new ChannelOptions();
+			options.params.put("modes", "subscribe");
+			options.params.put("delta", "vcdiff");
+
+			/* create a channel and attach */
+			final Channel channel = ably.channels.get(channelName, options);
+			channel.attach();
+			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+
+			try {
+				ably.channels.get(channelName, options);
+			} catch (AblyException e) {
+				assertEquals("Verify error code", 400, e.errorInfo.code);
+				assertEquals("Verify error status code", 40000, e.errorInfo.statusCode);
+				assertTrue("Verify error message", e.errorInfo.message.contains("setOptions"));
+			}
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/*@Test*/
+	public void attach_with_channel_params_modes_and_channel_modes() {
+		String channelName = "attach_with_channel_params_modes_and_channel_modes_" + testParams.name;
+		AblyRealtime ably = null;
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			(new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ConnectionState.connected, ably.connection.state);
+
+			ChannelOptions options = new ChannelOptions();
+			options.params.put("modes", "presence,subscribe");
+			options.modes.add(ChannelMode.publish, ChannelMode.presence_subscribe);
+
+			/* create a channel and attach */
+			final Channel channel = ably.channels.get(channelName, options);
+			channel.attach();
+			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
+			assertEquals("Verify channel params", channel.getParams(), options.params);
+			assertArrayEquals("Verify channel modes", new ChannelMode[] { ChannelMode.subscribe, ChannelMode.presence }, channel.getModes().toArray());
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/*@Test*/
+	public void attach_with_channel_modes() {
+		String channelName = "attach_with_channel_modes_" + testParams.name;
+		AblyRealtime ably = null;
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			(new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ConnectionState.connected, ably.connection.state);
+
+			ChannelOptions options = new ChannelOptions();
+			options.modes.add(ChannelMode.publish, ChannelMode.presence_subscribe);
+
+			/* create a channel and attach */
+			final Channel channel = ably.channels.get(channelName, options);
+			channel.attach();
+			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
+			assertEquals("Verify channel modes", channel.getModes(), options.modes);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	/*@Test*/
+	public void attach_with_params_delta_and_channel_modes() {
+		String channelName = "attach_with_params_delta_and_channel_modes_" + testParams.name;
+		AblyRealtime ably = null;
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(opts);
+
+			/* wait until connected */
+			(new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", ConnectionState.connected, ably.connection.state);
+
+			ChannelOptions options = new ChannelOptions();
+			options.params.put("delta", "vcdiff");
+			options.modes.add(ChannelMode.publish, ChannelMode.subscribe, ChannelMode.presence_subscribe);
+
+			/* create a channel and attach */
+			final Channel channel = ably.channels.get(channelName, options);
+			channel.attach();
+			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
+			options.params.put("modes", "publish,subscribe,presence_subscribe");
+			assertEquals("Verify channel params", channel.getParams(), options.params);
+			assertEquals("Verify channel modes", channel.getModes(), options.modes);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
 	/**
 	 * Connect to the service and attach, then subscribe and unsubscribe
 	 */
@@ -1154,7 +1351,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			ProtocolMessage attachedMessage = new ProtocolMessage() {{
 				action = Action.attached;
 				channel = channelName;
-				flags |= 1 << Flag.resumed.ordinal();
+				flags |= Flag.resumed.getMask();
 			}};
 			ably.connection.connectionManager.onMessage(null, attachedMessage);
 

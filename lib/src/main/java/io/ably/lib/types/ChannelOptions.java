@@ -8,6 +8,9 @@ public class ChannelOptions {
 	public boolean encrypted;
 	public Object cipherParams;
 
+	public final ChannelParams params = new ChannelParams();
+	public final ChannelModes modes = new ChannelModes();
+
 	public ChannelCipher getCipher() throws AblyException {
 		if(!encrypted) return null;
 		if(cipher != null) return cipher;
