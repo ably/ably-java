@@ -152,8 +152,12 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
 		public Channel get(String channelName, ChannelOptions channelOptions) throws AblyException {
 			Channel channel = map.get(channelName);
 			if (channel != null) {
-				if (channelOptions != null)
+				if (channelOptions != null) {
+					if (channel.shouldReattachToSetOptions(channelOptions)) {
+						throw AblyException.fromErrorInfo(new ErrorInfo("Channels.get() cannot be used to set channel options that would cause the channel to reattach. Please, use Channel.setOptions() instead.", 40000, 400));
+					}
 					channel.setOptions(channelOptions);
+				}
 				return channel;
 			}
 
