@@ -20,6 +20,8 @@ public class ChannelOptions {
 	 * Whether or not this ChannelOptions is encrypted.
 	 */
 	public boolean encrypted;
+	public final ChannelParams params = new ChannelParams();
+	public final ChannelModes modes = new ChannelModes();
 
 	public ChannelCipher getCipher() throws AblyException {
 		if(!this.encrypted) {
