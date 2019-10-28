@@ -2,12 +2,24 @@ apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'signing'
 
-def groupId = "io.ably"
+def groupId = "com.amihaiemil.ably"
 def artifactId = "ably-java"
 def localReleaseDest = "${buildDir}/release/${version}"
 
 uploadArchives {
+    signing {
+        sign configurations.archives
+    }
     repositories.mavenDeployer {
+	beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+      repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+        authentication(userName: ossrhUsername, password: ossrhPassword)
+      }
+
+      snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+        authentication(userName: ossrhUsername, password: ossrhPassword)
+      }
         pom.groupId = groupId
         pom.artifactId = artifactId
         pom.version = version
@@ -48,7 +60,7 @@ uploadArchives {
         }
 
         // Export files to local storage
-        repository(url: "file://${localReleaseDest}")
+        //repository(url: "file://${localReleaseDest}")
     }
 }
 
