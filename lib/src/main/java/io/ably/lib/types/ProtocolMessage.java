@@ -143,20 +143,20 @@ public class ProtocolMessage {
 		this.flags |= flag.getMask();
 	}
 
-	public void encodeModesToFlags(String[] modes) {
-		for (String mode : modes) {
-			this.setFlag(Flag.valueOf(mode));
+	public void encodeModesToFlags(ChannelModes modes) {
+		for (ChannelMode mode : modes) {
+			this.setFlag(Flag.valueOf(mode.name()));
 		}
 	}
 
-	public String[] decodeModesFromFlags() {
-		List<String> result = new ArrayList<>();
+	public ChannelModes decodeModesFromFlags() {
+		ChannelModes result = new ChannelModes();
 		for (Flag mode : Flag.getModes()) {
 			if (this.hasFlag(mode)) {
-				result.add(mode.name());
+				result.add(ChannelMode.valueOf(mode.name()));
 			}
 		}
-		return result.toArray(new String[result.size()]);
+		return result;
 	}
 
 	void writeMsgpack(MessagePacker packer) throws IOException {

@@ -144,9 +144,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		ProtocolMessage attachMessage = new ProtocolMessage(Action.attach, this.name);
 		if(this.options != null) {
 			if(!this.options.params.isEmpty()) {
-				attachMessage.params = new ChannelParams(this.options.params);
+				attachMessage.params = this.options.params;
 			}
-			if(this.options.modes != null) {
+			if(!this.options.modes.isEmpty()) {
 				attachMessage.encodeModesToFlags(this.options.modes);
 			}
 		}
@@ -967,14 +967,14 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		/* TODO: Check if the new options are different than the old ones */
 		return
 			(this.state == ChannelState.attached || this.state == ChannelState.attaching) &&
-			(options.modes != null || !options.params.isEmpty());
+			(!options.modes.isEmpty() || !options.params.isEmpty());
 	}
 
 	public ChannelParams getParams() {
 		return this.params;
 	}
 
-	public String[] getModes() {
+	public ChannelModes getModes() {
 		return this.modes;
 	}
 
@@ -1102,5 +1102,5 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	String syncChannelSerial;
 	private final InternalEncodingDecodingContext encodingDecodingContext;
 	private ChannelParams params;
-	private String[] modes;
+	private ChannelModes modes;
 }

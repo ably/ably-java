@@ -9,7 +9,7 @@ public class ChannelOptions {
 	public Object cipherParams;
 
 	public final ChannelParams params = new ChannelParams();
-	public String[] modes;
+	public final ChannelModes modes = new ChannelModes();
 
 	public ChannelCipher getCipher() throws AblyException {
 		if(!encrypted) return null;

@@ -9,11 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ChannelParams extends HashMap<String, String> {
-	public ChannelParams() { }
-
-	public ChannelParams(ChannelParams toCopy) {
-		super(toCopy);
-	}
+	ChannelParams() { }
 
 	void writeMsgpack(MessagePacker packer) throws IOException {
 		packer.packMapHeader(this.size());

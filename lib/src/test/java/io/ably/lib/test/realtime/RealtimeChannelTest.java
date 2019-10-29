@@ -146,8 +146,8 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			channel.attach();
 			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
-			assertTrue("Verify channel params", channel.getParams().equals(options.params));
-			assertArrayEquals("Verify channel modes", new String[] { "subscribe" }, channel.getModes());
+			assertEquals("Verify channel params", channel.getParams(), options.params);
+			assertArrayEquals("Verify channel modes", new ChannelMode[] { ChannelMode.subscribe }, channel.getModes().toArray());
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
@@ -179,8 +179,8 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			channel.attach();
 			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
-			assertTrue("Verify channel params", channel.getParams().equals(options.params));
-			assertArrayEquals("Verify channel modes", new String[] { "subscribe" }, channel.getModes());
+			assertEquals("Verify channel params", channel.getParams(), options.params);
+			assertArrayEquals("Verify channel modes", new ChannelMode[] { ChannelMode.subscribe }, channel.getModes().toArray());
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
@@ -241,15 +241,15 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
 			ChannelOptions options = new ChannelOptions();
 			options.params.put("modes", "presence,subscribe");
-			options.modes = new String[] { "publish", "presence_subscribe" };
+			options.modes.add(ChannelMode.publish, ChannelMode.presence_subscribe);
 
 			/* create a channel and attach */
 			final Channel channel = ably.channels.get(channelName, options);
 			channel.attach();
 			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
-			assertTrue("Verify channel params", channel.getParams().equals(options.params));
-			assertArrayEquals("Verify channel modes", new String[] { "presence", "subscribe" }, channel.getModes());
+			assertEquals("Verify channel params", channel.getParams(), options.params);
+			assertArrayEquals("Verify channel modes", new ChannelMode[] { ChannelMode.subscribe, ChannelMode.presence }, channel.getModes().toArray());
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
@@ -272,14 +272,14 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			assertEquals("Verify connected state reached", ConnectionState.connected, ably.connection.state);
 
 			ChannelOptions options = new ChannelOptions();
-			options.modes = new String[] { "publish", "presence_subscribe" };
+			options.modes.add(ChannelMode.publish, ChannelMode.presence_subscribe);
 
 			/* create a channel and attach */
 			final Channel channel = ably.channels.get(channelName, options);
 			channel.attach();
 			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
-			assertArrayEquals("Verify channel modes", options.modes, channel.getModes());
+			assertEquals("Verify channel modes", channel.getModes(), options.modes);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
@@ -303,7 +303,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
 			ChannelOptions options = new ChannelOptions();
 			options.params.put("delta", "vcdiff");
-			options.modes = new String[] { "publish", "subscribe", "local_presence_subscribe" };
+			options.modes.add(ChannelMode.publish, ChannelMode.subscribe, ChannelMode.local_presence_subscribe);
 
 			/* create a channel and attach */
 			final Channel channel = ably.channels.get(channelName, options);
@@ -311,8 +311,8 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
 			options.params.put("modes", "publish,subscribe,local_presence_subscribe");
-			assertTrue("Verify channel params", channel.getParams().equals(options.params));
-			assertArrayEquals("Verify channel modes", options.modes, channel.getModes());
+			assertEquals("Verify channel params", channel.getParams(), options.params);
+			assertEquals("Verify channel modes", channel.getModes(), options.modes);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
