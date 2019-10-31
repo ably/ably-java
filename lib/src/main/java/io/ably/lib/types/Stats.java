@@ -3,6 +3,7 @@ package io.ably.lib.types;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
 
 /**
  * A class encapsulating a Stats datapoint.
@@ -31,6 +32,11 @@ public class Stats {
 	public static class MessageCount {
 		public double count;
 		public double data;
+		public double uncompressedData;
+	}
+
+	public static class MessageCategory extends MessageCount {
+		public Map<String, MessageCount> category;
 	}
 
 	/**
@@ -38,9 +44,9 @@ public class Stats {
 	 * message types.
 	 */
 	public static class MessageTypes {
-		public MessageCount all;
-		public MessageCount messages;
-		public MessageCount presence;
+		public MessageCategory all;
+		public MessageCategory messages;
+		public MessageCategory presence;
 	}
 
 	/**
@@ -71,6 +77,16 @@ public class Stats {
 		public double mean;
 		public double min;
 		public double refused;
+	}
+
+	public static class ProcessedCount {
+		public double succeeded;
+		public double skipped;
+		public double failed;
+	}
+
+	public static class ProcessedMessages {
+		public Map<String, ProcessedCount> delta;
 	}
 
 	public static enum Granularity {
@@ -109,4 +125,5 @@ public class Stats {
 	public ResourceCount channels;
 	public RequestCount apiRequests;
 	public RequestCount tokenRequests;
+	public ProcessedMessages processed;
 }
