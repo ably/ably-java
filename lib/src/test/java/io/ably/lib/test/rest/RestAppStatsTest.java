@@ -45,34 +45,37 @@ public class RestAppStatsTest extends ParameterizedTest {
 			try {
 				currentTime = ably.time();
 			} catch (AblyException e) {}
-	
+
 			/* round down to the start of the current minute */
 			Date currentDate = new Date(currentTime);
 			currentDate.setSeconds(0);
 			currentTime = currentDate.getTime();
-	
+
 			/* Make it the same time last year, to avoid problems with the app
 			 * already having stats from other tests in the same test run. */
 			currentTime -= 365 * 24 * 3600 * 1000L;
-	
+
 			/* get time bounds for test */
 			intervalIds = new String[3];
 			for(int i = 0; i < 3; i++) {
 				long intervalTime = currentTime + (i - 3) * 60 * 1000;
 				intervalIds[i] = Stats.toIntervalId(intervalTime, Stats.Granularity.minute);
 			}
-	
+
 			/* add stats for each of the minutes within the interval */
 			Stats[] testStats = StatsReader.readJson(
 					'['
 					+   "{ \"intervalId\": \"" + intervalIds[0] + "\","
-					+     "\"inbound\": {\"realtime\":{\"messages\":{\"count\":50,\"data\":5000}}}"
+					+     "\"inbound\": {\"realtime\":{\"messages\":{\"count\":50,\"data\":5000,\"uncompressedData\":5000,\"category\":{\"delta\":{\"count\":10,\"data\":1000,\"uncompressedData\":5000}}}}},"
+					+     "\"processed\": {\"delta\": {\"xdelta\": {\"succeeded\": 10, \"skipped\": 5, \"failed\": 1}}}"
 					+   "},"
 					+   "{ \"intervalId\": \"" + intervalIds[1] + "\","
-					+     "\"inbound\": {\"realtime\":{\"messages\":{\"count\":60,\"data\":6000}}}"
+					+     "\"inbound\": {\"realtime\":{\"messages\":{\"count\":60,\"data\":6000,\"uncompressedData\":6000,\"category\":{\"delta\":{\"count\":20,\"data\":2000,\"uncompressedData\":6000}}}}},"
+					+     "\"processed\": {\"delta\": {\"xdelta\": {\"succeeded\": 20, \"skipped\": 10, \"failed\": 2}}}"
 					+   "},"
 					+   "{ \"intervalId\": \"" + intervalIds[2] + "\","
-					+     "\"inbound\": {\"realtime\":{\"messages\":{\"count\":70,\"data\":7000}}}"
+					+     "\"inbound\": {\"realtime\":{\"messages\":{\"count\":70,\"data\":7000,\"uncompressedData\":7000,\"category\":{\"delta\":{\"count\":40,\"data\":4000,\"uncompressedData\":7000}}}}},"
+					+     "\"processed\": {\"delta\": {\"xdelta\": {\"succeeded\": 40, \"skipped\": 20, \"failed\": 4}}}"
 					+   '}'
 					+ ']'
 				);
@@ -97,6 +100,9 @@ public class RestAppStatsTest extends ParameterizedTest {
 			assertNotNull("Expected non-null stats", stats);
 			assertThat("Expected 1 record", stats.items().length, is(equalTo(1)));
 			assertThat("Expected 50 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(50)));
+			assertThat("Expected 5000 bytes of uncompressed data", (int)stats.items()[0].inbound.all.all.uncompressedData, is(equalTo(5000)));
+			assertThat("Expected 10 delta messages", (int)stats.items()[0].inbound.all.all.category.get("delta").count, is(equalTo(10)));
+			assertThat("Expected 10 successful delta generations", (int)stats.items()[0].processed.delta.get("xdelta").succeeded, is(equalTo(10)));
 
 			stats = ably.stats(new Param[] {
 				new Param("direction", "forwards"),
@@ -106,6 +112,9 @@ public class RestAppStatsTest extends ParameterizedTest {
 			assertNotNull("Expected non-null stats", stats);
 			assertThat("Expected 1 record", stats.items().length, is(equalTo(1)));
 			assertThat("Expected 60 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(60)));
+			assertThat("Expected 6000 bytes of uncompressed data", (int)stats.items()[0].inbound.all.all.uncompressedData, is(equalTo(6000)));
+			assertThat("Expected 20 delta messages", (int)stats.items()[0].inbound.all.all.category.get("delta").count, is(equalTo(20)));
+			assertThat("Expected 20 successful delta generations", (int)stats.items()[0].processed.delta.get("xdelta").succeeded, is(equalTo(20)));
 
 			stats = ably.stats(new Param[] {
 					new Param("direction", "forwards"),
@@ -115,6 +124,9 @@ public class RestAppStatsTest extends ParameterizedTest {
 				assertNotNull("Expected non-null stats", stats);
 				assertThat("Expected 1 record", stats.items().length, is(equalTo(1)));
 				assertThat("Expected 70 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(70)));
+			assertThat("Expected 7000 bytes of uncompressed data", (int)stats.items()[0].inbound.all.all.uncompressedData, is(equalTo(7000)));
+			assertThat("Expected 40 delta messages", (int)stats.items()[0].inbound.all.all.category.get("delta").count, is(equalTo(40)));
+			assertThat("Expected 40 successful delta generations", (int)stats.items()[0].processed.delta.get("xdelta").succeeded, is(equalTo(40)));
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("appstats_minute0: Unexpected exception");
@@ -179,6 +191,9 @@ public class RestAppStatsTest extends ParameterizedTest {
 			assertNotNull("Expected non-null stats", stats);
 			assertThat("Expected 1 record", stats.items().length, is(equalTo(1)));
 			assertThat("Expected 180 messages", (int)stats.items()[0].inbound.all.all.count, is(equalTo(180)));
+			assertThat("Expected 18000 bytes of uncompressed data", (int)stats.items()[0].inbound.all.all.uncompressedData, is(equalTo(18000)));
+			assertThat("Expected 70 delta messages", (int)stats.items()[0].inbound.all.all.category.get("delta").count, is(equalTo(70)));
+			assertThat("Expected 70 successful delta generations", (int)stats.items()[0].processed.delta.get("xdelta").succeeded, is(equalTo(70)));
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("appstats_hour0: Unexpected exception");
