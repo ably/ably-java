@@ -120,7 +120,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
 			/* wait for the publish callback to be called */
 			ErrorInfo[] errors = msgComplete1.waitFor();
-			assertTrue("Verify success from all message callbacks", errors.length == 0);				
+			assertTrue("Verify success from all message callbacks", errors.length == 0);
 
 			/* wait for the subscription callback to be called */
 			messageWaiter.waitFor(messageCount);
@@ -148,7 +148,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
 			/* wait for the publish callback to be called */
 			errors = msgComplete2.waitFor();
-			assertTrue("Verify success from all message callbacks", errors.length == 0);				
+			assertTrue("Verify success from all message callbacks", errors.length == 0);
 
 			/* wait for the subscription callback to be called */
 			messageWaiter.waitFor(messageCount);
@@ -207,7 +207,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
 			/* wait for the publish callback to be called */
 			ErrorInfo[] errors = msgComplete1.waitFor();
-			assertTrue("Verify success from all message callbacks", errors.length == 0);				
+			assertTrue("Verify success from all message callbacks", errors.length == 0);
 
 			/* wait for the subscription callback to be called */
 			messageWaiter.waitFor(messageCount);
@@ -232,7 +232,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
 			/* wait for the publish callback to be called */
 			errors = msgComplete2.waitFor();
-			assertTrue("Verify success from all message callbacks", errors.length == 0);				
+			assertTrue("Verify success from all message callbacks", errors.length == 0);
 
 			/* reconnect the rx connection, and expect the messages to be delivered */
 			ablyRx.connection.connect();
@@ -299,7 +299,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
 			/* wait for the publish callback to be called */
 			ErrorInfo[] errors = msgComplete1.waitFor();
-			assertTrue("Verify success from all message callbacks", errors.length == 0);				
+			assertTrue("Verify success from all message callbacks", errors.length == 0);
 
 			/* wait for the subscription callback to be called */
 			messageWaiter1.waitFor(messageCount);
@@ -328,7 +328,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
 			/* wait for the publish callback to be called */
 			errors = msgComplete2.waitFor();
-			assertTrue("Verify success from all message callbacks", errors.length == 0);				
+			assertTrue("Verify success from all message callbacks", errors.length == 0);
 
 			/* reconnect the rx connection, and expect the messages to be delivered */
 			ablyRx.connection.connect();
@@ -388,7 +388,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
 			/* wait for the publish callback to be called */
 			ErrorInfo[] errors = msgComplete1.waitFor();
-			assertTrue("Verify success from all message callbacks", errors.length == 0);				
+			assertTrue("Verify success from all message callbacks", errors.length == 0);
 
 			/* wait for the subscription callback to be called */
 			messageWaiter.waitFor(messageCount);
@@ -413,7 +413,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
 			/* wait for the publish callback to be called */
 			errors = msgComplete2.waitFor();
-			assertTrue("Verify success from all message callbacks", errors.length == 0);				
+			assertTrue("Verify success from all message callbacks", errors.length == 0);
 
 			/* reconnect the rx connection, and expect the messages to be delivered */
 			ablyRx.connection.connect();
@@ -473,7 +473,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
 			/* wait for the publish callback to be called */
 			ErrorInfo[] errors = msgComplete1.waitFor();
-			assertTrue("Verify success from all message callbacks", errors.length == 0);				
+			assertTrue("Verify success from all message callbacks", errors.length == 0);
 
 			/* wait for the subscription callback to be called */
 			messageWaiter.waitFor(messageCount);
@@ -508,7 +508,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 			System.out.println("*** published. About to wait for callbacks");
 			errors = msgComplete2.waitFor();
 			System.out.println("*** done");
-			assertTrue("Verify success from all message callbacks", errors.length == 0);				
+			assertTrue("Verify success from all message callbacks", errors.length == 0);
 
 			/* wait for the subscription callback to be called */
 			messageWaiter.waitFor(messageCount);
@@ -522,6 +522,115 @@ public class RealtimeResumeTest extends ParameterizedTest {
 				ablyTx.close();
 			if(ablyRx != null)
 				ablyRx.close();
+		}
+	}
+
+	/**
+	 * Connect to the service using two library instances to set
+	 * up separate send and recv connections.
+	 *
+	 * Send some messages, drop the sender's transport, then send another
+	 * round of messages which should be queued and published after
+	 * we reconnect the sender.
+	 */
+	@Test
+	public void resume_publish_queue() {
+		AblyRealtime receiver = null;
+		AblyRealtime sender = null;
+		String channelName = "resume_publish_queue";
+		int messageCount = 3;
+		long delay = 200;
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			receiver = new AblyRealtime(opts);
+			sender = new AblyRealtime(opts);
+
+			/* create and attach channel to send on */
+			final Channel senderChannel = sender.channels.get(channelName);
+			senderChannel.attach();
+			(new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
+			assertEquals(
+			    "The sender's channel should be attached!",
+			    senderChannel.state, ChannelState.attached
+			);
+
+			/* create and attach channel to recv on */
+			final Channel receiverChannel = receiver.channels.get(channelName);
+			receiverChannel.attach();
+			(new ChannelWaiter(receiverChannel)).waitFor(ChannelState.attached);
+			assertEquals(
+				"The receiver's channel should be attached!",
+				receiverChannel.state, ChannelState.attached
+			);
+			/* subscribe */
+			MessageWaiter messageWaiter =  new MessageWaiter(receiverChannel);
+
+			/* publish first messages to the channel */
+			CompletionSet msgComplete1 = new CompletionSet();
+			for(int i = 0; i < messageCount; i++) {
+				senderChannel.publish("test_event", "Test message (resume_publish_queue) " + i, msgComplete1.add());
+				try { Thread.sleep(delay); } catch(InterruptedException e){}
+			}
+
+			/* wait for the publish callback to be called */
+			ErrorInfo[] errors = msgComplete1.waitFor();
+			assertTrue(
+			    "First round of messages has errors!", errors.length == 0
+			);
+
+			/* wait for the subscription callback to be called */
+			messageWaiter.waitFor(messageCount);
+			assertEquals(
+			    "Did not receive the entire first round of messages!",
+			    messageWaiter.receivedMessages.size(), messageCount
+			);
+			messageWaiter.reset();
+
+			/* disconnect the sender, without closing;
+			 * NOTE this depends on knowledge of the internal structure
+			 * of the library, to simulate a dropped transport without
+			 * causing the connection itself to be disposed */
+			sender.connection.connectionManager.requestState(ConnectionState.disconnected);
+
+			/* wait */
+			try { Thread.sleep(2000L); } catch(InterruptedException e) {}
+
+			/*
+			 *  publish further messages to the channel, which should be queued
+			 *  because the channel is currently disconnected.
+			 */
+			CompletionSet msgComplete2 = new CompletionSet();
+			for(int i = 0; i < messageCount; i++) {
+				senderChannel.publish("test_event", "Test queued message (resume_publish_queue) " + i, msgComplete2.add());
+				try { Thread.sleep(delay); } catch(InterruptedException e){}
+			}
+
+			/* reconnect the sender */
+			sender.connection.connect();
+			(new ConnectionWaiter(sender.connection)).waitFor(ConnectionState.connected);
+
+
+			/* wait for the publish callback to be called.*/
+			errors = msgComplete2.waitFor();
+			assertTrue(
+			    "Second round of messages (queued) has errors!",
+				errors.length == 0
+			);
+
+			/* wait for the subscription callback to be called */
+			messageWaiter.waitFor(messageCount);
+			assertEquals(
+			    "Did not receive the entire second round of messages (queued)!",
+				messageWaiter.receivedMessages.size(), messageCount
+			);
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			if(sender != null)
+				sender.close();
+			if(receiver != null)
+				receiver.close();
 		}
 	}
 }
