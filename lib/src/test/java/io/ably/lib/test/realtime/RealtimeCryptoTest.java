@@ -534,9 +534,14 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 
 	/**
 	 * Test channel options creation from the cipher key
-	 * Tests TB3
+	 * Tests TB3.
+	 *
+	 * This test should be removed when we get rid of the methods
+	 * ChannelOptions.fromCipherKey(...) which are deprecated and have
+	 * been replaced with ChannelOptions.withCipherKey(...).
 	 */
 	@Test
+	@Deprecated
 	public void channel_options_from_cipher_key() {
 		String channelName = "cipher_params_test_" + testParams.name;
 		AblyRealtime ably1 = null, ably2 = null;
@@ -554,6 +559,63 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 			final Channel channelSend = ably1.channels.get(channelName, ChannelOptions.fromCipherKey(key));
 			/* create a receiving channel using (the same) key encoded with base64 */
 			final Channel channelReceive = ably2.channels.get(channelName, ChannelOptions.fromCipherKey(base64key));
+
+			/* attach */
+			channelSend.attach();
+			channelReceive.attach();
+
+			/* subscribe */
+			MessageWaiter messageWaiter =  new MessageWaiter(channelReceive);
+
+			/* publish to the channel */
+			String messageText = "Test message";
+			CompletionWaiter msgComplete = new CompletionWaiter();
+			channelSend.publish("test_event", messageText, msgComplete);
+
+			/* wait for the publish callback to be called */
+			msgComplete.waitFor();
+			assertTrue("Verify success callback was called", msgComplete.success);
+
+			/* wait for the subscription callback to be called */
+			messageWaiter.waitFor(1);
+			assertEquals("Verify message subscription was called", messageWaiter.receivedMessages.size(), 1);
+
+			/* check the correct plaintext recovered from the message */
+			assertTrue("Verify correct plaintext received", messageText.equals(messageWaiter.receivedMessages.get(0).data));
+
+		} catch (AblyException e) {
+			e.printStackTrace();
+			fail("init0: Unexpected exception instantiating library");
+		} finally {
+			if(ably1 != null)
+				ably1.close();
+			if(ably2 != null)
+				ably2.close();
+		}
+	}
+
+	/**
+	 * Test channel options creation with the cipher key
+	 * Tests TB3.
+	 */
+	@Test
+	public void channel_options_with_cipher_key() {
+		String channelName = "cipher_params_test_" + testParams.name;
+		AblyRealtime ably1 = null, ably2 = null;
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			ably1 = new AblyRealtime(opts);
+			ably2 = new AblyRealtime(opts);
+
+			/* 128-bit key */
+			byte[] key = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+			/* Same key but encoded with Base64 */
+			String base64key = "AQIDBAUGBwgJCgsMDQ4PEA==";
+
+			/* create a sending channel using byte[] array */
+			final Channel channelSend = ably1.channels.get(channelName, ChannelOptions.withCipherKey(key));
+			/* create a receiving channel using (the same) key encoded with base64 */
+			final Channel channelReceive = ably2.channels.get(channelName, ChannelOptions.withCipherKey(base64key));
 
 			/* attach */
 			channelSend.attach();
