@@ -55,7 +55,7 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 			/* attach */
 			channel.attach();
 			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+			assertEquals("Channel is not attached", channel.state, ChannelState.attached);
 
 			/* subscribe */
 			MessageWaiter messageWaiter =  new MessageWaiter(channel);
@@ -67,21 +67,28 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 
 			/* wait for the publish callback to be called */
 			msgComplete.waitFor();
-			assertTrue("Verify success callback was called", msgComplete.success);
+			assertTrue("Success callback was not called", msgComplete.success);
 
 			/* wait for the subscription callback to be called */
 			messageWaiter.waitFor(1);
-			assertEquals("Verify message subscription was called", messageWaiter.receivedMessages.size(), 1);
+			assertEquals(
+			    "Unexpected number of received messages",
+				messageWaiter.receivedMessages.size(), 1
+			);
 
 			/* check the correct plaintext recovered from the message */
-			assertTrue("Verify correct plaintext received", messageText.equals(messageWaiter.receivedMessages.get(0).data));
+			assertTrue(
+			    "Unexpected message received",
+				messageText.equals(messageWaiter.receivedMessages.get(0).data)
+			);
 
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
-			if(ably != null)
+			if(ably != null) {
 				ably.close();
+			}
 		}
 	}
 
@@ -111,7 +118,10 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 			/* attach */
 			channel.attach();
 			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+			assertEquals(
+			    "Channel is not attached",
+				channel.state, ChannelState.attached
+			);
 
 			/* subscribe */
 			MessageWaiter messageWaiter =  new MessageWaiter(channel);
@@ -123,14 +133,20 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 
 			/* wait for the publish callback to be called */
 			msgComplete.waitFor();
-			assertTrue("Verify success callback was called", msgComplete.success);
+			assertTrue("Success callback was not called", msgComplete.success);
 
 			/* wait for the subscription callback to be called */
 			messageWaiter.waitFor(1);
-			assertEquals("Verify message subscription was called", messageWaiter.receivedMessages.size(), 1);
+			assertEquals(
+			    "Unexpected number of received messages",
+			    messageWaiter.receivedMessages.size(), 1
+			);
 
 			/* check the correct plaintext recovered from the message */
-			assertTrue("Verify correct plaintext received", messageText.equals(messageWaiter.receivedMessages.get(0).data));
+			assertTrue(
+			    "Unexpected message received",
+			    messageText.equals(messageWaiter.receivedMessages.get(0).data)
+			);
 
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -139,8 +155,9 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 			e.printStackTrace();
 			fail("init0: Unexpected exception generating key");
 		} finally {
-			if(ably != null)
+			if(ably != null) {
 				ably.close();
+			}
 		}
 	}
 
@@ -157,9 +174,9 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 
 			/* generate and remember message texts */
 			String[] messageTexts = new String[messageCount];
-			for(int i = 0; i < messageCount; i++)
+			for(int i = 0; i < messageCount; i++) {
 				messageTexts[i] = "Test message (_multiple_send) " + i;
-
+			}
 			/* create a channel */
 			ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; }};
 			final Channel channel = ably.channels.get(channelName, channelOpts);
@@ -167,7 +184,10 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 			/* attach */
 			channel.attach();
 			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+			assertEquals(
+			    "Channel is not attached",
+				channel.state, ChannelState.attached
+			);
 
 			/* subscribe */
 			MessageWaiter messageWaiter =  new MessageWaiter(channel);
@@ -181,22 +201,31 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 
 			/* wait for the publish callback to be called */
 			ErrorInfo[] errors = msgComplete.waitFor();
-			assertTrue("Verify success from all message callbacks", errors.length == 0);
+			assertTrue("Errors when sending messages", errors.length == 0);
 
 			/* wait for the subscription callback to be called */
 			messageWaiter.waitFor(messageCount);
-			assertEquals("Verify message subscriptions all called", messageWaiter.receivedMessages.size(), messageCount);
+			assertEquals(
+			    "Unexpected number of messages received",
+			    messageWaiter.receivedMessages.size(), messageCount
+			);
 
 			/* check the correct plaintext recovered from the message */
-			for(int i = 0; i < messageCount; i++)
-				assertTrue("Verify correct plaintext received", messageTexts[i].equals(messageWaiter.receivedMessages.get(i).data));
-
+			for(int i = 0; i < messageCount; i++) {
+				assertTrue(
+				    "Unexpected message received",
+					messageTexts[i].equals(
+					    messageWaiter.receivedMessages.get(i).data
+					)
+				);
+			}
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
-			if(ably != null)
+			if(ably != null) {
 				ably.close();
+			}
 		}
 	}
 
@@ -222,56 +251,71 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 	@Test
 	public void single_send_binary_text() {
 		String channelName = "single_send_binary_text_" + testParams.name;
-		AblyRealtime txAbly = null, rxAbly = null;
+		AblyRealtime sender = null;
+		AblyRealtime receiver = null;
 		try {
-			ClientOptions txOpts = createOptions(testVars.keys[0].keyStr);
-			txAbly = new AblyRealtime(txOpts);
-			ClientOptions rxOpts = createOptions(testVars.keys[0].keyStr);
-			rxOpts.useBinaryProtocol = !testParams.useBinaryProtocol;
-			rxAbly = new AblyRealtime(rxOpts);
+			ClientOptions senderOpts = createOptions(testVars.keys[0].keyStr);
+			sender = new AblyRealtime(senderOpts);
+			ClientOptions receiverOpts = createOptions(testVars.keys[0].keyStr);
+			receiverOpts.useBinaryProtocol = !testParams.useBinaryProtocol;
+			receiver = new AblyRealtime(receiverOpts);
 
 			/* create a key */
 			final CipherParams params = Crypto.getDefaultParams();
 
 			/* create a channel */
-			final ChannelOptions txChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params; }};
-			final Channel txChannel = txAbly.channels.get(channelName, txChannelOpts);
-			ChannelOptions rxChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params; }};
-			final Channel rxChannel = rxAbly.channels.get(channelName, rxChannelOpts);
+			final ChannelOptions senderChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params; }};
+			final Channel senderChannel = sender.channels.get(channelName, senderChannelOpts);
+			final ChannelOptions receiverChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params; }};
+			final Channel receiverChannel = receiver.channels.get(channelName, receiverChannelOpts);
 
 			/* attach */
-			txChannel.attach();
-			rxChannel.attach();
-			(new ChannelWaiter(txChannel)).waitFor(ChannelState.attached);
-			(new ChannelWaiter(rxChannel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", txChannel.state, ChannelState.attached);
-			assertEquals("Verify attached state reached", rxChannel.state, ChannelState.attached);
+			senderChannel.attach();
+			receiverChannel.attach();
+			(new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
+			(new ChannelWaiter(receiverChannel)).waitFor(ChannelState.attached);
+			assertEquals(
+				"Sender channel is not attached",
+				senderChannel.state, ChannelState.attached
+			);
+			assertEquals(
+				"Receiver channel is not attached",
+				receiverChannel.state, ChannelState.attached
+			);
 
 			/* subscribe */
-			MessageWaiter messageWaiter =  new MessageWaiter(rxChannel);
+			MessageWaiter messageWaiter =  new MessageWaiter(receiverChannel);
 
 			/* publish to the channel */
 			String messageText = "Test message (single_send_binary_text)";
 			CompletionWaiter msgComplete = new CompletionWaiter();
-			txChannel.publish("test_event", messageText, msgComplete);
+			senderChannel.publish("test_event", messageText, msgComplete);
 
 			/* wait for the publish callback to be called */
 			msgComplete.waitFor();
-			assertTrue("Verify success callback was called", msgComplete.success);
+			assertTrue("Success callback was not called", msgComplete.success);
 
 			/* wait for the subscription callback to be called */
 			messageWaiter.waitFor(1);
-			assertEquals("Verify message subscription was called", messageWaiter.receivedMessages.size(), 1);
-
+			assertEquals(
+				"Unexpected number of received messages",
+				messageWaiter.receivedMessages.size(), 1
+			);
 			/* check the correct plaintext recovered from the message */
-			assertTrue("Verify correct plaintext received", messageText.equals(messageWaiter.receivedMessages.get(0).data));
-
+			assertTrue(
+			    "Unexpected message received",
+			    messageText.equals(messageWaiter.receivedMessages.get(0).data)
+			);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
-			if(txAbly != null)
-				txAbly.close();
+			if(sender != null) {
+				sender.close();
+			}
+			if(receiver != null) {
+				receiver.close();
+			}
 		}
 	}
 
@@ -283,52 +327,68 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 	 */
 	@Test
 	public void single_send_key_mismatch() {
-		AblyRealtime txAbly = null, rxAbly = null;
+		AblyRealtime sender = null;
+		AblyRealtime receiver = null;
 		try {
-			ClientOptions txOpts = createOptions(testVars.keys[0].keyStr);
-			txAbly = new AblyRealtime(txOpts);
-			ClientOptions rxOpts = createOptions(testVars.keys[0].keyStr);
-			rxAbly = new AblyRealtime(rxOpts);
+			ClientOptions senderOpts = createOptions(testVars.keys[0].keyStr);
+			sender = new AblyRealtime(senderOpts);
+			ClientOptions receiverOpts = createOptions(testVars.keys[0].keyStr);
+			receiver = new AblyRealtime(receiverOpts);
 
 			/* create a channel */
-			final ChannelOptions txChannelOpts = new ChannelOptions() {{ encrypted = true; }};
-			final Channel txChannel = txAbly.channels.get("single_send_binary_text", txChannelOpts);
-			ChannelOptions rxChannelOpts = new ChannelOptions() {{ encrypted = true; }};
-			final Channel rxChannel = rxAbly.channels.get("single_send_binary_text", rxChannelOpts);
+			final ChannelOptions senderChannelOpts = new ChannelOptions() {{ encrypted = true; }};
+			final Channel senderChannel = sender.channels.get("single_send_binary_text", senderChannelOpts);
+			final ChannelOptions receiverChannelOpts = new ChannelOptions() {{ encrypted = true; }};
+			final Channel receiverChannel = receiver.channels.get("single_send_binary_text", receiverChannelOpts);
 
 			/* attach */
-			txChannel.attach();
-			rxChannel.attach();
-			(new ChannelWaiter(txChannel)).waitFor(ChannelState.attached);
-			(new ChannelWaiter(rxChannel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", txChannel.state, ChannelState.attached);
-			assertEquals("Verify attached state reached", rxChannel.state, ChannelState.attached);
+			senderChannel.attach();
+			receiverChannel.attach();
+			(new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
+			(new ChannelWaiter(receiverChannel)).waitFor(ChannelState.attached);
+			assertEquals(
+			    "Sender channel is not attached",
+			    senderChannel.state, ChannelState.attached
+			);
+			assertEquals(
+			    "Receiver channel is not attached",
+			    receiverChannel.state, ChannelState.attached
+			);
 
 			/* subscribe */
-			MessageWaiter messageWaiter =  new MessageWaiter(rxChannel);
+			MessageWaiter messageWaiter =  new MessageWaiter(receiverChannel);
 
 			/* publish to the channel */
 			String messageText = "Test message (single_send_key_mismatch)";
 			CompletionWaiter msgComplete = new CompletionWaiter();
-			txChannel.publish("test_event", messageText, msgComplete);
+			senderChannel.publish("test_event", messageText, msgComplete);
 
 			/* wait for the publish callback to be called */
 			msgComplete.waitFor();
-			assertTrue("Verify success callback was called", msgComplete.success);
+			assertTrue("Success callback was not called", msgComplete.success);
 
 			/* wait for the subscription callback to be called */
 			messageWaiter.waitFor(1);
-			assertEquals("Verify message subscription was called", messageWaiter.receivedMessages.size(), 1);
+			assertEquals(
+			    "Unexpected number of received messages",
+			    messageWaiter.receivedMessages.size(), 1
+			);
 
 			/* check the correct plaintext recovered from the message */
-			assertFalse("Verify correct plaintext not received", messageText.equals(messageWaiter.receivedMessages.get(0).data));
-
+			assertFalse(
+			    "Unexpected message received",
+			    messageText.equals(messageWaiter.receivedMessages.get(0).data)
+			);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
-			if(txAbly != null)
-				txAbly.close();
+			if(sender != null) {
+				sender.close();
+			}
+			if(receiver != null) {
+				receiver.close();
+			}
 		}
 	}
 
@@ -340,51 +400,67 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 	 */
 	@Test
 	public void single_send_unencrypted() {
-		AblyRealtime txAbly = null, rxAbly = null;
+		AblyRealtime sender = null;
+		AblyRealtime receiver = null;
 		try {
-			ClientOptions txOpts = createOptions(testVars.keys[0].keyStr);
-			txAbly = new AblyRealtime(txOpts);
-			ClientOptions rxOpts = createOptions(testVars.keys[0].keyStr);
-			rxAbly = new AblyRealtime(rxOpts);
+			ClientOptions senderOpts = createOptions(testVars.keys[0].keyStr);
+			sender = new AblyRealtime(senderOpts);
+			ClientOptions receiverOpts = createOptions(testVars.keys[0].keyStr);
+			receiver = new AblyRealtime(receiverOpts);
 
 			/* create a channel */
-			final Channel txChannel = txAbly.channels.get("single_send_unencrypted");
-			ChannelOptions rxChannelOpts = new ChannelOptions() {{ encrypted = true; }};
-			final Channel rxChannel = rxAbly.channels.get("single_send_unencrypted", rxChannelOpts);
+			final Channel senderChannel = sender.channels.get("single_send_unencrypted");
+			ChannelOptions receiverChannelOpts = new ChannelOptions() {{ encrypted = true; }};
+			final Channel receiverChannel = receiver.channels.get("single_send_unencrypted", receiverChannelOpts);
 
 			/* attach */
-			txChannel.attach();
-			rxChannel.attach();
-			(new ChannelWaiter(txChannel)).waitFor(ChannelState.attached);
-			(new ChannelWaiter(rxChannel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", txChannel.state, ChannelState.attached);
-			assertEquals("Verify attached state reached", rxChannel.state, ChannelState.attached);
+			senderChannel.attach();
+			receiverChannel.attach();
+			(new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
+			(new ChannelWaiter(receiverChannel)).waitFor(ChannelState.attached);
+			assertEquals(
+			    "Sender channel is not attached",
+			    senderChannel.state, ChannelState.attached
+			);
+			assertEquals(
+			    "Receiver channel is not attached",
+			    receiverChannel.state, ChannelState.attached
+			);
 
 			/* subscribe */
-			MessageWaiter messageWaiter =  new MessageWaiter(rxChannel);
+			MessageWaiter messageWaiter =  new MessageWaiter(receiverChannel);
 
 			/* publish to the channel */
 			String messageText = "Test message (single_send_unencrypted)";
 			CompletionWaiter msgComplete = new CompletionWaiter();
-			txChannel.publish("test_event", messageText, msgComplete);
+			senderChannel.publish("test_event", messageText, msgComplete);
 
 			/* wait for the publish callback to be called */
 			msgComplete.waitFor();
-			assertTrue("Verify success callback was called", msgComplete.success);
+			assertTrue("Success callback was not called", msgComplete.success);
 
 			/* wait for the subscription callback to be called */
 			messageWaiter.waitFor(1);
-			assertEquals("Verify message subscription was called", messageWaiter.receivedMessages.size(), 1);
+			assertEquals(
+			    "Unexpected number of received messages",
+			    messageWaiter.receivedMessages.size(), 1
+			);
 
 			/* check the correct text recovered from the message */
-			assertTrue("Verify correct message text received", messageText.equals(messageWaiter.receivedMessages.get(0).data));
-
+			assertTrue(
+			    "Received message is not correct",
+			    messageText.equals(messageWaiter.receivedMessages.get(0).data)
+			);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
-			if(txAbly != null)
-				txAbly.close();
+			if(sender != null) {
+				sender.close();
+			}
+			if(receiver != null) {
+				receiver.close();
+			}
 		}
 	}
 
@@ -395,41 +471,51 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 	 */
 	@Test
 	public void single_send_encrypted_unhandled() {
-		AblyRealtime txAbly = null, rxAbly = null;
+		AblyRealtime sender = null;
+		AblyRealtime receiver = null;
 		try {
-			ClientOptions txOpts = createOptions(testVars.keys[0].keyStr);
-			txAbly = new AblyRealtime(txOpts);
-			ClientOptions rxOpts = createOptions(testVars.keys[0].keyStr);
-			rxAbly = new AblyRealtime(rxOpts);
+			ClientOptions senderOpts = createOptions(testVars.keys[0].keyStr);
+			sender = new AblyRealtime(senderOpts);
+			ClientOptions receiverOpts = createOptions(testVars.keys[0].keyStr);
+			receiver = new AblyRealtime(receiverOpts);
 
 			/* create a channel */
-			ChannelOptions txChannelOpts = new ChannelOptions() {{ encrypted = true; }};
-			final Channel txChannel = txAbly.channels.get("single_send_encrypted_unhandled", txChannelOpts);
-			final Channel rxChannel = rxAbly.channels.get("single_send_encrypted_unhandled");
+			ChannelOptions senderChannelOpts = new ChannelOptions() {{ encrypted = true; }};
+			final Channel senderChannel = sender.channels.get("single_send_encrypted_unhandled", senderChannelOpts);
+			final Channel receiverChannel = receiver.channels.get("single_send_encrypted_unhandled");
 
 			/* attach */
-			txChannel.attach();
-			rxChannel.attach();
-			(new ChannelWaiter(txChannel)).waitFor(ChannelState.attached);
-			(new ChannelWaiter(rxChannel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", txChannel.state, ChannelState.attached);
-			assertEquals("Verify attached state reached", rxChannel.state, ChannelState.attached);
+			senderChannel.attach();
+			receiverChannel.attach();
+			(new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
+			(new ChannelWaiter(receiverChannel)).waitFor(ChannelState.attached);
+			assertEquals(
+			    "Sender channel is not attached",
+			    senderChannel.state, ChannelState.attached
+			);
+			assertEquals(
+			    "Receiver channel is not attached",
+			    receiverChannel.state, ChannelState.attached
+			);
 
 			/* subscribe */
-			MessageWaiter messageWaiter =  new MessageWaiter(rxChannel);
+			MessageWaiter messageWaiter =  new MessageWaiter(receiverChannel);
 
 			/* publish to the channel */
 			String messageText = "Test message (single_send_encrypted_unhandled)";
 			CompletionWaiter msgComplete = new CompletionWaiter();
-			txChannel.publish("test_event", messageText, msgComplete);
+			senderChannel.publish("test_event", messageText, msgComplete);
 
 			/* wait for the publish callback to be called */
 			msgComplete.waitFor();
-			assertTrue("Verify success callback was called", msgComplete.success);
+			assertTrue("Success callback was not called", msgComplete.success);
 
 			/* wait for the subscription callback to be called */
 			messageWaiter.waitFor(1);
-			assertEquals("Verify message subscription was called", messageWaiter.receivedMessages.size(), 1);
+			assertEquals(
+			    "Unexpected number of messages received",
+			    messageWaiter.receivedMessages.size(), 1
+			);
 
 			/* check the the message payload is indicated as encrypted */
 //			assertTrue("Verify correct message text received", messageWaiter.receivedMessages.get(0).data instanceof CipherData);
@@ -438,8 +524,12 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
-			if(txAbly != null)
-				txAbly.close();
+			if(sender != null) {
+				sender.close();
+			}
+			if(receiver != null) {
+				receiver.close();
+			}
 		}
 	}
 
@@ -451,60 +541,77 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 	 */
 	@Test
 	public void set_cipher_params() {
-		AblyRealtime txAbly = null, rxAbly = null;
+		AblyRealtime sender = null;
+		AblyRealtime receiver = null;
 		try {
-			ClientOptions txOpts = createOptions(testVars.keys[0].keyStr);
-			txAbly = new AblyRealtime(txOpts);
-			ClientOptions rxOpts = createOptions(testVars.keys[0].keyStr);
-			rxOpts.useBinaryProtocol = !testParams.useBinaryProtocol;
-			rxAbly = new AblyRealtime(rxOpts);
+			ClientOptions senderOpts = createOptions(testVars.keys[0].keyStr);
+			sender = new AblyRealtime(senderOpts);
+			ClientOptions receiverOpts = createOptions(testVars.keys[0].keyStr);
+			receiverOpts.useBinaryProtocol = !testParams.useBinaryProtocol;
+			receiver = new AblyRealtime(receiverOpts);
 
 			/* create a key */
 			final CipherParams params1 = Crypto.getDefaultParams();
 
 			/* create a channel */
-			ChannelOptions txChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params1; }};
-			final Channel txChannel = txAbly.channels.get("set_cipher_params", txChannelOpts);
-			ChannelOptions rxChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params1; }};
-			final Channel rxChannel = rxAbly.channels.get("set_cipher_params", rxChannelOpts);
+			ChannelOptions senderChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params1; }};
+			final Channel senderChannel = sender.channels.get("set_cipher_params", senderChannelOpts);
+			ChannelOptions receiverChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params1; }};
+			final Channel receiverChannel = receiver.channels.get("set_cipher_params", receiverChannelOpts);
 
 			/* attach */
-			txChannel.attach();
-			rxChannel.attach();
-			(new ChannelWaiter(txChannel)).waitFor(ChannelState.attached);
-			(new ChannelWaiter(rxChannel)).waitFor(ChannelState.attached);
-			assertEquals("Verify attached state reached", txChannel.state, ChannelState.attached);
-			assertEquals("Verify attached state reached", rxChannel.state, ChannelState.attached);
+			senderChannel.attach();
+			receiverChannel.attach();
+			(new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
+			(new ChannelWaiter(receiverChannel)).waitFor(ChannelState.attached);
+
+			assertEquals(
+			    "Sender channel is not attached",
+			    senderChannel.state, ChannelState.attached
+			);
+			assertEquals(
+			    "Receiver channel is not attached",
+			    receiverChannel.state, ChannelState.attached
+			);
 
 			/* subscribe */
-			MessageWaiter messageWaiter =  new MessageWaiter(rxChannel);
+			MessageWaiter messageWaiter =  new MessageWaiter(receiverChannel);
 
 			/* publish to the channel */
 			String messageText = "Test message (set_cipher_params)";
 			CompletionWaiter msgComplete = new CompletionWaiter();
-			txChannel.publish("test_event", messageText, msgComplete);
+			senderChannel.publish("test_event", messageText, msgComplete);
 
 			/* wait for the publish callback to be called */
 			msgComplete.waitFor();
-			assertTrue("Verify success callback was called", msgComplete.success);
+			assertTrue("Success callback was not called", msgComplete.success);
 
 			/* wait for the subscription callback to be called */
 			messageWaiter.waitFor(1);
-			assertEquals("Verify message subscription was called", messageWaiter.receivedMessages.size(), 1);
+			assertEquals(
+			    "Unexpected number of received messages",
+			    messageWaiter.receivedMessages.size(), 1
+			);
 
 			/* check the correct plaintext recovered from the message */
-			assertTrue("Verify correct plaintext received", messageText.equals(messageWaiter.receivedMessages.get(0).data));
+			assertTrue(
+			    "Received message is not correct",
+			    messageText.equals(messageWaiter.receivedMessages.get(0).data)
+			);
 
-			/* create a second key and set tx channel opts */
+			/* create a second key and set sender channel opts */
 			final CipherParams params2 = Crypto.getDefaultParams();
-			txChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params2; }};
-			txChannel.setOptions(txChannelOpts);
+			senderChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params2; }};
+			senderChannel.setOptions(senderChannelOpts);
 
 			/* publish to the channel, wait, check message bad */
 			messageWaiter.reset();
-			txChannel.publish("test_event", messageText, msgComplete);
+			senderChannel.publish("test_event", messageText, msgComplete);
 			messageWaiter.waitFor(1);
-			assertFalse("Verify correct plaintext not received", messageText.equals(messageWaiter.receivedMessages.get(0).data));
+			assertFalse(
+			    "Received message is not correct",
+			    messageText.equals(messageWaiter.receivedMessages.get(0).data)
+			);
 
 			/* See issue https://github.com/ably/ably-java/issues/202
 			 * This final part of the test fails intermittently. For now just try
@@ -513,42 +620,48 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 				assertTrue("Verify correct plaintext received", count != 0);
 
 				/* set rx channel opts */
-				rxChannel.setOptions(txChannelOpts);
+				receiverChannel.setOptions(senderChannelOpts);
 
 				/* publish to the channel, wait, check message bad */
 				messageWaiter.reset();
-				txChannel.publish("test_event", messageText, msgComplete);
+				senderChannel.publish("test_event", messageText, msgComplete);
 				messageWaiter.waitFor(1);
-				if (messageText.equals(messageWaiter.receivedMessages.get(0).data))
+				if (messageText.equals(messageWaiter.receivedMessages.get(0).data)) {
 					break;
+				}
 			}
 
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
-			if(txAbly != null)
-				txAbly.close();
+			if(sender != null) {
+				sender.close();
+			}
+			if(receiver != null) {
+				receiver.close();
+			}
 		}
 	}
 
 	/**
-	 * Test channel options creation from the cipher key
-	 * Tests TB3.
+	 * Test channel options creation from the cipher key.
 	 *
 	 * This test should be removed when we get rid of the methods
 	 * ChannelOptions.fromCipherKey(...) which are deprecated and have
 	 * been replaced with ChannelOptions.withCipherKey(...).
+	 * @see <a href="https://docs.ably.io/client-lib-development-guide/features/#TB3>TB3</a>
 	 */
 	@Test
 	@Deprecated
 	public void channel_options_from_cipher_key() {
 		String channelName = "cipher_params_test_" + testParams.name;
-		AblyRealtime ably1 = null, ably2 = null;
+		AblyRealtime sender = null;
+		AblyRealtime receiver = null;
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-			ably1 = new AblyRealtime(opts);
-			ably2 = new AblyRealtime(opts);
+			sender = new AblyRealtime(opts);
+			receiver = new AblyRealtime(opts);
 
 			/* 128-bit key */
 			byte[] key = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
@@ -556,9 +669,9 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 			String base64key = "AQIDBAUGBwgJCgsMDQ4PEA==";
 
 			/* create a sending channel using byte[] array */
-			final Channel channelSend = ably1.channels.get(channelName, ChannelOptions.fromCipherKey(key));
+			final Channel channelSend = sender.channels.get(channelName, ChannelOptions.fromCipherKey(key));
 			/* create a receiving channel using (the same) key encoded with base64 */
-			final Channel channelReceive = ably2.channels.get(channelName, ChannelOptions.fromCipherKey(base64key));
+			final Channel channelReceive = receiver.channels.get(channelName, ChannelOptions.fromCipherKey(base64key));
 
 			/* attach */
 			channelSend.attach();
@@ -574,38 +687,47 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 
 			/* wait for the publish callback to be called */
 			msgComplete.waitFor();
-			assertTrue("Verify success callback was called", msgComplete.success);
+			assertTrue("Success callback was not called", msgComplete.success);
 
 			/* wait for the subscription callback to be called */
 			messageWaiter.waitFor(1);
-			assertEquals("Verify message subscription was called", messageWaiter.receivedMessages.size(), 1);
+			assertEquals(
+			    "Unexpected number of received messages",
+			    messageWaiter.receivedMessages.size(), 1
+			);
 
 			/* check the correct plaintext recovered from the message */
-			assertTrue("Verify correct plaintext received", messageText.equals(messageWaiter.receivedMessages.get(0).data));
+			assertTrue(
+			    "Received message is not correct",
+			    messageText.equals(messageWaiter.receivedMessages.get(0).data)
+			);
 
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
-			if(ably1 != null)
-				ably1.close();
-			if(ably2 != null)
-				ably2.close();
+			if(sender != null) {
+				sender.close();
+			}
+			if(receiver != null) {
+				receiver.close();
+			}
 		}
 	}
 
 	/**
-	 * Test channel options creation with the cipher key
-	 * Tests TB3.
+	 * Test channel options creation with the cipher key.
+	 * @see <a href="https://docs.ably.io/client-lib-development-guide/features/#TB3>TB3</a>
 	 */
 	@Test
 	public void channel_options_with_cipher_key() {
 		String channelName = "cipher_params_test_" + testParams.name;
-		AblyRealtime ably1 = null, ably2 = null;
+		AblyRealtime sender = null;
+		AblyRealtime receiver = null;
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-			ably1 = new AblyRealtime(opts);
-			ably2 = new AblyRealtime(opts);
+			sender = new AblyRealtime(opts);
+			receiver = new AblyRealtime(opts);
 
 			/* 128-bit key */
 			byte[] key = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
@@ -613,9 +735,9 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 			String base64key = "AQIDBAUGBwgJCgsMDQ4PEA==";
 
 			/* create a sending channel using byte[] array */
-			final Channel channelSend = ably1.channels.get(channelName, ChannelOptions.withCipherKey(key));
+			final Channel channelSend = sender.channels.get(channelName, ChannelOptions.withCipherKey(key));
 			/* create a receiving channel using (the same) key encoded with base64 */
-			final Channel channelReceive = ably2.channels.get(channelName, ChannelOptions.withCipherKey(base64key));
+			final Channel channelReceive = receiver.channels.get(channelName, ChannelOptions.withCipherKey(base64key));
 
 			/* attach */
 			channelSend.attach();
@@ -631,32 +753,39 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 
 			/* wait for the publish callback to be called */
 			msgComplete.waitFor();
-			assertTrue("Verify success callback was called", msgComplete.success);
+			assertTrue("Success callback was not called", msgComplete.success);
 
 			/* wait for the subscription callback to be called */
 			messageWaiter.waitFor(1);
-			assertEquals("Verify message subscription was called", messageWaiter.receivedMessages.size(), 1);
+			assertEquals(
+			    "Unexpected number of received messages",
+				messageWaiter.receivedMessages.size(), 1
+			);
 
 			/* check the correct plaintext recovered from the message */
-			assertTrue("Verify correct plaintext received", messageText.equals(messageWaiter.receivedMessages.get(0).data));
+			assertTrue(
+			    "Received message is not correct",
+				messageText.equals(messageWaiter.receivedMessages.get(0).data)
+			);
 
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
-			if(ably1 != null)
-				ably1.close();
-			if(ably2 != null)
-				ably2.close();
+			if(sender != null) {
+				sender.close();
+			}
+			if(receiver != null) {
+				receiver.close();
+			}
 		}
 	}
 
 
 	/**
-	 * Test Crypto.getDefaultParams
-	 * @throws AblyException
-	 *
-	 * Tests RSE1
+	 * Test Crypto.getDefaultParams.
+	 * @see <a href="https://docs.ably.io/client-lib-development-guide/features/#RSE1">RSE1</a>
+	 * @throws AblyException If something goes wrong.
 	 */
 	@Test
 	public void cipher_params() throws AblyException {
@@ -676,8 +805,13 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 		final CipherParams params3 = Crypto.getDefaultParams(params1); params3.ivSpec = new IvParameterSpec(iv);
 		final CipherParams params4 = Crypto.getDefaultParams(base64key2); params4.ivSpec = new IvParameterSpec(iv);
 
-		assertTrue("Verify keyLength is calculated properly",
-				params1.keyLength == key.length*8 && params2.keyLength == key.length*8 && params3.keyLength == key.length*8 && params4.keyLength == key.length*8);
+		assertTrue(
+		    "Key length is incorrect",
+		    params1.keyLength == key.length*8 &&
+		    params2.keyLength == key.length*8 &&
+		    params3.keyLength == key.length*8 &&
+		    params4.keyLength == key.length*8
+		);
 
 		byte[] plaintext = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
 		Crypto.ChannelCipher channelCipher1 = Crypto.getCipher(new ChannelOptions() {{ encrypted=true; cipherParams=params1; }});
@@ -690,26 +824,36 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 		byte[] ciphertext3 = channelCipher3.encrypt(plaintext);
 		byte[] ciphertext4 = channelCipher4.encrypt(plaintext);
 
-		assertTrue("Verify all the cipertexts are equal",
-				Arrays.equals(ciphertext1, ciphertext2) &&
-						Arrays.equals(ciphertext1, ciphertext3) &&
-						Arrays.equals(ciphertext1, ciphertext4));
+		assertTrue(
+		    "All ciphertexts should be the same.",
+		    Arrays.equals(ciphertext1, ciphertext2) &&
+		    Arrays.equals(ciphertext1, ciphertext3) &&
+		    Arrays.equals(ciphertext1, ciphertext4)
+		);
 	}
 
 	/**
-	 * Test Crypto.generateRandomKey
-	 * Tests RSE2
+	 * Test Crypto.generateRandomKey.
+	 * @see <a href="https://docs.ably.io/client-lib-development-guide/features/#RSE2">RSE2</a>
 	 */
-	@Test public void generate_random_key() {
+	@Test
+	public void generate_random_key() {
 		final int numberOfRandomKeys = 50;
 		final int randomKeyBits = 256;
 		byte[][] randomKeys = new byte[numberOfRandomKeys][];
 
 		for (int i=0; i<numberOfRandomKeys; i++) {
 			randomKeys[i] = Crypto.generateRandomKey(randomKeyBits);
-			assertEquals("Verify random data has correct length", randomKeys[i].length, (randomKeyBits + 7) / 8);
-			for (int j=0; j<i; j++)
-				assertFalse("Verify random data is unique", Arrays.equals(randomKeys[i], randomKeys[j]));
+			assertEquals(
+			    "Random key doesn't have the correct length",
+			    randomKeys[i].length, (randomKeyBits + 7) / 8
+			);
+			for (int j=0; j<i; j++) {
+				assertFalse(
+				    "Found duplicates among randomly generated keys",
+					Arrays.equals(randomKeys[i], randomKeys[j])
+				);
+			}
 		}
 	}
 }
