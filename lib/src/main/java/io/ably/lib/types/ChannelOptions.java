@@ -22,9 +22,15 @@ public class ChannelOptions {
 	public boolean encrypted;
 
 	public ChannelCipher getCipher() throws AblyException {
-		if(!encrypted) return null;
-		if(cipher != null) return cipher;
-		return (cipher = Crypto.getCipher(this));
+		if(!this.encrypted) {
+			return null;
+		}
+		if(this.cipher != null) {
+			return this.cipher;
+		} else {
+			this.cipher = Crypto.getCipher(this);
+			return this.cipher;
+		}
 	}
 
 	public static ChannelOptions fromCipherKey(byte[] key) throws AblyException {
