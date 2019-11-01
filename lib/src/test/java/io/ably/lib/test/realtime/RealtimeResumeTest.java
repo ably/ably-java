@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import io.ably.lib.types.Message;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -20,6 +21,8 @@ import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
+
+import java.util.List;
 
 public class RealtimeResumeTest extends ParameterizedTest {
 
@@ -73,8 +76,9 @@ public class RealtimeResumeTest extends ParameterizedTest {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
-			if(ably != null)
+			if(ably != null) {
 				ably.close();
+			}
 		}
 	}
 
@@ -87,7 +91,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
 	 */
 	@Test
 	public void resume_simple() {
-		AblyRealtime ablyRx = null, ablyTx = null;
+		AblyRealtime ablyTx = null;
+		AblyRealtime ablyRx = null;
 		String channelName = "resume_simple";
 		int messageCount = 5;
 		long delay = 200;
@@ -158,10 +163,12 @@ public class RealtimeResumeTest extends ParameterizedTest {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
-			if(ablyTx != null)
+			if(ablyTx != null) {
 				ablyTx.close();
-			if(ablyRx != null)
+			}
+			if(ablyRx != null) {
 				ablyRx.close();
+			}
 		}
 	}
 
@@ -174,7 +181,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
 	 */
 	@Test
 	public void resume_disconnected() {
-		AblyRealtime ablyRx = null, ablyTx = null;
+		AblyRealtime ablyTx = null;
+		AblyRealtime ablyRx = null;
 		String channelName = "resume_disconnected";
 		int messageCount = 5;
 		long delay = 200;
@@ -244,10 +252,12 @@ public class RealtimeResumeTest extends ParameterizedTest {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
-			if(ablyTx != null)
+			if(ablyTx != null) {
 				ablyTx.close();
-			if(ablyRx != null)
+			}
+			if(ablyRx != null) {
 				ablyRx.close();
+			}
 		}
 	}
 
@@ -256,7 +266,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
 	 */
 	@Test
 	public void resume_multiple_channel() {
-		AblyRealtime ablyRx = null, ablyTx = null;
+		AblyRealtime ablyTx = null;
+		AblyRealtime ablyRx = null;
 		String channelName = "resume_multiple_channel";
 		int messageCount = 5;
 		long delay = 200;
@@ -342,10 +353,12 @@ public class RealtimeResumeTest extends ParameterizedTest {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
-			if(ablyTx != null)
+			if(ablyTx != null) {
 				ablyTx.close();
-			if(ablyRx != null)
+			}
+			if(ablyRx != null) {
 				ablyRx.close();
+			}
 		}
 	}
 
@@ -355,7 +368,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
 	 */
 	@Test
 	public void resume_multiple_interval() {
-		AblyRealtime ablyRx = null, ablyTx = null;
+		AblyRealtime ablyTx = null;
+		AblyRealtime ablyRx = null;
 		String channelName = "resume_multiple_interval";
 		int messageCount = 5;
 		long delay = 200;
@@ -425,10 +439,12 @@ public class RealtimeResumeTest extends ParameterizedTest {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
-			if(ablyTx != null)
+			if(ablyTx != null) {
 				ablyTx.close();
-			if(ablyRx != null)
+			}
+			if(ablyRx != null) {
 				ablyRx.close();
+			}
 		}
 	}
 
@@ -440,7 +456,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
 	 */
 	@Test
 	public void resume_verify_publish() {
-		AblyRealtime ablyRx = null, ablyTx = null;
+		AblyRealtime ablyTx = null;
+		AblyRealtime ablyRx = null;
 		String channelName = "resume_verify_publish";
 		int messageCount = 5;
 		long delay = 200;
@@ -518,10 +535,12 @@ public class RealtimeResumeTest extends ParameterizedTest {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
-			if(ablyTx != null)
+			if(ablyTx != null) {
 				ablyTx.close();
-			if(ablyRx != null)
+			}
+			if(ablyRx != null) {
 				ablyRx.close();
+			}
 		}
 	}
 
@@ -550,7 +569,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 			senderChannel.attach();
 			(new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
 			assertEquals(
-			    "The sender's channel should be attached!",
+			    "The sender's channel should be attached",
 			    senderChannel.state, ChannelState.attached
 			);
 
@@ -559,7 +578,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 			receiverChannel.attach();
 			(new ChannelWaiter(receiverChannel)).waitFor(ChannelState.attached);
 			assertEquals(
-				"The receiver's channel should be attached!",
+				"The receiver's channel should be attached",
 				receiverChannel.state, ChannelState.attached
 			);
 			/* subscribe */
@@ -575,13 +594,13 @@ public class RealtimeResumeTest extends ParameterizedTest {
 			/* wait for the publish callback to be called */
 			ErrorInfo[] errors = msgComplete1.waitFor();
 			assertTrue(
-			    "First round of messages has errors!", errors.length == 0
+			    "First round of messages has errors", errors.length == 0
 			);
 
 			/* wait for the subscription callback to be called */
 			messageWaiter.waitFor(messageCount);
 			assertEquals(
-			    "Did not receive the entire first round of messages!",
+			    "Did not receive the entire first round of messages",
 			    messageWaiter.receivedMessages.size(), messageCount
 			);
 			messageWaiter.reset();
@@ -601,7 +620,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 			 */
 			CompletionSet msgComplete2 = new CompletionSet();
 			for(int i = 0; i < messageCount; i++) {
-				senderChannel.publish("test_event", "Test queued message (resume_publish_queue) " + i, msgComplete2.add());
+				senderChannel.publish("queued_message_" + i, "Test queued message (resume_publish_queue) " + i, msgComplete2.add());
 				try { Thread.sleep(delay); } catch(InterruptedException e){}
 			}
 
@@ -613,24 +632,34 @@ public class RealtimeResumeTest extends ParameterizedTest {
 			/* wait for the publish callback to be called.*/
 			errors = msgComplete2.waitFor();
 			assertTrue(
-			    "Second round of messages (queued) has errors!",
+			    "Second round of messages (queued) has errors",
 				errors.length == 0
 			);
 
 			/* wait for the subscription callback to be called */
 			messageWaiter.waitFor(messageCount);
+
+			List<Message> received = messageWaiter.receivedMessages;
 			assertEquals(
-			    "Did not receive the entire second round of messages (queued)!",
-				messageWaiter.receivedMessages.size(), messageCount
+				"Did not receive the entire second round of messages (queued)",
+				received.size(), messageCount
 			);
+			for(int i=0; i<received.size(); i++) {
+				assertEquals(
+					"Received unexpected queued message",
+					received.get(i).name, "queued_message_" + i
+				);
+			}
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail("init0: Unexpected exception instantiating library");
 		} finally {
-			if(sender != null)
+			if(sender != null) {
 				sender.close();
-			if(receiver != null)
+			}
+			if(receiver != null) {
 				receiver.close();
+			}
 		}
 	}
 }
