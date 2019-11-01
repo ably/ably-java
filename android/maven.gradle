@@ -6,7 +6,19 @@ def artifactId = "ably-android"
 def localReleaseDest = "${buildDir}/release/${version}"
 
 uploadArchives {
+	signing {
+		sign configurations.archives
+	}
     repositories.mavenDeployer {
+		beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+		repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+			authentication(userName: ossrhUsername, password: ossrhPassword)
+		}
+
+		snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+			authentication(userName: ossrhUsername, password: ossrhPassword)
+		}
         pom.groupId = groupId
         pom.artifactId = artifactId
         pom.version = version
@@ -54,10 +66,10 @@ uploadArchives {
         }
 
 		// Export to local Maven cache
-		repository(url: repositories.mavenLocal().url)
+		//repository(url: repositories.mavenLocal().url)
 
         // Export files to local storage
-        repository(url: "file://${localReleaseDest}")
+        //repository(url: "file://${localReleaseDest}")
     }
 }
 
