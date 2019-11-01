@@ -636,6 +636,9 @@ public class Helpers {
 		}
 
 		@Override
+		public void onRawConnectRequested(String url) {}
+
+		@Override
 		public void onRawConnect(String url) {
 			connectUrl = url;
 		}

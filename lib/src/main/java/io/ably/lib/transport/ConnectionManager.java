@@ -987,9 +987,13 @@ public class ConnectionManager implements ConnectListener {
 			oldTransport = this.transport;
 			this.transport = transport;
 		}
-		if (oldTransport != null)
+		if (oldTransport != null) {
 			oldTransport.abort(REASON_TIMEDOUT);
+		}
 		transport.connect(this);
+		if(protocolListener != null) {
+			protocolListener.onRawConnectRequested(transport.getURL());
+		}
 		return true;
 	}
 
