@@ -53,16 +53,18 @@ public class ConnectionManager implements ConnectListener {
 		final ErrorInfo reason;
 		final String fallback;
 		final String currentHost;
+		final boolean retryImmediately;
 
 		public StateIndication(ConnectionState state, ErrorInfo reason) {
-			this(state, reason, null, null);
+			this(state, reason, null, null, false);
 		}
 
-		public StateIndication(ConnectionState state, ErrorInfo reason, String fallback, String currentHost) {
+		public StateIndication(ConnectionState state, ErrorInfo reason, String fallback, String currentHost, boolean retryImmediately) {
 			this.state = state;
 			this.reason = reason;
 			this.fallback = fallback;
 			this.currentHost = currentHost;
+			this.retryImmediately = retryImmediately;
 		}
 	}
 
@@ -395,10 +397,12 @@ public class ConnectionManager implements ConnectListener {
 			if (state.state == ConnectionState.connecting) {
 				/* Close the connecting transport. */
 				Log.v(TAG, "onAuthUpdated: closing connecting transport");
-				transport.close(/*sendDisconnect=*/false);
+				clearTransport();
+				/* request a state change that triggers an immediate retry */
+				Log.v(TAG, "onAuthUpdated: requesting immediate new connection attempt");
+				ErrorInfo disconnectError = new ErrorInfo("Aborting incomplete connection with superseded auth params", 503, 80003);
+				requestState(new StateIndication(ConnectionState.disconnected, disconnectError, null, null, true));
 			}
-			/* Start a new connection attempt. */
-			connect();
 		}
 
 		if(!waitForResponse)
@@ -676,7 +680,7 @@ public class ConnectionManager implements ConnectListener {
 			if(connectImpl(transitionState)) {
 				return transitionState;
 			} else {
-				return new StateIndication(ConnectionState.failed, new ErrorInfo("Connection failed; no host available", 404, 80000), null, requestedState.currentHost);
+				return new StateIndication(ConnectionState.failed, new ErrorInfo("Connection failed; no host available", 404, 80000), null, requestedState.currentHost, false);
 			}
 		}
 		/* no other requests can move from a terminal state */
@@ -738,7 +742,11 @@ public class ConnectionManager implements ConnectListener {
 			}
 			switch(state.state) {
 			case connecting:
-				stateChange = checkSuspend(stateChange);
+				if(stateChange.retryImmediately && !suppressRetry) {
+					requestState(ConnectionState.connecting);
+				} else {
+					stateChange = checkSuspend(stateChange);
+				}
 				pendingConnect = null;
 				break;
 			case closing:
@@ -798,7 +806,7 @@ public class ConnectionManager implements ConnectListener {
 				String hostFallback = hosts.getFallback(pendingConnect.host);
 				if (hostFallback != null) {
 					Log.v(TAG, "checkSuspend: fallback to " + hostFallback);
-					requestState(new StateIndication(ConnectionState.connecting, null, hostFallback, pendingConnect.host));
+					requestState(new StateIndication(ConnectionState.connecting, null, hostFallback, pendingConnect.host, false));
 					/* returning null ensures we stay in the connecting state */
 					return null;
 				}
@@ -943,7 +951,7 @@ public class ConnectionManager implements ConnectListener {
 			Log.i(TAG, "onTransportUnavailable: disconnected: " + reason.message);
 		}
 		ably.auth.onAuthError(reason);
-		requestState(new StateIndication(state, reason, null, transport.getHost()));
+		requestState(new StateIndication(state, reason, null, transport.getHost(), false));
 		this.transport = null;
 	}
 
