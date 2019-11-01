@@ -8,6 +8,7 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -138,19 +139,29 @@ public class HttpUtils {
 		return result;
 	}
 
-	public static String encodeURIComponent(String input) {
-		try {
-			return URLEncoder.encode(input, "UTF-8")
-					.replaceAll(" ", "%20")
-					.replaceAll("!", "%21")
-					.replaceAll("'", "%27")
-					.replaceAll("\\(", "%28")
-					.replaceAll("\\)", "%29")
-					.replaceAll("\\+", "%2B")
-					.replaceAll("\\:", "%3A")
-					.replaceAll("~", "%7E");
-		} catch (UnsupportedEncodingException e) {}
-		return null;
+	/* copied from https://stackoverflow.com/a/52378025 */
+	private static final String HEX = "0123456789ABCDEF";
+
+	public static String encodeURIComponent(String str) {
+		if (str == null) {
+			return null;
+		}
+
+		byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
+		StringBuilder builder = new StringBuilder(bytes.length);
+
+		for (byte c : bytes) {
+			if (c >= 'a' ? c <= 'z' || c == '~' :
+					c >= 'A' ? c <= 'Z' || c == '_' :
+							c >= '0' ? c <= '9' :  c == '-' || c == '.')
+				builder.append((char)c);
+			else
+				builder.append('%')
+						.append(HEX.charAt(c >> 4 & 0xf))
+						.append(HEX.charAt(c & 0xf));
+		}
+
+		return builder.toString();
 	}
 
 	private static void appendParams(StringBuilder uri, Param[] params) {
