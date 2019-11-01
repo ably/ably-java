@@ -163,6 +163,8 @@ public class RealtimeConnectTest extends ParameterizedTest {
 					urlWrapper[0] = url;
 				}
 				@Override
+				public void onRawConnectRequested(String url) {}
+				@Override
 				public void onRawMessageSend(ProtocolMessage message) {}
 				@Override
 				public void onRawMessageRecv(ProtocolMessage message) {}

@@ -206,6 +206,8 @@ public class RealtimeJWTTest extends ParameterizedTest {
 			options.authParams = mergeParams(keys, mediumTokenTtl);
 			options.protocolListener = new RawProtocolListener() {
 				@Override
+				public void onRawConnectRequested(String url) {}
+				@Override
 				public void onRawConnect(String url) { }
 				@Override
 				public void onRawMessageSend(ProtocolMessage message) { }
@@ -303,6 +305,8 @@ public class RealtimeJWTTest extends ParameterizedTest {
 			options.environment = createOptions().environment;
 			options.authCallback = authCallback;
 			options.protocolListener = new RawProtocolListener() {
+				@Override
+				public void onRawConnectRequested(String url) {}
 				@Override
 				public void onRawConnect(String url) { }
 				@Override
