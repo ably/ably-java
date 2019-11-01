@@ -5,8 +5,21 @@ import io.ably.lib.util.Crypto;
 import io.ably.lib.util.Crypto.ChannelCipher;
 
 public class ChannelOptions {
-	public boolean encrypted;
+
+	/**
+	 * Cipher in use.
+	 */
+	private ChannelCipher cipher;
+
+	/**
+	 * Parameters for the cipher.
+	 */
 	public Object cipherParams;
+
+	/**
+	 * Are these options encrypted or not?
+	 */
+	public boolean encrypted;
 
 	public ChannelCipher getCipher() throws AblyException {
 		if(!encrypted) return null;
@@ -25,6 +38,4 @@ public class ChannelOptions {
 	public static ChannelOptions fromCipherKey(String base64Key) throws AblyException {
 		return fromCipherKey(Base64Coder.decode(base64Key));
 	}
-
-	private ChannelCipher cipher;
 }
