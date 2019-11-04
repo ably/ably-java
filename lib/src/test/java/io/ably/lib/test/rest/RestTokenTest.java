@@ -112,7 +112,7 @@ public class RestTokenTest extends ParameterizedTest {
 	@Test
 	public void authtime2() {
 		try {
-			Auth.clearCachedServerTime();
+			ably.auth.clearCachedServerTime();
 			long requestTime = timeOffset + System.currentTimeMillis();
 			AuthOptions authOptions = new AuthOptions();
 			/* Unset fields in authOptions no longer inherit from stored values,

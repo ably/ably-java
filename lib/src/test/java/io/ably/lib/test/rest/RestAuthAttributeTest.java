@@ -118,7 +118,6 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 	@Test
 	public void auth_stores_options_exception_querytime() {
 		try {
-			Auth.clearCachedServerTime();
 			final long fakeServerTime = -1000;
 			final String expectedClientId = "testClientId";
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);

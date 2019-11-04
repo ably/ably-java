@@ -787,9 +787,6 @@ public class RealtimeAuthTest extends ParameterizedTest {
 			/* allow to expire */
 			try { Thread.sleep(200L); } catch(InterruptedException ie) {}
 
-			/* clear the cached server time (it is static so shared between library instances) */
-			Auth.clearCachedServerTime();
-
 			/* create Ably realtime instance with token and authCallback */
 			ClientOptions opts = createOptions();
 			opts.tokenDetails = tokenDetails;
@@ -844,9 +841,6 @@ public class RealtimeAuthTest extends ParameterizedTest {
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
 			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new Auth.TokenParams(){{ ttl = 2000L; }}, null);
 			assertNotNull("Expected token value", tokenDetails.token);
-
-			/* clear the cached server time (it is static so shared between library instances) */
-			Auth.clearCachedServerTime();
 
 			/* create Ably realtime with token and authCallback */
 			ClientOptions opts = createOptions();

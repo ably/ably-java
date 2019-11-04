@@ -964,9 +964,9 @@ public class Auth {
 		return tokenDetails;
 	}
 
-	private static boolean tokenValid(TokenDetails tokenDetails) {
+	private boolean tokenValid(TokenDetails tokenDetails) {
 		/* RSA4b1: only perform a local check for token validity if we have time sync with the server */
-		return (timeDelta == Long.MAX_VALUE) || (tokenDetails.expires > Auth.serverTimestamp());
+		return (timeDelta == Long.MAX_VALUE) || (tokenDetails.expires > serverTimestamp());
 	}
 
 	/**
@@ -1078,7 +1078,7 @@ public class Auth {
 	/**
 	 * Using time delta obtained before guess current server time
 	 */
-	public static long serverTimestamp() {
+	public long serverTimestamp() {
 		long clientTime = timestamp();
 		long delta = timeDelta;
 		return delta != Long.MAX_VALUE ? clientTime + timeDelta : clientTime;
@@ -1097,18 +1097,18 @@ public class Auth {
 	/**
 	 * Time delta is server time minus client time, in milliseconds, MAX_VALUE if not obtained yet
 	 */
-	private static long timeDelta = Long.MAX_VALUE;
+	private long timeDelta = Long.MAX_VALUE;
 	/**
 	 * Time delta between System.nanoTime() and System.currentTimeMillis. If it changes significantly it
 	 * suggests device time/date has changed
 	 */
-	private static long nanoTimeDelta = System.currentTimeMillis() - System.nanoTime()/(1000*1000);
+	private long nanoTimeDelta = System.currentTimeMillis() - System.nanoTime()/(1000*1000);
 
 	public static final String WILDCARD_CLIENTID = "*";
 	/**
 	 * For testing purposes we need method to clear cached timeDelta
 	 */
-	public static void clearCachedServerTime() {
+	public void clearCachedServerTime() {
 		timeDelta = Long.MAX_VALUE;
 	}
 }
