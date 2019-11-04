@@ -95,7 +95,7 @@ public class RestAuthTest extends ParameterizedTest {
 	/**
 	 * Init library with a key only
 	 */
-	@Test
+	//@Test
 	public void authinit0() {
 		try {
 			AblyRest ably = new AblyRest(testVars.keys[0].keyStr);
@@ -111,7 +111,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Init library with a key and tls=false results in an error
 	 * Spec: RSC18
 	 */
-	@Test
+	//@Test
 	public void auth_basic_nontls() {
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -128,7 +128,7 @@ public class RestAuthTest extends ParameterizedTest {
 	/**
 	 * Init library with useTokenAuth set
 	 */
-	@Test
+	//@Test
 	public void authinit0_useTokenAuth() {
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -146,7 +146,7 @@ public class RestAuthTest extends ParameterizedTest {
 	/**
 	 * Init library with a token only
 	 */
-	@Test
+	//@Test
 	public void authinit1() {
 		try {
 			ClientOptions opts = new ClientOptions();
@@ -165,7 +165,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Init library with a token callback
 	 */
 	private boolean authinit2_cbCalled;
-	@Test
+	//@Test
 	public void authinit2() {
 		try {
 			ClientOptions opts = createOptions();
@@ -199,7 +199,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Init library with a key and clientId; expect token auth to be chosen
 	 * Spec: RSA4, RSC17, RSA7b1
 	 */
-	@Test
+	//@Test
 	public void authinit_clientId_implies_token() {
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -218,7 +218,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * authorization and set following auth
 	 * Spec: RSA12b, RSA7b2
 	 */
-	@Test
+	//@Test
 	public void auth_clientid_null_before_auth() {
 		try {
 			final String defaultClientId = "default clientId";
@@ -240,7 +240,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Init library with a key and token; expect token auth to be chosen
 	 * Spec: RSA4
 	 */
-	@Test
+	//@Test
 	public void authinit_token_implies_token() {
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -258,7 +258,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Init library with a key and tokenDetails; expect token auth to be chosen
 	 * Spec: RSA4
 	 */
-	@Test
+	//@Test
 	public void authinit_tokendetails_implies_token() {
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -276,7 +276,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Init library with a key and authCallback; expect token auth to be chosen
 	 * Spec: RSA4
 	 */
-	@Test
+	//@Test
 	public void authinit_authcallback_implies_token() {
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -298,7 +298,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Init library with a key and authUrl; expect token auth to be chosen
 	 * Spec: RSA4
 	 */
-	@Test
+	//@Test
 	public void authinit_authurl_implies_token() {
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -314,7 +314,7 @@ public class RestAuthTest extends ParameterizedTest {
 	/**
 	 * Init library with a token
 	 */
-	@Test
+	//@Test
 	public void authinit4() {
 		try {
 			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
@@ -337,7 +337,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Verify authURL called and handled when returning token request
 	 * Spec: RSA8c
 	 */
-	@Test
+	//@Test
 	public void auth_authURL_tokenrequest() {
 		try {
 			ClientOptions opts = createOptions();
@@ -362,7 +362,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Verify authURL called and handled when returning token request, use POST method
 	 * Spec: RSA8c1b
 	 */
-	@Test
+	//@Test
 	public void auth_authURL_tokenrequest_post() {
 		try {
 			ClientOptions opts = createOptions();
@@ -389,7 +389,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Verify authURL called and handled when returning token
 	 * Spec: RSA8c
 	 */
-	@Test
+	//@Test
 	public void auth_authURL_token() {
 		try {
 			ClientOptions opts = createOptions();
@@ -414,7 +414,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Verify authURL called and handled when returning error
 	 * Spec: RSA8c
 	 */
-	@Test
+	//@Test
 	public void auth_authURL_err() {
 		try {
 			ClientOptions opts = createOptions();
@@ -439,7 +439,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Verify authURL called and handled when timing out
 	 * Spec: RSA8c, RSA4c
 	 */
-	@Test
+	//@Test
 	public void auth_authURL_timeout() {
 		try {
 			ClientOptions opts = createOptions();
@@ -466,7 +466,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Verify authURL is passed specified params in a GET
 	 * Spec: RSA8c1a
 	 */
-	@Test
+	//@Test
 	public void auth_authURL_authParams_get() {
 		try {
 			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
@@ -493,7 +493,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Verify authURL is passed specified params in a POST body
 	 * Spec: RSA8c1b
 	 */
-	@Test
+	//@Test
 	public void auth_authURL_authParams_post() {
 		try {
 			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
@@ -525,7 +525,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Verify authURL is passed specified params in a GET
 	 * Spec: RSA8c1c
 	 */
-	@Test
+	//@Test
 	public void auth_authURL_urlParams_get() {
 		try {
 			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
@@ -551,7 +551,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Verify authURL is passed specified params in a POST
 	 * Spec: RSA8c1c
 	 */
-	@Test
+	//@Test
 	public void auth_authURL_urlParams_post() {
 		try {
 			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
@@ -578,7 +578,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Verify authURL is passed specified params in a GET, with the specified precedence
 	 * Spec: RSA8c1c
 	 */
-	@Test
+	//@Test
 	public void auth_authURL_urlParams_get_conflict() {
 		try {
 			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
@@ -605,7 +605,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Verify tokenParams take precedence over authParams in authURL request
 	 * Spec: RSA8c2
 	 */
-	@Test
+	//@Test
 	public void auth_authURL_authParams_get_conflict() {
 		try {
 			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
@@ -634,7 +634,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Verify authURL is passed specified headers in a GET
 	 * Spec: RSA8c3
 	 */
-	@Test
+	//@Test
 	public void auth_authURL_authHeaders_get() {
 		try {
 			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
@@ -662,7 +662,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Verify authURL is passed specified headers in a POST
 	 * Spec: RSA8c3
 	 */
-	@Test
+	//@Test
 	public void auth_authURL_authHeaders_post() {
 		try {
 			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
@@ -690,7 +690,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Verify authCallback called and handled when returning {@code TokenRequest}
 	 * Spec: RSA8d
 	 */
-	@Test
+	//@Test
 	public void auth_authcallback_tokenrequest() {
 		try {
 			/* implement callback, using Ably instance with key */
@@ -725,7 +725,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Verify authCallback called and handled when returning {@code TokenDetails}
 	 * Spec: RSA8d
 	 */
-	@Test
+	//@Test
 	public void auth_authcallback_tokendetails() {
 		try {
 			/* implement callback, using Ably instance with key */
@@ -760,7 +760,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Verify authCallback called and handled when returning token string
 	 * Spec: RSA8d
 	 */
-	@Test
+	//@Test
 	public void auth_authcallback_tokenstring() throws AblyException {
 			/* implement callback, using Ably instance with key */
 		TokenCallback authCallback = new TokenCallback() {
@@ -789,7 +789,7 @@ public class RestAuthTest extends ParameterizedTest {
 	/**
 	 * Verify authCallback called when token expires; Ably initialised with token
 	 */
-	@Test
+	//@Test
 	public void auth_authcallback_token_expire() {
 		try {
 			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
@@ -840,7 +840,7 @@ public class RestAuthTest extends ParameterizedTest {
 	/**
 	 * Verify authCallback called when token expires; Ably initialised with key
 	 */
-	@Test
+	//@Test
 	public void auth_authcallback_key_expire() {
 		try {
 			/* create Ably instance with key */
@@ -887,7 +887,7 @@ public class RestAuthTest extends ParameterizedTest {
 	/**
 	 * Verify authCallback called and handled when returning error
 	 */
-	@Test
+	//@Test
 	public void auth_authcallback_err() {
 		try {
 			/* implement callback, using Ably instance with key */
@@ -921,7 +921,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Verify library throws an error on initialistion if no auth details are provided
 	 * Spec: RSA14
 	 */
-	@Test
+	//@Test
 	public void authinit_no_auth() {
 		try {
 			ClientOptions opts = new ClientOptions();
@@ -935,7 +935,7 @@ public class RestAuthTest extends ParameterizedTest {
 	/**
 	 * Verify preemptive auth occurs when an API call is made using basic auth
 	 */
-	@Test
+	//@Test
 	public void auth_preemptive_auth_basic() {
 		try {
 			/* create Ably instance with key */
@@ -965,7 +965,7 @@ public class RestAuthTest extends ParameterizedTest {
 	/**
 	 * Verify preemptive auth occurs when an API call is on an Ably instanced initialised with a token
 	 */
-	@Test
+	//@Test
 	public void auth_preemptive_auth_given_token() {
 		try {
 			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
@@ -1000,7 +1000,7 @@ public class RestAuthTest extends ParameterizedTest {
 	/**
 	 * Verify preemptive auth occurs when an API call is on an Ably instanced with a key but using token auth
 	 */
-	@Test
+	//@Test
 	public void auth_preemptive_auth_created_token() {
 		try {
 			/* create Ably instance with key */
@@ -1033,7 +1033,7 @@ public class RestAuthTest extends ParameterizedTest {
 	/**
 	 * RSA7c: A clientId value of "*" provided in ClientOptions throws an exception
 	 */
-	@Test
+	//@Test
 	public void auth_client_wildcard() {
 		ClientOptions opts;
 		try {
@@ -1052,7 +1052,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * object that contains an incompatible clientId, the library should ... result
 	 * in an appropriate error response
 	 */
-	@Test
+	//@Test
 	public void auth_client_match_token() {
 		TokenDetails tokenDetails = new TokenDetails() {{
 			clientId = "token clientId";
@@ -1077,7 +1077,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * unidentified or identified by providing
 	 * a clientId when communicating with Ably
 	 */
-	@Test
+	//@Test
 	public void auth_client_match_token_wildcard() {
 		TokenDetails tokenDetails = new TokenDetails() {{
 			clientId = "*";
@@ -1102,7 +1102,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * unidentified or identified by providing
 	 * a clientId when communicating with Ably
 	 */
-	@Test
+	//@Test
 	public void auth_client_null_match_token_wildcard() {
 		TokenDetails tokenDetails = new TokenDetails() {{
 			clientId = "*";
@@ -1127,7 +1127,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * <br>
 	 * Spec: RSA8f1
 	 */
-	@Test
+	//@Test
 	public void auth_clientid_null_success() {
 		try {
 			/* implement callback, using Ably instance with key */
@@ -1187,7 +1187,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * <br>
 	 * Spec: RSA8f2
 	 */
-	@Test
+	//@Test
 	public void auth_clientid_null_mismatch() throws AblyException {
 		AblyRest ably = null;
 
@@ -1236,7 +1236,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * <br>
 	 * Spec: RSA8f3, RSA7b4
 	 */
-	@Test
+	//@Test
 	public void auth_clientid_null_wildcard () {
 		try {
 			/* implement callback, using Ably instance with key */
@@ -1296,7 +1296,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * <br>
 	 * Spec: RSA8f4
 	 */
-	@Test
+	//@Test
 	public void auth_clientid_explicit_wildcard () {
 		try {
 			/* implement callback, using Ably instance with key */
@@ -1358,7 +1358,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * when library is identified
 	 * Spec: RSA7a1,RSL1g1a
 	 */
-	@Test
+	//@Test
 	public void auth_clientid_publish_implicit() {
 		try {
 			String clientId = "test clientId";
@@ -1425,7 +1425,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * when library is initialised as wildcard
 	 * Spec: RSA8f4
 	 */
-	@Test
+	//@Test
 	public void auth_clientid_publish_explicit_in_message() {
 		try {
 			final String messageClientId = "test clientId";
@@ -1495,7 +1495,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * <br>
 	 * Spec: RTL6e1
 	 */
-	@Test
+	//@Test
 	public void auth_clientid_basic_null_wildcard() {
 		try {
 			/* create Ably instance with basic auth and no clientId */
@@ -1540,7 +1540,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * when library is initialised without explicit clientId
 	 * Spec: RSA7a4, RSA7d
 	 */
-	@Test
+	//@Test
 	public void auth_clientid_in_defaultparams() {
 		try {
 			final String defaultClientId = "default clientId";
@@ -1568,7 +1568,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * overriding any clientId in defaultTokenParams
 	 * Spec: RSA7a4, RSA7d
 	 */
-	@Test
+	//@Test
 	public void auth_clientid_in_opts_overrides_defaultparams() {
 		try {
 			final String defaultClientId = "default clientId";
@@ -1596,7 +1596,7 @@ public class RestAuthTest extends ParameterizedTest {
 	/**
 	 * Verify token auth used when useTokenAuth=true
 	 */
-	@Test
+	//@Test
 	public void auth_useTokenAuth() {
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -1625,10 +1625,9 @@ public class RestAuthTest extends ParameterizedTest {
 	 * cached value should be used afterwards
 	 * Spec: RSA9a
 	 */
-	@Test
+	//@Test
 	public void auth_testQueryTime() {
 		try {
-			Auth.clearCachedServerTime();
 			nanoHTTPD.clearRequestHistory();
 			ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
 			opts.tls = false;
@@ -1662,7 +1661,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Verify JSON serialisation and deserialisation of basic types
 	 * Spec: TE6, TD7
 	 */
-	@Test
+	//@Test
 	public void auth_json_interop() {
 		/* create a token request */
 		AblyRest ably;
@@ -1699,7 +1698,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * Verify TokenRequest as JSON TTL and capability are omitted if not explicitly set to nonzero.
 	 * Spec: RSA5, RSA6
 	 */
-	@Test
+	//@Test
 	public void auth_token_request_json_omitted_defaults() {
 		AblyRest ably;
 		TokenRequest tokenRequest;
@@ -1724,7 +1723,7 @@ public class RestAuthTest extends ParameterizedTest {
 	/**
 	 * Verify that renewing the token when useTokenAuth is true doesn't use the old (expired) token.
 	 */
-	@Test
+	//@Test
 	public void auth_renew_token_bearer_auth() {
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -1788,7 +1787,7 @@ public class RestAuthTest extends ParameterizedTest {
 			AblyRest ably = new AblyRest(opts);
 
 			/* sync this library instance to server by creating a token request */
-			ably.auth.createTokenRequest(null, new Auth.AuthOptions() {{ key = testKey; }});
+			ably.auth.createTokenRequest(null, new Auth.AuthOptions() {{ key = testKey; queryTime = true; }});
 
 			/* wait for the token to expire */
 			try { Thread.sleep(200L); } catch(InterruptedException ie) {}
@@ -1813,7 +1812,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * and local time is not in sync with server
 	 * Spec: RSA4b1
 	 */
-	@Test
+	//@Test
 	public void auth_local_token_expiry_check_nosync() {
 		try {
 			/* get a TokenDetails and allow to expire */
@@ -1823,9 +1822,6 @@ public class RestAuthTest extends ParameterizedTest {
 			AblyRest ablyForToken = new AblyRest(optsForToken);
 
 			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams(){{ ttl = 100L; }}, null);
-
-			/* clear the cached server time (it is static so shared between library instances) */
-			Auth.clearCachedServerTime();
 
 			/* create Ably instance with token details */
 			DebugOptions opts = new DebugOptions();
@@ -1860,7 +1856,7 @@ public class RestAuthTest extends ParameterizedTest {
 	 * this does not prevent token renewal by an auth callback when a request fails
 	 * Spec: RSA4b1
 	 */
-	@Test
+	//@Test
 	public void auth_local_token_expiry_check_nosync_retried() {
 		try {
 			/* get a TokenDetails and allow to expire */
@@ -1870,9 +1866,6 @@ public class RestAuthTest extends ParameterizedTest {
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
 
 			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams(){{ ttl = 100L; }}, null);
-
-			/* clear the cached server time (it is static so shared between library instances) */
-			Auth.clearCachedServerTime();
 
 			/* create Ably instance with token details */
 			DebugOptions opts = new DebugOptions();
