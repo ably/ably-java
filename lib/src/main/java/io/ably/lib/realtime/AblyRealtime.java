@@ -16,8 +16,11 @@ import io.ably.lib.util.Log;
 /**
  * AblyRealtime
  * The top-level class to be instanced for the Ably Realtime library.
+ *
+ * This class implements {@link AutoCloseable} so you can use it in
+ * try-with-resources constructs and have the JDK close it for you.
  */
-public class AblyRealtime extends AblyRest {
+public class AblyRealtime extends AblyRest implements AutoCloseable {
 
 	/**
 	 * The {@link Connection} object for this instance.
@@ -66,6 +69,7 @@ public class AblyRealtime extends AblyRest {
 	 * The connection can be re-opened by calling
 	 * {@link Connection#connect}.
 	 */
+	@Override
 	public void close() {
 		connection.close();
 	}
