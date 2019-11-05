@@ -17,7 +17,7 @@ public class ChannelOptions {
 	public Object cipherParams;
 
 	/**
-	 * Are these options encrypted or not?
+	 * Whether or not this ChannelOptions is encrypted.
 	 */
 	public boolean encrypted;
 
