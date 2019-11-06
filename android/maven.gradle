@@ -5,6 +5,9 @@ def groupId = "io.ably"
 def artifactId = "ably-android"
 def localReleaseDest = "${buildDir}/release/${version}"
 
+/*
+ * Task which signs and uploads the Android artifacts to Nexus OSSRH.
+ */
 uploadArchives {
 	signing {
 		sign configurations.archives
@@ -64,12 +67,6 @@ uploadArchives {
                 dep -> dep.artifactId != 'play-services-gcm' && dep.artifactId != 'firebase-messaging'
             }
         }
-
-		// Export to local Maven cache
-		//repository(url: repositories.mavenLocal().url)
-
-        // Export files to local storage
-        //repository(url: "file://${localReleaseDest}")
     }
 }
 

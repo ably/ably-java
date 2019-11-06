@@ -6,6 +6,9 @@ def groupId = "io.ably"
 def artifactId = "ably-java"
 def localReleaseDest = "${buildDir}/release/${version}"
 
+/*
+ * Task which signs and uploads the Java artifacts to Nexus OSSRH.
+ */
 uploadArchives {
     signing {
         sign configurations.archives
@@ -58,9 +61,6 @@ uploadArchives {
                 dep -> dep.scope == 'runtime'
             }
         }
-
-        // Export files to local storage
-        //repository(url: "file://${localReleaseDest}")
     }
 }
 
