@@ -1,7 +1,7 @@
 apply plugin: 'maven'
 apply plugin: 'signing'
 
-def groupId = "com.amihaiemil"
+def groupId = "io.ably"
 def artifactId = "ably-android"
 def localReleaseDest = "${buildDir}/release/${version}"
 
