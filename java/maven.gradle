@@ -2,7 +2,7 @@ apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'signing'
 
-def groupId = "io.ably"
+def groupId = "com.amihaiemil"
 def artifactId = "ably-java"
 def localReleaseDest = "${buildDir}/release/${version}"
 
@@ -37,6 +37,15 @@ uploadArchives {
             description 'A Java Realtime and REST client library for [Ably.io](https://www.ably.io), the realtime messaging service.'
             packaging 'jar'
             inceptionYear '2015'
+			url 'https://www.github.com/ably/ably-java'
+			developers {
+				developer {
+					name 'Paddy Byers'
+					email 'paddy@ably.io'
+					url 'https://github.com/paddybyers'
+					id 'paddybyers'
+				}
+			}
             scm {
                 url 'scm:git:https://github.com/ably/ably-java'
                 connection 'scm:git:https://github.com/ably/ably-java'
