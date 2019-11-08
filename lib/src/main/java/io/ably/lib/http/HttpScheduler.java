@@ -114,10 +114,9 @@ public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
 				final Param[] headers,
 				final Param[] params,
 				final HttpCore.RequestBody requestBody,
-				final boolean withCredentials,
 				final HttpCore.ResponseHandler<T> responseHandler,
 				final Callback<T> callback) {
-			super(method, headers, params, requestBody, withCredentials, responseHandler, callback);
+			super(method, headers, params, requestBody, responseHandler, callback);
 			this.url = url;
 		}
 		@Override
@@ -150,7 +149,7 @@ public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
 				final HttpCore.ResponseHandler<T> responseHandler,
 				final boolean requireAblyAuth,
 				final Callback<T> callback) {
-			super(method, headers, params, requestBody, true, responseHandler, callback);
+			super(method, headers, params, requestBody, responseHandler, callback);
 			this.host = host;
 			this.path = path;
 			this.requireAblyAuth = requireAblyAuth;
@@ -186,7 +185,7 @@ public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
 				final HttpCore.ResponseHandler<T> responseHandler,
 				final boolean requireAblyAuth,
 				final Callback<T> callback) {
-			super(method, headers, params, requestBody, true, responseHandler, callback);
+			super(method, headers, params, requestBody, responseHandler, callback);
 			this.path = path;
 			this.requireAblyAuth = requireAblyAuth;
 		}
@@ -235,7 +234,6 @@ public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
 				final Param[] headers,
 				final Param[] params,
 				final HttpCore.RequestBody requestBody,
-				final boolean withCredentials,
 				final HttpCore.ResponseHandler<T> responseHandler,
 				final Callback<T> callback) {
 			this.method = method;
@@ -358,7 +356,6 @@ public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
 	 * @param method
 	 * @param headers
 	 * @param requestBody
-	 * @param withCredentials
 	 * @param responseHandler
 	 * @param callback
 	 * @return
@@ -368,11 +365,10 @@ public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
 			final String method,
 			final Param[] headers,
 			final HttpCore.RequestBody requestBody,
-			final boolean withCredentials,
 			final HttpCore.ResponseHandler<T> responseHandler,
 			final Callback<T> callback) {
 
-		UrlRequest<T> request = new UrlRequest<>(url, method, headers, null, requestBody, withCredentials, responseHandler, callback);
+		UrlRequest<T> request = new UrlRequest<>(url, method, headers, null, requestBody, responseHandler, callback);
 		executor.execute(request);
 		return request;
 	}
