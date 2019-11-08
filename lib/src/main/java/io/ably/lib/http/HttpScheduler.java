@@ -107,7 +107,7 @@ public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
 	 * An AsyncRequest type representing a request to a specific URL
 	 * @param <T>
 	 */
-	private class UrlRequest<T> extends AsyncRequest<T> implements Runnable {
+	private class UrlRequest<T> extends AsyncRequest<T> {
 		private UrlRequest(
 				URL url,
 				final String method,
@@ -138,7 +138,7 @@ public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
 	 * supporting reauthentication on receipt of WWW-Authenticate
 	 * @param <T>
 	 */
-	private class AblyRequestWithRetry<T> extends AsyncRequest<T> implements Runnable {
+	private class AblyRequestWithRetry<T> extends AsyncRequest<T> {
 		private AblyRequestWithRetry(
 				String host,
 				String path,
@@ -175,7 +175,7 @@ public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
 	 * supporting host fallback and reauthentication on receipt of WWW-Authenticate
 	 * @param <T>
 	 */
-	private class AblyRequestWithFallback<T> extends AsyncRequest<T> implements Runnable {
+	private class AblyRequestWithFallback<T> extends AsyncRequest<T> {
 		private AblyRequestWithFallback(
 				String path,
 				final String method,
@@ -228,7 +228,7 @@ public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
 	 * A class encapsulating a scheduled or in-process async HTTP request
 	 * @param <T>
 	 */
-	private abstract class AsyncRequest<T> implements Future<T> {
+	private abstract class AsyncRequest<T> implements Future<T>, Runnable {
 		private AsyncRequest(
 				final String method,
 				final Param[] headers,
