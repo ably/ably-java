@@ -377,24 +377,26 @@ public class ConnectionManager implements ConnectListener {
 	 */
 	public void onAuthUpdated(String token, boolean waitForResponse) throws AblyException {
 		ConnectionWaiter waiter = new ConnectionWaiter();
-		if (state.state == ConnectionState.connected) {
-			/* (RTC8a) If the connection is in the CONNECTED state and
-			 * auth.authorize is called or Ably requests a re-authentication
-			 * (see RTN22), the client must obtain a new token, then send an
-			 * AUTH ProtocolMessage to Ably with an auth attribute
-			 * containing an AuthDetails object with the token string. */
-			try {
-				ProtocolMessage msg = new ProtocolMessage(ProtocolMessage.Action.auth);
-				msg.auth = new ProtocolMessage.AuthDetails(token);
-				send(msg, false, null);
-			} catch (AblyException e) {
-				/* The send failed. Close the transport; if a subsequent
-				 * reconnect succeeds, it will be with the new token. */
-				Log.v(TAG, "onAuthUpdated: closing transport after send failure");
-				transport.close(/*sendDisconnect=*/false);
-			}
-		} else {
-			if (state.state == ConnectionState.connecting) {
+		switch(state.state) {
+			case connected:
+				/* (RTC8a) If the connection is in the CONNECTED state and
+				 * auth.authorize is called or Ably requests a re-authentication
+				 * (see RTN22), the client must obtain a new token, then send an
+				 * AUTH ProtocolMessage to Ably with an auth attribute
+				 * containing an AuthDetails object with the token string. */
+				try {
+					ProtocolMessage msg = new ProtocolMessage(ProtocolMessage.Action.auth);
+					msg.auth = new ProtocolMessage.AuthDetails(token);
+					send(msg, false, null);
+				} catch (AblyException e) {
+					/* The send failed. Close the transport; if a subsequent
+					 * reconnect succeeds, it will be with the new token. */
+					Log.v(TAG, "onAuthUpdated: closing transport after send failure");
+					transport.close(/*sendDisconnect=*/false);
+				}
+				break;
+
+			case connecting:
 				/* Close the connecting transport. */
 				Log.v(TAG, "onAuthUpdated: closing connecting transport");
 				clearTransport();
@@ -402,11 +404,17 @@ public class ConnectionManager implements ConnectListener {
 				Log.v(TAG, "onAuthUpdated: requesting immediate new connection attempt");
 				ErrorInfo disconnectError = new ErrorInfo("Aborting incomplete connection with superseded auth params", 503, 80003);
 				requestState(new StateIndication(ConnectionState.disconnected, disconnectError, null, null, true));
-			}
+				break;
+
+			default:
+				/* Start a new connection attempt. */
+				connect();
+				break;
 		}
 
-		if(!waitForResponse)
+		if(!waitForResponse) {
 			return;
+		}
 
 		/* Wait for a state transition into anything other than connecting or
 		 * disconnected. Note that this includes the case that the connection
@@ -1312,10 +1320,14 @@ public class ConnectionManager implements ConnectListener {
 	 * internal
 	 ******************/
 
+	private boolean isTokenError(ErrorInfo err) {
+		return (err.code >= 40140) && (err.code < 40150);
+	}
+
 	private boolean isFatalError(ErrorInfo err) {
 		if(err.code != 0) {
 			/* token errors are assumed to be recoverable */
-			if((err.code >= 40140) && (err.code < 40150)) { return false; }
+			if(isTokenError(err)) { return false; }
 			/* 400 codes assumed to be fatal */
 			if((err.code >= 40000) && (err.code < 50000)) { return true; }
 		}
