@@ -416,12 +416,17 @@ public class Helpers {
 			long targetTime = System.currentTimeMillis() + time;
 			long remaining = time;
 			while(getStateCount(state) < count && remaining > 0) {
+				Log.d(TAG, "waitFor(state=" + state.getConnectionEvent().name() + ", waiting for=" + remaining + ")");
 				try { wait(remaining); } catch(InterruptedException e) {}
 				remaining = targetTime - System.currentTimeMillis();
 			}
 			int stateCount = getStateCount(state);
-			Log.d(TAG, "waitFor done: state=" + connection.state.getConnectionEvent().name() +
-					", count=" + Integer.toString(stateCount)+ ")");
+			if(remaining <= 0) {
+				Log.d(TAG, "waitFor timed out: current state=" + connection.state.getConnectionEvent().name());
+			} else {
+				Log.d(TAG, "waitFor done: state=" + connection.state.getConnectionEvent().name() +
+						", count=" + Integer.toString(stateCount));
+			}
 			return stateCount >= count;
 		}
 
@@ -457,6 +462,9 @@ public class Helpers {
 				Counter counter = stateCounts.get(state.current); if(counter == null) stateCounts.put(state.current, (counter = new Counter()));
 				counter.incr();
 				Log.d(TAG, "onConnectionStateChanged(" + state.current + "): count now " + counter.value);
+				if(state.current == ConnectionState.connected) {
+					Log.d(TAG, "onConnectionStateChanged(connected): count now " + counter.value);
+				}
 				notify();
 			}
 		}
