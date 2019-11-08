@@ -157,8 +157,12 @@ public class WebSocketTransport implements ITransport {
 		@Override
 		public void onOpen(ServerHandshake handshakedata) {
 			Log.d(TAG, "onOpen()");
-			connectListener.onTransportAvailable(WebSocketTransport.this, params);
-			flagActivity();
+			schedule(new TimerTask() {
+				public void run() {
+					connectListener.onTransportAvailable(WebSocketTransport.this, params);
+					flagActivity();
+				}
+			});
 		}
 
 		@Override
@@ -197,55 +201,63 @@ public class WebSocketTransport implements ITransport {
 		}
 
 		@Override
-		public void onClose(int wsCode, String wsReason, boolean remote) {
+		public void onClose(final int wsCode, final String wsReason, final boolean remote) {
 			Log.d(TAG, "onClose(): wsCode = " + wsCode + "; wsReason = " + wsReason + "; remote = " + remote);
-			ConnectionState newState;
-			ErrorInfo reason;
-			switch(wsCode) {
-			case NEVER_CONNECTED:
-				newState = ConnectionState.disconnected;
-				reason = ConnectionManager.REASON_NEVER_CONNECTED;
-				break;
-			case CLOSE_NORMAL:
-			case BUGGYCLOSE:
-			case GOING_AWAY:
-			case ABNORMAL_CLOSE:
-				/* we don't know the specific reason that the connection closed in these cases,
-				 * but we have to assume it's a problem with connectivity rather than some other
-				 * application problem */
-				newState = ConnectionState.disconnected;
-				reason = ConnectionManager.REASON_DISCONNECTED;
-				break;
-			case REFUSE:
-			case POLICY_VALIDATION:
-				newState = ConnectionState.failed;
-				reason = ConnectionManager.REASON_REFUSED;
-				break;
-			case TOOBIG:
-				newState = ConnectionState.failed;
-				reason = ConnectionManager.REASON_TOO_BIG;
-				break;
-			case NO_UTF8:
-			case CLOSE_PROTOCOL_ERROR:
-			case UNEXPECTED_CONDITION:
-			case EXTENSION:
-			case TLS_ERROR:
-			default:
-				/* we don't know the specific reason that the connection closed in these cases,
-				 * but we have to assume it's an application problem, and the problem will
-				 * recur if we try again. The failed state means that we won't automatically
-				 * try again. */
-				newState = ConnectionState.failed;
-				reason = ConnectionManager.REASON_FAILED;
-				break;
-			}
-			connectListener.onTransportUnavailable(WebSocketTransport.this, params, reason, newState);
+			schedule(new TimerTask() {
+				public void run() {
+					ConnectionState newState;
+					ErrorInfo reason;
+					switch(wsCode) {
+						case NEVER_CONNECTED:
+							newState = ConnectionState.disconnected;
+							reason = ConnectionManager.REASON_NEVER_CONNECTED;
+							break;
+						case CLOSE_NORMAL:
+						case BUGGYCLOSE:
+						case GOING_AWAY:
+						case ABNORMAL_CLOSE:
+							/* we don't know the specific reason that the connection closed in these cases,
+							 * but we have to assume it's a problem with connectivity rather than some other
+							 * application problem */
+							newState = ConnectionState.disconnected;
+							reason = ConnectionManager.REASON_DISCONNECTED;
+							break;
+						case REFUSE:
+						case POLICY_VALIDATION:
+							newState = ConnectionState.failed;
+							reason = ConnectionManager.REASON_REFUSED;
+							break;
+						case TOOBIG:
+							newState = ConnectionState.failed;
+							reason = ConnectionManager.REASON_TOO_BIG;
+							break;
+						case NO_UTF8:
+						case CLOSE_PROTOCOL_ERROR:
+						case UNEXPECTED_CONDITION:
+						case EXTENSION:
+						case TLS_ERROR:
+						default:
+							/* we don't know the specific reason that the connection closed in these cases,
+							 * but we have to assume it's an application problem, and the problem will
+							 * recur if we try again. The failed state means that we won't automatically
+							 * try again. */
+							newState = ConnectionState.failed;
+							reason = ConnectionManager.REASON_FAILED;
+							break;
+					}
+					connectListener.onTransportUnavailable(WebSocketTransport.this, params, reason, newState);
+				}
+			});
 			dispose();
 		}
 
 		@Override
-		public void onError(Exception e) {
-			connectListener.onTransportUnavailable(WebSocketTransport.this, params, new ErrorInfo(e.getMessage(), 503, 80000));
+		public void onError(final Exception e) {
+			schedule(new TimerTask() {
+				public void run() {
+					connectListener.onTransportUnavailable(WebSocketTransport.this, params, new ErrorInfo(e.getMessage(), 503, 80000));
+				}
+			});
 		}
 
 		private void dispose() {
@@ -259,15 +271,6 @@ public class WebSocketTransport implements ITransport {
 		private void flagActivity() {
 			lastActivityTime = System.currentTimeMillis();
 			connectionManager.setLastActivity(lastActivityTime);
-			if (timer == null && connectionManager.maxIdleInterval != 0) {
-				/* No timer currently running because previously there was no
-				 * maxIdleInterval configured, but now there is a
-				 * maxIdleInterval configured.  Call checkActivity so a timer
-				 * gets started.  This happens when flagActivity gets called
-				 * just after processing the connect message that configures
-				 * maxIdleInterval. */
-				checkActivity();
-			}
 		}
 
 		private void checkActivity() {
@@ -285,24 +288,15 @@ public class WebSocketTransport implements ITransport {
 				 * of inactivity.  Schedule a new timer for that long after the
 				 * last activity time. */
 				Log.v(TAG, "checkActivity: ok");
-				if (timer == null) {
-					synchronized(this) {
-						if (timer == null) {
-							try {
-								timer = new Timer();
-							} catch(Throwable t) {
-								Log.e(TAG, "Unexpected exception creating activity timer", t);
-							}
+				schedule(new TimerTask() {
+					public void run() {
+						try {
+							checkActivity();
+						} catch(Throwable t) {
+							Log.e(TAG, "Unexpected exception in activity timer handler", t);
 						}
 					}
-				}
-				if(timer != null) {
-					try {
-						timer.schedule(new WsClientTimerTask(this), next - now);
-					} catch(IllegalStateException ise) {
-						Log.e(TAG, "Unexpected exception scheduling activity timer", ise);
-					}
-				}
+				}, next - now);
 			} else {
 				/* Timeout has been reached. Close the connection. */
 				Log.e(TAG, "No activity for " + timeout + "ms, closing connection");
@@ -310,22 +304,15 @@ public class WebSocketTransport implements ITransport {
 			}
 		}
 
-		/* The TimerTask used to implement disconnection if no activity (inc
-		 * pings) is seen within a certain time.
-		 */
-		class WsClientTimerTask extends TimerTask {
-			private final WsClient client;
+		private void schedule(TimerTask task) {
+			schedule(task, 0);
+		}
 
-			public WsClientTimerTask(WsClient client) {
-				this.client = client;
-			}
-
-			public void run() {
-				try {
-					client.checkActivity();
-				} catch(Throwable t) {
-					Log.e(TAG, "Unexpected exception in activity timer handler", t);
-				}
+		private void schedule(TimerTask task, long delay) {
+			try {
+				timer.schedule(task, delay);
+			} catch(IllegalStateException ise) {
+				Log.e(TAG, "Unexpected exception scheduling activity timer", ise);
 			}
 		}
 
@@ -333,9 +320,8 @@ public class WebSocketTransport implements ITransport {
 		 * WsClient private members
 		 ***************************/
 
-		private Timer timer;
+		private Timer timer = new Timer();
 		private long lastActivityTime;
-
 	}
 
 	public String toString() {
