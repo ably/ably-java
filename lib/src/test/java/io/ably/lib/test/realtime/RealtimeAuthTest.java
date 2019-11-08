@@ -20,11 +20,16 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.ProtocolMessage;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import static org.junit.Assert.*;
 
 public class RealtimeAuthTest extends ParameterizedTest {
+
+	@Rule
+	public Timeout testTimeout = Timeout.seconds(30);
 
 	/**
 	 * RSA12a: The clientId attribute of a TokenRequest or TokenDetails
@@ -803,17 +808,10 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
 			opts.logLevel = Log.VERBOSE;
 
-			/* temporarily override the disconnected retry interval */
-			ConnectionManager.states.get(ConnectionState.disconnected).timeout = 1000L;
-			int oldDisconnectTimeout = Defaults.TIMEOUT_DISCONNECT;
-			Defaults.TIMEOUT_DISCONNECT = 1000;
-
 			final AblyRealtime ably = new AblyRealtime(opts);
 
 			Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ably.connection);
-			boolean isConnected = connectionWaiter.waitFor(ConnectionState.connected, 1, 4000L);
-
-			ConnectionManager.states.get(ConnectionState.disconnected).timeout = Defaults.TIMEOUT_DISCONNECT;
+			boolean isConnected = connectionWaiter.waitFor(ConnectionState.connected, 1, 30000L);
 
 			if(isConnected) {
 				/* done */
@@ -869,6 +867,5 @@ public class RealtimeAuthTest extends ParameterizedTest {
 			fail("auth_expired_token_expire_renew: Unexpected exception instantiating library");
 		}
 	}
-
 
 }
