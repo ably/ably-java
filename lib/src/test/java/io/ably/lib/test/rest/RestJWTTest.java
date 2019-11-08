@@ -52,7 +52,7 @@ public class RestJWTTest extends ParameterizedTest {
 		} catch (AblyException e) {
 			assertEquals("Unexpected code from exception", 40144, e.errorInfo.code);
 			assertEquals("Unexpected statusCode from exception", 401, e.errorInfo.statusCode);
-			assertTrue("Error message not matching the expected one", e.errorInfo.message.contains("Error verifying JWT; err = invalid signature"));
+			assertTrue("Error message not matching the expected one", e.errorInfo.message.contains("signature verification failed"));
 		}
 	}
 
