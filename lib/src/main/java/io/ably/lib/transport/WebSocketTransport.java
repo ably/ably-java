@@ -260,24 +260,36 @@ public class WebSocketTransport implements ITransport {
 			});
 		}
 
-		private void dispose() {
+		private synchronized void dispose() {
 			/* dispose timer */
-			if(timer != null) {
+			try {
 				timer.cancel();
 				timer = null;
+			} catch(IllegalStateException e) {}
+		}
+
+		private synchronized void flagActivity() {
+			lastActivityTime = System.currentTimeMillis();
+			connectionManager.setLastActivity(lastActivityTime);
+			if (activityTimerTask == null && connectionManager.maxIdleInterval != 0) {
+				/* No timer currently running because previously there was no
+				 * maxIdleInterval configured, but now there is a
+				 * maxIdleInterval configured.  Call checkActivity so a timer
+				 * gets started.  This happens when flagActivity gets called
+				 * just after processing the connect message that configures
+				 * maxIdleInterval. */
+				checkActivity();
 			}
 		}
 
-		private void flagActivity() {
-			lastActivityTime = System.currentTimeMillis();
-			connectionManager.setLastActivity(lastActivityTime);
-		}
-
-		private void checkActivity() {
+		private synchronized void checkActivity() {
 			long timeout = connectionManager.maxIdleInterval;
 			if (timeout == 0) {
 				Log.v(TAG, "checkActivity: infinite timeout");
-				timer = null;
+				return;
+			}
+			if(activityTimerTask != null) {
+				/* timer already running */
 				return;
 			}
 			timeout += connectionManager.ably.options.realtimeRequestTimeout;
@@ -288,7 +300,7 @@ public class WebSocketTransport implements ITransport {
 				 * of inactivity.  Schedule a new timer for that long after the
 				 * last activity time. */
 				Log.v(TAG, "checkActivity: ok");
-				schedule(new TimerTask() {
+				schedule((activityTimerTask = new TimerTask() {
 					public void run() {
 						try {
 							checkActivity();
@@ -296,7 +308,7 @@ public class WebSocketTransport implements ITransport {
 							Log.e(TAG, "Unexpected exception in activity timer handler", t);
 						}
 					}
-				}, next - now);
+				}), next - now);
 			} else {
 				/* Timeout has been reached. Close the connection. */
 				Log.e(TAG, "No activity for " + timeout + "ms, closing connection");
@@ -308,11 +320,13 @@ public class WebSocketTransport implements ITransport {
 			schedule(task, 0);
 		}
 
-		private void schedule(TimerTask task, long delay) {
-			try {
-				timer.schedule(task, delay);
-			} catch(IllegalStateException ise) {
-				Log.e(TAG, "Unexpected exception scheduling activity timer", ise);
+		private synchronized void schedule(TimerTask task, long delay) {
+			if(timer != null) {
+				try {
+					timer.schedule(task, delay);
+				} catch(IllegalStateException ise) {
+					Log.e(TAG, "Unexpected exception scheduling activity timer", ise);
+				}
 			}
 		}
 
@@ -321,6 +335,7 @@ public class WebSocketTransport implements ITransport {
 		 ***************************/
 
 		private Timer timer = new Timer();
+		private TimerTask activityTimerTask = null;
 		private long lastActivityTime;
 	}
 
