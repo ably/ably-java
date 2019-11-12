@@ -133,8 +133,8 @@ public class BaseMessage implements Cloneable {
 										lastPayload = data;
 									}
 								}
-								catch (Exception ex) {
-									throw MessageDecodeException.fromDescription("Decoding failed for user provided codec " + match.group(1));
+								catch (AblyException ex) {
+									throw MessageDecodeException.fromThrowableAndErrorInfo(ex, new ErrorInfo("Decoding failed for user provided codec " + match.group(1), ex.errorInfo.statusCode, ex.errorInfo.code));
 								}
 								continue;
 							}

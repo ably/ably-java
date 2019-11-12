@@ -168,6 +168,7 @@ public class ProtocolMessage {
 		if(auth != null) ++fieldCount;
 		if(flags != 0) ++fieldCount;
 		if(params != null) ++fieldCount;
+		if(channelSerial != null) ++fieldCount;
 		packer.packMapHeader(fieldCount);
 		packer.packString("action");
 		packer.packInt(action.getValue());
@@ -198,6 +199,10 @@ public class ProtocolMessage {
 		if(params != null) {
 			packer.packString("params");
 			params.writeMsgpack(packer);
+		}
+		if(channelSerial != null) {
+			packer.packString("channelSerial");
+			packer.packString(channelSerial);
 		}
 	}
 

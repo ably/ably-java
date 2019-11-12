@@ -66,6 +66,59 @@ public class RealtimeCodecsTest extends ParameterizedTest {
 		}
 	}
 
+	@Test
+	public void delta_decode_failure_recovery() {
+		AblyRealtime ably = null;
+		String testName = "delta_decode_failure_recovery";
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			MonitoredCodec monitoredCodec = new MonitoredCodec(new FailingDeltaCodec());
+			opts.Codecs.put("vcdiff", monitoredCodec);
+			ably = new AblyRealtime(opts);
+
+			/* create a channel */
+			final Channel channel = ably.channels.get("[?delta=vcdiff]" + testName);
+
+			/* attach */
+			channel.attach();
+			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			/* subscribe */
+			MessageWaiter messageWaiter = new MessageWaiter(channel);
+
+			/* publish to the channel */
+			for (int i = 0; i < testData.length; i++) {
+				channel.publish(Integer.toString(i), testData[i]);
+			}
+
+			/* wait for the messages */
+			messageWaiter.waitFor(testData.length);
+			for (Message message: messageWaiter.receivedMessages) {
+				assertEquals("Verify message data", testData[Integer.parseInt(message.name)], message.data);
+			}
+			assertEquals("Verify number of calls to the codec", testData.length - 1, monitoredCodec.numberOfCalls);
+		} catch(Exception e) {
+			fail(testName + ": Unexpected exception " + e.getMessage());
+			e.printStackTrace();
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+
+	private static class FailingDeltaCodec implements AblyCodec {
+		@Override
+		public Object decode(Object delta, EncodingDecodingContext encodingContext) throws AblyException {
+			throw AblyException.fromErrorInfo(new ErrorInfo("Delta decode failed", 400, 40018));
+		}
+
+		@Override
+		public EncodingResult encode(Object payload, EncodingDecodingContext decodingContext) {
+			return null;
+		}
+	}
+
 	private static class MonitoredCodec implements AblyCodec {
 		private AblyCodec codec;
 		private int numberOfCalls = 0;
@@ -75,7 +128,7 @@ public class RealtimeCodecsTest extends ParameterizedTest {
 		}
 
 		@Override
-		public Object decode(Object delta, EncodingDecodingContext encodingContext) throws Exception {
+		public Object decode(Object delta, EncodingDecodingContext encodingContext) throws AblyException {
 			this.numberOfCalls++;
 			return this.codec.decode(delta, encodingContext);
 		}
