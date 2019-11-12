@@ -66,7 +66,56 @@ public class RealtimeDeltaPluggableDecoderTest extends ParameterizedTest {
 		}
 	}
 
-	private static class MonitoredCodec implements VCDiffPluggableCodec {
+	@Test
+	public void delta_decode_failure_recovery() {
+		AblyRealtime ably = null;
+		String testName = "delta_decode_failure_recovery";
+		try {
+			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			MonitoredCodec monitoredCodec = new MonitoredCodec(new FailingDeltaCodec());
+			opts.Codecs.put("vcdiff", monitoredCodec);
+			ably = new AblyRealtime(opts);
+
+			/* create a channel */
+			final Channel channel = ably.channels.get("[?delta=vcdiff]" + testName);
+
+			/* attach */
+			channel.attach();
+			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+			/* subscribe */
+			MessageWaiter messageWaiter = new MessageWaiter(channel);
+
+			/* publish to the channel */
+			for (int i = 0; i < testData.length; i++) {
+				channel.publish(Integer.toString(i), testData[i]);
+			}
+
+			/* wait for the messages */
+			messageWaiter.waitFor(testData.length);
+			for (Message message: messageWaiter.receivedMessages) {
+				assertEquals("Verify message data", testData[Integer.parseInt(message.name)], message.data);
+			}
+			assertEquals("Verify number of calls to the codec", testData.length - 1, monitoredCodec.numberOfCalls);
+		} catch(Exception e) {
+			fail(testName + ": Unexpected exception " + e.getMessage());
+			e.printStackTrace();
+		} finally {
+			if(ably != null)
+				ably.close();
+		}
+	}
+}
+
+private static class FailingDeltaCodec implements VCDiffPluggableCodec {
+		@Override
+		public byte[] decode(byte[] delta, byte[] base) throws MessageDecodeException {
+			throw MessageDecodeException.fromErrorInfo(new ErrorInfo("Delta decode failed", 400, 40018));
+		}
+	}
+
+private static class MonitoredCodec implements VCDiffPluggableCodec {
 		private VCDiffPluggableCodec codec;
 		private int numberOfCalls = 0;
 
