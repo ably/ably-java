@@ -75,7 +75,7 @@ public class RealtimeCodecsTest extends ParameterizedTest {
 		}
 
 		@Override
-		public Object decode(Object delta, EncodingDecodingContext encodingContext) throws Exception {
+		public Object decode(Object delta, EncodingDecodingContext encodingContext) throws AblyException {
 			this.numberOfCalls++;
 			return this.codec.decode(delta, encodingContext);
 		}
