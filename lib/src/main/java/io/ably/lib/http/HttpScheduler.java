@@ -20,7 +20,7 @@ import io.ably.lib.util.Log;
  *
  * @param <Executor> The Executor that will run blocking operations.
  */
-public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
+public abstract class HttpScheduler<Executor extends java.util.concurrent.Executor> {
 
 	/**
 	 * Async HTTP GET for Ably host, with fallbacks

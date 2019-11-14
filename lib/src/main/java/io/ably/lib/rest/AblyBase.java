@@ -3,11 +3,9 @@ package io.ably.lib.rest;
 import java.util.HashMap;
 
 import io.ably.annotation.Experimental;
-import io.ably.lib.http.AsyncHttpScheduler;
 import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpScheduler;
-import io.ably.lib.http.SyncHttpScheduler;
 import io.ably.lib.http.AsyncHttpPaginatedQuery;
 import io.ably.lib.http.AsyncPaginatedQuery;
 import io.ably.lib.http.HttpPaginatedQuery;
@@ -71,7 +69,7 @@ public abstract class AblyBase {
 
 		auth = new Auth(this, options);
 		httpCore = new HttpCore(options, auth);
-		http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
+		http = new Http(httpCore, options);
 		channels = new Channels();
 		platform = new Platform();
 		push = new Push(this);
@@ -110,7 +108,7 @@ public abstract class AblyBase {
 	/**
 	 * Obtain the time from the Ably service.
 	 * This may be required on clients that do not have access
-	 * to a sufficiently well maintained time source, to provide 
+	 * to a sufficiently well maintained time source, to provide
 	 * timestamps for use in token requests
 	 * @return time in millis since the epoch
 	 * @throws AblyException
@@ -122,7 +120,7 @@ public abstract class AblyBase {
 	/**
 	 * Asynchronously obtain the time from the Ably service.
 	 * This may be required on clients that do not have access
-	 * to a sufficiently well maintained time source, to provide 
+	 * to a sufficiently well maintained time source, to provide
 	 * timestamps for use in token requests
 	 * @param callback
 	 */

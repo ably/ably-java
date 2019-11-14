@@ -11,8 +11,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * A HttpScheduler that uses a thread pool to run HTTP operations.
  */
-public class AsyncHttpScheduler extends HttpScheduler<ThreadPoolExecutor> {
-	public AsyncHttpScheduler(HttpCore httpCore, ClientOptions options) {
+class AsyncHttpScheduler extends HttpScheduler<ThreadPoolExecutor> {
+	AsyncHttpScheduler(HttpCore httpCore, ClientOptions options) {
 		super(httpCore, new ThreadPoolExecutor(options.asyncHttpThreadpoolSize, options.asyncHttpThreadpoolSize, KEEP_ALIVE_TIME, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>()));
 		executor.allowsCoreThreadTimeOut();
 	}

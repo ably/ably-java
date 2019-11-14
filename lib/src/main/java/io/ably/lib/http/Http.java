@@ -2,6 +2,7 @@ package io.ably.lib.http;
 
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
+import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 
 /**
@@ -11,9 +12,9 @@ public class Http {
 	private final AsyncHttpScheduler asyncHttp;
 	private final SyncHttpScheduler syncHttp;
 
-	public Http(AsyncHttpScheduler asyncHttp, SyncHttpScheduler syncHttp) {
-		this.asyncHttp = asyncHttp;
-		this.syncHttp = syncHttp;
+	public Http(HttpCore core, ClientOptions options) {
+		this.asyncHttp = new AsyncHttpScheduler(core, options);
+		this.syncHttp = new SyncHttpScheduler(core);
 	}
 
 	public class Request<Result> {

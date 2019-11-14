@@ -135,7 +135,7 @@ public class HttpTest {
 			}
 		}.setUrlArgumentStack(urlHostArgumentStack);
 
-		Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
+		Http http = new Http(httpCore, options);
 		try {
 			HttpHelpers.ablyHttpExecute(
 					http, "/path/to/fallback", /* Ignore path */
@@ -196,7 +196,7 @@ public class HttpTest {
 			}
 		}.setUrlArgumentStack(urlHostArgumentStack);
 
-		Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
+		Http http = new Http(httpCore, options);
 		try {
 			HttpHelpers.ablyHttpExecute(
 					http, "/path/to/fallback", /* Ignore path */
@@ -265,7 +265,7 @@ public class HttpTest {
 						any(HttpCore.ResponseHandler.class) /* Ignore */
 				);
 
-		Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
+		Http http = new Http(httpCore, options);
 		String responseActual = (String) HttpHelpers.ablyHttpExecute(
 				http, "", /* Ignore */
 				"", /* Ignore */
@@ -354,7 +354,7 @@ public class HttpTest {
 						any(HttpCore.ResponseHandler.class) /* Ignore */
 				);
 
-		Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
+		Http http = new Http(httpCore, options);
 		try {
 			HttpHelpers.ablyHttpExecute(
 					http, "", /* Ignore */
@@ -450,7 +450,7 @@ public class HttpTest {
 						any(HttpCore.ResponseHandler.class) /* Ignore */
 				);
 
-		Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
+		Http http = new Http(httpCore, options);
 		try {
 			HttpHelpers.ablyHttpExecute(
 					http, "", /* Ignore */
@@ -530,7 +530,7 @@ public class HttpTest {
 						any(HttpCore.ResponseHandler.class) /* Ignore */
 				);
 
-		Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
+		Http http = new Http(httpCore, options);
 		String responseActual = (String) HttpHelpers.ablyHttpExecute(
 				http, "", /* Ignore */
 				"", /* Ignore */
@@ -599,7 +599,7 @@ public class HttpTest {
 			}
 		}.setUrlArgumentStack(urlHostArgumentStack);
 
-		Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
+		Http http = new Http(httpCore, options);
 		try {
 			HttpHelpers.ablyHttpExecute(
 					http, "/path/to/fallback", /* Ignore path */
@@ -660,7 +660,7 @@ public class HttpTest {
 						any(HttpCore.ResponseHandler.class) /* Ignore */
 				);
 
-		Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
+		Http http = new Http(httpCore, new ClientOptions());
 		String responseActual = (String) HttpHelpers.ablyHttpExecute(
 				http, "", /* Ignore */
 				"", /* Ignore */
@@ -730,7 +730,7 @@ public class HttpTest {
 				);
 
 		/* Call method with real parameters */
-		Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
+		Http http = new Http(httpCore, new ClientOptions());
 		String responseActual = (String) HttpHelpers.ablyHttpExecute(
 				http, "", /* Ignore */
 				"", /* Ignore */
@@ -800,7 +800,7 @@ public class HttpTest {
 						any(HttpCore.ResponseHandler.class) /* Ignore */
 				);
 
-		Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
+		Http http = new Http(httpCore, new ClientOptions());
 		String responseActual = (String) HttpHelpers.ablyHttpExecute(
 				http, "", /* Ignore */
 				"", /* Ignore */
@@ -880,7 +880,7 @@ public class HttpTest {
 						any(HttpCore.ResponseHandler.class) /* Ignore */
 				);
 
-		Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
+		Http http = new Http(httpCore, new ClientOptions());
 		HttpHelpers.ablyHttpExecute(
 				http, "", /* Ignore */
 				"", /* Ignore */
@@ -967,7 +967,7 @@ public class HttpTest {
 						any(HttpCore.ResponseHandler.class) /* Ignore */
 				);
 
-		Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
+		Http http = new Http(httpCore, new ClientOptions());
 		HttpHelpers.ablyHttpExecute(
 				http, "", /* Ignore */
 				"", /* Ignore */
@@ -1058,7 +1058,7 @@ public class HttpTest {
 						any(HttpCore.ResponseHandler.class) /* Ignore */
 				);
 
-		Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
+		Http http = new Http(httpCore, new ClientOptions());
 		HttpHelpers.ablyHttpExecute(
 				http, "", /* Ignore */
 				"", /* Ignore */
@@ -1148,7 +1148,7 @@ public class HttpTest {
 		 */
 		thrown.expect(AblyException.HostFailedException.class);
 
-		Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
+		Http http = new Http(httpCore, new ClientOptions());
 		HttpHelpers.ablyHttpExecute(
 				http, "", /* Ignore */
 				"", /* Ignore */
