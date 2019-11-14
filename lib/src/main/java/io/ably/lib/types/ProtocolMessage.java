@@ -63,13 +63,12 @@ public class ProtocolMessage {
 		presence(16),
 		publish(17),
 		subscribe(18),
-		presence_subscribe(19),
-		local_presence_subscribe(20);
+		presence_subscribe(19);
 
 		private int mask;
 		Flag(int offset) { this.mask = 1 << offset; }
 		public int getMask() { return this.mask; }
-		public static Flag[] getModes() { return new Flag[] { presence, publish, subscribe, presence_subscribe, local_presence_subscribe }; };
+		public static Flag[] getModes() { return new Flag[] { presence, publish, subscribe, presence_subscribe }; };
 	}
 
 	public static boolean mergeTo(ProtocolMessage dest, ProtocolMessage src) {

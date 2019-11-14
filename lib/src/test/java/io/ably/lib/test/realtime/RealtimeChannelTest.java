@@ -303,14 +303,14 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
 			ChannelOptions options = new ChannelOptions();
 			options.params.put("delta", "vcdiff");
-			options.modes.add(ChannelMode.publish, ChannelMode.subscribe, ChannelMode.local_presence_subscribe);
+			options.modes.add(ChannelMode.publish, ChannelMode.subscribe, ChannelMode.presence_subscribe);
 
 			/* create a channel and attach */
 			final Channel channel = ably.channels.get(channelName, options);
 			channel.attach();
 			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
-			options.params.put("modes", "publish,subscribe,local_presence_subscribe");
+			options.params.put("modes", "publish,subscribe,presence_subscribe");
 			assertEquals("Verify channel params", channel.getParams(), options.params);
 			assertEquals("Verify channel modes", channel.getModes(), options.modes);
 		} catch (AblyException e) {
