@@ -6,10 +6,6 @@ def groupId = "io.ably"
 def artifactId = "ably-java"
 def localReleaseDest = "${buildDir}/release/${version}"
 
-task promoteRepo {
-	println("HELLO PROMOTE REPO")
-}
-
 /*
  * Task which signs and uploads the Java artifacts to Nexus OSSRH.
  */
@@ -21,11 +17,11 @@ uploadArchives {
         beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
 	    repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-         authentication(userName: ossrhUsername, password: ossrhPassword)
+         authentication(userName: nexusUsername, password: nexusPassword)
         }
 
         snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-          authentication(userName: ossrhUsername, password: ossrhPassword)
+          authentication(userName: nexusUsername, password: nexusPassword)
         }
         pom.groupId = groupId
         pom.artifactId = artifactId
