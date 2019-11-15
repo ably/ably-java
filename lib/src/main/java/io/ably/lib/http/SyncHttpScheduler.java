@@ -7,7 +7,7 @@ import io.ably.lib.util.CurrentThreadExecutor;
  */
 class SyncHttpScheduler extends HttpScheduler<CurrentThreadExecutor> {
 
-	SyncHttpScheduler(HttpCore httpCore) {
-		super(httpCore, CurrentThreadExecutor.INSTANCE);
-	}
+    SyncHttpScheduler(HttpCore httpCore) {
+        super(httpCore, CurrentThreadExecutor.INSTANCE);
+    }
 }
