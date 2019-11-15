@@ -65,7 +65,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 		AblyRealtime ably = new AblyRealtime(opts);
 		ConnectionManager connectionManager = ably.connection.connectionManager;
 
-		new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.connected);
+		new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
 
 		/* Verify that,
 		 *   - connectionManager is connected
@@ -96,7 +96,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 		AblyRealtime ably = new AblyRealtime(opts);
 		ConnectionManager connectionManager = ably.connection.connectionManager;
 
-		new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.disconnected);
+		new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.disconnected);
 
 		/* Verify that,
 		 *   - connectionManager is disconnected
@@ -176,7 +176,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 		AblyRealtime ably = new AblyRealtime(opts);
 		ConnectionManager connectionManager = ably.connection.connectionManager;
 
-		new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.disconnected);
+		new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.disconnected);
 
 		/* Verify that,
 		 *   - connectionManager is disconnected
@@ -210,7 +210,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 		ConnectionManager connectionManager = ably.connection.connectionManager;
 
 		System.out.println("waiting for disconnected");
-		new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.disconnected);
+		new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.disconnected);
 		System.out.println("got disconnected");
 
 		/* Verify that,
@@ -225,7 +225,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 		System.out.println("about to connect");
 		ably.connection.connect();
 
-		new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.failed);
+		new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.failed);
 
 		/* Verify that,
 		 *   - connectionManager is failed, because we are using an application key
@@ -260,7 +260,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 		ConnectionManager connectionManager = ably.connection.connectionManager;
 
 		System.out.println("waiting for disconnected");
-		new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.disconnected);
+		new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.disconnected);
 		System.out.println("got disconnected");
 		ably.close();
 
@@ -470,7 +470,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 					}
 				}
 			});
-			new Helpers.ConnectionManagerWaiter(ably.connection.connectionManager).waitFor(ConnectionState.connected);
+			new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
 			assertTrue("Connected callback was not run", callbackWasRun[0]);
 			ably.close();
 		} catch (AblyException e) {
