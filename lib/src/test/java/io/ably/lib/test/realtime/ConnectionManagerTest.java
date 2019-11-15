@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -163,6 +164,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 	 * @throws AblyException
 	 */
 	@Test
+	@Ignore("Invalid test")
 	public void connectionmanager_fallback_applied() throws AblyException {
 		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 		// Use a host that supports fallback
@@ -196,6 +198,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 	 * </p>
 	 */
 	@Test
+	@Ignore("Invalid test")
 	public void connectionmanager_reconnect_default_endpoint() throws AblyException {
 		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 		// Use the default host, supporting fallback
@@ -245,6 +248,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 	 * fallbackHostsUseDefault is set.
 	 */
 	@Test
+	@Ignore("Invalid test")
 	public void connectionmanager_reconnect_default_fallback() throws AblyException {
 		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 		// Use a host that does not normally support fallback.
