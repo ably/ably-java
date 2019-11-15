@@ -1,5 +1,28 @@
 # Change Log
 
+## [v1.1.6](https://github.com/ably/ably-java/tree/v1.1.6)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.1.5...v1.1.6)
+
+**Fixed bugs:**
+
+- Unexpected exception in WsClient causing connection errors [\#519](https://github.com/ably/ably-java/issues/519)
+- bad rsv 4 error from WebsocketClient if transport is forced to close during handshake [\#503](https://github.com/ably/ably-java/issues/503)
+- fromCipherKey does not match spec [\#492](https://github.com/ably/ably-java/issues/492)
+
+**Closed issues:**
+
+- HttpScheduler.AsyncRequest\<T\> Ignores withCredentials Parameter [\#517](https://github.com/ably/ably-java/issues/517)
+- AblyRealtime should implement Autocloseable [\#514](https://github.com/ably/ably-java/issues/514)
+
+**Merged pull requests:**
+
+- Update websocket dependency [\#520](https://github.com/ably/ably-java/pull/520) ([paddybyers](https://github.com/paddybyers))
+- Fixes in HttpScheduler.AsyncRequest [\#518](https://github.com/ably/ably-java/pull/518) ([amihaiemil](https://github.com/amihaiemil))
+- \#514 AblyRealtime implements Autocloseable [\#515](https://github.com/ably/ably-java/pull/515) ([amihaiemil](https://github.com/amihaiemil))
+- ChannelOptions.withCipherKey + tests [\#513](https://github.com/ably/ably-java/pull/513) ([amihaiemil](https://github.com/amihaiemil))
+- Added test for \#474 [\#511](https://github.com/ably/ably-java/pull/511) ([amihaiemil](https://github.com/amihaiemil))
+
 ## [v1.1.5](https://github.com/ably/ably-java/tree/v1.1.5)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.1.4...v1.1.5)
