@@ -847,6 +847,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
 			/* create a channel and subscribe */
 			final Channel subChannel = subAbly.channels.get(channelName);
+			new ChannelWaiter(subChannel).waitFor(ChannelState.attached);
 			Helpers.MessageWaiter messageWaiter = new Helpers.MessageWaiter(subChannel);
 
 			pubAbly = new AblyRealtime(opts);
