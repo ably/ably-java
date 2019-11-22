@@ -895,7 +895,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	private List<QueuedMessage> queuedMessages;
 
 	/************************************
-	 * Channel history 
+	 * Channel history
 	 ************************************/
 
 	/**
@@ -927,7 +927,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	}
 
 	/************************************
-	 * Channel options 
+	 * Channel options
 	 ************************************/
 
 	public void setOptions(ChannelOptions options) throws AblyException {
@@ -936,7 +936,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
 	/************************************
 	 * internal general
-	 * @throws AblyException 
+	 * @throws AblyException
 	 ************************************/
 
 	private class ChannelStateCompletionListener implements ChannelStateListener {
@@ -972,6 +972,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		this.presence = new Presence((Channel) this);
 		state = ChannelState.initialized;
 		queuedMessages = new ArrayList<QueuedMessage>();
+		this.decodingContext = new DecodingContext(ably.options.Codecs);
 	}
 
 	void onChannelMessage(ProtocolMessage msg) {
@@ -1055,4 +1056,5 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	final String basePath;
 	ChannelOptions options;
 	String syncChannelSerial;
+	DecodingContext decodingContext;
 }
