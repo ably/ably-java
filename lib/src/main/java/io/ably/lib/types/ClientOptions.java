@@ -6,6 +6,7 @@ import io.ably.lib.transport.Defaults;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Log.LogHandler;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -194,4 +195,6 @@ public class ClientOptions extends AuthOptions {
 	 * before responding.
 	 */
 	public boolean pushFullWait = false;
+
+	public final Map<String, PluggableCodec> Codecs = new HashMap<>();
 }
