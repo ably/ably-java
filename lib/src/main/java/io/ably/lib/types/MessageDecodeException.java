@@ -6,13 +6,17 @@ package io.ably.lib.types;
 public class MessageDecodeException extends AblyException {
 	private static final long serialVersionUID = 1L;
 
-	private MessageDecodeException(Throwable e, String description) {
-		super(e, new ErrorInfo(description, 91200));
+	private MessageDecodeException(Throwable e, ErrorInfo errorInfo) {
+		super(e, errorInfo);
 	}
 
 	public static MessageDecodeException fromDescription(String description) {
 		return new MessageDecodeException(
-				new Exception(description),
-				description);
+			new Exception(description),
+			new ErrorInfo(description, 91200));
+	}
+
+	static MessageDecodeException fromThrowableAndErrorInfo(Throwable e, ErrorInfo errorInfo) {
+		return new MessageDecodeException(e, errorInfo);
 	}
 }
