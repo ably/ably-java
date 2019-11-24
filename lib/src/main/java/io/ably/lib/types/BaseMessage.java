@@ -136,7 +136,7 @@ public class BaseMessage implements Cloneable {
 									throw MessageDecodeException.fromDescription("vcdiff codec is not of type VCDiffPluggableCodec");
 
 								try {
-									data = vcdiffCodec.Decode((byte[]) data, context.get_lastMessage());
+									data = vcdiffCodec.decode((byte[]) data, context.get_lastMessage());
 									context.set_lastMessage((byte[]) data);
 								}
 								catch (AblyException ex) {
