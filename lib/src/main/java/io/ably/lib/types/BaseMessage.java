@@ -77,7 +77,12 @@ public class BaseMessage implements Cloneable {
 
 	public void decode(ChannelOptions opts,  DecodingContext context) throws MessageDecodeException {
 
-		Object lastPayload = data;
+		if(data instanceof String)
+			context.set_lastMessage((String)data);
+		else if (data instanceof byte[])
+			context.set_lastMessage((byte[])data);
+		else
+			throw MessageDecodeException.fromDescription("Message data neither String nor byte[]. Unsupported message data type.");
 
 		if(encoding != null) {
 			String[] xforms = encoding.split("\\/");
@@ -94,7 +99,7 @@ public class BaseMessage implements Cloneable {
 								throw MessageDecodeException.fromDescription("Invalid base64 data received");
 							}
 							if(lastProcessedEncodingIndex == xforms.length) {
-								lastPayload = data;
+								context.set_lastMessage((byte[])data);
 							}
 							continue;
 
@@ -130,8 +135,14 @@ public class BaseMessage implements Cloneable {
 								if(vcdiffCodec == null)
 									throw MessageDecodeException.fromDescription("vcdiff codec is not of type VCDiffPluggableCodec");
 
-								data = vcdiffCodec.Decode((byte[]) data, context.get_lastMessage());
-								lastPayload = data;
+								try {
+									data = vcdiffCodec.Decode((byte[]) data, context.get_lastMessage());
+									context.set_lastMessage((byte[]) data);
+								}
+								catch (AblyException ex) {
+									throw MessageDecodeException.fromThrowableAndErrorInfo(ex, new ErrorInfo("Decoding failed for user provided codec " + match.group(1), ex.errorInfo.statusCode, ex.errorInfo.code));
+								}
+
 								continue;
 							}
 					}
@@ -141,11 +152,6 @@ public class BaseMessage implements Cloneable {
 				encoding = (lastProcessedEncodingIndex  <= 0) ? null : join(xforms, '/', 0, lastProcessedEncodingIndex );
 			}
 		}
-	}
-
-	public boolean tryPluggableCodecDecode(String encoding) {
-
-		return false;
 	}
 
 	public void encode(ChannelOptions opts) throws AblyException {
