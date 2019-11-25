@@ -77,12 +77,7 @@ public class BaseMessage implements Cloneable {
 
 	public void decode(ChannelOptions opts,  DecodingContext context) throws MessageDecodeException {
 
-		if(data instanceof String)
-			context.set_lastMessage((String)data);
-		else if (data instanceof byte[])
-			context.set_lastMessage((byte[])data);
-		else
-			throw MessageDecodeException.fromDescription("Message data neither String nor byte[]. Unsupported message data type.");
+		Object lastPayload = data;
 
 		if(encoding != null) {
 			String[] xforms = encoding.split("\\/");
@@ -99,7 +94,7 @@ public class BaseMessage implements Cloneable {
 								throw MessageDecodeException.fromDescription("Invalid base64 data received");
 							}
 							if(lastProcessedEncodingIndex == xforms.length) {
-								context.set_lastMessage((byte[])data);
+								lastPayload = data;
 							}
 							continue;
 
@@ -137,7 +132,7 @@ public class BaseMessage implements Cloneable {
 
 								try {
 									data = vcdiffCodec.decode((byte[]) data, context.get_lastMessage());
-									context.set_lastMessage((byte[]) data);
+									lastPayload = data;
 								}
 								catch (AblyException ex) {
 									throw MessageDecodeException.fromThrowableAndErrorInfo(ex, new ErrorInfo("Decoding failed for user provided codec " + match.group(1), ex.errorInfo.statusCode, ex.errorInfo.code));
@@ -152,6 +147,13 @@ public class BaseMessage implements Cloneable {
 				encoding = (lastProcessedEncodingIndex  <= 0) ? null : join(xforms, '/', 0, lastProcessedEncodingIndex );
 			}
 		}
+
+		if(lastPayload instanceof String)
+			context.set_lastMessage((String)lastPayload);
+		else if (lastPayload instanceof byte[])
+			context.set_lastMessage((byte[])lastPayload);
+		else
+			throw MessageDecodeException.fromDescription("Message data neither String nor byte[]. Unsupported message data type.");
 	}
 
 	public void encode(ChannelOptions opts) throws AblyException {

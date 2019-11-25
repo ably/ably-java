@@ -649,7 +649,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		for(int i = 0; i < messages.length; i++) {
 			Message msg = messages[i];
 			try {
-				msg.decode(options);
+				msg.decode(options, decodingContext);
 			} catch (MessageDecodeException e) {
 				Log.e(TAG, String.format("%s on channel %s", e.errorInfo.message, name));
 			}
