@@ -5,3 +5,8 @@ if(System.getenv('ANDROID_HOME')) {
   include 'android'
 }
 
+/* Temporary solution until ably-delta-codec-java and delta-codec-java are published */
+include ':ably-delta-codec-java'
+project(':ably-delta-codec-java').projectDir = new File('submodules/ably-delta-codec-java')
+include ':ably-java'
+project(':ably-java').projectDir = new File('submodules/ably-delta-codec-java/submodules/ably-java/java')
