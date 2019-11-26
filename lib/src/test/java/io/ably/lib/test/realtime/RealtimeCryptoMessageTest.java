@@ -26,20 +26,17 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 	@Test
 	public void encrypt_message_128() throws IOException, AblyException, NoSuchAlgorithmException {
 		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile128, CryptoTestData.class);
-		byte[] key = Base64Coder.decode(testData.key);
-		byte[] iv = Base64Coder.decode(testData.iv);
-		String algorithm = testData.algorithm;
+		final byte[] key = Base64Coder.decode(testData.key);
+		final byte[] iv = Base64Coder.decode(testData.iv);
+		final String algorithm = testData.algorithm;
 
 		final CipherParams params = Crypto.getParams(algorithm, key);
 		params.ivSpec = new IvParameterSpec(iv);
 
-		CryptoTestItem[] items = testData.items;
-		for(int i = 0; i < items.length; i++) {
-			CryptoTestItem item = items[i];
-
+		for(final CryptoTestItem item : testData.items) {
 			/* read messages from test data */
-			Message testMessage = item.encoded;
-			Message encryptedMessage = item.encrypted;
+			final Message testMessage = item.encoded;
+			final Message encryptedMessage = item.encrypted;
 
 			/* decode (ie remove any base64 encoding) */
 			testMessage.decode(null);
@@ -48,7 +45,7 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 			} catch (MessageDecodeException e) {}
 
 			/* reset channel cipher, to ensure it uses the given iv */
-			ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
+			final ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
 
 			/* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
 			testMessage.encode(options);
@@ -61,20 +58,17 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 	@Test
 	public void encrypt_message_256() throws IOException, AblyException, NoSuchAlgorithmException {
 		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile256, CryptoTestData.class);
-		byte[] key = Base64Coder.decode(testData.key);
-		byte[] iv = Base64Coder.decode(testData.iv);
-		String algorithm = testData.algorithm;
+		final byte[] key = Base64Coder.decode(testData.key);
+		final byte[] iv = Base64Coder.decode(testData.iv);
+		final String algorithm = testData.algorithm;
 
 		final CipherParams params = Crypto.getParams(algorithm, key);
 		params.ivSpec = new IvParameterSpec(iv);
 
-		CryptoTestItem[] items = testData.items;
-		for(int i = 0; i < items.length; i++) {
-			CryptoTestItem item = items[i];
-
+		for(final CryptoTestItem item : testData.items) {
 			/* read messages from test data */
-			Message testMessage = item.encoded;
-			Message encryptedMessage = item.encrypted;
+			final Message testMessage = item.encoded;
+			final Message encryptedMessage = item.encrypted;
 
 			/* decode (ie remove any base64 encoding) */
 			testMessage.decode(null);
@@ -96,20 +90,17 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 	@Test
 	public void decrypt_message_128() throws IOException, MessageDecodeException, NoSuchAlgorithmException {
 		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile128, CryptoTestData.class);
-		byte[] key = Base64Coder.decode(testData.key);
-		byte[] iv = Base64Coder.decode(testData.iv);
-		String algorithm = testData.algorithm;
+		final byte[] key = Base64Coder.decode(testData.key);
+		final byte[] iv = Base64Coder.decode(testData.iv);
+		final String algorithm = testData.algorithm;
 
 		final CipherParams params = Crypto.getParams(algorithm, key);
 		params.ivSpec = new IvParameterSpec(iv);
 
-		CryptoTestItem[] items = testData.items;
-		for(int i = 0; i < items.length; i++) {
-			CryptoTestItem item = items[i];
-
+		for(final CryptoTestItem item : testData.items) {
 			/* read messages from test data */
-			Message testMessage = item.encoded;
-			Message encryptedMessage = item.encrypted;
+			final Message testMessage = item.encoded;
+			final Message encryptedMessage = item.encrypted;
 
 			/* decode (ie remove any base64 encoding) */
 			testMessage.decode(null);
@@ -131,20 +122,17 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 	@Test
 	public void decrypt_message_256() throws IOException, MessageDecodeException, NoSuchAlgorithmException {
 		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile256, CryptoTestData.class);
-		byte[] key = Base64Coder.decode(testData.key);
-		byte[] iv = Base64Coder.decode(testData.iv);
-		String algorithm = testData.algorithm;
+		final byte[] key = Base64Coder.decode(testData.key);
+		final byte[] iv = Base64Coder.decode(testData.iv);
+		final String algorithm = testData.algorithm;
 
 		final CipherParams params = Crypto.getParams(algorithm, key);
 		params.ivSpec = new IvParameterSpec(iv);
 
-		CryptoTestItem[] items = testData.items;
-		for(int i = 0; i < items.length; i++) {
-			CryptoTestItem item = items[i];
-
+		for(final CryptoTestItem item : testData.items) {
 			/* read messages from test data */
-			Message testMessage = item.encoded;
-			Message encryptedMessage = item.encrypted;
+			final Message testMessage = item.encoded;
+			final Message encryptedMessage = item.encrypted;
 
 			/* decode (ie remove any base64 encoding) */
 			testMessage.decode(null);
