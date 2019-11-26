@@ -17,7 +17,6 @@ import org.junit.runners.Parameterized.Parameters;
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
-import jdk.nashorn.internal.runtime.Debug;
 
 @RunWith(Parameterized.class)
 public class ParameterizedTest {
