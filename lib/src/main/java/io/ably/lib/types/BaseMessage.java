@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -131,7 +130,7 @@ public class BaseMessage implements Cloneable {
 									throw MessageDecodeException.fromDescription("vcdiff codec is not of type VCDiffPluggableCodec");
 
 								try {
-									data = vcdiffCodec.decode((byte[]) data, context.get_lastMessage());
+									data = vcdiffCodec.decode((byte[]) data, context.getLastMessage());
 									lastPayload = data;
 								}
 								catch (AblyException ex) {
@@ -149,9 +148,9 @@ public class BaseMessage implements Cloneable {
 		}
 
 		if(lastPayload instanceof String)
-			context.set_lastMessage((String)lastPayload);
+			context.setLastMessage((String)lastPayload);
 		else if (lastPayload instanceof byte[])
-			context.set_lastMessage((byte[])lastPayload);
+			context.setLastMessage((byte[])lastPayload);
 		else
 			throw MessageDecodeException.fromDescription("Message data neither String nor byte[]. Unsupported message data type.");
 	}

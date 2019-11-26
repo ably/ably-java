@@ -18,7 +18,7 @@ public class DecodingContext {
 
 	public Map<String, PluggableCodec> codecs;
 
-	public byte[] get_lastMessage() {
+	public byte[] getLastMessage() {
 		if(lastMessageBinary != null)
 			return lastMessageBinary;
 		else if(lastMessageString != null) {
@@ -28,11 +28,13 @@ public class DecodingContext {
 			return null;
 	}
 
-	public void set_lastMessage(String message) {
+	public void setLastMessage(String message) {
 		lastMessageString = message;
+		lastMessageBinary = null;
 	}
 
-	public void set_lastMessage(byte[] message) {
+	public void setLastMessage(byte[] message) {
 		lastMessageBinary = message;
+		lastMessageString = null;
 	}
 }
