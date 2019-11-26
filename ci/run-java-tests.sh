@@ -2,6 +2,7 @@
 unset ANDROID_HOME
 
 ret=0
+./gradlew runUnitTests || ret=1
 ./gradlew java:testRealtimeSuite || ret=1
 ./gradlew java:testRestSuite || ret=1
 exit $ret
