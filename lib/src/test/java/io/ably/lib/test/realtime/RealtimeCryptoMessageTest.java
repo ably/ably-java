@@ -22,30 +22,23 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 
 	private static final String testDataFile128 = "ably-common/test-resources/crypto-data-128.json";
 	private static final String testDataFile256 = "ably-common/test-resources/crypto-data-256.json";
-	private static CryptoTestData testData128;
-	private static CryptoTestData testData256;
 
 	@Test
-	public void encrypt_message_128() {
-		try {
-			testData128 = (CryptoTestData)Setup.loadJson(testDataFile128, CryptoTestData.class);
-		} catch (IOException e1) {
-			fail();
-			return;
-		}
+	public void encrypt_message_128() throws IOException {
+		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile128, CryptoTestData.class);
 		AblyRealtime ably = null;
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
-			byte[] key = Base64Coder.decode(testData128.key);
-			byte[] iv = Base64Coder.decode(testData128.iv);
-			String algorithm = testData128.algorithm;
+			byte[] key = Base64Coder.decode(testData.key);
+			byte[] iv = Base64Coder.decode(testData.iv);
+			String algorithm = testData.algorithm;
 
 			final CipherParams params = Crypto.getParams(algorithm, key);
 			params.ivSpec = new IvParameterSpec(iv);
 
-			CryptoTestItem[] items = testData128.items;
+			CryptoTestItem[] items = testData.items;
 			for(int i = 0; i < items.length; i++) {
 				CryptoTestItem item = items[i];
 
@@ -81,26 +74,21 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 	}
 
 	@Test
-	public void encrypt_message_256() {
-		try {
-			testData256 = (CryptoTestData)Setup.loadJson(testDataFile256, CryptoTestData.class);
-		} catch (IOException e1) {
-			fail();
-			return;
-		}
+	public void encrypt_message_256() throws IOException {
+		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile256, CryptoTestData.class);
 		AblyRealtime ably = null;
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
-			byte[] key = Base64Coder.decode(testData256.key);
-			byte[] iv = Base64Coder.decode(testData256.iv);
-			String algorithm = testData256.algorithm;
+			byte[] key = Base64Coder.decode(testData.key);
+			byte[] iv = Base64Coder.decode(testData.iv);
+			String algorithm = testData.algorithm;
 
 			final CipherParams params = Crypto.getParams(algorithm, key);
 			params.ivSpec = new IvParameterSpec(iv);
 
-			CryptoTestItem[] items = testData256.items;
+			CryptoTestItem[] items = testData.items;
 			for(int i = 0; i < items.length; i++) {
 				CryptoTestItem item = items[i];
 
@@ -136,26 +124,21 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 	}
 
 	@Test
-	public void decrypt_message_128() {
-		try {
-			testData128 = (CryptoTestData)Setup.loadJson(testDataFile128, CryptoTestData.class);
-		} catch (IOException e1) {
-			fail();
-			return;
-		}
+	public void decrypt_message_128() throws IOException {
+		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile128, CryptoTestData.class);
 		AblyRealtime ably = null;
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
-			byte[] key = Base64Coder.decode(testData128.key);
-			byte[] iv = Base64Coder.decode(testData128.iv);
-			String algorithm = testData128.algorithm;
+			byte[] key = Base64Coder.decode(testData.key);
+			byte[] iv = Base64Coder.decode(testData.iv);
+			String algorithm = testData.algorithm;
 
 			final CipherParams params = Crypto.getParams(algorithm, key);
 			params.ivSpec = new IvParameterSpec(iv);
 
-			CryptoTestItem[] items = testData128.items;
+			CryptoTestItem[] items = testData.items;
 			for(int i = 0; i < items.length; i++) {
 				CryptoTestItem item = items[i];
 
@@ -191,26 +174,21 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 	}
 
 	@Test
-	public void decrypt_message_256() {
-		try {
-			testData256 = (CryptoTestData)Setup.loadJson(testDataFile256, CryptoTestData.class);
-		} catch (IOException e1) {
-			fail();
-			return;
-		}
+	public void decrypt_message_256() throws IOException {
+		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile256, CryptoTestData.class);
 		AblyRealtime ably = null;
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			ably = new AblyRealtime(opts);
 
-			byte[] key = Base64Coder.decode(testData256.key);
-			byte[] iv = Base64Coder.decode(testData256.iv);
-			String algorithm = testData256.algorithm;
+			byte[] key = Base64Coder.decode(testData.key);
+			byte[] iv = Base64Coder.decode(testData.iv);
+			String algorithm = testData.algorithm;
 
 			final CipherParams params = Crypto.getParams(algorithm, key);
 			params.ivSpec = new IvParameterSpec(iv);
 
-			CryptoTestItem[] items = testData256.items;
+			CryptoTestItem[] items = testData.items;
 			for(int i = 0; i < items.length; i++) {
 				CryptoTestItem item = items[i];
 
