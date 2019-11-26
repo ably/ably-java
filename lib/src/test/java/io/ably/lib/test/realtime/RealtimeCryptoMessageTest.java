@@ -10,7 +10,6 @@ import javax.crypto.spec.IvParameterSpec;
 import io.ably.lib.types.*;
 import org.junit.Test;
 
-import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Setup;
@@ -24,13 +23,9 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 	private static final String testDataFile256 = "ably-common/test-resources/crypto-data-256.json";
 
 	@Test
-	public void encrypt_message_128() throws IOException {
+	public void encrypt_message_128() throws IOException, AblyException {
 		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile128, CryptoTestData.class);
-		AblyRealtime ably = null;
 		try {
-			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-			ably = new AblyRealtime(opts);
-
 			byte[] key = Base64Coder.decode(testData.key);
 			byte[] iv = Base64Coder.decode(testData.iv);
 			String algorithm = testData.algorithm;
@@ -61,26 +56,16 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 				/* compare */
 				assertTrue(Helpers.compareMessage(testMessage, encryptedMessage));
 			}
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("init0: Unexpected exception instantiating library");
 		} catch (java.security.NoSuchAlgorithmException e) {
 			e.printStackTrace();
 			fail("Unexpected Algorithm exception");
-		} finally {
-			if(ably != null)
-				ably.close();
 		}
 	}
 
 	@Test
-	public void encrypt_message_256() throws IOException {
+	public void encrypt_message_256() throws IOException, AblyException {
 		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile256, CryptoTestData.class);
-		AblyRealtime ably = null;
 		try {
-			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-			ably = new AblyRealtime(opts);
-
 			byte[] key = Base64Coder.decode(testData.key);
 			byte[] iv = Base64Coder.decode(testData.iv);
 			String algorithm = testData.algorithm;
@@ -111,26 +96,16 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 				/* compare */
 				assertTrue(Helpers.compareMessage(testMessage, encryptedMessage));
 			}
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("init0: Unexpected exception instantiating library");
 		} catch (java.security.NoSuchAlgorithmException e) {
 			e.printStackTrace();
 			fail("Unexpected Algorithm exception");
-		} finally {
-			if(ably != null)
-				ably.close();
 		}
 	}
 
 	@Test
-	public void decrypt_message_128() throws IOException {
+	public void decrypt_message_128() throws IOException, MessageDecodeException {
 		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile128, CryptoTestData.class);
-		AblyRealtime ably = null;
 		try {
-			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-			ably = new AblyRealtime(opts);
-
 			byte[] key = Base64Coder.decode(testData.key);
 			byte[] iv = Base64Coder.decode(testData.iv);
 			String algorithm = testData.algorithm;
@@ -161,26 +136,16 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 				/* compare */
 				assertTrue(Helpers.compareMessage(testMessage, encryptedMessage));
 			}
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("init0: Unexpected exception instantiating library");
 		} catch (java.security.NoSuchAlgorithmException e) {
 			e.printStackTrace();
 			fail("Unexpected Algorithm exception");
-		} finally {
-			if(ably != null)
-				ably.close();
 		}
 	}
 
 	@Test
-	public void decrypt_message_256() throws IOException {
+	public void decrypt_message_256() throws IOException, MessageDecodeException {
 		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile256, CryptoTestData.class);
-		AblyRealtime ably = null;
 		try {
-			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-			ably = new AblyRealtime(opts);
-
 			byte[] key = Base64Coder.decode(testData.key);
 			byte[] iv = Base64Coder.decode(testData.iv);
 			String algorithm = testData.algorithm;
@@ -211,15 +176,9 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 				/* compare */
 				assertTrue(Helpers.compareMessage(testMessage, encryptedMessage));
 			}
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("init0: Unexpected exception instantiating library");
 		} catch (java.security.NoSuchAlgorithmException e) {
 			e.printStackTrace();
 			fail("Unexpected Algorithm exception");
-		} finally {
-			if(ably != null)
-				ably.close();
 		}
 	}
 
