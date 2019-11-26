@@ -39,6 +39,7 @@ import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 
 import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -716,33 +717,18 @@ public class Helpers {
 		}
 	}
 
-	public static boolean compareString(String one, String two) {
-		return (one == null) ? (two == null) : (one.equals(two));
-	}
-
-	public static boolean compareBytes(byte[] one, byte[] two) {
-		if(one == null) return (two == null);
-		if(one.length != two.length) return false;
-		for(int i = 0; i < one.length; i++)
-			if(one[i] != two[i]) return false;
-		return true;
-	}
-
-	public static boolean compareMessage(BaseMessage one, BaseMessage two) {
-		if(!compareString(one.encoding, two.encoding)) return false;
-		if(one.data == null) return (two.data == null);
-		if(one.getClass() != two.getClass()) return false;
-		if(one.data instanceof String) {
-			return compareString((String)one.data, (String)two.data);
-		}
-		if(one.data instanceof byte[]) {
-			return compareBytes((byte[])one.data, (byte[])two.data);
-		}
-		if(one.data instanceof JsonObject || one.data instanceof JsonArray) {
+	public static void assertMessagesEqual(BaseMessage expected, BaseMessage actual) {
+		assertEquals("Encodings differ.", expected.encoding, actual.encoding);
+		assertEquals("Message classes differ.", expected.getClass(), actual.getClass());
+		assertEquals("Message data classes differ.", expected.data.getClass(), actual.data.getClass());
+		if(expected.data instanceof byte[]) {
+			assertArrayEquals("Message binary data contents differ.", (byte[])expected.data, (byte[])actual.data);
+		} else if (expected.data instanceof JsonObject || expected.data instanceof JsonArray) {
 			Gson gson = new Gson();
-			return compareString(gson.toJson((JsonElement)one.data), gson.toJson((JsonElement)two.data));
+			assertEquals("Message JSON contents differ.", gson.toJson((JsonElement)expected.data), gson.toJson((JsonElement)actual.data));			
+		} else {
+			assertEquals("Message data contents differ.", expected.data, actual.data);
 		}
-		return false;
 	}
 
 	public static class AsyncWaiter<T> implements Callback<T> {

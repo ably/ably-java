@@ -79,7 +79,7 @@ task testRealtimeSuite(type: Test) {
         includeTestsMatching "*RealtimeSuite"
     }
     beforeTest { descriptor ->
-        logger.lifecycle("Running test: " + descriptor)
+        logger.lifecycle("-> " + descriptor)
     }
     outputs.upToDateWhen { false }
 }
@@ -89,7 +89,27 @@ task testRestSuite(type: Test) {
         includeTestsMatching "*RestSuite"
     }
     beforeTest { descriptor ->
-        logger.lifecycle("Running test: " + descriptor)
+        logger.lifecycle("-> " + descriptor)
     }
     outputs.upToDateWhen { false }
 }
+
+/*
+Test task to run pure unit tests, where pure means that they only run
+locally and do not need to communicate with Ably servers.
+This is achieved by excluding everything in the io.ably.lib.test package,
+as it only contains the REST and Realtime suites.
+*/
+task runUnitTests(type: Test) {
+    filter {
+        excludeTestsMatching "io.ably.lib.test.*"
+    }
+    beforeTest { descriptor ->
+        // informational, so we're not flying blind at runtime
+        logger.lifecycle("-> " + descriptor)
+    }
+
+    // force tests to run every time this task is invoked
+    outputs.upToDateWhen { false }
+}
+
