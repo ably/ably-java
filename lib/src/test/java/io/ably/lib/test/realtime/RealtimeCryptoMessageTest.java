@@ -1,5 +1,8 @@
 package io.ably.lib.test.realtime;
 
+import static io.ably.lib.test.common.Helpers.assertMessagesEqual;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -24,130 +27,85 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 	private static final String testDataFile256 = "ably-common/test-resources/crypto-data-256.json";
 
 	@Test
-	public void encrypt_message_128() throws IOException, AblyException, NoSuchAlgorithmException {
+	public void encrypt_message_128() throws IOException, NoSuchAlgorithmException, CloneNotSupportedException, AblyException {
 		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile128, CryptoTestData.class);
-		final byte[] key = Base64Coder.decode(testData.key);
-		final byte[] iv = Base64Coder.decode(testData.iv);
-		final String algorithm = testData.algorithm;
-
-		final CipherParams params = Crypto.getParams(algorithm, key);
-		params.ivSpec = new IvParameterSpec(iv);
-
-		for(final CryptoTestItem item : testData.items) {
-			/* read messages from test data */
-			final Message testMessage = item.encoded;
-			final Message encryptedMessage = item.encrypted;
-
-			/* decode (ie remove any base64 encoding) */
-			testMessage.decode(null);
-			try {
-				encryptedMessage.decode(null);
-			} catch (MessageDecodeException e) {}
-
-			/* reset channel cipher, to ensure it uses the given iv */
-			final ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
-
-			/* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
-			testMessage.encode(options);
-
-			/* compare */
-			assertTrue(Helpers.compareMessage(testMessage, encryptedMessage));
-		}
+		testEncrypt(testData, "cipher+aes-128-cbc");
 	}
 
 	@Test
-	public void encrypt_message_256() throws IOException, AblyException, NoSuchAlgorithmException {
+	public void encrypt_message_256() throws IOException, NoSuchAlgorithmException, CloneNotSupportedException, AblyException {
 		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile256, CryptoTestData.class);
-		final byte[] key = Base64Coder.decode(testData.key);
-		final byte[] iv = Base64Coder.decode(testData.iv);
-		final String algorithm = testData.algorithm;
-
-		final CipherParams params = Crypto.getParams(algorithm, key);
-		params.ivSpec = new IvParameterSpec(iv);
-
-		for(final CryptoTestItem item : testData.items) {
-			/* read messages from test data */
-			final Message testMessage = item.encoded;
-			final Message encryptedMessage = item.encrypted;
-
-			/* decode (ie remove any base64 encoding) */
-			testMessage.decode(null);
-			try {
-				encryptedMessage.decode(null);
-			} catch (MessageDecodeException e) {}
-
-			/* reset channel cipher, to ensure it uses the given iv */
-			ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
-
-			/* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
-			testMessage.encode(options);
-
-			/* compare */
-			assertTrue(Helpers.compareMessage(testMessage, encryptedMessage));
-		}
+		testEncrypt(testData, "cipher+aes-256-cbc");
 	}
 
 	@Test
-	public void decrypt_message_128() throws IOException, MessageDecodeException, NoSuchAlgorithmException {
+	public void decrypt_message_128() throws IOException, NoSuchAlgorithmException, CloneNotSupportedException, AblyException {
 		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile128, CryptoTestData.class);
-		final byte[] key = Base64Coder.decode(testData.key);
-		final byte[] iv = Base64Coder.decode(testData.iv);
-		final String algorithm = testData.algorithm;
-
-		final CipherParams params = Crypto.getParams(algorithm, key);
-		params.ivSpec = new IvParameterSpec(iv);
-
-		for(final CryptoTestItem item : testData.items) {
-			/* read messages from test data */
-			final Message testMessage = item.encoded;
-			final Message encryptedMessage = item.encrypted;
-
-			/* decode (ie remove any base64 encoding) */
-			testMessage.decode(null);
-			try {
-				encryptedMessage.decode(null);
-			} catch (MessageDecodeException e) {}
-
-			/* reset channel cipher, to ensure it uses the given iv */
-			ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
-
-			/* decrypt message; decode() also to handle data that is not already string or buffer */
-			encryptedMessage.decode(options);
-
-			/* compare */
-			assertTrue(Helpers.compareMessage(testMessage, encryptedMessage));
-		}
+		testDecrypt(testData, "cipher+aes-128-cbc");
 	}
 
 	@Test
-	public void decrypt_message_256() throws IOException, MessageDecodeException, NoSuchAlgorithmException {
+	public void decrypt_message_256() throws IOException, NoSuchAlgorithmException, CloneNotSupportedException, AblyException {
 		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile256, CryptoTestData.class);
+		testDecrypt(testData, "cipher+aes-256-cbc");
+	}
+
+	private static void testDecrypt(final CryptoTestData testData, final String expectedEncryptedEncoding) throws NoSuchAlgorithmException, CloneNotSupportedException, AblyException {
 		final byte[] key = Base64Coder.decode(testData.key);
 		final byte[] iv = Base64Coder.decode(testData.iv);
 		final String algorithm = testData.algorithm;
 
 		final CipherParams params = Crypto.getParams(algorithm, key);
 		params.ivSpec = new IvParameterSpec(iv);
+		final ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
 
 		for(final CryptoTestItem item : testData.items) {
-			/* read messages from test data */
-			final Message testMessage = item.encoded;
-			final Message encryptedMessage = item.encrypted;
+			final Message plain = item.encoded;
+			final Message encrypted = item.encrypted;
+			assertTrue(encrypted.encoding.endsWith(expectedEncryptedEncoding + "/base64"));
+			
+			// if necessary, remove base64 encoding from plain-'text' message
+			plain.decode(null);
+			assertEquals(null, plain.encoding);
 
-			/* decode (ie remove any base64 encoding) */
-			testMessage.decode(null);
-			try {
-				encryptedMessage.decode(null);
-			} catch (MessageDecodeException e) {}
+			// perform the decryption (via decode) which is the thing we need to test
+			encrypted.decode(options);
+			assertEquals(null, encrypted.encoding);
 
-			/* reset channel cipher, to ensure it uses the given iv */
-			ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
+			// compare the expected plain-'text' bytes with those decrypted above
+			assertMessagesEqual(plain, encrypted);
+		}		
+	}
 
-			/* decrypt message; decode() also to handle data that is not already string or buffer */
-			encryptedMessage.decode(options);
+	private static void testEncrypt(final CryptoTestData testData, final String expectedEncryptedEncoding) throws NoSuchAlgorithmException, CloneNotSupportedException, AblyException {
+		final byte[] key = Base64Coder.decode(testData.key);
+		final byte[] iv = Base64Coder.decode(testData.iv);
+		final String algorithm = testData.algorithm;
 
-			/* compare */
-			assertTrue(Helpers.compareMessage(testMessage, encryptedMessage));
+		final CipherParams params = Crypto.getParams(algorithm, key);
+		params.ivSpec = new IvParameterSpec(iv);
+		final ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
+
+		for(final CryptoTestItem item : testData.items) {
+			final Message plain = item.encoded;
+			final Message encrypted = item.encrypted;
+			assertTrue(encrypted.encoding.endsWith(expectedEncryptedEncoding + "/base64"));
+			
+			// if necessary, remove base64 encoding from plain-'text' message
+			plain.decode(null);
+			assertEquals(null, plain.encoding);
+
+			// perform the encryption (via encode) which is the thing we need to test
+			plain.encode(options);
+			assertTrue(plain.encoding.endsWith(expectedEncryptedEncoding));
+			
+			// our test fixture always provides a string for the encrypted data, which means
+			// that it's base64 encoded - so we need to base64 decode it to get the encrypted bytes
+			final byte[] expected = Base64Coder.decode((String)encrypted.data);
+			
+			// compare the expected encrypted bytes with those encrypted above
+			final byte[] actual = (byte[])plain.data;
+			assertArrayEquals(expected, actual);
 		}
 	}
 
