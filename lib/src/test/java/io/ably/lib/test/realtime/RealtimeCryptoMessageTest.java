@@ -4,19 +4,19 @@ import static io.ably.lib.test.common.Helpers.assertMessagesEqual;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 
 import javax.crypto.spec.IvParameterSpec;
 
-import io.ably.lib.types.*;
 import org.junit.Test;
 
-import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Setup;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ChannelOptions;
+import io.ably.lib.types.Message;
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Crypto;
 import io.ably.lib.util.Crypto.CipherParams;
@@ -63,7 +63,7 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 			final Message plain = item.encoded;
 			final Message encrypted = item.encrypted;
 			assertTrue(encrypted.encoding.endsWith(expectedEncryptedEncoding + "/base64"));
-			
+
 			// if necessary, remove base64 encoding from plain-'text' message
 			plain.decode(null);
 			assertEquals(null, plain.encoding);
@@ -74,7 +74,7 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 
 			// compare the expected plain-'text' bytes with those decrypted above
 			assertMessagesEqual(plain, encrypted);
-		}		
+		}
 	}
 
 	private static void testEncrypt(final CryptoTestData testData, final String expectedEncryptedEncoding) throws NoSuchAlgorithmException, CloneNotSupportedException, AblyException {
@@ -90,7 +90,7 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 			final Message plain = item.encoded;
 			final Message encrypted = item.encrypted;
 			assertTrue(encrypted.encoding.endsWith(expectedEncryptedEncoding + "/base64"));
-			
+
 			// if necessary, remove base64 encoding from plain-'text' message
 			plain.decode(null);
 			assertEquals(null, plain.encoding);
@@ -98,11 +98,11 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 			// perform the encryption (via encode) which is the thing we need to test
 			plain.encode(options);
 			assertTrue(plain.encoding.endsWith(expectedEncryptedEncoding));
-			
+
 			// our test fixture always provides a string for the encrypted data, which means
 			// that it's base64 encoded - so we need to base64 decode it to get the encrypted bytes
 			final byte[] expected = Base64Coder.decode((String)encrypted.data);
-			
+
 			// compare the expected encrypted bytes with those encrypted above
 			final byte[] actual = (byte[])plain.data;
 			assertArrayEquals(expected, actual);

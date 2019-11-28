@@ -6,6 +6,20 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Random;
+
+import javax.crypto.KeyGenerator;
+import javax.crypto.spec.IvParameterSpec;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.Timeout;
+
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
@@ -21,20 +35,6 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.util.Crypto;
 import io.ably.lib.util.Crypto.ChannelCipher;
 import io.ably.lib.util.Crypto.CipherParams;
-
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Random;
-
-import javax.crypto.KeyGenerator;
-import javax.crypto.spec.IvParameterSpec;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
 
 public class RealtimeCryptoTest extends ParameterizedTest {
 
@@ -810,7 +810,7 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 		final CipherParams params2 = Crypto.getDefaultParams(base64key); params2.ivSpec = new IvParameterSpec(iv);
 		final CipherParams params3 = Crypto.getDefaultParams(params1); params3.ivSpec = new IvParameterSpec(iv);
 		final CipherParams params4 = Crypto.getDefaultParams(base64key2); params4.ivSpec = new IvParameterSpec(iv);
-		
+
 		assertEquals("AES", params1.keySpec.getAlgorithm());
 
 		assertTrue(
@@ -839,7 +839,7 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 		    Arrays.equals(ciphertext1, ciphertext4)
 		);
 	}
-	
+
 	@Test
 	public void encodeDecodeVariableSizesWithAES256CBC() throws NoSuchAlgorithmException, AblyException {
 		final CipherParams params = new CipherParams("aes", generateNonce(32));
@@ -857,7 +857,7 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 			}
 		}
 	}
-	
+
 	private static byte[] hexStringToByteArray(String s) {
 	    int len = s.length();
 	    byte[] data = new byte[len / 2];
@@ -867,7 +867,7 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 	    }
 	    return data;
 	}
-	
+
 	private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 	private static String byteArrayToHexString(final byte[] bytes) {
 	    char[] hexChars = new char[bytes.length * 2];
@@ -878,7 +878,7 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 	    }
 	    return new String(hexChars);
 	}
-	
+
 	@Test
 	public void decodeAppleLibrarySequences() throws NoSuchAlgorithmException, AblyException {
 		final Map<String, String> apple = new LinkedHashMap<>();
@@ -1094,7 +1094,7 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 		apple.put(
 			"0102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F40414243444546",
 			"100F0E0D0C0B0A090807060504030201DD85C6780D7CBDFDAF8F5CE92EC1C389AD84FAD57E8FAA692A75313E76FDEC5298511F43949DD4C7C6D4E4C767BE26D4FECF4BE2FF20FFA4685CF25AA46C073D341FFEFA178945C75BA2144F828F482B");
-		
+
 		final byte[] key = hexStringToByteArray(appleKey);
 		final byte[] iv = hexStringToByteArray(appleIv);
 
@@ -1107,7 +1107,7 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 			final byte[] appleEncrypted = hexStringToByteArray(entry.getValue());
 			final byte[] encrypted = cipher.encrypt(appleMessage);
 			final byte[] decrypted = cipher.decrypt(appleEncrypted);
-			
+
 			try {
 				assertArrayEquals(appleMessage, decrypted);
 				System.out.println("Decryption Success for length " + appleMessage.length + ".");
@@ -1117,9 +1117,9 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 					+ "\n\texpected: " + byteArrayToHexString(appleMessage)
 					+ "\n\tproduced: " + byteArrayToHexString(decrypted));
 			}
-			
+
 			try {
-				assertArrayEquals(appleEncrypted, encrypted);				
+				assertArrayEquals(appleEncrypted, encrypted);
 				System.out.println("Encryption Success for length " + appleMessage.length + ".");
 			} catch (final AssertionError e) {
 				failed = true;
@@ -1127,15 +1127,15 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 					+ "\n\texpected: " + byteArrayToHexString(appleEncrypted)
 					+ "\n\tproduced: " + byteArrayToHexString(encrypted));
 			}
-			
+
 			System.out.println();
 		}
-		
+
 		assertFalse("At least one decryption or encryption operation failed. See output for details.", failed);
 	}
-	
+
 	private static final Random RANDOM = new Random();
-	
+
 	private static byte[] generateNonce(final int size) {
 		final byte[] nonce = new byte[size];
 		RANDOM.nextBytes(nonce);
