@@ -24,6 +24,7 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 
 	private static final String testDataFile128 = "ably-common/test-resources/crypto-data-128.json";
 	private static final String testDataFile256 = "ably-common/test-resources/crypto-data-256.json";
+	private static final String testDataFileCocoa = "ably-common/test-resources/crypto-data-256-cocoa.json";
 
 	@Test
 	public void encrypt_message_128() throws IOException, NoSuchAlgorithmException, CloneNotSupportedException, AblyException {
@@ -38,6 +39,12 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 	}
 
 	@Test
+	public void encryptCocoa() throws IOException, NoSuchAlgorithmException, CloneNotSupportedException, AblyException {
+		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFileCocoa, CryptoTestData.class);
+		testEncrypt(testData, "cipher+aes-256-cbc");
+	}
+
+	@Test
 	public void decrypt_message_128() throws IOException, NoSuchAlgorithmException, CloneNotSupportedException, AblyException {
 		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile128, CryptoTestData.class);
 		testDecrypt(testData, "cipher+aes-128-cbc");
@@ -46,6 +53,12 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 	@Test
 	public void decrypt_message_256() throws IOException, NoSuchAlgorithmException, CloneNotSupportedException, AblyException {
 		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile256, CryptoTestData.class);
+		testDecrypt(testData, "cipher+aes-256-cbc");
+	}
+	
+	@Test
+	public void decryptCocoa() throws IOException, NoSuchAlgorithmException, CloneNotSupportedException, AblyException {
+		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFileCocoa, CryptoTestData.class);
 		testDecrypt(testData, "cipher+aes-256-cbc");
 	}
 
