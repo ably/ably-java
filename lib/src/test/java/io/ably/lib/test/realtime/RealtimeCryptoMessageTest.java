@@ -1,14 +1,13 @@
 package io.ably.lib.test.realtime;
 
 import static io.ably.lib.test.common.Helpers.assertMessagesEqual;
+import static org.hamcrest.core.StringEndsWith.endsWith;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-
-import javax.crypto.spec.IvParameterSpec;
 
 import org.junit.Test;
 
@@ -55,14 +54,13 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 		final byte[] iv = Base64Coder.decode(testData.iv);
 		final String algorithm = testData.algorithm;
 
-		final CipherParams params = Crypto.getParams(algorithm, key);
-		params.ivSpec = new IvParameterSpec(iv);
+		final CipherParams params = Crypto.getParams(algorithm, key, iv);
 		final ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
 
 		for(final CryptoTestItem item : testData.items) {
 			final Message plain = item.encoded;
 			final Message encrypted = item.encrypted;
-			assertTrue(encrypted.encoding.endsWith(expectedEncryptedEncoding + "/base64"));
+			assertThat(encrypted.encoding, endsWith(expectedEncryptedEncoding + "/base64"));
 
 			// if necessary, remove base64 encoding from plain-'text' message
 			plain.decode(null);
@@ -82,14 +80,13 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 		final byte[] iv = Base64Coder.decode(testData.iv);
 		final String algorithm = testData.algorithm;
 
-		final CipherParams params = Crypto.getParams(algorithm, key);
-		params.ivSpec = new IvParameterSpec(iv);
-		final ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
+		final CipherParams params = Crypto.getParams(algorithm, key, iv);
 
 		for(final CryptoTestItem item : testData.items) {
+			final ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
 			final Message plain = item.encoded;
 			final Message encrypted = item.encrypted;
-			assertTrue(encrypted.encoding.endsWith(expectedEncryptedEncoding + "/base64"));
+			assertThat(encrypted.encoding, endsWith(expectedEncryptedEncoding + "/base64"));
 
 			// if necessary, remove base64 encoding from plain-'text' message
 			plain.decode(null);
@@ -97,7 +94,7 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 
 			// perform the encryption (via encode) which is the thing we need to test
 			plain.encode(options);
-			assertTrue(plain.encoding.endsWith(expectedEncryptedEncoding));
+			assertThat(plain.encoding, endsWith(expectedEncryptedEncoding));
 
 			// our test fixture always provides a string for the encrypted data, which means
 			// that it's base64 encoded - so we need to base64 decode it to get the encrypted bytes

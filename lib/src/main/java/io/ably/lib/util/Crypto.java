@@ -51,23 +51,34 @@ public class Crypto {
 	 * query the implementation to obtain a default system CipherParams.
 	 */
 	public static class CipherParams {
-		public final String algorithm;
-		public final int keyLength;
-		public final SecretKeySpec keySpec;
-		public IvParameterSpec ivSpec;
+		private final String algorithm;
+		private final int keyLength;
+		private final SecretKeySpec keySpec;
+		private final IvParameterSpec ivSpec;
 
-		public CipherParams(String algorithm, byte[] key) throws NoSuchAlgorithmException {
-			if(algorithm == null) algorithm = DEFAULT_ALGORITHM;
-			this.algorithm = algorithm;
-			this.keyLength = key.length * 8;
-			this.keySpec = new SecretKeySpec(key, algorithm.toUpperCase());
+		CipherParams(String algorithm, byte[] key, byte[] iv) throws NoSuchAlgorithmException {
+			this.algorithm = (null == algorithm) ? DEFAULT_ALGORITHM : algorithm;
+			keyLength = key.length * 8;
+			keySpec = new SecretKeySpec(key, algorithm.toUpperCase());
+			ivSpec = new IvParameterSpec(iv);
 		}
 
-		private CipherParams(String algorithm, int keyLength, SecretKeySpec keySpec, IvParameterSpec ivSpec) {
-			this.algorithm = algorithm;
-			this.keyLength = keyLength;
-			this.keySpec = keySpec;
-			this.ivSpec = ivSpec;
+		/**
+		 * Returns the length of the key in bits (e.g. 256 for a 32 byte key).
+		 *
+		 * This method is package scoped as it is exposed for unit testing purposes.
+		 */
+		int getKeyLength() {
+			return keyLength;
+		}
+
+		/**
+		 * Returns the algorithm in the case that it was supplied on construction.
+		 *
+		 * Package scoped for unit testing purposes.
+		 */
+		String getAlgorithm() {
+			return algorithm;
 		}
 	}
 
@@ -100,6 +111,13 @@ public class Crypto {
 	}
 
 	/**
+	 * Package scoped method for unit testing purposes.
+	 */
+	static CipherParams getDefaultParams(byte[] key, byte[] iv) throws NoSuchAlgorithmException {
+		return new CipherParams(DEFAULT_ALGORITHM, key, iv);
+	}
+
+	/**
 	 * Obtain a default CipherParams using Base64-encoded key. Same as above, throws
 	 * IllegalArgumentException if base64Key is invalid
 	 *
@@ -111,12 +129,10 @@ public class Crypto {
 	}
 
 	/**
-	 * Obtain default CipherParams using key and algorithm from other CipherParams object
-	 * @param params
-	 * @return
+	 * Package scoped method for unit testing purposes.
 	 */
-	public static CipherParams getDefaultParams(CipherParams params) {
-		return new CipherParams(params.algorithm, params.keyLength, params.keySpec, params.ivSpec);
+	static CipherParams getDefaultParams(String base64Key, byte[] iv) throws NoSuchAlgorithmException {
+		return new CipherParams(null, Base64Coder.decode(base64Key), iv);
 	}
 
 	public static CipherParams getParams(String algorithm, int keyLength) {
@@ -131,11 +147,13 @@ public class Crypto {
 	}
 
 	public static CipherParams getParams(String algorithm, byte[] key) throws NoSuchAlgorithmException {
-		CipherParams params = new CipherParams(algorithm, key);
 		byte[] ivBytes = new byte[DEFAULT_BLOCKLENGTH];
 		secureRandom.nextBytes(ivBytes);
-		params.ivSpec = new IvParameterSpec(ivBytes);
-		return params;
+		return getParams(algorithm, key, ivBytes);
+	}
+
+	public static CipherParams getParams(String algorithm, byte[] key, byte[] iv) throws NoSuchAlgorithmException {
+		return new CipherParams(algorithm, key, iv);
 	}
 
 	public static byte[] generateRandomKey(int keyLength) {
@@ -152,10 +170,10 @@ public class Crypto {
 	 * Interface for a ChannelCipher instance that may be associated with a Channel.
 	 *
 	 */
-	public static interface ChannelCipher {
-		public byte[] encrypt(byte[] plaintext) throws AblyException;
-		public byte[] decrypt(byte[] ciphertext) throws AblyException;
-		public String getAlgorithm();
+	public interface ChannelCipher {
+		byte[] encrypt(byte[] plaintext) throws AblyException;
+		byte[] decrypt(byte[] ciphertext) throws AblyException;
+		String getAlgorithm();
 	}
 
 	/**
@@ -164,16 +182,17 @@ public class Crypto {
 	 * @return
 	 * @throws AblyException
 	 */
-	public static ChannelCipher getCipher(ChannelOptions opts) throws AblyException {
-		CipherParams params;
-		if(opts.cipherParams == null)
-			params = Crypto.getDefaultParams();
+	public static ChannelCipher getCipher(final ChannelOptions opts) throws AblyException {
+		final Object opaqueCipherParams = opts.cipherParams;
+		final CipherParams cipherParams;
+		if(null == opaqueCipherParams)
+			cipherParams = Crypto.getDefaultParams();
 		else if(opts.cipherParams instanceof CipherParams)
-			params = (CipherParams)opts.cipherParams;
+			cipherParams = (CipherParams)opts.cipherParams;
 		else
 			throw AblyException.fromErrorInfo(new ErrorInfo("ChannelOptions not supported", 400, 40000));
 
-		return new CBCCipher(params);
+		return new CBCCipher(cipherParams);
 	}
 
 	/**
@@ -194,9 +213,10 @@ public class Crypto {
 		private byte[] iv;
 
 		private CBCCipher(CipherParams params) throws AblyException {
-			String transformation = params.algorithm.toUpperCase() + "/CBC/PKCS5Padding";
+			final String cipherAlgorithm = params.getAlgorithm();
+			String transformation = cipherAlgorithm.toUpperCase() + "/CBC/PKCS5Padding";
 			try {
-				algorithm = params.algorithm + '-' + params.keyLength + "-cbc";
+				algorithm = cipherAlgorithm + '-' + params.getKeyLength() + "-cbc";
 				keySpec = params.keySpec;
 				encryptCipher = Cipher.getInstance(transformation);
 				encryptCipher.init(Cipher.ENCRYPT_MODE, params.keySpec, params.ivSpec);
@@ -248,14 +268,13 @@ public class Crypto {
 		/**
 		 * Internal: get an IV for the next message.
 		 * Returns either the IV that was used to initialise the ChannelCipher,
-		 * of generates an IV based on the current cipher state.
-		 * @return
+		 * or generates an IV based on the current cipher state.
 		 */
 		private byte[] getIv() {
 			if(iv == null)
 				return encryptCipher.update(emptyBlock);
 
-			byte[] result = iv;
+			final byte[] result = iv;
 			iv = null;
 			return result;
 		}

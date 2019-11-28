@@ -14,7 +14,6 @@ import java.util.Map.Entry;
 import java.util.Random;
 
 import javax.crypto.KeyGenerator;
-import javax.crypto.spec.IvParameterSpec;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -787,63 +786,9 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 		}
 	}
 
-
-	/**
-	 * Test Crypto.getDefaultParams.
-	 * @see <a href="https://docs.ably.io/client-lib-development-guide/features/#RSE1">RSE1</a>
-	 * @throws AblyException If something goes wrong.
-	 */
-	@Test
-	public void cipher_params() throws AblyException {
-		/* 128-bit key */
-		/* {0xFF, 0xFE, 0xFD, 0xFC, 0xFB, 0xFA, 0xF9, 0xF8, 0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0}; */
-		byte[] key = {-1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15, -16};
-		/* Same key but encoded with Base64 */
-		String base64key = "//79/Pv6+fj39vX08/Lx8A==";
-		/* Same key but encoded in URL style (RFC 4648 s.5) */
-		String base64key2 = "__79_Pv6-fj39vX08_Lx8A==";
-
-		/* IV */
-		byte[] iv = {16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
-
-		final CipherParams params1 = Crypto.getDefaultParams(key); params1.ivSpec = new IvParameterSpec(iv);
-		final CipherParams params2 = Crypto.getDefaultParams(base64key); params2.ivSpec = new IvParameterSpec(iv);
-		final CipherParams params3 = Crypto.getDefaultParams(params1); params3.ivSpec = new IvParameterSpec(iv);
-		final CipherParams params4 = Crypto.getDefaultParams(base64key2); params4.ivSpec = new IvParameterSpec(iv);
-
-		assertEquals("AES", params1.keySpec.getAlgorithm());
-
-		assertTrue(
-		    "Key length is incorrect",
-		    params1.keyLength == key.length*8 &&
-		    params2.keyLength == key.length*8 &&
-		    params3.keyLength == key.length*8 &&
-		    params4.keyLength == key.length*8
-		);
-
-		byte[] plaintext = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-		Crypto.ChannelCipher channelCipher1 = Crypto.getCipher(new ChannelOptions() {{ encrypted=true; cipherParams=params1; }});
-		Crypto.ChannelCipher channelCipher2 = Crypto.getCipher(new ChannelOptions() {{ encrypted=true; cipherParams=params2; }});
-		Crypto.ChannelCipher channelCipher3 = Crypto.getCipher(new ChannelOptions() {{ encrypted=true; cipherParams=params3; }});
-		Crypto.ChannelCipher channelCipher4 = Crypto.getCipher(new ChannelOptions() {{ encrypted=true; cipherParams=params4; }});
-
-		byte[] ciphertext1 = channelCipher1.encrypt(plaintext);
-		byte[] ciphertext2 = channelCipher2.encrypt(plaintext);
-		byte[] ciphertext3 = channelCipher3.encrypt(plaintext);
-		byte[] ciphertext4 = channelCipher4.encrypt(plaintext);
-
-		assertTrue(
-		    "All ciphertexts should be the same.",
-		    Arrays.equals(ciphertext1, ciphertext2) &&
-		    Arrays.equals(ciphertext1, ciphertext3) &&
-		    Arrays.equals(ciphertext1, ciphertext4)
-		);
-	}
-
 	@Test
 	public void encodeDecodeVariableSizesWithAES256CBC() throws NoSuchAlgorithmException, AblyException {
-		final CipherParams params = new CipherParams("aes", generateNonce(32));
-		params.ivSpec = new IvParameterSpec(generateNonce(16));
+		final CipherParams params = Crypto.getParams("aes", generateNonce(32), generateNonce(16));
 		final ChannelCipher cipher = Crypto.getCipher(new ChannelOptions() {{ encrypted=true; cipherParams=params; }});
 		for (int i=1; i<1000; i++) {
 			final int size = RANDOM.nextInt(2000) + 1;
@@ -1098,11 +1043,14 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 		final byte[] key = hexStringToByteArray(appleKey);
 		final byte[] iv = hexStringToByteArray(appleIv);
 
-		final CipherParams params = new CipherParams("aes", key);
-		params.ivSpec = new IvParameterSpec(iv);
-		final ChannelCipher cipher = Crypto.getCipher(new ChannelOptions() {{ encrypted=true; cipherParams=params; }});
+		final CipherParams params = Crypto.getParams("aes", key, iv);
 		boolean failed = false;
 		for (final Entry<String, String> entry : apple.entrySet()) {
+			// We have to create a new ChannelCipher for each message we encode because
+			// cipher instances only use the IV we've supplied via CipherParams for the
+			// encryption of the very first message.
+			final ChannelCipher cipher = Crypto.getCipher(new ChannelOptions() {{ encrypted=true; cipherParams=params; }});
+
 			final byte[] appleMessage = hexStringToByteArray(entry.getKey());
 			final byte[] appleEncrypted = hexStringToByteArray(entry.getValue());
 			final byte[] encrypted = cipher.encrypt(appleMessage);
