@@ -35,7 +35,7 @@ public class CryptoTest {
 		final CipherParams params3 = new CipherParams(null, key, iv);
 		final CipherParams params4 = Crypto.getDefaultParams(base64key2, iv);
 
-		assertEquals("AES", params1.getAlgorithm());
+		assertEquals("aes", params1.getAlgorithm());
 
 		assertTrue(
 		    "Key length is incorrect",
