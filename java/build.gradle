@@ -79,7 +79,7 @@ task testRealtimeSuite(type: Test) {
         includeTestsMatching "*RealtimeSuite"
     }
     beforeTest { descriptor ->
-        logger.lifecycle("Running test: " + descriptor)
+        logger.lifecycle("-> " + descriptor)
     }
     outputs.upToDateWhen { false }
 }
@@ -89,7 +89,7 @@ task testRestSuite(type: Test) {
         includeTestsMatching "*RestSuite"
     }
     beforeTest { descriptor ->
-        logger.lifecycle("Running test: " + descriptor)
+        logger.lifecycle("-> " + descriptor)
     }
     outputs.upToDateWhen { false }
 }
@@ -104,5 +104,12 @@ task runUnitTests(type: Test) {
     filter {
         excludeTestsMatching "io.ably.lib.test.*"
     }
+    beforeTest { descriptor ->
+        // informational, so we're not flying blind at runtime
+        logger.lifecycle("-> " + descriptor)
+    }
+
+    // force tests to run every time this task is invoked
+    outputs.upToDateWhen { false }
 }
 
