@@ -156,7 +156,7 @@ public class CryptoTest {
 		writeData(writer, encoded, null);
 
 		writer.name("encrypted");
-		writeData(writer, encoded, "cipher+aes-256-cbc");
+		writeData(writer, encrypted, "cipher+aes-256-cbc");
 
 		writer.endObject();
 	}
