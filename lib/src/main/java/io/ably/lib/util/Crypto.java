@@ -59,7 +59,7 @@ public class Crypto {
 		CipherParams(String algorithm, byte[] key, byte[] iv) throws NoSuchAlgorithmException {
 			this.algorithm = (null == algorithm) ? DEFAULT_ALGORITHM : algorithm;
 			keyLength = key.length * 8;
-			keySpec = new SecretKeySpec(key, algorithm.toUpperCase());
+			keySpec = new SecretKeySpec(key, this.algorithm.toUpperCase());
 			ivSpec = new IvParameterSpec(iv);
 		}
 
