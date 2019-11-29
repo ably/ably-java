@@ -24,12 +24,16 @@ import io.ably.lib.util.Crypto.CipherParams;
 
 @RunWith(Parameterized.class)
 public class CryptoMessageTest {
+	private static final String AES128 = "cipher+aes-128-cbc";
+	private static final String AES256 = "cipher+aes-256-cbc";
+
 	@Parameters(name= "{0}_{1}")
 	public static Object[][] data() {
 		return new Object[][] {
-			{ "crypto-data-128", "cipher+aes-128-cbc" },
-			{ "crypto-data-256", "cipher+aes-256-cbc" },
-			{ "crypto-data-256-cocoa", "cipher+aes-256-cbc" },
+			{ "crypto-data-128", AES128 },
+			{ "crypto-data-256", AES256 },
+			{ "crypto-data-256-cocoa", AES256 },
+			{ "crypto-data-256-java", AES256 },
 		};
 	}
 
