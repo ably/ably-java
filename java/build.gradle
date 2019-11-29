@@ -93,3 +93,16 @@ task testRestSuite(type: Test) {
     }
     outputs.upToDateWhen { false }
 }
+
+/*
+Test task to run pure unit tests, where pure means that they only run
+locally and do not need to communicate with Ably servers.
+This is achieved by excluding everything in the io.ably.lib.test package,
+as it only contains the REST and Realtime suites.
+*/
+task runUnitTests(type: Test) {
+    filter {
+        excludeTestsMatching "io.ably.lib.test.*"
+    }
+}
+
