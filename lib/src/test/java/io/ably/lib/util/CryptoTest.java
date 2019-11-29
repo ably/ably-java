@@ -165,6 +165,9 @@ public class CryptoTest {
 	private void writeData(final JsonWriter writer, final byte[] data, final String encoding) throws IOException {
 		writer.beginObject();
 
+		writer.name("name");
+		writer.value("example");
+
 		writer.name("data");
 		writer.value(Base64Coder.encodeToString(data));
 
