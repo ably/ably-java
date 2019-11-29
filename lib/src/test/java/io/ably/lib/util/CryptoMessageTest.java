@@ -1,4 +1,4 @@
-package io.ably.lib.test.realtime;
+package io.ably.lib.util;
 
 import static io.ably.lib.test.common.Helpers.assertMessagesEqual;
 import static org.hamcrest.core.StringEndsWith.endsWith;
@@ -10,8 +10,10 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
@@ -20,49 +22,34 @@ import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Crypto;
 import io.ably.lib.util.Crypto.CipherParams;
 
-public class RealtimeCryptoMessageTest extends ParameterizedTest {
+@RunWith(Parameterized.class)
+public class CryptoMessageTest {
+	@Parameters(name= "{0}_{1}")
+	public static Object[][] data() {
+		return new Object[][] {
+			{ "crypto-data-128", "cipher+aes-128-cbc" },
+			{ "crypto-data-256", "cipher+aes-256-cbc" },
+			{ "crypto-data-256-cocoa", "cipher+aes-256-cbc" },
+		};
+	}
 
-	private static final String testDataFile128 = "ably-common/test-resources/crypto-data-128.json";
-	private static final String testDataFile256 = "ably-common/test-resources/crypto-data-256.json";
-	private static final String testDataFileCocoa = "ably-common/test-resources/crypto-data-256-cocoa.json";
+	private final String fileName;
+	private final String expectedEncryptedEncoding;
 
-	@Test
-	public void encrypt_message_128() throws IOException, NoSuchAlgorithmException, CloneNotSupportedException, AblyException {
-		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile128, CryptoTestData.class);
-		testEncrypt(testData, "cipher+aes-128-cbc");
+	public CryptoMessageTest(final String fileName, final String expectedEncryptedEncoding) {
+		this.fileName = fileName;
+		this.expectedEncryptedEncoding = expectedEncryptedEncoding;
+	}
+
+	private static final CryptoTestData loadTestData(final String fileName) throws IOException {
+		return (CryptoTestData)Setup.loadJson(
+			"ably-common/test-resources/" + fileName + ".json",
+			CryptoTestData.class);
 	}
 
 	@Test
-	public void encrypt_message_256() throws IOException, NoSuchAlgorithmException, CloneNotSupportedException, AblyException {
-		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile256, CryptoTestData.class);
-		testEncrypt(testData, "cipher+aes-256-cbc");
-	}
-
-	@Test
-	public void encryptCocoa() throws IOException, NoSuchAlgorithmException, CloneNotSupportedException, AblyException {
-		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFileCocoa, CryptoTestData.class);
-		testEncrypt(testData, "cipher+aes-256-cbc");
-	}
-
-	@Test
-	public void decrypt_message_128() throws IOException, NoSuchAlgorithmException, CloneNotSupportedException, AblyException {
-		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile128, CryptoTestData.class);
-		testDecrypt(testData, "cipher+aes-128-cbc");
-	}
-
-	@Test
-	public void decrypt_message_256() throws IOException, NoSuchAlgorithmException, CloneNotSupportedException, AblyException {
-		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFile256, CryptoTestData.class);
-		testDecrypt(testData, "cipher+aes-256-cbc");
-	}
-	
-	@Test
-	public void decryptCocoa() throws IOException, NoSuchAlgorithmException, CloneNotSupportedException, AblyException {
-		final CryptoTestData testData = (CryptoTestData)Setup.loadJson(testDataFileCocoa, CryptoTestData.class);
-		testDecrypt(testData, "cipher+aes-256-cbc");
-	}
-
-	private static void testDecrypt(final CryptoTestData testData, final String expectedEncryptedEncoding) throws NoSuchAlgorithmException, CloneNotSupportedException, AblyException {
+	public void testDecrypt() throws NoSuchAlgorithmException, CloneNotSupportedException, AblyException, IOException {
+		final CryptoTestData testData = loadTestData(fileName);
 		final byte[] key = Base64Coder.decode(testData.key);
 		final byte[] iv = Base64Coder.decode(testData.iv);
 		final String algorithm = testData.algorithm;
@@ -88,7 +75,9 @@ public class RealtimeCryptoMessageTest extends ParameterizedTest {
 		}
 	}
 
-	private static void testEncrypt(final CryptoTestData testData, final String expectedEncryptedEncoding) throws NoSuchAlgorithmException, CloneNotSupportedException, AblyException {
+	@Test
+	public void testEncrypt() throws NoSuchAlgorithmException, CloneNotSupportedException, AblyException, IOException {
+		final CryptoTestData testData = loadTestData(fileName);
 		final byte[] key = Base64Coder.decode(testData.key);
 		final byte[] iv = Base64Coder.decode(testData.iv);
 		final String algorithm = testData.algorithm;
