@@ -71,7 +71,7 @@ public class BaseMessage implements Cloneable {
 
 	public void decode(ChannelOptions opts) throws MessageDecodeException {
 
-		this.decode(opts, new DecodingContext(new HashMap<String, PluggableCodec>()));
+		this.decode(opts, new DecodingContext(new HashMap<PluginType, Plugin>()));
 	}
 
 	public void decode(ChannelOptions opts,  DecodingContext context) throws MessageDecodeException {
@@ -123,14 +123,16 @@ public class BaseMessage implements Cloneable {
 								throw MessageDecodeException.fromDescription("Encrypted message received but encryption is not set up");
 							}
 						case "vcdiff":
-							if(context.codecs.containsKey("vcdiff"))
+
+							Plugin vcdiffPlugin =  context.getDecoderPlugin(PluginType.vcdiffDecoder);
+							if(vcdiffPlugin != null)
 							{
-								VCDiffPluggableCodec vcdiffCodec = (VCDiffPluggableCodec) context.codecs.get("vcdiff");
+								VCDiffPluggableCodec vcdiffCodec = (VCDiffPluggableCodec)vcdiffPlugin;
 								if(vcdiffCodec == null)
-									throw MessageDecodeException.fromDescription("vcdiff codec is not of type VCDiffPluggableCodec");
+									throw MessageDecodeException.fromDescription("vcdiffDecoder plugin is not of type VCDiffPluggableCodec");
 
 								try {
-									data = vcdiffCodec.decode((byte[]) data, context.getLastMessage());
+									data = vcdiffCodec.decode((byte[]) data, context.getLastMessageData());
 									lastPayload = data;
 								}
 								catch (AblyException ex) {
@@ -147,10 +149,11 @@ public class BaseMessage implements Cloneable {
 			}
 		}
 
+		//last message bookkeping
 		if(lastPayload instanceof String)
-			context.setLastMessage((String)lastPayload);
+			context.setLastMessageData((String)lastPayload);
 		else if (lastPayload instanceof byte[])
-			context.setLastMessage((byte[])lastPayload);
+			context.setLastMessageData((byte[])lastPayload);
 		else
 			throw MessageDecodeException.fromDescription("Message data neither String nor byte[]. Unsupported message data type.");
 	}

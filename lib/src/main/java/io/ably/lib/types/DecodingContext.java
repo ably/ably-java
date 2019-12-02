@@ -1,6 +1,5 @@
 package io.ably.lib.types;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.nio.charset.StandardCharsets;
 
@@ -9,16 +8,21 @@ public class DecodingContext {
 	private String lastMessageString;
 	private byte[] lastMessageBinary;
 
-	public DecodingContext(Map<String, PluggableCodec> codecs)
+	public DecodingContext(Map<PluginType, Plugin> plugins)
 	{
 		lastMessageBinary = null;
 		lastMessageString = null;
-		this.codecs = codecs;
+		this.plugins = plugins;
 	}
 
-	public Map<String, PluggableCodec> codecs;
+	private final Map<PluginType, Plugin> plugins;
 
-	public byte[] getLastMessage() {
+	public Plugin getDecoderPlugin(PluginType type)
+	{
+		return plugins.get(type);
+	}
+
+	public byte[] getLastMessageData() {
 		if(lastMessageBinary != null)
 			return lastMessageBinary;
 		else if(lastMessageString != null) {
@@ -28,12 +32,12 @@ public class DecodingContext {
 			return null;
 	}
 
-	public void setLastMessage(String message) {
+	public void setLastMessageData(String message) {
 		lastMessageString = message;
 		lastMessageBinary = null;
 	}
 
-	public void setLastMessage(byte[] message) {
+	public void setLastMessageData(byte[] message) {
 		lastMessageBinary = message;
 		lastMessageString = null;
 	}
