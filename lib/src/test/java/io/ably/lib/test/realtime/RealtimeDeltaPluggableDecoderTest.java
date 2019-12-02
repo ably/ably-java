@@ -35,7 +35,7 @@ public class RealtimeDeltaPluggableDecoderTest extends ParameterizedTest {
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			MonitoredCodec monitoredCodec = new MonitoredCodec(new AblyVcdiffCodec());
-			opts.Codecs.put("vcdiff", monitoredCodec);
+			opts.Codecs.put(PluginType.vcdiffDecoder, monitoredCodec);
 			ably = new AblyRealtime(opts);
 			Channel channel = ably.channels.get("[?delta=vcdiff]" + testName);
 
@@ -75,7 +75,7 @@ public class RealtimeDeltaPluggableDecoderTest extends ParameterizedTest {
 		}
 
 		@Override
-		public byte[] decode(byte[] delta, byte[] base) throws AblyException {
+		public byte[] decode(byte[] delta, byte[] base) throws MessageDecodeException {
 			this.numberOfCalls++;
 			return this.codec.decode(delta, base);
 		}
