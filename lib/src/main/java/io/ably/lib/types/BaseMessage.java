@@ -131,14 +131,9 @@ public class BaseMessage implements Cloneable {
 								if(vcdiffCodec == null)
 									throw MessageDecodeException.fromDescription("vcdiffDecoder plugin is not of type VCDiffPluggableCodec");
 
-								try {
-									data = vcdiffCodec.decode((byte[]) data, context.getLastMessageData());
-									lastPayload = data;
-								}
-								catch (AblyException ex) {
-									throw MessageDecodeException.fromThrowableAndErrorInfo(ex, new ErrorInfo("Decoding failed for user provided codec " + match.group(1), ex.errorInfo.statusCode, ex.errorInfo.code));
-								}
-
+								data = vcdiffCodec.decode((byte[]) data, context.getLastMessageData());
+								lastPayload = data;
+								
 								continue;
 							}
 					}
