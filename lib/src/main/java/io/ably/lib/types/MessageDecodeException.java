@@ -16,7 +16,7 @@ public class MessageDecodeException extends AblyException {
 			new ErrorInfo(description, 91200));
 	}
 
-	static MessageDecodeException fromThrowableAndErrorInfo(Throwable e, ErrorInfo errorInfo) {
+	public static MessageDecodeException fromThrowableAndErrorInfo(Throwable e, ErrorInfo errorInfo) {
 		return new MessageDecodeException(e, errorInfo);
 	}
 }
