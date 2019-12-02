@@ -133,7 +133,7 @@ public class BaseMessage implements Cloneable {
 
 								data = vcdiffCodec.decode((byte[]) data, context.getLastMessageData());
 								lastPayload = data;
-								
+
 								continue;
 							}
 					}
