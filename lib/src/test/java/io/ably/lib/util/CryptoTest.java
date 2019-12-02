@@ -75,7 +75,8 @@ public class CryptoTest {
 	 *
  	 * The key, IV and message data are the same for every test run so that the
  	 * encrypted data may be exported from the console output for consumption by tests
- 	 * run on other platforms.
+ 	 * run on other platforms. This output is manually exported to the file
+ 	 * test-resources/crypto-data-256-variable-lengths.json in ably-common.
  	 *
 	 * Equivalent to the following in ably-cocoa:
 	 * testEncryptAndDecrypt in Spec/CryptoTest.m

@@ -32,8 +32,7 @@ public class CryptoMessageTest {
 		return new Object[][] {
 			{ "crypto-data-128", AES128 },
 			{ "crypto-data-256", AES256 },
-			{ "crypto-data-256-cocoa", AES256 },
-			{ "crypto-data-256-java", AES256 },
+			{ "crypto-data-256-variable-lengths", AES256 },
 		};
 	}
 
