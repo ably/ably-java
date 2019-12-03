@@ -17,6 +17,7 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.util.Crypto.ChannelCipher;
 import io.ably.lib.util.Crypto.CipherParams;
+import io.ably.lib.util.CryptoMessageTest.FixtureSet;
 
 public class CryptoTest {
 	/**
@@ -75,8 +76,8 @@ public class CryptoTest {
 	 *
  	 * The key, IV and message data are the same for every test run so that the
  	 * encrypted data may be exported from the console output for consumption by tests
- 	 * run on other platforms. This output is manually exported to the file
- 	 * test-resources/crypto-data-256-variable-lengths.json in ably-common.
+ 	 * run on other platforms. This output is manually merged into the file
+ 	 * test-resources/crypto-data-256.json in ably-common.
  	 *
 	 * Equivalent to the following in ably-cocoa:
 	 * testEncryptAndDecrypt in Spec/CryptoTest.m
@@ -84,16 +85,8 @@ public class CryptoTest {
 	 */
 	@Test
 	public void encryptAndDecrypt() throws NoSuchAlgorithmException, AblyException, IOException {
-		final byte[] key = {
-			1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-			11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-			21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-			31, 32,
-		};
-		final byte[] iv = {
-			16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1,
-		};
-		final CipherParams params = Crypto.getDefaultParams(key, iv);
+		final FixtureSet fixtureSet = FixtureSet.AES256;
+		final CipherParams params = Crypto.getDefaultParams(fixtureSet.key, fixtureSet.iv);
 
 		// Prepare message data.
 		final int maxLength = 70;
@@ -117,10 +110,10 @@ public class CryptoTest {
 		writer.value(256);
 		
 		writer.name("key");
-		writer.value(Base64Coder.encodeToString(key));
+		writer.value(Base64Coder.encodeToString(fixtureSet.key));
 		
 		writer.name("iv");
-		writer.value(Base64Coder.encodeToString(iv));
+		writer.value(Base64Coder.encodeToString(fixtureSet.iv));
 
 		// Perform encrypt and decrypt on message data trimmed at all lengths up
 		// to and including maxLength.
@@ -136,7 +129,7 @@ public class CryptoTest {
 			final byte[] encrypted = cipher.encrypt(encoded);
 
 			// Add encryption result to results in format ready for fixture.
-			writeResult(writer, encoded, encrypted);
+			writeResult(writer, "byte 1 to " + i, encoded, encrypted);
 
 			// Decrypt the encrypted data and verify the result is the same as what
 			// we submitted for encryption.
@@ -150,24 +143,24 @@ public class CryptoTest {
 		System.out.println("Fixture JSON for test-resources:\n" + target.toString());
 	}
 
-	private void writeResult(final JsonWriter writer, final byte[] encoded, final byte[] encrypted) throws IOException {
+	private void writeResult(final JsonWriter writer, final String name, final byte[] encoded, final byte[] encrypted) throws IOException {
 		writer.beginObject();
 
 		writer.name("encoded");
-		writeData(writer, encoded, null);
+		writeData(writer, name, encoded, null);
 
 		writer.name("encrypted");
-		writeData(writer, encrypted, "cipher+aes-256-cbc");
+		writeData(writer, name, encrypted, "cipher+aes-256-cbc");
 
 		writer.endObject();
 	}
 
 	private static final String BASE64 = "base64";
-	private void writeData(final JsonWriter writer, final byte[] data, final String encoding) throws IOException {
+	private void writeData(final JsonWriter writer, final String name, final byte[] data, final String encoding) throws IOException {
 		writer.beginObject();
 
 		writer.name("name");
-		writer.value("example");
+		writer.value(name);
 
 		writer.name("data");
 		writer.value(Base64Coder.encodeToString(data));

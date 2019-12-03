@@ -24,46 +24,74 @@ import io.ably.lib.util.Crypto.CipherParams;
 
 @RunWith(Parameterized.class)
 public class CryptoMessageTest {
-	private static final String AES128 = "cipher+aes-128-cbc";
-	private static final String AES256 = "cipher+aes-256-cbc";
+	public enum FixtureSet {
+		AES128(16),
+		AES256(32);
 
-	@Parameters(name= "{0}_{1}")
+		public final byte[] key;
+		public final byte[] iv;
+		private final String fileName;
+		public final String encoding;
+
+		private FixtureSet(final int keySize) {
+			if (keySize < 1) {
+				throw new IllegalArgumentException("keySize");
+			}
+
+			final int keyLength = keySize * 8; // bytes to bits
+			fileName = "crypto-data-" + keyLength;
+			encoding = "cipher+aes-" + keyLength + "-cbc";
+
+			CryptoTestData testData;
+			try {
+				testData = loadTestData();
+			} catch (IOException e) {
+				throw new Error(e); // caught to uncaught
+			}
+			key = Base64Coder.decode(testData.key);
+			iv = Base64Coder.decode(testData.iv);
+
+			if (keySize != this.key.length) {
+				throw new IllegalArgumentException("key");
+			}
+			if (16 != this.iv.length) {
+				throw new IllegalArgumentException("iv");
+			}
+		}
+
+		private CryptoTestData loadTestData() throws IOException {
+			return (CryptoTestData)Setup.loadJson(
+				"ably-common/test-resources/" + fileName + ".json",
+				CryptoTestData.class);
+		}
+	}
+
+	@Parameters(name= "{0}")
 	public static Object[][] data() {
 		return new Object[][] {
-			{ "crypto-data-128", AES128 },
-			{ "crypto-data-256", AES256 },
-			{ "crypto-data-256-variable-lengths", AES256 },
+			{ FixtureSet.AES128 },
+			{ FixtureSet.AES256 },
 		};
 	}
 
-	private final String fileName;
-	private final String expectedEncryptedEncoding;
+	private final FixtureSet fixtureSet;
 
-	public CryptoMessageTest(final String fileName, final String expectedEncryptedEncoding) {
-		this.fileName = fileName;
-		this.expectedEncryptedEncoding = expectedEncryptedEncoding;
-	}
-
-	private static final CryptoTestData loadTestData(final String fileName) throws IOException {
-		return (CryptoTestData)Setup.loadJson(
-			"ably-common/test-resources/" + fileName + ".json",
-			CryptoTestData.class);
+	public CryptoMessageTest(final FixtureSet fixtureSet) {
+		this.fixtureSet = fixtureSet;
 	}
 
 	@Test
 	public void testDecrypt() throws NoSuchAlgorithmException, CloneNotSupportedException, AblyException, IOException {
-		final CryptoTestData testData = loadTestData(fileName);
-		final byte[] key = Base64Coder.decode(testData.key);
-		final byte[] iv = Base64Coder.decode(testData.iv);
+		final CryptoTestData testData = fixtureSet.loadTestData();
 		final String algorithm = testData.algorithm;
 
-		final CipherParams params = Crypto.getParams(algorithm, key, iv);
+		final CipherParams params = Crypto.getParams(algorithm, fixtureSet.key, fixtureSet.iv);
 		final ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
 
 		for(final CryptoTestItem item : testData.items) {
 			final Message plain = item.encoded;
 			final Message encrypted = item.encrypted;
-			assertThat(encrypted.encoding, endsWith(expectedEncryptedEncoding + "/base64"));
+			assertThat(encrypted.encoding, endsWith(fixtureSet.encoding + "/base64"));
 
 			// if necessary, remove base64 encoding from plain-'text' message
 			plain.decode(null);
@@ -80,18 +108,16 @@ public class CryptoMessageTest {
 
 	@Test
 	public void testEncrypt() throws NoSuchAlgorithmException, CloneNotSupportedException, AblyException, IOException {
-		final CryptoTestData testData = loadTestData(fileName);
-		final byte[] key = Base64Coder.decode(testData.key);
-		final byte[] iv = Base64Coder.decode(testData.iv);
+		final CryptoTestData testData = fixtureSet.loadTestData();
 		final String algorithm = testData.algorithm;
 
-		final CipherParams params = Crypto.getParams(algorithm, key, iv);
+		final CipherParams params = Crypto.getParams(algorithm, fixtureSet.key, fixtureSet.iv);
 
 		for(final CryptoTestItem item : testData.items) {
 			final ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
 			final Message plain = item.encoded;
 			final Message encrypted = item.encrypted;
-			assertThat(encrypted.encoding, endsWith(expectedEncryptedEncoding + "/base64"));
+			assertThat(encrypted.encoding, endsWith(fixtureSet.encoding + "/base64"));
 
 			// if necessary, remove base64 encoding from plain-'text' message
 			plain.decode(null);
@@ -99,7 +125,7 @@ public class CryptoMessageTest {
 
 			// perform the encryption (via encode) which is the thing we need to test
 			plain.encode(options);
-			assertThat(plain.encoding, endsWith(expectedEncryptedEncoding));
+			assertThat(plain.encoding, endsWith(fixtureSet.encoding));
 
 			// our test fixture always provides a string for the encrypted data, which means
 			// that it's base64 encoded - so we need to base64 decode it to get the encrypted bytes
