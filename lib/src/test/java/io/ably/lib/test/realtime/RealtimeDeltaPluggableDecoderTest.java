@@ -73,7 +73,7 @@ public class RealtimeDeltaPluggableDecoderTest extends ParameterizedTest {
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			MonitoredCodec monitoredCodec = new MonitoredCodec(new FailingDeltaCodec());
-			opts.Codecs.put("vcdiff", monitoredCodec);
+			opts.Codecs.put(PluginType.vcdiffDecoder, monitoredCodec);
 			ably = new AblyRealtime(opts);
 
 			/* create a channel */
@@ -108,16 +108,16 @@ public class RealtimeDeltaPluggableDecoderTest extends ParameterizedTest {
 	}
 }
 
-private static class FailingDeltaCodec implements VCDiffPluggableCodec {
+    class FailingDeltaCodec implements VCDiffPluggableCodec {
 		@Override
 		public byte[] decode(byte[] delta, byte[] base) throws MessageDecodeException {
 			throw MessageDecodeException.fromErrorInfo(new ErrorInfo("Delta decode failed", 400, 40018));
 		}
 	}
 
-private static class MonitoredCodec implements VCDiffPluggableCodec {
+	class MonitoredCodec implements VCDiffPluggableCodec {
 		private VCDiffPluggableCodec codec;
-		private int numberOfCalls = 0;
+		public int numberOfCalls = 0;
 
 		MonitoredCodec(VCDiffPluggableCodec codec) {
 			this.codec = codec;
