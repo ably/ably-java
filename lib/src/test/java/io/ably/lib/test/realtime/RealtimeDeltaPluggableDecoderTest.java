@@ -111,7 +111,7 @@ public class RealtimeDeltaPluggableDecoderTest extends ParameterizedTest {
     class FailingDeltaCodec implements VCDiffPluggableCodec {
 		@Override
 		public byte[] decode(byte[] delta, byte[] base) throws MessageDecodeException {
-			throw MessageDecodeException.fromErrorInfo(new ErrorInfo("Delta decode failed", 400, 40018));
+			throw MessageDecodeException.fromThrowableAndErrorInfo(null, new ErrorInfo("Delta decode failed", 400, 40018));
 		}
 	}
 
@@ -129,4 +129,4 @@ public class RealtimeDeltaPluggableDecoderTest extends ParameterizedTest {
 			return this.codec.decode(delta, base);
 		}
 	}
-}
+
