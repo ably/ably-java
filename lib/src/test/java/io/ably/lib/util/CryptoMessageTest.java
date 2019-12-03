@@ -31,7 +31,7 @@ public class CryptoMessageTest {
 		public final byte[] key;
 		public final byte[] iv;
 		private final String fileName;
-		public final String encoding;
+		public final String cipherName;
 
 		private FixtureSet(final int keySize) {
 			if (keySize < 1) {
@@ -40,7 +40,7 @@ public class CryptoMessageTest {
 
 			final int keyLength = keySize * 8; // bytes to bits
 			fileName = "crypto-data-" + keyLength;
-			encoding = "cipher+aes-" + keyLength + "-cbc";
+			cipherName = "cipher+aes-" + keyLength + "-cbc";
 
 			CryptoTestData testData;
 			try {
@@ -91,7 +91,7 @@ public class CryptoMessageTest {
 		for(final CryptoTestItem item : testData.items) {
 			final Message plain = item.encoded;
 			final Message encrypted = item.encrypted;
-			assertThat(encrypted.encoding, endsWith(fixtureSet.encoding + "/base64"));
+			assertThat(encrypted.encoding, endsWith(fixtureSet.cipherName + "/base64"));
 
 			// if necessary, remove base64 encoding from plain-'text' message
 			plain.decode(null);
@@ -117,7 +117,7 @@ public class CryptoMessageTest {
 			final ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
 			final Message plain = item.encoded;
 			final Message encrypted = item.encrypted;
-			assertThat(encrypted.encoding, endsWith(fixtureSet.encoding + "/base64"));
+			assertThat(encrypted.encoding, endsWith(fixtureSet.cipherName + "/base64"));
 
 			// if necessary, remove base64 encoding from plain-'text' message
 			plain.decode(null);
@@ -125,7 +125,7 @@ public class CryptoMessageTest {
 
 			// perform the encryption (via encode) which is the thing we need to test
 			plain.encode(options);
-			assertThat(plain.encoding, endsWith(fixtureSet.encoding));
+			assertThat(plain.encoding, endsWith(fixtureSet.cipherName));
 
 			// our test fixture always provides a string for the encrypted data, which means
 			// that it's base64 encoded - so we need to base64 decode it to get the encrypted bytes

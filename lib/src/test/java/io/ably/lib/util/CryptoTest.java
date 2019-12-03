@@ -4,12 +4,15 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 import org.junit.Test;
+import org.msgpack.core.MessagePack;
+import org.msgpack.core.MessagePacker;
 
 import com.google.gson.stream.JsonWriter;
 
@@ -105,7 +108,7 @@ public class CryptoTest {
 
 		writer.name("mode");
 		writer.value("cbc");
-		
+
 		writer.name("keyLength");
 		writer.value(256);
 		
@@ -129,7 +132,7 @@ public class CryptoTest {
 			final byte[] encrypted = cipher.encrypt(encoded);
 
 			// Add encryption result to results in format ready for fixture.
-			writeResult(writer, "byte 1 to " + i, encoded, encrypted);
+			writeResult(writer, "byte 1 to " + i, encoded, encrypted, fixtureSet.cipherName);
 
 			// Decrypt the encrypted data and verify the result is the same as what
 			// we submitted for encryption.
@@ -143,20 +146,23 @@ public class CryptoTest {
 		System.out.println("Fixture JSON for test-resources:\n" + target.toString());
 	}
 
-	private void writeResult(final JsonWriter writer, final String name, final byte[] encoded, final byte[] encrypted) throws IOException {
+	private static void writeResult(final JsonWriter writer, final String name, final byte[] encoded, final byte[] encrypted, final String cipherName) throws IOException {
 		writer.beginObject();
 
 		writer.name("encoded");
 		writeData(writer, name, encoded, null);
 
 		writer.name("encrypted");
-		writeData(writer, name, encrypted, "cipher+aes-256-cbc");
+		writeData(writer, name, encrypted, cipherName);
+
+		writer.name("msgpack");
+		writer.value(Base64Coder.encodeToString(msgPacked(name, encrypted, cipherName)));
 
 		writer.endObject();
 	}
 
 	private static final String BASE64 = "base64";
-	private void writeData(final JsonWriter writer, final String name, final byte[] data, final String encoding) throws IOException {
+	private static void writeData(final JsonWriter writer, final String name, final byte[] data, final String encoding) throws IOException {
 		writer.beginObject();
 
 		writer.name("name");
@@ -169,5 +175,26 @@ public class CryptoTest {
 		writer.value(null == encoding ? BASE64 : encoding + "/" + BASE64);
 
 		writer.endObject();
+	}
+
+	private static byte[] msgPacked(final String name, final byte[] data, final String encoding) throws IOException {
+		final ByteArrayOutputStream out = new ByteArrayOutputStream();
+		final MessagePacker packer = MessagePack.DEFAULT_PACKER_CONFIG.newPacker(out);
+
+		packer.packMapHeader(3);
+
+		packer.packString("name");
+		packer.packString(name);
+
+		packer.packString("data");
+		packer.packBinaryHeader(data.length);
+		packer.writePayload(data);
+
+		packer.packString("encoding");
+		packer.packString(encoding);
+
+		packer.close();
+
+		return out.toByteArray();
 	}
 }
