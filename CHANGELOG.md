@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.1.7](https://github.com/ably/ably-java/tree/v1.1.7)
+
+Note: this release reverts the changes in 1.1.6 due to regressions in that release, and is functionally identical to 1.1.5.
+
 ## [v1.1.5](https://github.com/ably/ably-java/tree/v1.1.5)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.1.4...v1.1.5)
