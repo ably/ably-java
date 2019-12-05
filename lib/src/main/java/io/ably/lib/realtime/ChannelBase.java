@@ -653,7 +653,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		Message lastMessage = messages[messages.length - 1];
 
 		if (firstMessage.extras != null && firstMessage.extras.delta != null && !firstMessage.extras.delta.from.equals(this.lastPayloadMessageId)) {
-			Log.w(TAG, "Delta message decode failure - previous message not available.");
+			Log.e(TAG, String.format("Delta message decode failure - previous message not available. Message id = %s, channel = %s", firstMessage.id, name));
 			this.startDecodeFailureRecovery();
 			return;
 		}
@@ -663,10 +663,21 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 			try {
 				msg.decode(options, decodingContext);
 			} catch (MessageDecodeException e) {
-				Log.e(TAG, String.format("%s on channel %s", e.errorInfo.message, name));
 				if (e.errorInfo.code == 40018) {
+					if(msg.id == null) msg.id = message.id + ':' + i;
+					Log.e(TAG, String.format("Delta message decode failure - %s. Message id = %s, channel = %s", e.errorInfo.message, msg.id, name));
 					this.startDecodeFailureRecovery();
+
+					//log messages skipped per RTL16
+					for (int j = i + 1; j < messages.length; j++) {
+						if(messages[j].id == null) messages[j].id = message.id + ':' + j;
+						Log.v(TAG, String.format("Delta recovery in progress - message skipped. Message id = %s, channel = %s", messages[j].id, name));
+					}
+
 					return;
+				}
+				else {
+					Log.e(TAG, String.format("Message decode failure - %s. Message id = %s, channel = %s", e.errorInfo.message, msg.id, name));
 				}
 			}
 			/* populate fields derived from protocol message */
@@ -691,7 +702,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		if (this.decodeFailureRecoveryInProgress) {
 			return;
 		}
-		Log.w(TAG, "Starting decode failure recovery process");
+		Log.w(TAG, "Starting delta decode failure recovery process");
 		this.decodeFailureRecoveryInProgress = true;
 		this.attach(true, new CompletionListener() {
 			@Override
@@ -1096,7 +1107,13 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 			}
 			break;
 		case message:
-			onMessage(msg);
+			if(!decodeFailureRecoveryInProgress)
+				onMessage(msg);
+			else {
+				//log messages skipped per RTL16
+				for (int j = 0; j < msg.messages.length; j++)
+					Log.v(TAG, String.format("Delta recovery in progress - message skipped. Message id = %s, channel = %s", msg.messages[j].id, name));
+			}
 			break;
 		case presence:
 			onPresence(msg, null);
