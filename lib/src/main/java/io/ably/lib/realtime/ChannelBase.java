@@ -663,8 +663,10 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 			try {
 				msg.decode(options, decodingContext);
 			} catch (MessageDecodeException e) {
+
+				if(msg.id == null) msg.id = message.id + ':' + i;
+
 				if (e.errorInfo.code == 40018) {
-					if(msg.id == null) msg.id = message.id + ':' + i;
 					Log.e(TAG, String.format("Delta message decode failure - %s. Message id = %s, channel = %s", e.errorInfo.message, msg.id, name));
 					this.startDecodeFailureRecovery();
 
