@@ -262,8 +262,10 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			try {
 				Auth.TokenDetails reauthTokenDetails = ablyRealtime.auth.authorize(null, authOptions);
 				assertFalse("Expecting exception", true);
+				System.out.println("Authorize failed to throw an exception");
 			} catch (AblyException e) {
 				assertEquals("Expecting failed", ConnectionState.failed, ablyRealtime.connection.state);
+				System.out.println("Got failed connection");
 			}
 
 			/**
