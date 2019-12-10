@@ -4,6 +4,7 @@ import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
 import io.ably.lib.http.HttpHelpers;
 import io.ably.lib.realtime.*;
+import io.ably.lib.realtime.ConnectionStateListener.ConnectionStateChange;
 import io.ably.lib.transport.ITransport.ConnectListener;
 import io.ably.lib.transport.ITransport.TransportParams;
 import io.ably.lib.types.AblyException;
@@ -11,19 +12,31 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ConnectionDetails;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
-import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.types.ProtocolSerializer;
 import io.ably.lib.util.Log;
 import io.ably.lib.transport.NetworkConnectivity.NetworkConnectivityListener;
-import io.ably.lib.platform.Platform;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-
+import java.util.*;
 
 public class ConnectionManager implements ConnectListener {
+
+	/**************************************************************
+	 * ConnectionManager
+	 *
+	 * This class is responsible for coordinating all actions that
+	 * relate to transports and connection state.
+	 *
+	 * It comprises two principal parts:
+	 * - An action queue, and a thread that performs those actions.
+	 *   Actions comprise connection state change requests, plus other
+	 *   actions that arise from transport state indications. An
+	 *   action Handler thread runs, except during idle times when
+	 *   there is no current or pending connection activity, that
+	 *   performs queued actions.
+	 *
+	 * - A state machine that represents the current connection state,
+	 *   and the possible transitions between states.
+	 **************************************************************/
 
 	private static final String TAG = ConnectionManager.class.getName();
 	private static final String INTERNET_CHECK_URL = "http://internet-up.ably-realtime.com/is-the-internet-up.txt";
@@ -36,15 +49,13 @@ public class ConnectionManager implements ConnectListener {
 	static ErrorInfo REASON_CLOSED = new ErrorInfo("Connection closed by client", 200, 10000);
 	static ErrorInfo REASON_DISCONNECTED = new ErrorInfo("Connection temporarily unavailable", 503, 80003);
 	static ErrorInfo REASON_SUSPENDED = new ErrorInfo("Connection unavailable", 503, 80002);
-	static ErrorInfo REASON_FAILED = new ErrorInfo("Connection failed", 503, 80000);
+	static ErrorInfo REASON_FAILED = new ErrorInfo("Connection failed", 400, 80000);
 	static ErrorInfo REASON_REFUSED = new ErrorInfo("Access refused", 401, 40100);
 	static ErrorInfo REASON_TOO_BIG = new ErrorInfo("Connection closed; message too large", 400, 40000);
-	static ErrorInfo REASON_NEVER_CONNECTED = new ErrorInfo("Unable to establish connection", 503, 80002);
-	static ErrorInfo REASON_TIMEDOUT = new ErrorInfo("Unable to establish connection", 503, 80014);
 
 	/***********************************
 	 * a class encapsulating information
-	 * associated with a state change
+	 * associated with a currentState change
 	 * request or notification
 	 ***********************************/
 
@@ -53,18 +64,20 @@ public class ConnectionManager implements ConnectListener {
 		final ErrorInfo reason;
 		final String fallback;
 		final String currentHost;
-		final boolean retryImmediately;
 
-		public StateIndication(ConnectionState state, ErrorInfo reason) {
-			this(state, reason, null, null, false);
+		StateIndication(ConnectionState state) {
+			this(state, null);
 		}
 
-		public StateIndication(ConnectionState state, ErrorInfo reason, String fallback, String currentHost, boolean retryImmediately) {
+		public StateIndication(ConnectionState state, ErrorInfo reason) {
+			this(state, reason, null, null);
+		}
+
+		StateIndication(ConnectionState state, ErrorInfo reason, String fallback, String currentHost) {
 			this.state = state;
 			this.reason = reason;
 			this.fallback = fallback;
 			this.currentHost = currentHost;
-			this.retryImmediately = retryImmediately;
 		}
 	}
 
@@ -73,50 +86,375 @@ public class ConnectionManager implements ConnectListener {
 	 * information for a given state
 	 *************************************/
 
-	public static class StateInfo {
+	public abstract class State {
 		public final ConnectionState state;
 		public final ErrorInfo defaultErrorInfo;
 		public final boolean queueEvents;
 		public final boolean sendEvents;
 
 		final boolean terminal;
-		final boolean retry;
-		public long timeout;
-		String host;
+		public final long timeout;
 
-		StateInfo(ConnectionState state, boolean queueEvents, boolean sendEvents, boolean terminal, boolean retry, long timeout, ErrorInfo defaultErrorInfo) {
+		State(ConnectionState state, boolean queueEvents, boolean sendEvents, boolean terminal, long timeout, ErrorInfo defaultErrorInfo) {
 			this.state = state;
 			this.queueEvents = queueEvents;
 			this.sendEvents = sendEvents;
 			this.terminal = terminal;
-			this.retry = retry;
 			this.timeout = timeout;
 			this.defaultErrorInfo = defaultErrorInfo;
 		}
+
+		/**
+		 * Called on the current state to determine the response to a
+		 * give state change request.
+		 * @param target: the state change request or event
+		 * @return StateIndication result: the determined response to
+		 * the request with the required state transition, if any. A
+		 * null result indicates that there is no resulting transition.
+		 */
+		abstract StateIndication validateTransition(StateIndication target);
+
+		/**
+		 * Called when the timeout occurs for the current state.
+		 * @return StateIndication result: the determined response to
+		 * the timeout with the required state transition, if any. A
+		 * null result indicates that there is no resulting transition.
+		 */
+		StateIndication onTimeout() {
+			return null;
+		}
+
+		/**
+		 * Perform a transition to this state.
+		 * @param stateIndication: the transition request that triggered this transition
+		 * @param change: the change event corresponding to this transition.
+		 */
+		void enact(StateIndication stateIndication, ConnectionStateChange change) {
+			if(change != null) {
+				/* if now connected, send queued messages, etc */
+				if(sendEvents) {
+					sendQueuedMessages();
+				} else if(!queueEvents) {
+					failQueuedMessages(stateIndication.reason);
+				}
+				for(Channel channel : ably.channels.values()) {
+					enactForChannel(stateIndication, change, channel);
+				}
+			}
+		}
+
+		/**
+		 * Perform a transition to this state for a given channel.
+		 * @param stateIndication: the transition request that triggered this transition
+		 * @param change: the change event corresponding to this transition.
+		 * @param channel: the channel
+		 */
+		void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, Channel channel) {}
+	}
+
+	/**************************************************
+	 * Initialized: the initial state
+	 **************************************************/
+
+	class Initialized extends State {
+		Initialized() {
+			super(ConnectionState.initialized, true, false, false, 0, null);
+		}
+
+		@Override
+		StateIndication validateTransition(StateIndication target) {
+			/* we can transition to any other state, other than ourselves */
+			if(target.state == this.state) {
+				return null;
+			}
+			return target;
+		}
+	}
+
+	/**************************************************
+	 * Connecting: a connection attempt is in progress
+	 **************************************************/
+
+	class Connecting extends State {
+		Connecting() {
+			super(ConnectionState.connecting, true, false, false, Defaults.TIMEOUT_CONNECT, null);
+		}
+
+		@Override
+		StateIndication onTimeout() {
+			return checkSuspended(null);
+		}
+
+		@Override
+		StateIndication validateTransition(StateIndication target) {
+			/* we can transition to any other state */
+			return target;
+		}
+
+		@Override
+		void enact(StateIndication stateIndication, ConnectionStateChange change) {
+			super.enact(stateIndication, change);
+			connectImpl(stateIndication);
+		}
+	}
+
+	/**************************************************
+	 * Connected: a connection is established
+	 **************************************************/
+
+	class Connected extends State {
+		Connected() {
+			super(ConnectionState.connected, false, true, false, 0, null);
+		}
+
+		@Override
+		StateIndication validateTransition(StateIndication target) {
+			if(target.state == this.state) {
+				/* RTN24: no currentState change, so no transition, required, but there will be an update event;
+				 * connected is special case because we want to deliver reauth notifications to listeners as an update */
+				addAction(new UpdateAction(null));
+				return null;
+			}
+
+			/* we can transition to any other state */
+			return target;
+		}
+
+		@Override
+		void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, Channel channel) {
+			channel.setConnected();
+		}
+	}
+
+	/**************************************************
+	 * Disconnected: no connection is established, but
+	 * a reconnection attempt will be made on timer
+	 * expiry, anticipating preservation of connection
+	 * state on reconnection
+	 **************************************************/
+
+	class Disconnected extends State {
+		Disconnected() {
+			super(ConnectionState.disconnected, true, false, false, Defaults.TIMEOUT_DISCONNECT, REASON_DISCONNECTED);
+		}
+
+		@Override
+		StateIndication validateTransition(StateIndication target) {
+			/* we can't transition to ourselves */
+			if(target.state == this.state) {
+				return null;
+			}
+			/* a closing event will transition directly to closed */
+			if(target.state == ConnectionState.closing) {
+				return new StateIndication(ConnectionState.closed);
+			}
+			/* otherwise, the transition is valid */
+			return target;
+		}
+
+		@Override
+		StateIndication onTimeout() {
+			return new StateIndication(ConnectionState.connecting);
+		}
+
+		@Override
+		void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, Channel channel) {
+			/* (RTL3e) If the connection currentState enters the
+			 * DISCONNECTED currentState, it will have no effect on the
+			 * channel states. */
+		}
+
+		@Override
+		void enact(StateIndication stateIndication, ConnectionStateChange change) {
+			super.enact(stateIndication, change);
+			clearTransport();
+			if(change.previous == ConnectionState.connected) {
+				setSuspendTime();
+				/* we were connected, so retry immediately */
+				if(!suppressRetry) {
+					requestState(ConnectionState.connecting);
+				}
+			}
+		}
+	}
+
+	/**************************************************
+	 * Suspended: no connection is established. A
+	 * reconnection attempt will be made on timer expiry
+	 * but there will be no continuity of connection
+	 * state on reconnection
+	 **************************************************/
+
+	class Suspended extends State {
+		Suspended() {
+			super(ConnectionState.suspended, false, false, false, Defaults.connectionStateTtl, REASON_SUSPENDED);
+		}
+
+		@Override
+		StateIndication validateTransition(StateIndication target) {
+			/* we can't transition to ourselves */
+			if(target.state == this.state) {
+				return null;
+			}
+			/* a closing event will transition directly to closed */
+			if(target.state == ConnectionState.closing) {
+				return new StateIndication(ConnectionState.closed);
+			}
+			/* otherwise, the transition is valid */
+			return target;
+		}
+
+		@Override
+		StateIndication onTimeout() {
+			return new StateIndication(ConnectionState.connecting);
+		}
+
+		@Override
+		void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, Channel channel) {
+			/* (RTL3c) If the connection currentState enters the SUSPENDED
+			 * currentState, then an ATTACHING or ATTACHED channel currentState
+			 * will transition to SUSPENDED. */
+			channel.setSuspended(defaultErrorInfo, true);
+		}
+	}
+
+	/**************************************************
+	 * Closing: a close sequence is in progress
+	 **************************************************/
+
+	class Closing extends State {
+		Closing() {
+			super(ConnectionState.closing, false, false, false, Defaults.TIMEOUT_CONNECT, REASON_CLOSED);
+		}
+
+		@Override
+		StateIndication validateTransition(StateIndication target) {
+			/* we can't transition to ourselves */
+			if(target.state == this.state) {
+				return null;
+			}
+			/* any disconnection event will transition directly to closed */
+			if(target.state == ConnectionState.disconnected || target.state == ConnectionState.suspended) {
+				return new StateIndication(ConnectionState.closed);
+			}
+			/* otherwise, the transition is valid */
+			return target;
+		}
+
+		@Override
+		StateIndication onTimeout() {
+			return new StateIndication(ConnectionState.closed);
+		}
+
+		@Override
+		void enact(StateIndication stateIndication, ConnectionStateChange change) {
+			super.enact(stateIndication, change);
+			boolean closed = closeImpl();
+			if(closed) {
+				addAction(new AsynchronousStateChangeAction(ConnectionState.closed));
+			}
+		}
+	}
+
+	/**************************************************
+	 * Closed: the connection is closed, and no
+	 * reconnection attempt will be made unless
+	 * explicitly requested
+	 **************************************************/
+
+	class Closed extends State {
+		Closed() {
+			super(ConnectionState.closed, false, false, true, 0, REASON_CLOSED);
+		}
+
+		@Override
+		StateIndication validateTransition(StateIndication target) {
+			/* we only leave the closed state via a connection attempt */
+			if(target.state == ConnectionState.connecting) {
+				return target;
+			}
+			/* otherwise, the transition is not valid */
+			return null;
+		}
+
+		@Override
+		void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, Channel channel) {
+			/* (RTL3b) If the connection currentState enters the CLOSED
+			 * currentState, then an ATTACHING or ATTACHED channel currentState
+			 * will transition to DETACHED. */
+			channel.setConnectionClosed(REASON_CLOSED);
+		}
+	}
+
+	/**************************************************
+	 * Failed: there is no connection, and there has
+	 * been an error, either in options validation or
+	 * as a response to a connection attempt, that
+	 * implies no new connection attempt will succeed.
+	 * No reconnection attempt will be made unless
+	 * explicitly requested
+	 **************************************************/
+
+	class Failed extends State {
+		Failed() {
+			super(ConnectionState.failed, false, false, true, 0, REASON_FAILED);
+		}
+
+		@Override
+		StateIndication validateTransition(StateIndication target) {
+			/* we only leave the failed state via a connection attempt */
+			if(target.state == ConnectionState.connecting) {
+				return target;
+			}
+			/* otherwise, the transition is not valid */
+			return null;
+		}
+
+		@Override
+		void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, Channel channel) {
+			/* (RTL3a) If the connection currentState enters the FAILED
+			 * currentState, then an ATTACHING or ATTACHED channel currentState
+			 * will transition to FAILED, set the
+			 * Channel#errorReason and emit the error event. */
+			channel.setConnectionFailed(stateIndication.reason);
+		}
+
+		@Override
+		void enact(StateIndication stateIndication, ConnectionStateChange change) {
+			super.enact(stateIndication, change);
+			clearTransport();
+		}
+	}
+
+	public ErrorInfo getStateErrorInfo() {
+		return stateError != null ? stateError : currentState.defaultErrorInfo;
+	}
+
+	public boolean isActive() {
+		return currentState.queueEvents || currentState.sendEvents;
 	}
 
 	/*************************************
-	 * a class that listens for state change
+	 * a class that listens for currentState change
 	 * events for in-place authorization
 	 *************************************/
-	public class ConnectionWaiter implements ConnectionStateListener {
 
-		/**
-		 * Public API
-		 */
-		public ConnectionWaiter() {
+	private class ConnectionWaiter implements ConnectionStateListener {
+		private ConnectionStateChange change;
+
+		private ConnectionWaiter() {
 			connection.on(this);
 		}
 
 		/**
-		 * Wait for a state change notification
+		 * Wait for a currentState change notification
 		 */
-		public synchronized ErrorInfo waitForChange() {
+		private synchronized ErrorInfo waitForChange() {
 			Log.d(TAG, "ConnectionWaiter.waitFor()");
 			if (change == null) {
 				try { wait(); } catch(InterruptedException e) {}
 			}
-			Log.d(TAG, "ConnectionWaiter.waitFor done: state=" + state + ")");
+			Log.d(TAG, "ConnectionWaiter.waitFor done: currentState=" + currentState + ")");
 			ErrorInfo reason = change.reason;
 			change = null;
 			return reason;
@@ -126,73 +464,249 @@ public class ConnectionManager implements ConnectListener {
 		 * ConnectionStateListener interface
 		 */
 		@Override
-		public void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange state) {
+		public void onConnectionStateChanged(ConnectionStateChange state) {
 			synchronized(this) {
 				change = state;
 				notify();
 			}
 		}
+	}
+
+	/***********************
+	 * Actions
+	 ***********************/
+
+	/**
+	 * A class that encapsulates actions to perform by the ConnectionManager
+	 */
+	private interface Action extends Runnable {}
+
+	/**
+	 * An class that performs a state transition
+	 */
+	private abstract class StateChangeAction {
+
+		protected final ITransport transport;
+		protected final StateIndication stateIndication;
+		protected ConnectionStateChange change;
+
+		StateChangeAction(ITransport transport, StateIndication stateIndication) {
+			this.transport = transport;
+			this.stateIndication = stateIndication;
+		}
 
 		/**
-		 * Internal
+		 * Make the change to the ConnectionManager currentState represented by this Action
 		 */
-		private ConnectionStateListener.ConnectionStateChange change;
+		protected void setState() {
+			change = ConnectionManager.this.setState(transport, stateIndication);
+		}
+
+		protected void enactState() {
+			if(change != null) {
+				if(change.current != change.previous) {
+					/* broadcast currentState change */
+					connection.onConnectionStateChange(change);
+				}
+
+				/* implement the state change */
+				states.get(stateIndication.state).enact(stateIndication, change);
+				if(currentState.terminal) {
+					clearTransport();
+				}
+			}
+		}
+	}
+
+	/**
+	 * An Action that enacts a state transition, making the ConnectionManager state change
+	 * synchronously. This is for instances such as any transition away from the connected
+	 * state, where the state is updated synchronously with the transport state change.
+	 * This ensures that there is no possibility of an attempt to send on the transport
+	 * after it has indicated that it is not available.
+	 */
+	private class SynchronousStateChangeAction extends StateChangeAction implements Action {
+		SynchronousStateChangeAction(ITransport transport, StateIndication stateIndication) {
+			super(transport, stateIndication);
+			setState();
+		}
+
+		@Override
+		public void run() {
+			enactState();
+		}
+	}
+
+	/**
+	 * An Action that enacts a state transition, making the ConnectionManager state change
+	 * asynchronously. This applies to all transitions that are not transitions away from
+	 * the connected state.
+	 */
+	private class AsynchronousStateChangeAction extends StateChangeAction implements Action{
+		AsynchronousStateChangeAction(ConnectionState state) {
+			super(null, new StateIndication(state, null));
+		}
+
+		AsynchronousStateChangeAction(ITransport transport, StateIndication stateIndication) {
+			super(transport, stateIndication);
+		}
+
+		@Override
+		public void run() {
+			setState();
+			enactState();
+		}
+	}
+
+	/**
+	 * An Action that performs an inband reauthorisation
+	 */
+	private class ReauthAction implements Action {
+		@Override
+		public void run() {
+			handleReauth();
+		}
+	}
+
+	/**
+	 * An Action that handles dissemination of update events arising from a
+	 * connected -> connected transition
+	 */
+	private class UpdateAction implements Action {
+		private final ErrorInfo reason;
+
+		UpdateAction(ErrorInfo reason) {
+			this.reason = reason;
+		}
+
+		@Override
+		public void run() {
+			connection.emitUpdate(reason);
+		}
+	}
+
+	/**
+	 * A queue of Actions awaiting processing
+	 */
+	private static class ActionQueue extends ArrayDeque<Action> {
+		public synchronized boolean add(Action action) {
+			return super.add(action);
+		}
+
+		public synchronized Action poll() {
+			return super.poll();
+		}
+
+		public synchronized Action peek() {
+			return super.peek();
+		}
+
+		public synchronized int size() {
+			return super.size();
+		}
+	}
+
+	/**
+	 * Append an action to the pending action queue
+	 * @param action: the action
+	 */
+	private synchronized void addAction(Action action) {
+		actionQueue.add(action);
+		notifyAll();
+	}
+
+	/**
+	 * A handler that runs in a dedicated Thread that processes queued actions
+	 */
+	class ActionHandler implements Runnable {
+
+		public void run() {
+			while(true) {
+				/*
+				 * Until we're committed to exit we:
+				 * - wait for an action or timeout
+				 * - given an action, perform the action asynchronously;
+				 * - if a timeout, perform the timeout state transition
+				 */
+
+				/* Hold the lock until we obtain an action */
+				synchronized(ConnectionManager.this) {
+					while(actionQueue.size() == 0) {
+						/* if we're in a terminal state, then this thread is done */
+						if(currentState.terminal) {
+							/* indicate that this thread is committed to die */
+							handlerThread = null;
+							stopConnectivityListener();
+							return;
+						}
+
+						/* wait for an action event or for expiry of the current currentState */
+						tryWait(currentState.timeout);
+
+						/* if during the wait some action was requested, handle it */
+						Action act = actionQueue.peek();
+						if (act != null) {
+							Log.d(TAG, "Wait ended by action: " + act.toString());
+							break;
+						}
+
+						/* if our currentState wants us to retry on timer expiry, do that */
+						if (!suppressRetry) {
+							StateIndication nextState = currentState.onTimeout();
+							if (nextState != null) {
+								requestState(nextState);
+							}
+						}
+					}
+				}
+
+				/* perform outstanding actions, without the ConnectionManager locked */
+				Action deferredAction;
+				while((deferredAction = actionQueue.poll()) != null) {
+					try {
+						deferredAction.run();
+					} catch(Exception e) {
+						Log.e(TAG, "Action invocation failed with exception: action = " + deferredAction.toString(), e);
+					}
+				}
+			}
+		}
 	}
 
 	/***********************
-	 * all state information
+	 * ConnectionManager
 	 ***********************/
 
-	@SuppressWarnings("serial")
-	public static final HashMap<ConnectionState, StateInfo> states = new HashMap<ConnectionState, StateInfo>() {{
-		put(ConnectionState.initialized, new StateInfo(ConnectionState.initialized, true, false, false, false, 0, null));
-		put(ConnectionState.connecting, new StateInfo(ConnectionState.connecting, true, false, false, false, Defaults.TIMEOUT_CONNECT, null));
-		put(ConnectionState.connected, new StateInfo(ConnectionState.connected, false, true, false, false, 0, null));
-		put(ConnectionState.disconnected, new StateInfo(ConnectionState.disconnected, true, false, false, true, Defaults.TIMEOUT_DISCONNECT, REASON_DISCONNECTED));
-		put(ConnectionState.suspended, new StateInfo(ConnectionState.suspended, false, false, false, true, Defaults.connectionStateTtl, REASON_SUSPENDED));
-		put(ConnectionState.closing, new StateInfo(ConnectionState.closing, false, false, false, false, Defaults.TIMEOUT_CONNECT, REASON_CLOSED));
-		put(ConnectionState.closed, new StateInfo(ConnectionState.closed, false, false, true, false, 0, REASON_CLOSED));
-		put(ConnectionState.failed, new StateInfo(ConnectionState.failed, false, false, true, false, 0, REASON_FAILED));
-	}};
-
-	long maxIdleInterval = Defaults.maxIdleInterval;
-	long connectionStateTtl = Defaults.connectionStateTtl;
-
-	public ErrorInfo getStateErrorInfo() {
-		return stateError != null ? stateError : state.defaultErrorInfo;
-	}
-
-	public boolean isActive() {
-		return state.queueEvents || state.sendEvents;
-	}
-
-	/***********************
-	 * constructor
-	 ***********************/
-
-	public ConnectionManager(final AblyRealtime ably, Connection connection) {
+	public ConnectionManager(final AblyRealtime ably, Connection connection) throws AblyException {
 		this.ably = ably;
-		this.options = ably.options;
 		this.connection = connection;
-		queuedMessages = new ArrayList<QueuedMessage>();
-		pendingMessages = new PendingMessageQueue();
-		state = states.get(ConnectionState.initialized);
-		String transportClass = Defaults.TRANSPORT;
-		try {
-			this.hosts = new Hosts(options.realtimeHost, Defaults.HOST_REALTIME, options);
-			/* debug options */
-			if(options instanceof DebugOptions)
-				protocolListener = ((DebugOptions)options).protocolListener;
 
-			factory = ((ITransport.Factory)Class.forName(transportClass).newInstance());
-		} catch(Exception e) {
-			String msg = "Unable to instance factory class";
-			Log.e(getClass().getName(), msg, e);
-			throw new RuntimeException(msg, e);
+		ClientOptions options = ably.options;
+		this.hosts = new Hosts(options.realtimeHost, Defaults.HOST_REALTIME, options);
+
+		/* debug options */
+		ITransport.Factory transportFactory = null;
+		RawProtocolListener protocolListener = null;
+		if(options instanceof DebugOptions) {
+			protocolListener = ((DebugOptions) options).protocolListener;
+			transportFactory = ((DebugOptions) options).transportFactory;
 		}
-		synchronized(this) {
-			setSuspendTime();
-		}
+		this.protocolListener = protocolListener;
+		this.transportFactory = (transportFactory != null) ? transportFactory : Defaults.TRANSPORT;
+
+		/* construct all states */
+		states.put(ConnectionState.initialized, new Initialized());
+		states.put(ConnectionState.connecting, new Connecting());
+		states.put(ConnectionState.connected, new Connected());
+		states.put(ConnectionState.disconnected, new Disconnected());
+		states.put(ConnectionState.suspended, new Suspended());
+		states.put(ConnectionState.closing, new Closing());
+		states.put(ConnectionState.closed, new Closed());
+		states.put(ConnectionState.failed, new Failed());
+
+		currentState = states.get(ConnectionState.initialized);
+
+		setSuspendTime();
 	}
 
 	/*********************
@@ -205,169 +719,141 @@ public class ConnectionManager implements ConnectListener {
 	}
 
 	/*********************
-	 * state management
+	 * states API
 	 *********************/
 
-	public void connect() {
-		boolean connectionExist = state.state == ConnectionState.connected;
-		boolean connectionAttemptInProgress = (requestedState != null && requestedState.state == ConnectionState.connecting) ||
-				state.state == ConnectionState.connecting;
+	public synchronized State getConnectionState() {
+		return currentState;
+	}
 
-		if(!connectionExist && !connectionAttemptInProgress) {
-			startup(); // Start thread if not already started.
-			requestState(ConnectionState.connecting);
+	public synchronized void connect() {
+		/* connect() is the only action that will bring the ConnectionManager out of a terminal currentState */
+		if(currentState.terminal || currentState.state == ConnectionState.initialized) {
+			startup();
 		}
+		requestState(ConnectionState.connecting);
 	}
 
 	public void close() {
 		requestState(ConnectionState.closing);
 	}
 
-	public synchronized StateInfo getConnectionState() {
-		return state;
-	}
-
-	/**
-	 * Set the state the given state
-	 * @param newState
-	 * @return changed
-	 */
-	private boolean setState(StateIndication newState) {
-		ConnectionStateListener.ConnectionStateChange change;
-		StateInfo newStateInfo = states.get(newState.state);
-		synchronized(this) {
-			if(newState.state == state.state) {
-				Log.v(TAG, "setState(): unchanged " + newState.state);
-				return false;
-			}
-			ErrorInfo reason = newState.reason;
-			if(reason == null) {
-				reason = newStateInfo.defaultErrorInfo;
-			}
-			Log.v(TAG, "setState(): setting " + newState.state + "; reason " + reason);
-			change = new ConnectionStateListener.ConnectionStateChange(state.state, newState.state, newStateInfo.timeout, reason);
-			newStateInfo.host = newState.currentHost;
-			state = newStateInfo;
-			stateError = reason;
-
-			if(change.current != change.previous) {
-				/* any state change clears pending reauth flag */
-				pendingReauth = false;
-			}
-			if(state.terminal) {
-				clearTransport();
-				shutdown();
-			}
-		}
-
-		/* broadcast state change */
-		connection.onConnectionStateChange(change);
-
-		/* if now connected, send queued messages, etc */
-		if(state.sendEvents) {
-			sendQueuedMessages();
-		} else if(!state.queueEvents) {
-			failQueuedMessages(state.defaultErrorInfo);
-		}
-		switch (state.state) {
-			case connected:
-				for(Channel channel : ably.channels.values()) {
-					channel.setConnected();
-				}
-				break;
-			case disconnected:
-				/* (RTL3e) If the connection state enters the
-				 * DISCONNECTED state, it will have no effect on the
-				 * channel states. */
-				break;
-			case failed:
-				/* (RTL3a) If the connection state enters the FAILED
-				 * state, then an ATTACHING or ATTACHED channel state
-				 * will transition to FAILED, set the
-				 * Channel#errorReason and emit the error event. */
-				for(Channel channel : ably.channels.values()) {
-					channel.setConnectionFailed(change.reason);
-				}
-				break;
-			case closed:
-				/* (RTL3b) If the connection state enters the CLOSED
-				 * state, then an ATTACHING or ATTACHED channel state
-				 * will transition to DETACHED. */
-				for(Channel channel : ably.channels.values()) {
-					channel.setConnectionClosed(state.defaultErrorInfo);
-				}
-				break;
-			case suspended:
-				/* (RTL3c) If the connection state enters the SUSPENDED
-				 * state, then an ATTACHING or ATTACHED channel state
-				 * will transition to SUSPENDED. */
-				for(Channel channel : ably.channels.values()) {
-					channel.setSuspended(state.defaultErrorInfo, true);
-				}
-				break;
-		}
-		return true;
-	}
-
 	public void requestState(ConnectionState state) {
 		requestState(new StateIndication(state, null));
 	}
 
-	public synchronized void requestState(StateIndication state) {
-		Log.v(TAG, "requestState(): requesting " + state.state + "; id = " + connection.id);
-		requestedState = state;
-		notify();
+	public void requestState(StateIndication state) {
+		requestState(null, state);
 	}
 
-	private synchronized void requestState(ITransport transport, StateIndication state) {
-		if(transport != null) {
-			if(this.transport != transport) {
-				Log.v(TAG, "requestState: notification received for superseded transport");
-				return;
-			}
-			/* if this transition signifies the end of the transport, clear the transport */
-			if(states.get(state.state).terminal) {
-				this.transport = null;
-			}
-		}
-		requestState(state);
+	private synchronized void requestState(ITransport transport, StateIndication stateIndication) {
+		Log.v(TAG, "requestState(): requesting " + stateIndication.state + "; id = " + connection.id);
+		addAction(new AsynchronousStateChangeAction(transport, stateIndication));
 	}
+
+	private synchronized ConnectionStateChange setState(ITransport transport, StateIndication stateIndication) {
+		/* check validity of transport */
+		if (transport != null && transport != this.transport) {
+			Log.v(TAG, "setState: action received for superseded transport; discarding");
+			return null;
+		}
+
+		/* check validity of transition */
+		StateIndication validatedStateIndication = currentState.validateTransition(stateIndication);
+		if (validatedStateIndication == null) {
+			Log.v(TAG, "setState(): not transitioning; not a valid transition " + stateIndication.state);
+			return null;
+		}
+
+		/* update currentState */
+		ConnectionState newConnectionState = validatedStateIndication.state;
+		State newState = states.get(newConnectionState);
+		ErrorInfo reason = validatedStateIndication.reason;
+		if (reason == null) {
+			reason = newState.defaultErrorInfo;
+		}
+		Log.v(TAG, "setState(): setting " + newState.state + "; reason " + reason);
+		ConnectionStateChange change = new ConnectionStateChange(currentState.state, newConnectionState, newState.timeout, reason);
+		currentState = newState;
+		stateError = reason;
+
+		return change;
+	}
+
+	/*********************
+	 * ping API
+	 *********************/
 
 	public void ping(final CompletionListener listener) {
-		if(state.state != ConnectionState.connected) {
-			if(listener != null)
-				listener.onError(new ErrorInfo("Unable to ping service; not connected", 40000, 400));
+		HeartbeatWaiter waiter = new HeartbeatWaiter(listener);
+		if(currentState.state != ConnectionState.connected) {
+			waiter.onError(new ErrorInfo("Unable to ping service; not connected", 40000, 400));
 			return;
 		}
-		if(listener != null) {
-			Runnable waiter = new Runnable() {
-				public void run() {
-					boolean pending;
-					synchronized(heartbeatWaiters) {
-						pending = heartbeatWaiters.contains(this);
-						if(pending)
-							try { heartbeatWaiters.wait(HEARTBEAT_TIMEOUT); } catch(InterruptedException ie) {}
-
-						pending = heartbeatWaiters.remove(this);
-					}
-					if(pending)
-						listener.onError(new ErrorInfo("Timed out waiting for heartbeat response", 50000, 500));
-					else
-						listener.onSuccess();
-				}
-			};
-			synchronized(heartbeatWaiters) {
-				heartbeatWaiters.add(waiter);
-				(new Thread(waiter)).start();
-			}
+		synchronized(heartbeatWaiters) {
+			heartbeatWaiters.add(waiter);
+			waiter.start();
 		}
 		try {
 			send(new ProtocolMessage(ProtocolMessage.Action.heartbeat), false, null);
 		} catch (AblyException e) {
-			if(listener != null)
-				listener.onError(e.errorInfo);
+			waiter.onError(e.errorInfo);
 		}
 	}
+
+	/**
+	 * A thread that waits for completion of a ping
+	 */
+	private class HeartbeatWaiter extends Thread {
+		private final CompletionListener listener;
+
+		HeartbeatWaiter(CompletionListener listener) {
+			this.listener = listener;
+		}
+
+		private void onSuccess() {
+			clear();
+			if(listener != null) {
+				listener.onSuccess();
+			}
+		}
+
+		private void onError(ErrorInfo reason) {
+			clear();
+			if(listener != null) {
+				listener.onError(reason);
+			}
+		}
+
+		private boolean clear() {
+			boolean pending = heartbeatWaiters.remove(this);
+			if(pending) {
+				interrupt();
+			}
+			return pending;
+		}
+
+		@Override
+		public void run() {
+			boolean pending;
+			synchronized(heartbeatWaiters) {
+				try {
+					heartbeatWaiters.wait(HEARTBEAT_TIMEOUT);
+				} catch (InterruptedException ie) {
+				}
+				pending = clear();
+			}
+			if(pending) {
+				onError(new ErrorInfo("Timed out waiting for heartbeat response", 50000, 500));
+			} else {
+				onSuccess();
+			}
+		}
+	}
+
+	/***************************************
+	 * auth event handling
+	 ***************************************/
 
 	/**
 	 * (RTC8) For a realtime client, Auth.authorize instructs the library to
@@ -377,9 +863,9 @@ public class ConnectionManager implements ConnectListener {
 	 */
 	public void onAuthUpdated(String token, boolean waitForResponse) throws AblyException {
 		ConnectionWaiter waiter = new ConnectionWaiter();
-		switch(state.state) {
+		switch(currentState.state) {
 			case connected:
-				/* (RTC8a) If the connection is in the CONNECTED state and
+				/* (RTC8a) If the connection is in the CONNECTED currentState and
 				 * auth.authorize is called or Ably requests a re-authentication
 				 * (see RTN22), the client must obtain a new token, then send an
 				 * AUTH ProtocolMessage to Ably with an auth attribute
@@ -392,18 +878,17 @@ public class ConnectionManager implements ConnectListener {
 					/* The send failed. Close the transport; if a subsequent
 					 * reconnect succeeds, it will be with the new token. */
 					Log.v(TAG, "onAuthUpdated: closing transport after send failure");
-					transport.close(/*sendDisconnect=*/false);
+					transport.close();
 				}
 				break;
 
 			case connecting:
 				/* Close the connecting transport. */
 				Log.v(TAG, "onAuthUpdated: closing connecting transport");
-				clearTransport();
-				/* request a state change that triggers an immediate retry */
-				Log.v(TAG, "onAuthUpdated: requesting immediate new connection attempt");
 				ErrorInfo disconnectError = new ErrorInfo("Aborting incomplete connection with superseded auth params", 503, 80003);
-				requestState(new StateIndication(ConnectionState.disconnected, disconnectError, null, null, true));
+				requestState(new StateIndication(ConnectionState.disconnected, disconnectError, null, null));
+				/* Start a new connection attempt. */
+				connect();
 				break;
 
 			default:
@@ -416,13 +901,13 @@ public class ConnectionManager implements ConnectListener {
 			return;
 		}
 
-		/* Wait for a state transition into anything other than connecting or
+		/* Wait for a currentState transition into anything other than connecting or
 		 * disconnected. Note that this includes the case that the connection
 		 * was already connected, and the AUTH message prompted the server to
 		 * send another connected message. */
 		for (;;) {
 			ErrorInfo reason = waiter.waitForChange();
-			switch (state.state) {
+			switch (currentState.state) {
 				case connected:
 					Log.v(TAG, "onAuthUpdated: got connected");
 					return;
@@ -444,17 +929,17 @@ public class ConnectionManager implements ConnectListener {
 	 */
 	public void onAuthError(ErrorInfo errorInfo) {
 		Log.i(TAG, String.format("onAuthError: (%d) %s", errorInfo.code, errorInfo.message));
-		switch (state.state) {
+		switch (currentState.state) {
 			case connecting:
 				ITransport transport = this.transport;
 				if (transport != null)
-					/* onTransportUnavailable will send state change event and set transport to null */
-					onTransportUnavailable(transport, null, errorInfo);
+					/* request that the current transport is closed */
+					requestState(new StateIndication(ConnectionState.disconnected, errorInfo));
 				break;
 
 			case connected:
 				/* stay connected but notify of authentication error */
-				connection.emitUpdate(errorInfo);
+				addAction(new UpdateAction(errorInfo));
 				break;
 
 			default:
@@ -495,7 +980,7 @@ public class ConnectionManager implements ConnectListener {
 						Log.e(TAG, "onMessage(): ERROR message received; message = " + reason.message + "; code = " + reason.code);
 					}
 
-					/* an error message may signify an error state in a channel, or in the connection */
+					/* an error message may signify an error currentState in a channel, or in the connection */
 					if(message.channel != null) {
 						onChannelMessage(message);
 					} else {
@@ -519,10 +1004,7 @@ public class ConnectionManager implements ConnectListener {
 					onNack(message);
 					break;
 				case auth:
-					synchronized (this) {
-						pendingReauth = true;
-						notify();
-					}
+					addAction(new ReauthAction());
 					break;
 				default:
 					onChannelMessage(message);
@@ -591,15 +1073,20 @@ public class ConnectionManager implements ConnectListener {
 			ably.auth.setClientId(clientId);
 		} catch (AblyException e) {
 			requestState(transport, new StateIndication(ConnectionState.failed, e.errorInfo));
+			return;
 		}
 
-		/* indicated connected state */
+		/* indicated connected currentState */
 		setSuspendTime();
 		requestState(new StateIndication(ConnectionState.connected, error));
 	}
 
 	private synchronized void onDisconnected(ProtocolMessage message) {
-		onTransportUnavailable(transport, null, message.error);
+		ErrorInfo reason = message.error;
+		if(reason != null && isTokenError(reason)) {
+			ably.auth.onAuthError(reason);
+		}
+		requestState(new StateIndication(ConnectionState.disconnected, reason));
 	}
 
 	private synchronized void onClosed(ProtocolMessage message) {
@@ -614,7 +1101,9 @@ public class ConnectionManager implements ConnectListener {
 	private synchronized void onError(ProtocolMessage message) {
 		connection.key = null;
 		ErrorInfo reason = message.error;
-		ably.auth.onAuthError(reason);
+		if(isTokenError(reason)) {
+			ably.auth.onAuthError(reason);
+		}
 		ConnectionState destinationState = isFatalError(reason) ? ConnectionState.failed : ConnectionState.disconnected;
 		requestState(transport, new StateIndication(destinationState, reason));
 	}
@@ -638,83 +1127,11 @@ public class ConnectionManager implements ConnectListener {
 	 * ConnectionManager lifecycle
 	 ******************************/
 
-	private void startup() {
-		startThread();
-		startConnectivityListener();
-	}
-
-	private void shutdown() {
-		stopConnectivityListener();
-		stopThread();
-	}
-
-	private void startThread() {
-		boolean creating = false;
-		synchronized(this) {
-			if(mgrThread == null) {
-				mgrThread = new CMThread();
-				state = states.get(ConnectionState.initialized);
-				creating = true;
-			}
+	private synchronized void startup() {
+		if(handlerThread == null) {
+			(handlerThread = new Thread(new ActionHandler())).start();
+			startConnectivityListener();
 		}
-		if(creating) {
-			synchronized(mgrThread) {
-				mgrThread.start();
-				try { mgrThread.wait(); } catch(InterruptedException ie) {}
-			}
-		}
-	}
-
-	private void stopThread() {
-		if(mgrThread != null) {
-			mgrThread.setExiting();
-			mgrThread = null;
-		}
-	}
-
-	/**
-	 * Handle a request to transition to a new state
-	 * @return StateIndication: the resulting state, if changed; null otherwise
-	 */
-	private StateIndication handleStateRequest() {
-		/* the resulting state will by default be that requested */
-		StateIndication transitionState = requestedState;
-
-		/* clear requestState here; actions below may trigger a subsequent state change */
-		requestedState = null;
-
-		/* handle connection request */
-		if(transitionState.state == ConnectionState.connecting) {
-			if(connectImpl(transitionState)) {
-				return transitionState;
-			} else {
-				return new StateIndication(ConnectionState.failed, new ErrorInfo("Connection failed; no host available", 404, 80000), null, requestedState.currentHost, false);
-			}
-		}
-		/* no other requests can move from a terminal state */
-		if(state.terminal) {
-			/* no change */
-			return null;
-		}
-
-		switch(transitionState.state) {
-		case disconnected:
-			if(transport != null) {
-				transport.close(false);
-			}
-			break;
-		case failed:
-			if(transport != null) {
-				transport.abort(transitionState.reason);
-			}
-			break;
-		case closing:
-			closeImpl(transitionState);
-			break;
-		default:
-			break;
-		}
-		return transitionState;
 	}
 
 	private boolean checkConnectionStale() {
@@ -738,173 +1155,52 @@ public class ConnectionManager implements ConnectListener {
 		return false;
 	}
 
-	private void handleStateChange(StateIndication stateChange) {
-		/* if we have had a disconnected state indication
-		 * from the transport then we have to decide whether
-		 * to transition to closed, disconnected to suspended depending
-		 * on when we last had a successful connection */
-		if(stateChange.state == ConnectionState.disconnected) {
-			if(checkConnectionStale()) {
-				requestState(ConnectionState.suspended);
-				return;
-			}
-			switch(state.state) {
-			case connecting:
-				if(stateChange.retryImmediately && !suppressRetry) {
-					requestState(ConnectionState.connecting);
-				} else {
-					stateChange = checkSuspend(stateChange);
-				}
-				pendingConnect = null;
-				break;
-			case closing:
-				/* this becomes a close event; if the indication we received
-				 * has a non-default disconnection reason, use that */
-				ErrorInfo closeReason = (stateChange.reason == REASON_DISCONNECTED) ? REASON_CLOSED : stateChange.reason;
-				stateChange = new StateIndication(ConnectionState.closed, closeReason);
-				break;
-			case closed:
-			case failed:
-				/* terminal states */
-				stateChange = null;
-				break;
-			case connected:
-				setSuspendTime();
-				/* we were connected, so retry immediately */
-				if(!suppressRetry) {
-					requestState(ConnectionState.connecting);
-				}
-				break;
-			case suspended:
-				/* Don't allow a second disconnected to make the state come out of suspended. */
-				Log.v(TAG, "handleStateChange: not moving out of suspended");
-				stateChange = null;
-				break;
-			default:
-				break;
-			}
-		}
-		if(stateChange != null) {
-			boolean changed = setState(stateChange);
-			if (!changed && stateChange.state == ConnectionState.connected) {
-				/* connected is special case because we want to deliver reauth notifications to listeners as an update */
-				connection.emitUpdate(null);
-			}
-		}
-	}
-
-	private void setSuspendTime() {
+	private synchronized void setSuspendTime() {
 		suspendTime = (System.currentTimeMillis() + connectionStateTtl);
 	}
 
-	private StateIndication checkSuspend(StateIndication stateChange) {
-		/* We got here when a connection attempt failed and we need to check to
-		 * see whether we should go into disconnected or suspended state.
-		 * There are three options:
-		 * - First check to see whether or not internet connectivity is ok;
-		 *   if so we'll trigger a new connect attempt with a fallback host.
-		 * - we're entering disconnected and will schedule a retry after the
-		 *   reconnect timer;
-		 * - the suspend timer has expired, so we're going into suspended state.
-		 */
-
-		if(pendingConnect != null && (stateChange.reason == null || stateChange.reason.statusCode >= 500)) {
+	/**
+	 * After a connection attempt failed, check to
+	 * see whether we should attempt to use a fallback.
+	 * @param reason
+	 * @return StateIndication if a fallback connection attempt is required, otherwise null
+	 */
+	private StateIndication checkFallback(ErrorInfo reason) {
+		if(pendingConnect != null && (reason == null || reason.statusCode >= 500)) {
 			if (checkConnectivity()) {
 				/* we will try a fallback host */
 				String hostFallback = hosts.getFallback(pendingConnect.host);
 				if (hostFallback != null) {
-					Log.v(TAG, "checkSuspend: fallback to " + hostFallback);
-					requestState(new StateIndication(ConnectionState.connecting, null, hostFallback, pendingConnect.host, false));
-					/* returning null ensures we stay in the connecting state */
-					return null;
+					Log.v(TAG, "checkFallback: fallback to " + hostFallback);
+					return new StateIndication(ConnectionState.connecting, null, hostFallback, pendingConnect.host);
 				}
 			}
 		}
-		Log.v(TAG, "checkSuspend: not falling back");
-		boolean suspendMode = System.currentTimeMillis() > suspendTime;
+		pendingConnect = null;
+		return null;
+	}
+
+	private synchronized StateIndication checkSuspended(ErrorInfo reason) {
+		long currentTime = System.currentTimeMillis();
+		long timeToSuspend = suspendTime - currentTime;
+		boolean suspendMode = timeToSuspend <= 0;
+		Log.v(TAG, "checkSuspended: timeToSuspend = " + timeToSuspend + "ms; suspendMode = " + suspendMode);
 		ConnectionState expiredState = suspendMode ? ConnectionState.suspended : ConnectionState.disconnected;
-		return new StateIndication(expiredState, stateChange.reason);
+		return new StateIndication(expiredState, reason);
 	}
 
 	private void tryWait(long timeout) {
-		if(requestedState == null && !pendingReauth) {
-			try {
-				if(timeout == 0) {
-					wait();
-				} else {
-					wait(timeout);
-				}
-			} catch (InterruptedException e) {}
-		}
-	}
-
-	class CMThread extends Thread {
-
-		private boolean exiting = false;
-		private void setExiting() {
-			exiting = true;
-		}
-
-		public void run() {
-			ConnectionManager cm = ConnectionManager.this;
-			while(!exiting) {
-				/*
-				 * Until we're commited to exit we:
-				 * - get a state change;
-				 * - enact that change
-				 */
-				StateIndication stateChange = null;
-
-				/* Hold the lock until we obtain a state change */
-				synchronized(cm) {
-					/* if we're initialising, then tell the starting thread that
-					 * we're ready to receive events */
-					if (state.state == ConnectionState.initialized) {
-						synchronized(this) {
-							notify();
-						}
-					}
-
-					while(!exiting && stateChange == null) {
-						/* wait for a state change event or for expiry of the current state */
-						tryWait(state.timeout);
-
-						/* if during the wait some action was requested, handle it */
-						if (pendingReauth) {
-							handleReauth();
-							continue;
-						}
-
-						if (requestedState != null) {
-							stateChange = handleStateRequest();
-							continue;
-						}
-
-						/* if our state wants us to retry on timer expiry, do that */
-						if (state.retry && !suppressRetry) {
-							requestState(ConnectionState.connecting);
-							continue;
-						}
-
-						/* no indicated state or requested action, so the timer
-						 * expired while we were in the connecting/closing state */
-						stateChange = checkSuspend(new StateIndication(ConnectionState.disconnected, REASON_TIMEDOUT));
-					}
-				}
-				if(exiting) { break; }
-
-				/* Enact the change without the lock */
-				if (stateChange != null) {
-					handleStateChange(stateChange);
-				}
+		try {
+			if(timeout == 0) {
+				wait();
+			} else {
+				wait(timeout);
 			}
-		}
+		} catch (InterruptedException e) {}
 	}
 
 	private void handleReauth() {
-		pendingReauth = false;
-
-		if (state.state == ConnectionState.connected) {
+		if (currentState.state == ConnectionState.connected) {
 			Log.v(TAG, "Server initiated reauth");
 
 			ErrorInfo errorInfo = null;
@@ -919,15 +1215,15 @@ public class ConnectionManager implements ConnectListener {
 				errorInfo = e.errorInfo;
 			}
 
-			/* report connection state in UPDATE event */
-			if (state.state == ConnectionState.connected) {
+			/* report connection currentState in UPDATE event */
+			if (currentState.state == ConnectionState.connected) {
 				connection.emitUpdate(errorInfo);
 			}
 		}
 	}
 
 	@Override
-	public void onTransportAvailable(ITransport transport, TransportParams params) {
+	public synchronized void onTransportAvailable(ITransport transport) {
 		if (this.transport != transport) {
 			/* This is from a transport that we have already abandoned. */
 			Log.v(TAG, "onTransportAvailable: ignoring connection event from superseded transport");
@@ -939,40 +1235,45 @@ public class ConnectionManager implements ConnectListener {
 	}
 
 	@Override
-	public synchronized void onTransportUnavailable(ITransport transport, TransportParams params, ErrorInfo reason) {
-		this.onTransportUnavailable(transport, params, reason, ConnectionState.disconnected);
-	}
-
-	@Override
-	public synchronized void onTransportUnavailable(ITransport transport, TransportParams params, ErrorInfo reason, ConnectionState state) {
+	public synchronized void onTransportUnavailable(ITransport transport, ErrorInfo reason) {
 		if (this.transport != transport) {
 			/* This is from a transport that we have already abandoned. */
 			Log.v(TAG, "onTransportUnavailable: ignoring disconnection event from superseded transport");
 			return;
 		}
-		if(reason == null) {
-			reason = states.get(state).defaultErrorInfo;
+
+		/* if this is a failure of a pending connection attempt, decide whether or not to attempt a fallback host */
+		StateIndication fallbackAttempt = checkFallback(reason);
+		if(fallbackAttempt != null) {
+			requestState(fallbackAttempt);
+			return;
 		}
-		if(state == ConnectionState.failed) {
-			Log.e(TAG, "onTransportUnavailable: unexpected exception in WsClient: " + reason.message);
-		} else {
-			Log.i(TAG, "onTransportUnavailable: disconnected: " + reason.message);
+
+		StateIndication stateIndication = null;
+		if(reason != null) {
+			if(isFatalError(reason)) {
+				Log.e(TAG, "onTransportUnavailable: unexpected transport error: " + reason.message);
+				stateIndication = new StateIndication(ConnectionState.failed, reason);
+			} else if(isTokenError(reason)) {
+				ably.auth.onAuthError(reason);
+			}
 		}
-		ably.auth.onAuthError(reason);
-		requestState(new StateIndication(state, reason, null, transport.getHost(), false));
-		this.transport = null;
+		if(stateIndication == null) {
+			stateIndication = checkSuspended(reason);
+		}
+		addAction(new SynchronousStateChangeAction(transport, stateIndication));
 	}
 
 	private class ConnectParams extends TransportParams {
 		ConnectParams(ClientOptions options) {
-			this.options = options;
+			super(options);
 			this.connectionKey = connection.key;
 			this.connectionSerial = String.valueOf(connection.serial);
 			this.port = Defaults.getPort(options);
 		}
 	}
 
-	private boolean connectImpl(StateIndication request) {
+	private void connectImpl(StateIndication request) {
 		/* determine the parameters of this connection attempt, and
 		 * instance the transport.
 		 * First, choose the transport. (Right now there's only one.)
@@ -985,14 +1286,14 @@ public class ConnectionManager implements ConnectListener {
 			host = hosts.getPreferredHost();
 		}
 		checkConnectionStale();
-		pendingConnect = new ConnectParams(options);
+		pendingConnect = new ConnectParams(ably.options);
 		pendingConnect.host = host;
 		lastUsedHost = host;
 
 		/* try the connection */
 		ITransport transport;
 		try {
-			transport = factory.getTransport(pendingConnect, this);
+			transport = transportFactory.getTransport(pendingConnect, this);
 		} catch(Exception e) {
 			String msg = "Unable to instance transport class";
 			Log.e(getClass().getName(), msg, e);
@@ -1004,41 +1305,42 @@ public class ConnectionManager implements ConnectListener {
 			this.transport = transport;
 		}
 		if (oldTransport != null) {
-			oldTransport.abort(REASON_TIMEDOUT);
+			oldTransport.close();
 		}
 		transport.connect(this);
 		if(protocolListener != null) {
 			protocolListener.onRawConnectRequested(transport.getURL());
 		}
-		return true;
 	}
 
-	private void closeImpl(StateIndication request) {
-		boolean isConnected = state.state == ConnectionState.connected;
-
-		/* close or abort transport */
-		if(transport != null) {
-			if(isConnected) {
-				/* send a close message on the transport, if connected */
-				try {
-					Log.v(TAG, "Requesting connection close");
-					transport.send(new ProtocolMessage(Action.close));
-				} catch (AblyException e) {
-					transport.abort(e.errorInfo);
-				}
-			} else {
-				/* just close the transport */
-				Log.v(TAG, "Closing incomplete transport");
-				transport.close(false);
-			}
-			transport = null;
+	/**
+	 * Close any existing transport
+	 * @return closed if true, otherwise awaiting closed indication
+	 */
+	private boolean closeImpl() {
+		if(transport == null) {
+			return true;
 		}
-		requestState(new StateIndication(ConnectionState.closed, null));
+
+		/* if connected, send an explicit close message and await response */
+		boolean isConnected = currentState.state == ConnectionState.connected;
+		if(isConnected) {
+			try {
+				Log.v(TAG, "Requesting connection close");
+				transport.send(new ProtocolMessage(ProtocolMessage.Action.close));
+				return false;
+			} catch (AblyException e) {}
+		}
+
+		/* just close the transport */
+		Log.v(TAG, "Closing incomplete transport");
+		clearTransport();
+		return true;
 	}
 
 	private void clearTransport() {
 		if(transport != null) {
-			transport.close(false);
+			transport.close();
 			transport = null;
 		}
 	}
@@ -1077,9 +1379,9 @@ public class ConnectionManager implements ConnectListener {
 	}
 
 	public void send(ProtocolMessage msg, boolean queueEvents, CompletionListener listener) throws AblyException {
-		StateInfo state;
+		State state;
 		synchronized(this) {
-			state = this.state;
+			state = this.currentState;
 			if(state.sendEvents) {
 				sendImpl(msg, listener);
 				return;
@@ -1165,6 +1467,9 @@ public class ConnectionManager implements ConnectListener {
 		}
 	}
 
+	/**
+	 * A class containing a queue of messages awaiting acknowledgement
+	 */
 	private class PendingMessageQueue {
 		private long startSerial = 0L;
 		private ArrayList<QueuedMessage> queue = new ArrayList<QueuedMessage>();
@@ -1277,7 +1582,7 @@ public class ConnectionManager implements ConnectListener {
 		@Override
 		public void onNetworkAvailable() {
 			ConnectionManager cm = ConnectionManager.this;
-			ConnectionState currentState = cm.state.state;
+			ConnectionState currentState = cm.getConnectionState().state;
 			Log.i(TAG, "onNetworkAvailable(): currentState = " + currentState.name());
 			if(currentState == ConnectionState.disconnected || currentState == ConnectionState.suspended) {
 				Log.i(TAG, "onNetworkAvailable(): initiating reconnect");
@@ -1288,7 +1593,7 @@ public class ConnectionManager implements ConnectListener {
 		@Override
 		public void onNetworkUnavailable(ErrorInfo reason) {
 			ConnectionManager cm = ConnectionManager.this;
-			ConnectionState currentState = cm.state.state;
+			ConnectionState currentState = cm.getConnectionState().state;
 			Log.i(TAG, "onNetworkUnavailable(); currentState = " + currentState.name() + "; reason = " + reason.toString());
 			if(currentState == ConnectionState.connected || currentState == ConnectionState.connecting) {
 				Log.i(TAG, "onNetworkUnavailable(): closing connected transport");
@@ -1312,16 +1617,18 @@ public class ConnectionManager implements ConnectListener {
 	 ******************/
 
 	void disconnectAndSuppressRetries() {
-		requestState(ConnectionState.disconnected);
+		if(transport != null) {
+			transport.close();
+		}
 		suppressRetry = true;
 	}
 
 	/*******************
-	 * internal
+	 * misc error handling
 	 ******************/
 
 	private boolean isTokenError(ErrorInfo err) {
-		return (err.code >= 40140) && (err.code < 40150);
+		return ((err.code >= 40140) && (err.code < 40150)) || (err.code == 80019 && err.statusCode == 401);
 	}
 
 	private boolean isFatalError(ErrorInfo err) {
@@ -1341,29 +1648,30 @@ public class ConnectionManager implements ConnectListener {
 	 ******************/
 
 	final AblyRealtime ably;
-	private final ClientOptions options;
 	private final Connection connection;
-	private final ITransport.Factory factory;
-	private final List<QueuedMessage> queuedMessages;
-	private final PendingMessageQueue pendingMessages;
+	private final ITransport.Factory transportFactory;
+	private final List<QueuedMessage> queuedMessages = new ArrayList<>();
+	private final PendingMessageQueue pendingMessages = new PendingMessageQueue();
 	private final HashSet<Object> heartbeatWaiters = new HashSet<Object>();
+	private final ActionQueue actionQueue = new ActionQueue();
 	private final Hosts hosts;
 
-	private CMThread mgrThread;
-	private StateInfo state;
+	private Thread handlerThread;
+	private final Map<ConnectionState, State> states = new HashMap<>();
+	private State currentState;
 	private ErrorInfo stateError;
-	private StateIndication requestedState;
 	private ConnectParams pendingConnect;
-	private boolean pendingReauth;
 	private boolean suppressRetry; /* for tests only; modified via reflection */
 	private ITransport transport;
 	private long suspendTime;
 	private long msgSerial;
 	private long lastActivity;
 	private CMConnectivityListener connectivityListener;
+	private long connectionStateTtl = Defaults.connectionStateTtl;
+	long maxIdleInterval = Defaults.maxIdleInterval;
 
 	/* for debug/test only */
-	private RawProtocolListener protocolListener;
+	private final RawProtocolListener protocolListener;
 	private String lastUsedHost;
 
 	private static final long HEARTBEAT_TIMEOUT = 5000L;

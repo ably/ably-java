@@ -206,6 +206,10 @@ public class ProtocolMessage {
 				case "auth":
 					auth = AuthDetails.fromMsgpack(unpacker);
 					break;
+				case "connectionKey":
+					/* deprecated; ignore */
+					unpacker.unpackString();
+					break;
 				default:
 					Log.v(TAG, "Unexpected field: " + fieldName);
 					unpacker.skipValue();

@@ -713,7 +713,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	 * Publish a message on this channel. This implicitly attaches the channel if
 	 * not already attached.
 	 * @param name: the event name
-	 * @param data: the message payload. See {@link io.ably.types.Data} for supported datatypes
+	 * @param data: the message payload
 	 * @throws AblyException
 	 */
 	public void publish(String name, Object data) throws AblyException {
@@ -775,7 +775,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	public synchronized void publish(Message[] messages, CompletionListener listener) throws AblyException {
 		Log.v(TAG, "publish(Message[]); channel = " + this.name);
 		ConnectionManager connectionManager = ably.connection.connectionManager;
-		ConnectionManager.StateInfo connectionState = connectionManager.getConnectionState();
+		ConnectionManager.State connectionState = connectionManager.getConnectionState();
 		boolean queueMessages = ably.options.queueMessages;
 		if(!connectionManager.isActive() || (connectionState.queueEvents && !queueMessages)) {
 			throw AblyException.fromErrorInfo(connectionState.defaultErrorInfo);
