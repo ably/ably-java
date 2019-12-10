@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import io.ably.lib.http.HttpCore;
+import io.ably.lib.transport.ITransport;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ProtocolMessage;
@@ -29,4 +30,5 @@ public class DebugOptions extends ClientOptions {
 
 	public RawProtocolListener protocolListener;
 	public RawHttpListener httpListener;
+	public ITransport.Factory transportFactory;
 }

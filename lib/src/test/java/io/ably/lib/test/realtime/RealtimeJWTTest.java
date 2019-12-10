@@ -8,6 +8,7 @@ import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpCore.*;
 import io.ably.lib.http.HttpHelpers;
 import io.ably.lib.test.common.Setup.Key;
+import io.ably.lib.util.Log;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -157,6 +158,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
 	/**
 	 * Request a JWT with a ttl of 5 seconds and
 	 * verify the correct error and message in the disconnected state change.
+	 * Spec: RTN15h1
 	 */
 	@Test
 	public void auth_jwt_with_token_that_expires() {
@@ -178,10 +180,9 @@ public class RealtimeJWTTest extends ParameterizedTest {
 				public void onConnectionStateChanged(ConnectionStateChange stateChange) {
 					assertEquals("Unexpected connection stage change", 40142, stateChange.reason.code);
 					assertTrue("Unexpected error message", stateChange.reason.message.contains("Key/token status changed (expire)"));
-					ablyRealtime.close();
 				}
 			});
-			connectionWaiter.waitFor(ConnectionState.closed);
+			connectionWaiter.waitFor(ConnectionState.failed);
 		} catch (AblyException e) {
 			e.printStackTrace();
 			fail();

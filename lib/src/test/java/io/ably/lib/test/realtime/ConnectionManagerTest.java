@@ -19,6 +19,10 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import io.ably.lib.debug.DebugOptions;
+import io.ably.lib.test.util.MockWebsocketFactory;
+import io.ably.lib.transport.Hosts;
+import io.ably.lib.util.Log;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -157,57 +161,91 @@ public class ConnectionManagerTest extends ParameterizedTest {
 	 * overriden, and a fallback is applied
 	 * </p>
 	 * <p>
-	 * Spec: RTN17b, RTN17c, RTN17e
+	 * Spec: RTN17b, RTN17c
 	 * </p>
 	 *
 	 * @throws AblyException
 	 */
 	@Test
-	@Ignore("Invalid test")
-	public void connectionmanager_fallback_applied() throws AblyException {
-		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-		// Use a host that supports fallback
-		opts.realtimeHost = null;
+	public void connectionmanager_default_fallback_applied() throws AblyException {
+		DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+		fillInOptions(opts);
+
+		final Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, opts);
+		final String primaryHost = hosts.getPrimaryHost();
+
+		/* clear the environment override, so we trigger default fallback behaviour */
 		opts.environment = null;
-		/* Use an incorrect port number for TLS. Using 80 rather than some
-		 * random number (e.g. 1234) makes the failure almost immediate,
-		 * instead of taking 15s to time out at each fallback host. */
-		opts.tls = true;
-		opts.tlsPort = 80;
-		try(AblyRealtime ably = new AblyRealtime(opts)) {
+
+		/* set up mock transport */
+		MockWebsocketFactory mockTransport = new MockWebsocketFactory();
+		opts.transportFactory = mockTransport;
+
+		/* ensure that all connection attempts ultimately resolve to the primary host */
+		mockTransport.setHostTransform(new MockWebsocketFactory.HostTransform() {
+			@Override
+			public String transformHost(String givenHost) {
+				return primaryHost;
+			}
+		});
+
+		/* set up a filter on a mock transport to fail connections to the primary host */
+		mockTransport.failConnect(new MockWebsocketFactory.HostFilter() {
+			@Override
+			public boolean matches(String hostname) {
+				return hostname.equals(primaryHost);
+			}
+		});
+
+		try (final AblyRealtime ably = new AblyRealtime(opts)) {
 			ConnectionManager connectionManager = ably.connection.connectionManager;
 
-			new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.disconnected);
+			new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
 
 			/* Verify that,
-			 *   - connectionManager is disconnected
+			 *   - connectionManager is connected
 			 *   - connectionManager's last host was a fallback host
 			 */
-			assertThat(connectionManager.getConnectionState().state, is(ConnectionState.disconnected));
-			assertThat(connectionManager.getHost(), is(not(equalTo(opts.realtimeHost))));
+			assertThat(connectionManager.getConnectionState().state, is(ConnectionState.connected));
+			assertThat(connectionManager.getHost(), is(not(equalTo(primaryHost))));
 		}
 	}
 
 	/**
-	 *
+	 * Verify that when environment is overridden, no fallback is used by default
 	 *
 	 * <p>
-	 * Spec: RTN17a
+	 * Spec: RTN17b
 	 * </p>
 	 */
 	@Test
-	@Ignore("Invalid test")
-	public void connectionmanager_reconnect_default_endpoint() throws AblyException {
-		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-		// Use the default host, supporting fallback
-		opts.realtimeHost = null;
-		opts.environment = null;
-		/* Use an incorrect port number for TLS. Using 80 rather than some
-		 * random number (e.g. 1234) makes the failure almost immediate,
-		 * instead of taking 15s to time out at each fallback host. */
-		opts.tls = true;
-		opts.tlsPort = 80;
-		try(AblyRealtime ably = new AblyRealtime(opts)) {
+	public void connectionmanager_default_endpoint_no_fallback() throws AblyException {
+		DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+		fillInOptions(opts);
+
+		final Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, opts);
+		final String primaryHost = hosts.getPrimaryHost();
+
+		MockWebsocketFactory mockTransport = new MockWebsocketFactory();
+		opts.transportFactory = mockTransport;
+
+		/* ensure that all connection attempts ultimately resolve to the primary host */
+		mockTransport.setHostTransform(new MockWebsocketFactory.HostTransform() {
+			@Override
+			public String transformHost(String givenHost) {
+				return primaryHost;
+			}
+		});
+
+		/* set up a filter on a mock transport to fail connections to the primary host */
+		mockTransport.failConnect(new MockWebsocketFactory.HostFilter() {
+			@Override
+			public boolean matches(String hostname) {
+				return hostname.equals(primaryHost);
+			}
+		});
+
+		try (final AblyRealtime ably = new AblyRealtime(opts)) {
 			ConnectionManager connectionManager = ably.connection.connectionManager;
 
 			System.out.println("waiting for disconnected");
@@ -216,27 +254,62 @@ public class ConnectionManagerTest extends ParameterizedTest {
 
 			/* Verify that,
 			 *   - connectionManager is disconnected
-			 *   - connectionManager's last host was a fallback host
+			 *   - connectionManager's last host was the primary host
 			 */
 			assertThat(connectionManager.getConnectionState().state, is(ConnectionState.disconnected));
-			assertThat(connectionManager.getHost(), is(not(equalTo("realtime.ably.io"))));
+			assertThat(connectionManager.getHost(), is(equalTo(primaryHost)));
+		}
+	}
 
-			/* Reconnect */
-			ably.options.tlsPort = Defaults.TLS_PORT;
-			System.out.println("about to connect");
-			ably.connection.connect();
+	/**
+	 * Verify that when environment is overridden and fallback specified, the fallback is used
+	 *
+	 * <p>
+	 * Spec: RTN17b
+	 * </p>
+	 */
+	@Test
+	public void connectionmanager_default_endpoint_explicit_fallback() throws AblyException {
+		DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+		fillInOptions(opts);
 
-			new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.failed);
+		final Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, opts);
+		final String primaryHost = hosts.getPrimaryHost();
+
+		opts.fallbackHosts = new String[]{"fallback 1", "fallback 2"};
+
+		MockWebsocketFactory mockTransport = new MockWebsocketFactory();
+		opts.transportFactory = mockTransport;
+
+		/* ensure that all connection attempts ultimately resolve to the primary host */
+		mockTransport.setHostTransform(new MockWebsocketFactory.HostTransform() {
+			@Override
+			public String transformHost(String givenHost) {
+				return primaryHost;
+			}
+		});
+
+		/* set up a filter on a mock transport to fail connections to the primary host */
+		mockTransport.failConnect(new MockWebsocketFactory.HostFilter() {
+			@Override
+			public boolean matches(String hostname) {
+				return hostname.equals(primaryHost);
+			}
+		});
+
+		try (final AblyRealtime ably = new AblyRealtime(opts)) {
+			ConnectionManager connectionManager = ably.connection.connectionManager;
+
+			System.out.println("waiting for connected");
+			new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+			System.out.println("got connected");
 
 			/* Verify that,
-			 *   - connectionManager is failed, because we are using an application key
-			 *     that only works on sandbox;
-			 *   - connectionManager first tried to connect to the original host, not a fallback one.
+			 *   - connectionManager is connected
+			 *   - connectionManager's last host was a fallback host
 			 */
-			System.out.println("waiting for failed");
-			assertThat(connectionManager.getConnectionState().state, is(ConnectionState.failed));
-			System.out.println("got failed");
-			assertThat(connectionManager.getHost(), is(equalTo("realtime.ably.io")));
+			assertThat(connectionManager.getConnectionState().state, is(ConnectionState.connected));
+			assertThat(connectionManager.getHost(), is(not(equalTo(primaryHost))));
 		}
 	}
 
@@ -245,31 +318,47 @@ public class ConnectionManagerTest extends ParameterizedTest {
 	 * fallbackHostsUseDefault is set.
 	 */
 	@Test
-	@Ignore("Invalid test")
 	public void connectionmanager_reconnect_default_fallback() throws AblyException {
-		ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-		// Use a host that does not normally support fallback.
-		opts.realtimeHost = "nondefault.ably.io";
-		opts.environment = null;
+		DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+		fillInOptions(opts);
+
 		opts.fallbackHostsUseDefault = true;
-		/* Use an incorrect port number for TLS. Using 80 rather than some
-		 * random number (e.g. 1234) makes the failure almost immediate,
-		 * instead of taking 15s to time out at each fallback host. */
-		opts.tls = true;
-		opts.tlsPort = 80;
-		try(AblyRealtime ably = new AblyRealtime(opts)) {
+
+		final Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, opts);
+		final String primaryHost = hosts.getPrimaryHost();
+
+		MockWebsocketFactory mockTransport = new MockWebsocketFactory();
+		opts.transportFactory = mockTransport;
+
+		/* ensure that all connection attempts ultimately resolve to the primary host */
+		mockTransport.setHostTransform(new MockWebsocketFactory.HostTransform() {
+			@Override
+			public String transformHost(String givenHost) {
+				return primaryHost;
+			}
+		});
+
+		/* set up a filter on a mock transport to fail connections to the primary host */
+		mockTransport.failConnect(new MockWebsocketFactory.HostFilter() {
+			@Override
+			public boolean matches(String hostname) {
+				return hostname.equals(primaryHost);
+			}
+		});
+
+		try (final AblyRealtime ably = new AblyRealtime(opts)) {
 			ConnectionManager connectionManager = ably.connection.connectionManager;
 
-			System.out.println("waiting for disconnected");
-			new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.disconnected);
-			System.out.println("got disconnected");
+			System.out.println("waiting for connected");
+			new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+			System.out.println("got connected");
 			ably.close();
 
 			/* Verify that,
-			 *   - connectionManager is disconnected
+			 *   - connectionManager is connected
 			 *   - connectionManager's last host was a fallback host
 			 */
-			assertThat(connectionManager.getConnectionState().state, is(ConnectionState.disconnected));
+			assertThat(connectionManager.getConnectionState().state, is(ConnectionState.connected));
 			assertThat(connectionManager.getHost(), is(not(equalTo(opts.realtimeHost))));
 		}
 	}
@@ -438,18 +527,24 @@ public class ConnectionManagerTest extends ParameterizedTest {
 			ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
 				@Override
 				public void onConnectionStateChanged(ConnectionStateChange state) {
-					callbackWasRun[0] = true;
-					try {
-						Field field = ably.connection.connectionManager.getClass().getDeclaredField("connectionStateTtl");
-						field.setAccessible(true);
-						assertEquals("Verify connectionStateTtl has the default value", field.get(ably.connection.connectionManager), 120000L);
-					} catch (NoSuchFieldException | IllegalAccessException e) {
-						fail("Unexpected exception in checking connectionStateTtl");
+					synchronized(callbackWasRun) {
+						callbackWasRun[0] = true;
+						try {
+							Field field = ably.connection.connectionManager.getClass().getDeclaredField("connectionStateTtl");
+							field.setAccessible(true);
+							assertEquals("Verify connectionStateTtl has the default value", field.get(ably.connection.connectionManager), 120000L);
+						} catch (NoSuchFieldException|IllegalAccessException e) {
+							fail("Unexpected exception in checking connectionStateTtl");
+						}
+						callbackWasRun.notify();
 					}
 				}
 			});
-			new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
-			assertTrue("Connected callback was not run", callbackWasRun[0]);
+
+			synchronized (callbackWasRun) {
+				try { callbackWasRun.wait(); } catch(InterruptedException ie) {}
+				assertTrue("Connected callback was not run", callbackWasRun[0]);
+			}
 		}
 	}
 

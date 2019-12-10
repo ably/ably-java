@@ -1,5 +1,6 @@
 package io.ably.lib.test.realtime;
 
+import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.transport.ITransport;
@@ -332,14 +333,16 @@ public class RealtimeRecoverTest extends ParameterizedTest {
 	@Test
 	public void recover_transport_send_exception() {
 		AblyRealtime ably = null;
-		String oldTransportClass = Defaults.TRANSPORT;
 		final String channelName = "recover_transport_send_exception";
 		try {
-			MockWebsocketTransport.throwOnSend = false;
-			MockWebsocketTransport.exceptionsThrown = 0;
+			MockWebsocketFactory mockTransport = new MockWebsocketFactory();
+			mockTransport.throwOnSend = false;
+			mockTransport.exceptionsThrown = 0;
 
-			Defaults.TRANSPORT = MockWebsocketFactory.class.getName();
-			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+			fillInOptions(opts);
+			opts.transportFactory = mockTransport;
+
 			opts.autoConnect = false;
 			ably = new AblyRealtime(opts);
 			ConnectionWaiter connWaiter = new ConnectionWaiter(ably.connection);
@@ -354,7 +357,7 @@ public class RealtimeRecoverTest extends ParameterizedTest {
 			connWaiter.waitFor(ConnectionState.connecting, 2);
 
 			/* Start throwing exceptions in the send() */
-			MockWebsocketTransport.throwOnSend = true;
+			mockTransport.throwOnSend = true;
 			for (int i=0; i<5; i++) {
 				try {
 					channel.publish("name", "data");
@@ -367,7 +370,7 @@ public class RealtimeRecoverTest extends ParameterizedTest {
 			} catch (InterruptedException e) {}
 
 			/* Stop exceptions */
-			MockWebsocketTransport.throwOnSend = false;
+			mockTransport.throwOnSend = false;
 			channel.publish("name2", "data2");
 
 			try {
@@ -375,7 +378,7 @@ public class RealtimeRecoverTest extends ParameterizedTest {
 			} catch (InterruptedException e) {}
 
 			/* It is hard to predict how many exception would be thrown but it shouldn't be hundreds */
-			assertThat("", MockWebsocketTransport.exceptionsThrown, is(lessThan(10)));
+			assertThat("", mockTransport.exceptionsThrown, is(lessThan(10)));
 
 		} catch (AblyException e) {
 			e.printStackTrace();
@@ -383,38 +386,35 @@ public class RealtimeRecoverTest extends ParameterizedTest {
 		} finally {
 			if (ably != null)
 				ably.close();
-			Defaults.TRANSPORT = oldTransportClass;
 		}
-
 	}
 
 	public static class MockWebsocketFactory implements ITransport.Factory {
+		boolean throwOnSend = false;
+		int exceptionsThrown = 0;
+
+		/*
+		 * Special transport class that allows throwing exceptions from send()
+		 */
+		private class MockWebsocketTransport extends WebSocketTransport {
+			private MockWebsocketTransport(TransportParams transportParams, ConnectionManager connectionManager) {
+				super(transportParams, connectionManager);
+			}
+
+			@Override
+			public void send(ProtocolMessage msg) throws AblyException {
+				if (throwOnSend) {
+					exceptionsThrown++;
+					throw AblyException.fromErrorInfo(new ErrorInfo("TestException", 40000));
+				} else {
+					super.send(msg);
+				}
+			}
+		}
+
 		@Override
 		public ITransport getTransport(ITransport.TransportParams transportParams, ConnectionManager connectionManager) {
 			return new MockWebsocketTransport(transportParams, connectionManager);
 		}
 	}
-
-	/*
-	 * Special transport class that allows throwing exceptions from send()
-	 */
-	private static class MockWebsocketTransport extends WebSocketTransport {
-		static boolean throwOnSend = false;
-		static int exceptionsThrown = 0;
-
-		private MockWebsocketTransport(TransportParams transportParams, ConnectionManager connectionManager) {
-			super(transportParams, connectionManager);
-		}
-
-		@Override
-		public void send(ProtocolMessage msg) throws AblyException {
-			if (throwOnSend) {
-				exceptionsThrown++;
-				throw AblyException.fromErrorInfo(new ErrorInfo("TestException", 40000));
-			} else {
-				super.send(msg);
-			}
-		}
-	}
-
 }

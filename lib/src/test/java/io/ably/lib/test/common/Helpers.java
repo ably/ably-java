@@ -366,8 +366,6 @@ public class Helpers {
 	 *
 	 */
 	public static class ConnectionWaiter implements ConnectionStateListener {
-		private static final String TAG = ConnectionWaiter.class.getName();
-		public Map<ConnectionState, Counter> stateCounts;
 
 		/**
 		 * Public API
@@ -384,10 +382,15 @@ public class Helpers {
 		 * @return error info
 		 */
 		public synchronized ErrorInfo waitFor(ConnectionState state) {
-			Log.d(TAG, "waitFor(state=" + state.getConnectionEvent().name() + ")");
-			while(connection.state != state)
-				try { wait(); } catch(InterruptedException e) {}
-			Log.d(TAG, "waitFor done: state=" + connection.state.getConnectionEvent().name() + ")");
+			String targetStateName = state.getConnectionEvent().name();
+			Log.d(TAG, "waitFor(state=" + targetStateName + ")");
+			while (currentState() != state) {
+				try {
+					wait();
+				} catch (InterruptedException e) {
+				}
+			}
+			Log.d(TAG, "waitFor done: state=" + targetStateName + ")");
 			return reason;
 		}
 
@@ -401,7 +404,7 @@ public class Helpers {
 
 			while(getStateCount(state) < count)
 				try { wait(); } catch(InterruptedException e) {}
-			Log.d(TAG, "waitFor done: state=" + connection.state.getConnectionEvent().name() + ", count=" + getStateCount(state) + ")");
+			Log.d(TAG, "waitFor done: state=" + latestChange.current.getConnectionEvent().name() + ", count=" + getStateCount(state) + ")");
 		}
 
 		/**
@@ -423,9 +426,9 @@ public class Helpers {
 			}
 			int stateCount = getStateCount(state);
 			if(remaining <= 0) {
-				Log.d(TAG, "waitFor timed out: current state=" + connection.state.getConnectionEvent().name());
+				Log.d(TAG, "waitFor timed out: current state=" + currentState().getConnectionEvent().name());
 			} else {
-				Log.d(TAG, "waitFor done: state=" + connection.state.getConnectionEvent().name() +
+				Log.d(TAG, "waitFor done: state=" + currentState().getConnectionEvent().name() +
 						", count=" + Integer.toString(stateCount));
 			}
 			return stateCount >= count;
@@ -459,6 +462,7 @@ public class Helpers {
 		@Override
 		public void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange state) {
 			synchronized(this) {
+				latestChange = state;
 				reason = state.reason;
 				Counter counter = stateCounts.get(state.current); if(counter == null) stateCounts.put(state.current, (counter = new Counter()));
 				counter.incr();
@@ -478,11 +482,18 @@ public class Helpers {
 			return counter != null ? counter.value : 0;
 		}
 
+		private synchronized ConnectionState currentState() {
+			return latestChange == null ? connection.state : latestChange.current;
+		}
+
 		/**
 		 * Internal
 		 */
 		private Connection connection;
 		private ErrorInfo reason;
+		private ConnectionStateChange latestChange;
+		private Map<ConnectionState, Counter> stateCounts;
+		private static final String TAG = ConnectionWaiter.class.getName();
 	}
 
 	/**
@@ -586,7 +597,6 @@ public class Helpers {
 
 		/**
 		 * Wait for a given number of messages
-		 * @param count
 		 */
 		public void waitForRecv() {
 			waitForRecv(1);
