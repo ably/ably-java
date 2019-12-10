@@ -855,7 +855,6 @@ public class HttpTest {
 	public void http_execute_fallback_success_timeout_unexpired() throws Exception {
 		ClientOptions opts = new ClientOptions();
 		opts.fallbackRetryTimeout = 2000L;
-		opts.logLevel = Log.VERBOSE;
 		HttpCore httpCore = Mockito.spy(new HttpCore(opts, null));
 
 		String hostExpected = Defaults.HOST_REST;
