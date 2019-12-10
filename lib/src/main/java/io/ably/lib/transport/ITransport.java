@@ -34,16 +34,29 @@ public interface ITransport {
 	}
 
 	public static class TransportParams {
-		ClientOptions options;
-		String host;
-		int port;
-		String connectionKey;
-		String connectionSerial;
-		Mode mode;
-		boolean heartbeats;
+		protected ClientOptions options;
+		protected String host;
+		protected int port;
+		protected String connectionKey;
+		protected String connectionSerial;
+		protected Mode mode;
+		protected boolean heartbeats;
 
-		public TransportParams() {
+		public TransportParams(ClientOptions options) {
+			this.options = options;
 			heartbeats = true; /* default to requiring Ably heartbeats */
+		}
+
+		public String getHost() {
+			return host;
+		}
+
+		public int getPort() {
+			return port;
+		}
+
+		public ClientOptions getClientOptions() {
+			return options;
 		}
 
 		public Param[] getConnectParams(Param[] baseParams) {
@@ -83,9 +96,8 @@ public interface ITransport {
 	}
 
 	public static interface ConnectListener {
-		public void onTransportAvailable(ITransport transport, TransportParams params);
-		public void onTransportUnavailable(ITransport transport, TransportParams params, ErrorInfo reason);
-		public void onTransportUnavailable(ITransport transport, TransportParams params, ErrorInfo reason, ConnectionState state);
+		public void onTransportAvailable(ITransport transport);
+		public void onTransportUnavailable(ITransport transport, ErrorInfo reason);
 	}
 
 	/**
@@ -98,12 +110,7 @@ public interface ITransport {
 	/**
 	 * Close this transport.
 	 */
-	public void close(boolean sendDisconnect);
-
-	/**
-	 * Kill this transport.
-	 */
-	public void abort(ErrorInfo reason);
+	public void close();
 
 	/**
 	 * Send a message on the channel

@@ -14,6 +14,7 @@ public class ConnectionDetails {
 	public String serverId;
 	public Long maxMessageSize;
 	public Long maxInboundRate;
+	public Long maxOutboundRate;
 	public Long maxFrameSize;
 	public Long maxIdleInterval;
 	public Long connectionStateTtl;
@@ -45,6 +46,9 @@ public class ConnectionDetails {
 					break;
 				case "maxInboundRate":
 					maxInboundRate = unpacker.unpackLong();
+					break;
+				case "maxOutboundRate":
+					maxOutboundRate = unpacker.unpackLong();
 					break;
 				case "maxFrameSize":
 					maxFrameSize = unpacker.unpackLong();

@@ -2,8 +2,6 @@ package io.ably.lib.test.realtime;
 
 import io.ably.lib.realtime.*;
 import io.ably.lib.test.common.Setup;
-import io.ably.lib.transport.ConnectionManager;
-import io.ably.lib.transport.Defaults;
 import io.ably.lib.util.Log;
 
 import io.ably.lib.debug.DebugOptions;
@@ -739,7 +737,6 @@ public class RealtimeAuthTest extends ParameterizedTest {
 			}
 
 			ProtocolListener opts = new ProtocolListener();
-			opts.logLevel = Log.VERBOSE;
 			opts.autoConnect = false;
 			opts.tokenDetails = tokenDetails;
 			opts.authCallback = new Auth.TokenCallback() {
@@ -806,8 +803,6 @@ public class RealtimeAuthTest extends ParameterizedTest {
 			/* disable token validity check */
 			opts.queryTime = false;
 
-			opts.logLevel = Log.VERBOSE;
-
 			final AblyRealtime ably = new AblyRealtime(opts);
 
 			Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ably.connection);
@@ -835,7 +830,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
 			/* get a TokenDetails and allow to expire */
 			final String testKey = testVars.keys[0].keyStr;
 			ClientOptions optsForToken = createOptions(testKey);
-			optsForToken.queryTime = false;
+			optsForToken.queryTime = true;
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
 			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new Auth.TokenParams(){{ ttl = 2000L; }}, null);
 			assertNotNull("Expected token value", tokenDetails.token);
@@ -852,7 +847,6 @@ public class RealtimeAuthTest extends ParameterizedTest {
 				}
 			};
 
-			opts.logLevel = Log.VERBOSE;
 			final AblyRealtime ably = new AblyRealtime(opts);
 
 			Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ably.connection);

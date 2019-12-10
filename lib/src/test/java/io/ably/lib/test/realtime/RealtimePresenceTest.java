@@ -15,6 +15,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.*;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.types.*;
@@ -2041,16 +2042,16 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	@Test
 	public void realtime_presence_suspended_reenter() throws AblyException {
 		AblyRealtime ably = null;
-		String oldWebsockFactory = Defaults.TRANSPORT;
 		try {
-			Defaults.TRANSPORT = MockWebsocketFactory.class.getName();
-
-			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			MockWebsocketFactory mockTransport = new MockWebsocketFactory();
+			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+			fillInOptions(opts);
+			opts.transportFactory = mockTransport;
 
 			for (int i=0; i<2; i++) {
 				final String channelName = "presence_suspended_reenter" + testParams.name + String.valueOf(i);
 
-				MockWebsocketFactory.allowSend();
+				mockTransport.allowSend();
 
 				ably = new AblyRealtime(opts);
 
@@ -2070,7 +2071,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				 * On the first run to test RTP19a we don't enter client1 so the server on
 				 * return from suspend sees no presence data and sends ATTACHED without HAS_PRESENCE
 				 * The client then should remove all the members from the presence map and then
-				 * re-enter client2. On the second loop run we enter client2 and receive ATTACHED with
+				 * re-enter client2. On the second loop run we enter client1 and receive ATTACHED with
 				 * HAS_PRESENCE
 				 */
 				final boolean[] wrongPresenceEmitted = new boolean[] {false};
@@ -2103,7 +2104,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				 * don't send it to the server
 				 */
 
-				MockWebsocketFactory.blockSend();
+				mockTransport.blockSend();
 				channel.presence.enterClient(testClientId2, presenceData);
 
 				ProtocolMessage msg = new ProtocolMessage();
@@ -2122,7 +2123,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				};
 				ably.connection.connectionManager.onMessage(null, msg);
 
-				MockWebsocketFactory.allowSend();
+				mockTransport.allowSend();
 
 				ably.connection.connectionManager.requestState(ConnectionState.suspended);
 				channelWaiter.waitFor(ChannelState.suspended);
@@ -2149,24 +2150,20 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
 				/* In both cases we should have one leave message in the leaveMessages */
 				assertEquals("Verify exactly one LEAVE message was generated", leaveMessages.size(), 1);
+
 				PresenceMessage leaveMessage = leaveMessages.get(0);
-				assertTrue("Verify LEAVE message follows specs",
-						leaveMessage.action == Action.leave &&
-								leaveMessage.clientId.equals(testClientId2) && leaveMessage.id == null &&
-								Math.abs(leaveMessage.timestamp-reconnectTimestamp) < 500 &&
-								leaveMessage.data.equals(presenceData));
+				assertEquals("Verify LEAVE message follows specs",leaveMessage.action, Action.leave);
+				assertEquals("Verify LEAVE message follows specs",leaveMessage.clientId, testClientId2);
+				assertEquals("Verify LEAVE message follows specs",leaveMessage.data, presenceData);
+				assertTrue("Verify LEAVE message follows specs", Math.abs(leaveMessage.timestamp-reconnectTimestamp) < 2000);
 
 				/* According to RTP5f there should be no presence event emitted for client1 */
 				assertFalse("Verify no presence event emitted on return from suspend on SYNC for client1",
 						wrongPresenceEmitted[0]);
-
-				ably.close();
-				ably = null;
 			}
 		} finally {
 			if(ably != null)
 				ably.close();
-			Defaults.TRANSPORT = oldWebsockFactory;
 		}
 	}
 
@@ -2336,15 +2333,14 @@ public class RealtimePresenceTest extends ParameterizedTest {
 		AblyRealtime clientAbly2 = null;
 		TestChannel testChannel = new TestChannel();
 		int clientCount = 150; /* Should be greater than 100 to break sync into several messages */
-		String oldTransportName = Defaults.TRANSPORT;
 		try {
 			/* subscribe for presence events in the anonymous connection */
 			new PresenceWaiter(testChannel.realtimeChannel);
+
 			/* set up a connection with specific clientId */
-			ClientOptions client1Opts = new ClientOptions() {{
-				tokenDetails = wildcardToken;
-			}};
+			ClientOptions client1Opts = new ClientOptions(testVars.keys[0].keyStr);
 			fillInOptions(client1Opts);
+			client1Opts.tokenDetails = wildcardToken;
 			clientAbly1 = new AblyRealtime(client1Opts);
 
 			/* wait until connected */
@@ -2367,14 +2363,15 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			assertTrue("Verify no enter errors", enterComplete.errors.isEmpty());
 
 			/* set up a second connection with different clientId */
-			Defaults.TRANSPORT = MockWebsocketFactory.class.getName();
-			MockWebsocketFactory.allowSend();
-			ClientOptions client2Opts = new ClientOptions() {{
-				tokenDetails = token2;
-				clientId = testClientId2;
-			}};
-			testVars.fillInOptions(client2Opts);
+			final MockWebsocketFactory mockTransport20 = new MockWebsocketFactory();
+			DebugOptions client2Opts = new DebugOptions(testVars.keys[0].keyStr);
+			fillInOptions(client2Opts);
+			client2Opts.transportFactory = mockTransport20;
+			client2Opts.tokenDetails = token2;
+			client2Opts.clientId = testClientId2;
 			client2Opts.autoConnect = false;
+
+			mockTransport20.allowSend();
 			clientAbly2 = new AblyRealtime(client2Opts);
 
 			/* wait until connected */
@@ -2395,9 +2392,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 							@Override
 							public void onPresenceMessage(PresenceMessage messages) {
 								if (!disconnectedTransport[0]) {
-									MockWebsocketFactory.lastCreatedTransport.close(false);
-									connectionManager.onTransportUnavailable(MockWebsocketFactory.lastCreatedTransport,
-											null, new ErrorInfo("Mock", 40000));
+									mockTransport20.lastCreatedTransport.close();
+									connectionManager.onTransportUnavailable(mockTransport20.lastCreatedTransport, new ErrorInfo("Mock", 50000));
 
 								}
 								disconnectedTransport[0] = true;
@@ -2437,7 +2433,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			if(clientAbly2 != null)
 				clientAbly2.close();
 			testChannel.dispose();
-			Defaults.TRANSPORT = oldTransportName;
 		}
 	}
 
@@ -2600,12 +2595,13 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	@Test
 	public void presence_state_change () {
 		AblyRealtime ably = null;
-		String oldTransport = Defaults.TRANSPORT;
 		try {
-			Defaults.TRANSPORT = MockWebsocketFactory.class.getName();
-
-			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+			fillInOptions(opts);
 			opts.autoConnect = false;	/* to queue presence messages */
+
+			final MockWebsocketFactory mockTransport = new MockWebsocketFactory();
+			opts.transportFactory = mockTransport;
 			ably = new AblyRealtime(opts);
 
 			final String channelName = "presence_state_change" + testParams.name;
@@ -2630,7 +2626,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			PresenceMessage[] presenceMessages = channel.presence.get(false);
 			assertEquals(presenceMessages.length, 1);
 
-			MockWebsocketFactory.blockSend();
+			mockTransport.blockSend();
 			/* Inject something into internal presence map */
 			final String connId = ably.connection.id;
 			channel.presence.enterClient(testClientId2);
@@ -2651,7 +2647,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			}};
 			ably.connection.connectionManager.onMessage(null, msg);
 
-			MockWebsocketFactory.allowSend();
+			mockTransport.allowSend();
 
 			channel.detach();
 			channelWaiter.waitFor(ChannelState.detached);
@@ -2669,11 +2665,11 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			assertEquals("Verify internal presence map is cleared on DETACH", channel.presence.get(false).length, 0);
 
 			/* Test failure of presence re-enter */
-			MockWebsocketFactory.blockSend();
+			mockTransport.blockSend();
 			/* Let's add something to the presence map */
 			channel.presence.enterClient(testClientId2);
 			ably.connection.connectionManager.onMessage(null, msg);
-			MockWebsocketFactory.failSend(new MockWebsocketFactory.MessageFilter() {
+			mockTransport.failSend(new MockWebsocketFactory.MessageFilter() {
 				@Override
 				public boolean matches(ProtocolMessage message) {
 					return message.action == ProtocolMessage.Action.presence;
@@ -2703,8 +2699,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 		} finally {
 			if (ably != null)
 				ably.close();
-			MockWebsocketFactory.allowSend();
-			Defaults.TRANSPORT = oldTransport;
 		}
 	}
 
@@ -2973,13 +2967,13 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	@Test
 	public void protocol_enter_message_format() throws AblyException, InterruptedException {
 		AblyRealtime ably = null;
-		String oldTransport = Defaults.TRANSPORT;
 
 		try {
 			final ArrayList<PresenceMessage> sentPresence = new ArrayList<>();
-			Defaults.TRANSPORT = MockWebsocketFactory.class.getName();
+
 			/* Allow send but record all the presence messages for later analysis */
-			MockWebsocketFactory.allowSend(new MockWebsocketFactory.MessageFilter() {
+			final MockWebsocketFactory mockTransport = new MockWebsocketFactory();
+			mockTransport.allowSend(new MockWebsocketFactory.MessageFilter() {
 				@Override
 				public boolean matches(ProtocolMessage message) {
 					if (message.action == ProtocolMessage.Action.presence && message.presence != null) {
@@ -2992,8 +2986,10 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				}
 			});
 
-			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+			fillInOptions(opts);
 			opts.clientId = testClientId1;
+			opts.transportFactory = mockTransport;
 			ably = new AblyRealtime(opts);
 
 			Channel channel = ably.channels.get("protocol_enter_message_format_" + testParams.name);
@@ -3024,9 +3020,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 		} finally {
 			if (ably != null)
 				ably.close();
-			/* reset filter */
-			MockWebsocketFactory.allowSend();
-			Defaults.TRANSPORT = oldTransport;
 		}
 	}
 
@@ -3039,13 +3032,13 @@ public class RealtimePresenceTest extends ParameterizedTest {
 	@Test
 	public void protocol_enterclient_message_format() throws AblyException, InterruptedException {
 		AblyRealtime ably = null;
-		String oldTransport = Defaults.TRANSPORT;
 
 		try {
 			final ArrayList<PresenceMessage> sentPresence = new ArrayList<>();
-			Defaults.TRANSPORT = MockWebsocketFactory.class.getName();
+
 			/* Allow send but record all the presence messages for later analysis */
-			MockWebsocketFactory.allowSend(new MockWebsocketFactory.MessageFilter() {
+			final MockWebsocketFactory mockTransport = new MockWebsocketFactory();
+			mockTransport.allowSend(new MockWebsocketFactory.MessageFilter() {
 				@Override
 				public boolean matches(ProtocolMessage message) {
 					if (message.action == ProtocolMessage.Action.presence && message.presence != null) {
@@ -3058,7 +3051,9 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				}
 			});
 
-			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+			fillInOptions(opts);
+			opts.transportFactory = mockTransport;
 			ably = new AblyRealtime(opts);
 
 			Channel channel = ably.channels.get("protocol_enterclient_message_format_" + testParams.name);
@@ -3089,9 +3084,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
 		} finally {
 			if (ably != null)
 				ably.close();
-			/* reset filter */
-			MockWebsocketFactory.allowSend();
-			Defaults.TRANSPORT = oldTransport;
 		}
 	}
 

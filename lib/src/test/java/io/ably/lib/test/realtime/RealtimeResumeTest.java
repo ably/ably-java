@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import io.ably.lib.types.Message;
+import io.ably.lib.util.Log;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -22,6 +23,8 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
 
 public class RealtimeResumeTest extends ParameterizedTest {
@@ -51,12 +54,16 @@ public class RealtimeResumeTest extends ParameterizedTest {
 			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
 			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
 
-			/* disconnect the connection, without closing;
-			 * NOTE this depends on knowledge of the internal structure
-			 * of the library, to simulate a dropped transport without
-			 * causing the connection itself to be disposed */
+			/* disconnect the connection, without closing,
+			/* suppressing automatic retries by the connection manager */
 			System.out.println("Simulating dropped transport");
-			ably.connection.connectionManager.requestState(ConnectionState.disconnected);
+			try {
+				Method method = ably.connection.connectionManager.getClass().getDeclaredMethod("disconnectAndSuppressRetries");
+				method.setAccessible(true);
+				method.invoke(ably.connection.connectionManager);
+			} catch (NoSuchMethodException|IllegalAccessException| InvocationTargetException e) {
+				fail("Unexpected exception in suppressing retries");
+			}
 
 			/* reconnect the rx connection */
 			ably.connection.connect();
@@ -502,7 +509,14 @@ public class RealtimeResumeTest extends ParameterizedTest {
 			 * of the library, to simulate a dropped transport without
 			 * causing the connection itself to be disposed */
 			System.out.println("*** about to disconnect tx connection");
-			ablyTx.connection.connectionManager.requestState(ConnectionState.disconnected);
+			/* suppress automatic retries by the connection manager */
+			try {
+				Method method = ablyTx.connection.connectionManager.getClass().getDeclaredMethod("disconnectAndSuppressRetries");
+				method.setAccessible(true);
+				method.invoke(ablyTx.connection.connectionManager);
+			} catch (NoSuchMethodException|IllegalAccessException|InvocationTargetException e) {
+				fail("Unexpected exception in suppressing retries");
+			}
 
 			/* wait */
 			try { Thread.sleep(2000L); } catch(InterruptedException e) {}

@@ -8,7 +8,6 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolSerializer;
-import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.util.Log;
 
 import java.net.URI;
@@ -81,41 +80,22 @@ public class WebSocketTransport implements ITransport {
 			wsConnection.connect();
 		} catch(AblyException e) {
 			Log.e(TAG, "Unexpected exception attempting connection; wsUri = " + wsUri, e);
-			connectListener.onTransportUnavailable(this, params, e.errorInfo);
+			connectListener.onTransportUnavailable(this, e.errorInfo);
 		} catch(Throwable t) {
 			Log.e(TAG, "Unexpected exception attempting connection; wsUri = " + wsUri, t);
-			connectListener.onTransportUnavailable(this, params, AblyException.fromThrowable(t).errorInfo);
+			connectListener.onTransportUnavailable(this, AblyException.fromThrowable(t).errorInfo);
 		}
 	}
 
 	@Override
-	public void close(boolean sendClose) {
-		Log.d(TAG, "close(); sendClose = " + sendClose);
-		synchronized(this) {
-			if(wsConnection != null) {
-				if(sendClose) {
-					try {
-						send(new ProtocolMessage(Action.close));
-					} catch (AblyException e) {
-						Log.e(TAG, "Unexpected exception sending close", e);
-					}
-				}
-				wsConnection.close();
-				wsConnection = null;
-			}
-		}
-	}
-
-	@Override
-	public void abort(ErrorInfo reason) {
-		Log.d(TAG, "abort(); reason = " + reason);
+	public void close() {
+		Log.d(TAG, "close()");
 		synchronized(this) {
 			if(wsConnection != null) {
 				wsConnection.close();
 				wsConnection = null;
 			}
 		}
-		connectListener.onTransportUnavailable(this, params, reason, ConnectionState.failed);
 	}
 
 	@Override
@@ -150,19 +130,15 @@ public class WebSocketTransport implements ITransport {
 
 	class WsClient extends WebSocketClient {
 
-		public WsClient(URI serverUri) {
+		WsClient(URI serverUri) {
 			super(serverUri);
 		}
 
 		@Override
 		public void onOpen(ServerHandshake handshakedata) {
 			Log.d(TAG, "onOpen()");
-			schedule(new TimerTask() {
-				public void run() {
-					connectListener.onTransportAvailable(WebSocketTransport.this, params);
-					flagActivity();
-				}
-			});
+			connectListener.onTransportAvailable(WebSocketTransport.this);
+			flagActivity();
 		}
 
 		@Override
@@ -203,61 +179,46 @@ public class WebSocketTransport implements ITransport {
 		@Override
 		public void onClose(final int wsCode, final String wsReason, final boolean remote) {
 			Log.d(TAG, "onClose(): wsCode = " + wsCode + "; wsReason = " + wsReason + "; remote = " + remote);
-			schedule(new TimerTask() {
-				public void run() {
-					ConnectionState newState;
-					ErrorInfo reason;
-					switch(wsCode) {
-						case NEVER_CONNECTED:
-							newState = ConnectionState.disconnected;
-							reason = ConnectionManager.REASON_NEVER_CONNECTED;
-							break;
-						case CLOSE_NORMAL:
-						case BUGGYCLOSE:
-						case GOING_AWAY:
-						case ABNORMAL_CLOSE:
-							/* we don't know the specific reason that the connection closed in these cases,
-							 * but we have to assume it's a problem with connectivity rather than some other
-							 * application problem */
-							newState = ConnectionState.disconnected;
-							reason = ConnectionManager.REASON_DISCONNECTED;
-							break;
-						case REFUSE:
-						case POLICY_VALIDATION:
-							newState = ConnectionState.failed;
-							reason = ConnectionManager.REASON_REFUSED;
-							break;
-						case TOOBIG:
-							newState = ConnectionState.failed;
-							reason = ConnectionManager.REASON_TOO_BIG;
-							break;
-						case NO_UTF8:
-						case CLOSE_PROTOCOL_ERROR:
-						case UNEXPECTED_CONDITION:
-						case EXTENSION:
-						case TLS_ERROR:
-						default:
-							/* we don't know the specific reason that the connection closed in these cases,
-							 * but we have to assume it's an application problem, and the problem will
-							 * recur if we try again. The failed state means that we won't automatically
-							 * try again. */
-							newState = ConnectionState.failed;
-							reason = ConnectionManager.REASON_FAILED;
-							break;
-					}
-					connectListener.onTransportUnavailable(WebSocketTransport.this, params, reason, newState);
-				}
-			});
+
+			ErrorInfo reason;
+			switch(wsCode) {
+				case NEVER_CONNECTED:
+				case CLOSE_NORMAL:
+				case BUGGYCLOSE:
+				case GOING_AWAY:
+				case ABNORMAL_CLOSE:
+					/* we don't know the specific reason that the connection closed in these cases,
+					 * but we have to assume it's a problem with connectivity rather than some other
+					 * application problem */
+					reason = ConnectionManager.REASON_DISCONNECTED;
+					break;
+				case REFUSE:
+				case POLICY_VALIDATION:
+					reason = ConnectionManager.REASON_REFUSED;
+					break;
+				case TOOBIG:
+					reason = ConnectionManager.REASON_TOO_BIG;
+					break;
+				case NO_UTF8:
+				case CLOSE_PROTOCOL_ERROR:
+				case UNEXPECTED_CONDITION:
+				case EXTENSION:
+				case TLS_ERROR:
+				default:
+					/* we don't know the specific reason that the connection closed in these cases,
+					 * but we have to assume it's an application problem, and the problem will
+					 * recur if we try again. The failed state means that we won't automatically
+					 * try again. */
+					reason = ConnectionManager.REASON_FAILED;
+					break;
+			}
+			connectListener.onTransportUnavailable(WebSocketTransport.this, reason);
 			dispose();
 		}
 
 		@Override
 		public void onError(final Exception e) {
-			schedule(new TimerTask() {
-				public void run() {
-					connectListener.onTransportUnavailable(WebSocketTransport.this, params, new ErrorInfo(e.getMessage(), 503, 80000));
-				}
-			});
+			connectListener.onTransportUnavailable(WebSocketTransport.this, new ErrorInfo(e.getMessage(), 503, 80000));
 		}
 
 		private synchronized void dispose() {
@@ -314,10 +275,6 @@ public class WebSocketTransport implements ITransport {
 				Log.e(TAG, "No activity for " + timeout + "ms, closing connection");
 				closeConnection(CloseFrame.ABNORMAL_CLOSE, "timed out");
 			}
-		}
-
-		private void schedule(TimerTask task) {
-			schedule(task, 0);
 		}
 
 		private synchronized void schedule(TimerTask task, long delay) {

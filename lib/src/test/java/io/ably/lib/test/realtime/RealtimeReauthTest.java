@@ -287,10 +287,11 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			try {
 				Auth.TokenDetails reauthTokenDetails = ablyRealtime.auth.authorize(null, authOptions);
 				assertFalse("Expecting exception", true);
+				System.out.println("Authorize failed to throw an exception");
 			} catch (AblyException e) {
 				assertEquals("Expecting failed", ConnectionState.failed, ablyRealtime.connection.state);
+				System.out.println("Got failed connection");
 			}
-			System.out.println("Got failed connection");
 
 			/**
 			 * RTC8c: If the connection is in the DISCONNECTED, SUSPENDED, FAILED, or
@@ -413,7 +414,6 @@ public class RealtimeReauthTest extends ParameterizedTest {
 	public void reauth_token_expire_inplace_reauth() {
 		try {
 			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-			optsForToken.logLevel = Log.VERBOSE;
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
 			/* Server will send reauth message 30 seconds before token expiration time i.e. in 4 seconds */
 			TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 34000L; }}, null);
@@ -438,7 +438,6 @@ public class RealtimeReauthTest extends ParameterizedTest {
 					return ablyForToken.auth.requestToken(params, null);
 				}
 			};
-			opts.logLevel = Log.VERBOSE;
 			AblyRealtime ably = new AblyRealtime(opts);
 
 			/* Test UPDATE event delivery */
@@ -498,7 +497,6 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			opts.clientId = "testClientId";
 			opts.useTokenAuth = true;
 			opts.defaultTokenParams.ttl = 34000L;
-			opts.logLevel = Log.VERBOSE;
 			AblyRealtime ably = new AblyRealtime(opts);
 
 			/* Test UPDATE event delivery */
