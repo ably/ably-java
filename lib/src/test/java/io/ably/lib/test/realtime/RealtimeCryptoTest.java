@@ -681,6 +681,8 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 			/* attach */
 			channelSend.attach();
 			channelReceive.attach();
+			new ChannelWaiter(channelSend).waitFor(ChannelState.attached);
+			new ChannelWaiter(channelReceive).waitFor(ChannelState.attached);
 
 			/* subscribe */
 			MessageWaiter messageWaiter =  new MessageWaiter(channelReceive);
@@ -747,6 +749,8 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 			/* attach */
 			channelSend.attach();
 			channelReceive.attach();
+			new ChannelWaiter(channelSend).waitFor(ChannelState.attached);
+			new ChannelWaiter(channelReceive).waitFor(ChannelState.attached);
 
 			/* subscribe */
 			MessageWaiter messageWaiter =  new MessageWaiter(channelReceive);
