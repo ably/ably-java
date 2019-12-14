@@ -1724,7 +1724,7 @@ public class RestAuthTest extends ParameterizedTest {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 			opts.useTokenAuth = true;
 			opts.defaultTokenParams = new TokenParams() {{
-				ttl = 100;
+				ttl = 500;
 			}};
 			AblyRest ably = new AblyRest(opts);
 
@@ -1735,7 +1735,7 @@ public class RestAuthTest extends ParameterizedTest {
 
 			// Sleep until old token expires, then ensure it did.
 
-			Thread.sleep(110);
+			Thread.sleep(1000);
 			ClientOptions optsWithOldToken = createOptions();
 			optsWithOldToken.tokenDetails = oldToken;
 			AblyRest ablyWithOldToken = new AblyRest(optsWithOldToken);
