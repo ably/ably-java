@@ -57,7 +57,6 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			/* init ably for token */
 			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
-			System.out.println("done init ably for token");
 
 			/* get first token */
 			Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -65,7 +64,6 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			capability.addResource(wrongChannel, "*");
 			tokenParams.capability = capability.toString();
 			tokenParams.clientId = testClientId;
-			System.out.println("done get first token");
 
 			Auth.TokenDetails firstToken = ablyForToken.auth.requestToken(tokenParams, null);
 			assertNotNull("Expected token value", firstToken.token);
@@ -75,13 +73,11 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			opts.clientId = testClientId;
 			opts.tokenDetails = firstToken;
 			AblyRealtime ablyRealtime = new AblyRealtime(opts);
-			System.out.println("done create ably");
 
 			/* wait for connected state */
 			Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ablyRealtime.connection);
 			connectionWaiter.waitFor(ConnectionState.connected);
 			assertEquals("Verify connected state is reached", ConnectionState.connected, ablyRealtime.connection.state);
-			System.out.println("connected");
 
 			/* create a channel and check can't attach */
 			Channel channel = ablyRealtime.channels.get(rightChannel);
@@ -90,7 +86,6 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			ErrorInfo error = waiter.waitFor();
 			assertNotNull("Expected error", error);
 			assertEquals("Verify error code 40160 (channel is denied access)", error.code, 40160);
-			System.out.println("can't attach");
 
 			/* get second token */
 			tokenParams = new Auth.TokenParams();
@@ -99,7 +94,6 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			capability.addResource(rightChannel, "*");
 			tokenParams.capability = capability.toString();
 			tokenParams.clientId = testClientId;
-			System.out.println("got second token");
 
 			Auth.TokenDetails secondToken = ablyForToken.auth.requestToken(tokenParams, null);
 			assertNotNull("Expected token value", secondToken.token);
@@ -111,16 +105,13 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			authOptions.tokenDetails = secondToken;
 			Auth.TokenDetails reauthTokenDetails = ablyRealtime.auth.authorize(null, authOptions);
 			assertNotNull("Expected token value", reauthTokenDetails.token);
-			System.out.println("done reauthorize");
 
 			/* re-attach to the channel */
 			waiter = new Helpers.CompletionWaiter();
-			System.out.println("attaching");
 			channel.attach(waiter);
 
 			/* verify onSuccess callback gets called */
 			waiter.waitFor();
-			System.out.println("waited for attach");
 			assertThat(waiter.success, is(true));
 			/* Verify that the connection never disconnected (0.9 in-place authorization) */
 			assertTrue("Expected in-place authorization", connectionWaiter.getCount(ConnectionState.connecting) == 0);
@@ -150,7 +141,6 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			/* init ably for token */
 			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
-			System.out.println("done init ably for token");
 
 			/* get first (good) token */
 			Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -160,7 +150,6 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			tokenParams.capability = capability.toString();
 			tokenParams.clientId = testClientId;
 			Auth.TokenDetails firstToken = ablyForToken.auth.requestToken(tokenParams, null);
-			System.out.println("done get first token");
 			assertNotNull("Expected token value", firstToken.token);
 
 			/* create ably realtime with tokenDetails and clientId */
@@ -168,22 +157,18 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			opts.clientId = testClientId;
 			opts.tokenDetails = firstToken;
 			AblyRealtime ablyRealtime = new AblyRealtime(opts);
-			System.out.println("done create ably");
 
 			/* wait for connected state */
 			Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ablyRealtime.connection);
 			connectionWaiter.waitFor(ConnectionState.connected);
 			assertEquals("Verify connected state is reached", ConnectionState.connected, ablyRealtime.connection.state);
-			System.out.println("connected");
 
 			/* create a channel and check attached */
 			Channel channel = ablyRealtime.channels.get(rightChannel);
 			Helpers.ChannelWaiter waiter = new Helpers.ChannelWaiter(channel);
-			System.out.println("attaching");
 			channel.attach();
 			/* verify onSuccess callback gets called */
 			waiter.waitFor(ChannelState.attached);
-			System.out.println("waited for attach");
 			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
 
 			/* get second (bad) token */
@@ -193,7 +178,6 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			tokenParams.capability = capability.toString();
 			tokenParams.clientId = testClientId;
 			Auth.TokenDetails secondToken = ablyForToken.auth.requestToken(tokenParams, null);
-			System.out.println("got second token");
 			assertNotNull("Expected token value", secondToken.token);
 
 			/* reauthorize */
@@ -202,7 +186,6 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			authOptions.tokenDetails = secondToken;
 			Auth.TokenDetails reauthTokenDetails = ablyRealtime.auth.authorize(null, authOptions);
 			assertNotNull("Expected token value", reauthTokenDetails.token);
-			System.out.println("done reauthorize");
 
 			/* Check that the channel moves to failed state within 2s, and that
 			 * we get the expected error code. */
@@ -211,7 +194,6 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
 			assertEquals("Verify error code", err.code, 40160);
 			assertTrue("Expected channel to fail quickly", System.currentTimeMillis() - before < 2000);
-			System.out.println("got failed channel state: " + err);
 
 			ablyRealtime.close();
 		} catch (AblyException e) {
@@ -236,7 +218,6 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			/* init ably for token */
 			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
-			System.out.println("done init ably for token");
 
 			/* get first (good) token */
 			Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -245,7 +226,6 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			tokenParams.capability = capability.toString();
 			tokenParams.clientId = testClientId;
 			Auth.TokenDetails firstToken = ablyForToken.auth.requestToken(tokenParams, null);
-			System.out.println("done get first token");
 			assertNotNull("Expected token value", firstToken.token);
 
 			/* create ably realtime with tokenDetails and clientId */
@@ -253,22 +233,18 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			opts.clientId = testClientId;
 			opts.tokenDetails = firstToken;
 			AblyRealtime ablyRealtime = new AblyRealtime(opts);
-			System.out.println("done create ably");
 
 			/* wait for connected state */
 			Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ablyRealtime.connection);
 			connectionWaiter.waitFor(ConnectionState.connected);
 			assertEquals("Verify connected state is reached", ConnectionState.connected, ablyRealtime.connection.state);
-			System.out.println("connected");
 
 			/* create a channel and check attached */
 			Channel channel = ablyRealtime.channels.get(rightChannel);
 			Helpers.ChannelWaiter waiter = new Helpers.ChannelWaiter(channel);
-			System.out.println("attaching");
 			channel.attach();
 			/* verify onSuccess callback gets called */
 			waiter.waitFor(ChannelState.attached);
-			System.out.println("waited for attach");
 			assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
 
 			/* get second (bad) token */
@@ -276,7 +252,6 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			Auth.TokenDetails secondToken = ablyForToken.auth.requestToken(tokenParams, null);
 			/* revert client id in token details, otherwise it will be blocked by the client library */
 			secondToken.clientId = testClientId;
-			System.out.println("got second token");
 			assertNotNull("Expected token value", secondToken.token);
 
 			/* Reauthorize. We expect this to throw an exception from the
@@ -287,10 +262,8 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			try {
 				Auth.TokenDetails reauthTokenDetails = ablyRealtime.auth.authorize(null, authOptions);
 				assertFalse("Expecting exception", true);
-				System.out.println("Authorize failed to throw an exception");
 			} catch (AblyException e) {
 				assertEquals("Expecting failed", ConnectionState.failed, ablyRealtime.connection.state);
-				System.out.println("Got failed connection");
 			}
 
 			/**
@@ -304,13 +277,10 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			connectionWaiter.reset();
 			authOptions = new Auth.AuthOptions();
 			authOptions.tokenDetails = firstToken;
-			System.out.println("authorizing with good token");
 			Auth.TokenDetails reauthTokenDetails = ablyRealtime.auth.authorize(null, authOptions);
-			System.out.println("authorized with first token");
 			assertNotNull("Expected token value", reauthTokenDetails.token);
 			connectionWaiter.waitFor(ConnectionState.connected);
 			assertEquals("Verify connected state is reached", ConnectionState.connected, ablyRealtime.connection.state);
-			System.out.println("connected");
 
 			ablyRealtime.close();
 		} catch (AblyException e) {
@@ -333,7 +303,6 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			/* init ably for token */
 			ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
 			final AblyRest ablyForToken = new AblyRest(optsForToken);
-			System.out.println("done init ably for token");
 
 			/* get first token */
 			Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -346,7 +315,6 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			opts.clientId = testClientId;
 			opts.tokenDetails = firstToken;
 			AblyRealtime ablyRealtime = new AblyRealtime(opts);
-			System.out.println("done create ably");
 
 			ablyRealtime.connection.on(new ConnectionStateListener() {
 				@Override
@@ -366,7 +334,6 @@ public class RealtimeReauthTest extends ParameterizedTest {
 			}
 
 			assertEquals("Verify connected state is reached", ConnectionState.connected, ablyRealtime.connection.state);
-			System.out.println("connected");
 
 			int stateChangeCount = stateChangeHistory.size();
 
