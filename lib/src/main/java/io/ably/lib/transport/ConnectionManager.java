@@ -1329,7 +1329,11 @@ public class ConnectionManager implements ConnectListener {
 				Log.v(TAG, "Requesting connection close");
 				transport.send(new ProtocolMessage(ProtocolMessage.Action.close));
 				return false;
-			} catch (AblyException e) {}
+			} catch (AblyException e) {
+				/* we're closing, and the attempt to send the CLOSE message failed;
+				 * continue, because we're not going to reinstate the transport
+				 * just to send a CLOSE message */
+			}
 		}
 
 		/* just close the transport */
