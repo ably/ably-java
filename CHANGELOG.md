@@ -1,5 +1,25 @@
 # Change Log
 
+## [v1.1.8](https://github.com/ably/ably-java/tree/v1.1.8)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.1.6...v1.1.8)
+
+**Fixed bugs:**
+
+- Rework and reinstate invalid ConnectionManager tests [\#524](https://github.com/ably/ably-java/issues/524)
+- After loss of connectivity, and transport closure due to timeout, the ConnectionManager still thinks the transport is active [\#495](https://github.com/ably/ably-java/issues/495)
+
+**Merged pull requests:**
+
+- Connectionmanager synchronisation refactor [\#539](https://github.com/ably/ably-java/pull/539) ([paddybyers](https://github.com/paddybyers))
+- RealtimeChannelTest.transient\_publish\_connected: fix regression… [\#538](https://github.com/ably/ably-java/pull/538) ([paddybyers](https://github.com/paddybyers))
+- Fix transient pub race [\#528](https://github.com/ably/ably-java/pull/528) ([paddybyers](https://github.com/paddybyers))
+- \[WIP\] Fix some ConnectionManager tests [\#526](https://github.com/ably/ably-java/pull/526) ([amihaiemil](https://github.com/amihaiemil))
+
+## [v1.1.7](https://github.com/ably/ably-java/tree/v1.1.7)
+
+Note: this release reverts the changes in 1.1.6 due to regressions in that release, and is functionally identical to 1.1.5.
+
 ## [v1.1.6](https://github.com/ably/ably-java/tree/v1.1.6)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.1.5...v1.1.6)
