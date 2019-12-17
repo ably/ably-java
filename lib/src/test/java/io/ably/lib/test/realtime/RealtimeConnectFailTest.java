@@ -54,7 +54,6 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 
 			ErrorInfo fail = connectionWaiter.waitFor(ConnectionState.failed);
 			assertEquals("Verify failed state is reached", ConnectionState.failed, ably.connection.state);
-			/* FIXME: sometimes this fails with 401 */
 			// assertEquals("Verify correct error code is given", 404, fail.statusCode);
 		} finally {
 			ably.close();
