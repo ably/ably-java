@@ -964,7 +964,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	}
 
 	boolean shouldReattachToSetOptions(ChannelOptions options) {
-		/* TODO: Check if the new options are different than the old ones */
 		return
 			(this.state == ChannelState.attached || this.state == ChannelState.attaching) &&
 			(!options.modes.isEmpty() || !options.params.isEmpty());
