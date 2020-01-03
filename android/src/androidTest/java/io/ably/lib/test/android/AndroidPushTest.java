@@ -9,6 +9,11 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.test.AndroidTestCase;
 
 import android.util.Log;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.iid.InstanceIdResult;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import io.ably.lib.push.*;
 import io.ably.lib.push.ActivationStateMachine.AfterRegistrationSyncFailed;
 import io.ably.lib.push.ActivationStateMachine.CalledActivate;
@@ -202,7 +207,7 @@ public class AndroidPushTest extends AndroidTestCase {
 		assertSize(1, activation.machine.pendingEvents);
 		assertInstanceOf(CalledActivate.class, activation.machine.pendingEvents.getLast());
 
-		assertInstanceOf(WaitingForNewPushDeviceDetails.class, to);
+		assertInstanceOf(WaitingForRegistrationSync.class, to);
 	}
 
 	// RSH3a3a
@@ -1209,6 +1214,7 @@ public class AndroidPushTest extends AndroidTestCase {
 					testActivation = new TestActivation();
 
 					setUpMachineState(this);
+					final boolean isExpectingRegistrationValidation = testActivation.machine.current instanceof AfterRegistrationSyncFailed;
 
 					final AsyncWaiter<Intent> registerCallback = useCustomRegistrar ? broadcastWaiter("PUSH_REGISTER_DEVICE") : null;
 					final AsyncWaiter<Intent> updateFailedCallback = updateError != null ? broadcastWaiter("PUSH_UPDATE_FAILED") : null;
@@ -1235,20 +1241,27 @@ public class AndroidPushTest extends AndroidTestCase {
 						registerCallback.waitFor();
 						assertNull(registerCallback.error);
 					} else {
-						// RSH3d3b
 						requestWaiter.waitFor();
 						Helpers.RawHttpRequest request = requestWaiter.result;
-						assertEquals("PATCH", request.method);
 						assertEquals("/push/deviceRegistrations/"+testActivation.rest.push.getLocalDevice().id, request.url.getPath());
-						assertEquals(
-								JsonUtils.object()
-										.add("push", JsonUtils.object()
-												.add("recipient", JsonUtils.object()
-														.add("transportType", "fcm")
-														.add("registrationToken", updatedRegistrationToken))).toJson().toString(),
-								Serialisation.msgpackToGson(request.requestBody.getEncoded()).toString());
 						String authToken = Base64Coder.decodeString(request.requestHeaders.get("X-Ably-DeviceToken").get(0));
 						assertEquals(testActivation.rest.push.getLocalDevice().deviceIdentityToken, authToken);
+
+						JsonObject requestBody = (JsonObject)Serialisation.msgpackToGson(request.requestBody.getEncoded());
+						JsonObject requestRecipient = requestBody.getAsJsonObject("push").getAsJsonObject("recipient");
+						assertEquals("fcm", requestRecipient.getAsJsonPrimitive("transportType").getAsString());
+						assertEquals(updatedRegistrationToken, requestRecipient.getAsJsonPrimitive("registrationToken").getAsString());
+
+						if(isExpectingRegistrationValidation) {
+							// RSH3f1a: PUT the entire DeviceDetails
+							assertEquals("PUT", request.method);
+							assertTrue(requestBody.has("deviceSecret"));
+							assertTrue(requestBody.has("clientId"));
+						} else {
+							// RSH3d3b: PATCH the updated members
+							assertFalse(requestBody.has("deviceSecret"));
+							assertFalse(requestBody.has("clientId"));
+						}
 					}
 
 					// RSH3d3d
