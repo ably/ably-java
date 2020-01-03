@@ -29,6 +29,7 @@ import io.ably.lib.push.ActivationStateMachine.WaitingForPushDeviceDetails;
 import io.ably.lib.push.ActivationStateMachine.WaitingForRegistrationUpdate;
 import io.ably.lib.push.ActivationStateMachine.UpdatingRegistrationFailed;
 import io.ably.lib.rest.DeviceDetails;
+import io.azam.ulidj.ULID;
 import junit.extensions.TestSetup;
 import junit.framework.TestSuite;
 
@@ -96,7 +97,7 @@ public class AndroidPushTest extends AndroidTestCase {
 			AsyncWaiter<Helpers.RawHttpRequest> requestWaiter = httpTracker.getRequestWaiter();
 			AsyncWaiter<Intent> activateWaiter = broadcastWaiter("PUSH_ACTIVATE");
 
-			rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.GCM, "testToken");
+			rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.FCM, "testToken");
 			rest.push.activate(false);
 
 			activateWaiter.waitFor();
@@ -113,7 +114,7 @@ public class AndroidPushTest extends AndroidTestCase {
 
 			rest.push.activate(true); // Just to set useCustomRegistrar to true.
 			AsyncWaiter<Intent> customRegisterer = broadcastWaiter("PUSH_REGISTER_DEVICE");
-			rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.GCM, "testTokenFailed");
+			rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.FCM, "testTokenFailed");
 			customRegisterer.waitFor();
 
 			CompletionWaiter failedWaiter = machine.getTransitionedToWaiter(AfterRegistrationUpdateFailed.class);
@@ -163,7 +164,7 @@ public class AndroidPushTest extends AndroidTestCase {
 	public void test_push_onNewRegistrationToken() throws InterruptedException, AblyException {
 		TestActivation activation = new TestActivation();
 		BlockingQueue<Event> events = activation.machine.getEventReceiver(1);
-		activation.rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.GCM, "foo");
+		activation.rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.FCM, "foo");
 		Event event = events.take();
 		assertInstanceOf(GotPushDeviceDetails.class, event);
 	}
@@ -218,7 +219,7 @@ public class AndroidPushTest extends AndroidTestCase {
 	// RSH3a2b
 	public void test_NotActivated_on_CalledActivate_with_registrationToken() throws InterruptedException, AblyException {
 		TestActivation activation = new TestActivation();
-		activation.rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.GCM, "testToken");
+		activation.rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.FCM, "testToken");
 
 		State state = new NotActivated(activation.machine);
 		State to = state.transition(new CalledActivate());
@@ -317,7 +318,7 @@ public class AndroidPushTest extends AndroidTestCase {
 					}
 
 					// Will send GotPushDeviceDetails event.
-					activation.rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.GCM, "testToken");
+					activation.rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.FCM, "testToken");
 
 					handled.waitFor();
 
@@ -371,7 +372,11 @@ public class AndroidPushTest extends AndroidTestCase {
 					assertTrue(expectedState.isInstance(activation.machine.current));
 				} finally {
 					activation.httpTracker.unlockRequests();
-					activation.rest.push.admin.deviceRegistrations.remove(activation.rest.push.getLocalDevice());
+					/* delete the registration without sending (invalid) local device credentials */
+					LocalDevice localDevice = activation.rest.push.getLocalDevice();
+					String deviceId = localDevice.id;
+					localDevice.reset();
+					activation.rest.push.admin.deviceRegistrations.remove(deviceId);
 				}
 			}
 		}
@@ -640,14 +645,17 @@ public class AndroidPushTest extends AndroidTestCase {
 	public void test_PushChannel_subscribeDevice_not_registered() throws AblyException {
 		TestActivation activation = new TestActivation();
 		Channel channel = activation.rest.channels.get("pushenabled:foo");
-		PushBase.ChannelSubscription sub = PushBase.ChannelSubscription.forDevice(channel.name, activation.rest.push.getLocalDevice().id);
 
 		try {
 			channel.push.subscribeDevice();
 			fail("expected failure due to device not being registered");
 		} catch (AblyException e) {
 		} finally {
-			activation.rest.push.admin.channelSubscriptions.remove(sub);
+			String deviceId = activation.rest.push.getLocalDevice().id;
+			if(deviceId != null) {
+				PushBase.ChannelSubscription sub = PushBase.ChannelSubscription.forDevice(channel.name, deviceId);
+				activation.rest.push.admin.channelSubscriptions.remove(sub);
+			}
 		}
 	}
 
@@ -655,11 +663,11 @@ public class AndroidPushTest extends AndroidTestCase {
 	public void test_PushChannel_subscribeDevice_ok() throws AblyException {
 		TestActivation activation = new TestActivation();
 		Channel channel = activation.rest.channels.get("pushenabled:foo");
-		PushBase.ChannelSubscription sub = PushBase.ChannelSubscription.forDevice(channel.name, activation.rest.push.getLocalDevice().id);
+		PushBase.ChannelSubscription sub = null;
 
 		try {
 			activation.registerAndWait();
-
+			sub = PushBase.ChannelSubscription.forDevice(channel.name, activation.rest.push.getLocalDevice().id);
 			channel.push.subscribeDevice();
 
 			PushBase.ChannelSubscription[] items = activation.rest.push.admin.channelSubscriptions.list(new Param[]{
@@ -670,7 +678,9 @@ public class AndroidPushTest extends AndroidTestCase {
 			assertSize(1, items);
 			assertEquals(items[0], sub);
 		} finally {
-			activation.rest.push.admin.channelSubscriptions.remove(sub);
+			if(sub != null) {
+				activation.rest.push.admin.channelSubscriptions.remove(sub);
+			}
 		}
 	}
 
@@ -678,7 +688,6 @@ public class AndroidPushTest extends AndroidTestCase {
 	public void test_PushChannel_subscribeClient_not_registered() throws AblyException {
 		TestActivation activation = new TestActivation();
 		Channel channel = activation.rest.channels.get("pushenabled:foo");
-		PushBase.ChannelSubscription sub = PushBase.ChannelSubscription.forClientId(channel.name, activation.rest.push.getLocalDevice().clientId);
 
 		try {
 			channel.push.subscribeClient();
@@ -694,12 +703,12 @@ public class AndroidPushTest extends AndroidTestCase {
 		activation.rest.auth.setClientId(testClientId);
 		activation.rest.auth.authorize(new Auth.TokenParams() {{ clientId = testClientId; }}, null);
 
-		Channel channel = activation.rest.channels.get("pushenabled:foo");
-		PushBase.ChannelSubscription sub = PushBase.ChannelSubscription.forClientId(channel.name, activation.rest.push.getLocalDevice().clientId);
-
+		PushBase.ChannelSubscription sub = null;
 		try {
 			activation.registerAndWait();
 
+			Channel channel = activation.rest.channels.get("pushenabled:foo");
+			sub = PushBase.ChannelSubscription.forClientId(channel.name, activation.rest.push.getLocalDevice().clientId);
 			channel.push.subscribeClient();
 
 			PushBase.ChannelSubscription[] items = activation.rest.push.admin.channelSubscriptions.list(new Param[]{
@@ -710,7 +719,9 @@ public class AndroidPushTest extends AndroidTestCase {
 			assertSize(1, items);
 			assertEquals(items[0], sub);
 		} finally {
-			activation.rest.push.admin.channelSubscriptions.remove(sub);
+			if(sub != null) {
+				activation.rest.push.admin.channelSubscriptions.remove(sub);
+			}
 		}
 	}
 
@@ -721,7 +732,7 @@ public class AndroidPushTest extends AndroidTestCase {
 		PushBase.ChannelSubscription sub = PushBase.ChannelSubscription.forDevice(channel.name, activation.rest.push.getLocalDevice().id);
 
 		try {
-			channel.push.unsubscribeDevice(getContext());
+			channel.push.unsubscribeDevice();
 			fail("expected failure due to device not being registered");
 		} catch (AblyException e) {
 		}
@@ -731,14 +742,15 @@ public class AndroidPushTest extends AndroidTestCase {
 	public void test_PushChannel_unsubscribeDevice_ok() throws AblyException {
 		TestActivation activation = new TestActivation();
 		Channel channel = activation.rest.channels.get("pushenabled:foo");
-		PushBase.ChannelSubscription sub = PushBase.ChannelSubscription.forDevice(channel.name, activation.rest.push.getLocalDevice().id);
+		PushBase.ChannelSubscription sub = null;
 
 		try {
 			activation.registerAndWait();
+			sub = PushBase.ChannelSubscription.forDevice(channel.name, activation.rest.push.getLocalDevice().id);
 
 			activation.rest.push.admin.channelSubscriptions.save(sub);
 
-			channel.push.unsubscribeDevice(getContext());
+			channel.push.unsubscribeDevice();
 
 			PushBase.ChannelSubscription[] items = activation.rest.push.admin.channelSubscriptions.list(new Param[]{
 					new Param("channel", channel.name),
@@ -747,7 +759,9 @@ public class AndroidPushTest extends AndroidTestCase {
 			}).items();
 			assertSize(0, items);
 		} finally {
-			activation.rest.push.admin.channelSubscriptions.remove(sub);
+			if(sub != null) {
+				activation.rest.push.admin.channelSubscriptions.remove(sub);
+			}
 		}
 	}
 
@@ -772,10 +786,11 @@ public class AndroidPushTest extends AndroidTestCase {
 		activation.rest.auth.authorize(new Auth.TokenParams() {{ clientId = testClientId; }}, null);
 
 		Channel channel = activation.rest.channels.get("pushenabled:foo");
-		PushBase.ChannelSubscription sub = PushBase.ChannelSubscription.forClientId(channel.name, activation.rest.push.getLocalDevice().clientId);
+		PushBase.ChannelSubscription sub = null;
 
 		try {
 			activation.registerAndWait();
+			sub = PushBase.ChannelSubscription.forClientId(channel.name, activation.rest.push.getLocalDevice().clientId);
 
 			activation.rest.push.admin.channelSubscriptions.save(sub);
 
@@ -788,7 +803,9 @@ public class AndroidPushTest extends AndroidTestCase {
 			}).items();
 			assertSize(0, items);
 		} finally {
-			activation.rest.push.admin.channelSubscriptions.remove(sub);
+			if(sub != null) {
+				activation.rest.push.admin.channelSubscriptions.remove(sub);
+			}
 		}
 	}
 
@@ -822,7 +839,7 @@ public class AndroidPushTest extends AndroidTestCase {
 						.add("metadata", JsonUtils.object())
 						.add("push", JsonUtils.object()
 								.add("recipient", JsonUtils.object()
-										.add("transportType", "gcm")
+										.add("transportType", "fcm")
 										.add("registrationToken", "qux")))
 						.toJson());
 
@@ -975,6 +992,11 @@ public class AndroidPushTest extends AndroidTestCase {
 			return super.reset();
 		}
 
+		@Override
+		protected void getRegistrationToken() {
+			activationContext.onNewRegistrationToken(RegistrationToken.Type.FCM, ULID.random());
+		}
+
 		public BlockingQueue<Event> getEventReceiver(int capacity) {
 			events = new ArrayBlockingQueue<Event>(capacity);
 			return events;
@@ -1084,8 +1106,7 @@ public class AndroidPushTest extends AndroidTestCase {
 						requestWaiter.waitFor();
 						Helpers.RawHttpRequest request = requestWaiter.result;
 						assertEquals("DELETE", request.method);
-						assertEquals("/push/deviceRegistrations", request.url.getPath());
-						assertTrue(request.url.getQuery().contains("deviceId="+testActivation.rest.push.getLocalDevice().id));
+						assertEquals("/push/deviceRegistrations/" + testActivation.rest.push.getLocalDevice().id, request.url.getPath());
 					}
 
 					// RSH3d2d
@@ -1223,7 +1244,7 @@ public class AndroidPushTest extends AndroidTestCase {
 								JsonUtils.object()
 										.add("push", JsonUtils.object()
 												.add("recipient", JsonUtils.object()
-														.add("transportType", "gcm")
+														.add("transportType", "fcm")
 														.add("registrationToken", updatedRegistrationToken))).toJson().toString(),
 								Serialisation.msgpackToGson(request.requestBody.getEncoded()).toString());
 						String authToken = Helpers.tokenFromAuthHeader(request.authHeader);
@@ -1303,7 +1324,7 @@ public class AndroidPushTest extends AndroidTestCase {
 		protected String sendInitialEvent(TestCase testCase) throws AblyException {
 			// Will send GotPushDeviceDetails event.
 			CalledActivate.useCustomRegistrar(testCase.useCustomRegistrar, PreferenceManager.getDefaultSharedPreferences(getContext()));
-			testCase.testActivation.rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.GCM, "testTokenUpdated");
+			testCase.testActivation.rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.FCM, "testTokenUpdated");
 			return "testTokenUpdated";
 		}
 	}
