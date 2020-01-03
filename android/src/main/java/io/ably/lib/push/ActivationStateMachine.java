@@ -368,21 +368,20 @@ public class ActivationStateMachine {
 	}
 
 	private static void getRegistrationToken(final ActivationStateMachine machine) {
-		FirebaseInstanceId.getInstance().getInstanceId()
-				.addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
-					@Override
-					public void onComplete(Task<InstanceIdResult> task) {
-						if(task.isSuccessful()) {
-							/* Get new Instance ID token */
-							String token = task.getResult().getToken();
-							Log.i(TAG, "getInstanceId completed with new token");
-							machine.activationContext.onNewRegistrationToken(RegistrationToken.Type.FCM, token);
-						} else {
-							Log.e(TAG, "getInstanceId failed", task.getException());
-							machine.handleEvent(new ActivationStateMachine.GettingPushDeviceDetailsFailed(ErrorInfo.fromThrowable(task.getException())));
-						}
-					}
-				});
+		machine.activationContext.getRegistrationToken(new OnCompleteListener<InstanceIdResult>() {
+			@Override
+			public void onComplete(Task<InstanceIdResult> task) {
+				if(task.isSuccessful()) {
+					/* Get new Instance ID token */
+					String token = task.getResult().getToken();
+					Log.i(TAG, "getInstanceId completed with new token");
+					machine.activationContext.onNewRegistrationToken(RegistrationToken.Type.FCM, token);
+				} else {
+					Log.e(TAG, "getInstanceId failed", task.getException());
+					machine.handleEvent(new ActivationStateMachine.GettingPushDeviceDetailsFailed(ErrorInfo.fromThrowable(task.getException())));
+				}
+			}
+		});
 	}
 
 	private static void updateRegistration(final ActivationStateMachine machine) {
