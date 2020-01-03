@@ -9,7 +9,6 @@ import android.support.v4.content.LocalBroadcastManager;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
 import com.google.gson.JsonObject;
 
@@ -94,7 +93,7 @@ public class ActivationStateMachine {
 				if (device.getRegistrationToken() != null) {
 					machine.pendingEvents.add(new ActivationStateMachine.GotPushDeviceDetails());
 				} else {
-					getRegistrationToken(machine);
+					machine.getRegistrationToken();
 				}
 
 				if(!device.isCreated()) {
@@ -198,12 +197,11 @@ public class ActivationStateMachine {
 				return this;
 			} else if (event instanceof ActivationStateMachine.CalledDeactivate) {
 				LocalDevice device = machine.getDevice();
-				deregister(machine);
+				machine.deregister();
 				return new ActivationStateMachine.WaitingForDeregistration(machine, this);
 			} else if (event instanceof ActivationStateMachine.GotPushDeviceDetails) {
-				LocalDevice device = machine.getDevice();
-
-				updateRegistration(machine);
+				machine.getDevice();
+				machine.updateRegistration();
 
 				return new ActivationStateMachine.WaitingForRegistrationUpdate(machine);
 			}
@@ -233,10 +231,10 @@ public class ActivationStateMachine {
 		public AfterRegistrationUpdateFailed(ActivationStateMachine machine) { super(machine); }
 		public ActivationStateMachine.State transition(ActivationStateMachine.Event event) {
 			if (event instanceof ActivationStateMachine.CalledActivate || event instanceof ActivationStateMachine.GotPushDeviceDetails) {
-				updateRegistration(machine);
+				machine.updateRegistration();
 				return new ActivationStateMachine.WaitingForRegistrationUpdate(machine);
 			} else if (event instanceof ActivationStateMachine.CalledDeactivate) {
-				deregister(machine);
+				machine.deregister();
 				return new ActivationStateMachine.WaitingForDeregistration(machine, this);
 			}
 			return null;
@@ -367,36 +365,36 @@ public class ActivationStateMachine {
 		LocalBroadcastManager.getInstance(context).registerReceiver(onceReceiver, filter);
 	}
 
-	private static void getRegistrationToken(final ActivationStateMachine machine) {
-		machine.activationContext.getRegistrationToken(new OnCompleteListener<InstanceIdResult>() {
+	protected void getRegistrationToken() {
+		activationContext.getRegistrationToken(new OnCompleteListener<InstanceIdResult>() {
 			@Override
 			public void onComplete(Task<InstanceIdResult> task) {
 				if(task.isSuccessful()) {
 					/* Get new Instance ID token */
 					String token = task.getResult().getToken();
 					Log.i(TAG, "getInstanceId completed with new token");
-					machine.activationContext.onNewRegistrationToken(RegistrationToken.Type.FCM, token);
+					activationContext.onNewRegistrationToken(RegistrationToken.Type.FCM, token);
 				} else {
 					Log.e(TAG, "getInstanceId failed", task.getException());
-					machine.handleEvent(new ActivationStateMachine.GettingPushDeviceDetailsFailed(ErrorInfo.fromThrowable(task.getException())));
+					handleEvent(new ActivationStateMachine.GettingPushDeviceDetailsFailed(ErrorInfo.fromThrowable(task.getException())));
 				}
 			}
 		});
 	}
 
-	private static void updateRegistration(final ActivationStateMachine machine) {
-		final LocalDevice device = machine.activationContext.getLocalDevice();
-		boolean useCustomRegistrar = machine.activationContext.getPreferences().getBoolean(ActivationStateMachine.PersistKeys.PUSH_CUSTOM_REGISTRAR, false);
+	private void updateRegistration() {
+		final LocalDevice device = activationContext.getLocalDevice();
+		boolean useCustomRegistrar = activationContext.getPreferences().getBoolean(ActivationStateMachine.PersistKeys.PUSH_CUSTOM_REGISTRAR, false);
 		if (useCustomRegistrar) {
-			machine.invokeCustomRegistration(device, false);
+			invokeCustomRegistration(device, false);
 		} else {
 			final AblyRest ably;
 			try {
-				ably = machine.activationContext.getAbly();
+				ably = activationContext.getAbly();
 			} catch(AblyException ae) {
 				ErrorInfo reason = ae.errorInfo;
 				Log.e(TAG, "exception registering " + device.id + ": " + reason.toString());
-				machine.handleEvent(new ActivationStateMachine.UpdatingRegistrationFailed(reason));
+				handleEvent(new ActivationStateMachine.UpdatingRegistrationFailed(reason));
 				return;
 			}
 			final HttpCore.RequestBody body = HttpUtils.requestBodyFromGson(device.pushRecipientJsonObject(), ably.options.useBinaryProtocol);
@@ -408,35 +406,35 @@ public class ActivationStateMachine {
 						params = Param.push(params, "fullWait", "true");
 					}
 
-					http.patch("/push/deviceRegistrations/" + device.id, ably.push.pushRequestHeaders(true), params, body, null, true, callback);
+					http.patch("/push/deviceRegistrations/" + device.id, ably.push.pushRequestHeaders(true), params, body, null, false, callback);
 				}
 			}).async(new Callback<Void>() {
 				@Override
 				public void onSuccess(Void response) {
 					Log.i(TAG, "updated registration " + device.id);
-					machine.handleEvent(new ActivationStateMachine.RegistrationUpdated());
+					handleEvent(new ActivationStateMachine.RegistrationUpdated());
 				}
 				@Override
 				public void onError(ErrorInfo reason) {
 					Log.e(TAG, "error updating registration " + device.id + ": " + reason.toString());
-					machine.handleEvent(new ActivationStateMachine.UpdatingRegistrationFailed(reason));
+					handleEvent(new ActivationStateMachine.UpdatingRegistrationFailed(reason));
 				}
 			});
 		}
 	}
 
-	private static void deregister(final ActivationStateMachine machine) {
-		final LocalDevice device = machine.activationContext.getLocalDevice();
-		if (machine.activationContext.getPreferences().getBoolean(ActivationStateMachine.PersistKeys.PUSH_CUSTOM_REGISTRAR, false)) {
-			machine.invokeCustomDeregistration(device);
+	private void deregister() {
+		final LocalDevice device = activationContext.getLocalDevice();
+		if (activationContext.getPreferences().getBoolean(ActivationStateMachine.PersistKeys.PUSH_CUSTOM_REGISTRAR, false)) {
+			invokeCustomDeregistration(device);
 		} else {
 			final AblyRest ably;
 			try {
-				ably = machine.activationContext.getAbly();
+				ably = activationContext.getAbly();
 			} catch(AblyException ae) {
 				ErrorInfo reason = ae.errorInfo;
 				Log.e(TAG, "exception registering " + device.id + ": " + reason.toString());
-				machine.handleEvent(new ActivationStateMachine.DeregistrationFailed(reason));
+				handleEvent(new ActivationStateMachine.DeregistrationFailed(reason));
 				return;
 			}
 			ably.http.request(new Http.Execute<Void>() {
@@ -452,18 +450,18 @@ public class ActivationStateMachine {
 				@Override
 				public void onSuccess(Void response) {
 					Log.i(TAG, "deregistered " + device.id);
-					machine.handleEvent(new ActivationStateMachine.Deregistered());
+					handleEvent(new ActivationStateMachine.Deregistered());
 				}
 				@Override
 				public void onError(ErrorInfo reason) {
 					Log.e(TAG, "error deregistering " + device.id + ": " + reason.toString());
-					machine.handleEvent(new ActivationStateMachine.DeregistrationFailed(reason));
+					handleEvent(new ActivationStateMachine.DeregistrationFailed(reason));
 				}
 			});
 		}
 	}
 
-	private final ActivationContext activationContext;
+	protected final ActivationContext activationContext;
 	private final Context context;
 	public ActivationStateMachine.State current;
 	public ArrayDeque<ActivationStateMachine.Event> pendingEvents;

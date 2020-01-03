@@ -29,7 +29,6 @@ public class ActivationContext {
 
 	public synchronized LocalDevice getLocalDevice() {
 		if(localDevice == null) {
-
 			localDevice = new LocalDevice(this);
 		}
 		return localDevice;
