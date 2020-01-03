@@ -100,7 +100,7 @@ public class RestPushTest extends ParameterizedTest {
 				.add("metadata", JsonUtils.object())
 				.add("push", JsonUtils.object()
 						.add("recipient", JsonUtils.object()
-								.add("transportType", "gcm")
+								.add("transportType", "fcm")
 								.add("registrationToken", "qux")))
 				.toJson());
 
@@ -112,7 +112,7 @@ public class RestPushTest extends ParameterizedTest {
 				.add("metadata", JsonUtils.object())
 				.add("push", JsonUtils.object()
 						.add("recipient", JsonUtils.object()
-								.add("transportType", "gcm")
+								.add("transportType", "fcm")
 								.add("registrationToken", "qux")))
 				.toJson());
 
@@ -124,7 +124,7 @@ public class RestPushTest extends ParameterizedTest {
 				.add("metadata", JsonUtils.object())
 				.add("push", JsonUtils.object()
 						.add("recipient", JsonUtils.object()
-								.add("transportType", "gcm")
+								.add("transportType", "fcm")
 								.add("registrationToken", "qux")))
 				.toJson());
 
@@ -136,7 +136,7 @@ public class RestPushTest extends ParameterizedTest {
 				.add("metadata", JsonUtils.object())
 				.add("push", JsonUtils.object()
 						.add("recipient", JsonUtils.object()
-								.add("transportType", "gcm")
+								.add("transportType", "fcm")
 								.add("registrationToken", "qux")))
 				.toJson());
 
