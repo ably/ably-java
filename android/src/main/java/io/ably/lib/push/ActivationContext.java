@@ -65,15 +65,16 @@ public class ActivationContext {
 		return (ably = new AblyRest(deviceIdentityToken));
 	}
 
-	public boolean setClientId(String clientId) {
+	public boolean setClientId(String clientId, boolean propagateGotPushDeviceDetails) {
 		boolean updated = !clientId.equals(this.clientId);
 		if(updated) {
+			this.clientId = clientId;
 			if(localDevice != null) {
+				/* Spec: RSH8d */
 				localDevice.setClientId(clientId);
-				if(localDevice.isRegistered()) {
-					if(activationStateMachine != null) {
-						activationStateMachine.handleEvent(new ActivationStateMachine.GotPushDeviceDetails());
-					}
+				if(localDevice.isRegistered() && activationStateMachine != null && propagateGotPushDeviceDetails) {
+					/* Spec: RSH8e */
+					activationStateMachine.handleEvent(new ActivationStateMachine.GotPushDeviceDetails());
 				}
 			}
 		}

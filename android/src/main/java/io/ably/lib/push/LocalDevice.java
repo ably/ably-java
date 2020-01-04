@@ -46,6 +46,7 @@ public class LocalDevice extends DeviceDetails {
 	}
 
 	private void loadPersisted() {
+		/* Spec: RSH8a */
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
 
 		String id = prefs.getString(SharedPrefKeys.DEVICE_ID, null);
@@ -120,6 +121,7 @@ public class LocalDevice extends DeviceDetails {
 	}
 
 	boolean create() {
+		/* Spec: RSH8b */
 		Log.v(TAG, "create()");
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
 		SharedPreferences.Editor editor = prefs.edit();

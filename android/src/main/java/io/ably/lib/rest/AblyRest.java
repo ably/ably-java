@@ -49,7 +49,7 @@ public class AblyRest extends AblyBase {
 		/* we only need to propagate any update to clientId if this is a late init */
 		if(push != null && platform.hasApplicationContext()) {
 			try {
-				push.getActivationContext().setClientId(clientId);
+				push.getActivationContext().setClientId(clientId, true);
 			} catch(AblyException ae) {
 				Log.e(TAG, "unable to update local device state");
 			}

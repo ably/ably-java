@@ -16,6 +16,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.ArrayDeque;
 
+import com.google.gson.JsonPrimitive;
 import io.ably.lib.http.*;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.DeviceDetails;
@@ -118,15 +119,16 @@ public class ActivationStateMachine {
 				machine.callDeactivatedCallback(((ActivationStateMachine.GettingPushDeviceDetailsFailed)event).reason);
 				return new ActivationStateMachine.NotActivated(machine);
 			} else if (event instanceof ActivationStateMachine.GotPushDeviceDetails) {
-				final LocalDevice device = machine.getDevice();
+				final ActivationContext activationContext = machine.activationContext;
+				final LocalDevice device = activationContext.getLocalDevice();
 
-				boolean useCustomRegistrar = machine.activationContext.getPreferences().getBoolean(ActivationStateMachine.PersistKeys.PUSH_CUSTOM_REGISTRAR, false);
+				boolean useCustomRegistrar = activationContext.getPreferences().getBoolean(ActivationStateMachine.PersistKeys.PUSH_CUSTOM_REGISTRAR, false);
 				if (useCustomRegistrar) {
 					machine.invokeCustomRegistration(device, true);
 				} else {
 					final AblyRest ably;
 					try {
-						ably = machine.activationContext.getAbly();
+						ably = activationContext.getAbly();
 					} catch(AblyException ae) {
 						ErrorInfo reason = ae.errorInfo;
 						Log.e(TAG, "exception registering " + device.id + ": " + reason.toString());
@@ -150,10 +152,19 @@ public class ActivationStateMachine {
 							Log.i(TAG, "registered " + device.id);
 							JsonObject deviceIdentityTokenJson = response.getAsJsonObject("deviceIdentityToken");
 							if(deviceIdentityTokenJson == null) {
+								Log.e(TAG, "invalid device registration response (no deviceIdentityToken); deviceId = " + device.id);
 								machine.handleEvent(new ActivationStateMachine.GettingDeviceRegistrationFailed(new ErrorInfo("Invalid deviceIdentityToken in response", 40000, 400)));
-							} else {
-								machine.handleEvent(new ActivationStateMachine.GotDeviceRegistration(deviceIdentityTokenJson.getAsJsonPrimitive("token").getAsString()));
+								return;
 							}
+							JsonPrimitive responseClientIdJson = response.getAsJsonPrimitive("clientId");
+							if(responseClientIdJson != null) {
+								String responseClientId = responseClientIdJson.getAsString();
+								if(device.clientId == null) {
+									/* Spec RSH8f: there is an implied clientId in our credentials that we didn't know about */
+									activationContext.setClientId(responseClientId, false);
+								}
+							}
+							machine.handleEvent(new ActivationStateMachine.GotDeviceRegistration(deviceIdentityTokenJson.getAsJsonPrimitive("token").getAsString()));
 						}
 						@Override
 						public void onError(ErrorInfo reason) {
@@ -423,20 +434,27 @@ public class ActivationStateMachine {
 
 	private void validateRegistration() {
 		final LocalDevice device = activationContext.getLocalDevice();
-		/* TODO: verify that the existing registration is compatible with the present credentials */
+		final AblyRest ably;
+		try {
+			ably = activationContext.getAbly();
+		} catch(AblyException ae) {
+			ErrorInfo reason = ae.errorInfo;
+			Log.e(TAG, "exception validating registration for " + device.id + ": " + reason.toString());
+			handleEvent(new SyncRegistrationFailed(reason));
+			return;
+		}
+		/* Spec: RSH3a2a1, RSH8g: verify that the existing registration is compatible with the present credentials */
+		String presentClientId = ably.auth.clientId;
+		if(presentClientId != null && device.clientId != null && !presentClientId.equals(device.clientId)) {
+			ErrorInfo clientIdErr = new ErrorInfo("Activation failed: present clientId is not compatible with existing device registration", 400, 61002);
+			handleEvent(new SyncRegistrationFailed(clientIdErr));
+			return;
+		}
+
 		boolean useCustomRegistrar = activationContext.getPreferences().getBoolean(ActivationStateMachine.PersistKeys.PUSH_CUSTOM_REGISTRAR, false);
 		if (useCustomRegistrar) {
 			invokeCustomRegistration(device, false);
 		} else {
-			final AblyRest ably;
-			try {
-				ably = activationContext.getAbly();
-			} catch(AblyException ae) {
-				ErrorInfo reason = ae.errorInfo;
-				Log.e(TAG, "exception validating registration for " + device.id + ": " + reason.toString());
-				handleEvent(new SyncRegistrationFailed(reason));
-				return;
-			}
 			ably.http.request(new Http.Execute<JsonObject>() {
 				@Override
 				public void execute(HttpScheduler http, Callback<JsonObject> callback) throws AblyException {
@@ -452,6 +470,14 @@ public class ActivationStateMachine {
 				@Override
 				public void onSuccess(JsonObject response) {
 					Log.i(TAG, "updated registration " + device.id);
+					JsonPrimitive responseClientIdJson = response.getAsJsonPrimitive("clientId");
+					if(responseClientIdJson != null) {
+						String responseClientId = responseClientIdJson.getAsString();
+						if(device.clientId == null) {
+							/* Spec RSH8f: there is an implied clientId in our credentials that we didn't know about */
+							activationContext.setClientId(responseClientId, false);
+						}
+					}
 					handleEvent(new RegistrationSynced());
 				}
 				@Override
