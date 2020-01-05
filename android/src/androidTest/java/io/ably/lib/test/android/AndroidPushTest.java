@@ -1259,6 +1259,7 @@ public class AndroidPushTest extends AndroidTestCase {
 							assertTrue(requestBody.has("clientId"));
 						} else {
 							// RSH3d3b: PATCH the updated members
+							assertEquals("PATCH", request.method);
 							assertFalse(requestBody.has("deviceSecret"));
 							assertFalse(requestBody.has("clientId"));
 						}
