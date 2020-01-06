@@ -24,6 +24,7 @@ import io.ably.lib.test.common.Setup;
 	RealtimeConnectTest.class,
 	RealtimeConnectFailTest.class,
 	RealtimeChannelTest.class,
+	RealtimeDeltaDecoderTest.class,
 	RealtimePresenceTest.class,
 	RealtimeMessageTest.class,
 	RealtimeResumeTest.class,
