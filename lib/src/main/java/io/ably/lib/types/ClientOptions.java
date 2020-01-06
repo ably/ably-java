@@ -195,6 +195,4 @@ public class ClientOptions extends AuthOptions {
 	 * before responding.
 	 */
 	public boolean pushFullWait = false;
-
-	public final Map<PluginType, Plugin> Codecs = new HashMap<>();
 }

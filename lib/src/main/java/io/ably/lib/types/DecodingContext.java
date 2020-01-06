@@ -8,18 +8,10 @@ public class DecodingContext {
 	private String lastMessageString;
 	private byte[] lastMessageBinary;
 
-	public DecodingContext(Map<PluginType, Plugin> plugins)
+	public DecodingContext()
 	{
 		lastMessageBinary = null;
 		lastMessageString = null;
-		this.plugins = plugins;
-	}
-
-	private final Map<PluginType, Plugin> plugins;
-
-	public Plugin getDecoderPlugin(PluginType type)
-	{
-		return plugins.get(type);
 	}
 
 	public byte[] getLastMessageData() {
