@@ -1015,7 +1015,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		this.presence = new Presence((Channel) this);
 		state = ChannelState.initialized;
 		queuedMessages = new ArrayList<QueuedMessage>();
-		this.decodingContext = new DecodingContext(ably.options.Codecs);
+		this.decodingContext = new DecodingContext();
 	}
 
 	void onChannelMessage(ProtocolMessage msg) {

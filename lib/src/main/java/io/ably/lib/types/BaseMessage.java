@@ -71,7 +71,7 @@ public class BaseMessage implements Cloneable {
 
 	public void decode(ChannelOptions opts) throws MessageDecodeException {
 
-		this.decode(opts, new DecodingContext(new HashMap<PluginType, Plugin>()));
+		this.decode(opts, new DecodingContext());
 	}
 
 	public void decode(ChannelOptions opts,  DecodingContext context) throws MessageDecodeException {
@@ -123,19 +123,10 @@ public class BaseMessage implements Cloneable {
 								throw MessageDecodeException.fromDescription("Encrypted message received but encryption is not set up");
 							}
 						case "vcdiff":
+							data = VCDiffDecoderHelper.decode((byte[]) data, context.getLastMessageData());
+							lastPayload = data;
 
-							Plugin vcdiffPlugin =  context.getDecoderPlugin(PluginType.vcdiffDecoder);
-							if(vcdiffPlugin != null)
-							{
-								VCDiffPluggableCodec vcdiffCodec = (VCDiffPluggableCodec)vcdiffPlugin;
-								if(vcdiffCodec == null)
-									throw MessageDecodeException.fromDescription("vcdiffDecoder plugin is not of type VCDiffPluggableCodec");
-
-								data = vcdiffCodec.decode((byte[]) data, context.getLastMessageData());
-								lastPayload = data;
-
-								continue;
-							}
+							continue;
 					}
 					break;
 				}

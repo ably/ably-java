@@ -16,7 +16,7 @@ import io.ably.lib.test.common.Helpers.MessageWaiter;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.*;
 
-public class RealtimeDeltaPluggableDecoderTest extends ParameterizedTest {
+public class RealtimeDeltaDecoderTest extends ParameterizedTest {
 	private static final String[] testData = new String[] {
 		"{ foo: \"bar\", count: 1, status: \"active\" }",
 		"{ foo: \"bar\", count: 2, status: \"active\" }",
@@ -34,8 +34,7 @@ public class RealtimeDeltaPluggableDecoderTest extends ParameterizedTest {
 		String testName = "simple_delta_codec";
 		try {
 			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-			MonitoredCodec monitoredCodec = new MonitoredCodec(new AblyVcdiffCodec());
-			opts.Codecs.put(PluginType.vcdiffDecoder, monitoredCodec);
+
 			ably = new AblyRealtime(opts);
 			Channel channel = ably.channels.get("[?delta=vcdiff]" + testName);
 
@@ -56,28 +55,12 @@ public class RealtimeDeltaPluggableDecoderTest extends ParameterizedTest {
 				assertEquals("Verify message order", i, messageIndex);
 				assertEquals("Verify message data", true, testData[messageIndex].equals(message.data));
 			}
-			assertEquals("Verify number of calls to the codec", testData.length - 1, monitoredCodec.numberOfCalls);
 		} catch(Exception e) {
 			fail(testName + ": Unexpected exception " + e.getMessage());
 			e.printStackTrace();
 		} finally {
 			if(ably != null)
 				ably.close();
-		}
-	}
-
-	private static class MonitoredCodec implements VCDiffPluggableCodec {
-		private VCDiffPluggableCodec codec;
-		private int numberOfCalls = 0;
-
-		MonitoredCodec(VCDiffPluggableCodec codec) {
-			this.codec = codec;
-		}
-
-		@Override
-		public byte[] decode(byte[] delta, byte[] base) throws MessageDecodeException {
-			this.numberOfCalls++;
-			return this.codec.decode(delta, base);
 		}
 	}
 }
