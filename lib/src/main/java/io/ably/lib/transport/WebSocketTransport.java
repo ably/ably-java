@@ -144,6 +144,11 @@ public class WebSocketTransport implements ITransport {
 		return params.host;
 	}
 
+	protected void preProcessReceivedMessage(ProtocolMessage message)
+	{
+		//Gives the chance to child classes to do message pre-processing
+	}
+
 	/**************************
 	 * WebSocketHandler methods
 	 **************************/
@@ -170,6 +175,7 @@ public class WebSocketTransport implements ITransport {
 			try {
 				ProtocolMessage msg = ProtocolSerializer.readMsgpack(blob.array());
 				Log.d(TAG, "onMessage(): msg (binary) = " + msg);
+				WebSocketTransport.this.preProcessReceivedMessage(msg);
 				connectionManager.onMessage(WebSocketTransport.this, msg);
 			} catch (AblyException e) {
 				String msg = "Unexpected exception processing received binary message";
@@ -183,6 +189,7 @@ public class WebSocketTransport implements ITransport {
 			try {
 				ProtocolMessage msg = ProtocolSerializer.fromJSON(string);
 				Log.d(TAG, "onMessage(): msg (text) = " + msg);
+				WebSocketTransport.this.preProcessReceivedMessage(msg);
 				connectionManager.onMessage(WebSocketTransport.this, msg);
 			} catch (AblyException e) {
 				String msg = "Unexpected exception processing received text message";
