@@ -239,30 +239,30 @@ Channel channel = ably.channels.get("test");
 
 ### Publishing a message to a channel ###
 
-Given messages below
+Given the message below
 
 ```java
-Message[] messages = new Message[]{new Message("myEvent", "Hello")};
+Message message = new Message("myEvent", "Hello");
 ```
 
 Sharing synchronously,
 
 ```java
-channel.publish(messages);
+channel.publish(message);
 ```
 
 Sharing asynchronously,
 
 ```java
-channel.publishAsync(messages, new CompletionListener() {
+channel.publishAsync(message, new CompletionListener() {
   @Override
 	public void onSuccess() {
-	   System.out.println("Message successfully sent");
+	   System.out.println("Message successfully received by Ably server.");
 	}
 
 	@Override
 	public void onError(ErrorInfo reason) {
-		System.err.println("Unable to publish message; err = " + reason.message);
+		System.err.println("Unable to publish message to Ably server; err = " + reason.message);
 	}
 });
 ```
