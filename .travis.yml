@@ -71,5 +71,4 @@ notifications:
 branches:
   only:
   - master
-  - develop
   - /^.*-ci$/
