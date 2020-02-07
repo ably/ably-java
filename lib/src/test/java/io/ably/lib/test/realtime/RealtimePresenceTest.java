@@ -1724,9 +1724,9 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			final ArrayList<PresenceMessage> presenceMessages = new ArrayList<>();
 			Presence.PresenceListener listener = new Presence.PresenceListener() {
 				@Override
-				public void onPresenceMessage(PresenceMessage messages) {
+				public void onPresenceMessage(PresenceMessage message) {
 					synchronized (presenceMessages) {
-						presenceMessages.add(messages);
+						presenceMessages.add(message);
 						presenceMessages.notify();
 					}
 				}
@@ -2082,8 +2082,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 					// RTP5f: after this point there should be no presence event for client1
 					channel.presence.subscribe(new Presence.PresenceListener() {
 						@Override
-						public void onPresenceMessage(PresenceMessage messages) {
-							if (messages.clientId.equals(testClientId1))
+						public void onPresenceMessage(PresenceMessage message) {
+							if (message.clientId.equals(testClientId1))
 								wrongPresenceEmitted[0] = true;
 						}
 					});
@@ -2093,8 +2093,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				/* Subscribe for message type, test RTP6b */
 				channel.presence.subscribe(Action.leave, new Presence.PresenceListener() {
 					@Override
-					public void onPresenceMessage(PresenceMessage messages) {
-						leaveMessages.add(messages);
+					public void onPresenceMessage(PresenceMessage message) {
+						leaveMessages.add(message);
 					}
 				});
 
@@ -2302,8 +2302,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			final ArrayList<PresenceMessage> syncPresenceMessages = new ArrayList<>();
 			channel2.presence.subscribe(new Presence.PresenceListener() {
 				@Override
-				public void onPresenceMessage(PresenceMessage messages) {
-					syncPresenceMessages.add(messages);
+				public void onPresenceMessage(PresenceMessage message) {
+					syncPresenceMessages.add(message);
 				}
 			});
 			ably.connection.connectionManager.onMessage(null, syncMessage);
@@ -2393,7 +2393,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 					try {
 						client2Channel.presence.subscribe(new Presence.PresenceListener() {
 							@Override
-							public void onPresenceMessage(PresenceMessage messages) {
+							public void onPresenceMessage(PresenceMessage message) {
 								if (!disconnectedTransport[0]) {
 									MockWebsocketFactory.lastCreatedTransport.close(false);
 									connectionManager.onTransportUnavailable(MockWebsocketFactory.lastCreatedTransport,
@@ -2462,7 +2462,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			final ArrayList<PresenceMessage> presenceHistory = new ArrayList<>();
 			channel.presence.subscribe(new Presence.PresenceListener() {
 				@Override
-				public void onPresenceMessage(PresenceMessage messages) {
+				public void onPresenceMessage(PresenceMessage message) {
 					presenceHistory.add(messages);
 				}
 			});
@@ -3117,9 +3117,9 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			final ArrayList<Object> receivedPresenceData = new ArrayList<>();
 			channel2.presence.subscribe(new Presence.PresenceListener() {
 				@Override
-				public void onPresenceMessage(PresenceMessage messages) {
+				public void onPresenceMessage(PresenceMessage message) {
 					synchronized (receivedPresenceData) {
-						receivedPresenceData.add(messages.data);
+						receivedPresenceData.add(message.data);
 						receivedPresenceData.notify();
 					}
 				}

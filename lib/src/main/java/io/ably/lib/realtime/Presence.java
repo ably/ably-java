@@ -84,10 +84,10 @@ public class Presence {
 	}
 
 	/**
-	 * An interface allowing a listener to be notified of arrival of presence messages
+	 * An interface allowing a listener to be notified of arrival of a presence message.
 	 */
 	public interface PresenceListener {
-		void onPresenceMessage(PresenceMessage messages);
+		void onPresenceMessage(PresenceMessage message);
 	}
 
 	/**

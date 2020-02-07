@@ -527,10 +527,10 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	 ************************************/
 
 	/**
-	 * An interface whereby a client maybe notified of messages changes on a channel.
+	 * An interface whereby a client maybe notified of message on a channel.
 	 */
 	public interface MessageListener {
-		void onMessage(Message messages);
+		void onMessage(Message message);
 	}
 
 	/**

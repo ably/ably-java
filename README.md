@@ -119,10 +119,8 @@ Subscribe to all events:
 ```java
 channel.subscribe(new MessageListener() {
 	@Override
-	public void onMessage(Message[] messages) {
-		for(Message message : messages) {
-			System.out.println("Received `" + message.name + "` message with data: " + message.data);
-		}
+	public void onMessage(Message message) {
+		System.out.println("Received `" + message.name + "` message with data: " + message.data);
 	}
 });
 ```
@@ -133,8 +131,8 @@ or subscribe to certain events:
 String[] events = new String[] {"event1", "event2"};
 channel.subscribe(events, new MessageListener() {
 	@Override
-	public void onMessage(Message[] messages) {
-		System.out.println("Received `" + messages[0].name + "` message with data: " + message[0].data);
+	public void onMessage(Message message) {
+		System.out.println("Received `" + message.name + "` message with data: " + message.data);
 	}
 });
 ```

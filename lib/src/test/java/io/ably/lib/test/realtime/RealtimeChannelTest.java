@@ -357,14 +357,14 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			channel2.attach();
 			new ChannelWaiter(channel2).waitFor(ChannelState.attached);
 
-			/* Create a listener that collect received messages */
+			/* Create a listener that collects received messages */
 			ArrayList<Message> receivedMessageStack = new ArrayList<>();
 			MessageListener listener = new MessageListener() {
 				List<Message> messageStack;
 
 				@Override
-				public void onMessage(Message messages) {
-					messageStack.add(messages);
+				public void onMessage(Message message) {
+					messageStack.add(message);
 				}
 
 				public MessageListener setMessageStack(List<Message> messageStack) {
