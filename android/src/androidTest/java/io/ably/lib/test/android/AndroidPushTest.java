@@ -194,7 +194,6 @@ public class AndroidPushTest extends AndroidTestCase {
 		LocalDevice device = activation.rest.push.getLocalDevice();
 		device.setDeviceIdentityToken("foo");
 
-		assertNotNull(device.id);
 		assertEquals("foo", device.deviceIdentityToken);
 
 		State state = new NotActivated(activation.machine);
