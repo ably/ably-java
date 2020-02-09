@@ -144,7 +144,7 @@ public class AndroidPushTest extends AndroidTestCase {
 	// RSH2a
 	public void test_push_activate() throws InterruptedException, AblyException {
 		TestActivation activation = new TestActivation();
-		BlockingQueue<Event> events = activation.machine.getEventReceiver(1);
+		BlockingQueue<Event> events = activation.machine.getEventReceiver(2); // CalledActivate + GotPushDeviceDetails
 		assertInstanceOf(ActivationStateMachine.NotActivated.class, activation.machine.current);
 		activation.rest.push.activate();
 		Event event = events.take();
