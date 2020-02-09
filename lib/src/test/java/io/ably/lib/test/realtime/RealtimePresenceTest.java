@@ -2458,7 +2458,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			channel.presence.subscribe(new Presence.PresenceListener() {
 				@Override
 				public void onPresenceMessage(PresenceMessage message) {
-					presenceHistory.add(messages);
+					presenceHistory.add(message);
 				}
 			});
 
