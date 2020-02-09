@@ -464,7 +464,7 @@ public class ActivationStateMachine {
 					}
 
 					final HttpCore.RequestBody body = HttpUtils.requestBodyFromGson(device.toJsonObject(), ably.options.useBinaryProtocol);
-					http.put("/push/deviceRegistrations/" + device.id, ably.push.pushRequestHeaders(true), params, body, null, false, callback);
+					http.put("/push/deviceRegistrations/" + device.id, ably.push.pushRequestHeaders(true), params, body, new Serialisation.HttpResponseHandler<JsonObject>(), false, callback);
 				}
 			}).async(new Callback<JsonObject>() {
 				@Override
