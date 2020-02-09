@@ -29,6 +29,7 @@ import io.ably.lib.push.ActivationStateMachine.WaitingForPushDeviceDetails;
 import io.ably.lib.push.ActivationStateMachine.WaitingForRegistrationUpdate;
 import io.ably.lib.push.ActivationStateMachine.UpdatingRegistrationFailed;
 import io.ably.lib.rest.DeviceDetails;
+import io.ably.lib.util.Base64Coder;
 import io.azam.ulidj.ULID;
 import junit.extensions.TestSetup;
 import junit.framework.TestSuite;
@@ -1247,7 +1248,7 @@ public class AndroidPushTest extends AndroidTestCase {
 														.add("transportType", "fcm")
 														.add("registrationToken", updatedRegistrationToken))).toJson().toString(),
 								Serialisation.msgpackToGson(request.requestBody.getEncoded()).toString());
-						String authToken = Helpers.tokenFromAuthHeader(request.authHeader);
+						String authToken = Base64Coder.decodeString(request.requestHeaders.get("X-Ably-DeviceToken").get(0));
 						assertEquals(testActivation.rest.push.getLocalDevice().deviceIdentityToken, authToken);
 					}
 
