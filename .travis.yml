@@ -19,7 +19,6 @@ android:
 
 jdk:
   - oraclejdk8
-  - openjdk7
 
 env:
   global:
@@ -36,8 +35,6 @@ matrix:
       jdk: oraclejdk9
       env: BUILD_ANDROID=false
   exclude:
-    - jdk: openjdk7
-      env: BUILD_ANDROID=true
     - jdk: oraclejdk9
       env: BUILD_ANDROID=true
 
