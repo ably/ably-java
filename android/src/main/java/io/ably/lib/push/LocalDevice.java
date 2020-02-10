@@ -33,11 +33,7 @@ public class LocalDevice extends DeviceDetails {
 		this.formFactor = isTablet(activationContext.getContext()) ? "tablet" : "phone";
 		this.activationContext = activationContext;
 		this.push = new DeviceDetails.Push();
-		try {
-			loadPersisted();
-		} catch(AblyException e) {
-			Log.e(TAG, "unable to load local device state");
-		}
+		loadPersisted();
 	}
 
 	public JsonObject toJsonObject() {
@@ -49,14 +45,14 @@ public class LocalDevice extends DeviceDetails {
 		return o;
 	}
 
-	private void loadPersisted() throws AblyException {
+	private void loadPersisted() {
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
 
 		String id = prefs.getString(SharedPrefKeys.DEVICE_ID, null);
 		this.id = id;
 		if(id != null) {
 			Log.v(TAG, "loadPersisted(): existing deviceId found; id: " + id);
-			clientId = prefs.getString(SharedPrefKeys.CLIENT_ID, activationContext.clientId);
+			clientId = prefs.getString(SharedPrefKeys.CLIENT_ID, null);
 			deviceSecret = prefs.getString(SharedPrefKeys.DEVICE_SECRET, null);
 		}
 		this.deviceIdentityToken = prefs.getString(SharedPrefKeys.DEVICE_TOKEN, null);

@@ -28,7 +28,6 @@ import io.ably.lib.util.Serialisation;
 public abstract class AblyBase {
 
 	public final ClientOptions options;
-	final String clientId;
 	public final Http http;
 	public final HttpCore httpCore;
 
@@ -67,7 +66,6 @@ public abstract class AblyBase {
 		Log.setLevel(options.logLevel);
 		Log.setHandler(options.logHandler);
 		Log.i(getClass().getName(), "started");
-		this.clientId = options.clientId;
 
 		auth = new Auth(this, options);
 		httpCore = new HttpCore(options, auth);
@@ -110,7 +108,7 @@ public abstract class AblyBase {
 	/**
 	 * Obtain the time from the Ably service.
 	 * This may be required on clients that do not have access
-	 * to a sufficiently well maintained time source, to provide 
+	 * to a sufficiently well maintained time source, to provide
 	 * timestamps for use in token requests
 	 * @return time in millis since the epoch
 	 * @throws AblyException
@@ -122,7 +120,7 @@ public abstract class AblyBase {
 	/**
 	 * Asynchronously obtain the time from the Ably service.
 	 * This may be required on clients that do not have access
-	 * to a sufficiently well maintained time source, to provide 
+	 * to a sufficiently well maintained time source, to provide
 	 * timestamps for use in token requests
 	 * @param callback
 	 */

@@ -90,7 +90,7 @@ public class PushChannel {
 		}
 	}
 
-	public void unsubscribeDevice(Context context) throws AblyException {
+	public void unsubscribeDevice() throws AblyException {
 		unsubscribeDeviceImpl().sync();
 	}
 

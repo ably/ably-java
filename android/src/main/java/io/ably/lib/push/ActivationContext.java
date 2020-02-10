@@ -3,6 +3,11 @@ package io.ably.lib.push;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.InstanceIdResult;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
@@ -119,6 +124,11 @@ public class ActivationContext {
 			}
 		}
 		return activationContext;
+	}
+
+	void getRegistrationToken(OnCompleteListener<InstanceIdResult> listener) {
+		FirebaseInstanceId.getInstance().getInstanceId()
+				.addOnCompleteListener(listener);
 	}
 
 	protected AblyRest ably;

@@ -568,7 +568,7 @@ public class Auth {
 
 		/* Spec: RSA7d */
 		if(params.clientId == null) {
-			params.clientId = ably.clientId;
+			params.clientId = ably.options.clientId;
 		}
 		params.capability = Capability.c14n(params.capability);
 
@@ -736,7 +736,7 @@ public class Auth {
 		String capabilityText = (request.capability == null) ? "" : request.capability;
 
 		/* clientId */
-		if (request.clientId == null) request.clientId = ably.clientId;
+		if (request.clientId == null) request.clientId = ably.options.clientId;
 		String clientIdText = (request.clientId == null) ? "" : request.clientId;
 
 		/* timestamp */
@@ -1017,6 +1017,11 @@ public class Auth {
 	 * @throws AblyException
 	 */
 	public void setClientId(String clientId) throws AblyException {
+		if(clientId == null) {
+			/* do nothing - we received a token without a clientId */
+			return;
+		}
+
 		if(this.clientId == null) {
 			/* RSA12a, RSA12b, RSA7b2, RSA7b3, RSA7b4: the given clientId is now our clientId */
 			this.clientId = clientId;
