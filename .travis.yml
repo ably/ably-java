@@ -1,4 +1,9 @@
+# Android build, per Travis instructions here:
+# https://docs.travis-ci.com/user/languages/android/
+# TL;DR: we must use their Trusty image.
 language: android
+dist: trusty
+
 sudo: true
 android:
   components:
