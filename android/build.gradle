@@ -31,8 +31,8 @@ android {
     defaultConfig {
         buildConfigField 'String', 'LIBRARY_NAME', '"android"'
         buildConfigField 'String', 'VERSION', "\"$version\""
-        minSdkVersion 14
-        targetSdkVersion 24
+        minSdkVersion 19
+        targetSdkVersion 19
         versionCode 1
         versionName version
         setProperty("archivesBaseName", "ably-android-$versionName")
