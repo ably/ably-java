@@ -13,6 +13,9 @@ buildscript {
 apply plugin: 'com.android.library'
 apply from: '../common.gradle'
 
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
 ext {
     artifactId = 'ably-android'
 }
