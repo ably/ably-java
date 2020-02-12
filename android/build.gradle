@@ -27,8 +27,13 @@ allprojects {
     }
 }
 
+// minSdkVersion <= targetSdkVersion <= compileSdkVersion
+// See: https://medium.com/androiddevelopers/picking-your-compilesdkversion-minsdkversion-targetsdkversion-a098a0341ebd
 android {
-    compileSdkVersion 19
+    // This version is for the compiler only. Therefore there is no reason
+    // not to compile using the latest SDK version (aka API Level).
+    compileSdkVersion 29 // Android 10
+
     buildToolsVersion '29.0.3'
 
     defaultConfig {
