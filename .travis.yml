@@ -10,7 +10,7 @@ android:
     - platform-tools
     - tools
     - build-tools-29.0.3
-    - android-19
+    - android-29
     - extra-android-m2repository
     - sys-img-armeabi-v7a-android-19
   licenses:
@@ -52,7 +52,7 @@ before_install:
   - if [ "$BUILD_ANDROID" = "false" ]; then sudo hostname "$(hostname | cut -c1-63)"; fi
   - if [ "$BUILD_ANDROID" = "false" ]; then sudo sed -i -e "s/^\\(127\\.0\\.0\\.1.*\\)/\\1 $(hostname | cut -c1-63)/" /etc/hosts; fi
   - if [ "$BUILD_ANDROID" = "false" ]; then cat /etc/hosts; fi
-  - if [ "$BUILD_ANDROID" = "true" ]; then yes | sdkmanager "platforms;android-19"; fi
+  - if [ "$BUILD_ANDROID" = "true" ]; then yes | sdkmanager "platforms;android-29"; fi
 
   # taken from https://github.com/gretty-gradle-plugin/gretty/commit/f680ab388bf1f7a46f505ee2fe1a4a29e9a0a41e
   - sudo apt-get -qq update
