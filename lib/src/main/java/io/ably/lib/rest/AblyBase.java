@@ -1,6 +1,7 @@
 package io.ably.lib.rest;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import io.ably.annotation.Experimental;
 import io.ably.lib.http.AsyncHttpScheduler;
@@ -70,25 +71,35 @@ public abstract class AblyBase {
 		auth = new Auth(this, options);
 		httpCore = new HttpCore(options, auth);
 		http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
-		channels = new Channels();
+		
+		channels = new InternalChannels();
+
 		platform = new Platform();
 		push = new Push(this);
 	}
 
 	/**
 	 * A collection of Channels associated with an Ably instance.
-	 *
 	 */
-	public class Channels extends HashMap<String, Channel> {
-		private static final long serialVersionUID = 1L;
+	public interface Channels {
+		public Channel get(String channelName);
+		public Channel get(String channelName, ChannelOptions channelOptions) throws AblyException;
+		public void release(String channelName);
+	}
 
+	private class InternalChannels implements Channels {
+		private final Map<String, Channel> map = new HashMap<>();
+		
+		@Override
 		public Channel get(String channelName) {
 			try {
 				return get(channelName, null);
 			} catch (AblyException e) { return null; }
 		}
+
+		@Override
 		public Channel get(String channelName, ChannelOptions channelOptions) throws AblyException {
-			Channel channel = super.get(channelName);
+			Channel channel = map.get(channelName);
 			if (channel != null) {
 				if (channelOptions != null)
 					channel.options = channelOptions;
@@ -96,12 +107,13 @@ public abstract class AblyBase {
 			}
 
 			channel = new Channel(AblyBase.this, channelName, channelOptions);
-			super.put(channelName, channel);
+			map.put(channelName, channel);
 			return channel;
 		}
 
+		@Override
 		public void release(String channelName) {
-			super.remove(channelName);
+			map.remove(channelName);
 		}
 	}
 
