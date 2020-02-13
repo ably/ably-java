@@ -1098,7 +1098,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	final String basePath;
 	ChannelOptions options;
 	String syncChannelSerial;
-	DecodingContext decodingContext;
 	private ChannelParams params;
 	private ChannelModes modes;
 }
