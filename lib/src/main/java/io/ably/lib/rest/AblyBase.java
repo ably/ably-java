@@ -18,6 +18,7 @@ import io.ably.lib.platform.Platform;
 import io.ably.lib.push.Push;
 import io.ably.lib.types.*;
 import io.ably.lib.util.Crypto;
+import io.ably.lib.util.InternalMap;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 
@@ -81,14 +82,18 @@ public abstract class AblyBase {
 	/**
 	 * A collection of Channels associated with an Ably instance.
 	 */
-	public interface Channels {
+	public interface Channels extends ReadOnlyMap<String, Channel> {
 		Channel get(String channelName);
 		Channel get(String channelName, ChannelOptions channelOptions) throws AblyException;
 		void release(String channelName);
+		int size();
+		Iterable<Channel> values();
 	}
 
-	private class InternalChannels implements Channels {
-		private final Map<String, Channel> map = new HashMap<>();
+	private class InternalChannels extends InternalMap<String, Channel> implements Channels {
+		public InternalChannels() {
+			super(new HashMap<String, Channel>());
+		}
 		
 		@Override
 		public Channel get(String channelName) {

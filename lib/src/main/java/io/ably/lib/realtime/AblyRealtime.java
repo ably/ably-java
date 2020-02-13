@@ -12,6 +12,8 @@ import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.types.ReadOnlyMap;
+import io.ably.lib.util.InternalMap;
 import io.ably.lib.util.Log;
 
 /**
@@ -52,6 +54,15 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
 		final InternalChannels channels = new InternalChannels();
 		this.channels = channels;
 		connection = new Connection(this, channels);
+
+		/* remove all channels when the connection is closed, to avoid stalled state */
+		connection.on(ConnectionEvent.closed, new ConnectionStateListener() {
+			@Override
+			public void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange state) {
+				channels.clear();
+			}
+		});
+		
 		if(options.autoConnect) connection.connect();
 	}
 
@@ -91,7 +102,7 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
 	/**
 	 * A collection of Channels associated with this Ably Realtime instance.
 	 */
-	public interface Channels {
+	public interface Channels extends ReadOnlyMap<String, Channel> {
 		/**
 		 * Get the named channel; if it does not already exist,
 		 * create it with default options.
@@ -119,17 +130,9 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
 		void release(String channelName);
 	}
 
-	private class InternalChannels implements Channels, ConnectionManager.Channels {
-		private final Map<String, Channel> map = new ConcurrentHashMap<>();
-
+	private class InternalChannels extends InternalMap<String, Channel> implements Channels, ConnectionManager.Channels {
 		private InternalChannels() {
-			/* remove all channels when the connection is closed, to avoid stalled state */
-			connection.on(ConnectionEvent.closed, new ConnectionStateListener() {
-				@Override
-				public void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange state) {
-					map.clear();
-				}
-			});
+			super(new ConcurrentHashMap<String, Channel>());
 		}
 
 		/**
@@ -191,9 +194,8 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
 			}
 		}
 
-		@Override
-		public Iterable<Channel> getAll() {
-			return map.values();
+		private void clear() {
+			map.clear();
 		}
 	}
 

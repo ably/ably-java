@@ -60,7 +60,7 @@ public class ConnectionManager implements ConnectListener {
 	public interface Channels {
 		void onMessage(ProtocolMessage msg);
 		void suspendAll(ErrorInfo error, boolean notifyStateChange);
-		Iterable<Channel> getAll();
+		Iterable<Channel> values();
 	}
 
 	/***********************************
@@ -147,7 +147,7 @@ public class ConnectionManager implements ConnectListener {
 				} else if(!queueEvents) {
 					failQueuedMessages(stateIndication.reason);
 				}
-				for(final Channel channel : channels.getAll()) {
+				for(final Channel channel : channels.values()) {
 					enactForChannel(stateIndication, change, channel);
 				}
 			}
