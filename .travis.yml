@@ -10,7 +10,7 @@ android:
     - platform-tools
     - tools
     - build-tools-29.0.3
-    - android-29
+    - android-19
     - extra-android-m2repository
     - sys-img-armeabi-v7a-android-19
   licenses:
