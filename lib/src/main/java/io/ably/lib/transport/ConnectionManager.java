@@ -1033,7 +1033,7 @@ public class ConnectionManager implements ConnectListener {
 			if (connection.key != null)
 				connection.recoveryKey = connection.key + ":" + message.connectionSerial;
 		}
-		channels.onMessage(transport, message);
+		channels.onMessage(message);
 	}
 
 	private synchronized void onConnected(ProtocolMessage message) {
