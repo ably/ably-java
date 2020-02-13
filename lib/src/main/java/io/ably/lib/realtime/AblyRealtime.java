@@ -98,7 +98,7 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
 		 * @param channelName the name of the channel
 		 * @return the channel
 		 */
-		public Channel get(String channelName);
+		Channel get(String channelName);
 
 		/**
 		 * Get the named channel and set the given options, creating it
@@ -108,7 +108,7 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
 		 * @return the channel
 		 * @throws AblyException
 		 */
-		public Channel get(String channelName, ChannelOptions channelOptions) throws AblyException;
+		Channel get(String channelName, ChannelOptions channelOptions) throws AblyException;
 
 		/**
 		 * Remove this channel from this AblyRealtime instance. This detaches from the channel
@@ -116,7 +116,7 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
 		 * This silently does nothing if the channel does not already exist.
 		 * @param channelName the name of the channel
 		 */
-		public void release(String channelName);
+		void release(String channelName);
 	}
 
 	private class InternalChannels implements Channels, ConnectionManager.Channels {

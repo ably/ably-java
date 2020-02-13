@@ -82,9 +82,9 @@ public abstract class AblyBase {
 	 * A collection of Channels associated with an Ably instance.
 	 */
 	public interface Channels {
-		public Channel get(String channelName);
-		public Channel get(String channelName, ChannelOptions channelOptions) throws AblyException;
-		public void release(String channelName);
+		Channel get(String channelName);
+		Channel get(String channelName, ChannelOptions channelOptions) throws AblyException;
+		void release(String channelName);
 	}
 
 	private class InternalChannels implements Channels {
