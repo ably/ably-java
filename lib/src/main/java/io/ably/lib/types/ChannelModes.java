@@ -9,4 +9,11 @@ public class ChannelModes extends HashSet<ChannelMode> {
 	public void add(ChannelMode... modes) {
 		Collections.addAll(this, modes);
 	}
+
+	@Override
+	public ChannelModes clone() {
+		ChannelModes clonedModes = new ChannelModes();
+		clonedModes.addAll(this);
+		return clonedModes;
+	}
 }
