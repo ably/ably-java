@@ -58,6 +58,7 @@ public class ProtocolMessage {
 		has_presence(0),
 		has_backlog(1),
 		resumed(2),
+		attach_resume(5),
 
 		/* Channel mode flags */
 		presence(16),

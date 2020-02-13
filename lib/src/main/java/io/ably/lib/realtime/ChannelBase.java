@@ -118,6 +118,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		attachWithTimeout(forceReattach, listener);
 	}
 
+	private boolean attachResume;
+
 	private void attachImpl(final boolean forceReattach, final CompletionListener listener) throws AblyException {
 		Log.v(TAG, "attach(); channel = " + name);
 		if(!forceReattach) {
@@ -156,6 +158,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		try {
 			if (listener != null) {
 				on(new ChannelStateCompletionListener(listener, ChannelState.attached, ChannelState.failed));
+			}
+			if (this.attachResume) {
+				attachMessage.setFlag(Flag.attach_resume);
 			}
 
 			setState(ChannelState.attaching, null);
@@ -213,6 +218,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 				on(new ChannelStateCompletionListener(listener, ChannelState.detached, ChannelState.failed));
 			}
 
+			this.attachResume = false;
 			setState(ChannelState.detaching, null);
 			connectionManager.send(detachMessage, true, null);
 		} catch(AblyException e) {
@@ -276,6 +282,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 			/* emit UPDATE event according to RTL12 */
 			emitUpdate(null, resumed);
 		} else {
+			this.attachResume = true;
 			setState(ChannelState.attached, message.error, resumed);
 			sendQueuedMessages();
 			presence.setAttached(message.hasFlag(Flag.has_presence));
@@ -294,6 +301,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		clearAttachTimers();
 		Log.v(TAG, "setFailed(); channel = " + name);
 		presence.setDetached(reason);
+		this.attachResume = false;
 		setState(ChannelState.failed, reason);
 		failQueuedMessages(reason);
 	}
@@ -1021,11 +1029,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	}
 
 	public ChannelParams getParams() {
-		return this.params;
+		return this.params.clone();
 	}
 
 	public ChannelModes getModes() {
-		return this.modes;
+		return this.modes.clone();
 	}
 
 	/************************************
@@ -1064,6 +1072,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		this.basePath = "/channels/" + HttpUtils.encodeURIComponent(name);
 		this.setOptions(options);
 		this.presence = new Presence((Channel) this);
+		this.attachResume = false;
 		state = ChannelState.initialized;
 		queuedMessages = new ArrayList<QueuedMessage>();
 		this.decodingContext = new DecodingContext();
