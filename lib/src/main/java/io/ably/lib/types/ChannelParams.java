@@ -11,6 +11,13 @@ import java.util.Map;
 public class ChannelParams extends HashMap<String, String> {
 	ChannelParams() { }
 
+	@Override
+	public ChannelParams clone() {
+		ChannelParams clonedParams = new ChannelParams();
+		clonedParams.putAll(this);
+		return clonedParams;
+	}
+
 	void writeMsgpack(MessagePacker packer) throws IOException {
 		packer.packMapHeader(this.size());
 		for (Map.Entry<String, String> entry : this.entrySet()) {
