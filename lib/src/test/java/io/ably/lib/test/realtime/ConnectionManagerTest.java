@@ -131,8 +131,9 @@ public class ConnectionManagerTest extends ParameterizedTest {
 		opts.autoConnect = false;
 		try(AblyRealtime ably = new AblyRealtime(opts)) {
 			Connection connection = Mockito.mock(Connection.class);
+			final ConnectionManager.Channels channels = Mockito.mock(ConnectionManager.Channels.class);
 
-			ConnectionManager connectionManager = new ConnectionManager(ably, connection) {
+			ConnectionManager connectionManager = new ConnectionManager(ably, connection, channels) {
 				@Override
 				protected boolean checkConnectivity() {
 					return false;

@@ -76,10 +76,10 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
 	 * internal
 	 *****************/
 
-	Connection(AblyRealtime ably) throws AblyException {
+	Connection(AblyRealtime ably, ConnectionManager.Channels channels) throws AblyException {
 		this.ably = ably;
 		this.state = ConnectionState.initialized;
-		this.connectionManager = new ConnectionManager(ably, this);
+		this.connectionManager = new ConnectionManager(ably, this, channels);
 	}
 
 	public void onConnectionStateChange(ConnectionStateChange stateChange) {

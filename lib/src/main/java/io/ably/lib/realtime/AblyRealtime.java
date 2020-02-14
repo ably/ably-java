@@ -5,12 +5,15 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.ably.lib.rest.AblyRest;
+import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ITransport;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.types.ReadOnlyMap;
+import io.ably.lib.util.InternalMap;
 import io.ably.lib.util.Log;
 
 /**
@@ -27,10 +30,7 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
 	 */
 	public final Connection connection;
 
-	/**
-	 * The {@link #Channels} associated with this instance.
-	 */
-	public Channels channels;
+	public final Channels channels;
 
 	/**
 	 * Instance the Ably library using a key only.
@@ -51,8 +51,18 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
 	 */
 	public AblyRealtime(ClientOptions options) throws AblyException {
 		super(options);
-		connection = new Connection(this);
-		channels = new Channels();
+		final InternalChannels channels = new InternalChannels();
+		this.channels = channels;
+		connection = new Connection(this, channels);
+
+		/* remove all channels when the connection is closed, to avoid stalled state */
+		connection.on(ConnectionEvent.closed, new ConnectionStateListener() {
+			@Override
+			public void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange state) {
+				channels.clear();
+			}
+		});
+		
 		if(options.autoConnect) connection.connect();
 	}
 
@@ -90,33 +100,16 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
 	}
 
 	/**
-	 * A collection of the Channels associated with this Realtime
-	 * instance.
-	 *
+	 * A collection of Channels associated with this Ably Realtime instance.
 	 */
-	@SuppressWarnings("serial")
-	public class Channels extends ConcurrentHashMap<String, Channel> {
-		public Channels() {
-			/* remove all channels when the connection is closed, to avoid stalled state */
-			connection.on(ConnectionEvent.closed, new ConnectionStateListener() {
-				@Override
-				public void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange state) {
-					Channels.this.clear();
-				}
-			});
-		}
-
+	public interface Channels extends ReadOnlyMap<String, Channel> {
 		/**
 		 * Get the named channel; if it does not already exist,
 		 * create it with default options.
 		 * @param channelName the name of the channel
 		 * @return the channel
 		 */
-		public Channel get(String channelName) {
-			try {
-				return get(channelName, null);
-			} catch (AblyException e) { return null; }
-		}
+		Channel get(String channelName);
 
 		/**
 		 * Get the named channel and set the given options, creating it
@@ -126,8 +119,38 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
 		 * @return the channel
 		 * @throws AblyException
 		 */
+		Channel get(String channelName, ChannelOptions channelOptions) throws AblyException;
+
+		/**
+		 * Remove this channel from this AblyRealtime instance. This detaches from the channel
+		 * and releases all other resources associated with the channel in this client.
+		 * This silently does nothing if the channel does not already exist.
+		 * @param channelName the name of the channel
+		 */
+		void release(String channelName);
+	}
+
+	private class InternalChannels extends InternalMap<String, Channel> implements Channels, ConnectionManager.Channels {
+		private InternalChannels() {
+			super(new ConcurrentHashMap<String, Channel>());
+		}
+
+		/**
+		 * Get the named channel; if it does not already exist,
+		 * create it with default options.
+		 * @param channelName the name of the channel
+		 * @return the channel
+		 */
+		@Override
+		public Channel get(String channelName) {
+			try {
+				return get(channelName, null);
+			} catch (AblyException e) { return null; }
+		}
+
+		@Override
 		public Channel get(String channelName, ChannelOptions channelOptions) throws AblyException {
-			Channel channel = super.get(channelName);
+			Channel channel = map.get(channelName);
 			if (channel != null) {
 				if (channelOptions != null)
 					channel.setOptions(channelOptions);
@@ -135,18 +158,13 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
 			}
 
 			channel = new Channel(AblyRealtime.this, channelName, channelOptions);
-			super.put(channelName, channel);
+			map.put(channelName, channel);
 			return channel;
 		}
 
-		/**
-		 * Remove this channel from this AblyRealtime instance. This detaches from the channel
-		 * and releases all other resources associated with the channel in this client.
-		 * This silently does nothing if the channel does not already exist.
-		 * @param channelName
-		 */
+		@Override
 		public void release(String channelName) {
-			Channel channel = remove(channelName);
+			Channel channel = map.remove(channelName);
 			if(channel != null) {
 				try {
 					channel.detach();
@@ -156,7 +174,8 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
 			}
 		}
 
-		public void onChannelMessage(ITransport transport, ProtocolMessage msg) {
+		@Override
+		public void onMessage(ProtocolMessage msg) {
 			String channelName = msg.channel;
 			Channel channel;
 			synchronized(this) { channel = channels.get(channelName); }
@@ -167,11 +186,16 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
 			channel.onChannelMessage(msg);
 		}
 
+		@Override
 		public void suspendAll(ErrorInfo error, boolean notifyStateChange) {
-			for(Iterator<Map.Entry<String, Channel>> it = entrySet().iterator(); it.hasNext(); ) {
+			for(Iterator<Map.Entry<String, Channel>> it = map.entrySet().iterator(); it.hasNext(); ) {
 				Map.Entry<String, Channel> entry = it.next();
 				entry.getValue().setSuspended(error, notifyStateChange);
 			}
+		}
+
+		private void clear() {
+			map.clear();
 		}
 	}
 

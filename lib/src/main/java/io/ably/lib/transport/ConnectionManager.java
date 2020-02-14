@@ -53,6 +53,16 @@ public class ConnectionManager implements ConnectListener {
 	static ErrorInfo REASON_REFUSED = new ErrorInfo("Access refused", 401, 40100);
 	static ErrorInfo REASON_TOO_BIG = new ErrorInfo("Connection closed; message too large", 400, 40000);
 
+	/**
+	 * Methods on the channels map owned by the {@link AblyRealtime} instance
+	 * which the {@link ConnectionManager} needs access to.
+	 */
+	public interface Channels {
+		void onMessage(ProtocolMessage msg);
+		void suspendAll(ErrorInfo error, boolean notifyStateChange);
+		Iterable<Channel> values();
+	}
+
 	/***********************************
 	 * a class encapsulating information
 	 * associated with a currentState change
@@ -137,7 +147,7 @@ public class ConnectionManager implements ConnectListener {
 				} else if(!queueEvents) {
 					failQueuedMessages(stateIndication.reason);
 				}
-				for(Channel channel : ably.channels.values()) {
+				for(final Channel channel : channels.values()) {
 					enactForChannel(stateIndication, change, channel);
 				}
 			}
@@ -677,9 +687,10 @@ public class ConnectionManager implements ConnectListener {
 	 * ConnectionManager
 	 ***********************/
 
-	public ConnectionManager(final AblyRealtime ably, Connection connection) throws AblyException {
+	public ConnectionManager(final AblyRealtime ably, final Connection connection, final Channels channels) throws AblyException {
 		this.ably = ably;
 		this.connection = connection;
+		this.channels = channels;
 
 		ClientOptions options = ably.options;
 		this.hosts = new Hosts(options.realtimeHost, Defaults.HOST_REALTIME, options);
@@ -1022,7 +1033,7 @@ public class ConnectionManager implements ConnectListener {
 			if (connection.key != null)
 				connection.recoveryKey = connection.key + ":" + message.connectionSerial;
 		}
-		ably.channels.onChannelMessage(transport, message);
+		channels.onMessage(message);
 	}
 
 	private synchronized void onConnected(ProtocolMessage message) {
@@ -1042,7 +1053,7 @@ public class ConnectionManager implements ConnectListener {
 			if(error == null) {
 				error = REASON_SUSPENDED;
 			}
-			ably.channels.suspendAll(error, false);
+			channels.suspendAll(error, false);
 		}
 
 		/* set the new connection id */
@@ -1652,6 +1663,7 @@ public class ConnectionManager implements ConnectListener {
 	 ******************/
 
 	final AblyRealtime ably;
+	private final Channels channels;
 	private final Connection connection;
 	private final ITransport.Factory transportFactory;
 	private final List<QueuedMessage> queuedMessages = new ArrayList<>();

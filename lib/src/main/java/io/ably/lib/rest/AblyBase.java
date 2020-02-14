@@ -1,6 +1,7 @@
 package io.ably.lib.rest;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import io.ably.annotation.Experimental;
 import io.ably.lib.http.AsyncHttpScheduler;
@@ -17,6 +18,7 @@ import io.ably.lib.platform.Platform;
 import io.ably.lib.push.Push;
 import io.ably.lib.types.*;
 import io.ably.lib.util.Crypto;
+import io.ably.lib.util.InternalMap;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 
@@ -70,25 +72,39 @@ public abstract class AblyBase {
 		auth = new Auth(this, options);
 		httpCore = new HttpCore(options, auth);
 		http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
-		channels = new Channels();
+		
+		channels = new InternalChannels();
+
 		platform = new Platform();
 		push = new Push(this);
 	}
 
 	/**
 	 * A collection of Channels associated with an Ably instance.
-	 *
 	 */
-	public class Channels extends HashMap<String, Channel> {
-		private static final long serialVersionUID = 1L;
+	public interface Channels extends ReadOnlyMap<String, Channel> {
+		Channel get(String channelName);
+		Channel get(String channelName, ChannelOptions channelOptions) throws AblyException;
+		void release(String channelName);
+		int size();
+		Iterable<Channel> values();
+	}
 
+	private class InternalChannels extends InternalMap<String, Channel> implements Channels {
+		public InternalChannels() {
+			super(new HashMap<String, Channel>());
+		}
+		
+		@Override
 		public Channel get(String channelName) {
 			try {
 				return get(channelName, null);
 			} catch (AblyException e) { return null; }
 		}
+
+		@Override
 		public Channel get(String channelName, ChannelOptions channelOptions) throws AblyException {
-			Channel channel = super.get(channelName);
+			Channel channel = map.get(channelName);
 			if (channel != null) {
 				if (channelOptions != null)
 					channel.options = channelOptions;
@@ -96,12 +112,13 @@ public abstract class AblyBase {
 			}
 
 			channel = new Channel(AblyBase.this, channelName, channelOptions);
-			super.put(channelName, channel);
+			map.put(channelName, channel);
 			return channel;
 		}
 
+		@Override
 		public void release(String channelName) {
-			super.remove(channelName);
+			map.remove(channelName);
 		}
 	}
 
