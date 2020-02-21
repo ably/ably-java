@@ -98,11 +98,16 @@ apply from: '../dependencies.gradle'
 apply from: './dependencies.gradle'
 dependencies {
     implementation 'com.google.firebase:firebase-messaging:17.3.4'
+
+    // Core Library
+    androidTestImplementation 'androidx.test:core:1.2.0'
+    
+    // Runner and Rules
+    androidTestImplementation 'androidx.test:runner:1.2.0'
+    androidTestImplementation 'androidx.test:rules:1.2.0'
+
+    // Assertions
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
-    androidTestImplementation 'androidx.test:rules:1.1.1'
-    androidTestImplementation "com.crittercism.dexmaker:dexmaker:1.4"
-    androidTestImplementation "com.crittercism.dexmaker:dexmaker-dx:1.4"
-    androidTestImplementation "com.crittercism.dexmaker:dexmaker-mockito:1.4"
 }
 
 configurations {

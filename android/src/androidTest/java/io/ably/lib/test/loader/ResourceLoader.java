@@ -26,5 +26,7 @@ public class ResourceLoader {
 	}
 
 	private static final String TAG = ResourceLoader.class.getName();
-	private Context instrumentationCtx = InstrumentationRegistry.getContext();
+
+	// Since AndroidX: https://stackoverflow.com/a/56960018/392847
+	private Context instrumentationCtx = InstrumentationRegistry.getInstrumentation().getTargetContext();
 }
