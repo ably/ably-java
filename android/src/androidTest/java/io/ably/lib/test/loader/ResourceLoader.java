@@ -1,7 +1,7 @@
 package io.ably.lib.test.loader;
 
 import android.content.Context;
-import android.support.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import android.util.Log;
 
 import java.io.InputStream;

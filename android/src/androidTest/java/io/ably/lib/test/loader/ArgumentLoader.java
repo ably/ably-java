@@ -1,7 +1,7 @@
 package io.ably.lib.test.loader;
 
 import android.os.Bundle;
-import android.support.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 public class ArgumentLoader {
 	public String getTestArgument(String name) {
