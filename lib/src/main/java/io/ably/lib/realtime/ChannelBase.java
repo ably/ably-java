@@ -113,7 +113,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		this.attach(false, listener);
 	}
 
-	private void attach(boolean forceReattach, CompletionListener listener) throws AblyException {
+	private void attach(boolean forceReattach, CompletionListener listener) {
 		clearAttachTimers();
 		attachWithTimeout(forceReattach, listener);
 	}
@@ -149,6 +149,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 			if(!this.options.modes.isEmpty()) {
 				attachMessage.encodeModesToFlags(this.options.modes);
 			}
+		}
+		if(this.decodeFailureRecoveryInProgress) {
+			attachMessage.channelSerial = this.lastPayloadProtocolMessageChannelSerial;
 		}
 		try {
 			if (listener != null) {
@@ -323,7 +326,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	 * Attach channel, if not attached within timeout set state to suspended and
 	 * set up timer to reattach it later
 	 */
-	synchronized private void attachWithTimeout(final boolean forceReattach, final CompletionListener listener) throws AblyException {
+	synchronized private void attachWithTimeout(final boolean forceReattach, final CompletionListener listener) {
 		Timer currentAttachTimer;
 		try {
 			currentAttachTimer = new Timer();
@@ -646,12 +649,38 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	private void onMessage(ProtocolMessage message) {
 		Log.v(TAG, "onMessage(); channel = " + name);
 		Message[] messages = message.messages;
+		Message firstMessage = messages[0];
+		Message lastMessage = messages[messages.length - 1];
+
+		if (firstMessage.extras != null && firstMessage.extras.delta != null && !firstMessage.extras.delta.from.equals(this.lastPayloadMessageId)) {
+			Log.e(TAG, String.format("Delta message decode failure - previous message not available. Message id = %s, channel = %s", firstMessage.id, name));
+			this.startDecodeFailureRecovery();
+			return;
+		}
+
 		for(int i = 0; i < messages.length; i++) {
 			Message msg = messages[i];
 			try {
-				msg.decode(options);
+				msg.decode(options, decodingContext);
 			} catch (MessageDecodeException e) {
-				Log.e(TAG, String.format("%s on channel %s", e.errorInfo.message, name));
+
+				if(msg.id == null) msg.id = message.id + ':' + i;
+
+				if (e.errorInfo.code == 40018) {
+					Log.e(TAG, String.format("Delta message decode failure - %s. Message id = %s, channel = %s", e.errorInfo.message, msg.id, name));
+					this.startDecodeFailureRecovery();
+
+					//log messages skipped per RTL16
+					for (int j = i + 1; j < messages.length; j++) {
+						if(messages[j].id == null) messages[j].id = message.id + ':' + j;
+						Log.v(TAG, String.format("Delta recovery in progress - message skipped. Message id = %s, channel = %s", messages[j].id, name));
+					}
+
+					return;
+				}
+				else {
+					Log.e(TAG, String.format("Message decode failure - %s. Message id = %s, channel = %s", e.errorInfo.message, msg.id, name));
+				}
 			}
 			/* populate fields derived from protocol message */
 			if(msg.connectionId == null) msg.connectionId = message.connectionId;
@@ -663,9 +692,31 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 				listeners.onMessage(msg);
 		}
 
+		this.lastPayloadMessageId = lastMessage.id;
+		this.lastPayloadProtocolMessageChannelSerial = message.channelSerial;
+
 		for (Message msg : message.messages) {
 			this.listeners.onMessage(msg);
 		}
+	}
+
+	private void startDecodeFailureRecovery() {
+		if (this.decodeFailureRecoveryInProgress) {
+			return;
+		}
+		Log.w(TAG, "Starting delta decode failure recovery process");
+		this.decodeFailureRecoveryInProgress = true;
+		this.attach(true, new CompletionListener() {
+			@Override
+			public void onSuccess() {
+				decodeFailureRecoveryInProgress = false;
+			}
+
+			@Override
+			public void onError(ErrorInfo reason) {
+				decodeFailureRecoveryInProgress = false;
+			}
+		});
 	}
 
 	private void onPresence(ProtocolMessage message, String syncChannelSerial) {
@@ -915,7 +966,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	private List<QueuedMessage> queuedMessages;
 
 	/************************************
-	 * Channel history 
+	 * Channel history
 	 ************************************/
 
 	/**
@@ -947,7 +998,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	}
 
 	/************************************
-	 * Channel options 
+	 * Channel options
 	 ************************************/
 
 	public void setOptions(ChannelOptions options) throws AblyException {
@@ -979,7 +1030,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
 	/************************************
 	 * internal general
-	 * @throws AblyException 
+	 * @throws AblyException
 	 ************************************/
 
 	private class ChannelStateCompletionListener implements ChannelStateListener {
@@ -1015,6 +1066,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		this.presence = new Presence((Channel) this);
 		state = ChannelState.initialized;
 		queuedMessages = new ArrayList<QueuedMessage>();
+		this.decodingContext = new DecodingContext();
 	}
 
 	void onChannelMessage(ProtocolMessage msg) {
@@ -1056,7 +1108,13 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 			}
 			break;
 		case message:
-			onMessage(msg);
+			if(!decodeFailureRecoveryInProgress)
+				onMessage(msg);
+			else {
+				//log messages skipped per RTL16
+				for (int j = 0; j < msg.messages.length; j++)
+					Log.v(TAG, String.format("Delta recovery in progress - message skipped. Message id = %s, channel = %s", msg.messages[j].id, name));
+			}
 			break;
 		case presence:
 			onPresence(msg, null);
@@ -1100,4 +1158,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	String syncChannelSerial;
 	private ChannelParams params;
 	private ChannelModes modes;
+	private String lastPayloadMessageId;
+	private String lastPayloadProtocolMessageChannelSerial;
+	private boolean decodeFailureRecoveryInProgress;
 }

@@ -27,7 +27,7 @@ public class Message extends BaseMessage {
 	/**
 	 * Extras, if available
 	 */
-	public JsonObject extras;
+	public MessageExtras extras;
 
 	/**
 	 * Default constructor
@@ -49,7 +49,7 @@ public class Message extends BaseMessage {
 		this(name, data, clientId, null);
 	}
 
-	public Message(String name, Object data, JsonObject extras) {
+	public Message(String name, Object data, MessageExtras extras) {
 		this(name, data, null, extras);
 	}
 
@@ -60,7 +60,7 @@ public class Message extends BaseMessage {
 	 * @param clientId
 	 * @param extras
 	 */
-	public Message(String name, Object data, String clientId, JsonObject extras) {
+	public Message(String name, Object data, String clientId, MessageExtras extras) {
 		this.name = name;
 		this.clientId = clientId;
 		this.data = data;
@@ -92,7 +92,7 @@ public class Message extends BaseMessage {
 		}
 		if(extras != null) {
 			packer.packString("extras");
-			Serialisation.gsonToMsgpack(extras, packer);
+			extras.writeMsgpack(packer);
 		}
 	}
 
@@ -112,7 +112,7 @@ public class Message extends BaseMessage {
 			if(fieldName.equals("name")) {
 				name = unpacker.unpackString();
 			} else if (fieldName == "extras") {
-				extras = (JsonObject)Serialisation.msgpackToGson(unpacker.unpackValue());
+				extras = MessageExtras.fromMsgpack(unpacker);
 			} else {
 				Log.v(TAG, "Unexpected field: " + fieldName);
 				unpacker.skipValue();
@@ -245,7 +245,7 @@ public class Message extends BaseMessage {
 		public JsonElement serialize(Message message, Type typeOfMessage, JsonSerializationContext ctx) {
 			JsonObject json = (JsonObject) super.serialize(message, typeOfMessage, ctx);
 			if(message.name != null) json.addProperty("name", message.name);
-			if(message.extras != null) json.add("extras", message.extras);
+			if(message.extras != null) json.add("extras", message.extras.asJsonElement());
 			return json;
 		}
 	}
