@@ -4,4 +4,3 @@ include 'java'
 if(System.getenv('ANDROID_HOME')) {
   include 'android'
 }
-
