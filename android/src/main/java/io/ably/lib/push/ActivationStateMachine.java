@@ -84,7 +84,6 @@ public class ActivationStateMachine {
 				LocalDevice device = machine.getDevice();
 
 				if (device.isRegistered()) {
-					machine.pendingEvents.add(new ActivationStateMachine.CalledActivate());
 					machine.validateRegistration();
 					return new ActivationStateMachine.WaitingForRegistrationSync(machine, event);
 				}
@@ -228,6 +227,11 @@ public class ActivationStateMachine {
 
 		public ActivationStateMachine.State transition(ActivationStateMachine.Event event) {
 			if (event instanceof ActivationStateMachine.CalledActivate) {
+				if (fromEvent instanceof CalledActivate) {
+					// Don't handle; there's a CalledActivate ongoing already, so this one should
+					// be enqueued for when that one finishes.
+					return null;
+				}
 				machine.callActivatedCallback(null);
 				return this;
 			} else if (event instanceof RegistrationSynced) {
