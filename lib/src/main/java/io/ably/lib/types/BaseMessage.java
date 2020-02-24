@@ -3,6 +3,7 @@ package io.ably.lib.types;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -69,12 +70,20 @@ public class BaseMessage implements Cloneable {
 	}
 
 	public void decode(ChannelOptions opts) throws MessageDecodeException {
+
+		this.decode(opts, new DecodingContext());
+	}
+
+	public void decode(ChannelOptions opts,  DecodingContext context) throws MessageDecodeException {
+
+		Object lastPayload = data;
+
 		if(encoding != null) {
 			String[] xforms = encoding.split("\\/");
-			int i = 0, j = xforms.length;
+			int lastProcessedEncodingIndex = 0, encodingsToProcess  = xforms.length;
 			try {
-				while((i = j) > 0) {
-					Matcher match = xformPattern.matcher(xforms[--j]);
+				while((lastProcessedEncodingIndex  = encodingsToProcess ) > 0) {
+					Matcher match = xformPattern.matcher(xforms[--encodingsToProcess ]);
 					if(!match.matches()) break;
 					switch(match.group(1)) {
 						case "base64":
@@ -82,6 +91,9 @@ public class BaseMessage implements Cloneable {
 								data = Base64Coder.decode((String) data);
 							} catch (IllegalArgumentException e) {
 								throw MessageDecodeException.fromDescription("Invalid base64 data received");
+							}
+							if(lastProcessedEncodingIndex == xforms.length) {
+								lastPayload = data;
 							}
 							continue;
 
@@ -110,13 +122,26 @@ public class BaseMessage implements Cloneable {
 							else {
 								throw MessageDecodeException.fromDescription("Encrypted message received but encryption is not set up");
 							}
+						case "vcdiff":
+							data = VCDiffDecoderHelper.decode((byte[]) data, context.getLastMessageData());
+							lastPayload = data;
+
+							continue;
 					}
 					break;
 				}
 			} finally {
-				encoding = (i <= 0) ? null : join(xforms, '/', 0, i);
+				encoding = (lastProcessedEncodingIndex  <= 0) ? null : join(xforms, '/', 0, lastProcessedEncodingIndex );
 			}
 		}
+
+		//last message bookkeping
+		if(lastPayload instanceof String)
+			context.setLastMessageData((String)lastPayload);
+		else if (lastPayload instanceof byte[])
+			context.setLastMessageData((byte[])lastPayload);
+		else
+			throw MessageDecodeException.fromDescription("Message data neither String nor byte[]. Unsupported message data type.");
 	}
 
 	public void encode(ChannelOptions opts) throws AblyException {
