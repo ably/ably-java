@@ -70,17 +70,34 @@ public class AndroidPushTest extends AndroidTestCase {
 		private AblyRest adminRest;
 
 		TestActivation() {
+			this(null);
+		}
+
+		TestActivation(Helpers.AblyFunction<ClientOptions, Void> configure) {
+			this(configure, true);
+		}
+
+		TestActivation(boolean clearPersisted) {
+			this(null, clearPersisted);
+		}
+
+		TestActivation(Helpers.AblyFunction<ClientOptions, Void> configure, boolean clearPersisted) {
 			try {
 				httpTracker = new Helpers.RawHttpTracker();
 				DebugOptions options = createOptions(testVars.keys[0].keyStr);
 				options.httpListener = httpTracker;
 				options.useTokenAuth = true;
+				if (configure != null) {
+					configure.apply(options);
+				}
 				rest = new AblyRest(options);
 				rest.auth.authorize(null, null);
 				rest.setAndroidContext(getContext());
 				activationContext = rest.push.getActivationContext();
 				activationContext.setAbly(rest);
-				activationContext.reset();
+				if (clearPersisted) {
+					activationContext.reset();
+				}
 				machine = new TestActivationStateMachine(activationContext);
 				activationContext.setActivationStateMachine(machine);
 
@@ -186,20 +203,210 @@ public class AndroidPushTest extends AndroidTestCase {
 	}
 
 	// RSH3a2a
-	public void test_NotActivated_on_CalledActivate_with_DeviceToken() throws InterruptedException, AblyException {
-		TestActivation activation = new TestActivation();
-		LocalDevice device = activation.rest.push.getLocalDevice();
-		device.setDeviceIdentityToken("foo");
+	public void test_NotActivated_on_CalledActivate_with_DeviceToken() throws Exception {
+		class TestCase extends TestCases.Base {
+			private final String persistedClientId;
+			private final String instanceClientId;
+			private final ErrorInfo syncError;
+			private final boolean useCustomRegistrar;
+			private final Class<? extends Event> expectedEvent;
+			private final Class<? extends State> expectedState;
+			private final Integer expectedErrorCode;
 
-		assertEquals("foo", device.deviceIdentityToken);
+			public TestCase(
+					String name,
+					String persistedClientId,
+					String instanceClientId,
+					boolean useCustomRegistrar,
+					ErrorInfo syncError,
+					Class<? extends Event> expectedEvent,
+					Class<? extends State> expectedState,
+					Integer expectedErrorCode
+			) {
+				super(name, null);
+				this.persistedClientId = persistedClientId;
+				this.instanceClientId = instanceClientId;
+				this.useCustomRegistrar = useCustomRegistrar;
+				this.syncError = syncError;
+				this.expectedEvent = expectedEvent;
+				this.expectedState = expectedState;
+				this.expectedErrorCode = expectedErrorCode;
+			}
 
-		State state = new NotActivated(activation.machine);
-		State to = state.transition(new CalledActivate());
+			@Override
+			public void run() throws Exception {
+				// Register local device before doing anything, in order to trigger RSH3a2a.
+				TestActivation activation = new TestActivation(new Helpers.AblyFunction<ClientOptions, Void>() {
+					@Override
+					public Void apply(ClientOptions options) throws AblyException {
+						options.clientId = persistedClientId;
+						return null;
+					}
+				});
 
-		assertSize(1, activation.machine.pendingEvents);
-		assertInstanceOf(CalledActivate.class, activation.machine.pendingEvents.getLast());
+				try {
+					Helpers.AsyncWaiter<Intent> activateCallback = broadcastWaiter("PUSH_ACTIVATE");
+					activation.rest.push.activate(false);
+					activateCallback.waitFor();
 
-		assertInstanceOf(WaitingForRegistrationSync.class, to);
+					LocalDevice device = activation.rest.push.getLocalDevice();
+					assertNotNull(device.id);
+					assertNotNull(device.deviceIdentityToken);
+					assertEquals(persistedClientId, device.clientId);
+
+
+					// Now use a new instance, to force persistence consistency checking.
+					activation = new TestActivation(new Helpers.AblyFunction<ClientOptions, Void>() {
+						@Override
+						public Void apply(ClientOptions options) throws AblyException {
+							options.clientId = instanceClientId;
+							return null;
+						}
+					}, false);
+
+					Helpers.AsyncWaiter<Intent> registerCallback = useCustomRegistrar ? broadcastWaiter("PUSH_REGISTER_DEVICE") : null;
+					activateCallback = broadcastWaiter("PUSH_ACTIVATE");
+
+					CompletionWaiter calledActivateHandled = activation.machine.getEventHandledWaiter(CalledActivate.class);
+					Helpers.AsyncWaiter<Helpers.RawHttpRequest> requestWaiter = null;
+
+					if (!useCustomRegistrar) {
+						if (syncError != null) {
+							activation.httpTracker.mockResponse = Helpers.httpResponseFromErrorInfo(syncError);
+						}
+
+						requestWaiter = activation.httpTracker.getRequestWaiter();
+						// Block until we've checked the intermediate WaitingForRegistrationSync state,
+						// before the request's response causes another state transition.
+						// Otherwise, our test would be racing against the request.
+						activation.httpTracker.lockRequests();
+					}
+
+					activation.rest.push.activate(useCustomRegistrar);
+					calledActivateHandled.waitFor();
+
+					// RSH3a2a1: SyncRegistrationFailed may be enqueued (synchronously). In that
+					// case, register callback or PUT request won't be invoked, and we'll go
+					// synchronously to AfterRegistrationSyncFailed.
+					if (activation.machine.current instanceof WaitingForRegistrationSync) {
+						if (useCustomRegistrar) {
+							// RSH3a2a2
+							registerCallback.waitFor();
+							assertNull(registerCallback.error);
+						} else {
+							// RSH3a2a3
+							requestWaiter.waitFor();
+							Helpers.RawHttpRequest request = requestWaiter.result;
+							assertEquals("PUT", request.method);
+							assertEquals("/push/deviceRegistrations/" + device.id, request.url.getPath());
+						}
+
+						// RSH3a2a4
+						assertSize(0, activation.machine.pendingEvents);
+						assertInstanceOf(WaitingForRegistrationSync.class, activation.machine.current);
+
+						// Now wait for next event, when we may have an error.
+
+						CompletionWaiter handled = activation.machine.getEventHandledWaiter();
+						BlockingQueue<Event> events = activation.machine.getEventReceiver(1);
+
+						if (useCustomRegistrar) {
+							Intent intent = new Intent();
+							if (syncError != null) {
+								IntentUtils.addErrorInfo(intent, syncError);
+							}
+							sendBroadcast("PUSH_DEVICE_REGISTERED", intent);
+						} else {
+							activation.httpTracker.unlockRequests();
+						}
+
+						assertTrue(expectedEvent.isInstance(events.take()));
+						assertNull(handled.waitFor());
+					} // else: RSH3a2a1 validation failed
+
+					// RSH3e2 or RSH3e3
+					activateCallback.waitFor();
+					if (expectedErrorCode != null) {
+						assertNotNull(activateCallback.error);
+						assertEquals(expectedErrorCode.intValue(), activateCallback.error.code);
+					} else {
+						assertNull(activateCallback.error);
+					}
+					assertTrue(expectedState.isInstance(activation.machine.current));
+				} finally {
+					activation.httpTracker.unlockRequests();
+					/* delete the registration without sending (invalid) local device credentials */
+					LocalDevice localDevice = activation.rest.push.getLocalDevice();
+					String deviceId = localDevice.id;
+					localDevice.reset();
+					activation.rest.push.admin.deviceRegistrations.remove(deviceId);
+				}
+			}
+		}
+
+		TestCases testCases = new TestCases();
+
+		// RSH3a2a1, RSH3a2a4, RSH3e3
+		testCases.add(new TestCase(
+				"clientId mismatch",
+				"testClientId",
+				"otherClientId",
+				false,
+				null,
+				SyncRegistrationFailed.class,
+				AfterRegistrationSyncFailed.class,
+				61002
+		));
+
+		// RSH3a2a1, RSH3a2a2, RSH3a2a4, RSH3e2
+		testCases.add(new TestCase(
+				"ok with custom registerer",
+				"testClientId",
+				"testClientId",
+				true,
+				null,
+				RegistrationSynced.class,
+				WaitingForNewPushDeviceDetails.class,
+				null
+		));
+
+		// RSH3a2a1, RSH3a2a2, RSH3a2a4, RSH3e3
+		testCases.add(new TestCase(
+				"failing with custom registerer",
+				"testClientId",
+				"testClientId",
+				true,
+				new ErrorInfo("test error", 123, 123),
+				SyncRegistrationFailed.class,
+				AfterRegistrationSyncFailed.class,
+				123
+		));
+
+		// RSH3a2a1, RSH3a2a3, RSH3a2a4, RSH3e2
+		testCases.add(new TestCase(
+				"ok without custom registerer",
+				"testClientId",
+				"testClientId",
+				false,
+				null,
+				RegistrationSynced.class,
+				WaitingForNewPushDeviceDetails.class,
+				null
+		));
+
+		// RSH3a2a1, RSH3a2a3, RSH3a2a4, RSH3e3
+		testCases.add(new TestCase(
+				"failing without custom registerer",
+				"testClientId",
+				"testClientId",
+				false,
+				new ErrorInfo("test error", 123, 123),
+				SyncRegistrationFailed.class,
+				AfterRegistrationSyncFailed.class,
+				123
+		));
+
+		testCases.run();
 	}
 
 	// RSH3a3a
