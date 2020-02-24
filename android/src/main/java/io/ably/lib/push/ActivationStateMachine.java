@@ -86,7 +86,7 @@ public class ActivationStateMachine {
 				if (device.isRegistered()) {
 					machine.pendingEvents.add(new ActivationStateMachine.CalledActivate());
 					machine.validateRegistration();
-					return new ActivationStateMachine.WaitingForRegistrationSync(machine);
+					return new ActivationStateMachine.WaitingForRegistrationSync(machine, event);
 				}
 
 				if (device.getRegistrationToken() != null) {
@@ -212,24 +212,38 @@ public class ActivationStateMachine {
 				machine.getDevice();
 				machine.updateRegistration();
 
-				return new WaitingForRegistrationSync(machine);
+				return new WaitingForRegistrationSync(machine, event);
 			}
 			return null;
 		}
 	}
 
 	public static class WaitingForRegistrationSync extends ActivationStateMachine.State {
-		public WaitingForRegistrationSync(ActivationStateMachine machine) { super(machine); }
+		private final Event fromEvent;
+
+		public WaitingForRegistrationSync(ActivationStateMachine machine, Event fromEvent) {
+			super(machine);
+			this.fromEvent = fromEvent;
+		}
+
 		public ActivationStateMachine.State transition(ActivationStateMachine.Event event) {
 			if (event instanceof ActivationStateMachine.CalledActivate) {
 				machine.callActivatedCallback(null);
 				return this;
 			} else if (event instanceof RegistrationSynced) {
+				if (fromEvent instanceof CalledActivate) {
+					machine.callActivatedCallback(null);
+				}
 				return new ActivationStateMachine.WaitingForNewPushDeviceDetails(machine);
 			} else if (event instanceof SyncRegistrationFailed) {
 				// TODO: Here we could try to recover ourselves if the error is e. g.
 				// a networking error. Just notify the user for now.
-				machine.callSyncRegistrationFailedCallback(((SyncRegistrationFailed) event).reason);
+				ErrorInfo reason = ((SyncRegistrationFailed) event).reason;
+				if (fromEvent instanceof CalledActivate) {
+					machine.callActivatedCallback(reason);
+				} else {
+					machine.callSyncRegistrationFailedCallback(reason);
+				}
 				return new AfterRegistrationSyncFailed(machine);
 			}
 			return null;
@@ -241,7 +255,7 @@ public class ActivationStateMachine {
 		public ActivationStateMachine.State transition(ActivationStateMachine.Event event) {
 			if (event instanceof ActivationStateMachine.CalledActivate || event instanceof ActivationStateMachine.GotPushDeviceDetails) {
 				machine.validateRegistration();
-				return new WaitingForRegistrationSync(machine);
+				return new WaitingForRegistrationSync(machine, event);
 			} else if (event instanceof ActivationStateMachine.CalledDeactivate) {
 				machine.deregister();
 				return new ActivationStateMachine.WaitingForDeregistration(machine, this);

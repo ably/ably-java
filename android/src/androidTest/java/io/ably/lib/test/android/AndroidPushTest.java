@@ -9,10 +9,6 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.test.AndroidTestCase;
 
 import android.util.Log;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.iid.InstanceIdResult;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.ably.lib.push.*;
 import io.ably.lib.push.ActivationStateMachine.AfterRegistrationSyncFailed;
@@ -34,6 +30,7 @@ import io.ably.lib.push.ActivationStateMachine.WaitingForPushDeviceDetails;
 import io.ably.lib.push.ActivationStateMachine.WaitingForRegistrationSync;
 import io.ably.lib.push.ActivationStateMachine.SyncRegistrationFailed;
 import io.ably.lib.rest.DeviceDetails;
+import io.ably.lib.types.*;
 import io.ably.lib.util.Base64Coder;
 import io.azam.ulidj.ULID;
 import junit.extensions.TestSetup;
@@ -55,11 +52,6 @@ import io.ably.lib.test.common.Helpers.AsyncWaiter;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.util.TestCases;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.Param;
-import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.util.IntentUtils;
 import io.ably.lib.util.JsonUtils;
 import io.ably.lib.util.Serialisation;
@@ -476,7 +468,7 @@ public class AndroidPushTest extends AndroidTestCase {
 	// RSH3e1
 	public void test_WaitingForRegistrationUpdate_on_CalledActivate() {
 		TestActivation activation = new TestActivation();
-		State state = new WaitingForRegistrationSync(activation.machine);
+		State state = new WaitingForRegistrationSync(activation.machine, null);
 
 		final AsyncWaiter<Intent> waiter = broadcastWaiter("PUSH_ACTIVATE");
 
@@ -495,7 +487,7 @@ public class AndroidPushTest extends AndroidTestCase {
 	// RSH3e2
 	public void test_WaitingForRegistrationUpdate_on_RegistrationUpdated() {
 		TestActivation activation = new TestActivation();
-		State state = new WaitingForRegistrationSync(activation.machine);
+		State state = new WaitingForRegistrationSync(activation.machine, null);
 
 		State to = state.transition(new RegistrationSynced());
 
@@ -507,7 +499,7 @@ public class AndroidPushTest extends AndroidTestCase {
 	// RSH3e3
 	public void test_WaitingForRegistrationUpdate_on_UpdatingRegistrationFailed() {
 		TestActivation activation = new TestActivation();
-		State state = new WaitingForRegistrationSync(activation.machine);
+		State state = new WaitingForRegistrationSync(activation.machine, null);
 		ErrorInfo reason = new ErrorInfo("test", 123);
 
 		final AsyncWaiter<Intent> waiter = broadcastWaiter("PUSH_UPDATE_FAILED");
@@ -539,7 +531,7 @@ public class AndroidPushTest extends AndroidTestCase {
 
 	// RSH3f1
 	public void test_AfterRegistrationUpdateFailed_on_CalledActivate() throws Exception {
-		new UpdateRegistrationTest() {
+		new UpdateRegistrationTest("PUSH_ACTIVATE") {
 			@Override
 			protected void setUpMachineState(TestCase testCase) throws AblyException {
 				testCase.testActivation.registerAndWait();
@@ -1191,7 +1183,17 @@ public class AndroidPushTest extends AndroidTestCase {
 	}
 
 	private abstract class UpdateRegistrationTest {
+		private final String onFailedEvent;
+
 		protected abstract void setUpMachineState(TestCase testCase) throws AblyException;
+
+		UpdateRegistrationTest() {
+			this("PUSH_UPDATE_FAILED");
+		}
+
+		UpdateRegistrationTest(String onFailedEvent) {
+			this.onFailedEvent = onFailedEvent;
+		}
 
 		class TestCase extends TestCases.Base {
 			private final ErrorInfo updateError;
@@ -1217,7 +1219,7 @@ public class AndroidPushTest extends AndroidTestCase {
 					final boolean isExpectingRegistrationValidation = testActivation.machine.current instanceof AfterRegistrationSyncFailed;
 
 					final AsyncWaiter<Intent> registerCallback = useCustomRegistrar ? broadcastWaiter("PUSH_REGISTER_DEVICE") : null;
-					final AsyncWaiter<Intent> updateFailedCallback = updateError != null ? broadcastWaiter("PUSH_UPDATE_FAILED") : null;
+					final AsyncWaiter<Intent> updateFailedCallback = updateError != null ? broadcastWaiter(onFailedEvent) : null;
 					AsyncWaiter<Helpers.RawHttpRequest> requestWaiter = null;
 
 					if (!useCustomRegistrar) {
