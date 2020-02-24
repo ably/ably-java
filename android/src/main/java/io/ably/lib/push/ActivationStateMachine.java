@@ -549,46 +549,65 @@ public class ActivationStateMachine {
 	private final Context context;
 	public ActivationStateMachine.State current;
 	public ArrayDeque<ActivationStateMachine.Event> pendingEvents;
+	protected boolean handlingEvent;
 
 	public ActivationStateMachine(ActivationContext activationContext) {
 		this.activationContext = activationContext;
 		this.context = activationContext.getContext();
 		current = getPersistedState();
 		pendingEvents = getPersistedPendingEvents();
+		handlingEvent = false;
+	}
+
+	private void enqueueEvent(ActivationStateMachine.Event event) {
+		Log.d(TAG, "enqueuing event: " + event.getClass().getSimpleName());
+		pendingEvents.add(event);
 	}
 
 	public synchronized boolean handleEvent(ActivationStateMachine.Event event) {
-		Log.d(TAG, String.format("handling event %s from %s", event.getClass().getSimpleName(), current.getClass().getSimpleName()));
-
-		ActivationStateMachine.State maybeNext = current.transition(event);
-		if (maybeNext == null) {
-			Log.d(TAG, "enqueuing event: " + event.getClass().getSimpleName());
-			pendingEvents.add(event);
+		if (handlingEvent) {
+			// An event's side effects may end up synchronously calling handleEvent while it's
+			// itself being handled. In that case, enqueue it so it's handled next (and still
+			// synchronously).
+			enqueueEvent(event);
 			return true;
 		}
 
-		Log.d(TAG, String.format("transition: %s -(%s)-> %s", current.getClass().getSimpleName(), event.getClass().getSimpleName(), maybeNext.getClass().getSimpleName()));
-		current = maybeNext;
+		handlingEvent = true;
+		try {
+			Log.d(TAG, String.format("handling event %s from %s", event.getClass().getSimpleName(), current.getClass().getSimpleName()));
 
-		while (true) {
-			ActivationStateMachine.Event pending = pendingEvents.peek();
-			if (pending == null) {
-				break;
-			}
-
-			Log.d(TAG, "attempting to consume pending event: " + pending.getClass().getSimpleName());
-
-			maybeNext = current.transition(pending);
+			ActivationStateMachine.State maybeNext = current.transition(event);
 			if (maybeNext == null) {
-				break;
+				enqueueEvent(event);
+				return true;
 			}
-			pendingEvents.poll();
 
-			Log.d(TAG, String.format("transition: %s -(%s)-> %s", current.getClass().getSimpleName(), pending.getClass().getSimpleName(), maybeNext.getClass().getSimpleName()));
+			Log.d(TAG, String.format("transition: %s -(%s)-> %s", current.getClass().getSimpleName(), event.getClass().getSimpleName(), maybeNext.getClass().getSimpleName()));
 			current = maybeNext;
-		}
 
-		return persist();
+			while (true) {
+				ActivationStateMachine.Event pending = pendingEvents.peek();
+				if (pending == null) {
+					break;
+				}
+
+				Log.d(TAG, "attempting to consume pending event: " + pending.getClass().getSimpleName());
+
+				maybeNext = current.transition(pending);
+				if (maybeNext == null) {
+					break;
+				}
+				pendingEvents.poll();
+
+				Log.d(TAG, String.format("transition: %s -(%s)-> %s", current.getClass().getSimpleName(), pending.getClass().getSimpleName(), maybeNext.getClass().getSimpleName()));
+				current = maybeNext;
+			}
+
+			return persist();
+		} finally {
+			handlingEvent = false;
+		}
 	}
 
 	public boolean reset() {

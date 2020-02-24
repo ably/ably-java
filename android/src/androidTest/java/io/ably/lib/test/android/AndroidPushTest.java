@@ -293,6 +293,7 @@ public class AndroidPushTest extends AndroidTestCase {
 				try {
 
 					activation = new TestActivation();
+					activation.machine.ignoreRegistrationTokenRequest = true; // Will do this manually.
 					final Helpers.AsyncWaiter<Intent> registerCallback = useCustomRegistrar ? broadcastWaiter("PUSH_REGISTER_DEVICE") : null;
 					final Helpers.AsyncWaiter<Intent> activateCallback = broadcastWaiter("PUSH_ACTIVATE");
 
@@ -959,9 +960,11 @@ public class AndroidPushTest extends AndroidTestCase {
 		private BlockingQueue<Event> events = null;
 		private EventOrStateWaiter waiter;
 		private Class<? extends State> waitingForState;
+		public boolean ignoreRegistrationTokenRequest;
 
 		public TestActivationStateMachine(ActivationContext activationContext) {
 			super(activationContext);
+			ignoreRegistrationTokenRequest = false;
 		}
 
 		@Override
@@ -991,6 +994,9 @@ public class AndroidPushTest extends AndroidTestCase {
 
 		@Override
 		protected void getRegistrationToken() {
+			if (this.ignoreRegistrationTokenRequest) {
+				return;
+			}
 			activationContext.onNewRegistrationToken(RegistrationToken.Type.FCM, ULID.random());
 		}
 
