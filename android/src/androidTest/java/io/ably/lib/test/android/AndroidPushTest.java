@@ -175,7 +175,7 @@ public class AndroidPushTest extends AndroidTestCase {
 		assertInstanceOf(CalledDeactivate.class, event);
 	}
 
-	// RSH2c
+	// RSH2c / RSH8g
 	public void test_push_onNewRegistrationToken() throws InterruptedException, AblyException {
 		TestActivation activation = new TestActivation();
 		BlockingQueue<Event> events = activation.machine.getEventReceiver(1);
