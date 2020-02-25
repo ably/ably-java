@@ -53,9 +53,9 @@ public class LocalDevice extends DeviceDetails {
 		this.id = id;
 		if(id != null) {
 			Log.v(TAG, "loadPersisted(): existing deviceId found; id: " + id);
-			clientId = prefs.getString(SharedPrefKeys.CLIENT_ID, null);
 			deviceSecret = prefs.getString(SharedPrefKeys.DEVICE_SECRET, null);
 		}
+		this.clientId = prefs.getString(SharedPrefKeys.CLIENT_ID, null);
 		this.deviceIdentityToken = prefs.getString(SharedPrefKeys.DEVICE_TOKEN, null);
 
 		RegistrationToken.Type type = RegistrationToken.Type.fromOrdinal(
