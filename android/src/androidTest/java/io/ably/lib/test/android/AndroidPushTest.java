@@ -484,6 +484,11 @@ public class AndroidPushTest extends AndroidTestCase {
 		assertInstanceOf(GotPushDeviceDetails.class, activation.machine.pendingEvents.getLast());
 
 		assertInstanceOf(WaitingForPushDeviceDetails.class, to);
+
+		// RSH8b
+		LocalDevice device = activation.rest.device();
+		assertNotNull(device.id);
+		assertNotNull(device.deviceSecret);
 	}
 
 	// RSH3a2c
