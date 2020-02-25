@@ -69,8 +69,8 @@ public class ActivationStateMachine {
 
 	public abstract static class Event {}
 
-	abstract static class ErrorEvent extends ActivationStateMachine.Event {
-		final ErrorInfo reason;
+	public abstract static class ErrorEvent extends ActivationStateMachine.Event {
+		public final ErrorInfo reason;
 		ErrorEvent(ErrorInfo reason) { this.reason = reason; }
 	}
 
