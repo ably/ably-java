@@ -181,9 +181,30 @@ public class AndroidPushTest extends AndroidTestCase {
 	public void test_push_onNewRegistrationToken() throws InterruptedException, AblyException {
 		TestActivation activation = new TestActivation();
 		BlockingQueue<Event> events = activation.machine.getEventReceiver(1);
-		activation.rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.FCM, "foo");
-		Event event = events.take();
-		assertInstanceOf(GotPushDeviceDetails.class, event);
+		final BlockingQueue<Callback<String>> tokenCallbacks = new ArrayBlockingQueue<>(1) ;
+
+		activation.activationContext.onGetRegistrationToken = new Helpers.AblyFunction<Callback<String>, Void>() {
+			@Override
+			public Void apply(Callback<String> callback) throws AblyException {
+				try {
+					tokenCallbacks.put(callback);
+				} catch (InterruptedException e) {
+					throw AblyException.fromThrowable(e);
+				}
+				return null;
+			}
+		};
+
+		activation.rest.push.activate(true); // This registers the listener for registration tokens.
+		assertInstanceOf(CalledActivate.class, events.take());
+
+		Callback<String> tokenCallback = tokenCallbacks.take();
+
+		tokenCallback.onSuccess("foo");
+		assertInstanceOf(GotPushDeviceDetails.class, events.take());
+
+		tokenCallback.onSuccess("bar");
+		assertInstanceOf(GotPushDeviceDetails.class, events.take());
 	}
 
 	// RSH3a1
