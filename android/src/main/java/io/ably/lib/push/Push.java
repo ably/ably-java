@@ -52,9 +52,14 @@ public class Push extends PushBase {
 		return applicationContext;
 	}
 
+	protected ActivationContext activationContext = null;
+
 	public ActivationContext getActivationContext() throws AblyException {
-		Context applicationContext = getApplicationContext();
-		return ActivationContext.getActivationContext(applicationContext, (AblyRest)rest);
+		if (activationContext == null) {
+			Context applicationContext = getApplicationContext();
+			activationContext = ActivationContext.getActivationContext(applicationContext, (AblyRest)rest);
+		}
+		return activationContext;
 	}
 
 	public LocalDevice getLocalDevice() throws AblyException {
