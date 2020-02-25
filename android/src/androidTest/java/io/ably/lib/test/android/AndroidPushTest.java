@@ -236,14 +236,26 @@ public class AndroidPushTest extends AndroidTestCase {
 		assertEquals(123,((ActivationStateMachine.GettingPushDeviceDetailsFailed) event).reason.code);
 	}
 
-	// RSH8c
-	public void test_push_deviceIdentityToken_persisted() throws InterruptedException, AblyException {
-		TestActivation activation = new TestActivation();
+	// RSH8a, RSH8c
+	public void test_push_device_persistence() throws InterruptedException, AblyException {
+		TestActivation activation = new TestActivation(new Helpers.AblyFunction<ClientOptions, Void>() {
+			@Override
+			public Void apply(ClientOptions options) throws AblyException {
+				options.clientId = "testClient";
+				return null;
+			}
+		});
 
 		// Fake-register the device.
 		AsyncWaiter<Intent> customRegisterer = broadcastWaiter("PUSH_REGISTER_DEVICE");
 		AsyncWaiter<Intent> activated = broadcastWaiter("PUSH_ACTIVATE");
 		activation.rest.push.activate(true);
+
+		LocalDevice device = activation.rest.device();
+		assertEquals("testClient", device.clientId);
+		assertNotNull(device.id);
+		assertNotNull(device.deviceSecret);
+
 		customRegisterer.waitFor();
 		Intent intent = new Intent();
 		intent.putExtra("deviceIdentityToken", "fakeToken");
@@ -254,7 +266,11 @@ public class AndroidPushTest extends AndroidTestCase {
 
 		// Load from persisted state.
 		activation = new TestActivation(false);
-		assertEquals("fakeToken", activation.rest.device().deviceIdentityToken);
+		LocalDevice newDevice = activation.rest.device();
+		assertEquals("fakeToken", newDevice.deviceIdentityToken);
+		assertEquals(device.id, newDevice.id);
+		assertEquals(device.deviceSecret, newDevice.deviceSecret);
+		assertEquals(device.clientId, newDevice.clientId);
 	}
 
 	// RSH3a1
