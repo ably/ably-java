@@ -10,6 +10,7 @@ import android.test.AndroidTestCase;
 
 import android.util.Log;
 import com.google.gson.JsonObject;
+import io.ably.lib.http.HttpCore;
 import io.ably.lib.push.*;
 import io.ably.lib.push.ActivationStateMachine.AfterRegistrationSyncFailed;
 import io.ably.lib.push.ActivationStateMachine.CalledActivate;
@@ -60,6 +61,7 @@ import io.ably.lib.util.Serialisation;
 import static io.ably.lib.test.common.Helpers.assertArrayUnorderedEquals;
 import static io.ably.lib.test.common.Helpers.assertInstanceOf;
 import static io.ably.lib.test.common.Helpers.assertSize;
+import static io.ably.lib.util.Serialisation.gson;
 
 public class AndroidPushTest extends AndroidTestCase {
 
@@ -314,6 +316,34 @@ public class AndroidPushTest extends AndroidTestCase {
 
 		Event event = events.poll(100, TimeUnit.MILLISECONDS);
 		assertInstanceOf(GotPushDeviceDetails.class, event);
+	}
+
+	// RSH8f
+	public void test_push_clientId_from_server() throws InterruptedException, AblyException {
+		TestActivation activation = new TestActivation();
+
+		JsonObject body = new JsonObject();
+		body.addProperty("clientId", "testClient");
+		JsonObject fakeToken = new JsonObject();
+		fakeToken.addProperty("token", "fakeToken");
+		body.add("deviceIdentityToken", fakeToken);
+		HttpCore.Response response = new HttpCore.Response();
+		response.statusCode = 200;
+		response.statusLine = "OK";
+		response.contentType = "application/json";
+		response.body = gson.toJson(body).getBytes();
+		response.contentLength = response.body.length;
+		activation.httpTracker.mockResponse = response;
+
+		try {
+			AsyncWaiter<Intent> activated = broadcastWaiter("PUSH_ACTIVATE");
+			activation.rest.push.activate(false);
+			activated.waitFor();
+		} finally {
+			activation.adminRest.push.admin.deviceRegistrations.remove(activation.rest.device().id);
+		}
+
+		assertEquals("testClient", activation.rest.device().clientId);
 	}
 
 	// RSH3a1
