@@ -164,7 +164,7 @@ public class AndroidPushTest extends AndroidTestCase {
 		BlockingQueue<Event> events = activation.machine.getEventReceiver(2); // CalledActivate + GotPushDeviceDetails
 		assertInstanceOf(ActivationStateMachine.NotActivated.class, activation.machine.current);
 		activation.rest.push.activate();
-		Event event = events.take();
+		Event event = events.poll(10, TimeUnit.SECONDS);
 		assertInstanceOf(CalledActivate.class, event);
 	}
 
@@ -174,7 +174,7 @@ public class AndroidPushTest extends AndroidTestCase {
 		BlockingQueue<Event> events = activation.machine.getEventReceiver(1);
 		assertInstanceOf(NotActivated.class, activation.machine.current);
 		activation.rest.push.deactivate();
-		Event event = events.take();
+		Event event = events.poll(10, TimeUnit.SECONDS);
 		assertInstanceOf(CalledDeactivate.class, event);
 	}
 
@@ -197,15 +197,15 @@ public class AndroidPushTest extends AndroidTestCase {
 		};
 
 		activation.rest.push.activate(true); // This registers the listener for registration tokens.
-		assertInstanceOf(CalledActivate.class, events.take());
+		assertInstanceOf(CalledActivate.class, events.poll(10, TimeUnit.SECONDS));
 
-		Callback<String> tokenCallback = tokenCallbacks.take();
+		Callback<String> tokenCallback = tokenCallbacks.poll(10, TimeUnit.SECONDS);
 
 		tokenCallback.onSuccess("foo");
-		assertInstanceOf(GotPushDeviceDetails.class, events.take());
+		assertInstanceOf(GotPushDeviceDetails.class, events.poll(10, TimeUnit.SECONDS));
 
 		tokenCallback.onSuccess("bar");
-		assertInstanceOf(GotPushDeviceDetails.class, events.take());
+		assertInstanceOf(GotPushDeviceDetails.class, events.poll(10, TimeUnit.SECONDS));
 	}
 
 	// RSH2d / RSH8h
@@ -227,12 +227,12 @@ public class AndroidPushTest extends AndroidTestCase {
 		};
 
 		activation.rest.push.activate(true); // This registers the listener for registration tokens.
-		assertInstanceOf(CalledActivate.class, events.take());
+		assertInstanceOf(CalledActivate.class, events.poll(10, TimeUnit.SECONDS));
 
-		Callback<String> tokenCallback = tokenCallbacks.take();
+		Callback<String> tokenCallback = tokenCallbacks.poll(10, TimeUnit.SECONDS);
 
 		tokenCallback.onError(new ErrorInfo("foo", 123, 123));
-		Event event = events.take();
+		Event event = events.poll(10, TimeUnit.SECONDS);
 		assertInstanceOf(ActivationStateMachine.GettingPushDeviceDetailsFailed.class, event);
 		assertEquals(123,((ActivationStateMachine.GettingPushDeviceDetailsFailed) event).reason.code);
 	}
@@ -452,7 +452,7 @@ public class AndroidPushTest extends AndroidTestCase {
 							activation.httpTracker.unlockRequests();
 						}
 
-						assertTrue(expectedEvent.isInstance(events.take()));
+						assertTrue(expectedEvent.isInstance(events.poll(10, TimeUnit.SECONDS)));
 						assertNull(handled.waitFor());
 					} // else: RSH3a2a1 validation failed
 
@@ -702,7 +702,7 @@ public class AndroidPushTest extends AndroidTestCase {
 						activation.httpTracker.unlockRequests();
 					}
 
-					assertTrue(expectedEvent.isInstance(events.take()));
+					assertTrue(expectedEvent.isInstance(events.poll(10, TimeUnit.SECONDS)));
 					assertNull(handled.waitFor());
 
 					// RSH3c2a
@@ -1489,7 +1489,7 @@ public class AndroidPushTest extends AndroidTestCase {
 						testActivation.httpTracker.unlockRequests();
 					}
 
-					assertTrue(expectedEvent.isInstance(events.take()));
+					assertTrue(expectedEvent.isInstance(events.poll(10, TimeUnit.SECONDS)));
 					assertNull(handled.waitFor());
 
 					if (deregisterError == null) {
@@ -1650,7 +1650,7 @@ public class AndroidPushTest extends AndroidTestCase {
 						testActivation.httpTracker.unlockRequests();
 					}
 
-					assertTrue(expectedEvent.isInstance(events.take()));
+					assertTrue(expectedEvent.isInstance(events.poll(10, TimeUnit.SECONDS)));
 					assertNull(handled.waitFor());
 
 					if (updateError != null) {
