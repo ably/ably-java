@@ -236,6 +236,27 @@ public class AndroidPushTest extends AndroidTestCase {
 		assertEquals(123,((ActivationStateMachine.GettingPushDeviceDetailsFailed) event).reason.code);
 	}
 
+	// RSH8c
+	public void test_push_deviceIdentityToken_persisted() throws InterruptedException, AblyException {
+		TestActivation activation = new TestActivation();
+
+		// Fake-register the device.
+		AsyncWaiter<Intent> customRegisterer = broadcastWaiter("PUSH_REGISTER_DEVICE");
+		AsyncWaiter<Intent> activated = broadcastWaiter("PUSH_ACTIVATE");
+		activation.rest.push.activate(true);
+		customRegisterer.waitFor();
+		Intent intent = new Intent();
+		intent.putExtra("deviceIdentityToken", "fakeToken");
+		sendBroadcast("PUSH_DEVICE_REGISTERED", intent);
+		activated.waitFor();
+
+		assertEquals("fakeToken", activation.rest.device().deviceIdentityToken);
+
+		// Load from persisted state.
+		activation = new TestActivation(false);
+		assertEquals("fakeToken", activation.rest.device().deviceIdentityToken);
+	}
+
 	// RSH3a1
 	public void test_NotActivated_on_CalledDeactivate() {
 		TestActivation activation = new TestActivation();
