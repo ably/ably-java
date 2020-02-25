@@ -144,6 +144,10 @@ public class ActivationContext {
 				});
 	}
 
+	public static void setActivationContext(Context applicationContext, ActivationContext activationContext) {
+		activationContexts.put(applicationContext, activationContext);
+	}
+
 	protected AblyRest ably;
 	protected String clientId;
 	protected ActivationStateMachine activationStateMachine;

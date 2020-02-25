@@ -65,7 +65,7 @@ public class AndroidPushTest extends AndroidTestCase {
 	private class TestActivation {
 		private Helpers.RawHttpTracker httpTracker;
 		private AblyRest rest;
-		private ActivationContext activationContext;
+		private TestActivationContext activationContext;
 		private TestActivationStateMachine machine;
 		private AblyRest adminRest;
 
@@ -92,9 +92,11 @@ public class AndroidPushTest extends AndroidTestCase {
 				}
 				rest = new AblyRest(options);
 				rest.auth.authorize(null, null);
-				rest.setAndroidContext(getContext());
-				activationContext = rest.push.getActivationContext();
+				Context context = getContext();
+				rest.setAndroidContext(context);
+				activationContext = new TestActivationContext(context.getApplicationContext());
 				activationContext.setAbly(rest);
+				ActivationContext.setActivationContext(context.getApplicationContext(), activationContext);
 				if (clearPersisted) {
 					activationContext.reset();
 				}
@@ -1134,6 +1136,7 @@ public class AndroidPushTest extends AndroidTestCase {
 	private class TestActivationContext extends ActivationContext {
 		TestActivationContext(Context context) { super(context); }
 
+		@Override
 		public synchronized ActivationStateMachine getActivationStateMachine() {
 			if(activationStateMachine == null) {
 				activationStateMachine = new TestActivationStateMachine(this);
