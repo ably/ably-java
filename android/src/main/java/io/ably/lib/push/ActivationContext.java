@@ -10,6 +10,7 @@ import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.types.AblyException;
+import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.util.Log;
@@ -127,9 +128,20 @@ public class ActivationContext {
 		return activationContext;
 	}
 
-	void getRegistrationToken(OnCompleteListener<InstanceIdResult> listener) {
+	protected void getRegistrationToken(final Callback<String> callback) {
 		FirebaseInstanceId.getInstance().getInstanceId()
-				.addOnCompleteListener(listener);
+				.addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
+					@Override
+					public void onComplete(Task<InstanceIdResult> task) {
+						if(task.isSuccessful()) {
+							/* Get new Instance ID token */
+							String token = task.getResult().getToken();
+							callback.onSuccess(token);
+						} else {
+							callback.onError(ErrorInfo.fromThrowable(task.getException()));
+						}
+					}
+				});
 	}
 
 	protected AblyRest ably;

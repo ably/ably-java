@@ -393,18 +393,18 @@ public class ActivationStateMachine {
 	}
 
 	protected void getRegistrationToken() {
-		activationContext.getRegistrationToken(new OnCompleteListener<InstanceIdResult>() {
+		activationContext.getRegistrationToken(new Callback<String>() {
 			@Override
-			public void onComplete(Task<InstanceIdResult> task) {
-				if(task.isSuccessful()) {
-					/* Get new Instance ID token */
-					String token = task.getResult().getToken();
-					Log.i(TAG, "getInstanceId completed with new token");
-					activationContext.onNewRegistrationToken(RegistrationToken.Type.FCM, token);
-				} else {
-					Log.e(TAG, "getInstanceId failed", task.getException());
-					handleEvent(new ActivationStateMachine.GettingPushDeviceDetailsFailed(ErrorInfo.fromThrowable(task.getException())));
-				}
+			public void onSuccess(String token) {
+				Log.i(TAG, "getInstanceId completed with new token");
+				activationContext.onNewRegistrationToken(RegistrationToken.Type.FCM, token);
+			}
+
+			@Override
+			public void onError(ErrorInfo error) {
+				Log.e(TAG, "getInstanceId failed", AblyException.fromErrorInfo(error));
+				handleEvent(new ActivationStateMachine.GettingPushDeviceDetailsFailed(error));
+
 			}
 		});
 	}
