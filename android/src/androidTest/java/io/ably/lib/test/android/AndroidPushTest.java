@@ -273,6 +273,24 @@ public class AndroidPushTest extends AndroidTestCase {
 		assertEquals(device.clientId, newDevice.clientId);
 	}
 
+	// RSH8d
+	public void test_push_late_clientId_persisted() throws InterruptedException, AblyException {
+		TestActivation activation = new TestActivation();
+
+		assertNull(activation.rest.auth.clientId);
+		assertNull(activation.rest.device().clientId);
+
+		Auth.TokenParams params = new Auth.TokenParams();
+		params.clientId = "testClient";
+		activation.rest.auth.authorize(params, null);
+
+		assertEquals("testClient", activation.rest.auth.clientId);
+		assertEquals("testClient", activation.rest.device().clientId);
+
+		activation = new TestActivation(false);
+		assertEquals("testClient", activation.rest.device().clientId);
+	}
+
 	// RSH3a1
 	public void test_NotActivated_on_CalledDeactivate() {
 		TestActivation activation = new TestActivation();
