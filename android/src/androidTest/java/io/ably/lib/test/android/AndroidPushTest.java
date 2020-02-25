@@ -41,6 +41,7 @@ import junit.framework.Test;
 import java.util.ArrayList;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.AblyRealtime;
@@ -289,6 +290,30 @@ public class AndroidPushTest extends AndroidTestCase {
 
 		activation = new TestActivation(false);
 		assertEquals("testClient", activation.rest.device().clientId);
+	}
+
+	// RSH8e
+	public void test_push_late_clientId_emits_GotPushDeviceDetails() throws InterruptedException, AblyException {
+		TestActivation activation = new TestActivation();
+
+		// Fake-register the device.
+		AsyncWaiter<Intent> customRegisterer = broadcastWaiter("PUSH_REGISTER_DEVICE");
+		AsyncWaiter<Intent> activated = broadcastWaiter("PUSH_ACTIVATE");
+		activation.rest.push.activate(true);
+		customRegisterer.waitFor();
+		Intent intent = new Intent();
+		intent.putExtra("deviceIdentityToken", "fakeToken");
+		sendBroadcast("PUSH_DEVICE_REGISTERED", intent);
+		activated.waitFor();
+
+		BlockingQueue<Event> events = activation.machine.getEventReceiver(1);
+
+		Auth.TokenParams params = new Auth.TokenParams();
+		params.clientId = "testClient";
+		activation.rest.auth.authorize(params, null);
+
+		Event event = events.poll(100, TimeUnit.MILLISECONDS);
+		assertInstanceOf(GotPushDeviceDetails.class, event);
 	}
 
 	// RSH3a1
