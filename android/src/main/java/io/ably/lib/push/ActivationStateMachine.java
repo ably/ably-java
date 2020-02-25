@@ -554,9 +554,13 @@ public class ActivationStateMachine {
 	public ActivationStateMachine(ActivationContext activationContext) {
 		this.activationContext = activationContext;
 		this.context = activationContext.getContext();
+		loadPersisted();
+		handlingEvent = false;
+	}
+
+	private void loadPersisted() {
 		current = getPersistedState();
 		pendingEvents = getPersistedPendingEvents();
-		handlingEvent = false;
 	}
 
 	private void enqueueEvent(ActivationStateMachine.Event event) {
@@ -619,7 +623,11 @@ public class ActivationStateMachine {
 					throw new RuntimeException(e);
 				}
 		}
-		return editor.commit();
+		try {
+			return editor.commit();
+		} finally {
+			loadPersisted();
+		}
 	}
 
 	private boolean persist() {
