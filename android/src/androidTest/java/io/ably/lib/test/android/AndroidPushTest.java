@@ -502,7 +502,13 @@ public class AndroidPushTest extends AndroidTestCase {
 				try {
 
 					activation = new TestActivation();
-					activation.machine.ignoreRegistrationTokenRequest = true; // Will do this manually.
+					activation.activationContext.onGetRegistrationToken = new Helpers.AblyFunction<Callback<String>, Void>() {
+						@Override
+						public Void apply(Callback<String> callback) throws AblyException {
+							// Ignore request; will send event manually below.
+							return null;
+						}
+					};
 					final Helpers.AsyncWaiter<Intent> registerCallback = useCustomRegistrar ? broadcastWaiter("PUSH_REGISTER_DEVICE") : null;
 					final Helpers.AsyncWaiter<Intent> activateCallback = broadcastWaiter("PUSH_ACTIVATE");
 
@@ -1134,7 +1140,18 @@ public class AndroidPushTest extends AndroidTestCase {
 	}
 
 	private class TestActivationContext extends ActivationContext {
-		TestActivationContext(Context context) { super(context); }
+		public Helpers.AblyFunction<Callback<String>, Void> onGetRegistrationToken;
+
+		TestActivationContext(Context context) {
+			super(context);
+			this.onGetRegistrationToken = new Helpers.AblyFunction<Callback<String>, Void>() {
+				@Override
+				public Void apply(Callback<String> callback) throws AblyException {
+					callback.onSuccess(ULID.random());
+					return null;
+				}
+			};
+		}
 
 		@Override
 		public synchronized ActivationStateMachine getActivationStateMachine() {
@@ -1144,6 +1161,14 @@ public class AndroidPushTest extends AndroidTestCase {
 			return activationStateMachine;
 		}
 
+		@Override
+		protected void getRegistrationToken(final Callback<String> callback) {
+			try {
+				this.onGetRegistrationToken.apply(callback);
+			} catch (AblyException e) {
+				callback.onError(ErrorInfo.fromThrowable(e));
+			}
+		}
 	}
 
 	private class TestActivationStateMachine extends ActivationStateMachine {
@@ -1170,11 +1195,9 @@ public class AndroidPushTest extends AndroidTestCase {
 		private BlockingQueue<Event> events = null;
 		private EventOrStateWaiter waiter;
 		private Class<? extends State> waitingForState;
-		public boolean ignoreRegistrationTokenRequest;
 
 		public TestActivationStateMachine(ActivationContext activationContext) {
 			super(activationContext);
-			ignoreRegistrationTokenRequest = false;
 		}
 
 		@Override
@@ -1200,14 +1223,6 @@ public class AndroidPushTest extends AndroidTestCase {
 			waiter = null;
 			events = null;
 			return super.reset();
-		}
-
-		@Override
-		protected void getRegistrationToken() {
-			if (this.ignoreRegistrationTokenRequest) {
-				return;
-			}
-			activationContext.onNewRegistrationToken(RegistrationToken.Type.FCM, ULID.random());
 		}
 
 		public BlockingQueue<Event> getEventReceiver(int capacity) {
