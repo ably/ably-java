@@ -251,12 +251,13 @@ public class AndroidPushTest extends AndroidTestCase {
 		AsyncWaiter<Intent> activated = broadcastWaiter("PUSH_ACTIVATE");
 		activation.rest.push.activate(true);
 
+		customRegisterer.waitFor();
+
 		LocalDevice device = activation.rest.device();
 		assertEquals("testClient", device.clientId);
 		assertNotNull(device.id);
 		assertNotNull(device.deviceSecret);
 
-		customRegisterer.waitFor();
 		Intent intent = new Intent();
 		intent.putExtra("deviceIdentityToken", "fakeToken");
 		sendBroadcast("PUSH_DEVICE_REGISTERED", intent);
