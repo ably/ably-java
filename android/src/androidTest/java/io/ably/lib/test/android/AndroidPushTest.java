@@ -574,7 +574,7 @@ public class AndroidPushTest extends AndroidTestCase {
 							activation.httpTracker.unlockRequests();
 						}
 
-						assertTrue(expectedEvent.isInstance(events.poll(10, TimeUnit.SECONDS)));
+						assertInstanceOf(expectedEvent, events.poll(10, TimeUnit.SECONDS));
 						assertNull(handled.waitFor());
 					} // else: RSH3a2a1 validation failed
 
@@ -586,7 +586,7 @@ public class AndroidPushTest extends AndroidTestCase {
 					} else {
 						assertNull(activateCallback.error);
 					}
-					assertTrue(expectedState.isInstance(activation.machine.current));
+					assertInstanceOf(expectedState, activation.machine.current);
 				} finally {
 					activation.httpTracker.unlockRequests();
 					/* delete the registration without sending (invalid) local device credentials */
@@ -824,7 +824,7 @@ public class AndroidPushTest extends AndroidTestCase {
 						activation.httpTracker.unlockRequests();
 					}
 
-					assertTrue(expectedEvent.isInstance(events.poll(10, TimeUnit.SECONDS)));
+					assertInstanceOf(expectedEvent, events.poll(10, TimeUnit.SECONDS));
 					assertNull(handled.waitFor());
 
 					// RSH3c2a
@@ -839,7 +839,7 @@ public class AndroidPushTest extends AndroidTestCase {
 					// RSH3c2b, RSH3c3a
 					activateCallback.waitFor();
 					assertEquals(registerError, activateCallback.error);
-					assertTrue(expectedState.isInstance(activation.machine.current));
+					assertInstanceOf(expectedState, activation.machine.current);
 				} finally {
 					activation.httpTracker.unlockRequests();
 					/* delete the registration without sending (invalid) local device credentials */
@@ -1628,7 +1628,7 @@ public class AndroidPushTest extends AndroidTestCase {
 						testActivation.httpTracker.unlockRequests();
 					}
 
-					assertTrue(expectedEvent.isInstance(events.poll(10, TimeUnit.SECONDS)));
+					assertInstanceOf(expectedEvent, events.poll(10, TimeUnit.SECONDS));
 					assertNull(handled.waitFor());
 
 					if (deregisterError == null) {
@@ -1789,7 +1789,7 @@ public class AndroidPushTest extends AndroidTestCase {
 						testActivation.httpTracker.unlockRequests();
 					}
 
-					assertTrue(expectedEvent.isInstance(events.poll(10, TimeUnit.SECONDS)));
+					assertInstanceOf(expectedEvent, events.poll(10, TimeUnit.SECONDS));
 					assertNull(handled.waitFor());
 
 					if (updateError != null) {
@@ -1798,7 +1798,7 @@ public class AndroidPushTest extends AndroidTestCase {
 						assertEquals(updateError, updateFailedCallback.error);
 					}
 					// RSH3e2a, RSH3e3b
-					assertTrue(expectedState.isInstance(testActivation.machine.current));
+					assertInstanceOf(expectedState, testActivation.machine.current);
 				} finally {
 					testActivation.httpTracker.unlockRequests();
 					testActivation.rest.push.admin.deviceRegistrations.remove(testActivation.rest.push.getLocalDevice());
