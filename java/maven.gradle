@@ -6,8 +6,27 @@ def groupId = "io.ably"
 def artifactId = "ably-java"
 def localReleaseDest = "${buildDir}/release/${version}"
 
+task promoteRepo {
+	println("HELLO PROMOTE REPO")
+}
+
+/*
+ * Task which signs and uploads the Java artifacts to Nexus OSSRH.
+ */
 uploadArchives {
+    signing {
+        sign configurations.archives
+    }
     repositories.mavenDeployer {
+        beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+	    repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+         authentication(userName: ossrhUsername, password: ossrhPassword)
+        }
+
+        snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+          authentication(userName: ossrhUsername, password: ossrhPassword)
+        }
         pom.groupId = groupId
         pom.artifactId = artifactId
         pom.version = version
@@ -18,6 +37,15 @@ uploadArchives {
             description 'A Java Realtime and REST client library for [Ably.io](https://www.ably.io), the realtime messaging service.'
             packaging 'jar'
             inceptionYear '2015'
+			url 'https://www.github.com/ably/ably-java'
+			developers {
+				developer {
+					name 'Paddy Byers'
+					email 'paddy@ably.io'
+					url 'https://github.com/paddybyers'
+					id 'paddybyers'
+				}
+			}
             scm {
                 url 'scm:git:https://github.com/ably/ably-java'
                 connection 'scm:git:https://github.com/ably/ably-java'
@@ -46,9 +74,6 @@ uploadArchives {
                 dep -> dep.scope == 'runtime'
             }
         }
-
-        // Export files to local storage
-        repository(url: "file://${localReleaseDest}")
     }
 }
 
