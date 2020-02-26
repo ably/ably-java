@@ -645,8 +645,16 @@ public class ActivationStateMachine {
 
 	private ActivationStateMachine.State getPersistedState() {
 		try {
-			Class<ActivationStateMachine.State> stateClass = (Class<ActivationStateMachine.State>) Class.forName(activationContext.getPreferences().getString(ActivationStateMachine.PersistKeys.CURRENT_STATE, ""));
-			Constructor<ActivationStateMachine.State> constructor = stateClass.getConstructor(this.getClass());
+			Class<? extends ActivationStateMachine.State> stateClass;
+
+			String className = activationContext.getPreferences().getString(ActivationStateMachine.PersistKeys.CURRENT_STATE, "");
+			if (className.endsWith("$AfterRegistrationUpdateFailed")) {
+				stateClass = AfterRegistrationSyncFailed.class;
+			} else {
+				stateClass = (Class<? extends State>) Class.forName(className);
+			}
+
+			Constructor<? extends ActivationStateMachine.State> constructor = stateClass.getConstructor(ActivationStateMachine.class);
 			return constructor.newInstance(this);
 		} catch (Exception e) {
 			return new ActivationStateMachine.NotActivated(this);
@@ -668,8 +676,8 @@ public class ActivationStateMachine {
 		return deque;
 	}
 
-	private static class PersistKeys {
-		static final String CURRENT_STATE = "ABLY_PUSH_CURRENT_STATE";
+	public static class PersistKeys {
+		public static final String CURRENT_STATE = "ABLY_PUSH_CURRENT_STATE";
 		static final String PENDING_EVENTS_LENGTH = "ABLY_PUSH_PENDING_EVENTS_LENGTH";
 		static final String PENDING_EVENTS_PREFIX = "ABLY_PUSH_PENDING_EVENTS";
 		static final String PUSH_CUSTOM_REGISTRAR = "ABLY_PUSH_REGISTRATION_HANDLER";

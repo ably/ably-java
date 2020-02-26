@@ -1,9 +1,6 @@
 package io.ably.lib.test.android;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
+import android.content.*;
 import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.test.AndroidTestCase;
@@ -1274,6 +1271,15 @@ public class AndroidPushTest extends AndroidTestCase {
 		assertInstanceOf(LocalDevice.class, realtime.push.getLocalDevice());
 		assertInstanceOf(Push.class, realtime.push);
 		assertInstanceOf(PushChannel.class, realtime.channels.get("test").push);
+	}
+
+	public void test_push_AfterRegistrationUpdateFailed_migrate_to_AfterRegistrationSyncFailed() {
+		SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(getContext().getApplicationContext()).edit();
+		editor.putString(ActivationStateMachine.PersistKeys.CURRENT_STATE, "io.ably.lib.push.ActivationStateMachine$AfterRegistrationUpdateFailed");
+		editor.apply();
+
+		TestActivation activation = new TestActivation(false);
+		assertInstanceOf(AfterRegistrationSyncFailed.class, activation.machine.current);
 	}
 
 	// This is all copied and pasted from ParameterizedTest, since I can't inherit from it.
