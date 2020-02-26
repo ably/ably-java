@@ -43,6 +43,16 @@ public class Push extends PushBase {
 		return getActivationContext().getActivationStateMachine();
 	}
 
+	public void tryRequestRegistrationToken() {
+		try {
+			if (getLocalDevice().isRegistered()) {
+				getStateMachine().getRegistrationToken();
+			}
+		} catch (AblyException e) {
+			Log.e(TAG, "couldn't validate existing push recipient device details", e);
+		}
+	}
+
 	Context getApplicationContext() throws AblyException {
 		Context applicationContext = rest.platform.getApplicationContext();
 		if(applicationContext == null) {

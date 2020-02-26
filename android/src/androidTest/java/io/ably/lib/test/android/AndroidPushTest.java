@@ -76,6 +76,7 @@ public class AndroidPushTest extends AndroidTestCase {
 		public class Options {
 			public DebugOptions clientOptions;
 			public boolean clearPersisted = true;
+			public TestActivationContext activationContext;
 		}
 
 		TestActivation(Helpers.AblyFunction<Options, Void> configure) {
@@ -84,23 +85,28 @@ public class AndroidPushTest extends AndroidTestCase {
 				DebugOptions options = createOptions(testVars.keys[0].keyStr);
 				options.httpListener = httpTracker;
 				options.useTokenAuth = true;
+				Context context = getContext();
+
 				Options activationOptions = new Options();
 				activationOptions.clientOptions = options;
+				activationOptions.activationContext = new TestActivationContext(context.getApplicationContext());
 				if (configure != null) {
 					configure.apply(activationOptions);
 				}
-				rest = new AblyRest(options);
-				rest.auth.authorize(null, null);
-				Context context = getContext();
-				rest.setAndroidContext(context);
-				activationContext = new TestActivationContext(context.getApplicationContext());
-				activationContext.setAbly(rest);
+				activationContext = activationOptions.activationContext;
+				options = activationOptions.clientOptions;
+
 				ActivationContext.setActivationContext(context.getApplicationContext(), activationContext);
 				if (activationOptions.clearPersisted) {
 					activationContext.reset();
 				}
 				machine = new TestActivationStateMachine(activationContext);
 				activationContext.setActivationStateMachine(machine);
+
+				rest = new AblyRest(options);
+				rest.auth.authorize(null, null);
+				activationContext.setAbly(rest);
+				rest.setAndroidContext(context);
 
 				adminRest = new AblyRest(options);
 				adminRest.auth.authorize(new Auth.TokenParams() {{
@@ -233,6 +239,82 @@ public class AndroidPushTest extends AndroidTestCase {
 		Event event = events.poll(10, TimeUnit.SECONDS);
 		assertInstanceOf(ActivationStateMachine.GettingPushDeviceDetailsFailed.class, event);
 		assertEquals(123,((ActivationStateMachine.GettingPushDeviceDetailsFailed) event).reason.code);
+	}
+
+	// RSH2e / RSH8i
+	public void test_push_syncOnStartup() throws InterruptedException, AblyException {
+		final BlockingQueue<Callback<String>> tokenCallbacks = new ArrayBlockingQueue<>(1) ;
+
+		Helpers.AblyFunction<TestActivation.Options, Void> configureActivation = new Helpers.AblyFunction<TestActivation.Options, Void>() {
+			@Override
+			public Void apply(TestActivation.Options options) throws AblyException {
+				options.activationContext.onGetRegistrationToken = new Helpers.AblyFunction<Callback<String>, Void>() {
+					@Override
+					public Void apply(Callback<String> callback) throws AblyException {
+						try {
+							tokenCallbacks.put(callback);
+						} catch (InterruptedException e) {
+							throw AblyException.fromThrowable(e);
+						}
+						return null;
+					}
+				};
+				return null;
+			}
+		};
+
+		TestActivation activation = new TestActivation(configureActivation);
+
+		// Fake-register the device.
+		AsyncWaiter<Intent> customRegisterer = broadcastWaiter("PUSH_REGISTER_DEVICE");
+		AsyncWaiter<Intent> activated = broadcastWaiter("PUSH_ACTIVATE");
+		activation.rest.push.activate(true);
+		Callback<String> tokenCallback = tokenCallbacks.take();
+		tokenCallback.onSuccess("foo");
+		customRegisterer.waitFor();
+		Intent intent = new Intent();
+		intent.putExtra("deviceIdentityToken", "fakeToken");
+		sendBroadcast("PUSH_DEVICE_REGISTERED", intent);
+		activated.waitFor();
+
+		// Now just creating a new library instance should request the current token.
+
+		BlockingQueue<Event> events = activation.machine.getEventReceiver(1);
+
+		configureActivation = new Helpers.AblyFunction<TestActivation.Options, Void>() {
+			@Override
+			public Void apply(TestActivation.Options options) throws AblyException {
+				options.clearPersisted = false;
+				options.activationContext.onGetRegistrationToken = new Helpers.AblyFunction<Callback<String>, Void>() {
+					@Override
+					public Void apply(Callback<String> callback) throws AblyException {
+						try {
+							tokenCallbacks.put(callback);
+						} catch (InterruptedException e) {
+							throw AblyException.fromThrowable(e);
+						}
+						return null;
+					}
+				};
+				return null;
+			}
+		};
+
+		activation = new TestActivation(configureActivation);
+		tokenCallback = tokenCallbacks.take();
+
+		// With the same token, nothing happens.
+		events = activation.machine.getEventReceiver(1);
+		tokenCallback.onSuccess("foo");
+		assertNull(events.poll(100, TimeUnit.MILLISECONDS));
+
+		// Do the same with a different token, expect a GotPushDeviceDetails.
+		activation = new TestActivation(configureActivation);
+		events = activation.machine.getEventReceiver(1);
+		tokenCallback = tokenCallbacks.take();
+		tokenCallback.onSuccess("qux");
+		Event event = events.poll(100, TimeUnit.MILLISECONDS);
+		assertInstanceOf(GotPushDeviceDetails.class, event);
 	}
 
 	// RSH8a, RSH8c
@@ -1287,9 +1369,11 @@ public class AndroidPushTest extends AndroidTestCase {
 	}
 
 	public void test_push_AfterRegistrationUpdateFailed_migrate_to_AfterRegistrationSyncFailed() {
+		new TestActivation(); // Just for the side effect of clearing persisted state.
+
 		SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(getContext().getApplicationContext()).edit();
 		editor.putString(ActivationStateMachine.PersistKeys.CURRENT_STATE, "io.ably.lib.push.ActivationStateMachine$AfterRegistrationUpdateFailed");
-		editor.apply();
+		assertTrue(editor.commit());
 
 		TestActivation activation = new TestActivation(new Helpers.AblyFunction<TestActivation.Options, Void>() {
 			@Override

@@ -40,7 +40,10 @@ public class AblyRest extends AblyBase {
 	/**
 	 * Set the Android Context for this instance
 	 */
-	public void setAndroidContext(Context context) throws AblyException { this.platform.setAndroidContext(context); }
+	public void setAndroidContext(Context context) throws AblyException {
+		this.platform.setAndroidContext(context);
+		this.push.tryRequestRegistrationToken();
+	}
 
 	/**
 	 * clientId set by late initialisation
