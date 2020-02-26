@@ -73,22 +73,21 @@ public class AndroidPushTest extends AndroidTestCase {
 			this(null);
 		}
 
-		TestActivation(Helpers.AblyFunction<ClientOptions, Void> configure) {
-			this(configure, true);
+		public class Options {
+			public DebugOptions clientOptions;
+			public boolean clearPersisted = true;
 		}
 
-		TestActivation(boolean clearPersisted) {
-			this(null, clearPersisted);
-		}
-
-		TestActivation(Helpers.AblyFunction<ClientOptions, Void> configure, boolean clearPersisted) {
+		TestActivation(Helpers.AblyFunction<Options, Void> configure) {
 			try {
 				httpTracker = new Helpers.RawHttpTracker();
 				DebugOptions options = createOptions(testVars.keys[0].keyStr);
 				options.httpListener = httpTracker;
 				options.useTokenAuth = true;
+				Options activationOptions = new Options();
+				activationOptions.clientOptions = options;
 				if (configure != null) {
-					configure.apply(options);
+					configure.apply(activationOptions);
 				}
 				rest = new AblyRest(options);
 				rest.auth.authorize(null, null);
@@ -97,7 +96,7 @@ public class AndroidPushTest extends AndroidTestCase {
 				activationContext = new TestActivationContext(context.getApplicationContext());
 				activationContext.setAbly(rest);
 				ActivationContext.setActivationContext(context.getApplicationContext(), activationContext);
-				if (clearPersisted) {
+				if (activationOptions.clearPersisted) {
 					activationContext.reset();
 				}
 				machine = new TestActivationStateMachine(activationContext);
@@ -238,10 +237,10 @@ public class AndroidPushTest extends AndroidTestCase {
 
 	// RSH8a, RSH8c
 	public void test_push_device_persistence() throws InterruptedException, AblyException {
-		TestActivation activation = new TestActivation(new Helpers.AblyFunction<ClientOptions, Void>() {
+		TestActivation activation = new TestActivation(new Helpers.AblyFunction<TestActivation.Options, Void>() {
 			@Override
-			public Void apply(ClientOptions options) throws AblyException {
-				options.clientId = "testClient";
+			public Void apply(TestActivation.Options options) throws AblyException {
+				options.clientOptions.clientId = "testClient";
 				return null;
 			}
 		});
@@ -266,7 +265,13 @@ public class AndroidPushTest extends AndroidTestCase {
 		assertEquals("fakeToken", activation.rest.device().deviceIdentityToken);
 
 		// Load from persisted state.
-		activation = new TestActivation(false);
+		activation = new TestActivation(new Helpers.AblyFunction<TestActivation.Options, Void>() {
+			@Override
+			public Void apply(TestActivation.Options options) throws AblyException {
+				options.clearPersisted = false;
+				return null;
+			}
+		});
 		LocalDevice newDevice = activation.rest.device();
 		assertEquals("fakeToken", newDevice.deviceIdentityToken);
 		assertEquals(device.id, newDevice.id);
@@ -288,7 +293,13 @@ public class AndroidPushTest extends AndroidTestCase {
 		assertEquals("testClient", activation.rest.auth.clientId);
 		assertEquals("testClient", activation.rest.device().clientId);
 
-		activation = new TestActivation(false);
+		activation = new TestActivation(new Helpers.AblyFunction<TestActivation.Options, Void>() {
+			@Override
+			public Void apply(TestActivation.Options options) throws AblyException {
+				options.clearPersisted = false;
+				return null;
+			}
+		});
 		assertEquals("testClient", activation.rest.device().clientId);
 	}
 
@@ -396,10 +407,10 @@ public class AndroidPushTest extends AndroidTestCase {
 			@Override
 			public void run() throws Exception {
 				// Register local device before doing anything, in order to trigger RSH3a2a.
-				TestActivation activation = new TestActivation(new Helpers.AblyFunction<ClientOptions, Void>() {
+				TestActivation activation = new TestActivation(new Helpers.AblyFunction<TestActivation.Options, Void>() {
 					@Override
-					public Void apply(ClientOptions options) throws AblyException {
-						options.clientId = persistedClientId;
+					public Void apply(TestActivation.Options options) throws AblyException {
+						options.clientOptions.clientId = persistedClientId;
 						return null;
 					}
 				});
@@ -416,13 +427,14 @@ public class AndroidPushTest extends AndroidTestCase {
 
 
 					// Now use a new instance, to force persistence consistency checking.
-					activation = new TestActivation(new Helpers.AblyFunction<ClientOptions, Void>() {
+					activation = new TestActivation(new Helpers.AblyFunction<TestActivation.Options, Void>() {
 						@Override
-						public Void apply(ClientOptions options) throws AblyException {
-							options.clientId = instanceClientId;
+						public Void apply(TestActivation.Options options) throws AblyException {
+							options.clientOptions.clientId = instanceClientId;
+							options.clearPersisted = false;
 							return null;
 						}
-					}, false);
+					});
 
 					Helpers.AsyncWaiter<Intent> registerCallback = useCustomRegistrar ? broadcastWaiter("PUSH_REGISTER_DEVICE") : null;
 					activateCallback = broadcastWaiter("PUSH_ACTIVATE");
@@ -1279,7 +1291,13 @@ public class AndroidPushTest extends AndroidTestCase {
 		editor.putString(ActivationStateMachine.PersistKeys.CURRENT_STATE, "io.ably.lib.push.ActivationStateMachine$AfterRegistrationUpdateFailed");
 		editor.apply();
 
-		TestActivation activation = new TestActivation(false);
+		TestActivation activation = new TestActivation(new Helpers.AblyFunction<TestActivation.Options, Void>() {
+			@Override
+			public Void apply(TestActivation.Options options) throws AblyException {
+				options.clearPersisted = false;
+				return null;
+			}
+		});
 		assertInstanceOf(AfterRegistrationSyncFailed.class, activation.machine.current);
 	}
 
