@@ -1,5 +1,29 @@
 # Change Log
 
+## [v1.1.9](https://github.com/ably/ably-java/tree/v1.1.9)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.1.8...v1.1.9)
+
+**Implemented enhancements:**
+
+- Maven deployment: add task for deploy to staging [\#560](https://github.com/ably/ably-java/pull/560) ([paddybyers](https://github.com/paddybyers))
+
+**Fixed bugs:**
+
+- ConnectionManager.checkConnectivity\(\) fails every time for Android 9 [\#541](https://github.com/ably/ably-java/issues/541)
+- ably-java sometimes failing to decrypt Messages [\#531](https://github.com/ably/ably-java/issues/531)
+- Channels visibility improvements [\#558](https://github.com/ably/ably-java/pull/558) ([QuintinWillison](https://github.com/QuintinWillison))
+- ConnectionManager: use HTTPS for the internet-up check [\#542](https://github.com/ably/ably-java/pull/542) ([paddybyers](https://github.com/paddybyers))
+
+**Closed issues:**
+
+- Remove develop branch [\#547](https://github.com/ably/ably-java/issues/547)
+
+**Merged pull requests:**
+
+- Get AndroidPushTest to pass again [\#553](https://github.com/ably/ably-java/pull/553) ([tcard](https://github.com/tcard))
+- Fix reference to param that wasn't updated when param name changed. [\#552](https://github.com/ably/ably-java/pull/552) ([tcard](https://github.com/tcard))
+
 ## [v1.1.8](https://github.com/ably/ably-java/tree/v1.1.8)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.1.6...v1.1.8)
