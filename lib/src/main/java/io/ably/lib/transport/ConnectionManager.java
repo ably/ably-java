@@ -39,7 +39,7 @@ public class ConnectionManager implements ConnectListener {
 	 **************************************************************/
 
 	private static final String TAG = ConnectionManager.class.getName();
-	private static final String INTERNET_CHECK_URL = "http://internet-up.ably-realtime.com/is-the-internet-up.txt";
+	private static final String INTERNET_CHECK_URL = "https://internet-up.ably-realtime.com/is-the-internet-up.txt";
 	private static final String INTERNET_CHECK_OK = "yes";
 
 	/***********************************
