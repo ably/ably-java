@@ -567,7 +567,9 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 
 * Create a branch for the release, named like `release/1.1.9`
 * Replace all references of the current version number with the new version number (check this file [README.md](./README.md) and [common.gradle](./common.gradle)) and commit the changes
-* Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to update the [CHANGELOG](./CHANGELOG.md): `github_changelog_generator -u ably -p ably-java --header-label="# Changelog" --release-branch=release/1.1.9 --future-release=v1.1.9` 
+* Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to update the [CHANGELOG](./CHANGELOG.md):
+  * This might work: `github_changelog_generator -u ably -p ably-java --header-label="# Changelog" --release-branch=release/1.1.9 --future-release=v1.1.9`
+  * But your mileage may vary as it can error. Perhaps more reliable is something like: `github_changelog_generator -u ably -p ably-java --since-tag v1.1.8 --output delta.md` and then manually merge the delta contents in to the main change log
 * Commit [CHANGELOG](./CHANGELOG.md)
 * Make a PR against `master`
 * Once the PR is approved, merge it into `master`
