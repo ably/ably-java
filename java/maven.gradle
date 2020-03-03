@@ -87,10 +87,9 @@ task assembleRelease {
         println "Release ${version} can be found at ${localReleaseDest}/"
         println "Release ${version} zipped can be found ${buildDir}/release-${version}.zip"
     }
+    dependsOn(uploadArchives)
+    dependsOn(zipRelease)
 }
-
-assembleRelease.dependsOn(uploadArchives)
-assembleRelease.dependsOn(zipRelease)
 
 task sourcesJar(type: Jar) {
      classifier = 'sources'
