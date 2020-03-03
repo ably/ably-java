@@ -76,6 +76,12 @@ uploadArchives {
                 dep -> dep.artifactId != 'play-services-gcm' && dep.artifactId != 'firebase-messaging'
             }
         }
+
+		// Export to local Maven cache
+		repository(url: repositories.mavenLocal().url)
+
+        // Export files to local storage
+        repository(url: "file://${localReleaseDest}")
     }
 }
 

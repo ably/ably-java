@@ -70,6 +70,9 @@ uploadArchives {
                 dep -> dep.scope == 'runtime'
             }
         }
+
+        // Export files to local storage
+        repository(url: "file://${localReleaseDest}")
     }
 }
 
