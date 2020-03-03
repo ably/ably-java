@@ -576,10 +576,20 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 * Fast-forward the master branch: `git checkout master && git merge --ff-only master && git push origin master`
 * Add a tag and push to origin - e.g.: `git tag v1.1.0 && git push origin v1.1.0`
 
+### Signing
+
+If you've not configured the signing key in your [Gradle properties](https://docs.gradle.org/current/userguide/build_environment.html#sec:gradle_configuration_properties) then `java:assemble` will complain:
+
+    Cannot perform signing task ':java:signArchives' because it has no configured signatory
+
+You need to [configure Signatory credentials](https://docs.gradle.org/current/userguide/signing_plugin.html#sec:signatory_credentials), for example via the `gradle.properties` file in your `GRADLE_USER_HOME` folder (usually `~/.gradle`).
+
+The GPG key file is internal and private to Ably.
+
 ### Build release
 
-* Run `gradle java:assemble` to build the JRE-specific JARs for this release
-* Run `gradle android:assemble` to build the Android AAR for this release
+* Run `./gradlew java:assemble` to build the JRE-specific JARs for this release
+* Run `./gradlew android:assemble` to build the Android AAR for this release
 
 ### Publishing to JCenter (Maven)
 
@@ -596,7 +606,7 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 * Visit [https://github.com/ably/ably-java/tags](https://github.com/ably/ably-java/tags) and `Add release notes` for the release including links to the changelog entry and the JCenter releases.
 
 Similarly for the Android release at https://bintray.com/ably-io/ably/ably-android.
-Run `gradle android:assembleRelease` locally to generate the files, and drag in the files in
+Run `./gradlew android:assembleRelease` locally to generate the files, and drag in the files in
 `./android/build/release/1.1.9/io/ably/ably-android/1.1.9`. In this case upload the `.jar` files, the `.pom` file and the `.aar` file.
 
 ## Support, feedback and troubleshooting

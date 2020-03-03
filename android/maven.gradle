@@ -4,6 +4,8 @@ apply plugin: 'signing'
 def groupId = "io.ably"
 def artifactId = "ably-android"
 def localReleaseDest = "${buildDir}/release/${version}"
+def mavenUser = hasProperty('ossrhUsername') ? ossrhUsername : ''
+def mavenPassword = hasProperty('ossrhPassword') ? ossrhPassword : ''
 
 /*
  * Task which signs and uploads the Android artifacts to Nexus OSSRH.
@@ -13,14 +15,16 @@ uploadArchives {
 		sign configurations.archives
 	}
     repositories.mavenDeployer {
+        logger.info('OSSRH auth with username: ' + mavenUser)
+
 		beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
 		repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-			authentication(userName: hasProperty('ossrhUsername')?ossrhUsername:'', password: hasProperty('ossrhPassword')?ossrhPassword:'')
+            authentication(userName: mavenUser, password: mavenPassword)
 		}
 
 		snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-			authentication(userName: hasProperty('ossrhUsername')?ossrhUsername:'', password: hasProperty('ossrhPassword')?ossrhPassword:'')
+            authentication(userName: mavenUser, password: mavenPassword)
 		}
         pom.groupId = groupId
         pom.artifactId = artifactId
