@@ -591,8 +591,8 @@ The GPG key file is internal and private to Ably.
 
 We publish to:
 
-* JCenter via JFrog's Bintray.
-* Maven Central via Sonatype's.
+* JCenter via JFrog's [Bintray](https://bintray.com/ably-io/ably)
+* Maven Central via Sonatype's [OSSRH](https://issues.sonatype.org/browse/OSSRH-52871) / [Nexus](https://oss.sonatype.org/#nexus-search;quick~io.ably)
 
 The `java` release process goes as follows:
 
