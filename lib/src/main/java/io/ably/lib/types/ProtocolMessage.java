@@ -59,37 +59,6 @@ public class ProtocolMessage {
 		public static Flag findByValue(int value) { return values()[value]; }
 	}
 
-	public static boolean mergeTo(ProtocolMessage dest, ProtocolMessage src) {
-		boolean result = false;
-		Action action;
-		if(dest.channel == src.channel) {
-			if((action = dest.action) == src.action) {
-				switch(action) {
-				case message: {
-						Message[] srcMessages = src.messages;
-						Message[] destMessages = dest.messages;
-						Message[] mergedMessages = dest.messages = new Message[destMessages.length + srcMessages.length];
-						System.arraycopy(destMessages, 0, mergedMessages, 0, destMessages.length);
-						System.arraycopy(srcMessages, 0, mergedMessages, destMessages.length, srcMessages.length);
-						result = true;
-					}
-					break;					
-				case presence: {
-						PresenceMessage[] srcMessages = src.presence;
-						PresenceMessage[] destMessages = dest.presence;
-						PresenceMessage[] mergedMessages = dest.presence = new PresenceMessage[destMessages.length + srcMessages.length];
-						System.arraycopy(mergedMessages, 0, destMessages, 0, destMessages.length);
-						System.arraycopy(mergedMessages, destMessages.length, srcMessages, 0, srcMessages.length);
-						result = true;
-					}
-					break;
-				default:
-				}
-			}
-		}
-		return result;
-	}
-
 	public static boolean ackRequired(ProtocolMessage msg) {
 		return (msg.action == Action.message || msg.action == Action.presence);
 	}

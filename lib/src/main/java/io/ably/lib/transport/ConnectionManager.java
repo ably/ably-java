@@ -1385,8 +1385,7 @@ public class ConnectionManager implements ConnectListener {
 
 	public static class QueuedMessage {
 		public final ProtocolMessage msg;
-		public CompletionListener listener;
-		private boolean isMerged;
+		public final CompletionListener listener;
 		public QueuedMessage(ProtocolMessage msg, CompletionListener listener) {
 			this.msg = msg;
 			this.listener = listener;
@@ -1402,19 +1401,6 @@ public class ConnectionManager implements ConnectListener {
 				return;
 			}
 			if(state.queueEvents && queueEvents) {
-				int queueSize = queuedMessages.size();
-				if(queueSize > 0) {
-					QueuedMessage lastQueued = queuedMessages.get(queueSize - 1);
-					ProtocolMessage lastMessage = lastQueued.msg;
-					if(ProtocolMessage.mergeTo(lastMessage, msg)) {
-						if(!lastQueued.isMerged) {
-							lastQueued.listener = new CompletionListener.Multicaster(lastQueued.listener);
-							lastQueued.isMerged = true;
-						}
-						((CompletionListener.Multicaster)lastQueued.listener).add(listener);
-						return;
-					}
-				}
 				queuedMessages.add(new QueuedMessage(msg, listener));
 				return;
 			}
