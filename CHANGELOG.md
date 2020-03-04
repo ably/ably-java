@@ -1,5 +1,17 @@
 # Change Log
 
+## [v.1.1.10](https://github.com/ably/ably-java/tree/v1.1.10)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.1.9...v1.1.10)
+
+**Implemented enhancements:**
+
+- Remove capability to bundle messages [\#567](https://github.com/ably/ably-java/pull/567) ([QuintinWillison](https://github.com/QuintinWillison))
+
+**Closed issues:**
+
+- Avoid message bundling, conforming to updated RTL6d [\#548](https://github.com/ably/ably-java/issues/548)
+
 ## [v1.1.9](https://github.com/ably/ably-java/tree/v1.1.9)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.1.8...v1.1.9)
