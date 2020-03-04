@@ -30,13 +30,13 @@ Reference the library by including a compile dependency reference in your gradle
 For [Java](https://bintray.com/ably-io/ably/ably-java/_latestVersion):
 
 ```
-compile 'io.ably:ably-java:1.1.9'
+compile 'io.ably:ably-java:1.1.10'
 ```
 
 For [Android](https://bintray.com/ably-io/ably/ably-android/_latestVersion):
 
 ```
-compile 'io.ably:ably-android:1.1.9'
+compile 'io.ably:ably-android:1.1.10'
 ```
 
 The library is hosted on the [Jcenter repository](https://bintray.com/ably-io/ably), so you need to ensure that the repo is referenced also; IDEs will typically include this by default:
@@ -563,17 +563,17 @@ Configuration of Run/Debug configurations for running the unit tests on Android 
 
 This library uses [semantic versioning](http://semver.org/). For each release, the following needs to be done:
 
-1. Create a branch for the release, named like `release/1.1.9`
+1. Create a branch for the release, named like `release/1.1.10`
 2. Replace all references of the current version number with the new version number (check this file [README.md](./README.md) and [common.gradle](./common.gradle)) and commit the changes
 3. Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to update the [CHANGELOG](./CHANGELOG.md):
-    * This might work: `github_changelog_generator -u ably -p ably-java --header-label="# Changelog" --release-branch=release/1.1.9 --future-release=v1.1.9`
-    * But your mileage may vary as it can error. Perhaps more reliable is something like: `github_changelog_generator -u ably -p ably-java --since-tag v1.1.8 --output delta.md` and then manually merge the delta contents in to the main change log
+    * This might work: `github_changelog_generator -u ably -p ably-java --header-label="# Changelog" --release-branch=release/1.1.10 --future-release=v1.1.10`
+    * But your mileage may vary as it can error. Perhaps more reliable is something like: `github_changelog_generator -u ably -p ably-java --since-tag v1.1.9 --output delta.md` and then manually merge the delta contents in to the main change log
 4. Commit [CHANGELOG](./CHANGELOG.md)
 5. Make a PR against `master`
 6. Once the PR is approved, merge it into `master`
 7. Assemble and Upload ([see below](#publishing-to-jcenter-and-maven-central) for details) - but the overall order to follow is:
     1. Publish to Maven Central (for now this is tied in with the assembly process though this will be improved soon)
-	2. Add a tag and push to origin - e.g.: `git tag v1.1.9 && git push origin v1.1.9`
+	2. Add a tag and push to origin - e.g.: `git tag v1.1.10 && git push origin v1.1.10`
 	3. Create the release on Github including populating the release notes
 	4. Upload to Bintray and use this tag and associated release notes
 
@@ -596,18 +596,18 @@ We publish to:
 
 The `java` release process goes as follows:
 
-* Go to the home page for the package; eg https://bintray.com/ably-io/ably/ably-java. Select Add a version, enter the new version such as "1.1.9" in name and save
+* Go to the home page for the package; eg https://bintray.com/ably-io/ably/ably-java. Select Add a version, enter the new version such as "1.1.10" in name and save
 * Run `./gradlew java:assembleRelease` locally to generate the files
-* Open local relative folder such as `./java/build/release/1.1.9/io/ably/ably-java/1.1.9`
-* Then go to the new version in JFrog Bintray; eg https://bintray.com/ably-io/ably/ably-java/1.1.9, then click on the link to upload via the UI in the "Upload files" section
-* Type in `io/ably/ably-java/1.1.9` into "Target Repository Path" ensuring the correct version is included. The drag in the files in `java/build/release/1.1.9/`. Upload all the `.jar` files and the `.pom` file.
-* You will see a notice "You have 4 unpublished item(s) for this version", make sure you click "Publish". Wait a few minutes and check that your version has all the necessary files at https://bintray.com/ably-io/ably/ably-java/1.1.9?sort=&order=#files/io/ably/ably-java/1.1.9 for example.
+* Open local relative folder such as `./java/build/release/1.1.10/io/ably/ably-java/1.1.10`
+* Then go to the new version in JFrog Bintray; eg https://bintray.com/ably-io/ably/ably-java/1.1.10, then click on the link to upload via the UI in the "Upload files" section
+* Type in `io/ably/ably-java/1.1.10` into "Target Repository Path" ensuring the correct version is included. The drag in the files in `java/build/release/1.1.10/`. Upload all the `.jar` files and the `.pom` file.
+* You will see a notice "You have 4 unpublished item(s) for this version", make sure you click "Publish". Wait a few minutes and check that your version has all the necessary files at https://bintray.com/ably-io/ably/ably-java/1.1.10?sort=&order=#files/io/ably/ably-java/1.1.10 for example.
 * Update the README text in Bintray (version number needs incrementing).
 
 Similarly for the `android` release at https://bintray.com/ably-io/ably/ably-android:
 
 * Run `./gradlew android:assembleRelease` locally to generate the files, and drag in the files in
-`./android/build/release/1.1.9/io/ably/ably-android/1.1.9`.
+`./android/build/release/1.1.10/io/ably/ably-android/1.1.10`.
 * In this case upload the `.jar` files, the `.pom` file and the `.aar` file.
 
 ### Creating the release on Github
