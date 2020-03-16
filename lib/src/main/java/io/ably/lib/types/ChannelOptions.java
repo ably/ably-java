@@ -1,10 +1,15 @@
 package io.ably.lib.types;
 
+import java.util.Map;
+
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Crypto;
 import io.ably.lib.util.Crypto.ChannelCipher;
 
 public class ChannelOptions {
+	public Map<String, String> params;
+	
+	public ChannelMode[] modes;
 
 	/**
 	 * Cipher in use.
@@ -20,9 +25,23 @@ public class ChannelOptions {
 	 * Whether or not this ChannelOptions is encrypted.
 	 */
 	public boolean encrypted;
-	public final ChannelParams params = new ChannelParams();
-	public final ChannelModes modes = new ChannelModes();
-
+	
+	public boolean hasModes() {
+		return null != modes && 0 != modes.length;
+	}
+	
+	public boolean hasParams() {
+		return null != params && !params.isEmpty();
+	}
+	
+	public int getModeFlags() {
+		int flags = 0;
+		for (final ChannelMode mode : modes) {
+			flags |= mode.getMask();
+		}
+		return flags;
+	}
+	
 	public ChannelCipher getCipher() throws AblyException {
 		if(!this.encrypted) {
 			return null;
