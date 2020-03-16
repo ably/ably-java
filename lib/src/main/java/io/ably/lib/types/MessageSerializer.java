@@ -2,10 +2,14 @@ package io.ably.lib.types;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.util.Log;
+
+import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 
@@ -68,6 +72,31 @@ public class MessageSerializer {
 			for(Message message : messages)
 				message.writeMsgpack(packer);
 		} catch(IOException e) {}
+	}
+
+	public static void write(final Map<String, String> map, final MessagePacker packer) throws IOException {
+		packer.packMapHeader(map.size());
+		for (final Map.Entry<String, String> entry : map.entrySet()) {
+			packer.packString(entry.getKey());
+			packer.packString(entry.getValue());
+		}
+	}
+	
+	public static Map<String, String> readStringMap(final MessageUnpacker unpacker) throws IOException {
+		final Map<String, String> map = new HashMap<>();
+		final int fieldCount = unpacker.unpackMapHeader();
+		for(int i = 0; i < fieldCount; i++) {
+			final String fieldName = unpacker.unpackString();
+			final MessageFormat fieldFormat = unpacker.getNextFormat();
+			
+			// TODO is this required? It seems to be saying that if we have a null value
+			// then nothing should be added to the map, despite the fact that the key
+			// was potentially viable.
+			if(fieldFormat.equals(MessageFormat.NIL)) { unpacker.unpackNil(); continue; }
+			
+			map.put(fieldName, unpacker.unpackString());
+		}
+		return map;		
 	}
 
 	public static HttpCore.RequestBody asMsgpackRequest(Message.Batch[] pubSpecs) {
