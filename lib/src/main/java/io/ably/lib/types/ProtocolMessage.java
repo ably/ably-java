@@ -2,8 +2,6 @@ package io.ably.lib.types;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import org.msgpack.core.MessageFormat;
@@ -66,10 +64,15 @@ public class ProtocolMessage {
 		subscribe(18),
 		presence_subscribe(19);
 
-		private int mask;
-		Flag(int offset) { this.mask = 1 << offset; }
-		public int getMask() { return this.mask; }
-		public static Flag[] getModes() { return new Flag[] { presence, publish, subscribe, presence_subscribe }; };
+		private final int mask;
+		
+		Flag(int offset) { 
+			this.mask = 1 << offset;
+		}
+		
+		public int getMask() {
+			return this.mask;
+		}
 	}
 
 	public static boolean ackRequired(ProtocolMessage msg) {
@@ -102,32 +105,20 @@ public class ProtocolMessage {
 	public PresenceMessage[] presence;
 	public ConnectionDetails connectionDetails;
 	public AuthDetails auth;
-	public ChannelParams params;
-
-	public boolean hasFlag(Flag flag) {
-		return (this.flags & flag.getMask()) == flag.getMask();
+	public Map<String, String> params;
+	
+	public boolean hasFlag(final Flag flag) {
+		return (flags & flag.getMask()) == flag.getMask();
 	}
 
-	public void setFlag(Flag flag) {
-		this.flags |= flag.getMask();
+	public void setFlag(final Flag flag) {
+		flags |= flag.getMask();
 	}
-
-	public void encodeModesToFlags(ChannelModes modes) {
-		for (ChannelMode mode : modes) {
-			this.setFlag(Flag.valueOf(mode.name()));
-		}
+	
+	public void setFlags(final int flags) {
+		this.flags |= flags;
 	}
-
-	public ChannelModes decodeModesFromFlags() {
-		ChannelModes result = new ChannelModes();
-		for (Flag mode : Flag.getModes()) {
-			if (this.hasFlag(mode)) {
-				result.add(ChannelMode.valueOf(mode.name()));
-			}
-		}
-		return result;
-	}
-
+	
 	void writeMsgpack(MessagePacker packer) throws IOException {
 		int fieldCount = 1; //action
 		if(channel != null) ++fieldCount;
@@ -167,7 +158,7 @@ public class ProtocolMessage {
 		}
 		if(params != null) {
 			packer.packString("params");
-			params.writeMsgpack(packer);
+			MessageSerializer.write(params, packer);
 		}
 		if(channelSerial != null) {
 			packer.packString("channelSerial");
@@ -233,7 +224,7 @@ public class ProtocolMessage {
 					unpacker.unpackString();
 					break;
 				case "params":
-					params = ChannelParams.fromMsgpack(unpacker);
+					params = MessageSerializer.readStringMap(unpacker);
 					break;
 				default:
 					Log.v(TAG, "Unexpected field: " + fieldName);

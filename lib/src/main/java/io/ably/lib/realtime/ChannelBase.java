@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -16,9 +18,8 @@ import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.AsyncPaginatedResult;
 import io.ably.lib.types.Callback;
-import io.ably.lib.types.ChannelModes;
+import io.ably.lib.types.ChannelMode;
 import io.ably.lib.types.ChannelOptions;
-import io.ably.lib.types.ChannelParams;
 import io.ably.lib.types.ChannelProperties;
 import io.ably.lib.types.DecodingContext;
 import io.ably.lib.types.ErrorInfo;
@@ -31,6 +32,7 @@ import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.types.ProtocolMessage.Flag;
+import io.ably.lib.util.CollectionUtils;
 import io.ably.lib.util.EventEmitter;
 import io.ably.lib.util.Log;
 
@@ -164,11 +166,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		Log.v(TAG, "attach(); channel = " + name + "; sending ATTACH request");
 		ProtocolMessage attachMessage = new ProtocolMessage(Action.attach, this.name);
 		if(this.options != null) {
-			if(!this.options.params.isEmpty()) {
-				attachMessage.params = this.options.params;
+			if(this.options.hasParams()) {
+				attachMessage.params = CollectionUtils.copy(this.options.params);
 			}
-			if(!this.options.modes.isEmpty()) {
-				attachMessage.encodeModesToFlags(this.options.modes);
+			if(this.options.hasModes()) {
+				attachMessage.setFlags(options.getModeFlags());
 			}
 		}
 		if(this.decodeFailureRecoveryInProgress) {
@@ -295,7 +297,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		Log.v(TAG, "setAttached(); channel = " + name + ", resumed = " + resumed);
 		properties.attachSerial = message.channelSerial;
 		params = message.params;
-		modes = message.decodeModesFromFlags();
+		modes = ChannelMode.toSet(message.flags);
 		if(state == ChannelState.attached) {
 			Log.v(TAG, String.format("Server initiated attach for channel %s", name));
 			/* emit UPDATE event according to RTL12 */
@@ -1044,15 +1046,15 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	boolean shouldReattachToSetOptions(ChannelOptions options) {
 		return
 			(this.state == ChannelState.attached || this.state == ChannelState.attaching) &&
-			(!options.modes.isEmpty() || !options.params.isEmpty());
+			(options.hasModes() || options.hasParams());
 	}
 
-	public ChannelParams getParams() {
-		return this.params.clone();
+	public Map<String, String> getParams() {
+		return CollectionUtils.copy(params);
 	}
 
-	public ChannelModes getModes() {
-		return this.modes.clone();
+	public ChannelMode[] getModes() {
+		return modes.toArray(new ChannelMode[modes.size()]);
 	}
 
 	/************************************
@@ -1184,8 +1186,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	final String basePath;
 	ChannelOptions options;
 	String syncChannelSerial;
-	private ChannelParams params;
-	private ChannelModes modes;
+	private Map<String, String> params;
+	private Set<ChannelMode> modes;
 	private String lastPayloadMessageId;
 	private String lastPayloadProtocolMessageChannelSerial;
 	private boolean decodeFailureRecoveryInProgress;
