@@ -3,24 +3,26 @@ package io.ably.lib.test.realtime;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import io.ably.lib.transport.ConnectionManager;
-import io.ably.lib.transport.Defaults;
-import io.ably.lib.transport.ITransport;
-import io.ably.lib.transport.WebSocketTransport;
-import io.ably.lib.util.Base64Coder;
+import java.util.Objects;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.MessageWaiter;
 import io.ably.lib.test.common.ParameterizedTest;
-import io.ably.lib.types.*;
-
-import java.util.Objects;
+import io.ably.lib.transport.ConnectionManager;
+import io.ably.lib.transport.ITransport;
+import io.ably.lib.transport.WebSocketTransport;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.Message;
+import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.util.Base64Coder;
 
 public class RealtimeDeltaDecoderTest extends ParameterizedTest {
 	private static final String[] testData = new String[] {
@@ -72,22 +74,19 @@ public class RealtimeDeltaDecoderTest extends ParameterizedTest {
 
 	@Test
 	public void delta_out_of_order_failure_recovery() {
-		delta_failure_recovery(OutOfOrderDeltasWebsocketFactory.class.getName(), "delta_out_of_order_failure_recovery");
+		delta_failure_recovery(new OutOfOrderDeltasWebsocketFactory(), "delta_out_of_order_failure_recovery");
 	}
 
 	@Test
 	public void delta_decode_failure_recovery() {
-		delta_failure_recovery(FailingDeltasWebsocketFactory.class.getName(), "delta_decode_failure_recovery");
+		delta_failure_recovery(new FailingDeltasWebsocketFactory(), "delta_decode_failure_recovery");
 	}
 
-	private void delta_failure_recovery(String websocketFactoryClass, String testName) {
+	private void delta_failure_recovery(final ITransport.Factory websocketFactory, String testName) {
 		AblyRealtime ably = null;
-		String oldTransportClass = Defaults.TRANSPORT;
-
 		try {
-			Defaults.TRANSPORT = websocketFactoryClass;
-
-			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+			DebugOptions opts = createOptions(testVars.keys[0].keyStr);
+			opts.transportFactory = websocketFactory;
 			ably = new AblyRealtime(opts);
 
 			/* create a channel */
@@ -118,8 +117,6 @@ public class RealtimeDeltaDecoderTest extends ParameterizedTest {
 		} finally {
 			if(ably != null)
 				ably.close();
-
-			Defaults.TRANSPORT = oldTransportClass;
 		}
 	}
 
