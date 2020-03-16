@@ -1,19 +1,38 @@
 package io.ably.lib.realtime;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+
 import io.ably.lib.http.BasePaginatedQuery;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ConnectionManager.QueuedMessage;
 import io.ably.lib.transport.Defaults;
-import io.ably.lib.types.*;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.AsyncPaginatedResult;
+import io.ably.lib.types.Callback;
+import io.ably.lib.types.ChannelModes;
+import io.ably.lib.types.ChannelOptions;
+import io.ably.lib.types.ChannelParams;
+import io.ably.lib.types.ChannelProperties;
+import io.ably.lib.types.DecodingContext;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Message;
+import io.ably.lib.types.MessageDecodeException;
+import io.ably.lib.types.MessageSerializer;
+import io.ably.lib.types.PaginatedResult;
+import io.ably.lib.types.Param;
+import io.ably.lib.types.PresenceMessage;
+import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.types.ProtocolMessage.Flag;
 import io.ably.lib.util.EventEmitter;
 import io.ably.lib.util.Log;
-
-import java.util.*;
-
 
 /**
  * A class representing a Channel belonging to this application.
@@ -1170,4 +1189,5 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	private String lastPayloadMessageId;
 	private String lastPayloadProtocolMessageChannelSerial;
 	private boolean decodeFailureRecoveryInProgress;
+	private final DecodingContext decodingContext;
 }
