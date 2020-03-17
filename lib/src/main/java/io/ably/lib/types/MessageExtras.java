@@ -9,16 +9,26 @@ import org.msgpack.core.MessageUnpacker;
 
 import java.io.IOException;
 
-public class MessageExtras {
+public final class MessageExtras {
 	private static final String TAG = MessageExtras.class.getName();
+	
+	// TODO what about the 1.1 push extension? (TM2i)
 
-	public DeltaExtras delta;
+	private final DeltaExtras delta; // may be null
+	
+	public MessageExtras(final DeltaExtras delta) {
+		this.delta = delta;
+	}
+	
+	public DeltaExtras getDelta() {
+		return delta;
+	}
 
-	JsonElement asJsonElement() {
+	/* package private */ JsonElement toJsonElement() {
 		return Serialisation.gson.toJsonTree(this);
 	}
 
-	void writeMsgpack(MessagePacker packer) throws IOException {
+	/* package private */ void writeMsgpack(MessagePacker packer) throws IOException {
 		int fieldCount = 0;
 		if (this.delta != null) {
 			fieldCount++;
@@ -30,8 +40,9 @@ public class MessageExtras {
 		}
 	}
 
-	private MessageExtras readMsgpack(MessageUnpacker unpacker) throws IOException {
-		int fieldCount = unpacker.unpackMapHeader();
+	/* package private */ static MessageExtras fromMsgpack(MessageUnpacker unpacker) throws IOException {
+		final int fieldCount = unpacker.unpackMapHeader();
+		DeltaExtras delta = null;
 		for(int i = 0; i < fieldCount; i++) {
 			String fieldName = unpacker.unpackString();
 			MessageFormat fieldFormat = unpacker.getNextFormat();
@@ -41,16 +52,13 @@ public class MessageExtras {
 			}
 
 			if(fieldName.equals("delta")) {
-				this.delta = DeltaExtras.fromMsgpack(unpacker);
+				delta = DeltaExtras.fromMsgpack(unpacker);
 			} else {
-				Log.v(TAG, "Unexpected field: " + fieldName);
+				Log.w(TAG, "Unexpected field: " + fieldName);
 				unpacker.skipValue();
 			}
 		}
-		return this;
-	}
-
-	static MessageExtras fromMsgpack(MessageUnpacker unpacker) throws IOException {
-		return (new MessageExtras()).readMsgpack(unpacker);
+		
+		return new MessageExtras(delta);
 	}
 }
