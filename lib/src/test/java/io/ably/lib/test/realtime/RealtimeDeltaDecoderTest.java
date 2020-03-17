@@ -20,7 +20,9 @@ import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ITransport;
 import io.ably.lib.transport.WebSocketTransport;
 import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.DeltaExtras;
 import io.ably.lib.types.Message;
+import io.ably.lib.types.MessageExtras;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Base64Coder;
 
@@ -128,7 +130,7 @@ public class RealtimeDeltaDecoderTest extends ParameterizedTest {
 	}
 
 	/*
-	 * Special transport class that erases the order bookkeeping of delta messages to allow testing delta recovery
+	 * Special transport class that corrupts the order bookkeeping of delta messages to allow testing delta recovery.
 	 */
 	private static class OutOfOrderDeltasWebsocketTransportMock extends WebSocketTransport {
 
@@ -141,8 +143,9 @@ public class RealtimeDeltaDecoderTest extends ParameterizedTest {
 		protected void preProcessReceivedMessage(ProtocolMessage message) {
 			if(message.action == ProtocolMessage.Action.message &&
 				message.messages[0].extras != null &&
-				message.messages[0].extras.delta != null) {
-					message.messages[0].extras.delta.from = "";
+				message.messages[0].extras.getDelta() != null) {
+					final String format = message.messages[0].extras.getDelta().getFormat();
+					message.messages[0].extras = new MessageExtras(new DeltaExtras(format, ""));
 			}
 		}
 	}
@@ -168,8 +171,8 @@ public class RealtimeDeltaDecoderTest extends ParameterizedTest {
 		protected void preProcessReceivedMessage(ProtocolMessage message) {
 			if(message.action == ProtocolMessage.Action.message &&
 				message.messages[0].extras != null &&
-				message.messages[0].extras.delta != null &&
-				Objects.equals(message.messages[0].extras.delta.format, "vcdiff")) {
+				message.messages[0].extras.getDelta() != null &&
+				Objects.equals(message.messages[0].extras.getDelta().getFormat(), "vcdiff")) {
 
 				if(message.messages[0].data instanceof String) {
 					byte[] delta = Base64Coder.decode((String)message.messages[0].data);

@@ -22,6 +22,7 @@ import io.ably.lib.types.ChannelMode;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ChannelProperties;
 import io.ably.lib.types.DecodingContext;
+import io.ably.lib.types.DeltaExtras;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.MessageDecodeException;
@@ -681,7 +682,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		Message firstMessage = messages[0];
 		Message lastMessage = messages[messages.length - 1];
 
-		if (firstMessage.extras != null && firstMessage.extras.delta != null && !firstMessage.extras.delta.from.equals(this.lastPayloadMessageId)) {
+		final DeltaExtras deltaExtras = (null == firstMessage.extras) ? null : firstMessage.extras.getDelta();
+		if (null != deltaExtras && !deltaExtras.getFrom().equals(this.lastPayloadMessageId)) {
 			Log.e(TAG, String.format("Delta message decode failure - previous message not available. Message id = %s, channel = %s", firstMessage.id, name));
 			this.startDecodeFailureRecovery();
 			return;
