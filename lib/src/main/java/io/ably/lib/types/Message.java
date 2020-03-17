@@ -245,7 +245,7 @@ public class Message extends BaseMessage {
 		public JsonElement serialize(Message message, Type typeOfMessage, JsonSerializationContext ctx) {
 			JsonObject json = (JsonObject) super.serialize(message, typeOfMessage, ctx);
 			if(message.name != null) json.addProperty("name", message.name);
-			if(message.extras != null) json.add("extras", message.extras.asJsonElement());
+			if(message.extras != null) json.add("extras", message.extras.toJsonElement());
 			return json;
 		}
 	}
