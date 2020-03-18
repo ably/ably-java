@@ -676,35 +676,39 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 	 * internal
 	 *
 	 */
-	private void onMessage(ProtocolMessage message) {
+	private void onMessage(final ProtocolMessage protocolMessage) {
 		Log.v(TAG, "onMessage(); channel = " + name);
-		Message[] messages = message.messages;
-		Message firstMessage = messages[0];
-		Message lastMessage = messages[messages.length - 1];
+		final Message[] messages = protocolMessage.messages;
+		final Message firstMessage = messages[0];
+		final Message lastMessage = messages[messages.length - 1];
 
 		final DeltaExtras deltaExtras = (null == firstMessage.extras) ? null : firstMessage.extras.getDelta();
 		if (null != deltaExtras && !deltaExtras.getFrom().equals(this.lastPayloadMessageId)) {
 			Log.e(TAG, String.format("Delta message decode failure - previous message not available. Message id = %s, channel = %s", firstMessage.id, name));
-			this.startDecodeFailureRecovery();
+			startDecodeFailureRecovery();
 			return;
 		}
 
 		for(int i = 0; i < messages.length; i++) {
-			Message msg = messages[i];
+			final Message msg = messages[i];
+			
+			/* populate fields derived from protocol message */
+			if(msg.connectionId == null) msg.connectionId = protocolMessage.connectionId;
+			if(msg.timestamp == 0) msg.timestamp = protocolMessage.timestamp;
+			if(msg.id == null) msg.id = protocolMessage.id + ':' + i;
+			
 			try {
 				msg.decode(options, decodingContext);
 			} catch (MessageDecodeException e) {
-
-				if(msg.id == null) msg.id = message.id + ':' + i;
-
 				if (e.errorInfo.code == 40018) {
 					Log.e(TAG, String.format("Delta message decode failure - %s. Message id = %s, channel = %s", e.errorInfo.message, msg.id, name));
-					this.startDecodeFailureRecovery();
+					startDecodeFailureRecovery();
 
-					//log messages skipped per RTL16
+					// log messages skipped per RTL16
 					for (int j = i + 1; j < messages.length; j++) {
-						if(messages[j].id == null) messages[j].id = message.id + ':' + j;
-						Log.v(TAG, String.format("Delta recovery in progress - message skipped. Message id = %s, channel = %s", messages[j].id, name));
+						final String jId = messages[j].id; // might be null
+						final String jIdToLog = (null == jId) ? protocolMessage.id + ':' + j : jId;
+						Log.v(TAG, String.format("Delta recovery in progress - message skipped. Message id = %s, channel = %s", jIdToLog, name));
 					}
 
 					return;
@@ -713,20 +717,17 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 					Log.e(TAG, String.format("Message decode failure - %s. Message id = %s, channel = %s", e.errorInfo.message, msg.id, name));
 				}
 			}
-			/* populate fields derived from protocol message */
-			if(msg.connectionId == null) msg.connectionId = message.connectionId;
-			if(msg.timestamp == 0) msg.timestamp = message.timestamp;
-			if(msg.id == null) msg.id = message.id + ':' + i;
+
 			/* broadcast */
-			MessageMulticaster listeners = eventListeners.get(msg.name);
+			final MessageMulticaster listeners = eventListeners.get(msg.name);
 			if(listeners != null)
 				listeners.onMessage(msg);
 		}
 
-		this.lastPayloadMessageId = lastMessage.id;
-		this.lastPayloadProtocolMessageChannelSerial = message.channelSerial;
+		lastPayloadMessageId = lastMessage.id;
+		lastPayloadProtocolMessageChannelSerial = protocolMessage.channelSerial;
 
-		for (Message msg : message.messages) {
+		for (final Message msg : messages) {
 			this.listeners.onMessage(msg);
 		}
 	}
