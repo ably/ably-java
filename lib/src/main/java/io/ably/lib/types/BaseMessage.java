@@ -1,9 +1,9 @@
 package io.ably.lib.types;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
-import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -11,6 +11,8 @@ import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 
+import com.davidehrmann.vcdiff.VCDiffDecoder;
+import com.davidehrmann.vcdiff.VCDiffDecoderBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
@@ -73,6 +75,18 @@ public class BaseMessage implements Cloneable {
 
 		this.decode(opts, new DecodingContext());
 	}
+	
+	private final static VCDiffDecoder vcdiffDecoder = VCDiffDecoderBuilder.builder().buildSimple();
+
+	private static byte[] vcdiffApply(byte[] delta, byte[] base) throws MessageDecodeException {
+		try {
+			ByteArrayOutputStream decoded = new ByteArrayOutputStream();
+			vcdiffDecoder.decode(base, delta, decoded);
+			return decoded.toByteArray();
+		} catch (Throwable t) {
+			throw MessageDecodeException.fromThrowableAndErrorInfo(t, new ErrorInfo("VCDIFF delta decode failed", 400, 40018));
+		}
+	}
 
 	public void decode(ChannelOptions opts,  DecodingContext context) throws MessageDecodeException {
 
@@ -123,7 +137,7 @@ public class BaseMessage implements Cloneable {
 								throw MessageDecodeException.fromDescription("Encrypted message received but encryption is not set up");
 							}
 						case "vcdiff":
-							data = VCDiffDecoderHelper.decode((byte[]) data, context.getLastMessageData());
+							data = vcdiffApply((byte[]) data, context.getLastMessageData());
 							lastPayload = data;
 
 							continue;
