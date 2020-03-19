@@ -16,6 +16,7 @@ import javax.crypto.spec.SecretKeySpec;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Param;
 
 /**
  * Utility classes and interfaces for message payload encryption.
@@ -318,10 +319,26 @@ public class Crypto {
 		};
 	}
 
-	public static String getRandomMessageId() {
+	/**
+	 * Returns an identifier, based on a sequence of 9 random bytes which have
+	 * been base64 encoded.
+	 * 
+	 * Spec: RSL1k1, RSC7c
+	 */
+	public static String generateRandomId() {
 		byte[] entropy = new byte[9];
 		secureRandom.nextBytes(entropy);
 		return Base64Coder.encode(entropy).toString();
+	}
+	
+	/**
+	 * Returns a "request_id" query param, based on a sequence of 9 random bytes
+	 * which have been base64 encoded.
+	 * 
+	 * Spec: RSC7c
+	 */
+	public static Param generateRandomRequestId() {
+		return new Param("request_id", Crypto.generateRandomId());
 	}
 
 	/**

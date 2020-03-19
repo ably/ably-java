@@ -105,15 +105,16 @@ public class ChannelBase {
 				}
 				if(!hasClientSuppliedId && ably.options.idempotentRestPublishing) {
 					/* RSL1k1: populate the message id with a library-generated id */
-					String messageId = Crypto.getRandomMessageId();
+					String messageId = Crypto.generateRandomId();
 					for (int i = 0; i < messages.length; i++) {
 						messages[i].id = messageId + ':' + i;
 					}
 				}
 
 				HttpCore.RequestBody requestBody = ably.options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(messages) : MessageSerializer.asJsonRequest(messages);
+				final Param[] params = ably.options.addRequestIds ? Param.array(Crypto.generateRandomRequestId()) : null; // RSC7c
 
-				http.post(basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), null, requestBody, null, true, callback);
+				http.post(basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, requestBody, null, true, callback);
 			}
 		});
 	}
@@ -141,8 +142,9 @@ public class ChannelBase {
 		historyImpl(params).async(callback);
 	}
 
-	private BasePaginatedQuery.ResultRequest<Message> historyImpl(Param[] params) {
+	private BasePaginatedQuery.ResultRequest<Message> historyImpl(Param[] initialParams) {
 		HttpCore.BodyHandler<Message> bodyHandler = MessageSerializer.getMessageResponseHandler(options);
+		final Param[] params = ably.options.addRequestIds ? Param.set(initialParams, Crypto.generateRandomRequestId()) : initialParams; // RSC7c
 		return (new BasePaginatedQuery<Message>(ably.http, basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler)).get();
 	}
 
@@ -171,8 +173,9 @@ public class ChannelBase {
 			getImpl(params).async(callback);
 		}
 
-		private BasePaginatedQuery.ResultRequest<PresenceMessage> getImpl(Param[] params) {
+		private BasePaginatedQuery.ResultRequest<PresenceMessage> getImpl(Param[] initialParams) {
 			HttpCore.BodyHandler<PresenceMessage> bodyHandler = PresenceSerializer.getPresenceResponseHandler(options);
+			final Param[] params = ably.options.addRequestIds ? Param.set(initialParams, Crypto.generateRandomRequestId()) : initialParams; // RSC7c
 			return (new BasePaginatedQuery<PresenceMessage>(ably.http, basePath + "/presence", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler)).get();
 		}
 
@@ -197,8 +200,9 @@ public class ChannelBase {
 			historyImpl(params).async(callback);
 		}
 
-		private BasePaginatedQuery.ResultRequest<PresenceMessage> historyImpl(Param[] params) {
+		private BasePaginatedQuery.ResultRequest<PresenceMessage> historyImpl(Param[] initialParams) {
 			HttpCore.BodyHandler<PresenceMessage> bodyHandler = PresenceSerializer.getPresenceResponseHandler(options);
+			final Param[] params = ably.options.addRequestIds ? Param.set(initialParams, Crypto.generateRandomRequestId()) : initialParams; // RSC7c
 			return (new BasePaginatedQuery<PresenceMessage>(ably.http, basePath + "/presence/history", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler)).get();
 		}
 

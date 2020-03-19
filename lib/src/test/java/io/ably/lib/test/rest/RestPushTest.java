@@ -1,25 +1,26 @@
 package io.ably.lib.test.rest;
 
-import com.google.gson.JsonObject;
-
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-
-import org.junit.*;
-import org.junit.rules.Timeout;
 
 import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.Timeout;
+
+import com.google.gson.JsonObject;
+
 import io.ably.lib.debug.DebugOptions;
+import io.ably.lib.push.PushBase.ChannelSubscription;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.DeviceDetails;
-import io.ably.lib.push.PushBase.ChannelSubscription;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
 import io.ably.lib.test.common.Helpers.MessageWaiter;
@@ -248,7 +249,7 @@ public class RestPushTest extends ParameterizedTest {
 				null));
 		testCases.add(new TestCase(
 				"bad recipient",
-				Param.set(null, "foo", "bar"),
+				Param.array("foo", "bar"),
 				JsonUtils.object()
 						.add("data", JsonUtils.object()
 								.add("foo", "bar")).toJson(),
@@ -262,7 +263,7 @@ public class RestPushTest extends ParameterizedTest {
 				"recipient"));
 		testCases.add(new TestCase(
 				"empty payload",
-				Param.set(null, "ablyChannel", "pushenabled:push_admin_publish-ok"),
+				Param.array("ablyChannel", "pushenabled:push_admin_publish-ok"),
 				null,
 				"payload"));
 

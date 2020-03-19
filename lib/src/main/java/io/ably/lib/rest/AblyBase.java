@@ -246,7 +246,7 @@ public abstract class AblyBase {
 			}
 			if(!hasClientSuppliedId && options.idempotentRestPublishing) {
 				/* RSL1k1: populate the message id with a library-generated id */
-				String messageId = Crypto.getRandomMessageId();
+				String messageId = Crypto.generateRandomId();
 				for (int i = 0; i < spec.messages.length; i++) {
 					spec.messages[i].id = messageId + ':' + i;
 				}
@@ -256,7 +256,8 @@ public abstract class AblyBase {
 			@Override
 			public void execute(HttpScheduler http, final Callback<PublishResponse[]> callback) throws AblyException {
 				HttpCore.RequestBody requestBody = options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(pubSpecs) : MessageSerializer.asJSONRequest(pubSpecs);
-				http.post("/messages", HttpUtils.defaultAcceptHeaders(options.useBinaryProtocol), null, requestBody, new HttpCore.ResponseHandler<PublishResponse[]>() {
+				final Param[] params = options.addRequestIds ? Param.array(Crypto.generateRandomRequestId()) : null; // RSC7c				
+				http.post("/messages", HttpUtils.defaultAcceptHeaders(options.useBinaryProtocol), params, requestBody, new HttpCore.ResponseHandler<PublishResponse[]>() {
 					@Override
 					public PublishResponse[] handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
 						if(error != null && error.code != 40020) {

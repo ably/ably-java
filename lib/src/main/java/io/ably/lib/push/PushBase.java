@@ -7,6 +7,7 @@ import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.DeviceDetails;
 import io.ably.lib.types.*;
+import io.ably.lib.util.Crypto;
 import io.ably.lib.util.Serialisation;
 import io.ably.lib.util.StringUtils;
 
@@ -62,6 +63,9 @@ public class PushBase {
 					Param[] params = null;
 					if (rest.options.pushFullWait) {
 						params = Param.push(params, "fullWait", "true");
+					}
+					if (rest.options.addRequestIds) {
+						params = Param.set(params, Crypto.generateRandomRequestId()); // RSC7c
 					}
 
 					http.post("/push/publish", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, body, null, true, callback);
@@ -203,6 +207,10 @@ public class PushBase {
 					if (rest.options.pushFullWait) {
 						params = Param.push(params, "fullWait", "true");
 					}
+					if (rest.options.addRequestIds) {
+						params = Param.set(params, Crypto.generateRandomRequestId()); // RSC7c
+					}
+					
 					http.post("/push/channelSubscriptions", rest.push.pushRequestHeaders(subscription.deviceId), params, body, ChannelSubscription.httpResponseHandler, true, callback);
 				}
 			});

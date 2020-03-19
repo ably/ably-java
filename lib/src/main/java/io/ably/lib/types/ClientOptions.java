@@ -87,6 +87,14 @@ public class ClientOptions extends AuthOptions {
 	 * If false, suppresses the automatic initiation of a connection when the library is instanced.
 	 */
 	public boolean autoConnect = true;
+	
+	/**
+	 * If true then every REST request will include an accompanying request_id query string parameter,
+	 * generated from a source of randomness.
+	 * 
+	 * Spec: TO3p, RSC7c
+	 */
+	public boolean addRequestIds = false;
 
 	/**
 	 * If false, forces the library to use the JSON encoding for REST and Realtime operations,

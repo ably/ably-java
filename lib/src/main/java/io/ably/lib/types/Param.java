@@ -1,71 +1,100 @@
 package io.ably.lib.types;
 
 /**
- * A class encapsulating a key/value pair
+ * A class encapsulating a key/value pair.
  */
-public class Param {
+public final class Param {
+	public Param(final String key, final String value) {
+		this.key = key;
+		this.value = value;
+	}
 
-	public Param(String key, String value) { this.key = key; this.value = value; }
-	public Param(String key, Object value) { this(key, value.toString()); }
-	public String key;
-	public String value;
+	public Param(final String key, final Object value) {
+		this(key, value.toString());
+	}
 
-	public static Param[] push(Param[] params, Param val) {
+	public final String key;
+	public final String value;
+
+	public static Param[] array(final Param val) {
+		return new Param[] { val };
+	}
+
+	public static Param[] array(final String key, final String value) {
+		return array(new Param(key, value));
+	}
+
+	private static Param[] push(final Param[] params, final Param param) {
 		if (params == null) {
-			return new Param[] { val };
+			return array(param);
 		}
 
-		int len = params.length;
-		Param[] result = new Param[len + 1];
+		final int len = params.length;
+		final Param[] result = new Param[len + 1];
 		System.arraycopy(params, 0, result, 0, len);
-		result[len] = val;
+		result[len] = param;
 		return result;
 	}
 
+	private static Param[] remove(final Param[] params, final String key) {
+		int count = 0;
+		for (final Param param : params) {
+			if (key.equals(param.key)) {
+				count += 1;
+			}
+		}
+
+		final Param[] result = new Param[params.length - count];
+		int i = 0;
+		for (final Param param : params) {
+			if (!key.equals(param.key)) {
+				result[i++] = param;
+			}
+		}
+
+		return result;
+	}
+
+	/**
+	 * Returns a new array containing a copy of the given params with an additional
+	 * Param instance added to the end, initialised with the given key and value.
+	 */
 	public static Param[] push(Param[] params, String key, String value) {
 		return push(params, new Param(key, value));
 	}
 
-	public static Param[] set(Param[] params, Param val) {
-		if (params == null) {
-			return new Param[] { val };
-		}
-
-		for (int i = 0; i < params.length; i++) {
-			if (params[i].key.equals(val.key)) {
-				params[i] = val;
-				return params;
-			}
-		}
-
-		return push(params, val);
+	/**
+	 * Returns a new array containing a copy of the given params with all instances
+	 * of Param with a key of val.key removed, then val added to the end.
+	 */
+	public static Param[] set(final Param[] params, final Param param) {
+		return push(remove(params, param.key), param);
 	}
 
-	public static Param[] set(Param[] params, String key, String value) {
-		return set(params, new Param(key, value));
-	}
-
-	public static boolean containsKey(Param[] params, String key) {
+	public static boolean containsKey(final Param[] params, final String key) {
 		return getFirst(params, key) != null;
 	}
 
-	public static String getFirst(Param[] params, String key) {
-		if(params == null)
+	public static String getFirst(final Param[] params, final String key) {
+		if (params == null)
 			return null;
-		for(Param param : params)
-			if(param.key.equals(key))
+		for (Param param : params)
+			if (param.key.equals(key))
 				return param.value;
 		return null;
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+	public boolean equals(final Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
 
-		Param param = (Param) o;
+		final Param param = (Param) o;
 
-		if (key != null ? !key.equals(param.key) : param.key != null) return false;
+		if (key != null ? !key.equals(param.key) : param.key != null)
+			return false;
 		return value != null ? value.equals(param.value) : param.value == null;
 
 	}
