@@ -4,7 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import io.ably.lib.types.Message;
+import io.ably.lib.debug.DebugOptions;
+import io.ably.lib.types.*;
 import io.ably.lib.util.Log;
 import org.junit.Rule;
 import org.junit.Test;
@@ -19,9 +20,6 @@ import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.Helpers.MessageWaiter;
 import io.ably.lib.test.common.ParameterizedTest;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -674,6 +672,72 @@ public class RealtimeResumeTest extends ParameterizedTest {
 			if(receiver != null) {
 				receiver.close();
 			}
+		}
+	}
+
+	//RTL4j2 
+	@Test
+	public void resume_rewind_1 ()
+	{
+		AblyRealtime receiver1 = null;
+		AblyRealtime receiver2 = null;
+		AblyRealtime sender = null;
+		final String testMessage = "{ foo: \"bar\", count: 1, status: \"active\" }";
+
+		String testName = "resume_rewind_1";
+		try {
+
+			ClientOptions common_opts = createOptions(testVars.keys[0].keyStr);
+			sender = new AblyRealtime(common_opts);
+			receiver1 = new AblyRealtime(common_opts);
+
+			DebugOptions receiver2_opts = createOptions(testVars.keys[0].keyStr);
+			receiver2_opts.protocolListener = new DebugOptions.RawProtocolListener() {
+				@Override
+				public void onRawConnect(String url) {}
+				@Override
+				public void onRawConnectRequested(String url) {}
+				@Override
+				public void onRawMessageSend(ProtocolMessage message) {
+					if(message.action == ProtocolMessage.Action.attach) {
+						message.setFlag(ProtocolMessage.Flag.attach_resume);
+					}
+				}
+				@Override
+				public void onRawMessageRecv(ProtocolMessage message) {}
+			};
+			receiver2 = new AblyRealtime(receiver2_opts);
+
+			Channel recever1_channel = receiver1.channels.get("[?rewind=1]" + testName);
+			Channel recever2_channel = receiver2.channels.get("[?rewind=1]" + testName);
+			Channel sender_channel = sender.channels.get(testName);
+
+			sender_channel.attach();
+			(new ChannelWaiter(sender_channel)).waitFor(ChannelState.attached);
+			sender_channel.publish("0", testMessage);
+
+			/* subscribe 1*/
+			MessageWaiter messageWaiter_1 = new MessageWaiter(recever1_channel);
+			messageWaiter_1.waitFor(1);
+			assertEquals("Verify rewound message", testMessage, messageWaiter_1.receivedMessages.get(0).data);
+
+			/* subscribe 2*/
+			MessageWaiter messageWaiter_2 = new MessageWaiter(recever2_channel);
+			messageWaiter_2.waitFor(1, 7000);
+			assertEquals("Verify no message received on attach_rewind", 0, messageWaiter_2.receivedMessages.size());
+
+		} catch(Exception e) {
+			fail(testName + ": Unexpected exception " + e.getMessage());
+			e.printStackTrace();
+		} finally {
+			if(receiver1 != null)
+				receiver1.close();
+
+			if(receiver2 != null)
+				receiver2.close();
+
+			if(sender != null)
+				sender.close();
 		}
 	}
 }
