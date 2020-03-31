@@ -630,7 +630,3 @@ To see what has changed in recent versions of Bundler, see the [CHANGELOG](CHANG
 4. Ensure you have added suitable tests and the test suite is passing(`./gradlew java:testRestSuite java:testRealtimeSuite android:connectedAndroidTest`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create a new Pull Request
-
-## License
-
-Copyright (c) 2015-2019 Ably Real-time Ltd, Licensed under the Apache License, Version 2.0.  Refer to [LICENSE](LICENSE) for the license terms.
