@@ -12,7 +12,9 @@ import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.*;
 import org.hamcrest.Matchers;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -35,6 +37,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 			return (result == 0)?(((String) o1.data).compareTo((String) o2.data)):(result);
 		}
 	};
+
 
 	/**
 	 * Connect to the service and attach to a channel,
@@ -1837,4 +1840,75 @@ public class RealtimeChannelTest extends ParameterizedTest {
 		}
 
 	}
+
+	@Test
+	public void no_messages_when_channel_state_not_attached() {
+
+		AblyRealtime senderReceiver = null;
+		final String testMessage1 = "{ foo: \"bar\", count: 1, status: \"active\" }";
+		final String testMessage2 = "{ foo: \"bar\", count: 2, status: \"active\" }";
+
+		String testName = "no_messages_when_channel_state_not_attached";
+		try {
+
+			DebugOptions common_opts = createOptions(testVars.keys[0].keyStr);
+			common_opts.protocolListener = new DetachingProtocolListener();
+			senderReceiver = new AblyRealtime(common_opts);
+
+			Channel sender_channel = senderReceiver.channels.get(testName);
+			((DetachingProtocolListener)common_opts.protocolListener).theChannel = sender_channel;
+
+
+			sender_channel.attach();
+			(new ChannelWaiter(sender_channel)).waitFor(ChannelState.attached);
+
+			Helpers.MessageWaiter messageWaiter_1 = new Helpers.MessageWaiter(sender_channel);
+
+			sender_channel.publish("1", testMessage1);
+
+			messageWaiter_1.waitFor(1);
+			assertEquals("Verify rewound message", testMessage1, messageWaiter_1.receivedMessages.get(0).data);
+			messageWaiter_1.reset();
+
+			sender_channel.publish("2", testMessage2);
+			messageWaiter_1.waitFor(1, 7000);
+			assertEquals("Verify no message received on attach_rewind", 0, messageWaiter_1.receivedMessages.size());
+
+		} catch(Exception e) {
+			fail(testName + ": Unexpected exception " + e.getMessage());
+			e.printStackTrace();
+		} finally {
+			if(senderReceiver != null)
+				senderReceiver.close();
+		}
+	}
+
+	class DetachingProtocolListener implements DebugOptions.RawProtocolListener {
+
+		public Channel theChannel;
+		boolean messageReceived;
+
+		public DetachingProtocolListener() {
+			messageReceived = false;
+		}
+
+		@Override
+		public void onRawConnect(String url) {}
+		@Override
+		public void onRawConnectRequested(String url) {}
+		@Override
+		public void onRawMessageSend(ProtocolMessage message) {
+		}
+		@Override
+		public void onRawMessageRecv(ProtocolMessage message) {
+			if(message.action == ProtocolMessage.Action.message) {
+				if (!messageReceived) {
+					messageReceived = true;
+					return;
+				}
+
+				theChannel.state = ChannelState.attaching;
+			}
+		}
+	};
 }
