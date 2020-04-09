@@ -691,12 +691,12 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
 		for(int i = 0; i < messages.length; i++) {
 			final Message msg = messages[i];
-			
+
 			/* populate fields derived from protocol message */
 			if(msg.connectionId == null) msg.connectionId = protocolMessage.connectionId;
 			if(msg.timestamp == 0) msg.timestamp = protocolMessage.timestamp;
 			if(msg.id == null) msg.id = protocolMessage.id + ':' + i;
-			
+
 			try {
 				msg.decode(options, decodingContext);
 			} catch (MessageDecodeException e) {
@@ -1141,12 +1141,19 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 			}
 			break;
 		case message:
-			if(!decodeFailureRecoveryInProgress)
+			if(state == ChannelState.attached)
 				onMessage(msg);
 			else {
-				//log messages skipped per RTL16
+				String errorMsg = "";
+				if(decodeFailureRecoveryInProgress) {
+					errorMsg = "Delta recovery in progress - message skipped. Message id = %s, channel = %s";
+				}
+				else
+					errorMsg = "Message skipped on a channel that is not ATTACHED. Message id = %s, channel = %s";
+
+				//log messages skipped per RTL17
 				for (int j = 0; j < msg.messages.length; j++)
-					Log.v(TAG, String.format("Delta recovery in progress - message skipped. Message id = %s, channel = %s", msg.messages[j].id, name));
+					Log.v(TAG, String.format(errorMsg, msg.messages[j].id, name));
 			}
 			break;
 		case presence:
