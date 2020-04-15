@@ -1144,12 +1144,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 			if(state == ChannelState.attached) {
 				onMessage(msg);
 			} else {
-				final String errorMsgPrefix;
-				if(decodeFailureRecoveryInProgress) {
-					errorMsgPrefix = "Delta recovery in progress - message skipped.";
-				} else {
-					errorMsgPrefix = "Message skipped on a channel that is not ATTACHED.";
-				}
+				final String errorMsgPrefix = decodeFailureRecoveryInProgress ?
+					"Delta recovery in progress - message skipped." :
+					"Message skipped on a channel that is not ATTACHED.";
 
 				// log messages skipped per RTL17
 				for (final Message skippedMessage : msg.messages) {
