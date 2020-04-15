@@ -1141,19 +1141,20 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 			}
 			break;
 		case message:
-			if(state == ChannelState.attached)
+			if(state == ChannelState.attached) {
 				onMessage(msg);
-			else {
-				String errorMsg = "";
+			} else {
+				final String errorMsgPrefix;
 				if(decodeFailureRecoveryInProgress) {
-					errorMsg = "Delta recovery in progress - message skipped. Message id = %s, channel = %s";
+					errorMsgPrefix = "Delta recovery in progress - message skipped.";
+				} else {
+					errorMsgPrefix = "Message skipped on a channel that is not ATTACHED.";
 				}
-				else
-					errorMsg = "Message skipped on a channel that is not ATTACHED. Message id = %s, channel = %s";
 
-				//log messages skipped per RTL17
-				for (int j = 0; j < msg.messages.length; j++)
-					Log.v(TAG, String.format(errorMsg, msg.messages[j].id, name));
+				// log messages skipped per RTL17
+				for (final Message skippedMessage : msg.messages) {
+					Log.v(TAG, String.format(errorMsgPrefix + " Message id = %s, channel = %s", skippedMessage.id, name));
+				}
 			}
 			break;
 		case presence:
