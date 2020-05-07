@@ -10,6 +10,7 @@ import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.types.AblyException;
+import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.util.Log;
@@ -65,15 +66,16 @@ public class ActivationContext {
 		return (ably = new AblyRest(deviceIdentityToken));
 	}
 
-	public boolean setClientId(String clientId) {
+	public boolean setClientId(String clientId, boolean propagateGotPushDeviceDetails) {
 		boolean updated = !clientId.equals(this.clientId);
 		if(updated) {
+			this.clientId = clientId;
 			if(localDevice != null) {
+				/* Spec: RSH8d */
 				localDevice.setClientId(clientId);
-				if(localDevice.isRegistered()) {
-					if(activationStateMachine != null) {
-						activationStateMachine.handleEvent(new ActivationStateMachine.GotPushDeviceDetails());
-					}
+				if(localDevice.isRegistered() && activationStateMachine != null && propagateGotPushDeviceDetails) {
+					/* Spec: RSH8e */
+					activationStateMachine.handleEvent(new ActivationStateMachine.GotPushDeviceDetails());
 				}
 			}
 		}
@@ -126,9 +128,24 @@ public class ActivationContext {
 		return activationContext;
 	}
 
-	void getRegistrationToken(OnCompleteListener<InstanceIdResult> listener) {
+	protected void getRegistrationToken(final Callback<String> callback) {
 		FirebaseInstanceId.getInstance().getInstanceId()
-				.addOnCompleteListener(listener);
+				.addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
+					@Override
+					public void onComplete(Task<InstanceIdResult> task) {
+						if(task.isSuccessful()) {
+							/* Get new Instance ID token */
+							String token = task.getResult().getToken();
+							callback.onSuccess(token);
+						} else {
+							callback.onError(ErrorInfo.fromThrowable(task.getException()));
+						}
+					}
+				});
+	}
+
+	public static void setActivationContext(Context applicationContext, ActivationContext activationContext) {
+		activationContexts.put(applicationContext, activationContext);
 	}
 
 	protected AblyRest ably;

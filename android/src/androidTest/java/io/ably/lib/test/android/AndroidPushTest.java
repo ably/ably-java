@@ -1,16 +1,15 @@
 package io.ably.lib.test.android;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
+import android.content.*;
 import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.test.AndroidTestCase;
 
 import android.util.Log;
+import com.google.gson.JsonObject;
+import io.ably.lib.http.HttpCore;
 import io.ably.lib.push.*;
-import io.ably.lib.push.ActivationStateMachine.AfterRegistrationUpdateFailed;
+import io.ably.lib.push.ActivationStateMachine.AfterRegistrationSyncFailed;
 import io.ably.lib.push.ActivationStateMachine.CalledActivate;
 import io.ably.lib.push.ActivationStateMachine.CalledDeactivate;
 import io.ably.lib.push.ActivationStateMachine.Deregistered;
@@ -20,15 +19,16 @@ import io.ably.lib.push.ActivationStateMachine.GettingDeviceRegistrationFailed;
 import io.ably.lib.push.ActivationStateMachine.GotDeviceRegistration;
 import io.ably.lib.push.ActivationStateMachine.GotPushDeviceDetails;
 import io.ably.lib.push.ActivationStateMachine.NotActivated;
-import io.ably.lib.push.ActivationStateMachine.RegistrationUpdated;
+import io.ably.lib.push.ActivationStateMachine.RegistrationSynced;
 import io.ably.lib.push.ActivationStateMachine.State;
 import io.ably.lib.push.ActivationStateMachine.WaitingForDeregistration;
 import io.ably.lib.push.ActivationStateMachine.WaitingForDeviceRegistration;
 import io.ably.lib.push.ActivationStateMachine.WaitingForNewPushDeviceDetails;
 import io.ably.lib.push.ActivationStateMachine.WaitingForPushDeviceDetails;
-import io.ably.lib.push.ActivationStateMachine.WaitingForRegistrationUpdate;
-import io.ably.lib.push.ActivationStateMachine.UpdatingRegistrationFailed;
+import io.ably.lib.push.ActivationStateMachine.WaitingForRegistrationSync;
+import io.ably.lib.push.ActivationStateMachine.SyncRegistrationFailed;
 import io.ably.lib.rest.DeviceDetails;
+import io.ably.lib.types.*;
 import io.ably.lib.util.Base64Coder;
 import io.azam.ulidj.ULID;
 import junit.extensions.TestSetup;
@@ -39,6 +39,7 @@ import junit.framework.Test;
 import java.util.ArrayList;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.AblyRealtime;
@@ -50,11 +51,6 @@ import io.ably.lib.test.common.Helpers.AsyncWaiter;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.util.TestCases;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.Param;
-import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.util.IntentUtils;
 import io.ably.lib.util.JsonUtils;
 import io.ably.lib.util.Serialisation;
@@ -62,30 +58,55 @@ import io.ably.lib.util.Serialisation;
 import static io.ably.lib.test.common.Helpers.assertArrayUnorderedEquals;
 import static io.ably.lib.test.common.Helpers.assertInstanceOf;
 import static io.ably.lib.test.common.Helpers.assertSize;
+import static io.ably.lib.util.Serialisation.gson;
 
 public class AndroidPushTest extends AndroidTestCase {
 
 	private class TestActivation {
 		private Helpers.RawHttpTracker httpTracker;
 		private AblyRest rest;
-		private ActivationContext activationContext;
+		private TestActivationContext activationContext;
 		private TestActivationStateMachine machine;
 		private AblyRest adminRest;
 
 		TestActivation() {
+			this(null);
+		}
+
+		public class Options {
+			public DebugOptions clientOptions;
+			public boolean clearPersisted = true;
+			public TestActivationContext activationContext;
+		}
+
+		TestActivation(Helpers.AblyFunction<Options, Void> configure) {
 			try {
 				httpTracker = new Helpers.RawHttpTracker();
 				DebugOptions options = createOptions(testVars.keys[0].keyStr);
 				options.httpListener = httpTracker;
 				options.useTokenAuth = true;
-				rest = new AblyRest(options);
-				rest.auth.authorize(null, null);
-				rest.setAndroidContext(getContext());
-				activationContext = rest.push.getActivationContext();
-				activationContext.setAbly(rest);
-				activationContext.reset();
+				Context context = getContext();
+
+				Options activationOptions = new Options();
+				activationOptions.clientOptions = options;
+				activationOptions.activationContext = new TestActivationContext(context.getApplicationContext());
+				if (configure != null) {
+					configure.apply(activationOptions);
+				}
+				activationContext = activationOptions.activationContext;
+				options = activationOptions.clientOptions;
+
+				ActivationContext.setActivationContext(context.getApplicationContext(), activationContext);
+				if (activationOptions.clearPersisted) {
+					activationContext.reset();
+				}
 				machine = new TestActivationStateMachine(activationContext);
 				activationContext.setActivationStateMachine(machine);
+
+				rest = new AblyRest(options);
+				rest.auth.authorize(null, null);
+				activationContext.setAbly(rest);
+				rest.setAndroidContext(context);
 
 				adminRest = new AblyRest(options);
 				adminRest.auth.authorize(new Auth.TokenParams() {{
@@ -111,14 +132,14 @@ public class AndroidPushTest extends AndroidTestCase {
 		}
 
 		private void moveToAfterRegistrationUpdateFailed() throws AblyException {
-			// Move to AfterRegistrationUpdateFailed by forcing an update failure.
+			// Move to AfterRegistrationSyncFailed by forcing an update failure.
 
 			rest.push.activate(true); // Just to set useCustomRegistrar to true.
 			AsyncWaiter<Intent> customRegisterer = broadcastWaiter("PUSH_REGISTER_DEVICE");
 			rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.FCM, "testTokenFailed");
 			customRegisterer.waitFor();
 
-			CompletionWaiter failedWaiter = machine.getTransitionedToWaiter(AfterRegistrationUpdateFailed.class);
+			CompletionWaiter failedWaiter = machine.getTransitionedToWaiter(AfterRegistrationSyncFailed.class);
 
 			Intent intent = new Intent();
 			IntentUtils.addErrorInfo(intent, new ErrorInfo("intentional", 123));
@@ -147,7 +168,7 @@ public class AndroidPushTest extends AndroidTestCase {
 		BlockingQueue<Event> events = activation.machine.getEventReceiver(2); // CalledActivate + GotPushDeviceDetails
 		assertInstanceOf(ActivationStateMachine.NotActivated.class, activation.machine.current);
 		activation.rest.push.activate();
-		Event event = events.take();
+		Event event = events.poll(10, TimeUnit.SECONDS);
 		assertInstanceOf(CalledActivate.class, event);
 	}
 
@@ -157,17 +178,263 @@ public class AndroidPushTest extends AndroidTestCase {
 		BlockingQueue<Event> events = activation.machine.getEventReceiver(1);
 		assertInstanceOf(NotActivated.class, activation.machine.current);
 		activation.rest.push.deactivate();
-		Event event = events.take();
+		Event event = events.poll(10, TimeUnit.SECONDS);
 		assertInstanceOf(CalledDeactivate.class, event);
 	}
 
-	// RSH2c
+	// RSH2c / RSH8g
 	public void test_push_onNewRegistrationToken() throws InterruptedException, AblyException {
 		TestActivation activation = new TestActivation();
 		BlockingQueue<Event> events = activation.machine.getEventReceiver(1);
-		activation.rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.FCM, "foo");
-		Event event = events.take();
+		final BlockingQueue<Callback<String>> tokenCallbacks = new ArrayBlockingQueue<>(1) ;
+
+		activation.activationContext.onGetRegistrationToken = new Helpers.AblyFunction<Callback<String>, Void>() {
+			@Override
+			public Void apply(Callback<String> callback) throws AblyException {
+				try {
+					tokenCallbacks.put(callback);
+				} catch (InterruptedException e) {
+					throw AblyException.fromThrowable(e);
+				}
+				return null;
+			}
+		};
+
+		activation.rest.push.activate(true); // This registers the listener for registration tokens.
+		assertInstanceOf(CalledActivate.class, events.poll(10, TimeUnit.SECONDS));
+
+		Callback<String> tokenCallback = tokenCallbacks.poll(10, TimeUnit.SECONDS);
+
+		tokenCallback.onSuccess("foo");
+		assertInstanceOf(GotPushDeviceDetails.class, events.poll(10, TimeUnit.SECONDS));
+
+		tokenCallback.onSuccess("bar");
+		assertInstanceOf(GotPushDeviceDetails.class, events.poll(10, TimeUnit.SECONDS));
+	}
+
+	// RSH2d / RSH8h
+	public void test_push_onNewRegistrationTokenFailed() throws InterruptedException, AblyException {
+		TestActivation activation = new TestActivation();
+		BlockingQueue<Event> events = activation.machine.getEventReceiver(1);
+		final BlockingQueue<Callback<String>> tokenCallbacks = new ArrayBlockingQueue<>(1) ;
+
+		activation.activationContext.onGetRegistrationToken = new Helpers.AblyFunction<Callback<String>, Void>() {
+			@Override
+			public Void apply(Callback<String> callback) throws AblyException {
+				try {
+					tokenCallbacks.put(callback);
+				} catch (InterruptedException e) {
+					throw AblyException.fromThrowable(e);
+				}
+				return null;
+			}
+		};
+
+		activation.rest.push.activate(true); // This registers the listener for registration tokens.
+		assertInstanceOf(CalledActivate.class, events.poll(10, TimeUnit.SECONDS));
+
+		Callback<String> tokenCallback = tokenCallbacks.poll(10, TimeUnit.SECONDS);
+
+		tokenCallback.onError(new ErrorInfo("foo", 123, 123));
+		Event event = events.poll(10, TimeUnit.SECONDS);
+		assertInstanceOf(ActivationStateMachine.GettingPushDeviceDetailsFailed.class, event);
+		assertEquals(123,((ActivationStateMachine.GettingPushDeviceDetailsFailed) event).reason.code);
+	}
+
+	// RSH2e / RSH8i
+	public void test_push_syncOnStartup() throws InterruptedException, AblyException {
+		final BlockingQueue<Callback<String>> tokenCallbacks = new ArrayBlockingQueue<>(1) ;
+
+		Helpers.AblyFunction<TestActivation.Options, Void> configureActivation = new Helpers.AblyFunction<TestActivation.Options, Void>() {
+			@Override
+			public Void apply(TestActivation.Options options) throws AblyException {
+				options.activationContext.onGetRegistrationToken = new Helpers.AblyFunction<Callback<String>, Void>() {
+					@Override
+					public Void apply(Callback<String> callback) throws AblyException {
+						try {
+							tokenCallbacks.put(callback);
+						} catch (InterruptedException e) {
+							throw AblyException.fromThrowable(e);
+						}
+						return null;
+					}
+				};
+				return null;
+			}
+		};
+
+		TestActivation activation = new TestActivation(configureActivation);
+
+		// Fake-register the device.
+		AsyncWaiter<Intent> customRegisterer = broadcastWaiter("PUSH_REGISTER_DEVICE");
+		AsyncWaiter<Intent> activated = broadcastWaiter("PUSH_ACTIVATE");
+		activation.rest.push.activate(true);
+		Callback<String> tokenCallback = tokenCallbacks.take();
+		tokenCallback.onSuccess("foo");
+		customRegisterer.waitFor();
+		Intent intent = new Intent();
+		intent.putExtra("deviceIdentityToken", "fakeToken");
+		sendBroadcast("PUSH_DEVICE_REGISTERED", intent);
+		activated.waitFor();
+
+		// Now just creating a new library instance should request the current token.
+
+		BlockingQueue<Event> events = activation.machine.getEventReceiver(1);
+
+		configureActivation = new Helpers.AblyFunction<TestActivation.Options, Void>() {
+			@Override
+			public Void apply(TestActivation.Options options) throws AblyException {
+				options.clearPersisted = false;
+				options.activationContext.onGetRegistrationToken = new Helpers.AblyFunction<Callback<String>, Void>() {
+					@Override
+					public Void apply(Callback<String> callback) throws AblyException {
+						try {
+							tokenCallbacks.put(callback);
+						} catch (InterruptedException e) {
+							throw AblyException.fromThrowable(e);
+						}
+						return null;
+					}
+				};
+				return null;
+			}
+		};
+
+		activation = new TestActivation(configureActivation);
+		tokenCallback = tokenCallbacks.take();
+
+		// With the same token, nothing happens.
+		events = activation.machine.getEventReceiver(1);
+		tokenCallback.onSuccess("foo");
+		assertNull(events.poll(100, TimeUnit.MILLISECONDS));
+
+		// Do the same with a different token, expect a GotPushDeviceDetails.
+		activation = new TestActivation(configureActivation);
+		events = activation.machine.getEventReceiver(1);
+		tokenCallback = tokenCallbacks.take();
+		tokenCallback.onSuccess("qux");
+		Event event = events.poll(100, TimeUnit.MILLISECONDS);
 		assertInstanceOf(GotPushDeviceDetails.class, event);
+	}
+
+	// RSH8a, RSH8c
+	public void test_push_device_persistence() throws InterruptedException, AblyException {
+		TestActivation activation = new TestActivation(new Helpers.AblyFunction<TestActivation.Options, Void>() {
+			@Override
+			public Void apply(TestActivation.Options options) throws AblyException {
+				options.clientOptions.clientId = "testClient";
+				return null;
+			}
+		});
+
+		// Fake-register the device.
+		AsyncWaiter<Intent> customRegisterer = broadcastWaiter("PUSH_REGISTER_DEVICE");
+		AsyncWaiter<Intent> activated = broadcastWaiter("PUSH_ACTIVATE");
+		activation.rest.push.activate(true);
+
+		customRegisterer.waitFor();
+
+		LocalDevice device = activation.rest.device();
+		assertEquals("testClient", device.clientId);
+		assertNotNull(device.id);
+		assertNotNull(device.deviceSecret);
+
+		Intent intent = new Intent();
+		intent.putExtra("deviceIdentityToken", "fakeToken");
+		sendBroadcast("PUSH_DEVICE_REGISTERED", intent);
+		activated.waitFor();
+
+		assertEquals("fakeToken", activation.rest.device().deviceIdentityToken);
+
+		// Load from persisted state.
+		activation = new TestActivation(new Helpers.AblyFunction<TestActivation.Options, Void>() {
+			@Override
+			public Void apply(TestActivation.Options options) throws AblyException {
+				options.clearPersisted = false;
+				return null;
+			}
+		});
+		LocalDevice newDevice = activation.rest.device();
+		assertEquals("fakeToken", newDevice.deviceIdentityToken);
+		assertEquals(device.id, newDevice.id);
+		assertEquals(device.deviceSecret, newDevice.deviceSecret);
+		assertEquals(device.clientId, newDevice.clientId);
+	}
+
+	// RSH8d
+	public void test_push_late_clientId_persisted() throws InterruptedException, AblyException {
+		TestActivation activation = new TestActivation();
+
+		assertNull(activation.rest.auth.clientId);
+		assertNull(activation.rest.device().clientId);
+
+		Auth.TokenParams params = new Auth.TokenParams();
+		params.clientId = "testClient";
+		activation.rest.auth.authorize(params, null);
+
+		assertEquals("testClient", activation.rest.auth.clientId);
+		assertEquals("testClient", activation.rest.device().clientId);
+
+		activation = new TestActivation(new Helpers.AblyFunction<TestActivation.Options, Void>() {
+			@Override
+			public Void apply(TestActivation.Options options) throws AblyException {
+				options.clearPersisted = false;
+				return null;
+			}
+		});
+		assertEquals("testClient", activation.rest.device().clientId);
+	}
+
+	// RSH8e
+	public void test_push_late_clientId_emits_GotPushDeviceDetails() throws InterruptedException, AblyException {
+		TestActivation activation = new TestActivation();
+
+		// Fake-register the device.
+		AsyncWaiter<Intent> customRegisterer = broadcastWaiter("PUSH_REGISTER_DEVICE");
+		AsyncWaiter<Intent> activated = broadcastWaiter("PUSH_ACTIVATE");
+		activation.rest.push.activate(true);
+		customRegisterer.waitFor();
+		Intent intent = new Intent();
+		intent.putExtra("deviceIdentityToken", "fakeToken");
+		sendBroadcast("PUSH_DEVICE_REGISTERED", intent);
+		activated.waitFor();
+
+		BlockingQueue<Event> events = activation.machine.getEventReceiver(1);
+
+		Auth.TokenParams params = new Auth.TokenParams();
+		params.clientId = "testClient";
+		activation.rest.auth.authorize(params, null);
+
+		Event event = events.poll(100, TimeUnit.MILLISECONDS);
+		assertInstanceOf(GotPushDeviceDetails.class, event);
+	}
+
+	// RSH8f
+	public void test_push_clientId_from_server() throws InterruptedException, AblyException {
+		TestActivation activation = new TestActivation();
+
+		JsonObject body = new JsonObject();
+		body.addProperty("clientId", "testClient");
+		JsonObject fakeToken = new JsonObject();
+		fakeToken.addProperty("token", "fakeToken");
+		body.add("deviceIdentityToken", fakeToken);
+		HttpCore.Response response = new HttpCore.Response();
+		response.statusCode = 200;
+		response.statusLine = "OK";
+		response.contentType = "application/json";
+		response.body = gson.toJson(body).getBytes();
+		response.contentLength = response.body.length;
+		activation.httpTracker.mockResponse = response;
+
+		try {
+			AsyncWaiter<Intent> activated = broadcastWaiter("PUSH_ACTIVATE");
+			activation.rest.push.activate(false);
+			activated.waitFor();
+		} finally {
+			activation.adminRest.push.admin.deviceRegistrations.remove(activation.rest.device().id);
+		}
+
+		assertEquals("testClient", activation.rest.device().clientId);
 	}
 
 	// RSH3a1
@@ -189,20 +456,211 @@ public class AndroidPushTest extends AndroidTestCase {
 	}
 
 	// RSH3a2a
-	public void test_NotActivated_on_CalledActivate_with_DeviceToken() throws InterruptedException, AblyException {
-		TestActivation activation = new TestActivation();
-		LocalDevice device = activation.rest.push.getLocalDevice();
-		device.setDeviceIdentityToken("foo");
+	public void test_NotActivated_on_CalledActivate_with_DeviceToken() throws Exception {
+		class TestCase extends TestCases.Base {
+			private final String persistedClientId;
+			private final String instanceClientId;
+			private final ErrorInfo syncError;
+			private final boolean useCustomRegistrar;
+			private final Class<? extends Event> expectedEvent;
+			private final Class<? extends State> expectedState;
+			private final Integer expectedErrorCode;
 
-		assertEquals("foo", device.deviceIdentityToken);
+			public TestCase(
+					String name,
+					String persistedClientId,
+					String instanceClientId,
+					boolean useCustomRegistrar,
+					ErrorInfo syncError,
+					Class<? extends Event> expectedEvent,
+					Class<? extends State> expectedState,
+					Integer expectedErrorCode
+			) {
+				super(name, null);
+				this.persistedClientId = persistedClientId;
+				this.instanceClientId = instanceClientId;
+				this.useCustomRegistrar = useCustomRegistrar;
+				this.syncError = syncError;
+				this.expectedEvent = expectedEvent;
+				this.expectedState = expectedState;
+				this.expectedErrorCode = expectedErrorCode;
+			}
 
-		State state = new NotActivated(activation.machine);
-		State to = state.transition(new CalledActivate());
+			@Override
+			public void run() throws Exception {
+				// Register local device before doing anything, in order to trigger RSH3a2a.
+				TestActivation activation = new TestActivation(new Helpers.AblyFunction<TestActivation.Options, Void>() {
+					@Override
+					public Void apply(TestActivation.Options options) throws AblyException {
+						options.clientOptions.clientId = persistedClientId;
+						return null;
+					}
+				});
 
-		assertSize(1, activation.machine.pendingEvents);
-		assertInstanceOf(CalledActivate.class, activation.machine.pendingEvents.getLast());
+				try {
+					Helpers.AsyncWaiter<Intent> activateCallback = broadcastWaiter("PUSH_ACTIVATE");
+					activation.rest.push.activate(false);
+					activateCallback.waitFor();
 
-		assertInstanceOf(WaitingForNewPushDeviceDetails.class, to);
+					LocalDevice device = activation.rest.push.getLocalDevice();
+					assertNotNull(device.id);
+					assertNotNull(device.deviceIdentityToken);
+					assertEquals(persistedClientId, device.clientId);
+
+
+					// Now use a new instance, to force persistence consistency checking.
+					activation = new TestActivation(new Helpers.AblyFunction<TestActivation.Options, Void>() {
+						@Override
+						public Void apply(TestActivation.Options options) throws AblyException {
+							options.clientOptions.clientId = instanceClientId;
+							options.clearPersisted = false;
+							return null;
+						}
+					});
+
+					Helpers.AsyncWaiter<Intent> registerCallback = useCustomRegistrar ? broadcastWaiter("PUSH_REGISTER_DEVICE") : null;
+					activateCallback = broadcastWaiter("PUSH_ACTIVATE");
+
+					CompletionWaiter calledActivateHandled = activation.machine.getEventHandledWaiter(CalledActivate.class);
+					Helpers.AsyncWaiter<Helpers.RawHttpRequest> requestWaiter = null;
+
+					if (!useCustomRegistrar) {
+						if (syncError != null) {
+							activation.httpTracker.mockResponse = Helpers.httpResponseFromErrorInfo(syncError);
+						}
+
+						requestWaiter = activation.httpTracker.getRequestWaiter();
+						// Block until we've checked the intermediate WaitingForRegistrationSync state,
+						// before the request's response causes another state transition.
+						// Otherwise, our test would be racing against the request.
+						activation.httpTracker.lockRequests();
+					}
+
+					activation.rest.push.activate(useCustomRegistrar);
+					calledActivateHandled.waitFor();
+
+					// RSH3a2a1: SyncRegistrationFailed may be enqueued (synchronously). In that
+					// case, register callback or PUT request won't be invoked, and we'll go
+					// synchronously to AfterRegistrationSyncFailed.
+					if (activation.machine.current instanceof WaitingForRegistrationSync) {
+						if (useCustomRegistrar) {
+							// RSH3a2a2
+							registerCallback.waitFor();
+							assertNull(registerCallback.error);
+						} else {
+							// RSH3a2a3
+							requestWaiter.waitFor();
+							Helpers.RawHttpRequest request = requestWaiter.result;
+							assertEquals("PUT", request.method);
+							assertEquals("/push/deviceRegistrations/" + device.id, request.url.getPath());
+						}
+
+						// RSH3a2a4
+						assertSize(0, activation.machine.pendingEvents);
+						assertInstanceOf(WaitingForRegistrationSync.class, activation.machine.current);
+
+						// Now wait for next event, when we may have an error.
+
+						CompletionWaiter handled = activation.machine.getEventHandledWaiter();
+						BlockingQueue<Event> events = activation.machine.getEventReceiver(1);
+
+						if (useCustomRegistrar) {
+							Intent intent = new Intent();
+							if (syncError != null) {
+								IntentUtils.addErrorInfo(intent, syncError);
+							}
+							sendBroadcast("PUSH_DEVICE_REGISTERED", intent);
+						} else {
+							activation.httpTracker.unlockRequests();
+						}
+
+						assertInstanceOf(expectedEvent, events.poll(10, TimeUnit.SECONDS));
+						assertNull(handled.waitFor());
+					} // else: RSH3a2a1 validation failed
+
+					// RSH3e2 or RSH3e3
+					activateCallback.waitFor();
+					if (expectedErrorCode != null) {
+						assertNotNull(activateCallback.error);
+						assertEquals(expectedErrorCode.intValue(), activateCallback.error.code);
+					} else {
+						assertNull(activateCallback.error);
+					}
+					assertInstanceOf(expectedState, activation.machine.current);
+				} finally {
+					activation.httpTracker.unlockRequests();
+					/* delete the registration without sending (invalid) local device credentials */
+					LocalDevice localDevice = activation.rest.push.getLocalDevice();
+					String deviceId = localDevice.id;
+					localDevice.reset();
+					activation.rest.push.admin.deviceRegistrations.remove(deviceId);
+				}
+			}
+		}
+
+		TestCases testCases = new TestCases();
+
+		// RSH3a2a1, RSH3a2a4, RSH3e3
+		testCases.add(new TestCase(
+				"clientId mismatch",
+				"testClientId",
+				"otherClientId",
+				false,
+				null,
+				SyncRegistrationFailed.class,
+				AfterRegistrationSyncFailed.class,
+				61002
+		));
+
+		// RSH3a2a1, RSH3a2a2, RSH3a2a4, RSH3e2
+		testCases.add(new TestCase(
+				"ok with custom registerer",
+				"testClientId",
+				"testClientId",
+				true,
+				null,
+				RegistrationSynced.class,
+				WaitingForNewPushDeviceDetails.class,
+				null
+		));
+
+		// RSH3a2a1, RSH3a2a2, RSH3a2a4, RSH3e3
+		testCases.add(new TestCase(
+				"failing with custom registerer",
+				"testClientId",
+				"testClientId",
+				true,
+				new ErrorInfo("test error", 123, 123),
+				SyncRegistrationFailed.class,
+				AfterRegistrationSyncFailed.class,
+				123
+		));
+
+		// RSH3a2a1, RSH3a2a3, RSH3a2a4, RSH3e2
+		testCases.add(new TestCase(
+				"ok without custom registerer",
+				"testClientId",
+				"testClientId",
+				false,
+				null,
+				RegistrationSynced.class,
+				WaitingForNewPushDeviceDetails.class,
+				null
+		));
+
+		// RSH3a2a1, RSH3a2a3, RSH3a2a4, RSH3e3
+		testCases.add(new TestCase(
+				"failing without custom registerer",
+				"testClientId",
+				"testClientId",
+				false,
+				new ErrorInfo("test error", 123, 123),
+				SyncRegistrationFailed.class,
+				AfterRegistrationSyncFailed.class,
+				123
+		));
+
+		testCases.run();
 	}
 
 	// RSH3a3a
@@ -228,6 +686,11 @@ public class AndroidPushTest extends AndroidTestCase {
 		assertInstanceOf(GotPushDeviceDetails.class, activation.machine.pendingEvents.getLast());
 
 		assertInstanceOf(WaitingForPushDeviceDetails.class, to);
+
+		// RSH8b
+		LocalDevice device = activation.rest.device();
+		assertNotNull(device.id);
+		assertNotNull(device.deviceSecret);
 	}
 
 	// RSH3a2c
@@ -296,6 +759,13 @@ public class AndroidPushTest extends AndroidTestCase {
 				try {
 
 					activation = new TestActivation();
+					activation.activationContext.onGetRegistrationToken = new Helpers.AblyFunction<Callback<String>, Void>() {
+						@Override
+						public Void apply(Callback<String> callback) throws AblyException {
+							// Ignore request; will send event manually below.
+							return null;
+						}
+					};
 					final Helpers.AsyncWaiter<Intent> registerCallback = useCustomRegistrar ? broadcastWaiter("PUSH_REGISTER_DEVICE") : null;
 					final Helpers.AsyncWaiter<Intent> activateCallback = broadcastWaiter("PUSH_ACTIVATE");
 
@@ -354,7 +824,7 @@ public class AndroidPushTest extends AndroidTestCase {
 						activation.httpTracker.unlockRequests();
 					}
 
-					assertTrue(expectedEvent.isInstance(events.take()));
+					assertInstanceOf(expectedEvent, events.poll(10, TimeUnit.SECONDS));
 					assertNull(handled.waitFor());
 
 					// RSH3c2a
@@ -369,7 +839,7 @@ public class AndroidPushTest extends AndroidTestCase {
 					// RSH3c2b, RSH3c3a
 					activateCallback.waitFor();
 					assertEquals(registerError, activateCallback.error);
-					assertTrue(expectedState.isInstance(activation.machine.current));
+					assertInstanceOf(expectedState, activation.machine.current);
 				} finally {
 					activation.httpTracker.unlockRequests();
 					/* delete the registration without sending (invalid) local device credentials */
@@ -471,7 +941,7 @@ public class AndroidPushTest extends AndroidTestCase {
 	// RSH3e1
 	public void test_WaitingForRegistrationUpdate_on_CalledActivate() {
 		TestActivation activation = new TestActivation();
-		State state = new ActivationStateMachine.WaitingForRegistrationUpdate(activation.machine);
+		State state = new WaitingForRegistrationSync(activation.machine, null);
 
 		final AsyncWaiter<Intent> waiter = broadcastWaiter("PUSH_ACTIVATE");
 
@@ -484,15 +954,15 @@ public class AndroidPushTest extends AndroidTestCase {
 		assertSize(0, activation.machine.pendingEvents);
 
 		// RSH3e1b
-		assertInstanceOf(WaitingForRegistrationUpdate.class, to);
+		assertInstanceOf(WaitingForRegistrationSync.class, to);
 	}
 
 	// RSH3e2
 	public void test_WaitingForRegistrationUpdate_on_RegistrationUpdated() {
 		TestActivation activation = new TestActivation();
-		State state = new WaitingForRegistrationUpdate(activation.machine);
+		State state = new WaitingForRegistrationSync(activation.machine, null);
 
-		State to = state.transition(new RegistrationUpdated());
+		State to = state.transition(new RegistrationSynced());
 
 		// RSH3e2a
 		assertSize(0, activation.machine.pendingEvents);
@@ -502,12 +972,12 @@ public class AndroidPushTest extends AndroidTestCase {
 	// RSH3e3
 	public void test_WaitingForRegistrationUpdate_on_UpdatingRegistrationFailed() {
 		TestActivation activation = new TestActivation();
-		State state = new WaitingForRegistrationUpdate(activation.machine);
+		State state = new WaitingForRegistrationSync(activation.machine, null);
 		ErrorInfo reason = new ErrorInfo("test", 123);
 
 		final AsyncWaiter<Intent> waiter = broadcastWaiter("PUSH_UPDATE_FAILED");
 
-		State to = state.transition(new UpdatingRegistrationFailed(reason));
+		State to = state.transition(new SyncRegistrationFailed(reason));
 
 		// RSH3e3a
 		waiter.waitFor();
@@ -517,7 +987,7 @@ public class AndroidPushTest extends AndroidTestCase {
 		assertSize(0, activation.machine.pendingEvents);
 
 		// RSH3e3b
-		assertInstanceOf(AfterRegistrationUpdateFailed.class, to);
+		assertInstanceOf(AfterRegistrationSyncFailed.class, to);
 	}
 
 	// RSH3f1
@@ -534,7 +1004,7 @@ public class AndroidPushTest extends AndroidTestCase {
 
 	// RSH3f1
 	public void test_AfterRegistrationUpdateFailed_on_CalledActivate() throws Exception {
-		new UpdateRegistrationTest() {
+		new UpdateRegistrationTest("PUSH_ACTIVATE") {
 			@Override
 			protected void setUpMachineState(TestCase testCase) throws AblyException {
 				testCase.testActivation.registerAndWait();
@@ -551,7 +1021,7 @@ public class AndroidPushTest extends AndroidTestCase {
 
 	// RSH3f1
 	public void test_AfterRegistrationUpdateFailed_on_CalledDeactivate() throws Exception {
-		new DeactivateTest(AfterRegistrationUpdateFailed.class) {
+		new DeactivateTest(AfterRegistrationSyncFailed.class) {
 			@Override
 			protected void setUpMachineState(TestCase testCase) throws AblyException {
 				testCase.testActivation.registerAndWait();
@@ -634,9 +1104,9 @@ public class AndroidPushTest extends AndroidTestCase {
 
 		TestActivation activation1 = new TestActivation();
 		testCases.add(new TestCase(
-				"from AfterRegistrationUpdateFailed",
+				"from AfterRegistrationSyncFailed",
 				activation1,
-				new AfterRegistrationUpdateFailed(activation1.machine)));
+				new AfterRegistrationSyncFailed(activation1.machine)));
 
 		testCases.run();
 	}
@@ -898,6 +1368,23 @@ public class AndroidPushTest extends AndroidTestCase {
 		assertInstanceOf(PushChannel.class, realtime.channels.get("test").push);
 	}
 
+	public void test_push_AfterRegistrationUpdateFailed_migrate_to_AfterRegistrationSyncFailed() {
+		new TestActivation(); // Just for the side effect of clearing persisted state.
+
+		SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(getContext().getApplicationContext()).edit();
+		editor.putString(ActivationStateMachine.PersistKeys.CURRENT_STATE, "io.ably.lib.push.ActivationStateMachine$AfterRegistrationUpdateFailed");
+		assertTrue(editor.commit());
+
+		TestActivation activation = new TestActivation(new Helpers.AblyFunction<TestActivation.Options, Void>() {
+			@Override
+			public Void apply(TestActivation.Options options) throws AblyException {
+				options.clearPersisted = false;
+				return null;
+			}
+		});
+		assertInstanceOf(AfterRegistrationSyncFailed.class, activation.machine.current);
+	}
+
 	// This is all copied and pasted from ParameterizedTest, since I can't inherit from it.
 	// I need to inherit from AndroidPushTest, and Java doesn't have multiple inheritance
 	// or mixins or something like that.
@@ -927,8 +1414,20 @@ public class AndroidPushTest extends AndroidTestCase {
 	}
 
 	private class TestActivationContext extends ActivationContext {
-		TestActivationContext(Context context) { super(context); }
+		public Helpers.AblyFunction<Callback<String>, Void> onGetRegistrationToken;
 
+		TestActivationContext(Context context) {
+			super(context);
+			this.onGetRegistrationToken = new Helpers.AblyFunction<Callback<String>, Void>() {
+				@Override
+				public Void apply(Callback<String> callback) throws AblyException {
+					callback.onSuccess(ULID.random());
+					return null;
+				}
+			};
+		}
+
+		@Override
 		public synchronized ActivationStateMachine getActivationStateMachine() {
 			if(activationStateMachine == null) {
 				activationStateMachine = new TestActivationStateMachine(this);
@@ -936,6 +1435,14 @@ public class AndroidPushTest extends AndroidTestCase {
 			return activationStateMachine;
 		}
 
+		@Override
+		protected void getRegistrationToken(final Callback<String> callback) {
+			try {
+				this.onGetRegistrationToken.apply(callback);
+			} catch (AblyException e) {
+				callback.onError(ErrorInfo.fromThrowable(e));
+			}
+		}
 	}
 
 	private class TestActivationStateMachine extends ActivationStateMachine {
@@ -990,11 +1497,6 @@ public class AndroidPushTest extends AndroidTestCase {
 			waiter = null;
 			events = null;
 			return super.reset();
-		}
-
-		@Override
-		protected void getRegistrationToken() {
-			activationContext.onNewRegistrationToken(RegistrationToken.Type.FCM, ULID.random());
 		}
 
 		public BlockingQueue<Event> getEventReceiver(int capacity) {
@@ -1126,7 +1628,7 @@ public class AndroidPushTest extends AndroidTestCase {
 						testActivation.httpTracker.unlockRequests();
 					}
 
-					assertTrue(expectedEvent.isInstance(events.take()));
+					assertInstanceOf(expectedEvent, events.poll(10, TimeUnit.SECONDS));
 					assertNull(handled.waitFor());
 
 					if (deregisterError == null) {
@@ -1186,7 +1688,17 @@ public class AndroidPushTest extends AndroidTestCase {
 	}
 
 	private abstract class UpdateRegistrationTest {
+		private final String onFailedEvent;
+
 		protected abstract void setUpMachineState(TestCase testCase) throws AblyException;
+
+		UpdateRegistrationTest() {
+			this("PUSH_UPDATE_FAILED");
+		}
+
+		UpdateRegistrationTest(String onFailedEvent) {
+			this.onFailedEvent = onFailedEvent;
+		}
 
 		class TestCase extends TestCases.Base {
 			private final ErrorInfo updateError;
@@ -1209,9 +1721,10 @@ public class AndroidPushTest extends AndroidTestCase {
 					testActivation = new TestActivation();
 
 					setUpMachineState(this);
+					final boolean isExpectingRegistrationValidation = testActivation.machine.current instanceof AfterRegistrationSyncFailed;
 
 					final AsyncWaiter<Intent> registerCallback = useCustomRegistrar ? broadcastWaiter("PUSH_REGISTER_DEVICE") : null;
-					final AsyncWaiter<Intent> updateFailedCallback = updateError != null ? broadcastWaiter("PUSH_UPDATE_FAILED") : null;
+					final AsyncWaiter<Intent> updateFailedCallback = updateError != null ? broadcastWaiter(onFailedEvent) : null;
 					AsyncWaiter<Helpers.RawHttpRequest> requestWaiter = null;
 
 					if (!useCustomRegistrar) {
@@ -1226,7 +1739,7 @@ public class AndroidPushTest extends AndroidTestCase {
 						testActivation.httpTracker.lockRequests();
 					}
 
-					CompletionWaiter updatingWaiter = testActivation.machine.getTransitionedToWaiter(WaitingForRegistrationUpdate.class);
+					CompletionWaiter updatingWaiter = testActivation.machine.getTransitionedToWaiter(WaitingForRegistrationSync.class);
 					String updatedRegistrationToken = sendInitialEvent(this);
 					updatingWaiter.waitFor();
 
@@ -1235,24 +1748,32 @@ public class AndroidPushTest extends AndroidTestCase {
 						registerCallback.waitFor();
 						assertNull(registerCallback.error);
 					} else {
-						// RSH3d3b
 						requestWaiter.waitFor();
 						Helpers.RawHttpRequest request = requestWaiter.result;
-						assertEquals("PATCH", request.method);
 						assertEquals("/push/deviceRegistrations/"+testActivation.rest.push.getLocalDevice().id, request.url.getPath());
-						assertEquals(
-								JsonUtils.object()
-										.add("push", JsonUtils.object()
-												.add("recipient", JsonUtils.object()
-														.add("transportType", "fcm")
-														.add("registrationToken", updatedRegistrationToken))).toJson().toString(),
-								Serialisation.msgpackToGson(request.requestBody.getEncoded()).toString());
 						String authToken = Base64Coder.decodeString(request.requestHeaders.get("X-Ably-DeviceToken").get(0));
 						assertEquals(testActivation.rest.push.getLocalDevice().deviceIdentityToken, authToken);
+
+						JsonObject requestBody = (JsonObject)Serialisation.msgpackToGson(request.requestBody.getEncoded());
+						JsonObject requestRecipient = requestBody.getAsJsonObject("push").getAsJsonObject("recipient");
+						assertEquals("fcm", requestRecipient.getAsJsonPrimitive("transportType").getAsString());
+						assertEquals(updatedRegistrationToken, requestRecipient.getAsJsonPrimitive("registrationToken").getAsString());
+
+						if(isExpectingRegistrationValidation) {
+							// RSH3f1a: PUT the entire DeviceDetails
+							assertEquals("PUT", request.method);
+							assertTrue(requestBody.has("deviceSecret"));
+							assertTrue(requestBody.has("clientId"));
+						} else {
+							// RSH3d3b: PATCH the updated members
+							assertEquals("PATCH", request.method);
+							assertFalse(requestBody.has("deviceSecret"));
+							assertFalse(requestBody.has("clientId"));
+						}
 					}
 
 					// RSH3d3d
-					assertInstanceOf(WaitingForRegistrationUpdate.class, testActivation.machine.current);
+					assertInstanceOf(WaitingForRegistrationSync.class, testActivation.machine.current);
 
 					// Now wait for next event, after updated.
 					CompletionWaiter handled = testActivation.machine.getEventHandledWaiter();
@@ -1268,7 +1789,7 @@ public class AndroidPushTest extends AndroidTestCase {
 						testActivation.httpTracker.unlockRequests();
 					}
 
-					assertTrue(expectedEvent.isInstance(events.take()));
+					assertInstanceOf(expectedEvent, events.poll(10, TimeUnit.SECONDS));
 					assertNull(handled.waitFor());
 
 					if (updateError != null) {
@@ -1277,7 +1798,7 @@ public class AndroidPushTest extends AndroidTestCase {
 						assertEquals(updateError, updateFailedCallback.error);
 					}
 					// RSH3e2a, RSH3e3b
-					assertTrue(expectedState.isInstance(testActivation.machine.current));
+					assertInstanceOf(expectedState, testActivation.machine.current);
 				} finally {
 					testActivation.httpTracker.unlockRequests();
 					testActivation.rest.push.admin.deviceRegistrations.remove(testActivation.rest.push.getLocalDevice());
@@ -1293,14 +1814,14 @@ public class AndroidPushTest extends AndroidTestCase {
 					"ok with custom registerer",
 					true,
 					null,
-					RegistrationUpdated.class,
+					RegistrationSynced.class,
 					WaitingForNewPushDeviceDetails.class));
 
 			testCases.add(new TestCase(
 					"ok with default registerer",
 					false,
 					null,
-					RegistrationUpdated.class,
+					RegistrationSynced.class,
 					WaitingForNewPushDeviceDetails.class));
 
 			// RSH3e3
@@ -1308,15 +1829,15 @@ public class AndroidPushTest extends AndroidTestCase {
 					"failing with custom registerer",
 					true,
 					new ErrorInfo("testError", 123),
-					UpdatingRegistrationFailed.class,
-					AfterRegistrationUpdateFailed.class));
+					SyncRegistrationFailed.class,
+					AfterRegistrationSyncFailed.class));
 
 			testCases.add(new TestCase(
 					"failing with default registerer",
 					false,
 					new ErrorInfo("testError", 123),
-					UpdatingRegistrationFailed.class,
-					AfterRegistrationUpdateFailed.class));
+					SyncRegistrationFailed.class,
+					AfterRegistrationSyncFailed.class));
 
 			testCases.run();
 		}

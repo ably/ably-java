@@ -46,15 +46,16 @@ public class LocalDevice extends DeviceDetails {
 	}
 
 	private void loadPersisted() {
+		/* Spec: RSH8a */
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
 
 		String id = prefs.getString(SharedPrefKeys.DEVICE_ID, null);
 		this.id = id;
 		if(id != null) {
 			Log.v(TAG, "loadPersisted(): existing deviceId found; id: " + id);
-			clientId = prefs.getString(SharedPrefKeys.CLIENT_ID, null);
 			deviceSecret = prefs.getString(SharedPrefKeys.DEVICE_SECRET, null);
 		}
+		this.clientId = prefs.getString(SharedPrefKeys.CLIENT_ID, null);
 		this.deviceIdentityToken = prefs.getString(SharedPrefKeys.DEVICE_TOKEN, null);
 
 		RegistrationToken.Type type = RegistrationToken.Type.fromOrdinal(
@@ -120,6 +121,7 @@ public class LocalDevice extends DeviceDetails {
 	}
 
 	boolean create() {
+		/* Spec: RSH8b */
 		Log.v(TAG, "create()");
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
 		SharedPreferences.Editor editor = prefs.edit();

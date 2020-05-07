@@ -40,7 +40,10 @@ public class AblyRest extends AblyBase {
 	/**
 	 * Set the Android Context for this instance
 	 */
-	public void setAndroidContext(Context context) throws AblyException { this.platform.setAndroidContext(context); }
+	public void setAndroidContext(Context context) throws AblyException {
+		this.platform.setAndroidContext(context);
+		this.push.tryRequestRegistrationToken();
+	}
 
 	/**
 	 * clientId set by late initialisation
@@ -49,7 +52,7 @@ public class AblyRest extends AblyBase {
 		/* we only need to propagate any update to clientId if this is a late init */
 		if(push != null && platform.hasApplicationContext()) {
 			try {
-				push.getActivationContext().setClientId(clientId);
+				push.getActivationContext().setClientId(clientId, true);
 			} catch(AblyException ae) {
 				Log.e(TAG, "unable to update local device state");
 			}

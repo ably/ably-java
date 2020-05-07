@@ -43,6 +43,16 @@ public class Push extends PushBase {
 		return getActivationContext().getActivationStateMachine();
 	}
 
+	public void tryRequestRegistrationToken() {
+		try {
+			if (getLocalDevice().isRegistered()) {
+				getStateMachine().getRegistrationToken();
+			}
+		} catch (AblyException e) {
+			Log.e(TAG, "couldn't validate existing push recipient device details", e);
+		}
+	}
+
 	Context getApplicationContext() throws AblyException {
 		Context applicationContext = rest.platform.getApplicationContext();
 		if(applicationContext == null) {
@@ -52,9 +62,14 @@ public class Push extends PushBase {
 		return applicationContext;
 	}
 
+	protected ActivationContext activationContext = null;
+
 	public ActivationContext getActivationContext() throws AblyException {
-		Context applicationContext = getApplicationContext();
-		return ActivationContext.getActivationContext(applicationContext, (AblyRest)rest);
+		if (activationContext == null) {
+			Context applicationContext = getApplicationContext();
+			activationContext = ActivationContext.getActivationContext(applicationContext, (AblyRest)rest);
+		}
+		return activationContext;
 	}
 
 	public LocalDevice getLocalDevice() throws AblyException {
