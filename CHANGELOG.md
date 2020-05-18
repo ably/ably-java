@@ -1,6 +1,14 @@
 # Change Log
 
-## [v.1.1.10](https://github.com/ably/ably-java/tree/v1.1.10)
+## [v1.1.11](https://github.com/ably/ably-java/tree/v1.1.11) (2020-05-18)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.1.10...v1.1.11)
+
+**Merged pull requests:**
+
+- Push Activation State Machine: validate an already-registered device on activation [\#543](https://github.com/ably/ably-java/pull/543) ([paddybyers](https://github.com/paddybyers))
+
+## [v1.1.10](https://github.com/ably/ably-java/tree/v1.1.10) (2020-03-04)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.1.9...v1.1.10)
 
@@ -12,12 +20,13 @@
 
 - Avoid message bundling, conforming to updated RTL6d [\#548](https://github.com/ably/ably-java/issues/548)
 
-## [v1.1.9](https://github.com/ably/ably-java/tree/v1.1.9)
+## [v1.1.9](https://github.com/ably/ably-java/tree/v1.1.9) (2020-03-03)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.1.8...v1.1.9)
 
 **Implemented enhancements:**
 
+- Upload to Maven Central [\#505](https://github.com/ably/ably-java/issues/505)
 - Maven deployment: add task for deploy to staging [\#560](https://github.com/ably/ably-java/pull/560) ([paddybyers](https://github.com/paddybyers))
 
 **Fixed bugs:**
