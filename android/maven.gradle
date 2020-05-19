@@ -82,9 +82,13 @@ uploadArchives {
         }
 
 		// Export to local Maven cache
+        // COMMENT OUT THIS LINE AND THE ONE BELOW IN ORDER TO RELEASE TO SONATYPE NEXUS STAGING
+        // TODO https://github.com/ably/ably-java/issues/566
 		repository(url: repositories.mavenLocal().url)
 
         // Export files to local storage
+        // COMMENT OUT THIS LINE AND THE ONE ABOVE IN ORDER TO RELEASE TO SONATYPE NEXUS STAGING
+        // TODO https://github.com/ably/ably-java/issues/566
         repository(url: "file://${localReleaseDest}")
     }
 }

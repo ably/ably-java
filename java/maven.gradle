@@ -77,6 +77,8 @@ uploadArchives {
         }
 
         // Export files to local storage
+        // COMMENT OUT THIS LINE IN ORDER TO RELEASE TO SONATYPE NEXUS STAGING
+        // TODO https://github.com/ably/ably-java/issues/566
         repository(url: "file://${localReleaseDest}")
     }
 }
