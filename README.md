@@ -595,6 +595,8 @@ We publish to:
 * JCenter via JFrog's [Bintray](https://bintray.com/ably-io/ably)
 * Maven Central via Sonatype's [OSSRH](https://issues.sonatype.org/browse/OSSRH-52871) / [Nexus](https://oss.sonatype.org/#nexus-search;quick~io.ably)
 
+#### Releasing to JCenter (JFrog Bintray)
+
 The `java` release process goes as follows:
 
 * Go to the home page for the package; eg https://bintray.com/ably-io/ably/ably-java. Select Add a version, enter the new version such as "1.1.11" in name and save
@@ -610,6 +612,17 @@ Similarly for the `android` release at https://bintray.com/ably-io/ably/ably-and
 * Run `./gradlew android:assembleRelease` locally to generate the files, and drag in the files in
 `./android/build/release/1.1.11/io/ably/ably-android/1.1.11`.
 * In this case upload the `.jar` files, the `.pom` file and the `.aar` file.
+
+#### Releasing to Maven Central (Sonatype Nexus)
+
+Bearing in mind the earlier instructions around commenting out lines in the `maven.gradle` files (temporary requirement) you then need to find the new staging repository in
+[Nexus Repository Manager](https://oss.sonatype.org/#stagingRepositories)
+and do a few things with it:
+
+1. Check that it contains Android and Java releases.
+2. "Close" it - this will take a few minutes during which time it will say (after a refresh of your browser) that "Activity: Operation in Progress".
+3. Once it has closed you will have "Release" available. You can allow it to "automatically drop" after successful release. A refresh or two later of the browser and the staging repository will have disappeared from the list (i.e. it's been dropped which implies it was released successfully).
+4. A [search for Ably packages](https://oss.sonatype.org/#nexus-search;quick~io.ably) should now list the new version for both `ably-android` and `ably-java`.
 
 ### Creating the release on Github
 
