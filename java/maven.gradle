@@ -16,7 +16,7 @@ uploadArchives {
         sign configurations.archives
     }
     repositories.mavenDeployer {
-        logger.info('OSSRH auth with username: ' + mavenUser)
+        logger.lifecycle('OSSRH auth with username: ' + mavenUser)
 
         beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
