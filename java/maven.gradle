@@ -89,8 +89,8 @@ task zipRelease(type: Zip) {
 
 task assembleRelease {
     doLast {
-        println "Release ${version} can be found at ${localReleaseDest}/"
-        println "Release ${version} zipped can be found ${buildDir}/release-${version}.zip"
+        logger.quiet("Release ${version} can be found at ${localReleaseDest}");
+        logger.quiet("Release ${version} zipped can be found ${buildDir}/release-${version}.zip");
     }
     dependsOn(uploadArchives)
     dependsOn(zipRelease)
