@@ -1,5 +1,13 @@
 # Change Log
 
+## [v1.2.0](https://github.com/ably/ably-java/tree/v1.2.0) (2020-06-08)
+
+Adds the capability to subscribe to a channel in delta mode.
+
+Subscribing to a channel in delta mode enables [delta compression](https://www.ably.io/documentation/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.1.11...v1.2.0)
+
 ## [v1.1.11](https://github.com/ably/ably-java/tree/v1.1.11) (2020-05-18)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.1.10...v1.1.11)
