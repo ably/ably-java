@@ -137,6 +137,22 @@ channel.subscribe(events, new MessageListener() {
 });
 ```
 
+### Subscribing to a channel with deltas ###
+
+Request a Vcdiff formatted delta stream using channel options when you get the channel:
+
+```java
+Map<String, String> params = new HashMap<>();
+params.put("delta", "vcdiff");
+ChannelOptions options = new ChannelOptions();
+options.params = params;
+Channel channel = ably.channels.get("test", options);
+```
+
+Beyond specifying channel options, the rest is transparent and requires no further changes to your application. The `message.data` instances that are delivered to your `MessageListener` continue to contain the values that were originally published.
+
+If you would like to inspect the `Message` instances in order to identify whether the `data` they present was rendered from a delta message from Ably then you can see if `extras.getDelta().getFormat()` equals `"vcdiff"`.
+
 ### Publishing to a channel ###
 
 ```java
