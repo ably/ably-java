@@ -16,7 +16,7 @@ uploadArchives {
         sign configurations.archives
     }
     repositories.mavenDeployer {
-        logger.info('OSSRH auth with username: ' + mavenUser)
+        logger.lifecycle('OSSRH auth with username: ' + mavenUser)
 
         beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
@@ -77,6 +77,8 @@ uploadArchives {
         }
 
         // Export files to local storage
+        // COMMENT OUT THIS LINE IN ORDER TO RELEASE TO SONATYPE NEXUS STAGING
+        // TODO https://github.com/ably/ably-java/issues/566
         repository(url: "file://${localReleaseDest}")
     }
 }
@@ -89,8 +91,8 @@ task zipRelease(type: Zip) {
 
 task assembleRelease {
     doLast {
-        println "Release ${version} can be found at ${localReleaseDest}/"
-        println "Release ${version} zipped can be found ${buildDir}/release-${version}.zip"
+        logger.quiet("Release ${version} can be found at ${localReleaseDest}");
+        logger.quiet("Release ${version} zipped can be found ${buildDir}/release-${version}.zip");
     }
     dependsOn(uploadArchives)
     dependsOn(zipRelease)
