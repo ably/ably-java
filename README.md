@@ -137,7 +137,9 @@ channel.subscribe(events, new MessageListener() {
 });
 ```
 
-### Subscribing to a channel with deltas ###
+### Subscribing to a channel in delta mode ###
+
+Subscribing to a channel in delta mode enables delta compression. This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
 
 Request a Vcdiff formatted delta stream using channel options when you get the channel:
 
