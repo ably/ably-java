@@ -137,6 +137,24 @@ channel.subscribe(events, new MessageListener() {
 });
 ```
 
+### Subscribing to a channel in delta mode ###
+
+Subscribing to a channel in delta mode enables [delta compression](https://www.ably.io/documentation/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
+
+Request a Vcdiff formatted delta stream using channel options when you get the channel:
+
+```java
+Map<String, String> params = new HashMap<>();
+params.put("delta", "vcdiff");
+ChannelOptions options = new ChannelOptions();
+options.params = params;
+Channel channel = ably.channels.get("test", options);
+```
+
+Beyond specifying channel options, the rest is transparent and requires no further changes to your application. The `message.data` instances that are delivered to your `MessageListener` continue to contain the values that were originally published.
+
+If you would like to inspect the `Message` instances in order to identify whether the `data` they present was rendered from a delta message from Ably then you can see if `extras.getDelta().getFormat()` equals `"vcdiff"`.
+
 ### Publishing to a channel ###
 
 ```java
