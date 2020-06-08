@@ -65,11 +65,11 @@ public class ProtocolMessage {
 		presence_subscribe(19);
 
 		private final int mask;
-		
-		Flag(int offset) { 
+
+		Flag(int offset) {
 			this.mask = 1 << offset;
 		}
-		
+
 		public int getMask() {
 			return this.mask;
 		}
@@ -106,7 +106,7 @@ public class ProtocolMessage {
 	public ConnectionDetails connectionDetails;
 	public AuthDetails auth;
 	public Map<String, String> params;
-	
+
 	public boolean hasFlag(final Flag flag) {
 		return (flags & flag.getMask()) == flag.getMask();
 	}
@@ -114,11 +114,11 @@ public class ProtocolMessage {
 	public void setFlag(final Flag flag) {
 		flags |= flag.getMask();
 	}
-	
+
 	public void setFlags(final int flags) {
 		this.flags |= flags;
 	}
-	
+
 	void writeMsgpack(MessagePacker packer) throws IOException {
 		int fieldCount = 1; //action
 		if(channel != null) ++fieldCount;
