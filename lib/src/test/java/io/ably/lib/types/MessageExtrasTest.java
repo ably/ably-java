@@ -6,7 +6,13 @@ import static org.junit.Assert.assertNull;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import io.ably.lib.util.Serialisation;
 import org.junit.Test;
+import org.msgpack.core.MessagePacker;
+import org.msgpack.core.MessageUnpacker;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 public class MessageExtrasTest {
 	/**
@@ -57,5 +63,24 @@ public class MessageExtrasTest {
 		final JsonElement serialised = serializer.serialize(messageExtras, null, null);
 
 		assertEquals(expectedJsonElement, serialised);
+	}
+
+	@Test
+	public void deltaViaMessagePack() throws IOException {
+		final DeltaExtras deltaExtras = new DeltaExtras("tamrof", "morf");
+		final MessageExtras messageExtras = new MessageExtras(deltaExtras);
+
+		// Encode to MessagePack
+		final ByteArrayOutputStream out = new ByteArrayOutputStream();
+		final MessagePacker packer = Serialisation.msgpackPackerConfig.newPacker(out);
+		messageExtras.writeMsgpack(packer);
+		packer.flush();
+
+		// Decode from MessagePack
+		System.out.println("len: " + out.toByteArray().length);
+		MessageUnpacker unpacker = Serialisation.msgpackUnpackerConfig.newUnpacker(out.toByteArray());
+		final MessageExtras unpacked = MessageExtras.fromMsgpack(unpacker);
+
+		assertEquals(messageExtras, unpacked);
 	}
 }
