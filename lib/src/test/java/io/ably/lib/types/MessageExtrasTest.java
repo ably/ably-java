@@ -1,0 +1,31 @@
+package io.ably.lib.types;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import org.junit.Test;
+
+public class MessageExtrasTest {
+	/**
+	 * Construct an instance from a JSON source and validate that the
+	 * serialised JSON is the same.
+	 */
+	@Test
+	public void raw() {
+		final JsonObject objectA = new JsonObject();
+		objectA.addProperty("someKey", "someValue");
+
+		final JsonObject objectB = new JsonObject();
+		objectB.addProperty("someOtherKey", "someValue");
+
+		final MessageExtras messageExtras = new MessageExtras(objectA);
+		final MessageExtras.Serializer serializer = new MessageExtras.Serializer();
+		final JsonElement serialised = serializer.serialize(messageExtras, null, null);
+
+		assertEquals(objectA, serialised);
+		assertNotEquals(objectB, serialised);
+		assertNotEquals(objectB, objectA);
+	}
+}
