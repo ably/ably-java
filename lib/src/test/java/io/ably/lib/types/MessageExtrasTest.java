@@ -1,9 +1,5 @@
 package io.ably.lib.types;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNull;
-
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.ably.lib.util.Serialisation;
@@ -13,6 +9,10 @@ import org.msgpack.core.MessageUnpacker;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
 
 public class MessageExtrasTest {
 	/**
@@ -38,6 +38,26 @@ public class MessageExtrasTest {
 		assertNotEquals(objectB, objectA);
 	}
 
+	@Test
+	public void rawViaMessagePack() throws IOException {
+		final JsonObject object = new JsonObject();
+		object.addProperty("foo", "bar");
+		object.addProperty("cliché", "cache");
+		final MessageExtras messageExtras = new MessageExtras(object);
+
+		// Encode to MessagePack
+		final ByteArrayOutputStream out = new ByteArrayOutputStream();
+		final MessagePacker packer = Serialisation.msgpackPackerConfig.newPacker(out);
+		messageExtras.writeMsgpack(packer);
+		packer.flush();
+
+		// Decode from MessagePack
+		MessageUnpacker unpacker = Serialisation.msgpackUnpackerConfig.newUnpacker(out.toByteArray());
+		final MessageExtras unpacked = MessageExtras.fromMsgpack(unpacker);
+
+		assertEquals(messageExtras, unpacked);
+	}
+
 	/**
 	 * Construct an instance with DeltaExtras and validate that the
 	 * serialised JSON is as expected. Also validate that the DeltaExtras
@@ -53,11 +73,7 @@ public class MessageExtrasTest {
 		assertNotEquals(deltaExtrasB, messageExtras.getDelta());
 		assertNotEquals(deltaExtrasB, deltaExtrasA);
 
-		final JsonObject expectedDeltaExtrasJsonElement = new JsonObject();
-		expectedDeltaExtrasJsonElement.addProperty("format", "someFormat");
-		expectedDeltaExtrasJsonElement.addProperty("from", "someSource");
-		final JsonObject expectedJsonElement = new JsonObject();
-		expectedJsonElement.add("delta", expectedDeltaExtrasJsonElement);
+		final JsonObject expectedJsonElement = deltaExtrasJsonObject("someFormat", "someSource");
 
 		final MessageExtras.Serializer serializer = new MessageExtras.Serializer();
 		final JsonElement serialised = serializer.serialize(messageExtras, null, null);
@@ -85,6 +101,21 @@ public class MessageExtrasTest {
 		MessageUnpacker unpacker = Serialisation.msgpackUnpackerConfig.newUnpacker(out.toByteArray());
 		final MessageExtras unpacked = MessageExtras.fromMsgpack(unpacker);
 
-		assertEquals(messageExtras, unpacked);
+		assertEquals(messageExtras.getDelta(), unpacked.getDelta());
+
+		// On decode from MessagePack we now also get a raw value (JSON), hence the
+		// two original MessageExtras instance will not equal the unpacked instance.
+		assertNotEquals(messageExtras, unpacked);
+		assertNull(messageExtras.getRaw());
+		assertEquals(deltaExtrasJsonObject("tamrof", "morf"), unpacked.getRaw());
+	}
+
+	private static JsonObject deltaExtrasJsonObject(final String format, final String from) {
+		final JsonObject deltaExtrasJsonElement = new JsonObject();
+		deltaExtrasJsonElement.addProperty("format", format);
+		deltaExtrasJsonElement.addProperty("from", from);
+		final JsonObject jsonElement = new JsonObject();
+		jsonElement.add("delta", deltaExtrasJsonElement);
+		return jsonElement;
 	}
 }

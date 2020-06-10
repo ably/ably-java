@@ -5,14 +5,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
-import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePacker;
-import org.msgpack.core.MessageUnpacker;
+import org.msgpack.value.Value;
+import org.msgpack.value.ValueFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.Map;
 import java.util.Objects;
 
 public final class DeltaExtras {
@@ -61,29 +61,10 @@ public final class DeltaExtras {
 		packer.packString(from);
 	}
 
-	/* package private */ static DeltaExtras fromMsgpack(final MessageUnpacker unpacker) throws IOException {
-		final int fieldCount = unpacker.unpackMapHeader();
-		String format = null;
-		String from = null;
-		for(int i = 0; i < fieldCount; i++) {
-			String fieldName = unpacker.unpackString();
-			MessageFormat fieldFormat = unpacker.getNextFormat();
-			if(fieldFormat.equals(MessageFormat.NIL)) {
-				unpacker.unpackNil();
-				continue;
-			}
-
-			if(fieldName.equals("format")) {
-				format = unpacker.unpackString();
-			} else if (fieldName.equals("from")) {
-				from = unpacker.unpackString();
-			} else {
-				Log.w(TAG, "Unexpected field: " + fieldName);
-				unpacker.skipValue();
-			}
-		}
-
-		return new DeltaExtras(format, from);
+	/* package private */ static DeltaExtras fromMessagePackMap(final Map<Value, Value> map) throws IOException {
+		final Value format = map.get(ValueFactory.newString("format"));
+		final Value from = map.get(ValueFactory.newString("from"));
+		return new DeltaExtras(format.asStringValue().asString(), from.asStringValue().asString());
 	}
 
 	@Override

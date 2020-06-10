@@ -4,14 +4,17 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
-import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
+import org.msgpack.value.ImmutableMapValue;
+import org.msgpack.value.ImmutableValue;
+import org.msgpack.value.Value;
+import org.msgpack.value.ValueFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.Map;
 import java.util.Objects;
 
 public final class MessageExtras {
@@ -19,17 +22,13 @@ public final class MessageExtras {
 
 	/**
 	 * Only intended for use with a MessageExtras instance received from Ably's servers (inbound).
-	 * May be null if raw is null.
-	 * Must be null if raw is not null.
 	 */
 	private final DeltaExtras delta;
 
 	/**
 	 * Only intended for use with MessageExtras instances created to be sent to Ably's servers (outbound).
-	 * May be null if delta is null.
-	 * Must be null if delta is not null.
 	 */
-	private final JsonObject raw; // may be null
+	private final JsonObject raw;
 
 	/**
 	 * Creates a MessageExtras instance to be sent as extra with a Message to Ably's servers.
@@ -51,42 +50,56 @@ public final class MessageExtras {
 		raw = null;
 	}
 
+	private MessageExtras(final JsonObject raw, final DeltaExtras delta) {
+		this.raw = raw;
+		this.delta = delta;
+	}
+
 	public DeltaExtras getDelta() {
 		return delta;
 	}
 
+	/* package private */ JsonObject getRaw() {
+		return raw;
+	}
+
 	/* package private */ void writeMsgpack(MessagePacker packer) throws IOException {
-		int fieldCount = 0;
-		if (this.delta != null) {
-			fieldCount++;
-		}
-		packer.packMapHeader(fieldCount);
-		if (this.delta != null) {
+		if (null == raw) {
+			// raw is null, so delta is not null
+			packer.packMapHeader(1);
 			packer.packString("delta");
 			this.delta.writeMsgpack(packer);
+		} else {
+			// raw is not null, so delta can be ignored
+			Serialisation.gsonToMsgpack(raw, packer);
 		}
 	}
 
 	/* package private */ static MessageExtras fromMsgpack(MessageUnpacker unpacker) throws IOException {
-		final int fieldCount = unpacker.unpackMapHeader();
 		DeltaExtras delta = null;
-		for(int i = 0; i < fieldCount; i++) {
-			String fieldName = unpacker.unpackString();
-			MessageFormat fieldFormat = unpacker.getNextFormat();
-			if(fieldFormat.equals(MessageFormat.NIL)) {
-				unpacker.unpackNil();
-				continue;
-			}
 
-			if(fieldName.equals("delta")) {
-				delta = DeltaExtras.fromMsgpack(unpacker);
-			} else {
-				Log.w(TAG, "Unexpected field: " + fieldName);
-				unpacker.skipValue();
+		final ImmutableValue value = unpacker.unpackValue();
+		if (value instanceof ImmutableMapValue) {
+			final Map<Value, Value> map = ((ImmutableMapValue) value).map();
+			final Value deltaValue = map.get(ValueFactory.newString("delta"));
+			if (null != deltaValue) {
+				if (!(deltaValue instanceof ImmutableMapValue)) {
+					// There's a delta key but the value at that key is not a map.
+					throw new IOException("The delta extras unpacked to the wrong type \"" + deltaValue.getClass() + "\" when expected a map.");
+				}
+				final Map<Value, Value> deltaMap = ((ImmutableMapValue)deltaValue).map();
+				delta = DeltaExtras.fromMessagePackMap(deltaMap);
 			}
 		}
 
-		return new MessageExtras(delta);
+		final JsonElement element = Serialisation.msgpackToGson(value);
+		if (!(element instanceof JsonObject)) {
+			// The root thing that we unpacked was not a map.
+			throw new IOException("The extras unpacked to the wrong type \"" + element.getClass() + "\" when expected a JsonObject.");
+		}
+		final JsonObject raw = (JsonObject)element;
+
+		return new MessageExtras(raw, delta);
 	}
 
 	@Override
