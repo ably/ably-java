@@ -65,6 +65,10 @@ public class MessageExtrasTest {
 		assertEquals(expectedJsonElement, serialised);
 	}
 
+	/**
+	 * Construct an instance with DeltaExtras and validate that it can be encoded
+	 * to MessagePack and then decoded back again from MessagePack.
+	 */
 	@Test
 	public void deltaViaMessagePack() throws IOException {
 		final DeltaExtras deltaExtras = new DeltaExtras("tamrof", "morf");
