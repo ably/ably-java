@@ -240,12 +240,16 @@ public class Message extends BaseMessage {
 		}
 	}
 
-	public static class Serializer extends BaseMessage.Serializer implements JsonSerializer<Message> {
+	public static class Serializer implements JsonSerializer<Message> {
 		@Override
 		public JsonElement serialize(Message message, Type typeOfMessage, JsonSerializationContext ctx) {
-			JsonObject json = (JsonObject) super.serialize(message, typeOfMessage, ctx);
-			if(message.name != null) json.addProperty("name", message.name);
-			if(message.extras != null) json.add("extras", message.extras.toJsonElement());
+			final JsonObject json = BaseMessage.toJsonObject(message);
+			if (message.name != null) {
+				json.addProperty("name", message.name);
+			}
+			if (message.extras != null) {
+				json.add("extras", Serialisation.gson.toJsonTree(message.extras));
+			}
 			return json;
 		}
 	}

@@ -206,13 +206,13 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
 		}
 	}
 
-	public static class Serializer extends BaseMessage.Serializer implements JsonSerializer<PresenceMessage> {
+	public static class Serializer implements JsonSerializer<PresenceMessage> {
 		@Override
 		public JsonElement serialize(PresenceMessage message, Type typeOfMessage, JsonSerializationContext ctx) {
-			JsonObject json = (JsonObject)super.serialize(message, typeOfMessage, ctx);
+			final JsonObject json = BaseMessage.toJsonObject(message);
 			if(message.action != null) json.addProperty("action", message.action.getValue());
 			return json;
-		}		
+		}
 	}
 
 	/**

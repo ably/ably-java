@@ -8,7 +8,15 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
-
+import io.ably.lib.http.HttpCore;
+import io.ably.lib.platform.Platform;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.DeltaExtras;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Message;
+import io.ably.lib.types.MessageExtras;
+import io.ably.lib.types.PresenceMessage;
+import io.ably.lib.types.ProtocolMessage;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePack.PackerConfig;
 import org.msgpack.core.MessagePack.UnpackerConfig;
@@ -25,14 +33,6 @@ import java.math.BigInteger;
 import java.util.Map;
 import java.util.Set;
 
-import io.ably.lib.http.HttpCore;
-import io.ably.lib.platform.Platform;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.Message;
-import io.ably.lib.types.PresenceMessage;
-import io.ably.lib.types.ProtocolMessage;
-
 public class Serialisation {
 	public static final JsonParser gsonParser;
 	public static final GsonBuilder gsonBuilder;
@@ -45,6 +45,8 @@ public class Serialisation {
 		gsonParser = new JsonParser();
 		gsonBuilder = new GsonBuilder();
 		gsonBuilder.registerTypeAdapter(Message.class, new Message.Serializer());
+		gsonBuilder.registerTypeAdapter(MessageExtras.class, new MessageExtras.Serializer());
+		gsonBuilder.registerTypeAdapter(DeltaExtras.class, new DeltaExtras.Serializer());
 		gsonBuilder.registerTypeAdapter(PresenceMessage.class, new PresenceMessage.Serializer());
 		gsonBuilder.registerTypeAdapter(PresenceMessage.Action.class, new PresenceMessage.ActionSerializer());
 		gsonBuilder.registerTypeAdapter(ProtocolMessage.Action.class, new ProtocolMessage.ActionSerializer());

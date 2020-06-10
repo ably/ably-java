@@ -1,27 +1,23 @@
 package io.ably.lib.types;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Type;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.msgpack.core.MessageFormat;
-import org.msgpack.core.MessagePacker;
-import org.msgpack.core.MessageUnpacker;
-
 import com.davidehrmann.vcdiff.VCDiffDecoder;
 import com.davidehrmann.vcdiff.VCDiffDecoderBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.google.gson.JsonSerializationContext;
-
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Crypto.ChannelCipher;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
+import org.msgpack.core.MessageFormat;
+import org.msgpack.core.MessagePacker;
+import org.msgpack.core.MessageUnpacker;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class BaseMessage implements Cloneable {
 	/**
@@ -75,7 +71,7 @@ public class BaseMessage implements Cloneable {
 
 		this.decode(opts, new DecodingContext());
 	}
-	
+
 	private final static VCDiffDecoder vcdiffDecoder = VCDiffDecoderBuilder.builder().buildSimple();
 
 	private static byte[] vcdiffApply(byte[] delta, byte[] base) throws MessageDecodeException {
@@ -190,27 +186,27 @@ public class BaseMessage implements Cloneable {
 		return result.toString();
 	}
 
-	/* Gson Serializer */
-	public static class Serializer {
-		public JsonElement serialize(BaseMessage message, Type typeOfMessage, JsonSerializationContext ctx) {
-			JsonObject json = new JsonObject();
-			Object data = message.data;
-			String encoding = message.encoding;
-			if(data != null) {
-				if(data instanceof byte[]) {
-					byte[] dataBytes = (byte[])data;
-					json.addProperty("data", new String(Base64Coder.encode(dataBytes)));
-					encoding = (encoding == null) ? "base64" : encoding + "/base64";
-				} else {
-					json.addProperty("data", data.toString());
-				}
-				if(encoding != null) json.addProperty("encoding", encoding);
+	/**
+	 * Base for gson serialisers.
+	 */
+	public static JsonObject toJsonObject(final BaseMessage message) {
+		JsonObject json = new JsonObject();
+		Object data = message.data;
+		String encoding = message.encoding;
+		if(data != null) {
+			if(data instanceof byte[]) {
+				byte[] dataBytes = (byte[])data;
+				json.addProperty("data", new String(Base64Coder.encode(dataBytes)));
+				encoding = (encoding == null) ? "base64" : encoding + "/base64";
+			} else {
+				json.addProperty("data", data.toString());
 			}
-			if(message.id != null) json.addProperty("id", message.id);
-			if(message.clientId != null) json.addProperty("clientId", message.clientId);
-			if(message.connectionId != null) json.addProperty("connectionId", message.connectionId);
-			return json;
+			if(encoding != null) json.addProperty("encoding", encoding);
 		}
+		if(message.id != null) json.addProperty("id", message.id);
+		if(message.clientId != null) json.addProperty("clientId", message.clientId);
+		if(message.connectionId != null) json.addProperty("connectionId", message.connectionId);
+		return json;
 	}
 
 	/* Msgpack processing */

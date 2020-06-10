@@ -1,21 +1,27 @@
 package io.ably.lib.types;
 
-import java.io.IOException;
-
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import io.ably.lib.util.Log;
+import io.ably.lib.util.Serialisation;
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 
-import io.ably.lib.util.Log;
+import java.io.IOException;
+import java.lang.reflect.Type;
 
 public final class DeltaExtras {
 	private static final String TAG = DeltaExtras.class.getName();
-	
+
 	public static final String FORMAT_VCDIFF = "vcdiff";
 
 	private final String format;
 	private final String from;
-	
+
 	public DeltaExtras(final String format, final String from) {
 		if (null == format) {
 			throw new IllegalArgumentException("format cannot be null.");
@@ -23,11 +29,11 @@ public final class DeltaExtras {
 		if (null == from) {
 			throw new IllegalArgumentException("from cannot be null.");
 		}
-		
+
 		this.format = format;
 		this.from = from;
 	}
-	
+
 	/**
 	 * The delta format. As at API version 1.2, only {@link DeltaExtras.FORMAT_VCDIFF} is supported.
 	 * Will never return null.
@@ -35,7 +41,7 @@ public final class DeltaExtras {
 	public String getFormat() {
 		return format;
 	}
-	
+
 	/**
 	 * The id of the message the delta was generated from.
 	 * Will never return null.
@@ -75,7 +81,18 @@ public final class DeltaExtras {
 				unpacker.skipValue();
 			}
 		}
-		
+
 		return new DeltaExtras(format, from);
+	}
+
+	public static class Serializer implements JsonSerializer<DeltaExtras> {
+		@Override
+		public JsonElement serialize(final DeltaExtras src, final Type typeOfSrc, final JsonSerializationContext context) {
+			final JsonObject json = new JsonObject();
+			final Gson gson = Serialisation.gson;
+			json.addProperty("format", src.getFormat());
+			json.addProperty("from", src.getFrom());
+			return json;
+		}
 	}
 }
