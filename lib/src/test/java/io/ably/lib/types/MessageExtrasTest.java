@@ -28,4 +28,31 @@ public class MessageExtrasTest {
 		assertNotEquals(objectB, serialised);
 		assertNotEquals(objectB, objectA);
 	}
+
+	/**
+	 * Construct an instance with DeltaExtras and validate that the
+	 * serialised JSON is as expected. Also validate that the DeltaExtras
+	 * retrieved is the same.
+	 */
+	@Test
+	public void delta() {
+		final DeltaExtras deltaExtrasA = new DeltaExtras("someFormat", "someSource");
+		final DeltaExtras deltaExtrasB = new DeltaExtras("someFormat", "someOtherSource");
+
+		final MessageExtras messageExtras = new MessageExtras(deltaExtrasA);
+		assertEquals(deltaExtrasA, messageExtras.getDelta());
+		assertNotEquals(deltaExtrasB, messageExtras.getDelta());
+		assertNotEquals(deltaExtrasB, deltaExtrasA);
+
+		final JsonObject expectedDeltaExtrasJsonElement = new JsonObject();
+		expectedDeltaExtrasJsonElement.addProperty("format", "someFormat");
+		expectedDeltaExtrasJsonElement.addProperty("from", "someSource");
+		final JsonObject expectedJsonElement = new JsonObject();
+		expectedJsonElement.add("delta", expectedDeltaExtrasJsonElement);
+
+		final MessageExtras.Serializer serializer = new MessageExtras.Serializer();
+		final JsonElement serialised = serializer.serialize(messageExtras, null, null);
+
+		assertEquals(expectedJsonElement, serialised);
+	}
 }
