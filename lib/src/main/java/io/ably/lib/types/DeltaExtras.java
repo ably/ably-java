@@ -13,6 +13,7 @@ import org.msgpack.core.MessageUnpacker;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.Objects;
 
 public final class DeltaExtras {
 	private static final String TAG = DeltaExtras.class.getName();
@@ -83,6 +84,20 @@ public final class DeltaExtras {
 		}
 
 		return new DeltaExtras(format, from);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		DeltaExtras that = (DeltaExtras) o;
+		return format.equals(that.format) &&
+				from.equals(that.from);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(format, from);
 	}
 
 	public static class Serializer implements JsonSerializer<DeltaExtras> {

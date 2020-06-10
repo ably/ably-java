@@ -12,6 +12,7 @@ import org.msgpack.core.MessageUnpacker;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.Objects;
 
 public final class MessageExtras {
 	private static final String TAG = MessageExtras.class.getName();
@@ -86,6 +87,20 @@ public final class MessageExtras {
 		}
 
 		return new MessageExtras(delta);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		MessageExtras that = (MessageExtras) o;
+		return Objects.equals(delta, that.delta) &&
+				Objects.equals(raw, that.raw);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(delta, raw);
 	}
 
 	public static class Serializer implements JsonSerializer<MessageExtras> {
