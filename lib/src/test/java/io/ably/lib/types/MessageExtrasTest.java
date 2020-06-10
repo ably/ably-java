@@ -2,6 +2,7 @@ package io.ably.lib.types;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -21,6 +22,8 @@ public class MessageExtrasTest {
 		objectB.addProperty("someOtherKey", "someValue");
 
 		final MessageExtras messageExtras = new MessageExtras(objectA);
+		assertNull(messageExtras.getDelta());
+
 		final MessageExtras.Serializer serializer = new MessageExtras.Serializer();
 		final JsonElement serialised = serializer.serialize(messageExtras, null, null);
 
