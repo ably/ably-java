@@ -102,10 +102,7 @@ public class MessageExtrasTest {
 		final MessageExtras unpacked = MessageExtras.fromMsgpack(unpacker);
 
 		assertEquals(messageExtras.getDelta(), unpacked.getDelta());
-
-		// On decode from MessagePack we now also get a raw value (JSON), hence the
-		// two original MessageExtras instance will not equal the unpacked instance.
-		assertNotEquals(messageExtras, unpacked);
+		assertEquals(messageExtras, unpacked);
 		assertNull(messageExtras.getRaw());
 		assertEquals(deltaExtrasJsonObject("tamrof", "morf"), unpacked.getRaw());
 	}
