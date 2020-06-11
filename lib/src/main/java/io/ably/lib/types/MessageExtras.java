@@ -20,14 +20,7 @@ import java.util.Objects;
 public final class MessageExtras {
 	private static final String TAG = MessageExtras.class.getName();
 
-	/**
-	 * Only intended for use with a MessageExtras instance received from Ably's servers (inbound).
-	 */
 	private final DeltaExtras delta;
-
-	/**
-	 * Only intended for use with MessageExtras instances created to be sent to Ably's servers (outbound).
-	 */
 	private final JsonObject raw;
 
 	/**
