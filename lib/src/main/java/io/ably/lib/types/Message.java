@@ -11,7 +11,6 @@ import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 
 import io.ably.lib.util.Log;
-import io.ably.lib.util.Serialisation;
 
 /**
  * A class representing an individual message to be sent or received
@@ -92,7 +91,7 @@ public class Message extends BaseMessage {
 		}
 		if(extras != null) {
 			packer.packString("extras");
-			extras.writeMsgpack(packer);
+			extras.write(packer);
 		}
 	}
 
@@ -112,7 +111,7 @@ public class Message extends BaseMessage {
 			if(fieldName.equals("name")) {
 				name = unpacker.unpackString();
 			} else if (fieldName == "extras") {
-				extras = MessageExtras.fromMsgpack(unpacker);
+				extras = MessageExtras.read(unpacker);
 			} else {
 				Log.v(TAG, "Unexpected field: " + fieldName);
 				unpacker.skipValue();

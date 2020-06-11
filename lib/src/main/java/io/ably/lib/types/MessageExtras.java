@@ -56,19 +56,19 @@ public final class MessageExtras {
 		return raw;
 	}
 
-	/* package private */ void writeMsgpack(MessagePacker packer) throws IOException {
+	/* package private */ void write(MessagePacker packer) throws IOException {
 		if (null == raw) {
 			// raw is null, so delta is not null
 			packer.packMapHeader(1);
 			packer.packString("delta");
-			this.delta.writeMsgpack(packer);
+			delta.write(packer);
 		} else {
 			// raw is not null, so delta can be ignored
 			Serialisation.gsonToMsgpack(raw, packer);
 		}
 	}
 
-	/* package private */ static MessageExtras fromMsgpack(MessageUnpacker unpacker) throws IOException {
+	/* package private */ static MessageExtras read(MessageUnpacker unpacker) throws IOException {
 		DeltaExtras delta = null;
 
 		final ImmutableValue value = unpacker.unpackValue();
@@ -81,7 +81,7 @@ public final class MessageExtras {
 					throw new IOException("The delta extras unpacked to the wrong type \"" + deltaValue.getClass() + "\" when expected a map.");
 				}
 				final Map<Value, Value> deltaMap = ((ImmutableMapValue)deltaValue).map();
-				delta = DeltaExtras.fromMessagePackMap(deltaMap);
+				delta = DeltaExtras.read(deltaMap);
 			}
 		}
 

@@ -48,12 +48,12 @@ public class MessageExtrasTest {
 		// Encode to MessagePack
 		final ByteArrayOutputStream out = new ByteArrayOutputStream();
 		final MessagePacker packer = Serialisation.msgpackPackerConfig.newPacker(out);
-		messageExtras.writeMsgpack(packer);
+		messageExtras.write(packer);
 		packer.flush();
 
 		// Decode from MessagePack
 		MessageUnpacker unpacker = Serialisation.msgpackUnpackerConfig.newUnpacker(out.toByteArray());
-		final MessageExtras unpacked = MessageExtras.fromMsgpack(unpacker);
+		final MessageExtras unpacked = MessageExtras.read(unpacker);
 
 		assertEquals(messageExtras, unpacked);
 	}
@@ -93,13 +93,13 @@ public class MessageExtrasTest {
 		// Encode to MessagePack
 		final ByteArrayOutputStream out = new ByteArrayOutputStream();
 		final MessagePacker packer = Serialisation.msgpackPackerConfig.newPacker(out);
-		messageExtras.writeMsgpack(packer);
+		messageExtras.write(packer);
 		packer.flush();
 
 		// Decode from MessagePack
 		System.out.println("len: " + out.toByteArray().length);
 		MessageUnpacker unpacker = Serialisation.msgpackUnpackerConfig.newUnpacker(out.toByteArray());
-		final MessageExtras unpacked = MessageExtras.fromMsgpack(unpacker);
+		final MessageExtras unpacked = MessageExtras.read(unpacker);
 
 		assertEquals(messageExtras.getDelta(), unpacked.getDelta());
 		assertEquals(messageExtras, unpacked);

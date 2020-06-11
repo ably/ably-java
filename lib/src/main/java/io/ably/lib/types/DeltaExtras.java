@@ -51,7 +51,7 @@ public final class DeltaExtras {
 		return from;
 	}
 
-	/* package private */ void writeMsgpack(MessagePacker packer) throws IOException {
+	/* package private */ void write(MessagePacker packer) throws IOException {
 		packer.packMapHeader(2);
 
 		packer.packString("format");
@@ -61,7 +61,7 @@ public final class DeltaExtras {
 		packer.packString(from);
 	}
 
-	/* package private */ static DeltaExtras fromMessagePackMap(final Map<Value, Value> map) throws IOException {
+	/* package private */ static DeltaExtras read(final Map<Value, Value> map) throws IOException {
 		final Value format = map.get(ValueFactory.newString("format"));
 		final Value from = map.get(ValueFactory.newString("from"));
 		return new DeltaExtras(format.asStringValue().asString(), from.asStringValue().asString());
