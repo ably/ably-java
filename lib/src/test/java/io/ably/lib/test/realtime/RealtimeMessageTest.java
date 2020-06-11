@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Locale;
 
 import com.google.gson.*;
+import io.ably.lib.types.MessageExtras;
 import io.ably.lib.util.Serialisation;
 import org.junit.Rule;
 import org.junit.Test;
@@ -909,5 +910,60 @@ public class RealtimeMessageTest extends ParameterizedTest {
 
 	static class MessagesData {
 		public Message[] messages;
+	}
+
+	/**
+	 * Publish a message that contains extras of arbitrary creation. Validate that when we receive that message
+	 * echoed back from the service that those extras remain intact.
+	 *
+	 * @see <a href="https://docs.ably.io/client-lib-development-guide/features/#RSL6a2">RSL6a2</a>
+	 */
+	@Test
+	public void opaque_message_extras() throws AblyException {
+		AblyRealtime ably = null;
+		try {
+			final JsonObject opaqueJson = new JsonObject();
+			opaqueJson.addProperty("Some Property", "Lorem Ipsum");
+			opaqueJson.addProperty("Some Truth", false);
+			opaqueJson.addProperty("Some Number", 321);
+
+			final MessageExtras extras = new MessageExtras(opaqueJson);
+			final Message message = new Message();
+			message.name = "The Test Message";
+			message.data = "Some Value";
+			message.extras = extras;
+
+			final ClientOptions clientOptions = createOptions(testVars.keys[0].keyStr);
+			ably = new AblyRealtime(clientOptions);
+
+			// create a channel and attach to it
+			final Channel channel = ably.channels.get(createChannelName("opaque_message_extras"));
+			channel.attach();
+			(new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+			assertEquals(ChannelState.attached, channel.state);
+
+			// subscribe
+			final MessageWaiter messageWaiter = new MessageWaiter(channel);
+
+			// publish and await success
+			final CompletionWaiter completionWaiter = new CompletionWaiter();
+			channel.publish(message, completionWaiter);
+			completionWaiter.waitFor();
+			assertTrue(completionWaiter.success);
+
+			// wait for the subscriber to receive the message
+			messageWaiter.waitFor(1);
+			assertEquals(1, messageWaiter.receivedMessages.size());
+
+			// validate the contents of the received message
+			final Message received = messageWaiter.receivedMessages.get(0);
+			assertEquals("The Test Message", received.name);
+			assertEquals("Some Value", received.data);
+			assertEquals(extras, received.extras);
+		} finally {
+			if(ably != null) {
+				ably.close();
+			}
+		}
 	}
 }
