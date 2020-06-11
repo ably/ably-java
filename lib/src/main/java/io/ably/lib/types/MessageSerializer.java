@@ -136,15 +136,7 @@ public class MessageSerializer {
 	 ****************************************/
 
 	public static Message[] readMessagesFromJson(byte[] packed) throws MessageDecodeException {
-		final InputStream stream = new ByteArrayInputStream(packed);
-		final Reader reader = new InputStreamReader(stream);
-		final JsonElement root = JsonParser.parseReader(reader);
-
-		if (!(root instanceof JsonArray)) {
-			throw MessageDecodeException.fromDescription("Expected a JSON array but found type \"" + root.getClass() + "\".");
-		}
-
-		return Message.fromEncodedArray((JsonArray)root, null);
+		return Serialisation.gson.fromJson(new String(packed), Message[].class);
 	}
 
 	/****************************************

@@ -173,8 +173,7 @@ public class Message extends BaseMessage {
 	 */
 	public static Message fromEncoded(JsonObject messageJson, ChannelOptions channelOptions) throws MessageDecodeException {
 		try {
-			final Message message = new Message();
-			message.read(messageJson);
+			Message message = Serialisation.gson.fromJson(messageJson, Message.class);
 			message.decode(channelOptions);
 			return message;
 		} catch(Exception e) {
