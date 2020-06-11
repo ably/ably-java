@@ -100,13 +100,22 @@ public final class MessageExtras {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		MessageExtras that = (MessageExtras) o;
-		return Objects.equals(delta, that.delta) &&
+		return (null == raw) ?
+				Objects.equals(delta, that.delta) :
 				Objects.equals(raw, that.raw);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(delta, raw);
+		return (null == raw) ? Objects.hashCode(delta) : Objects.hashCode(raw);
+	}
+
+	@Override
+	public String toString() {
+		return "MessageExtras{" +
+				"delta=" + delta +
+				", raw=" + raw +
+				'}';
 	}
 
 	public static class Serializer implements JsonSerializer<MessageExtras> {
