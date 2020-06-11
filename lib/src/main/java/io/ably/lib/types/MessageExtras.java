@@ -20,6 +20,8 @@ import java.util.Objects;
 public final class MessageExtras {
 	private static final String TAG = MessageExtras.class.getName();
 
+	private static final String DELTA = "delta";
+
 	private final DeltaExtras delta;
 	private final JsonObject raw;
 
@@ -60,7 +62,7 @@ public final class MessageExtras {
 		if (null == raw) {
 			// raw is null, so delta is not null
 			packer.packMapHeader(1);
-			packer.packString("delta");
+			packer.packString(DELTA);
 			delta.write(packer);
 		} else {
 			// raw is not null, so delta can be ignored
@@ -74,7 +76,7 @@ public final class MessageExtras {
 		final ImmutableValue value = unpacker.unpackValue();
 		if (value instanceof ImmutableMapValue) {
 			final Map<Value, Value> map = ((ImmutableMapValue) value).map();
-			final Value deltaValue = map.get(ValueFactory.newString("delta"));
+			final Value deltaValue = map.get(ValueFactory.newString(DELTA));
 			if (null != deltaValue) {
 				if (!(deltaValue instanceof ImmutableMapValue)) {
 					// There's a delta key but the value at that key is not a map.
@@ -91,6 +93,21 @@ public final class MessageExtras {
 			throw new IOException("The extras unpacked to the wrong type \"" + element.getClass() + "\" when expected a JsonObject.");
 		}
 		final JsonObject raw = (JsonObject)element;
+
+		return new MessageExtras(raw, delta);
+	}
+
+	/* package private */ static MessageExtras read(final JsonObject raw) throws MessageDecodeException {
+		DeltaExtras delta = null;
+
+		final JsonElement deltaElement = raw.get(DELTA);
+		if (deltaElement instanceof JsonObject) {
+			delta = DeltaExtras.read((JsonObject)deltaElement);
+		} else {
+			if (null != deltaElement) {
+				throw MessageDecodeException.fromDescription("The value under the delta key is of the wrong type \"" + deltaElement.getClass() + "\" when expected a map.");
+			}
+		}
 
 		return new MessageExtras(raw, delta);
 	}
@@ -113,7 +130,7 @@ public final class MessageExtras {
 	@Override
 	public String toString() {
 		return "MessageExtras{" +
-				"delta=" + delta +
+				DELTA + "=" + delta +
 				", raw=" + raw +
 				'}';
 	}
@@ -126,7 +143,7 @@ public final class MessageExtras {
 
 		private JsonObject wrapDelta(final DeltaExtras delta) {
 			final JsonObject json = new JsonObject();
-			json.add("delta", Serialisation.gson.toJsonTree(delta));
+			json.add(DELTA, Serialisation.gson.toJsonTree(delta));
 			return json;
 		}
 	}

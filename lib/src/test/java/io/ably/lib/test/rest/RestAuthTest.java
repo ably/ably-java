@@ -1374,12 +1374,9 @@ public class RestAuthTest extends ParameterizedTest {
 							if(testParams.useBinaryProtocol) {
 								messages[0] = MessageSerializer.readMsgpack(requestBody.getEncoded())[0];
 							} else {
-								messages[0] = MessageSerializer.readJSON(requestBody.getEncoded())[0];
+								messages[0] = MessageSerializer.readMessagesFromJson(requestBody.getEncoded())[0];
 							}
 						} catch (AblyException e) {
-							e.printStackTrace();
-							fail("auth_clientid_publish_implicit: Unexpected exception");
-						} catch (IOException e) {
 							e.printStackTrace();
 							fail("auth_clientid_publish_implicit: Unexpected exception");
 						}
@@ -1442,12 +1439,9 @@ public class RestAuthTest extends ParameterizedTest {
 							if(testParams.useBinaryProtocol) {
 								messages[0] = MessageSerializer.readMsgpack(requestBody.getEncoded())[0];
 							} else {
-								messages[0] = MessageSerializer.readJSON(requestBody.getEncoded())[0];
+								messages[0] = MessageSerializer.readMessagesFromJson(requestBody.getEncoded())[0];
 							}
 						} catch (AblyException e) {
-							e.printStackTrace();
-							fail("auth_clientid_publish_implicit: Unexpected exception");
-						} catch (IOException e) {
 							e.printStackTrace();
 							fail("auth_clientid_publish_implicit: Unexpected exception");
 						}

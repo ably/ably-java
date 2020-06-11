@@ -20,6 +20,9 @@ public final class DeltaExtras {
 
 	public static final String FORMAT_VCDIFF = "vcdiff";
 
+	private static final String FROM = "from";
+	private static final String FORMAT = "format";
+
 	private final String format;
 	private final String from;
 
@@ -54,17 +57,21 @@ public final class DeltaExtras {
 	/* package private */ void write(MessagePacker packer) throws IOException {
 		packer.packMapHeader(2);
 
-		packer.packString("format");
+		packer.packString(FORMAT);
 		packer.packString(format);
 
-		packer.packString("from");
+		packer.packString(FROM);
 		packer.packString(from);
 	}
 
 	/* package private */ static DeltaExtras read(final Map<Value, Value> map) throws IOException {
-		final Value format = map.get(ValueFactory.newString("format"));
-		final Value from = map.get(ValueFactory.newString("from"));
+		final Value format = map.get(ValueFactory.newString(FORMAT));
+		final Value from = map.get(ValueFactory.newString(FROM));
 		return new DeltaExtras(format.asStringValue().asString(), from.asStringValue().asString());
+	}
+
+	/* package private */ static DeltaExtras read(final JsonObject map) {
+		return new DeltaExtras(map.get(FORMAT).getAsString(), map.get(FROM).getAsString());
 	}
 
 	@Override
@@ -86,8 +93,8 @@ public final class DeltaExtras {
 		public JsonElement serialize(final DeltaExtras src, final Type typeOfSrc, final JsonSerializationContext context) {
 			final JsonObject json = new JsonObject();
 			final Gson gson = Serialisation.gson;
-			json.addProperty("format", src.getFormat());
-			json.addProperty("from", src.getFrom());
+			json.addProperty(FORMAT, src.getFormat());
+			json.addProperty(FROM, src.getFrom());
 			return json;
 		}
 	}
