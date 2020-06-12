@@ -3,6 +3,7 @@ package io.ably.lib.types;
 import com.davidehrmann.vcdiff.VCDiffDecoder;
 import com.davidehrmann.vcdiff.VCDiffDecoderBuilder;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
@@ -241,7 +242,7 @@ public class BaseMessage implements Cloneable {
 	 */
 	protected String readString(final JsonObject map, final String key) {
 		final JsonElement element = map.get(key);
-		if (null == element) {
+		if (null == element || element instanceof JsonNull) {
 			return null;
 		}
 		return element.getAsString();
@@ -255,7 +256,7 @@ public class BaseMessage implements Cloneable {
 	 */
 	protected Long readLong(final JsonObject map, final String key) {
 		final JsonElement element = map.get(key);
-		if (null == element) {
+		if (null == element || element instanceof JsonNull) {
 			return null;
 		}
 		return element.getAsLong();
