@@ -89,6 +89,8 @@ public class MessageExtrasTest {
 	public void deltaViaMessagePack() throws IOException {
 		final DeltaExtras deltaExtras = new DeltaExtras("tamrof", "morf");
 		final MessageExtras messageExtras = new MessageExtras(deltaExtras);
+		final JsonObject expectedMessageExtrasJsonObject = deltaExtrasJsonObject("tamrof", "morf");
+		assertEquals(expectedMessageExtrasJsonObject, messageExtras.asJsonObject());
 
 		// Encode to MessagePack
 		final ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -103,8 +105,7 @@ public class MessageExtrasTest {
 
 		assertEquals(messageExtras.getDelta(), unpacked.getDelta());
 		assertEquals(messageExtras, unpacked);
-		assertNull(messageExtras.getRaw());
-		assertEquals(deltaExtrasJsonObject("tamrof", "morf"), unpacked.getRaw());
+		assertEquals(expectedMessageExtrasJsonObject, unpacked.asJsonObject());
 	}
 
 	private static JsonObject deltaExtrasJsonObject(final String format, final String from) {

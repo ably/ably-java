@@ -22,8 +22,8 @@ public final class MessageExtras {
 
 	private static final String DELTA = "delta";
 
-	private final DeltaExtras delta;
-	private final JsonObject raw;
+	private final DeltaExtras delta; // may be null
+	private final JsonObject jsonObject; // never null
 
 	/**
 	 * Creates a MessageExtras instance to be sent as extra with a Message to Ably's servers.
@@ -32,21 +32,23 @@ public final class MessageExtras {
 	 *
 	 * @since 1.2.1
 	 */
-	public MessageExtras(final JsonObject raw) {
-		this.raw = raw;
-		delta = null;
+	public MessageExtras(final JsonObject jsonObject) {
+		this(jsonObject, null);
 	}
 
 	/**
 	 * @since 1.2.0
 	 */
 	public MessageExtras(final DeltaExtras delta) {
-		this.delta = delta;
-		raw = null;
+		this(Serializer.wrapDelta(delta), delta);
 	}
 
-	private MessageExtras(final JsonObject raw, final DeltaExtras delta) {
-		this.raw = raw;
+	private MessageExtras(final JsonObject jsonObject, final DeltaExtras delta) {
+		if (null == jsonObject) {
+			throw new NullPointerException("jsonObject cannot be null.");
+		}
+
+		this.jsonObject = jsonObject;
 		this.delta = delta;
 	}
 
@@ -54,19 +56,19 @@ public final class MessageExtras {
 		return delta;
 	}
 
-	/* package private */ JsonObject getRaw() {
-		return raw;
+	public JsonObject asJsonObject() {
+		return jsonObject;
 	}
 
 	/* package private */ void write(MessagePacker packer) throws IOException {
-		if (null == raw) {
+		if (null == jsonObject) {
 			// raw is null, so delta is not null
 			packer.packMapHeader(1);
 			packer.packString(DELTA);
 			delta.write(packer);
 		} else {
 			// raw is not null, so delta can be ignored
-			Serialisation.gsonToMsgpack(raw, packer);
+			Serialisation.gsonToMsgpack(jsonObject, packer);
 		}
 	}
 
@@ -117,31 +119,35 @@ public final class MessageExtras {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		MessageExtras that = (MessageExtras) o;
-		return (null == raw) ?
+		return (null == jsonObject) ?
 				Objects.equals(delta, that.delta) :
-				Objects.equals(raw, that.raw);
+				Objects.equals(jsonObject, that.jsonObject);
 	}
 
 	@Override
 	public int hashCode() {
-		return (null == raw) ? Objects.hashCode(delta) : Objects.hashCode(raw);
+		return (null == jsonObject) ? Objects.hashCode(delta) : Objects.hashCode(jsonObject);
 	}
 
 	@Override
 	public String toString() {
 		return "MessageExtras{" +
 				DELTA + "=" + delta +
-				", raw=" + raw +
+				", raw=" + jsonObject +
 				'}';
 	}
 
 	public static class Serializer implements JsonSerializer<MessageExtras> {
 		@Override
 		public JsonElement serialize(final MessageExtras src, final Type typeOfSrc, final JsonSerializationContext context) {
-			return (null != src.raw) ? src.raw : wrapDelta(src.getDelta());
+			return (null != src.jsonObject) ? src.jsonObject : wrapDelta(src.getDelta());
 		}
 
-		private JsonObject wrapDelta(final DeltaExtras delta) {
+		public static JsonObject wrapDelta(final DeltaExtras delta) {
+			if (null == delta) {
+				throw new NullPointerException("delta cannot be null.");
+			}
+
 			final JsonObject json = new JsonObject();
 			json.add(DELTA, Serialisation.gson.toJsonTree(delta));
 			return json;
