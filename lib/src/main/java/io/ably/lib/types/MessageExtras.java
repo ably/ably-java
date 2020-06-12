@@ -36,13 +36,6 @@ public final class MessageExtras {
 		this(jsonObject, null);
 	}
 
-	/**
-	 * @since 1.2.0
-	 */
-	public MessageExtras(final DeltaExtras delta) {
-		this(Serializer.wrapDelta(delta), delta);
-	}
-
 	private MessageExtras(final JsonObject jsonObject, final DeltaExtras delta) {
 		if (null == jsonObject) {
 			throw new NullPointerException("jsonObject cannot be null.");
