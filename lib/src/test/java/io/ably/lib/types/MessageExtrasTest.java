@@ -58,6 +58,11 @@ public class MessageExtrasTest {
 		assertEquals(messageExtras, unpacked);
 	}
 
+	@Test(expected = NullPointerException.class)
+	public void rawNullArgument() {
+		new MessageExtras((JsonObject)null);
+	}
+
 	/**
 	 * Construct an instance with DeltaExtras and validate that the
 	 * serialised JSON is as expected. Also validate that the DeltaExtras
@@ -106,6 +111,11 @@ public class MessageExtrasTest {
 		assertEquals(messageExtras.getDelta(), unpacked.getDelta());
 		assertEquals(messageExtras, unpacked);
 		assertEquals(expectedMessageExtrasJsonObject, unpacked.asJsonObject());
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void deltaNullArgument() {
+		new MessageExtras((DeltaExtras)null);
 	}
 
 	private static JsonObject deltaExtrasJsonObject(final String format, final String from) {
