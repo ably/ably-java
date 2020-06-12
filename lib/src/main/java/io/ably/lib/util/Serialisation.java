@@ -46,7 +46,6 @@ public class Serialisation {
 		gsonBuilder = new GsonBuilder();
 		gsonBuilder.registerTypeAdapter(Message.class, new Message.Serializer());
 		gsonBuilder.registerTypeAdapter(MessageExtras.class, new MessageExtras.Serializer());
-		gsonBuilder.registerTypeAdapter(DeltaExtras.class, new DeltaExtras.Serializer());
 		gsonBuilder.registerTypeAdapter(PresenceMessage.class, new PresenceMessage.Serializer());
 		gsonBuilder.registerTypeAdapter(PresenceMessage.Action.class, new PresenceMessage.ActionSerializer());
 		gsonBuilder.registerTypeAdapter(ProtocolMessage.Action.class, new ProtocolMessage.ActionSerializer());

@@ -87,15 +87,4 @@ public final class DeltaExtras {
 	public int hashCode() {
 		return Objects.hash(format, from);
 	}
-
-	public static class Serializer implements JsonSerializer<DeltaExtras> {
-		@Override
-		public JsonElement serialize(final DeltaExtras src, final Type typeOfSrc, final JsonSerializationContext context) {
-			final JsonObject json = new JsonObject();
-			final Gson gson = Serialisation.gson;
-			json.addProperty(FORMAT, src.getFormat());
-			json.addProperty(FROM, src.getFrom());
-			return json;
-		}
-	}
 }
