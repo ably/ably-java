@@ -26,7 +26,7 @@ public final class DeltaExtras {
 	private final String format;
 	private final String from;
 
-	public DeltaExtras(final String format, final String from) {
+	private DeltaExtras(final String format, final String from) {
 		if (null == format) {
 			throw new IllegalArgumentException("format cannot be null.");
 		}
