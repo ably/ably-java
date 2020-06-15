@@ -1,5 +1,17 @@
 # Change Log
 
+## [v1.2.1](https://github.com/ably/ably-java/tree/v1.2.1) (2020-06-15)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.0...v1.2.1)
+
+**Fixed bugs:**
+
+- Address impact of change to interface on extras field on Message [\#580](https://github.com/ably/ably-java/issues/580)
+
+**Merged pull requests:**
+
+- Support outbound message extras [\#581](https://github.com/ably/ably-java/pull/581) ([QuintinWillison](https://github.com/QuintinWillison))
+
 ## [v1.2.0](https://github.com/ably/ably-java/tree/v1.2.0) (2020-06-08)
 
 Adds the capability to subscribe to a channel in delta mode.
