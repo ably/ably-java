@@ -508,12 +508,17 @@ To run tests against a specific host, specify in the environment:
 
     env ABLY_ENV=staging ./gradlew testRealtimeSuite
 
-Tests will run against sandbox by default.
+Tests will run against the sandbox environment by default.
 
 Tests can be run on the Android-specific library. An Android device must be connected,
 either a real device or the Android emulator.
 
     ./gradlew android:connectedAndroidTest
+
+We also have a small, fledgling set of unit tests which do not communicate with Ably's servers.
+The plan is to expand this collection of tests in due course:
+
+    ./gradlew java:runUnitTests
 
 ### Interactive push tests
 

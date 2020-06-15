@@ -1,6 +1,8 @@
 package io.ably.lib.test.common;
 
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -75,4 +77,16 @@ public class ParameterizedTest {
 		return mergeParams(new Param[][]{target, src});
 	}
 
+	final SimpleDateFormat timestampDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+
+	/**
+	 * Generate a channel name that conforms to Ably's restrictions but is, as far as is
+	 * reasonably achievable, unique to the test that's running.
+	 *
+	 * @see <a href="https://support.ably.io/support/solutions/articles/3000046824-what-restrictions-exist-for-the-name-field-of-a-channel-">What restrictions exist for the name field of a channel?</a>
+	 */
+	protected String createChannelName(final String testTitle) {
+		return this.getClass().getCanonicalName() + "/" + testTitle
+				+ "/" + timestampDateFormat.format(new Date());
+	}
 }

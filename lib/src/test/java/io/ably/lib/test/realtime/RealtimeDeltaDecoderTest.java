@@ -5,6 +5,7 @@ import static org.junit.Assert.fail;
 
 import java.util.Objects;
 
+import com.google.gson.JsonObject;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -133,19 +134,27 @@ public class RealtimeDeltaDecoderTest extends ParameterizedTest {
 	 * Special transport class that corrupts the order bookkeeping of delta messages to allow testing delta recovery.
 	 */
 	private static class OutOfOrderDeltasWebsocketTransportMock extends WebSocketTransport {
-
+		private static final String DELTA = "delta";
 
 		private OutOfOrderDeltasWebsocketTransportMock(TransportParams transportParams, ConnectionManager connectionManager) {
 			super(transportParams, connectionManager);
 		}
 
 		@Override
-		protected void preProcessReceivedMessage(ProtocolMessage message) {
-			if(message.action == ProtocolMessage.Action.message &&
-				message.messages[0].extras != null &&
-				message.messages[0].extras.getDelta() != null) {
-					final String format = message.messages[0].extras.getDelta().getFormat();
-					message.messages[0].extras = new MessageExtras(new DeltaExtras(format, ""));
+		protected void preProcessReceivedMessage(ProtocolMessage protocolMessage) {
+			if(protocolMessage.action == ProtocolMessage.Action.message) {
+				for (final Message message : protocolMessage.messages) {
+					final MessageExtras extras = message.extras;
+					if (extras != null) {
+						final JsonObject json = message.extras.asJsonObject();
+
+						if (json.has(DELTA)) {
+							// This MessageExtras (json) has DeltaExtras.
+							// Corrupt it by replacing the value at the from key with an empty string.
+							json.getAsJsonObject(DELTA).addProperty("from", "");
+						}
+					}
+				}
 			}
 		}
 	}

@@ -1,10 +1,19 @@
 package io.ably.lib.types;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.util.Log;
@@ -81,22 +90,22 @@ public class MessageSerializer {
 			packer.packString(entry.getValue());
 		}
 	}
-	
+
 	public static Map<String, String> readStringMap(final MessageUnpacker unpacker) throws IOException {
 		final Map<String, String> map = new HashMap<>();
 		final int fieldCount = unpacker.unpackMapHeader();
 		for(int i = 0; i < fieldCount; i++) {
 			final String fieldName = unpacker.unpackString();
 			final MessageFormat fieldFormat = unpacker.getNextFormat();
-			
+
 			// TODO is this required? It seems to be saying that if we have a null value
 			// then nothing should be added to the map, despite the fact that the key
 			// was potentially viable.
 			if(fieldFormat.equals(MessageFormat.NIL)) { unpacker.unpackNil(); continue; }
-			
+
 			map.put(fieldName, unpacker.unpackString());
 		}
-		return map;		
+		return map;
 	}
 
 	public static HttpCore.RequestBody asMsgpackRequest(Message.Batch[] pubSpecs) {
@@ -126,7 +135,7 @@ public class MessageSerializer {
 	 *              JSON decode
 	 ****************************************/
 
-	public static Message[] readJSON(byte[] packed) throws IOException {
+	public static Message[] readMessagesFromJson(byte[] packed) throws MessageDecodeException {
 		return Serialisation.gson.fromJson(new String(packed), Message[].class);
 	}
 
@@ -163,7 +172,7 @@ public class MessageSerializer {
 			try {
 				Message[] messages = null;
 				if("application/json".equals(contentType))
-					messages = readJSON(body);
+					messages = readMessagesFromJson(body);
 				else if("application/x-msgpack".equals(contentType))
 					messages = readMsgpack(body);
 				if(messages != null) {
@@ -176,7 +185,7 @@ public class MessageSerializer {
 					}
 				}
 				return messages;
-			} catch(IOException e) {
+			} catch (MessageDecodeException e) {
 				throw AblyException.fromThrowable(e);
 			}
 		}

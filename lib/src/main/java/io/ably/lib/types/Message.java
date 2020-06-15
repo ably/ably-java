@@ -11,7 +11,6 @@ import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 
 import io.ably.lib.util.Log;
-import io.ably.lib.util.Serialisation;
 
 /**
  * A class representing an individual message to be sent or received
@@ -28,6 +27,9 @@ public class Message extends BaseMessage {
 	 * Extras, if available
 	 */
 	public MessageExtras extras;
+
+	private static final String NAME = "name";
+	private static final String EXTRAS = "extras";
 
 	/**
 	 * Default constructor
@@ -92,7 +94,7 @@ public class Message extends BaseMessage {
 		}
 		if(extras != null) {
 			packer.packString("extras");
-			extras.writeMsgpack(packer);
+			extras.write(packer);
 		}
 	}
 
@@ -109,10 +111,10 @@ public class Message extends BaseMessage {
 			if(super.readField(unpacker, fieldName, fieldFormat)) {
 				continue;
 			}
-			if(fieldName.equals("name")) {
+			if(fieldName.equals(NAME)) {
 				name = unpacker.unpackString();
-			} else if (fieldName == "extras") {
-				extras = MessageExtras.fromMsgpack(unpacker);
+			} else if (fieldName.equals(EXTRAS)) {
+				extras = MessageExtras.read(unpacker);
 			} else {
 				Log.v(TAG, "Unexpected field: " + fieldName);
 				unpacker.skipValue();
@@ -240,13 +242,48 @@ public class Message extends BaseMessage {
 		}
 	}
 
-	public static class Serializer extends BaseMessage.Serializer implements JsonSerializer<Message> {
+	@Override
+	protected void read(final JsonObject map) throws MessageDecodeException {
+		super.read(map);
+
+		name = readString(map, NAME);
+
+		final JsonElement extrasElement = map.get(EXTRAS);
+		if (null != extrasElement) {
+			if (!(extrasElement instanceof JsonObject)) {
+				throw MessageDecodeException.fromDescription("Message extras is of type \"" + extrasElement.getClass() + "\" when expected a JSON object.");
+			}
+			extras = MessageExtras.read((JsonObject) extrasElement);
+		}
+	}
+
+	public static class Serializer implements JsonSerializer<Message>, JsonDeserializer<Message> {
 		@Override
 		public JsonElement serialize(Message message, Type typeOfMessage, JsonSerializationContext ctx) {
-			JsonObject json = (JsonObject) super.serialize(message, typeOfMessage, ctx);
-			if(message.name != null) json.addProperty("name", message.name);
-			if(message.extras != null) json.add("extras", message.extras.toJsonElement());
+			final JsonObject json = BaseMessage.toJsonObject(message);
+			if (message.name != null) {
+				json.addProperty(NAME, message.name);
+			}
+			if (message.extras != null) {
+				json.add(EXTRAS, Serialisation.gson.toJsonTree(message.extras));
+			}
 			return json;
+		}
+
+		@Override
+		public Message deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+			if (!(json instanceof JsonObject)) {
+				throw new JsonParseException("Expected an object but got \"" + json.getClass() + "\".");
+			}
+
+			final Message message = new Message();
+			try {
+				message.read((JsonObject)json);
+			} catch (MessageDecodeException e) {
+				e.printStackTrace();
+				throw new JsonParseException("Failed to deserialize Message from JSON.", e);
+			}
+			return message;
 		}
 	}
 

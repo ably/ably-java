@@ -1,27 +1,25 @@
 package io.ably.lib.types;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Type;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.msgpack.core.MessageFormat;
-import org.msgpack.core.MessagePacker;
-import org.msgpack.core.MessageUnpacker;
-
 import com.davidehrmann.vcdiff.VCDiffDecoder;
 import com.davidehrmann.vcdiff.VCDiffDecoderBuilder;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.google.gson.JsonSerializationContext;
-
+import com.google.gson.JsonPrimitive;
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Crypto.ChannelCipher;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
+import org.msgpack.core.MessageFormat;
+import org.msgpack.core.MessagePacker;
+import org.msgpack.core.MessageUnpacker;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class BaseMessage implements Cloneable {
 	/**
@@ -54,6 +52,13 @@ public class BaseMessage implements Cloneable {
 	 */
 	public Object data;
 
+	private static final String TIMESTAMP = "timestamp";
+	private static final String ID = "id";
+	private static final String CLIENT_ID = "clientId";
+	private static final String CONNECTION_ID = "connectionId";
+	private static final String ENCODING = "encoding";
+	private static final String DATA = "data";
+
 	/**
 	 * Generate a String summary of this BaseMessage
 	 * @return string
@@ -75,7 +80,7 @@ public class BaseMessage implements Cloneable {
 
 		this.decode(opts, new DecodingContext());
 	}
-	
+
 	private final static VCDiffDecoder vcdiffDecoder = VCDiffDecoderBuilder.builder().buildSimple();
 
 	private static byte[] vcdiffApply(byte[] delta, byte[] base) throws MessageDecodeException {
@@ -190,44 +195,88 @@ public class BaseMessage implements Cloneable {
 		return result.toString();
 	}
 
-	/* Gson Serializer */
-	public static class Serializer {
-		public JsonElement serialize(BaseMessage message, Type typeOfMessage, JsonSerializationContext ctx) {
-			JsonObject json = new JsonObject();
-			Object data = message.data;
-			String encoding = message.encoding;
-			if(data != null) {
-				if(data instanceof byte[]) {
-					byte[] dataBytes = (byte[])data;
-					json.addProperty("data", new String(Base64Coder.encode(dataBytes)));
-					encoding = (encoding == null) ? "base64" : encoding + "/base64";
-				} else {
-					json.addProperty("data", data.toString());
-				}
-				if(encoding != null) json.addProperty("encoding", encoding);
+	/**
+	 * Base for gson serialisers.
+	 */
+	public static JsonObject toJsonObject(final BaseMessage message) {
+		JsonObject json = new JsonObject();
+		Object data = message.data;
+		String encoding = message.encoding;
+		if(data != null) {
+			if(data instanceof byte[]) {
+				byte[] dataBytes = (byte[])data;
+				json.addProperty("data", new String(Base64Coder.encode(dataBytes)));
+				encoding = (encoding == null) ? "base64" : encoding + "/base64";
+			} else {
+				json.addProperty("data", data.toString());
 			}
-			if(message.id != null) json.addProperty("id", message.id);
-			if(message.clientId != null) json.addProperty("clientId", message.clientId);
-			if(message.connectionId != null) json.addProperty("connectionId", message.connectionId);
-			return json;
+			if(encoding != null) json.addProperty("encoding", encoding);
 		}
+		if(message.id != null) json.addProperty("id", message.id);
+		if(message.clientId != null) json.addProperty("clientId", message.clientId);
+		if(message.connectionId != null) json.addProperty("connectionId", message.connectionId);
+		return json;
+	}
+
+	/**
+	 * Populate fields from JSON.
+	 */
+	protected void read(final JsonObject map) throws MessageDecodeException {
+		final Long optionalTimestamp = readLong(map, TIMESTAMP);
+		if (null != optionalTimestamp) {
+			timestamp = optionalTimestamp; // unbox
+		}
+
+		id = readString(map, ID);
+		clientId = readString(map, CLIENT_ID);
+		connectionId = readString(map, CONNECTION_ID);
+		encoding = readString(map, ENCODING);
+		data = readString(map, DATA);
+	}
+
+	/**
+	 * Read an optional textual value.
+	 * @return The value, or null if the key was not present in the map.
+	 * @throws ClassCastException if an element exists for that key and that element is not a {@link JsonPrimitive}
+	 * or is not a valid string value.
+	 */
+	protected String readString(final JsonObject map, final String key) {
+		final JsonElement element = map.get(key);
+		if (null == element || element instanceof JsonNull) {
+			return null;
+		}
+		return element.getAsString();
+	}
+
+	/**
+	 * Read an optional numerical value.
+	 * @return The value, or null if the key was not present in the map.
+	 * @throws ClassCastException if an element exists for that key and that element is not a {@link JsonPrimitive}
+	 * or is not a valid long value.
+	 */
+	protected Long readLong(final JsonObject map, final String key) {
+		final JsonElement element = map.get(key);
+		if (null == element || element instanceof JsonNull) {
+			return null;
+		}
+		return element.getAsLong();
 	}
 
 	/* Msgpack processing */
 	boolean readField(MessageUnpacker unpacker, String fieldName, MessageFormat fieldType) throws IOException {
 		boolean result = true;
 		switch (fieldName) {
-			case "timestamp":
+			case TIMESTAMP:
 				timestamp = unpacker.unpackLong(); break;
-			case "id":
+			case ID:
 				id = unpacker.unpackString(); break;
-			case "clientId":
+			case CLIENT_ID:
 				clientId = unpacker.unpackString(); break;
-			case "connectionId":
+			case CONNECTION_ID:
 				connectionId = unpacker.unpackString(); break;
-			case "encoding":
+			case ENCODING:
 				encoding = unpacker.unpackString(); break;
-			case "data":
+			case DATA:
 				if(fieldType.getValueType().isBinaryType()) {
 					byte[] byteData = new byte[unpacker.unpackBinaryHeader()];
 					unpacker.readPayload(byteData);
@@ -256,27 +305,27 @@ public class BaseMessage implements Cloneable {
 
 	void writeFields(MessagePacker packer) throws IOException {
 		if(timestamp > 0) {
-			packer.packString("timestamp");
+			packer.packString(TIMESTAMP);
 			packer.packLong(timestamp);
 		}
 		if(id != null) {
-			packer.packString("id");
+			packer.packString(ID);
 			packer.packString(id);
 		}
 		if(clientId != null) {
-			packer.packString("clientId");
+			packer.packString(CLIENT_ID);
 			packer.packString(clientId);
 		}
 		if(connectionId != null) {
-			packer.packString("connectionId");
+			packer.packString(CONNECTION_ID);
 			packer.packString(connectionId);
 		}
 		if(encoding != null) {
-			packer.packString("encoding");
+			packer.packString(ENCODING);
 			packer.packString(encoding);
 		}
 		if(data != null) {
-			packer.packString("data");
+			packer.packString(DATA);
 			if(data instanceof byte[]) {
 				byte[] byteData = (byte[])data;
 				packer.packBinaryHeader(byteData.length);
