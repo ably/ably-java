@@ -77,16 +77,14 @@ public class HttpHeaderTest extends ParameterizedTest {
 			/* Get last headers */
 			Map<String, String> headers = server.getHeaders();
 
-			/* Prepare checked header */
-			String ably_version_header = Defaults.ABLY_VERSION_HEADER.toLowerCase();
-			String ably_lib_header = Defaults.ABLY_LIB_HEADER.toLowerCase();
-
-			/* Check header */
+			/* Check header
+			 * This test should not directly validate version against Defaults.ABLY_VERSION, Defaults.ABLY_LIB_VERSION,
+			 * Defaults.ABLY_VERSION_HEADER, nor Defaults.ABLY_LIB_HEADER, as ultimately these headers have been derived
+			 * from those values.
+			 */
 			Assert.assertNotNull("Expected headers", headers);
-			Assert.assertTrue(String.format("Expected header %s", Defaults.ABLY_VERSION_HEADER), headers.containsKey(ably_version_header));
-			Assert.assertEquals(headers.get(ably_version_header), Defaults.ABLY_VERSION);
-			Assert.assertTrue(String.format("Expected header %s", Defaults.ABLY_LIB_HEADER), headers.containsKey(ably_lib_header));
-			Assert.assertEquals(headers.get(ably_lib_header), Defaults.ABLY_LIB_VERSION);
+			Assert.assertEquals(headers.get("x-ably-version"), "1.2");
+			Assert.assertEquals(headers.get("x-ably-lib"), "java-1.2.1");
 		} catch (AblyException e) {
 			e.printStackTrace();
 			Assert.fail("header_lib_channel_publish: Unexpected exception");

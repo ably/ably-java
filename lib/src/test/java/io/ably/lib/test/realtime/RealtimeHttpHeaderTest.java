@@ -79,13 +79,19 @@ public class RealtimeHttpHeaderTest extends ParameterizedTest {
 			assertEquals("Verify correct key param", requestParameters.get("key"),
 					Collections.singletonList(key));
 
-			/* Spec RTN2f */
-			assertEquals("Verify correct version", requestParameters.get(Defaults.ABLY_VERSION_PARAM),
-					Collections.singletonList(Defaults.ABLY_VERSION));
+			/* Spec RTN2f
+			 * This test should not directly validate version against Defaults.ABLY_VERSION, nor
+			 * Defaults.ABLY_VERSION_PARAM, as ultimately the request param has been derived from those values.
+			 */
+			assertEquals("Verify correct version", requestParameters.get("v"),
+					Collections.singletonList("1.2"));
 
-			/* Spec RTN2g */
-			assertEquals("Verify correct lib version", requestParameters.get(Defaults.ABLY_LIB_PARAM),
-					Collections.singletonList(Defaults.ABLY_LIB_VERSION));
+			/* Spec RTN2g
+			 * This test should not directly validate version against Defaults.ABLY_LIB_VERSION, nor
+			 * Defaults.ABLY_LIB_PARAM, as ultimately the request param has been derived from those values.
+			 */
+			assertEquals("Verify correct lib version", requestParameters.get("lib"),
+					Collections.singletonList("java-1.2.1"));
 
 			/* Spec RTN2a */
 			assertEquals("Verify correct format", requestParameters.get("format"),
