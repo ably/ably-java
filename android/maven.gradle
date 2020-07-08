@@ -61,7 +61,7 @@ uploadArchives {
             licenses {
                 license {
                     name 'The Apache Software License, Version 2.0'
-                    url 'https://raw.github.com/ably/ably-java/master/LICENSE'
+                    url 'https://raw.github.com/ably/ably-java/main/LICENSE'
                     distribution 'repo'
                 }
             }
