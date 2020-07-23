@@ -70,5 +70,5 @@ notifications:
 
 branches:
   only:
-  - master
+  - main
   - /^.*-ci$/

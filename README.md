@@ -592,8 +592,8 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
     * This might work: `github_changelog_generator -u ably -p ably-java --header-label="# Changelog" --release-branch=release/1.2.1 --future-release=v1.2.1`
     * But your mileage may vary as it can error. Perhaps more reliable is something like: `github_changelog_generator -u ably -p ably-java --since-tag v1.2.0 --output delta.md` and then manually merge the delta contents in to the main change log
 4. Commit [CHANGELOG](./CHANGELOG.md)
-5. Make a PR against `master`
-6. Once the PR is approved, merge it into `master`
+5. Make a PR against `main`
+6. Once the PR is approved, merge it into `main`
 7. Add a tag and push to origin - e.g.: `git tag v1.2.1 && git push origin v1.2.1`
 8. Create the release on Github including populating the release notes (needed so JFrog can pull them in)
 9. Assemble and Upload ([see below](#publishing-to-jcenter-and-maven-central) for details) - but the overall order to follow is:
