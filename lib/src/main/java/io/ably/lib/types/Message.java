@@ -6,6 +6,7 @@ import java.util.Collection;
 
 import com.google.gson.*;
 import io.ably.lib.util.Serialisation;
+import org.jetbrains.annotations.Nullable;
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
@@ -21,11 +22,13 @@ public class Message extends BaseMessage {
 	/**
 	 * The event name, if available
 	 */
+	@Nullable
 	public String name;
 
 	/**
 	 * Extras, if available
 	 */
+	@Nullable
 	public MessageExtras extras;
 
 	private static final String NAME = "name";
@@ -62,7 +65,7 @@ public class Message extends BaseMessage {
 	 * @param clientId
 	 * @param extras
 	 */
-	public Message(String name, Object data, String clientId, MessageExtras extras) {
+	public Message(@Nullable String name, Object data, String clientId, @Nullable MessageExtras extras) {
 		this.name = name;
 		this.clientId = clientId;
 		this.data = data;
@@ -89,11 +92,11 @@ public class Message extends BaseMessage {
 		packer.packMapHeader(fieldCount);
 		super.writeFields(packer);
 		if(name != null) {
-			packer.packString("name");
+			packer.packString(NAME);
 			packer.packString(name);
 		}
 		if(extras != null) {
-			packer.packString("extras");
+			packer.packString(EXTRAS);
 			extras.write(packer);
 		}
 	}
@@ -146,7 +149,7 @@ public class Message extends BaseMessage {
 		}
 
 		public Batch(Collection<String> channels, Collection<Message> messages) {
-			this(channels.toArray(new String[channels.size()]), messages.toArray(new Message[messages.size()]));
+			this(channels.toArray(new String[0]), messages.toArray(new Message[0]));
 		}
 
 		public void writeMsgpack(MessagePacker packer) throws IOException {

@@ -5,6 +5,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import io.ably.lib.util.Serialisation;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.value.ImmutableMapValue;
@@ -22,7 +24,10 @@ public final class MessageExtras {
 
 	private static final String DELTA = "delta";
 
+	@Nullable
 	private final DeltaExtras delta; // may be null
+
+	@NotNull
 	private final JsonObject jsonObject; // never null
 
 	/**
@@ -32,11 +37,13 @@ public final class MessageExtras {
 	 *
 	 * @since 1.2.1
 	 */
-	public MessageExtras(final JsonObject jsonObject) {
+	public MessageExtras(@NotNull final JsonObject jsonObject) {
 		this(jsonObject, null);
 	}
 
-	private MessageExtras(final JsonObject jsonObject, final DeltaExtras delta) {
+	private MessageExtras(@NotNull final JsonObject jsonObject, @Nullable final DeltaExtras delta) {
+		// Necessary to add null check where error is possible to be introduced either by developer or server data
+		// noinspection ConstantConditions - Nullable/NoNull inspections doen't enforce error at precompilation level
 		if (null == jsonObject) {
 			throw new NullPointerException("jsonObject cannot be null.");
 		}
@@ -45,24 +52,18 @@ public final class MessageExtras {
 		this.delta = delta;
 	}
 
+	@Nullable
 	public DeltaExtras getDelta() {
 		return delta;
 	}
 
+	@NotNull
 	public JsonObject asJsonObject() {
 		return jsonObject;
 	}
 
 	/* package private */ void write(MessagePacker packer) throws IOException {
-		if (null == jsonObject) {
-			// raw is null, so delta is not null
-			packer.packMapHeader(1);
-			packer.packString(DELTA);
-			delta.write(packer);
-		} else {
-			// raw is not null, so delta can be ignored
 			Serialisation.gsonToMsgpack(jsonObject, packer);
-		}
 	}
 
 	/* package private */ static MessageExtras read(MessageUnpacker unpacker) throws IOException {
@@ -112,14 +113,12 @@ public final class MessageExtras {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		MessageExtras that = (MessageExtras) o;
-		return (null == jsonObject) ?
-				Objects.equals(delta, that.delta) :
-				Objects.equals(jsonObject, that.jsonObject);
+		return Objects.equals(jsonObject, that.jsonObject);
 	}
 
 	@Override
 	public int hashCode() {
-		return (null == jsonObject) ? Objects.hashCode(delta) : Objects.hashCode(jsonObject);
+		return Objects.hashCode(jsonObject);
 	}
 
 	@Override
@@ -133,17 +132,7 @@ public final class MessageExtras {
 	public static class Serializer implements JsonSerializer<MessageExtras> {
 		@Override
 		public JsonElement serialize(final MessageExtras src, final Type typeOfSrc, final JsonSerializationContext context) {
-			return (null != src.jsonObject) ? src.jsonObject : wrapDelta(src.getDelta());
-		}
-
-		public static JsonObject wrapDelta(final DeltaExtras delta) {
-			if (null == delta) {
-				throw new NullPointerException("delta cannot be null.");
-			}
-
-			final JsonObject json = new JsonObject();
-			json.add(DELTA, Serialisation.gson.toJsonTree(delta));
-			return json;
+			return src.jsonObject;
 		}
 	}
 }

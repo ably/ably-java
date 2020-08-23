@@ -1,17 +1,12 @@
 package io.ably.lib.types;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
-import io.ably.lib.util.Serialisation;
-import org.msgpack.core.MessagePacker;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.msgpack.value.Value;
 import org.msgpack.value.ValueFactory;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.Objects;
 
@@ -23,10 +18,14 @@ public final class DeltaExtras {
 	private static final String FROM = "from";
 	private static final String FORMAT = "format";
 
+	@NotNull
 	private final String format;
+
+	@NotNull
 	private final String from;
 
-	private DeltaExtras(final String format, final String from) {
+	private DeltaExtras(@Nullable final String format, @Nullable final String from) {
+
 		if (null == format) {
 			throw new IllegalArgumentException("format cannot be null.");
 		}
@@ -42,6 +41,7 @@ public final class DeltaExtras {
 	 * The delta format. As at API version 1.2, only {@link DeltaExtras.FORMAT_VCDIFF} is supported.
 	 * Will never return null.
 	 */
+	@NotNull
 	public String getFormat() {
 		return format;
 	}
@@ -50,18 +50,9 @@ public final class DeltaExtras {
 	 * The id of the message the delta was generated from.
 	 * Will never return null.
 	 */
+	@NotNull
 	public String getFrom() {
 		return from;
-	}
-
-	/* package private */ void write(MessagePacker packer) throws IOException {
-		packer.packMapHeader(2);
-
-		packer.packString(FORMAT);
-		packer.packString(format);
-
-		packer.packString(FROM);
-		packer.packString(from);
 	}
 
 	/* package private */ static DeltaExtras read(final Map<Value, Value> map) throws IOException {
