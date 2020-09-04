@@ -678,8 +678,15 @@ public class ActivationStateMachine {
 		for (int i = 0; i < length; i++) {
 			try {
 				String className = activationContext.getPreferences().getString(String.format("%s[%d]", ActivationStateMachine.PersistKeys.PENDING_EVENTS_PREFIX, i), "");
-				ActivationStateMachine.Event event = ((Class<ActivationStateMachine.Event>) Class.forName(className)).newInstance();
+				Class<ActivationStateMachine.Event> eventClass = (Class<ActivationStateMachine.Event>) Class.forName(className);
+				ActivationStateMachine.Event event = eventClass.newInstance();
 				deque.add(event);
+			} catch(InstantiationException e) {
+				// We aren't properly persisting events with a non-nullary constructor. Those events
+				// are supposed to be handled by states that aren't persisted (until
+				// https://github.com/ably/ably-java/issues/546 is fixed), so it should be safe to
+				// just drop them.
+				continue;
 			} catch(Exception e) {
 				throw new RuntimeException(e);
 			}
