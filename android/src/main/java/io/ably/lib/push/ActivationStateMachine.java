@@ -573,6 +573,9 @@ public class ActivationStateMachine {
 			// An event's side effects may end up synchronously calling handleEvent while it's
 			// itself being handled. In that case, enqueue it so it's handled next (and still
 			// synchronously).
+			//
+			// We don't need to persist here, as the handleEvent call up the stack will eventually
+			// persist when done with the synchronous transitions.
 			enqueueEvent(event);
 			return true;
 		}
@@ -584,7 +587,7 @@ public class ActivationStateMachine {
 			ActivationStateMachine.State maybeNext = current.transition(event);
 			if (maybeNext == null) {
 				enqueueEvent(event);
-				return true;
+				return persist();
 			}
 
 			Log.d(TAG, String.format("transition: %s -(%s)-> %s", current.getClass().getSimpleName(), event.getClass().getSimpleName(), maybeNext.getClass().getSimpleName()));
