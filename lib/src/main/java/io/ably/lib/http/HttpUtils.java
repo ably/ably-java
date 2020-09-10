@@ -8,7 +8,6 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -147,7 +146,7 @@ public class HttpUtils {
 			return null;
 		}
 
-		byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
+		byte[] bytes = str.getBytes(Charset.forName("UTF-8"));
 		StringBuilder builder = new StringBuilder(bytes.length);
 
 		for (byte c : bytes) {

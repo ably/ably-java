@@ -1,7 +1,6 @@
 package io.ably.lib.types;
 
-import java.util.Map;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 
 public class DecodingContext {
 
@@ -18,7 +17,7 @@ public class DecodingContext {
 		if(lastMessageBinary != null)
 			return lastMessageBinary;
 		else if(lastMessageString != null) {
-			return lastMessageString.getBytes(StandardCharsets.UTF_8);
+			return lastMessageString.getBytes(Charset.forName("UTF-8"));
 		}
 		else
 			return null;
