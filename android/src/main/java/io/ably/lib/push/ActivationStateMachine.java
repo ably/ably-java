@@ -573,6 +573,9 @@ public class ActivationStateMachine {
 			// An event's side effects may end up synchronously calling handleEvent while it's
 			// itself being handled. In that case, enqueue it so it's handled next (and still
 			// synchronously).
+			//
+			// We don't need to persist here, as the handleEvent call up the stack will eventually
+			// persist when done with the synchronous transitions.
 			enqueueEvent(event);
 			return true;
 		}
@@ -584,7 +587,7 @@ public class ActivationStateMachine {
 			ActivationStateMachine.State maybeNext = current.transition(event);
 			if (maybeNext == null) {
 				enqueueEvent(event);
-				return true;
+				return persist();
 			}
 
 			Log.d(TAG, String.format("transition: %s -(%s)-> %s", current.getClass().getSimpleName(), event.getClass().getSimpleName(), maybeNext.getClass().getSimpleName()));
@@ -675,7 +678,18 @@ public class ActivationStateMachine {
 		for (int i = 0; i < length; i++) {
 			try {
 				String className = activationContext.getPreferences().getString(String.format("%s[%d]", ActivationStateMachine.PersistKeys.PENDING_EVENTS_PREFIX, i), "");
-				ActivationStateMachine.Event event = ((Class<ActivationStateMachine.Event>) Class.forName(className)).newInstance();
+				Class<ActivationStateMachine.Event> eventClass = (Class<ActivationStateMachine.Event>) Class.forName(className);
+				ActivationStateMachine.Event event;
+				try {
+					event = eventClass.newInstance();
+				} catch(InstantiationException e) {
+					// We aren't properly persisting events with a non-nullary constructor. Those events
+					// are supposed to be handled by states that aren't persisted (until
+					// https://github.com/ably/ably-java/issues/546 is fixed), so it should be safe to
+					// just drop them.
+					Log.d(TAG, String.format("discarding improperly persisted event: %s", className));
+					continue;
+				}
 				deque.add(event);
 			} catch(Exception e) {
 				throw new RuntimeException(e);

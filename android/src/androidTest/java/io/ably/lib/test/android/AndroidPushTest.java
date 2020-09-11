@@ -1385,6 +1385,33 @@ public class AndroidPushTest extends AndroidTestCase {
 		assertInstanceOf(AfterRegistrationSyncFailed.class, activation.machine.current);
 	}
 
+	// https://github.com/ably/ably-java/issues/598
+	public void test_restore_non_nullary_event() {
+		TestActivation activation = new TestActivation();
+		assertInstanceOf(NotActivated.class, activation.machine.current);
+
+		SyncRegistrationFailed event = new SyncRegistrationFailed(new ErrorInfo());
+
+		activation.machine.handleEvent(event);
+
+		// NotActivated can't handle SyncRegistrationFailed, so it should be pending.
+		assertTrue(activation.machine.pendingEvents.contains(event));
+
+		// Now recover the persisted state and events.
+
+		activation = new TestActivation(new Helpers.AblyFunction<TestActivation.Options, Void>() {
+			@Override
+			public Void apply(TestActivation.Options options) throws AblyException {
+				options.clearPersisted = false;
+				return null;
+			}
+		});
+
+		// Since the event doesn't have a nullary constructor, it should be dropped.
+		assertInstanceOf(NotActivated.class, activation.machine.current);
+		assertSize(0, activation.machine.pendingEvents);
+	}
+
 	// This is all copied and pasted from ParameterizedTest, since I can't inherit from it.
 	// I need to inherit from AndroidPushTest, and Java doesn't have multiple inheritance
 	// or mixins or something like that.
