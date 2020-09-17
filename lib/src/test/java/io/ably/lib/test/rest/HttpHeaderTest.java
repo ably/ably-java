@@ -84,7 +84,7 @@ public class HttpHeaderTest extends ParameterizedTest {
 			 */
 			Assert.assertNotNull("Expected headers", headers);
 			Assert.assertEquals(headers.get("x-ably-version"), "1.2");
-			Assert.assertEquals(headers.get("x-ably-lib"), "java-1.2.1");
+			Assert.assertEquals(headers.get("x-ably-lib"), "java-1.2.2");
 		} catch (AblyException e) {
 			e.printStackTrace();
 			Assert.fail("header_lib_channel_publish: Unexpected exception");
