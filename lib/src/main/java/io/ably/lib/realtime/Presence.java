@@ -786,10 +786,14 @@ public class Presence {
 		 */
 		synchronized void waitForSync() throws AblyException, InterruptedException {
 			boolean syncIsComplete = false;	/* temporary variable to avoid potential race conditions */
-			while((channel.state == ChannelState.attached || channel.state == ChannelState.attaching) &&
-					/* = (and not ==) is intentional */
-					!(syncIsComplete = (!syncInProgress && syncComplete)))
+			while (channel.state == ChannelState.attaching) {
 				wait();
+			}
+			if (channel.state == ChannelState.attached) {
+				while (!(syncIsComplete = (!syncInProgress && syncComplete))) {
+					wait();
+				}
+			}
 
 			/* invalid channel state */
 			int errorCode;
@@ -992,7 +996,7 @@ public class Presence {
 					members.remove(itemKey);
 				}
 				residualMembers = null;
-	
+
 				/* finish, notifying any waiters */
 				syncInProgress = false;
 			}
