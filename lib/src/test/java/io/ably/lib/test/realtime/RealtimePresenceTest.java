@@ -37,9 +37,7 @@ import io.ably.lib.test.common.Helpers.PresenceWaiter;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.util.MockWebsocketFactory;
 import io.ably.lib.transport.ConnectionManager;
-import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.PresenceMessage.Action;
-import io.ably.lib.util.Log;
 
 public class RealtimePresenceTest extends ParameterizedTest {
 
@@ -415,7 +413,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			/* let client1 update the channel and wait for the update event to be delivered */
 			CompletionWaiter updateComplete = new CompletionWaiter();
 			String reenterString = "Test data (enter_update_simple), updating";
-			client1Channel.presence.enter(reenterString, updateComplete);
+			client1Channel.presence.update(reenterString, updateComplete);
 			presenceWaiter.waitFor(testClientId1, Action.update);
 			assertNotNull(presenceWaiter.contains(testClientId1, Action.update));
 			assertEquals(presenceWaiter.receivedMessages.get(0).data, reenterString);
@@ -485,7 +483,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 			/* let client1 update the channel and wait for the update event to be delivered */
 			CompletionWaiter updateComplete = new CompletionWaiter();
 			String updateString = null;
-			client1Channel.presence.enter(updateString, updateComplete);
+			client1Channel.presence.update(updateString, updateComplete);
 			presenceWaiter.waitFor(testClientId1, Action.update);
 			assertNotNull(presenceWaiter.contains(testClientId1, Action.update));
 			assertEquals(presenceWaiter.receivedMessages.get(0).data, updateString);
@@ -3241,6 +3239,69 @@ public class RealtimePresenceTest extends ParameterizedTest {
 				ably1.close();
 			if (ably2 != null)
 				ably2.close();
+		}
+	}
+
+
+	/**
+	 * Test Presence.get()
+	 * check if parent channel is able to detect presence
+	 * during intermittent detach cycles
+	 */
+
+	public void checkMembersWithChannelPresence(Channel testChannel) throws AblyException {
+		PresenceMessage[] presenceMessages = testChannel.presence.get(true);
+		testChannel.detach();
+		assertEquals("Members count with channel presence should be " + presenceMessages.length, presenceMessages.length, 1);
+	}
+
+	@Test
+	public void test_consistent_presence_for_members() {
+		AblyRealtime clientAbly1 = null;
+		TestChannel testChannel = new TestChannel();
+		try {
+			/* subscribe for presence events in the anonymous connection */
+			PresenceWaiter presenceWaiter = new PresenceWaiter(testChannel.realtimeChannel);
+			/* set up a connection with specific clientId */
+			ClientOptions client1Opts = new ClientOptions() {{
+				tokenDetails = token1;
+				clientId = testClientId1;
+			}};
+			fillInOptions(client1Opts);
+			clientAbly1 = new AblyRealtime(client1Opts);
+
+			(new ConnectionWaiter(clientAbly1.connection)).waitFor(ConnectionState.connected);
+			assertEquals("Verify connected state reached", clientAbly1.connection.state, ConnectionState.connected);
+
+			Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
+			client1Channel.attach();
+			(new ChannelWaiter(client1Channel)).waitFor(ChannelState.attached);
+			assertEquals("Verify attached state reached", client1Channel.state, ChannelState.attached);
+
+			String enterString = "Entering presence from child channel";
+
+			CompletionWaiter enterComplete = new CompletionWaiter();
+			client1Channel.presence.enter(enterString, enterComplete);
+			enterComplete.waitFor();
+
+			presenceWaiter.waitFor(testClientId1, Action.enter);
+			assertNotNull(presenceWaiter.contains(testClientId1, Action.enter));
+			assertEquals(presenceWaiter.receivedMessages.get(0).data, enterString);
+
+			int parent_detach_cycle = 6;
+			for (int cycle = 0; cycle < parent_detach_cycle ; cycle++) {
+				Thread.sleep(1000);
+				checkMembersWithChannelPresence(testChannel.realtimeChannel);
+			}
+
+		} catch(AblyException | InterruptedException e) {
+			e.printStackTrace();
+			fail("Unexpected exception running test: " + e.getMessage());
+		} finally {
+			if(clientAbly1 != null)
+				clientAbly1.close();
+			if(testChannel != null)
+				testChannel.dispose();
 		}
 	}
 
