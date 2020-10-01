@@ -282,7 +282,7 @@ public class BasePaginatedQuery<T> implements HttpCore.ResponseHandler<BasePagin
 	 * @param <T>
 	 */
 	private static class SyncResultPage<T> extends ResultPageWrapper<T> implements PaginatedResult<T> {
-		public SyncResultPage(BasePaginatedResult<T> resultBase) {
+		SyncResultPage(BasePaginatedResult<T> resultBase) {
 			super(resultBase);
 		}
 
@@ -301,7 +301,7 @@ public class BasePaginatedQuery<T> implements HttpCore.ResponseHandler<BasePagin
 	 * @param <T>
 	 */
 	private static class AsyncResultPage<T> extends ResultPageWrapper<T> implements AsyncPaginatedResult<T> {
-		public AsyncResultPage(BasePaginatedResult<T> resultBase) {
+		AsyncResultPage(BasePaginatedResult<T> resultBase) {
 			super(resultBase);
 		}
 
@@ -329,7 +329,7 @@ public class BasePaginatedQuery<T> implements HttpCore.ResponseHandler<BasePagin
 	private static class CallbackBridge<T> implements Callback<BasePaginatedResult<T>> {
 		private final Callback<AsyncPaginatedResult<T>> callback;
 
-		public CallbackBridge(Callback<AsyncPaginatedResult<T>> callback) {
+		CallbackBridge(Callback<AsyncPaginatedResult<T>> callback) {
 			this.callback = callback;
 		}
 

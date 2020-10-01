@@ -21,7 +21,7 @@ import java.io.PrintStream;
 public class Log {
 
 	public interface LogHandler {
-		public void println(int severity, String tag, String msg, Throwable tr);
+		void println(int severity, String tag, String msg, Throwable tr);
 	}
 
 	/**

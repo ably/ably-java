@@ -4,15 +4,15 @@ import io.ably.lib.types.ErrorInfo;
 
 public interface ConnectionStateListener {
 
-	public void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange state);
+	void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange state);
 
-	public static class ConnectionStateChange {
+	class ConnectionStateChange {
 		public final ConnectionEvent event;
 		public final ConnectionState previous;
 		public final ConnectionState current;
 		public final long retryIn;
 		public final ErrorInfo reason;
-	
+
 		public ConnectionStateChange(ConnectionState previous, ConnectionState current, long retryIn, ErrorInfo reason) {
 			this.event = current.getConnectionEvent();
 			this.previous = previous;
@@ -35,7 +35,7 @@ public interface ConnectionStateListener {
 		}
 	}
 
-	static class Multicaster extends io.ably.lib.util.Multicaster<ConnectionStateListener> implements ConnectionStateListener {
+	class Multicaster extends io.ably.lib.util.Multicaster<ConnectionStateListener> implements ConnectionStateListener {
 		@Override
 		public void onConnectionStateChanged(ConnectionStateChange state) {
 			for(ConnectionStateListener member : members)
@@ -45,7 +45,7 @@ public interface ConnectionStateListener {
 		}
 	}
 
-	static class Filter implements ConnectionStateListener {
+	class Filter implements ConnectionStateListener {
 		@Override
 		public void onConnectionStateChanged(ConnectionStateChange change) {
 			if(change.current == state)

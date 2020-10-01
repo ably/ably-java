@@ -78,7 +78,7 @@ public class Serialisation {
 	}
 
 	public interface FromJsonElement<T> {
-		public T fromJsonElement(JsonElement e);
+		T fromJsonElement(JsonElement e);
 	}
 
 	public static class HttpResponseHandler<T> implements HttpCore.ResponseHandler<T> {

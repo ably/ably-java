@@ -10,15 +10,15 @@ public interface Callback<T> {
 	/**
 	 * Called when the associated operation completes successfully,
 	 */
-	public void onSuccess(T result);
+	void onSuccess(T result);
 
 	/**
 	 * Called when the associated operation completes with an error.
 	 * @param reason: information about the error.
 	 */
-	public void onError(ErrorInfo reason);
+	void onError(ErrorInfo reason);
 
-	public abstract static class Map<T, U> implements Callback<T> {
+	abstract class Map<T, U> implements Callback<T> {
 		private final Callback<U> callback;
 
 		public abstract U map(T result);

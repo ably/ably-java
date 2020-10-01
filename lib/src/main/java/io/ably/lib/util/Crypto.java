@@ -285,7 +285,7 @@ public class Crypto {
 		 * @param plaintextLength
 		 * @return
 		 */
-		private static final int getPaddedLength(int plaintextLength) {
+		private static int getPaddedLength(int plaintextLength) {
 			return (plaintextLength + DEFAULT_BLOCKLENGTH) & -DEFAULT_BLOCKLENGTH;
 		}
 

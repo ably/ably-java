@@ -89,7 +89,7 @@ public class Stats {
 		public Map<String, ProcessedCount> delta;
 	}
 
-	public static enum Granularity {
+	public enum Granularity {
 		minute,
 		hour,
 		day,

@@ -7,12 +7,12 @@ import io.ably.lib.types.ErrorInfo;
  */
 public interface ChannelStateListener {
 
-	public void onChannelStateChanged(ChannelStateChange stateChange);
+	void onChannelStateChanged(ChannelStateChange stateChange);
 
 	/**
 	 * Channel state change. See Ably Realtime API documentation for more details.
 	 */
-	public class ChannelStateChange {
+	class ChannelStateChange {
 		final public ChannelEvent event;
 		/* (TH2) The ChannelStateChange object contains the current state in
 		 * attribute current, the previous state in attribute previous. */
@@ -53,7 +53,7 @@ public interface ChannelStateListener {
 		}
 	}
 
-	static class Multicaster extends io.ably.lib.util.Multicaster<ChannelStateListener> implements ChannelStateListener {
+	class Multicaster extends io.ably.lib.util.Multicaster<ChannelStateListener> implements ChannelStateListener {
 		@Override
 		public void onChannelStateChanged(ChannelStateChange stateChange) {
 			for(ChannelStateListener member : members)
@@ -63,7 +63,7 @@ public interface ChannelStateListener {
 		}
 	}
 
-	static class Filter implements ChannelStateListener {
+	class Filter implements ChannelStateListener {
 		@Override
 		public void onChannelStateChanged(ChannelStateChange stateChange) {
 			if(stateChange.current == this.state)

@@ -92,7 +92,7 @@ public class PresenceSerializer {
 
 	private static class PresenceBodyHandler implements HttpCore.BodyHandler<PresenceMessage> {
 
-		public PresenceBodyHandler(ChannelOptions opts) { this.opts = opts; }
+		PresenceBodyHandler(ChannelOptions opts) { this.opts = opts; }
 
 		@Override
 		public PresenceMessage[] handleResponseBody(String contentType, byte[] body) throws AblyException {

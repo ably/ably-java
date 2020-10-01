@@ -13,7 +13,7 @@ public enum ChannelState {
 	suspended(ChannelEvent.suspended);
 
 	final private ChannelEvent event;
-	private ChannelState(ChannelEvent event) {
+	ChannelState(ChannelEvent event) {
 		this.event = event;
 	}
 	public ChannelEvent getChannelEvent() {

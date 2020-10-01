@@ -165,7 +165,7 @@ public class MessageSerializer {
 
 	private static class MessageBodyHandler implements HttpCore.BodyHandler<Message> {
 
-		public MessageBodyHandler(ChannelOptions opts) { this.opts = opts; }
+		MessageBodyHandler(ChannelOptions opts) { this.opts = opts; }
 
 		@Override
 		public Message[] handleResponseBody(String contentType, byte[] body) throws AblyException {

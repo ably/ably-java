@@ -22,8 +22,8 @@ public class EventEmitterTest {
 		public String message;
 	}
 
-	private static interface MyListener {
-		public void onMyThingHappened(MyEventPayload theThing);
+	private interface MyListener {
+		void onMyThingHappened(MyEventPayload theThing);
 	}
 
 	private static class CountingListener implements MyListener {

@@ -33,12 +33,12 @@ public abstract class AsyncHttpPaginatedResponse {
 		/**
 		 * Called when the associated request completes with an Http response,
 		 */
-		public void onResponse(AsyncHttpPaginatedResponse response);
+		void onResponse(AsyncHttpPaginatedResponse response);
 
 		/**
 		 * Called when the associated operation completes with an error.
 		 * @param reason: information about the error.
 		 */
-		public void onError(ErrorInfo reason);
+		void onError(ErrorInfo reason);
 	}
 }

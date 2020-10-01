@@ -471,7 +471,7 @@ public class Auth {
 	 * or signed token requests, in response to a request with given token params.
 	 */
 	public interface TokenCallback {
-		public Object getTokenRequest(TokenParams params) throws AblyException;
+		Object getTokenRequest(TokenParams params) throws AblyException;
 	}
 
 	/**
@@ -1001,7 +1001,7 @@ public class Auth {
 		return (one == null) ? (two == null) : one.equals(two);
 	}
 
-	private static final String hmac(String text, String key) {
+	private static String hmac(String text, String key) {
 		try {
 			Mac mac = Mac.getInstance("HmacSHA256");
 			mac.init(new SecretKeySpec(key.getBytes(Charset.forName("UTF-8")), "HmacSHA256"));
