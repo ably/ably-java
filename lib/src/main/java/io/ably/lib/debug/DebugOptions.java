@@ -12,16 +12,16 @@ import io.ably.lib.types.ProtocolMessage;
 
 public class DebugOptions extends ClientOptions {
 	public interface RawProtocolListener {
-		public void onRawConnectRequested(String url);
-		public void onRawConnect(String url);
-		public void onRawMessageSend(ProtocolMessage message);
-		public void onRawMessageRecv(ProtocolMessage message);
+		void onRawConnectRequested(String url);
+		void onRawConnect(String url);
+		void onRawMessageSend(ProtocolMessage message);
+		void onRawMessageRecv(ProtocolMessage message);
 	}
 
 	public interface RawHttpListener {
-		public HttpCore.Response onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody);
-		public void onRawHttpResponse(String id, String method, HttpCore.Response response);
-		public void onRawHttpException(String id, String method, Throwable t);
+		HttpCore.Response onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody);
+		void onRawHttpResponse(String id, String method, HttpCore.Response response);
+		void onRawHttpException(String id, String method, Throwable t);
 	}
 
 	public DebugOptions() { super(); pushFullWait = true; }
