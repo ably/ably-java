@@ -487,6 +487,16 @@ The Android-specific library AAR is built with:
 
 (The `ANDROID_HOME` environment variable must be set appropriately.)
 
+## Code Standard
+
+We are introducing [Checkstyle](https://checkstyle.org/) to enforce code style and spot for transgressions and illogical constructs.
+The Gradle build has been configured to run these on `java:assembleRelease`.
+It does not run for the Android build yet.
+
+You can run just the Checkstyle rules on their own using:
+
+    ./gradlew checkstyleMain
+
 ## Tests
 
 A gradle wrapper is included so these tasks can run without any prior installation of gradle. The Linux/OSX form of the commands, given below, is:
