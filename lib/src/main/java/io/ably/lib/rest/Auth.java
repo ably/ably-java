@@ -43,7 +43,7 @@ public class Auth {
 	 */
 	public enum AuthMethod {
 		basic,
-		token;
+		token
 	}
 
 	/**

@@ -1910,5 +1910,5 @@ public class RealtimeChannelTest extends ParameterizedTest {
 				theChannel.state = ChannelState.attaching;
 			}
 		}
-	};
+	}
 }
