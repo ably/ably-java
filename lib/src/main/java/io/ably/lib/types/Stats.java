@@ -16,114 +16,114 @@ import java.util.Map;
  */
 public class Stats {
 
-	/**
-	 * A breakdown of summary stats data for different (tls vs non-tls)
-	 * connection types.
-	 */
-	public static class ConnectionTypes {
-		public ResourceCount all;
-		public ResourceCount plain;
-		public ResourceCount tls;
-	}
+    /**
+     * A breakdown of summary stats data for different (tls vs non-tls)
+     * connection types.
+     */
+    public static class ConnectionTypes {
+        public ResourceCount all;
+        public ResourceCount plain;
+        public ResourceCount tls;
+    }
 
-	/**
-	 * A datapoint for message volume (number of messages plus aggregate data size)
-	 */
-	public static class MessageCount {
-		public double count;
-		public double data;
-		public double uncompressedData;
-	}
+    /**
+     * A datapoint for message volume (number of messages plus aggregate data size)
+     */
+    public static class MessageCount {
+        public double count;
+        public double data;
+        public double uncompressedData;
+    }
 
-	public static class MessageCategory extends MessageCount {
-		public Map<String, MessageCount> category;
-	}
+    public static class MessageCategory extends MessageCount {
+        public Map<String, MessageCount> category;
+    }
 
-	/**
-	 * A breakdown of summary stats data for different (message vs presence)
-	 * message types.
-	 */
-	public static class MessageTypes {
-		public MessageCategory all;
-		public MessageCategory messages;
-		public MessageCategory presence;
-	}
+    /**
+     * A breakdown of summary stats data for different (message vs presence)
+     * message types.
+     */
+    public static class MessageTypes {
+        public MessageCategory all;
+        public MessageCategory messages;
+        public MessageCategory presence;
+    }
 
-	/**
-	 * A breakdown of summary stats data for traffic over various transport types.
-	 */
-	public static class MessageTraffic {
-		public MessageTypes all;
-		public MessageTypes realtime;
-		public MessageTypes rest;
-		public MessageTypes webhook;
-	}
+    /**
+     * A breakdown of summary stats data for traffic over various transport types.
+     */
+    public static class MessageTraffic {
+        public MessageTypes all;
+        public MessageTypes realtime;
+        public MessageTypes rest;
+        public MessageTypes webhook;
+    }
 
-	/**
-	 * Aggregate data for numbers of requests in a specific scope.
-	 */
-	public static class RequestCount {
-		public double succeeded;
-		public double failed;
-		public double refused;
-	}
+    /**
+     * Aggregate data for numbers of requests in a specific scope.
+     */
+    public static class RequestCount {
+        public double succeeded;
+        public double failed;
+        public double refused;
+    }
 
-	/**
-	 * Aggregate data for usage of a resource in a specific scope.
-	 */
-	public static class ResourceCount {
-		public double opened;
-		public double peak;
-		public double mean;
-		public double min;
-		public double refused;
-	}
+    /**
+     * Aggregate data for usage of a resource in a specific scope.
+     */
+    public static class ResourceCount {
+        public double opened;
+        public double peak;
+        public double mean;
+        public double min;
+        public double refused;
+    }
 
-	public static class ProcessedCount {
-		public double succeeded;
-		public double skipped;
-		public double failed;
-	}
+    public static class ProcessedCount {
+        public double succeeded;
+        public double skipped;
+        public double failed;
+    }
 
-	public static class ProcessedMessages {
-		public Map<String, ProcessedCount> delta;
-	}
+    public static class ProcessedMessages {
+        public Map<String, ProcessedCount> delta;
+    }
 
-	public enum Granularity {
-		minute,
-		hour,
-		day,
-		month
-	}
+    public enum Granularity {
+        minute,
+        hour,
+        day,
+        month
+    }
 
-	private static String[] intervalFormatString = new String[] {
-		"yyyy-MM-dd:hh:mm",
-		"yyyy-MM-dd:hh",
-		"yyyy-MM-dd",
-		"yyyy-MM"
-	};
+    private static String[] intervalFormatString = new String[] {
+        "yyyy-MM-dd:hh:mm",
+        "yyyy-MM-dd:hh",
+        "yyyy-MM-dd",
+        "yyyy-MM"
+    };
 
-	public static String toIntervalId(long timestamp, Granularity granularity) {
-		String formatString = intervalFormatString[granularity.ordinal()];
-		return new SimpleDateFormat(formatString).format(new Date(timestamp));
-	}
+    public static String toIntervalId(long timestamp, Granularity granularity) {
+        String formatString = intervalFormatString[granularity.ordinal()];
+        return new SimpleDateFormat(formatString).format(new Date(timestamp));
+    }
 
-	public static long fromIntervalId(String intervalId) {
-		try {
-			String formatString = intervalFormatString[0].substring(0, intervalId.length());
-			return new SimpleDateFormat(formatString).parse(intervalId).getTime();
-		} catch (ParseException e) { return 0; }
-	}
+    public static long fromIntervalId(String intervalId) {
+        try {
+            String formatString = intervalFormatString[0].substring(0, intervalId.length());
+            return new SimpleDateFormat(formatString).parse(intervalId).getTime();
+        } catch (ParseException e) { return 0; }
+    }
 
-	public String intervalId;
-	public String unit;
-	public MessageTypes all;
-	public MessageTraffic inbound;
-	public MessageTraffic outbound;
-	public MessageTypes persisted;
-	public ConnectionTypes connections;
-	public ResourceCount channels;
-	public RequestCount apiRequests;
-	public RequestCount tokenRequests;
-	public ProcessedMessages processed;
+    public String intervalId;
+    public String unit;
+    public MessageTypes all;
+    public MessageTraffic inbound;
+    public MessageTraffic outbound;
+    public MessageTypes persisted;
+    public ConnectionTypes connections;
+    public ResourceCount channels;
+    public RequestCount apiRequests;
+    public RequestCount tokenRequests;
+    public ProcessedMessages processed;
 }

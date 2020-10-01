@@ -8,26 +8,26 @@ import com.google.gson.JsonElement;
  * indicates the relative queries available.
  */
 public abstract class HttpPaginatedResponse {
-	public boolean success;
-	public int statusCode;
-	public int errorCode;
-	public String errorMessage;
-	public Param[] headers;
+    public boolean success;
+    public int statusCode;
+    public int errorCode;
+    public String errorMessage;
+    public Param[] headers;
 
-	/**
-	 * Get the contents as an array of component type
-	 */
-	public abstract JsonElement[] items();
+    /**
+     * Get the contents as an array of component type
+     */
+    public abstract JsonElement[] items();
 
-	/**
-	 * Perform the given relative query
-	 */
-	public abstract HttpPaginatedResponse first() throws AblyException;
-	public abstract HttpPaginatedResponse current() throws AblyException;
-	public abstract HttpPaginatedResponse next() throws AblyException;
+    /**
+     * Perform the given relative query
+     */
+    public abstract HttpPaginatedResponse first() throws AblyException;
+    public abstract HttpPaginatedResponse current() throws AblyException;
+    public abstract HttpPaginatedResponse next() throws AblyException;
 
-	public abstract boolean hasFirst();
-	public abstract boolean hasCurrent();
-	public abstract boolean hasNext();
-	public abstract boolean isLast();
+    public abstract boolean hasFirst();
+    public abstract boolean hasCurrent();
+    public abstract boolean hasNext();
+    public abstract boolean isLast();
 }
