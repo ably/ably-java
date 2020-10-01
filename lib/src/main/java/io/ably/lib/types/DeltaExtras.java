@@ -1,17 +1,11 @@
 package io.ably.lib.types;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
-import io.ably.lib.util.Serialisation;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.value.Value;
 import org.msgpack.value.ValueFactory;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.Objects;
 

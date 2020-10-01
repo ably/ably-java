@@ -6,7 +6,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.transport.ConnectionManager;
-import io.ably.lib.transport.ITransport;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ClientOptions;

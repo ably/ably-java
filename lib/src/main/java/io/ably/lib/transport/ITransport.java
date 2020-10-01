@@ -1,6 +1,5 @@
 package io.ably.lib.transport;
 
-import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;

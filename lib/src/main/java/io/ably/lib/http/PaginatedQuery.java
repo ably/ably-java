@@ -1,17 +1,6 @@
 package io.ably.lib.http;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import io.ably.lib.types.AblyException;
-import io.ably.lib.types.BasePaginatedResult;
-import io.ably.lib.types.Callback;
-import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 

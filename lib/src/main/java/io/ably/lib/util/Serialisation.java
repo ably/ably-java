@@ -11,7 +11,6 @@ import com.google.gson.JsonPrimitive;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.platform.Platform;
 import io.ably.lib.types.AblyException;
-import io.ably.lib.types.DeltaExtras;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.MessageExtras;
