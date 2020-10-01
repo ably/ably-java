@@ -8,8 +8,8 @@ import java.util.Set;
 public abstract class NetworkConnectivity {
 
 	public interface NetworkConnectivityListener {
-		public void onNetworkAvailable();
-		public void onNetworkUnavailable(ErrorInfo reason);
+		void onNetworkAvailable();
+		void onNetworkUnavailable(ErrorInfo reason);
 	}
 
 	public void addListener(NetworkConnectivityListener listener) {

@@ -18,22 +18,22 @@ import java.util.regex.Pattern;
 
 public interface ITransport {
 
-	public static final String TAG = ITransport.class.getName();
+	String TAG = ITransport.class.getName();
 
-	public interface Factory {
+	interface Factory {
 		/**
 		 * Obtain and instance of this transport based on the specified options.
 		 */
-		public ITransport getTransport(TransportParams transportParams, ConnectionManager connectionManager);
+		ITransport getTransport(TransportParams transportParams, ConnectionManager connectionManager);
 	}
 
-	public enum Mode {
+	enum Mode {
 		clean,
 		resume,
 		recover
 	}
 
-	public static class TransportParams {
+	class TransportParams {
 		protected ClientOptions options;
 		protected String host;
 		protected int port;
@@ -95,36 +95,36 @@ public interface ITransport {
 		}
 	}
 
-	public static interface ConnectListener {
-		public void onTransportAvailable(ITransport transport);
-		public void onTransportUnavailable(ITransport transport, ErrorInfo reason);
+	interface ConnectListener {
+		void onTransportAvailable(ITransport transport);
+		void onTransportUnavailable(ITransport transport, ErrorInfo reason);
 	}
 
 	/**
 	 * Initiate a connection attempt; the transport will be activated,
 	 * and attempt to remain connected, until disconnect() is called.
-	 * @throws AblyException 
+	 * @throws AblyException
 	 */
-	public void connect(ConnectListener connectListener);
+	void connect(ConnectListener connectListener);
 
 	/**
 	 * Close this transport.
 	 */
-	public void close();
+	void close();
 
 	/**
 	 * Send a message on the channel
 	 * @param msg
 	 * @throws IOException
 	 */
-	public void send(ProtocolMessage msg) throws AblyException;
+	void send(ProtocolMessage msg) throws AblyException;
 
 	/**
 	 * Get connection URL
 	 * @return
 	 */
-	public String getURL();
+	String getURL();
 
-	public String getHost();
+	String getHost();
 
 }

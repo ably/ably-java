@@ -71,7 +71,7 @@ public class Http {
 	}
 
 	public interface Execute<Result> {
-		public void execute(HttpScheduler http, Callback<Result> callback) throws AblyException;
+		void execute(HttpScheduler http, Callback<Result> callback) throws AblyException;
 	}
 
 	private static class SyncExecuteResult<Result> {

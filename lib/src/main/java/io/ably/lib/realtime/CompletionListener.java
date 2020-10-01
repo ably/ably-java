@@ -12,19 +12,19 @@ public interface CompletionListener {
 	/**
 	 * Called when the associated operation completes successfully,
 	 */
-	public void onSuccess();
+	void onSuccess();
 
 	/**
 	 * Called when the associated operation completes with an error.
 	 * @param reason: information about the error.
 	 */
-	public void onError(ErrorInfo reason);
+	void onError(ErrorInfo reason);
 
 	/**
 	 * A Multicaster instance is used in the Ably library to manage a list
 	 * of client listeners against certain operations.
 	 */
-	public static class Multicaster extends io.ably.lib.util.Multicaster<CompletionListener> implements CompletionListener {
+	class Multicaster extends io.ably.lib.util.Multicaster<CompletionListener> implements CompletionListener {
 		public Multicaster(CompletionListener... members) { super(members); }
 
 		@Override
@@ -44,7 +44,7 @@ public interface CompletionListener {
 		}
 	}
 
-	public static class ToCallback implements Callback<Void> {
+	class ToCallback implements Callback<Void> {
 		private CompletionListener listener;
 		public ToCallback(CompletionListener listener) {
 			this.listener = listener;
@@ -61,7 +61,7 @@ public interface CompletionListener {
 		}
 	}
 
-	public static class FromCallback implements CompletionListener {
+	class FromCallback implements CompletionListener {
 		private final Callback<Void> callback;
 
 		public FromCallback(Callback<Void> callback) {

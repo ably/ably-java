@@ -7,12 +7,12 @@ import io.ably.lib.types.ErrorInfo;
  */
 public interface ChannelStateListener {
 
-	public void onChannelStateChanged(ChannelStateChange stateChange);
+	void onChannelStateChanged(ChannelStateChange stateChange);
 
 	/**
 	 * Channel state change. See Ably Realtime API documentation for more details.
 	 */
-	public class ChannelStateChange {
+	class ChannelStateChange {
 		final public ChannelEvent event;
 		/* (TH2) The ChannelStateChange object contains the current state in
 		 * attribute current, the previous state in attribute previous. */

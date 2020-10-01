@@ -471,7 +471,7 @@ public class Auth {
 	 * or signed token requests, in response to a request with given token params.
 	 */
 	public interface TokenCallback {
-		public Object getTokenRequest(TokenParams params) throws AblyException;
+		Object getTokenRequest(TokenParams params) throws AblyException;
 	}
 
 	/**

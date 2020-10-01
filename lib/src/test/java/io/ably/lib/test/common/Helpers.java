@@ -735,7 +735,7 @@ public class Helpers {
 			assertArrayEquals("Message binary data contents differ.", (byte[])expected.data, (byte[])actual.data);
 		} else if (expected.data instanceof JsonObject || expected.data instanceof JsonArray) {
 			Gson gson = new Gson();
-			assertEquals("Message JSON contents differ.", gson.toJson((JsonElement)expected.data), gson.toJson((JsonElement)actual.data));			
+			assertEquals("Message JSON contents differ.", gson.toJson((JsonElement)expected.data), gson.toJson((JsonElement)actual.data));
 		} else {
 			assertEquals("Message data contents differ.", expected.data, actual.data);
 		}
@@ -994,6 +994,6 @@ public class Helpers {
 	}
 
 	public interface AblyFunction<Arg, Result> {
-		public Result apply(Arg arg) throws AblyException;
+		Result apply(Arg arg) throws AblyException;
 	}
 }
