@@ -9,19 +9,19 @@ package io.ably.lib.types;
  */
 public interface AsyncPaginatedResult<T> {
 
-	/**
-	 * Get the contents as an array of component type
-	 */
-	public T[] items();
+    /**
+     * Get the contents as an array of component type
+     */
+    T[] items();
 
-	/**
-	 * Obtain params required to perform the given relative query
-	 */
-	public abstract void first(Callback<AsyncPaginatedResult<T>> callback);
-	public abstract void current(Callback<AsyncPaginatedResult<T>> callback);
-	public abstract void next(Callback<AsyncPaginatedResult<T>> callback);
+    /**
+     * Obtain params required to perform the given relative query
+     */
+    void first(Callback<AsyncPaginatedResult<T>> callback);
+    void current(Callback<AsyncPaginatedResult<T>> callback);
+    void next(Callback<AsyncPaginatedResult<T>> callback);
 
-	public abstract boolean hasFirst();
-	public abstract boolean hasCurrent();
-	public abstract boolean hasNext();
+    boolean hasFirst();
+    boolean hasCurrent();
+    boolean hasNext();
 }
