@@ -768,12 +768,12 @@ public class Auth {
         request.nonce = random();
 
         String signText
-        =	request.keyName + '\n'
-        +	ttlText + '\n'
-        +	capabilityText + '\n'
-        +	clientIdText + '\n'
-        +	request.timestamp + '\n'
-        +	request.nonce + '\n';
+            = request.keyName + '\n'
+            + ttlText + '\n'
+            + capabilityText + '\n'
+            + clientIdText + '\n'
+            + request.timestamp + '\n'
+            + request.nonce + '\n';
 
         request.mac = hmac(signText, keySecret);
 

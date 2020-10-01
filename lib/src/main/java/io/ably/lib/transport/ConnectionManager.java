@@ -1564,8 +1564,8 @@ public class ConnectionManager implements ConnectListener {
          * reset the pending message queue, failing any currently pending messages.
          * Used when a resume fails and we get a different connection id.
          * @param oldMsgSerial the next message serial number for the old
-         *		connection, and thus one more than the highest message serial
-         *		in the queue.
+         * connection, and thus one more than the highest message serial
+         * in the queue.
          */
         public synchronized void reset(long oldMsgSerial, ErrorInfo err) {
             nack(startSerial, (int)(oldMsgSerial - startSerial), err);

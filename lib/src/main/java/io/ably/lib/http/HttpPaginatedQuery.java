@@ -132,7 +132,7 @@ public class HttpPaginatedQuery implements HttpCore.ResponseHandler<HttpPaginate
         @Override
         public boolean isLast() {
             return relNext == null;
-        }		
+        }
     }
 
     static final HttpCore.BodyHandler<JsonElement> jsonArrayResponseHandler = new HttpCore.BodyHandler<JsonElement>() {

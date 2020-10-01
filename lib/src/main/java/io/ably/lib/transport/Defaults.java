@@ -29,7 +29,7 @@ public class Defaults {
     /* Timeouts */
     public static int TIMEOUT_CONNECT               = 15000;
     public static int TIMEOUT_DISCONNECT            = 15000;
-    public static int TIMEOUT_CHANNEL_RETRY			= 15000;
+    public static int TIMEOUT_CHANNEL_RETRY         = 15000;
 
     /* TO313 */
     public static int TIMEOUT_HTTP_OPEN = 4000;

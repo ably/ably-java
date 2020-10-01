@@ -329,8 +329,8 @@ public class WebSocketTransport implements ITransport {
     private static final int GOING_AWAY           = 1001;
     private static final int CLOSE_PROTOCOL_ERROR = 1002;
     private static final int REFUSE               = 1003;
-/*	private static final int UNUSED               = 1004; */
-/*	private static final int NOCODE               = 1005; */
+/*  private static final int UNUSED               = 1004; */
+/*  private static final int NOCODE               = 1005; */
     private static final int ABNORMAL_CLOSE       = 1006;
     private static final int NO_UTF8              = 1007;
     private static final int POLICY_VALIDATION    = 1008;
