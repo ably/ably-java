@@ -1,8 +1,14 @@
 package io.ably.lib.http;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.Field;
-import java.net.*;
+import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

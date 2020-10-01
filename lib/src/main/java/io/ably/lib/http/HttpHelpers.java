@@ -3,7 +3,10 @@ package io.ably.lib.http;
 import java.io.IOException;
 import java.net.URL;
 
-import io.ably.lib.types.*;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.Callback;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Param;
 
 import static io.ably.lib.http.HttpUtils.buildURL;
 

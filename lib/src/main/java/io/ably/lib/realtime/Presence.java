@@ -14,8 +14,16 @@ import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.PresenceSerializer;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * A class that provides access to presence operations and state for the

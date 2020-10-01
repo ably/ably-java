@@ -3,7 +3,12 @@ package io.ably.lib.transport;
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
 import io.ably.lib.http.HttpHelpers;
-import io.ably.lib.realtime.*;
+import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.realtime.Channel;
+import io.ably.lib.realtime.CompletionListener;
+import io.ably.lib.realtime.Connection;
+import io.ably.lib.realtime.ConnectionState;
+import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.realtime.ConnectionStateListener.ConnectionStateChange;
 import io.ably.lib.transport.ITransport.ConnectListener;
 import io.ably.lib.transport.ITransport.TransportParams;
@@ -15,8 +20,12 @@ import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolSerializer;
 import io.ably.lib.util.Log;
 import io.ably.lib.transport.NetworkConnectivity.NetworkConnectivityListener;
-
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 
 public class ConnectionManager implements ConnectListener {
 
