@@ -10,7 +10,7 @@ plugins {
 }
 
 checkstyle {
-	toolVersion '8.36.2'
+    toolVersion '8.36.2'
 }
 
 apply plugin: 'java'
