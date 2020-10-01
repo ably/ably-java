@@ -53,7 +53,7 @@ public interface ChannelStateListener {
 		}
 	}
 
-	static class Multicaster extends io.ably.lib.util.Multicaster<ChannelStateListener> implements ChannelStateListener {
+	class Multicaster extends io.ably.lib.util.Multicaster<ChannelStateListener> implements ChannelStateListener {
 		@Override
 		public void onChannelStateChanged(ChannelStateChange stateChange) {
 			for(ChannelStateListener member : members)
@@ -63,7 +63,7 @@ public interface ChannelStateListener {
 		}
 	}
 
-	static class Filter implements ChannelStateListener {
+	class Filter implements ChannelStateListener {
 		@Override
 		public void onChannelStateChanged(ChannelStateChange stateChange) {
 			if(stateChange.current == this.state)

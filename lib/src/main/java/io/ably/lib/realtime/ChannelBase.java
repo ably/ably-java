@@ -1070,7 +1070,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 		private final ChannelState successState;
 		private final ChannelState failureState;
 
-		public ChannelStateCompletionListener(CompletionListener completionListener, ChannelState successState, ChannelState failureState) {
+		ChannelStateCompletionListener(CompletionListener completionListener, ChannelState successState, ChannelState failureState) {
 			this.completionListener = completionListener;
 			this.successState = successState;
 			this.failureState = failureState;

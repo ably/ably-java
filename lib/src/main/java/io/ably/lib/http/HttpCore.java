@@ -517,7 +517,7 @@ public class HttpCore {
 	/**
 	 * Interface for an entity that supplies an httpCore request body
 	 */
-	public static interface RequestBody {
+	public interface RequestBody {
 		byte[] getEncoded();
 		String getContentType();
 	}
@@ -526,7 +526,7 @@ public class HttpCore {
 	 * Interface for an entity that performs type-specific processing on an httpCore response body
 	 * @param <T>
 	 */
-	public static interface BodyHandler<T> {
+	public interface BodyHandler<T> {
 		T[] handleResponseBody(String contentType, byte[] body) throws AblyException;
 	}
 
@@ -534,7 +534,7 @@ public class HttpCore {
 	 * Interface for an entity that performs type-specific processing on an httpCore response
 	 * @param <T>
 	 */
-	public static interface ResponseHandler<T> {
+	public interface ResponseHandler<T> {
 		T handleResponse(Response response, ErrorInfo error) throws AblyException;
 	}
 

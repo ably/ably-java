@@ -14,7 +14,7 @@ public enum ConnectionState {
 	failed(ConnectionEvent.failed);
 
 	final private ConnectionEvent event;
-	private ConnectionState(ConnectionEvent event) {
+	ConnectionState(ConnectionEvent event) {
 		this.event = event;
 	}
 	public ConnectionEvent getConnectionEvent() {

@@ -72,7 +72,7 @@ public abstract class AblyBase {
 		auth = new Auth(this, options);
 		httpCore = new HttpCore(options, auth);
 		http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
-		
+
 		channels = new InternalChannels();
 
 		platform = new Platform();
@@ -91,10 +91,10 @@ public abstract class AblyBase {
 	}
 
 	private class InternalChannels extends InternalMap<String, Channel> implements Channels {
-		public InternalChannels() {
+		InternalChannels() {
 			super(new HashMap<String, Channel>());
 		}
-		
+
 		@Override
 		public Channel get(String channelName) {
 			try {

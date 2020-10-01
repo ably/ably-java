@@ -662,7 +662,7 @@ public class Presence {
 	private static class QueuedPresence {
 		public PresenceMessage msg;
 		public CompletionListener listener;
-		public QueuedPresence(PresenceMessage msg, CompletionListener listener) { this.msg = msg; this.listener = listener; }
+		QueuedPresence(PresenceMessage msg, CompletionListener listener) { this.msg = msg; this.listener = listener; }
 	}
 
 	private final Map<String, QueuedPresence> pendingPresence = new HashMap<String, QueuedPresence>();
@@ -992,7 +992,7 @@ public class Presence {
 					members.remove(itemKey);
 				}
 				residualMembers = null;
-	
+
 				/* finish, notifying any waiters */
 				syncInProgress = false;
 			}
