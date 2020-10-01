@@ -10,5 +10,9 @@
 
 	<module name="TreeWalker">
 		<module name="RedundantModifier"/>
+		<module name="UnnecessarySemicolonAfterOuterTypeDeclaration"/>
+		<module name="UnnecessarySemicolonAfterTypeMemberDeclaration"/>
+		<module name="UnnecessarySemicolonInEnumeration"/>
+		<module name="UnnecessarySemicolonInTryWithResources"/>
 	</module>
 </module>

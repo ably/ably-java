@@ -801,7 +801,7 @@ public class RestAuthTest extends ParameterizedTest {
                 }
                 public int getCbCount() { return cbCount; }
                 private int cbCount = 0;
-            };
+            }
 
             TokenGenerator authCallback = new TokenGenerator();
 
