@@ -13,7 +13,6 @@ import io.ably.lib.types.AsyncPaginatedResult;
 import io.ably.lib.types.BasePaginatedResult;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.Message;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 

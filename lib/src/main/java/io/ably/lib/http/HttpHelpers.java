@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.net.URL;
 
 import io.ably.lib.types.*;
-import io.ably.lib.util.Log;
-import io.ably.lib.util.Serialisation;
 
 import static io.ably.lib.http.HttpUtils.buildURL;
 

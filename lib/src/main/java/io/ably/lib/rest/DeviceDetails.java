@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonElement;
 
 import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.AblyException;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.util.JsonUtils;
 import io.ably.lib.util.Serialisation;

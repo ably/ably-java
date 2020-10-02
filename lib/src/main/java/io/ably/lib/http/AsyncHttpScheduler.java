@@ -1,8 +1,6 @@
 package io.ably.lib.http;
 
-import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
 
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;

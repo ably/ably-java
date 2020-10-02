@@ -3,7 +3,6 @@ package io.ably.lib.realtime;
 import io.ably.lib.http.BasePaginatedQuery;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
-import io.ably.lib.http.PaginatedQuery;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.AsyncPaginatedResult;
