@@ -254,7 +254,7 @@ public abstract class AblyBase {
 
     @Experimental
     public void publishBatchAsync(Message.Batch[] pubSpecs, ChannelOptions channelOptions, Param[] params, final Callback<PublishResponse[]> callback) throws AblyException {
-        publishBatchImpl(pubSpecs, channelOptions, null).async(callback);
+        publishBatchImpl(pubSpecs, channelOptions, params).async(callback);
     }
 
     private Http.Request<PublishResponse[]> publishBatchImpl(final Message.Batch[] pubSpecs, ChannelOptions channelOptions, final Param[] params) throws AblyException {
