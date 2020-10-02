@@ -18,7 +18,7 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
 
     /**
      * Publish a single message on multiple channels
-     * 
+     *
      * The payload constructed has the form
      * [
      *   {
@@ -26,7 +26,7 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
      *     message: [{ data: <message text> }]
      *   }
      * ]
-     * 
+     *
      * It publishes the given message on all of the given channels.
      */
     @Test
@@ -69,54 +69,54 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
         }
     }
 
-	/**
-	 * As above but with the param method
-	 */
-	@Test
-	public void bulk_publish_multiple_channels_param() {
-		try {
-			/* setup library instance */
-			ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-			AblyRest ably = new AblyRest(opts);
+    /**
+     * As above but with the param method
+     */
+    @Test
+    public void bulk_publish_multiple_channels_param() {
+        try {
+            /* setup library instance */
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+            AblyRest ably = new AblyRest(opts);
 
-			/* first, publish some messages */
-			int channelCount = 5;
-			ArrayList<String> channelIds = new ArrayList<String>();
-			for(int i = 0; i < channelCount; i++) {
-				channelIds.add("persisted:" + randomString());
-			}
+            /* first, publish some messages */
+            int channelCount = 5;
+            ArrayList<String> channelIds = new ArrayList<String>();
+            for (int i = 0; i < channelCount; i++) {
+                channelIds.add("persisted:" + randomString());
+            }
 
-			Message message = new Message(null, "bulk_publish_multiple_channels_param");
-			String messageId = message.id = randomString();
-			Message.Batch payload = new Message.Batch(channelIds, Collections.singleton(message));
+            Message message = new Message(null, "bulk_publish_multiple_channels_param");
+            String messageId = message.id = randomString();
+            Message.Batch payload = new Message.Batch(channelIds, Collections.singleton(message));
 
-			Param[] params = new Param[] { new Param("quickAck", "true") };
+            Param[] params = new Param[]{new Param("quickAck", "true")};
 
-			PublishResponse[] result = ably.publishBatch(new Message.Batch[] { payload }, null, params);
-			for(PublishResponse response : result) {
-				assertEquals("Verify expected response id", response.messageId, messageId);
-				assertTrue("Verify expected channel name", channelIds.contains(response.channelId));
-				assertNull("Verify no publish error", response.error);
-			}
+            PublishResponse[] result = ably.publishBatch(new Message.Batch[]{payload}, null, params);
+            for (PublishResponse response : result) {
+                assertEquals("Verify expected response id", response.messageId, messageId);
+                assertTrue("Verify expected channel name", channelIds.contains(response.channelId));
+                assertNull("Verify no publish error", response.error);
+            }
 
-			/* get the history for this channel */
-			for(String channel : channelIds) {
-				PaginatedResult<Message> messages = ably.channels.get(channel).history(null);
-				assertNotNull("Expected non-null messages", messages);
-				assertEquals("Expected 1 message", messages.items().length, 1);
-				/* verify message contents */
-				assertEquals("Expect message data to be expected String", messages.items()[0].data, message.data);
-			}
-		} catch (AblyException e) {
-			e.printStackTrace();
-			fail("bulk_publish_multiple_channels_param: Unexpected exception");
-			return;
-		}
-	}
+            /* get the history for this channel */
+            for (String channel : channelIds) {
+                PaginatedResult<Message> messages = ably.channels.get(channel).history(null);
+                assertNotNull("Expected non-null messages", messages);
+                assertEquals("Expected 1 message", messages.items().length, 1);
+                /* verify message contents */
+                assertEquals("Expect message data to be expected String", messages.items()[0].data, message.data);
+            }
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail("bulk_publish_multiple_channels_param: Unexpected exception");
+            return;
+        }
+    }
 
     /**
      * Publish a multiple messages on multiple channels
-     * 
+     *
      * The payload constructed has the form
      * [
      *   {
@@ -139,7 +139,7 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
      *   },
      *   ...
      * ]
-     * 
+     *
      * It publishes the given messages on the associated channels.
      */
     @Test
