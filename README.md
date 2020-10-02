@@ -497,6 +497,11 @@ You can run just the Checkstyle rules on their own using:
 
     ./gradlew checkstyleMain
 
+We have a root [`.editorconfig`](.editorconfig) file, supporting [EditorConfig](https://editorconfig.org/), which should be of assistance within most IDEs. e.g.:
+
+- [VS Code](https://code.visualstudio.com/) using the [EditorConfig plugin](https://marketplace.visualstudio.com/items?itemName=EditorConfig.EditorConfig)
+- [IntelliJ IDEA](https://www.jetbrains.com/idea/) using the [bundled plugin](https://www.jetbrains.com/help/idea/configuring-code-style.html#editorconfig).
+
 ## Tests
 
 A gradle wrapper is included so these tasks can run without any prior installation of gradle. The Linux/OSX form of the commands, given below, is:
