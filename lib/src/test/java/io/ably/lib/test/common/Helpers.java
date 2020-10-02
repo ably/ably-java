@@ -429,7 +429,7 @@ public class Helpers {
                 Log.d(TAG, "waitFor timed out: current state=" + currentState().getConnectionEvent().name());
             } else {
                 Log.d(TAG, "waitFor done: state=" + currentState().getConnectionEvent().name() +
-                        ", count=" + Integer.toString(stateCount));
+                        ", count=" + stateCount);
             }
             return stateCount >= count;
         }

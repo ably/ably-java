@@ -31,7 +31,7 @@ public class TimeHandler extends RouterNanoHTTPD.DefaultStreamHandler {
             Thread.sleep(delay);
         } catch(InterruptedException ie) {}
 
-        return newFixedLengthResponse(NanoHTTPD.Response.Status.OK, getMimeType(), "[" + String.valueOf(System.currentTimeMillis()) + "]");
+        return newFixedLengthResponse(NanoHTTPD.Response.Status.OK, getMimeType(), "[" + System.currentTimeMillis() + "]");
     }
 
 }

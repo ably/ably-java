@@ -263,7 +263,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
      * Connect twice to the service, each using the default (binary) protocol.
      * Publish messages on one connection to a given channel; then attach
      * the second connection to the same channel and verify a complete message
-     * history can be obtained. 
+     * history can be obtained.
      */
     @Test
     public void channelhistory_second_channel() {
@@ -860,7 +860,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 
             /* verify message order */
             for(int i = 0; i < 10; i++)
-                expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(i + 10));
+                expectedMessageHistory[i] = messageContents.get("history" + (i + 10));
             Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
             /* get next page */
@@ -874,7 +874,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 
             /* verify message order */
             for(int i = 0; i < 10; i++)
-                expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(i + 20));
+                expectedMessageHistory[i] = messageContents.get("history" + (i + 20));
             Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
         } catch (AblyException e) {
@@ -934,7 +934,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
             /* verify message order */
             Message[] expectedMessageHistory = new Message[10];
             for(int i = 0; i < 10; i++)
-                expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(49 - i));
+                expectedMessageHistory[i] = messageContents.get("history" + (49 - i));
             Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
             /* get next page */
@@ -948,7 +948,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 
             /* verify message order */
             for(int i = 0; i < 10; i++)
-                expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(39 - i));
+                expectedMessageHistory[i] = messageContents.get("history" + (39 - i));
             Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
             /* get next page */
@@ -962,7 +962,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 
             /* verify message order */
             for(int i = 0; i < 10; i++)
-                expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(29 - i));
+                expectedMessageHistory[i] = messageContents.get("history" + (29 - i));
             Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
         } catch (AblyException e) {
@@ -1036,7 +1036,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 
             /* verify message order */
             for(int i = 0; i < 10; i++)
-                expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(i + 10));
+                expectedMessageHistory[i] = messageContents.get("history" + (i + 10));
             Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
             /* get first page */
@@ -1050,7 +1050,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 
             /* verify message order */
             for(int i = 0; i < 10; i++)
-                expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(i));
+                expectedMessageHistory[i] = messageContents.get("history" + i);
             Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
         } catch (AblyException e) {
@@ -1110,7 +1110,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
             /* verify message order */
             Message[] expectedMessageHistory = new Message[10];
             for(int i = 0; i < 10; i++)
-                expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(49 - i));
+                expectedMessageHistory[i] = messageContents.get("history" + (49 - i));
             Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
             /* get next page */
@@ -1124,7 +1124,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 
             /* verify message order */
             for(int i = 0; i < 10; i++)
-                expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(39 - i));
+                expectedMessageHistory[i] = messageContents.get("history" + (39 - i));
             Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
             /* get first page */
@@ -1138,7 +1138,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
 
             /* verify message order */
             for(int i = 0; i < 10; i++)
-                expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(49 - i));
+                expectedMessageHistory[i] = messageContents.get("history" + (49 - i));
             Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
         } catch (AblyException e) {
@@ -1154,7 +1154,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
      * Connect twice to the service, each using the default (binary) protocol.
      * Publish messages on one connection to a given channel; while in progress,
      * attach the second connection to the same channel and verify a message
-     * history up to the point of attachment can be obtained. 
+     * history up to the point of attachment can be obtained.
      */
     @Test
     @Ignore("Fails due to issues in sandbox. See https://github.com/ably/realtime/issues/1834 for details.")
@@ -1166,16 +1166,16 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
             ClientOptions rxOpts = createOptions(testVars.keys[0].keyStr);
             rxAbly = new AblyRealtime(rxOpts);
             String channelName = "persisted:channelhistory_from_attach_" + testParams.name;
-    
+
             /* create a channel */
             final Channel txChannel = txAbly.channels.get(channelName);
             final Channel rxChannel = rxAbly.channels.get(channelName);
-    
+
             /* attach sender */
             txChannel.attach();
             (new ChannelWaiter(txChannel)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", txChannel.state, ChannelState.attached);
-    
+
             /* publish messages to the channel */
             final CompletionSet msgComplete = new CompletionSet();
             Thread publisherThread = new Thread() {

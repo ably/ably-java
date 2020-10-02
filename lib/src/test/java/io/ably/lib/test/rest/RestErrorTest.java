@@ -129,7 +129,7 @@ public class RestErrorTest extends ParameterizedTest {
         }
     }
 
-    private static String href(int code) { return HREF_BASE + String.valueOf(code); }
+    private static String href(int code) { return HREF_BASE + code; }
     private static final String HREF_BASE = "https://help.ably.io/error/";
 
     private static class SessionHandlerNanoHTTPD extends NanoHTTPD {
