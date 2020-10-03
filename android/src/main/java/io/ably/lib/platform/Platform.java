@@ -14,40 +14,40 @@ import io.ably.lib.types.ErrorInfo;
 import java.util.WeakHashMap;
 
 public class Platform {
-	public static final String name = "android";
+    public static final String name = "android";
 
-	public Platform() {}
+    public Platform() {}
 
-	public Context getApplicationContext() {
-		return applicationContext;
-	}
-	/**
-	 * Set the Android Context for this instance
-	 */
-	public void setAndroidContext(Context context) throws AblyException {
-		context = context.getApplicationContext();
-		if(applicationContext != null) {
-			if(context == applicationContext) {
-				return;
-			}
-			throw AblyException.fromErrorInfo(new ErrorInfo("Incompatible application context set", 40000, 400));
-		}
-		applicationContext = context;
-		AndroidNetworkConnectivity.getNetworkConnectivity(context).addListener(this.networkConnectivity);
-	}
+    public Context getApplicationContext() {
+        return applicationContext;
+    }
+    /**
+     * Set the Android Context for this instance
+     */
+    public void setAndroidContext(Context context) throws AblyException {
+        context = context.getApplicationContext();
+        if(applicationContext != null) {
+            if(context == applicationContext) {
+                return;
+            }
+            throw AblyException.fromErrorInfo(new ErrorInfo("Incompatible application context set", 40000, 400));
+        }
+        applicationContext = context;
+        AndroidNetworkConnectivity.getNetworkConnectivity(context).addListener(this.networkConnectivity);
+    }
 
-	public boolean hasApplicationContext() {
-		return applicationContext != null;
-	}
+    public boolean hasApplicationContext() {
+        return applicationContext != null;
+    }
 
-	/**
-	 * Get the NetworkConnectivity tracker instance for this context
-	 * @return
-	 */
-	public NetworkConnectivity getNetworkConnectivity() {
-		return networkConnectivity;
-	}
+    /**
+     * Get the NetworkConnectivity tracker instance for this context
+     * @return
+     */
+    public NetworkConnectivity getNetworkConnectivity() {
+        return networkConnectivity;
+    }
 
-	private Context applicationContext;
-	private final DelegatedNetworkConnectivity networkConnectivity = new DelegatedNetworkConnectivity();
+    private Context applicationContext;
+    private final DelegatedNetworkConnectivity networkConnectivity = new DelegatedNetworkConnectivity();
 }

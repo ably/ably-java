@@ -7,34 +7,34 @@ import io.ably.lib.types.ErrorInfo;
  * of an asynchronous operation.
  */
 public interface Callback<T> {
-	/**
-	 * Called when the associated operation completes successfully,
-	 */
-	public void onSuccess(T result);
+    /**
+     * Called when the associated operation completes successfully,
+     */
+    void onSuccess(T result);
 
-	/**
-	 * Called when the associated operation completes with an error.
-	 * @param reason: information about the error.
-	 */
-	public void onError(ErrorInfo reason);
+    /**
+     * Called when the associated operation completes with an error.
+     * @param reason: information about the error.
+     */
+    void onError(ErrorInfo reason);
 
-	public abstract static class Map<T, U> implements Callback<T> {
-		private final Callback<U> callback;
+    abstract class Map<T, U> implements Callback<T> {
+        private final Callback<U> callback;
 
-		public abstract U map(T result);
+        public abstract U map(T result);
 
-		public Map(Callback<U> callback) {
-			this.callback = callback;
-		}
+        public Map(Callback<U> callback) {
+            this.callback = callback;
+        }
 
-		@Override
-		public void onSuccess(T result) {
-			callback.onSuccess(map(result));
-		}
+        @Override
+        public void onSuccess(T result) {
+            callback.onSuccess(map(result));
+        }
 
-		@Override
-		public void onError(ErrorInfo reason) {
-			callback.onError(reason);
-		}
-	}
+        @Override
+        public void onError(ErrorInfo reason) {
+            callback.onError(reason);
+        }
+    }
 }

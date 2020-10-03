@@ -14,40 +14,40 @@ import static fi.iki.elonen.NanoHTTPD.newFixedLengthResponse;
  */
 public class StatusHandler extends RouterNanoHTTPD.DefaultStreamHandler {
 
-	@Override
-	public String getMimeType() {
-		return "application/json";
-	}
+    @Override
+    public String getMimeType() {
+        return "application/json";
+    }
 
-	@Override
-	public NanoHTTPD.Response.IStatus getStatus() {
-		throw new IllegalStateException("this method should not be called in a status handler");
-	}
+    @Override
+    public NanoHTTPD.Response.IStatus getStatus() {
+        throw new IllegalStateException("this method should not be called in a status handler");
+    }
 
-	@Override
-	public NanoHTTPD.Response get(RouterNanoHTTPD.UriResource uriResource, Map<String, String> urlParams, NanoHTTPD.IHTTPSession session) {
-		String codeParam = urlParams.get("code");
-		int code = Integer.parseInt(codeParam);
+    @Override
+    public NanoHTTPD.Response get(RouterNanoHTTPD.UriResource uriResource, Map<String, String> urlParams, NanoHTTPD.IHTTPSession session) {
+        String codeParam = urlParams.get("code");
+        int code = Integer.parseInt(codeParam);
 
-		return newFixedLengthResponse(newStatus(code, ""), getMimeType(), "{code:" + codeParam + "}");
-	}
+        return newFixedLengthResponse(newStatus(code, ""), getMimeType(), "{code:" + codeParam + "}");
+    }
 
-	@Override
-	public InputStream getData() {
-		throw new IllegalStateException("this method should not be called in a status handler");
-	}
+    @Override
+    public InputStream getData() {
+        throw new IllegalStateException("this method should not be called in a status handler");
+    }
 
-	private static NanoHTTPD.Response.IStatus newStatus(final int status, final String description) {
-		return new NanoHTTPD.Response.IStatus() {
-			@Override
-			public String getDescription() {
-				return "" + status + " " + description;
-			}
+    private static NanoHTTPD.Response.IStatus newStatus(final int status, final String description) {
+        return new NanoHTTPD.Response.IStatus() {
+            @Override
+            public String getDescription() {
+                return "" + status + " " + description;
+            }
 
-			@Override
-			public int getRequestStatus() {
-				return status;
-			}
-		};
-	}
+            @Override
+            public int getRequestStatus() {
+                return status;
+            }
+        };
+    }
 }
