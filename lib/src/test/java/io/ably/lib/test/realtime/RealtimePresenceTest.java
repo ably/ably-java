@@ -6,19 +6,50 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.UUID;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.realtime.*;
+import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.realtime.Channel;
+import io.ably.lib.realtime.ChannelEvent;
+import io.ably.lib.realtime.ChannelState;
+import io.ably.lib.realtime.ChannelStateListener;
+import io.ably.lib.realtime.CompletionListener;
+import io.ably.lib.realtime.ConnectionEvent;
+import io.ably.lib.realtime.ConnectionState;
+import io.ably.lib.realtime.ConnectionStateListener;
+import io.ably.lib.realtime.Presence;
 import io.ably.lib.test.common.Setup;
-import io.ably.lib.types.*;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.Capability;
+import io.ably.lib.types.ChannelOptions;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.PaginatedResult;
+import io.ably.lib.types.Param;
+import io.ably.lib.types.PresenceMessage;
+import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Serialisation;
 import org.junit.Before;
 import org.junit.Rule;
@@ -37,9 +68,7 @@ import io.ably.lib.test.common.Helpers.PresenceWaiter;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.util.MockWebsocketFactory;
 import io.ably.lib.transport.ConnectionManager;
-import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.PresenceMessage.Action;
-import io.ably.lib.util.Log;
 
 public class RealtimePresenceTest extends ParameterizedTest {
 
@@ -1508,7 +1537,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
             leavePresenceWaiter.waitFor(ably1.options.clientId, Action.leave);
 
             /* Validate that,
-             *	- we received all actions
+             *- we received all actions
              */
             assertThat(receivedMessageStack.size(), is(equalTo(4)));
             for (PresenceMessage message : receivedMessageStack) {
@@ -1586,7 +1615,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
             } catch(InterruptedException e) {}
 
             /* Validate that,
-             *	- we received specific actions
+             *- we received specific actions
              */
             assertThat(receivedMessageStack.size(), is(equalTo(3)));
             for (PresenceMessage message : receivedMessageStack) {
@@ -1663,7 +1692,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
             waiter.waitFor(ably1.options.clientId, Action.leave);
 
             /* Validate that,
-             *	- we received specific actions
+             *- we received specific actions
              */
             assertThat(receivedMessageStack, is(not(empty())));
             for (PresenceMessage message : receivedMessageStack) {
@@ -2598,7 +2627,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         try {
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
-            opts.autoConnect = false;	/* to queue presence messages */
+            opts.autoConnect = false;  /* to queue presence messages */
 
             final MockWebsocketFactory mockTransport = new MockWebsocketFactory();
             opts.transportFactory = mockTransport;
@@ -2819,7 +2848,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
             /* get first token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
             Capability capability = new Capability();
-            capability.addResource(channelName, "publish");	/* no presence permission! */
+            capability.addResource(channelName, "publish"); /* no presence permission! */
             tokenParams.capability = capability.toString();
             tokenParams.clientId = testClientId1;
 
