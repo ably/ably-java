@@ -5,12 +5,16 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
+import java.util.Collections;
+import java.util.List;
 import org.junit.Test;
 
 import io.ably.lib.transport.Defaults;
@@ -186,6 +190,50 @@ public class HostsTest {
         }
     }
 
+    /**
+     * Expect that returned fallback hosts containing the environment information.
+     */
+    @Test
+    public void hosts_fallback_use_environment(){
+        try {
+            ClientOptions options = new ClientOptions();
+            options.environment = "sandbox";
+            String[] expectedEnvironmentFallbackHosts = Defaults.getEnvironmentFallbackHosts(options.environment);
+            Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
 
+            String host = "sandbox-" + Defaults.HOST_REALTIME;
+            List<String> returnedEnvironmentFallbackHosts = new ArrayList<>();
+            while ((host = hosts.getFallback(host)) != null){
+                returnedEnvironmentFallbackHosts.add(host);
+            }
+            Collections.sort(returnedEnvironmentFallbackHosts);
+            assertEquals(Arrays.asList(expectedEnvironmentFallbackHosts), returnedEnvironmentFallbackHosts);
+        } catch (Exception e) {
+            fail("Unexpected exception " + e);
+        }
+    }
 
+    /**
+     * Expect that returned default fallback hosts without environment according to RSC15g4.
+     */
+    @Test
+    public void hosts_fallback_use_default_fallback_hosts_and_environment(){
+        try {
+            ClientOptions options = new ClientOptions();
+            options.fallbackHostsUseDefault = true;
+            options.environment = "sandbox";
+            Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
+            String host = "sandbox-" + Defaults.HOST_REALTIME;
+            List<String> returnedEnvironmentFallbackHosts = new ArrayList<>();
+
+            while ((host = hosts.getFallback(host)) != null){
+                returnedEnvironmentFallbackHosts.add(host);
+            }
+
+            Collections.sort(returnedEnvironmentFallbackHosts);
+            assertEquals(Arrays.asList(Defaults.HOST_FALLBACKS), returnedEnvironmentFallbackHosts);
+        } catch (Exception e) {
+            fail("Unexpected exception " + e);
+        }
+    }
 }

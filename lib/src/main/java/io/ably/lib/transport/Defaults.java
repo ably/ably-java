@@ -53,4 +53,15 @@ public class Defaults {
             ? ((options.tlsPort != 0) ? options.tlsPort : Defaults.TLS_PORT)
             : ((options.port != 0) ? options.port : Defaults.PORT);
     }
+
+    /* Construct environment fallback hosts as per RSC15i */
+    public static String[] getEnvironmentFallbackHosts(String environment) {
+        return new String[] {
+            environment + "-a-fallback.ably-realtime.com",
+            environment + "-b-fallback.ably-realtime.com",
+            environment + "-c-fallback.ably-realtime.com",
+            environment + "-d-fallback.ably-realtime.com",
+            environment + "-e-fallback.ably-realtime.com"
+        };
+    }
 }

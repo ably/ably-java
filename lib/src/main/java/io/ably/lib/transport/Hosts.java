@@ -61,8 +61,15 @@ public class Hosts {
         }
         fallbackHostsUseDefault = options.fallbackHostsUseDefault;
         if (options.fallbackHosts == null) {
-            fallbackHosts = Arrays.copyOf(Defaults.HOST_FALLBACKS, Defaults.HOST_FALLBACKS.length);
-            fallbackHostsIsDefault = true;
+            if (!fallbackHostsUseDefault && options.environment != null && !options.environment.equalsIgnoreCase("production")) {
+                /* RSC15g2: If ClientOptions#environment is set to a value other than "production"
+                 * and ClientOptions#fallbackHosts is not set, use the environment fallback hosts */
+                fallbackHosts = Defaults.getEnvironmentFallbackHosts(options.environment);
+                fallbackHostsIsDefault = false;
+            } else {
+                fallbackHosts = Arrays.copyOf(Defaults.HOST_FALLBACKS, Defaults.HOST_FALLBACKS.length);
+                fallbackHostsIsDefault = true;
+            }
         } else {
             /* RSC15a: use ClientOptions#fallbackHosts if set */
             fallbackHosts = Arrays.copyOf(options.fallbackHosts, options.fallbackHosts.length);
