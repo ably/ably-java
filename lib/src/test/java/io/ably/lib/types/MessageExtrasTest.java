@@ -11,49 +11,50 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 
 public class MessageExtrasTest {
-	/**
-	 * Construct an instance from a JSON source and validate that the
-	 * serialised JSON is the same.
-	 */
-	@Test
-	public void raw() {
-		final JsonObject objectA = new JsonObject();
-		objectA.addProperty("someKey", "someValue");
+    /**
+     * Construct an instance from a JSON source and validate that the
+     * serialised JSON is the same.
+     */
+    @Test
+    public void raw() {
+        final JsonObject objectA = new JsonObject();
+        objectA.addProperty("someKey", "someValue");
 
-		final MessageExtras messageExtras = new MessageExtras(objectA);
-		assertNull(messageExtras.getDelta());
+        final MessageExtras messageExtras = new MessageExtras(objectA);
+        assertNull(messageExtras.getDelta());
 
-		final MessageExtras.Serializer serializer = new MessageExtras.Serializer();
-		final JsonElement serialised = serializer.serialize(messageExtras, null, null);
+        final MessageExtras.Serializer serializer = new MessageExtras.Serializer();
+        final JsonElement serialised = serializer.serialize(messageExtras, null, null);
 
-		assertEquals(objectA, serialised);
-	}
+        assertEquals(objectA, serialised);
+    }
 
-	@Test
-	public void rawViaMessagePack() throws IOException {
-		final JsonObject object = new JsonObject();
-		object.addProperty("foo", "bar");
-		object.addProperty("cliché", "cache");
-		final MessageExtras messageExtras = new MessageExtras(object);
+    @Test
+    public void rawViaMessagePack() throws IOException {
+        final JsonObject object = new JsonObject();
+        object.addProperty("foo", "bar");
+        object.addProperty("cliché", "cache");
+        final MessageExtras messageExtras = new MessageExtras(object);
 
-		// Encode to MessagePack
-		final ByteArrayOutputStream out = new ByteArrayOutputStream();
-		final MessagePacker packer = Serialisation.msgpackPackerConfig.newPacker(out);
-		messageExtras.write(packer);
-		packer.flush();
+        // Encode to MessagePack
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        final MessagePacker packer = Serialisation.msgpackPackerConfig.newPacker(out);
+        messageExtras.write(packer);
+        packer.flush();
 
-		// Decode from MessagePack
-		MessageUnpacker unpacker = Serialisation.msgpackUnpackerConfig.newUnpacker(out.toByteArray());
-		final MessageExtras unpacked = MessageExtras.read(unpacker);
+        // Decode from MessagePack
+        MessageUnpacker unpacker = Serialisation.msgpackUnpackerConfig.newUnpacker(out.toByteArray());
+        final MessageExtras unpacked = MessageExtras.read(unpacker);
 
-		assertEquals(messageExtras, unpacked);
-	}
+        assertEquals(messageExtras, unpacked);
+    }
 
-	@Test(expected = NullPointerException.class)
-	public void rawNullArgument() {
-		new MessageExtras((JsonObject)null);
-	}
+    @Test(expected = NullPointerException.class)
+    public void rawNullArgument() {
+        new MessageExtras((JsonObject)null);
+    }
 }
