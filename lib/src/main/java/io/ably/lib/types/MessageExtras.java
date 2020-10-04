@@ -5,8 +5,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import io.ably.lib.util.Serialisation;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.value.ImmutableMapValue;
@@ -24,10 +22,8 @@ public final class MessageExtras {
 
 	private static final String DELTA = "delta";
 
-	@Nullable
 	private final DeltaExtras delta; // may be null
 
-	@NotNull
 	private final JsonObject jsonObject; // never null
 
 	/**
@@ -37,11 +33,11 @@ public final class MessageExtras {
 	 *
 	 * @since 1.2.1
 	 */
-	public MessageExtras(@NotNull final JsonObject jsonObject) {
+	public MessageExtras(final JsonObject jsonObject) {
 		this(jsonObject, null);
 	}
 
-	private MessageExtras(@NotNull final JsonObject jsonObject, @Nullable final DeltaExtras delta) {
+	private MessageExtras(final JsonObject jsonObject, final DeltaExtras delta) {
 		// Necessary to add null check where error is possible to be introduced either by developer or server data
 		// noinspection ConstantConditions - Nullable/NoNull inspections doen't enforce error at precompilation level
 		if (null == jsonObject) {
@@ -52,12 +48,10 @@ public final class MessageExtras {
 		this.delta = delta;
 	}
 
-	@Nullable
 	public DeltaExtras getDelta() {
 		return delta;
 	}
 
-	@NotNull
 	public JsonObject asJsonObject() {
 		return jsonObject;
 	}

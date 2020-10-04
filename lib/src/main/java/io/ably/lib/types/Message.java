@@ -6,7 +6,6 @@ import java.util.Collection;
 
 import com.google.gson.*;
 import io.ably.lib.util.Serialisation;
-import org.jetbrains.annotations.Nullable;
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
@@ -22,13 +21,11 @@ public class Message extends BaseMessage {
 	/**
 	 * The event name, if available
 	 */
-	@Nullable
 	public String name;
 
 	/**
 	 * Extras, if available
 	 */
-	@Nullable
 	public MessageExtras extras;
 
 	private static final String NAME = "name";
@@ -65,7 +62,7 @@ public class Message extends BaseMessage {
 	 * @param clientId
 	 * @param extras
 	 */
-	public Message(@Nullable String name, Object data, String clientId, @Nullable MessageExtras extras) {
+	public Message(String name, Object data, String clientId, MessageExtras extras) {
 		this.name = name;
 		this.clientId = clientId;
 		this.data = data;

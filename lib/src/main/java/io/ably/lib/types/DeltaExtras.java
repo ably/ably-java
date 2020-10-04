@@ -1,8 +1,6 @@
 package io.ably.lib.types;
 
 import com.google.gson.JsonObject;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.msgpack.value.Value;
 import org.msgpack.value.ValueFactory;
 
@@ -18,13 +16,11 @@ public final class DeltaExtras {
 	private static final String FROM = "from";
 	private static final String FORMAT = "format";
 
-	@NotNull
 	private final String format;
 
-	@NotNull
 	private final String from;
 
-	private DeltaExtras(@Nullable final String format, @Nullable final String from) {
+	private DeltaExtras(final String format, final String from) {
 
 		if (null == format) {
 			throw new IllegalArgumentException("format cannot be null.");
@@ -41,7 +37,6 @@ public final class DeltaExtras {
 	 * The delta format. As at API version 1.2, only {@link DeltaExtras.FORMAT_VCDIFF} is supported.
 	 * Will never return null.
 	 */
-	@NotNull
 	public String getFormat() {
 		return format;
 	}
@@ -50,7 +45,6 @@ public final class DeltaExtras {
 	 * The id of the message the delta was generated from.
 	 * Will never return null.
 	 */
-	@NotNull
 	public String getFrom() {
 		return from;
 	}
