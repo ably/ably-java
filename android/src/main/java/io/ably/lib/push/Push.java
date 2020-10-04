@@ -13,90 +13,90 @@ import io.ably.lib.util.Log;
 
 public class Push extends PushBase {
 
-	public Push(AblyBase rest) {
-		super(rest);
-	}
+    public Push(AblyBase rest) {
+        super(rest);
+    }
 
-	public void activate() throws AblyException {
-		activate(false);
-	}
+    public void activate() throws AblyException {
+        activate(false);
+    }
 
-	public void activate(boolean useCustomRegistrar) throws AblyException {
-		Log.v(TAG, "activate(): useCustomRegistrar " + useCustomRegistrar);
-		Context context = getApplicationContext();
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-		getStateMachine().handleEvent(ActivationStateMachine.CalledActivate.useCustomRegistrar(useCustomRegistrar, prefs));
-	}
+    public void activate(boolean useCustomRegistrar) throws AblyException {
+        Log.v(TAG, "activate(): useCustomRegistrar " + useCustomRegistrar);
+        Context context = getApplicationContext();
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        getStateMachine().handleEvent(ActivationStateMachine.CalledActivate.useCustomRegistrar(useCustomRegistrar, prefs));
+    }
 
-	public void deactivate() throws AblyException {
-		deactivate(false);
-	}
+    public void deactivate() throws AblyException {
+        deactivate(false);
+    }
 
-	public void deactivate(boolean useCustomRegistrar) throws AblyException {
-		Log.v(TAG, "deactivate(): useCustomRegistrar " + useCustomRegistrar);
-		Context context = getApplicationContext();
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-		getStateMachine().handleEvent(ActivationStateMachine.CalledDeactivate.useCustomRegistrar(useCustomRegistrar, prefs));
-	}
+    public void deactivate(boolean useCustomRegistrar) throws AblyException {
+        Log.v(TAG, "deactivate(): useCustomRegistrar " + useCustomRegistrar);
+        Context context = getApplicationContext();
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        getStateMachine().handleEvent(ActivationStateMachine.CalledDeactivate.useCustomRegistrar(useCustomRegistrar, prefs));
+    }
 
-	synchronized ActivationStateMachine getStateMachine() throws AblyException {
-		return getActivationContext().getActivationStateMachine();
-	}
+    synchronized ActivationStateMachine getStateMachine() throws AblyException {
+        return getActivationContext().getActivationStateMachine();
+    }
 
-	public void tryRequestRegistrationToken() {
-		try {
-			if (getLocalDevice().isRegistered()) {
-				getStateMachine().getRegistrationToken();
-			}
-		} catch (AblyException e) {
-			Log.e(TAG, "couldn't validate existing push recipient device details", e);
-		}
-	}
+    public void tryRequestRegistrationToken() {
+        try {
+            if (getLocalDevice().isRegistered()) {
+                getStateMachine().getRegistrationToken();
+            }
+        } catch (AblyException e) {
+            Log.e(TAG, "couldn't validate existing push recipient device details", e);
+        }
+    }
 
-	Context getApplicationContext() throws AblyException {
-		Context applicationContext = rest.platform.getApplicationContext();
-		if(applicationContext == null) {
-			Log.e(TAG, "getApplicationContext(): Unable to get application context; not set");
-			throw AblyException.fromErrorInfo(new ErrorInfo("Unable to get application context; not set", 40000, 400));
-		}
-		return applicationContext;
-	}
+    Context getApplicationContext() throws AblyException {
+        Context applicationContext = rest.platform.getApplicationContext();
+        if(applicationContext == null) {
+            Log.e(TAG, "getApplicationContext(): Unable to get application context; not set");
+            throw AblyException.fromErrorInfo(new ErrorInfo("Unable to get application context; not set", 40000, 400));
+        }
+        return applicationContext;
+    }
 
-	protected ActivationContext activationContext = null;
+    protected ActivationContext activationContext = null;
 
-	public ActivationContext getActivationContext() throws AblyException {
-		if (activationContext == null) {
-			Context applicationContext = getApplicationContext();
-			activationContext = ActivationContext.getActivationContext(applicationContext, (AblyRest)rest);
-		}
-		return activationContext;
-	}
+    public ActivationContext getActivationContext() throws AblyException {
+        if (activationContext == null) {
+            Context applicationContext = getApplicationContext();
+            activationContext = ActivationContext.getActivationContext(applicationContext, (AblyRest)rest);
+        }
+        return activationContext;
+    }
 
-	public LocalDevice getLocalDevice() throws AblyException {
-		return getActivationContext().getLocalDevice();
-	}
+    public LocalDevice getLocalDevice() throws AblyException {
+        return getActivationContext().getLocalDevice();
+    }
 
-	@Override
-	Param[] pushRequestHeaders(boolean forLocalDevice) {
-		Param[] headers = super.pushRequestHeaders(forLocalDevice);
-		if(forLocalDevice) {
-			try {
-				Param[] deviceIdentityHeaders = getLocalDevice().deviceIdentityHeaders();
-				if(deviceIdentityHeaders != null) {
-					headers = HttpUtils.mergeHeaders(headers, deviceIdentityHeaders);
-				}
-			} catch (AblyException e) {}
-		}
-		return headers;
-	}
+    @Override
+    Param[] pushRequestHeaders(boolean forLocalDevice) {
+        Param[] headers = super.pushRequestHeaders(forLocalDevice);
+        if(forLocalDevice) {
+            try {
+                Param[] deviceIdentityHeaders = getLocalDevice().deviceIdentityHeaders();
+                if(deviceIdentityHeaders != null) {
+                    headers = HttpUtils.mergeHeaders(headers, deviceIdentityHeaders);
+                }
+            } catch (AblyException e) {}
+        }
+        return headers;
+    }
 
-	Param[] pushRequestHeaders(String deviceId) {
-		boolean forLocalDevice = false;
-		try {
-			forLocalDevice = deviceId != null && deviceId.equals(getLocalDevice().id);
-		} catch (AblyException e) {}
-		return pushRequestHeaders(forLocalDevice);
-	}
+    Param[] pushRequestHeaders(String deviceId) {
+        boolean forLocalDevice = false;
+        try {
+            forLocalDevice = deviceId != null && deviceId.equals(getLocalDevice().id);
+        } catch (AblyException e) {}
+        return pushRequestHeaders(forLocalDevice);
+    }
 
-	private static final String TAG = Push.class.getName();
+    private static final String TAG = Push.class.getName();
 }

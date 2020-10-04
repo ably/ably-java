@@ -9,21 +9,21 @@ package io.ably.lib.types;
  */
 public interface PaginatedResult<T> {
 
-	/**
-	 * Get the contents as an array of component type
-	 */
-	T[] items();
+    /**
+     * Get the contents as an array of component type
+     */
+    T[] items();
 
-	/**
-	 * Perform the given relative query
-	 */
-	PaginatedResult<T> first() throws AblyException;
-	PaginatedResult<T> current() throws AblyException;
-	PaginatedResult<T> next() throws AblyException;
+    /**
+     * Perform the given relative query
+     */
+    PaginatedResult<T> first() throws AblyException;
+    PaginatedResult<T> current() throws AblyException;
+    PaginatedResult<T> next() throws AblyException;
 
-	boolean hasFirst();
-	boolean hasCurrent();
-	boolean hasNext();
+    boolean hasFirst();
+    boolean hasCurrent();
+    boolean hasNext();
 
-	boolean isLast();
+    boolean isLast();
 }

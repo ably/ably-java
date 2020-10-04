@@ -1,5 +1,21 @@
 # Change Log
 
+## [v1.2.2](https://github.com/ably/ably-java/tree/v1.2.2) (2020-09-17)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.1...v1.2.2)
+
+**Fixed bugs:**
+
+- Restoral of ActivationStateMachine events fails because not all event types have a no-argument constructor [\#598](https://github.com/ably/ably-java/issues/598) fixed by:
+    - Discard persisted events with non-nullary constructors [\#599](https://github.com/ably/ably-java/pull/599) ([tcard](https://github.com/tcard))
+- Fatal Exception on API level below 19 [\#596](https://github.com/ably/ably-java/issues/596) fixed by:
+    - Replace use of StandardCharsets [\#601](https://github.com/ably/ably-java/pull/601) ([QuintinWillison](https://github.com/QuintinWillison))
+
+**Other merged pull requests:**
+
+- Rename master to main [\#592](https://github.com/ably/ably-java/pull/592) ([QuintinWillison](https://github.com/QuintinWillison))
+- Bump protocol version to 1.2 [\#591](https://github.com/ably/ably-java/pull/591) ([QuintinWillison](https://github.com/QuintinWillison))
+
 ## [v1.2.1](https://github.com/ably/ably-java/tree/v1.2.1) (2020-06-15)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.0...v1.2.1)

@@ -6,6 +6,7 @@ buildscript {
 
 plugins {
     id 'de.fuerstenau.buildconfig' version '1.1.8'
+    id 'checkstyle'
 }
 
 apply plugin: 'java'
@@ -64,6 +65,7 @@ task fullJar(type: Jar) {
 }
 
 assemble.dependsOn fullJar
+assembleRelease.dependsOn checkstyleMain
 
 configurations {
     fullConfiguration
