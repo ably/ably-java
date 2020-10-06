@@ -59,7 +59,7 @@ public class WebSocketTransport implements ITransport {
         try {
             boolean isTls = params.options.tls;
             String wsScheme = isTls ? "wss://" : "ws://";
-            wsUri = wsScheme + params.host + ':' + String.valueOf(params.port) + "/";
+            wsUri = wsScheme + params.host + ':' + params.port + "/";
             Param[] authParams = connectionManager.ably.auth.getAuthParams();
             Param[] connectParams = params.getConnectParams(authParams);
             if(connectParams.length > 0)

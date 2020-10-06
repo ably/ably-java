@@ -183,7 +183,7 @@ public class ErrorInfo {
                 (message == other.message || (message != null && message.equals(other.message)));
     }
 
-    private static String href(int code) { return HREF_BASE + String.valueOf(code); }
+    private static String href(int code) { return HREF_BASE + code; }
     private static final String HREF_BASE = "https://help.ably.io/error/";
     private static final String TAG = ErrorInfo.class.getName();
 }

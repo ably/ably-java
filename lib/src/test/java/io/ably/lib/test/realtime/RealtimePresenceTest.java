@@ -2049,7 +2049,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
             opts.transportFactory = mockTransport;
 
             for (int i=0; i<2; i++) {
-                final String channelName = "presence_suspended_reenter" + testParams.name + String.valueOf(i);
+                final String channelName = "presence_suspended_reenter" + testParams.name + i;
 
                 mockTransport.allowSend();
 

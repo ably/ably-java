@@ -383,7 +383,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
 
             /* verify message order */
             for(int i = 0; i < 10; i++)
-                expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(i + 10));
+                expectedMessageHistory[i] = messageContents.get("history" + (i + 10));
             Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
             /* get next page */
@@ -397,7 +397,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
 
             /* verify message order */
             for(int i = 0; i < 10; i++)
-                expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(i + 20));
+                expectedMessageHistory[i] = messageContents.get("history" + (i + 20));
             Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
         } catch (AblyException e) {
@@ -437,7 +437,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
             /* verify message order */
             Message[] expectedMessageHistory = new Message[10];
             for(int i = 0; i < 10; i++)
-                expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(49 - i));
+                expectedMessageHistory[i] = messageContents.get("history" + (49 - i));
             Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
             /* get next page */
@@ -451,7 +451,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
 
             /* verify message order */
             for(int i = 0; i < 10; i++)
-                expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(39 - i));
+                expectedMessageHistory[i] = messageContents.get("history" + (39 - i));
             Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
             /* get next page */
@@ -465,7 +465,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
 
             /* verify message order */
             for(int i = 0; i < 10; i++)
-                expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(29 - i));
+                expectedMessageHistory[i] = messageContents.get("history" + (29 - i));
             Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
         } catch (AblyException e) {
@@ -519,7 +519,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
 
             /* verify message order */
             for(int i = 0; i < 10; i++)
-                expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(i + 10));
+                expectedMessageHistory[i] = messageContents.get("history" + (i + 10));
             Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
             /* get first page */
@@ -533,7 +533,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
 
             /* verify message order */
             for(int i = 0; i < 10; i++)
-                expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(i));
+                expectedMessageHistory[i] = messageContents.get("history" + i);
             Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
         } catch (AblyException e) {
@@ -573,7 +573,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
             /* verify message order */
             Message[] expectedMessageHistory = new Message[10];
             for(int i = 0; i < 10; i++)
-                expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(49 - i));
+                expectedMessageHistory[i] = messageContents.get("history" + (49 - i));
             Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
             /* get next page */
@@ -587,7 +587,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
 
             /* verify message order */
             for(int i = 0; i < 10; i++)
-                expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(39 - i));
+                expectedMessageHistory[i] = messageContents.get("history" + (39 - i));
             Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
             /* get first page */
@@ -601,7 +601,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
 
             /* verify message order */
             for(int i = 0; i < 10; i++)
-                expectedMessageHistory[i] = messageContents.get("history" + String.valueOf(49 - i));
+                expectedMessageHistory[i] = messageContents.get("history" + (49 - i));
             Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
 
         } catch (AblyException e) {
