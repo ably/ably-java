@@ -4,11 +4,13 @@ import io.ably.lib.BuildConfig;
 import io.ably.lib.types.ClientOptions;
 
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Locale;
 
 public class Defaults {
     /* versions */
     public static final float ABLY_VERSION_NUMBER   = 1.2f;
-    public static final String ABLY_VERSION         = new DecimalFormat("0.0").format(ABLY_VERSION_NUMBER);
+    public static final String ABLY_VERSION         = new DecimalFormat("0.0", new DecimalFormatSymbols(Locale.ENGLISH)).format(ABLY_VERSION_NUMBER);
     public static final String ABLY_LIB_VERSION     = String.format("%s-%s", BuildConfig.LIBRARY_NAME, BuildConfig.VERSION);
 
     /* params */
