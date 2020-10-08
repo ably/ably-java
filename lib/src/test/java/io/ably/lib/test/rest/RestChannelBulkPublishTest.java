@@ -5,9 +5,12 @@ import java.util.Collections;
 import java.util.Random;
 
 import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.test.common.Helpers.ChannelWaiter;
+import io.ably.lib.test.common.Helpers.MessageWaiter;
 import io.ably.lib.types.*;
 
 import io.ably.lib.rest.AblyRest;
+import io.ably.lib.realtime.*;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -74,16 +77,24 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
      */
     @Test
     public void bulk_publish_multiple_channels_param() {
+        AblyRealtime rxAbly = null;
         try {
             /* setup library instance */
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             AblyRest ably = new AblyRest(opts);
+            rxAbly = new AblyRealtime(opts);
 
             /* first, publish some messages */
             int channelCount = 5;
             ArrayList<String> channelIds = new ArrayList<String>();
+            ArrayList<MessageWaiter> rxWaiters = new ArrayList<MessageWaiter>();
             for (int i = 0; i < channelCount; i++) {
-                channelIds.add("persisted:" + randomString());
+                String channelId = "persisted:" + randomString();
+                channelIds.add(channelId);
+                Channel rxChannel = rxAbly.channels.get(channelId);
+                MessageWaiter messageWaiter = new MessageWaiter(rxChannel);
+                rxWaiters.add(messageWaiter);
+                new ChannelWaiter(rxChannel).waitFor(ChannelState.attached);
             }
 
             Message message = new Message(null, "bulk_publish_multiple_channels_param");
@@ -99,19 +110,23 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
                 assertNull("Verify no publish error", response.error);
             }
 
-            /* get the history for this channel */
-            for (String channel : channelIds) {
-                PaginatedResult<Message> messages = ably.channels.get(channel).history(null);
-                assertNotNull("Expected non-null messages", messages);
-                assertEquals("Expected 1 message", messages.items().length, 1);
-                /* verify message contents */
-                assertEquals("Expect message data to be expected String", messages.items()[0].data, message.data);
+            /* Wait to get a message on each channel -- since we're using
+             * quickAck, getting an ack is no longer a guarantee that the
+             * message has been processed, so getting history immediately after
+             * the publish returns may fail */
+            for (MessageWaiter messageWaiter : rxWaiters) {
+                messageWaiter.waitFor(1);
             }
         } catch (AblyException e) {
             e.printStackTrace();
             fail("bulk_publish_multiple_channels_param: Unexpected exception");
             return;
+        } finally {
+            if(rxAbly != null) {
+                rxAbly.close();
+            }
         }
+
     }
 
     /**
