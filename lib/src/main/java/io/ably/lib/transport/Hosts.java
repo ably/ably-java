@@ -60,7 +60,10 @@ public class Hosts {
             setPrimaryHost(defaultHost);
         }
         fallbackHostsUseDefault = options.fallbackHostsUseDefault;
-        if (options.fallbackHosts == null) {
+        if (options.tlsPort != 0 || options.port != 0) {
+            fallbackHosts = new String[]{};
+            fallbackHostsIsDefault = false;
+        } else if (options.fallbackHosts == null) {
             if (!fallbackHostsUseDefault && options.environment != null && !options.environment.equalsIgnoreCase("production")) {
                 /* RSC15g2: If ClientOptions#environment is set to a value other than "production"
                  * and ClientOptions#fallbackHosts is not set, use the environment fallback hosts */

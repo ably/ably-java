@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -192,5 +193,23 @@ public class HostsTest {
         }
 
         assertThat(returnedEnvironmentFallbackHosts, is(containsInAnyOrder(Defaults.HOST_FALLBACKS)));
+    }
+
+    @Test
+    public void hosts_no_fallback_when_port_is_defined() throws AblyException {
+        ClientOptions options = new ClientOptions();
+        options.port = 8080;
+        Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
+
+        assertThat(hosts.getFallback(Defaults.HOST_REALTIME), is(nullValue()));
+    }
+
+    @Test
+    public void hosts_no_fallback_when_tlsport_is_defined() throws AblyException {
+        ClientOptions options = new ClientOptions();
+        options.tlsPort = 8081;
+        Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
+
+        assertThat(hosts.getFallback(Defaults.HOST_REALTIME), is(nullValue()));
     }
 }
