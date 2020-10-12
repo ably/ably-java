@@ -42,8 +42,8 @@ public class ChannelBase {
      * Publish a message on this channel using the REST API.
      * Since the REST API is stateless, this request is made independently
      * of any other request on this or any other channel.
-     * @param name: the event name
-     * @param data: the message payload; see {@link io.ably.types.Data} for
+     * @param name the event name
+     * @param data the message payload; see {@link io.ably.types.Data} for
      * details of supported data types.
      * @throws AblyException
      */
@@ -55,8 +55,8 @@ public class ChannelBase {
      * Publish a message on this channel using the REST API.
      * Since the REST API is stateless, this request is made independently
      * of any other request on this or any other channel.
-     * @param name: the event name
-     * @param data: the message payload; see {@link io.ably.types.Data} for
+     * @param name the event name
+     * @param data the message payload; see {@link io.ably.types.Data} for
      * @param listener
      */
     public void publishAsync(String name, Object data, CompletionListener listener) {
@@ -72,7 +72,7 @@ public class ChannelBase {
      * multiple messages to be sent, it is more efficient to use this
      * method to publish them in a single request, as compared with
      * publishing via multiple independent requests.
-     * @param messages: array of messages to publish.
+     * @param messages array of messages to publish.
      * @throws AblyException
      */
     public void publish(final Message[] messages) throws AblyException {
@@ -120,9 +120,9 @@ public class ChannelBase {
      * Obtain recent history for this channel using the REST API.
      * The history provided relqtes to all clients of this application,
      * not just this instance.
-     * @param params: the request params. See the Ably REST API
+     * @param params the request params. See the Ably REST API
      * documentation for more details.
-     * @return: an array of Messages for this Channel.
+     * @return an array of Messages for this Channel.
      * @throws AblyException
      */
     public PaginatedResult<Message> history(Param[] params) throws AblyException {
@@ -131,7 +131,7 @@ public class ChannelBase {
 
     /**
      * Asynchronously obtain recent history for this channel using the REST API.
-     * @param params: the request params. See the Ably REST API
+     * @param params the request params. See the Ably REST API
      * @param callback
      * @return
      */
@@ -154,8 +154,8 @@ public class ChannelBase {
 
         /**
          * Get the presence state for this Channel.
-         * @return: the current present members.
-         * @throws AblyException 
+         * @return the current present members.
+         * @throws AblyException
          */
         public PaginatedResult<PresenceMessage> get(Param[] params) throws AblyException {
             return getImpl(params).sync();
@@ -163,7 +163,7 @@ public class ChannelBase {
 
         /**
          * Asynchronously get the presence state for this Channel.
-         * @param callback: on success returns the currently present members.
+         * @param callback on success returns the currently present members.
          */
         public void getAsync(Param[] params, Callback<AsyncPaginatedResult<PresenceMessage>> callback) {
             getImpl(params).async(callback);
@@ -178,7 +178,7 @@ public class ChannelBase {
          * Asynchronously obtain presence history for this channel using the REST API.
          * The history provided relqtes to all clients of this application,
          * not just this instance.
-         * @param params: the request params. See the Ably REST API
+         * @param params the request params. See the Ably REST API
          * documentation for more details.
          */
         public PaginatedResult<PresenceMessage> history(Param[] params) throws AblyException {
@@ -187,7 +187,7 @@ public class ChannelBase {
 
         /**
          * Asynchronously obtain recent history for this channel using the REST API.
-         * @param params: the request params. See the Ably REST API
+         * @param params the request params. See the Ably REST API
          * @param callback
          * @return
          */
@@ -204,7 +204,7 @@ public class ChannelBase {
 
     /******************
      * internal
-     * @throws AblyException 
+     * @throws AblyException
      ******************/
 
     ChannelBase(AblyBase ably, String name, ChannelOptions options) throws AblyException {

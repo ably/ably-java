@@ -27,11 +27,11 @@ public class BasePaginatedQuery<T> implements HttpCore.ResponseHandler<BasePagin
     /**
      * Construct a PaginatedQuery
      *
-     * @param http. the http instance
-     * @param path. the path of the resource being queried
-     * @param headers. headers to pass into the first and all relative queries
-     * @param params. params to pass into the initial query
-     * @param bodyHandler. handler to parse response bodies for first and all relative queries
+     * @param http the http instance
+     * @param path the path of the resource being queried
+     * @param headers headers to pass into the first and all relative queries
+     * @param params params to pass into the initial query
+     * @param bodyHandler handler to parse response bodies for first and all relative queries
      */
     public BasePaginatedQuery(Http http, String path, Param[] headers, Param[] params, HttpCore.BodyHandler<T> bodyHandler) {
         this(http, path, headers, params, null, bodyHandler);
@@ -40,11 +40,11 @@ public class BasePaginatedQuery<T> implements HttpCore.ResponseHandler<BasePagin
     /**
      * Construct a PaginatedQuery
      *
-     * @param http. the http instance
-     * @param path. the path of the resource being queried
-     * @param headers. headers to pass into the first and all relative queries
-     * @param params. params to pass into the initial query
-     * @param bodyHandler. handler to parse response bodies for first and all relative queries
+     * @param http the http instance
+     * @param path the path of the resource being queried
+     * @param headers headers to pass into the first and all relative queries
+     * @param params params to pass into the initial query
+     * @param bodyHandler handler to parse response bodies for first and all relative queries
      */
     public BasePaginatedQuery(Http http, String path, Param[] headers, Param[] params, HttpCore.RequestBody requestBody, HttpCore.BodyHandler<T> bodyHandler) {
         this.http = http;

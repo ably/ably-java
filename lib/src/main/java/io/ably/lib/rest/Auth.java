@@ -123,7 +123,7 @@ public class Auth {
         /**
          * Convenience constructor, to create an AuthOptions based
          * on the key string obtained from the application dashboard.
-         * @param key: the full key string as obtained from the dashboard
+         * @param key the full key string as obtained from the dashboard
          * @throws AblyException
          */
         public AuthOptions(String key) throws AblyException {
@@ -555,7 +555,7 @@ public class Auth {
      * has a valid token. It would typically be used to issue tokens for use by other clients.
      * @param params : see {@link #authorize} for params
      * @param tokenOptions : see {@link #authorize} for options
-     * @return: the TokenDetails
+     * @return the TokenDetails
      * @throws AblyException
      */
     public TokenDetails requestToken(TokenParams params, AuthOptions tokenOptions) throws AblyException {
@@ -700,7 +700,7 @@ public class Auth {
      * signed requests for submission by another client.
      * @param params : see {@link #authorize} for params
      * @param options : see {@link #authorize} for options
-     * @return: the params augmented with the mac.
+     * @return the params augmented with the mac.
      * @throws AblyException
      */
     public TokenRequest createTokenRequest(TokenParams params, AuthOptions options) throws AblyException {
@@ -1041,8 +1041,8 @@ public class Auth {
      * Verify that a message, possibly containing a clientId,
      * is compatible with Auth.clientId if it is set
      * @param msg
-     * @param allowNullClientId: true if it is ok for there to be no resolved clientId
-     * @param connected: true if connected; if false it is ok for the library to be unidentified
+     * @param allowNullClientId true if it is ok for there to be no resolved clientId
+     * @param connected true if connected; if false it is ok for the library to be unidentified
      * @return the resolved clientId
      * @throws AblyException
      */

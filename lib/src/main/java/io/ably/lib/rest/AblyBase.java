@@ -57,7 +57,7 @@ public abstract class AblyBase {
      * This is simply a convenience constructor for the
      * simplest case of instancing the library with a key
      * for basic authentication and no other options.
-     * @param key; String key (obtained from application dashboard)
+     * @param key String key (obtained from application dashboard)
      * @throws AblyException
      */
     public AblyBase(String key) throws AblyException {
@@ -66,7 +66,7 @@ public abstract class AblyBase {
 
     /**
      * Instance the Ably library with the given options.
-     * @param options: see {@link io.ably.lib.types.ClientOptions} for options
+     * @param options see {@link io.ably.lib.types.ClientOptions} for options
      * @throws AblyException
      */
     public AblyBase(ClientOptions options) throws AblyException {
@@ -190,7 +190,7 @@ public abstract class AblyBase {
 
     /**
      * Asynchronously obtain usage statistics for this application using the REST API.
-     * @param params: the request params. See the Ably REST API
+     * @param params the request params. See the Ably REST API
      * @param callback
      * @return
      */
@@ -201,8 +201,8 @@ public abstract class AblyBase {
     /**
      * Make a generic HTTP request against an endpoint representing a collection
      * of some type; this is to provide a forward compatibility path for new APIs.
-     * @param method: the HTTP method to use (see constants in io.ably.lib.httpCore.HttpCore)
-     * @param path: the path component of the resource URI
+     * @param method the HTTP method to use (see constants in io.ably.lib.httpCore.HttpCore)
+     * @param path the path component of the resource URI
      * @param params (optional; may be null): any parameters to send with the request; see API-specific documentation
      * @param body (optional; may be null): an instance of RequestBody; either a JSONRequestBody or ByteArrayRequestBody
      * @param headers (optional; may be null): any additional headers to send; see API-specific documentation
@@ -217,12 +217,12 @@ public abstract class AblyBase {
     /**
      * Make an async generic HTTP request against an endpoint representing a collection
      * of some type; this is to provide a forward compatibility path for new APIs.
-     * @param method: the HTTP method to use (see constants in io.ably.lib.httpCore.HttpCore)
-     * @param path: the path component of the resource URI
+     * @param method the HTTP method to use (see constants in io.ably.lib.httpCore.HttpCore)
+     * @param path the path component of the resource URI
      * @param params (optional; may be null): any parameters to send with the request; see API-specific documentation
      * @param body (optional; may be null): an instance of RequestBody; either a JSONRequestBody or ByteArrayRequestBody
      * @param headers (optional; may be null): any additional headers to send; see API-specific documentation
-     * @param callback: called with the asynchronous result
+     * @param callback called with the asynchronous result
      */
     public void requestAsync(String method, String path, Param[] params, HttpCore.RequestBody body, Param[] headers, final AsyncHttpPaginatedResponse.Callback callback)  {
         headers = HttpUtils.mergeHeaders(HttpUtils.defaultAcceptHeaders(false), headers);

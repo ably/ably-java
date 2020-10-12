@@ -15,11 +15,11 @@ public class AsyncPaginatedQuery<T> {
     /**
      * Construct a PaginatedQuery
      *
-     * @param http. the httpCore instance
-     * @param path. the path of the resource being queried
-     * @param headers. headers to pass into the first and all relative queries
-     * @param params. params to pass into the initial query
-     * @param bodyHandler. handler to parse response bodies for first and all relative queries
+     * @param http the httpCore instance
+     * @param path the path of the resource being queried
+     * @param headers headers to pass into the first and all relative queries
+     * @param params params to pass into the initial query
+     * @param bodyHandler handler to parse response bodies for first and all relative queries
      */
     public AsyncPaginatedQuery(Http http, String path, Param[] headers, Param[] params, HttpCore.BodyHandler<T> bodyHandler) {
         this(http, path, headers, params, null, bodyHandler);
@@ -28,11 +28,11 @@ public class AsyncPaginatedQuery<T> {
     /**
      * Construct a PaginatedQuery
      *
-     * @param http. the http instance
-     * @param path. the path of the resource being queried
-     * @param headers. headers to pass into the first and all relative queries
-     * @param params. params to pass into the initial query
-     * @param bodyHandler. handler to parse response bodies for first and all relative queries
+     * @param http the http instance
+     * @param path the path of the resource being queried
+     * @param headers headers to pass into the first and all relative queries
+     * @param params params to pass into the initial query
+     * @param bodyHandler handler to parse response bodies for first and all relative queries
      */
     public AsyncPaginatedQuery(Http http, String path, Param[] headers, Param[] params, HttpCore.RequestBody requestBody, HttpCore.BodyHandler<T> bodyHandler) {
         base = new BasePaginatedQuery<T>(http, path, headers, params, requestBody, bodyHandler);
@@ -40,7 +40,7 @@ public class AsyncPaginatedQuery<T> {
 
     /**
      * Get the result of the first query
-     * @param callback. On success returns A PaginatedResult<T> giving the
+     * @param callback On success returns A PaginatedResult<T> giving the
      * first page of results together with any available links to related results pages.
      */
     public void get(Callback<AsyncPaginatedResult<T>> callback) {

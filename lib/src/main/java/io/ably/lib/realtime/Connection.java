@@ -55,7 +55,7 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
 
     /**
      * Send a heartbeat message to the Ably service and await a response.
-     * @param listener: a listener to be notified of the outcome of this message.
+     * @param listener a listener to be notified of the outcome of this message.
      */
     public void ping(CompletionListener listener) {
         connectionManager.ping(listener);

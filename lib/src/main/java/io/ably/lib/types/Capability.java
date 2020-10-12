@@ -20,8 +20,8 @@ public class Capability {
 
     /**
      * Convenience method to canonicalise a JSON capability expression
-     * 
-     * @param capability: a capability string, which is the JSON text for the capability
+     *
+     * @param capability a capability string, which is the JSON text for the capability
      * @return a capability string which has been canonicalised
      * @throws AblyException if there is an error processing the given string
      * (if for example it is not valid JSON)
@@ -150,7 +150,7 @@ public class Capability {
             }
         /* removal doesn't break sort order, so dirty can remain false */
     }
-    
+
     /**
      * Get the canonicalised String text for a Capability instance.
      * The json object and its members are sorted if the object has been modified
