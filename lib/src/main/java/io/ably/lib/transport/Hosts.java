@@ -66,15 +66,7 @@ public class Hosts {
             throw AblyException.fromErrorInfo(new ErrorInfo("cannot set both fallbackHosts and fallbackHostsUseDefault options", 40000, 400));
         }
         fallbackHostsUseDefault = options.fallbackHostsUseDefault;
-        if (primaryHost != null) {
-            if (fallbackHostsUseDefault && options.port == 0 && options.tlsPort == 0) {
-                fallbackHosts = Defaults.HOST_FALLBACKS.clone();
-                fallbackHostsIsDefault = true;
-            } else {
-                fallbackHosts = (options.fallbackHosts == null) ? new String[] {} : options.fallbackHosts.clone();
-                fallbackHostsIsDefault = false;
-            }
-        } else {
+        if (primaryHostIsDefault) {
             if (options.fallbackHosts == null && options.port == 0 && options.tlsPort == 0) {
                 if (!fallbackHostsUseDefault && options.environment != null && !options.environment.equalsIgnoreCase("production")) {
                     /* RSC15g2: If ClientOptions#environment is set to a value other than "production"
@@ -86,7 +78,15 @@ public class Hosts {
                     fallbackHostsIsDefault = true;
                 }
             } else {
-                fallbackHosts = (options.fallbackHosts == null) ? new String[] {} : options.fallbackHosts.clone();;
+                fallbackHosts = (options.fallbackHosts == null) ? new String[] {} : options.fallbackHosts.clone();
+                fallbackHostsIsDefault = false;
+            }
+        } else {
+            if (fallbackHostsUseDefault && options.port == 0 && options.tlsPort == 0) {
+                fallbackHosts = Defaults.HOST_FALLBACKS.clone();
+                fallbackHostsIsDefault = true;
+            } else {
+                fallbackHosts = (options.fallbackHosts == null) ? new String[] {} : options.fallbackHosts.clone();
                 fallbackHostsIsDefault = false;
             }
         }

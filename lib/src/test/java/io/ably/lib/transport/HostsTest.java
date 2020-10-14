@@ -26,7 +26,7 @@ public class HostsTest {
     @Test
     public void hosts_fallback() throws AblyException {
         ClientOptions options = new ClientOptions();
-        Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
+        Hosts hosts = new Hosts(Defaults.HOST_REALTIME, Defaults.HOST_REALTIME, options);
         String host = hosts.getFallback(Defaults.HOST_REALTIME);
         /* Expect given fallback host string is (relatively) valid */
         assertThat(host, not(isEmptyOrNullString()));
