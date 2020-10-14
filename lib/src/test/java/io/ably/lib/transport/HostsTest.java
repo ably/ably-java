@@ -1,11 +1,10 @@
 package io.ably.lib.transport;
 
-import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -27,16 +26,17 @@ public class HostsTest {
     @Test
     public void hosts_fallback() throws AblyException {
         ClientOptions options = new ClientOptions();
-        Hosts hosts = new Hosts(Defaults.HOST_REALTIME, Defaults.HOST_REALTIME, options);
+        Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
         String host = hosts.getFallback(Defaults.HOST_REALTIME);
         /* Expect given fallback host string is (relatively) valid */
-        assertThat(host, is(not(isEmptyOrNullString())));
+        assertThat(host, not(isEmptyOrNullString()));
         /* Expect multiple calls will provide different (relatively) valid fallback hosts */
         String host2 = hosts.getFallback(host);
-        assertThat(host2, is(not(allOf(isEmptyOrNullString(), equalTo(host)))));
+        assertThat(host2, not(isEmptyOrNullString()));
+        assertThat(host2, not(host));
         /* Expect a null, when we requested more than available fallback hosts */
         for (int i = Defaults.HOST_FALLBACKS.length - 1; i > 0; i--) {
-            assertThat(host2, is(not(equalTo(null))));
+            assertThat(host2, notNullValue());
             host2 = hosts.getFallback(host2);
         }
     }
@@ -48,7 +48,7 @@ public class HostsTest {
     public void hosts_host_and_environment() throws AblyException {
         ClientOptions options = new ClientOptions();
         options.environment = "myenv";
-        Hosts hosts = new Hosts(Defaults.HOST_REALTIME, Defaults.HOST_REALTIME, options);
+        new Hosts(Defaults.HOST_REALTIME, Defaults.HOST_REALTIME, options);
     }
 
     /**
@@ -60,7 +60,7 @@ public class HostsTest {
         options.fallbackHosts = new String[]{};
         Hosts hosts = new Hosts(Defaults.HOST_REALTIME, Defaults.HOST_REALTIME, options);
         String host = hosts.getFallback(Defaults.HOST_REALTIME);
-        assertThat(host, is(equalTo(null)));
+        assertThat(host, nullValue());
     }
 
     /**
@@ -98,7 +98,7 @@ public class HostsTest {
     @Test
     public void hosts_fallback_no_custom_hosts() throws AblyException {
         ClientOptions options = new ClientOptions();
-        Hosts hosts = new Hosts(Defaults.HOST_REALTIME, Defaults.HOST_REALTIME, options);
+        Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
         int idx;
         String host = Defaults.HOST_REALTIME;
         boolean shuffled = false;
@@ -127,7 +127,7 @@ public class HostsTest {
         String host = "overridden.ably.io";
         Hosts hosts = new Hosts(host, Defaults.HOST_REALTIME, options);
         host = hosts.getFallback(host);
-        assertThat(host, is(equalTo(null)));
+        assertThat(host, nullValue());
     }
 
     /**
@@ -159,6 +159,19 @@ public class HostsTest {
     }
 
     /**
+     * It is not allowed to use default fallback hosts and at the same time
+     * provide custom fallback hosts.
+     */
+    @Test(expected = AblyException.class)
+    public void hosts_fallback_use_default_and_set_fallback_hosts() throws AblyException {
+        ClientOptions options = new ClientOptions();
+        options.fallbackHostsUseDefault = true;
+        options.fallbackHosts = new String[] { "custom.ably-realtime.com" };
+
+        new Hosts(null, Defaults.HOST_REALTIME, options);
+    }
+
+    /**
      * Expect that returned fallback hosts containing the environment information.
      */
     @Test
@@ -173,7 +186,8 @@ public class HostsTest {
         while ((host = hosts.getFallback(host)) != null){
             returnedEnvironmentFallbackHosts.add(host);
         }
-        assertThat(returnedEnvironmentFallbackHosts, is(containsInAnyOrder(expectedEnvironmentFallbackHosts)));
+
+        assertThat(returnedEnvironmentFallbackHosts, containsInAnyOrder(expectedEnvironmentFallbackHosts));
     }
 
     /**
@@ -192,7 +206,7 @@ public class HostsTest {
             returnedEnvironmentFallbackHosts.add(host);
         }
 
-        assertThat(returnedEnvironmentFallbackHosts, is(containsInAnyOrder(Defaults.HOST_FALLBACKS)));
+        assertThat(returnedEnvironmentFallbackHosts, containsInAnyOrder(Defaults.HOST_FALLBACKS));
     }
 
     @Test
@@ -201,7 +215,7 @@ public class HostsTest {
         options.port = 8080;
         Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
 
-        assertThat(hosts.getFallback(Defaults.HOST_REALTIME), is(nullValue()));
+        assertThat(hosts.getFallback(Defaults.HOST_REALTIME), nullValue());
     }
 
     @Test
@@ -210,6 +224,6 @@ public class HostsTest {
         options.tlsPort = 8081;
         Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
 
-        assertThat(hosts.getFallback(Defaults.HOST_REALTIME), is(nullValue()));
+        assertThat(hosts.getFallback(Defaults.HOST_REALTIME), nullValue());
     }
 }

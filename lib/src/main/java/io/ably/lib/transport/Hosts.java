@@ -59,30 +59,38 @@ public class Hosts {
         } else {
             setPrimaryHost(defaultHost);
         }
+
+        if (options.fallbackHostsUseDefault && options.fallbackHosts != null) {
+            /* TO3k7: It is never valid to configure fallbackHost and set
+             * fallbackHostsUseDefault to true */
+            throw AblyException.fromErrorInfo(new ErrorInfo("cannot set both fallbackHosts and fallbackHostsUseDefault options", 40000, 400));
+        }
         fallbackHostsUseDefault = options.fallbackHostsUseDefault;
-        if (options.tlsPort != 0 || options.port != 0) {
-            fallbackHosts = new String[]{};
-            fallbackHostsIsDefault = false;
-        } else if (options.fallbackHosts == null) {
-            if (!fallbackHostsUseDefault && options.environment != null && !options.environment.equalsIgnoreCase("production")) {
-                /* RSC15g2: If ClientOptions#environment is set to a value other than "production"
-                 * and ClientOptions#fallbackHosts is not set, use the environment fallback hosts */
-                fallbackHosts = Defaults.getEnvironmentFallbackHosts(options.environment);
-                fallbackHostsIsDefault = false;
-            } else {
-                fallbackHosts = Arrays.copyOf(Defaults.HOST_FALLBACKS, Defaults.HOST_FALLBACKS.length);
+        if (primaryHost != null) {
+            if (fallbackHostsUseDefault && options.port == 0 && options.tlsPort == 0) {
+                fallbackHosts = Defaults.HOST_FALLBACKS.clone();
                 fallbackHostsIsDefault = true;
+            } else {
+                fallbackHosts = (options.fallbackHosts == null) ? new String[] {} : options.fallbackHosts.clone();
+                fallbackHostsIsDefault = false;
             }
         } else {
-            /* RSC15a: use ClientOptions#fallbackHosts if set */
-            fallbackHosts = Arrays.copyOf(options.fallbackHosts, options.fallbackHosts.length);
-            fallbackHostsIsDefault = false;
-            if (options.fallbackHostsUseDefault) {
-                /* TO3k7: It is never valid to configure fallbackHost and set
-                 * fallbackHostsUseDefault to true */
-                throw AblyException.fromErrorInfo(new ErrorInfo("cannot set both fallbackHosts and fallbackHostsUseDefault options", 40000, 400));
+            if (options.fallbackHosts == null && options.port == 0 && options.tlsPort == 0) {
+                if (!fallbackHostsUseDefault && options.environment != null && !options.environment.equalsIgnoreCase("production")) {
+                    /* RSC15g2: If ClientOptions#environment is set to a value other than "production"
+                     * and ClientOptions#fallbackHosts is not set, use the environment fallback hosts */
+                    fallbackHosts = Defaults.getEnvironmentFallbackHosts(options.environment);
+                    fallbackHostsIsDefault = false;
+                } else {
+                    fallbackHosts = Defaults.HOST_FALLBACKS.clone();
+                    fallbackHostsIsDefault = true;
+                }
+            } else {
+                fallbackHosts = (options.fallbackHosts == null) ? new String[] {} : options.fallbackHosts.clone();;
+                fallbackHostsIsDefault = false;
             }
         }
+
         /* RSC15a: shuffle the fallback hosts. */
         Collections.shuffle(Arrays.asList(fallbackHosts));
         fallbackRetryTimeout = options.fallbackRetryTimeout;
