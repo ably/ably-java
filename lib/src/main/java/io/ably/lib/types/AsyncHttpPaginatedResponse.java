@@ -37,7 +37,7 @@ public abstract class AsyncHttpPaginatedResponse {
 
         /**
          * Called when the associated operation completes with an error.
-         * @param reason: information about the error.
+         * @param reason information about the error.
          */
         void onError(ErrorInfo reason);
     }

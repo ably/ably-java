@@ -603,7 +603,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     /**
      * Subscribe for messages on this channel. This implicitly attaches the channel if
      * not already attached.
-     * @param listener: the MessageListener
+     * @param listener the MessageListener
      * @throws AblyException
      */
     public synchronized void subscribe(MessageListener listener) throws AblyException {
@@ -614,7 +614,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
     /**
      * Unsubscribe a previously subscribed listener from this channel.
-     * @param listener: the previously subscribed listener.
+     * @param listener the previously subscribed listener.
      */
     public synchronized void unsubscribe(MessageListener listener) {
         Log.v(TAG, "unsubscribe(); channel = " + this.name);
@@ -627,8 +627,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     /**
      * Subscribe for messages with a specific event name on this channel.
      * This implicitly attaches the channel if not already attached.
-     * @param name: the event name
-     * @param listener: the MessageListener
+     * @param name the event name
+     * @param listener the MessageListener
      * @throws AblyException
      */
     public synchronized void subscribe(String name, MessageListener listener) throws AblyException {
@@ -639,8 +639,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
     /**
      * Unsubscribe a previously subscribed event listener from this channel.
-     * @param name: the event name
-     * @param listener: the previously subscribed listener.
+     * @param name the event name
+     * @param listener the previously subscribed listener.
      */
     public synchronized void unsubscribe(String name, MessageListener listener) {
         Log.v(TAG, "unsubscribe(); channel = " + this.name + "; event = " + name);
@@ -650,8 +650,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     /**
      * Subscribe for messages with an array of event names on this channel.
      * This implicitly attaches the channel if not already attached.
-     * @param names: the event names
-     * @param listener: the MessageListener
+     * @param names the event names
+     * @param listener the MessageListener
      * @throws AblyException
      */
     public synchronized void subscribe(String[] names, MessageListener listener) throws AblyException {
@@ -663,8 +663,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
     /**
      * Unsubscribe a previously subscribed event listener from this channel.
-     * @param names: the event names
-     * @param listener: the previously subscribed listener.
+     * @param names the event names
+     * @param listener the previously subscribed listener.
      */
     public synchronized void unsubscribe(String[] names, MessageListener listener) {
         Log.v(TAG, "unsubscribe(); channel = " + this.name + "; (multiple events)");
@@ -815,8 +815,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     /**
      * Publish a message on this channel. This implicitly attaches the channel if
      * not already attached.
-     * @param name: the event name
-     * @param data: the message payload
+     * @param name the event name
+     * @param data the message payload
      * @throws AblyException
      */
     public void publish(String name, Object data) throws AblyException {
@@ -826,7 +826,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     /**
      * Publish a message on this channel. This implicitly attaches the channel if
      * not already attached.
-     * @param message: the message
+     * @param message the message
      * @throws AblyException
      */
     public void publish(Message message) throws AblyException {
@@ -836,7 +836,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     /**
      * Publish an array of messages on this channel. This implicitly attaches the channel if
      * not already attached.
-     * @param messages: the message
+     * @param messages the message
      * @throws AblyException
      */
     public void publish(Message[] messages) throws AblyException {
@@ -846,9 +846,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     /**
      * Publish a message on this channel. This implicitly attaches the channel if
      * not already attached.
-     * @param name: the event name
-     * @param data: the message payload. See {@link io.ably.types.Data} for supported datatypes
-     * @param listener: a listener to be notified of the outcome of this message.
+     * @param name the event name
+     * @param data the message payload. See {@link io.ably.types.Data} for supported datatypes
+     * @param listener a listener to be notified of the outcome of this message.
      * @throws AblyException
      */
     public void publish(String name, Object data, CompletionListener listener) throws AblyException {
@@ -859,8 +859,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     /**
      * Publish a message on this channel. This implicitly attaches the channel if
      * not already attached.
-     * @param message: the message
-     * @param listener: a listener to be notified of the outcome of this message.
+     * @param message the message
+     * @param listener a listener to be notified of the outcome of this message.
      * @throws AblyException
      */
     public void publish(Message message, CompletionListener listener) throws AblyException {
@@ -871,8 +871,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     /**
      * Publish an array of messages on this channel. This implicitly attaches the channel if
      * not already attached.
-     * @param messages: the message
-     * @param listener: a listener to be notified of the outcome of this message.
+     * @param messages the message
+     * @param listener a listener to be notified of the outcome of this message.
      * @throws AblyException
      */
     public synchronized void publish(Message[] messages, CompletionListener listener) throws AblyException {
@@ -1005,9 +1005,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * Obtain recent history for this channel using the REST API.
      * The history provided relqtes to all clients of this application,
      * not just this instance.
-     * @param params: the request params. See the Ably REST API
+     * @param params the request params. See the Ably REST API
      * documentation for more details.
-     * @return: an array of Messgaes for this Channel.
+     * @return an array of Messgaes for this Channel.
      * @throws AblyException
      */
     public PaginatedResult<Message> history(Param[] params) throws AblyException {

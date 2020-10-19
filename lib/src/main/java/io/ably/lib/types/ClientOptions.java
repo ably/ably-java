@@ -21,7 +21,7 @@ public class ClientOptions extends AuthOptions {
     /**
      * Construct an options with a single key string. The key string is obtained
      * from the application dashboard.
-     * @param key: the key string
+     * @param key the key string
      * @throws AblyException if the key is not in a valid format
      */
     public ClientOptions(String key) throws AblyException {

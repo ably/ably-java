@@ -36,7 +36,7 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
      * This is simply a convenience constructor for the
      * simplest case of instancing the library with a key
      * for basic authentication and no other options.
-     * @param key; String key (obtained from application dashboard)
+     * @param key String key (obtained from application dashboard)
      * @throws AblyException
      */
     public AblyRealtime(String key) throws AblyException {
@@ -45,7 +45,7 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
 
     /**
      * Instance the Ably library with the given options.
-     * @param options: see {@link io.ably.lib.types.ClientOptions} for options
+     * @param options see {@link io.ably.lib.types.ClientOptions} for options
      * @throws AblyException
      */
     public AblyRealtime(ClientOptions options) throws AblyException {
@@ -61,7 +61,7 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
                 channels.clear();
             }
         });
-        
+
         if(options.autoConnect) connection.connect();
     }
 
