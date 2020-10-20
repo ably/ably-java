@@ -15,9 +15,11 @@ import io.ably.lib.types.AsyncPaginatedResult;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
+import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 import io.ably.lib.util.StringUtils;
 
+import java.util.Arrays;
 import java.util.Map;
 
 
@@ -28,6 +30,8 @@ public class PushBase {
     }
 
     public static class Admin {
+        private static final String TAG = Admin.class.getName();
+
         public final DeviceRegistrations deviceRegistrations;
         public final ChannelSubscriptions channelSubscriptions;
 
@@ -46,6 +50,7 @@ public class PushBase {
         }
 
         private Http.Request<Void> publishImpl(final Param[] recipient, final JsonObject payload)  {
+            Log.v(TAG, "publishImpl(): recipient=" + Arrays.toString(recipient) + ", payload=" + payload);
             return rest.http.request(new Http.Execute<Void>() {
                 @Override
                 public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
@@ -81,6 +86,8 @@ public class PushBase {
     }
 
     public static class DeviceRegistrations {
+        private static final String TAG = DeviceRegistrations.class.getName();
+
         public DeviceDetails save(DeviceDetails device) throws AblyException {
             return saveImpl(device).sync();
         }
@@ -90,6 +97,7 @@ public class PushBase {
         }
 
         protected Http.Request<DeviceDetails> saveImpl(final DeviceDetails device) {
+            Log.v(TAG, "saveImpl(): device=" + device);
             final HttpCore.RequestBody body = HttpUtils.requestBodyFromGson(device.toJsonObject(), rest.options.useBinaryProtocol);
             return rest.http.request(new Http.Execute<DeviceDetails>() {
                 @Override
@@ -112,6 +120,7 @@ public class PushBase {
         }
 
         protected Http.Request<DeviceDetails> getImpl(final String deviceId) {
+            Log.v(TAG, "getImpl(): deviceId=" + deviceId);
             return rest.http.request(new Http.Execute<DeviceDetails>() {
                 @Override
                 public void execute(HttpScheduler http, Callback<DeviceDetails> callback) throws AblyException {
@@ -133,6 +142,7 @@ public class PushBase {
         }
 
         protected BasePaginatedQuery.ResultRequest<DeviceDetails> listImpl(Param[] params) {
+            Log.v(TAG, "listImpl(): params=" + Arrays.toString(params));
             return new BasePaginatedQuery<DeviceDetails>(rest.http, "/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, DeviceDetails.httpBodyHandler).get();
         }
 
@@ -153,6 +163,7 @@ public class PushBase {
         }
 
         protected Http.Request<Void> removeImpl(final String deviceId) {
+            Log.v(TAG, "removeImpl(): deviceId=" + deviceId);
             return rest.http.request(new Http.Execute<Void>() {
                 @Override
                 public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
@@ -174,6 +185,7 @@ public class PushBase {
         }
 
         protected Http.Request<Void> removeWhereImpl(Param[] params) {
+            Log.v(TAG, "removeWhereImpl(): params=" + Arrays.toString(params));
             if (rest.options.pushFullWait) {
                 params = Param.push(params, "fullWait", "true");
             }
@@ -194,6 +206,8 @@ public class PushBase {
     }
 
     public static class ChannelSubscriptions {
+        private static final String TAG = ChannelSubscriptions.class.getName();
+
         public ChannelSubscription save(ChannelSubscription subscription) throws AblyException {
             return saveImpl(subscription).sync();
         }
@@ -203,6 +217,7 @@ public class PushBase {
         }
 
         protected Http.Request<ChannelSubscription> saveImpl(final ChannelSubscription subscription) {
+            Log.v(TAG, "saveImpl(): subscription=" + subscription);
             final HttpCore.RequestBody body = HttpUtils.requestBodyFromGson(subscription.toJsonObject(), rest.options.useBinaryProtocol);
             return rest.http.request(new Http.Execute<ChannelSubscription>() {
                 @Override
@@ -225,6 +240,7 @@ public class PushBase {
         }
 
         protected BasePaginatedQuery.ResultRequest<ChannelSubscription> listImpl(Param[] params) {
+            Log.v(TAG, "listImpl(): params=" + Arrays.toString(params));
             String deviceId = HttpUtils.getParam(params, "deviceId");
             return new BasePaginatedQuery<Push.ChannelSubscription>(rest.http, "/push/channelSubscriptions", rest.push.pushRequestHeaders(deviceId), params, ChannelSubscription.httpBodyHandler).get();
         }
@@ -238,6 +254,7 @@ public class PushBase {
         }
 
         protected Http.Request<Void> removeImpl(ChannelSubscription subscription) {
+            Log.v(TAG, "removeImpl(): subscription=" + subscription);
             Param[] params = new Param[] { new Param("channel", subscription.channel) };
             if (subscription.deviceId != null) {
                 params = Param.push(params, "deviceId", subscription.deviceId);
@@ -260,6 +277,7 @@ public class PushBase {
         }
 
         protected Http.Request<Void> removeWhereImpl(Param[] params) {
+            Log.v(TAG, "removeWhereImpl(): params=" + Arrays.toString(params));
             String deviceId = HttpUtils.getParam(params, "deviceId");
             if (rest.options.pushFullWait) {
                 params = Param.push(params, "fullWait", "true");
@@ -283,6 +301,7 @@ public class PushBase {
         }
 
         protected BasePaginatedQuery.ResultRequest<String> listChannelsImpl(Param[] params) {
+            Log.v(TAG, "listChannelsImpl(): params=" + Arrays.toString(params));
             String deviceId = HttpUtils.getParam(params, "deviceId");
             return new BasePaginatedQuery<String>(rest.http, "/push/channels", rest.push.pushRequestHeaders(deviceId), params, StringUtils.httpBodyHandler).get();
         }
