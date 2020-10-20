@@ -41,6 +41,7 @@ public class AblyRest extends AblyBase {
      * Set the Android Context for this instance
      */
     public void setAndroidContext(Context context) throws AblyException {
+        Log.v(TAG, "setAndroidContext(): context=" + context);
         this.platform.setAndroidContext(context);
         this.push.tryRequestRegistrationToken();
     }
@@ -49,6 +50,7 @@ public class AblyRest extends AblyBase {
      * clientId set by late initialisation
      */
     protected void onClientIdSet(String clientId) {
+        Log.v(TAG, "onClientIdSet(): clientId=" + clientId);
         /* we only need to propagate any update to clientId if this is a late init */
         if(push != null && platform.hasApplicationContext()) {
             try {

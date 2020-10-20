@@ -30,18 +30,25 @@ public class ActivationContext {
 
     public synchronized LocalDevice getLocalDevice() {
         if(localDevice == null) {
+            Log.v(TAG, "getLocalDevice(): creating new instance and returning that");
             localDevice = new LocalDevice(this);
+        } else {
+            Log.v(TAG, "getLocalDevice(): returning existing instance");
         }
         return localDevice;
     }
 
     public synchronized void setActivationStateMachine(ActivationStateMachine activationStateMachine) {
+        Log.v(TAG, "setActivationStateMachine(): activationStateMachine=" + activationStateMachine);
         this.activationStateMachine = activationStateMachine;
     }
 
     public synchronized ActivationStateMachine getActivationStateMachine() {
         if(activationStateMachine == null) {
+            Log.v(TAG, "getActivationStateMachine(): creating new instance and returning that");
             activationStateMachine = new ActivationStateMachine(this);
+        } else {
+            Log.v(TAG, "getActivationStateMachine(): returning existing instance");
         }
         return activationStateMachine;
     }
@@ -55,6 +62,8 @@ public class ActivationContext {
         if(ably != null) {
             Log.v(TAG, "getAbly(): returning existing Ably instance");
             return ably;
+        } else {
+            Log.v(TAG, "getAbly(): creating new Ably instance");
         }
 
         String deviceIdentityToken = getLocalDevice().deviceIdentityToken;
@@ -67,22 +76,27 @@ public class ActivationContext {
     }
 
     public boolean setClientId(String clientId, boolean propagateGotPushDeviceDetails) {
+        Log.v(TAG, "setClientId(): clientId=" + clientId + ", propagateGotPushDeviceDetails=" + propagateGotPushDeviceDetails);
         boolean updated = !clientId.equals(this.clientId);
         if(updated) {
             this.clientId = clientId;
             if(localDevice != null) {
+                Log.v(TAG, "setClientId(): local device exists");
                 /* Spec: RSH8d */
                 localDevice.setClientId(clientId);
                 if(localDevice.isRegistered() && activationStateMachine != null && propagateGotPushDeviceDetails) {
                     /* Spec: RSH8e */
                     activationStateMachine.handleEvent(new ActivationStateMachine.GotPushDeviceDetails());
                 }
+            } else {
+                Log.v(TAG, "setClientId(): local device doest not exist");
             }
         }
         return updated;
     }
 
     public void onNewRegistrationToken(RegistrationToken.Type type, String token) {
+        Log.v(TAG, "onNewRegistrationToken(): type=" + type + ", token=" + token);
         LocalDevice localDevice = getLocalDevice();
         RegistrationToken previous = localDevice.getRegistrationToken();
         if (previous != null) {
@@ -100,6 +114,8 @@ public class ActivationContext {
     }
 
     public void reset() {
+        Log.v(TAG, "reset()");
+
         ably = null;
 
         getActivationStateMachine().reset();
@@ -120,19 +136,26 @@ public class ActivationContext {
             if(activationContext == null) {
                 Log.v(TAG, "getActivationContext(): creating new ActivationContext for this application");
                 activationContexts.put(applicationContext, (activationContext = new ActivationContext(applicationContext)));
+            } else {
+                Log.v(TAG, "getActivationContext(): returning existing ActivationContext for this application");
             }
             if(ably != null) {
+                Log.v(TAG, "Setting Ably instance on the activation context");
                 activationContext.setAbly(ably);
+            } else {
+                Log.v(TAG, "Not setting Ably instance on the activation context");
             }
         }
         return activationContext;
     }
 
     protected void getRegistrationToken(final Callback<String> callback) {
+        Log.v(TAG, "getRegistrationToken(): callback=" + callback);
         FirebaseInstanceId.getInstance().getInstanceId()
                 .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
                     @Override
                     public void onComplete(Task<InstanceIdResult> task) {
+                        Log.v(TAG, "getRegistrationToken(): firebase called onComplete(): task=" + task);
                         if(task.isSuccessful()) {
                             /* Get new Instance ID token */
                             String token = task.getResult().getToken();
@@ -145,6 +168,7 @@ public class ActivationContext {
     }
 
     public static void setActivationContext(Context applicationContext, ActivationContext activationContext) {
+        Log.v(TAG, "setActivationContext(): applicationContext=" + applicationContext + ", activationContext=" + activationContext);
         activationContexts.put(applicationContext, activationContext);
     }
 

@@ -54,6 +54,8 @@ public class LocalDevice extends DeviceDetails {
         if(id != null) {
             Log.v(TAG, "loadPersisted(): existing deviceId found; id: " + id);
             deviceSecret = prefs.getString(SharedPrefKeys.DEVICE_SECRET, null);
+        } else {
+            Log.v(TAG, "loadPersisted(): existing deviceId not found.");
         }
         this.clientId = prefs.getString(SharedPrefKeys.CLIENT_ID, null);
         this.deviceIdentityToken = prefs.getString(SharedPrefKeys.DEVICE_TOKEN, null);
@@ -65,8 +67,8 @@ public class LocalDevice extends DeviceDetails {
         if(type != null) {
             RegistrationToken token = null;
             String tokenString = prefs.getString(SharedPrefKeys.TOKEN, null);
+            Log.d(TAG, "loadPersisted(): token string = " + tokenString);
             if(tokenString != null) {
-                Log.d(TAG, "loadPersisted(): token string = " + tokenString);
                 token = new RegistrationToken(type, tokenString);
                 setRegistrationToken(token);
             }
@@ -76,8 +78,10 @@ public class LocalDevice extends DeviceDetails {
     RegistrationToken getRegistrationToken() {
         JsonObject recipient = push.recipient;
         if(recipient == null) {
+            Log.v(TAG, "getRegistrationToken(): returning null because push.recipient is null");
             return null;
         }
+        Log.v(TAG, "getRegistrationToken(): returning a new registration token because push.recipient is set");
         return new RegistrationToken(
             RegistrationToken.Type.fromName(recipient.get("transportType").getAsString()),
             recipient.get("registrationToken").getAsString()
@@ -85,17 +89,19 @@ public class LocalDevice extends DeviceDetails {
     }
 
     private void setRegistrationToken(RegistrationToken token) {
+        Log.v(TAG, "setRegistrationToken(): token=" + token);
         push.recipient = new JsonObject();
         push.recipient.addProperty("transportType", token.type.toName());
         push.recipient.addProperty("registrationToken", token.token);
     }
 
     private void clearRegistrationToken() {
+        Log.v(TAG, "clearRegistrationToken()");
         push.recipient = null;
     }
 
     void setAndPersistRegistrationToken(RegistrationToken token) {
-        Log.v(TAG, "setAndPersistRegistrationToken(): token: " + token.token);
+        Log.v(TAG, "setAndPersistRegistrationToken(): token=" + token);
         setRegistrationToken(token);
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
         prefs.edit()
@@ -105,12 +111,14 @@ public class LocalDevice extends DeviceDetails {
     }
 
     void setClientId(String clientId) {
+        Log.v(TAG, "setClientId(): clientId=" + clientId);
         this.clientId = clientId;
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
         prefs.edit().putString(SharedPrefKeys.CLIENT_ID, clientId).apply();
     }
 
     public void setDeviceIdentityToken(String token) {
+        Log.v(TAG, "setDeviceIdentityToken(): token=" + token);
         this.deviceIdentityToken = token;
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
         prefs.edit().putString(SharedPrefKeys.DEVICE_TOKEN, token).apply();
@@ -178,6 +186,7 @@ public class LocalDevice extends DeviceDetails {
     }
 
     private static String generateSecret() {
+        Log.v(TAG, "generateSecret()");
         byte[] entropy = new byte[64];
         (new SecureRandom()).nextBytes(entropy);
         MessageDigest digest = null;

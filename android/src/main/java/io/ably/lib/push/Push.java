@@ -11,6 +11,8 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 import io.ably.lib.util.Log;
 
+import java.util.Arrays;
+
 public class Push extends PushBase {
 
     public Push(AblyBase rest) {
@@ -22,7 +24,7 @@ public class Push extends PushBase {
     }
 
     public void activate(boolean useCustomRegistrar) throws AblyException {
-        Log.v(TAG, "activate(): useCustomRegistrar " + useCustomRegistrar);
+        Log.v(TAG, "activate(): useCustomRegistrar=" + useCustomRegistrar);
         Context context = getApplicationContext();
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         getStateMachine().handleEvent(ActivationStateMachine.CalledActivate.useCustomRegistrar(useCustomRegistrar, prefs));
@@ -33,7 +35,7 @@ public class Push extends PushBase {
     }
 
     public void deactivate(boolean useCustomRegistrar) throws AblyException {
-        Log.v(TAG, "deactivate(): useCustomRegistrar " + useCustomRegistrar);
+        Log.v(TAG, "deactivate(): useCustomRegistrar=" + useCustomRegistrar);
         Context context = getApplicationContext();
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         getStateMachine().handleEvent(ActivationStateMachine.CalledDeactivate.useCustomRegistrar(useCustomRegistrar, prefs));
@@ -46,7 +48,10 @@ public class Push extends PushBase {
     public void tryRequestRegistrationToken() {
         try {
             if (getLocalDevice().isRegistered()) {
+                Log.v(TAG, "Local device is registered.");
                 getStateMachine().getRegistrationToken();
+            } else {
+                Log.v(TAG, "Local device is not registered.");
             }
         } catch (AblyException e) {
             Log.e(TAG, "couldn't validate existing push recipient device details", e);
@@ -66,8 +71,11 @@ public class Push extends PushBase {
 
     public ActivationContext getActivationContext() throws AblyException {
         if (activationContext == null) {
+            Log.v(TAG, "getActivationContext(): creating a new context and returning that");
             Context applicationContext = getApplicationContext();
             activationContext = ActivationContext.getActivationContext(applicationContext, (AblyRest)rest);
+        } else {
+            Log.v(TAG, "getActivationContext(): returning existing content");
         }
         return activationContext;
     }
@@ -81,11 +89,16 @@ public class Push extends PushBase {
         Param[] headers = super.pushRequestHeaders(forLocalDevice);
         if(forLocalDevice) {
             try {
-                Param[] deviceIdentityHeaders = getLocalDevice().deviceIdentityHeaders();
+                final Param[] deviceIdentityHeaders = getLocalDevice().deviceIdentityHeaders();
                 if(deviceIdentityHeaders != null) {
+                    Log.v(TAG, "pushRequestHeaders(): deviceIdentityHeaders=" + Arrays.toString(deviceIdentityHeaders));
                     headers = HttpUtils.mergeHeaders(headers, deviceIdentityHeaders);
+                } else {
+                    Log.w(TAG, "pushRequestHeaders(): Local device returned null device identity headers!");
                 }
-            } catch (AblyException e) {}
+            } catch (AblyException e) {
+                Log.w(TAG, "pushRequestHeaders(): Failed to get device identity headers. forLocalDevice=" + forLocalDevice, e);
+            }
         }
         return headers;
     }
@@ -94,7 +107,9 @@ public class Push extends PushBase {
         boolean forLocalDevice = false;
         try {
             forLocalDevice = deviceId != null && deviceId.equals(getLocalDevice().id);
-        } catch (AblyException e) {}
+        } catch (AblyException e) {
+            Log.w(TAG, "pushRequestHeaders(): deviceId=" + deviceId, e);
+        }
         return pushRequestHeaders(forLocalDevice);
     }
 
