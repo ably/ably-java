@@ -10,5 +10,5 @@ repositories {
 }
 
 nexusStaging {
-    packageGroup = "io.ably"
+    packageGroup = 'io.ably'
 }

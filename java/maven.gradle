@@ -2,8 +2,8 @@ apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'signing'
 
-final String groupId = "io.ably"
-final String artifactId = "ably-java"
+final String groupId = 'io.ably'
+final String artifactId = 'ably-java'
 final String localReleaseDest = "${buildDir}/release/${version}"
 final String mavenUser = hasProperty('ossrhUsername') ? ossrhUsername : ''
 final String mavenPassword = hasProperty('ossrhPassword') ? ossrhPassword : ''
@@ -20,11 +20,11 @@ uploadArchives {
 
         beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-        repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+        repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/') {
             authentication(userName: mavenUser, password: mavenPassword)
         }
 
-        snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+        snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots/') {
             authentication(userName: mavenUser, password: mavenPassword)
         }
 
@@ -91,8 +91,8 @@ task zipRelease(type: Zip) {
 
 task assembleRelease {
     doLast {
-        logger.quiet("Release ${version} can be found at ${localReleaseDest}");
-        logger.quiet("Release ${version} zipped can be found ${buildDir}/release-${version}.zip");
+        logger.quiet("Release ${version} can be found at ${localReleaseDest}")
+        logger.quiet("Release ${version} zipped can be found ${buildDir}/release-${version}.zip")
     }
     dependsOn(uploadArchives)
     dependsOn(zipRelease)

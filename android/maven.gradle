@@ -1,8 +1,8 @@
 apply plugin: 'maven'
 apply plugin: 'signing'
 
-final String groupId = "io.ably"
-final String artifactId = "ably-android"
+final String groupId = 'io.ably'
+final String artifactId = 'ably-android'
 final String localReleaseDest = "${buildDir}/release/${version}"
 final String mavenUser = hasProperty('ossrhUsername') ? ossrhUsername : ''
 final String mavenPassword = hasProperty('ossrhPassword') ? ossrhPassword : ''
@@ -19,11 +19,11 @@ uploadArchives {
 
         beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-        repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+        repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/') {
             authentication(userName: mavenUser, password: mavenPassword)
         }
 
-        snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+        snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots/') {
             authentication(userName: mavenUser, password: mavenPassword)
         }
         pom.groupId = groupId
@@ -70,7 +70,7 @@ uploadArchives {
         pom.whenConfigured { p ->
             p.dependencies = p.dependencies.findAll {
                     // Exclude dependency on lib subproject.
-                dep -> dep.artifactId != "lib"
+                dep -> dep.artifactId != 'lib'
             }.findAll {
                     // Exclude Google services since we don't want to impose a particular
                     // version on users. Ideally we would specify a version range,
@@ -102,8 +102,8 @@ task zipRelease(type: Zip) {
 tasks.whenTaskAdded { task ->
     if (task.name == 'assembleRelease') {
         task.doLast {
-            logger.quiet("Release ${version} can be found at ${localReleaseDest}/");
-            logger.quiet("Release ${version} zipped can be found ${buildDir}/release-${version}.zip");
+            logger.quiet("Release ${version} can be found at ${localReleaseDest}/")
+            logger.quiet("Release ${version} zipped can be found ${buildDir}/release-${version}.zip")
         }
 
         task.dependsOn(uploadArchives)
@@ -118,7 +118,7 @@ task sourcesJar(type: Jar) {
 
 task javadoc(type: Javadoc) {
     source = android.sourceSets.main.java.srcDirs
-    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+    classpath += project.files(android.bootClasspath.join(File.pathSeparator))
     failOnError false
 }
 
