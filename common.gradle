@@ -1,6 +1,6 @@
 repositories {
-  jcenter()
-  mavenCentral()
+    jcenter()
+    mavenCentral()
 }
 
 group = 'io.ably'
@@ -8,6 +8,6 @@ version = '1.2.2'
 description = """Ably java client library"""
 
 tasks.withType(Javadoc) {
-  // To prevent javadoc warnings with Java 8
-  options.addStringOption('Xdoclint:none', '-quiet')
+    // To prevent javadoc warnings with Java 8
+    options.addStringOption('Xdoclint:none', '-quiet')
 }

@@ -20,7 +20,7 @@ uploadArchives {
 
         beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-	    repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+        repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
             authentication(userName: mavenUser, password: mavenPassword)
         }
 
@@ -38,15 +38,15 @@ uploadArchives {
             description 'A Java Realtime and REST client library for [Ably.io](https://www.ably.io), the realtime messaging service.'
             packaging 'jar'
             inceptionYear '2015'
-			url 'https://www.github.com/ably/ably-java'
-			developers {
-				developer {
-					name 'Paddy Byers'
-					email 'paddy@ably.io'
-					url 'https://github.com/paddybyers'
-					id 'paddybyers'
-				}
-			}
+            url 'https://www.github.com/ably/ably-java'
+            developers {
+                developer {
+                    name 'Paddy Byers'
+                    email 'paddy@ably.io'
+                    url 'https://github.com/paddybyers'
+                    id 'paddybyers'
+                }
+            }
             scm {
                 url 'scm:git:https://github.com/ably/ably-java'
                 connection 'scm:git:https://github.com/ably/ably-java'
@@ -70,8 +70,8 @@ uploadArchives {
         }
 
         // Exclude test dependencies
-        pom.whenConfigured {
-            p -> p.dependencies = p.dependencies.findAll {
+        pom.whenConfigured { p ->
+            p.dependencies = p.dependencies.findAll {
                 dep -> dep.scope == 'runtime'
             }
         }
@@ -99,13 +99,13 @@ task assembleRelease {
 }
 
 task sourcesJar(type: Jar) {
-     classifier = 'sources'
-     from sourceSets.main.allSource
+    classifier = 'sources'
+    from sourceSets.main.allSource
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-     classifier = 'javadoc'
-     from javadoc.destinationDir
+    classifier = 'javadoc'
+    from javadoc.destinationDir
 }
 
 artifacts {

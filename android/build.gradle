@@ -58,7 +58,7 @@ android {
         main {
             java {
                 srcDirs = ['src/main/java', '../lib/src/main/java']
-           }
+            }
         }
         androidTest {
             java {
