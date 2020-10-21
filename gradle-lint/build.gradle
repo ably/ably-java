@@ -1,0 +1,86 @@
+plugins {
+    id 'codenarc'
+
+    // This project needs the groovy plugin so that it will recognise groovy source sets,
+    // which is a requirement of using the codenarc plugin.
+    id 'groovy'
+}
+
+repositories {
+    jcenter()
+}
+
+sourceSets {
+    // delegate: https://docs.gradle.org/current/javadoc/org/gradle/api/tasks/SourceSetContainer.html
+    // a.k.a. NamedDomainObjectContainer<SourceSet>
+    // TODO: find canonical reference for how the named domain object container translates to Groovy Gradle DSL
+    // and document that here for future reference.
+    // But, basically, gradleScripts is a name we've made up for this source set. User-defined, if you will.
+
+    /**
+     * Ably-defined name for the source set that encapsulates all Gradle build script files in this repository.
+     * The CodeNarc plugin creates an implicit task called codenarcGradleScripts, based on this name, however
+     * that tasks doesn't pick up the .gradle files. Presumably it filters to process only files with a .groovy
+     * extension. This is why we are invoking CodeNarc by extending the CodeNarc task - see checkWithCodenarc.
+     */
+    gradleScripts {
+        // groovy is a method added by the groovy plugin
+        groovy {
+            // delegate: https://docs.gradle.org/current/dsl/org.gradle.api.file.SourceDirectorySet.html
+            // srcDir "${project.rootProject.files('.')}"
+            srcDir '..'
+            include '**/*.gradle'
+            exclude '**/bin/**'
+        }
+    }
+}
+
+// https://docs.gradle.org/current/dsl/org.gradle.api.plugins.quality.CodeNarcExtension.html
+// We could move configFile to the configuration phase of our runCodenarc task and that works ok.
+// However, reportFormat is not understood there and the reports block that is documented for that block's
+// delegate doesn't seem to have an obvious way to generate output to the console.
+// For this reason the decision has been made to configure the overall nature for CodeNarc in this block,
+// while the specification of which files it lints is made in our ablyCodenarc task.
+codenarc {
+    configFile = file('src/main/groovy/build-script-rules.groovy')
+    reportFormat 'console'
+}
+
+dependencies {
+    // To use the groovy plugin we have to tell it where to get Groovy from.
+    // As this project is checking build scripts used by Gradle projects in this repository,
+    // including this project, the local Groovy instance is exactly what we need.
+    implementation localGroovy()
+}
+
+/**
+ * This task is informational, here to help with debugging issues with our use of codenarc.
+ */
+tasks.register('listBuildScriptsCheckedWithCodenarc') {
+    group = 'Ably'
+    description = 'Lists the build script files which will be checked by the checkWithCodenarc task.'
+
+    doLast {
+        sourceSets.each { sourceSet ->
+            println("$sourceSet:")
+            boolean noSourceFound = true
+            sourceSet.allSource.each { file ->
+                println("\t$file")
+                noSourceFound = false
+            }
+            if (noSourceFound) {
+                println('\tNo source files captured by this source set.')
+            }
+        }
+    }
+}
+
+tasks.register('checkWithCodenarc', CodeNarc) { cn ->
+    // delegate: https://docs.gradle.org/current/dsl/org.gradle.api.plugins.quality.CodeNarc.html
+    group = 'Ably'
+    description = 'Checks the build script files in this repository using CodeNarc.'
+
+    sourceSets.each { sourceSet ->
+        cn.source sourceSet.allSource
+    }
+}
