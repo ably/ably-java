@@ -1,4 +1,6 @@
 ruleset {
+    ruleset 'rulesets/basic.xml'
+
     ruleset('rulesets/formatting.xml') {
         // This rule requires a space before the colon, which is unnecessary and less human-readable - especially in our JSON-rich world.
         exclude 'SpaceAroundMapEntryColon'
@@ -11,4 +13,6 @@ ruleset {
         // Not a valid concern given our context (Gradle build scripts).
         exclude 'CompileStatic'
     }
+
+    ruleset 'rulesets/groovyism.xml'
 }
