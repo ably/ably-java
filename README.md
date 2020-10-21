@@ -489,13 +489,28 @@ The Android-specific library AAR is built with:
 
 ## Code Standard
 
-We are introducing [Checkstyle](https://checkstyle.org/) to enforce code style and spot for transgressions and illogical constructs.
+### Checkstyle
+
+We use [Checkstyle](https://checkstyle.org/) to enforce code style and spot for transgressions and illogical constructs
+in our Java source files.
 The Gradle build has been configured to run these on `java:assembleRelease`.
 It does not run for the Android build yet.
 
 You can run just the Checkstyle rules on their own using:
 
     ./gradlew checkstyleMain
+
+### CodeNarc
+
+We use [CodeNarc](https://codenarc.org/) to enforce code style in our Gradle build scripts, which are all written in Groovy.
+
+You can run CodeNarc over all build scripts in this repository using:
+
+    ./gradlew checkWithCodenarc
+
+For more details see the [`gradle-lint`](gradle-lint) project.
+
+### IDE Support
 
 We have a root [`.editorconfig`](.editorconfig) file, supporting [EditorConfig](https://editorconfig.org/), which should be of assistance within most IDEs. e.g.:
 
