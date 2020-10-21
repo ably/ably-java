@@ -2,11 +2,11 @@ apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'signing'
 
-def groupId = "io.ably"
-def artifactId = "ably-java"
-def localReleaseDest = "${buildDir}/release/${version}"
-def mavenUser = hasProperty('ossrhUsername') ? ossrhUsername : ''
-def mavenPassword = hasProperty('ossrhPassword') ? ossrhPassword : ''
+final String groupId = "io.ably"
+final String artifactId = "ably-java"
+final String localReleaseDest = "${buildDir}/release/${version}"
+final String mavenUser = hasProperty('ossrhUsername') ? ossrhUsername : ''
+final String mavenPassword = hasProperty('ossrhPassword') ? ossrhPassword : ''
 
 /*
  * Task which signs and uploads the Java artifacts to Nexus OSSRH.

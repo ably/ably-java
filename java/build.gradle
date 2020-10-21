@@ -42,8 +42,8 @@ sourceSets {
 jar {
     baseName = 'ably-java'
     from {
-        configurations.compile.collect {
-            it.isDirectory() ? it : zipTree(it)
+        configurations.compile.collect { file ->
+            file.isDirectory() ? file : zipTree(file)
         }
     }
     includes = ['**/io/ably/**']
@@ -56,8 +56,8 @@ task fullJar(type: Jar) {
     baseName = 'ably-java'
     classifier = 'full'
     from {
-        configurations.compile.collect {
-            it.isDirectory() ? it : zipTree(it)
+        configurations.compile.collect { file ->
+            file.isDirectory() ? file : zipTree(file)
         }
     }
     with jar

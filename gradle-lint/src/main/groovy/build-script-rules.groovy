@@ -6,4 +6,9 @@ ruleset {
         // Arbitrary, ending up forcing developers to contort code unecessarily - especially for string definitions.
         exclude 'LineLength'
     }
+
+    ruleset('rulesets/convention.xml') {
+        // Not a valid concern given our context (Gradle build scripts).
+        exclude 'CompileStatic'
+    }
 }
