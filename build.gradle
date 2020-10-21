@@ -1,18 +1,13 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
+plugins {
+  id 'io.codearte.nexus-staging' version '0.21.1'
+}
+
 repositories {
-    google()
+  google()
+  mavenCentral()
 }
-buildscript {
-    repositories {
-        google()
-		mavenCentral()
-	}
-	dependencies {
-		classpath 'io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.21.1'
-	}
-}
-apply plugin: 'io.codearte.nexus-staging'
 
 nexusStaging {
 	packageGroup = "io.ably"
