@@ -2,11 +2,11 @@ apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'signing'
 
-def groupId = "io.ably"
-def artifactId = "ably-java"
-def localReleaseDest = "${buildDir}/release/${version}"
-def mavenUser = hasProperty('ossrhUsername') ? ossrhUsername : ''
-def mavenPassword = hasProperty('ossrhPassword') ? ossrhPassword : ''
+final String GROUP_ID = 'io.ably'
+final String ARTIFACT_ID = 'ably-java'
+final String LOCAL_RELEASE_DESTINATION = "${buildDir}/release/${version}"
+final String MAVEN_USER = hasProperty('ossrhUsername') ? ossrhUsername : ''
+final String MAVEN_PASSWORD = hasProperty('ossrhPassword') ? ossrhPassword : ''
 
 /*
  * Task which signs and uploads the Java artifacts to Nexus OSSRH.
@@ -16,20 +16,20 @@ uploadArchives {
         sign configurations.archives
     }
     repositories.mavenDeployer {
-        logger.lifecycle('OSSRH auth with username: ' + mavenUser)
+        logger.lifecycle('OSSRH auth with username: ' + MAVEN_USER)
 
         beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-        repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-            authentication(userName: mavenUser, password: mavenPassword)
+        repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/') {
+            authentication(userName: MAVEN_USER, password: MAVEN_PASSWORD)
         }
 
-        snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-            authentication(userName: mavenUser, password: mavenPassword)
+        snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots/') {
+            authentication(userName: MAVEN_USER, password: MAVEN_PASSWORD)
         }
 
-        pom.groupId = groupId
-        pom.artifactId = artifactId
+        pom.groupId = GROUP_ID
+        pom.artifactId = ARTIFACT_ID
         pom.version = version
 
         // Add other pom properties here if you want (developer details / licenses)
@@ -79,20 +79,20 @@ uploadArchives {
         // Export files to local storage
         // COMMENT OUT THIS LINE IN ORDER TO RELEASE TO SONATYPE NEXUS STAGING
         // TODO https://github.com/ably/ably-java/issues/566
-        repository(url: "file://${localReleaseDest}")
+        repository(url: "file://${LOCAL_RELEASE_DESTINATION}")
     }
 }
 
 task zipRelease(type: Zip) {
-    from localReleaseDest
+    from LOCAL_RELEASE_DESTINATION
     destinationDir buildDir
     archiveName "release-${version}.zip"
 }
 
 task assembleRelease {
     doLast {
-        logger.quiet("Release ${version} can be found at ${localReleaseDest}");
-        logger.quiet("Release ${version} zipped can be found ${buildDir}/release-${version}.zip");
+        logger.quiet("Release ${version} can be found at ${LOCAL_RELEASE_DESTINATION}")
+        logger.quiet("Release ${version} zipped can be found ${buildDir}/release-${version}.zip")
     }
     dependsOn(uploadArchives)
     dependsOn(zipRelease)
