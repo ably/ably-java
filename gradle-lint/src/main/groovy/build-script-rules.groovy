@@ -14,6 +14,7 @@ ruleset {
         exclude 'CompileStatic'
     }
 
+    ruleset 'rulesets/braces.xml'
     ruleset 'rulesets/groovyism.xml'
     ruleset 'rulesets/naming.xml'
     ruleset 'rulesets/unnecessary.xml'
