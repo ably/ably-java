@@ -16,4 +16,5 @@ ruleset {
 
     ruleset 'rulesets/groovyism.xml'
     ruleset 'rulesets/unnecessary.xml'
+    ruleset 'rulesets/unused.xml'
 }
