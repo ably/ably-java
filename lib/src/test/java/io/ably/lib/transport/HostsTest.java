@@ -48,7 +48,7 @@ public class HostsTest {
     public void hosts_host_and_environment() throws AblyException {
         ClientOptions options = new ClientOptions();
         options.environment = "myenv";
-        new Hosts(Defaults.HOST_REALTIME, Defaults.HOST_REALTIME, options);
+        new Hosts("overridden.ably.io", Defaults.HOST_REALTIME, options);
     }
 
     /**
@@ -209,6 +209,9 @@ public class HostsTest {
         assertThat(returnedEnvironmentFallbackHosts, containsInAnyOrder(Defaults.HOST_FALLBACKS));
     }
 
+    /**
+     * Expect no fallback hosts if the custom port is specified.
+     */
     @Test
     public void hosts_no_fallback_when_port_is_defined() throws AblyException {
         ClientOptions options = new ClientOptions();
@@ -218,6 +221,9 @@ public class HostsTest {
         assertThat(hosts.getFallback(Defaults.HOST_REALTIME), nullValue());
     }
 
+    /**
+     * Expect no fallback hosts if the custom TLS port is specified.
+     */
     @Test
     public void hosts_no_fallback_when_tlsport_is_defined() throws AblyException {
         ClientOptions options = new ClientOptions();
@@ -225,5 +231,31 @@ public class HostsTest {
         Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
 
         assertThat(hosts.getFallback(Defaults.HOST_REALTIME), nullValue());
+    }
+
+    /**
+     * It should return fallback hosts when custom fallbacks and port are provided.
+     */
+    @Test
+    public void hosts_fallback_when_fallback_hosts_and_port_are_defined() throws AblyException {
+        ClientOptions options = new ClientOptions();
+        options.port = 8081;
+        options.fallbackHosts = new String[] { "custom-fallback.ably.com" };
+        Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
+
+        assertThat(hosts.getFallback(Defaults.HOST_REALTIME), is("custom-fallback.ably.com"));
+    }
+
+    /**
+     * It should return fallback hosts when host, custom fallbacks, and port are provided.
+     */
+    @Test
+    public void hosts_fallback_when_host_and_fallback_hosts_and_port_are_defined() throws AblyException {
+        ClientOptions options = new ClientOptions();
+        options.tlsPort = 8081;
+        options.fallbackHosts = new String[] { "custom-fallback.ably.com" };
+        Hosts hosts = new Hosts("custom.ably.com", Defaults.HOST_REALTIME, options);
+
+        assertThat(hosts.getFallback("custom.ably.com"), is("custom-fallback.ably.com"));
     }
 }

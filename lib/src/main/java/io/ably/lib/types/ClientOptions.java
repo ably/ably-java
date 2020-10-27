@@ -160,6 +160,7 @@ public class ClientOptions extends AuthOptions {
      * Spec: TO3k7 Set to use default fallbackHosts even when overriding
      * environment or restHost/realtimeHost
      */
+    @Deprecated
     public boolean fallbackHostsUseDefault;
 
     /**
