@@ -258,4 +258,14 @@ public class HostsTest {
 
         assertThat(hosts.getFallback("custom.ably.com"), is("custom-fallback.ably.com"));
     }
+
+    @Test(expected = AblyException.class)
+    public void hosts_use_default_fallback_hosts_and_tlsport_are_defined() throws AblyException {
+        ClientOptions options = new ClientOptions();
+        options.tlsPort = 8081;
+        options.fallbackHostsUseDefault = true;
+        Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
+
+        assertThat(hosts.getFallback(Defaults.HOST_REALTIME), nullValue());
+    }
 }

@@ -47,13 +47,13 @@ public class Hosts {
             if (options.fallbackHosts != null) {
                 throw AblyException.fromErrorInfo(new ErrorInfo("fallbackHosts and fallbackHostsUseDefault cannot both be set", 40000, 400));
             }
-            if (options.port != 0 && options.tlsPort != 0) {
+            if (options.port != 0 || options.tlsPort != 0) {
                 throw AblyException.fromErrorInfo(new ErrorInfo("fallbackHostsUseDefault cannot be set when port or tlsPort are set", 40000, 400));
             }
             tempFallbackHosts = Defaults.HOST_FALLBACKS;
         }
 
-        boolean isProduction = (options.environment == null) || ("production".equalsIgnoreCase(options.environment));
+        boolean isProduction = options.environment == null || options.environment.isEmpty() || "production".equalsIgnoreCase(options.environment);
 
         if (!hasCustomPrimaryHost && tempFallbackHosts == null && options.port == 0 && options.tlsPort == 0) {
             tempFallbackHosts = isProduction ? Defaults.HOST_FALLBACKS : Defaults.getEnvironmentFallbackHosts(options.environment);
