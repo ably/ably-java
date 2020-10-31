@@ -1,10 +1,8 @@
-package io.ably.lib.test.realtime;
+package io.ably.lib.util;
 
 import org.junit.Test;
 
 import java.util.HashMap;
-
-import io.ably.lib.util.EventEmitter;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -12,7 +10,7 @@ import static org.junit.Assert.assertTrue;
 
 public class EventEmitterTest {
 
-    private static enum MyEvents {
+    private enum MyEvents {
         event_0,
         event_1
     }
@@ -32,7 +30,7 @@ public class EventEmitterTest {
             Integer count = counts.get(theThing.event); if(count == null) count = 0;
             counts.put(theThing.event, count + 1);
         }
-        HashMap<MyEvents, Integer> counts = new HashMap<MyEvents, Integer>();
+        HashMap<MyEvents, Integer> counts = new HashMap<>();
     }
 
     private static class MyEmitter extends EventEmitter<MyEvents, MyListener> {
@@ -320,7 +318,6 @@ public class EventEmitterTest {
     /**
      * "off" event specific listeners inside the listener and ensure they are not called during that event.
      */
-
     @Test
     public void off_specific_event_listener_in_listener() {
         final MyEmitter emitter = new MyEmitter();

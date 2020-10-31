@@ -15,7 +15,6 @@ import io.ably.lib.test.common.Setup;
 @SuiteClasses({
     ConnectionManagerTest.class,
     HostsTest.class,
-    EventEmitterTest.class,
     RealtimeHttpHeaderTest.class,
     RealtimeAuthTest.class,
     RealtimeJWTTest.class,
