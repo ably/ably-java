@@ -40,39 +40,38 @@ public class Hosts {
      */
     public Hosts(String primaryHost, String defaultHost, ClientOptions options) throws AblyException {
         this.defaultHost = defaultHost;
-        if (primaryHost != null) {
+        this.fallbackHostsUseDefault = options.fallbackHostsUseDefault;
+        boolean hasCustomPrimaryHost = primaryHost != null && !primaryHost.equalsIgnoreCase(defaultHost);
+        String[] tempFallbackHosts = options.fallbackHosts;
+        if (options.fallbackHostsUseDefault) {
+            if (options.fallbackHosts != null) {
+                throw AblyException.fromErrorInfo(new ErrorInfo("fallbackHosts and fallbackHostsUseDefault cannot both be set", 40000, 400));
+            }
+            if (options.port != 0 || options.tlsPort != 0) {
+                throw AblyException.fromErrorInfo(new ErrorInfo("fallbackHostsUseDefault cannot be set when port or tlsPort are set", 40000, 400));
+            }
+            tempFallbackHosts = Defaults.HOST_FALLBACKS;
+        }
+
+        boolean isProduction = options.environment == null || options.environment.isEmpty() || "production".equalsIgnoreCase(options.environment);
+
+        if (!hasCustomPrimaryHost && tempFallbackHosts == null && options.port == 0 && options.tlsPort == 0) {
+            tempFallbackHosts = isProduction ? Defaults.HOST_FALLBACKS : Defaults.getEnvironmentFallbackHosts(options.environment);
+        }
+
+        if (hasCustomPrimaryHost) {
             setPrimaryHost(primaryHost);
             if (options.environment != null) {
                 /* TO3k2: It is never valid to provide both a restHost and environment value
                  * TO3k3: It is never valid to provide both a realtimeHost and environment value */
                 throw AblyException.fromErrorInfo(new ErrorInfo("cannot set both restHost/realtimeHost and environment options", 40000, 400));
             }
-        } else if (options.environment != null && !options.environment.equalsIgnoreCase("production")) {
-            /* RSC11: If ClientOptions.environment is set and is not
-             * "production", then the primary hostname is set to the default
-             * hostname with the environment setting used as a prefix.
-             * Note that this does not happen if there is an explicit setting
-             * of ClientOptions.restHost or ClientOptions.realtimeHost (as
-             * appropriate). The spec is not clear on which one should take
-             * precedence. */
-            setPrimaryHost(options.environment + "-" + defaultHost);
         } else {
-            setPrimaryHost(defaultHost);
+            setPrimaryHost(isProduction ? defaultHost : options.environment + "-" + defaultHost);
         }
-        fallbackHostsUseDefault = options.fallbackHostsUseDefault;
-        if (options.fallbackHosts == null) {
-            fallbackHosts = Arrays.copyOf(Defaults.HOST_FALLBACKS, Defaults.HOST_FALLBACKS.length);
-            fallbackHostsIsDefault = true;
-        } else {
-            /* RSC15a: use ClientOptions#fallbackHosts if set */
-            fallbackHosts = Arrays.copyOf(options.fallbackHosts, options.fallbackHosts.length);
-            fallbackHostsIsDefault = false;
-            if (options.fallbackHostsUseDefault) {
-                /* TO3k7: It is never valid to configure fallbackHost and set
-                 * fallbackHostsUseDefault to true */
-                throw AblyException.fromErrorInfo(new ErrorInfo("cannot set both fallbackHosts and fallbackHostsUseDefault options", 40000, 400));
-            }
-        }
+
+        fallbackHostsIsDefault = Arrays.equals(Defaults.HOST_FALLBACKS, tempFallbackHosts);
+        fallbackHosts = tempFallbackHosts == null ? new String[] {} : tempFallbackHosts.clone();
         /* RSC15a: shuffle the fallback hosts. */
         Collections.shuffle(Arrays.asList(fallbackHosts));
         fallbackRetryTimeout = options.fallbackRetryTimeout;
