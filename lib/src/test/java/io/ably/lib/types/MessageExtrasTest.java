@@ -11,6 +11,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 
 public class MessageExtrasTest {
@@ -23,6 +24,9 @@ public class MessageExtrasTest {
         final JsonObject objectA = new JsonObject();
         objectA.addProperty("someKey", "someValue");
 
+        final JsonObject objectB = new JsonObject();
+        objectB.addProperty("someOtherKey", "someValue");
+
         final MessageExtras messageExtras = new MessageExtras(objectA);
         assertNull(messageExtras.getDelta());
 
@@ -30,6 +34,8 @@ public class MessageExtrasTest {
         final JsonElement serialised = serializer.serialize(messageExtras, null, null);
 
         assertEquals(objectA, serialised);
+        assertNotEquals(objectB, serialised);
+        assertNotEquals(objectB, objectA);
     }
 
     @Test
