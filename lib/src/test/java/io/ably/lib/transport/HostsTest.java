@@ -251,10 +251,7 @@ public class HostsTest {
         options.fallbackHostsUseDefault = true;
 
         // When
-        Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
-
-        // Then
-        assertThat(hosts.getFallback(Defaults.HOST_REALTIME), nullValue());
+        new Hosts(null, Defaults.HOST_REALTIME, options);
     }
 
     private List<String> collectFallbackHosts(Hosts hosts) {
