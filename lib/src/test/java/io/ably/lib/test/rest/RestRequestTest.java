@@ -464,7 +464,7 @@ public class RestRequestTest extends ParameterizedTest {
     /**
      * Publish a message using the request() API
      * Spec: RSC19a, RSC19b
-     * 
+     *
      */
     @Test
     public void request_post() {
@@ -717,4 +717,28 @@ public class RestRequestTest extends ParameterizedTest {
         }
     }
 
+    /**
+     * Trying to publish a message on behalf of another client with invalid connection key.
+     * Specs: TM2h
+     */
+    @Test
+    public void request_post_with_invalid_connection_key() throws AblyException {
+        // Given
+        DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+        fillInOptions(opts);
+        opts.httpListener = new RawHttpTracker();
+        AblyRest ably = new AblyRest(opts);
+        Message message = new Message("Test event", "Test data (invalid key)");
+        message.connectionKey = "invalid";
+        HttpUtils.JsonRequestBody requestBody = new HttpUtils.JsonRequestBody(message);
+
+        // When
+        HttpPaginatedResponse publishResponse = ably.request(HttpConstants.Methods.POST, channelMessagesPath, null, requestBody, null);
+
+        // Then
+        assertFalse("Verify failure is indicated", publishResponse.success);
+        assertNotNull("Verify error is indicated", publishResponse.errorMessage);
+        assertEquals("Verify statusCode is present", publishResponse.statusCode, 400);
+        assertEquals("Verify errorCode is present", publishResponse.errorCode, 40006);
+    }
 }
