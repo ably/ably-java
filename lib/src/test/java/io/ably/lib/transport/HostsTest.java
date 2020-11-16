@@ -1,44 +1,37 @@
 package io.ably.lib.transport;
 
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ClientOptions;
 import java.util.ArrayList;
-import java.util.Arrays;
-
 import java.util.List;
 import org.junit.Test;
 
-import io.ably.lib.types.ClientOptions;
-
 public class HostsTest {
+
+    private final ClientOptions options = new ClientOptions();
 
     /**
      * Tests for Hosts class (fallback hosts).
      */
     @Test
     public void hosts_fallback() throws AblyException {
-        ClientOptions options = new ClientOptions();
+        // When
         Hosts hosts = new Hosts(Defaults.HOST_REALTIME, Defaults.HOST_REALTIME, options);
-        String host = hosts.getFallback(Defaults.HOST_REALTIME);
-        /* Expect given fallback host string is (relatively) valid */
-        assertThat(host, not(isEmptyOrNullString()));
-        /* Expect multiple calls will provide different (relatively) valid fallback hosts */
-        String host2 = hosts.getFallback(host);
-        assertThat(host2, not(isEmptyOrNullString()));
-        assertThat(host2, not(host));
-        /* Expect a null, when we requested more than available fallback hosts */
-        for (int i = Defaults.HOST_FALLBACKS.length - 1; i > 0; i--) {
-            assertThat(host2, notNullValue());
-            host2 = hosts.getFallback(host2);
-        }
+
+        // Then
+        List<String> fallbackHosts = collectFallbackHosts(hosts);
+        assertThat(hosts.getPrimaryHost(), is(Defaults.HOST_REALTIME));
+        // the returned fallback hosts should have the same elements as default host fallbacks
+        assertThat(fallbackHosts, containsInAnyOrder(Defaults.HOST_FALLBACKS));
+        // expect the fallback hosts to be shuffled
+        assertThat(fallbackHosts, not(contains(Defaults.HOST_FALLBACKS)));
     }
 
     /**
@@ -46,8 +39,10 @@ public class HostsTest {
      */
     @Test(expected = AblyException.class)
     public void hosts_host_and_environment() throws AblyException {
-        ClientOptions options = new ClientOptions();
+        // Given
         options.environment = "myenv";
+
+        // When
         new Hosts("overridden.ably.io", Defaults.HOST_REALTIME, options);
     }
 
@@ -56,11 +51,14 @@ public class HostsTest {
      */
     @Test
     public void hosts_fallback_empty_array() throws AblyException {
-        ClientOptions options = new ClientOptions();
-        options.fallbackHosts = new String[]{};
+        // Given
+        options.fallbackHosts = new String[] {};
+
+        // When
         Hosts hosts = new Hosts(Defaults.HOST_REALTIME, Defaults.HOST_REALTIME, options);
-        String host = hosts.getFallback(Defaults.HOST_REALTIME);
-        assertThat(host, nullValue());
+
+        // Then
+        assertThat(hosts.getFallback(Defaults.HOST_REALTIME), nullValue());
     }
 
     /**
@@ -69,27 +67,20 @@ public class HostsTest {
      */
     @Test
     public void hosts_fallback_custom_hosts() throws AblyException {
-        ClientOptions options = new ClientOptions();
+        // Given
         String[] customHosts = { "F.ably-realtime.com", "G.ably-realtime.com", "H.ably-realtime.com", "I.ably-realtime.com", "J.ably-realtime.com", "K.ably-realtime.com" };
         options.fallbackHosts = customHosts;
+
+        // When
         Hosts hosts = new Hosts(Defaults.HOST_REALTIME, Defaults.HOST_REALTIME, options);
-        int idx;
-        String host = Defaults.HOST_REALTIME;
-        boolean shuffled = false;
-        boolean allFound = true;
-        for (idx = 0; ; ++idx) {
-            host = hosts.getFallback(host);
-            if (host == null)
-                break;
-            int found = Arrays.asList(customHosts).indexOf(host);
-            if (found < 0)
-                allFound = false;
-            else if (found != idx)
-                shuffled = true;
-        }
-        assertThat(idx, is(customHosts.length));
-        assertTrue(allFound);
-        assertTrue(shuffled);
+
+        // Then
+        List<String> fallbackHosts = collectFallbackHosts(hosts);
+        assertThat(hosts.getPrimaryHost(), is(Defaults.HOST_REALTIME));
+        // the returned fallback hosts should have the same elements as custom host fallbacks
+        assertThat(fallbackHosts, containsInAnyOrder(customHosts));
+        // expect the fallback hosts to be shuffled
+        assertThat(fallbackHosts, not(contains(customHosts)));
     }
 
     /**
@@ -97,25 +88,16 @@ public class HostsTest {
      */
     @Test
     public void hosts_fallback_no_custom_hosts() throws AblyException {
-        ClientOptions options = new ClientOptions();
+        // When
         Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
-        int idx;
-        String host = Defaults.HOST_REALTIME;
-        boolean shuffled = false;
-        boolean allFound = true;
-        for (idx = 0; ; ++idx) {
-            host = hosts.getFallback(host);
-            if (host == null)
-                break;
-            int found = Arrays.asList(Defaults.HOST_FALLBACKS).indexOf(host);
-            if (found < 0)
-                allFound = false;
-            else if (found != idx)
-                shuffled = true;
-        }
-        assertThat(idx, is(Defaults.HOST_FALLBACKS.length));
-        assertTrue(allFound);
-        assertTrue(shuffled);
+
+        // Then
+        List<String> fallbackHosts = collectFallbackHosts(hosts);
+        assertThat(hosts.getPrimaryHost(), is(Defaults.HOST_REALTIME));
+        // the returned fallback hosts should have the same elements as default host fallbacks
+        assertThat(fallbackHosts, containsInAnyOrder(Defaults.HOST_FALLBACKS));
+        // expect the fallback hosts to be shuffled
+        assertThat(fallbackHosts, not(contains(Defaults.HOST_FALLBACKS)));
     }
 
     /**
@@ -123,11 +105,14 @@ public class HostsTest {
      */
     @Test
     public void hosts_fallback_overridden_host() throws AblyException {
-        ClientOptions options = new ClientOptions();
+        // Given
         String host = "overridden.ably.io";
+
+        // When
         Hosts hosts = new Hosts(host, Defaults.HOST_REALTIME, options);
-        host = hosts.getFallback(host);
-        assertThat(host, nullValue());
+
+        // Then
+        assertThat(hosts.getFallback(host), nullValue());
     }
 
     /**
@@ -136,26 +121,17 @@ public class HostsTest {
      */
     @Test
     public void hosts_fallback_use_default() throws AblyException {
-        ClientOptions options = new ClientOptions();
+        // Given
         options.fallbackHostsUseDefault = true;
         String host = "overridden.ably.io";
+
+        // When
         Hosts hosts = new Hosts(host, Defaults.HOST_REALTIME, options);
-        int idx;
-        boolean shuffled = false;
-        boolean allFound = true;
-        for (idx = 0; ; ++idx) {
-            host = hosts.getFallback(host);
-            if (host == null)
-                break;
-            int found = Arrays.asList(Defaults.HOST_FALLBACKS).indexOf(host);
-            if (found < 0)
-                allFound = false;
-            else if (found != idx)
-                shuffled = true;
-        }
-        assertThat(idx, is(Defaults.HOST_FALLBACKS.length));
-        assertTrue(allFound);
-        assertTrue(shuffled);
+
+        // Then
+        assertThat(hosts.getPrimaryHost(), is(host));
+        // the returned fallback hosts should have the same elements as default host fallbacks
+        assertThat(collectFallbackHosts(hosts), containsInAnyOrder(Defaults.HOST_FALLBACKS));
     }
 
     /**
@@ -164,10 +140,11 @@ public class HostsTest {
      */
     @Test(expected = AblyException.class)
     public void hosts_fallback_use_default_and_set_fallback_hosts() throws AblyException {
-        ClientOptions options = new ClientOptions();
+        // Given
         options.fallbackHostsUseDefault = true;
         options.fallbackHosts = new String[] { "custom.ably-realtime.com" };
 
+        // When
         new Hosts(null, Defaults.HOST_REALTIME, options);
     }
 
@@ -176,18 +153,16 @@ public class HostsTest {
      */
     @Test
     public void hosts_fallback_use_environment() throws AblyException {
-        ClientOptions options = new ClientOptions();
+        // Given
         options.environment = "sandbox";
         String[] expectedEnvironmentFallbackHosts = Defaults.getEnvironmentFallbackHosts(options.environment);
+
+        // When
         Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
 
-        String host = "sandbox-" + Defaults.HOST_REALTIME;
-        List<String> returnedEnvironmentFallbackHosts = new ArrayList<>();
-        while ((host = hosts.getFallback(host)) != null){
-            returnedEnvironmentFallbackHosts.add(host);
-        }
-
-        assertThat(returnedEnvironmentFallbackHosts, containsInAnyOrder(expectedEnvironmentFallbackHosts));
+        // Then
+        assertThat(hosts.getPrimaryHost(), is("sandbox-" + Defaults.HOST_REALTIME));
+        assertThat(collectFallbackHosts(hosts), containsInAnyOrder(expectedEnvironmentFallbackHosts));
     }
 
     /**
@@ -195,18 +170,16 @@ public class HostsTest {
      */
     @Test
     public void hosts_fallback_use_default_fallback_hosts_and_environment() throws AblyException {
-        ClientOptions options = new ClientOptions();
+        // Given
         options.fallbackHostsUseDefault = true;
         options.environment = "sandbox";
+
+        // When
         Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
-        String host = "sandbox-" + Defaults.HOST_REALTIME;
-        List<String> returnedEnvironmentFallbackHosts = new ArrayList<>();
 
-        while ((host = hosts.getFallback(host)) != null){
-            returnedEnvironmentFallbackHosts.add(host);
-        }
-
-        assertThat(returnedEnvironmentFallbackHosts, containsInAnyOrder(Defaults.HOST_FALLBACKS));
+        // Then
+        assertThat(hosts.getPrimaryHost(), is("sandbox-" + Defaults.HOST_REALTIME));
+        assertThat(collectFallbackHosts(hosts), containsInAnyOrder(Defaults.HOST_FALLBACKS));
     }
 
     /**
@@ -214,10 +187,13 @@ public class HostsTest {
      */
     @Test
     public void hosts_no_fallback_when_port_is_defined() throws AblyException {
-        ClientOptions options = new ClientOptions();
+        // Given
         options.port = 8080;
+
+        // When
         Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
 
+        // Then
         assertThat(hosts.getFallback(Defaults.HOST_REALTIME), nullValue());
     }
 
@@ -226,10 +202,13 @@ public class HostsTest {
      */
     @Test
     public void hosts_no_fallback_when_tlsport_is_defined() throws AblyException {
-        ClientOptions options = new ClientOptions();
+        // Given
         options.tlsPort = 8081;
+
+        // When
         Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
 
+        // Then
         assertThat(hosts.getFallback(Defaults.HOST_REALTIME), nullValue());
     }
 
@@ -238,11 +217,14 @@ public class HostsTest {
      */
     @Test
     public void hosts_fallback_when_fallback_hosts_and_port_are_defined() throws AblyException {
-        ClientOptions options = new ClientOptions();
+        // Given
         options.port = 8081;
         options.fallbackHosts = new String[] { "custom-fallback.ably.com" };
+
+        // When
         Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
 
+        // Then
         assertThat(hosts.getFallback(Defaults.HOST_REALTIME), is("custom-fallback.ably.com"));
     }
 
@@ -251,21 +233,33 @@ public class HostsTest {
      */
     @Test
     public void hosts_fallback_when_host_and_fallback_hosts_and_port_are_defined() throws AblyException {
-        ClientOptions options = new ClientOptions();
+        // Given
         options.tlsPort = 8081;
         options.fallbackHosts = new String[] { "custom-fallback.ably.com" };
+
+        // When
         Hosts hosts = new Hosts("custom.ably.com", Defaults.HOST_REALTIME, options);
 
+        // Then
         assertThat(hosts.getFallback("custom.ably.com"), is("custom-fallback.ably.com"));
     }
 
     @Test(expected = AblyException.class)
     public void hosts_use_default_fallback_hosts_and_tlsport_are_defined() throws AblyException {
-        ClientOptions options = new ClientOptions();
+        // Given
         options.tlsPort = 8081;
         options.fallbackHostsUseDefault = true;
-        Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
 
-        assertThat(hosts.getFallback(Defaults.HOST_REALTIME), nullValue());
+        // When
+        new Hosts(null, Defaults.HOST_REALTIME, options);
+    }
+
+    private List<String> collectFallbackHosts(Hosts hosts) {
+        List<String> fallbackHosts = new ArrayList<>();
+        String host = hosts.getPrimaryHost();
+        while ((host = hosts.getFallback(host)) != null){
+            fallbackHosts.add(host);
+        }
+        return fallbackHosts;
     }
 }
