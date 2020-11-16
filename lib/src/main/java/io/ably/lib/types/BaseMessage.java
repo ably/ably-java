@@ -60,8 +60,7 @@ public class BaseMessage implements Cloneable {
     private static final String DATA = "data";
 
     /**
-     * Generate a String summary of this BaseMessage
-     * @return string
+     * Generate a String summary of this BaseMessage.
      */
     public void getDetails(StringBuilder builder) {
         if(clientId != null)

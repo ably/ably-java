@@ -25,17 +25,23 @@ import io.ably.lib.util.Log;
 public class Message extends BaseMessage {
 
     /**
-     * The event name, if available
+     * The event name, if available.
      */
     public String name;
 
     /**
-     * Extras, if available
+     * Extras, if available.
      */
     public MessageExtras extras;
 
+    /**
+     * Key needed only in case one client is publishing this message on behalf of another client.
+     */
+    public String connectionKey;
+
     private static final String NAME = "name";
     private static final String EXTRAS = "extras";
+    private static final String CONNECTION_KEY = "connectionKey";
 
     /**
      * Default constructor
@@ -44,29 +50,44 @@ public class Message extends BaseMessage {
     }
 
     /**
-     * Construct a message from event name and data
-     * @param name
-     * @param data
+     * Construct a message from event name and data.
+     *
+     * @param name the event name
+     * @param data the message payload
      */
     public Message(String name, Object data) {
         this(name, data, null, null);
     }
 
-
+    /**
+     * Construct a message from name, data, and client id.
+     *
+     * @param name the event name
+     * @param data the message payload
+     * @param clientId the client identifier
+     */
     public Message(String name, Object data, String clientId) {
         this(name, data, clientId, null);
     }
 
+    /**
+     * Construct a message from name, data, and extras.
+     *
+     * @param name the event name
+     * @param data the message payload
+     * @param extras extra information to be sent with this message
+     */
     public Message(String name, Object data, MessageExtras extras) {
         this(name, data, null, extras);
     }
 
     /**
-     * Generic constructor
-     * @param name
-     * @param data
-     * @param clientId
-     * @param extras
+     * Construct a message from name, data, client id, and extras.
+     *
+     * @param name the event name
+     * @param data the message payload
+     * @param clientId the client identifier
+     * @param extras extra information to be sent with this message
      */
     public Message(String name, Object data, String clientId, MessageExtras extras) {
         this.name = name;
@@ -272,6 +293,9 @@ public class Message extends BaseMessage {
             }
             if (message.extras != null) {
                 json.add(EXTRAS, Serialisation.gson.toJsonTree(message.extras));
+            }
+            if (message.connectionKey != null) {
+                json.addProperty(CONNECTION_KEY, message.connectionKey);
             }
             return json;
         }
