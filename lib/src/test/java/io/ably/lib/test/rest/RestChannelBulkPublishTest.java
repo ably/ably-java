@@ -5,9 +5,12 @@ import java.util.Collections;
 import java.util.Random;
 
 import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.test.common.Helpers.ChannelWaiter;
+import io.ably.lib.test.common.Helpers.MessageWaiter;
 import io.ably.lib.types.*;
 
 import io.ably.lib.rest.AblyRest;
+import io.ably.lib.realtime.*;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -18,7 +21,7 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
 
     /**
      * Publish a single message on multiple channels
-     * 
+     *
      * The payload constructed has the form
      * [
      *   {
@@ -26,7 +29,7 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
      *     message: [{ data: <message text> }]
      *   }
      * ]
-     * 
+     *
      * It publishes the given message on all of the given channels.
      */
     @Test
@@ -70,8 +73,65 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
     }
 
     /**
+     * As above but with the param method
+     */
+    @Test
+    public void bulk_publish_multiple_channels_param() {
+        AblyRealtime rxAbly = null;
+        try {
+            /* setup library instance */
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+            AblyRest ably = new AblyRest(opts);
+            rxAbly = new AblyRealtime(opts);
+
+            /* first, publish some messages */
+            int channelCount = 5;
+            ArrayList<String> channelIds = new ArrayList<String>();
+            ArrayList<MessageWaiter> rxWaiters = new ArrayList<MessageWaiter>();
+            for (int i = 0; i < channelCount; i++) {
+                String channelId = "persisted:" + randomString();
+                channelIds.add(channelId);
+                Channel rxChannel = rxAbly.channels.get(channelId);
+                MessageWaiter messageWaiter = new MessageWaiter(rxChannel);
+                rxWaiters.add(messageWaiter);
+                new ChannelWaiter(rxChannel).waitFor(ChannelState.attached);
+            }
+
+            Message message = new Message(null, "bulk_publish_multiple_channels_param");
+            String messageId = message.id = randomString();
+            Message.Batch payload = new Message.Batch(channelIds, Collections.singleton(message));
+
+            Param[] params = new Param[]{new Param("quickAck", "true")};
+
+            PublishResponse[] result = ably.publishBatch(new Message.Batch[]{payload}, null, params);
+            for (PublishResponse response : result) {
+                assertEquals("Verify expected response id", response.messageId, messageId);
+                assertTrue("Verify expected channel name", channelIds.contains(response.channelId));
+                assertNull("Verify no publish error", response.error);
+            }
+
+            /* Wait to get a message on each channel -- since we're using
+             * quickAck, getting an ack is no longer a guarantee that the
+             * message has been processed, so getting history immediately after
+             * the publish returns may fail */
+            for (MessageWaiter messageWaiter : rxWaiters) {
+                messageWaiter.waitFor(1);
+            }
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail("bulk_publish_multiple_channels_param: Unexpected exception");
+            return;
+        } finally {
+            if(rxAbly != null) {
+                rxAbly.close();
+            }
+        }
+
+    }
+
+    /**
      * Publish a multiple messages on multiple channels
-     * 
+     *
      * The payload constructed has the form
      * [
      *   {
@@ -94,7 +154,7 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
      *   },
      *   ...
      * ]
-     * 
+     *
      * It publishes the given messages on the associated channels.
      */
     @Test

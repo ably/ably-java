@@ -239,15 +239,25 @@ public abstract class AblyBase {
      */
     @Experimental
     public PublishResponse[] publishBatch(Message.Batch[] pubSpecs, ChannelOptions channelOptions) throws AblyException {
-        return publishBatchImpl(pubSpecs, channelOptions).sync();
+        return publishBatchImpl(pubSpecs, channelOptions, null).sync();
+    }
+
+    @Experimental
+    public PublishResponse[] publishBatch(Message.Batch[] pubSpecs, ChannelOptions channelOptions, Param[] params) throws AblyException {
+        return publishBatchImpl(pubSpecs, channelOptions, params).sync();
     }
 
     @Experimental
     public void publishBatchAsync(Message.Batch[] pubSpecs, ChannelOptions channelOptions, final Callback<PublishResponse[]> callback) throws AblyException {
-        publishBatchImpl(pubSpecs, channelOptions).async(callback);
+        publishBatchImpl(pubSpecs, channelOptions, null).async(callback);
     }
 
-    private Http.Request<PublishResponse[]> publishBatchImpl(final Message.Batch[] pubSpecs, ChannelOptions channelOptions) throws AblyException {
+    @Experimental
+    public void publishBatchAsync(Message.Batch[] pubSpecs, ChannelOptions channelOptions, Param[] params, final Callback<PublishResponse[]> callback) throws AblyException {
+        publishBatchImpl(pubSpecs, channelOptions, params).async(callback);
+    }
+
+    private Http.Request<PublishResponse[]> publishBatchImpl(final Message.Batch[] pubSpecs, ChannelOptions channelOptions, final Param[] params) throws AblyException {
         boolean hasClientSuppliedId = false;
         for(Message.Batch spec : pubSpecs) {
             for(Message message : spec.messages) {
@@ -270,7 +280,7 @@ public abstract class AblyBase {
             @Override
             public void execute(HttpScheduler http, final Callback<PublishResponse[]> callback) throws AblyException {
                 HttpCore.RequestBody requestBody = options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(pubSpecs) : MessageSerializer.asJSONRequest(pubSpecs);
-                http.post("/messages", HttpUtils.defaultAcceptHeaders(options.useBinaryProtocol), null, requestBody, new HttpCore.ResponseHandler<PublishResponse[]>() {
+                http.post("/messages", HttpUtils.defaultAcceptHeaders(options.useBinaryProtocol), params, requestBody, new HttpCore.ResponseHandler<PublishResponse[]>() {
                     @Override
                     public PublishResponse[] handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
                         if(error != null && error.code != 40020) {
