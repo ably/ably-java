@@ -33,4 +33,12 @@ public class RegistrationToken {
             return name().toLowerCase();
         }
     }
+
+    @Override
+    public String toString() {
+        return "RegistrationToken{" +
+            "type=" + type +
+            ", token='" + token + '\'' +
+            '}';
+    }
 }
