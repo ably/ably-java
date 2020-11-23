@@ -204,16 +204,16 @@ public class BaseMessage implements Cloneable {
         if(data != null) {
             if(data instanceof byte[]) {
                 byte[] dataBytes = (byte[])data;
-                json.addProperty("data", new String(Base64Coder.encode(dataBytes)));
+                json.addProperty(DATA, new String(Base64Coder.encode(dataBytes)));
                 encoding = (encoding == null) ? "base64" : encoding + "/base64";
             } else {
-                json.addProperty("data", data.toString());
+                json.addProperty(DATA, data.toString());
             }
-            if(encoding != null) json.addProperty("encoding", encoding);
+            if(encoding != null) json.addProperty(ENCODING, encoding);
         }
-        if(message.id != null) json.addProperty("id", message.id);
-        if(message.clientId != null) json.addProperty("clientId", message.clientId);
-        if(message.connectionId != null) json.addProperty("connectionId", message.connectionId);
+        if(message.id != null) json.addProperty(ID, message.id);
+        if(message.clientId != null) json.addProperty(CLIENT_ID, message.clientId);
+        if(message.connectionId != null) json.addProperty(CONNECTION_ID, message.connectionId);
         return json;
     }
 

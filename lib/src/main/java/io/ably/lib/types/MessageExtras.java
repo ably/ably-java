@@ -53,16 +53,8 @@ public final class MessageExtras {
         return jsonObject;
     }
 
-    /* package private */ void write(MessagePacker packer) throws IOException {
-        if (null == jsonObject) {
-            // raw is null, so delta is not null
-            packer.packMapHeader(1);
-            packer.packString(DELTA);
-            delta.write(packer);
-        } else {
-            // raw is not null, so delta can be ignored
+    /* package private */ void write(MessagePacker packer) {
             Serialisation.gsonToMsgpack(jsonObject, packer);
-        }
     }
 
     /* package private */ static MessageExtras read(MessageUnpacker unpacker) throws IOException {
@@ -112,14 +104,12 @@ public final class MessageExtras {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         MessageExtras that = (MessageExtras) o;
-        return (null == jsonObject) ?
-                Objects.equals(delta, that.delta) :
-                Objects.equals(jsonObject, that.jsonObject);
+        return Objects.equals(jsonObject, that.jsonObject);
     }
 
     @Override
     public int hashCode() {
-        return (null == jsonObject) ? Objects.hashCode(delta) : Objects.hashCode(jsonObject);
+        return Objects.hashCode(jsonObject);
     }
 
     @Override
@@ -133,17 +123,7 @@ public final class MessageExtras {
     public static class Serializer implements JsonSerializer<MessageExtras> {
         @Override
         public JsonElement serialize(final MessageExtras src, final Type typeOfSrc, final JsonSerializationContext context) {
-            return (null != src.jsonObject) ? src.jsonObject : wrapDelta(src.getDelta());
-        }
-
-        public static JsonObject wrapDelta(final DeltaExtras delta) {
-            if (null == delta) {
-                throw new NullPointerException("delta cannot be null.");
-            }
-
-            final JsonObject json = new JsonObject();
-            json.add(DELTA, Serialisation.gson.toJsonTree(delta));
-            return json;
+            return src.jsonObject;
         }
     }
 }

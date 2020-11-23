@@ -1,7 +1,6 @@
 package io.ably.lib.types;
 
 import com.google.gson.JsonObject;
-import org.msgpack.core.MessagePacker;
 import org.msgpack.value.Value;
 import org.msgpack.value.ValueFactory;
 
@@ -46,16 +45,6 @@ public final class DeltaExtras {
      */
     public String getFrom() {
         return from;
-    }
-
-    /* package private */ void write(MessagePacker packer) throws IOException {
-        packer.packMapHeader(2);
-
-        packer.packString(FORMAT);
-        packer.packString(format);
-
-        packer.packString(FROM);
-        packer.packString(from);
     }
 
     /* package private */ static DeltaExtras read(final Map<Value, Value> map) throws IOException {

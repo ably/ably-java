@@ -116,11 +116,11 @@ public class Message extends BaseMessage {
         packer.packMapHeader(fieldCount);
         super.writeFields(packer);
         if(name != null) {
-            packer.packString("name");
+            packer.packString(NAME);
             packer.packString(name);
         }
         if(extras != null) {
-            packer.packString("extras");
+            packer.packString(EXTRAS);
             extras.write(packer);
         }
     }
@@ -173,7 +173,7 @@ public class Message extends BaseMessage {
         }
 
         public Batch(Collection<String> channels, Collection<Message> messages) {
-            this(channels.toArray(new String[channels.size()]), messages.toArray(new Message[messages.size()]));
+            this(channels.toArray(new String[0]), messages.toArray(new Message[0]));
         }
 
         public void writeMsgpack(MessagePacker packer) throws IOException {
