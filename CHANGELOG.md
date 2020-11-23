@@ -10,6 +10,7 @@
 - Improve error messages for channel attach when realtime is not active [\#627](https://github.com/ably/ably-java/pull/627) ([vzhikserg](https://github.com/vzhikserg)), fixing [\#594](https://github.com/ably/ably-java/issues/594)
 - Add verbose logs in push notification related code [\#623](https://github.com/ably/ably-java/pull/623) ([QuintinWillison](https://github.com/QuintinWillison))
 - Defaults: Generate environment fallbacks [\#618](https://github.com/ably/ably-java/pull/618) ([vzhikserg](https://github.com/vzhikserg)), fixing [\#603](https://github.com/ably/ably-java/issues/603)
+- Rest.publishBatch: support overloaded method that takes params [\#604](https://github.com/ably/ably-java/pull/604) ([SimonWoolf](https://github.com/SimonWoolf))
 
 **Code Quality Improvements:**
 
@@ -27,7 +28,6 @@
 - Convert tabs to spaces in all Java source files [\#610](https://github.com/ably/ably-java/pull/610) ([QuintinWillison](https://github.com/QuintinWillison))
 - Introduce Checkstyle [\#609](https://github.com/ably/ably-java/pull/609) ([QuintinWillison](https://github.com/QuintinWillison))
 - Remove redundant public keywords in the interfaces' definitions [\#608](https://github.com/ably/ably-java/pull/608) ([vzhikserg](https://github.com/vzhikserg))
-- Rest.publishBatch: support overloaded method that takes params [\#604](https://github.com/ably/ably-java/pull/604) ([SimonWoolf](https://github.com/SimonWoolf))
 
 ## [v1.2.2](https://github.com/ably/ably-java/tree/v1.2.2) (2020-09-17)
 
