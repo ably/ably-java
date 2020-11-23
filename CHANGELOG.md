@@ -1,5 +1,34 @@
 # Change Log
 
+## [v1.2.3](https://github.com/ably/ably-java/tree/v1.2.3)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.2...v1.2.3)
+
+**Enhancements and Bug Fixes:**
+
+- Add connectionKey attribute missing from the Message object [\#630](https://github.com/ably/ably-java/pull/630) ([vzhikserg](https://github.com/vzhikserg)), fixing [\#614](https://github.com/ably/ably-java/issues/614)
+- Improve error messages for channel attach when realtime is not active [\#627](https://github.com/ably/ably-java/pull/627) ([vzhikserg](https://github.com/vzhikserg)), fixing [\#594](https://github.com/ably/ably-java/issues/594)
+- Add verbose logs in push notification related code [\#623](https://github.com/ably/ably-java/pull/623) ([QuintinWillison](https://github.com/QuintinWillison))
+- Defaults: Generate environment fallbacks [\#618](https://github.com/ably/ably-java/pull/618) ([vzhikserg](https://github.com/vzhikserg)), fixing [\#603](https://github.com/ably/ably-java/issues/603)
+
+**Code Quality Improvements:**
+
+- Refactor unit tests related to hosts and environmental fallbacks [\#629](https://github.com/ably/ably-java/pull/629) ([vzhikserg](https://github.com/vzhikserg)), fixing [\#628](https://github.com/ably/ably-java/issues/628)
+- Move tests for EventEmitter to unit tests [\#626](https://github.com/ably/ably-java/pull/626) ([vzhikserg](https://github.com/vzhikserg))
+- Adopt more Groovy conventions in Gradle scripts [\#625](https://github.com/ably/ably-java/pull/625) ([QuintinWillison](https://github.com/QuintinWillison))
+- Gradle conform and reformat [\#624](https://github.com/ably/ably-java/pull/624) ([QuintinWillison](https://github.com/QuintinWillison))
+- Fix param and return javadoc statements [\#622](https://github.com/ably/ably-java/pull/622) ([vzhikserg](https://github.com/vzhikserg))
+- Make Ably version more robust [\#619](https://github.com/ably/ably-java/pull/619) ([vzhikserg](https://github.com/vzhikserg))
+- Remove unnecessary calls to the toString method [\#617](https://github.com/ably/ably-java/pull/617) ([vzhikserg](https://github.com/vzhikserg))
+- Update EditorConfig [\#616](https://github.com/ably/ably-java/pull/616) ([QuintinWillison](https://github.com/QuintinWillison))
+- Upgrade Gradle wrapper to version 6.6.1 [\#615](https://github.com/ably/ably-java/pull/615) ([QuintinWillison](https://github.com/QuintinWillison))
+- Checkstyle: AvoidStarImport [\#613](https://github.com/ably/ably-java/pull/613) ([QuintinWillison](https://github.com/QuintinWillison))
+- Checkstyle: UnusedImports [\#612](https://github.com/ably/ably-java/pull/612) ([QuintinWillison](https://github.com/QuintinWillison))
+- Convert tabs to spaces in all Java source files [\#610](https://github.com/ably/ably-java/pull/610) ([QuintinWillison](https://github.com/QuintinWillison))
+- Introduce Checkstyle [\#609](https://github.com/ably/ably-java/pull/609) ([QuintinWillison](https://github.com/QuintinWillison))
+- Remove redundant public keywords in the interfaces' definitions [\#608](https://github.com/ably/ably-java/pull/608) ([vzhikserg](https://github.com/vzhikserg))
+- Rest.publishBatch: support overloaded method that takes params [\#604](https://github.com/ably/ably-java/pull/604) ([SimonWoolf](https://github.com/SimonWoolf))
+
 ## [v1.2.2](https://github.com/ably/ably-java/tree/v1.2.2) (2020-09-17)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.1...v1.2.2)
