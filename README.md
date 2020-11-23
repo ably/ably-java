@@ -30,13 +30,13 @@ Reference the library by including a compile dependency reference in your gradle
 For [Java](https://bintray.com/ably-io/ably/ably-java/_latestVersion):
 
 ```
-compile 'io.ably:ably-java:1.2.2'
+compile 'io.ably:ably-java:1.2.3'
 ```
 
 For [Android](https://bintray.com/ably-io/ably/ably-android/_latestVersion):
 
 ```
-compile 'io.ably:ably-android:1.2.2'
+compile 'io.ably:ably-android:1.2.3'
 ```
 
 The library is hosted on the [Jcenter repository](https://bintray.com/ably-io/ably), so you need to ensure that the repo is referenced also; IDEs will typically include this by default:
@@ -616,15 +616,15 @@ Configuration of Run/Debug configurations for running the unit tests on Android 
 
 This library uses [semantic versioning](http://semver.org/). For each release, the following needs to be done:
 
-1. Create a branch for the release, named like `release/1.2.2`
+1. Create a branch for the release, named like `release/1.2.3`
 2. Replace all references of the current version number with the new version number (check this file [README.md](./README.md) and [common.gradle](./common.gradle)) and commit the changes
 3. Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to update the [CHANGELOG](./CHANGELOG.md):
-    * This might work: `github_changelog_generator -u ably -p ably-java --header-label="# Changelog" --release-branch=release/1.2.2 --future-release=v1.2.2`
-    * But your mileage may vary as it can error. Perhaps more reliable is something like: `github_changelog_generator -u ably -p ably-java --since-tag v1.2.1 --output delta.md` and then manually merge the delta contents in to the main change log
+    * This might work: `github_changelog_generator -u ably -p ably-java --header-label="# Changelog" --release-branch=release/1.2.3 --future-release=v1.2.3`
+    * But your mileage may vary as it can error. Perhaps more reliable is something like: `github_changelog_generator -u ably -p ably-java --since-tag v1.2.2 --output delta.md` and then manually merge the delta contents in to the main change log
 4. Commit [CHANGELOG](./CHANGELOG.md)
 5. Make a PR against `main`
 6. Once the PR is approved, merge it into `main`
-7. Add a tag and push to origin - e.g.: `git tag v1.2.2 && git push origin v1.2.2`
+7. Add a tag and push to origin - e.g.: `git tag v1.2.3 && git push origin v1.2.3`
 8. Create the release on Github including populating the release notes (needed so JFrog can pull them in)
 9. Assemble and Upload ([see below](#publishing-to-jcenter-and-maven-central) for details) - but the overall order to follow is:
 	1. Upload to Bintray and use the pushed tag, which will pull in the associated release notes
@@ -652,10 +652,10 @@ We publish to:
 
 The `java` release process goes as follows:
 
-* Go to the home page for the package; eg https://bintray.com/ably-io/ably/ably-java. Select Add a version, enter the new version such as "1.2.2" in name and save
+* Go to the home page for the package; eg https://bintray.com/ably-io/ably/ably-java. Select Add a version, enter the new version such as "1.2.3" in name and save
 * Run `./gradlew java:assembleRelease` locally to generate the files
-* Open local relative folder in Finder, such as `./java/build/release/1.2.2/io/ably/ably-java/1.2.2`
-* Go to the new version in JFrog Bintray; eg https://bintray.com/ably-io/ably/ably-java/1.2.2, then click on the link to upload via the UI in the "Upload files" section
+* Open local relative folder in Finder, such as `./java/build/release/1.2.3/io/ably/ably-java/1.2.3`
+* Go to the new version in JFrog Bintray; eg https://bintray.com/ably-io/ably/ably-java/1.2.3, then click on the link to upload via the UI in the "Upload files" section
 * Drag in the files from Finder, just the `.jar` files and the `.pom` file. JFrog will fill in the "Target Path" box after you drop the files in. Click the "Upload" button.
 * You will see a notice something like "4 unpublished files in your version. Will be deleted in 6 days and 22 hours. Publish all or Delete all unpublished files.", make sure you click "Publish all". Wait a few minutes and check that what's uploaded looks like what was uploaded for previous releases. The `maven-metadata` files are created by JFrog.
 * Update the README text in Bintray (version number needs incrementing).
@@ -663,7 +663,7 @@ The `java` release process goes as follows:
 Similarly for the `android` release at https://bintray.com/ably-io/ably/ably-android:
 
 * Run `./gradlew android:assembleRelease` locally to generate the files, and drag in the files in
-`./android/build/release/1.2.2/io/ably/ably-android/1.2.2`.
+`./android/build/release/1.2.3/io/ably/ably-android/1.2.3`.
 * In this case upload the `.jar` files, the `.pom` file and the `.aar` file.
 
 #### Releasing to Maven Central (Sonatype Nexus)
