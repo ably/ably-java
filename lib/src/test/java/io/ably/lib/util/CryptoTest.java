@@ -10,6 +10,7 @@ import java.io.StringWriter;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
@@ -84,8 +85,9 @@ public class CryptoTest {
      *
      * Equivalent to the following in ably-cocoa:
      * testEncryptAndDecrypt in Spec/CryptoTest.m
-     * @throws IOException 
+     * @throws IOException
      */
+    @Ignore
     @Test
     public void encryptAndDecrypt() throws NoSuchAlgorithmException, AblyException, IOException {
         final FixtureSet fixtureSet = FixtureSet.AES256;
@@ -111,10 +113,10 @@ public class CryptoTest {
 
         writer.name("keyLength");
         writer.value(256);
-        
+
         writer.name("key");
         writer.value(Base64Coder.encodeToString(fixtureSet.key));
-        
+
         writer.name("iv");
         writer.value(Base64Coder.encodeToString(fixtureSet.iv));
 
