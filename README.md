@@ -58,7 +58,7 @@ For Android, 4.0 (API level 14) or later is required.
 
 ## Feature support
 
-This library targets the Ably 1.1 client library specification and supports all principal 1.1 features.
+This library targets the Ably 1.2 client library specification and supports all principal 1.2 features.
 
 ## Using the Realtime API ##
 
