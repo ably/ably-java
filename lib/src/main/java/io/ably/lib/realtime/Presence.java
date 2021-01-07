@@ -797,9 +797,10 @@ public class Presence {
                 wait();
             }
             if (channel.state == ChannelState.attached) {
-                while (!(syncIsComplete = (!syncInProgress && syncComplete))) {
+                do {
                     wait();
-                }
+                    syncIsComplete = !syncInProgress && syncComplete;
+                } while (!syncIsComplete);
             }
 
             /* invalid channel state */
