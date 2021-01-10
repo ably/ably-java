@@ -87,7 +87,7 @@ public class CryptoTest {
      * testEncryptAndDecrypt in Spec/CryptoTest.m
      * @throws IOException
      */
-    @Ignore
+    @Ignore("FIXME: NullPointerException should be fixed")
     @Test
     public void encryptAndDecrypt() throws NoSuchAlgorithmException, AblyException, IOException {
         final FixtureSet fixtureSet = FixtureSet.AES256;

@@ -23,7 +23,7 @@ import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Crypto;
 import io.ably.lib.util.Crypto.CipherParams;
 
-@Ignore
+@Ignore("FIXME: Initialization is failing")
 @RunWith(Parameterized.class)
 public class CryptoMessageTest {
     public enum FixtureSet {
