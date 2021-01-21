@@ -792,11 +792,16 @@ public class Presence {
          * state other than attached or attaching
          */
         synchronized void waitForSync() throws AblyException, InterruptedException {
-            boolean syncIsComplete = false; /* temporary variable to avoid potential race conditions */
-            while((channel.state == ChannelState.attached || channel.state == ChannelState.attaching) &&
-                    /* = (and not ==) is intentional */
-                    !(syncIsComplete = (!syncInProgress && syncComplete)))
+            boolean syncIsComplete = false;    /* temporary variable to avoid potential race conditions */
+            while (channel.state == ChannelState.attaching) {
                 wait();
+            }
+            if (channel.state == ChannelState.attached) {
+                do {
+                    wait();
+                    syncIsComplete = !syncInProgress && syncComplete;
+                } while (!syncIsComplete);
+            }
 
             /* invalid channel state */
             int errorCode;
