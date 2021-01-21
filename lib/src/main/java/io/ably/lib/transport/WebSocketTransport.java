@@ -223,6 +223,7 @@ public class WebSocketTransport implements ITransport {
 
         @Override
         public void onError(final Exception e) {
+            Log.e(TAG, "Connection error ", e);
             connectListener.onTransportUnavailable(WebSocketTransport.this, new ErrorInfo(e.getMessage(), 503, 80000));
         }
 
