@@ -1,8 +1,4 @@
 rootProject.name = 'ably-java'
-include 'java'
-
-if (System.getenv('ANDROID_HOME')) {
-    include 'android'
-}
-
-include 'gradle-lint'
+include 'java',
+    'android',
+    'gradle-lint'
