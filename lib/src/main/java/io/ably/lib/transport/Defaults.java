@@ -33,9 +33,9 @@ public class Defaults {
     public static int TIMEOUT_DISCONNECT            = 15000;
     public static int TIMEOUT_CHANNEL_RETRY         = 15000;
 
-    /* TO313 */
+    /* TO3l3 */
     public static int TIMEOUT_HTTP_OPEN = 4000;
-    /* TO314 */
+    /* TO3l4 */
     public static int TIMEOUT_HTTP_REQUEST = 15000;
     /* DF1b */
     public static long realtimeRequestTimeout = 10000L;
