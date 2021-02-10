@@ -3317,6 +3317,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         assertEquals("Members count with channel presence should be " + presenceMessages.length, presenceMessages.length, 1);
     }
 
+    @Ignore
     @Test
     public void test_consistent_presence_for_members() {
         AblyRealtime clientAbly1 = null;
