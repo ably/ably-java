@@ -7,6 +7,7 @@ buildscript {
 plugins {
     id 'de.fuerstenau.buildconfig' version '1.1.8'
     id 'checkstyle'
+    id 'org.gradle.test-retry' version '1.2.0'
 }
 
 apply plugin: 'java'
@@ -84,6 +85,11 @@ task testRealtimeSuite(type: Test) {
         logger.lifecycle("-> $descriptor")
     }
     outputs.upToDateWhen { false }
+    testLogging.exceptionFormat = 'full'
+    retry {
+        maxRetries = 3
+        maxFailures = 4
+    }
 }
 
 task testRestSuite(type: Test) {
@@ -94,6 +100,11 @@ task testRestSuite(type: Test) {
         logger.lifecycle("-> $descriptor")
     }
     outputs.upToDateWhen { false }
+    testLogging.exceptionFormat = 'full'
+    retry {
+        maxRetries = 3
+        maxFailures = 4
+    }
 }
 
 /*

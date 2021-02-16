@@ -31,6 +31,7 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -101,6 +102,7 @@ public class HttpTest {
      *
      * @throws Exception
      */
+    @Ignore("FIXME: flaky test")
     @Test
     public void http_ably_execute_fallback() throws AblyException {
         ClientOptions options = new ClientOptions();
