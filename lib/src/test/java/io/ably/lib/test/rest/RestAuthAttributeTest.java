@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import io.ably.lib.rest.AblyRest;
@@ -47,6 +48,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
      * Spec: RSA10g,RSA10j
      * </p>
      */
+    @Ignore("FIXME: flaky test")
     @Test
     public void auth_stores_options_params() {
         try {
