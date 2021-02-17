@@ -708,8 +708,7 @@ public class Auth {
         options = (options == null) ? this.authOptions : options.copy();
         params = (params == null) ? this.tokenParams : params.copy();
 
-        if(params.capability != null)
-            params.capability = Capability.c14n(params.capability);
+        params.capability = Capability.c14n(params.capability);
         TokenRequest request = new TokenRequest(params);
 
         String key = options.key;
