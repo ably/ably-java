@@ -1,6 +1,5 @@
 package io.ably.lib.types;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
@@ -18,6 +17,6 @@ public class CapabilityTest {
     public void c14n_sendEmptyString_returnsEmptyString() throws AblyException {
         String returnedValue = Capability.c14n("");
 
-        assertEquals("", returnedValue);
+        assertNull(returnedValue);
     }
 }

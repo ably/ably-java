@@ -27,7 +27,7 @@ public class Capability {
      * (if for example it is not valid JSON)
      */
     public static String c14n(String capability) throws AblyException {
-        if (capability == null || capability.isEmpty()) return capability;
+        if (capability == null || capability.isEmpty()) return null;
         try {
             JsonObject json = (JsonObject)gsonParser.parse(capability);
             return (new Capability(json)).toString();
