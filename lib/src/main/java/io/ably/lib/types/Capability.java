@@ -19,21 +19,19 @@ import com.google.gson.JsonParser;
 public class Capability {
 
     /**
-     * Convenience method to canonicalise a JSON capability expression
+     * Convenience method to canonicalise a JSON capability expression.
      *
      * @param capability a capability string, which is the JSON text for the capability
      * @return a capability string which has been canonicalised
      * @throws AblyException if there is an error processing the given string
      * (if for example it is not valid JSON)
      */
-    public static final String c14n(String capability) throws AblyException {
-        if(capability == null || capability.isEmpty()) return "";
+    public static String c14n(String capability) throws AblyException {
+        if (capability == null || capability.isEmpty()) return null;
         try {
             JsonObject json = (JsonObject)gsonParser.parse(capability);
             return (new Capability(json)).toString();
-        } catch(ClassCastException e) {
-            throw AblyException.fromThrowable(e);
-        } catch(JsonParseException e) {
+        } catch(ClassCastException | JsonParseException e) {
             throw AblyException.fromThrowable(e);
         }
     }
