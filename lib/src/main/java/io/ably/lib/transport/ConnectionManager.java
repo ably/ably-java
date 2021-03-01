@@ -453,14 +453,18 @@ public class ConnectionManager implements ConnectListener {
         return currentState.queueEvents || currentState.sendEvents;
     }
 
-    /*************************************
-     * a class that listens for currentState change
-     * events for in-place authorization
-     *************************************/
-
+    /**
+     * Listens for connection state changes.
+     *
+     * The close() method must be called when the ConnectionWaiter is no longer needed.
+     */
     private class ConnectionWaiter implements ConnectionStateListener {
         private ConnectionStateChange change;
+        private boolean closed = false;
 
+        /**
+         * Create a ConnectionWaiter as a connection listener.
+         */
         private ConnectionWaiter() {
             connection.on(this);
         }
@@ -469,6 +473,10 @@ public class ConnectionManager implements ConnectListener {
          * Wait for a currentState change notification
          */
         private synchronized ErrorInfo waitForChange() {
+            if (closed) {
+                throw new IllegalStateException("Already closed.");
+            }
+
             Log.d(TAG, "ConnectionWaiter.waitFor()");
             if (change == null) {
                 try { wait(); } catch(InterruptedException e) {}
@@ -483,11 +491,22 @@ public class ConnectionManager implements ConnectListener {
          * ConnectionStateListener interface
          */
         @Override
-        public void onConnectionStateChanged(ConnectionStateChange state) {
-            synchronized(this) {
-                change = state;
-                notify();
+        public synchronized void onConnectionStateChanged(ConnectionStateChange state) {
+            change = state;
+            notify();
+        }
+
+        /**
+         * Remove this ConnectionWaiter as a connection listener.
+         */
+        private void close() {
+            // This method is explicitly not synchronized. There may be a case for this in the
+            // future, however its addition is designed to be lightweight with minimal impact.
+            if (closed) {
+                return;
             }
+            closed = true;
+            connection.off(this);
         }
     }
 
@@ -881,64 +900,74 @@ public class ConnectionManager implements ConnectListener {
      * the current connection to use that token; or if not currently connected,
      * to connect with the token.
      */
-    public void onAuthUpdated(String token, boolean waitForResponse) throws AblyException {
-        ConnectionWaiter waiter = new ConnectionWaiter();
-        switch(currentState.state) {
-            case connected:
-                /* (RTC8a) If the connection is in the CONNECTED currentState and
-                 * auth.authorize is called or Ably requests a re-authentication
-                 * (see RTN22), the client must obtain a new token, then send an
-                 * AUTH ProtocolMessage to Ably with an auth attribute
-                 * containing an AuthDetails object with the token string. */
-                try {
-                    ProtocolMessage msg = new ProtocolMessage(ProtocolMessage.Action.auth);
-                    msg.auth = new ProtocolMessage.AuthDetails(token);
-                    send(msg, false, null);
-                } catch (AblyException e) {
-                    /* The send failed. Close the transport; if a subsequent
-                     * reconnect succeeds, it will be with the new token. */
-                    Log.v(TAG, "onAuthUpdated: closing transport after send failure");
-                    transport.close();
-                }
-                break;
-
-            case connecting:
-                /* Close the connecting transport. */
-                Log.v(TAG, "onAuthUpdated: closing connecting transport");
-                ErrorInfo disconnectError = new ErrorInfo("Aborting incomplete connection with superseded auth params", 503, 80003);
-                requestState(new StateIndication(ConnectionState.disconnected, disconnectError, null, null));
-                /* Start a new connection attempt. */
-                connect();
-                break;
-
-            default:
-                /* Start a new connection attempt. */
-                connect();
-                break;
-        }
-
-        if(!waitForResponse) {
-            return;
-        }
-
-        /* Wait for a currentState transition into anything other than connecting or
-         * disconnected. Note that this includes the case that the connection
-         * was already connected, and the AUTH message prompted the server to
-         * send another connected message. */
-        for (;;) {
-            ErrorInfo reason = waiter.waitForChange();
-            switch (currentState.state) {
+    public void onAuthUpdated(final String token, final boolean waitForResponse) throws AblyException {
+        final ConnectionWaiter waiter = new ConnectionWaiter();
+        try {
+            switch(currentState.state) {
                 case connected:
-                    Log.v(TAG, "onAuthUpdated: got connected");
-                    return;
+                    /* (RTC8a) If the connection is in the CONNECTED currentState and
+                     * auth.authorize is called or Ably requests a re-authentication
+                     * (see RTN22), the client must obtain a new token, then send an
+                     * AUTH ProtocolMessage to Ably with an auth attribute
+                     * containing an AuthDetails object with the token string. */
+                    try {
+                        ProtocolMessage msg = new ProtocolMessage(ProtocolMessage.Action.auth);
+                        msg.auth = new ProtocolMessage.AuthDetails(token);
+                        send(msg, false, null);
+                    } catch (AblyException e) {
+                        /* The send failed. Close the transport; if a subsequent
+                         * reconnect succeeds, it will be with the new token. */
+                        Log.v(TAG, "onAuthUpdated: closing transport after send failure");
+                        transport.close();
+                    }
+                    break;
+
                 case connecting:
-                case disconnected:
-                    continue;
+                    /* Close the connecting transport. */
+                    Log.v(TAG, "onAuthUpdated: closing connecting transport");
+                    ErrorInfo disconnectError = new ErrorInfo("Aborting incomplete connection with superseded auth params", 503, 80003);
+                    requestState(new StateIndication(ConnectionState.disconnected, disconnectError, null, null));
+                    /* Start a new connection attempt. */
+                    connect();
+                    break;
+
                 default:
-                    /* suspended/closed/error: throw the error. */
-                    Log.v(TAG, "onAuthUpdated: throwing exception");
-                    throw AblyException.fromErrorInfo(reason);
+                    /* Start a new connection attempt. */
+                    connect();
+                    break;
             }
+
+            if(!waitForResponse) {
+                return;
+            }
+
+            /* Wait for a currentState transition into anything other than connecting or
+             * disconnected. Note that this includes the case that the connection
+             * was already connected, and the AUTH message prompted the server to
+             * send another connected message. */
+            boolean waitingForConnected = true;
+            while (waitingForConnected) {
+                final ErrorInfo reason = waiter.waitForChange();
+                final ConnectionState connectionState = currentState.state;
+                switch (connectionState) {
+                    case connected:
+                        Log.v(TAG, "onAuthUpdated: got connected");
+                        waitingForConnected = false;
+                        break;
+
+                    case connecting:
+                    case disconnected:
+                        Log.v(TAG, "onAuthUpdated: " + connectionState);
+                        break;
+
+                    default:
+                        /* suspended/closed/error: throw the error. */
+                        Log.v(TAG, "onAuthUpdated: throwing exception");
+                        throw AblyException.fromErrorInfo(reason);
+                }
+            }
+        } finally {
+            waiter.close();
         }
     }
 
