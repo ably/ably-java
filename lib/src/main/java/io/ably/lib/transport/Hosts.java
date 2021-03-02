@@ -12,10 +12,10 @@ import java.util.Collections;
  * Object to encapsulate primary host name and shuffled fallback host names.
  */
 public class Hosts {
-    private String primaryHost;
+    private final String primaryHost;
     private String prefHost;
     private long prefHostExpiry;
-    boolean primaryHostIsDefault;
+    private final boolean primaryHostIsDefault;
     private final String defaultHost;
     private final String[] fallbackHosts;
     private final boolean fallbackHostsIsDefault;
@@ -38,7 +38,7 @@ public class Hosts {
      * code, but the results are ignored because ConnectionManager then calls
      * setHost() and fallback is not used.
      */
-    public Hosts(String primaryHost, String defaultHost, ClientOptions options) throws AblyException {
+    public Hosts(final String primaryHost, final String defaultHost, final ClientOptions options) throws AblyException {
         this.defaultHost = defaultHost;
         this.fallbackHostsUseDefault = options.fallbackHostsUseDefault;
         boolean hasCustomPrimaryHost = primaryHost != null && !primaryHost.equalsIgnoreCase(defaultHost);
@@ -60,29 +60,22 @@ public class Hosts {
         }
 
         if (hasCustomPrimaryHost) {
-            setPrimaryHost(primaryHost);
+            this.primaryHost = primaryHost;
             if (options.environment != null) {
                 /* TO3k2: It is never valid to provide both a restHost and environment value
                  * TO3k3: It is never valid to provide both a realtimeHost and environment value */
                 throw AblyException.fromErrorInfo(new ErrorInfo("cannot set both restHost/realtimeHost and environment options", 40000, 400));
             }
         } else {
-            setPrimaryHost(isProduction ? defaultHost : options.environment + "-" + defaultHost);
+            this.primaryHost = isProduction ? defaultHost : options.environment + "-" + defaultHost;
         }
+        primaryHostIsDefault = this.primaryHost.equalsIgnoreCase(defaultHost);
 
         fallbackHostsIsDefault = Arrays.equals(Defaults.HOST_FALLBACKS, tempFallbackHosts);
         fallbackHosts = tempFallbackHosts == null ? new String[] {} : tempFallbackHosts.clone();
         /* RSC15a: shuffle the fallback hosts. */
         Collections.shuffle(Arrays.asList(fallbackHosts));
         fallbackRetryTimeout = options.fallbackRetryTimeout;
-    }
-
-    /**
-     * set primary hostname
-     */
-    private void setPrimaryHost(String primaryHost) {
-        this.primaryHost = primaryHost;
-        primaryHostIsDefault = primaryHost.equalsIgnoreCase(defaultHost);
     }
 
     /**
