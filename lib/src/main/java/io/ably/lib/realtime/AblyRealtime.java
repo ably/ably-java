@@ -130,10 +130,6 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
     }
 
     private class InternalChannels extends InternalMap<String, Channel> implements Channels, ConnectionManager.Channels {
-        private InternalChannels() {
-            super(new ConcurrentHashMap<String, Channel>());
-        }
-
         /**
          * Get the named channel; if it does not already exist,
          * create it with default options.

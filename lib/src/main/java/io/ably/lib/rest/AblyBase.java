@@ -105,10 +105,6 @@ public abstract class AblyBase {
     }
 
     private class InternalChannels extends InternalMap<String, Channel> implements Channels {
-        InternalChannels() {
-            super(new HashMap<String, Channel>());
-        }
-
         @Override
         public Channel get(String channelName) {
             try {
