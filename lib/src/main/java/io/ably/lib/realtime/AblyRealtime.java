@@ -2,7 +2,6 @@ package io.ably.lib.realtime;
 
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.transport.ConnectionManager;
@@ -144,21 +143,24 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
         }
 
         @Override
-        public Channel get(String channelName, ChannelOptions channelOptions) throws AblyException {
-            Channel channel = map.get(channelName);
-            if (channel != null) {
+        public Channel get(final String channelName, final ChannelOptions channelOptions) throws AblyException {
+            // We're not using computeIfAbsent because that requires Java 1.8.
+            // Hence there's the slight inefficiency of creating newChannel when it may not be
+            // needed because there is an existingChannel.
+            final Channel newChannel = new Channel(AblyRealtime.this, channelName, channelOptions);
+            final Channel existingChannel = map.putIfAbsent(channelName, newChannel);
+
+            if (existingChannel != null) {
                 if (channelOptions != null) {
-                    if (channel.shouldReattachToSetOptions(channelOptions)) {
+                    if (existingChannel.shouldReattachToSetOptions(channelOptions)) {
                         throw AblyException.fromErrorInfo(new ErrorInfo("Channels.get() cannot be used to set channel options that would cause the channel to reattach. Please, use Channel.setOptions() instead.", 40000, 400));
                     }
-                    channel.setOptions(channelOptions);
+                    existingChannel.setOptions(channelOptions);
                 }
-                return channel;
+                return existingChannel;
             }
 
-            channel = new Channel(AblyRealtime.this, channelName, channelOptions);
-            map.put(channelName, channel);
-            return channel;
+            return newChannel;
         }
 
         @Override

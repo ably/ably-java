@@ -3,6 +3,7 @@ package io.ably.lib.util;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import io.ably.lib.types.ReadOnlyMap;
 
@@ -17,7 +18,7 @@ import io.ably.lib.types.ReadOnlyMap;
  * @param <V> Value type.
  */
 public abstract class InternalMap<K, V> implements ReadOnlyMap<K, V> {
-    protected final Map<K, V> map = new ConcurrentHashMap<>();
+    protected final ConcurrentMap<K, V> map = new ConcurrentHashMap<>();
 
     @Override
     public final boolean containsKey(final Object key) {
