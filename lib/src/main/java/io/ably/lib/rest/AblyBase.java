@@ -1,7 +1,5 @@
 package io.ably.lib.rest;
 
-import java.util.HashMap;
-
 import io.ably.annotation.Experimental;
 import io.ably.lib.http.AsyncHttpScheduler;
 import io.ably.lib.http.Http;
