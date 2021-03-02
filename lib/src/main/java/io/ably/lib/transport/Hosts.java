@@ -13,8 +13,6 @@ import java.util.Collections;
  */
 public class Hosts {
     private final String primaryHost;
-    private String prefHost;
-    private long prefHostExpiry;
     private final boolean primaryHostIsDefault;
     private final String defaultHost;
     private final String[] fallbackHosts;
@@ -22,6 +20,7 @@ public class Hosts {
     private final boolean fallbackHostsUseDefault;
     private final long fallbackRetryTimeout;
 
+    private Preferred preferred = new Preferred();
 
     /**
      * Create Hosts object
@@ -81,23 +80,17 @@ public class Hosts {
     /**
      * set preferred hostname, which might not be the primary
      */
-    public void setPreferredHost(String prefHost, boolean temporary) {
-        if(prefHost.equals(this.prefHost)) {
+    public void setPreferredHost(final String prefHost, final boolean temporary) {
+        if (preferred.isHost(prefHost)) {
             /* a successful request against a fallback; don't update the expiry time */
             return;
         }
-        if(prefHost.equals(this.primaryHost)) {
+        if(prefHost.equals(primaryHost)) {
             /* a successful request against the primary host; reset */
-            clearPreferredHost();
+            preferred.clear();
         } else {
-            this.prefHost = prefHost;
-            this.prefHostExpiry = temporary ? System.currentTimeMillis() + fallbackRetryTimeout : 0;
+            preferred.setHost(prefHost, temporary ? System.currentTimeMillis() + fallbackRetryTimeout : 0);
         }
-    }
-
-    private void clearPreferredHost() {
-        this.prefHost = null;
-        this.prefHostExpiry = 0;
     }
 
     /**
@@ -111,17 +104,8 @@ public class Hosts {
      * Get preferred host name (taking into account any affinity to a fallback: see RSC15f)
      */
     public String getPreferredHost() {
-        checkPreferredHostExpiry();
-        return (prefHost == null) ? primaryHost : prefHost;
-    }
-
-    private String checkPreferredHostExpiry() {
-        /* reset if expired */
-        if(prefHostExpiry > 0 && prefHostExpiry <= System.currentTimeMillis()) {
-            prefHostExpiry = 0;
-            prefHost = null;
-        }
-        return prefHost;
+        final String host = preferred.getHostOrClearIfExpired();
+        return (host == null) ? primaryHost : host;
     }
 
     /**
@@ -142,9 +126,9 @@ public class Hosts {
             if (!primaryHostIsDefault && !fallbackHostsUseDefault && fallbackHostsIsDefault)
                 return null;
             idx = 0;
-        } else if(lastHost.equals(checkPreferredHostExpiry())) {
+        } else if(lastHost.equals(preferred.getHostOrClearIfExpired())) {
             /* RSC15f: there was a failure on an unexpired, cached fallback; so try again using the primary */
-            clearPreferredHost();
+            preferred.clear();
             return primaryHost;
         } else {
             /* Onto next fallback. */
@@ -164,9 +148,39 @@ public class Hosts {
         if(fallbackHosts == null) {
             return 0;
         }
-        if(candidateHost.equals(primaryHost) || candidateHost.equals(prefHost)) {
+        if(candidateHost.equals(primaryHost) || candidateHost.equals(preferred.getHost())) {
             return fallbackHosts.length;
         }
         return fallbackHosts.length - Arrays.asList(fallbackHosts).indexOf(candidateHost) - 1;
+    }
+
+    private static class Preferred {
+        private String host;
+        private long expiry;
+
+        public void clear() {
+            host = null;
+            expiry = 0;
+        }
+
+        public boolean isHost(final String host) {
+            return (this.host == null) ? (host == null) : this.host.equals(host);
+        }
+
+        public void setHost(final String host, final long expiry) {
+            this.host = host;
+            this.expiry = expiry;
+        }
+
+        public String getHostOrClearIfExpired() {
+            if(expiry > 0 && expiry <= System.currentTimeMillis()) {
+                clear(); // expired, so reset
+            }
+            return host;
+        }
+
+        public String getHost() {
+            return host;
+        }
     }
 }
