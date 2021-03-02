@@ -10,6 +10,8 @@ import java.util.Collections;
 
 /**
  * Object to encapsulate primary host name and shuffled fallback host names.
+ *
+ * Methods on this class are safe to be called from any thread.
  */
 public class Hosts {
     private final String primaryHost;
@@ -20,7 +22,7 @@ public class Hosts {
     private final boolean fallbackHostsUseDefault;
     private final long fallbackRetryTimeout;
 
-    private Preferred preferred = new Preferred();
+    private final Preferred preferred = new Preferred();
 
     /**
      * Create Hosts object
@@ -80,7 +82,7 @@ public class Hosts {
     /**
      * set preferred hostname, which might not be the primary
      */
-    public void setPreferredHost(final String prefHost, final boolean temporary) {
+    public synchronized void setPreferredHost(final String prefHost, final boolean temporary) {
         if (preferred.isHost(prefHost)) {
             /* a successful request against a fallback; don't update the expiry time */
             return;
@@ -103,7 +105,7 @@ public class Hosts {
     /**
      * Get preferred host name (taking into account any affinity to a fallback: see RSC15f)
      */
-    public String getPreferredHost() {
+    public synchronized String getPreferredHost() {
         final String host = preferred.getHostOrClearIfExpired();
         return (host == null) ? primaryHost : host;
     }
@@ -115,7 +117,7 @@ public class Hosts {
      * @return Successor host that can be used as a fallback.
      * null, if there is no successor fallback available.
      */
-    public String getFallback(String lastHost) {
+    public synchronized String getFallback(String lastHost) {
         if (fallbackHosts == null)
             return null;
         int idx;
@@ -144,7 +146,7 @@ public class Hosts {
         return fallbackHosts[idx];
     }
 
-    public int fallbackHostsRemaining(String candidateHost) {
+    public synchronized int fallbackHostsRemaining(String candidateHost) {
         if(fallbackHosts == null) {
             return 0;
         }
