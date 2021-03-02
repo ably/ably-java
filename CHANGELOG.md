@@ -1,5 +1,31 @@
 # Change Log
 
+## [v1.2.4](https://github.com/ably/ably-java/tree/v1.2.4)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.3...v1.2.4)
+
+**Fixed bugs:**
+
+- Many instances of ConnectionWaiter spawned while app is running, with authentication token flow [\#651](https://github.com/ably/ably-java/issues/651)
+- capability tokendetails adds to HTTP Request as a query parameter [\#647](https://github.com/ably/ably-java/issues/647)
+- ClientOptions idempotentRestPublishing default may be wrong [\#590](https://github.com/ably/ably-java/issues/590)
+- Presence blocking get sometimes has missing members [\#467](https://github.com/ably/ably-java/issues/467)
+- Remove empty capability query parameter [\#648](https://github.com/ably/ably-java/pull/648) ([vzhikserg](https://github.com/vzhikserg))
+- Add unit test for idempotentRestPublishing in ClientOptions [\#636](https://github.com/ably/ably-java/pull/636) ([vzhikserg](https://github.com/vzhikserg))
+- Fix Member Presence [\#607](https://github.com/ably/ably-java/pull/607) ([sacOO7](https://github.com/sacOO7))
+
+**Merged pull requests:**
+
+- Unregister ConnectionWaiter listeners once connected [\#652](https://github.com/ably/ably-java/pull/652) ([QuintinWillison](https://github.com/QuintinWillison))
+- Update references from 1 -\> l to match client spec [\#646](https://github.com/ably/ably-java/pull/646) ([natdempk](https://github.com/natdempk))
+- Add workflow status badges [\#645](https://github.com/ably/ably-java/pull/645) ([QuintinWillison](https://github.com/QuintinWillison))
+- Add maintainers file [\#644](https://github.com/ably/ably-java/pull/644) ([niksilver](https://github.com/niksilver))
+- Add workflows [\#643](https://github.com/ably/ably-java/pull/643) ([QuintinWillison](https://github.com/QuintinWillison))
+- Fix CI pipeline [\#642](https://github.com/ably/ably-java/pull/642) ([vzhikserg](https://github.com/vzhikserg))
+- Fix/doc 233 update readme [\#641](https://github.com/ably/ably-java/pull/641) ([tbedford](https://github.com/tbedford))
+- Log error message to get clear understanding of exception [\#632](https://github.com/ably/ably-java/pull/632) ([sacOO7](https://github.com/sacOO7))
+- Refactor MessageExtras [\#595](https://github.com/ably/ably-java/pull/595) ([sacOO7](https://github.com/sacOO7))
+
 ## [v1.2.3](https://github.com/ably/ably-java/tree/v1.2.3)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.2...v1.2.3)
