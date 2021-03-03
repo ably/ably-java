@@ -199,4 +199,10 @@ public class CryptoTest {
 
         return out.toByteArray();
     }
+
+    @Test
+    public void getRandomId() {
+        String randomId = Crypto.getRandomMessageId();
+        assertEquals(12, randomId.length());
+    }
 }

@@ -321,7 +321,7 @@ public class Crypto {
     public static String getRandomMessageId() {
         byte[] entropy = new byte[9];
         secureRandom.nextBytes(entropy);
-        return Base64Coder.encode(entropy).toString();
+        return Base64Coder.encodeToString(entropy);
     }
 
     /**
