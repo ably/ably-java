@@ -1,7 +1,5 @@
 package io.ably.lib.rest;
 
-import java.util.HashMap;
-
 import io.ably.annotation.Experimental;
 import io.ably.lib.http.AsyncHttpScheduler;
 import io.ably.lib.http.Http;
@@ -105,10 +103,6 @@ public abstract class AblyBase {
     }
 
     private class InternalChannels extends InternalMap<String, Channel> implements Channels {
-        InternalChannels() {
-            super(new HashMap<String, Channel>());
-        }
-
         @Override
         public Channel get(String channelName) {
             try {

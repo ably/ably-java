@@ -1,16 +1,23 @@
 package io.ably.lib.util;
 
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import io.ably.lib.types.ReadOnlyMap;
 
+/**
+ * A map implemented using a {@link ConcurrentHashMap}. This class is a base class for other classes
+ * which are designed to be internal to the library, specifically as regards access to the map
+ * field.
+ *
+ * This class exposes a {@link ReadOnlyMap} which is safe to be exposed in our public API.
+ *
+ * @param <K> Key type.
+ * @param <V> Value type.
+ */
 public abstract class InternalMap<K, V> implements ReadOnlyMap<K, V> {
-    protected final Map<K, V> map;
-
-    public InternalMap(final Map<K, V> map) {
-        this.map = map;
-    }
+    protected final ConcurrentMap<K, V> map = new ConcurrentHashMap<>();
 
     @Override
     public final boolean containsKey(final Object key) {
