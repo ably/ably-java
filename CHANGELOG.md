@@ -1,5 +1,21 @@
 # Change Log
 
+## [v1.2.5](https://github.com/ably/ably-java/tree/v1.2.5)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.4...v1.2.5)
+
+**Fixed bugs:**
+
+- Crypto.getRandomMessageId isn't working as intended [\#654](https://github.com/ably/ably-java/issues/654)
+- Hosts class is not thread safe [\#650](https://github.com/ably/ably-java/issues/650)
+- AblyBase.InternalChannels is not thread-safe [\#649](https://github.com/ably/ably-java/issues/649)
+
+**Merged pull requests:**
+
+- Makes the Hosts class safe to be called from any thread [\#657](https://github.com/ably/ably-java/pull/657) ([QuintinWillison](https://github.com/QuintinWillison))
+- Fix getRandomMessageId [\#656](https://github.com/ably/ably-java/pull/656) ([sacOO7](https://github.com/sacOO7))
+- Improve channel map operations in respect of thread-safety [\#655](https://github.com/ably/ably-java/pull/655) ([QuintinWillison](https://github.com/QuintinWillison))
+
 ## [v1.2.4](https://github.com/ably/ably-java/tree/v1.2.4)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.3...v1.2.4)
