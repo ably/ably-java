@@ -91,7 +91,7 @@ public class RealtimeHttpHeaderTest extends ParameterizedTest {
              * Defaults.ABLY_LIB_PARAM, as ultimately the request param has been derived from those values.
              */
             assertEquals("Verify correct lib version", requestParameters.get("lib"),
-                    Collections.singletonList("java-1.2.4"));
+                    Collections.singletonList("java-1.2.5"));
 
             /* Spec RTN2a */
             assertEquals("Verify correct format", requestParameters.get("format"),
