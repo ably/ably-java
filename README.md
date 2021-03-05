@@ -2,7 +2,6 @@
 
 ![.github/workflows/check.yml](https://github.com/ably/ably-java/workflows/.github/workflows/check.yml/badge.svg)
 ![.github/workflows/integration-test.yml](https://github.com/ably/ably-java/workflows/.github/workflows/integration-test.yml/badge.svg)
-![.github/workflows/assemble.yml](https://github.com/ably/ably-java/workflows/.github/workflows/assemble.yml/badge.svg)
 
 | Android | Java |
 |---------|------|
