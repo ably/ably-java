@@ -28,18 +28,18 @@ Visit https://www.ably.io/documentation for a complete API reference and more ex
 
 ## Installation ##
 
-Reference the library by including a compile dependency reference in your gradle build file.
+Include the library by adding an `implementation` reference to `dependencies` block in your Gradle build script.
 
 For [Java](https://bintray.com/ably-io/ably/ably-java/_latestVersion):
 
 ```
-compile 'io.ably:ably-java:1.2.5'
+implementation 'io.ably:ably-java:1.2.5'
 ```
 
 For [Android](https://bintray.com/ably-io/ably/ably-android/_latestVersion):
 
 ```
-compile 'io.ably:ably-android:1.2.5'
+implementation 'io.ably:ably-android:1.2.5'
 ```
 
 The library is hosted on the [Jcenter repository](https://bintray.com/ably-io/ably), so you need to ensure that the repo is referenced also; IDEs will typically include this by default:
