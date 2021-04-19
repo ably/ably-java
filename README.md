@@ -30,27 +30,27 @@ Visit https://www.ably.io/documentation for a complete API reference and more ex
 
 Include the library by adding an `implementation` reference to `dependencies` block in your Gradle build script.
 
-For [Java](https://bintray.com/ably-io/ably/ably-java/_latestVersion):
+For [Java](https://mvnrepository.com/artifact/io.ably/ably-java/latest):
 
 ```
 implementation 'io.ably:ably-java:1.2.5'
 ```
 
-For [Android](https://bintray.com/ably-io/ably/ably-android/_latestVersion):
+For [Android](https://mvnrepository.com/artifact/io.ably/ably-android/latest):
 
 ```
 implementation 'io.ably:ably-android:1.2.5'
 ```
 
-The library is hosted on the [Jcenter repository](https://bintray.com/ably-io/ably), so you need to ensure that the repo is referenced also; IDEs will typically include this by default:
+The library is hosted on [Maven Central](https://mvnrepository.com/repos/central), so you need to ensure that the repository is referenced also; IDEs will typically include this by default:
 
 ```
 repositories {
-	jcenter()
+	mavenCentral()
 }
 ```
 
-Previous releases of the Java library included a downloadable JAR; however we now only support installation via Maven/Gradle from the Jcenter repository. If you want to use a standalone fat JAR for (ie containing all dependencies), it can be generated via a gradle task (see [building](#building) below); note that this is the "Java" (JRE) library variant only; Android is now supported via an AAR and there is no self-contained AAR build option.
+We only support installation via Maven/Gradle from the Maven Central repository. If you want to use a standalone fat JAR for (ie containing all dependencies), it can be generated via a gradle task (see [building](#building) below); note that this is the "Java" (JRE) library variant only; Android is now supported via an AAR and there is no self-contained AAR build option.
 
 ## Dependencies
 
