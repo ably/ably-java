@@ -3,10 +3,6 @@
 ![.github/workflows/check.yml](https://github.com/ably/ably-java/workflows/.github/workflows/check.yml/badge.svg)
 ![.github/workflows/integration-test.yml](https://github.com/ably/ably-java/workflows/.github/workflows/integration-test.yml/badge.svg)
 
-| Android | Java |
-|---------|------|
-| [ ![Download](https://api.bintray.com/packages/ably-io/ably/ably-android/images/download.svg) ](https://bintray.com/ably-io/ably/ably-android/_latestVersion) | [ ![Download](https://api.bintray.com/packages/ably-io/ably/ably-java/images/download.svg) ](https://bintray.com/ably-io/ably/ably-java/_latestVersion) |
-
 A Java Realtime and REST client library for [Ably Realtime](https://www.ably.io), the realtime messaging and data delivery service. This library currently targets the [Ably client library features spec](https://www.ably.io/documentation/client-lib-development-guide/features/) Version 1.2. You can jump to the '[Known Limitations](#known-limitations)' section to see the features this client library does not yet support or [view our client library SDKs feature support matrix](https://www.ably.io/download/sdk-feature-support-matrix) to see the list of all the available features.
 
 ## Supported Platforms
@@ -26,31 +22,31 @@ If you find any compatibility issues, please [do raise an issue](https://github.
 
 Visit https://www.ably.io/documentation for a complete API reference and more examples.
 
-## Installation ##
+## Installation
 
-Reference the library by including a compile dependency reference in your gradle build file.
+Include the library by adding an `implementation` reference to `dependencies` block in your [Gradle](https://gradle.org/) build script.
 
-For [Java](https://bintray.com/ably-io/ably/ably-java/_latestVersion):
-
-```
-compile 'io.ably:ably-java:1.2.5'
-```
-
-For [Android](https://bintray.com/ably-io/ably/ably-android/_latestVersion):
+For [Java](https://mvnrepository.com/artifact/io.ably/ably-java/latest):
 
 ```
-compile 'io.ably:ably-android:1.2.5'
+implementation 'io.ably:ably-java:1.2.5'
 ```
 
-The library is hosted on the [Jcenter repository](https://bintray.com/ably-io/ably), so you need to ensure that the repo is referenced also; IDEs will typically include this by default:
+For [Android](https://mvnrepository.com/artifact/io.ably/ably-android/latest):
+
+```
+implementation 'io.ably:ably-android:1.2.5'
+```
+
+The library is hosted on [Maven Central](https://mvnrepository.com/repos/central), so you need to ensure that the repository is referenced also; IDEs will typically include this by default:
 
 ```
 repositories {
-	jcenter()
+	mavenCentral()
 }
 ```
 
-Previous releases of the Java library included a downloadable JAR; however we now only support installation via Maven/Gradle from the Jcenter repository. If you want to use a standalone fat JAR for (ie containing all dependencies), it can be generated via a gradle task (see [building](#building) below); note that this is the "Java" (JRE) library variant only; Android is now supported via an AAR and there is no self-contained AAR build option.
+We only support installation via Maven / Gradle from the Maven Central repository. If you want to use a standalone fat JAR (i.e. containing all dependencies), it can be generated via a Gradle task (see [building](#building) below), creating a "Java" (JRE) library variant only. There is no standalone / self-contained AAR build option.
 
 ## Dependencies
 
@@ -63,9 +59,9 @@ For Android, 4.0 (API level 14) or later is required.
 
 This library targets the Ably 1.2 client library specification and supports all principal 1.2 features.
 
-## Using the Realtime API ##
+## Using the Realtime API
 
-### Introduction ###
+### Introduction
 
 Please refer to the [documentation](https://www.ably.io/documentation) for a full realtime API reference.
 
@@ -75,7 +71,7 @@ The examples below assume a client has been created as follows:
 AblyRealtime ably = new AblyRealtime("xxxxx");
 ```
 
-### Connection ###
+### Connection
 
 AblyRealtime will attempt to connect automatically once new instance is created. Also, it offers API for listening connection state changes.
 
@@ -98,7 +94,7 @@ ably.connection.on(new ConnectionStateListener() {
 });
 ```
 
-### Subscribing to a channel ###
+### Subscribing to a channel
 
 Given:
 
@@ -129,7 +125,7 @@ channel.subscribe(events, new MessageListener() {
 });
 ```
 
-### Subscribing to a channel in delta mode ###
+### Subscribing to a channel in delta mode
 
 Subscribing to a channel in delta mode enables [delta compression](https://www.ably.io/documentation/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
 
@@ -147,7 +143,7 @@ Beyond specifying channel options, the rest is transparent and requires no furth
 
 If you would like to inspect the `Message` instances in order to identify whether the `data` they present was rendered from a delta message from Ably then you can see if `extras.getDelta().getFormat()` equals `"vcdiff"`.
 
-### Publishing to a channel ###
+### Publishing to a channel
 
 ```java
 channel.publish("greeting", "Hello World!", new CompletionListener() {
@@ -163,7 +159,7 @@ channel.publish("greeting", "Hello World!", new CompletionListener() {
 });
 ```
 
-### Querying the history ###
+### Querying the history
 
 ```java
 PaginatedResult<Message> result = channel.history(null);
@@ -175,7 +171,7 @@ while(result.hasNext()) {
 }
 ```
 
-### Presence on a channel ###
+### Presence on a channel
 
 ```java
 channel.presence.enter("john.doe", new CompletionListener() {
@@ -191,7 +187,7 @@ channel.presence.enter("john.doe", new CompletionListener() {
 });
 ```
 
-### Querying the presence history ###
+### Querying the presence history
 
 ```java
 PaginatedResult<PresenceMessage> result = channel.presence.history(null);
@@ -203,7 +199,7 @@ while(result.hasNext()) {
 }
 ```
 
-### Channel state ###
+### Channel state
 
 `Channel` extends `EventEmitter` that emits channel state changes, and listening those events is possible with `ChannelStateListener`
 
@@ -234,9 +230,9 @@ If you are interested with specific events, it is possible with providing extra 
 channel.on(ChannelState.attached, listener);
 ```
 
-## Using the REST API ##
+## Using the REST API
 
-### Introduction ###
+### Introduction
 
 Please refer to the [documentation](https://www.ably.io/documentation) for a full REST API reference.
 
@@ -247,7 +243,7 @@ AblyRest ably = new AblyRest("xxxxx");
 Channel channel = ably.channels.get("test");
 ```
 
-### Publishing a message to a channel ###
+### Publishing a message to a channel
 
 Given the message below
 
@@ -277,7 +273,7 @@ channel.publishAsync(message, new CompletionListener() {
 });
 ```
 
-### Querying the history ###
+### Querying the history
 
 ```java
 PaginatedResult<Message> result = channel.history(null);
@@ -289,7 +285,7 @@ while(result.hasNext()) {
 }
 ```
 
-### Presence on a channel ###
+### Presence on a channel
 
 ```java
 PaginatedResult<PresenceMessage> result = channel.presence.get(null);
@@ -301,7 +297,7 @@ while(result.hasNext()) {
 }
 ```
 
-### Querying the presence history ###
+### Querying the presence history
 
 ```java
 PaginatedResult<PresenceMessage> result = channel.presence.history(null);
@@ -313,14 +309,14 @@ while(result.hasNext()) {
 }
 ```
 
-### Generate a Token and Token Request ###
+### Generate a Token and Token Request
 
 ```java
 TokenDetails tokenDetails = ably.auth.requestToken(null, null);
 System.out.println("Success; token = " + tokenRequest);
 ```
 
-### Fetching your application's stats ###
+### Fetching your application's stats
 
 ```java
 PaginatedResult<Stats> stats = ably.stats(null);
@@ -332,13 +328,13 @@ while(result.hasNext()) {
 }
 ```
 
-### Fetching the Ably service time ###
+### Fetching the Ably service time
 
 ```java
 long serviceTime = ably.time();
 ```
 
-### Logging ###
+### Logging
 
 You can get log output from the library by modifying the log level:
 
@@ -453,7 +449,7 @@ realtime.push.activate();
 
 See https://www.ably.io/documentation/general/push/admin for details of the push admin API.
 
-## Building ##
+## Building
 
 The library consists of JRE-specific library (in `java/`) and an Android-specific library (in `android/`). The libraries are largely common-sourced; the `lib/` directory contains the common parts.
 
@@ -617,11 +613,16 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 5. Make a PR against `main`
 6. Once the PR is approved, merge it into `main`
 7. Add a tag and push to origin - e.g.: `git tag v1.2.5 && git push origin v1.2.5`
-8. Create the release on Github including populating the release notes (needed so JFrog can pull them in)
-9. Assemble and Upload ([see below](#publishing-to-jcenter-and-maven-central) for details) - but the overall order to follow is:
-	1. Upload to Bintray and use the pushed tag, which will pull in the associated release notes
-	2. Comment out local `repository` lines in the two `maven.gradle` files temporarily (this is horrible but is [to be fixed soon](https://github.com/ably/ably-java/issues/566))
-	3. Repeat the assemble stages to this time to push to Maven Central
+8. Create the release on Github including populating the release notes
+9. Assemble and Upload ([see below](#publishing-to-maven-central) for details) - but the overall order to follow is:
+    1. Comment out local `repository` lines in the two `maven.gradle` files temporarily (this is horrible but is [to be fixed soon](https://github.com/ably/ably-java/issues/566))
+    2. Run `./gradlew java:assembleRelease` to build and upload `ably-java` to Nexus staging repository
+    3. Run `./gradlew android:assembleRelease` build and upload `ably-android` to Nexus staging repository
+    4. Find the new staging repository using the [Nexus Repository Manager](https://oss.sonatype.org/#stagingRepositories)
+    5. Check that it contains Android and Java releases
+    6. "Close" it - this will take a few minutes during which time it will say (after a refresh of your browser) that "Activity: Operation in Progress"
+    7. Once it has closed you will have "Release" available. You can allow it to "automatically drop" after successful release. A refresh or two later of the browser and the staging repository will have disappeared from the list (i.e. it's been dropped which implies it was released successfully)
+    8. A [search for Ably packages](https://oss.sonatype.org/#nexus-search;quick~io.ably) should now list the new version for both `ably-android` and `ably-java`
 
 ### Signing
 
@@ -633,45 +634,9 @@ You need to [configure Signatory credentials](https://docs.gradle.org/current/us
 
 The GPG key file is internal and private to Ably.
 
-### Publishing to JCenter and Maven Central
+### Sonatype Nexus for Maven Central
 
-We publish to:
-
-* JCenter via JFrog's [Bintray](https://bintray.com/ably-io/ably)
-* Maven Central via Sonatype's [OSSRH](https://issues.sonatype.org/browse/OSSRH-52871) / [Nexus](https://oss.sonatype.org/#nexus-search;quick~io.ably)
-
-#### Releasing to JCenter (JFrog Bintray)
-
-The `java` release process goes as follows:
-
-* Go to the home page for the package; eg https://bintray.com/ably-io/ably/ably-java. Select Add a version, enter the new version such as "1.2.5" in name and save
-* Run `./gradlew java:assembleRelease` locally to generate the files
-* Open local relative folder in Finder, such as `./java/build/release/1.2.5/io/ably/ably-java/1.2.5`
-* Go to the new version in JFrog Bintray; eg https://bintray.com/ably-io/ably/ably-java/1.2.5, then click on the link to upload via the UI in the "Upload files" section
-* Drag in the files from Finder, just the `.jar` files and the `.pom` file. JFrog will fill in the "Target Path" box after you drop the files in. Click the "Upload" button.
-* You will see a notice something like "4 unpublished files in your version. Will be deleted in 6 days and 22 hours. Publish all or Delete all unpublished files.", make sure you click "Publish all". Wait a few minutes and check that what's uploaded looks like what was uploaded for previous releases. The `maven-metadata` files are created by JFrog.
-* Update the README text in Bintray (version number needs incrementing).
-
-Similarly for the `android` release at https://bintray.com/ably-io/ably/ably-android:
-
-* Run `./gradlew android:assembleRelease` locally to generate the files, and drag in the files in
-`./android/build/release/1.2.5/io/ably/ably-android/1.2.5`.
-* In this case upload the `.jar` files, the `.pom` file and the `.aar` file.
-
-#### Releasing to Maven Central (Sonatype Nexus)
-
-Bearing in mind the earlier instructions around commenting out lines in the `maven.gradle` files (temporary requirement) you then need to find the new staging repository in
-[Nexus Repository Manager](https://oss.sonatype.org/#stagingRepositories)
-and do a few things with it:
-
-1. Check that it contains Android and Java releases.
-2. "Close" it - this will take a few minutes during which time it will say (after a refresh of your browser) that "Activity: Operation in Progress".
-3. Once it has closed you will have "Release" available. You can allow it to "automatically drop" after successful release. A refresh or two later of the browser and the staging repository will have disappeared from the list (i.e. it's been dropped which implies it was released successfully).
-4. A [search for Ably packages](https://oss.sonatype.org/#nexus-search;quick~io.ably) should now list the new version for both `ably-android` and `ably-java`.
-
-### Creating the release on Github
-
-Visit [https://github.com/ably/ably-java/tags](https://github.com/ably/ably-java/tags) and `Add release notes` for the release including links to the changelog entry and the JCenter releases.
+We publish to Maven Central via Sonatype's [OSSRH](https://issues.sonatype.org/browse/OSSRH-52871) / [Nexus](https://oss.sonatype.org/#nexus-search;quick~io.ably)
 
 ## Support, feedback and troubleshooting
 
