@@ -46,7 +46,7 @@ repositories {
 }
 ```
 
-We only support installation via Maven/Gradle from the Maven Central repository. If you want to use a standalone fat JAR for (ie containing all dependencies), it can be generated via a gradle task (see [building](#building) below); note that this is the "Java" (JRE) library variant only; Android is now supported via an AAR and there is no self-contained AAR build option.
+We only support installation via Maven / Gradle from the Maven Central repository. If you want to use a standalone fat JAR (i.e. containing all dependencies), it can be generated via a Gradle task (see [building](#building) below), creating a "Java" (JRE) library variant only. There is no standalone / self-contained AAR build option.
 
 ## Dependencies
 
@@ -449,7 +449,7 @@ realtime.push.activate();
 
 See https://www.ably.io/documentation/general/push/admin for details of the push admin API.
 
-## Building ##
+## Building
 
 The library consists of JRE-specific library (in `java/`) and an Android-specific library (in `android/`). The libraries are largely common-sourced; the `lib/` directory contains the common parts.
 
