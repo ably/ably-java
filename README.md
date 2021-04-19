@@ -22,7 +22,7 @@ If you find any compatibility issues, please [do raise an issue](https://github.
 
 Visit https://www.ably.io/documentation for a complete API reference and more examples.
 
-## Installation ##
+## Installation
 
 Include the library by adding an `implementation` reference to `dependencies` block in your [Gradle](https://gradle.org/) build script.
 
@@ -59,9 +59,9 @@ For Android, 4.0 (API level 14) or later is required.
 
 This library targets the Ably 1.2 client library specification and supports all principal 1.2 features.
 
-## Using the Realtime API ##
+## Using the Realtime API
 
-### Introduction ###
+### Introduction
 
 Please refer to the [documentation](https://www.ably.io/documentation) for a full realtime API reference.
 
@@ -71,7 +71,7 @@ The examples below assume a client has been created as follows:
 AblyRealtime ably = new AblyRealtime("xxxxx");
 ```
 
-### Connection ###
+### Connection
 
 AblyRealtime will attempt to connect automatically once new instance is created. Also, it offers API for listening connection state changes.
 
@@ -94,7 +94,7 @@ ably.connection.on(new ConnectionStateListener() {
 });
 ```
 
-### Subscribing to a channel ###
+### Subscribing to a channel
 
 Given:
 
@@ -125,7 +125,7 @@ channel.subscribe(events, new MessageListener() {
 });
 ```
 
-### Subscribing to a channel in delta mode ###
+### Subscribing to a channel in delta mode
 
 Subscribing to a channel in delta mode enables [delta compression](https://www.ably.io/documentation/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
 
@@ -143,7 +143,7 @@ Beyond specifying channel options, the rest is transparent and requires no furth
 
 If you would like to inspect the `Message` instances in order to identify whether the `data` they present was rendered from a delta message from Ably then you can see if `extras.getDelta().getFormat()` equals `"vcdiff"`.
 
-### Publishing to a channel ###
+### Publishing to a channel
 
 ```java
 channel.publish("greeting", "Hello World!", new CompletionListener() {
@@ -159,7 +159,7 @@ channel.publish("greeting", "Hello World!", new CompletionListener() {
 });
 ```
 
-### Querying the history ###
+### Querying the history
 
 ```java
 PaginatedResult<Message> result = channel.history(null);
@@ -171,7 +171,7 @@ while(result.hasNext()) {
 }
 ```
 
-### Presence on a channel ###
+### Presence on a channel
 
 ```java
 channel.presence.enter("john.doe", new CompletionListener() {
@@ -187,7 +187,7 @@ channel.presence.enter("john.doe", new CompletionListener() {
 });
 ```
 
-### Querying the presence history ###
+### Querying the presence history
 
 ```java
 PaginatedResult<PresenceMessage> result = channel.presence.history(null);
@@ -199,7 +199,7 @@ while(result.hasNext()) {
 }
 ```
 
-### Channel state ###
+### Channel state
 
 `Channel` extends `EventEmitter` that emits channel state changes, and listening those events is possible with `ChannelStateListener`
 
@@ -230,9 +230,9 @@ If you are interested with specific events, it is possible with providing extra 
 channel.on(ChannelState.attached, listener);
 ```
 
-## Using the REST API ##
+## Using the REST API
 
-### Introduction ###
+### Introduction
 
 Please refer to the [documentation](https://www.ably.io/documentation) for a full REST API reference.
 
@@ -243,7 +243,7 @@ AblyRest ably = new AblyRest("xxxxx");
 Channel channel = ably.channels.get("test");
 ```
 
-### Publishing a message to a channel ###
+### Publishing a message to a channel
 
 Given the message below
 
@@ -273,7 +273,7 @@ channel.publishAsync(message, new CompletionListener() {
 });
 ```
 
-### Querying the history ###
+### Querying the history
 
 ```java
 PaginatedResult<Message> result = channel.history(null);
@@ -285,7 +285,7 @@ while(result.hasNext()) {
 }
 ```
 
-### Presence on a channel ###
+### Presence on a channel
 
 ```java
 PaginatedResult<PresenceMessage> result = channel.presence.get(null);
@@ -297,7 +297,7 @@ while(result.hasNext()) {
 }
 ```
 
-### Querying the presence history ###
+### Querying the presence history
 
 ```java
 PaginatedResult<PresenceMessage> result = channel.presence.history(null);
@@ -309,14 +309,14 @@ while(result.hasNext()) {
 }
 ```
 
-### Generate a Token and Token Request ###
+### Generate a Token and Token Request
 
 ```java
 TokenDetails tokenDetails = ably.auth.requestToken(null, null);
 System.out.println("Success; token = " + tokenRequest);
 ```
 
-### Fetching your application's stats ###
+### Fetching your application's stats
 
 ```java
 PaginatedResult<Stats> stats = ably.stats(null);
@@ -328,13 +328,13 @@ while(result.hasNext()) {
 }
 ```
 
-### Fetching the Ably service time ###
+### Fetching the Ably service time
 
 ```java
 long serviceTime = ably.time();
 ```
 
-### Logging ###
+### Logging
 
 You can get log output from the library by modifying the log level:
 
