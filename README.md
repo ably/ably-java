@@ -3,10 +3,6 @@
 ![.github/workflows/check.yml](https://github.com/ably/ably-java/workflows/.github/workflows/check.yml/badge.svg)
 ![.github/workflows/integration-test.yml](https://github.com/ably/ably-java/workflows/.github/workflows/integration-test.yml/badge.svg)
 
-| Android | Java |
-|---------|------|
-| [ ![Download](https://api.bintray.com/packages/ably-io/ably/ably-android/images/download.svg) ](https://bintray.com/ably-io/ably/ably-android/_latestVersion) | [ ![Download](https://api.bintray.com/packages/ably-io/ably/ably-java/images/download.svg) ](https://bintray.com/ably-io/ably/ably-java/_latestVersion) |
-
 A Java Realtime and REST client library for [Ably Realtime](https://www.ably.io), the realtime messaging and data delivery service. This library currently targets the [Ably client library features spec](https://www.ably.io/documentation/client-lib-development-guide/features/) Version 1.2. You can jump to the '[Known Limitations](#known-limitations)' section to see the features this client library does not yet support or [view our client library SDKs feature support matrix](https://www.ably.io/download/sdk-feature-support-matrix) to see the list of all the available features.
 
 ## Supported Platforms
