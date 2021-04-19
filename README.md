@@ -24,7 +24,7 @@ Visit https://www.ably.io/documentation for a complete API reference and more ex
 
 ## Installation ##
 
-Include the library by adding an `implementation` reference to `dependencies` block in your Gradle build script.
+Include the library by adding an `implementation` reference to `dependencies` block in your [Gradle](https://gradle.org/) build script.
 
 For [Java](https://mvnrepository.com/artifact/io.ably/ably-java/latest):
 
