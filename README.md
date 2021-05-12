@@ -29,13 +29,13 @@ Include the library by adding an `implementation` reference to `dependencies` bl
 For [Java](https://mvnrepository.com/artifact/io.ably/ably-java/latest):
 
 ```
-implementation 'io.ably:ably-java:1.2.5'
+implementation 'io.ably:ably-java:1.2.6'
 ```
 
 For [Android](https://mvnrepository.com/artifact/io.ably/ably-android/latest):
 
 ```
-implementation 'io.ably:ably-android:1.2.5'
+implementation 'io.ably:ably-android:1.2.6'
 ```
 
 The library is hosted on [Maven Central](https://mvnrepository.com/repos/central), so you need to ensure that the repository is referenced also; IDEs will typically include this by default:
@@ -604,15 +604,15 @@ Configuration of Run/Debug configurations for running the unit tests on Android 
 
 This library uses [semantic versioning](http://semver.org/). For each release, the following needs to be done:
 
-1. Create a branch for the release, named like `release/1.2.5`
+1. Create a branch for the release, named like `release/1.2.6`
 2. Replace all references of the current version number with the new version number (check this file [README.md](./README.md) and [common.gradle](./common.gradle)) and commit the changes
 3. Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to update the [CHANGELOG](./CHANGELOG.md):
-    * This might work: `github_changelog_generator -u ably -p ably-java --header-label="# Changelog" --release-branch=release/1.2.5 --future-release=v1.2.5`
-    * But your mileage may vary as it can error. Perhaps more reliable is something like: `github_changelog_generator -u ably -p ably-java --since-tag v1.2.4 --output delta.md` and then manually merge the delta contents in to the main change log
+    * This might work: `github_changelog_generator -u ably -p ably-java --header-label="# Changelog" --release-branch=release/1.2.6 --future-release=v1.2.6`
+    * But your mileage may vary as it can error. Perhaps more reliable is something like: `github_changelog_generator -u ably -p ably-java --since-tag v1.2.5 --output delta.md` and then manually merge the delta contents in to the main change log
 4. Commit [CHANGELOG](./CHANGELOG.md)
 5. Make a PR against `main`
 6. Once the PR is approved, merge it into `main`
-7. Add a tag and push to origin - e.g.: `git tag v1.2.5 && git push origin v1.2.5`
+7. Add a tag and push to origin - e.g.: `git tag v1.2.6 && git push origin v1.2.6`
 8. Create the release on Github including populating the release notes
 9. Assemble and Upload ([see below](#publishing-to-maven-central) for details) - but the overall order to follow is:
     1. Comment out local `repository` lines in the two `maven.gradle` files temporarily (this is horrible but is [to be fixed soon](https://github.com/ably/ably-java/issues/566))
