@@ -1,5 +1,12 @@
 # Change Log
 
+## [v1.2.6](https://github.com/ably/ably-java/tree/v1.2.6)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.5...v1.2.6)
+
+**Fixed bug:** channel presence members [\#669](https://github.com/ably/ably-java/pull/669) ([sacOO7](https://github.com/sacOO7))  
+An issue affecting only users calling `get(boolean wait)` on `Presence` with `wait` set to `true`.
+
 ## [v1.2.5](https://github.com/ably/ably-java/tree/v1.2.5)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.4...v1.2.5)
