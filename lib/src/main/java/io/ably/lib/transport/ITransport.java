@@ -5,6 +5,7 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.util.AgentHeaderCreator;
 import io.ably.lib.util.Log;
 
 import java.io.IOException;
@@ -88,7 +89,7 @@ public interface ITransport {
             if(options.transportParams != null) {
                 paramList.addAll(Arrays.asList(options.transportParams));
             }
-            paramList.add(new Param(Defaults.ABLY_LIB_PARAM, Defaults.ABLY_LIB_VERSION));
+            paramList.add(new Param(Defaults.ABLY_AGENT_PARAM, AgentHeaderCreator.create(options.agents)));
             Log.d(TAG, "getConnectParams: params = " + paramList);
             return paramList.toArray(new Param[paramList.size()]);
         }
