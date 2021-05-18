@@ -195,4 +195,11 @@ public class ClientOptions extends AuthOptions {
      * before responding.
      */
     public boolean pushFullWait = false;
+
+    /**
+     * Map of agents that will be appended to the agent header.
+     * The keys represent agent names and its corresponding values represent agent versions.
+     * Agent versions are optional, if you don't want to specify it pass `null` as the map entry value.
+     */
+    public Map<String, String> agents;
 }

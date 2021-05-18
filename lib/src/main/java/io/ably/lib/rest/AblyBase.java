@@ -29,10 +29,7 @@ import io.ably.lib.types.PublishResponse;
 import io.ably.lib.types.ReadOnlyMap;
 import io.ably.lib.types.Stats;
 import io.ably.lib.types.StatsReader;
-import io.ably.lib.util.Crypto;
-import io.ably.lib.util.InternalMap;
-import io.ably.lib.util.Log;
-import io.ably.lib.util.Serialisation;
+import io.ably.lib.util.*;
 
 /**
  * AblyBase
@@ -71,6 +68,11 @@ public abstract class AblyBase {
         /* normalise options */
         if(options == null) {
             String msg = "no options provided";
+            Log.e(getClass().getName(), msg);
+            throw AblyException.fromErrorInfo(new ErrorInfo(msg, 400, 40000));
+        }
+        if (options.agents != null && !AblyAgentValidator.areAllValid(options.agents)) {
+            String msg = "invalid agent provided";
             Log.e(getClass().getName(), msg);
             throw AblyException.fromErrorInfo(new ErrorInfo(msg, 400, 40000));
         }
