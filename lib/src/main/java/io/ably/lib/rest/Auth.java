@@ -491,7 +491,7 @@ public class Auth {
      *
      * - ttl:        (optional) the requested life of any new token in ms. If none
      *               is specified a default of 1 hour is provided. The maximum lifetime
-     *               is 24hours; any request exceeeding that lifetime will be rejected
+     *               is 24hours; any request exceeding that lifetime will be rejected
      *               with an error.
      *
      * - capability: (optional) the capability to associate with the access token.

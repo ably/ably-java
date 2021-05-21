@@ -978,6 +978,12 @@ public class ConnectionManager implements ConnectListener {
      */
     public void onAuthError(ErrorInfo errorInfo) {
         Log.i(TAG, String.format("onAuthError: (%d) %s", errorInfo.code, errorInfo.message));
+
+        if(errorInfo.code == 403) {
+            this.connection.state = ConnectionState.failed;
+            return;
+        }
+
         switch (currentState.state) {
             case connecting:
                 ITransport transport = this.transport;
