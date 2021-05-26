@@ -27,7 +27,7 @@ public class AgentHeaderCreator {
             agentStringBuilder.append(getAdditionalAgentEntries(additionalAgents));
         }
         agentStringBuilder.append(Defaults.ABLY_AGENT_VERSION);
-        if (BuildConfig.LIBRARY_NAME == ANDROID_LIBRARY_NAME) {
+        if (BuildConfig.LIBRARY_NAME.equals(ANDROID_LIBRARY_NAME)) {
             agentStringBuilder.append(AGENT_ENTRY_SEPARATOR);
             agentStringBuilder.append(getAndroidAgent());
         }
