@@ -4,9 +4,6 @@ import android.os.Build;
 import io.ably.lib.BuildConfig;
 import io.ably.lib.transport.Defaults;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 public class AgentHeaderCreator {
@@ -36,7 +33,7 @@ public class AgentHeaderCreator {
 
     private static String getAdditionalAgentEntries(Map<String, String> additionalAgents) {
         StringBuilder additionalAgentsBuilder = new StringBuilder();
-        for (String additionalAgentName : getSortedAgentNames(additionalAgents)) {
+        for (String additionalAgentName : additionalAgents.keySet()) {
             String additionalAgentVersion = additionalAgents.get(additionalAgentName);
             additionalAgentsBuilder.append(additionalAgentName);
             if (additionalAgentVersion != null) {
@@ -46,13 +43,6 @@ public class AgentHeaderCreator {
             additionalAgentsBuilder.append(AGENT_ENTRY_SEPARATOR);
         }
         return additionalAgentsBuilder.toString();
-    }
-
-
-    private static List<String> getSortedAgentNames(Map<String, String> agents) {
-        List<String> agentNames = new ArrayList<>(agents.keySet());
-        Collections.sort(agentNames);
-        return agentNames;
     }
 
     private static String getAndroidAgent() {
