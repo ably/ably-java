@@ -979,7 +979,7 @@ public class ConnectionManager implements ConnectListener {
     public void onAuthError(ErrorInfo errorInfo) {
         Log.i(TAG, String.format("onAuthError: (%d) %s", errorInfo.code, errorInfo.message));
 
-        if(errorInfo.code == 403) {
+        if(errorInfo.statusCode == 403) {
             ConnectionStateChange failedStateChange =
                 new ConnectionStateChange(
                     connection.state,
