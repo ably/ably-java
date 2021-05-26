@@ -20,7 +20,12 @@ import io.ably.lib.debug.DebugOptions.RawHttpListener;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.transport.Hosts;
-import io.ably.lib.types.*;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.ErrorResponse;
+import io.ably.lib.types.Param;
+import io.ably.lib.types.ProxyOptions;
 import io.ably.lib.util.AgentHeaderCreator;
 import io.ably.lib.util.Log;
 
