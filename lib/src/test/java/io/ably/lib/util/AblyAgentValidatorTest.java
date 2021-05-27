@@ -79,7 +79,8 @@ public class AblyAgentValidatorTest {
         // given
         Map<String, String> agents = new HashMap<>();
         agents.put("valid-name", "1.0.1");
-        agents.put("another-valid-name", null);
+        agents.put("another-valid-name123", null);
+        agents.put("fully-123-valid-!#$%&'*+.^_`|~-name", null);
 
         // when
         boolean areAgentsValid = AblyAgentValidator.areAllValid(agents);
@@ -94,7 +95,7 @@ public class AblyAgentValidatorTest {
         Map<String, String> agents = new HashMap<>();
         agents.put("valid-name", "1.0.1");
         agents.put("invalid/name", "1.0.1");
-        agents.put("another-valid-name", null);
+        agents.put("another-valid-name123", null);
 
         // when
         boolean areAgentsValid = AblyAgentValidator.areAllValid(agents);

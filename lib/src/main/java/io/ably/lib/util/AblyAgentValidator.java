@@ -6,9 +6,9 @@ import java.util.regex.Pattern;
 public class AblyAgentValidator {
     /**
      * Agent name validation regex.
-     * Allow only lowercase letters and '-'.
+     * Allow only lowercase letters, digits and characters from the set [ !#$%&'*+-.^_`|~ ].
      */
-    private static final String AGENT_NAME_REGEX = "^[a-z\\-]+$";
+    private static final String AGENT_NAME_REGEX = "^[a-z0-9!#$%&'*+\\-.^_`|~]+$";
     private static final Pattern agentNamePattern = Pattern.compile(AGENT_NAME_REGEX);
 
     /**
