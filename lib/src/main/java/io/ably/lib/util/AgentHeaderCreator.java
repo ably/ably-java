@@ -23,7 +23,7 @@ public class AgentHeaderCreator {
     public static String create(Map<String, String> additionalAgents) {
         StringBuilder agentStringBuilder = new StringBuilder();
         agentStringBuilder.append(Defaults.ABLY_AGENT_VERSION);
-        if (!additionalAgents.isEmpty()) {
+        if (additionalAgents != null && !additionalAgents.isEmpty()) {
             agentStringBuilder.append(AGENT_ENTRY_SEPARATOR);
             agentStringBuilder.append(getAdditionalAgentEntries(additionalAgents));
         }

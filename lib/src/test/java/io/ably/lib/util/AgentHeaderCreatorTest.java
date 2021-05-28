@@ -32,6 +32,17 @@ public class AgentHeaderCreatorTest {
     }
 
     @Test
+    public void should_create_default_header_if_additional_agents_are_null() {
+        // given
+
+        // when
+        String agentHeaderValue = AgentHeaderCreator.create(null);
+
+        // then
+        assertMatchingAgentHeaders(PREDEFINED_AGENTS, agentHeaderValue);
+    }
+
+    @Test
     public void should_create_header_with_appended_agents_if_they_are_provided() {
         // given
         Map<String, String> agents = new HashMap<>();
