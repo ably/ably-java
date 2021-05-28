@@ -37,7 +37,7 @@ public class AgentHeaderCreatorTest {
         String agentHeaderValue = AgentHeaderCreator.create(agents);
 
         // then
-        assertMatchingAgentHeaders("library/1.0.1 other/0.8.2 " + PREDEFINED_AGENTS, agentHeaderValue);
+        assertMatchingAgentHeaders(PREDEFINED_AGENTS + " library/1.0.1 other/0.8.2", agentHeaderValue);
     }
 
     @Test
@@ -51,18 +51,18 @@ public class AgentHeaderCreatorTest {
         String agentHeaderValue = AgentHeaderCreator.create(agents);
 
         // then
-        assertMatchingAgentHeaders("library/1.0.1 no-version " + PREDEFINED_AGENTS, agentHeaderValue);
+        assertMatchingAgentHeaders(PREDEFINED_AGENTS + " library/1.0.1 no-version", agentHeaderValue);
     }
 
     private void assertMatchingAgentHeaders(String expectedAgentHeader, String actualAgentHeader) {
-        assertPredefinedAgentsAreAtTheEnd(actualAgentHeader);
+        assertPredefinedAgentsAreAtTheStart(actualAgentHeader);
         assertAllExpectedAgentsArePresentInActualAgents(expectedAgentHeader, actualAgentHeader);
     }
 
-    private void assertPredefinedAgentsAreAtTheEnd(String actualAgentHeader) {
+    private void assertPredefinedAgentsAreAtTheStart(String actualAgentHeader) {
         assertTrue(
-            actualAgentHeader + " does not end with the library predefined agents",
-            actualAgentHeader.endsWith(PREDEFINED_AGENTS)
+            actualAgentHeader + " does not start with the library predefined agents",
+            actualAgentHeader.startsWith(PREDEFINED_AGENTS)
         );
     }
 

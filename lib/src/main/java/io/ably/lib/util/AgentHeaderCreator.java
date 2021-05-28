@@ -20,10 +20,11 @@ public class AgentHeaderCreator {
 
     public static String create(Map<String, String> additionalAgents) {
         StringBuilder agentStringBuilder = new StringBuilder();
+        agentStringBuilder.append(Defaults.ABLY_AGENT_VERSION);
         if (!additionalAgents.isEmpty()) {
+            agentStringBuilder.append(AGENT_ENTRY_SEPARATOR);
             agentStringBuilder.append(getAdditionalAgentEntries(additionalAgents));
         }
-        agentStringBuilder.append(Defaults.ABLY_AGENT_VERSION);
         if (BuildConfig.LIBRARY_NAME.equals(ANDROID_LIBRARY_NAME)) {
             agentStringBuilder.append(AGENT_ENTRY_SEPARATOR);
             agentStringBuilder.append(getAndroidAgent());
@@ -42,7 +43,7 @@ public class AgentHeaderCreator {
             }
             additionalAgentsBuilder.append(AGENT_ENTRY_SEPARATOR);
         }
-        return additionalAgentsBuilder.toString();
+        return additionalAgentsBuilder.toString().trim();
     }
 
     private static String getAndroidAgent() {
