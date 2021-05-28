@@ -29,7 +29,11 @@ import io.ably.lib.types.PublishResponse;
 import io.ably.lib.types.ReadOnlyMap;
 import io.ably.lib.types.Stats;
 import io.ably.lib.types.StatsReader;
-import io.ably.lib.util.*;
+import io.ably.lib.util.AblyAgentValidator;
+import io.ably.lib.util.Crypto;
+import io.ably.lib.util.InternalMap;
+import io.ably.lib.util.Log;
+import io.ably.lib.util.Serialisation;
 
 /**
  * AblyBase
