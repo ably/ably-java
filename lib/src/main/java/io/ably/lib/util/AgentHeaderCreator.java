@@ -1,7 +1,5 @@
 package io.ably.lib.util;
 
-import android.os.Build;
-import io.ably.lib.BuildConfig;
 import io.ably.lib.transport.Defaults;
 
 import java.util.Map;
@@ -16,7 +14,11 @@ public class AgentHeaderCreator {
      * Separates agent name from agent version.
      */
     private static final String AGENT_DIVIDER = "/";
-    private static final String ANDROID_LIBRARY_NAME = "android";
+
+    /**
+     * Optional platform agent, e.g. "android/24"
+     */
+    private static String platformAgent = null;
 
     public static String create(Map<String, String> additionalAgents) {
         StringBuilder agentStringBuilder = new StringBuilder();
@@ -25,9 +27,9 @@ public class AgentHeaderCreator {
             agentStringBuilder.append(AGENT_ENTRY_SEPARATOR);
             agentStringBuilder.append(getAdditionalAgentEntries(additionalAgents));
         }
-        if (BuildConfig.LIBRARY_NAME.equals(ANDROID_LIBRARY_NAME)) {
+        if (platformAgent != null) {
             agentStringBuilder.append(AGENT_ENTRY_SEPARATOR);
-            agentStringBuilder.append(getAndroidAgent());
+            agentStringBuilder.append(platformAgent);
         }
         return agentStringBuilder.toString();
     }
@@ -46,7 +48,14 @@ public class AgentHeaderCreator {
         return additionalAgentsBuilder.toString().trim();
     }
 
-    private static String getAndroidAgent() {
-        return "android" + AGENT_DIVIDER + Build.VERSION.SDK_INT;
+    public static void setAndroidPlatformAgent(int platformVersion) {
+        platformAgent = "android" + AGENT_DIVIDER + platformVersion;
+    }
+
+    /**
+     * Added to clear AgentHeaderCreator state for unit tests.
+     */
+    public static void clearPlatformAgent() {
+        platformAgent = null;
     }
 }

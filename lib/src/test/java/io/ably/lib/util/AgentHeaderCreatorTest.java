@@ -1,7 +1,7 @@
 package io.ably.lib.util;
 
-import android.os.Build;
 import io.ably.lib.transport.Defaults;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -12,7 +12,12 @@ import java.util.Map;
 import static org.junit.Assert.*;
 
 public class AgentHeaderCreatorTest {
-    private final static String PREDEFINED_AGENTS = Defaults.ABLY_AGENT_VERSION + " android/" + Build.VERSION.SDK_INT;
+    private final static String PREDEFINED_AGENTS = Defaults.ABLY_AGENT_VERSION;
+
+    @Before
+    public void beforeEach() {
+        AgentHeaderCreator.clearPlatformAgent();
+    }
 
     @Test
     public void should_create_default_header_if_there_are_no_additional_agents() {
@@ -52,6 +57,20 @@ public class AgentHeaderCreatorTest {
 
         // then
         assertMatchingAgentHeaders(PREDEFINED_AGENTS + " library/1.0.1 no-version", agentHeaderValue);
+    }
+
+    @Test
+    public void should_create_header_with_platform_agent_if_it_is_provided() {
+        // given
+        Map<String, String> agents = new HashMap<>();
+        agents.put("library", "1.0.1");
+        AgentHeaderCreator.setAndroidPlatformAgent(25);
+
+        // when
+        String agentHeaderValue = AgentHeaderCreator.create(agents);
+
+        // then
+        assertMatchingAgentHeaders(PREDEFINED_AGENTS + " android/25 library/1.0.1", agentHeaderValue);
     }
 
     private void assertMatchingAgentHeaders(String expectedAgentHeader, String actualAgentHeader) {

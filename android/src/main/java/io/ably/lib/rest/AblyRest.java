@@ -1,9 +1,11 @@
 package io.ably.lib.rest;
 
 import android.content.Context;
+import android.os.Build;
 import io.ably.lib.push.LocalDevice;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
+import io.ably.lib.util.AgentHeaderCreator;
 import io.ably.lib.util.Log;
 
 public class AblyRest extends AblyBase {
@@ -17,6 +19,7 @@ public class AblyRest extends AblyBase {
      */
     public AblyRest(String key) throws AblyException {
         super(key);
+        AgentHeaderCreator.setAndroidPlatformAgent(Build.VERSION.SDK_INT);
     }
 
     /**
@@ -26,6 +29,7 @@ public class AblyRest extends AblyBase {
      */
     public AblyRest(ClientOptions options) throws AblyException {
         super(options);
+        AgentHeaderCreator.setAndroidPlatformAgent(Build.VERSION.SDK_INT);
     }
 
     /**
