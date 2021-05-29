@@ -85,28 +85,50 @@ public class RealtimeAuthTest extends ParameterizedTest {
      * errorReason
      *
      * Verify end connection state is failed
+     * Spec: RSA4d, RSA4d1
      */
     @Test
     public void auth_client_fails_authorize_server_forbidden() {
         try {
-            ClientOptions opts = createOptions();
+            ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
+            AblyRest ablyForToken = new AblyRest(optsForToken);
+            TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, null);
+
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.autoConnect = false;
+            opts.tokenDetails = tokenDetails;
             opts.useTokenAuth = true;
             opts.authUrl = "https://echo.ably.io/respondwith";
             opts.authParams = new Param[]{ new Param("status", 403)};
 
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            final AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            ablyRealtime.connection.connect();
+
+            Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ablyRealtime.connection);
+            connectionWaiter.waitFor(ConnectionState.connected);
+
+            ablyRealtime.connection.once(ConnectionEvent.failed, new ConnectionStateListener() {
+                @Override
+                public void onConnectionStateChanged(ConnectionStateChange stateChange) {
+                    assertEquals(stateChange.previous, ConnectionState.connected);
+                    assertEquals(stateChange.reason.code, 80019);
+                    assertEquals(80019, ablyRealtime.connection.reason.code);
+                    assertEquals(403, ablyRealtime.connection.reason.statusCode);
+                }
+            });
 
             try {
-                ablyRealtime.auth.authorize(null, null);
+                opts.tokenDetails = null;
+                ablyRealtime.auth.authorize(null, opts);
             } catch (AblyException e) {
                 assertEquals(403, e.errorInfo.statusCode);
+                assertEquals(80019, e.errorInfo.code);
             }
 
             /* wait for failed state */
-            Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ablyRealtime.connection);
             connectionWaiter.waitFor(ConnectionState.failed);
             assertEquals("Verify connected state has failed", ConnectionState.failed, ablyRealtime.connection.state);
+            assertEquals("Check correct cause error code", 403, ablyRealtime.connection.reason.statusCode);
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
