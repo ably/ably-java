@@ -1,5 +1,6 @@
 package io.ably.lib.util;
 
+import io.ably.lib.test.util.EmptyPlatformAgentProvider;
 import io.ably.lib.transport.Defaults;
 import org.junit.Before;
 import org.junit.Test;
@@ -13,11 +14,7 @@ import static org.junit.Assert.assertTrue;
 
 public class AgentHeaderCreatorTest {
     private final static String PREDEFINED_AGENTS = Defaults.ABLY_AGENT_VERSION;
-
-    @Before
-    public void beforeEach() {
-        AgentHeaderCreator.clearPlatformAgent();
-    }
+    private final PlatformAgentProvider emptyPlatformAgentProvider = new EmptyPlatformAgentProvider();
 
     @Test
     public void should_create_default_header_if_there_are_no_additional_agents() {
@@ -25,7 +22,7 @@ public class AgentHeaderCreatorTest {
         Map<String, String> agents = new HashMap<>();
 
         // when
-        String agentHeaderValue = AgentHeaderCreator.create(agents);
+        String agentHeaderValue = AgentHeaderCreator.create(agents, emptyPlatformAgentProvider);
 
         // then
         assertMatchingAgentHeaders(PREDEFINED_AGENTS, agentHeaderValue);
@@ -36,7 +33,7 @@ public class AgentHeaderCreatorTest {
         // given
 
         // when
-        String agentHeaderValue = AgentHeaderCreator.create(null);
+        String agentHeaderValue = AgentHeaderCreator.create(null, emptyPlatformAgentProvider);
 
         // then
         assertMatchingAgentHeaders(PREDEFINED_AGENTS, agentHeaderValue);
@@ -50,7 +47,7 @@ public class AgentHeaderCreatorTest {
         agents.put("other", "0.8.2");
 
         // when
-        String agentHeaderValue = AgentHeaderCreator.create(agents);
+        String agentHeaderValue = AgentHeaderCreator.create(agents, emptyPlatformAgentProvider);
 
         // then
         assertMatchingAgentHeaders(PREDEFINED_AGENTS + " library/1.0.1 other/0.8.2", agentHeaderValue);
@@ -64,7 +61,7 @@ public class AgentHeaderCreatorTest {
         agents.put("no-version", null);
 
         // when
-        String agentHeaderValue = AgentHeaderCreator.create(agents);
+        String agentHeaderValue = AgentHeaderCreator.create(agents, emptyPlatformAgentProvider);
 
         // then
         assertMatchingAgentHeaders(PREDEFINED_AGENTS + " library/1.0.1 no-version", agentHeaderValue);
@@ -75,10 +72,15 @@ public class AgentHeaderCreatorTest {
         // given
         Map<String, String> agents = new HashMap<>();
         agents.put("library", "1.0.1");
-        AgentHeaderCreator.setAndroidPlatformAgent(25);
+        PlatformAgentProvider androidPlatformAgentProvider = new PlatformAgentProvider() {
+            @Override
+            public String createPlatformAgent() {
+                return "android/25";
+            }
+        };
 
         // when
-        String agentHeaderValue = AgentHeaderCreator.create(agents);
+        String agentHeaderValue = AgentHeaderCreator.create(agents, androidPlatformAgentProvider);
 
         // then
         assertMatchingAgentHeaders(PREDEFINED_AGENTS + " android/25 library/1.0.1", agentHeaderValue);

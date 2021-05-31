@@ -33,6 +33,7 @@ import io.ably.lib.util.AblyAgentValidator;
 import io.ably.lib.util.Crypto;
 import io.ably.lib.util.InternalMap;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.PlatformAgentProvider;
 import io.ably.lib.util.Serialisation;
 
 /**
@@ -50,6 +51,7 @@ public abstract class AblyBase {
     public final Channels channels;
     public final Platform platform;
     public final Push push;
+    protected final PlatformAgentProvider platformAgentProvider;
 
     /**
      * Instance the Ably library using a key only.
@@ -57,18 +59,20 @@ public abstract class AblyBase {
      * simplest case of instancing the library with a key
      * for basic authentication and no other options.
      * @param key String key (obtained from application dashboard)
+     * @param platformAgentProvider provides platform agent for the agent header.
      * @throws AblyException
      */
-    public AblyBase(String key) throws AblyException {
-        this(new ClientOptions(key));
+    public AblyBase(String key, PlatformAgentProvider platformAgentProvider) throws AblyException {
+        this(new ClientOptions(key), platformAgentProvider);
     }
 
     /**
      * Instance the Ably library with the given options.
      * @param options see {@link io.ably.lib.types.ClientOptions} for options
+     * @param platformAgentProvider provides platform agent for the agent header.
      * @throws AblyException
      */
-    public AblyBase(ClientOptions options) throws AblyException {
+    public AblyBase(ClientOptions options, PlatformAgentProvider platformAgentProvider) throws AblyException {
         /* normalise options */
         if(options == null) {
             String msg = "no options provided";
@@ -87,8 +91,9 @@ public abstract class AblyBase {
         Log.setHandler(options.logHandler);
         Log.i(getClass().getName(), "started");
 
+        this.platformAgentProvider = platformAgentProvider;
         auth = new Auth(this, options);
-        httpCore = new HttpCore(options, auth);
+        httpCore = new HttpCore(options, auth, this.platformAgentProvider);
         http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
 
         channels = new InternalChannels();

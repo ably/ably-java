@@ -20,6 +20,8 @@ import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolSerializer;
 import io.ably.lib.util.Log;
 import io.ably.lib.transport.NetworkConnectivity.NetworkConnectivityListener;
+import io.ably.lib.util.PlatformAgentProvider;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -715,10 +717,11 @@ public class ConnectionManager implements ConnectListener {
      * ConnectionManager
      ***********************/
 
-    public ConnectionManager(final AblyRealtime ably, final Connection connection, final Channels channels) throws AblyException {
+    public ConnectionManager(final AblyRealtime ably, final Connection connection, final Channels channels, final PlatformAgentProvider platformAgentProvider) throws AblyException {
         this.ably = ably;
         this.connection = connection;
         this.channels = channels;
+        this.platformAgentProvider = platformAgentProvider;
 
         ClientOptions options = ably.options;
         this.hosts = new Hosts(options.realtimeHost, Defaults.HOST_REALTIME, options);
@@ -1314,8 +1317,8 @@ public class ConnectionManager implements ConnectListener {
     }
 
     private class ConnectParams extends TransportParams {
-        ConnectParams(ClientOptions options) {
-            super(options);
+        ConnectParams(ClientOptions options, PlatformAgentProvider platformAgentProvider) {
+            super(options, platformAgentProvider);
             this.connectionKey = connection.key;
             this.connectionSerial = String.valueOf(connection.serial);
             this.port = Defaults.getPort(options);
@@ -1335,7 +1338,7 @@ public class ConnectionManager implements ConnectListener {
             host = hosts.getPreferredHost();
         }
         checkConnectionStale();
-        pendingConnect = new ConnectParams(ably.options);
+        pendingConnect = new ConnectParams(ably.options, platformAgentProvider);
         pendingConnect.host = host;
         lastUsedHost = host;
 
@@ -1695,6 +1698,7 @@ public class ConnectionManager implements ConnectListener {
     private final HashSet<Object> heartbeatWaiters = new HashSet<Object>();
     private final ActionQueue actionQueue = new ActionQueue();
     private final Hosts hosts;
+    private final PlatformAgentProvider platformAgentProvider;
 
     private Thread handlerThread;
     private final Map<ConnectionState, State> states = new HashMap<>();

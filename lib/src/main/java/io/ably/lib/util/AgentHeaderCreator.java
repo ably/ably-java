@@ -13,20 +13,16 @@ public class AgentHeaderCreator {
     /**
      * Separates agent name from agent version.
      */
-    private static final String AGENT_DIVIDER = "/";
+    public static final String AGENT_DIVIDER = "/";
 
-    /**
-     * Optional platform agent, e.g. "android/24"
-     */
-    private static String platformAgent = null;
-
-    public static String create(Map<String, String> additionalAgents) {
+    public static String create(Map<String, String> additionalAgents, PlatformAgentProvider platformAgentProvider) {
         StringBuilder agentStringBuilder = new StringBuilder();
         agentStringBuilder.append(Defaults.ABLY_AGENT_VERSION);
         if (additionalAgents != null && !additionalAgents.isEmpty()) {
             agentStringBuilder.append(AGENT_ENTRY_SEPARATOR);
             agentStringBuilder.append(getAdditionalAgentEntries(additionalAgents));
         }
+        String platformAgent = platformAgentProvider.createPlatformAgent();
         if (platformAgent != null) {
             agentStringBuilder.append(AGENT_ENTRY_SEPARATOR);
             agentStringBuilder.append(platformAgent);
@@ -46,16 +42,5 @@ public class AgentHeaderCreator {
             additionalAgentsBuilder.append(AGENT_ENTRY_SEPARATOR);
         }
         return additionalAgentsBuilder.toString().trim();
-    }
-
-    public static void setAndroidPlatformAgent(int platformVersion) {
-        platformAgent = "android" + AGENT_DIVIDER + platformVersion;
-    }
-
-    /**
-     * Added to clear AgentHeaderCreator state for unit tests.
-     */
-    public static void clearPlatformAgent() {
-        platformAgent = null;
     }
 }

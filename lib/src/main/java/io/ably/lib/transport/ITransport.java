@@ -7,6 +7,7 @@ import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.AgentHeaderCreator;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.PlatformAgentProvider;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,9 +42,11 @@ public interface ITransport {
         protected String connectionSerial;
         protected Mode mode;
         protected boolean heartbeats;
+        private final PlatformAgentProvider platformAgentProvider;
 
-        public TransportParams(ClientOptions options) {
+        public TransportParams(ClientOptions options, PlatformAgentProvider platformAgentProvider) {
             this.options = options;
+            this.platformAgentProvider = platformAgentProvider;
             heartbeats = true; /* default to requiring Ably heartbeats */
         }
 
@@ -89,7 +92,7 @@ public interface ITransport {
             if(options.transportParams != null) {
                 paramList.addAll(Arrays.asList(options.transportParams));
             }
-            paramList.add(new Param(Defaults.ABLY_AGENT_PARAM, AgentHeaderCreator.create(options.agents)));
+            paramList.add(new Param(Defaults.ABLY_AGENT_PARAM, AgentHeaderCreator.create(options.agents, platformAgentProvider)));
             Log.d(TAG, "getConnectParams: params = " + paramList);
             return paramList.toArray(new Param[paramList.size()]);
         }
