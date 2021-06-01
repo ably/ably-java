@@ -1,11 +1,7 @@
 package io.ably.lib.test.realtime;
 
-import io.ably.lib.realtime.*;
-import io.ably.lib.test.common.Setup;
-import io.ably.lib.types.*;
-import io.ably.lib.util.Log;
-
 import io.ably.lib.debug.DebugOptions;
+import io.ably.lib.realtime.*;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.TokenDetails;
@@ -14,11 +10,8 @@ import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.ParameterizedTest;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.Message;
-import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.test.common.Setup;
+import io.ably.lib.types.*;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -110,8 +103,8 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ablyRealtime.connection.once(ConnectionEvent.failed, new ConnectionStateListener() {
                 @Override
                 public void onConnectionStateChanged(ConnectionStateChange stateChange) {
-                    assertEquals(stateChange.previous, ConnectionState.connected);
-                    assertEquals(stateChange.reason.code, 80019);
+                    assertEquals(ConnectionState.connected, stateChange.previous);
+                    assertEquals(80019, stateChange.reason.code);
                     assertEquals(80019, ablyRealtime.connection.reason.code);
                     assertEquals(403, ablyRealtime.connection.reason.statusCode);
                 }
