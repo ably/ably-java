@@ -69,7 +69,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
     }
 
     /**
-     * RSA4d:  If a request by a realtime client to an authUrl results in an HTTP 403 response,
+     * RSA4d: If a request by a realtime client to an authUrl results in an HTTP 403 response,
      * or any of an authUrl request, an authCallback, or a request to Ably to exchange
      * a TokenRequest for a TokenDetails result in an ErrorInfo with statusCode 403,
      * as part of an attempt by the realtime client to authenticate, then the client library
@@ -77,16 +77,21 @@ public class RealtimeAuthTest extends ParameterizedTest {
      * and cause set to the underlying cause) emitted with the state change and set as the connection
      * errorReason
      *
-     * Verify end connection state is failed
+     * Verify that if server responses with 403 error code on authorization attempt,
+     * end connection state is failed.
+     *
      * Spec: RSA4d, RSA4d1
      */
     @Test
     public void auth_client_fails_authorize_server_forbidden() {
         try {
+            /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
             AblyRest ablyForToken = new AblyRest(optsForToken);
+            /* get token */
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, null);
 
+            /* create ably realtime with tokenDetails and auth url which returns 403 error code */
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.autoConnect = false;
             opts.tokenDetails = tokenDetails;
@@ -97,12 +102,15 @@ public class RealtimeAuthTest extends ParameterizedTest {
             final AblyRealtime ablyRealtime = new AblyRealtime(opts);
             ablyRealtime.connection.connect();
 
+            /* wait for connected state */
             Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ablyRealtime.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
 
+            /* create listener for ConnectionEvent.failed */
             ablyRealtime.connection.once(ConnectionEvent.failed, new ConnectionStateListener() {
                 @Override
                 public void onConnectionStateChanged(ConnectionStateChange stateChange) {
+                    /* assert that state changes correctly */
                     assertEquals(ConnectionState.connected, stateChange.previous);
                     assertEquals(80019, stateChange.reason.code);
                     assertEquals(80019, ablyRealtime.connection.reason.code);
@@ -112,8 +120,10 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             try {
                 opts.tokenDetails = null;
+                /* try to authorize */
                 ablyRealtime.auth.authorize(null, opts);
             } catch (AblyException e) {
+                /* check expected error codes */
                 assertEquals(403, e.errorInfo.statusCode);
                 assertEquals(80019, e.errorInfo.code);
             }
