@@ -154,10 +154,11 @@ public abstract class AblyBase {
     }
 
     private Http.Request<Long> timeImpl() {
+        final Param[] params = this.options.addRequestIds ? Param.array(Crypto.generateRandomRequestId()) : null; // RSC7c
         return http.request(new Http.Execute<Long>() {
             @Override
             public void execute(HttpScheduler http, Callback<Long> callback) throws AblyException {
-                http.get("/time", HttpUtils.defaultAcceptHeaders(false), null, new HttpCore.ResponseHandler<Long>() {
+                http.get("/time", HttpUtils.defaultAcceptHeaders(false), params, new HttpCore.ResponseHandler<Long>() {
                     @Override
                     public Long handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
                         if(error != null) {
@@ -251,7 +252,7 @@ public abstract class AblyBase {
         publishBatchImpl(pubSpecs, channelOptions, params).async(callback);
     }
 
-    private Http.Request<PublishResponse[]> publishBatchImpl(final Message.Batch[] pubSpecs, ChannelOptions channelOptions, final Param[] params) throws AblyException {
+    private Http.Request<PublishResponse[]> publishBatchImpl(final Message.Batch[] pubSpecs, ChannelOptions channelOptions, final Param[] initialParams) throws AblyException {
         boolean hasClientSuppliedId = false;
         for(Message.Batch spec : pubSpecs) {
             for(Message message : spec.messages) {
@@ -264,7 +265,7 @@ public abstract class AblyBase {
             }
             if(!hasClientSuppliedId && options.idempotentRestPublishing) {
                 /* RSL1k1: populate the message id with a library-generated id */
-                String messageId = Crypto.getRandomMessageId();
+                String messageId = Crypto.getRandomId();
                 for (int i = 0; i < spec.messages.length; i++) {
                     spec.messages[i].id = messageId + ':' + i;
                 }
@@ -274,6 +275,7 @@ public abstract class AblyBase {
             @Override
             public void execute(HttpScheduler http, final Callback<PublishResponse[]> callback) throws AblyException {
                 HttpCore.RequestBody requestBody = options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(pubSpecs) : MessageSerializer.asJSONRequest(pubSpecs);
+                final Param[] params = options.addRequestIds ? Param.set(initialParams, Crypto.generateRandomRequestId()) : initialParams ; // RSC7c
                 http.post("/messages", HttpUtils.defaultAcceptHeaders(options.useBinaryProtocol), params, requestBody, new HttpCore.ResponseHandler<PublishResponse[]>() {
                     @Override
                     public PublishResponse[] handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {

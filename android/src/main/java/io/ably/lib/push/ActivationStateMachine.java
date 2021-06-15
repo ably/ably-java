@@ -7,9 +7,6 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.support.v4.content.LocalBroadcastManager;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.iid.InstanceIdResult;
 import com.google.gson.JsonObject;
 
 import java.lang.reflect.Constructor;
@@ -21,6 +18,7 @@ import io.ably.lib.http.*;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.DeviceDetails;
 import io.ably.lib.types.*;
+import io.ably.lib.util.Crypto;
 import io.ably.lib.util.IntentUtils;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
@@ -432,6 +430,9 @@ public class ActivationStateMachine {
                     if (ably.options.pushFullWait) {
                         params = Param.push(params, "fullWait", "true");
                     }
+                    if(ably.options.addRequestIds) { // RSC7c
+                        Param.set(params, Crypto.generateRandomRequestId());
+                    }
 
                     http.patch("/push/deviceRegistrations/" + device.id, ably.push.pushRequestHeaders(true), params, body, null, false, callback);
                 }
@@ -480,6 +481,9 @@ public class ActivationStateMachine {
                     if (ably.options.pushFullWait) {
                         params = Param.push(params, "fullWait", "true");
                     }
+                    if(ably.options.addRequestIds) { // RSC7c
+                        Param.set(params, Crypto.generateRandomRequestId());
+                    }
 
                     final HttpCore.RequestBody body = HttpUtils.requestBodyFromGson(device.toJsonObject(), ably.options.useBinaryProtocol);
                     http.put("/push/deviceRegistrations/" + device.id, ably.push.pushRequestHeaders(true), params, body, new Serialisation.HttpResponseHandler<JsonObject>(), true, callback);
@@ -527,6 +531,9 @@ public class ActivationStateMachine {
                     Param[] params = new Param[0];
                     if (ably.options.pushFullWait) {
                         params = Param.push(params, "fullWait", "true");
+                    }
+                    if(ably.options.addRequestIds) { // RSC7c
+                        Param.set(params, Crypto.generateRandomRequestId());
                     }
                     http.del("/push/deviceRegistrations/" + device.id, ably.push.pushRequestHeaders(true), params, null, true, callback);
                 }

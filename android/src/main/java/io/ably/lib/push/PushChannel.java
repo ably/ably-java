@@ -1,6 +1,5 @@
 package io.ably.lib.push;
 
-import android.content.Context;
 import com.google.gson.JsonObject;
 import io.ably.lib.http.*;
 import io.ably.lib.realtime.CompletionListener;
@@ -8,6 +7,7 @@ import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Channel;
 import io.ably.lib.rest.DeviceDetails;
 import io.ably.lib.types.*;
+import io.ably.lib.util.Crypto;
 
 public class PushChannel {
     protected final Channel channel;
@@ -112,7 +112,7 @@ public class PushChannel {
         if (rest.options.pushFullWait) {
             params = Param.push(params, "fullWait", "true");
         }
-        final Param[] finalParams = params;
+        final Param[] finalParams = rest.options.addRequestIds ? Param.set(params, Crypto.generateRandomRequestId()) : params; // RSC7c
         return rest.http.request(new Http.Execute<Void>() {
             @Override
             public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {

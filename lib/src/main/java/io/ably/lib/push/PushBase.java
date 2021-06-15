@@ -15,6 +15,7 @@ import io.ably.lib.types.AsyncPaginatedResult;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
+import io.ably.lib.util.Crypto;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 import io.ably.lib.util.StringUtils;
@@ -76,6 +77,9 @@ public class PushBase {
                     if (rest.options.pushFullWait) {
                         params = Param.push(params, "fullWait", "true");
                     }
+                    if (rest.options.addRequestIds) {
+                        params = Param.set(params, Crypto.generateRandomRequestId()); // RSC7c
+                    }
 
                     http.post("/push/publish", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, body, null, true, callback);
                 }
@@ -106,6 +110,9 @@ public class PushBase {
                     if (rest.options.pushFullWait) {
                         params = Param.push(params, "fullWait", "true");
                     }
+                    if(rest.options.addRequestIds) { // RSC7c
+                        Param.set(params, Crypto.generateRandomRequestId());
+                    }
                     http.put("/push/deviceRegistrations/" + device.id, rest.push.pushRequestHeaders(device.id), params, body, DeviceDetails.httpResponseHandler, true, callback);
                 }
             });
@@ -127,6 +134,9 @@ public class PushBase {
                     Param[] params = null;
                     if (rest.options.pushFullWait) {
                         params = Param.push(params, "fullWait", "true");
+                    }
+                    if (rest.options.addRequestIds) { // RSC7c
+                        Param.set(params, Crypto.generateRandomRequestId());
                     }
                     http.get("/push/deviceRegistrations/" + deviceId, rest.push.pushRequestHeaders(deviceId), params, DeviceDetails.httpResponseHandler, true, callback);
                 }
@@ -171,6 +181,9 @@ public class PushBase {
                     if (rest.options.pushFullWait) {
                         params = Param.push(params, "fullWait", "true");
                     }
+                    if(rest.options.addRequestIds) { // RSC7c
+                        Param.set(params, Crypto.generateRandomRequestId());
+                    }
                     http.del("/push/deviceRegistrations/" + deviceId, rest.push.pushRequestHeaders(deviceId), params, null, true, callback);
                 }
             });
@@ -189,7 +202,7 @@ public class PushBase {
             if (rest.options.pushFullWait) {
                 params = Param.push(params, "fullWait", "true");
             }
-            final Param[] finalParams = params;
+            final Param[] finalParams = rest.options.addRequestIds ? Param.set(params, Crypto.generateRandomRequestId()) : params; // RSC7c
             return rest.http.request(new Http.Execute<Void>() {
                 @Override
                 public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
@@ -225,6 +238,9 @@ public class PushBase {
                     Param[] params = null;
                     if (rest.options.pushFullWait) {
                         params = Param.push(params, "fullWait", "true");
+                    }
+                    if (rest.options.addRequestIds) {
+                        params = Param.set(params, Crypto.generateRandomRequestId()); // RSC7c
                     }
                     http.post("/push/channelSubscriptions", rest.push.pushRequestHeaders(subscription.deviceId), params, body, ChannelSubscription.httpResponseHandler, true, callback);
                 }
@@ -283,7 +299,7 @@ public class PushBase {
                 params = Param.push(params, "fullWait", "true");
             }
             final Param[] finalHeaders = rest.push.pushRequestHeaders(deviceId);
-            final Param[] finalParams = params;
+            final Param[] finalParams = rest.options.addRequestIds ? Param.set(params, Crypto.generateRandomRequestId()) : params; // RSC7c
             return rest.http.request(new Http.Execute<Void>() {
                 @Override
                 public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
