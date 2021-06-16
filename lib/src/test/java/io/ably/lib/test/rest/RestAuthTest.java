@@ -191,20 +191,20 @@ public class RestAuthTest extends ParameterizedTest {
     }
 
     /**
-     * Init library with a key and clientId; expect token auth to be chosen
-     * Spec: RSA4, RSC17, RSA7b1
+     * Init library with a key and clientId; expect basic auth to be chosen
+     * Spec: RSC17, RSA7b1
      */
     @Test
-    public void authinit_clientId_implies_token() {
+    public void authinit_clientId_auth_basic() {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.clientId = "testClientId";
             AblyRest ably = new AblyRest(opts);
-            assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
+            assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.basic);
             assertEquals("Unexpected clientId mismatch", ably.auth.clientId, "testClientId");
         } catch (AblyException e) {
             e.printStackTrace();
-            fail("authinit_clientId_implies_token: Unexpected exception instantiating library");
+            fail("authinit_clientId_auth_basic: Unexpected exception instantiating library");
         }
     }
 

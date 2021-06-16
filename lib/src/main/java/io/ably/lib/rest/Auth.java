@@ -868,8 +868,7 @@ public class Auth {
 
         /* decide default auth method (spec: RSA4) */
         if(authOptions.key != null) {
-            if(options.clientId == null &&
-                    !options.useTokenAuth &&
+            if(!options.useTokenAuth &&
                     options.token == null &&
                     options.tokenDetails == null &&
                     options.authCallback == null &&
