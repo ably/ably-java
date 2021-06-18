@@ -10,7 +10,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class RestClientTest extends ParameterizedTest {
 
@@ -37,7 +38,7 @@ public class RestClientTest extends ParameterizedTest {
 
         ablyA.channels.get("test").publish("foo", "bar");
         /* verify client_id is not a part of url query */
-        assertEquals("Verify clientId is not present in query", null, httpListener.getFirstRequest().url.getQuery());
+        assertNull("Verify clientId is not present in query", httpListener.getFirstRequest().url.getQuery());
 
         /* enable addRequestIds */
         opts.addRequestIds = true;
@@ -45,6 +46,32 @@ public class RestClientTest extends ParameterizedTest {
 
         ablyB.channels.get("test").publish("foo", "bar");
         /* verify client_id is a part of url query */
-        assertEquals("Verify clientId is present in query", true, httpListener.getLastRequest().url.getQuery().contains("request_id"));
+        assertTrue("Verify clientId is present in query", httpListener.getLastRequest().url.getQuery().contains("request_id"));
+    }
+
+    /**
+     * Include `request_id` in ErrorInfo if addRequestIds in client options is enabled
+     * Spec: RSC7c
+     */
+    @Test
+    public void error_info_contains_request_id() throws AblyException {
+        DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+        fillInOptions(opts);
+
+        Helpers.RawHttpTracker httpListener = new Helpers.RawHttpTracker();
+        opts.httpListener = httpListener;
+        opts.addRequestIds = true;
+        opts.environment = null;
+        opts.restHost = "";
+        AblyRest ably = new AblyRest(opts);
+
+        try{
+            ably.channels.get("test").publish("foo", "bar");
+        } catch (AblyException e) {
+            assertTrue(e.errorInfo.message.contains("request_id"));
+        }
+
+        /* verify client_id is a part of url query */
+        assertTrue("Verify clientId is present in query", httpListener.getFirstRequest().url.getQuery().contains("request_id"));
     }
 }

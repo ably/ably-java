@@ -202,17 +202,26 @@ public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
                     break;
                 } catch (AblyException.HostFailedException e) {
                     if(--retryCountRemaining < 0) {
+                        if(Param.getFirst(params, "request_id") != null) {
+                            e.errorInfo.message += String.format(", request_id %s", Param.getFirst(params, "request_id"));
+                        }
                         setError(e.errorInfo);
                         break;
                     }
                     Log.d(TAG, "Connection failed to host `" + candidateHost + "`. Searching for new host...");
                     candidateHost = httpCore.hosts.getFallback(candidateHost);
                     if (candidateHost == null) {
+                        if(Param.getFirst(params, "request_id") != null) {
+                            e.errorInfo.message += String.format(", request_id %s", Param.getFirst(params, "request_id"));
+                        }
                         setError(e.errorInfo);
                         break;
                     }
                     Log.d(TAG, "Switched to `" + candidateHost + "`.");
                 } catch(AblyException e) {
+                    if(Param.getFirst(params, "request_id") != null) {
+                        e.errorInfo.message += String.format(", request_id %s", Param.getFirst(params, "request_id"));
+                    }
                     setError(e.errorInfo);
                     break;
                 } finally {
