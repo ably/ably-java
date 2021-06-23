@@ -249,7 +249,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             assertEquals(ChannelState.initialized, channel.state);
         } catch (AblyException | InterruptedException e) {
             e.printStackTrace();
-            fail("init0: Unexpected exception instantiating library");
+            fail("unexpected exception");
         } finally {
             if(ably != null)
                 ably.close();
