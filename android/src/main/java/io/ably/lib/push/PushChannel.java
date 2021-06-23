@@ -68,6 +68,9 @@ public class PushChannel {
                 if (rest.options.pushFullWait) {
                     params = Param.push(params, "fullWait", "true");
                 }
+                if(rest.options.addRequestIds) { // RSC7c
+                    params = Param.set(params, Crypto.generateRandomRequestId());
+                }
                 http.post("/push/channelSubscriptions", rest.push.pushRequestHeaders(true), params, body, null, true, callback);
             }
         });

@@ -140,6 +140,9 @@ public class ActivationStateMachine {
                             if(ably.options.pushFullWait) {
                                 params = Param.push(null, "fullWait", "true");
                             }
+                            if(ably.options.addRequestIds) { // RSC7c
+                                params = Param.set(params, Crypto.generateRandomRequestId());
+                            }
                             /* this is authenticated using the Ably library credentials, plus the deviceSecret in the request body */
                             http.post("/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, body, new Serialisation.HttpResponseHandler<JsonObject>(), true, callback);
                         }
@@ -431,7 +434,7 @@ public class ActivationStateMachine {
                         params = Param.push(params, "fullWait", "true");
                     }
                     if(ably.options.addRequestIds) { // RSC7c
-                        Param.set(params, Crypto.generateRandomRequestId());
+                        params = Param.set(params, Crypto.generateRandomRequestId());
                     }
 
                     http.patch("/push/deviceRegistrations/" + device.id, ably.push.pushRequestHeaders(true), params, body, null, false, callback);
@@ -482,7 +485,7 @@ public class ActivationStateMachine {
                         params = Param.push(params, "fullWait", "true");
                     }
                     if(ably.options.addRequestIds) { // RSC7c
-                        Param.set(params, Crypto.generateRandomRequestId());
+                        params = Param.set(params, Crypto.generateRandomRequestId());
                     }
 
                     final HttpCore.RequestBody body = HttpUtils.requestBodyFromGson(device.toJsonObject(), ably.options.useBinaryProtocol);
@@ -533,7 +536,7 @@ public class ActivationStateMachine {
                         params = Param.push(params, "fullWait", "true");
                     }
                     if(ably.options.addRequestIds) { // RSC7c
-                        Param.set(params, Crypto.generateRandomRequestId());
+                        params = Param.set(params, Crypto.generateRandomRequestId());
                     }
                     http.del("/push/deviceRegistrations/" + device.id, ably.push.pushRequestHeaders(true), params, null, true, callback);
                 }

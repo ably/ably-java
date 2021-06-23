@@ -111,7 +111,7 @@ public class PushBase {
                         params = Param.push(params, "fullWait", "true");
                     }
                     if(rest.options.addRequestIds) { // RSC7c
-                        Param.set(params, Crypto.generateRandomRequestId());
+                        params = Param.set(params, Crypto.generateRandomRequestId());
                     }
                     http.put("/push/deviceRegistrations/" + device.id, rest.push.pushRequestHeaders(device.id), params, body, DeviceDetails.httpResponseHandler, true, callback);
                 }
@@ -136,7 +136,7 @@ public class PushBase {
                         params = Param.push(params, "fullWait", "true");
                     }
                     if (rest.options.addRequestIds) { // RSC7c
-                        Param.set(params, Crypto.generateRandomRequestId());
+                        params = Param.set(params, Crypto.generateRandomRequestId());
                     }
                     http.get("/push/deviceRegistrations/" + deviceId, rest.push.pushRequestHeaders(deviceId), params, DeviceDetails.httpResponseHandler, true, callback);
                 }
@@ -182,7 +182,7 @@ public class PushBase {
                         params = Param.push(params, "fullWait", "true");
                     }
                     if(rest.options.addRequestIds) { // RSC7c
-                        Param.set(params, Crypto.generateRandomRequestId());
+                        params = Param.set(params, Crypto.generateRandomRequestId());
                     }
                     http.del("/push/deviceRegistrations/" + deviceId, rest.push.pushRequestHeaders(deviceId), params, null, true, callback);
                 }
