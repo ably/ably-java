@@ -1,8 +1,15 @@
 package io.ably.lib.test.realtime;
 
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.realtime.*;
+import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.Channel.MessageListener;
+import io.ably.lib.realtime.ChannelEvent;
+import io.ably.lib.realtime.ChannelState;
+import io.ably.lib.realtime.ChannelStateListener;
+import io.ably.lib.realtime.CompletionListener;
+import io.ably.lib.realtime.ConnectionState;
+import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
@@ -11,7 +18,13 @@ import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.util.MockWebsocketFactory;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.Defaults;
-import io.ably.lib.types.*;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ChannelMode;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Message;
+import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.types.ChannelOptions;
 import org.hamcrest.Matchers;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -214,24 +227,24 @@ public class RealtimeChannelTest extends ParameterizedTest {
             Channel channel = ably.channels.get(channelName, options);
             ablyRest.channels.get(channelName).publish("", "test-message");
 
-            // channel is in initialized state when created
+            /* channel is in initialized state when created */
             assertEquals(ChannelState.initialized, channel.state);
 
             Helpers.MessageWaiter messageWaiter = new Helpers.MessageWaiter(channel);
-            // channel is not attached yet
+            /* channel is not attached yet */
             assertEquals(ChannelState.attaching, channel.state);
 
             messageWaiter.waitFor(1);
-            // when message is received channel state is already in attached state
+            /* when message is received channel state is already in attached state */
             assertEquals(ChannelState.attached, channel.state);
 
             ably.channels.release(channelName);
 
-            // verify there are no channels after realising
+            /* verify there are no channels after releasing */
             assertFalse(ably.channels.entrySet().iterator().hasNext());
             Thread.sleep(5000);
 
-            // get channel again
+            /* get channel again */
             channel = ably.channels.get(channelName, options);
             assertEquals(ChannelState.initialized, channel.state);
         } catch (AblyException | InterruptedException e) {
@@ -1476,7 +1489,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             final boolean[] resumedFlag = new boolean[]{true, true};
             attachedChannel.on(new ChannelStateListener() {
                 @Override
-                public void onChannelStateChanged(ChannelStateChange stateChange) {
+                public void onChannelStateChanged(ChannelStateListener.ChannelStateChange stateChange) {
                     switch(stateChange.current) {
                         case suspended:
                             suspendedStateReached[0] = true;
