@@ -3,6 +3,7 @@ package io.ably.lib.test.realtime;
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.*;
 import io.ably.lib.realtime.Channel.MessageListener;
+import io.ably.lib.rest.AblyRest;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
@@ -13,17 +14,11 @@ import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.*;
 import org.hamcrest.Matchers;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.Timeout;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -188,6 +183,58 @@ public class RealtimeChannelTest extends ParameterizedTest {
             assertEquals("Verify channel params", channel.getParams(), options.params);
             assertArrayEquals("Verify channel modes", new ChannelMode[] { ChannelMode.subscribe }, channel.getModes());
         } catch (AblyException e) {
+            e.printStackTrace();
+            fail("init0: Unexpected exception instantiating library");
+        } finally {
+            if(ably != null)
+                ably.close();
+        }
+    }
+
+    @Test
+    public void attached_state_is_correctly_achieved() {
+        String channelName = "test_" + testParams.name;
+        AblyRealtime ably = null;
+        AblyRest ablyRest;
+
+        try {
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+            ably = new AblyRealtime(opts);
+            ablyRest = new AblyRest(opts);
+
+            /* wait until connected */
+            (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+            assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+            final Map<String, String> params = new HashMap<>();
+            params.put("rewind", "1");
+            final ChannelOptions options = new ChannelOptions();
+            options.params = params;
+
+            Channel channel = ably.channels.get(channelName, options);
+            ablyRest.channels.get(channelName).publish("", "test-message");
+
+            // channel is in initialized state when created
+            assertEquals(ChannelState.initialized, channel.state);
+
+            Helpers.MessageWaiter messageWaiter = new Helpers.MessageWaiter(channel);
+            // channel is not attached yet
+            assertEquals(ChannelState.attaching, channel.state);
+
+            messageWaiter.waitFor(1);
+            // when message is received channel state is already in attached state
+            assertEquals(ChannelState.attached, channel.state);
+
+            ably.channels.release(channelName);
+
+            // verify there are no channels after realising
+            assertFalse(ably.channels.entrySet().iterator().hasNext());
+            Thread.sleep(5000);
+
+            // get channel again
+            channel = ably.channels.get(channelName, options);
+            assertEquals(ChannelState.initialized, channel.state);
+        } catch (AblyException | InterruptedException e) {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");
         } finally {
