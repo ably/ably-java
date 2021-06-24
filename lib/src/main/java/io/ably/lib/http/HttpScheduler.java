@@ -189,6 +189,12 @@ public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
             this.path = path;
             this.requireAblyAuth = requireAblyAuth;
         }
+
+        private String extendMessage(String msg) {
+            return Param.getFirst(params, "request_id") == null ?
+                msg : String.format("%s request_id=%s", msg, Param.getFirst(params, "request_id"));
+        }
+
         @Override
         public void run() {
             String candidateHost = httpCore.hosts.getPreferredHost();
@@ -202,26 +208,20 @@ public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
                     break;
                 } catch (AblyException.HostFailedException e) {
                     if(--retryCountRemaining < 0) {
-                        if(Param.getFirst(params, "request_id") != null) {
-                            e.errorInfo.message += String.format(", request_id %s", Param.getFirst(params, "request_id"));
-                        }
+                        e.errorInfo.message = extendMessage(e.errorInfo.message);
                         setError(e.errorInfo);
                         break;
                     }
-                    Log.d(TAG, "Connection failed to host `" + candidateHost + "`. Searching for new host...");
+                    Log.d(TAG, extendMessage("Connection failed to host `" + candidateHost + "`. Searching for new host..."));
                     candidateHost = httpCore.hosts.getFallback(candidateHost);
                     if (candidateHost == null) {
-                        if(Param.getFirst(params, "request_id") != null) {
-                            e.errorInfo.message += String.format(", request_id %s", Param.getFirst(params, "request_id"));
-                        }
+                        e.errorInfo.message = extendMessage(e.errorInfo.message);
                         setError(e.errorInfo);
                         break;
                     }
-                    Log.d(TAG, "Switched to `" + candidateHost + "`.");
+                    Log.d(TAG, extendMessage("Switched to `" + candidateHost + "`."));
                 } catch(AblyException e) {
-                    if(Param.getFirst(params, "request_id") != null) {
-                        e.errorInfo.message += String.format(", request_id %s", Param.getFirst(params, "request_id"));
-                    }
+                    e.errorInfo.message = extendMessage(e.errorInfo.message);
                     setError(e.errorInfo);
                     break;
                 } finally {

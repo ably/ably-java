@@ -10,6 +10,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -63,6 +64,7 @@ public class RestClientTest extends ParameterizedTest {
         opts.addRequestIds = true;
         opts.environment = null;
         opts.restHost = "";
+        opts.fallbackHosts = new String[]{"ably.com"};
         AblyRest ably = new AblyRest(opts);
 
         try{
@@ -73,5 +75,36 @@ public class RestClientTest extends ParameterizedTest {
 
         /* verify client_id is a part of url query */
         assertTrue("Verify clientId is present in query", httpListener.getFirstRequest().url.getQuery().contains("request_id"));
+    }
+
+    /**
+     * `clientId` remain the same if a request is retried to a fallback host
+     * Spec: RSC7c
+     */
+    @Test
+    public void request_id_remain_same_retried_fallbacks() throws AblyException {
+        DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+        fillInOptions(opts);
+
+        Helpers.RawHttpTracker httpListener = new Helpers.RawHttpTracker();
+        opts.httpListener = httpListener;
+        opts.addRequestIds = true;
+        opts.environment = null;
+        opts.restHost = "invalid-host1.com";
+        opts.fallbackHosts = new String[]{"invalid-host2.com", "invalid-host3.com"};
+        AblyRest ably = new AblyRest(opts);
+
+        try{
+            ably.channels.get("test").publish("foo", "bar");
+        } catch (AblyException e) { }
+
+        /* verify client_id is a part of url query */
+        assertTrue("Verify clientId is present in query", httpListener.getFirstRequest().url.getQuery().contains("request_id"));
+        String query = httpListener.getFirstRequest().url.getQuery();
+        /* verify request was retried 3 times */
+        assertEquals(3, httpListener.values().size());
+        for (Helpers.RawHttpRequest rawHttpRequest : httpListener.values()) {
+            assertTrue("Verify clientId remain the same if a request is retried to a fallback host", rawHttpRequest.url.getQuery().contains(query));
+        }
     }
 }
