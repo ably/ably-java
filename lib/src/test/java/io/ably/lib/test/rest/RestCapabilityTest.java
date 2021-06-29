@@ -106,7 +106,7 @@ public class RestCapabilityTest extends ParameterizedTest {
     }
 
     /**
-     * Non-empty ops intersection 
+     * Non-empty ops intersection
      */
     @Test
     public void authcapability4() {
@@ -116,7 +116,7 @@ public class RestCapabilityTest extends ParameterizedTest {
             authOptions.key = key.keyStr;
             TokenParams tokenParams = new TokenParams();
             Capability requestedCapability = new Capability();
-            requestedCapability.addResource("channel2", new String[]{"presence", "subscribe"});
+            requestedCapability.addResource("channel2", "presence", "subscribe");
             tokenParams.capability = requestedCapability.toString();
             TokenDetails tokenDetails = ably.auth.requestToken(tokenParams, authOptions);
             Capability expectedCapability = new Capability();
@@ -130,7 +130,7 @@ public class RestCapabilityTest extends ParameterizedTest {
     }
 
     /**
-     * Non-empty paths intersection 
+     * Non-empty paths intersection
      */
     @Test
     public void authcapability5() {
@@ -140,8 +140,8 @@ public class RestCapabilityTest extends ParameterizedTest {
             authOptions.key = key.keyStr;
             TokenParams tokenParams = new TokenParams();
             Capability requestedCapability = new Capability();
-            requestedCapability.addResource("channel2", new String[]{"presence", "subscribe"});
-            requestedCapability.addResource("channelx", new String[]{"presence", "subscribe"});
+            requestedCapability.addResource("channel2", "presence", "subscribe");
+            requestedCapability.addResource("channelx", "presence", "subscribe");
             tokenParams.capability = requestedCapability.toString();
             TokenDetails tokenDetails = ably.auth.requestToken(tokenParams, authOptions);
             Capability expectedCapability = new Capability();
@@ -155,7 +155,7 @@ public class RestCapabilityTest extends ParameterizedTest {
     }
 
     /**
-     * Wildcard ops intersection 
+     * Wildcard ops intersection
      */
     @Test
     public void authcapability6() {
@@ -169,7 +169,7 @@ public class RestCapabilityTest extends ParameterizedTest {
             tokenParams.capability = requestedCapability.toString();
             TokenDetails tokenDetails = ably.auth.requestToken(tokenParams, authOptions);
             Capability expectedCapability = new Capability();
-            expectedCapability.addResource("channel2", new String[]{"publish", "subscribe"});
+            expectedCapability.addResource("channel2", "publish", "subscribe");
             assertNotNull("Expected token value", tokenDetails.token);
             assertEquals("Unexpected capability", tokenDetails.capability, expectedCapability.toString());
         } catch (AblyException e) {
@@ -185,11 +185,11 @@ public class RestCapabilityTest extends ParameterizedTest {
             authOptions.key = key.keyStr;
             TokenParams tokenParams = new TokenParams();
             Capability requestedCapability = new Capability();
-            requestedCapability.addResource("channel6", new String[]{"publish", "subscribe"});
+            requestedCapability.addResource("channel6", "publish", "subscribe");
             tokenParams.capability = requestedCapability.toString();
             TokenDetails tokenDetails = ably.auth.requestToken(tokenParams, authOptions);
             Capability expectedCapability = new Capability();
-            expectedCapability.addResource("channel6", new String[]{"publish", "subscribe"});
+            expectedCapability.addResource("channel6", "publish", "subscribe");
             assertNotNull("Expected token value", tokenDetails.token);
             assertEquals("Unexpected capability", tokenDetails.capability, expectedCapability.toString());
         } catch (AblyException e) {
@@ -199,7 +199,7 @@ public class RestCapabilityTest extends ParameterizedTest {
     }
 
     /**
-     * Wildcard resources intersection 
+     * Wildcard resources intersection
      */
     @Test
     public void authcapability8() {
@@ -276,7 +276,7 @@ public class RestCapabilityTest extends ParameterizedTest {
     public void authinvalid1() {
         TokenParams tokenParams = new TokenParams();
         Capability invalidCapability = new Capability();
-        invalidCapability.addResource("channel0", new String[]{"*", "publish"});
+        invalidCapability.addResource("channel0", "*", "publish");
         tokenParams.capability = invalidCapability.toString();
         try {
             ably.auth.requestToken(tokenParams, null);
@@ -289,7 +289,7 @@ public class RestCapabilityTest extends ParameterizedTest {
     public void authinvalid2() {
         TokenParams tokenParams = new TokenParams();
         Capability invalidCapability = new Capability();
-        invalidCapability.addResource("channel0", new String[0]);
+        invalidCapability.addResource("channel0");
         tokenParams.capability = invalidCapability.toString();
         try {
             ably.auth.requestToken(tokenParams, null);
