@@ -1,0 +1,28 @@
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - run: ./gradlew javadoc
+
+      - uses: ably/sdk-upload-action@v1
+        with:
+          s3AccessKeyId: ${{ secrets.SDK_S3_ACCESS_KEY_ID }}
+          s3AccessKey: ${{ secrets.SDK_S3_ACCESS_KEY }}
+          sourcePath: java/build/docs/javadoc
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          artifactName: javadoc-java
+
+      - uses: ably/sdk-upload-action@v1
+        with:
+          s3AccessKeyId: ${{ secrets.SDK_S3_ACCESS_KEY_ID }}
+          s3AccessKey: ${{ secrets.SDK_S3_ACCESS_KEY }}
+          sourcePath: android/build/docs/javadoc
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          artifactName: javadoc-android
