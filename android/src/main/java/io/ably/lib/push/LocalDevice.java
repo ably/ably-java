@@ -1,38 +1,34 @@
 package io.ably.lib.push;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.content.res.Configuration;
-import android.preference.PreferenceManager;
-
 import com.google.gson.JsonObject;
+import io.ably.lib.rest.DeviceDetails;
+import io.ably.lib.types.Param;
+import io.ably.lib.types.RegistrationToken;
+import io.ably.lib.util.Base64Coder;
+import io.ably.lib.util.Log;
+import io.azam.ulidj.ULID;
 
-import java.lang.reflect.Field;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
-import io.ably.lib.rest.DeviceDetails;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.RegistrationToken;
-import io.ably.lib.util.Base64Coder;
-import io.ably.lib.util.Log;
-import io.ably.lib.types.Param;
-import io.azam.ulidj.ULID;
-
 public class LocalDevice extends DeviceDetails {
     public String deviceSecret;
     public String deviceIdentityToken;
+    private final Storage storage;
 
     private final ActivationContext activationContext;
 
-    public LocalDevice(ActivationContext activationContext) {
+    public LocalDevice(ActivationContext activationContext, Storage storage) {
         super();
         Log.v(TAG, "LocalDevice(): initialising");
         this.platform = "android";
         this.formFactor = isTablet(activationContext.getContext()) ? "tablet" : "phone";
         this.activationContext = activationContext;
         this.push = new DeviceDetails.Push();
+        this.storage = storage != null ? storage : new SharedPreferenceStorage(activationContext);
         loadPersisted();
     }
 
@@ -47,26 +43,24 @@ public class LocalDevice extends DeviceDetails {
 
     private void loadPersisted() {
         /* Spec: RSH8a */
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
-
-        String id = prefs.getString(SharedPrefKeys.DEVICE_ID, null);
+        String id = storage.getString(SharedPrefKeys.DEVICE_ID, null);
         this.id = id;
         if(id != null) {
             Log.v(TAG, "loadPersisted(): existing deviceId found; id: " + id);
-            deviceSecret = prefs.getString(SharedPrefKeys.DEVICE_SECRET, null);
+            deviceSecret = storage.getString(SharedPrefKeys.DEVICE_SECRET, null);
         } else {
             Log.v(TAG, "loadPersisted(): existing deviceId not found.");
         }
-        this.clientId = prefs.getString(SharedPrefKeys.CLIENT_ID, null);
-        this.deviceIdentityToken = prefs.getString(SharedPrefKeys.DEVICE_TOKEN, null);
+        this.clientId = storage.getString(SharedPrefKeys.CLIENT_ID, null);
+        this.deviceIdentityToken = storage.getString(SharedPrefKeys.DEVICE_TOKEN, null);
 
         RegistrationToken.Type type = RegistrationToken.Type.fromOrdinal(
-            prefs.getInt(SharedPrefKeys.TOKEN_TYPE, -1));
+            storage.getInt(SharedPrefKeys.TOKEN_TYPE, -1));
 
         Log.d(TAG, "loadPersisted(): token type = " + type);
         if(type != null) {
             RegistrationToken token = null;
-            String tokenString = prefs.getString(SharedPrefKeys.TOKEN, null);
+            String tokenString = storage.getString(SharedPrefKeys.TOKEN, null);
             Log.d(TAG, "loadPersisted(): token string = " + tokenString);
             if(tokenString != null) {
                 token = new RegistrationToken(type, tokenString);
@@ -103,42 +97,32 @@ public class LocalDevice extends DeviceDetails {
     void setAndPersistRegistrationToken(RegistrationToken token) {
         Log.v(TAG, "setAndPersistRegistrationToken(): token=" + token);
         setRegistrationToken(token);
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
-        prefs.edit()
-            .putInt(SharedPrefKeys.TOKEN_TYPE, token.type.ordinal())
-            .putString(SharedPrefKeys.TOKEN, token.token)
-            .apply();
+        storage.putInt(SharedPrefKeys.TOKEN_TYPE, token.type.ordinal());
+        storage.putString(SharedPrefKeys.TOKEN, token.token);
     }
 
     void setClientId(String clientId) {
         Log.v(TAG, "setClientId(): clientId=" + clientId);
         this.clientId = clientId;
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
-        prefs.edit().putString(SharedPrefKeys.CLIENT_ID, clientId).apply();
+        storage.putString(SharedPrefKeys.CLIENT_ID, clientId);
     }
 
     public void setDeviceIdentityToken(String token) {
         Log.v(TAG, "setDeviceIdentityToken(): token=" + token);
         this.deviceIdentityToken = token;
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
-        prefs.edit().putString(SharedPrefKeys.DEVICE_TOKEN, token).apply();
+        storage.putString(SharedPrefKeys.DEVICE_TOKEN, token);
     }
 
     boolean isCreated() {
         return id != null;
     }
 
-    boolean create() {
+    void create() {
         /* Spec: RSH8b */
         Log.v(TAG, "create()");
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
-        SharedPreferences.Editor editor = prefs.edit();
-
-        editor.putString(SharedPrefKeys.DEVICE_ID, (id = ULID.random()));
-        editor.putString(SharedPrefKeys.CLIENT_ID, (clientId = activationContext.clientId));
-        editor.putString(SharedPrefKeys.DEVICE_SECRET, (deviceSecret = generateSecret()));
-
-        return editor.commit();
+        storage.putString(SharedPrefKeys.DEVICE_ID, (id = ULID.random()));
+        storage.putString(SharedPrefKeys.CLIENT_ID, (clientId = activationContext.clientId));
+        storage.putString(SharedPrefKeys.DEVICE_SECRET, (deviceSecret = generateSecret()));
     }
 
     public void reset() {
@@ -149,15 +133,7 @@ public class LocalDevice extends DeviceDetails {
         this.clientId = null;
         this.clearRegistrationToken();
 
-        SharedPreferences.Editor editor = activationContext.getPreferences().edit();
-        for (Field f : SharedPrefKeys.class.getDeclaredFields()) {
-            try {
-                editor.remove((String) f.get(null));
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        editor.commit();
+        storage.reset(SharedPrefKeys.class.getDeclaredFields());
     }
 
     boolean isRegistered() {

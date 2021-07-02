@@ -1,5 +1,6 @@
 package io.ably.lib.types;
 
+import io.ably.lib.push.Storage;
 import io.ably.lib.rest.Auth.AuthOptions;
 import io.ably.lib.rest.Auth.TokenParams;
 import io.ably.lib.transport.Defaults;
@@ -195,4 +196,10 @@ public class ClientOptions extends AuthOptions {
      * before responding.
      */
     public boolean pushFullWait = false;
+
+    /**
+     * Allows provide custom Local Device storage. In a case nothing is provided default implementation
+     * using SharedPreferences is used.
+     */
+    public Storage storage = null;
 }

@@ -5,7 +5,6 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.FirebaseApp;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
 import io.ably.lib.rest.AblyRest;
@@ -31,7 +30,9 @@ public class ActivationContext {
     public synchronized LocalDevice getLocalDevice() {
         if(localDevice == null) {
             Log.v(TAG, "getLocalDevice(): creating new instance and returning that");
-            localDevice = new LocalDevice(this);
+            Storage storage = ably != null ? ably.options.storage : null;
+
+            localDevice = new LocalDevice(this, storage);
         } else {
             Log.v(TAG, "getLocalDevice(): returning existing instance");
         }
