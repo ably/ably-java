@@ -9,7 +9,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - run: ./gradlew javadoc
+      # Using the test command in lieu of https://github.com/ably/sdk-upload-action/issues/24
+      - run: |
+        ./gradlew javadoc
+        test -d java/build/docs/javadoc
+        test -d android/build/docs/javadoc
 
       - uses: ably/sdk-upload-action@v1
         with:
