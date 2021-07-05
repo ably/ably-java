@@ -12,10 +12,14 @@ jobs:
       # Using the test command in lieu of https://github.com/ably/sdk-upload-action/issues/24
       - run: |
           ./gradlew javadoc
-          test -d java/build/docs/javadoc
-          test -d android/build/docs/javadoc
+          test -d java/build/docs/javadoc && echo "java docs folder found."
+          test -d android/build/docs/javadoc && echo "android docs folder found."
+          echo "Contents of java docs folder:"
           ls -l java/build/docs/javadoc
+          echo "Contents of android docs folder:"
           ls -l android/build/docs/javadoc
+          test -d java/build/docs/javadoc/index.html && echo "java docs index found."
+          test -d android/build/docs/javadoc/index.html && echo "android docs index found."
 
       - uses: ably/sdk-upload-action@v1
         with:
