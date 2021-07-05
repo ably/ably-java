@@ -7,7 +7,7 @@ import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Channel;
 import io.ably.lib.rest.DeviceDetails;
 import io.ably.lib.types.*;
-import io.ably.lib.util.Crypto;
+import io.ably.lib.util.ParamsUtils;
 
 public class PushChannel {
     protected final Channel channel;
@@ -64,13 +64,7 @@ public class PushChannel {
         return rest.http.request(new Http.Execute<Void>() {
             @Override
             public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
-                Param[] params = null;
-                if (rest.options.pushFullWait) {
-                    params = Param.push(params, "fullWait", "true");
-                }
-                if(rest.options.addRequestIds) { // RSC7c
-                    params = Param.set(params, Crypto.generateRandomRequestId());
-                }
+                Param[] params = ParamsUtils.enrichParams(null, rest.options);
                 http.post("/push/channelSubscriptions", rest.push.pushRequestHeaders(true), params, body, null, true, callback);
             }
         });
@@ -112,10 +106,7 @@ public class PushChannel {
     }
 
     protected Http.Request<Void> delSubscription(Param[] params) {
-        if (rest.options.pushFullWait) {
-            params = Param.push(params, "fullWait", "true");
-        }
-        final Param[] finalParams = rest.options.addRequestIds ? Param.set(params, Crypto.generateRandomRequestId()) : params; // RSC7c
+        final Param[] finalParams = ParamsUtils.enrichParams(params, rest.options);
         return rest.http.request(new Http.Execute<Void>() {
             @Override
             public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
