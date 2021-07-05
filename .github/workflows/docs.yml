@@ -18,8 +18,8 @@ jobs:
           ls -l java/build/docs/javadoc
           echo "Contents of android docs folder:"
           ls -l android/build/docs/javadoc
-          test -d java/build/docs/javadoc/index.html && echo "java docs index found."
-          test -d android/build/docs/javadoc/index.html && echo "android docs index found."
+          test -f java/build/docs/javadoc/index.html && echo "java docs index found."
+          test -f android/build/docs/javadoc/index.html && echo "android docs index found."
 
       - uses: ably/sdk-upload-action@v1
         with:
