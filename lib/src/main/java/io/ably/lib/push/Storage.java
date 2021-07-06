@@ -10,7 +10,7 @@ public interface Storage {
 
     String getString(String key, String defaultValue);
 
-    int getInt(String key, int defValue);
+    int getInt(String key, int defaultValue);
 
     void reset(Field[] fields);
 }

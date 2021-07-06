@@ -32,9 +32,9 @@ public class SharedPreferenceStorage implements Storage{
     }
 
     @Override
-    public int getInt(String key, int defValue) {
+    public int getInt(String key, int defaultValue) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
-        return prefs.getInt(key, defValue);
+        return prefs.getInt(key, defaultValue);
     }
 
     @Override
