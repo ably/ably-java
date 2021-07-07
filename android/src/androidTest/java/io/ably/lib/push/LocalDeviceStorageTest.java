@@ -41,7 +41,7 @@ public class LocalDeviceStorageTest extends AndroidTestCase {
         }
 
         @Override
-        public void reset(Field[] fields) {
+        public void clear(Field[] fields) {
             hashMap = new HashMap<>();
         }
     };

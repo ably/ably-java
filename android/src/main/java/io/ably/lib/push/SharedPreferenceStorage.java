@@ -38,7 +38,7 @@ public class SharedPreferenceStorage implements Storage{
     }
 
     @Override
-    public void reset(Field[] fields) {
+    public void clear(Field[] fields) {
         SharedPreferences.Editor editor = activationContext.getPreferences().edit();
         for (Field f : fields) {
             try {

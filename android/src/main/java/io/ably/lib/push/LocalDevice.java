@@ -133,7 +133,7 @@ public class LocalDevice extends DeviceDetails {
         this.clientId = null;
         this.clearRegistrationToken();
 
-        storage.reset(SharedPrefKeys.class.getDeclaredFields());
+        storage.clear(SharedPrefKeys.class.getDeclaredFields());
     }
 
     boolean isRegistered() {

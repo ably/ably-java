@@ -2,6 +2,10 @@ package io.ably.lib.push;
 
 import java.lang.reflect.Field;
 
+/**
+ * Interface for an entity that supplies key value store
+ * - methods getString and getInt have to return default value if requested key is not found
+ */
 public interface Storage {
 
     void putString(String key, String value);
@@ -12,5 +16,5 @@ public interface Storage {
 
     int getInt(String key, int defaultValue);
 
-    void reset(Field[] fields);
+    void clear(Field[] fields);
 }
