@@ -13,28 +13,28 @@ public class SharedPreferenceStorage implements Storage{
         this.activationContext = activationContext;
     }
 
+    private SharedPreferences sharedPreferences() {
+        return PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
+    }
+
     @Override
     public void putString(String key, String value) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
-        prefs.edit().putString(key, value).apply();
+        sharedPreferences().edit().putString(key, value).apply();
     }
 
     @Override
     public void putInt(String key, int value) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
-        prefs.edit().putInt(key, value).apply();
+        sharedPreferences().edit().putInt(key, value).apply();
     }
 
     @Override
     public String getString(String key, String defaultValue) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
-        return prefs.getString(key, defaultValue);
+        return sharedPreferences().getString(key, defaultValue);
     }
 
     @Override
     public int getInt(String key, int defaultValue) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activationContext.getContext());
-        return prefs.getInt(key, defaultValue);
+        return sharedPreferences().getInt(key, defaultValue);
     }
 
     @Override
