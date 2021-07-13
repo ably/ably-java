@@ -101,11 +101,11 @@ public class Message extends BaseMessage {
      * @return string
      */
     public String toString() {
-        StringBuilder result = new StringBuilder("[Message");
+        StringBuilder result = new StringBuilder("{Message");
         super.getDetails(result);
         if(name != null)
             result.append(" name=").append(name);
-        result.append(']');
+        result.append('}');
         return result.toString();
     }
 
