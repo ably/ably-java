@@ -112,7 +112,11 @@ public class AndroidPushTest extends AndroidTestCase {
                 adminRest.auth.authorize(new Auth.TokenParams() {{
                     clientId = Auth.WILDCARD_CLIENTID;
                 }}, null);
-            } catch(AblyException e) {}
+            } catch(final AblyException e) {
+                // Re-throw as an unchecked exception.
+                // We want the test suite to fail if this constructor fails.
+                throw new RuntimeException(e);
+            }
         }
 
         private void registerAndWait() throws AblyException {
