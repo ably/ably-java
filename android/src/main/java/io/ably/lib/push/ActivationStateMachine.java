@@ -6,24 +6,26 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.support.v4.content.LocalBroadcastManager;
-
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.iid.InstanceIdResult;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import io.ably.lib.http.Http;
+import io.ably.lib.http.HttpCore;
+import io.ably.lib.http.HttpScheduler;
+import io.ably.lib.http.HttpUtils;
+import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.DeviceDetails;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.Callback;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Param;
+import io.ably.lib.types.RegistrationToken;
+import io.ably.lib.util.IntentUtils;
+import io.ably.lib.util.Log;
+import io.ably.lib.util.Serialisation;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.ArrayDeque;
-
-import com.google.gson.JsonPrimitive;
-import io.ably.lib.http.*;
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.rest.DeviceDetails;
-import io.ably.lib.types.*;
-import io.ably.lib.util.IntentUtils;
-import io.ably.lib.util.Log;
-import io.ably.lib.util.Serialisation;
 
 public class ActivationStateMachine {
     public static class CalledActivate extends ActivationStateMachine.Event {
@@ -67,7 +69,44 @@ public class ActivationStateMachine {
         public DeregistrationFailed(ErrorInfo reason) { super(reason); }
     }
 
-    public abstract static class Event {}
+    public abstract static class Event {
+        public static Event constructEventByName(String className) throws ClassNotFoundException, InstantiationException {
+            ActivationStateMachine.Event event;
+
+            switch (className) {
+                case "CalledActivate":
+                    event = new CalledActivate();
+                    break;
+                case "CalledDeactivate":
+                    event = new CalledDeactivate();
+                    break;
+                case "GotPushDeviceDetails":
+                    event = new GotPushDeviceDetails();
+                    break;
+                case "RegistrationSynced":
+                    event = new RegistrationSynced();
+                    break;
+                case "Deregistered":
+                    event = new Deregistered();
+                    break;
+
+                // We aren't properly persisting events with a non-nullary constructor. Those events
+                // are supposed to be handled by states that aren't persisted (until
+                // https://github.com/ably/ably-java/issues/546 is fixed), so it should be safe to
+                // just drop them.
+                case "GotDeviceRegistration":
+                case "GettingDeviceRegistrationFailed":
+                case "GettingPushDeviceDetailsFailed":
+                case "SyncRegistrationFailed":
+                case "DeregistrationFailed":
+                case "ErrorEvent":
+                    throw new InstantiationException(String.format("%s has non-nullary constructor", className));
+                default:
+                    throw new ClassNotFoundException(String.format("%s class cannot be found", className));
+            }
+            return event;
+        }
+    }
 
     public abstract static class ErrorEvent extends ActivationStateMachine.Event {
         public final ErrorInfo reason;
@@ -678,21 +717,12 @@ public class ActivationStateMachine {
         for (int i = 0; i < length; i++) {
             try {
                 String className = activationContext.getPreferences().getString(String.format("%s[%d]", ActivationStateMachine.PersistKeys.PENDING_EVENTS_PREFIX, i), "");
-                Class<ActivationStateMachine.Event> eventClass = (Class<ActivationStateMachine.Event>) Class.forName(className);
-                ActivationStateMachine.Event event;
-                try {
-                    event = eventClass.newInstance();
-                } catch(InstantiationException e) {
-                    // We aren't properly persisting events with a non-nullary constructor. Those events
-                    // are supposed to be handled by states that aren't persisted (until
-                    // https://github.com/ably/ably-java/issues/546 is fixed), so it should be safe to
-                    // just drop them.
-                    Log.d(TAG, String.format("discarding improperly persisted event: %s", className));
-                    continue;
-                }
+                ActivationStateMachine.Event event = Event.constructEventByName(className);
                 deque.add(event);
-            } catch(Exception e) {
-                throw new RuntimeException(e);
+            } catch (ClassNotFoundException e) {
+                Log.e(TAG, e.getLocalizedMessage());
+            } catch (InstantiationException e) {
+                continue;
             }
         }
         return deque;
