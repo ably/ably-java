@@ -130,6 +130,9 @@ public class Auth {
             if (key == null) {
                 throw AblyException.fromErrorInfo(new ErrorInfo("key string cannot be null", 40000, 400));
             }
+            if (key.isEmpty()) {
+                throw new IllegalArgumentException("Key string cannot be empty");
+            }
             if(key.indexOf(':') > -1)
                 this.key = key;
             else
