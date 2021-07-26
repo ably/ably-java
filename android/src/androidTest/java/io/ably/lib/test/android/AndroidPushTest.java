@@ -77,6 +77,7 @@ public class AndroidPushTest extends AndroidTestCase {
             public DebugOptions clientOptions;
             public boolean clearPersisted = true;
             public TestActivationContext activationContext;
+            public boolean resetMachineState = false;
         }
 
         TestActivation(Helpers.AblyFunction<Options, Void> configure) {
@@ -101,6 +102,9 @@ public class AndroidPushTest extends AndroidTestCase {
                     activationContext.reset();
                 }
                 machine = new TestActivationStateMachine(activationContext);
+                if (activationOptions.resetMachineState) {
+                    machine.resetState();
+                }
                 activationContext.setActivationStateMachine(machine);
 
                 rest = new AblyRest(options);
@@ -518,6 +522,10 @@ public class AndroidPushTest extends AndroidTestCase {
                         public Void apply(TestActivation.Options options) throws AblyException {
                             options.clientOptions.clientId = instanceClientId;
                             options.clearPersisted = false;
+                            // We're creating a second TestActivation (in this test) which creates a second
+                            // ActivationStateMachine. This machine will try to read the persisted state from the
+                            // first one which will result in test failure. To fix it we're resetting the machine.
+                            options.resetMachineState = true;
                             return null;
                         }
                     });
@@ -1521,6 +1529,10 @@ public class AndroidPushTest extends AndroidTestCase {
                 w.onSuccess();
             }
             return ok;
+        }
+
+        public void resetState(){
+            super.reset();
         }
 
         @Override
