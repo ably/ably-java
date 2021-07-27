@@ -78,6 +78,7 @@ public class HttpHeaderTest extends ParameterizedTest {
 
             /* Get last headers */
             Map<String, String> headers = server.getHeaders();
+            String expectedAblyAgentHeader = ABLY_AGENT_VERSION + " jre/" + System.getProperty("java.version");
 
             /* Check header
              * This test should not directly validate version against Defaults.ABLY_VERSION, Defaults.ABLY_LIB_VERSION,
@@ -86,7 +87,7 @@ public class HttpHeaderTest extends ParameterizedTest {
              */
             Assert.assertNotNull("Expected headers", headers);
             Assert.assertEquals(headers.get("x-ably-version"), "1.2");
-            Assert.assertEquals(headers.get("ably-agent"), ABLY_AGENT_VERSION);
+            Assert.assertEquals(headers.get("ably-agent"), expectedAblyAgentHeader);
         } catch (AblyException e) {
             e.printStackTrace();
             Assert.fail("header_lib_channel_publish: Unexpected exception");
