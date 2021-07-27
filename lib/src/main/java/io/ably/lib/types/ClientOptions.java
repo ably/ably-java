@@ -198,8 +198,8 @@ public class ClientOptions extends AuthOptions {
     public boolean pushFullWait = false;
 
     /**
-     * Allows provide custom Local Device storage. In a case nothing is provided default implementation
+     * Custom Local Device storage. In the case nothing is provided then a default implementation
      * using SharedPreferences is used.
      */
-    public Storage storage = null;
+    public Storage localStorage = null;
 }

@@ -30,7 +30,7 @@ public class ActivationContext {
     public synchronized LocalDevice getLocalDevice() {
         if(localDevice == null) {
             Log.v(TAG, "getLocalDevice(): creating new instance and returning that");
-            Storage storage = ably != null ? ably.options.storage : null;
+            Storage storage = ably != null ? ably.options.localStorage : null;
 
             localDevice = new LocalDevice(this, storage);
         } else {

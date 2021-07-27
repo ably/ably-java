@@ -43,24 +43,24 @@ public class LocalDevice extends DeviceDetails {
 
     private void loadPersisted() {
         /* Spec: RSH8a */
-        String id = storage.getString(SharedPrefKeys.DEVICE_ID, null);
+        String id = storage.get(SharedPrefKeys.DEVICE_ID, null);
         this.id = id;
         if(id != null) {
             Log.v(TAG, "loadPersisted(): existing deviceId found; id: " + id);
-            deviceSecret = storage.getString(SharedPrefKeys.DEVICE_SECRET, null);
+            deviceSecret = storage.get(SharedPrefKeys.DEVICE_SECRET, null);
         } else {
             Log.v(TAG, "loadPersisted(): existing deviceId not found.");
         }
-        this.clientId = storage.getString(SharedPrefKeys.CLIENT_ID, null);
-        this.deviceIdentityToken = storage.getString(SharedPrefKeys.DEVICE_TOKEN, null);
+        this.clientId = storage.get(SharedPrefKeys.CLIENT_ID, null);
+        this.deviceIdentityToken = storage.get(SharedPrefKeys.DEVICE_TOKEN, null);
 
         RegistrationToken.Type type = RegistrationToken.Type.fromOrdinal(
-            storage.getInt(SharedPrefKeys.TOKEN_TYPE, -1));
+            storage.get(SharedPrefKeys.TOKEN_TYPE, -1));
 
         Log.d(TAG, "loadPersisted(): token type = " + type);
         if(type != null) {
             RegistrationToken token = null;
-            String tokenString = storage.getString(SharedPrefKeys.TOKEN, null);
+            String tokenString = storage.get(SharedPrefKeys.TOKEN, null);
             Log.d(TAG, "loadPersisted(): token string = " + tokenString);
             if(tokenString != null) {
                 token = new RegistrationToken(type, tokenString);
@@ -97,20 +97,20 @@ public class LocalDevice extends DeviceDetails {
     void setAndPersistRegistrationToken(RegistrationToken token) {
         Log.v(TAG, "setAndPersistRegistrationToken(): token=" + token);
         setRegistrationToken(token);
-        storage.putInt(SharedPrefKeys.TOKEN_TYPE, token.type.ordinal());
-        storage.putString(SharedPrefKeys.TOKEN, token.token);
+        storage.put(SharedPrefKeys.TOKEN_TYPE, token.type.ordinal());
+        storage.put(SharedPrefKeys.TOKEN, token.token);
     }
 
     void setClientId(String clientId) {
         Log.v(TAG, "setClientId(): clientId=" + clientId);
         this.clientId = clientId;
-        storage.putString(SharedPrefKeys.CLIENT_ID, clientId);
+        storage.put(SharedPrefKeys.CLIENT_ID, clientId);
     }
 
     public void setDeviceIdentityToken(String token) {
         Log.v(TAG, "setDeviceIdentityToken(): token=" + token);
         this.deviceIdentityToken = token;
-        storage.putString(SharedPrefKeys.DEVICE_TOKEN, token);
+        storage.put(SharedPrefKeys.DEVICE_TOKEN, token);
     }
 
     boolean isCreated() {
@@ -120,9 +120,9 @@ public class LocalDevice extends DeviceDetails {
     void create() {
         /* Spec: RSH8b */
         Log.v(TAG, "create()");
-        storage.putString(SharedPrefKeys.DEVICE_ID, (id = ULID.random()));
-        storage.putString(SharedPrefKeys.CLIENT_ID, (clientId = activationContext.clientId));
-        storage.putString(SharedPrefKeys.DEVICE_SECRET, (deviceSecret = generateSecret()));
+        storage.put(SharedPrefKeys.DEVICE_ID, (id = ULID.random()));
+        storage.put(SharedPrefKeys.CLIENT_ID, (clientId = activationContext.clientId));
+        storage.put(SharedPrefKeys.DEVICE_SECRET, (deviceSecret = generateSecret()));
     }
 
     public void reset() {

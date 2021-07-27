@@ -18,22 +18,22 @@ public class SharedPreferenceStorage implements Storage{
     }
 
     @Override
-    public void putString(String key, String value) {
+    public void put(String key, String value) {
         sharedPreferences().edit().putString(key, value).apply();
     }
 
     @Override
-    public void putInt(String key, int value) {
+    public void put(String key, int value) {
         sharedPreferences().edit().putInt(key, value).apply();
     }
 
     @Override
-    public String getString(String key, String defaultValue) {
+    public String get(String key, String defaultValue) {
         return sharedPreferences().getString(key, defaultValue);
     }
 
     @Override
-    public int getInt(String key, int defaultValue) {
+    public int get(String key, int defaultValue) {
         return sharedPreferences().getInt(key, defaultValue);
     }
 

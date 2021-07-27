@@ -19,23 +19,23 @@ public class LocalDeviceStorageTest extends AndroidTestCase {
 
     private Storage inMemoryStorage = new Storage() {
         @Override
-        public void putString(String key, String value) {
+        public void put(String key, String value) {
             hashMap.put(key, value);
         }
 
         @Override
-        public void putInt(String key, int value) {
+        public void put(String key, int value) {
             hashMap.put(key, value);
         }
 
         @Override
-        public String getString(String key, String defaultValue) {
+        public String get(String key, String defaultValue) {
             Object value = hashMap.get(key);
             return value != null ? (String) value : defaultValue;
         }
 
         @Override
-        public int getInt(String key, int defaultValue) {
+        public int get(String key, int defaultValue) {
             Object value = hashMap.get(key);
             return value != null ? (int) value : defaultValue;
         }

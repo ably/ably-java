@@ -8,18 +8,18 @@ import java.lang.reflect.Field;
 public interface Storage {
 
     /**
-     * Insert string value in to storage
+     * Put string value in to storage
      * @param key name under which value is stored
      * @param value stored string value
      */
-    void putString(String key, String value);
+    void put(String key, String value);
 
     /**
-     * Insert integer value in to storage
+     * Put integer value in to storage
      * @param key name after which value is stored
      * @param value stored integer value
      */
-    void putInt(String key, int value);
+    void put(String key, int value);
 
     /**
      * Returns string value based on key from storage
@@ -27,7 +27,7 @@ public interface Storage {
      * @param defaultValue value which is returned if key is not found
      * @return value stored under key or default value if key is not found
      */
-    String getString(String key, String defaultValue);
+    String get(String key, String defaultValue);
 
     /**
      * Returns integer value based on key from storage
@@ -35,7 +35,7 @@ public interface Storage {
      * @param defaultValue value which is returned if key is not found
      * @return value stored under key or default value if key is not found
      */
-    int getInt(String key, int defaultValue);
+    int get(String key, int defaultValue);
 
     /**
      * Removes fields from storage
