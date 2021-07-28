@@ -202,7 +202,7 @@ public class CryptoTest {
 
     @Test
     public void getRandomId() {
-        String randomId = Crypto.getRandomMessageId();
+        String randomId = Crypto.getRandomId();
         assertEquals(12, randomId.length());
     }
 }

@@ -130,6 +130,9 @@ public class Auth {
             if (key == null) {
                 throw AblyException.fromErrorInfo(new ErrorInfo("key string cannot be null", 40000, 400));
             }
+            if (key.isEmpty()) {
+                throw new IllegalArgumentException("Key string cannot be empty");
+            }
             if(key.indexOf(':') > -1)
                 this.key = key;
             else
@@ -491,7 +494,7 @@ public class Auth {
      *
      * - ttl:        (optional) the requested life of any new token in ms. If none
      *               is specified a default of 1 hour is provided. The maximum lifetime
-     *               is 24hours; any request exceeeding that lifetime will be rejected
+     *               is 24hours; any request exceeding that lifetime will be rejected
      *               with an error.
      *
      * - capability: (optional) the capability to associate with the access token.
@@ -658,7 +661,7 @@ public class Auth {
                     authUrlResponse = HttpHelpers.getUri(ably.httpCore, tokenOptions.authUrl, tokenOptions.authHeaders, HttpUtils.flattenParams(requestParams), responseHandler);
                 }
             } catch(AblyException e) {
-                throw AblyException.fromErrorInfo(e, new ErrorInfo("authUrl failed with an exception", 401, 80019));
+                throw AblyException.fromErrorInfo(e, new ErrorInfo("authUrl failed with an exception", e.errorInfo.statusCode, 80019));
             }
             if(authUrlResponse == null) {
                 throw AblyException.fromErrorInfo(null, new ErrorInfo("Empty response received from authUrl", 401, 80019));
@@ -868,8 +871,7 @@ public class Auth {
 
         /* decide default auth method (spec: RSA4) */
         if(authOptions.key != null) {
-            if(options.clientId == null &&
-                    !options.useTokenAuth &&
+            if(!options.useTokenAuth &&
                     options.token == null &&
                     options.tokenDetails == null &&
                     options.authCallback == null &&

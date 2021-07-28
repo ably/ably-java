@@ -303,7 +303,7 @@ public class WebSocketTransport implements ITransport {
     }
 
     public String toString() {
-        return WebSocketTransport.class.getName() + " [" + getURL() + "]";
+        return WebSocketTransport.class.getName() + " {" + getURL() + "}";
     }
 
     public String getURL() {

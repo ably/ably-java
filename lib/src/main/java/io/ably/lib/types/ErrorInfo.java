@@ -66,7 +66,7 @@ public class ErrorInfo {
     }
 
     public String toString() {
-        StringBuilder result = new StringBuilder("[ErrorInfo");
+        StringBuilder result = new StringBuilder("{ErrorInfo");
         result.append(" message=").append(logMessage());
         if(code > 0) {
             result.append(" code=").append(code);
@@ -77,7 +77,7 @@ public class ErrorInfo {
         if(href != null) {
             result.append(" href=").append(href);
         }
-        result.append(']');
+        result.append('}');
         return result.toString();
     }
 

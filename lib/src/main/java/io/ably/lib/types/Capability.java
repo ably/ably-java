@@ -59,37 +59,15 @@ public class Capability {
      * it is wholly replaced by the given set of operations.
      *
      * @param resource the resource string
-     * @param ops a String[] of the operations permitted for this resource;
-     * the array does not need to be sorted
+     * @param ops a String varargs of the operations permitted for this resource;
+     * the arguments do not need to be sorted
      */
-    public void addResource(String resource, String[] ops) {
+    public void addResource(String resource, String... ops) {
         JsonArray jsonOps = (JsonArray)gson.toJsonTree(ops);
         json.add(resource, jsonOps);
         dirty = true;
     }
 
-    /**
-     * Add a resource to an existing Capability instance with the
-     * given single operation. If the resource already exists,
-     * it is wholly replaced by the given set of operations.
-     *
-     * @param resource the resource string
-     * @param op a single operation String to be permitted for this resource;
-     */
-    public void addResource(String resource, String op) {
-        addResource(resource, new String[]{op});
-    }
-
-    /**
-     * Add a resource to an existing Capability instance with an
-     * empty set of operations. If the resource already exists,
-     * the effect is to reset its set of operations to empty.
-     *
-     * @param resource the resource string
-     */
-    public void addResource(String resource) {
-        addResource(resource, new String[0]);
-    }
     /**
      * Remove a resource from an existing Capability instance
      *
