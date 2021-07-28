@@ -29,47 +29,118 @@ import java.util.ArrayDeque;
 
 public class ActivationStateMachine {
     public static class CalledActivate extends ActivationStateMachine.Event {
+        private static final String NAME = "CalledActivate";
+
         public static ActivationStateMachine.CalledActivate useCustomRegistrar(boolean useCustomRegistrar, SharedPreferences prefs) {
             prefs.edit().putBoolean(ActivationStateMachine.PersistKeys.PUSH_CUSTOM_REGISTRAR, useCustomRegistrar).apply();
             return new ActivationStateMachine.CalledActivate();
         }
+
+        @Override
+        public String getName() {
+            return NAME;
+        }
     }
 
     public static class CalledDeactivate extends ActivationStateMachine.Event {
+        private static final String NAME = "CalledDeactivate";
+
         static ActivationStateMachine.CalledDeactivate useCustomRegistrar(boolean useCustomRegistrar, SharedPreferences prefs) {
             prefs.edit().putBoolean(ActivationStateMachine.PersistKeys.PUSH_CUSTOM_REGISTRAR, useCustomRegistrar).apply();
             return new ActivationStateMachine.CalledDeactivate();
         }
+
+        @Override
+        public String getName() {
+            return NAME;
+        }
     }
 
-    public static class GotPushDeviceDetails extends ActivationStateMachine.Event {}
+    public static class GotPushDeviceDetails extends ActivationStateMachine.Event {
+        private static final String NAME = "GotPushDeviceDetails";
+
+        @Override
+        public String getName() {
+            return NAME;
+        }
+    }
 
     public static class GotDeviceRegistration extends ActivationStateMachine.Event {
+        private static final String NAME = "GotDeviceRegistration";
         final String deviceIdentityToken;
-        GotDeviceRegistration(String token) { this.deviceIdentityToken = token; }
+        public GotDeviceRegistration(String token) { this.deviceIdentityToken = token; }
+
+        @Override
+        public String getName() {
+            return NAME;
+        }
     }
 
     public static class GettingDeviceRegistrationFailed extends ActivationStateMachine.ErrorEvent {
-        GettingDeviceRegistrationFailed(ErrorInfo reason) { super(reason); }
+        private static final String NAME = "GettingDeviceRegistrationFailed";
+
+        public GettingDeviceRegistrationFailed(ErrorInfo reason) { super(reason); }
+
+        @Override
+        public String getName() {
+            return NAME;
+        }
     }
 
     public static class GettingPushDeviceDetailsFailed extends ActivationStateMachine.ErrorEvent {
-        GettingPushDeviceDetailsFailed(ErrorInfo reason) { super(reason); }
+        private static final String NAME = "GettingPushDeviceDetailsFailed";
+
+        public GettingPushDeviceDetailsFailed(ErrorInfo reason) { super(reason); }
+
+        @Override
+        public String getName() {
+            return NAME;
+        }
     }
 
-    public static class RegistrationSynced extends ActivationStateMachine.Event {}
+    public static class RegistrationSynced extends ActivationStateMachine.Event {
+        private static final String NAME = "RegistrationSynced";
+
+        @Override
+        public String getName() {
+            return NAME;
+        }
+    }
 
     public static class SyncRegistrationFailed extends ActivationStateMachine.ErrorEvent {
+        private static final String NAME = "SyncRegistrationFailed";
+
         public SyncRegistrationFailed(ErrorInfo reason) { super(reason); }
+
+        @Override
+        public String getName() {
+            return NAME;
+        }
     }
 
-    public static class Deregistered extends ActivationStateMachine.Event {}
+    public static class Deregistered extends ActivationStateMachine.Event {
+        private static final String NAME = "Deregistered";
+
+        @Override
+        public String getName() {
+            return NAME;
+        }
+    }
 
     public static class DeregistrationFailed extends ActivationStateMachine.ErrorEvent {
+        private static final String NAME = "DeregistrationFailed";
+
         public DeregistrationFailed(ErrorInfo reason) { super(reason); }
+
+        @Override
+        public String getName() {
+            return NAME;
+        }
     }
 
     public abstract static class Event {
+        public abstract String getName();
+
         public static Event constructEventByName(String className) throws ClassNotFoundException, InstantiationException {
             ActivationStateMachine.Event event;
 
@@ -684,7 +755,7 @@ public class ActivationStateMachine {
         for (ActivationStateMachine.Event e : pendingEvents) {
             editor.putString(
                     String.format("%s[%d]", ActivationStateMachine.PersistKeys.PENDING_EVENTS_PREFIX, i),
-                    e.getClass().getName()
+                    e.getName()
             );
 
             i++;
@@ -722,6 +793,7 @@ public class ActivationStateMachine {
             } catch (ClassNotFoundException e) {
                 Log.e(TAG, e.getLocalizedMessage());
             } catch (InstantiationException e) {
+                Log.e(TAG, e.getLocalizedMessage());
                 continue;
             }
         }
