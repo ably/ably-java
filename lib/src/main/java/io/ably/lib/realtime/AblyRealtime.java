@@ -51,7 +51,7 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
         super(options);
         final InternalChannels channels = new InternalChannels();
         this.channels = channels;
-        connection = new Connection(this, channels);
+        connection = new Connection(this, channels, platformAgentProvider);
 
         /* remove all channels when the connection is closed, to avoid stalled state */
         connection.on(ConnectionEvent.closed, new ConnectionStateListener() {

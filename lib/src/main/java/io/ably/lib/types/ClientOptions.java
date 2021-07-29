@@ -201,4 +201,16 @@ public class ClientOptions extends AuthOptions {
      remain the same if a request is retried to a fallback host.
      */
     public boolean addRequestIds = false;
+
+    /**
+     * Map of agents that will be appended to the agent header.
+     *
+     * This should only be used by Ably-authored SDKs.
+     * If you need to use this then you have to add the agent to the agents.json file:
+     * https://github.com/ably/ably-common/blob/main/protocol/agents.json
+     *
+     * The keys represent agent names and its corresponding values represent agent versions.
+     * Agent versions are optional, if you don't want to specify it pass `null` as the map entry value.
+     */
+    public Map<String, String> agents;
 }
