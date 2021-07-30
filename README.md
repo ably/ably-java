@@ -53,7 +53,7 @@ We only support installation via Maven / Gradle from the Maven Central repositor
 For Java, JRE 7 or later is required. Note that the [Java Unlimited JCE extensions](http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html)
 must be installed in the Java runtime environment.
 
-For Android, 4.0 (API level 14) or later is required.
+For Android, 4.1 (API level 16) or later is required.
 
 ## Feature support
 
