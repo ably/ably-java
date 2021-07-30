@@ -31,7 +31,7 @@ android {
     defaultConfig {
         buildConfigField 'String', 'LIBRARY_NAME', '"android"'
         buildConfigField 'String', 'VERSION', "\"$version\""
-        minSdkVersion 14
+        minSdkVersion 16
         targetSdkVersion 24
         versionCode 1
         versionName version
@@ -84,7 +84,7 @@ tasks.withType(com.android.build.gradle.internal.tasks.AndroidTestTask) { task -
 apply from: '../dependencies.gradle'
 apply from: './dependencies.gradle'
 dependencies {
-    implementation 'com.google.firebase:firebase-messaging:17.3.4'
+    implementation 'com.google.firebase:firebase-messaging:22.0.0'
     androidTestImplementation 'com.android.support.test:runner:0.5'
     androidTestImplementation 'com.android.support.test:rules:0.5'
     androidTestImplementation 'com.crittercism.dexmaker:dexmaker:1.4'

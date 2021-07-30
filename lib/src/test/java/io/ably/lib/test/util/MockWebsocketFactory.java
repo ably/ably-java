@@ -46,7 +46,7 @@ public class MockWebsocketFactory implements ITransport.Factory {
         private HostTransform hostTransform;
 
         TransformParams(ITransport.TransportParams src, HostTransform hostTransform) {
-            super(src.getClientOptions());
+            super(src.getClientOptions(), new EmptyPlatformAgentProvider());
             this.hostTransform = hostTransform;
             this.host = hostTransform.transformHost(src.getHost());
             this.port = src.getPort();

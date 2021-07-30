@@ -10,6 +10,10 @@ public class Param {
     public String key;
     public String value;
 
+    public static Param[] array(final Param val) {
+        return new Param[] { val };
+    }
+
     public static Param[] push(Param[] params, Param val) {
         if (params == null) {
             return new Param[] { val };

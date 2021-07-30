@@ -16,6 +16,7 @@ import io.ably.lib.types.Callback;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.ParamsUtils;
 import io.ably.lib.util.Serialisation;
 import io.ably.lib.util.StringUtils;
 
@@ -71,11 +72,7 @@ public class PushBase {
                         bodyJson.add(entry.getKey(), entry.getValue());
                     }
                     HttpCore.RequestBody body = HttpUtils.requestBodyFromGson(bodyJson, rest.options.useBinaryProtocol);
-
-                    Param[] params = null;
-                    if (rest.options.pushFullWait) {
-                        params = Param.push(params, "fullWait", "true");
-                    }
+                    Param[] params = ParamsUtils.enrichParams(null, rest.options);
 
                     http.post("/push/publish", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, body, null, true, callback);
                 }
@@ -101,11 +98,8 @@ public class PushBase {
             final HttpCore.RequestBody body = HttpUtils.requestBodyFromGson(device.toJsonObject(), rest.options.useBinaryProtocol);
             return rest.http.request(new Http.Execute<DeviceDetails>() {
                 @Override
-                public void execute(HttpScheduler http, Callback<DeviceDetails> callback) throws AblyException {
-                    Param[] params = null;
-                    if (rest.options.pushFullWait) {
-                        params = Param.push(params, "fullWait", "true");
-                    }
+                public void execute(HttpScheduler http, Callback<DeviceDetails> callback) {
+                    Param[] params = ParamsUtils.enrichParams(null, rest.options);
                     http.put("/push/deviceRegistrations/" + device.id, rest.push.pushRequestHeaders(device.id), params, body, DeviceDetails.httpResponseHandler, true, callback);
                 }
             });
@@ -124,10 +118,7 @@ public class PushBase {
             return rest.http.request(new Http.Execute<DeviceDetails>() {
                 @Override
                 public void execute(HttpScheduler http, Callback<DeviceDetails> callback) throws AblyException {
-                    Param[] params = null;
-                    if (rest.options.pushFullWait) {
-                        params = Param.push(params, "fullWait", "true");
-                    }
+                    Param[] params = ParamsUtils.enrichParams(null, rest.options);
                     http.get("/push/deviceRegistrations/" + deviceId, rest.push.pushRequestHeaders(deviceId), params, DeviceDetails.httpResponseHandler, true, callback);
                 }
             });
@@ -167,10 +158,7 @@ public class PushBase {
             return rest.http.request(new Http.Execute<Void>() {
                 @Override
                 public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
-                    Param[] params = null;
-                    if (rest.options.pushFullWait) {
-                        params = Param.push(params, "fullWait", "true");
-                    }
+                    Param[] params = ParamsUtils.enrichParams(null, rest.options);
                     http.del("/push/deviceRegistrations/" + deviceId, rest.push.pushRequestHeaders(deviceId), params, null, true, callback);
                 }
             });
@@ -186,10 +174,7 @@ public class PushBase {
 
         protected Http.Request<Void> removeWhereImpl(Param[] params) {
             Log.v(TAG, "removeWhereImpl(): params=" + Arrays.toString(params));
-            if (rest.options.pushFullWait) {
-                params = Param.push(params, "fullWait", "true");
-            }
-            final Param[] finalParams = params;
+            final Param[] finalParams = ParamsUtils.enrichParams(params, rest.options);
             return rest.http.request(new Http.Execute<Void>() {
                 @Override
                 public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
@@ -222,10 +207,7 @@ public class PushBase {
             return rest.http.request(new Http.Execute<ChannelSubscription>() {
                 @Override
                 public void execute(HttpScheduler http, Callback<ChannelSubscription> callback) throws AblyException {
-                    Param[] params = null;
-                    if (rest.options.pushFullWait) {
-                        params = Param.push(params, "fullWait", "true");
-                    }
+                    Param[] params = ParamsUtils.enrichParams(null, rest.options);
                     http.post("/push/channelSubscriptions", rest.push.pushRequestHeaders(subscription.deviceId), params, body, ChannelSubscription.httpResponseHandler, true, callback);
                 }
             });
@@ -279,11 +261,8 @@ public class PushBase {
         protected Http.Request<Void> removeWhereImpl(Param[] params) {
             Log.v(TAG, "removeWhereImpl(): params=" + Arrays.toString(params));
             String deviceId = HttpUtils.getParam(params, "deviceId");
-            if (rest.options.pushFullWait) {
-                params = Param.push(params, "fullWait", "true");
-            }
+            final Param[] finalParams = ParamsUtils.enrichParams(params, rest.options);
             final Param[] finalHeaders = rest.push.pushRequestHeaders(deviceId);
-            final Param[] finalParams = params;
             return rest.http.request(new Http.Execute<Void>() {
                 @Override
                 public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
