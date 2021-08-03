@@ -26,7 +26,6 @@ import io.ably.lib.util.Log;
 import io.ably.lib.util.ParamsUtils;
 import io.ably.lib.util.Serialisation;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.ArrayDeque;
 
@@ -149,6 +148,14 @@ public class ActivationStateMachine {
 
     public static class NotActivated extends ActivationStateMachine.PersistentState {
         public NotActivated(ActivationStateMachine machine) { super(machine); }
+
+        public static final String NAME = "NotActivated";
+
+        @Override
+        String getPersistedName() {
+            return NAME;
+        }
+
         public ActivationStateMachine.State transition(ActivationStateMachine.Event event) {
             if (event instanceof ActivationStateMachine.CalledDeactivate) {
                 machine.callDeactivatedCallback(null);
@@ -181,6 +188,14 @@ public class ActivationStateMachine {
 
     public static class WaitingForPushDeviceDetails extends ActivationStateMachine.PersistentState {
         public WaitingForPushDeviceDetails(ActivationStateMachine machine) { super(machine); }
+
+        public static final String NAME = "WaitingForPushDeviceDetails";
+
+        @Override
+        String getPersistedName() {
+            return NAME;
+        }
+
         public ActivationStateMachine.State transition(final ActivationStateMachine.Event event) {
             if (event instanceof ActivationStateMachine.CalledActivate) {
                 return this;
@@ -269,6 +284,14 @@ public class ActivationStateMachine {
 
     public static class WaitingForNewPushDeviceDetails extends ActivationStateMachine.PersistentState {
         public WaitingForNewPushDeviceDetails(ActivationStateMachine machine) { super(machine); }
+
+        public static final String NAME = "WaitingForNewPushDeviceDetails";
+
+        @Override
+        String getPersistedName() {
+            return NAME;
+        }
+
         public ActivationStateMachine.State transition(ActivationStateMachine.Event event) {
             if (event instanceof ActivationStateMachine.CalledActivate) {
                 machine.callActivatedCallback(null);
@@ -326,6 +349,14 @@ public class ActivationStateMachine {
 
     public static class AfterRegistrationSyncFailed extends ActivationStateMachine.PersistentState {
         public AfterRegistrationSyncFailed(ActivationStateMachine machine) { super(machine); }
+
+        public static final String NAME = "AfterRegistrationSyncFailed";
+
+        @Override
+        String getPersistedName() {
+            return NAME;
+        }
+
         public ActivationStateMachine.State transition(ActivationStateMachine.Event event) {
             if (event instanceof ActivationStateMachine.CalledActivate || event instanceof ActivationStateMachine.GotPushDeviceDetails) {
                 machine.validateRegistration();
@@ -378,6 +409,30 @@ public class ActivationStateMachine {
 
     private static abstract class PersistentState extends ActivationStateMachine.State {
         PersistentState(ActivationStateMachine machine) { super(machine); }
+
+        /**
+         * @param className The name of the class to rehydrate.
+         * @return A new Event instance, or null if className is not supported.
+         */
+        public static State constructStateByName(final String className, final ActivationStateMachine machine) {
+            switch (className) {
+                case NotActivated.NAME:
+                    return new NotActivated(machine);
+
+                case WaitingForPushDeviceDetails.NAME:
+                    return new WaitingForPushDeviceDetails(machine);
+
+                case WaitingForNewPushDeviceDetails.NAME:
+                    return new WaitingForNewPushDeviceDetails(machine);
+
+                case AfterRegistrationSyncFailed.NAME:
+                    return new AfterRegistrationSyncFailed(machine);
+            }
+
+            return null;
+        }
+
+        abstract String getPersistedName();
     }
 
     private void callActivatedCallback(ErrorInfo reason) {
@@ -696,7 +751,8 @@ public class ActivationStateMachine {
         SharedPreferences.Editor editor = activationContext.getPreferences().edit();
 
         if (current instanceof ActivationStateMachine.PersistentState) {
-            editor.putString(ActivationStateMachine.PersistKeys.CURRENT_STATE, current.getClass().getName());
+            final PersistentState persistableState = (PersistentState)current;
+            editor.putString(ActivationStateMachine.PersistKeys.CURRENT_STATE, persistableState.getPersistedName());
         }
 
         editor.putInt(ActivationStateMachine.PersistKeys.PENDING_EVENTS_LENGTH, pendingEvents.size());
@@ -715,22 +771,14 @@ public class ActivationStateMachine {
         return editor.commit();
     }
 
+    /**
+     * Returns persisted state or `NotActivated` if there is no persisted state or the name of the currently persisted
+     * state is not recognised.
+     */
     private ActivationStateMachine.State getPersistedState() {
-        try {
-            Class<? extends ActivationStateMachine.State> stateClass;
-
-            String className = activationContext.getPreferences().getString(ActivationStateMachine.PersistKeys.CURRENT_STATE, "");
-            if (className.endsWith("$AfterRegistrationUpdateFailed")) {
-                stateClass = AfterRegistrationSyncFailed.class;
-            } else {
-                stateClass = (Class<? extends State>) Class.forName(className);
-            }
-
-            Constructor<? extends ActivationStateMachine.State> constructor = stateClass.getConstructor(ActivationStateMachine.class);
-            return constructor.newInstance(this);
-        } catch (Exception e) {
-            return new ActivationStateMachine.NotActivated(this);
-        }
+        final String className = activationContext.getPreferences().getString(ActivationStateMachine.PersistKeys.CURRENT_STATE, "");
+        final State instance = PersistentState.constructStateByName(className, this);
+        return instance == null ? new ActivationStateMachine.NotActivated(this) : instance;
     }
 
     private ArrayDeque<ActivationStateMachine.Event> getPersistedPendingEvents() {
