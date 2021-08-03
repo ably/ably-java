@@ -5,6 +5,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.support.v4.content.LocalBroadcastManager;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
@@ -21,6 +23,7 @@ import io.ably.lib.types.Param;
 import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.util.IntentUtils;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.ParamsUtils;
 import io.ably.lib.util.Serialisation;
 
 import java.lang.reflect.Constructor;
@@ -248,10 +251,7 @@ public class ActivationStateMachine {
                     ably.http.request(new Http.Execute<JsonObject>() {
                         @Override
                         public void execute(HttpScheduler http, Callback<JsonObject> callback) throws AblyException {
-                            Param[] params = null;
-                            if(ably.options.pushFullWait) {
-                                params = Param.push(null, "fullWait", "true");
-                            }
+                            Param[] params = ParamsUtils.enrichParams(null, ably.options);
                             /* this is authenticated using the Ably library credentials, plus the deviceSecret in the request body */
                             http.post("/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, body, new Serialisation.HttpResponseHandler<JsonObject>(), true, callback);
                         }
@@ -538,11 +538,7 @@ public class ActivationStateMachine {
             ably.http.request(new Http.Execute<Void>() {
                 @Override
                 public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
-                    Param[] params = null;
-                    if (ably.options.pushFullWait) {
-                        params = Param.push(params, "fullWait", "true");
-                    }
-
+                    Param[] params = ParamsUtils.enrichParams(null, ably.options);
                     http.patch("/push/deviceRegistrations/" + device.id, ably.push.pushRequestHeaders(true), params, body, null, false, callback);
                 }
             }).async(new Callback<Void>() {
@@ -586,11 +582,7 @@ public class ActivationStateMachine {
             ably.http.request(new Http.Execute<JsonObject>() {
                 @Override
                 public void execute(HttpScheduler http, Callback<JsonObject> callback) throws AblyException {
-                    Param[] params = null;
-                    if (ably.options.pushFullWait) {
-                        params = Param.push(params, "fullWait", "true");
-                    }
-
+                    Param[] params = ParamsUtils.enrichParams(null, ably.options);
                     final HttpCore.RequestBody body = HttpUtils.requestBodyFromGson(device.toJsonObject(), ably.options.useBinaryProtocol);
                     http.put("/push/deviceRegistrations/" + device.id, ably.push.pushRequestHeaders(true), params, body, new Serialisation.HttpResponseHandler<JsonObject>(), true, callback);
                 }
@@ -634,10 +626,7 @@ public class ActivationStateMachine {
             ably.http.request(new Http.Execute<Void>() {
                 @Override
                 public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
-                    Param[] params = new Param[0];
-                    if (ably.options.pushFullWait) {
-                        params = Param.push(params, "fullWait", "true");
-                    }
+                    Param[] params = ParamsUtils.enrichParams(new Param[0], ably.options);
                     http.del("/push/deviceRegistrations/" + device.id, ably.push.pushRequestHeaders(true), params, null, true, callback);
                 }
             }).async(new Callback<Void>() {

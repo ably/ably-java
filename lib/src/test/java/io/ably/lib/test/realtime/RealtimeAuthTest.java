@@ -25,6 +25,16 @@ public class RealtimeAuthTest extends ParameterizedTest {
     public Timeout testTimeout = Timeout.seconds(30);
 
     /**
+     * Verifies an Exception is thrown, when client is initialized with an empty key
+     *
+     * @throws IllegalArgumentException
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void auth_client_cannot_be_initialized_with_empty_key() throws AblyException {
+        new AblyRealtime("");
+    }
+
+    /**
      * RSA12a: The clientId attribute of a TokenRequest or TokenDetails
      * used for authentication is null, or ConnectionDetails#clientId is null
      * following a connection to Ably. In this case, the null value indicates

@@ -26,7 +26,9 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ErrorResponse;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProxyOptions;
+import io.ably.lib.util.AgentHeaderCreator;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.PlatformAgentProvider;
 
 /**
  * HttpCore performs authenticated HTTP synchronously. Internal; use Http or HttpScheduler instead.
@@ -37,9 +39,10 @@ public class HttpCore {
      *     Public API
      *************************/
 
-    public HttpCore(ClientOptions options, Auth auth) throws AblyException {
+    public HttpCore(ClientOptions options, Auth auth, PlatformAgentProvider platformAgentProvider) throws AblyException {
         this.options = options;
         this.auth = auth;
+        this.platformAgentProvider = platformAgentProvider;
         this.scheme = options.tls ? "https://" : "http://";
         this.port = Defaults.getPort(options);
         this.hosts = new Hosts(options.restHost, Defaults.HOST_REST, options);
@@ -216,7 +219,7 @@ public class HttpCore {
 
             /* pass required headers */
             conn.setRequestProperty(Defaults.ABLY_VERSION_HEADER, Defaults.ABLY_VERSION);
-            conn.setRequestProperty(Defaults.ABLY_LIB_HEADER, Defaults.ABLY_LIB_VERSION);
+            conn.setRequestProperty(Defaults.ABLY_AGENT_HEADER, AgentHeaderCreator.create(options.agents, platformAgentProvider));
 
             /* prepare request body */
             byte[] body = null;
@@ -517,6 +520,7 @@ public class HttpCore {
     private HttpAuth proxyAuth;
     private Proxy proxy = Proxy.NO_PROXY;
     private boolean isDisposed;
+    private final PlatformAgentProvider platformAgentProvider;
 
     private static final String TAG = HttpCore.class.getName();
 

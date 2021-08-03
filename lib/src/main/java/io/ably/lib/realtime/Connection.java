@@ -6,6 +6,7 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.util.EventEmitter;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.PlatformAgentProvider;
 
 /**
  * A class representing the connection associated with an AblyRealtime instance.
@@ -76,10 +77,10 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
      * internal
      *****************/
 
-    Connection(AblyRealtime ably, ConnectionManager.Channels channels) throws AblyException {
+    Connection(AblyRealtime ably, ConnectionManager.Channels channels, PlatformAgentProvider platformAgentProvider) throws AblyException {
         this.ably = ably;
         this.state = ConnectionState.initialized;
-        this.connectionManager = new ConnectionManager(ably, this, channels);
+        this.connectionManager = new ConnectionManager(ably, this, channels, platformAgentProvider);
     }
 
     public void onConnectionStateChange(ConnectionStateChange stateChange) {

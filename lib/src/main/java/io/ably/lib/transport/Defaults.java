@@ -11,15 +11,15 @@ public class Defaults {
     /* versions */
     public static final float ABLY_VERSION_NUMBER   = 1.2f;
     public static final String ABLY_VERSION         = new DecimalFormat("0.0", new DecimalFormatSymbols(Locale.ENGLISH)).format(ABLY_VERSION_NUMBER);
-    public static final String ABLY_LIB_VERSION     = String.format("%s-%s", BuildConfig.LIBRARY_NAME, BuildConfig.VERSION);
+    public static final String ABLY_AGENT_VERSION   = String.format("%s/%s", "ably-java", BuildConfig.VERSION);
 
     /* params */
     public static final String ABLY_VERSION_PARAM   = "v";
-    public static final String ABLY_LIB_PARAM       = "lib";
+    public static final String ABLY_AGENT_PARAM     = "agent";
 
     /* Headers */
     public static final String ABLY_VERSION_HEADER  = "X-Ably-Version";
-    public static final String ABLY_LIB_HEADER      = "X-Ably-Lib";
+    public static final String ABLY_AGENT_HEADER    = "Ably-Agent";
 
     /* Hosts */
     public static final String[] HOST_FALLBACKS     = { "A.ably-realtime.com", "B.ably-realtime.com", "C.ably-realtime.com", "D.ably-realtime.com", "E.ably-realtime.com" };
