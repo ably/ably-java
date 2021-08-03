@@ -70,10 +70,10 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
      * @return string
      */
     public String toString() {
-        StringBuilder result = new StringBuilder("[PresenceMessage");
+        StringBuilder result = new StringBuilder("{PresenceMessage");
         super.getDetails(result);
         result.append(" action=").append(action.name());
-        result.append(']');
+        result.append('}');
         return result.toString();
     }
 

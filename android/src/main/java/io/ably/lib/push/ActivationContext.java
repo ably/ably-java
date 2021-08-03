@@ -5,8 +5,8 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.iid.FirebaseInstanceId;
-import com.google.firebase.iid.InstanceIdResult;
+import com.google.firebase.installations.FirebaseInstallations;
+import com.google.firebase.installations.InstallationTokenResult;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
@@ -152,10 +152,10 @@ public class ActivationContext {
 
     protected void getRegistrationToken(final Callback<String> callback) {
         Log.v(TAG, "getRegistrationToken(): callback=" + callback);
-        FirebaseInstanceId.getInstance().getInstanceId()
-                .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
+        FirebaseInstallations.getInstance().getToken(true)
+                .addOnCompleteListener(new OnCompleteListener<InstallationTokenResult>() {
                     @Override
-                    public void onComplete(Task<InstanceIdResult> task) {
+                    public void onComplete(Task<InstallationTokenResult> task) {
                         Log.v(TAG, "getRegistrationToken(): firebase called onComplete(): task=" + task);
                         if(task.isSuccessful()) {
                             /* Get new Instance ID token */
