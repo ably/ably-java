@@ -42,6 +42,11 @@ public class ActivationStateMachine {
         public String getPersistedName() {
             return NAME;
         }
+
+        @Override
+        public String toString() {
+            return NAME;
+        }
     }
 
     public static class CalledDeactivate extends ActivationStateMachine.Event {
@@ -56,6 +61,11 @@ public class ActivationStateMachine {
         public String getPersistedName() {
             return NAME;
         }
+
+        @Override
+        public String toString() {
+            return NAME;
+        }
     }
 
     public static class GotPushDeviceDetails extends ActivationStateMachine.Event {
@@ -65,19 +75,41 @@ public class ActivationStateMachine {
         public String getPersistedName() {
             return NAME;
         }
+
+        @Override
+        public String toString() {
+            return NAME;
+        }
     }
 
     public static class GotDeviceRegistration extends ActivationStateMachine.Event {
         final String deviceIdentityToken;
         public GotDeviceRegistration(String token) { this.deviceIdentityToken = token; }
+
+        @Override
+        public String toString() {
+            return "GotDeviceRegistration{" +
+                "deviceIdentityToken='" + deviceIdentityToken + '\'' +
+                '}';
+        }
     }
 
     public static class GettingDeviceRegistrationFailed extends ActivationStateMachine.ErrorEvent {
         public GettingDeviceRegistrationFailed(ErrorInfo reason) { super(reason); }
+
+        @Override
+        public String toString() {
+            return "GettingDeviceRegistrationFailed: " + super.toString();
+        }
     }
 
     public static class GettingPushDeviceDetailsFailed extends ActivationStateMachine.ErrorEvent {
         public GettingPushDeviceDetailsFailed(ErrorInfo reason) { super(reason); }
+
+        @Override
+        public String toString() {
+            return "GettingPushDeviceDetailsFailed: " + super.toString();
+        }
     }
 
     public static class RegistrationSynced extends ActivationStateMachine.Event {
@@ -87,10 +119,20 @@ public class ActivationStateMachine {
         public String getPersistedName() {
             return NAME;
         }
+
+        @Override
+        public String toString() {
+            return NAME;
+        }
     }
 
     public static class SyncRegistrationFailed extends ActivationStateMachine.ErrorEvent {
         public SyncRegistrationFailed(ErrorInfo reason) { super(reason); }
+
+        @Override
+        public String toString() {
+            return "SyncRegistrationFailed: " + super.toString();
+        }
     }
 
     public static class Deregistered extends ActivationStateMachine.Event {
@@ -100,10 +142,20 @@ public class ActivationStateMachine {
         public String getPersistedName() {
             return NAME;
         }
+
+        @Override
+        public String toString() {
+            return NAME;
+        }
     }
 
     public static class DeregistrationFailed extends ActivationStateMachine.ErrorEvent {
         public DeregistrationFailed(ErrorInfo reason) { super(reason); }
+
+        @Override
+        public String toString() {
+            return "DeregistrationFailed: " + super.toString();
+        }
     }
 
     public abstract static class Event {
@@ -144,6 +196,13 @@ public class ActivationStateMachine {
     public abstract static class ErrorEvent extends ActivationStateMachine.Event {
         public final ErrorInfo reason;
         ErrorEvent(ErrorInfo reason) { this.reason = reason; }
+
+        @Override
+        public String toString() {
+            return "ErrorEvent{" +
+                "reason=" + reason +
+                '}';
+        }
     }
 
     public static class NotActivated extends ActivationStateMachine.PersistentState {
@@ -153,6 +212,11 @@ public class ActivationStateMachine {
 
         @Override
         String getPersistedName() {
+            return NAME;
+        }
+
+        @Override
+        public String toString() {
             return NAME;
         }
 
@@ -193,6 +257,11 @@ public class ActivationStateMachine {
 
         @Override
         String getPersistedName() {
+            return NAME;
+        }
+
+        @Override
+        public String toString() {
             return NAME;
         }
 
@@ -266,6 +335,12 @@ public class ActivationStateMachine {
 
     public static class WaitingForDeviceRegistration extends ActivationStateMachine.State {
         public WaitingForDeviceRegistration(ActivationStateMachine machine) { super(machine); }
+
+        @Override
+        public String toString() {
+            return "WaitingForDeviceRegistration";
+        }
+
         public ActivationStateMachine.State transition(ActivationStateMachine.Event event) {
             if (event instanceof ActivationStateMachine.CalledActivate) {
                 return this;
@@ -292,6 +367,11 @@ public class ActivationStateMachine {
             return NAME;
         }
 
+        @Override
+        public String toString() {
+            return "WaitingForNewPushDeviceDetails";
+        }
+
         public ActivationStateMachine.State transition(ActivationStateMachine.Event event) {
             if (event instanceof ActivationStateMachine.CalledActivate) {
                 machine.callActivatedCallback(null);
@@ -316,6 +396,13 @@ public class ActivationStateMachine {
         public WaitingForRegistrationSync(ActivationStateMachine machine, Event fromEvent) {
             super(machine);
             this.fromEvent = fromEvent;
+        }
+
+        @Override
+        public String toString() {
+            return "WaitingForRegistrationSync{" +
+                "fromEvent=" + fromEvent +
+                '}';
         }
 
         public ActivationStateMachine.State transition(ActivationStateMachine.Event event) {
@@ -357,6 +444,11 @@ public class ActivationStateMachine {
             return NAME;
         }
 
+        @Override
+        public String toString() {
+            return NAME;
+        }
+
         public ActivationStateMachine.State transition(ActivationStateMachine.Event event) {
             if (event instanceof ActivationStateMachine.CalledActivate || event instanceof ActivationStateMachine.GotPushDeviceDetails) {
                 machine.validateRegistration();
@@ -375,6 +467,13 @@ public class ActivationStateMachine {
         public WaitingForDeregistration(ActivationStateMachine machine, ActivationStateMachine.State previousState) {
             super(machine);
             this.previousState = previousState;
+        }
+
+        @Override
+        public String toString() {
+            return "WaitingForDeregistration{" +
+                "previousState=" + previousState +
+                '}';
         }
 
         public ActivationStateMachine.State transition(ActivationStateMachine.Event event) {
@@ -678,7 +777,7 @@ public class ActivationStateMachine {
     }
 
     private void enqueueEvent(ActivationStateMachine.Event event) {
-        Log.d(TAG, "enqueuing event: " + event.getClass().getSimpleName());
+        Log.d(TAG, "enqueuing event: " + event);
         pendingEvents.add(event);
     }
 
@@ -696,7 +795,7 @@ public class ActivationStateMachine {
 
         handlingEvent = true;
         try {
-            Log.d(TAG, String.format("handling event %s from %s", event.getClass().getSimpleName(), current.getClass().getSimpleName()));
+            Log.d(TAG, "handling event " + event + " from state " + current);
 
             ActivationStateMachine.State maybeNext = current.transition(event);
             if (maybeNext == null) {
@@ -704,7 +803,7 @@ public class ActivationStateMachine {
                 return persist();
             }
 
-            Log.d(TAG, String.format("transition: %s -(%s)-> %s", current.getClass().getSimpleName(), event.getClass().getSimpleName(), maybeNext.getClass().getSimpleName()));
+            Log.d(TAG, "transition: " + current + " -(" + event + ")-> " + maybeNext + ".");
             current = maybeNext;
 
             while (true) {
@@ -713,7 +812,7 @@ public class ActivationStateMachine {
                     break;
                 }
 
-                Log.d(TAG, "attempting to consume pending event: " + pending.getClass().getSimpleName());
+                Log.d(TAG, "attempting to consume pending event: " + pending);
 
                 maybeNext = current.transition(pending);
                 if (maybeNext == null) {
@@ -721,7 +820,7 @@ public class ActivationStateMachine {
                 }
                 pendingEvents.poll();
 
-                Log.d(TAG, String.format("transition: %s -(%s)-> %s", current.getClass().getSimpleName(), pending.getClass().getSimpleName(), maybeNext.getClass().getSimpleName()));
+                Log.d(TAG, "transition: " + current + " -(" + pending + ")-> " + maybeNext + ".");
                 current = maybeNext;
             }
 
