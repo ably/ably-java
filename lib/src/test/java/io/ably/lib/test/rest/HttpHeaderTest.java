@@ -17,6 +17,8 @@ import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 
+import static io.ably.lib.transport.Defaults.ABLY_AGENT_VERSION;
+
 /**
  * Created by VOstopolets on 8/17/16.
  */
@@ -46,11 +48,11 @@ public class HttpHeaderTest extends ParameterizedTest {
     }
 
     /**
-     * The header X-Ably-Lib: [lib][.optional variant]?-[version]
+     * The header Ably-Agent: [lib]/[version]
      * should be included in all REST requests to the Ably endpoint
-     * see {@link io.ably.lib.http.HttpUtils#ABLY_LIB_VERSION}
+     * see {@link io.ably.lib.http.HttpUtils#ABLY_AGENT_VERSION}
      * <p>
-     * Spec: RSC7b, G4
+     * Spec: RSC7d, G4
      * </p>
      *
      * Spec: RSC7a: Must have the header X-Ably-Version: 1.0 (or whatever the
@@ -76,6 +78,7 @@ public class HttpHeaderTest extends ParameterizedTest {
 
             /* Get last headers */
             Map<String, String> headers = server.getHeaders();
+            String expectedAblyAgentHeader = ABLY_AGENT_VERSION + " jre/" + System.getProperty("java.version");
 
             /* Check header
              * This test should not directly validate version against Defaults.ABLY_VERSION, Defaults.ABLY_LIB_VERSION,
@@ -84,7 +87,7 @@ public class HttpHeaderTest extends ParameterizedTest {
              */
             Assert.assertNotNull("Expected headers", headers);
             Assert.assertEquals(headers.get("x-ably-version"), "1.2");
-            Assert.assertEquals(headers.get("x-ably-lib"), "java-1.2.6");
+            Assert.assertEquals(headers.get("ably-agent"), expectedAblyAgentHeader);
         } catch (AblyException e) {
             e.printStackTrace();
             Assert.fail("header_lib_channel_publish: Unexpected exception");

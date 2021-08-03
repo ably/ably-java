@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import io.ably.lib.debug.DebugOptions;
+import io.ably.lib.test.util.EmptyPlatformAgentProvider;
 import io.ably.lib.test.util.MockWebsocketFactory;
 import io.ably.lib.transport.Hosts;
 import io.ably.lib.util.Log;
@@ -134,7 +135,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
             Connection connection = Mockito.mock(Connection.class);
             final ConnectionManager.Channels channels = Mockito.mock(ConnectionManager.Channels.class);
 
-            ConnectionManager connectionManager = new ConnectionManager(ably, connection, channels) {
+            ConnectionManager connectionManager = new ConnectionManager(ably, connection, channels, new EmptyPlatformAgentProvider()) {
                 @Override
                 protected boolean checkConnectivity() {
                     return false;

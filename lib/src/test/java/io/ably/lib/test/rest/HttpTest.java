@@ -23,9 +23,11 @@ import java.util.Arrays;
 import java.util.List;
 
 import io.ably.lib.http.*;
+import io.ably.lib.test.util.EmptyPlatformAgentProvider;
 import io.ably.lib.test.util.TimeHandler;
 import io.ably.lib.types.*;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.PlatformAgentProvider;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.AfterClass;
@@ -57,6 +59,7 @@ public class HttpTest {
     private static final String[] CUSTOM_HOSTS = { "f.ably-realtime.com", "g.ably-realtime.com", "h.ably-realtime.com", "i.ably-realtime.com", "j.ably-realtime.com", "k.ably-realtime.com" };
     private static final String TEST_SERVER_HOST = "localhost";
     private static final int TEST_SERVER_PORT = 27331;
+    private static final PlatformAgentProvider platformAgentProvider = new EmptyPlatformAgentProvider();
 
     @Rule
     public Timeout testTimeout = Timeout.seconds(60);
@@ -118,7 +121,7 @@ public class HttpTest {
         /*
          * Extend the httpCore, so that we can capture provided url arguments without mocking and changing its organic behavior.
          */
-        HttpCore httpCore = new HttpCore(options, null) {
+        HttpCore httpCore = new HttpCore(options, null, platformAgentProvider) {
             /* Store only string representations to avoid try/catch blocks */
             List<String> urlArgumentStack;
 
@@ -183,7 +186,7 @@ public class HttpTest {
 
         ArrayList<String> urlHostArgumentStack = new ArrayList<>();
 
-        HttpCore httpCore = new HttpCore(options, null) {
+        HttpCore httpCore = new HttpCore(options, null, platformAgentProvider) {
             List<String> urlArgumentStack;
 
             @Override
@@ -243,7 +246,7 @@ public class HttpTest {
         options.fallbackRetryTimeout = 100;
         AblyRest ably = new AblyRest(options);
 
-        HttpCore httpCore = Mockito.spy(new HttpCore(ably.options, ably.auth));
+        HttpCore httpCore = Mockito.spy(new HttpCore(ably.options, ably.auth, platformAgentProvider));
 
         String responseExpected = "Lorem Ipsum";
         ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
@@ -332,7 +335,7 @@ public class HttpTest {
         options.restHost = fakeHost;
         AblyRest ably = new AblyRest(options);
 
-        HttpCore httpCore = Mockito.spy(new HttpCore(ably.options, ably.auth));
+        HttpCore httpCore = Mockito.spy(new HttpCore(ably.options, ably.auth, platformAgentProvider));
 
         String responseExpected = "Lorem Ipsum";
         ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
@@ -428,7 +431,7 @@ public class HttpTest {
         options.fallbackHosts = new String[0];
         AblyRest ably = new AblyRest(options);
 
-        HttpCore httpCore = Mockito.spy(new HttpCore(ably.options, ably.auth));
+        HttpCore httpCore = Mockito.spy(new HttpCore(ably.options, ably.auth, platformAgentProvider));
 
         String responseExpected = "Lorem Ipsum";
         ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
@@ -508,7 +511,7 @@ public class HttpTest {
         int expectedCallCount = options.httpMaxRetryCount + 1;
         AblyRest ably = new AblyRest(options);
 
-        HttpCore httpCore = Mockito.spy(new HttpCore(ably.options, ably.auth));
+        HttpCore httpCore = Mockito.spy(new HttpCore(ably.options, ably.auth, platformAgentProvider));
 
         String responseExpected = "Lorem Ipsum";
         ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
@@ -581,7 +584,7 @@ public class HttpTest {
 
         ArrayList<String> urlHostArgumentStack = new ArrayList<>();
 
-        HttpCore httpCore = new HttpCore(options, null) {
+        HttpCore httpCore = new HttpCore(options, null, platformAgentProvider) {
             /* Store only string representations to avoid try/catch blocks */
             List<String> urlArgumentStack;
 
@@ -643,7 +646,7 @@ public class HttpTest {
      */
     @Test
     public void http_execute_nofallback() throws Exception {
-        HttpCore httpCore = Mockito.spy(new HttpCore(new ClientOptions(), null));
+        HttpCore httpCore = Mockito.spy(new HttpCore(new ClientOptions(), null, platformAgentProvider));
 
         String responseExpected = "Lorem Ipsum";
         String hostExpected = Defaults.HOST_REST;
@@ -706,7 +709,7 @@ public class HttpTest {
      */
     @Test
     public void http_execute_singlefallback() throws Exception {
-        HttpCore httpCore = Mockito.spy(new HttpCore(new ClientOptions(), null));
+        HttpCore httpCore = Mockito.spy(new HttpCore(new ClientOptions(), null, platformAgentProvider));
 
         String hostExpectedPattern = PATTERN_HOST_FALLBACK;
         String responseExpected = "Lorem Ipsum";
@@ -777,7 +780,7 @@ public class HttpTest {
      */
     @Test
     public void http_execute_multiplefallback() throws Exception {
-        HttpCore httpCore = Mockito.spy(new HttpCore(new ClientOptions(), null));
+        HttpCore httpCore = Mockito.spy(new HttpCore(new ClientOptions(), null, platformAgentProvider));
 
         String hostExpectedPattern = PATTERN_HOST_FALLBACK;
         String responseExpected = "Lorem Ipsum";
@@ -857,7 +860,7 @@ public class HttpTest {
     public void http_execute_fallback_success_timeout_unexpired() throws Exception {
         ClientOptions opts = new ClientOptions();
         opts.fallbackRetryTimeout = 2000L;
-        HttpCore httpCore = Mockito.spy(new HttpCore(opts, null));
+        HttpCore httpCore = Mockito.spy(new HttpCore(opts, null, platformAgentProvider));
 
         String hostExpected = Defaults.HOST_REST;
         ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
@@ -944,7 +947,7 @@ public class HttpTest {
     public void http_execute_fallback_failure_timeout_unexpired() throws Exception {
         ClientOptions opts = new ClientOptions();
         opts.fallbackRetryTimeout = 2000L;
-        HttpCore httpCore = Mockito.spy(new HttpCore(opts, null));
+        HttpCore httpCore = Mockito.spy(new HttpCore(opts, null, platformAgentProvider));
 
         String primaryHost = Defaults.HOST_REST;
         ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
@@ -1035,7 +1038,7 @@ public class HttpTest {
     public void http_execute_fallback_timeout_expired() throws Exception {
         ClientOptions opts = new ClientOptions();
         opts.fallbackRetryTimeout = 2000L;
-        HttpCore httpCore = Mockito.spy(new HttpCore(opts, null));
+        HttpCore httpCore = Mockito.spy(new HttpCore(opts, null, platformAgentProvider));
 
         String hostExpected = Defaults.HOST_REST;
         ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
@@ -1119,7 +1122,7 @@ public class HttpTest {
     @Test
     public void http_execute_excessivefallback() throws AblyException {
         ClientOptions options = new ClientOptions();
-        HttpCore httpCore = Mockito.spy(new HttpCore(options, null));
+        HttpCore httpCore = Mockito.spy(new HttpCore(options, null, platformAgentProvider));
 
         ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
         int excessiveFallbackCount = options.httpMaxRetryCount + 1;
@@ -1175,7 +1178,7 @@ public class HttpTest {
     @Test
     public void http_execute_response_50x() throws AblyException, MalformedURLException {
         URL url;
-        HttpCore httpCore = new HttpCore(new ClientOptions(), null);
+        HttpCore httpCore = new HttpCore(new ClientOptions(), null, platformAgentProvider);
 
         AblyException.HostFailedException hfe;
 
@@ -1210,7 +1213,7 @@ public class HttpTest {
     @Test
     public void http_execute_response_non5xx() throws AblyException, MalformedURLException {
         URL url;
-        HttpCore httpCore = new HttpCore(new ClientOptions(), null);
+        HttpCore httpCore = new HttpCore(new ClientOptions(), null, platformAgentProvider);
 
         /* Informational 1xx */
 

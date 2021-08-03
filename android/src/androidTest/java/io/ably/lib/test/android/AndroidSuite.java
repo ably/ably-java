@@ -64,7 +64,7 @@ public class AndroidSuite {
             Map<String, String> headers = server.getHeaders();
 
             assertNotNull("Verify ably server was reached", headers);
-            String header = headers.get(Defaults.ABLY_LIB_HEADER.toLowerCase());
+            String header = headers.get(Defaults.ABLY_AGENT_HEADER.toLowerCase());
             assertTrue("Verify correct library header was passed to the server", header != null && header.startsWith("android"));
         }
         catch (AblyException e) {
