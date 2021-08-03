@@ -21,23 +21,23 @@ public class EventTest {
     public void events_subclasses_correctly_constructed_by_name() throws ClassNotFoundException, InstantiationException {
 
         CalledActivate calledActivateEvent = new CalledActivate();
-        Event calledActivateReconstructed = Event.constructEventByName(calledActivateEvent.getName());
+        Event calledActivateReconstructed = Event.constructEventByName(calledActivateEvent.getPersistedName());
         assertEquals(calledActivateEvent.getClass(), calledActivateReconstructed.getClass());
 
         CalledDeactivate calledDeactivateEvent = new CalledDeactivate();
-        Event calledDeactivateReconstructed = Event.constructEventByName(calledDeactivateEvent.getName());
+        Event calledDeactivateReconstructed = Event.constructEventByName(calledDeactivateEvent.getPersistedName());
         assertEquals(calledDeactivateEvent.getClass(), calledDeactivateReconstructed.getClass());
 
         GotPushDeviceDetails gotPushDeviceDetailsEvent = new GotPushDeviceDetails();
-        Event gotPushDeviceDetailsReconstructed = Event.constructEventByName(gotPushDeviceDetailsEvent.getName());
+        Event gotPushDeviceDetailsReconstructed = Event.constructEventByName(gotPushDeviceDetailsEvent.getPersistedName());
         assertEquals(gotPushDeviceDetailsEvent.getClass(), gotPushDeviceDetailsReconstructed.getClass());
 
         RegistrationSynced registrationSyncedEvent = new RegistrationSynced();
-        Event registrationSyncedReconstructed = Event.constructEventByName(registrationSyncedEvent.getName());
+        Event registrationSyncedReconstructed = Event.constructEventByName(registrationSyncedEvent.getPersistedName());
         assertEquals(registrationSyncedEvent.getClass(), registrationSyncedReconstructed.getClass());
 
         Deregistered DeregisteredEvent = new Deregistered();
-        Event DeregisteredReconstructed = Event.constructEventByName(DeregisteredEvent.getName());
+        Event DeregisteredReconstructed = Event.constructEventByName(DeregisteredEvent.getPersistedName());
         assertEquals(DeregisteredEvent.getClass(), DeregisteredReconstructed.getClass());
     }
 
@@ -45,35 +45,35 @@ public class EventTest {
     public void events_with_constructor_parameter_cannot_be_restored() {
         GotDeviceRegistration gotDeviceRegistration = new GotDeviceRegistration(null);
         try{
-            Event.constructEventByName(gotDeviceRegistration.getName());
+            Event.constructEventByName(gotDeviceRegistration.getPersistedName());
         } catch (Exception e) {
             assertEquals(InstantiationException.class, e.getClass());
         }
 
         GettingDeviceRegistrationFailed gettingDeviceRegistrationFailed = new GettingDeviceRegistrationFailed(null);
         try {
-            Event.constructEventByName(gettingDeviceRegistrationFailed.getName());
+            Event.constructEventByName(gettingDeviceRegistrationFailed.getPersistedName());
         } catch (Exception e) {
             assertEquals(InstantiationException.class, e.getClass());
         }
 
         GettingPushDeviceDetailsFailed gettingPushDeviceDetailsFailed = new GettingPushDeviceDetailsFailed(null);
         try {
-            Event.constructEventByName(gettingPushDeviceDetailsFailed.getName());
+            Event.constructEventByName(gettingPushDeviceDetailsFailed.getPersistedName());
         } catch (Exception e) {
             assertEquals(InstantiationException.class, e.getClass());
         }
 
         SyncRegistrationFailed syncRegistrationFailed = new SyncRegistrationFailed(null);
         try {
-            Event.constructEventByName(syncRegistrationFailed.getName());
+            Event.constructEventByName(syncRegistrationFailed.getPersistedName());
         } catch (Exception e) {
             assertEquals(InstantiationException.class, e.getClass());
         }
 
         DeregistrationFailed deregistrationFailed = new DeregistrationFailed(null);
         try {
-            Event.constructEventByName(deregistrationFailed.getName());
+            Event.constructEventByName(deregistrationFailed.getPersistedName());
         } catch (Exception e) {
             assertEquals(InstantiationException.class, e.getClass());
         }

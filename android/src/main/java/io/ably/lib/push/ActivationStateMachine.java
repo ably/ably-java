@@ -40,7 +40,7 @@ public class ActivationStateMachine {
         }
 
         @Override
-        public String getName() {
+        public String getPersistedName() {
             return NAME;
         }
     }
@@ -54,7 +54,7 @@ public class ActivationStateMachine {
         }
 
         @Override
-        public String getName() {
+        public String getPersistedName() {
             return NAME;
         }
     }
@@ -63,122 +63,82 @@ public class ActivationStateMachine {
         public static final String NAME = "GotPushDeviceDetails";
 
         @Override
-        public String getName() {
+        public String getPersistedName() {
             return NAME;
         }
     }
 
     public static class GotDeviceRegistration extends ActivationStateMachine.Event {
-        private static final String NAME = "GotDeviceRegistration";
         final String deviceIdentityToken;
         public GotDeviceRegistration(String token) { this.deviceIdentityToken = token; }
-
-        @Override
-        public String getName() {
-            return NAME;
-        }
     }
 
     public static class GettingDeviceRegistrationFailed extends ActivationStateMachine.ErrorEvent {
-        private static final String NAME = "GettingDeviceRegistrationFailed";
-
         public GettingDeviceRegistrationFailed(ErrorInfo reason) { super(reason); }
-
-        @Override
-        public String getName() {
-            return NAME;
-        }
     }
 
     public static class GettingPushDeviceDetailsFailed extends ActivationStateMachine.ErrorEvent {
-        private static final String NAME = "GettingPushDeviceDetailsFailed";
-
         public GettingPushDeviceDetailsFailed(ErrorInfo reason) { super(reason); }
-
-        @Override
-        public String getName() {
-            return NAME;
-        }
     }
 
     public static class RegistrationSynced extends ActivationStateMachine.Event {
         public static final String NAME = "RegistrationSynced";
 
         @Override
-        public String getName() {
+        public String getPersistedName() {
             return NAME;
         }
     }
 
     public static class SyncRegistrationFailed extends ActivationStateMachine.ErrorEvent {
-        private static final String NAME = "SyncRegistrationFailed";
-
         public SyncRegistrationFailed(ErrorInfo reason) { super(reason); }
-
-        @Override
-        public String getName() {
-            return NAME;
-        }
     }
 
     public static class Deregistered extends ActivationStateMachine.Event {
         public static final String NAME = "Deregistered";
 
         @Override
-        public String getName() {
+        public String getPersistedName() {
             return NAME;
         }
     }
 
     public static class DeregistrationFailed extends ActivationStateMachine.ErrorEvent {
-        private static final String NAME = "DeregistrationFailed";
-
         public DeregistrationFailed(ErrorInfo reason) { super(reason); }
-
-        @Override
-        public String getName() {
-            return NAME;
-        }
     }
 
     public abstract static class Event {
-        public abstract String getName();
+        /**
+         * The name to be used when persisting this class, or null if this class should not be persisted.
+         */
+        public String getPersistedName() {
+            return null;
+        }
 
-        public static Event constructEventByName(String className) throws ClassNotFoundException, InstantiationException {
-            ActivationStateMachine.Event event;
-
+        /**
+         * @param className The name of the class to rehydrate.
+         * @return A new Event instance, or null if className is not supported.
+         */
+        public static Event constructEventByName(String className) {
             switch (className) {
                 case CalledActivate.NAME:
-                    event = new CalledActivate();
-                    break;
-                case CalledDeactivate.NAME:
-                    event = new CalledDeactivate();
-                    break;
-                case GotPushDeviceDetails.NAME:
-                    event = new GotPushDeviceDetails();
-                    break;
-                case RegistrationSynced.NAME:
-                    event = new RegistrationSynced();
-                    break;
-                case Deregistered.NAME:
-                    event = new Deregistered();
-                    break;
+                    return new CalledActivate();
 
-                // We aren't properly persisting events with a non-nullary constructor. Those events
-                // are supposed to be handled by states that aren't persisted (until
-                // https://github.com/ably/ably-java/issues/546 is fixed), so it should be safe to
-                // just drop them.
-                case "GotDeviceRegistration":
-                case "GettingDeviceRegistrationFailed":
-                case "GettingPushDeviceDetailsFailed":
-                case "SyncRegistrationFailed":
-                case "DeregistrationFailed":
-                case "ErrorEvent":
-                    throw new InstantiationException(String.format("%s has non-nullary constructor", className));
-                default:
-                    throw new ClassNotFoundException(String.format("%s class cannot be found", className));
+                case CalledDeactivate.NAME:
+                    return new CalledDeactivate();
+
+                case GotPushDeviceDetails.NAME:
+                    return new GotPushDeviceDetails();
+
+                case RegistrationSynced.NAME:
+                    return new RegistrationSynced();
+
+                case Deregistered.NAME:
+                    return new Deregistered();
             }
-            return event;
+
+            // the class name provided was not recognised
+            return null;
         }
     }
 
@@ -742,11 +702,13 @@ public class ActivationStateMachine {
         editor.putInt(ActivationStateMachine.PersistKeys.PENDING_EVENTS_LENGTH, pendingEvents.size());
         int i = 0;
         for (ActivationStateMachine.Event e : pendingEvents) {
-            editor.putString(
+            final String name = e.getPersistedName();
+            if (name != null) {
+                editor.putString(
                     String.format("%s[%d]", ActivationStateMachine.PersistKeys.PENDING_EVENTS_PREFIX, i),
-                    e.getName()
-            );
-
+                    name
+                );
+            }
             i++;
         }
 
@@ -775,15 +737,15 @@ public class ActivationStateMachine {
         int length = activationContext.getPreferences().getInt(ActivationStateMachine.PersistKeys.PENDING_EVENTS_LENGTH, 0);
         ArrayDeque<ActivationStateMachine.Event> deque = new ArrayDeque<>(length);
         for (int i = 0; i < length; i++) {
-            try {
-                String className = activationContext.getPreferences().getString(String.format("%s[%d]", ActivationStateMachine.PersistKeys.PENDING_EVENTS_PREFIX, i), "");
-                ActivationStateMachine.Event event = Event.constructEventByName(className);
+            String className = activationContext.getPreferences().getString(String.format("%s[%d]", ActivationStateMachine.PersistKeys.PENDING_EVENTS_PREFIX, i), "");
+            ActivationStateMachine.Event event = Event.constructEventByName(className);
+            if (event != null) {
                 deque.add(event);
-            } catch (ClassNotFoundException e) {
-                Log.e(TAG, e.getLocalizedMessage());
-            } catch (InstantiationException e) {
-                Log.e(TAG, e.getLocalizedMessage());
-                continue;
+            } else {
+                // This is likely to be a difference between builds of the SDK. Perhaps related to obfuscated event
+                // names having been previously persisted on this device. See:
+                // https://github.com/ably/ably-java/issues/686
+                Log.w(TAG, "Failed to construct push activation state machine event from persisted class name '" + className + "'.");
             }
         }
         return deque;
