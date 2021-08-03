@@ -32,7 +32,7 @@ import java.util.ArrayDeque;
 
 public class ActivationStateMachine {
     public static class CalledActivate extends ActivationStateMachine.Event {
-        private static final String NAME = "CalledActivate";
+        public static final String NAME = "CalledActivate";
 
         public static ActivationStateMachine.CalledActivate useCustomRegistrar(boolean useCustomRegistrar, SharedPreferences prefs) {
             prefs.edit().putBoolean(ActivationStateMachine.PersistKeys.PUSH_CUSTOM_REGISTRAR, useCustomRegistrar).apply();
@@ -46,7 +46,7 @@ public class ActivationStateMachine {
     }
 
     public static class CalledDeactivate extends ActivationStateMachine.Event {
-        private static final String NAME = "CalledDeactivate";
+        public static final String NAME = "CalledDeactivate";
 
         static ActivationStateMachine.CalledDeactivate useCustomRegistrar(boolean useCustomRegistrar, SharedPreferences prefs) {
             prefs.edit().putBoolean(ActivationStateMachine.PersistKeys.PUSH_CUSTOM_REGISTRAR, useCustomRegistrar).apply();
@@ -60,7 +60,7 @@ public class ActivationStateMachine {
     }
 
     public static class GotPushDeviceDetails extends ActivationStateMachine.Event {
-        private static final String NAME = "GotPushDeviceDetails";
+        public static final String NAME = "GotPushDeviceDetails";
 
         @Override
         public String getName() {
@@ -102,7 +102,7 @@ public class ActivationStateMachine {
     }
 
     public static class RegistrationSynced extends ActivationStateMachine.Event {
-        private static final String NAME = "RegistrationSynced";
+        public static final String NAME = "RegistrationSynced";
 
         @Override
         public String getName() {
@@ -122,7 +122,7 @@ public class ActivationStateMachine {
     }
 
     public static class Deregistered extends ActivationStateMachine.Event {
-        private static final String NAME = "Deregistered";
+        public static final String NAME = "Deregistered";
 
         @Override
         public String getName() {
@@ -148,19 +148,19 @@ public class ActivationStateMachine {
             ActivationStateMachine.Event event;
 
             switch (className) {
-                case "CalledActivate":
+                case CalledActivate.NAME:
                     event = new CalledActivate();
                     break;
-                case "CalledDeactivate":
+                case CalledDeactivate.NAME:
                     event = new CalledDeactivate();
                     break;
-                case "GotPushDeviceDetails":
+                case GotPushDeviceDetails.NAME:
                     event = new GotPushDeviceDetails();
                     break;
-                case "RegistrationSynced":
+                case RegistrationSynced.NAME:
                     event = new RegistrationSynced();
                     break;
-                case "Deregistered":
+                case Deregistered.NAME:
                     event = new Deregistered();
                     break;
 
