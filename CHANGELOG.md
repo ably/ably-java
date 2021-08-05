@@ -1,5 +1,42 @@
 # Change Log
 
+## [v1.2.7](https://github.com/ably/ably-java/tree/v1.2.7)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.6...v1.2.7)
+
+**Implemented enhancements:**
+
+- Implement RSC7d \(Ably-Agent header\) [\#665](https://github.com/ably/ably-java/issues/665)
+- Conform toString\(\) implementations [\#631](https://github.com/ably/ably-java/issues/631)
+
+**Fixed bugs:**
+
+- Remove use of forClass method in push activation state machine implementation [\#686](https://github.com/ably/ably-java/issues/686)
+- Race condition releasing short lived channels [\#570](https://github.com/ably/ably-java/issues/570)
+- Using a clientId should no longer be forcing token auth in the 1.1 spec [\#473](https://github.com/ably/ably-java/issues/473)
+- Ensure correct feedback to developer when malformed key is supplied [\#382](https://github.com/ably/ably-java/issues/382)
+
+**Closed issues:**
+
+- Fail connection immediately if authorize\(\) called and 403 returned [\#620](https://github.com/ably/ably-java/issues/620)
+- FCM getToken method is deprecated [\#597](https://github.com/ably/ably-java/issues/597)
+- Support for encryption of shared preferences [\#593](https://github.com/ably/ably-java/issues/593)
+- RSC7c TI1 addRequestIds on ClientOptions and requestId on ErrorInfo [\#574](https://github.com/ably/ably-java/issues/574)
+
+**Merged pull requests:**
+
+- Increase minimum SDK version to Android 4.1 \(Jelly Bean, API Level 16\) [\#691](https://github.com/ably/ably-java/pull/691) ([KacperKluka](https://github.com/KacperKluka))
+- Throws exception when AuthOptions are initialized with an empty string [\#690](https://github.com/ably/ably-java/pull/690) ([martin-morek](https://github.com/martin-morek))
+- Removed forName method  [\#689](https://github.com/ably/ably-java/pull/689) ([martin-morek](https://github.com/martin-morek))
+- Updated Firebase cloud messaging dependency [\#687](https://github.com/ably/ably-java/pull/687) ([martin-morek](https://github.com/martin-morek))
+- Unified custom toString\(\) method implementations to use curly bracket… [\#683](https://github.com/ably/ably-java/pull/683) ([martin-morek](https://github.com/martin-morek))
+- Support for encryption of shared preferences [\#681](https://github.com/ably/ably-java/pull/681) ([martin-morek](https://github.com/martin-morek))
+- Add request\_id query param if addRequestIds is enabled [\#678](https://github.com/ably/ably-java/pull/678) ([martin-morek](https://github.com/martin-morek))
+- Using a clientId should no longer be forcing token auth [\#675](https://github.com/ably/ably-java/pull/675) ([martin-morek](https://github.com/martin-morek))
+- Checking if error code is 403 and failing connection [\#672](https://github.com/ably/ably-java/pull/672) ([martin-morek](https://github.com/martin-morek))
+- Add Ably-Agent header [\#671](https://github.com/ably/ably-java/pull/671) ([KacperKluka](https://github.com/KacperKluka))
+- Changing Capability.addResource\(\) to take varargs as last parameter [\#664](https://github.com/ably/ably-java/pull/664) ([Thunderforge](https://github.com/Thunderforge))
+
 ## [v1.2.6](https://github.com/ably/ably-java/tree/v1.2.6)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.5...v1.2.6)
