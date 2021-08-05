@@ -1,18 +1,28 @@
 package io.ably.lib.push;
 
 import android.content.Context;
-import android.test.AndroidTestCase;
+import android.support.test.runner.AndroidJUnit4;
 import io.ably.lib.types.RegistrationToken;
 import junit.extensions.TestSetup;
 import junit.framework.TestSuite;
 import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
 
-public class LocalDeviceStorageTest extends AndroidTestCase {
-    private Context context;
-    private ActivationContext activationContext;
+import static android.support.test.InstrumentationRegistry.getContext;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
+@RunWith(AndroidJUnit4.class)
+public class LocalDeviceStorageTest {
+    private static Context context;
+    private static ActivationContext activationContext;
 
 
     private HashMap<String, Object> hashMap = new HashMap<>();
@@ -47,17 +57,12 @@ public class LocalDeviceStorageTest extends AndroidTestCase {
     };
 
     @BeforeClass
-    public void setUp() {
+    public static void setUp() {
         context = getContext();
         activationContext = new ActivationContext(context.getApplicationContext());
     }
 
-    public static junit.framework.Test suite() {
-        TestSuite suite = new TestSuite();
-        suite.addTest(new TestSetup(new TestSuite(LocalDeviceStorageTest.class)) {});
-        return suite;
-    }
-
+    @Test
     public void test_shared_preferences_storage_used_by_default() {
         LocalDevice localDevice = new LocalDevice(activationContext, null);
         /* initialize properties in storage */
@@ -71,6 +76,7 @@ public class LocalDeviceStorageTest extends AndroidTestCase {
         assertNotNull(localDevice.deviceSecret);
     }
 
+    @Test
     public void test_shared_preferences_storage_works_correctly() {
         LocalDevice localDevice = new LocalDevice(activationContext, null);
 
@@ -98,6 +104,7 @@ public class LocalDeviceStorageTest extends AndroidTestCase {
         assertNull(localDevice.getRegistrationToken());
     }
 
+    @Test
     public void test_custom_storage_used_if_provided() {
         LocalDevice localDevice = new LocalDevice(activationContext, inMemoryStorage);
         /* initialize properties in storage */
@@ -118,6 +125,7 @@ public class LocalDeviceStorageTest extends AndroidTestCase {
         assertEquals(deviceSecret, hashMap.get("ABLY_DEVICE_SECRET"));
     }
 
+    @Test
     public void test_custom_storage_works_correctly() {
         LocalDevice localDevice = new LocalDevice(activationContext, inMemoryStorage);
 
