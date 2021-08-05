@@ -2,11 +2,10 @@ buildscript {
     repositories {
         mavenCentral()
         mavenLocal()
-        jcenter()
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.2.1'
+        classpath 'com.android.tools.build:gradle:4.1.0'
     }
 }
 
@@ -19,14 +18,12 @@ ext {
 
 allprojects {
     repositories {
-        jcenter()
         google()
     }
 }
 
 android {
-    compileSdkVersion 22
-    buildToolsVersion '28.0.3'
+    compileSdkVersion 30
 
     defaultConfig {
         buildConfigField 'String', 'LIBRARY_NAME', '"android"'

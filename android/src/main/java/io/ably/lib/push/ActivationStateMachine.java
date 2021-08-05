@@ -7,7 +7,6 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-import android.support.v4.content.LocalBroadcastManager;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.ably.lib.http.Http;
