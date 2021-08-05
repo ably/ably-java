@@ -23,7 +23,7 @@ allprojects {
 }
 
 android {
-    compileSdkVersion 24
+    compileSdkVersion 30
 
     defaultConfig {
         buildConfigField 'String', 'LIBRARY_NAME', '"android"'
