@@ -6,10 +6,6 @@ plugins {
     id 'groovy'
 }
 
-repositories {
-    jcenter()
-}
-
 sourceSets {
     // delegate: https://docs.gradle.org/current/javadoc/org/gradle/api/tasks/SourceSetContainer.html
     // a.k.a. NamedDomainObjectContainer<SourceSet>
