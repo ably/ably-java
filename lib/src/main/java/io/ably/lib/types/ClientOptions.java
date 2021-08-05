@@ -1,5 +1,6 @@
 package io.ably.lib.types;
 
+import io.ably.lib.push.Storage;
 import io.ably.lib.rest.Auth.AuthOptions;
 import io.ably.lib.rest.Auth.TokenParams;
 import io.ably.lib.transport.Defaults;
@@ -195,6 +196,12 @@ public class ClientOptions extends AuthOptions {
      * before responding.
      */
     public boolean pushFullWait = false;
+
+    /**
+     * Custom Local Device storage. In the case nothing is provided then a default implementation
+     * using SharedPreferences is used.
+     */
+    public Storage localStorage = null;
 
     /**
      If enabled, every REST request to Ably includes a `request_id` query string parameter. This request ID
