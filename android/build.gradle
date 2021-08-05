@@ -24,7 +24,6 @@ allprojects {
 
 android {
     compileSdkVersion 24
-    buildToolsVersion '28.0.3'
 
     defaultConfig {
         buildConfigField 'String', 'LIBRARY_NAME', '"android"'
