@@ -61,6 +61,10 @@ For Android, 4.1 (API level 16) or later is required.
 
 This library targets the Ably 1.2 client library specification and supports [all principal 1.2 features](https://www.ably.io/download/sdk-feature-support-matrix).
 
+## Known limitations
+
+There are no recorded limitations for this client library SDK.
+
 ## Using the Realtime API
 
 ### Introduction
