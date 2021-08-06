@@ -63,7 +63,7 @@ public class LocalDeviceStorageTest {
     }
 
     @Test
-    public void test_shared_preferences_storage_used_by_default() {
+    public void shared_preferences_storage_used_by_default() {
         LocalDevice localDevice = new LocalDevice(activationContext, null);
         /* initialize properties in storage */
         localDevice.create();
@@ -77,7 +77,7 @@ public class LocalDeviceStorageTest {
     }
 
     @Test
-    public void test_shared_preferences_storage_works_correctly() {
+    public void shared_preferences_storage_works_correctly() {
         LocalDevice localDevice = new LocalDevice(activationContext, null);
 
         RegistrationToken registrationToken= new RegistrationToken(RegistrationToken.Type.FCM, "ABLY");
@@ -105,7 +105,7 @@ public class LocalDeviceStorageTest {
     }
 
     @Test
-    public void test_custom_storage_used_if_provided() {
+    public void custom_storage_used_if_provided() {
         LocalDevice localDevice = new LocalDevice(activationContext, inMemoryStorage);
         /* initialize properties in storage */
         localDevice.create();
@@ -126,7 +126,7 @@ public class LocalDeviceStorageTest {
     }
 
     @Test
-    public void test_custom_storage_works_correctly() {
+    public void custom_storage_works_correctly() {
         LocalDevice localDevice = new LocalDevice(activationContext, inMemoryStorage);
 
         RegistrationToken registrationToken= new RegistrationToken(RegistrationToken.Type.FCM, "ABLY");
