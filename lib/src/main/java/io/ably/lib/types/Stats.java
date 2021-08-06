@@ -89,6 +89,12 @@ public class Stats {
         public Map<String, ProcessedCount> delta;
     }
 
+    public static class PushedMessages {
+        public int messages;
+        public Map<String, Integer> notifications;
+        public int directPublishes;
+    }
+
     public enum Granularity {
         minute,
         hour,
@@ -117,6 +123,8 @@ public class Stats {
 
     public String intervalId;
     public String unit;
+    public int count;
+    public String inProgress;
     public MessageTypes all;
     public MessageTraffic inbound;
     public MessageTraffic outbound;
@@ -125,5 +133,5 @@ public class Stats {
     public ResourceCount channels;
     public RequestCount apiRequests;
     public RequestCount tokenRequests;
-    public ProcessedMessages processed;
+    public PushedMessages push;
 }
