@@ -17,6 +17,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 
 import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import org.java_websocket.framing.CloseFrame;
 import org.java_websocket.framing.Framedata;
 import org.java_websocket.handshake.ServerHandshake;
@@ -112,7 +113,12 @@ public class WebSocketTransport implements ITransport {
                     Log.v(TAG, "send(): " + new String(ProtocolSerializer.writeJSON(msg)));
                 wsConnection.send(ProtocolSerializer.writeJSON(msg));
             }
-        } catch (Exception e) {
+        }
+        catch (WebsocketNotConnectedException e){
+            AblyException ablyException = AblyException.fromThrowable(e);
+            connectListener.onTransportUnavailable(this, ablyException.errorInfo);
+        }
+        catch (Exception e) {
             throw AblyException.fromThrowable(e);
         }
     }
