@@ -1456,9 +1456,9 @@ public class AndroidPushTest {
             }
         });
 
-        // Since the event doesn't have a nullary constructor, it should be dropped.
         assertInstanceOf(NotActivated.class, activation.machine.current);
-        assertSize(0, activation.machine.pendingEvents);
+        // Since the event doesn't have a nullary constructor, it should be dropped.
+        assertEquals(0, activation.machine.pendingEvents.stream().filter(e -> e instanceof SyncRegistrationFailed).count());
     }
 
     // This is all copied and pasted from ParameterizedTest, since I can't inherit from it.
