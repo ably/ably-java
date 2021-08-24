@@ -204,6 +204,25 @@ If you are interested with specific events, it is possible with providing extra 
 channel.on(ChannelState.attached, listener);
 ```
 
+#### Use of authCallback
+
+Callback that provides either tokens, or signed token requests, in response to a request with given token params.
+
+```java
+ClientOptions options = new ClientOptions();
+    
+    options.authCallback = new Auth.TokenCallback() {
+        @Override
+            public Object getTokenRequest(Auth.TokenParams params) {
+                System.out.println("Token Parms: " + parms);
+                // process parms and return what is needed
+                return null;
+            }
+        };
+
+AblyRealtime ablyRealtime = new AblyRealtime(options);
+```
+
 ### Using the REST API
 
 The examples below assume a client and/or channel has been created as follows:
