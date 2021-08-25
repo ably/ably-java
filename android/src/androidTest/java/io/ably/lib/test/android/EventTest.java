@@ -14,6 +14,7 @@ import io.ably.lib.push.ActivationStateMachine.DeregistrationFailed;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class EventTest {
 
@@ -42,45 +43,16 @@ public class EventTest {
     }
 
     @Test
-    public void events_with_constructor_parameter_cannot_be_restored() {
-        GotDeviceRegistration gotDeviceRegistration = new GotDeviceRegistration(null);
-        try{
-            Event.constructEventByName(gotDeviceRegistration.getPersistedName());
-        } catch (Exception e) {
-            assertEquals(InstantiationException.class, e.getClass());
-        }
-
-        GettingDeviceRegistrationFailed gettingDeviceRegistrationFailed = new GettingDeviceRegistrationFailed(null);
-        try {
-            Event.constructEventByName(gettingDeviceRegistrationFailed.getPersistedName());
-        } catch (Exception e) {
-            assertEquals(InstantiationException.class, e.getClass());
-        }
-
-        GettingPushDeviceDetailsFailed gettingPushDeviceDetailsFailed = new GettingPushDeviceDetailsFailed(null);
-        try {
-            Event.constructEventByName(gettingPushDeviceDetailsFailed.getPersistedName());
-        } catch (Exception e) {
-            assertEquals(InstantiationException.class, e.getClass());
-        }
-
-        SyncRegistrationFailed syncRegistrationFailed = new SyncRegistrationFailed(null);
-        try {
-            Event.constructEventByName(syncRegistrationFailed.getPersistedName());
-        } catch (Exception e) {
-            assertEquals(InstantiationException.class, e.getClass());
-        }
-
-        DeregistrationFailed deregistrationFailed = new DeregistrationFailed(null);
-        try {
-            Event.constructEventByName(deregistrationFailed.getPersistedName());
-        } catch (Exception e) {
-            assertEquals(InstantiationException.class, e.getClass());
-        }
+    public void events_with_constructor_parameter_do_not_have_persisted_name() {
+        assertNull(new GotDeviceRegistration(null).getPersistedName());
+        assertNull(new GettingDeviceRegistrationFailed(null).getPersistedName());
+        assertNull(new GettingPushDeviceDetailsFailed(null).getPersistedName());
+        assertNull(new SyncRegistrationFailed(null).getPersistedName());
+        assertNull(new DeregistrationFailed(null).getPersistedName());
     }
 
-    @Test(expected = ClassNotFoundException.class)
-    public void unknown_events_cannot_be_constructed_by_name() throws Exception {
-        Event.constructEventByName("notDefinedName");
+    @Test
+    public void unknown_events_cannot_be_constructed_by_name() {
+        assertNull(Event.constructEventByName("notDefinedName"));
     }
 }
