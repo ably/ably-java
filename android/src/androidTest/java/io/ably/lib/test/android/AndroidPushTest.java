@@ -30,13 +30,13 @@ import io.ably.lib.push.ActivationStateMachine.SyncRegistrationFailed;
 import io.ably.lib.rest.DeviceDetails;
 import io.ably.lib.types.*;
 import io.ably.lib.util.Base64Coder;
-import io.azam.ulidj.ULID;
 import junit.extensions.TestSetup;
 import junit.framework.TestSuite;
 
 import junit.framework.Test;
 
 import java.util.ArrayList;
+import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -1448,7 +1448,7 @@ public class AndroidPushTest extends AndroidTestCase {
             this.onGetRegistrationToken = new Helpers.AblyFunction<Callback<String>, Void>() {
                 @Override
                 public Void apply(Callback<String> callback) throws AblyException {
-                    callback.onSuccess(ULID.random());
+                    callback.onSuccess(UUID.randomUUID().toString());
                     return null;
                 }
             };

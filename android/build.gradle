@@ -79,7 +79,6 @@ tasks.withType(com.android.build.gradle.internal.tasks.AndroidTestTask) { task -
 }
 
 apply from: '../dependencies.gradle'
-apply from: './dependencies.gradle'
 dependencies {
     implementation 'com.google.firebase:firebase-messaging:22.0.0'
     androidTestImplementation 'com.android.support.test:runner:0.5'
