@@ -1415,24 +1415,6 @@ public class AndroidPushTest {
         assertInstanceOf(PushChannel.class, realtime.channels.get("test").push);
     }
 
-    @Test
-    public void push_AfterRegistrationUpdateFailed_migrate_to_AfterRegistrationSyncFailed() {
-        new TestActivation(); // Just for the side effect of clearing persisted state.
-
-        SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(getContext().getApplicationContext()).edit();
-        editor.putString(ActivationStateMachine.PersistKeys.CURRENT_STATE, "io.ably.lib.push.ActivationStateMachine$AfterRegistrationUpdateFailed");
-        assertTrue(editor.commit());
-
-        TestActivation activation = new TestActivation(new Helpers.AblyFunction<TestActivation.Options, Void>() {
-            @Override
-            public Void apply(TestActivation.Options options) throws AblyException {
-                options.clearPersisted = false;
-                return null;
-            }
-        });
-        assertInstanceOf(AfterRegistrationSyncFailed.class, activation.machine.current);
-    }
-
     // https://github.com/ably/ably-java/issues/598
     @Test
     public void restore_non_nullary_event() {
