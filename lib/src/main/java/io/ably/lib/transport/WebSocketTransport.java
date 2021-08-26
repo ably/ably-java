@@ -115,8 +115,10 @@ public class WebSocketTransport implements ITransport {
             }
         }
         catch (WebsocketNotConnectedException e){
-            AblyException ablyException = AblyException.fromThrowable(e);
-            connectListener.onTransportUnavailable(this, ablyException.errorInfo);
+            if(connectListener != null) {
+                connectListener.onTransportUnavailable(this, AblyException.fromThrowable(e).errorInfo);
+            } else
+                throw AblyException.fromThrowable(e);
         }
         catch (Exception e) {
             throw AblyException.fromThrowable(e);
