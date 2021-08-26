@@ -3,7 +3,9 @@
 ![.github/workflows/check.yml](https://github.com/ably/ably-java/workflows/.github/workflows/check.yml/badge.svg)
 ![.github/workflows/integration-test.yml](https://github.com/ably/ably-java/workflows/.github/workflows/integration-test.yml/badge.svg)
 
-A Java Realtime and REST client library for [Ably Realtime](https://www.ably.io), the realtime messaging and data delivery service. This library currently targets the [Ably client library features spec](https://www.ably.io/documentation/client-lib-development-guide/features/) Version 1.2. You can jump to the '[Known Limitations](#known-limitations)' section to see the features this client library does not yet support or [view our client library SDKs feature support matrix](https://www.ably.io/download/sdk-feature-support-matrix) to see the list of all the available features.
+_[Ably](https://ably.com) is the platform that powers synchronized digital experiences in realtime. Whether attending an event in a virtual venue, receiving realtime financial information, or monitoring live car performance data – consumers simply expect realtime digital experiences as standard. Ably provides a suite of APIs to build, extend, and deliver powerful digital experiences in realtime for more than 250 million devices across 80 countries each month. Organizations like Bloomberg, HubSpot, Verizon, and Hopin depend on Ably’s platform to offload the growing complexity of business-critical realtime data synchronization at global scale. For more information, see the [Ably documentation](https://ably.com/documentation)._
+
+This is a Java Realtime and REST client library for Ably. The library currently targets the [Ably client library features spec](https://www.ably.io/documentation/client-lib-development-guide/features/) Version 1.2. View the [features that this client library supports](#feature-support) and any [known limitations](#known-limitations).
 
 ## Supported Platforms
 
@@ -57,7 +59,11 @@ For Android, 4.1 (API level 16) or later is required.
 
 ## Feature support
 
-This library targets the Ably 1.2 client library specification and supports all principal 1.2 features.
+This library targets the Ably 1.2 client library specification and supports [all principal 1.2 features](https://www.ably.io/download/sdk-feature-support-matrix).
+
+## Known limitations
+
+There are no recorded limitations for this client library SDK.
 
 ## Using the Realtime API
 
