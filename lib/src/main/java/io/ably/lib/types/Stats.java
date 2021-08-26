@@ -133,5 +133,6 @@ public class Stats {
     public ResourceCount channels;
     public RequestCount apiRequests;
     public RequestCount tokenRequests;
+    public ProcessedMessages processed;
     public PushedMessages push;
 }
