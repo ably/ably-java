@@ -31,8 +31,6 @@ import io.ably.lib.rest.DeviceDetails;
 import io.ably.lib.types.*;
 import io.ably.lib.util.Base64Coder;
 
-import junit.framework.Test;
-
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
