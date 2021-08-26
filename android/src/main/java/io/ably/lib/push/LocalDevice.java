@@ -8,11 +8,11 @@ import io.ably.lib.types.Param;
 import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Log;
-import io.azam.ulidj.ULID;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.UUID;
 
 public class LocalDevice extends DeviceDetails {
     public String deviceSecret;
@@ -120,7 +120,7 @@ public class LocalDevice extends DeviceDetails {
     void create() {
         /* Spec: RSH8b */
         Log.v(TAG, "create()");
-        storage.put(SharedPrefKeys.DEVICE_ID, (id = ULID.random()));
+        storage.put(SharedPrefKeys.DEVICE_ID, (id = UUID.randomUUID().toString()));
         storage.put(SharedPrefKeys.CLIENT_ID, (clientId = activationContext.clientId));
         storage.put(SharedPrefKeys.DEVICE_SECRET, (deviceSecret = generateSecret()));
     }
