@@ -206,7 +206,7 @@ channel.on(ChannelState.attached, listener);
 
 #### Use of authCallback
 
-Callback that provides either tokens, or signed token requests, in response to a request with given token params.
+Callback that provides either tokens (`TokenDetails`), or signed token requests (`TokenRequest`), in response to a request with given token params.
 
 ```java
 ClientOptions options = new ClientOptions();
