@@ -118,9 +118,35 @@ Beyond specifying channel options, the rest is transparent and requires no furth
 If you would like to inspect the `Message` instances in order to identify whether the `data` they present was rendered from a delta message from Ably then you can see if `extras.getDelta().getFormat()` equals `"vcdiff"`.
 
 #### Publishing to a channel
+Data published to a channel (apart from strings or bytearrays) has to be instances of JsonElement to be encoded properly.
+
 
 ```java
+// Publishing message of type String
 channel.publish("greeting", "Hello World!", new CompletionListener() {
+	@Override
+	public void onSuccess() {
+		System.out.println("Message successfully sent");
+	}
+
+	@Override
+	public void onError(ErrorInfo reason) {
+		System.err.println("Unable to publish message; err = " + reason.message);
+	}
+});
+
+// Publishing message of type JsonElement
+JsonObject jsonElement = new JsonObject();
+
+Map<String, String> inputMap = new HashMap<String, String>();
+inputMap.put("name", "Joe");
+inputMap.put("surename", "Doe");
+
+for (Map.Entry<String, String> entry : inputMap.entrySet()) {
+    jsonElement.addProperty(entry.getKey(), entry.getValue());
+}
+
+channel.publish("greeting", message, new CompletionListener() {
 	@Override
 	public void onSuccess() {
 		System.out.println("Message successfully sent");
