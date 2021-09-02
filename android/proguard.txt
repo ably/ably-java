@@ -3,5 +3,4 @@
 -keep class org.msgpack.core.** {*;}
 -keepclasseswithmembers class io.ably.lib.rest.Auth** {*;}
 -keep class com.google.gson.** {*;}
--keep class io.azam.ulidj.** {*;}
 -dontwarn org.msgpack.core.buffer.**

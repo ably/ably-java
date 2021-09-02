@@ -1,5 +1,25 @@
 # Change Log
 
+## [v1.2.8](https://github.com/ably/ably-java/tree/v1.2.8)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.7...v1.2.8)
+
+**Implemented enhancements:**
+
+- Update Stats fields with latest MessageTraffic types [\#394](https://github.com/ably/ably-java/issues/394)
+- Replace ULID with Android's UUID [\#680](https://github.com/ably/ably-java/issues/680)
+
+**Fixed bugs:**
+
+- Push Activation State Machine exception handling needs improvement [\#685](https://github.com/ably/ably-java/issues/685)
+- WebsocketNotConnectedException on send [\#430](https://github.com/ably/ably-java/issues/430)
+
+**Merged pull requests:**
+
+- Replaced ULID with UUID for deviceID [\#702](https://github.com/ably/ably-java/pull/702) ([martin-morek](https://github.com/martin-morek))
+- Separate handling WebsocketNotConnectedException [\#701](https://github.com/ably/ably-java/pull/701) ([martin-morek](https://github.com/martin-morek))
+- Updated Stats fields with the latest MessageTraffic types [\#698](https://github.com/ably/ably-java/pull/698) ([martin-morek](https://github.com/martin-morek))
+
 ## [v1.2.7](https://github.com/ably/ably-java/tree/v1.2.7)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.6...v1.2.7)

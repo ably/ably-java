@@ -3,7 +3,7 @@ repositories {
 }
 
 group = 'io.ably'
-version = '1.2.7'
+version = '1.2.8'
 description = 'Ably java client library'
 
 tasks.withType(Javadoc) {
