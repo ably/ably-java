@@ -121,8 +121,8 @@ Beyond specifying channel options, the rest is transparent and requires no furth
 If you would like to inspect the `Message` instances in order to identify whether the `data` they present was rendered from a delta message from Ably then you can see if `extras.getDelta().getFormat()` equals `"vcdiff"`.
 
 #### Publishing to a channel
-Data published to a channel (apart from strings or bytearrays) has to be instances of JsonElement to be encoded properly.
 
+Data published to a channel (apart from strings or bytearrays) has to be instances of JsonElement to be encoded properly.
 
 ```java
 // Publishing message of type String
@@ -468,6 +468,7 @@ realtime.push.activate();
 Visit https://www.ably.io/documentation for a complete API reference and more examples.
 
 ### Example projects:
+
 - [Ably Asset Tracking SDKs for Android](https://github.com/ably/ably-asset-tracking-android/blob/main/README.md#useful-resources)
 - [Chat app using Spring Boot + Auth0 + Ably](https://github.com/ably-labs/spring-boot-auth0)
 - [Spring + Ably Pub/Sub Demo with a Collaborative TODO list](https://github.com/ably-labs/ably-spring-pubsub)
