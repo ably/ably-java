@@ -168,8 +168,6 @@ End-to-end tests for push notifications (ie where the Android client is the targ
 There are [instructions there](https://github.com/ably/push-example-android#using-this-app-yourself) for setting up the necessary FCM account, configuring the credentials and other parameters,
 in order to get end-to-end FCM notifications working.
 
-## Building Platform-Specific Documentation
-
 ## Release Process
 
 This library uses [semantic versioning](http://semver.org/). For each release, the following needs to be done:
