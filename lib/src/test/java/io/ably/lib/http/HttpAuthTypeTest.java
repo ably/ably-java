@@ -20,4 +20,9 @@ public class HttpAuthTypeTest {
         assertEquals(HttpAuth.Type.DIGEST, HttpAuth.Type.parse("digest"));
         assertEquals(HttpAuth.Type.X_ABLY_TOKEN, HttpAuth.Type.parse("x-ably-token"));
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void parseFailure() {
+        HttpAuth.Type.parse("Früli");
+    }
 }
