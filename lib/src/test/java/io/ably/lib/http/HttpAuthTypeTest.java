@@ -25,4 +25,9 @@ public class HttpAuthTypeTest {
     public void parseFailure() {
         HttpAuth.Type.parse("Früli");
     }
+
+    @Test(expected = NullPointerException.class)
+    public void parseFailureNullValue() {
+        HttpAuth.Type.parse(null);
+    }
 }
