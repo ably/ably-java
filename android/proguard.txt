@@ -4,3 +4,4 @@
 -keepclasseswithmembers class io.ably.lib.rest.Auth** {*;}
 -keep class com.google.gson.** {*;}
 -dontwarn org.msgpack.core.buffer.**
+-dontwarn org.slf4j.**
