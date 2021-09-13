@@ -1339,8 +1339,11 @@ public class AndroidPushTest {
             @Override
             public void run() throws Exception {
                 testActivation = new TestActivation();
+
+                final String testClientId = "testClient";
+                final String testChannel = "pushenabled:foo";
+
                 if (useClientId) {
-                    final String testClientId = "testClient";
                     testActivation.rest.auth.setClientId(testClientId);
                     testActivation.rest.auth.authorize(new Auth.TokenParams() {{ clientId = testClientId; }}, null);
                 } else {
@@ -1362,12 +1365,12 @@ public class AndroidPushTest {
                 String deviceId = testActivation.rest.push.getLocalDevice().id;
 
                 Push.ChannelSubscription[] fixtures = new Push.ChannelSubscription[] {
-                    PushBase.ChannelSubscription.forDevice("pushenabled:foo", deviceId),
-                    PushBase.ChannelSubscription.forDevice("pushenabled:foo", "other"),
+                    PushBase.ChannelSubscription.forDevice(testChannel, deviceId),
+                    PushBase.ChannelSubscription.forDevice(testChannel, "other"),
                     PushBase.ChannelSubscription.forDevice("pushenabled:bar", deviceId),
-                    PushBase.ChannelSubscription.forClientId("pushenabled:foo", "testClient"),
-                    PushBase.ChannelSubscription.forClientId("pushenabled:foo", "otherClient"),
-                    PushBase.ChannelSubscription.forClientId("pushenabled:bar", "testClient"),
+                    PushBase.ChannelSubscription.forClientId(testChannel, testClientId),
+                    PushBase.ChannelSubscription.forClientId(testChannel, "otherClient"),
+                    PushBase.ChannelSubscription.forClientId("pushenabled:bar", testClientId),
                 };
 
                 try {
@@ -1377,12 +1380,20 @@ public class AndroidPushTest {
                         testActivation.adminRest.push.admin.channelSubscriptions.save(sub);
                     }
 
-                    Push.ChannelSubscription[] got = testActivation.rest.channels.get("pushenabled:foo").push.listSubscriptions().items();
+                    Param[] params = Param.array(new Param("deviceId", deviceId));
+                    params = Param.set(params, "channel", testChannel);
+
+                    if(useClientId) {
+                        params = Param.set(params, "clientId", testClientId);
+                    }
+
+                    Push.ChannelSubscription[] got = testActivation.rest.channels.get(testChannel)
+                        .push.listSubscriptions(params).items();
 
                     ArrayList<Push.ChannelSubscription> expected = new ArrayList<>(2);
-                    expected.add(PushBase.ChannelSubscription.forDevice("pushenabled:foo", deviceId));
+                    expected.add(PushBase.ChannelSubscription.forDevice(testChannel, deviceId));
                     if (useClientId) {
-                        expected.add(PushBase.ChannelSubscription.forClientId("pushenabled:foo", "testClient"));
+                        expected.add(PushBase.ChannelSubscription.forClientId(testChannel, testClientId));
                     }
 
                     assertArrayUnorderedEquals(expected.toArray(), got);
