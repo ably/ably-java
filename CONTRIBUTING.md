@@ -172,15 +172,15 @@ in order to get end-to-end FCM notifications working.
 
 This library uses [semantic versioning](http://semver.org/). For each release, the following needs to be done:
 
-1. Create a branch for the release, named like `release/1.2.7`
-2. Replace all references of the current version number with the new version number (check this file [README.md](./README.md) and [common.gradle](./common.gradle)) and commit the changes
+1. Create a branch for the release, named like `release/1.2.4` (where `1.2.4` is what you're releasing, being the new version)
+2. Replace all references of the current version number with the new version number (check the [README.md](./README.md) and [common.gradle](./common.gradle)) and commit the changes
 3. Run [`github_changelog_generator`](https://github.com/skywinder/Github-Changelog-Generator) to update the [CHANGELOG](./CHANGELOG.md):
-    * This might work: `github_changelog_generator -u ably -p ably-java --header-label="# Changelog" --release-branch=release/1.2.7 --future-release=v1.2.7`
-    * But your mileage may vary as it can error. Perhaps more reliable is something like: `github_changelog_generator -u ably -p ably-java --since-tag v1.2.6 --output delta.md` and then manually merge the delta contents in to the main change log
+    * This might work: `github_changelog_generator -u ably -p ably-java --header-label="# Changelog" --release-branch=release/1.2.4 --future-release=v1.2.4`
+    * But your mileage may vary as it can error. Perhaps more reliable is something like: `github_changelog_generator -u ably -p ably-java --since-tag v1.2.3 --output delta.md` and then manually merge the delta contents in to the main change log (where `1.2.3` is the preceding release)
 4. Commit [CHANGELOG](./CHANGELOG.md)
 5. Make a PR against `main`
 6. Once the PR is approved, merge it into `main`
-7. Add a tag and push to origin - e.g.: `git tag v1.2.7 && git push origin v1.2.7`
+7. Add a tag and push to origin - e.g.: `git tag v1.2.4 && git push origin v1.2.4`
 8. Create the release on Github including populating the release notes
 9. Assemble and Upload ([see below](#publishing-to-maven-central) for details) - but the overall order to follow is:
     1. Comment out local `repository` lines in the two `maven.gradle` files temporarily (this is horrible but is [to be fixed soon](https://github.com/ably/ably-java/issues/566))
