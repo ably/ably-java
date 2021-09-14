@@ -1,5 +1,19 @@
 # Change Log
 
+## [v1.2.9](https://github.com/ably/ably-java/tree/v1.2.9)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.8...v1.2.9)
+
+**Fixed bugs:**
+
+- IllegalArgumentException: No enum constant io.ably.lib.http.HttpAuth.Type.BASİC [\#711](https://github.com/ably/ably-java/issues/711)
+- ProGuard warnings emitted by Android build against 1.1.6 [\#529](https://github.com/ably/ably-java/issues/529)
+
+**Merged pull requests:**
+
+- Fix incorrect parsing of HTTP auth type for some locales [\#712](https://github.com/ably/ably-java/pull/712) ([QuintinWillison](https://github.com/QuintinWillison))
+- Suppressed warning in ProGuard [\#709](https://github.com/ably/ably-java/pull/709) ([martin-morek](https://github.com/martin-morek))
+
 ## [v1.2.8](https://github.com/ably/ably-java/tree/v1.2.8)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.7...v1.2.8)

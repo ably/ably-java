@@ -7,6 +7,7 @@ import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -20,7 +21,16 @@ public class HttpAuth {
     public enum Type {
         BASIC,
         DIGEST,
-        X_ABLY_TOKEN
+        X_ABLY_TOKEN;
+
+        static Type parse(final String value) {
+            final String conformedValue = value.toUpperCase(Locale.ROOT).replace('-', '_');
+            try {
+                return Type.valueOf(conformedValue);
+            } catch (final IllegalArgumentException e) {
+                throw new IllegalArgumentException("Failed to parse conformed form '" + conformedValue + "' of raw value '" + value + "'.", e);
+            }
+        }
     }
 
     HttpAuth(String username, String password, Type prefType) {
@@ -46,7 +56,7 @@ public class HttpAuth {
             if(delimiterIdx == -1) { throw AblyException.fromErrorInfo(new ErrorInfo("Invalid authenticate header (no delimiter)", 40000, 400)); }
             String authType = header.substring(0,  delimiterIdx).trim();
             String authDetails = header.substring(delimiterIdx + 1).trim();
-            sortedHeaders.put(Type.valueOf(authType.toUpperCase().replace('-', '_')), authDetails);
+            sortedHeaders.put(Type.parse(authType), authDetails);
         }
         return sortedHeaders;
     }
