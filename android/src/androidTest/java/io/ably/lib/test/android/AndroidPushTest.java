@@ -166,7 +166,7 @@ public class AndroidPushTest {
     }
 
     // RSH2a
-    //@Test
+    @Test
     public void push_activate() throws InterruptedException, AblyException {
         TestActivation activation = new TestActivation();
         BlockingQueue<Event> events = activation.machine.getEventReceiver(2); // CalledActivate + GotPushDeviceDetails
@@ -177,7 +177,7 @@ public class AndroidPushTest {
     }
 
     // RSH2b
-    //@Test
+    @Test
     public void push_deactivate() throws InterruptedException, AblyException {
         TestActivation activation = new TestActivation();
         BlockingQueue<Event> events = activation.machine.getEventReceiver(1);
@@ -188,7 +188,7 @@ public class AndroidPushTest {
     }
 
     // RSH2c / RSH8g
-    //@Test
+    @Test
     public void push_onNewRegistrationToken() throws InterruptedException, AblyException {
         TestActivation activation = new TestActivation();
         BlockingQueue<Event> events = activation.machine.getEventReceiver(1);
@@ -219,7 +219,7 @@ public class AndroidPushTest {
     }
 
     // RSH2d / RSH8h
-    //@Test
+    @Test
     public void push_onNewRegistrationTokenFailed() throws InterruptedException, AblyException {
         TestActivation activation = new TestActivation();
         BlockingQueue<Event> events = activation.machine.getEventReceiver(1);
@@ -249,7 +249,7 @@ public class AndroidPushTest {
     }
 
     // RSH2e / RSH8i
-    //@Test
+    @Test
     public void push_syncOnStartup() throws InterruptedException, AblyException {
         final BlockingQueue<Callback<String>> tokenCallbacks = new ArrayBlockingQueue<>(1) ;
 
@@ -326,7 +326,7 @@ public class AndroidPushTest {
     }
 
     // RSH8a, RSH8c
-    //@Test
+    @Test
     public void push_device_persistence() throws InterruptedException, AblyException {
         TestActivation activation = new TestActivation(new Helpers.AblyFunction<TestActivation.Options, Void>() {
             @Override
@@ -371,7 +371,7 @@ public class AndroidPushTest {
     }
 
     // RSH8d
-    //@Test
+    @Test
     public void push_late_clientId_persisted() throws InterruptedException, AblyException {
         TestActivation activation = new TestActivation();
 
@@ -396,7 +396,7 @@ public class AndroidPushTest {
     }
 
     // RSH8e
-    //@Test
+    @Test
     public void push_late_clientId_emits_GotPushDeviceDetails() throws InterruptedException, AblyException {
         TestActivation activation = new TestActivation();
 
@@ -421,7 +421,7 @@ public class AndroidPushTest {
     }
 
     // RSH8f
-    //@Test
+    @Test
     public void push_clientId_from_server() throws InterruptedException, AblyException {
         TestActivation activation = new TestActivation();
 
@@ -450,7 +450,7 @@ public class AndroidPushTest {
     }
 
     // RSH3a1
-    //@Test
+    @Test
     public void NotActivated_on_CalledDeactivate() {
         TestActivation activation = new TestActivation();
 
@@ -695,7 +695,7 @@ public class AndroidPushTest {
     }
 
     // RSH3a3a
-    //@Test
+    @Test
     public void NotActivated_on_GotPushDeviceDetails() throws InterruptedException {
         TestActivation activation = new TestActivation();
         State state = new NotActivated(activation.machine);
@@ -707,7 +707,7 @@ public class AndroidPushTest {
     }
 
     // RSH3a2b
-    //@Test
+    @Test
     public void NotActivated_on_CalledActivate_with_registrationToken() throws InterruptedException, AblyException {
         TestActivation activation = new TestActivation();
         activation.rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.FCM, "testToken");
@@ -727,7 +727,7 @@ public class AndroidPushTest {
     }
 
     // RSH3a2c
-    //@Test
+    @Test
     public void NotActivated_on_CalledActivate_without_registrationToken() throws InterruptedException {
         TestActivation activation = new TestActivation();
         State state = new NotActivated(activation.machine);
@@ -739,7 +739,7 @@ public class AndroidPushTest {
     }
 
     // RSH3b1
-    //@Test
+    @Test
     public void WaitingForPushDeviceDetails_on_CalledActivate() {
         TestActivation activation = new TestActivation();
         State state = new WaitingForPushDeviceDetails(activation.machine);
@@ -752,7 +752,7 @@ public class AndroidPushTest {
     }
 
     // RSH3b2
-    //@Test
+    @Test
     public void WaitingForPushDeviceDetails_on_CalledDeactivate() {
         TestActivation activation = new TestActivation();
         State state = new WaitingForPushDeviceDetails(activation.machine);
@@ -772,7 +772,7 @@ public class AndroidPushTest {
     }
 
     // RSH3b3
-    //@Test
+    @Test
     public void WaitingForPushDeviceDetails_on_GotPushDeviceDetails() throws Exception {
         class TestCase extends TestCases.Base {
             private final ErrorInfo registerError;
@@ -924,7 +924,7 @@ public class AndroidPushTest {
     }
 
     // RSH3c1
-    //@Test
+    @Test
     public void WaitingForDeviceRegistration_on_CalledActivate() {
         TestActivation activation = new TestActivation();
         State state = new WaitingForDeviceRegistration(activation.machine);
@@ -937,7 +937,7 @@ public class AndroidPushTest {
     }
 
     // RSH3d1
-    //@Test
+    @Test
     public void WaitingForNewPushDeviceDetails_on_CalledActivate() {
         TestActivation activation = new TestActivation();
         State state = new WaitingForNewPushDeviceDetails(activation.machine);
@@ -957,7 +957,7 @@ public class AndroidPushTest {
     }
 
     // RSH3d2
-    //@Test
+    @Test
     public void WaitingForNewPushDeviceDetails_on_CalledDeactivate() throws Exception {
         new DeactivateTest(WaitingForNewPushDeviceDetails.class) {
             @Override
@@ -968,7 +968,7 @@ public class AndroidPushTest {
     }
 
     // RSH3d3
-    //@Test
+    @Test
     public void WaitingForNewPushDeviceDetails_on_GotPushDeviceDetails() throws Exception {
         new UpdateRegistrationTest() {
             @Override
@@ -980,7 +980,7 @@ public class AndroidPushTest {
     }
 
     // RSH3e1
-    //@Test
+    @Test
     public void WaitingForRegistrationUpdate_on_CalledActivate() {
         TestActivation activation = new TestActivation();
         State state = new WaitingForRegistrationSync(activation.machine, null);
@@ -1000,7 +1000,7 @@ public class AndroidPushTest {
     }
 
     // RSH3e2
-    //@Test
+    @Test
     public void WaitingForRegistrationUpdate_on_RegistrationUpdated() {
         TestActivation activation = new TestActivation();
         State state = new WaitingForRegistrationSync(activation.machine, null);
@@ -1013,7 +1013,7 @@ public class AndroidPushTest {
     }
 
     // RSH3e3
-    //@Test
+    @Test
     public void WaitingForRegistrationUpdate_on_UpdatingRegistrationFailed() {
         TestActivation activation = new TestActivation();
         State state = new WaitingForRegistrationSync(activation.machine, null);
@@ -1035,7 +1035,7 @@ public class AndroidPushTest {
     }
 
     // RSH3f1
-    //@Test
+    @Test
     public void AfterRegistrationUpdateFailed_on_GotPushDeviceDetails() throws Exception {
         new UpdateRegistrationTest() {
             @Override
@@ -1048,7 +1048,7 @@ public class AndroidPushTest {
     }
 
     // RSH3f1
-    //@Test
+    @Test
     public void AfterRegistrationUpdateFailed_on_CalledActivate() throws Exception {
         new UpdateRegistrationTest("PUSH_ACTIVATE") {
             @Override
@@ -1066,7 +1066,7 @@ public class AndroidPushTest {
     }
 
     // RSH3f1
-    //@Test
+    @Test
     public void AfterRegistrationUpdateFailed_on_CalledDeactivate() throws Exception {
         new DeactivateTest(AfterRegistrationSyncFailed.class) {
             @Override
@@ -1078,7 +1078,7 @@ public class AndroidPushTest {
     }
 
     // RSH3g1
-    //@Test
+    @Test
     public void WaitingForDeregistration_on_CalledDeactivate() throws Exception {
         TestActivation activation = new TestActivation();
         State state = new WaitingForDeregistration(activation.machine, null);
@@ -1090,7 +1090,7 @@ public class AndroidPushTest {
     }
 
     // RSH3g2
-    //@Test
+    @Test
     public void WaitingForDeregistration_on_Deregistered() throws Exception {
         TestActivation activation = new TestActivation();
         State state = new WaitingForDeregistration(activation.machine, null);
@@ -1113,7 +1113,7 @@ public class AndroidPushTest {
     }
 
     // RSH3g3
-    //@Test
+    @Test
     public void WaitingForDeregistration_on_DeregistrationFailed() throws Exception {
         class TestCase extends TestCases.Base {
             private TestActivation testActivation;
@@ -1162,7 +1162,7 @@ public class AndroidPushTest {
     }
 
     // RSH4a1
-    //@Test
+    @Test
     public void PushChannel_subscribeDevice_not_registered() throws AblyException {
         TestActivation activation = new TestActivation();
         Channel channel = activation.rest.channels.get("pushenabled:foo");
@@ -1181,7 +1181,7 @@ public class AndroidPushTest {
     }
 
     // RSH4a2
-    //@Test
+    @Test
     public void PushChannel_subscribeDevice_ok() throws AblyException {
         TestActivation activation = new TestActivation();
         Channel channel = activation.rest.channels.get("pushenabled:foo");
@@ -1207,7 +1207,7 @@ public class AndroidPushTest {
     }
 
     // RSH4b1
-    //@Test
+    @Test
     public void PushChannel_subscribeClient_not_registered() throws AblyException {
         TestActivation activation = new TestActivation();
         Channel channel = activation.rest.channels.get("pushenabled:foo");
@@ -1220,7 +1220,7 @@ public class AndroidPushTest {
     }
 
     // RSH4b2
-    //@Test
+    @Test
     public void PushChannel_subscribeClient_ok() throws AblyException {
         TestActivation activation = new TestActivation();
         final String testClientId = "testClient";
@@ -1250,7 +1250,7 @@ public class AndroidPushTest {
     }
 
     // RSH4c1
-    //@Test
+    @Test
     public void PushChannel_unsubscribeDevice_not_registered() throws AblyException {
         TestActivation activation = new TestActivation();
         Channel channel = activation.rest.channels.get("pushenabled:foo");
@@ -1264,7 +1264,7 @@ public class AndroidPushTest {
     }
 
     // RSH4c2
-    //@Test
+    @Test
     public void PushChannel_unsubscribeDevice_ok() throws AblyException {
         TestActivation activation = new TestActivation();
         Channel channel = activation.rest.channels.get("pushenabled:foo");
@@ -1292,7 +1292,7 @@ public class AndroidPushTest {
     }
 
     // RSH4d1
-    //@Test
+    @Test
     public void PushChannel_unsubscribeClient_not_registered() throws AblyException {
         TestActivation activation = new TestActivation();
         Channel channel = activation.rest.channels.get("pushenabled:foo");
@@ -1306,7 +1306,7 @@ public class AndroidPushTest {
     }
 
     // RSH4d2
-    //@Test
+    @Test
     public void PushChannel_unsubscribeClient_ok() throws AblyException {
         TestActivation activation = new TestActivation();
         final String testClientId = "testClient";
@@ -1338,7 +1338,7 @@ public class AndroidPushTest {
     }
 
     // RSH4e
-    //@Test
+    @Test
     public void PushChannel_listSubscriptions() throws Exception {
         class TestCase extends TestCases.Base {
             private boolean useClientId;
@@ -1427,7 +1427,7 @@ public class AndroidPushTest {
         testCases.run();
     }
 
-    //@Test
+    @Test
     public void Realtime_push_interface() throws Exception {
         AblyRealtime realtime = new AblyRealtime(new ClientOptions() {{
             autoConnect = false;
@@ -1440,7 +1440,7 @@ public class AndroidPushTest {
     }
 
     // https://github.com/ably/ably-java/issues/598
-    //@Test
+    @Test
     public void restore_non_nullary_event() {
         TestActivation activation = new TestActivation();
         assertInstanceOf(NotActivated.class, activation.machine.current);
