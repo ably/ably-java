@@ -500,10 +500,6 @@ public class AndroidPushTest {
                 this.expectedErrorCode = expectedErrorCode;
             }
 
-            void debugLog(String action) {
-                Log.d("AndroidPushTest", "Timestamp: " + System.currentTimeMillis() + " message: " +  action);
-            }
-
             @Override
             public void run() throws Exception {
                 // Register local device before doing anything, in order to trigger RSH3a2a.
@@ -518,9 +514,7 @@ public class AndroidPushTest {
                 try {
                     Helpers.AsyncWaiter<Intent> activateCallback = broadcastWaiter("PUSH_ACTIVATE");
                     activation.rest.push.activate(false);
-                    debugLog(" before -> activateCallback.waitFor(), line 522");
                     activateCallback.waitFor();
-                    debugLog(" after -> activateCallback.waitFor(), line 522");
 
                     LocalDevice device = activation.rest.push.getLocalDevice();
                     assertNotNull(device.id);
@@ -569,16 +563,11 @@ public class AndroidPushTest {
                     if (activation.machine.current instanceof WaitingForRegistrationSync) {
                         if (useCustomRegistrar) {
                             // RSH3a2a2
-                            debugLog(" before -> registerCallback.waitFor(), line 573");
                             registerCallback.waitFor();
-                            debugLog(" after -> registerCallback.waitFor(), line 573");
                             assertNull(registerCallback.error);
                         } else {
                             // RSH3a2a3
-                            Log.d("AndroidPushTest", "NotActivated_on_CalledActivate_with_DeviceToken");
-                            debugLog(" before -> requestWaiter.waitFor(), line 579");
                             requestWaiter.waitFor();
-                            debugLog(" after -> requestWaiter.waitFor(), line 579");
                             Helpers.RawHttpRequest request = requestWaiter.result;
                             assertEquals("PUT", request.method);
                             assertEquals("/push/deviceRegistrations/" + device.id, request.url.getPath());
@@ -608,9 +597,7 @@ public class AndroidPushTest {
                     } // else: RSH3a2a1 validation failed
 
                     // RSH3e2 or RSH3e3
-                    debugLog(" before -> activateCallback.waitFor(), line 612");
                     activateCallback.waitFor();
-                    debugLog(" before -> activateCallback.waitFor(), line 612");
                     if (expectedErrorCode != null) {
                         assertNotNull(activateCallback.error);
                         assertEquals(expectedErrorCode.intValue(), activateCallback.error.code);
