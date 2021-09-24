@@ -168,6 +168,42 @@ End-to-end tests for push notifications (ie where the Android client is the targ
 There are [instructions there](https://github.com/ably/push-example-android#using-this-app-yourself) for setting up the necessary FCM account, configuring the credentials and other parameters,
 in order to get end-to-end FCM notifications working.
 
+## Building an AAR locally
+
+- Set up the GPG signing configuration:
+  - Create a GPG key pair: `gpg --expert --full-generate-key`.
+  - Export a secret key ring file: `gpg --export-secret-keys -o ably-java-secring.gpg`.
+  - Add the details of the GPG key pair inside `./gradle/gradle.properties`:
+```bash
+signing.keyId=XXXXXXXX
+signing.password=ably-debug-key
+signing.secretKeyRingFile=/Users/username/.ably/ably-java-secring.gpg
+```
+- Run `./gradlew android:assembleRelease` or `./gradlew android:assembleDebug`.
+
+## Using Ably Java / Ably Android locally in other projects
+
+- Build the AAR: See [Building an AAR](#building-an-aar)
+- Open the directory printed from the output of that command. Inside that folder, get the `ably-android-x.y.z.aar`, and place it your Android project's `libs/` directory. Create this directory if it doesn't exist.
+  - Update your `build.gradle` to use local AAR in `libs`:
+```groovy
+rootProject.allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        flatDir {
+            dirs project(':your_project_name').file('libs')
+        }
+    }
+}
+```
+  - If the file was called `ably-android-1.2.9.aar` for example, use:
+```groovy
+implementation(name: 'ably-android-1.2.9', ext: 'aar')
+```
+- Add the dependencies found in `dependencies.gradle` to your project too. This is because the `.aar` does not contain dependencies.
+- Build/run your application.
+
 ## Release Process
 
 This library uses [semantic versioning](http://semver.org/). For each release, the following needs to be done:
