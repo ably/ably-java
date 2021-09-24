@@ -183,7 +183,7 @@ signing.secretKeyRingFile=/Users/username/.ably/ably-java-secring.gpg
 
 ## Using `ably-java` / `ably-android` locally in other projects
 
-- Build the AAR: See [Building an AAR](#building-an-aar)
+- Build the AAR: See [Building an AAR locally](#building-an-aar-locally)
 - Open the directory printed from the output of that command. Inside that folder, get the `ably-android-x.y.z.aar`, and place it your Android project's `libs/` directory. Create this directory if it doesn't exist.
   - Update your `build.gradle` to use local AAR in `libs`:
 ```groovy
