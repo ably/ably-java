@@ -456,7 +456,7 @@ In order to enable an app as a recipient of Ably push messages:
 - register your app with Firebase Cloud Messaging (FCM) and configure the FCM credentials in the app dashboard;
 - Implement a service extending [`FirebaseMessagingService`](https://firebase.google.com/docs/reference/android/com/google/firebase/messaging/FirebaseMessagingService) and ensure it is declared in your `AndroidManifest.xml`, as per [Firebase's guide: Edit your app manifest](https://firebase.google.com/docs/cloud-messaging/android/client#manifest);
   - Override [`onNewToken`](https://firebase.google.com/docs/reference/android/com/google/firebase/messaging/FirebaseMessagingService#public-void-onnewtoken-string-token), and provide Ably with the registration token: `ActivationContext.getActivationContext(this).onNewRegistrationToken(RegistrationToken.Type.FCM, token);`. This method will be called whenever a new token is provided by Android.
-- Activate the device for push notifications with one Ably client:
+- Activate the device for push notifications:
 
 ```
 realtime.setAndroidContext(context);
