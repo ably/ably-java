@@ -1,12 +1,6 @@
 package io.ably.lib.test.realtime;
 
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.transport.ConnectionManager;
-import io.ably.lib.transport.Defaults;
-import io.ably.lib.transport.ITransport;
-import io.ably.lib.transport.WebSocketTransport;
-import io.ably.lib.types.ProtocolMessage;
-
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
@@ -16,16 +10,22 @@ import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.Helpers.MessageWaiter;
 import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.transport.ConnectionManager;
+import io.ably.lib.transport.ITransport;
+import io.ably.lib.transport.WebSocketTransport;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
-
+import io.ably.lib.types.ProtocolMessage;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.*;
-import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class RealtimeRecoverTest extends ParameterizedTest {
 

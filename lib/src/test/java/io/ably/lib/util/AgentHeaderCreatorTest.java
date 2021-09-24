@@ -2,7 +2,6 @@ package io.ably.lib.util;
 
 import io.ably.lib.test.util.EmptyPlatformAgentProvider;
 import io.ably.lib.transport.Defaults;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;

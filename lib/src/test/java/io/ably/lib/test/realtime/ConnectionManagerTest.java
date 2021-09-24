@@ -1,5 +1,42 @@
 package io.ably.lib.test.realtime;
 
+import io.ably.lib.debug.DebugOptions;
+import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.realtime.Channel;
+import io.ably.lib.realtime.ChannelEvent;
+import io.ably.lib.realtime.ChannelState;
+import io.ably.lib.realtime.ChannelStateListener;
+import io.ably.lib.realtime.Connection;
+import io.ably.lib.realtime.ConnectionEvent;
+import io.ably.lib.realtime.ConnectionState;
+import io.ably.lib.realtime.ConnectionStateListener;
+import io.ably.lib.rest.Auth.AuthMethod;
+import io.ably.lib.test.common.Helpers;
+import io.ably.lib.test.common.Helpers.ChannelWaiter;
+import io.ably.lib.test.common.Helpers.ConnectionWaiter;
+import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.test.util.EmptyPlatformAgentProvider;
+import io.ably.lib.test.util.MockWebsocketFactory;
+import io.ably.lib.transport.ConnectionManager;
+import io.ably.lib.transport.Defaults;
+import io.ably.lib.transport.Hosts;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ClientOptions;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.Timeout;
+import org.mockito.Mockito;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -9,45 +46,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.test.util.EmptyPlatformAgentProvider;
-import io.ably.lib.test.util.MockWebsocketFactory;
-import io.ably.lib.transport.Hosts;
-import io.ably.lib.util.Log;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.mockito.Mockito;
-
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.Connection;
-import io.ably.lib.realtime.ConnectionEvent;
-import io.ably.lib.realtime.ConnectionState;
-import io.ably.lib.realtime.ConnectionStateListener;
-import io.ably.lib.realtime.Channel;
-import io.ably.lib.realtime.ChannelState;
-import io.ably.lib.realtime.ChannelStateListener;
-import io.ably.lib.realtime.ChannelEvent;
-import io.ably.lib.rest.Auth.AuthMethod;
-import io.ably.lib.test.common.Helpers;
-import io.ably.lib.test.common.ParameterizedTest;
-import io.ably.lib.test.common.Helpers.ConnectionWaiter;
-import io.ably.lib.test.common.Helpers.ChannelWaiter;
-import io.ably.lib.transport.ConnectionManager;
-import io.ably.lib.transport.Defaults;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ClientOptions;
 
 /**
  * Created by gokhanbarisaker on 3/9/16.
@@ -200,7 +198,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
             }
         });
 
-        try (final AblyRealtime ably = new AblyRealtime(opts)) {
+        try (AblyRealtime ably = new AblyRealtime(opts)) {
             ConnectionManager connectionManager = ably.connection.connectionManager;
 
             new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
@@ -248,7 +246,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
             }
         });
 
-        try (final AblyRealtime ably = new AblyRealtime(opts)) {
+        try (AblyRealtime ably = new AblyRealtime(opts)) {
             ConnectionManager connectionManager = ably.connection.connectionManager;
 
             System.out.println("waiting for disconnected");
@@ -300,7 +298,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
             }
         });
 
-        try (final AblyRealtime ably = new AblyRealtime(opts)) {
+        try (AblyRealtime ably = new AblyRealtime(opts)) {
             ConnectionManager connectionManager = ably.connection.connectionManager;
 
             System.out.println("waiting for connected");
@@ -350,7 +348,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
             }
         });
 
-        try (final AblyRealtime ably = new AblyRealtime(opts)) {
+        try (AblyRealtime ably = new AblyRealtime(opts)) {
             ConnectionManager connectionManager = ably.connection.connectionManager;
 
             System.out.println("waiting for connected");
@@ -526,7 +524,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
     @Test
     public void connection_details_has_ttl() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        try (final AblyRealtime ably = new AblyRealtime(opts)) {
+        try (AblyRealtime ably = new AblyRealtime(opts)) {
             final boolean[] callbackWasRun = new boolean[1];
             ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
                 @Override
@@ -560,7 +558,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
     public void connection_has_new_id_when_reconnecting_after_statettl_plus_idleinterval_has_passed() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.realtimeRequestTimeout = 2000L;
-        try(final AblyRealtime ably = new AblyRealtime(opts)) {
+        try(AblyRealtime ably = new AblyRealtime(opts)) {
             final long newTtl = 1000L;
             final long newIdleInterval = 1000L;
             /* We want this greater than newTtl + newIdleInterval */
@@ -619,7 +617,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
     @Test
     public void connection_has_same_id_when_reconnecting_before_statettl_plus_idleinterval_has_passed() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        try(final AblyRealtime ably = new AblyRealtime(opts)) {
+        try(AblyRealtime ably = new AblyRealtime(opts)) {
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
             String firstConnectionId = ably.connection.id;
@@ -642,7 +640,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
     @Test
     public void channels_are_reattached_after_reconnecting_when_statettl_plus_idleinterval_has_passed() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        try(final AblyRealtime ably = new AblyRealtime(opts)) {
+        try(AblyRealtime ably = new AblyRealtime(opts)) {
             final long newTtl = 1000L;
             final long newIdleInterval = 1000L;
             /* We want this greater than newTtl + newIdleInterval */

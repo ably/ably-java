@@ -3,7 +3,6 @@ package io.ably.lib.test.util;
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 

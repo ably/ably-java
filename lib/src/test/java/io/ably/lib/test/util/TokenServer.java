@@ -164,5 +164,5 @@ public class TokenServer extends NanoHTTPD {
     }
 
     private final AblyRest ably;
-    private static final String MIME_JSON = "application/json";	
+    private static final String MIME_JSON = "application/json";
 }

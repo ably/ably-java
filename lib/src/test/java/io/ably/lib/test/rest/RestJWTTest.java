@@ -1,17 +1,25 @@
 package io.ably.lib.test.rest;
 
-import static org.junit.Assert.*;
-
-import io.ably.lib.http.*;
+import io.ably.lib.http.HttpCore;
+import io.ably.lib.http.HttpHelpers;
+import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.Auth;
+import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Setup.Key;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.PaginatedResult;
+import io.ably.lib.types.Param;
+import io.ably.lib.types.Stats;
 import org.junit.Test;
 
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.types.*;
-import io.ably.lib.rest.Auth.*;
-import io.ably.lib.test.common.ParameterizedTest;
-
 import java.io.UnsupportedEncodingException;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class RestJWTTest extends ParameterizedTest {
 
@@ -114,9 +122,9 @@ public class RestJWTTest extends ParameterizedTest {
         try {
             final AblyRest restJWTRequester = new AblyRest(createOptions(testVars.keys[0].keyStr));
             final boolean[] callbackCalled = new boolean[] { false };
-            TokenCallback authCallback = new TokenCallback() {
+            Auth.TokenCallback authCallback = new Auth.TokenCallback() {
                 @Override
-                public Object getTokenRequest(TokenParams params) throws AblyException {
+                public Object getTokenRequest(Auth.TokenParams params) throws AblyException {
                     callbackCalled[0] = true;
                     return restJWTRequester.auth.requestToken(params, null);
                 }

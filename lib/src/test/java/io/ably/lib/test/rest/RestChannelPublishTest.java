@@ -1,31 +1,35 @@
 package io.ably.lib.test.rest;
 
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import io.ably.lib.debug.DebugOptions;
+import io.ably.lib.http.HttpCore;
+import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.Auth;
+import io.ably.lib.rest.Channel;
+import io.ably.lib.test.common.Helpers.AsyncWaiter;
+import io.ably.lib.test.common.Helpers.CompletionSet;
+import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.AsyncPaginatedResult;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Message;
+import io.ably.lib.types.MessageSerializer;
+import io.ably.lib.types.PaginatedResult;
+import io.ably.lib.types.Param;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.http.HttpCore;
-import io.ably.lib.rest.Auth;
-import io.ably.lib.types.*;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.rest.Channel;
-import io.ably.lib.test.common.Helpers.AsyncWaiter;
-import io.ably.lib.test.common.Helpers.CompletionSet;
-import io.ably.lib.test.common.ParameterizedTest;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class RestChannelPublishTest extends ParameterizedTest {
 

@@ -1,5 +1,18 @@
 package io.ably.lib.test.rest;
 
+import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.Auth;
+import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.Capability;
+import io.ably.lib.types.ClientOptions;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -8,25 +21,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.rest.Auth;
-import io.ably.lib.rest.Auth.AuthOptions;
-import io.ably.lib.rest.Auth.TokenCallback;
-import io.ably.lib.rest.Auth.TokenDetails;
-import io.ably.lib.rest.Auth.TokenParams;
-import io.ably.lib.rest.Auth.TokenRequest;
-import io.ably.lib.test.common.ParameterizedTest;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.Capability;
-import io.ably.lib.types.ClientOptions;
 
 /**
  * Created by VOstopolets on 9/3/16.
@@ -57,19 +51,19 @@ public class RestAuthAttributeTest extends ParameterizedTest {
             capability.addResource("testchannel", "subscribe");
             final String capabilityStr = capability.toString();
             final String testClientId = "firstClientId";
-            TokenParams tokenParams = new TokenParams() {{
+            Auth.TokenParams tokenParams = new Auth.TokenParams() {{
                 ttl = 4000L;
                 clientId = testClientId;
                 capability = capabilityStr;
             }};
 
             /* init custom AuthOptions */
-            AuthOptions authOptions = new AuthOptions() {{
-                authCallback = new TokenCallback() {
+            Auth.AuthOptions authOptions = new Auth.AuthOptions() {{
+                authCallback = new Auth.TokenCallback() {
                     private AblyRest ably = new AblyRest(createOptions(testVars.keys[0].keyStr));
 
                     @Override
-                    public Object getTokenRequest(TokenParams params) throws AblyException {
+                    public Object getTokenRequest(Auth.TokenParams params) throws AblyException {
                         return ably.auth.requestToken(params, null);
                     }
                 };
@@ -80,7 +74,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
              * Deliberate use of British spelling alias authorise() to check that
              * it works (0.9 RSA10l) */
             @SuppressWarnings("deprecation")
-            TokenDetails tokenDetails1 = ably.auth.authorise(tokenParams, authOptions);
+            Auth.TokenDetails tokenDetails1 = ably.auth.authorise(tokenParams, authOptions);
 
             /* Verify that,
              * tokenDetails1 isn't null,
@@ -95,7 +89,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
             } catch(InterruptedException ie) {}
 
             /* authorize with default options */
-            TokenDetails tokenDetails2 = ably.auth.authorize(null, null);
+            Auth.TokenDetails tokenDetails2 = ably.auth.authorize(null, null);
 
             /* Verify that,
              * tokenDetails2 isn't null,
@@ -130,13 +124,13 @@ public class RestAuthAttributeTest extends ParameterizedTest {
                     return fakeServerTime;
                 }
             };
-            final AuthOptions authOptions = new AuthOptions();
+            final Auth.AuthOptions authOptions = new Auth.AuthOptions();
             authOptions.key = ablyForTime.options.key;
             authOptions.queryTime = true;
-            TokenParams tokenParams = new TokenParams();
+            Auth.TokenParams tokenParams = new Auth.TokenParams();
 
             /* create token request with custom AuthOptions that has attribute queryTime */
-            TokenRequest tokenRequest = ablyForTime.auth.createTokenRequest(tokenParams, authOptions);
+            Auth.TokenRequest tokenRequest = ablyForTime.auth.createTokenRequest(tokenParams, authOptions);
 
             /* verify that issued time of server equals fake expected value */
             assertEquals(expectedClientId, tokenRequest.clientId);
@@ -152,8 +146,8 @@ public class RestAuthAttributeTest extends ParameterizedTest {
             tokenRequest = ablyForTime.auth.createTokenRequest(tokenParams, null);
 
             /* Verify that,
-            * 	 - timestamp not equals fake server time
-            * 	 - timestamp equals local time */
+            *    - timestamp not equals fake server time
+            *    - timestamp equals local time */
             assertEquals(expectedClientId, tokenRequest.clientId);
             assertNotEquals(fakeServerTime, tokenRequest.timestamp);
             long localTime = System.currentTimeMillis();
@@ -182,41 +176,41 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 
             /* create custom token callback for capturing timestamp values */
             final List<Long> timestampCapturedList = new ArrayList<>();
-            TokenCallback tokenCallback = new TokenCallback() {
+            Auth.TokenCallback tokenCallback = new Auth.TokenCallback() {
                 private List<Long> timestampCapturedList;
 
-                public TokenCallback setTimestampCapturedList(List<Long> timestampCapturedList) {
+                public Auth.TokenCallback setTimestampCapturedList(List<Long> timestampCapturedList) {
                     this.timestampCapturedList = timestampCapturedList;
                     return this;
                 }
 
                 @Override
-                public Object getTokenRequest(TokenParams params) throws AblyException {
+                public Object getTokenRequest(Auth.TokenParams params) throws AblyException {
                     this.timestampCapturedList.add(params.timestamp);
                     return ablyForToken.auth.requestToken(null, null);
                 }
             }.setTimestampCapturedList(timestampCapturedList);
 
             /* authorize with custom timestamp */
-            AuthOptions authOptions = new AuthOptions();
+            Auth.AuthOptions authOptions = new Auth.AuthOptions();
             authOptions.key = ably.options.key;
             authOptions.authCallback = tokenCallback;
-            TokenParams tokenParams = new TokenParams();
+            Auth.TokenParams tokenParams = new Auth.TokenParams();
             tokenParams.timestamp = expectedTimestamp;
-            TokenDetails tokenDetails1 = ably.auth.authorize(tokenParams, authOptions);
+            Auth.TokenDetails tokenDetails1 = ably.auth.authorize(tokenParams, authOptions);
             final String token1 = tokenDetails1.token;
             final String clientId1 = tokenDetails1.clientId;
 
             /* force authorize with stored TokenParams values */
-            TokenDetails tokenDetails2 = ably.auth.authorize(null, authOptions);
+            Auth.TokenDetails tokenDetails2 = ably.auth.authorize(null, authOptions);
             final String token2 = tokenDetails2.token;
             final String clientId2 = tokenDetails2.clientId;
 
             /* Verify that,
-            * 	 - new token was issued
-            * 	 - authorize called twice
-            * 	 - first timestamp value equals expected timestamp
-            * 	 - second timestamp value is not expected
+            *    - new token was issued
+            *    - authorize called twice
+            *    - first timestamp value equals expected timestamp
+            *    - second timestamp value is not expected
             * tokenDetails1 and tokenDetails2 aren't null,
             * the values of each attribute are equals */
             assertNotNull(tokenDetails1);
@@ -244,21 +238,21 @@ public class RestAuthAttributeTest extends ParameterizedTest {
     public void auth_authorize_force() {
         try {
             /* authorize with default options */
-            TokenDetails tokenDetails1 = ably.auth.authorize(null, null);
+            Auth.TokenDetails tokenDetails1 = ably.auth.authorize(null, null);
 
             /* init custom AuthOptions */
             final String custom_test_value = "test_forced_token";
-            AuthOptions authOptions = new AuthOptions() {{
-                authCallback = new TokenCallback() {
+            Auth.AuthOptions authOptions = new Auth.AuthOptions() {{
+                authCallback = new Auth.TokenCallback() {
                     @Override
-                    public Object getTokenRequest(TokenParams params) throws AblyException {
+                    public Object getTokenRequest(Auth.TokenParams params) throws AblyException {
                         return custom_test_value;
                     }
                 };
             }};
 
             /* authorize with custom AuthOptions */
-            TokenDetails tokenDetails2 = ably.auth.authorize(null, authOptions);
+            Auth.TokenDetails tokenDetails2 = ably.auth.authorize(null, authOptions);
 
             /* Verify that,
              * tokenDetails1 and tokenDetails2 aren't null,

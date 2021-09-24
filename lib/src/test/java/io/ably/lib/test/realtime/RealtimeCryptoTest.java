@@ -532,7 +532,7 @@ public class RealtimeCryptoTest extends ParameterizedTest {
             );
 
             /* check the the message payload is indicated as encrypted */
-//			assertTrue("Verify correct message text received", messageWaiter.receivedMessages.get(0).data instanceof CipherData);
+//          assertTrue("Verify correct message text received", messageWaiter.receivedMessages.get(0).data instanceof CipherData);
 
         } catch (AblyException e) {
             e.printStackTrace();
