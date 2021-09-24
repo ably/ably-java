@@ -181,7 +181,7 @@ signing.secretKeyRingFile=/Users/username/.ably/ably-java-secring.gpg
 ```
 - Run `./gradlew android:assembleRelease` or `./gradlew android:assembleDebug`.
 
-## Using Ably Java / Ably Android locally in other projects
+## Using `ably-java` / `ably-android` locally in other projects
 
 - Build the AAR: See [Building an AAR](#building-an-aar)
 - Open the directory printed from the output of that command. Inside that folder, get the `ably-android-x.y.z.aar`, and place it your Android project's `libs/` directory. Create this directory if it doesn't exist.
