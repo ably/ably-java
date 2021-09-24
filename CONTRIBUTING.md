@@ -185,7 +185,7 @@ signing.secretKeyRingFile=/Users/username/.ably/ably-java-secring.gpg
 
 ## Using `ably-java` / `ably-android` locally in other projects
 
-You may wish to make changes to Ably Java or Ably Android, and test it immediately in a separate project. For example, during development for [Ably Flutter](https://github.com/ably/ably-flutter) which depends on `ably-android`, a bug was found in `ably-android`. A small fix was done in `ably-java`, the AAR was built and tested in [Ably Flutter](https://github.com/ably/ably-flutter).
+You may wish to make changes to Ably Java or Ably Android, and test it immediately in a separate project. For example, during development for [Ably Flutter](https://github.com/ably/ably-flutter) which depends on `ably-android`, a bug was found in `ably-android`. A small fix was done, the AAR was built and tested in [Ably Flutter](https://github.com/ably/ably-flutter).
 
 - Build the AAR: See [Building an Android Archive (AAR) file locally](#building-an-android-archive-aar-file-locally)
 - Open the directory printed from the output of that command. Inside that folder, get the `ably-android-x.y.z.aar`, and place it your Android project's `libs/` directory. Create this directory if it doesn't exist.
