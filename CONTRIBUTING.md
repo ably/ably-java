@@ -168,7 +168,9 @@ End-to-end tests for push notifications (ie where the Android client is the targ
 There are [instructions there](https://github.com/ably/push-example-android#using-this-app-yourself) for setting up the necessary FCM account, configuring the credentials and other parameters,
 in order to get end-to-end FCM notifications working.
 
-## Building an AAR locally
+## Building an Android Archive (AAR) file locally
+
+An [Android Archive (AAR)](https://developer.android.com/studio/projects/android-library) can be used in other projects as a dependency, unlike APKs. It does not contain dependencies, so you may face build and runtime errors if dependencies are not installed in projects which make use of the AAR.
 
 - Set up the GPG signing configuration:
   - Create a GPG key pair: `gpg --expert --full-generate-key`.
@@ -183,25 +185,15 @@ signing.secretKeyRingFile=/Users/username/.ably/ably-java-secring.gpg
 
 ## Using `ably-java` / `ably-android` locally in other projects
 
-- Build the AAR: See [Building an AAR locally](#building-an-aar-locally)
+You may wish to make changes to Ably Java or Ably Android, and test it immediately in a separate project. For example, during development for [Ably Flutter](https://github.com/ably/ably-flutter) which depends on `ably-android`, a bug was found in `ably-android`. A small fix was done in `ably-java`, the AAR was built and tested in [Ably Flutter](https://github.com/ably/ably-flutter).
+
+- Build the AAR: See [Building an Android Archive (AAR) file locally](#building-an-android-archive-aar-file-locally)
 - Open the directory printed from the output of that command. Inside that folder, get the `ably-android-x.y.z.aar`, and place it your Android project's `libs/` directory. Create this directory if it doesn't exist.
-  - Update your `build.gradle` to use local AAR in `libs`:
+- Add an `implementation` dependency on the `.aar`:
 ```groovy
-rootProject.allprojects {
-    repositories {
-        google()
-        mavenCentral()
-        flatDir {
-            dirs project(':your_project_name').file('libs')
-        }
-    }
-}
+implementation files('libs/ably-android-1.2.9.aar')
 ```
-  - If the file was called `ably-android-1.2.9.aar` for example, use:
-```groovy
-implementation(name: 'ably-android-1.2.9', ext: 'aar')
-```
-- Add the dependencies found in `dependencies.gradle` to your project too. This is because the `.aar` does not contain dependencies.
+- Add the `implementation` (not `testImplementation`) dependencies found in `dependencies.gradle` to your project. This is because the `.aar` does not contain dependencies.
 - Build/run your application.
 
 ## Release Process
