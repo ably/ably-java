@@ -168,6 +168,34 @@ End-to-end tests for push notifications (ie where the Android client is the targ
 There are [instructions there](https://github.com/ably/push-example-android#using-this-app-yourself) for setting up the necessary FCM account, configuring the credentials and other parameters,
 in order to get end-to-end FCM notifications working.
 
+## Building an Android Archive (AAR) file locally
+
+An [Android Archive (AAR)](https://developer.android.com/studio/projects/android-library) can be used in other projects as a dependency, unlike APKs. It does not contain dependencies, so you may face build and runtime errors if dependencies are not installed in projects which make use of the AAR.
+
+- Set up the GPG signing configuration:
+  - Create a GPG key pair: `gpg --expert --full-generate-key`.
+  - Export a secret key ring file: `gpg --export-secret-keys -o ably-java-secring.gpg`.
+  - Add the details of the GPG key pair inside `./gradle/gradle.properties`:
+```bash
+signing.keyId=XXXXXXXX
+signing.password=ably-debug-key
+signing.secretKeyRingFile=/Users/username/.ably/ably-java-secring.gpg
+```
+- Run `./gradlew android:assembleRelease` or `./gradlew android:assembleDebug`.
+
+## Using `ably-java` / `ably-android` locally in other projects
+
+You may wish to make changes to Ably Java or Ably Android, and test it immediately in a separate project. For example, during development for [Ably Flutter](https://github.com/ably/ably-flutter) which depends on `ably-android`, a bug was found in `ably-android`. A small fix was done, the AAR was built and tested in [Ably Flutter](https://github.com/ably/ably-flutter).
+
+- Build the AAR: See [Building an Android Archive (AAR) file locally](#building-an-android-archive-aar-file-locally)
+- Open the directory printed from the output of that command. Inside that folder, get the `ably-android-x.y.z.aar`, and place it your Android project's `libs/` directory. Create this directory if it doesn't exist.
+- Add an `implementation` dependency on the `.aar`:
+```groovy
+implementation files('libs/ably-android-1.2.9.aar')
+```
+- Add the `implementation` (not `testImplementation`) dependencies found in `dependencies.gradle` to your project. This is because the `.aar` does not contain dependencies.
+- Build/run your application.
+
 ## Release Process
 
 This library uses [semantic versioning](http://semver.org/). For each release, the following needs to be done:
