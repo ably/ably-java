@@ -205,9 +205,6 @@ public class RealtimeAuthTest extends ParameterizedTest {
         }
     }
 
-    private void assertNotNull(String expected_token_value, String token) {
-    }
-
     /**
      * Init library with a key and token; verify Auth.clientId is null before
      * connection
