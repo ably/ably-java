@@ -1,14 +1,10 @@
 package io.ably.lib.test.util;
 
-import java.util.ArrayList;
-import java.util.regex.Pattern;
-
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.util.Log;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import java.util.ArrayList;
 
 public class TestCases {
     final ArrayList<Base> testCases;

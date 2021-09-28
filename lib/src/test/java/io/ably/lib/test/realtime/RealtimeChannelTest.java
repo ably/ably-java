@@ -1,8 +1,15 @@
 package io.ably.lib.test.realtime;
 
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.realtime.*;
+import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.Channel.MessageListener;
+import io.ably.lib.realtime.ChannelEvent;
+import io.ably.lib.realtime.ChannelState;
+import io.ably.lib.realtime.ChannelStateListener;
+import io.ably.lib.realtime.CompletionListener;
+import io.ably.lib.realtime.ConnectionState;
+import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
@@ -10,12 +17,16 @@ import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.util.MockWebsocketFactory;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.Defaults;
-import io.ably.lib.types.*;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ChannelMode;
+import io.ably.lib.types.ChannelOptions;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Message;
+import io.ably.lib.types.ProtocolMessage;
 import org.hamcrest.Matchers;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.Timeout;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -27,7 +38,14 @@ import java.util.List;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class RealtimeChannelTest extends ParameterizedTest {
 
@@ -599,7 +617,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             new Helpers.MessageWaiter(channel2).waitFor(messages.length);
 
             /* Validate that,
-             *	- we received every message that has been published
+             *  - we received every message that has been published
              */
             assertThat(receivedMessageStack.size(), is(equalTo(messages.length)));
 
@@ -690,7 +708,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             new Helpers.MessageWaiter(channel2).waitFor(messages.length + 2);
 
             /* Validate that,
-             *	- we received specific messages
+             *  - we received specific messages
              */
             assertThat(receivedMessageStack.size(), is(equalTo(messages.length)));
 
@@ -775,7 +793,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             new Helpers.MessageWaiter(channel2).waitFor(messages.length + 2);
 
             /* Validate that,
-             *	- received same amount of emitted specific message
+             *  - received same amount of emitted specific message
              *  - received messages are the ones we emitted
              */
             assertThat(receivedMessageStack.size(), is(equalTo(messages.length)));
@@ -1891,7 +1909,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         public Channel theChannel;
         boolean messageReceived;
 
-        public DetachingProtocolListener() {
+        DetachingProtocolListener() {
             messageReceived = false;
         }
 

@@ -1,5 +1,36 @@
 package io.ably.lib.test.rest;
 
+import fi.iki.elonen.NanoHTTPD;
+import fi.iki.elonen.router.RouterNanoHTTPD;
+import io.ably.lib.debug.DebugOptions;
+import io.ably.lib.http.HttpConstants;
+import io.ably.lib.http.HttpCore;
+import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.Auth;
+import io.ably.lib.rest.Auth.AuthMethod;
+import io.ably.lib.rest.Auth.TokenCallback;
+import io.ably.lib.rest.Auth.TokenDetails;
+import io.ably.lib.rest.Auth.TokenParams;
+import io.ably.lib.rest.Auth.TokenRequest;
+import io.ably.lib.rest.Channel;
+import io.ably.lib.test.common.Helpers;
+import io.ably.lib.test.common.Helpers.RawHttpTracker;
+import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.test.util.TokenServer;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Message;
+import io.ably.lib.types.MessageSerializer;
+import io.ably.lib.types.PaginatedResult;
+import io.ably.lib.types.Param;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.Timeout;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
@@ -9,34 +40,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import io.ably.lib.http.HttpConstants;
-import io.ably.lib.http.HttpCore;
-import io.ably.lib.test.common.Helpers;
-import io.ably.lib.types.*;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
-
-import fi.iki.elonen.NanoHTTPD;
-import fi.iki.elonen.router.RouterNanoHTTPD;
-import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.rest.Auth;
-import io.ably.lib.rest.Auth.AuthMethod;
-import io.ably.lib.rest.Auth.TokenCallback;
-import io.ably.lib.rest.Auth.TokenDetails;
-import io.ably.lib.rest.Auth.TokenParams;
-import io.ably.lib.rest.Auth.TokenRequest;
-import io.ably.lib.rest.Channel;
-import io.ably.lib.test.common.ParameterizedTest;
-import io.ably.lib.test.common.Helpers.RawHttpTracker;
-import io.ably.lib.test.util.TokenServer;
-
-import static org.junit.Assert.*;
+import static junit.framework.TestCase.assertNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class RestAuthTest extends ParameterizedTest {
 
@@ -1316,7 +1326,7 @@ public class RestAuthTest extends ParameterizedTest {
 
             /* Publish a message */
             Message messagePublishee = new Message(
-                    "wildcard",	/* name */
+                    "wildcard",  /* name */
                     String.valueOf(System.currentTimeMillis()), /* data */
                     "brian that is called brian" /* clientId */
             );
@@ -1396,7 +1406,7 @@ public class RestAuthTest extends ParameterizedTest {
 
             /* Publish a message */
             Message messagePublishee = new Message(
-                    "I have clientId",	/* name */
+                    "I have clientId",  /* name */
                     String.valueOf(System.currentTimeMillis()) /* data */
             );
 
@@ -1461,7 +1471,7 @@ public class RestAuthTest extends ParameterizedTest {
 
             /* Publish a message */
             Message messagePublishee = new Message(
-                    "I have clientId",	/* name */
+                    "I have clientId",  /* name */
                     String.valueOf(System.currentTimeMillis()), /* data */
                     messageClientId /* clientId */
             );
@@ -1901,7 +1911,7 @@ public class RestAuthTest extends ParameterizedTest {
     private static class SessionHandlerNanoHTTPD extends RouterNanoHTTPD {
         private final ArrayList<String> requestHistory = new ArrayList<>();
 
-        public SessionHandlerNanoHTTPD(int port) {
+        SessionHandlerNanoHTTPD(int port) {
             super(port);
         }
 

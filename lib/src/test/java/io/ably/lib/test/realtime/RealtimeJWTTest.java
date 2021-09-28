@@ -1,28 +1,43 @@
 package io.ably.lib.test.realtime;
 
-import static org.junit.Assert.*;
-
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
 import io.ably.lib.http.HttpCore;
-import io.ably.lib.http.HttpCore.*;
+import io.ably.lib.http.HttpCore.ResponseHandler;
 import io.ably.lib.http.HttpHelpers;
+import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.realtime.Channel;
+import io.ably.lib.realtime.ChannelState;
+import io.ably.lib.realtime.CompletionListener;
+import io.ably.lib.realtime.ConnectionEvent;
+import io.ably.lib.realtime.ConnectionState;
+import io.ably.lib.realtime.ConnectionStateListener;
+import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.Auth.TokenCallback;
+import io.ably.lib.rest.Auth.TokenParams;
+import io.ably.lib.test.common.Helpers.ChannelWaiter;
+import io.ably.lib.test.common.Helpers.ConnectionWaiter;
+import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Setup.Key;
-import io.ably.lib.util.Log;
-import org.junit.Before;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Message;
+import io.ably.lib.types.Param;
+import io.ably.lib.types.ProtocolMessage;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import io.ably.lib.types.*;
-import io.ably.lib.realtime.*;
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.rest.Auth.*;
-import io.ably.lib.test.common.Helpers.*;
-import io.ably.lib.test.common.ParameterizedTest;
-
 import java.io.UnsupportedEncodingException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class RealtimeJWTTest extends ParameterizedTest {
 

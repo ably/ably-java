@@ -1,6 +1,9 @@
 package io.ably.lib.test.android;
 
-import android.content.*;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.preference.PreferenceManager;
 
 import android.support.test.runner.AndroidJUnit4;
@@ -8,7 +11,8 @@ import android.util.Log;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import com.google.gson.JsonObject;
 import io.ably.lib.http.HttpCore;
-import io.ably.lib.push.*;
+import io.ably.lib.push.ActivationContext;
+import io.ably.lib.push.ActivationStateMachine;
 import io.ably.lib.push.ActivationStateMachine.AfterRegistrationSyncFailed;
 import io.ably.lib.push.ActivationStateMachine.CalledActivate;
 import io.ably.lib.push.ActivationStateMachine.CalledDeactivate;
@@ -27,8 +31,17 @@ import io.ably.lib.push.ActivationStateMachine.WaitingForNewPushDeviceDetails;
 import io.ably.lib.push.ActivationStateMachine.WaitingForPushDeviceDetails;
 import io.ably.lib.push.ActivationStateMachine.WaitingForRegistrationSync;
 import io.ably.lib.push.ActivationStateMachine.SyncRegistrationFailed;
+import io.ably.lib.push.LocalDevice;
+import io.ably.lib.push.Push;
+import io.ably.lib.push.PushBase;
+import io.ably.lib.push.PushChannel;
 import io.ably.lib.rest.DeviceDetails;
-import io.ably.lib.types.*;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.Callback;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Param;
+import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.util.Base64Coder;
 
 import java.util.ArrayList;

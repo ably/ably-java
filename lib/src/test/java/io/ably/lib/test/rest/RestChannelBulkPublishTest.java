@@ -1,21 +1,30 @@
 package io.ably.lib.test.rest;
 
+import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.realtime.Channel;
+import io.ably.lib.realtime.ChannelState;
+import io.ably.lib.rest.AblyRest;
+import io.ably.lib.test.common.Helpers.ChannelWaiter;
+import io.ably.lib.test.common.Helpers.MessageWaiter;
+import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.Message;
+import io.ably.lib.types.PaginatedResult;
+import io.ably.lib.types.Param;
+import io.ably.lib.types.PublishResponse;
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
 
-import io.ably.lib.test.common.ParameterizedTest;
-import io.ably.lib.test.common.Helpers.ChannelWaiter;
-import io.ably.lib.test.common.Helpers.MessageWaiter;
-import io.ably.lib.types.*;
-
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.realtime.*;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class RestChannelBulkPublishTest extends ParameterizedTest  {
 
