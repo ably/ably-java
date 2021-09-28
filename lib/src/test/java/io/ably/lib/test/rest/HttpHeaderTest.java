@@ -1,21 +1,19 @@
 package io.ably.lib.test.rest;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
+import fi.iki.elonen.NanoHTTPD;
+import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.Channel;
+import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ClientOptions;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import fi.iki.elonen.NanoHTTPD;
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.rest.Channel;
-import io.ably.lib.test.common.ParameterizedTest;
-import io.ably.lib.transport.Defaults;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ClientOptions;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static io.ably.lib.transport.Defaults.ABLY_AGENT_VERSION;
 
@@ -97,7 +95,7 @@ public class HttpHeaderTest extends ParameterizedTest {
     private static class SessionHandlerNanoHTTPD extends NanoHTTPD {
         Map<String, String> requestHeaders;
 
-        public SessionHandlerNanoHTTPD(int port) {
+        SessionHandlerNanoHTTPD(int port) {
             super(port);
         }
 

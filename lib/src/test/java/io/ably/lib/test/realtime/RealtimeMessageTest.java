@@ -12,7 +12,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import io.ably.lib.types.MessageExtras;
 import io.ably.lib.util.Serialisation;
 import org.junit.Ignore;

@@ -1,32 +1,23 @@
 package io.ably.lib.test.rest;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.*;
-import static org.mockito.AdditionalMatchers.aryEq;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.Proxy;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import io.ably.lib.http.*;
+import fi.iki.elonen.NanoHTTPD;
+import fi.iki.elonen.router.RouterNanoHTTPD;
+import io.ably.lib.http.AsyncHttpScheduler;
+import io.ably.lib.http.Http;
+import io.ably.lib.http.HttpConstants;
+import io.ably.lib.http.HttpCore;
+import io.ably.lib.http.HttpHelpers;
+import io.ably.lib.http.SyncHttpScheduler;
+import io.ably.lib.rest.AblyRest;
 import io.ably.lib.test.util.EmptyPlatformAgentProvider;
+import io.ably.lib.test.util.StatusHandler;
 import io.ably.lib.test.util.TimeHandler;
-import io.ably.lib.types.*;
-import io.ably.lib.util.Log;
+import io.ably.lib.transport.Defaults;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.Callback;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Param;
 import io.ably.lib.util.PlatformAgentProvider;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
@@ -43,11 +34,31 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import fi.iki.elonen.NanoHTTPD;
-import fi.iki.elonen.router.RouterNanoHTTPD;
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.test.util.StatusHandler;
-import io.ably.lib.transport.Defaults;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.Proxy;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.AdditionalMatchers.aryEq;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.verify;
 
 /**
  * Created by gokhanbarisaker on 2/2/16.
@@ -153,15 +164,15 @@ public class HttpTest {
             );
         } catch (AblyException e) {
             /* Verify that,
-             * 		- an {@code AblyException} with {@code ErrorInfo} having a `50x` status code is thrown.
+             *      - an {@code AblyException} with {@code ErrorInfo} having a `50x` status code is thrown.
              */
             assertThat(e.errorInfo.statusCode / 10, is(equalTo(50)));
         }
 
         /* Verify that,
-         * 		- {code HttpCore#httpExecute} have been called with (httpMaxRetryCount + 1) URLs
-         * 		- first call executed against production rest host
-         * 		- other calls executed against a random fallback host
+         *      - {code HttpCore#httpExecute} have been called with (httpMaxRetryCount + 1) URLs
+         *      - first call executed against production rest host
+         *      - other calls executed against a random fallback host
          */
         int expectedCallCount = options.httpMaxRetryCount + 1;
         assertThat(urlHostArgumentStack.size(), is(equalTo(expectedCallCount)));
@@ -214,7 +225,7 @@ public class HttpTest {
             );
         } catch (AblyException.HostFailedException e) {
             /* Verify that,
-             * 		- a {@code AblyException.HostFailedException} is thrown.
+             *      - a {@code AblyException.HostFailedException} is thrown.
              */
             assertTrue(true);
         } catch (AblyException e) {
@@ -372,7 +383,7 @@ public class HttpTest {
             );
         } catch (AblyException e) {
             /* Verify that,
-             * 		- an {@code AblyException} with {@code ErrorInfo} having the 500 error from above
+             *      - an {@code AblyException} with {@code ErrorInfo} having the 500 error from above
              */
             ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, 50000);
             assertThat(e, new ErrorInfoMatcher(expectedErrorInfo));
@@ -392,7 +403,7 @@ public class HttpTest {
             );
         } catch (AblyException e) {
             /* Verify that,
-             * 		- an {@code AblyException} with {@code ErrorInfo} having the 500 error from above
+             *      - an {@code AblyException} with {@code ErrorInfo} having the 500 error from above
              */
             ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, 50000);
             assertThat(e, new ErrorInfoMatcher(expectedErrorInfo));
@@ -467,9 +478,7 @@ public class HttpTest {
                     false /* Ignore */
             );
         } catch (AblyException e) {
-            /* Verify that,
-             * 		- an {@code AblyException} with {@code ErrorInfo} with the 500 error from above.
-             */
+            /* Verify that, an {@code AblyException} with {@code ErrorInfo} with the 500 error from above. */
             ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, 50000);
             assertThat(e, new ErrorInfoMatcher(expectedErrorInfo));
         }
@@ -559,9 +568,9 @@ public class HttpTest {
                 );
 
         /* Verify that,
-         * 		- delivered expected response
-         * 		- first call executed against production rest host
-         * 		- other calls executed against a random custom fallback host */
+         * - delivered expected response
+         * - first call executed against production rest host
+         * - other calls executed against a random custom fallback host */
         List<URL> allValues = url.getAllValues();
         assertThat("Unexpected response", responseActual, is(equalTo(responseExpected)));
         assertThat("Unexpected default primary host", allValues.get(0).getHost(), is(equalTo(Defaults.HOST_REST)));
@@ -616,9 +625,7 @@ public class HttpTest {
                     false /* Ignore requireAblyAuth */
             );
         } catch (AblyException.HostFailedException e) {
-            /* Verify that,
-             * 		- a {@code AblyException.HostFailedException} is thrown.
-             */
+            /* Verify that, a {@code AblyException.HostFailedException} is thrown. */
             assertTrue(true);
         } catch (AblyException e) {
             assertTrue(false);
@@ -1357,7 +1364,7 @@ public class HttpTest {
          * @param nope            Expected nope
          * @param value           Expected value that will be returned after grumpiness level goes below or equal to 0.
          */
-        public GrumpyAnswer(int grumpinessLevel, Throwable nope, String value) {
+        GrumpyAnswer(int grumpinessLevel, Throwable nope, String value) {
             this.grumpinessLevel = grumpinessLevel;
             this.nope = nope;
             this.value = value;
@@ -1376,7 +1383,7 @@ public class HttpTest {
     static class ErrorInfoMatcher extends TypeSafeMatcher<AblyException> {
         ErrorInfo errorInfo;
 
-        public ErrorInfoMatcher(ErrorInfo errorInfo) {
+        ErrorInfoMatcher(ErrorInfo errorInfo) {
             super();
             this.errorInfo = errorInfo;
         }

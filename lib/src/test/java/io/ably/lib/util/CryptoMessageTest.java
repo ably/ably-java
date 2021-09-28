@@ -35,7 +35,7 @@ public class CryptoMessageTest {
         private final String fileName;
         public final String cipherName;
 
-        private FixtureSet(final int keySize) {
+        FixtureSet(final int keySize) {
             if (keySize < 1) {
                 throw new IllegalArgumentException("keySize");
             }

@@ -1,7 +1,12 @@
 package io.ably.lib.test.realtime;
 
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.realtime.*;
+import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.realtime.Channel;
+import io.ably.lib.realtime.ChannelState;
+import io.ably.lib.realtime.ConnectionEvent;
+import io.ably.lib.realtime.ConnectionState;
+import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.TokenDetails;
@@ -11,13 +16,22 @@ import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Setup;
-import io.ably.lib.types.*;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Message;
+import io.ably.lib.types.Param;
+import io.ably.lib.types.ProtocolMessage;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class RealtimeAuthTest extends ParameterizedTest {
 
@@ -596,7 +610,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             /* Publish a message */
             Message messageToPublish = new Message(
-                    "I have clientId",	/* name */
+                    "I have clientId",    /* name */
                     String.valueOf(System.currentTimeMillis()) /* data */
             );
             channel.publish(new Message[] { messageToPublish });
@@ -618,7 +632,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             /* Publish a message with explicit clientId */
             protocolListener.reset();
             messageToPublish = new Message(
-                    "I have clientId",	/* name */
+                    "I have clientId",    /* name */
                     String.valueOf(System.currentTimeMillis()),
                     clientId /* clientId */
             );
@@ -642,7 +656,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             /* Publish a message with incorrect clientId */
             protocolListener.reset();
             messageToPublish = new Message(
-                    "I have clientId",	/* name */
+                    "I have clientId",   /* name */
                     String.valueOf(System.currentTimeMillis()),
                     "invalid clientId" /* clientId */
             );
@@ -661,7 +675,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             /* Publish a message to verify that use of the channel can continue */
             messageToPublish = new Message(
-                    "I have clientId",	/* name */
+                    "I have clientId",    /* name */
                     String.valueOf(System.currentTimeMillis()) /* data */
             );
             channel.publish(new Message[] { messageToPublish });
@@ -720,7 +734,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             /* publish before connection and attach */
             Message messageToPublish = new Message(
-                    "I have clientId",	/* name */
+                    "I have clientId",    /* name */
                     String.valueOf(System.currentTimeMillis()),
                     clientId /* clientId */
             );
@@ -750,7 +764,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             /* Publish a message to verify that use of the channel can continue */
             protocolListener.reset();
             messageToPublish = new Message(
-                    "I have clientId",	/* name */
+                    "I have clientId",  /* name */
                     String.valueOf(System.currentTimeMillis()) /* data */
             );
             channel.publish(new Message[] { messageToPublish });

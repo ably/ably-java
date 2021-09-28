@@ -7,7 +7,11 @@ import static org.junit.Assert.fail;
 import java.util.HashMap;
 import java.util.UUID;
 
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import io.ably.lib.rest.AblyRest;
