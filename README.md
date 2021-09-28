@@ -451,12 +451,12 @@ rest.push.admin.publishAsync(recipient, payload, , new CompletionListener() {
 #### Activating a device and receiving notifications (Android only)
 
 See https://www.ably.io/documentation/general/push/activate-subscribe for detail.
-In order to enable an app as a recipent of Ably push messages:
+In order to enable an app as a recipient of Ably push messages:
 
 - register your app with Firebase Cloud Messaging (FCM) and configure the FCM credentials in the app dashboard;
-- include a service derived from `FirebaseMessagingService` and ensure it is started;
-- include a method to handle registration notifications from Android, such as including a service derived from `AblyFirebaseInstanceIdService` and ensure it is started;
-- initialise the device as an active push recipient:
+- Implement a service extending [`FirebaseMessagingService`](https://firebase.google.com/docs/reference/android/com/google/firebase/messaging/FirebaseMessagingService) and ensure it is declared in your `AndroidManifest.xml`, as per [Firebase's guide: Edit your app manifest](https://firebase.google.com/docs/cloud-messaging/android/client#manifest);
+  - Override [`onNewToken`](https://firebase.google.com/docs/reference/android/com/google/firebase/messaging/FirebaseMessagingService#public-void-onnewtoken-string-token), and provide Ably with the registration token: `ActivationContext.getActivationContext(this).onNewRegistrationToken(RegistrationToken.Type.FCM, token);`. This method will be called whenever a new token is provided by Android.
+- Activate the device for push notifications:
 
 ```
 realtime.setAndroidContext(context);
