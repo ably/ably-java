@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class ConnectionManager implements ConnectListener {
@@ -980,7 +981,7 @@ public class ConnectionManager implements ConnectListener {
      * @param errorInfo Error associated with unsuccessful authentication
      */
     public void onAuthError(ErrorInfo errorInfo) {
-        Log.i(TAG, String.format("onAuthError: (%d) %s", errorInfo.code, errorInfo.message));
+        Log.i(TAG, String.format(Locale.ROOT, "onAuthError: (%d) %s", errorInfo.code, errorInfo.message));
 
         if(errorInfo.statusCode == 403) {
             ConnectionStateChange failedStateChange =

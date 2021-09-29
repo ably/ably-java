@@ -1,5 +1,7 @@
 package io.ably.lib.types;
 
+import java.util.Locale;
+
 public class RegistrationToken {
     public Type type;
     public String token;
@@ -23,14 +25,14 @@ public class RegistrationToken {
 
         public static Type fromName(String name) {
             try {
-                return Type.valueOf(name.toUpperCase());
+                return Type.valueOf(name.toUpperCase(Locale.ROOT));
             } catch(Throwable t) {
                 return null;
             }
         }
 
         public String toName() {
-            return name().toLowerCase();
+            return name().toLowerCase(Locale.ROOT);
         }
     }
 

@@ -518,7 +518,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             ablyRealtime.connection.on(new ConnectionStateListener() {
                 @Override
                 public void onConnectionStateChanged(ConnectionStateChange state) {
-                    System.out.println(String.format("New state: %s", state.current));
+                    System.out.printf("New state: %s%n", state.current);
                     synchronized (reachedFinalState) {
                         reachedFinalState[0] = state.current == ConnectionState.closed ||
                                 state.current == ConnectionState.suspended ||

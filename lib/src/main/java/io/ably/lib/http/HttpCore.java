@@ -11,6 +11,7 @@ import java.net.Proxy;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import com.google.gson.JsonParseException;
@@ -408,7 +409,7 @@ public class HttpCore {
 
         for (Map.Entry<String, List<String>> entry : caseSensitiveHeaders.entrySet()) {
             if (entry.getKey() != null) {
-                response.headers.put(entry.getKey().toLowerCase(), entry.getValue());
+                response.headers.put(entry.getKey().toLowerCase(Locale.ROOT), entry.getValue());
                 if (Log.level <= Log.VERBOSE)
                     for (String val : entry.getValue())
                         Log.v(TAG, entry.getKey() + ": " + val);
@@ -575,7 +576,7 @@ public class HttpCore {
                 return null;
             }
 
-            return headers.get(name.toLowerCase());
+            return headers.get(name.toLowerCase(Locale.ROOT));
         }
     }
 

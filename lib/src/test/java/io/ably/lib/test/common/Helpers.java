@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -78,8 +79,8 @@ public class Helpers {
             return result;
         } catch (AblyException e) {
             try {
-                assertNotNull(String.format("got error \"%s\", none expected", e.errorInfo.message), expectedError);
-                assertEquals(String.format("expected to match \"%s\", got \"%s\"", expectedError, e.errorInfo.message), true, Pattern.compile(expectedError).matcher(e.errorInfo.message).find());
+                assertNotNull(String.format(Locale.ROOT, "got error \"%s\", none expected", e.errorInfo.message), expectedError);
+                assertEquals(String.format(Locale.ROOT, "expected to match \"%s\", got \"%s\"", expectedError, e.errorInfo.message), true, Pattern.compile(expectedError).matcher(e.errorInfo.message).find());
                 if (expectedCode > 0) {
                     assertEquals(expectedCode, e.errorInfo.code);
                 }
@@ -95,17 +96,17 @@ public class Helpers {
     }
 
     public static void assertInstanceOf(Class<?> c, Object o) {
-        assertTrue(String.format("expected object of class %s to be instance of %s", o.getClass().getName(), c.getName()), c.isInstance(o));
+        assertTrue(String.format(Locale.ROOT, "expected object of class %s to be instance of %s", o.getClass().getName(), c.getName()), c.isInstance(o));
     }
 
     public static void assertSize(int expected, Collection<?> c) {
         int size = c.size();
-        assertEquals(String.format("expected collection to have size %d, got %d: %s", expected, size, c), expected, size);
+        assertEquals(String.format(Locale.ROOT, "expected collection to have size %d, got %d: %s", expected, size, c), expected, size);
     }
 
     public static <T> void assertSize(int expected, T[] c) {
         int size = c.length;
-        assertEquals(String.format("expected array to have size %d, got %d: %s", expected, size, c), expected, size);
+        assertEquals(String.format(Locale.ROOT, "expected array to have size %d, got %d: %s", expected, size, c), expected, size);
     }
 
     public static HttpCore.Response httpResponseFromErrorInfo(final ErrorInfo errorInfo) {
@@ -816,7 +817,7 @@ public class Helpers {
             if(requestHeaders != null) {
                 normalisedHeaders.putAll(requestHeaders);
                 for(String header : requestHeaders.keySet()) {
-                    normalisedHeaders.put(header.toLowerCase(), requestHeaders.get(header));
+                    normalisedHeaders.put(header.toLowerCase(Locale.ROOT), requestHeaders.get(header));
                 }
             }
             RawHttpRequest req = new RawHttpRequest();
@@ -863,7 +864,7 @@ public class Helpers {
             if(headers != null) {
                 normalisedHeaders.putAll(headers);
                 for(String header : headers.keySet()) {
-                    normalisedHeaders.put(header.toLowerCase(), headers.get(header));
+                    normalisedHeaders.put(header.toLowerCase(Locale.ROOT), headers.get(header));
                 }
                 response.headers = normalisedHeaders;
             }
@@ -908,7 +909,7 @@ public class Helpers {
             List<String> result = null;
             RawHttpRequest req = get(id);
             if(req != null) {
-                header = header.toLowerCase();
+                header = header.toLowerCase(Locale.ROOT);
                 if(header.equalsIgnoreCase("authorization")) {
                     result = Collections.singletonList(req.authHeader);
                 } else {
@@ -922,7 +923,7 @@ public class Helpers {
             List<String> result = null;
             RawHttpRequest req = get(id);
             if(req != null) {
-                header = header.toLowerCase();
+                header = header.toLowerCase(Locale.ROOT);
                 List<String>headers = req.response.headers.get(header);
                 if(headers != null && headers.size() > 0) {
                     result = headers;

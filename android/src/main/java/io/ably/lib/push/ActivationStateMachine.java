@@ -27,6 +27,7 @@ import io.ably.lib.util.Serialisation;
 
 import java.lang.reflect.Field;
 import java.util.ArrayDeque;
+import java.util.Locale;
 
 public class ActivationStateMachine {
     public static class CalledActivate extends ActivationStateMachine.Event {
@@ -859,7 +860,7 @@ public class ActivationStateMachine {
             final String name = e.getPersistedName();
             if (name != null) {
                 editor.putString(
-                    String.format("%s[%d]", ActivationStateMachine.PersistKeys.PENDING_EVENTS_PREFIX, i),
+                    String.format(Locale.ROOT, "%s[%d]", ActivationStateMachine.PersistKeys.PENDING_EVENTS_PREFIX, i),
                     name
                 );
             }
@@ -883,7 +884,7 @@ public class ActivationStateMachine {
         int length = activationContext.getPreferences().getInt(ActivationStateMachine.PersistKeys.PENDING_EVENTS_LENGTH, 0);
         ArrayDeque<ActivationStateMachine.Event> deque = new ArrayDeque<>(length);
         for (int i = 0; i < length; i++) {
-            String className = activationContext.getPreferences().getString(String.format("%s[%d]", ActivationStateMachine.PersistKeys.PENDING_EVENTS_PREFIX, i), "");
+            String className = activationContext.getPreferences().getString(String.format(Locale.ROOT, "%s[%d]", ActivationStateMachine.PersistKeys.PENDING_EVENTS_PREFIX, i), "");
             ActivationStateMachine.Event event = Event.constructEventByName(className);
             if (event != null) {
                 deque.add(event);
