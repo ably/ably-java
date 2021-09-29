@@ -1,5 +1,17 @@
 # Change Log
 
+## [v1.2.10](https://github.com/ably/ably-java/tree/v1.2.10)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.9...v1.2.10)
+
+**Fixed bugs:**
+
+- Using Firebase installation ID as registration token: Users cannot reactivate the device after deactivating [\#715](https://github.com/ably/ably-java/issues/715)
+
+**Merged pull requests:**
+
+- Fix: Use `FirebaseMessaging\#getToken\(\)` to get registration token [\#717](https://github.com/ably/ably-java/pull/717) ([ben-xD](https://github.com/ben-xD))
+
 ## [v1.2.9](https://github.com/ably/ably-java/tree/v1.2.9)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.8...v1.2.9)
