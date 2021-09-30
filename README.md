@@ -240,14 +240,14 @@ Callback that provides either tokens (`TokenDetails`), or signed token requests 
 ```java
 ClientOptions options = new ClientOptions();
     
-    options.authCallback = new Auth.TokenCallback() {
-        @Override
-            public Object getTokenRequest(Auth.TokenParams params) {
-                System.out.println("Token Parms: " + parms);
-                // process parms and return what is needed
-                return null;
-            }
-        };
+options.authCallback = new Auth.TokenCallback() {
+    @Override
+    public Object getTokenRequest(Auth.TokenParams params) {
+        System.out.println("Token Params: " + params);
+        // TODO: process params
+        return null; // TODO: return TokenDetails or TokenRequest
+    }
+};
 
 AblyRealtime ablyRealtime = new AblyRealtime(options);
 ```
