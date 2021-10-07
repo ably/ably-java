@@ -10,6 +10,7 @@ import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import com.google.gson.JsonObject;
+import io.ably.lib.http.BasePaginatedQuery;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.push.ActivationContext;
 import io.ably.lib.push.ActivationStateMachine;
@@ -1393,8 +1394,24 @@ public class AndroidPushTest {
                         testActivation.adminRest.push.admin.channelSubscriptions.save(sub);
                     }
 
-                    Param[] params = Param.array(new Param("deviceId", deviceId));
-                    params = Param.set(params, "channel", testChannel);
+
+                    Param[] params = Param.array(new Param("channel", testChannel));
+
+                    try {
+                        LocalDevice localDevice = testActivation.rest.push.getActivationContext().getLocalDevice();
+                        if (localDevice == null || localDevice.deviceIdentityToken == null) {
+                            // Alternatively, we could store a queue of pending subscriptions in the
+                            // device storage. But then, in order to know if this subscription operation
+                            // succeeded, you would have to add a BroadcastReceiver in AndroidManifest.xml.
+                            // Arguably that encourages just ignoring any errors, and forcing you to listen
+                            // to the broadcast after push.activate has finished before subscribing is
+                            // more robust.
+                            throw AblyException.fromThrowable(new Exception("cannot use device before AblyRest.push.activate has finished"));
+                        }
+
+                        params = Param.set(params, "deviceId", localDevice.id);
+                    } catch(AblyException e) {}
+
 
                     if(useClientId) {
                         params = Param.set(params, "clientId", testClientId);
