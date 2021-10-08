@@ -511,6 +511,10 @@ public class AndroidPushTest {
                 this.expectedErrorCode = expectedErrorCode;
             }
 
+            void debugLog(String action) {
+                Log.d("AndroidPushTest", "Timestamp: " + System.currentTimeMillis() + " message: " +  action);
+            }
+
             @Override
             public void run() throws Exception {
                 // Register local device before doing anything, in order to trigger RSH3a2a.
@@ -525,7 +529,9 @@ public class AndroidPushTest {
                 try {
                     Helpers.AsyncWaiter<Intent> activateCallback = broadcastWaiter("PUSH_ACTIVATE");
                     activation.rest.push.activate(false);
+                    debugLog(" before -> activateCallback.waitFor(), line 532");
                     activateCallback.waitFor();
+                    debugLog(" after -> activateCallback.waitFor(), line 534");
 
                     LocalDevice device = activation.rest.push.getLocalDevice();
                     assertNotNull(device.id);
@@ -574,7 +580,9 @@ public class AndroidPushTest {
                     if (activation.machine.current instanceof WaitingForRegistrationSync) {
                         if (useCustomRegistrar) {
                             // RSH3a2a2
+                            debugLog(" before -> registerCallback.waitFor(), line 583");
                             registerCallback.waitFor();
+                            debugLog(" after -> registerCallback.waitFor(), line 585");
                             assertNull(registerCallback.error);
                         } else {
                             // RSH3a2a3
@@ -608,7 +616,9 @@ public class AndroidPushTest {
                     } // else: RSH3a2a1 validation failed
 
                     // RSH3e2 or RSH3e3
+                    debugLog(" before -> activateCallback.waitFor(), line 619");
                     activateCallback.waitFor();
+                    debugLog(" after -> activateCallback.waitFor(), line 621");
                     if (expectedErrorCode != null) {
                         assertNotNull(activateCallback.error);
                         assertEquals(expectedErrorCode.intValue(), activateCallback.error.code);
