@@ -3,18 +3,17 @@ package io.ably.lib.push;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.installations.FirebaseInstallations;
-import com.google.firebase.installations.InstallationTokenResult;
+
+import com.google.firebase.messaging.FirebaseMessaging;
+
+import java.util.WeakHashMap;
+
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.util.Log;
-
-import java.util.WeakHashMap;
 
 public class ActivationContext {
     public ActivationContext(Context context) {
@@ -152,20 +151,15 @@ public class ActivationContext {
 
     protected void getRegistrationToken(final Callback<String> callback) {
         Log.v(TAG, "getRegistrationToken(): callback=" + callback);
-        FirebaseInstallations.getInstance().getToken(true)
-                .addOnCompleteListener(new OnCompleteListener<InstallationTokenResult>() {
-                    @Override
-                    public void onComplete(Task<InstallationTokenResult> task) {
-                        Log.v(TAG, "getRegistrationToken(): firebase called onComplete(): task=" + task);
-                        if(task.isSuccessful()) {
-                            /* Get new Instance ID token */
-                            String token = task.getResult().getToken();
-                            callback.onSuccess(token);
-                        } else {
-                            callback.onError(ErrorInfo.fromThrowable(task.getException()));
-                        }
-                    }
-                });
+        FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
+            Log.v(TAG, "getRegistrationToken(): FirebaseMessaging#getToken() completed: task=" + task);
+            if(task.isSuccessful()) {
+                String registrationToken = task.getResult();
+                callback.onSuccess(registrationToken);
+            } else {
+                callback.onError(ErrorInfo.fromThrowable(task.getException()));
+            }
+        });
     }
 
     public static void setActivationContext(Context applicationContext, ActivationContext activationContext) {
