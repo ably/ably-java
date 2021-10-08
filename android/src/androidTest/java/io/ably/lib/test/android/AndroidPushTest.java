@@ -39,6 +39,7 @@ import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Channel;
+import io.ably.lib.rest.DeviceDetails;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Helpers.AsyncWaiter;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
@@ -52,18 +53,21 @@ import io.ably.lib.types.Param;
 import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.IntentUtils;
+import io.ably.lib.util.JsonUtils;
 import io.ably.lib.util.Serialisation;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import static android.support.test.InstrumentationRegistry.getContext;
+import static io.ably.lib.test.common.Helpers.assertArrayUnorderedEquals;
 import static io.ably.lib.test.common.Helpers.assertInstanceOf;
 import static io.ably.lib.test.common.Helpers.assertSize;
 import static io.ably.lib.util.Serialisation.gson;
@@ -1332,110 +1336,110 @@ public class AndroidPushTest {
     }
 
     // RSH4e
-//    @Test
-//    public void PushChannel_listSubscriptions() throws Exception {
-//        class TestCase extends TestCases.Base {
-//            private boolean useClientId;
-//            private TestActivation testActivation;
-//
-//            public TestCase(String name, boolean useClientId) {
-//                super(name, null);
-//                this.useClientId = useClientId;
-//            }
-//
-//            @Override
-//            public void run() throws Exception {
-//                testActivation = new TestActivation();
-//
-//                final String testClientId = "testClient";
-//                final String testChannel = "pushenabled:foo";
-//
-//                if (useClientId) {
-//                    testActivation.rest.auth.setClientId(testClientId);
-//                    testActivation.rest.auth.authorize(new Auth.TokenParams() {{ clientId = testClientId; }}, null);
-//                } else {
-//                    testActivation.rest.auth.authorize(null, null);
-//                }
-//
-//                testActivation.registerAndWait();
-//                DeviceDetails otherDevice = DeviceDetails.fromJsonObject(JsonUtils.object()
-//                        .add("id", "other")
-//                        .add("platform", "android")
-//                        .add("formFactor", "tablet")
-//                        .add("metadata", JsonUtils.object())
-//                        .add("push", JsonUtils.object()
-//                                .add("recipient", JsonUtils.object()
-//                                        .add("transportType", "fcm")
-//                                        .add("registrationToken", "qux")))
-//                        .toJson());
-//
-//                String deviceId = testActivation.rest.push.getLocalDevice().id;
-//
-//                Push.ChannelSubscription[] fixtures = new Push.ChannelSubscription[] {
-//                    PushBase.ChannelSubscription.forDevice(testChannel, deviceId),
-//                    PushBase.ChannelSubscription.forDevice(testChannel, "other"),
-//                    PushBase.ChannelSubscription.forDevice("pushenabled:bar", deviceId),
-//                    PushBase.ChannelSubscription.forClientId(testChannel, testClientId),
-//                    PushBase.ChannelSubscription.forClientId(testChannel, "otherClient"),
-//                    PushBase.ChannelSubscription.forClientId("pushenabled:bar", testClientId),
-//                };
-//
-//                try {
-//                    testActivation.adminRest.push.admin.deviceRegistrations.save(otherDevice);
-//
-//                    for (PushBase.ChannelSubscription sub : fixtures) {
-//                        testActivation.adminRest.push.admin.channelSubscriptions.save(sub);
-//                    }
-//
-//
-//                    Param[] params = Param.array(new Param("channel", testChannel));
-//
-//                    try {
-//                        LocalDevice localDevice = testActivation.rest.push.getActivationContext().getLocalDevice();
-//                        if (localDevice == null || localDevice.deviceIdentityToken == null) {
-//                            // Alternatively, we could store a queue of pending subscriptions in the
-//                            // device storage. But then, in order to know if this subscription operation
-//                            // succeeded, you would have to add a BroadcastReceiver in AndroidManifest.xml.
-//                            // Arguably that encourages just ignoring any errors, and forcing you to listen
-//                            // to the broadcast after push.activate has finished before subscribing is
-//                            // more robust.
-//                            throw AblyException.fromThrowable(new Exception("cannot use device before AblyRest.push.activate has finished"));
-//                        }
-//
-//                        params = Param.set(params, "deviceId", localDevice.id);
-//                    } catch(AblyException e) {}
-//
-//
-//                    if(useClientId) {
-//                        params = Param.set(params, "clientId", testClientId);
-//                    }
-//
-//                    Push.ChannelSubscription[] got = testActivation.rest.channels.get(testChannel)
-//                        .push.listSubscriptions(params).items();
-//
-//                    ArrayList<Push.ChannelSubscription> expected = new ArrayList<>(2);
-//                    expected.add(PushBase.ChannelSubscription.forDevice(testChannel, deviceId));
-//                    if (useClientId) {
-//                        expected.add(PushBase.ChannelSubscription.forClientId(testChannel, testClientId));
-//                    }
-//
-//                    assertArrayUnorderedEquals(expected.toArray(), got);
-//                } finally {
-//                    testActivation.adminRest.push.admin.deviceRegistrations.remove(otherDevice);
-//                    for (PushBase.ChannelSubscription sub : fixtures) {
-//                        testActivation.adminRest.push.admin.channelSubscriptions.remove(sub);
-//                    }
-//                }
-//            }
-//        }
-//
-//        TestCases testCases = new TestCases();
-//
-//        testCases.add(new TestCase("without client ID", false));
-//        testCases.add(new TestCase("with client ID", true));
-//
-//        testCases.run();
-//    }
+    @Test
+    public void PushChannel_listSubscriptions() throws Exception {
+        class TestCase extends TestCases.Base {
+            private boolean useClientId;
+            private TestActivation testActivation;
+
+            public TestCase(String name, boolean useClientId) {
+                super(name, null);
+                this.useClientId = useClientId;
+            }
+
+            @Override
+            public void run() throws Exception {
+                testActivation = new TestActivation();
+
+                final String testClientId = "testClient";
+                final String testChannel = "pushenabled:foo";
+
+                if (useClientId) {
+                    testActivation.rest.auth.setClientId(testClientId);
+                    testActivation.rest.auth.authorize(new Auth.TokenParams() {{ clientId = testClientId; }}, null);
+                } else {
+                    testActivation.rest.auth.authorize(null, null);
+                }
+
+                testActivation.registerAndWait();
+                DeviceDetails otherDevice = DeviceDetails.fromJsonObject(JsonUtils.object()
+                        .add("id", "other")
+                        .add("platform", "android")
+                        .add("formFactor", "tablet")
+                        .add("metadata", JsonUtils.object())
+                        .add("push", JsonUtils.object()
+                                .add("recipient", JsonUtils.object()
+                                        .add("transportType", "fcm")
+                                        .add("registrationToken", "qux")))
+                        .toJson());
+
+                String deviceId = testActivation.rest.push.getLocalDevice().id;
+
+                Push.ChannelSubscription[] fixtures = new Push.ChannelSubscription[] {
+                    PushBase.ChannelSubscription.forDevice(testChannel, deviceId),
+                    PushBase.ChannelSubscription.forDevice(testChannel, "other"),
+                    PushBase.ChannelSubscription.forDevice("pushenabled:bar", deviceId),
+                    PushBase.ChannelSubscription.forClientId(testChannel, testClientId),
+                    PushBase.ChannelSubscription.forClientId(testChannel, "otherClient"),
+                    PushBase.ChannelSubscription.forClientId("pushenabled:bar", testClientId),
+                };
+
+                try {
+                    testActivation.adminRest.push.admin.deviceRegistrations.save(otherDevice);
+
+                    for (PushBase.ChannelSubscription sub : fixtures) {
+                        testActivation.adminRest.push.admin.channelSubscriptions.save(sub);
+                    }
+
+
+                    Param[] params = Param.array(new Param("channel", testChannel));
+
+                    try {
+                        LocalDevice localDevice = testActivation.rest.push.getActivationContext().getLocalDevice();
+                        if (localDevice == null || localDevice.deviceIdentityToken == null) {
+                            // Alternatively, we could store a queue of pending subscriptions in the
+                            // device storage. But then, in order to know if this subscription operation
+                            // succeeded, you would have to add a BroadcastReceiver in AndroidManifest.xml.
+                            // Arguably that encourages just ignoring any errors, and forcing you to listen
+                            // to the broadcast after push.activate has finished before subscribing is
+                            // more robust.
+                            throw AblyException.fromThrowable(new Exception("cannot use device before AblyRest.push.activate has finished"));
+                        }
+
+                        params = Param.set(params, "deviceId", localDevice.id);
+                    } catch(AblyException e) {}
+
+
+                    if(useClientId) {
+                        params = Param.set(params, "clientId", testClientId);
+                    }
+
+                    Push.ChannelSubscription[] got = testActivation.rest.channels.get(testChannel)
+                        .push.listSubscriptions(params).items();
+
+                    ArrayList<Push.ChannelSubscription> expected = new ArrayList<>(2);
+                    expected.add(PushBase.ChannelSubscription.forDevice(testChannel, deviceId));
+                    if (useClientId) {
+                        expected.add(PushBase.ChannelSubscription.forClientId(testChannel, testClientId));
+                    }
+
+                    assertArrayUnorderedEquals(expected.toArray(), got);
+                } finally {
+                    testActivation.adminRest.push.admin.deviceRegistrations.remove(otherDevice);
+                    for (PushBase.ChannelSubscription sub : fixtures) {
+                        testActivation.adminRest.push.admin.channelSubscriptions.remove(sub);
+                    }
+                }
+            }
+        }
+
+        TestCases testCases = new TestCases();
+
+        testCases.add(new TestCase("without client ID", false));
+        testCases.add(new TestCase("with client ID", true));
+
+        testCases.run();
+    }
 
     @Test
     public void Realtime_push_interface() throws Exception {
