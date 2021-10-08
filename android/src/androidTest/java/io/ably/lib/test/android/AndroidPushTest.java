@@ -529,9 +529,7 @@ public class AndroidPushTest {
                 try {
                     Helpers.AsyncWaiter<Intent> activateCallback = broadcastWaiter("PUSH_ACTIVATE");
                     activation.rest.push.activate(false);
-                    debugLog(" before -> activateCallback.waitFor(), line 532");
                     activateCallback.waitFor();
-                    debugLog(" after -> activateCallback.waitFor(), line 534");
 
                     LocalDevice device = activation.rest.push.getLocalDevice();
                     assertNotNull(device.id);
