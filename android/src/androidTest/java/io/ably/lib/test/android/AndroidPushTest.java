@@ -614,9 +614,7 @@ public class AndroidPushTest {
                     } // else: RSH3a2a1 validation failed
 
                     // RSH3e2 or RSH3e3
-                    debugLog(" before -> activateCallback.waitFor(), line 619");
                     activateCallback.waitFor();
-                    debugLog(" after -> activateCallback.waitFor(), line 621");
                     if (expectedErrorCode != null) {
                         assertNotNull(activateCallback.error);
                         assertEquals(expectedErrorCode.intValue(), activateCallback.error.code);
