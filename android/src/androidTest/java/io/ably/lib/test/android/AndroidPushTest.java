@@ -511,10 +511,6 @@ public class AndroidPushTest {
                 this.expectedErrorCode = expectedErrorCode;
             }
 
-            void debugLog(String action) {
-                Log.d("AndroidPushTest", "Timestamp: " + System.currentTimeMillis() + " message: " +  action);
-            }
-
             @Override
             public void run() throws Exception {
                 // Register local device before doing anything, in order to trigger RSH3a2a.
@@ -578,7 +574,7 @@ public class AndroidPushTest {
                     if (activation.machine.current instanceof WaitingForRegistrationSync) {
                         if (useCustomRegistrar) {
                             // RSH3a2a2
-                            debugLog(" before -> registerCallback.waitFor(), line 583");
+                            Thread.sleep(50);
                             registerCallback.waitFor();
                             assertNull(registerCallback.error);
                         } else {
