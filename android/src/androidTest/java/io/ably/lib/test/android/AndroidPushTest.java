@@ -578,7 +578,6 @@ public class AndroidPushTest {
                     if (activation.machine.current instanceof WaitingForRegistrationSync) {
                         if (useCustomRegistrar) {
                             // RSH3a2a2
-                            debugLog(" before -> registerCallback.waitFor(), line 583");
                             registerCallback.waitFor();
                             debugLog(" after -> registerCallback.waitFor(), line 585");
                             assertNull(registerCallback.error);
