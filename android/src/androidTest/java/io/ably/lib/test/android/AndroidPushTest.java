@@ -574,7 +574,7 @@ public class AndroidPushTest {
                     if (activation.machine.current instanceof WaitingForRegistrationSync) {
                         if (useCustomRegistrar) {
                             // RSH3a2a2
-                            Thread.sleep(50);
+                            //Thread.sleep(50);
                             registerCallback.waitFor();
                             assertNull(registerCallback.error);
                         } else {
