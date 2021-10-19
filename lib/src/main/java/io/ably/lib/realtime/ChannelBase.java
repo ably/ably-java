@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
@@ -300,7 +301,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         params = message.params;
         modes = ChannelMode.toSet(message.flags);
         if(state == ChannelState.attached) {
-            Log.v(TAG, String.format("Server initiated attach for channel %s", name));
+            Log.v(TAG, String.format(Locale.ROOT, "Server initiated attach for channel %s", name));
             /* emit UPDATE event according to RTL12 */
             emitUpdate(null, resumed);
         } else {
@@ -396,7 +397,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                 new TimerTask() {
                     @Override
                     public void run() {
-                        String errorMessage = String.format("Attach timed out for channel %s", name);
+                        String errorMessage = String.format(Locale.ROOT, "Attach timed out for channel %s", name);
                         Log.v(TAG, errorMessage);
                         synchronized (ChannelBase.this) {
                             if(attachTimer != inProgressTimer) {
@@ -684,7 +685,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
         final DeltaExtras deltaExtras = (null == firstMessage.extras) ? null : firstMessage.extras.getDelta();
         if (null != deltaExtras && !deltaExtras.getFrom().equals(this.lastPayloadMessageId)) {
-            Log.e(TAG, String.format("Delta message decode failure - previous message not available. Message id = %s, channel = %s", firstMessage.id, name));
+            Log.e(TAG, String.format(Locale.ROOT, "Delta message decode failure - previous message not available. Message id = %s, channel = %s", firstMessage.id, name));
             startDecodeFailureRecovery();
             return;
         }
@@ -701,20 +702,20 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                 msg.decode(options, decodingContext);
             } catch (MessageDecodeException e) {
                 if (e.errorInfo.code == 40018) {
-                    Log.e(TAG, String.format("Delta message decode failure - %s. Message id = %s, channel = %s", e.errorInfo.message, msg.id, name));
+                    Log.e(TAG, String.format(Locale.ROOT, "Delta message decode failure - %s. Message id = %s, channel = %s", e.errorInfo.message, msg.id, name));
                     startDecodeFailureRecovery();
 
                     // log messages skipped per RTL16
                     for (int j = i + 1; j < messages.length; j++) {
                         final String jId = messages[j].id; // might be null
                         final String jIdToLog = (null == jId) ? protocolMessage.id + ':' + j : jId;
-                        Log.v(TAG, String.format("Delta recovery in progress - message skipped. Message id = %s, channel = %s", jIdToLog, name));
+                        Log.v(TAG, String.format(Locale.ROOT, "Delta recovery in progress - message skipped. Message id = %s, channel = %s", jIdToLog, name));
                     }
 
                     return;
                 }
                 else {
-                    Log.e(TAG, String.format("Message decode failure - %s. Message id = %s, channel = %s", e.errorInfo.message, msg.id, name));
+                    Log.e(TAG, String.format(Locale.ROOT, "Message decode failure - %s. Message id = %s, channel = %s", e.errorInfo.message, msg.id, name));
                 }
             }
 
@@ -759,7 +760,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             try {
                 msg.decode(options);
             } catch (MessageDecodeException e) {
-                Log.e(TAG, String.format("%s on channel %s", e.errorInfo.message, name));
+                Log.e(TAG, String.format(Locale.ROOT, "%s on channel %s", e.errorInfo.message, name));
             }
             /* populate fields derived from protocol message */
             if(msg.connectionId == null) msg.connectionId = message.connectionId;
@@ -1114,7 +1115,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                 case attached:
                     /* Unexpected detach, reattach when possible */
                     setDetached((msg.error != null) ? msg.error : REASON_NOT_ATTACHED);
-                    Log.v(TAG, String.format("Server initiated detach for channel %s; attempting reattach", name));
+                    Log.v(TAG, String.format(Locale.ROOT, "Server initiated detach for channel %s; attempting reattach", name));
                     try {
                         attachWithTimeout(null);
                     } catch (AblyException e) {
@@ -1125,7 +1126,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                     break;
                 case attaching:
                     /* RTL13b says we need to be suspended, but continue to retry */
-                    Log.v(TAG, String.format("Server initiated detach for channel %s whilst attaching; moving to suspended", name));
+                    Log.v(TAG, String.format(Locale.ROOT, "Server initiated detach for channel %s whilst attaching; moving to suspended", name));
                     setSuspended(msg.error, true);
                     reattachAfterTimeout();
                     break;

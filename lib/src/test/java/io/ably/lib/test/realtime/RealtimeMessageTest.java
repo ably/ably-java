@@ -769,7 +769,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
             String receivedDataHex = sb.toString();
             assertEquals("Verify decoded message data", fixtureMessage.expectedHexValue, receivedDataHex);
         } else {
-            throw new RuntimeException(String.format("unhandled: %s", fixtureMessage.expectedType));
+            throw new RuntimeException(String.format(Locale.ROOT, "unhandled: %s", fixtureMessage.expectedType));
         }
     }
 

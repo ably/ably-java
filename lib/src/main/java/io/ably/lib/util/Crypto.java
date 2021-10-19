@@ -4,6 +4,7 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Locale;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -60,7 +61,7 @@ public class Crypto {
         CipherParams(String algorithm, byte[] key, byte[] iv) throws NoSuchAlgorithmException {
             this.algorithm = (null == algorithm) ? DEFAULT_ALGORITHM : algorithm;
             keyLength = key.length * 8;
-            keySpec = new SecretKeySpec(key, this.algorithm.toUpperCase());
+            keySpec = new SecretKeySpec(key, this.algorithm.toUpperCase(Locale.ROOT));
             ivSpec = new IvParameterSpec(iv);
         }
 
@@ -139,7 +140,7 @@ public class Crypto {
     public static CipherParams getParams(String algorithm, int keyLength) {
         if(algorithm == null) algorithm = DEFAULT_ALGORITHM;
         try {
-            KeyGenerator keygen = KeyGenerator.getInstance(algorithm.toUpperCase());
+            KeyGenerator keygen = KeyGenerator.getInstance(algorithm.toUpperCase(Locale.ROOT));
             keygen.init(keyLength);
             byte[] key = keygen.generateKey().getEncoded();
             return getParams(algorithm, key);
@@ -215,7 +216,7 @@ public class Crypto {
 
         private CBCCipher(CipherParams params) throws AblyException {
             final String cipherAlgorithm = params.getAlgorithm();
-            String transformation = cipherAlgorithm.toUpperCase() + "/CBC/PKCS5Padding";
+            String transformation = cipherAlgorithm.toUpperCase(Locale.ROOT) + "/CBC/PKCS5Padding";
             try {
                 algorithm = cipherAlgorithm + '-' + params.getKeyLength() + "-cbc";
                 keySpec = params.keySpec;

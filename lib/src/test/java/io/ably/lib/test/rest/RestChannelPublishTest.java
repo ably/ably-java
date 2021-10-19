@@ -22,6 +22,7 @@ import org.junit.Test;
 import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -305,7 +306,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
             opts.useBinaryProtocol = true;
             opts.httpListener = requestListener;
             /* generate a fallback which resolves to the same address, which the library will treat as a different host */
-            opts.fallbackHosts = new String[]{ablyForToken.httpCore.getPrimaryHost().toUpperCase()};
+            opts.fallbackHosts = new String[]{ablyForToken.httpCore.getPrimaryHost().toUpperCase(Locale.ROOT)};
             AblyRest ably = new AblyRest(opts);
 
             /* publish message */
@@ -414,7 +415,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
             opts.useBinaryProtocol = true;
             opts.httpListener = requestListener;
             /* generate a fallback which resolves to the same address, which the library will treat as a different host */
-            opts.fallbackHosts = new String[]{ablyForToken.httpCore.getPrimaryHost().toUpperCase()};
+            opts.fallbackHosts = new String[]{ablyForToken.httpCore.getPrimaryHost().toUpperCase(Locale.ROOT)};
             AblyRest ably = new AblyRest(opts);
 
             /* publish message */

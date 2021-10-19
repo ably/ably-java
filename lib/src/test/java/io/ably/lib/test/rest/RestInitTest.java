@@ -7,6 +7,7 @@ import static org.junit.Assert.fail;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.Locale;
 
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.test.common.Setup;
@@ -299,7 +300,7 @@ public class RestInitTest {
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
             opts.environment = givenEnvironment;
             AblyRest ably = new AblyRest(opts);
-            assertEquals("Unexpected host mismatch", String.format("%s-%s", givenEnvironment, Defaults.HOST_REST), ably.httpCore.getPrimaryHost());
+            assertEquals("Unexpected host mismatch", String.format(Locale.ROOT, "%s-%s", givenEnvironment, Defaults.HOST_REST), ably.httpCore.getPrimaryHost());
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init4: Unexpected exception instantiating library");

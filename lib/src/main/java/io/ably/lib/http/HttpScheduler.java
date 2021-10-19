@@ -2,6 +2,7 @@ package io.ably.lib.http;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -192,7 +193,7 @@ public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
 
         private String extendMessage(String msg) {
             return Param.getFirst(params, "request_id") == null ?
-                msg : String.format("%s request_id=%s", msg, Param.getFirst(params, "request_id"));
+                msg : String.format(Locale.ROOT, "%s request_id=%s", msg, Param.getFirst(params, "request_id"));
         }
 
         @Override

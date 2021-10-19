@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -61,7 +62,7 @@ public class Presence {
             Collection<PresenceMessage> values = presence.get(params);
             return values.toArray(new PresenceMessage[values.size()]);
         } catch (InterruptedException e) {
-            Log.v(TAG, String.format("Channel %s: get() operation interrupted", channel.name));
+            Log.v(TAG, String.format(Locale.ROOT, "Channel %s: get() operation interrupted", channel.name));
             throw AblyException.fromThrowable(e);
         }
     }
@@ -214,7 +215,7 @@ public class Presence {
      */
     private void implicitAttachOnSubscribe(CompletionListener completionListener) throws AblyException {
         if (channel.state == ChannelState.failed) {
-            String errorString = String.format("Channel %s: subscribe in FAILED channel state", channel.name);
+            String errorString = String.format(Locale.ROOT, "Channel %s: subscribe in FAILED channel state", channel.name);
             Log.v(TAG, errorString);
             ErrorInfo errorInfo = new ErrorInfo(errorString, 90001);
             throw AblyException.fromErrorInfo(errorInfo);
@@ -270,14 +271,14 @@ public class Presence {
                                      * received from Ably (if applicable), the code received from Ably
                                      * (if applicable) and the explicit or implicit client_id of the PresenceMessage
                                      */
-                                String errorString = String.format("Cannot automatically re-enter %s on channel %s (%s)",
+                                String errorString = String.format(Locale.ROOT, "Cannot automatically re-enter %s on channel %s (%s)",
                                         clientId, channel.name, reason.message);
                                 Log.e(TAG, errorString);
                                 channel.emitUpdate(new ErrorInfo(errorString, 91004), true);
                             }
                         });
                     } catch(AblyException e) {
-                        String errorString = String.format("Cannot automatically re-enter %s on channel %s (%s)",
+                        String errorString = String.format(Locale.ROOT, "Cannot automatically re-enter %s on channel %s (%s)",
                                 clientId, channel.name, e.errorInfo.message);
                         Log.e(TAG, errorString);
                         channel.emitUpdate(new ErrorInfo(errorString, 91004), true);
@@ -480,7 +481,7 @@ public class Presence {
      */
     public void enterClient(String clientId, Object data, CompletionListener listener) throws AblyException {
         if(clientId == null) {
-            String errorMessage = String.format("Channel %s: unable to enter presence channel (null clientId specified)", channel.name);
+            String errorMessage = String.format(Locale.ROOT, "Channel %s: unable to enter presence channel (null clientId specified)", channel.name);
             Log.v(TAG, errorMessage);
             if(listener != null) {
                 listener.onError(new ErrorInfo(errorMessage, 40000));
@@ -531,7 +532,7 @@ public class Presence {
      */
     public void updateClient(String clientId, Object data, CompletionListener listener) throws AblyException {
         if(clientId == null) {
-            String errorMessage = String.format("Channel %s: unable to update presence channel (null clientId specified)", channel.name);
+            String errorMessage = String.format(Locale.ROOT, "Channel %s: unable to update presence channel (null clientId specified)", channel.name);
             Log.v(TAG, errorMessage);
             if(listener != null) {
                 listener.onError(new ErrorInfo(errorMessage, 40000));
@@ -574,7 +575,7 @@ public class Presence {
      */
     public void leaveClient(String clientId, Object data, CompletionListener listener) throws AblyException {
         if(clientId == null) {
-            String errorMessage = String.format("Channel %s: unable to leave presence channel (null clientId specified)", channel.name);
+            String errorMessage = String.format(Locale.ROOT, "Channel %s: unable to leave presence channel (null clientId specified)", channel.name);
             Log.v(TAG, errorMessage);
             if(listener != null) {
                 listener.onError(new ErrorInfo(errorMessage, 40000));
@@ -814,12 +815,12 @@ public class Presence {
                  * or if waitForSync is set to true, result in an error with code 91005 and a message stating
                  * that the presence state is out of sync due to the channel being in a SUSPENDED state */
                 errorCode = 91005;
-                errorMessage = String.format("Channel %s: presence state is out of sync due to the channel being in a SUSPENDED state", channel.name);
+                errorMessage = String.format(Locale.ROOT, "Channel %s: presence state is out of sync due to the channel being in a SUSPENDED state", channel.name);
             } else if(syncIsComplete) {
                 return;
             } else {
                 errorCode = 90001;
-                errorMessage = String.format("Channel %s: cannot get presence state because channel is in invalid state", channel.name);
+                errorMessage = String.format(Locale.ROOT, "Channel %s: cannot get presence state because channel is in invalid state", channel.name);
             }
             Log.v(TAG, errorMessage);
             throw AblyException.fromErrorInfo(new ErrorInfo(errorMessage, errorCode));

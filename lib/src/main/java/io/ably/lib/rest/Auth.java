@@ -4,6 +4,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.crypto.Mac;
@@ -993,7 +994,7 @@ public class Auth {
         return authHeader;
     }
 
-    private static String random() { return String.format("%016d", (long)(Math.random() * 1E16)); }
+    private static String random() { return String.format(Locale.ROOT, "%016d", (long)(Math.random() * 1E16)); }
 
     private static boolean equalNullableStrings(String one, String two) {
         return (one == null) ? (two == null) : one.equals(two);
