@@ -10,7 +10,7 @@ jobs:
       - uses: actions/checkout@v2
       # Using the test command in lieu of https://github.com/ably/sdk-upload-action/issues/24
       - run: |
-          ./gradlew groovydoc
+          ./gradlew java:javadoc
           test -d java/build/docs/javadoc && echo "java docs folder found."
           test -d android/build/docs/javadoc && echo "android docs folder found."
           echo "Contents of java docs folder:"
