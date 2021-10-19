@@ -8,7 +8,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-
       # Using the test command in lieu of https://github.com/ably/sdk-upload-action/issues/24
       - run: |
           ./gradlew javadoc
