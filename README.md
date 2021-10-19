@@ -245,7 +245,7 @@ options.authCallback = new Auth.TokenCallback() {
     public Object getTokenRequest(Auth.TokenParams params) {
         System.out.println("Token Params: " + params);
         // TODO: process params
-        return null; // TODO: return TokenDetails or TokenRequest
+        return null; // TODO: return TokenDetails or TokenRequest or JWT string
     }
 };
 
