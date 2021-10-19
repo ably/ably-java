@@ -5,11 +5,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.preference.PreferenceManager;
-
 import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import com.google.gson.JsonObject;
+import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.push.ActivationContext;
 import io.ably.lib.push.ActivationStateMachine;
@@ -25,17 +25,26 @@ import io.ably.lib.push.ActivationStateMachine.GotPushDeviceDetails;
 import io.ably.lib.push.ActivationStateMachine.NotActivated;
 import io.ably.lib.push.ActivationStateMachine.RegistrationSynced;
 import io.ably.lib.push.ActivationStateMachine.State;
+import io.ably.lib.push.ActivationStateMachine.SyncRegistrationFailed;
 import io.ably.lib.push.ActivationStateMachine.WaitingForDeregistration;
 import io.ably.lib.push.ActivationStateMachine.WaitingForDeviceRegistration;
 import io.ably.lib.push.ActivationStateMachine.WaitingForNewPushDeviceDetails;
 import io.ably.lib.push.ActivationStateMachine.WaitingForPushDeviceDetails;
 import io.ably.lib.push.ActivationStateMachine.WaitingForRegistrationSync;
-import io.ably.lib.push.ActivationStateMachine.SyncRegistrationFailed;
 import io.ably.lib.push.LocalDevice;
 import io.ably.lib.push.Push;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.push.PushChannel;
+import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.Auth;
+import io.ably.lib.rest.Channel;
 import io.ably.lib.rest.DeviceDetails;
+import io.ably.lib.test.common.Helpers;
+import io.ably.lib.test.common.Helpers.AsyncWaiter;
+import io.ably.lib.test.common.Helpers.CompletionWaiter;
+import io.ably.lib.test.common.Setup;
+import io.ably.lib.test.util.TestCases;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ClientOptions;
@@ -43,23 +52,6 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.util.Base64Coder;
-
-import java.util.ArrayList;
-import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
-
-import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.rest.Auth;
-import io.ably.lib.rest.Channel;
-import io.ably.lib.test.common.Helpers;
-import io.ably.lib.test.common.Helpers.AsyncWaiter;
-import io.ably.lib.test.common.Helpers.CompletionWaiter;
-import io.ably.lib.test.common.Setup;
-import io.ably.lib.test.util.TestCases;
 import io.ably.lib.util.IntentUtils;
 import io.ably.lib.util.JsonUtils;
 import io.ably.lib.util.Serialisation;
@@ -67,6 +59,12 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.ArrayList;
+import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import static android.support.test.InstrumentationRegistry.getContext;
 import static io.ably.lib.test.common.Helpers.assertArrayUnorderedEquals;
@@ -1352,8 +1350,11 @@ public class AndroidPushTest {
             @Override
             public void run() throws Exception {
                 testActivation = new TestActivation();
+
+                final String testClientId = "testClient";
+                final String testChannel = "pushenabled:foo";
+
                 if (useClientId) {
-                    final String testClientId = "testClient";
                     testActivation.rest.auth.setClientId(testClientId);
                     testActivation.rest.auth.authorize(new Auth.TokenParams() {{ clientId = testClientId; }}, null);
                 } else {
@@ -1375,12 +1376,12 @@ public class AndroidPushTest {
                 String deviceId = testActivation.rest.push.getLocalDevice().id;
 
                 Push.ChannelSubscription[] fixtures = new Push.ChannelSubscription[] {
-                    PushBase.ChannelSubscription.forDevice("pushenabled:foo", deviceId),
-                    PushBase.ChannelSubscription.forDevice("pushenabled:foo", "other"),
+                    PushBase.ChannelSubscription.forDevice(testChannel, deviceId),
+                    PushBase.ChannelSubscription.forDevice(testChannel, "other"),
                     PushBase.ChannelSubscription.forDevice("pushenabled:bar", deviceId),
-                    PushBase.ChannelSubscription.forClientId("pushenabled:foo", "testClient"),
-                    PushBase.ChannelSubscription.forClientId("pushenabled:foo", "otherClient"),
-                    PushBase.ChannelSubscription.forClientId("pushenabled:bar", "testClient"),
+                    PushBase.ChannelSubscription.forClientId(testChannel, testClientId),
+                    PushBase.ChannelSubscription.forClientId(testChannel, "otherClient"),
+                    PushBase.ChannelSubscription.forClientId("pushenabled:bar", testClientId),
                 };
 
                 try {
@@ -1390,12 +1391,20 @@ public class AndroidPushTest {
                         testActivation.adminRest.push.admin.channelSubscriptions.save(sub);
                     }
 
-                    Push.ChannelSubscription[] got = testActivation.rest.channels.get("pushenabled:foo").push.listSubscriptions().items();
+                    Param[] params = Param.array(new Param("deviceId", deviceId));
+                    params = Param.set(params, "channel", testChannel);
+
+                    if(useClientId) {
+                        params = Param.set(params, "clientId", testClientId);
+                    }
+
+                    Push.ChannelSubscription[] got = testActivation.rest.channels.get(testChannel)
+                        .push.listSubscriptions(params).items();
 
                     ArrayList<Push.ChannelSubscription> expected = new ArrayList<>(2);
-                    expected.add(PushBase.ChannelSubscription.forDevice("pushenabled:foo", deviceId));
+                    expected.add(PushBase.ChannelSubscription.forDevice(testChannel, deviceId));
                     if (useClientId) {
-                        expected.add(PushBase.ChannelSubscription.forClientId("pushenabled:foo", "testClient"));
+                        expected.add(PushBase.ChannelSubscription.forClientId(testChannel, testClientId));
                     }
 
                     assertArrayUnorderedEquals(expected.toArray(), got);

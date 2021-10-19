@@ -140,16 +140,6 @@ public class PushChannel {
     }
 
     protected BasePaginatedQuery.ResultRequest<Push.ChannelSubscription> listSubscriptionsImpl(Param[] params) {
-        try {
-            params = Param.set(params, "deviceId", getDevice().id);
-        } catch(AblyException e) {
-            return new BasePaginatedQuery.ResultRequest.Failed(e);
-        }
-        params = Param.set(params, "channel", channel.name);
-        String clientId = rest.auth.clientId;
-        if (clientId != null) {
-            params = Param.set(params, "clientId", clientId);
-        }
         params = Param.set(params, "concatFilters", "true");
 
         return new BasePaginatedQuery<Push.ChannelSubscription>(rest.http, "/push/channelSubscriptions", rest.push.pushRequestHeaders(true), params, Push.ChannelSubscription.httpBodyHandler).get();
