@@ -80,7 +80,7 @@ public class LocalDeviceStorageTest {
     public void shared_preferences_storage_works_correctly() {
         LocalDevice localDevice = new LocalDevice(activationContext, null);
 
-        RegistrationToken registrationToken= new RegistrationToken(RegistrationToken.Type.FCM, "ABLY");
+        RegistrationToken registrationToken= new RegistrationToken("ABLY");
         /* initialize properties in storage */
         localDevice.create();
         localDevice.setAndPersistRegistrationToken(registrationToken);
@@ -129,7 +129,7 @@ public class LocalDeviceStorageTest {
     public void custom_storage_works_correctly() {
         LocalDevice localDevice = new LocalDevice(activationContext, inMemoryStorage);
 
-        RegistrationToken registrationToken= new RegistrationToken(RegistrationToken.Type.FCM, "ABLY");
+        RegistrationToken registrationToken= new RegistrationToken("ABLY");
         /* initialize properties in storage */
         localDevice.create();
         localDevice.setAndPersistRegistrationToken(registrationToken);

@@ -11,6 +11,11 @@ public class RegistrationToken {
         this.token = token;
     }
 
+    public RegistrationToken(String token) {
+        this.type = Type.FCM;
+        this.token = token;
+    }
+
     public enum Type {
         @Deprecated GCM,
         FCM;

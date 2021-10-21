@@ -146,7 +146,7 @@ public class AndroidPushTest {
             AsyncWaiter<Helpers.RawHttpRequest> requestWaiter = httpTracker.getRequestWaiter();
             AsyncWaiter<Intent> activateWaiter = broadcastWaiter("PUSH_ACTIVATE");
 
-            rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.FCM, "testToken");
+            rest.push.getActivationContext().onNewRegistrationToken("testToken");
             rest.push.activate(false);
 
             activateWaiter.waitFor();
@@ -163,7 +163,7 @@ public class AndroidPushTest {
 
             rest.push.activate(true); // Just to set useCustomRegistrar to true.
             AsyncWaiter<Intent> customRegisterer = broadcastWaiter("PUSH_REGISTER_DEVICE");
-            rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.FCM, "testTokenFailed");
+            rest.push.getActivationContext().onNewRegistrationToken("testTokenFailed");
             customRegisterer.waitFor();
 
             CompletionWaiter failedWaiter = machine.getTransitionedToWaiter(AfterRegistrationSyncFailed.class);
@@ -708,7 +708,7 @@ public class AndroidPushTest {
     @Test
     public void NotActivated_on_CalledActivate_with_registrationToken() throws InterruptedException, AblyException {
         TestActivation activation = new TestActivation();
-        activation.rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.FCM, "testToken");
+        activation.rest.push.getActivationContext().onNewRegistrationToken("testToken");
 
         State state = new NotActivated(activation.machine);
         State to = state.transition(new CalledActivate());
@@ -823,7 +823,7 @@ public class AndroidPushTest {
                     }
 
                     // Will send GotPushDeviceDetails event.
-                    activation.rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.FCM, "testToken");
+                    activation.rest.push.getActivationContext().onNewRegistrationToken("testToken");
 
                     handled.waitFor();
 
@@ -1931,7 +1931,7 @@ public class AndroidPushTest {
         protected String sendInitialEvent(TestCase testCase) throws AblyException {
             // Will send GotPushDeviceDetails event.
             CalledActivate.useCustomRegistrar(testCase.useCustomRegistrar, PreferenceManager.getDefaultSharedPreferences(getContext()));
-            testCase.testActivation.rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.FCM, "testTokenUpdated");
+            testCase.testActivation.rest.push.getActivationContext().onNewRegistrationToken("testTokenUpdated");
             return "testTokenUpdated";
         }
     }

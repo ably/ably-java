@@ -621,7 +621,7 @@ public class ActivationStateMachine {
             @Override
             public void onSuccess(String token) {
                 Log.i(TAG, "getInstanceId completed with new token");
-                activationContext.onNewRegistrationToken(RegistrationToken.Type.FCM, token);
+                activationContext.onNewRegistrationToken(token);
             }
 
             @Override
