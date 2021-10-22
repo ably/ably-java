@@ -6,6 +6,10 @@ public class RegistrationToken {
     public Type type;
     public String token;
 
+    /**
+     * Deprecated: use RegistrationToken(String token) instead
+     */
+    @Deprecated
     public RegistrationToken(Type type, String token) {
         this.type = type;
         this.token = token;
