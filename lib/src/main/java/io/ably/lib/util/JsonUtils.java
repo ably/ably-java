@@ -2,6 +2,7 @@ package io.ably.lib.util;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 
 public class JsonUtils {
     public static JsonUtilsObject object() {
@@ -30,7 +31,10 @@ public class JsonUtils {
                 json.addProperty(key, (Number) value);
             } else if (value instanceof JsonUtilsObject) {
                 json.add(key, ((JsonUtilsObject) value).toJson());
+            } else {
+                throw new JsonParseException("Unsupported Object Type");
             }
+
             return this;
         }
 
