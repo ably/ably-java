@@ -102,7 +102,6 @@ public class ActivationContext {
         if (previous != null) {
             if (previous.type != RegistrationToken.Type.FCM) {
                 Log.e(TAG, "trying to register device with " + RegistrationToken.Type.FCM + ", but it was already registered with " + previous.type);
-                return;
             }
             if (previous.token.equals(token)) {
                 return;

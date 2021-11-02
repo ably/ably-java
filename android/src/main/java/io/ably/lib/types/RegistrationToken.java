@@ -20,6 +20,10 @@ public class RegistrationToken {
         this.token = token;
     }
 
+    /**
+     * Deprecated: Token type GCM is deprecated, enum will be replaced with constant
+     */
+    @Deprecated
     public enum Type {
         @Deprecated GCM,
         FCM;
