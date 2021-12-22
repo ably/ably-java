@@ -14,4 +14,4 @@ jobs:
         with:
           api-level: 24
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-          script: ./gradlew :android:connectedAndroidTest
+          script: ./gradlew :android:connectedAndroidTest --info
