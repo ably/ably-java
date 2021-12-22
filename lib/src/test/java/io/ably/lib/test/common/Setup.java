@@ -34,7 +34,7 @@ public class Setup {
 
         private final int code;
 
-        private TerminationReason(final int code) {
+        TerminationReason(final int code) {
             this.code = code;
         }
 
