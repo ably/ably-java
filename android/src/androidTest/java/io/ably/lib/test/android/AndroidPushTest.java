@@ -220,7 +220,8 @@ public class AndroidPushTest {
         activation.rest.push.activate(true); // This registers the listener for registration tokens.
         assertInstanceOf(CalledActivate.class, events.poll(10, TimeUnit.SECONDS));
 
-        Callback<String> tokenCallback = tokenCallbacks.poll(10, TimeUnit.SECONDS);
+        final Callback<String> tokenCallback = tokenCallbacks.poll(10, TimeUnit.SECONDS);
+        assertNotNull("Token callback not received before timeout.", tokenCallback);
 
         tokenCallback.onSuccess("foo");
         assertInstanceOf(GotPushDeviceDetails.class, events.poll(10, TimeUnit.SECONDS));
@@ -251,7 +252,8 @@ public class AndroidPushTest {
         activation.rest.push.activate(true); // This registers the listener for registration tokens.
         assertInstanceOf(CalledActivate.class, events.poll(10, TimeUnit.SECONDS));
 
-        Callback<String> tokenCallback = tokenCallbacks.poll(10, TimeUnit.SECONDS);
+        final Callback<String> tokenCallback = tokenCallbacks.poll(10, TimeUnit.SECONDS);
+        assertNotNull("Token callback not received before timeout.", tokenCallback);
 
         tokenCallback.onError(new ErrorInfo("foo", 123, 123));
         Event event = events.poll(10, TimeUnit.SECONDS);
