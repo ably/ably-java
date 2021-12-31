@@ -22,6 +22,28 @@ import io.ably.lib.util.Serialisation;
 import io.ably.lib.debug.DebugOptions;
 
 public class Setup {
+    /**
+     * The `Setup` class can call `System.exit(int)`.
+     * The codes supplied to that method are defined by this enumeration.
+     */
+    private enum TerminationReason {
+        UNABLE_TO_INSTANCE_REST(66601),
+        UNABLE_TO_READ_SPEC_FILE(66602),
+        UNABLE_TO_CREATE_TEST_APP(66603),
+        UNABLE_TO_DELETE_TEST_APP(66604);
+
+        private final int code;
+
+        TerminationReason(final int code) {
+            this.code = code;
+        }
+
+        public void exit(final Throwable t) {
+            System.err.println(this + ": " + t);
+            t.printStackTrace();
+            System.exit(code);
+        }
+    }
 
     public static Object loadJson(String resourceName, Class<? extends Object> expectedType) throws IOException {
         try {
@@ -185,9 +207,7 @@ public class Setup {
                     opts.tls = true;
                     ably = new AblyRest(opts);
                 } catch(AblyException e) {
-                    System.err.println("Unable to instance AblyRest: " + e);
-                    e.printStackTrace();
-                    System.exit(1);
+                    TerminationReason.UNABLE_TO_INSTANCE_REST.exit(e);
                 }
             }
 
@@ -196,9 +216,7 @@ public class Setup {
                 appSpec = (Setup.AppSpec)loadJson(specFile, Setup.AppSpec.class);
                 appSpec.notes = "Test app; created by ably-java realtime tests; date = " + new Date().toString();
             } catch(IOException ioe) {
-                System.err.println("Unable to read spec file: " + ioe);
-                ioe.printStackTrace();
-                System.exit(1);
+                TerminationReason.UNABLE_TO_READ_SPEC_FILE.exit(ioe);
             }
             try {
                 testVars = HttpHelpers.postSync(ably.http, "/apps", null, null, new HttpUtils.JsonRequestBody(appSpec), new HttpCore.ResponseHandler<TestVars>() {
@@ -218,9 +236,7 @@ public class Setup {
                         return result;
                     }}, false);
             } catch (AblyException ae) {
-                System.err.println("Unable to create test app: " + ae);
-                ae.printStackTrace();
-                System.exit(1);
+                TerminationReason.UNABLE_TO_CREATE_TEST_APP.exit(ae);
             }
         }
         return testVars;
@@ -248,9 +264,7 @@ public class Setup {
                     }
                 }).sync();
             } catch (AblyException ae) {
-                System.err.println("Unable to delete test app: " + ae);
-                ae.printStackTrace();
-                System.exit(1);
+                TerminationReason.UNABLE_TO_DELETE_TEST_APP.exit(ae);
             }
             testVars = null;
         }

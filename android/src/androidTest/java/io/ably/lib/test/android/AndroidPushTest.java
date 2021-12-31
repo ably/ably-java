@@ -80,6 +80,7 @@ import static org.junit.Assert.fail;
 
 @RunWith(AndroidJUnit4.class)
 public class AndroidPushTest {
+    private static final int TIMEOUT_SECONDS = 30;
 
     private class TestActivation {
         private Helpers.RawHttpTracker httpTracker;
@@ -183,7 +184,7 @@ public class AndroidPushTest {
         BlockingQueue<Event> events = activation.machine.getEventReceiver(2); // CalledActivate + GotPushDeviceDetails
         assertInstanceOf(ActivationStateMachine.NotActivated.class, activation.machine.current);
         activation.rest.push.activate();
-        Event event = events.poll(10, TimeUnit.SECONDS);
+        Event event = events.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertInstanceOf(CalledActivate.class, event);
     }
 
@@ -194,7 +195,7 @@ public class AndroidPushTest {
         BlockingQueue<Event> events = activation.machine.getEventReceiver(1);
         assertInstanceOf(NotActivated.class, activation.machine.current);
         activation.rest.push.deactivate();
-        Event event = events.poll(10, TimeUnit.SECONDS);
+        Event event = events.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertInstanceOf(CalledDeactivate.class, event);
     }
 
@@ -218,15 +219,16 @@ public class AndroidPushTest {
         };
 
         activation.rest.push.activate(true); // This registers the listener for registration tokens.
-        assertInstanceOf(CalledActivate.class, events.poll(10, TimeUnit.SECONDS));
+        assertInstanceOf(CalledActivate.class, events.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS));
 
-        Callback<String> tokenCallback = tokenCallbacks.poll(10, TimeUnit.SECONDS);
+        final Callback<String> tokenCallback = tokenCallbacks.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertNotNull("Token callback not received before timeout.", tokenCallback);
 
         tokenCallback.onSuccess("foo");
-        assertInstanceOf(GotPushDeviceDetails.class, events.poll(10, TimeUnit.SECONDS));
+        assertInstanceOf(GotPushDeviceDetails.class, events.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS));
 
         tokenCallback.onSuccess("bar");
-        assertInstanceOf(GotPushDeviceDetails.class, events.poll(10, TimeUnit.SECONDS));
+        assertInstanceOf(GotPushDeviceDetails.class, events.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS));
     }
 
     // RSH2d / RSH8h
@@ -249,12 +251,13 @@ public class AndroidPushTest {
         };
 
         activation.rest.push.activate(true); // This registers the listener for registration tokens.
-        assertInstanceOf(CalledActivate.class, events.poll(10, TimeUnit.SECONDS));
+        assertInstanceOf(CalledActivate.class, events.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS));
 
-        Callback<String> tokenCallback = tokenCallbacks.poll(10, TimeUnit.SECONDS);
+        final Callback<String> tokenCallback = tokenCallbacks.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertNotNull("Token callback not received before timeout.", tokenCallback);
 
         tokenCallback.onError(new ErrorInfo("foo", 123, 123));
-        Event event = events.poll(10, TimeUnit.SECONDS);
+        Event event = events.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertInstanceOf(ActivationStateMachine.GettingPushDeviceDetailsFailed.class, event);
         assertEquals(123,((ActivationStateMachine.GettingPushDeviceDetailsFailed) event).reason.code);
     }
@@ -603,7 +606,7 @@ public class AndroidPushTest {
                             activation.httpTracker.unlockRequests();
                         }
 
-                        assertInstanceOf(expectedEvent, events.poll(10, TimeUnit.SECONDS));
+                        assertInstanceOf(expectedEvent, events.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS));
                         assertNull(handled.waitFor());
                     } // else: RSH3a2a1 validation failed
 
@@ -859,7 +862,7 @@ public class AndroidPushTest {
                         activation.httpTracker.unlockRequests();
                     }
 
-                    assertInstanceOf(expectedEvent, events.poll(10, TimeUnit.SECONDS));
+                    assertInstanceOf(expectedEvent, events.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS));
                     assertNull(handled.waitFor());
 
                     // RSH3c2a
@@ -1714,7 +1717,7 @@ public class AndroidPushTest {
                         testActivation.httpTracker.unlockRequests();
                     }
 
-                    assertInstanceOf(expectedEvent, events.poll(10, TimeUnit.SECONDS));
+                    assertInstanceOf(expectedEvent, events.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS));
                     assertNull(handled.waitFor());
 
                     if (deregisterError == null) {
@@ -1875,7 +1878,7 @@ public class AndroidPushTest {
                         testActivation.httpTracker.unlockRequests();
                     }
 
-                    assertInstanceOf(expectedEvent, events.poll(10, TimeUnit.SECONDS));
+                    assertInstanceOf(expectedEvent, events.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS));
                     assertNull(handled.waitFor());
 
                     if (updateError != null) {
