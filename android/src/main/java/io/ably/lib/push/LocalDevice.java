@@ -54,18 +54,18 @@ public class LocalDevice extends DeviceDetails {
         this.clientId = storage.get(SharedPrefKeys.CLIENT_ID, null);
         this.deviceIdentityToken = storage.get(SharedPrefKeys.DEVICE_TOKEN, null);
 
-        RegistrationToken.Type type = RegistrationToken.Type.fromOrdinal(
-            storage.get(SharedPrefKeys.TOKEN_TYPE, -1));
+        final int ordinalTypeValue = storage.get(SharedPrefKeys.TOKEN_TYPE, -1);
+        if (ordinalTypeValue != RegistrationToken.TOKEN_TYPE_ORDINAL_VALUE_FCM) {
+            Log.e(TAG, "Cannot load persisted token because ordinal does not indicate FCM (it's " + ordinalTypeValue + ").");
+            return;
+        }
 
-        Log.d(TAG, "loadPersisted(): token type = " + type);
-        if(type != null) {
-            RegistrationToken token = null;
-            String tokenString = storage.get(SharedPrefKeys.TOKEN, null);
-            Log.d(TAG, "loadPersisted(): token string = " + tokenString);
-            if(tokenString != null) {
-                token = new RegistrationToken(type, tokenString);
-                setRegistrationToken(token);
-            }
+        RegistrationToken token = null;
+        String tokenString = storage.get(SharedPrefKeys.TOKEN, null);
+        Log.d(TAG, "loadPersisted(): FCM token string = " + tokenString);
+        if(tokenString != null) {
+            token = new RegistrationToken(tokenString);
+            setRegistrationToken(token);
         }
     }
 
@@ -75,11 +75,17 @@ public class LocalDevice extends DeviceDetails {
             Log.v(TAG, "getRegistrationToken(): returning null because push.recipient is null");
             return null;
         }
-        Log.v(TAG, "getRegistrationToken(): returning a new registration token because push.recipient is set");
-        return new RegistrationToken(
-            RegistrationToken.Type.fromName(recipient.get("transportType").getAsString()),
-            recipient.get("registrationToken").getAsString()
-        );
+
+        // GCM is no longer active, therefore we only support FCM.
+        final String tokenType = recipient.get("transportType").getAsString();
+        if (tokenType != RegistrationToken.TOKEN_TYPE_STRING_VALUE_FCM) {
+            // Presumably GCM, which has been deactivated by Google.
+            Log.e(TAG, "getRegistrationToken(): returning null because push.recipient.transportType is not FCM (it's \"" + tokenType + "\")");
+            return null;
+        }
+
+        Log.v(TAG, "getRegistrationToken(): returning a new registration token because push.recipient is set and is FCM");
+        return new RegistrationToken(recipient.get("registrationToken").getAsString());
     }
 
     private void setRegistrationToken(RegistrationToken token) {
@@ -157,7 +163,16 @@ public class LocalDevice extends DeviceDetails {
         static final String CLIENT_ID = "ABLY_CLIENT_ID";
         static final String DEVICE_SECRET = "ABLY_DEVICE_SECRET";
         static final String DEVICE_TOKEN = "ABLY_DEVICE_IDENTITY_TOKEN";
+
+        /**
+         * Historically this value was required because we had two token types, GCM and FCM.
+         * Google have now deactivated GCM, so the only currently supported type is FCM.
+         * The value stored against this key is an integer ordinal, where:
+         * - 0 represents GCM (not supported)
+         * - 1 represents FCM (supported) - defined, for clarity, as {@link RegistrationToken#TOKEN_TYPE_ORDINAL_VALUE_FCM}
+         */
         static final String TOKEN_TYPE = "ABLY_REGISTRATION_TOKEN_TYPE";
+
         static final String TOKEN = "ABLY_REGISTRATION_TOKEN";
     }
 

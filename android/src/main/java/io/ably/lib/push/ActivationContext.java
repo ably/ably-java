@@ -96,14 +96,12 @@ public class ActivationContext {
     }
 
     public void onNewRegistrationToken(String token) {
-        Log.v(TAG, "onNewRegistrationToken(): type=" + RegistrationToken.Type.FCM + ", token=" + token);
+        Log.v(TAG, "onNewRegistrationToken(): token=" + token);
         LocalDevice localDevice = getLocalDevice();
         RegistrationToken previous = localDevice.getRegistrationToken();
         if (previous != null) {
-            if (previous.type != RegistrationToken.Type.FCM) {
-                Log.e(TAG, "trying to register device with " + RegistrationToken.Type.FCM + ", but it was already registered with " + previous.type);
-            }
             if (previous.token.equals(token)) {
+                Log.v(TAG, "onNewRegistrationToken(): token does not need to be updated");
                 return;
             }
         }

@@ -3,11 +3,22 @@ package io.ably.lib.types;
 import java.util.Locale;
 
 public class RegistrationToken {
+    /**
+     * The type of registration token represented by the value in {@link #token}.
+     * @deprecated As of version 1.2.11. Only FCM is active now as GCM has been deactivated by Google.
+     */
+    @Deprecated
     public Type type;
+
+    /**
+     * The token value.
+     */
     public String token;
 
     /**
-     * Deprecated: use RegistrationToken(String token) instead
+     * @deprecated As of version 1.2.11.
+     * Use {@link #RegistrationToken(String)} instead, to create an FCM token.
+     * Only FCM is active now as GCM has been deactivated by Google.
      */
     @Deprecated
     public RegistrationToken(Type type, String token) {
@@ -15,17 +26,31 @@ public class RegistrationToken {
         this.token = token;
     }
 
+    /**
+     * Initializes a newly created RegistrationToken object representing an FCM registration token.
+     * @param token The FCM token value.
+     */
     public RegistrationToken(String token) {
         this.type = Type.FCM;
         this.token = token;
     }
 
     /**
-     * Deprecated: Token type GCM is deprecated, enum will be replaced with constant
+     * The Ably transportType used to categorise an FCM registration token.
+     */
+    public static final String TOKEN_TYPE_STRING_VALUE_FCM = "fcm";
+
+    /**
+     * The value persisted to shared preferences on Android to categorise an FCM registration token.
+     */
+    public static final int TOKEN_TYPE_ORDINAL_VALUE_FCM = 1;
+
+    /**
+     * @deprecated As of version 1.2.11. GCM has been deactivated by Google, use FCM instead.
      */
     @Deprecated
     public enum Type {
-        @Deprecated GCM,
+        GCM,
         FCM;
 
         public static Type fromOrdinal(int i) {

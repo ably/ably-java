@@ -4,9 +4,15 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 
+/**
+ * Since Google deactivated GCM, the only option is FCM.
+ * These tests are, however, still valid until we remove the deprecated  Type enum and type field from {@link RegistrationToken}.
+ */
+@SuppressWarnings("deprecation")
 public class RegistrationTokenTypeTest {
-
     @Test
     public void fromNameParseCorrectly() {
         assertEquals(RegistrationToken.Type.FCM, RegistrationToken.Type.fromName("FCM"));
@@ -56,4 +62,28 @@ public class RegistrationTokenTypeTest {
         assertEquals("gcm", new RegistrationToken(RegistrationToken.Type.GCM, "token").type.toName());
     }
 
+    /**
+     * This test validates that TOKEN_TYPE_ORDINAL_VALUE_FCM correctly represents the value that we use to persist the
+     * FCM registration token type on the local device.
+     */
+    @Test
+    public void ordinalValue() {
+        final int fcmValue = RegistrationToken.TOKEN_TYPE_ORDINAL_VALUE_FCM;
+        assertEquals(fcmValue, RegistrationToken.Type.FCM);
+        assertNotEquals(fcmValue, RegistrationToken.Type.GCM);
+        assertNotEquals(fcmValue, -1); // magic value typically used as default when getting preferences for storage
+    }
+
+    /**
+     * This test validates that TOKEN_TYPE_STRING_VALUE_FCM correctly represents the value that we use to represent the
+     * FCM token type 'on the wire' (transportType).
+     */
+    @Test
+    public void stringValue() {
+        final String fcmValue = RegistrationToken.TOKEN_TYPE_STRING_VALUE_FCM;
+        assertEquals(fcmValue, RegistrationToken.Type.FCM.toName());
+        assertNotEquals(fcmValue, RegistrationToken.Type.GCM.toName());
+        assertNotNull(fcmValue);
+        assertNotEquals(fcmValue, "");
+    }
 }
