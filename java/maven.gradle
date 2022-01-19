@@ -34,7 +34,7 @@ uploadArchives {
 
         pom.project {
             name 'Ably java client library'
-            description 'A Java Realtime and REST client library for [Ably.io](https://www.ably.io), the realtime messaging service.'
+            description 'A Java Realtime and REST client library SDK for the Ably platform.'
             packaging 'jar'
             inceptionYear '2015'
             url 'https://www.github.com/ably/ably-java'
