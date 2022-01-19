@@ -39,14 +39,6 @@ uploadArchives {
             packaging 'jar'
             inceptionYear '2015'
             url 'https://www.github.com/ably/ably-java'
-            developers {
-                developer {
-                    name 'Paddy Byers'
-                    email 'paddy@ably.io'
-                    url 'https://github.com/paddybyers'
-                    id 'paddybyers'
-                }
-            }
             scm {
                 url 'scm:git:https://github.com/ably/ably-java'
                 connection 'scm:git:https://github.com/ably/ably-java'
