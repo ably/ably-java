@@ -32,7 +32,6 @@ uploadArchives {
         pom.artifactId = ARTIFACT_ID
         pom.version = version
 
-        // Add other pom properties here if you want (developer details / licenses)
         pom.project {
             name 'Ably java client library'
             description 'A Java Realtime and REST client library for [Ably.io](https://www.ably.io), the realtime messaging service.'
