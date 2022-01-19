@@ -17,6 +17,7 @@ jobs:
           script: ./gradlew :android:connectedAndroidTest
 
       - uses: actions/upload-artifact@v2
+        if: always()
         with:
           name: android-build-reports
           path: android/build/reports/
