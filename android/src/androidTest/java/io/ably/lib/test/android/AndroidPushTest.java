@@ -483,7 +483,8 @@ public class AndroidPushTest {
     }
 
     // RSH3a2a
-    @Test
+    // DISABLED - see: https://github.com/ably/ably-java/issues/739
+    // @Test
     public void NotActivated_on_CalledActivate_with_DeviceToken() throws Exception {
         class TestCase extends TestCases.Base {
             private final String persistedClientId;
