@@ -45,7 +45,7 @@ uploadArchives {
             }
             organization {
                 name 'Ably'
-                url 'http://ably.io'
+                url 'https://ably.com/'
             }
             issueManagement {
                 system 'Github'
