@@ -33,7 +33,7 @@ uploadArchives {
         pom.version = version
 
         pom.project {
-            name 'Ably java client library'
+            name 'Ably Java client library SDK'
             description 'A Java Realtime and REST client library SDK for the Ably platform.'
             packaging 'jar'
             inceptionYear '2015'

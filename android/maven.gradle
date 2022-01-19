@@ -31,7 +31,7 @@ uploadArchives {
         pom.version = version
 
         pom.project {
-            name 'Ably Android client library'
+            name 'Ably Android client library SDK'
             description 'An Android Realtime and REST client library SDK for the Ably platform.'
             packaging 'aar'
             inceptionYear '2015'
