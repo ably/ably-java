@@ -171,10 +171,28 @@ public class Crypto {
     /**
      * Interface for a ChannelCipher instance that may be associated with a Channel.
      *
+     * The {@link #encrypt(byte[])} and {@link #decrypt(byte[])} methods must be implemented
+     * in a way that makes them safe to be called from any thread.
      */
     public interface ChannelCipher {
+        /**
+         * Encrypt data.
+         * @param plaintext Data to be encrypted.
+         * @return Encrypted data.
+         * @throws AblyException Encapsulates an exception thrown by the encryption implementation,
+         * typically from either {@link java.security} or {@link javax.crypto}
+         */
         byte[] encrypt(byte[] plaintext) throws AblyException;
+
+        /**
+         * Decrypt data.
+         * @param ciphertext Encrypted data.
+         * @return Unencrypted data.
+         * @throws AblyException Encapsulates an exception thrown by the encryption implementation,
+         * typically from either {@link java.security} or {@link javax.crypto}
+         */
         byte[] decrypt(byte[] ciphertext) throws AblyException;
+
         String getAlgorithm();
     }
 
@@ -232,7 +250,7 @@ public class Crypto {
         }
 
         @Override
-        public byte[] encrypt(byte[] plaintext) {
+        public synchronized byte[] encrypt(byte[] plaintext) {
             if(plaintext == null) return null;
             int plaintextLength = plaintext.length;
             int paddedLength = getPaddedLength(plaintextLength);
@@ -248,7 +266,7 @@ public class Crypto {
         }
 
         @Override
-        public byte[] decrypt(byte[] ciphertext) throws AblyException {
+        public synchronized byte[] decrypt(byte[] ciphertext) throws AblyException {
             if(ciphertext == null) return null;
             byte[] plaintext = null;
             try {
