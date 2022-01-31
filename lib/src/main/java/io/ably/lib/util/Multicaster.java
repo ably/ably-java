@@ -1,7 +1,6 @@
 package io.ably.lib.util;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 public abstract class Multicaster<T> {
@@ -15,5 +14,4 @@ public abstract class Multicaster<T> {
     public void clear() { members.clear(); }
     public boolean isEmpty() { return members.isEmpty(); }
     public int size() { return members.size(); }
-    public Iterator<T>  iterator() { return members.iterator(); }
 }
