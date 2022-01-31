@@ -782,7 +782,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     private static class MessageMulticaster extends io.ably.lib.util.Multicaster<MessageListener> implements MessageListener {
         @Override
         public void onMessage(Message message) {
-            for(MessageListener member : members)
+            for (final MessageListener member : getMembers())
                 try {
                     member.onMessage(message);
                 } catch (Throwable t) {
