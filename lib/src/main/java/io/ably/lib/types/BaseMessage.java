@@ -8,7 +8,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import io.ably.lib.util.Base64Coder;
-import io.ably.lib.util.Crypto.ChannelCipher;
+import io.ably.lib.util.Crypto.EncryptingChannelCipher;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 import org.msgpack.core.MessageFormat;
@@ -131,7 +131,7 @@ public class BaseMessage implements Cloneable {
                         case "cipher":
                             if(opts != null && opts.encrypted) {
                                 try {
-                                    data = opts.getCipher().decrypt((byte[]) data);
+                                    data = opts.getDecryptingCipher().decrypt((byte[]) data);
                                 } catch(AblyException e) {
                                     throw MessageDecodeException.fromDescription(e.errorInfo.message);
                                 }
@@ -179,7 +179,7 @@ public class BaseMessage implements Cloneable {
             }
         }
         if (opts != null && opts.encrypted) {
-            ChannelCipher cipher = opts.getCipher();
+            EncryptingChannelCipher cipher = opts.getEncryptingCipher();
             data = cipher.encrypt((byte[]) data);
             encoding = ((encoding == null) ? "" : encoding + "/") + "cipher+" + cipher.getAlgorithm();
         }

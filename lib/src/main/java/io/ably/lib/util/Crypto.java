@@ -15,7 +15,6 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 
@@ -170,31 +169,40 @@ public class Crypto {
 
     /**
      * Interface for a ChannelCipher instance that may be associated with a Channel.
-     *
      */
     public interface ChannelCipher {
-        byte[] encrypt(byte[] plaintext) throws AblyException;
-        byte[] decrypt(byte[] ciphertext) throws AblyException;
         String getAlgorithm();
     }
 
-    /**
-     * Internal; get a ChannelCipher instance based on the given ChannelOptions
-     * @param opts
-     * @return
-     * @throws AblyException
-     */
-    public static ChannelCipher getCipher(final ChannelOptions opts) throws AblyException {
-        final Object opaqueCipherParams = opts.cipherParams;
-        final CipherParams cipherParams;
-        if(null == opaqueCipherParams)
-            cipherParams = Crypto.getDefaultParams();
-        else if(opts.cipherParams instanceof CipherParams)
-            cipherParams = (CipherParams)opts.cipherParams;
+    public interface EncryptingChannelCipher extends ChannelCipher {
+        byte[] encrypt(byte[] plaintext) throws AblyException;
+    }
+
+    public interface DecryptingChannelCipher extends ChannelCipher {
+        byte[] decrypt(byte[] ciphertext) throws AblyException;
+    }
+
+    private static CipherParams getParams(final Object cipherParams) throws AblyException {
+        if (null == cipherParams)
+            return Crypto.getDefaultParams();
+        else if (cipherParams instanceof CipherParams)
+            return (CipherParams)cipherParams;
         else
             throw AblyException.fromErrorInfo(new ErrorInfo("ChannelOptions not supported", 400, 40000));
+    }
 
-        return new CBCCipher(cipherParams);
+    /**
+     * Internal; get an encrypting cipher instance based on the given channel options.
+     */
+    public static EncryptingChannelCipher getEncryptingCipher(final Object cipherParams) throws AblyException {
+        return new EncryptingCBCCipher(getParams(cipherParams));
+    }
+
+    /**
+     * Internal; get an decrypting cipher instance based on the given channel options.
+     */
+    public static DecryptingChannelCipher getDecryptingCipher(final Object cipherParams) throws AblyException {
+        return new DecryptingCBCCipher(getParams(cipherParams));
     }
 
     /**
@@ -207,97 +215,55 @@ public class Crypto {
      *
      */
     private static class CBCCipher implements ChannelCipher {
-        private final SecretKeySpec keySpec;
-        private final Cipher encryptCipher;
-        private final Cipher decryptCipher;
+        protected final SecretKeySpec keySpec;
+        protected final IvParameterSpec ivSpec;
+        protected final Cipher cipher;
+        protected final int blockLength;
         private final String algorithm;
-        private final int blockLength;
-        private byte[] iv;
 
-        private CBCCipher(CipherParams params) throws AblyException {
+        protected CBCCipher(final CipherParams params) throws AblyException {
             final String cipherAlgorithm = params.getAlgorithm();
             String transformation = cipherAlgorithm.toUpperCase(Locale.ROOT) + "/CBC/PKCS5Padding";
             try {
                 algorithm = cipherAlgorithm + '-' + params.getKeyLength() + "-cbc";
                 keySpec = params.keySpec;
-                encryptCipher = Cipher.getInstance(transformation);
-                encryptCipher.init(Cipher.ENCRYPT_MODE, params.keySpec, params.ivSpec);
-                decryptCipher = Cipher.getInstance(transformation);
-                iv = params.ivSpec.getIV();
-                blockLength = iv.length;
+                ivSpec = params.ivSpec;
+                blockLength = ivSpec.getIV().length;
+                cipher = Cipher.getInstance(transformation);
             }
-            catch (NoSuchAlgorithmException|NoSuchPaddingException|InvalidAlgorithmParameterException|InvalidKeyException e) {
+            catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
                 throw AblyException.fromThrowable(e);
             }
-        }
-
-        @Override
-        public byte[] encrypt(byte[] plaintext) {
-            if(plaintext == null) return null;
-            int plaintextLength = plaintext.length;
-            int paddedLength = getPaddedLength(plaintextLength);
-            byte[] cipherIn = new byte[paddedLength];
-            byte[] ciphertext = new byte[paddedLength + blockLength];
-            int padding = paddedLength - plaintextLength;
-            System.arraycopy(plaintext, 0, cipherIn, 0, plaintextLength);
-            System.arraycopy(pkcs5Padding[padding], 0, cipherIn, plaintextLength, padding);
-            System.arraycopy(getIv(), 0, ciphertext, 0, blockLength);
-            byte[] cipherOut = encryptCipher.update(cipherIn);
-            System.arraycopy(cipherOut, 0, ciphertext, blockLength, paddedLength);
-            return ciphertext;
-        }
-
-        @Override
-        public byte[] decrypt(byte[] ciphertext) throws AblyException {
-            if(ciphertext == null) return null;
-            byte[] plaintext = null;
-            try {
-                decryptCipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(ciphertext, 0, blockLength));
-                plaintext = decryptCipher.doFinal(ciphertext, blockLength, ciphertext.length - blockLength);
-            }
-            catch (InvalidKeyException|InvalidAlgorithmParameterException|IllegalBlockSizeException|BadPaddingException e) {
-                Log.e(TAG, "decrypt()", e);
-                throw AblyException.fromThrowable(e);
-            }
-            return plaintext;
         }
 
         @Override
         public String getAlgorithm() {
             return algorithm;
         }
+    }
 
-        /**
-         * Internal: get an IV for the next message.
-         * Returns either the IV that was used to initialise the ChannelCipher,
-         * or generates an IV based on the current cipher state.
-         */
-        private byte[] getIv() {
-            if(iv == null)
-                return encryptCipher.update(emptyBlock);
+    private static class EncryptingCBCCipher extends CBCCipher implements EncryptingChannelCipher {
+        private byte[] iv;
 
-            final byte[] result = iv;
-            iv = null;
-            return result;
+        EncryptingCBCCipher(final CipherParams params) throws AblyException {
+            super(params);
+
+            try {
+                cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
+            } catch (InvalidAlgorithmParameterException | InvalidKeyException e) {
+                throw AblyException.fromThrowable(e);
+            }
+
+            iv = params.ivSpec.getIV();
         }
 
         /**
-         * Internal: calculate the padded length of a given plaintext
-         * using PKCS5.
-         * @param plaintextLength
-         * @return
-         */
-        private static int getPaddedLength(int plaintextLength) {
-            return (plaintextLength + DEFAULT_BLOCKLENGTH) & -DEFAULT_BLOCKLENGTH;
-        }
-
-        /**
-         * Internal: a block containing zeros
+         * A block containing zeros.
          */
         private static final byte[] emptyBlock = new byte[DEFAULT_BLOCKLENGTH];
 
         /**
-         * Internal: obtain the pkcs5 padding string for a given padded length;
+         * The PKCS5 padding strings for given padded lengths.
          */
         private static final byte[][] pkcs5Padding = new byte[][] {
             new byte[] {16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16},
@@ -318,6 +284,64 @@ public class Crypto {
             new byte[] {15,15,15,15,15,15,15,15,15,15,15,15,15,15,15},
             new byte[] {16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16}
         };
+
+        /**
+         * Returns the padded length of a given plaintext, using PKCS5.
+         */
+        private static int getPaddedLength(int plaintextLength) {
+            return (plaintextLength + DEFAULT_BLOCKLENGTH) & -DEFAULT_BLOCKLENGTH;
+        }
+
+        /**
+         * Get an IV for the next message.
+         * Returns either the IV that was used to initialise the ChannelCipher,
+         * or generates an IV based on the current cipher state.
+         */
+        private byte[] getNextIv() {
+            if (iv == null)
+                return cipher.update(emptyBlock);
+
+            final byte[] result = iv;
+            iv = null;
+            return result;
+        }
+
+        @Override
+        public byte[] encrypt(byte[] plaintext) {
+            if (plaintext == null) return null;
+            final int plaintextLength = plaintext.length;
+            final int paddedLength = getPaddedLength(plaintextLength);
+            final byte[] cipherIn = new byte[paddedLength];
+            final byte[] ciphertext = new byte[paddedLength + blockLength];
+            final int padding = paddedLength - plaintextLength;
+            System.arraycopy(plaintext, 0, cipherIn, 0, plaintextLength);
+            System.arraycopy(pkcs5Padding[padding], 0, cipherIn, plaintextLength, padding);
+            System.arraycopy(getNextIv(), 0, ciphertext, 0, blockLength);
+            final byte[] cipherOut = cipher.update(cipherIn);
+            System.arraycopy(cipherOut, 0, ciphertext, blockLength, paddedLength);
+            return ciphertext;
+        }
+    }
+
+    private static class DecryptingCBCCipher extends CBCCipher implements DecryptingChannelCipher {
+        DecryptingCBCCipher(final CipherParams params) throws AblyException {
+            super(params);
+        }
+
+        @Override
+        public byte[] decrypt(byte[] ciphertext) throws AblyException {
+            if(ciphertext == null) return null;
+            byte[] plaintext = null;
+            try {
+                cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(ciphertext, 0, blockLength));
+                plaintext = cipher.doFinal(ciphertext, blockLength, ciphertext.length - blockLength);
+            }
+            catch (InvalidKeyException|InvalidAlgorithmParameterException|IllegalBlockSizeException|BadPaddingException e) {
+                Log.e(TAG, "decrypt()", e);
+                throw AblyException.fromThrowable(e);
+            }
+            return plaintext;
+        }
     }
 
     public static String getRandomId() {

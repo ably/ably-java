@@ -4,17 +4,16 @@ import java.util.Map;
 
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Crypto;
-import io.ably.lib.util.Crypto.ChannelCipher;
+import io.ably.lib.util.Crypto.EncryptingChannelCipher;
+import io.ably.lib.util.Crypto.DecryptingChannelCipher;
 
 public class ChannelOptions {
     public Map<String, String> params;
-    
+
     public ChannelMode[] modes;
 
-    /**
-     * Cipher in use.
-     */
-    private ChannelCipher cipher;
+    private EncryptingChannelCipher encryptingCipher;
+    private DecryptingChannelCipher decryptingCipher;
 
     /**
      * Parameters for the cipher.
@@ -25,15 +24,15 @@ public class ChannelOptions {
      * Whether or not this ChannelOptions is encrypted.
      */
     public boolean encrypted;
-    
+
     public boolean hasModes() {
         return null != modes && 0 != modes.length;
     }
-    
+
     public boolean hasParams() {
         return null != params && !params.isEmpty();
     }
-    
+
     public int getModeFlags() {
         int flags = 0;
         for (final ChannelMode mode : modes) {
@@ -41,17 +40,37 @@ public class ChannelOptions {
         }
         return flags;
     }
-    
-    public ChannelCipher getCipher() throws AblyException {
-        if(!this.encrypted) {
-            return null;
+
+    /**
+     * Returns the cipher to be used for encrypting data on this channel, given the current state of this instance.
+     * On the first call to this method a new cipher instance is created, with subsequent callers to this method being
+     * returned that same cipher instance. This method is safe to be called from any thread.
+     *
+     * @apiNote Once this method has been called then the cipher is fixed based on the value of the
+     * {@link #cipherParams} field at that time. If that field is then mutated, the cipher will not be updated.
+     * This is not great API design and we should fix this under https://github.com/ably/ably-java/issues/745
+     */
+    public synchronized EncryptingChannelCipher getEncryptingCipher() throws AblyException {
+        if (null == encryptingCipher) {
+            encryptingCipher = Crypto.getEncryptingCipher(this);
         }
-        if(this.cipher != null) {
-            return this.cipher;
-        } else {
-            this.cipher = Crypto.getCipher(this);
-            return this.cipher;
+        return encryptingCipher;
+    }
+
+    /**
+     * Returns the cipher to be used for decrypting data on this channel, given the current state of this instance.
+     * On the first call to this method a new cipher instance is created, with subsequent callers to this method being
+     * returned that same cipher instance. This method is safe to be called from any thread.
+     *
+     * @apiNote Once this method has been called then the cipher is fixed based on the value of the
+     * {@link #cipherParams} field at that time. If that field is then mutated, the cipher will not be updated.
+     * This is not great API design and we should fix this under https://github.com/ably/ably-java/issues/745
+     */
+    public synchronized DecryptingChannelCipher getDecryptingCipher() throws AblyException {
+        if (null == decryptingCipher) {
+            decryptingCipher = Crypto.getDecryptingCipher(this);
         }
+        return decryptingCipher;
     }
 
     /**
@@ -88,7 +107,6 @@ public class ChannelOptions {
         ChannelOptions options = new ChannelOptions();
         options.encrypted = true;
         options.cipherParams = Crypto.getDefaultParams(key);
-        options.cipher = Crypto.getCipher(options);
         return options;
     }
 
