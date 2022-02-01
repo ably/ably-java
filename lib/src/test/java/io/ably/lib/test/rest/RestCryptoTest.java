@@ -3,7 +3,6 @@ package io.ably.lib.test.rest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
@@ -33,9 +32,9 @@ public class RestCryptoTest extends ParameterizedTest {
 
     @Before
     public void setUpBefore() throws Exception {
-        ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+        final ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         ably = new AblyRest(opts);
-        ClientOptions opts_alt = createOptions(testVars.keys[0].keyStr);
+        final ClientOptions opts_alt = createOptions(testVars.keys[0].keyStr);
         opts_alt.useBinaryProtocol = testParams.useBinaryProtocol;
         ably_alt = new AblyRest(opts_alt);
     }
@@ -44,85 +43,55 @@ public class RestCryptoTest extends ParameterizedTest {
      * Publish events with data of various datatypes using text protocol
      */
     @Test
-    public void crypto_publish() {
+    public void crypto_publish() throws AblyException {
         /* first, publish some messages */
-        Channel publish0;
-        try {
-            ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; }};
-            publish0 = ably.channels.get("persisted:crypto_publish_" + testParams.name, channelOpts);
+        final ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; }};
+        final Channel publish0 = ably.channels.get("persisted:crypto_publish_" + testParams.name, channelOpts);
 
-            publish0.publish("publish0", "This is a string message payload");
-            publish0.publish("publish1", "This is a byte[] message payload".getBytes());
-        } catch(AblyException e) {
-            e.printStackTrace();
-            fail("channelpublish_text: Unexpected exception");
-            return;
-        }
+        publish0.publish("publish0", "This is a string message payload");
+        publish0.publish("publish1", "This is a byte[] message payload".getBytes());
 
         /* get the history for this channel */
-        try {
-            PaginatedResult<Message> messages = publish0.history(null);
-            assertNotNull("Expected non-null messages", messages);
-            assertEquals("Expected 2 messages", messages.items().length, 2);
-            HashMap<String, Object> messageContents = new HashMap<String, Object>();
-            /* verify message contents */
-            for(Message message : messages.items())
-                messageContents.put(message.name, message.data);
-            assertEquals("Expect publish0 to be expected String", messageContents.get("publish0"), "This is a string message payload");
-            assertEquals("Expect publish1 to be expected byte[]", new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");
-        } catch (AblyException e) {
-            e.printStackTrace();
-            fail("channelpublish_text: Unexpected exception");
-            return;
-        }
+        final PaginatedResult<Message> messages = publish0.history(null);
+        assertNotNull("Expected non-null messages", messages);
+        assertEquals("Expected 2 messages", messages.items().length, 2);
+        final HashMap<String, Object> messageContents = new HashMap<String, Object>();
+        /* verify message contents */
+        for (final Message message : messages.items())
+            messageContents.put(message.name, message.data);
+        assertEquals("Expect publish0 to be expected String", messageContents.get("publish0"), "This is a string message payload");
+        assertEquals("Expect publish1 to be expected byte[]", new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");
     }
 
     /**
      * Publish events with data of various datatypes using text protocol with a 256-bit key
      */
     @Test
-    public void crypto_publish_256() {
+    public void crypto_publish_256() throws NoSuchAlgorithmException, AblyException {
         /* first, publish some messages */
-        Channel publish0;
-        try {
-            /* create a key */
-            KeyGenerator keygen = KeyGenerator.getInstance("AES");
-            keygen.init(256);
-            byte[] key = keygen.generateKey().getEncoded();
-            final CipherParams params = Crypto.getDefaultParams(key);
+        /* create a key */
+        final KeyGenerator keygen = KeyGenerator.getInstance("AES");
+        keygen.init(256);
+        byte[] key = keygen.generateKey().getEncoded();
+        final CipherParams params = Crypto.getDefaultParams(key);
 
-            /* create a channel */
-            ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; this.cipherParams = params; }};
-            publish0 = ably.channels.get("persisted:crypto_publish_256_" + testParams.name, channelOpts);
+        /* create a channel */
+        final ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; this.cipherParams = params; }};
+        final Channel publish0 = ably.channels.get("persisted:crypto_publish_256_" + testParams.name, channelOpts);
 
-            publish0.publish("publish0", "This is a string message payload");
-            publish0.publish("publish1", "This is a byte[] message payload".getBytes());
-        } catch(AblyException e) {
-            e.printStackTrace();
-            fail("channelpublish_text: Unexpected exception");
-            return;
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            fail("init0: Unexpected exception generating key");
-            return;
-        }
+        publish0.publish("publish0", "This is a string message payload");
+        publish0.publish("publish1", "This is a byte[] message payload".getBytes());
 
         /* get the history for this channel */
-        try {
-            PaginatedResult<Message> messages = publish0.history(null);
-            assertNotNull("Expected non-null messages", messages);
-            assertEquals("Expected 2 messages", messages.items().length, 2);
-            HashMap<String, Object> messageContents = new HashMap<String, Object>();
-            /* verify message contents */
-            for(Message message : messages.items())
-                messageContents.put(message.name, message.data);
-            assertEquals("Expect publish0 to be expected String", messageContents.get("publish0"), "This is a string message payload");
-            assertEquals("Expect publish1 to be expected byte[]", new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");
-        } catch (AblyException e) {
-            e.printStackTrace();
-            fail("channelpublish_text: Unexpected exception");
-            return;
-        }
+        final PaginatedResult<Message> messages = publish0.history(null);
+        assertNotNull("Expected non-null messages", messages);
+        assertEquals("Expected 2 messages", messages.items().length, 2);
+        final HashMap<String, Object> messageContents = new HashMap<String, Object>();
+        /* verify message contents */
+        for (final Message message : messages.items())
+            messageContents.put(message.name, message.data);
+        assertEquals("Expect publish0 to be expected String", messageContents.get("publish0"), "This is a string message payload");
+        assertEquals("Expect publish1 to be expected byte[]", new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");
     }
 
     /**
@@ -131,44 +100,31 @@ public class RestCryptoTest extends ParameterizedTest {
      * the default cipher params and verify correct receipt.
      */
     @Test
-    public void crypto_publish_alt() {
+    public void crypto_publish_alt() throws AblyException {
         /* first, publish some messages */
-        Channel tx_publish;
-        ChannelOptions channelOpts;
-        String channelName = "persisted:crypto_publish_alt_" + testParams.name;
-        try {
-            /* create a key */
-            final CipherParams params = Crypto.getDefaultParams();
+        final String channelName = "persisted:crypto_publish_alt_" + testParams.name;
 
-            /* create a channel */
-            channelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params; }};
-            tx_publish = ably.channels.get(channelName, channelOpts);
+        /* create a key */
+        final CipherParams params = Crypto.getDefaultParams();
 
-            tx_publish.publish("publish0", "This is a string message payload");
-            tx_publish.publish("publish1", "This is a byte[] message payload".getBytes());
-        } catch(AblyException e) {
-            e.printStackTrace();
-            fail("channelpublish_text: Unexpected exception");
-            return;
-        }
+        /* create a channel */
+        final ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params; }};
+        final Channel tx_publish = ably.channels.get(channelName, channelOpts);
+
+        tx_publish.publish("publish0", "This is a string message payload");
+        tx_publish.publish("publish1", "This is a byte[] message payload".getBytes());
 
         /* get the history for this channel */
-        try {
-            Channel rx_publish = ably_alt.channels.get(channelName, channelOpts);
-            PaginatedResult<Message> messages = rx_publish.history(null);
-            assertNotNull("Expected non-null messages", messages);
-            assertEquals("Expected 2 messages", messages.items().length, 2);
-            HashMap<String, Object> messageContents = new HashMap<String, Object>();
-            /* verify message contents */
-            for(Message message : messages.items())
-                messageContents.put(message.name, message.data);
-            assertEquals("Expect publish0 to be expected String", messageContents.get("publish0"), "This is a string message payload");
-            assertEquals("Expect publish1 to be expected byte[]", new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");
-        } catch (AblyException e) {
-            e.printStackTrace();
-            fail("channelpublish_text: Unexpected exception");
-            return;
-        }
+        final Channel rx_publish = ably_alt.channels.get(channelName, channelOpts);
+        final PaginatedResult<Message> messages = rx_publish.history(null);
+        assertNotNull("Expected non-null messages", messages);
+        assertEquals("Expected 2 messages", messages.items().length, 2);
+        final HashMap<String, Object> messageContents = new HashMap<String, Object>();
+        /* verify message contents */
+        for (final Message message : messages.items())
+            messageContents.put(message.name, message.data);
+        assertEquals("Expect publish0 to be expected String", messageContents.get("publish0"), "This is a string message payload");
+        assertEquals("Expect publish1 to be expected byte[]", new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");
     }
 
     /**
@@ -178,34 +134,24 @@ public class RestCryptoTest extends ParameterizedTest {
      * is noticed as bad recovered plaintext.
      */
     @Test
-    public void crypto_publish_key_mismatch() {
+    public void crypto_publish_key_mismatch() throws AblyException {
         /* first, publish some messages */
-        Channel tx_publish;
-        String channelName = "persisted:crypto_publish_key_mismatch_" + testParams.name;
-        try {
-            /* create a channel */
-            ChannelOptions tx_channelOpts = new ChannelOptions() {{ encrypted = true; }};
-            tx_publish = ably.channels.get(channelName, tx_channelOpts);
+        final String channelName = "persisted:crypto_publish_key_mismatch_" + testParams.name;
 
-            tx_publish.publish("publish0", "This is a string message payload");
-            tx_publish.publish("publish1", "This is a byte[] message payload".getBytes());
-        } catch(AblyException e) {
-            e.printStackTrace();
-            fail("channelpublish_text: Unexpected exception");
-            return;
-        }
+        /* create a channel */
+        final ChannelOptions tx_channelOpts = new ChannelOptions() {{ encrypted = true; }};
+        final Channel tx_publish = ably.channels.get(channelName, tx_channelOpts);
+
+        tx_publish.publish("publish0", "This is a string message payload");
+        tx_publish.publish("publish1", "This is a byte[] message payload".getBytes());
 
         /* get the history for this channel */
-        try {
-            ChannelOptions rx_channelOpts = new ChannelOptions() {{ encrypted = true; }};
-            Channel rx_publish = ably.channels.get(channelName, rx_channelOpts);
+        final ChannelOptions rx_channelOpts = new ChannelOptions() {{ encrypted = true; }};
+        final Channel rx_publish = ably.channels.get(channelName, rx_channelOpts);
 
-            PaginatedResult<Message> messages = rx_publish.history(new Param[] { new Param("direction", "backwards"), new Param("limit", "2") });
-            for (Message failedMessage: messages.items())
-                assertTrue("Check decrypt failure", failedMessage.encoding.contains("cipher"));
-        } catch (AblyException e) {
-            fail("Didn't expect exception");
-        }
+        final PaginatedResult<Message> messages = rx_publish.history(new Param[] { new Param("direction", "backwards"), new Param("limit", "2") });
+        for (final Message failedMessage: messages.items())
+            assertTrue("Check decrypt failure", failedMessage.encoding.contains("cipher"));
     }
 
     /**
@@ -214,39 +160,29 @@ public class RestCryptoTest extends ParameterizedTest {
      * does not attempt to decrypt it.
      */
     @Test
-    public void crypto_send_unencrypted() {
-        String channelName = "persisted:crypto_send_unencrypted_" + testParams.name;
+    public void crypto_send_unencrypted() throws AblyException {
+        final String channelName = "persisted:crypto_send_unencrypted_" + testParams.name;
         /* first, publish some messages */
-        try {
-            /* create a channel */
-            Channel tx_publish = ably.channels.get(channelName);
 
-            tx_publish.publish("publish0", "This is a string message payload");
-            tx_publish.publish("publish1", "This is a byte[] message payload".getBytes());
-        } catch(AblyException e) {
-            e.printStackTrace();
-            fail("crypto_send_unencrypted: Unexpected exception");
-            return;
-        }
+        /* create a channel */
+        final Channel tx_publish = ably.channels.get(channelName);
+
+        tx_publish.publish("publish0", "This is a string message payload");
+        tx_publish.publish("publish1", "This is a byte[] message payload".getBytes());
 
         /* get the history for this channel */
-        try {
-            ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; }};
-            Channel rx_publish = ably.channels.get(channelName, channelOpts);
-            PaginatedResult<Message> messages = rx_publish.history(null);
-            assertNotNull("Expected non-null messages", messages);
-            assertEquals("Expected 2 messages", messages.items().length, 2);
-            HashMap<String, Object> messageContents = new HashMap<String, Object>();
-            /* verify message contents */
-            for(Message message : messages.items())
-                messageContents.put(message.name, message.data);
-            assertEquals("Expect publish0 to be expected String", messageContents.get("publish0"), "This is a string message payload");
-            assertEquals("Expect publish1 to be expected byte[]", new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");
-        } catch (AblyException e) {
-            e.printStackTrace();
-            fail("channelpublish_text: Unexpected exception");
-            return;
-        }
+        final ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; }};
+        final Channel rx_publish = ably.channels.get(channelName, channelOpts);
+        final PaginatedResult<Message> messages = rx_publish.history(null);
+        assertNotNull("Expected non-null messages", messages);
+        assertEquals("Expected 2 messages", messages.items().length, 2);
+        final HashMap<String, Object> messageContents = new HashMap<String, Object>();
+
+        /* verify message contents */
+        for (final Message message : messages.items())
+            messageContents.put(message.name, message.data);
+        assertEquals("Expect publish0 to be expected String", messageContents.get("publish0"), "This is a string message payload");
+        assertEquals("Expect publish1 to be expected byte[]", new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");
     }
 
     /**
@@ -255,38 +191,28 @@ public class RestCryptoTest extends ParameterizedTest {
      * is unable to decrypt it and leaves it as encoded cipher data
      */
     @Test
-    public void crypto_send_encrypted_unhandled() {
-        String channelName = "persisted:crypto_send_encrypted_unhandled_" + testParams.name;
-        /* first, publish some messages */
-        try {
-            /* create a channel */
-            ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; }};
-            Channel tx_publish = ably.channels.get(channelName, channelOpts);
+    public void crypto_send_encrypted_unhandled() throws AblyException {
+        final String channelName = "persisted:crypto_send_encrypted_unhandled_" + testParams.name;
 
-            tx_publish.publish("publish0", "This is a string message payload");
-            tx_publish.publish("publish1", "This is a byte[] message payload".getBytes());
-        } catch(AblyException e) {
-            e.printStackTrace();
-            fail("channelpublish_text: Unexpected exception");
-            return;
-        }
+        /* first, publish some messages */
+
+        /* create a channel */
+        final ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; }};
+        final Channel tx_publish = ably.channels.get(channelName, channelOpts);
+
+        tx_publish.publish("publish0", "This is a string message payload");
+        tx_publish.publish("publish1", "This is a byte[] message payload".getBytes());
 
         /* get the history for this channel */
-        try {
-            Channel rx_publish = ably_alt.channels.get(channelName);
-            PaginatedResult<Message> messages = rx_publish.history(null);
-            assertNotNull("Expected non-null messages", messages);
-            assertEquals("Expected 2 messages", messages.items().length, 2);
-            HashMap<String, Message> messageContents = new HashMap<String, Message>();
-            /* verify message contents */
-            for(Message message : messages.items())
-                messageContents.put(message.name, message);
-            assertTrue("Expect publish0 to be unprocessed CipherData", messageContents.get("publish0").encoding.contains("cipher"));
-            assertTrue("Expect publish1 to be unprocessed CipherData", messageContents.get("publish1").encoding.contains("cipher"));
-        } catch (AblyException e) {
-            e.printStackTrace();
-            fail("crypto_send_encrypted_unhandled: Unexpected exception");
-            return;
-        }
+        final Channel rx_publish = ably_alt.channels.get(channelName);
+        final PaginatedResult<Message> messages = rx_publish.history(null);
+        assertNotNull("Expected non-null messages", messages);
+        assertEquals("Expected 2 messages", messages.items().length, 2);
+        final HashMap<String, Message> messageContents = new HashMap<String, Message>();
+        /* verify message contents */
+        for (final Message message : messages.items())
+            messageContents.put(message.name, message);
+        assertTrue("Expect publish0 to be unprocessed CipherData", messageContents.get("publish0").encoding.contains("cipher"));
+        assertTrue("Expect publish1 to be unprocessed CipherData", messageContents.get("publish1").encoding.contains("cipher"));
     }
 }
