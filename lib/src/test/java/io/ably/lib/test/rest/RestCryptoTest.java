@@ -54,13 +54,13 @@ public class RestCryptoTest extends ParameterizedTest {
         /* get the history for this channel */
         final PaginatedResult<Message> messages = publish0.history(null);
         assertNotNull(messages);
-        assertEquals(messages.items().length, 2);
+        assertEquals(2, messages.items().length);
         final HashMap<String, Object> messageContents = new HashMap<String, Object>();
         /* verify message contents */
         for (final Message message : messages.items())
             messageContents.put(message.name, message.data);
-        assertEquals(messageContents.get("publish0"), "This is a string message payload");
-        assertEquals(new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");
+        assertEquals("This is a string message payload", messageContents.get("publish0"));
+        assertEquals("This is a byte[] message payload", new String((byte[])messageContents.get("publish1")));
     }
 
     /**
@@ -85,13 +85,13 @@ public class RestCryptoTest extends ParameterizedTest {
         /* get the history for this channel */
         final PaginatedResult<Message> messages = publish0.history(null);
         assertNotNull(messages);
-        assertEquals(messages.items().length, 2);
+        assertEquals(2, messages.items().length);
         final HashMap<String, Object> messageContents = new HashMap<String, Object>();
         /* verify message contents */
         for (final Message message : messages.items())
             messageContents.put(message.name, message.data);
-        assertEquals(messageContents.get("publish0"), "This is a string message payload");
-        assertEquals(new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");
+        assertEquals("This is a string message payload", messageContents.get("publish0"));
+        assertEquals("This is a byte[] message payload", new String((byte[])messageContents.get("publish1")));
     }
 
     /**
@@ -118,13 +118,13 @@ public class RestCryptoTest extends ParameterizedTest {
         final Channel rx_publish = ably_alt.channels.get(channelName, channelOpts);
         final PaginatedResult<Message> messages = rx_publish.history(null);
         assertNotNull(messages);
-        assertEquals(messages.items().length, 2);
+        assertEquals(2, messages.items().length);
         final HashMap<String, Object> messageContents = new HashMap<String, Object>();
         /* verify message contents */
         for (final Message message : messages.items())
             messageContents.put(message.name, message.data);
-        assertEquals(messageContents.get("publish0"), "This is a string message payload");
-        assertEquals(new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");
+        assertEquals("This is a string message payload", messageContents.get("publish0"));
+        assertEquals("This is a byte[] message payload", new String((byte[])messageContents.get("publish1")));
     }
 
     /**
@@ -175,14 +175,14 @@ public class RestCryptoTest extends ParameterizedTest {
         final Channel rx_publish = ably.channels.get(channelName, channelOpts);
         final PaginatedResult<Message> messages = rx_publish.history(null);
         assertNotNull(messages);
-        assertEquals(messages.items().length, 2);
+        assertEquals(2, messages.items().length);
         final HashMap<String, Object> messageContents = new HashMap<String, Object>();
 
         /* verify message contents */
         for (final Message message : messages.items())
             messageContents.put(message.name, message.data);
-        assertEquals(messageContents.get("publish0"), "This is a string message payload");
-        assertEquals(new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");
+        assertEquals("This is a string message payload", messageContents.get("publish0"));
+        assertEquals("This is a byte[] message payload", new String((byte[])messageContents.get("publish1")));
     }
 
     /**
@@ -207,7 +207,7 @@ public class RestCryptoTest extends ParameterizedTest {
         final Channel rx_publish = ably_alt.channels.get(channelName);
         final PaginatedResult<Message> messages = rx_publish.history(null);
         assertNotNull(messages);
-        assertEquals(messages.items().length, 2);
+        assertEquals(2, messages.items().length);
         final HashMap<String, Message> messageContents = new HashMap<String, Message>();
         /* verify message contents */
         for (final Message message : messages.items())
