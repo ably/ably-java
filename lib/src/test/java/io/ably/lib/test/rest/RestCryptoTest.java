@@ -53,14 +53,14 @@ public class RestCryptoTest extends ParameterizedTest {
 
         /* get the history for this channel */
         final PaginatedResult<Message> messages = publish0.history(null);
-        assertNotNull("Expected non-null messages", messages);
-        assertEquals("Expected 2 messages", messages.items().length, 2);
+        assertNotNull(messages);
+        assertEquals(messages.items().length, 2);
         final HashMap<String, Object> messageContents = new HashMap<String, Object>();
         /* verify message contents */
         for (final Message message : messages.items())
             messageContents.put(message.name, message.data);
-        assertEquals("Expect publish0 to be expected String", messageContents.get("publish0"), "This is a string message payload");
-        assertEquals("Expect publish1 to be expected byte[]", new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");
+        assertEquals(messageContents.get("publish0"), "This is a string message payload");
+        assertEquals(new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");
     }
 
     /**
@@ -84,14 +84,14 @@ public class RestCryptoTest extends ParameterizedTest {
 
         /* get the history for this channel */
         final PaginatedResult<Message> messages = publish0.history(null);
-        assertNotNull("Expected non-null messages", messages);
-        assertEquals("Expected 2 messages", messages.items().length, 2);
+        assertNotNull(messages);
+        assertEquals(messages.items().length, 2);
         final HashMap<String, Object> messageContents = new HashMap<String, Object>();
         /* verify message contents */
         for (final Message message : messages.items())
             messageContents.put(message.name, message.data);
-        assertEquals("Expect publish0 to be expected String", messageContents.get("publish0"), "This is a string message payload");
-        assertEquals("Expect publish1 to be expected byte[]", new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");
+        assertEquals(messageContents.get("publish0"), "This is a string message payload");
+        assertEquals(new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");
     }
 
     /**
@@ -117,14 +117,14 @@ public class RestCryptoTest extends ParameterizedTest {
         /* get the history for this channel */
         final Channel rx_publish = ably_alt.channels.get(channelName, channelOpts);
         final PaginatedResult<Message> messages = rx_publish.history(null);
-        assertNotNull("Expected non-null messages", messages);
-        assertEquals("Expected 2 messages", messages.items().length, 2);
+        assertNotNull(messages);
+        assertEquals(messages.items().length, 2);
         final HashMap<String, Object> messageContents = new HashMap<String, Object>();
         /* verify message contents */
         for (final Message message : messages.items())
             messageContents.put(message.name, message.data);
-        assertEquals("Expect publish0 to be expected String", messageContents.get("publish0"), "This is a string message payload");
-        assertEquals("Expect publish1 to be expected byte[]", new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");
+        assertEquals(messageContents.get("publish0"), "This is a string message payload");
+        assertEquals(new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");
     }
 
     /**
@@ -151,7 +151,7 @@ public class RestCryptoTest extends ParameterizedTest {
 
         final PaginatedResult<Message> messages = rx_publish.history(new Param[] { new Param("direction", "backwards"), new Param("limit", "2") });
         for (final Message failedMessage: messages.items())
-            assertTrue("Check decrypt failure", failedMessage.encoding.contains("cipher"));
+            assertTrue(failedMessage.encoding.contains("cipher"));
     }
 
     /**
@@ -174,15 +174,15 @@ public class RestCryptoTest extends ParameterizedTest {
         final ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; }};
         final Channel rx_publish = ably.channels.get(channelName, channelOpts);
         final PaginatedResult<Message> messages = rx_publish.history(null);
-        assertNotNull("Expected non-null messages", messages);
-        assertEquals("Expected 2 messages", messages.items().length, 2);
+        assertNotNull(messages);
+        assertEquals(messages.items().length, 2);
         final HashMap<String, Object> messageContents = new HashMap<String, Object>();
 
         /* verify message contents */
         for (final Message message : messages.items())
             messageContents.put(message.name, message.data);
-        assertEquals("Expect publish0 to be expected String", messageContents.get("publish0"), "This is a string message payload");
-        assertEquals("Expect publish1 to be expected byte[]", new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");
+        assertEquals(messageContents.get("publish0"), "This is a string message payload");
+        assertEquals(new String((byte[])messageContents.get("publish1")), "This is a byte[] message payload");
     }
 
     /**
@@ -206,13 +206,13 @@ public class RestCryptoTest extends ParameterizedTest {
         /* get the history for this channel */
         final Channel rx_publish = ably_alt.channels.get(channelName);
         final PaginatedResult<Message> messages = rx_publish.history(null);
-        assertNotNull("Expected non-null messages", messages);
-        assertEquals("Expected 2 messages", messages.items().length, 2);
+        assertNotNull(messages);
+        assertEquals(messages.items().length, 2);
         final HashMap<String, Message> messageContents = new HashMap<String, Message>();
         /* verify message contents */
         for (final Message message : messages.items())
             messageContents.put(message.name, message);
-        assertTrue("Expect publish0 to be unprocessed CipherData", messageContents.get("publish0").encoding.contains("cipher"));
-        assertTrue("Expect publish1 to be unprocessed CipherData", messageContents.get("publish1").encoding.contains("cipher"));
+        assertTrue(messageContents.get("publish0").encoding.contains("cipher"));
+        assertTrue(messageContents.get("publish1").encoding.contains("cipher"));
     }
 }
