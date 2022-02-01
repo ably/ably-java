@@ -42,7 +42,7 @@ public class ChannelOptions {
     }
 
     /**
-     * Returns the cipher to be used for encrypting data on this channel, given the current state of this instance.
+     * Returns the cipher to be used for encrypting data on a channel, given the current state of this instance.
      * On the first call to this method a new cipher instance is created, with subsequent callers to this method being
      * returned that same cipher instance. This method is safe to be called from any thread.
      *
@@ -58,7 +58,7 @@ public class ChannelOptions {
     }
 
     /**
-     * Returns the cipher to be used for decrypting data on this channel, given the current state of this instance.
+     * Returns the cipher to be used for decrypting data on a channel, given the current state of this instance.
      * On the first call to this method a new cipher instance is created, with subsequent callers to this method being
      * returned that same cipher instance. This method is safe to be called from any thread.
      *
