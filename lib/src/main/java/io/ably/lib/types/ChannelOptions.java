@@ -51,6 +51,9 @@ public class ChannelOptions {
      * This is not great API design and we should fix this under https://github.com/ably/ably-java/issues/745
      */
     public synchronized EncryptingChannelCipher getEncryptingCipher() throws AblyException {
+        if (!encrypted) {
+            throw new IllegalStateException("ChannelOptions encrypted field value is false.");
+        }
         if (null == encryptingCipher) {
             encryptingCipher = Crypto.getEncryptingCipher(cipherParams);
         }
@@ -67,6 +70,9 @@ public class ChannelOptions {
      * This is not great API design and we should fix this under https://github.com/ably/ably-java/issues/745
      */
     public synchronized DecryptingChannelCipher getDecryptingCipher() throws AblyException {
+        if (!encrypted) {
+            throw new IllegalStateException("ChannelOptions encrypted field value is false.");
+        }
         if (null == decryptingCipher) {
             decryptingCipher = Crypto.getDecryptingCipher(cipherParams);
         }
