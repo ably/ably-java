@@ -2,6 +2,7 @@ package io.ably.lib.test.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.security.NoSuchAlgorithmException;
@@ -9,6 +10,7 @@ import java.util.HashMap;
 
 import javax.crypto.KeyGenerator;
 
+import io.ably.lib.test.common.Helpers;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -48,8 +50,14 @@ public class RestCryptoTest extends ParameterizedTest {
         final ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; }};
         final Channel publish0 = ably.channels.get("persisted:crypto_publish_" + testParams.name, channelOpts);
 
-        publish0.publish("publish0", "This is a string message payload");
-        publish0.publish("publish1", "This is a byte[] message payload".getBytes());
+        final Helpers.CompletionWaiter publishWaiter = new Helpers.CompletionWaiter();
+        publish0.publishAsync("publish0", "This is a string message payload", publishWaiter);
+        publish0.publishAsync("publish1", "This is a byte[] message payload".getBytes(), publishWaiter);
+        assertNull(publishWaiter.waitFor(2));
+
+        // TODO find a way to know that the history call below will have data available already
+        // (i.e. that data has made it to the REST endpoint ... we know that we've waitied for our publish requests
+        // to succeed, but that doesn't necessarily mean the data is yet available to all clients)
 
         /* get the history for this channel */
         final PaginatedResult<Message> messages = publish0.history(null);
@@ -79,8 +87,14 @@ public class RestCryptoTest extends ParameterizedTest {
         final ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; this.cipherParams = params; }};
         final Channel publish0 = ably.channels.get("persisted:crypto_publish_256_" + testParams.name, channelOpts);
 
-        publish0.publish("publish0", "This is a string message payload");
-        publish0.publish("publish1", "This is a byte[] message payload".getBytes());
+        final Helpers.CompletionWaiter publishWaiter = new Helpers.CompletionWaiter();
+        publish0.publishAsync("publish0", "This is a string message payload", publishWaiter);
+        publish0.publishAsync("publish1", "This is a byte[] message payload".getBytes(), publishWaiter);
+        assertNull(publishWaiter.waitFor(2));
+
+        // TODO find a way to know that the history call below will have data available already
+        // (i.e. that data has made it to the REST endpoint ... we know that we've waitied for our publish requests
+        // to succeed, but that doesn't necessarily mean the data is yet available to all clients)
 
         /* get the history for this channel */
         final PaginatedResult<Message> messages = publish0.history(null);
@@ -111,8 +125,14 @@ public class RestCryptoTest extends ParameterizedTest {
         final ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params; }};
         final Channel tx_publish = ably.channels.get(channelName, channelOpts);
 
-        tx_publish.publish("publish0", "This is a string message payload");
-        tx_publish.publish("publish1", "This is a byte[] message payload".getBytes());
+        final Helpers.CompletionWaiter publishWaiter = new Helpers.CompletionWaiter();
+        tx_publish.publishAsync("publish0", "This is a string message payload", publishWaiter);
+        tx_publish.publishAsync("publish1", "This is a byte[] message payload".getBytes(), publishWaiter);
+        assertNull(publishWaiter.waitFor(2));
+
+        // TODO find a way to know that the history call below will have data available already
+        // (i.e. that data has made it to the REST endpoint ... we know that we've waitied for our publish requests
+        // to succeed, but that doesn't necessarily mean the data is yet available to all clients)
 
         /* get the history for this channel */
         final Channel rx_publish = ably_alt.channels.get(channelName, channelOpts);
@@ -142,8 +162,14 @@ public class RestCryptoTest extends ParameterizedTest {
         final ChannelOptions tx_channelOpts = new ChannelOptions() {{ encrypted = true; }};
         final Channel tx_publish = ably.channels.get(channelName, tx_channelOpts);
 
-        tx_publish.publish("publish0", "This is a string message payload");
-        tx_publish.publish("publish1", "This is a byte[] message payload".getBytes());
+        final Helpers.CompletionWaiter publishWaiter = new Helpers.CompletionWaiter();
+        tx_publish.publishAsync("publish0", "This is a string message payload", publishWaiter);
+        tx_publish.publishAsync("publish1", "This is a byte[] message payload".getBytes(), publishWaiter);
+        assertNull(publishWaiter.waitFor(2));
+
+        // TODO find a way to know that the history call below will have data available already
+        // (i.e. that data has made it to the REST endpoint ... we know that we've waitied for our publish requests
+        // to succeed, but that doesn't necessarily mean the data is yet available to all clients)
 
         /* get the history for this channel */
         final ChannelOptions rx_channelOpts = new ChannelOptions() {{ encrypted = true; }};
@@ -167,8 +193,14 @@ public class RestCryptoTest extends ParameterizedTest {
         /* create a channel */
         final Channel tx_publish = ably.channels.get(channelName);
 
-        tx_publish.publish("publish0", "This is a string message payload");
-        tx_publish.publish("publish1", "This is a byte[] message payload".getBytes());
+        final Helpers.CompletionWaiter publishWaiter = new Helpers.CompletionWaiter();
+        tx_publish.publishAsync("publish0", "This is a string message payload", publishWaiter);
+        tx_publish.publishAsync("publish1", "This is a byte[] message payload".getBytes(), publishWaiter);
+        assertNull(publishWaiter.waitFor(2));
+
+        // TODO find a way to know that the history call below will have data available already
+        // (i.e. that data has made it to the REST endpoint ... we know that we've waitied for our publish requests
+        // to succeed, but that doesn't necessarily mean the data is yet available to all clients)
 
         /* get the history for this channel */
         final ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; }};
@@ -200,8 +232,14 @@ public class RestCryptoTest extends ParameterizedTest {
         final ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; }};
         final Channel tx_publish = ably.channels.get(channelName, channelOpts);
 
-        tx_publish.publish("publish0", "This is a string message payload");
-        tx_publish.publish("publish1", "This is a byte[] message payload".getBytes());
+        final Helpers.CompletionWaiter publishWaiter = new Helpers.CompletionWaiter();
+        tx_publish.publishAsync("publish0", "This is a string message payload", publishWaiter);
+        tx_publish.publishAsync("publish1", "This is a byte[] message payload".getBytes(), publishWaiter);
+        assertNull(publishWaiter.waitFor(2));
+
+        // TODO find a way to know that the history call below will have data available already
+        // (i.e. that data has made it to the REST endpoint ... we know that we've waitied for our publish requests
+        // to succeed, but that doesn't necessarily mean the data is yet available to all clients)
 
         /* get the history for this channel */
         final Channel rx_publish = ably_alt.channels.get(channelName);
