@@ -52,7 +52,7 @@ public class ChannelOptions {
      */
     public synchronized EncryptingChannelCipher getEncryptingCipher() throws AblyException {
         if (null == encryptingCipher) {
-            encryptingCipher = Crypto.getEncryptingCipher(this);
+            encryptingCipher = Crypto.getEncryptingCipher(cipherParams);
         }
         return encryptingCipher;
     }
@@ -68,7 +68,7 @@ public class ChannelOptions {
      */
     public synchronized DecryptingChannelCipher getDecryptingCipher() throws AblyException {
         if (null == decryptingCipher) {
-            decryptingCipher = Crypto.getDecryptingCipher(this);
+            decryptingCipher = Crypto.getDecryptingCipher(cipherParams);
         }
         return decryptingCipher;
     }
