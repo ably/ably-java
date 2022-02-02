@@ -67,8 +67,12 @@ public class RestCryptoTest extends ParameterizedTest {
         /* verify message contents */
         for (final Message message : messages.items())
             messageContents.put(message.name, message.data);
-        assertEquals("This is a string message payload", messageContents.get("publish0"));
-        assertEquals("This is a byte[] message payload", new String((byte[])messageContents.get("publish1")));
+        final Object payload0 = messageContents.get("publish0");
+        final Object payload1 = messageContents.get("publish1");
+        assertTrue("Unexpected " + payload0.getClass(), payload0 instanceof String);
+        assertTrue("Unexpected " + payload1.getClass(), payload1 instanceof byte[]);
+        assertEquals("This is a string message payload", payload0);
+        assertEquals("This is a byte[] message payload", new String((byte[])payload1));
     }
 
     /**

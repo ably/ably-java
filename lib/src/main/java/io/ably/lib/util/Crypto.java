@@ -203,17 +203,40 @@ public class Crypto {
     }
 
     /**
-     * Internal; get an encrypting cipher instance based on the given channel options.
+     * A matching encipher and decipher pair, where both are guaranteed to have been configured with the same
+     * {@link CipherParams} as each other.
      */
-    public static EncryptingChannelCipher getEncryptingCipher(final Object cipherParams) throws AblyException {
-        return new EncryptingCBCCipher(getParams(cipherParams));
+    public interface ChannelCipherSet {
+        EncryptingChannelCipher getEncipher();
+        DecryptingChannelCipher getDecipher();
     }
 
     /**
-     * Internal; get an decrypting cipher instance based on the given channel options.
+     * Internal; get an encrypting cipher instance based on the given channel options.
      */
-    public static DecryptingChannelCipher getDecryptingCipher(final Object cipherParams) throws AblyException {
-        return new DecryptingCBCCipher(getParams(cipherParams));
+    public static ChannelCipherSet createChannelCipherSet(final Object cipherParams) throws AblyException {
+        final CipherParams nonNullParams;
+        if (null == cipherParams)
+            nonNullParams = Crypto.getDefaultParams();
+        else if (cipherParams instanceof CipherParams)
+            nonNullParams = (CipherParams)cipherParams;
+        else
+            throw AblyException.fromErrorInfo(new ErrorInfo("ChannelOptions not supported", 400, 40000));
+
+        return new ChannelCipherSet() {
+            private final EncryptingChannelCipher encipher = new EncryptingCBCCipher(nonNullParams);
+            private final DecryptingChannelCipher decipher = new DecryptingCBCCipher(nonNullParams);
+
+            @Override
+            public EncryptingChannelCipher getEncipher() {
+                return encipher;
+            }
+
+            @Override
+            public DecryptingChannelCipher getDecipher() {
+                return decipher;
+            }
+        };
     }
 
     /**
