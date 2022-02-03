@@ -205,15 +205,6 @@ public class Crypto {
         byte[] decrypt(byte[] ciphertext) throws AblyException;
     }
 
-    private static CipherParams getParams(final Object cipherParams) throws AblyException {
-        if (null == cipherParams)
-            return Crypto.getDefaultParams();
-        else if (cipherParams instanceof CipherParams)
-            return (CipherParams)cipherParams;
-        else
-            throw AblyException.fromErrorInfo(new ErrorInfo("ChannelOptions not supported", 400, 40000));
-    }
-
     /**
      * A matching encipher and decipher pair, where both are guaranteed to have been configured with the same
      * {@link CipherParams} as each other.
