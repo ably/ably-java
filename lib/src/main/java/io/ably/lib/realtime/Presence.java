@@ -357,7 +357,7 @@ public class Presence {
     private static class Multicaster extends io.ably.lib.util.Multicaster<PresenceListener> implements PresenceListener {
         @Override
         public void onPresenceMessage(PresenceMessage message) {
-            for(PresenceListener member : members)
+            for (final PresenceListener member : getMembers())
                 try {
                     member.onPresenceMessage(message);
                 } catch(Throwable t) {}

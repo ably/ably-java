@@ -38,7 +38,7 @@ public interface ConnectionStateListener {
     class Multicaster extends io.ably.lib.util.Multicaster<ConnectionStateListener> implements ConnectionStateListener {
         @Override
         public void onConnectionStateChanged(ConnectionStateChange state) {
-            for(ConnectionStateListener member : members)
+            for (final ConnectionStateListener member : getMembers())
                 try {
                     member.onConnectionStateChanged(state);
                 } catch(Throwable t) {}

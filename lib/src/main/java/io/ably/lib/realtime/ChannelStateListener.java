@@ -56,7 +56,7 @@ public interface ChannelStateListener {
     class Multicaster extends io.ably.lib.util.Multicaster<ChannelStateListener> implements ChannelStateListener {
         @Override
         public void onChannelStateChanged(ChannelStateChange stateChange) {
-            for(ChannelStateListener member : members)
+            for (final ChannelStateListener member : getMembers())
                 try {
                     member.onChannelStateChanged(stateChange);
                 } catch(Throwable t) {}

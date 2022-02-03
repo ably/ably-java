@@ -29,7 +29,7 @@ public interface CompletionListener {
 
         @Override
         public void onSuccess() {
-            for(CompletionListener member : members)
+            for (final CompletionListener member : getMembers())
                 try {
                     member.onSuccess();
                 } catch(Throwable t) {}
@@ -37,7 +37,7 @@ public interface CompletionListener {
 
         @Override
         public void onError(ErrorInfo reason) {
-            for(CompletionListener member : members)
+            for (final CompletionListener member : getMembers())
                 try {
                     member.onError(reason);
                 } catch(Throwable t) {}
