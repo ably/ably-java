@@ -42,7 +42,7 @@ public class ChannelOptions {
 
     /**
      * Returns a wrapper around the cipher set to be used for this channel. This wrapper is only available in this API
-     * to support customers who may have been using it in their applications against with version 1.2.10 or before.
+     * to support customers who may have been using it in their applications with version 1.2.10 or before.
      *
      * @deprecated Since version 1.2.11, this method (which was only ever intended for internal use within this library
      * has been replaced by {@link #getCipherSet()}. It will be removed in the future.
