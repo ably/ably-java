@@ -32,19 +32,20 @@ uploadArchives {
         pom.artifactId = ARTIFACT_ID
         pom.version = version
 
-        // Add other pom properties here if you want (developer details / licenses)
         pom.project {
-            name 'Ably java client library'
-            description 'A Java Realtime and REST client library for [Ably.io](https://www.ably.io), the realtime messaging service.'
+            name 'Ably Java client library SDK'
+            description 'A Java Realtime and REST client library SDK for the Ably platform.'
             packaging 'jar'
             inceptionYear '2015'
             url 'https://www.github.com/ably/ably-java'
             developers {
                 developer {
-                    name 'Paddy Byers'
-                    email 'paddy@ably.io'
-                    url 'https://github.com/paddybyers'
-                    id 'paddybyers'
+                    id 'ably' // our company org in GitHub: https://github.com/ably
+                    name 'Ably' // UK based company: Ably Real-time Ltd
+                    email 'support@ably.com'
+                    organization 'Ably' // UK based company: Ably Real-time Ltd
+                    organizationUrl 'https://ably.com/'
+                    url 'https://ably.com/'
                 }
             }
             scm {
@@ -54,7 +55,7 @@ uploadArchives {
             }
             organization {
                 name 'Ably'
-                url 'http://ably.io'
+                url 'https://ably.com/'
             }
             issueManagement {
                 system 'Github'
