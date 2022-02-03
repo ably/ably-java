@@ -18,9 +18,9 @@ import org.msgpack.core.MessagePacker;
 import com.google.gson.stream.JsonWriter;
 
 import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ChannelOptions;
-import io.ably.lib.util.Crypto.ChannelCipher;
+import io.ably.lib.util.Crypto.ChannelCipherSet;
 import io.ably.lib.util.Crypto.CipherParams;
+import io.ably.lib.util.Crypto.EncryptingChannelCipher;
 import io.ably.lib.util.CryptoMessageTest.FixtureSet;
 
 public class CryptoTest {
@@ -57,10 +57,10 @@ public class CryptoTest {
         );
 
         byte[] plaintext = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-        ChannelCipher channelCipher1 = Crypto.getCipher(new ChannelOptions() {{ encrypted=true; cipherParams=params1; }});
-        ChannelCipher channelCipher2 = Crypto.getCipher(new ChannelOptions() {{ encrypted=true; cipherParams=params2; }});
-        ChannelCipher channelCipher3 = Crypto.getCipher(new ChannelOptions() {{ encrypted=true; cipherParams=params3; }});
-        ChannelCipher channelCipher4 = Crypto.getCipher(new ChannelOptions() {{ encrypted=true; cipherParams=params4; }});
+        EncryptingChannelCipher channelCipher1 = Crypto.createChannelCipherSet(params1).getEncipher();
+        EncryptingChannelCipher channelCipher2 = Crypto.createChannelCipherSet(params2).getEncipher();
+        EncryptingChannelCipher channelCipher3 = Crypto.createChannelCipherSet(params3).getEncipher();
+        EncryptingChannelCipher channelCipher4 = Crypto.createChannelCipherSet(params4).getEncipher();
 
         byte[] ciphertext1 = channelCipher1.encrypt(plaintext);
         byte[] ciphertext2 = channelCipher2.encrypt(plaintext);
@@ -127,18 +127,18 @@ public class CryptoTest {
         for (int i=1; i<=maxLength; i++) {
             // We need to create a new ChannelCipher for each message we encode,
             // so that our IV gets used (being start of CBC chain).
-            final ChannelCipher cipher = Crypto.getCipher(new ChannelOptions() {{ encrypted=true; cipherParams=params; }});
+            final ChannelCipherSet cipherSet = Crypto.createChannelCipherSet(params);
 
             // Encrypt i bytes from the start of the message data.
             final byte[] encoded = Arrays.copyOfRange(message, 0, i);
-            final byte[] encrypted = cipher.encrypt(encoded);
+            final byte[] encrypted = cipherSet.getEncipher().encrypt(encoded);
 
             // Add encryption result to results in format ready for fixture.
             writeResult(writer, "byte 1 to " + i, encoded, encrypted, fixtureSet.cipherName);
 
             // Decrypt the encrypted data and verify the result is the same as what
             // we submitted for encryption.
-            final byte[] verify = cipher.decrypt(encrypted);
+            final byte[] verify = cipherSet.getDecipher().decrypt(encrypted);
             assertArrayEquals(verify, encoded);
         }
         writer.endArray();
