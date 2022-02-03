@@ -10,7 +10,6 @@
 - `IllegalStateException` in `Crypto` `CBCCipher`'s `decrypt` method [\#741](https://github.com/ably/ably-java/issues/741), fixed in [\#746](https://github.com/ably/ably-java/pull/746) ([QuintinWillison](https://github.com/QuintinWillison))
 - Incorrect use of locale sensitive String APIs [\#713](https://github.com/ably/ably-java/issues/713), fixed in [\#722](https://github.com/ably/ably-java/pull/722) ([martin-morek](https://github.com/martin-morek))
 - `push.listSubscriptionsImpl` method not respecting params [\#705](https://github.com/ably/ably-java/issues/705), fixed in [\#710](https://github.com/ably/ably-java/pull/710) ([martin-morek](https://github.com/martin-morek))
-- Read and persist `state` returned in `LocalDevice`/ `DeviceDetails` [\#697](https://github.com/ably/ably-java/issues/697)
 
 **Other merged pull requests:**
 
