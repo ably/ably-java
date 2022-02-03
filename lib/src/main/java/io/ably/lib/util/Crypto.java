@@ -17,6 +17,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 
@@ -174,12 +175,49 @@ public class Crypto {
      *
      * The operational methods implemented by channel cipher instances (encrypt and decrypt) are not designed to be
      * safe to be called from any thread.
+     *
+     * @deprecated Since version 1.2.11, this interface (which was only ever intended for internal use within this
+     * library) has been replaced by {@link ChannelCipherSet}.
      */
+    @Deprecated
     public interface ChannelCipher {
+        byte[] encrypt(byte[] plaintext) throws AblyException;
+        byte[] decrypt(byte[] ciphertext) throws AblyException;
         String getAlgorithm();
     }
 
-    public interface EncryptingChannelCipher extends ChannelCipher {
+    /**
+     * Internal; get a ChannelCipher instance based on the given ChannelOptions
+     *
+     * @deprecated Since version 1.2.11, this method (which was only ever intended for internal use within this
+     * library) has been replaced by {@link #createChannelCipherSet(Object)}.
+     */
+    @Deprecated
+    public static ChannelCipher getCipher(final ChannelOptions opts) throws AblyException {
+        return new ChannelCipher() {
+            private final ChannelCipherSet set = createChannelCipherSet(opts.cipherParams);
+
+            @Override
+            public byte[] encrypt(byte[] plaintext) throws AblyException {
+                return set.getEncipher().encrypt(plaintext);
+            }
+
+            @Override
+            public byte[] decrypt(byte[] ciphertext) throws AblyException {
+                return set.getDecipher().decrypt(ciphertext);
+            }
+
+            @Override
+            public String getAlgorithm() {
+                return set.getEncipher().getAlgorithm();
+            }
+        };
+    }
+
+    /**
+     * Internal; a cipher used to encrypt plaintext to ciphertext, for a channel.
+     */
+    public interface EncryptingChannelCipher {
         /**
          * Enciphers plaintext.
          *
@@ -190,9 +228,14 @@ public class Crypto {
          * @throws ConcurrentModificationException If this method is called from more than one thread at a time.
          */
         byte[] encrypt(byte[] plaintext) throws AblyException;
+
+        String getAlgorithm();
     }
 
-    public interface DecryptingChannelCipher extends ChannelCipher {
+    /**
+     * Internal; a cipher used to decrypt plaintext from ciphertext, for a channel.
+     */
+    public interface DecryptingChannelCipher {
         /**
          * Deciphers ciphertext.
          *
@@ -206,7 +249,7 @@ public class Crypto {
     }
 
     /**
-     * A matching encipher and decipher pair, where both are guaranteed to have been configured with the same
+     * Internal; a matching encipher and decipher pair, where both are guaranteed to have been configured with the same
      * {@link CipherParams} as each other.
      */
     public interface ChannelCipherSet {
@@ -243,20 +286,19 @@ public class Crypto {
     }
 
     /**
-     * Internal: a class that implements a CBC mode ChannelCipher.
+     * Implements a CBC mode ChannelCipher.
      * A single block of secure random data is provided for an initial IV.
      * Consecutive messages are chained in a manner that allows each to be
      * emitted with an IV, allowing each to be deciphered independently,
      * whilst avoiding having to obtain further entropy for IVs, and reinit
      * the cipher, between successive messages.
-     *
      */
-    private static class CBCCipher implements ChannelCipher {
+    private static class CBCCipher {
         protected final SecretKeySpec keySpec;
         protected final IvParameterSpec ivSpec;
         protected final Cipher cipher;
         protected final int blockLength;
-        private final String algorithm;
+        protected final String algorithm;
         private final Semaphore semaphore = new Semaphore(1);
 
         protected CBCCipher(final CipherParams params) throws AblyException {
@@ -272,11 +314,6 @@ public class Crypto {
             catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
                 throw AblyException.fromThrowable(e);
             }
-        }
-
-        @Override
-        public String getAlgorithm() {
-            return algorithm;
         }
 
         /**
@@ -315,6 +352,11 @@ public class Crypto {
             }
 
             iv = params.ivSpec.getIV();
+        }
+
+        @Override
+        public String getAlgorithm() {
+            return algorithm;
         }
 
         /**
