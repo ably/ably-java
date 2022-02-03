@@ -181,6 +181,12 @@ public class Crypto {
 
     public interface EncryptingChannelCipher extends ChannelCipher {
         /**
+         * Enciphers plaintext.
+         *
+         * This method is not safe to be called from multiple threads at the same time, and it will throw a
+         * {@link ConcurrentModificationException} if that happens at runtime.
+         *
+         * @return ciphertext, being the result of encrypting plaintext.
          * @throws ConcurrentModificationException If this method is called from more than one thread at a time.
          */
         byte[] encrypt(byte[] plaintext) throws AblyException;
@@ -188,6 +194,12 @@ public class Crypto {
 
     public interface DecryptingChannelCipher extends ChannelCipher {
         /**
+         * Deciphers ciphertext.
+         *
+         * This method is not safe to be called from multiple threads at the same time, and it will throw a
+         * {@link ConcurrentModificationException} if that happens at runtime.
+         *
+         * @return plaintext, being the result of decrypting ciphertext.
          * @throws ConcurrentModificationException If this method is called from more than one thread at a time.
          */
         byte[] decrypt(byte[] ciphertext) throws AblyException;
