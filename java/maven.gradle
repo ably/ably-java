@@ -38,6 +38,16 @@ uploadArchives {
             packaging 'jar'
             inceptionYear '2015'
             url 'https://www.github.com/ably/ably-java'
+            developers {
+                developer {
+                    id 'ably' // our company org in GitHub: https://github.com/ably
+                    name 'Ably' // UK based company: Ably Real-time Ltd
+                    email 'support@ably.com'
+                    organization 'Ably' // UK based company: Ably Real-time Ltd
+                    organizationUrl 'https://ably.com/'
+                    url 'https://ably.com/'
+                }
+            }
             scm {
                 url 'scm:git:https://github.com/ably/ably-java'
                 connection 'scm:git:https://github.com/ably/ably-java'
