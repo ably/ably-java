@@ -17,7 +17,6 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 
@@ -177,41 +176,13 @@ public class Crypto {
      * safe to be called from any thread.
      *
      * @deprecated Since version 1.2.11, this interface (which was only ever intended for internal use within this
-     * library) has been replaced by {@link ChannelCipherSet}.
+     * library) has been replaced by {@link ChannelCipherSet}. It will be removed in the future.
      */
     @Deprecated
     public interface ChannelCipher {
         byte[] encrypt(byte[] plaintext) throws AblyException;
         byte[] decrypt(byte[] ciphertext) throws AblyException;
         String getAlgorithm();
-    }
-
-    /**
-     * Internal; get a ChannelCipher instance based on the given ChannelOptions
-     *
-     * @deprecated Since version 1.2.11, this method (which was only ever intended for internal use within this
-     * library) has been replaced by {@link #createChannelCipherSet(Object)}.
-     */
-    @Deprecated
-    public static ChannelCipher getCipher(final ChannelOptions opts) throws AblyException {
-        return new ChannelCipher() {
-            private final ChannelCipherSet set = createChannelCipherSet(opts.cipherParams);
-
-            @Override
-            public byte[] encrypt(byte[] plaintext) throws AblyException {
-                return set.getEncipher().encrypt(plaintext);
-            }
-
-            @Override
-            public byte[] decrypt(byte[] ciphertext) throws AblyException {
-                return set.getDecipher().decrypt(ciphertext);
-            }
-
-            @Override
-            public String getAlgorithm() {
-                return set.getEncipher().getAlgorithm();
-            }
-        };
     }
 
     /**

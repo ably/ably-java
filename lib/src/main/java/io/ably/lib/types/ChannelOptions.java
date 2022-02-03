@@ -4,6 +4,7 @@ import java.util.Map;
 
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Crypto;
+import io.ably.lib.util.Crypto.ChannelCipher;
 import io.ably.lib.util.Crypto.ChannelCipherSet;
 
 public class ChannelOptions {
@@ -40,6 +41,39 @@ public class ChannelOptions {
     }
 
     /**
+     * Returns a wrapper around the cipher set to be used for this channel. This wrapper is only available in this API
+     * to support customers who may have been using it in their applications against with version 1.2.10 or before.
+     *
+     * @deprecated Since version 1.2.11, this method (which was only ever intended for internal use within this library
+     * has been replaced by {@link #getCipherSet()}. It will be removed in the future.
+     */
+    @Deprecated
+    public ChannelCipher getCipher() throws AblyException {
+        return new ChannelCipher() {
+            @Override
+            public byte[] encrypt(byte[] plaintext) throws AblyException {
+                return getCipherSet().getEncipher().encrypt(plaintext);
+            }
+
+            @Override
+            public byte[] decrypt(byte[] ciphertext) throws AblyException {
+                return getCipherSet().getDecipher().decrypt(ciphertext);
+            }
+
+            @Override
+            public String getAlgorithm() {
+                try {
+                    return getCipherSet().getEncipher().getAlgorithm();
+                } catch (final AblyException e) {
+                    throw new IllegalStateException("Unexpected exception when using legacy crypto cipher interface.", e);
+                }
+            }
+        };
+    }
+
+    /**
+     * Internal; this method is not intended for use by application developers. It may be changed or removed in future.
+     *
      * Returns the cipher set to be used for encrypting and decrypting data on a channel, given the current state of
      * this instance. On the first call to this method a new cipher set instance is created, with subsequent callers to
      * this method being returned that same cipher set instance. This method is safe to be called from any thread.
