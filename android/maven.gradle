@@ -45,9 +45,10 @@ uploadArchives {
                 }
             }
             scm {
-                url 'scm:git:https://github.com/ably/ably-java'
-                connection 'scm:git:https://github.com/ably/ably-java'
-                developerConnection 'scm:git:git@github.com:ably/ably-java'
+                url 'https://github.com/ably/ably-java'
+                connection 'scm:git:git://github.com/ably/ably-java.git'
+                developerConnection 'scm:git:ssh://github.com/ably/ably-java.git'
+                tag = 'v' + version
             }
             organization {
                 name 'Ably' // UK based company: Ably Real-time Ltd
