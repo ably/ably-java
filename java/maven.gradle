@@ -52,7 +52,7 @@ uploadArchives {
                 developerConnection 'scm:git:git@github.com:ably/ably-java'
             }
             organization {
-                name 'Ably'
+                name 'Ably' // UK based company: Ably Real-time Ltd
                 url 'https://ably.com/'
             }
             issueManagement {
