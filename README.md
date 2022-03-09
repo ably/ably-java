@@ -57,7 +57,7 @@ AblyRealtime will attempt to connect automatically once new instance is created.
 ably.connection.on(new ConnectionStateListener() {
 	@Override
 	public void onConnectionStateChanged(ConnectionStateChange state) {
-		System.out.println("New state is " + change.current.name());
+		System.out.println("New state is " + state.current.name());
 		switch (state.current) {
 			case connected: {
 				// Successful connection
