@@ -14,14 +14,14 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-public class SecureSSLSocketFactoryTest {
-    SecureSSLSocketFactory secureSSLSocketFactory;
+public class SafeSSLSocketFactoryTest {
+    SafeSSLSocketFactory safeSSLSocketFactory;
 
     @Before
     public void setup() throws NoSuchAlgorithmException, KeyManagementException {
         SSLContext sslContext = SSLContext.getInstance("TLS");
         sslContext.init(null, null, null);
-        secureSSLSocketFactory = new SecureSSLSocketFactory(sslContext.getSocketFactory());
+        safeSSLSocketFactory = new SafeSSLSocketFactory(sslContext.getSocketFactory());
     }
 
     @Test
@@ -34,7 +34,7 @@ public class SecureSSLSocketFactoryTest {
         ));
 
         // when
-        SSLSocket sslSocket = (SSLSocket) secureSSLSocketFactory.createSocket();
+        SSLSocket sslSocket = (SSLSocket) safeSSLSocketFactory.createSocket();
 
         // then
         for (String enabledProtocol : sslSocket.getEnabledProtocols()) {
@@ -55,7 +55,7 @@ public class SecureSSLSocketFactoryTest {
         ));
 
         // when
-        SSLSocket sslSocket = (SSLSocket) secureSSLSocketFactory.createSocket();
+        SSLSocket sslSocket = (SSLSocket) safeSSLSocketFactory.createSocket();
 
         // then
         boolean isUsingSecureProtocol = containsAnySecureProtocol(sslSocket.getEnabledProtocols(), secureProtocols);

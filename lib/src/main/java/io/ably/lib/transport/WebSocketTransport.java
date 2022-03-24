@@ -71,7 +71,7 @@ public class WebSocketTransport implements ITransport {
                 if(isTls) {
                     SSLContext sslContext = SSLContext.getInstance("TLS");
                     sslContext.init( null, null, null );
-                    SecureSSLSocketFactory factory = new SecureSSLSocketFactory(sslContext.getSocketFactory());
+                    SafeSSLSocketFactory factory = new SafeSSLSocketFactory(sslContext.getSocketFactory());
                     wsConnection.setSocketFactory(factory);
                 }
             }

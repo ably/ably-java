@@ -19,13 +19,13 @@ import java.util.Set;
  * This class was created because the {@code SSLContext.getInstance()} method does not allow specifying
  * precisely which TLS protocols can be used and which cannot.
  */
-public class SecureSSLSocketFactory extends SSLSocketFactory {
+public class SafeSSLSocketFactory extends SSLSocketFactory {
     /**
      * All API calls should be delegated to this factory instance.
      */
     private final SSLSocketFactory factory;
 
-    public SecureSSLSocketFactory(SSLSocketFactory factory) {
+    public SafeSSLSocketFactory(SSLSocketFactory factory) {
         this.factory = factory;
     }
 
