@@ -13,8 +13,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * This is a decorator for the {@code SSLSocketFactory} which modifies the enabled TLS protocols
- * for each created {@code SSLSocket} to only use the protocols which are considered to be secure.
+ * This is a decorator for the {@link SSLSocketFactory} which modifies the enabled TLS protocols
+ * for each created {@link SSLSocket} to only use the protocols which are considered to be secure.
  * <p>
  * This class was created because the {@code SSLContext.getInstance()} method does not allow specifying
  * precisely which TLS protocols can be used and which cannot.
