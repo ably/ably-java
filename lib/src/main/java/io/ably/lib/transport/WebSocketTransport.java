@@ -14,7 +14,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.exceptions.WebsocketNotConnectedException;
@@ -72,7 +71,7 @@ public class WebSocketTransport implements ITransport {
                 if(isTls) {
                     SSLContext sslContext = SSLContext.getInstance("TLS");
                     sslContext.init( null, null, null );
-                    SSLSocketFactory factory = sslContext.getSocketFactory();// (SSLSocketFactory) SSLSocketFactory.getDefault();
+                    SecureSSLSocketFactory factory = new SecureSSLSocketFactory(sslContext.getSocketFactory());
                     wsConnection.setSocketFactory(factory);
                 }
             }
