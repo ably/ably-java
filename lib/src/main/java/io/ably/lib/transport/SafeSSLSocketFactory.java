@@ -74,6 +74,9 @@ public class SafeSSLSocketFactory extends SSLSocketFactory {
      * If no secure protocol is supported then the socket won't have any protocols enabled.
      */
     private Socket getSocketWithOnlySecureProtocolsEnabled(Socket socket) {
+        if (!(socket instanceof SSLSocket)) {
+            return socket;
+        }
         SSLSocket sslSocket = (SSLSocket) socket;
         Set<String> supportedProtocols = new HashSet<>(Arrays.asList(sslSocket.getSupportedProtocols()));
         List<String> protocolsToEnable = new ArrayList<>();
