@@ -45,8 +45,8 @@ public class SafeSSLSocketFactory extends SSLSocketFactory {
     }
 
     @Override
-    public Socket createSocket(Socket s, String host, int port, boolean autoClose) throws IOException {
-        return getSocketWithOnlySecureProtocolsEnabled(factory.createSocket(s, host, port, autoClose));
+    public Socket createSocket(Socket socket, String host, int port, boolean autoClose) throws IOException {
+        return getSocketWithOnlySecureProtocolsEnabled(factory.createSocket(socket, host, port, autoClose));
     }
 
     @Override
