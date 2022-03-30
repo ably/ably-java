@@ -21,6 +21,14 @@ import java.util.Set;
  */
 public class SafeSSLSocketFactory extends SSLSocketFactory {
     /**
+     * The protocols that are considered to be safe.
+     */
+    private final String[] SAFE_PROTOCOLS = {
+        "TLSv1.2",
+        "TLSv1.3"
+    };
+
+    /**
      * All API calls should be delegated to this factory instance.
      */
     private final SSLSocketFactory factory;
@@ -80,11 +88,10 @@ public class SafeSSLSocketFactory extends SSLSocketFactory {
         SSLSocket sslSocket = (SSLSocket) socket;
         Set<String> allSupportedProtocols = new HashSet<>(Arrays.asList(sslSocket.getSupportedProtocols()));
         List<String> safeSupportedProtocols = new ArrayList<>();
-        if (allSupportedProtocols.contains("TLSv1.2")) {
-            safeSupportedProtocols.add("TLSv1.2");
-        }
-        if (allSupportedProtocols.contains("TLSv1.3")) {
-            safeSupportedProtocols.add("TLSv1.3");
+        for (String safeProtocol : SAFE_PROTOCOLS) {
+            if (allSupportedProtocols.contains(safeProtocol)) {
+                safeSupportedProtocols.add(safeProtocol);
+            }
         }
         sslSocket.setEnabledProtocols(safeSupportedProtocols.toArray(new String[0]));
         return sslSocket;
