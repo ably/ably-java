@@ -25,9 +25,9 @@ public class SafeSSLSocketFactoryTest {
     }
 
     @Test
-    public void should_not_use_insecure_tls_protocols() throws IOException {
+    public void should_not_use_unsafe_tls_protocols() throws IOException {
         // given
-        Set<String> insecureProtocols = new HashSet<>(Arrays.asList(
+        Set<String> unsafeProtocols = new HashSet<>(Arrays.asList(
             "SSLv3",
             "TLSv1",
             "TLSv1.1"
@@ -39,17 +39,17 @@ public class SafeSSLSocketFactoryTest {
         // then
         for (String enabledProtocol : sslSocket.getEnabledProtocols()) {
             Assert.assertFalse(
-                "Protocol " + enabledProtocol + " is insecure and should not be enabled",
-                insecureProtocols.contains(enabledProtocol)
+                "Protocol " + enabledProtocol + " is unsafe and should not be enabled",
+                unsafeProtocols.contains(enabledProtocol)
             );
 
         }
     }
 
     @Test
-    public void should_use_at_least_one_secure_tls_protocol() throws IOException {
+    public void should_use_at_least_one_safe_tls_protocol() throws IOException {
         // given
-        Set<String> secureProtocols = new HashSet<>(Arrays.asList(
+        Set<String> safeProtocols = new HashSet<>(Arrays.asList(
             "TLSv1.2",
             "TLSv1.3"
         ));
@@ -58,13 +58,13 @@ public class SafeSSLSocketFactoryTest {
         SSLSocket sslSocket = (SSLSocket) safeSSLSocketFactory.createSocket();
 
         // then
-        boolean isUsingSecureProtocol = containsAnySecureProtocol(sslSocket.getEnabledProtocols(), secureProtocols);
-        Assert.assertTrue("No secure protocols are enabled", isUsingSecureProtocol);
+        boolean isUsingSafeProtocol = containsAnySafeProtocol(sslSocket.getEnabledProtocols(), safeProtocols);
+        Assert.assertTrue("No safe protocols are enabled", isUsingSafeProtocol);
     }
 
-    private boolean containsAnySecureProtocol(String[] protocols, Set<String> secureProtocols) {
+    private boolean containsAnySafeProtocol(String[] protocols, Set<String> safeProtocols) {
         for (String protocol : protocols) {
-            if (secureProtocols.contains(protocol)) {
+            if (safeProtocols.contains(protocol)) {
                 return true;
             }
         }
