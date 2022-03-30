@@ -83,7 +83,7 @@ public class SafeSSLSocketFactory extends SSLSocketFactory {
      */
     private Socket getSocketWithOnlySafeProtocolsEnabled(Socket socket) {
         if (!(socket instanceof SSLSocket)) {
-            return socket;
+            throw new IllegalArgumentException("The socket is not an instance of the SSL socket");
         }
         SSLSocket sslSocket = (SSLSocket) socket;
         Set<String> allSupportedProtocols = new HashSet<>(Arrays.asList(sslSocket.getSupportedProtocols()));
@@ -92,6 +92,9 @@ public class SafeSSLSocketFactory extends SSLSocketFactory {
             if (allSupportedProtocols.contains(safeProtocol)) {
                 safeSupportedProtocols.add(safeProtocol);
             }
+        }
+        if (safeSupportedProtocols.isEmpty()) {
+            throw new SecurityException("No safe protocol version is supported for this SSL socket");
         }
         sslSocket.setEnabledProtocols(safeSupportedProtocols.toArray(new String[0]));
         return sslSocket;
