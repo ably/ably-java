@@ -37,9 +37,9 @@ repositories {
 
 We only support installation via Maven / Gradle from the Maven Central repository. If you want to use a standalone fat JAR (i.e. containing all dependencies), it can be generated via a Gradle task (see [building](#building) below), creating a "Java" (JRE) library variant only. There is no standalone / self-contained AAR build option. Checkout [requirements](#requirements).
 
-## Platform support
+## Runtime Requirements
 
-The library requires a safe TLS connection (TLS v1.2 or v1.3) and will fail with an error if it is not supported.
+The library requires that the runtime environment is able to establish a safe TLS connection (TLS v1.2 or v1.3). It will fail to connect with a `SecurityException` if this level of security is not available.
 
 ## Usage
 
