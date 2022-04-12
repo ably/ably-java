@@ -37,6 +37,10 @@ repositories {
 
 We only support installation via Maven / Gradle from the Maven Central repository. If you want to use a standalone fat JAR (i.e. containing all dependencies), it can be generated via a Gradle task (see [building](#building) below), creating a "Java" (JRE) library variant only. There is no standalone / self-contained AAR build option. Checkout [requirements](#requirements).
 
+## Runtime Requirements
+
+The library requires that the runtime environment is able to establish a safe TLS connection (TLS v1.2 or v1.3). It will fail to connect with a `SecurityException` if this level of security is not available.
+
 ## Usage
 
 Please refer to the [documentation](https://www.ably.io/documentation) for a full API reference.
