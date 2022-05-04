@@ -254,7 +254,13 @@ public class Presence {
                     /* Message is new to presence map, send it */
                     final String clientId = item.clientId;
                     try {
-                        PresenceMessage itemToSend = (PresenceMessage)item.clone();
+                        /**
+                         * (RTP17d) [...] publishing a PresenceMessage with an ENTER action using the
+                         * clientId and data attributes from that member [...]
+                         */
+                        PresenceMessage itemToSend = new PresenceMessage();
+                        itemToSend.clientId = item.clientId;
+                        itemToSend.data = item.data;
                         itemToSend.action = PresenceMessage.Action.enter;
                         updatePresence(itemToSend, new CompletionListener() {
                             @Override
