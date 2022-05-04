@@ -28,7 +28,7 @@ public final class MessageExtras {
     /**
      * Creates a MessageExtras instance to be sent as extra with a Message to Ably's servers.
      *
-     * @see <a href="https://www.ably.io/documentation/general/push/publish#channel-broadcast-example">Channel-based push notification example</a>
+     * @see <a href="https://www.ably.com/docs/general/push/publish#channel-broadcast-example">Channel-based push notification example</a>
      *
      * @since 1.2.1
      */

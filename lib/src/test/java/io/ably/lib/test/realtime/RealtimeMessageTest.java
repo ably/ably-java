@@ -935,7 +935,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
      * Publish a message that contains extras of arbitrary creation. Validate that when we receive that message
      * echoed back from the service that those extras remain intact.
      *
-     * @see <a href="https://docs.ably.io/client-lib-development-guide/features/#RSL6a2">RSL6a2</a>
+     * @see <a href="https://docs.ably.com/client-lib-development-guide/features/#RSL6a2">RSL6a2</a>
      */
     @Ignore("FIXME: fix exception")
     @Test
