@@ -26,7 +26,7 @@ import io.ably.lib.util.CryptoMessageTest.FixtureSet;
 public class CryptoTest {
     /**
      * Test Crypto.getDefaultParams.
-     * @see <a href="https://docs.ably.io/client-lib-development-guide/features/#RSE1">RSE1</a>
+     * @see <a href="https://docs.ably.com/client-lib-development-guide/features/#RSE1">RSE1</a>
      */
     @Test
     public void cipher_params() throws AblyException, NoSuchAlgorithmException {
