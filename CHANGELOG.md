@@ -1,5 +1,14 @@
 # Change Log
 
+## [v1.2.12](https://github.com/ably/ably-java/tree/v1.2.12)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.11...v1.2.12)
+
+**Fixed bugs:**
+
+- Cannot automatically re-enter channel due to mismatched connectionId [\#761](https://github.com/ably/ably-java/issues/761)
+- Ensure that weak SSL/TLS protocols are not used [\#749](https://github.com/ably/ably-java/issues/749)
+
 ## [v1.2.11](https://github.com/ably/ably-java/tree/v1.2.11)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.10...v1.2.11)
