@@ -1,0 +1,25 @@
+plugins {
+    id 'de.fuerstenau.buildconfig' version '1.1.8'
+    id 'checkstyle'
+    id 'org.gradle.test-retry' version '1.2.0'
+    id 'java'
+    id 'idea'
+}
+
+apply from: '../common.gradle'
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+apply from: '../dependencies.gradle'
+
+// Added to make test classes from this module available in other modules
+task testJar(type: Jar) {
+    archiveClassifier = "test"
+    from sourceSets.test.output
+}
+
+// Added to make test classes from this module available in other modules
+artifacts {
+    testRuntime testJar
+}

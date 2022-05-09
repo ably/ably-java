@@ -3,8 +3,8 @@ package io.ably.lib.transport;
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
 import io.ably.lib.http.HttpHelpers;
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.Channel;
+import io.ably.lib.realtime.AblyRealtimeBase;
+import io.ably.lib.realtime.RealtimeChannelBase;
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.realtime.Connection;
 import io.ably.lib.realtime.ConnectionState;
@@ -66,13 +66,13 @@ public class ConnectionManager implements ConnectListener {
     static ErrorInfo REASON_TOO_BIG = new ErrorInfo("Connection closed; message too large", 400, 40000);
 
     /**
-     * Methods on the channels map owned by the {@link AblyRealtime} instance
+     * Methods on the channels map owned by the {@link AblyRealtimeBase} instance
      * which the {@link ConnectionManager} needs access to.
      */
     public interface Channels {
         void onMessage(ProtocolMessage msg);
         void suspendAll(ErrorInfo error, boolean notifyStateChange);
-        Iterable<Channel> values();
+        Iterable<RealtimeChannelBase> values();
     }
 
     /***********************************
@@ -159,7 +159,7 @@ public class ConnectionManager implements ConnectListener {
                 } else if(!queueEvents) {
                     failQueuedMessages(stateIndication.reason);
                 }
-                for(final Channel channel : channels.values()) {
+                for(final RealtimeChannelBase channel : channels.values()) {
                     enactForChannel(stateIndication, change, channel);
                 }
             }
@@ -171,7 +171,7 @@ public class ConnectionManager implements ConnectListener {
          * @param change: the change event corresponding to this transition.
          * @param channel: the channel
          */
-        void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, Channel channel) {}
+        void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, RealtimeChannelBase channel) {}
     }
 
     /**************************************************
@@ -243,7 +243,7 @@ public class ConnectionManager implements ConnectListener {
         }
 
         @Override
-        void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, Channel channel) {
+        void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, RealtimeChannelBase channel) {
             channel.setConnected();
         }
     }
@@ -280,7 +280,7 @@ public class ConnectionManager implements ConnectListener {
         }
 
         @Override
-        void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, Channel channel) {
+        void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, RealtimeChannelBase channel) {
             /* (RTL3e) If the connection currentState enters the
              * DISCONNECTED currentState, it will have no effect on the
              * channel states. */
@@ -332,7 +332,7 @@ public class ConnectionManager implements ConnectListener {
         }
 
         @Override
-        void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, Channel channel) {
+        void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, RealtimeChannelBase channel) {
             /* (RTL3c) If the connection currentState enters the SUSPENDED
              * currentState, then an ATTACHING or ATTACHED channel currentState
              * will transition to SUSPENDED. */
@@ -400,7 +400,7 @@ public class ConnectionManager implements ConnectListener {
         }
 
         @Override
-        void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, Channel channel) {
+        void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, RealtimeChannelBase channel) {
             /* (RTL3b) If the connection currentState enters the CLOSED
              * currentState, then an ATTACHING or ATTACHED channel currentState
              * will transition to DETACHED. */
@@ -433,7 +433,7 @@ public class ConnectionManager implements ConnectListener {
         }
 
         @Override
-        void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, Channel channel) {
+        void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, RealtimeChannelBase channel) {
             /* (RTL3a) If the connection currentState enters the FAILED
              * currentState, then an ATTACHING or ATTACHED channel currentState
              * will transition to FAILED, set the
@@ -718,7 +718,7 @@ public class ConnectionManager implements ConnectListener {
      * ConnectionManager
      ***********************/
 
-    public ConnectionManager(final AblyRealtime ably, final Connection connection, final Channels channels, final PlatformAgentProvider platformAgentProvider) throws AblyException {
+    public ConnectionManager(final AblyRealtimeBase ably, final Connection connection, final Channels channels, final PlatformAgentProvider platformAgentProvider) throws AblyException {
         this.ably = ably;
         this.connection = connection;
         this.channels = channels;
@@ -1703,7 +1703,7 @@ public class ConnectionManager implements ConnectListener {
      * private members
      ******************/
 
-    final AblyRealtime ably;
+    final AblyRealtimeBase ably;
     private final Channels channels;
     private final Connection connection;
     private final ITransport.Factory transportFactory;

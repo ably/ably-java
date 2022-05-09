@@ -11,13 +11,15 @@ import io.ably.lib.http.AsyncPaginatedQuery;
 import io.ably.lib.http.HttpPaginatedQuery;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
-import io.ably.lib.platform.Platform;
-import io.ably.lib.push.Push;
+import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.push.PushBase;
+import io.ably.lib.types.AblyChannel;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.AsyncHttpPaginatedResponse;
 import io.ably.lib.types.AsyncPaginatedResult;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ChannelOptions;
+import io.ably.lib.types.Channels;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.HttpPaginatedResponse;
@@ -26,7 +28,6 @@ import io.ably.lib.types.MessageSerializer;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.PublishResponse;
-import io.ably.lib.types.ReadOnlyMap;
 import io.ably.lib.types.Stats;
 import io.ably.lib.types.StatsReader;
 import io.ably.lib.util.Crypto;
@@ -40,16 +41,20 @@ import io.ably.lib.util.Serialisation;
  * The top-level class to be instanced for the Ably REST library.
  *
  */
-public abstract class AblyBase {
+public abstract class AblyBase<
+    PushType extends PushBase,
+    PlatformType extends PlatformBase,
+    ChannelType extends AblyChannel
+    > {
 
     public final ClientOptions options;
     public final Http http;
     public final HttpCore httpCore;
 
     public final Auth auth;
-    public final Channels channels;
-    public final Platform platform;
-    public final Push push;
+    public final Channels<ChannelType> channels;
+    public final PlatformType platform;
+    public final PushType push;
     protected final PlatformAgentProvider platformAgentProvider;
 
     /**
@@ -90,41 +95,38 @@ public abstract class AblyBase {
         httpCore = new HttpCore(options, auth, this.platformAgentProvider);
         http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
 
-        channels = new InternalChannels();
+        channels = (Channels<ChannelType>) new InternalChannels();
 
-        platform = new Platform();
-        push = new Push(this);
+        this.platform = createPlatform();
+        this.push = createPush();
     }
+
+    protected abstract PlatformType createPlatform();
+    protected abstract PushType createPush();
+    protected abstract RestChannelBase createChannel(AblyBase<PushType, PlatformType, ChannelType> ablyBase, String channelName, ChannelOptions channelOptions) throws AblyException;
 
     /**
      * A collection of Channels associated with an Ably instance.
      */
-    public interface Channels extends ReadOnlyMap<String, Channel> {
-        Channel get(String channelName);
-        Channel get(String channelName, ChannelOptions channelOptions) throws AblyException;
-        void release(String channelName);
-        int size();
-        Iterable<Channel> values();
-    }
 
-    private class InternalChannels extends InternalMap<String, Channel> implements Channels {
+    private class InternalChannels extends InternalMap<String, RestChannelBase> implements Channels<RestChannelBase> {
         @Override
-        public Channel get(String channelName) {
+        public RestChannelBase get(String channelName) {
             try {
                 return get(channelName, null);
             } catch (AblyException e) { return null; }
         }
 
         @Override
-        public Channel get(String channelName, ChannelOptions channelOptions) throws AblyException {
-            Channel channel = map.get(channelName);
+        public RestChannelBase get(String channelName, ChannelOptions channelOptions) throws AblyException {
+            RestChannelBase channel = map.get(channelName);
             if (channel != null) {
                 if (channelOptions != null)
                     channel.options = channelOptions;
                 return channel;
             }
 
-            channel = new Channel(AblyBase.this, channelName, channelOptions);
+            channel = createChannel(AblyBase.this, channelName, channelOptions);
             map.put(channelName, channel);
             return channel;
         }

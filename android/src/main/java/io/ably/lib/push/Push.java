@@ -4,8 +4,10 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import io.ably.lib.http.HttpUtils;
+import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.AndroidPlatform;
 import io.ably.lib.rest.AblyBase;
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.RestChannelBase;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
@@ -15,7 +17,7 @@ import java.util.Arrays;
 
 public class Push extends PushBase {
 
-    public Push(AblyBase rest) {
+    public Push(AblyBase<PushBase, PlatformBase, RestChannelBase> rest) {
         super(rest);
     }
 
@@ -59,7 +61,7 @@ public class Push extends PushBase {
     }
 
     Context getApplicationContext() throws AblyException {
-        Context applicationContext = rest.platform.getApplicationContext();
+        Context applicationContext = ((AndroidPlatform) rest.platform).getApplicationContext();
         if(applicationContext == null) {
             Log.e(TAG, "getApplicationContext(): Unable to get application context; not set");
             throw AblyException.fromErrorInfo(new ErrorInfo("Unable to get application context; not set", 40000, 400));
@@ -73,7 +75,7 @@ public class Push extends PushBase {
         if (activationContext == null) {
             Log.v(TAG, "getActivationContext(): creating a new context and returning that");
             Context applicationContext = getApplicationContext();
-            activationContext = ActivationContext.getActivationContext(applicationContext, (AblyRest)rest);
+            activationContext = ActivationContext.getActivationContext(applicationContext, rest);
         } else {
             Log.v(TAG, "getActivationContext(): returning existing content");
         }
@@ -103,6 +105,7 @@ public class Push extends PushBase {
         return headers;
     }
 
+    @Override
     Param[] pushRequestHeaders(String deviceId) {
         boolean forLocalDevice = false;
         try {

@@ -603,7 +603,7 @@ public class Presence {
     public void updatePresence(PresenceMessage msg, CompletionListener listener) throws AblyException {
         Log.v(TAG, "update(); channel = " + channel.name);
 
-        AblyRealtime ably = channel.ably;
+        AblyRealtimeBase ably = channel.ably;
         boolean connected = (ably.connection.state == ConnectionState.connected);
         String clientId;
         try {
@@ -659,12 +659,12 @@ public class Presence {
 
     private BasePaginatedQuery.ResultRequest<PresenceMessage> historyImpl(Param[] params) {
         try {
-            params = Channel.replacePlaceholderParams(channel, params);
+            params = RealtimeChannelBase.replacePlaceholderParams(channel, params);
         } catch (AblyException e) {
             return new BasePaginatedQuery.ResultRequest.Failed<PresenceMessage>(e);
         }
 
-        AblyRealtime ably = channel.ably;
+        AblyRealtimeBase ably = channel.ably;
         HttpCore.BodyHandler<PresenceMessage> bodyHandler = PresenceSerializer.getPresenceResponseHandler(channel.options);
         return new BasePaginatedQuery<PresenceMessage>(ably.http, channel.basePath + "/presence/history", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
     }
@@ -683,7 +683,7 @@ public class Presence {
 
     private void sendQueuedMessages() {
         Log.v(TAG, "sendQueuedMessages()");
-        AblyRealtime ably = channel.ably;
+        AblyRealtimeBase ably = channel.ably;
         boolean queueMessages = ably.options.queueMessages;
         ConnectionManager connectionManager = ably.connection.connectionManager;
         int count = pendingPresence.size();
@@ -1043,13 +1043,13 @@ public class Presence {
      * general
      ************************************/
 
-    Presence(Channel channel) {
+    Presence(RealtimeChannelBase channel) {
         this.channel = channel;
     }
 
-    private static final String TAG = Channel.class.getName();
+    private static final String TAG = RealtimeChannelBase.class.getName();
 
-    private final Channel channel;
+    private final RealtimeChannelBase channel;
 
     /* channel serial if sync is in progress */
     private String currentSyncChannelSerial;

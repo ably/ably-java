@@ -7,9 +7,12 @@ import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpScheduler;
 import io.ably.lib.http.HttpUtils;
+import io.ably.lib.platform.PlatformBase;
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.DeviceDetails;
+import io.ably.lib.rest.RestChannelBase;
+import io.ably.lib.types.AblyChannel;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.AsyncPaginatedResult;
 import io.ably.lib.types.Callback;
@@ -25,7 +28,7 @@ import java.util.Map;
 
 
 public class PushBase {
-    public PushBase(AblyBase rest) {
+    public PushBase(AblyBase<PushBase, PlatformBase, RestChannelBase> rest) {
         this.rest = rest;
         this.admin = new Admin(rest);
     }
@@ -36,7 +39,7 @@ public class PushBase {
         public final DeviceRegistrations deviceRegistrations;
         public final ChannelSubscriptions channelSubscriptions;
 
-        Admin(AblyBase rest) {
+        Admin(AblyBase<PushBase, PlatformBase, RestChannelBase> rest) {
             this.rest = rest;
             this.deviceRegistrations = new DeviceRegistrations(rest);
             this.channelSubscriptions = new ChannelSubscriptions(rest);
@@ -79,7 +82,7 @@ public class PushBase {
             });
         }
 
-        private final AblyBase rest;
+        private final AblyBase<PushBase, PlatformBase, RestChannelBase> rest;
     }
 
     public static class DeviceRegistrations {
@@ -183,11 +186,11 @@ public class PushBase {
             });
         }
 
-        DeviceRegistrations(AblyBase rest) {
+        DeviceRegistrations(AblyBase<PushBase, PlatformBase, RestChannelBase> rest) {
             this.rest = rest;
         }
 
-        private final AblyBase rest;
+        private final AblyBase<PushBase, PlatformBase, RestChannelBase> rest;
     }
 
     public static class ChannelSubscriptions {
@@ -224,7 +227,7 @@ public class PushBase {
         protected BasePaginatedQuery.ResultRequest<ChannelSubscription> listImpl(Param[] params) {
             Log.v(TAG, "listImpl(): params=" + Arrays.toString(params));
             String deviceId = HttpUtils.getParam(params, "deviceId");
-            return new BasePaginatedQuery<Push.ChannelSubscription>(rest.http, "/push/channelSubscriptions", rest.push.pushRequestHeaders(deviceId), params, ChannelSubscription.httpBodyHandler).get();
+            return new BasePaginatedQuery<>(rest.http, "/push/channelSubscriptions", rest.push.pushRequestHeaders(deviceId), params, ChannelSubscription.httpBodyHandler).get();
         }
 
         public void remove(ChannelSubscription subscription) throws AblyException {
@@ -285,11 +288,11 @@ public class PushBase {
             return new BasePaginatedQuery<String>(rest.http, "/push/channels", rest.push.pushRequestHeaders(deviceId), params, StringUtils.httpBodyHandler).get();
         }
 
-        ChannelSubscriptions(AblyBase rest) {
+        ChannelSubscriptions(AblyBase<PushBase, PlatformBase, RestChannelBase> rest) {
             this.rest = rest;
         }
 
-        private final AblyBase rest;
+        private final AblyBase<PushBase, PlatformBase, RestChannelBase> rest;
     }
 
     public static class ChannelSubscription {
@@ -366,6 +369,6 @@ public class PushBase {
         return pushRequestHeaders(false);
     }
 
-    protected final AblyBase rest;
+    protected final AblyBase<PushBase, PlatformBase, RestChannelBase> rest;
     public final Admin admin;
 }

@@ -13,7 +13,7 @@ import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpScheduler;
 import io.ably.lib.http.HttpUtils;
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.DeviceDetails;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
@@ -282,7 +282,7 @@ public class ActivationStateMachine {
                 if (useCustomRegistrar) {
                     machine.invokeCustomRegistration(device, true);
                 } else {
-                    final AblyRest ably;
+                    final AblyBase ably;
                     try {
                         ably = activationContext.getAbly();
                     } catch(AblyException ae) {
@@ -639,7 +639,7 @@ public class ActivationStateMachine {
         if (useCustomRegistrar) {
             invokeCustomRegistration(device, false);
         } else {
-            final AblyRest ably;
+            final AblyBase ably;
             try {
                 ably = activationContext.getAbly();
             } catch(AblyException ae) {
@@ -672,7 +672,7 @@ public class ActivationStateMachine {
 
     private void validateRegistration() {
         final LocalDevice device = activationContext.getLocalDevice();
-        final AblyRest ably;
+        final AblyBase ably;
         try {
             ably = activationContext.getAbly();
         } catch(AblyException ae) {
@@ -728,7 +728,7 @@ public class ActivationStateMachine {
         if (activationContext.getPreferences().getBoolean(ActivationStateMachine.PersistKeys.PUSH_CUSTOM_REGISTRAR, false)) {
             invokeCustomDeregistration(device);
         } else {
-            final AblyRest ably;
+            final AblyBase ably;
             try {
                 ably = activationContext.getAbly();
             } catch(AblyException ae) {

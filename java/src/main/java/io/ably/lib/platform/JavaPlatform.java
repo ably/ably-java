@@ -2,10 +2,10 @@ package io.ably.lib.platform;
 
 import io.ably.lib.transport.NetworkConnectivity;
 
-public class Platform {
+public class JavaPlatform implements PlatformBase {
     public static final String name = "java";
 
-    public Platform() {}
+    public JavaPlatform() {}
 
     public NetworkConnectivity getNetworkConnectivity() {
         return networkConnectivity;
