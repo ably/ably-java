@@ -1,8 +1,10 @@
 package io.ably.lib.test.realtime;
 
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.Channel;
+import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.push.PushBase;
+import io.ably.lib.realtime.AblyRealtimeBase;
+import io.ably.lib.realtime.RealtimeChannelBase;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
@@ -27,7 +29,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class RealtimeRecoverTest extends ParameterizedTest {
+public abstract class RealtimeRecoverTest extends ParameterizedTest {
 
     private static final String TAG = RealtimeRecoverTest.class.getName();
 
@@ -44,23 +46,23 @@ public class RealtimeRecoverTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void recover_disconnected() {
-        AblyRealtime ablyRx = null, ablyTx = null, ablyRxRecover = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRx = null, ablyTx = null, ablyRxRecover = null;
         String channelName = "recover_disconnected";
         int messageCount = 5;
         long delay = 200;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ablyRx = new AblyRealtime(opts);
-            ablyTx = new AblyRealtime(opts);
+            ablyRx = createAblyRealtime(opts);
+            ablyTx = createAblyRealtime(opts);
 
             /* create and attach channel to send on */
-            final Channel channelTx = ablyTx.channels.get(channelName);
+            final RealtimeChannelBase channelTx = ablyTx.channels.get(channelName);
             channelTx.attach();
             (new ChannelWaiter(channelTx)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached for tx", channelTx.state, ChannelState.attached);
 
             /* create and attach channel to recv on */
-            final Channel channelRx = ablyRx.channels.get(channelName);
+            final RealtimeChannelBase channelRx = ablyRx.channels.get(channelName);
             channelRx.attach();
             (new ChannelWaiter(channelRx)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached for rx", channelRx.state, ChannelState.attached);
@@ -107,11 +109,11 @@ public class RealtimeRecoverTest extends ParameterizedTest {
             /* establish a new rx connection with recover string, and wait for connection */
             ClientOptions recoverOpts = createOptions(testVars.keys[0].keyStr);
             recoverOpts.recover = recoverConnectionKey;
-            ablyRxRecover = new AblyRealtime(recoverOpts);
+            ablyRxRecover = createAblyRealtime(recoverOpts);
             (new ConnectionWaiter(ablyRxRecover.connection)).waitFor(ConnectionState.connected);
 
             /* subscribe to channel */
-            final Channel channelRxRecover = ablyRxRecover.channels.get(channelName);
+            final RealtimeChannelBase channelRxRecover = ablyRxRecover.channels.get(channelName);
             MessageWaiter messageWaiterRecover =  new MessageWaiter(channelRxRecover);
 
             /* wait for the subscription callback to be called */
@@ -144,23 +146,23 @@ public class RealtimeRecoverTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void recover_implicit_connect() {
-        AblyRealtime ablyRx = null, ablyTx = null, ablyRxRecover = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRx = null, ablyTx = null, ablyRxRecover = null;
         String channelName = "recover_implicit_connect";
         int messageCount = 5;
         long delay = 200;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ablyRx = new AblyRealtime(opts);
-            ablyTx = new AblyRealtime(opts);
+            ablyRx = createAblyRealtime(opts);
+            ablyTx = createAblyRealtime(opts);
 
             /* create and attach channel to send on */
-            final Channel channelTx = ablyTx.channels.get(channelName);
+            final RealtimeChannelBase channelTx = ablyTx.channels.get(channelName);
             channelTx.attach();
             (new ChannelWaiter(channelTx)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached for tx", channelTx.state, ChannelState.attached);
 
             /* create and attach channel to recv on */
-            final Channel channelRx = ablyRx.channels.get(channelName);
+            final RealtimeChannelBase channelRx = ablyRx.channels.get(channelName);
             channelRx.attach();
             (new ChannelWaiter(channelRx)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached for rx", channelRx.state, ChannelState.attached);
@@ -207,10 +209,10 @@ public class RealtimeRecoverTest extends ParameterizedTest {
             /* establish a new rx connection with recover string, and wait for connection */
             ClientOptions recoverOpts = createOptions(testVars.keys[0].keyStr);
             recoverOpts.recover = recoverConnectionKey;
-            ablyRxRecover = new AblyRealtime(recoverOpts);
+            ablyRxRecover = createAblyRealtime(recoverOpts);
 
             /* subscribe to channel */
-            final Channel channelRxRecover = ablyRxRecover.channels.get(channelName);
+            final RealtimeChannelBase channelRxRecover = ablyRxRecover.channels.get(channelName);
             MessageWaiter messageWaiterRecover =  new MessageWaiter(channelRxRecover);
 
             /* wait for the subscription callback to be called */
@@ -239,23 +241,23 @@ public class RealtimeRecoverTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void recover_verify_publish() {
-        AblyRealtime ablyRx = null, ablyTx = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRx = null, ablyTx = null;
         String channelName = "recover_verify_publish";
         int messageCount = 5;
         long delay = 200;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ablyRx = new AblyRealtime(opts);
-            ablyTx = new AblyRealtime(opts);
+            ablyRx = createAblyRealtime(opts);
+            ablyTx = createAblyRealtime(opts);
 
             /* create and attach channel to send on */
-            final Channel channelTx = ablyTx.channels.get(channelName);
+            final RealtimeChannelBase channelTx = ablyTx.channels.get(channelName);
             channelTx.attach();
             (new ChannelWaiter(channelTx)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached for tx", channelTx.state, ChannelState.attached);
 
             /* create and attach channel to recv on */
-            final Channel channelRx = ablyRx.channels.get(channelName);
+            final RealtimeChannelBase channelRx = ablyRx.channels.get(channelName);
             channelRx.attach();
             (new ChannelWaiter(channelRx)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached for rx", channelRx.state, ChannelState.attached);
@@ -336,7 +338,7 @@ public class RealtimeRecoverTest extends ParameterizedTest {
      */
     @Test
     public void recover_transport_send_exception() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         final String channelName = "recover_transport_send_exception";
         try {
             MockWebsocketFactory mockTransport = new MockWebsocketFactory();
@@ -348,12 +350,12 @@ public class RealtimeRecoverTest extends ParameterizedTest {
             opts.transportFactory = mockTransport;
 
             opts.autoConnect = false;
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
             ConnectionWaiter connWaiter = new ConnectionWaiter(ably.connection);
             ably.connection.connect();
             connWaiter.waitFor(ConnectionState.connected);
 
-            Channel channel = ably.channels.get(channelName);
+            RealtimeChannelBase channel = ably.channels.get(channelName);
             channel.attach();
             new ChannelWaiter(channel).waitFor(ChannelState.attached);
 

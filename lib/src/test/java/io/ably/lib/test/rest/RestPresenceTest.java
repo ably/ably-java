@@ -6,11 +6,13 @@ import static org.junit.Assert.fail;
 
 import java.util.HashMap;
 
+import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.push.PushBase;
+import io.ably.lib.rest.RestChannelBase;
 import org.junit.Before;
 import org.junit.Test;
 
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.rest.Channel;
+import io.ably.lib.rest.AblyBase;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
@@ -18,7 +20,7 @@ import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.PresenceMessage;
 
-public class RestPresenceTest extends ParameterizedTest {
+public abstract class RestPresenceTest extends ParameterizedTest {
 
     private static final String[] clientIds = new String[] {
         "client_string_0",
@@ -27,12 +29,12 @@ public class RestPresenceTest extends ParameterizedTest {
         "client_string_3"
     };
 
-    private AblyRest ably_text;
+    private AblyBase<PushBase, PlatformBase, RestChannelBase> ably_text;
 
     @Before
     public void setUpBefore() throws Exception {
         ClientOptions opts_text = createOptions(testVars.keys[0].keyStr);
-        ably_text = new AblyRest(opts_text);
+        ably_text = createAblyRest(opts_text);
     }
 
     /**
@@ -42,7 +44,7 @@ public class RestPresenceTest extends ParameterizedTest {
     public void rest_getpresence() {
         String channelName = "restpresence_notpersisted";
         /* get channel */
-        Channel channel = ably_text.channels.get(channelName);
+        RestChannelBase channel = ably_text.channels.get(channelName);
         try {
             PresenceMessage[] members = channel.presence.get(null).items();
             assertNotNull("Expected non-null messages", members);
@@ -64,7 +66,7 @@ public class RestPresenceTest extends ParameterizedTest {
     public void rest_presencehistory_simple() {
         String channelName = "persisted:restpresence_persisted";
         /* get channel */
-        Channel channel = ably_text.channels.get(channelName);
+        RestChannelBase channel = ably_text.channels.get(channelName);
         try {
             /* get the history for this channel */
             PaginatedResult<PresenceMessage> members = channel.presence.history(new Param[]{ new Param("direction", "forwards") });
@@ -91,7 +93,7 @@ public class RestPresenceTest extends ParameterizedTest {
     public void rest_presencehistory_order_f() {
         String channelName = "persisted:restpresence_persisted";
         /* get channel */
-        Channel channel = ably_text.channels.get(channelName);
+        RestChannelBase channel = ably_text.channels.get(channelName);
         try {
             /* get the history for this channel */
             PaginatedResult<PresenceMessage> members = channel.presence.history(new Param[]{ new Param("direction", "forwards") });
@@ -118,7 +120,7 @@ public class RestPresenceTest extends ParameterizedTest {
     public void rest_presencehistory_order_b() {
         String channelName = "persisted:restpresence_persisted";
         /* get channel */
-        Channel channel = ably_text.channels.get(channelName);
+        RestChannelBase channel = ably_text.channels.get(channelName);
         try {
             /* get the history for this channel */
             PaginatedResult<PresenceMessage> members = channel.presence.history(new Param[]{ new Param("direction", "backwards") });
@@ -145,7 +147,7 @@ public class RestPresenceTest extends ParameterizedTest {
     public void rest_presencehistory_limit_f() {
         String channelName = "persisted:restpresence_persisted";
         /* get channel */
-        Channel channel = ably_text.channels.get(channelName);
+        RestChannelBase channel = ably_text.channels.get(channelName);
         try {
             /* get the history for this channel */
             PaginatedResult<PresenceMessage> members = channel.presence.history(new Param[]{ new Param("direction", "forwards"), new Param("limit", "2") });
@@ -172,7 +174,7 @@ public class RestPresenceTest extends ParameterizedTest {
     public void rest_presencehistory_limit_b() {
         String channelName = "persisted:restpresence_persisted";
         /* get channel */
-        Channel channel = ably_text.channels.get(channelName);
+        RestChannelBase channel = ably_text.channels.get(channelName);
         try {
             /* get the history for this channel */
             PaginatedResult<PresenceMessage> members = channel.presence.history(new Param[]{ new Param("direction", "backwards"), new Param("limit", "2") });
@@ -199,7 +201,7 @@ public class RestPresenceTest extends ParameterizedTest {
     public void rest_presencehistory_paginate_f() {
         /* get channel */
         String channelName = "persisted:restpresence_persisted";
-        Channel channel = ably_text.channels.get(channelName);
+        RestChannelBase channel = ably_text.channels.get(channelName);
         try {
             /* get the history for this channel */
             PaginatedResult<PresenceMessage> members = channel.presence.history(new Param[]{ new Param("direction", "forwards"), new Param("limit", "1") });
@@ -267,7 +269,7 @@ public class RestPresenceTest extends ParameterizedTest {
     public void rest_presencehistory_paginate_text_b() {
         /* get channel */
         String channelName = "persisted:restpresence_persisted";
-        Channel channel = ably_text.channels.get(channelName);
+        RestChannelBase channel = ably_text.channels.get(channelName);
         try {
             /* get the history for this channel */
             PaginatedResult<PresenceMessage> members = channel.presence.history(new Param[]{ new Param("direction", "backwards"), new Param("limit", "1") });

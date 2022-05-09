@@ -6,13 +6,13 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.AblyBase;
 import io.ably.lib.test.common.Helpers.AsyncWaiter;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 
-public class RestTimeTest extends ParameterizedTest {
+public abstract class RestTimeTest extends ParameterizedTest {
 
     /**
      * Verify accuracy of time (to within 60 seconds of actual time)
@@ -21,7 +21,7 @@ public class RestTimeTest extends ParameterizedTest {
     public void time0() {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            AblyRest ably = new AblyRest(opts);
+            AblyBase ably = createAblyRest(opts);
             long reportedTime = ably.time();
             long actualTime = System.currentTimeMillis();
             assertTrue(Math.abs(actualTime - reportedTime) < 60000);
@@ -38,7 +38,7 @@ public class RestTimeTest extends ParameterizedTest {
     public void time1() {
         try {
             ClientOptions opts = createOptions("not:a.key");
-            AblyRest ablyNoAuth = new AblyRest(opts);
+            AblyBase ablyNoAuth = createAblyRest(opts);
             ablyNoAuth.time();
         } catch (AblyException e) {
             e.printStackTrace();
@@ -55,7 +55,7 @@ public class RestTimeTest extends ParameterizedTest {
             ClientOptions opts = createOptions("not:a.key");
             opts.environment = null;
             opts.restHost = "this.restHost.does.not.exist";
-            AblyRest ably = new AblyRest(opts);
+            AblyBase ably = createAblyRest(opts);
             ably.time();
             fail("time2: Unexpected success getting time");
         } catch (AblyException e) {
@@ -70,7 +70,7 @@ public class RestTimeTest extends ParameterizedTest {
     public void time_async() {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            final AblyRest ably = new AblyRest(opts);
+            final AblyBase ably = createAblyRest(opts);
             AsyncWaiter<Long> callback = new AsyncWaiter<Long>();
             ably.timeAsync(callback);
             callback.waitFor();

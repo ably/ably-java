@@ -8,7 +8,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import io.ably.lib.http.HttpAuth;
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.AblyBase;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
@@ -16,7 +16,7 @@ import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.ProxyOptions;
 import io.ably.lib.types.Stats;
 
-public class RestProxyTest extends ParameterizedTest {
+public abstract class RestProxyTest extends ParameterizedTest {
 
     /**
      * Check access to stats API via proxy with invalid host, expecting failure
@@ -30,7 +30,7 @@ public class RestProxyTest extends ParameterizedTest {
                 host = "not-sandbox-proxy.ably.io";
                 port = 6128;
             }};
-            AblyRest ably = new AblyRest(opts);
+            AblyBase ably = createAblyRest(opts);
 
             /* attempt the call, expecting no exception */
             ably.stats(null);
@@ -55,7 +55,7 @@ public class RestProxyTest extends ParameterizedTest {
                 host = "sandbox-proxy.ably.io";
                 port = 6127;
             }};
-            AblyRest ably = new AblyRest(opts);
+            AblyBase ably = createAblyRest(opts);
 
             /* attempt the call, expecting no exception */
             ably.stats(null);
@@ -83,7 +83,7 @@ public class RestProxyTest extends ParameterizedTest {
                 host = "sandbox-proxy.ably.io";
                 port = 6128;
             }};
-            AblyRest ably = new AblyRest(opts);
+            AblyBase ably = createAblyRest(opts);
 
             /* attempt the call, expecting no exception */
             PaginatedResult<Stats> stats = ably.stats(null);
@@ -108,7 +108,7 @@ public class RestProxyTest extends ParameterizedTest {
                 host = "sandbox-proxy.ably.io";
                 port = 6128;
             }};
-            AblyRest ably = new AblyRest(opts);
+            AblyBase ably = createAblyRest(opts);
 
             /* attempt the call, expecting no exception */
             PaginatedResult<Stats> stats = ably.stats(null);
@@ -137,8 +137,8 @@ public class RestProxyTest extends ParameterizedTest {
                 username = "ably";
                 password = "password";
             }};
-            AblyRest ably = new AblyRest(opts);
-    
+            AblyBase ably = createAblyRest(opts);
+
             /* attempt the call, expecting no exception */
             PaginatedResult<Stats> stats = ably.stats(null);
             assertNotNull("Expected non-null stats", stats);
@@ -166,8 +166,8 @@ public class RestProxyTest extends ParameterizedTest {
                 password = "password";
                 prefAuthType = HttpAuth.Type.DIGEST;
             }};
-            AblyRest ably = new AblyRest(opts);
-    
+            AblyBase ably = createAblyRest(opts);
+
             /* attempt the call, expecting no exception */
             PaginatedResult<Stats> stats = ably.stats(null);
             assertNotNull("Expected non-null stats", stats);
@@ -192,8 +192,8 @@ public class RestProxyTest extends ParameterizedTest {
                 username = "ably";
                 password = "password";
             }};
-            AblyRest ably = new AblyRest(opts);
-    
+            AblyBase ably = createAblyRest(opts);
+
             /* attempt the call, expecting no exception */
             PaginatedResult<Stats> stats = ably.stats(null);
             assertNotNull("Expected non-null stats", stats);

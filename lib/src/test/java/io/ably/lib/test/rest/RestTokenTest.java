@@ -1,6 +1,6 @@
 package io.ably.lib.test.rest;
 
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.Auth.AuthOptions;
 import io.ably.lib.rest.Auth.TokenDetails;
 import io.ably.lib.rest.Auth.TokenParams;
@@ -17,10 +17,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class RestTokenTest extends ParameterizedTest {
+public abstract class RestTokenTest extends ParameterizedTest {
 
     private static String permitAll;
-    private static AblyRest ably;
+    private static AblyBase ably;
     private static long timeOffset;
 
     @Before
@@ -29,7 +29,7 @@ public class RestTokenTest extends ParameterizedTest {
         capability.addResource("*", "*");
         permitAll = capability.toString();
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        ably = new AblyRest(opts);
+        ably = createAblyRest(opts);
         long timeFromService = ably.time();
         timeOffset = timeFromService - System.currentTimeMillis();
     }

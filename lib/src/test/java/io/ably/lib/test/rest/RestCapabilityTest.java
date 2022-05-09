@@ -7,7 +7,7 @@ import static org.junit.Assert.fail;
 import org.junit.Before;
 import org.junit.Test;
 
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.Auth.AuthOptions;
 import io.ably.lib.rest.Auth.TokenDetails;
 import io.ably.lib.rest.Auth.TokenParams;
@@ -17,14 +17,14 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Capability;
 import io.ably.lib.types.ClientOptions;
 
-public class RestCapabilityTest extends ParameterizedTest {
+public abstract class RestCapabilityTest extends ParameterizedTest {
 
-    private AblyRest ably;
+    private AblyBase ably;
 
     @Before
     public void setUpBefore() throws Exception {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        ably = new AblyRest(opts);
+        ably = createAblyRest(opts);
     }
 
     /**

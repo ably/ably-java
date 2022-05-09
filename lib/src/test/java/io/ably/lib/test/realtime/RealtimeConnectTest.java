@@ -6,12 +6,15 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.push.PushBase;
+import io.ably.lib.realtime.RealtimeChannelBase;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
-import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.realtime.AblyRealtimeBase;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.rest.Auth.AuthMethod;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
@@ -23,7 +26,7 @@ import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
 import org.junit.rules.Timeout;
 
-public class RealtimeConnectTest extends ParameterizedTest {
+public abstract class RealtimeConnectTest extends ParameterizedTest {
 
     public Timeout testTimeout = Timeout.seconds(30);
 
@@ -36,7 +39,7 @@ public class RealtimeConnectTest extends ParameterizedTest {
     public void connect() {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            AblyRealtime ably = new AblyRealtime(opts);
+            AblyRealtimeBase ably = createAblyRealtime(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
             connectionWaiter.waitFor(ConnectionState.connected);
@@ -61,7 +64,7 @@ public class RealtimeConnectTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             CompletionWaiter heartbeatWaiter = new CompletionWaiter();
-            AblyRealtime ably = new AblyRealtime(opts);
+            AblyRealtimeBase ably = createAblyRealtime(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
             assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
@@ -86,7 +89,7 @@ public class RealtimeConnectTest extends ParameterizedTest {
     public void connect_after_close() {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            AblyRealtime ably = new AblyRealtime(opts);
+            AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
             assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
@@ -131,11 +134,11 @@ public class RealtimeConnectTest extends ParameterizedTest {
      */
     @Test
     public void connect_useTokenAuth() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.useTokenAuth = true;
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
             assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
@@ -172,7 +175,7 @@ public class RealtimeConnectTest extends ParameterizedTest {
                 public void onRawMessageRecv(ProtocolMessage message) {}
             };
             opts.transportParams = new Param[] {new Param("testStringParam", "testStringValue"), new Param("testIntParam", 100), new Param("testBooleanParam", false)};
-            AblyRealtime ably = new AblyRealtime(opts);
+            AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
             connectionWaiter.waitFor(ConnectionState.connected);
@@ -201,7 +204,7 @@ public class RealtimeConnectTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.autoConnect = false;
-            AblyRealtime ably = new AblyRealtime(opts);
+            AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
             /* verify no connection happens */
@@ -229,7 +232,7 @@ public class RealtimeConnectTest extends ParameterizedTest {
     public void close_when_connecting() {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            AblyRealtime ably = new AblyRealtime(opts);
+            AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
             connectionWaiter.waitFor(ConnectionState.connecting);

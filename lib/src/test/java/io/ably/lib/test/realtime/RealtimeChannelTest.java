@@ -1,9 +1,11 @@
 package io.ably.lib.test.realtime;
 
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.Channel;
-import io.ably.lib.realtime.Channel.MessageListener;
+import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.push.PushBase;
+import io.ably.lib.realtime.AblyRealtimeBase;
+import io.ably.lib.realtime.RealtimeChannelBase;
+import io.ably.lib.realtime.RealtimeChannelBase.MessageListener;
 import io.ably.lib.realtime.ChannelEvent;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.ChannelStateListener;
@@ -47,7 +49,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class RealtimeChannelTest extends ParameterizedTest {
+public abstract class RealtimeChannelTest extends ParameterizedTest {
 
     private Comparator<Message> messageComparator = new Comparator<Message>() {
         @Override
@@ -65,17 +67,17 @@ public class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void attach() {
         String channelName = "attach_" + testParams.name;
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
             assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
             /* create a channel and attach */
-            final Channel channel = ably.channels.get(channelName);
+            final RealtimeChannelBase channel = ably.channels.get(channelName);
             channel.attach();
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
@@ -96,13 +98,13 @@ public class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void attach_before_connect() {
         String channelName = "attach_before_connect_" + testParams.name;
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* create a channel and attach */
-            final Channel channel = ably.channels.get(channelName);
+            final RealtimeChannelBase channel = ably.channels.get(channelName);
             channel.attach();
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
@@ -123,13 +125,13 @@ public class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void attach_detach() {
         String channelName = "attach_detach_" + testParams.name;
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* create a channel and attach */
-            final Channel channel = ably.channels.get(channelName);
+            final RealtimeChannelBase channel = ably.channels.get(channelName);
             channel.attach();
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
@@ -151,10 +153,10 @@ public class RealtimeChannelTest extends ParameterizedTest {
     /*@Test*/
     public void attach_with_channel_params_channels_get() {
         String channelName = "attach_with_channel_params_channels_get_" + testParams.name;
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -166,7 +168,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             options.params.put("delta", "vcdiff");
 
             /* create a channel and attach */
-            final Channel channel = ably.channels.get(channelName, options);
+            final RealtimeChannelBase channel = ably.channels.get(channelName, options);
             channel.attach();
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
@@ -184,10 +186,10 @@ public class RealtimeChannelTest extends ParameterizedTest {
     /*@Test*/
     public void attach_with_channel_params_set_options() {
         String channelName = "attach_with_channel_params_set_options_" + testParams.name;
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -198,7 +200,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             options.params.put("delta", "vcdiff");
 
             /* create a channel and attach */
-            final Channel channel = ably.channels.get(channelName);
+            final RealtimeChannelBase channel = ably.channels.get(channelName);
             channel.setOptions(options);
             channel.attach();
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
@@ -217,10 +219,10 @@ public class RealtimeChannelTest extends ParameterizedTest {
     /*@Test*/
     public void channels_get_should_throw_when_would_cause_reattach() {
         String channelName = "channels_get_should_throw_when_would_cause_reattach_" + testParams.name;
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -231,7 +233,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             options.params.put("delta", "vcdiff");
 
             /* create a channel and attach */
-            final Channel channel = ably.channels.get(channelName, options);
+            final RealtimeChannelBase channel = ably.channels.get(channelName, options);
             channel.attach();
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
 
@@ -254,10 +256,10 @@ public class RealtimeChannelTest extends ParameterizedTest {
     /*@Test*/
     public void attach_with_channel_params_modes_and_channel_modes() {
         String channelName = "attach_with_channel_params_modes_and_channel_modes_" + testParams.name;
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -272,7 +274,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             };
 
             /* create a channel and attach */
-            final Channel channel = ably.channels.get(channelName, options);
+            final RealtimeChannelBase channel = ably.channels.get(channelName, options);
             channel.attach();
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
@@ -290,10 +292,10 @@ public class RealtimeChannelTest extends ParameterizedTest {
     /*@Test*/
     public void attach_with_channel_modes() {
         String channelName = "attach_with_channel_modes_" + testParams.name;
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -306,7 +308,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             };
 
             /* create a channel and attach */
-            final Channel channel = ably.channels.get(channelName, options);
+            final RealtimeChannelBase channel = ably.channels.get(channelName, options);
             channel.attach();
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
@@ -323,10 +325,10 @@ public class RealtimeChannelTest extends ParameterizedTest {
     /*@Test*/
     public void attach_with_params_delta_and_channel_modes() {
         String channelName = "attach_with_params_delta_and_channel_modes_" + testParams.name;
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -342,7 +344,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             };
 
             /* create a channel and attach */
-            final Channel channel = ably.channels.get(channelName, options);
+            final RealtimeChannelBase channel = ably.channels.get(channelName, options);
             channel.attach();
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
@@ -364,13 +366,13 @@ public class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void subscribe_unsubscribe() {
         String channelName = "subscribe_unsubscribe_" + testParams.name;
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* create a channel and attach */
-            final Channel channel = ably.channels.get(channelName);
+            final RealtimeChannelBase channel = ably.channels.get(channelName);
             channel.attach();
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
@@ -405,9 +407,9 @@ public class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void unsubscribe_all() throws AblyException {
         /* Ably instance that will emit messages */
-        AblyRealtime ably1 = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably1 = null;
         /* Ably instance that will receive messages */
-        AblyRealtime ably2 = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably2 = null;
 
         String channelName = "test.channel.unsubscribe.all" + System.currentTimeMillis();
         Message[] messages = new Message[] {
@@ -423,14 +425,14 @@ public class RealtimeChannelTest extends ParameterizedTest {
             ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
             option2.clientId = "receiver client";
 
-            ably1 = new AblyRealtime(option1);
-            ably2 = new AblyRealtime(option2);
+            ably1 = createAblyRealtime(option1);
+            ably2 = createAblyRealtime(option2);
 
-            Channel channel1 = ably1.channels.get(channelName);
+            RealtimeChannelBase channel1 = ably1.channels.get(channelName);
             channel1.attach();
             new ChannelWaiter(channel1).waitFor(ChannelState.attached);
 
-            Channel channel2 = ably2.channels.get(channelName);
+            RealtimeChannelBase channel2 = ably2.channels.get(channelName);
             channel2.attach();
             new ChannelWaiter(channel2).waitFor(ChannelState.attached);
 
@@ -483,9 +485,9 @@ public class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void unsubscribe_single() throws AblyException {
         /* Ably instance that will emit messages */
-        AblyRealtime ably1 = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably1 = null;
         /* Ably instance that will receive messages */
-        AblyRealtime ably2 = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably2 = null;
 
         String channelName = "test.channel.unsubscribe.single" + System.currentTimeMillis();
         Message[] messages = new Message[] {
@@ -501,14 +503,14 @@ public class RealtimeChannelTest extends ParameterizedTest {
             ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
             option2.clientId = "receiver client";
 
-            ably1 = new AblyRealtime(option1);
-            ably2 = new AblyRealtime(option2);
+            ably1 = createAblyRealtime(option1);
+            ably2 = createAblyRealtime(option2);
 
-            Channel channel1 = ably1.channels.get(channelName);
+            RealtimeChannelBase channel1 = ably1.channels.get(channelName);
             channel1.attach();
             new ChannelWaiter(channel1).waitFor(ChannelState.attached);
 
-            Channel channel2 = ably2.channels.get(channelName);
+            RealtimeChannelBase channel2 = ably2.channels.get(channelName);
             channel2.attach();
             new ChannelWaiter(channel2).waitFor(ChannelState.attached);
 
@@ -562,9 +564,9 @@ public class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void subscribe_all() throws AblyException {
         /* Ably instance that will emit channel messages */
-        AblyRealtime ably1 = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably1 = null;
         /* Ably instance that will receive channel messages */
-        AblyRealtime ably2 = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably2 = null;
 
         String channelName = "test.channel.subscribe.all" + System.currentTimeMillis();
         Message[] messages = new Message[]{
@@ -579,14 +581,14 @@ public class RealtimeChannelTest extends ParameterizedTest {
             ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
             option2.clientId = "receiver client";
 
-            ably1 = new AblyRealtime(option1);
-            ably2 = new AblyRealtime(option2);
+            ably1 = createAblyRealtime(option1);
+            ably2 = createAblyRealtime(option2);
 
-            Channel channel1 = ably1.channels.get(channelName);
+            RealtimeChannelBase channel1 = ably1.channels.get(channelName);
             channel1.attach();
             new ChannelWaiter(channel1).waitFor(ChannelState.attached);
 
-            Channel channel2 = ably2.channels.get(channelName);
+            RealtimeChannelBase channel2 = ably2.channels.get(channelName);
             channel2.attach();
             new ChannelWaiter(channel2).waitFor(ChannelState.attached);
 
@@ -646,9 +648,9 @@ public class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void subscribe_multiple() throws AblyException {
         /* Ably instance that will emit channel messages */
-        AblyRealtime ably1 = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably1 = null;
         /* Ably instance that will receive channel messages */
-        AblyRealtime ably2 = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably2 = null;
 
         String channelName = "test.channel.subscribe.multiple" + System.currentTimeMillis();
         Message[] messages = new Message[] {
@@ -669,14 +671,14 @@ public class RealtimeChannelTest extends ParameterizedTest {
             ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
             option2.clientId = "receiver client";
 
-            ably1 = new AblyRealtime(option1);
-            ably2 = new AblyRealtime(option2);
+            ably1 = createAblyRealtime(option1);
+            ably2 = createAblyRealtime(option2);
 
-            Channel channel1 = ably1.channels.get(channelName);
+            RealtimeChannelBase channel1 = ably1.channels.get(channelName);
             channel1.attach();
             new ChannelWaiter(channel1).waitFor(ChannelState.attached);
 
-            Channel channel2 = ably2.channels.get(channelName);
+            RealtimeChannelBase channel2 = ably2.channels.get(channelName);
             channel2.attach();
             new ChannelWaiter(channel2).waitFor(ChannelState.attached);
 
@@ -737,9 +739,9 @@ public class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void subscribe_single() throws AblyException {
         /* Ably instance that will emit channel messages */
-        AblyRealtime ably1 = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably1 = null;
         /* Ably instance that will receive channel messages */
-        AblyRealtime ably2 = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably2 = null;
 
         String channelName = "test.channel.subscribe.single" + System.currentTimeMillis();
         String messageName = "name";
@@ -755,14 +757,14 @@ public class RealtimeChannelTest extends ParameterizedTest {
             ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
             option2.clientId = "receiver client";
 
-            ably1 = new AblyRealtime(option1);
-            ably2 = new AblyRealtime(option2);
+            ably1 = createAblyRealtime(option1);
+            ably2 = createAblyRealtime(option2);
 
-            Channel channel1 = ably1.channels.get(channelName);
+            RealtimeChannelBase channel1 = ably1.channels.get(channelName);
             channel1.attach();
             new ChannelWaiter(channel1).waitFor(ChannelState.attached);
 
-            Channel channel2 = ably2.channels.get(channelName);
+            RealtimeChannelBase channel2 = ably2.channels.get(channelName);
             channel2.attach();
             new ChannelWaiter(channel2).waitFor(ChannelState.attached);
 
@@ -819,17 +821,17 @@ public class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void attach_fail() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
             assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
             /* create a channel and attach */
-            final Channel channel = ably.channels.get("attach_fail");
+            final RealtimeChannelBase channel = ably.channels.get("attach_fail");
             channel.attach();
             ErrorInfo fail = (new ChannelWaiter(channel)).waitFor(ChannelState.failed);
             assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
@@ -850,17 +852,17 @@ public class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void attach_success_callback() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
             assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
             /* create a channel and attach */
-            final Channel channel = ably.channels.get("attach_success");
+            final RealtimeChannelBase channel = ably.channels.get("attach_success");
             Helpers.CompletionWaiter waiter = new Helpers.CompletionWaiter();
             channel.attach(waiter);
             new ChannelWaiter(channel).waitFor(ChannelState.attached);
@@ -885,17 +887,17 @@ public class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void attach_fail_callback() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
             assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
             /* create a channel and attach */
-            final Channel channel = ably.channels.get("attach_fail");
+            final RealtimeChannelBase channel = ably.channels.get("attach_fail");
             Helpers.CompletionWaiter waiter = new Helpers.CompletionWaiter();
             channel.attach(waiter);
             ErrorInfo fail = (new ChannelWaiter(channel)).waitFor(ChannelState.failed);
@@ -920,17 +922,17 @@ public class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void detach_success_callback_initialized() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
             assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
             /* create a channel and attach */
-            final Channel channel = ably.channels.get("detach_success");
+            final RealtimeChannelBase channel = ably.channels.get("detach_success");
             assertEquals("Verify failed state reached", channel.state, ChannelState.initialized);
 
             /* detach */
@@ -955,17 +957,17 @@ public class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void detach_success_callback_attached() throws AblyException {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
             assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
             /* create a channel and attach */
-            final Channel channel = ably.channels.get("detach_success");
+            final RealtimeChannelBase channel = ably.channels.get("detach_success");
             channel.attach();
             new ChannelWaiter(channel).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
@@ -989,17 +991,17 @@ public class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void detach_success_callback_detaching() throws AblyException {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
             assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
             /* create a channel and attach */
-            final Channel channel = ably.channels.get("detach_success");
+            final RealtimeChannelBase channel = ably.channels.get("detach_success");
             channel.attach();
             new ChannelWaiter(channel).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
@@ -1025,17 +1027,17 @@ public class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void detach_success_callback_detached() throws AblyException {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
             assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
             /* create a channel and attach */
-            final Channel channel = ably.channels.get("detach_success");
+            final RealtimeChannelBase channel = ably.channels.get("detach_success");
             channel.attach();
             new ChannelWaiter(channel).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
@@ -1069,25 +1071,25 @@ public class RealtimeChannelTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void transient_publish_connected() throws AblyException {
-        AblyRealtime pubAbly = null, subAbly = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> pubAbly = null, subAbly = null;
         String channelName = "transient_publish_connected_" + testParams.name;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            subAbly = new AblyRealtime(opts);
+            subAbly = createAblyRealtime(opts);
 
             /* wait until connected */
             new ConnectionWaiter(subAbly.connection).waitFor(ConnectionState.connected);
             assertEquals("Verify connected state reached", subAbly.connection.state, ConnectionState.connected);
 
             /* create a channel and subscribe */
-            final Channel subChannel = subAbly.channels.get(channelName);
+            final RealtimeChannelBase subChannel = subAbly.channels.get(channelName);
             Helpers.MessageWaiter messageWaiter = new Helpers.MessageWaiter(subChannel);
             new ChannelWaiter(subChannel).waitFor(ChannelState.attached);
 
-            pubAbly = new AblyRealtime(opts);
+            pubAbly = createAblyRealtime(opts);
             new ConnectionWaiter(pubAbly.connection).waitFor(ConnectionState.connected);
             Helpers.CompletionWaiter completionWaiter = new Helpers.CompletionWaiter();
-            final Channel pubChannel = pubAbly.channels.get(channelName);
+            final RealtimeChannelBase pubChannel = pubAbly.channels.get(channelName);
             pubChannel.publish("Lorem", "Ipsum!", completionWaiter);
             assertEquals("Verify channel remains in initialized state", pubChannel.state, ChannelState.initialized);
 
@@ -1119,24 +1121,24 @@ public class RealtimeChannelTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void transient_publish_connecting() throws AblyException {
-        AblyRealtime pubAbly = null, subAbly = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> pubAbly = null, subAbly = null;
         String channelName = "transient_publish_connecting_" + testParams.name;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            subAbly = new AblyRealtime(opts);
+            subAbly = createAblyRealtime(opts);
 
             /* wait until connected */
             new ConnectionWaiter(subAbly.connection).waitFor(ConnectionState.connected);
             assertEquals("Verify connected state reached", subAbly.connection.state, ConnectionState.connected);
 
             /* create a channel and subscribe */
-            final Channel subChannel = subAbly.channels.get(channelName);
+            final RealtimeChannelBase subChannel = subAbly.channels.get(channelName);
             Helpers.ChannelWaiter channelWaiter = new Helpers.ChannelWaiter(subChannel);
             Helpers.MessageWaiter messageWaiter = new Helpers.MessageWaiter(subChannel);
             channelWaiter.waitFor(ChannelState.attached);
 
-            pubAbly = new AblyRealtime(opts);
-            final Channel pubChannel = pubAbly.channels.get(channelName);
+            pubAbly = createAblyRealtime(opts);
+            final RealtimeChannelBase pubChannel = pubAbly.channels.get(channelName);
             Helpers.CompletionWaiter completionWaiter = new Helpers.CompletionWaiter();
             pubChannel.publish("Lorem", "Ipsum!", completionWaiter);
             assertEquals("Verify channel remains in initialized state", pubChannel.state, ChannelState.initialized);
@@ -1167,15 +1169,15 @@ public class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void transient_publish_connection_failed() {
-        AblyRealtime pubAbly = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> pubAbly = null;
         String channelName = "transient_publish_connection_failed_" + testParams.name;
         try {
             ClientOptions opts = createOptions("not:a.key");
-            pubAbly = new AblyRealtime(opts);
+            pubAbly = createAblyRealtime(opts);
             new ConnectionWaiter(pubAbly.connection).waitFor(ConnectionState.failed);
             assertEquals("Verify failed state reached", pubAbly.connection.state, ConnectionState.failed);
 
-            final Channel pubChannel = pubAbly.channels.get(channelName);
+            final RealtimeChannelBase pubChannel = pubAbly.channels.get(channelName);
             Helpers.CompletionWaiter completionWaiter = new Helpers.CompletionWaiter();
             try {
                 pubChannel.publish("Lorem", "Ipsum!", completionWaiter);
@@ -1202,15 +1204,15 @@ public class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void transient_publish_channel_failed() {
-        AblyRealtime pubAbly = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> pubAbly = null;
         String channelName = "transient_publish_channel_failed_" + testParams.name;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
-            pubAbly = new AblyRealtime(opts);
+            pubAbly = createAblyRealtime(opts);
             new ConnectionWaiter(pubAbly.connection).waitFor(ConnectionState.connected);
             assertEquals("Verify connected state reached", pubAbly.connection.state, ConnectionState.connected);
 
-            final Channel pubChannel = pubAbly.channels.get(channelName);
+            final RealtimeChannelBase pubChannel = pubAbly.channels.get(channelName);
             Helpers.ChannelWaiter channelWaiter = new Helpers.ChannelWaiter(pubChannel);
             pubChannel.attach();
             channelWaiter.waitFor(ChannelState.failed);
@@ -1244,17 +1246,17 @@ public class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void attach_implicit_subscribe_fail() throws AblyException {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* wait until connected */
             new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
             assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
             /* create a channel and subscribe */
-            final Channel channel = ably.channels.get("subscribe_fail");
+            final RealtimeChannelBase channel = ably.channels.get("subscribe_fail");
             channel.subscribe(null);
             assertEquals("Verify attaching state reached", channel.state, ChannelState.attaching);
 
@@ -1269,17 +1271,17 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
     @Test
     public void ensure_detach_with_error_does_not_move_to_failed() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
             assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
             /* create a channel and attach */
-            final Channel channel = ably.channels.get("test");
+            final RealtimeChannelBase channel = ably.channels.get("test");
             channel.attach();
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
@@ -1303,11 +1305,11 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
     @Test
     public void channel_state_on_connection_suspended() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -1315,7 +1317,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             /* create a channel and attach */
             final String channelName = "test_state_channel";
-            final Channel channel = ably.channels.get(channelName);
+            final RealtimeChannelBase channel = ably.channels.get(channelName);
             channel.attach();
 
             ChannelWaiter channelWaiter = new ChannelWaiter(channel);
@@ -1357,7 +1359,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void channel_server_initiated_attached_detached() throws AblyException {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
         final String channelName = "channel_server_initiated_attach_detach";
 
@@ -1368,9 +1370,9 @@ public class RealtimeChannelTest extends ParameterizedTest {
             Defaults.realtimeRequestTimeout = 1000;
             opts.channelRetryTimeout = 1000;
 
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
-            Channel channel = ably.channels.get(channelName);
+            RealtimeChannelBase channel = ably.channels.get(channelName);
             ChannelWaiter channelWaiter = new ChannelWaiter(channel);
 
             channel.attach();
@@ -1423,21 +1425,21 @@ public class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void channel_resume_lost_continuity() throws AblyException {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         final String attachedChannelName = "channel_resume_lost_continuity_attached";
         final String suspendedChannelName = "channel_resume_lost_continuity_suspended";
 
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* prepare channels */
-            Channel attachedChannel = ably.channels.get(attachedChannelName);
+            RealtimeChannelBase attachedChannel = ably.channels.get(attachedChannelName);
             ChannelWaiter attachedChannelWaiter = new ChannelWaiter(attachedChannel);
             attachedChannel.attach();
             attachedChannelWaiter.waitFor(ChannelState.attached);
 
-            Channel suspendedChannel = ably.channels.get(suspendedChannelName);
+            RealtimeChannelBase suspendedChannel = ably.channels.get(suspendedChannelName);
             suspendedChannel.state = ChannelState.suspended;
             ChannelWaiter suspendedChannelWaiter = new ChannelWaiter(suspendedChannel);
 
@@ -1548,7 +1550,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void channel_attach_retry_failed() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         String channelName = "channel_attach_retry_failed_" + testParams.name;
         long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
         try {
@@ -1564,14 +1566,14 @@ public class RealtimeChannelTest extends ParameterizedTest {
             /* Reduce timeout for test to run faster */
             Defaults.realtimeRequestTimeout = 1000;
 
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
 
             /* Block send() and attach */
             mockTransport.blockSend();
 
-            Channel channel = ably.channels.get(channelName);
+            RealtimeChannelBase channel = ably.channels.get(channelName);
             ChannelWaiter channelWaiter = new ChannelWaiter(channel);
             channel.attach();
 
@@ -1667,7 +1669,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void channel_reattach_failed_timeout() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         final String channelName = "channel_reattach_failed_timeout_" + testParams.name;
         long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
         try {
@@ -1683,11 +1685,11 @@ public class RealtimeChannelTest extends ParameterizedTest {
             /* Reduce timeout for test to run faster */
             Defaults.realtimeRequestTimeout = 1000;
 
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
 
-            Channel channel = ably.channels.get(channelName);
+            RealtimeChannelBase channel = ably.channels.get(channelName);
             ChannelWaiter channelWaiter = new ChannelWaiter(channel);
             channel.attach();
 
@@ -1732,7 +1734,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void channel_reattach_failed_error() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         final String channelName = "channel_reattach_failed_error_" + testParams.name;
         final int errorCode = 12345;
         long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
@@ -1749,11 +1751,11 @@ public class RealtimeChannelTest extends ParameterizedTest {
             /* Reduce timeout for test to run faster */
             Defaults.realtimeRequestTimeout = 5000;
 
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
 
-            Channel channel = ably.channels.get(channelName);
+            RealtimeChannelBase channel = ably.channels.get(channelName);
             ChannelWaiter channelWaiter = new ChannelWaiter(channel);
             channel.attach();
 
@@ -1811,7 +1813,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             /* init Ably */
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            AblyRealtime ably = new AblyRealtime(opts);
+            AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -1823,7 +1825,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             assertEquals("Verify failed state reached", ably.connection.state, ConnectionState.failed);
 
             /* attempt to attach */
-            Channel channel = ably.channels.get(channelName);
+            RealtimeChannelBase channel = ably.channels.get(channelName);
             final ErrorInfo[] listenerError = new ErrorInfo[1];
             synchronized(listenerError) {
                 channel.attach(new CompletionListener() {
@@ -1865,7 +1867,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void no_messages_when_channel_state_not_attached() {
 
-        AblyRealtime senderReceiver = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> senderReceiver = null;
         final String testMessage1 = "{ foo: \"bar\", count: 1, status: \"active\" }";
         final String testMessage2 = "{ foo: \"bar\", count: 2, status: \"active\" }";
 
@@ -1874,9 +1876,9 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             DebugOptions common_opts = createOptions(testVars.keys[0].keyStr);
             common_opts.protocolListener = new DetachingProtocolListener();
-            senderReceiver = new AblyRealtime(common_opts);
+            senderReceiver = createAblyRealtime(common_opts);
 
-            Channel sender_channel = senderReceiver.channels.get(testName);
+            RealtimeChannelBase sender_channel = senderReceiver.channels.get(testName);
             ((DetachingProtocolListener)common_opts.protocolListener).theChannel = sender_channel;
 
 
@@ -1906,7 +1908,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
     class DetachingProtocolListener implements DebugOptions.RawProtocolListener {
 
-        public Channel theChannel;
+        public RealtimeChannelBase theChannel;
         boolean messageReceived;
 
         DetachingProtocolListener() {

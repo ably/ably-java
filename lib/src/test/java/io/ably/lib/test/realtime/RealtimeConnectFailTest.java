@@ -1,11 +1,11 @@
 package io.ably.lib.test.realtime;
 
-import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.realtime.AblyRealtimeBase;
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.realtime.ConnectionEvent;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.realtime.ConnectionStateListener;
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.TokenCallback;
 import io.ably.lib.rest.Auth.TokenDetails;
@@ -34,7 +34,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class RealtimeConnectFailTest extends ParameterizedTest {
+public abstract class RealtimeConnectFailTest extends ParameterizedTest {
 
     @Rule
     public Timeout testTimeout = Timeout.seconds(300);
@@ -46,10 +46,10 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
      */
     @Test
     public void connect_fail_notfound_error() throws AblyException {
-        AblyRealtime ably = null;
+        AblyRealtimeBase ably = null;
         try {
             ClientOptions opts = createOptions("not_an_app.invalid_key_id:invalid_key_value");
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
             ErrorInfo fail = connectionWaiter.waitFor(ConnectionState.failed);
@@ -66,10 +66,10 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
      */
     @Test
     public void connect_fail_authorized_error() throws AblyException {
-        AblyRealtime ably = null;
+        AblyRealtimeBase ably = null;
         try {
             ClientOptions opts = createOptions(testVars.appId + ".invalid_key_id:invalid_key_value");
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
             ErrorInfo fail = connectionWaiter.waitFor(ConnectionState.failed);
@@ -89,7 +89,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.realtimeHost = "non.existent.host";
         opts.environment = null;
-        AblyRealtime ably = new AblyRealtime(opts);
+        AblyRealtimeBase ably = createAblyRealtime(opts);
         ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
         connectionWaiter.waitFor(ConnectionState.disconnected);
@@ -109,7 +109,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.realtimeHost = "non.existent.host";
             opts.environment = null;
-            AblyRealtime ably = new AblyRealtime(opts);
+            AblyRealtimeBase ably = createAblyRealtime(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
             connectionWaiter.waitFor(ConnectionState.suspended);
@@ -143,7 +143,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.realtimeHost = "non.existent.host";
             opts.environment = null;
-            AblyRealtime ably = new AblyRealtime(opts);
+            AblyRealtimeBase ably = createAblyRealtime(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
             connectionWaiter.waitFor(ConnectionState.disconnected);
@@ -171,7 +171,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
     public void connect_token_expire_disconnected() {
         try {
             final ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyRest ablyForToken = new AblyRest(optsForToken);
+            final AblyBase ablyForToken = createAblyRest(optsForToken);
             Auth.AuthOptions restAuthOptions = new Auth.AuthOptions() {{
                 key = optsForToken.key;
                 queryTime = true;
@@ -196,7 +196,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.tokenDetails = tokenDetails;
             opts.authCallback = authCallback;
-            AblyRealtime ably = new AblyRealtime(opts);
+            AblyRealtimeBase ably = createAblyRealtime(opts);
 
             ably.connection.on(new ConnectionStateListener() {
                 @Override
@@ -239,7 +239,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
     public void connect_token_expire_inplace_reauth() {
         try {
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyRest ablyForToken = new AblyRest(optsForToken);
+            final AblyBase ablyForToken = createAblyRest(optsForToken);
             /* Server will send reauth message 30 seconds before token expiration time i.e. in 4 seconds */
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 34000L; }}, null);
             assertNotNull("Expected token value", tokenDetails.token);
@@ -263,7 +263,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
                     return ablyForToken.auth.requestToken(params, null);
                 }
             };
-            AblyRealtime ably = new AblyRealtime(opts);
+            AblyRealtimeBase ably = createAblyRealtime(opts);
 
             /* Test UPDATE event delivery */
             ably.connection.on(ConnectionEvent.update, new ConnectionStateListener() {
@@ -307,11 +307,11 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void connect_invalid_recover_fail() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.recover = "not_a_valid_connection_id:99";
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             ErrorInfo fail = connectionWaiter.waitFor(ConnectionState.failed);
             assertEquals("Verify failed state is reached", ConnectionState.failed, ably.connection.state);
@@ -331,12 +331,12 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
      */
     @Test
     public void connect_unknown_recover_fail() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             String recoverConnectionId = "0123456789abcdef-99";
             opts.recover = recoverConnectionId + ":0";
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             ErrorInfo connectedError = connectionWaiter.waitFor(ConnectionState.connected);
             assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
@@ -358,10 +358,10 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 
     @Test
     public void connect_test_queued_messages_on_failure() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
             final int[] numberOfErrors = new int[]{0};
 
             // assume we are in connecting state now
@@ -411,10 +411,10 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
     public void connect_reauth_failure_state_flow_test() {
 
         try {
-            AblyRest ablyRest = null;
+            AblyBase ablyRest = null;
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 
-            ablyRest = new AblyRest(opts);
+            ablyRest = createAblyRest(opts);
             final TokenDetails tokenDetails = ablyRest.auth.requestToken(new TokenParams() {{ ttl = 8000L; }}, null);
             assertNotNull("Expected token value", tokenDetails.token);
 
@@ -429,7 +429,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
                 }
             };
             optsForRealtime.tokenDetails = tokenDetails;
-            final AblyRealtime ablyRealtime = new AblyRealtime(optsForRealtime);
+            final AblyRealtimeBase ablyRealtime = createAblyRealtime(optsForRealtime);
 
             ablyRealtime.connection.on(ConnectionState.connected, new ConnectionStateListener() {
                 @Override
@@ -487,8 +487,8 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
      */
     @Test
     public void connect_auth_failure_and_suspend_test() {
-        AblyRealtime ablyRealtime = null;
-        AblyRest ablyRest = null;
+        AblyRealtimeBase ablyRealtime = null;
+        AblyBase ablyRest = null;
         int oldDisconnectTimeout = Defaults.TIMEOUT_DISCONNECT;
 
         try {
@@ -500,7 +500,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 
-            ablyRest = new AblyRest(opts);
+            ablyRest = createAblyRest(opts);
             final TokenDetails tokenDetails = ablyRest.auth.requestToken(new TokenParams() {{ ttl = 5000L; }}, null);
             assertNotNull("Expected token value", tokenDetails.token);
 
@@ -514,7 +514,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
                         throw AblyException.fromErrorInfo(new ErrorInfo("Auth failure", 90000));
                 }
             };
-            ablyRealtime = new AblyRealtime(optsForRealtime);
+            ablyRealtime = createAblyRealtime(optsForRealtime);
 
             ablyRealtime.connection.on(new ConnectionStateListener() {
                 @Override

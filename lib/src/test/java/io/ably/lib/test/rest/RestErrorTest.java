@@ -1,7 +1,7 @@
 package io.ably.lib.test.rest;
 
 import fi.iki.elonen.NanoHTTPD;
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.AblyBase;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
@@ -19,7 +19,7 @@ import java.util.Vector;
 import static io.ably.lib.http.HttpUtils.encodeURIComponent;
 import static org.junit.Assert.assertTrue;
 
-public class RestErrorTest extends ParameterizedTest {
+public abstract class RestErrorTest extends ParameterizedTest {
 
     private static SessionHandlerNanoHTTPD server;
 
@@ -63,7 +63,7 @@ public class RestErrorTest extends ParameterizedTest {
                     logMessages.add(msg);
                 }
             };
-            AblyRest ably = new AblyRest(opts);
+            AblyBase ably = createAblyRest(opts);
 
             /* make a call that will generate an error */
             ably.stats(new Param[]{new Param("message", encodeURIComponent("Test message")), new Param("href", href(12345))});
@@ -92,7 +92,7 @@ public class RestErrorTest extends ParameterizedTest {
                     logMessages.add(msg);
                 }
             };
-            AblyRest ably = new AblyRest(opts);
+            AblyBase ably = createAblyRest(opts);
 
             /* make a call that will generate an error */
             ably.stats(new Param[]{new Param("message", encodeURIComponent("Test message. See " + href(12345)))});
@@ -121,7 +121,7 @@ public class RestErrorTest extends ParameterizedTest {
                     logMessages.add(msg);
                 }
             };
-            AblyRest ably = new AblyRest(opts);
+            AblyBase ably = createAblyRest(opts);
 
             /* make a call that will generate an error */
             ably.stats(new Param[]{new Param("message", encodeURIComponent("Test message")), new Param("code", "12345")});

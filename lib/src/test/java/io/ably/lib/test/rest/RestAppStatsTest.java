@@ -2,7 +2,7 @@ package io.ably.lib.test.rest;
 
 import io.ably.lib.http.HttpHelpers;
 import io.ably.lib.http.HttpUtils;
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.AblyBase;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.util.StatsWriter;
@@ -13,7 +13,6 @@ import io.ably.lib.types.Param;
 import io.ably.lib.types.Stats;
 import io.ably.lib.types.StatsReader;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Date;
@@ -26,22 +25,30 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 @SuppressWarnings("deprecation")
-public class RestAppStatsTest extends ParameterizedTest {
+public abstract class RestAppStatsTest extends ParameterizedTest {
 
-    private AblyRest ably;
+    private AblyBase ably;
     private static String[] intervalIds;
+    private static boolean areStatsPopulated = false;
 
     @Before
     public void setUpBefore() throws Exception {
+        // populateStats() uses Ably but was declared as a static @BeforeClass hence we've introduced this
+        // workaround to make it work as before but without the static function.
+        synchronized (this) {
+            if (!areStatsPopulated) {
+                populateStats();
+                areStatsPopulated = true;
+            }
+        }
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        ably = new AblyRest(opts);
+        ably = createAblyRest(opts);
     }
 
-    @BeforeClass
-    public static void populateStats() {
+    public void populateStats() {
         try {
             ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr, Setup.TestParameters.TEXT);
-            AblyRest ably = new AblyRest(opts);
+            AblyBase ably = createAblyRest(opts);
             /* get time, preferring time from Ably */
             long currentTime = System.currentTimeMillis();
             try {

@@ -15,13 +15,15 @@ import java.util.Random;
 
 import javax.crypto.KeyGenerator;
 
+import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.push.PushBase;
+import io.ably.lib.realtime.RealtimeChannelBase;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.Channel;
+import io.ably.lib.realtime.AblyRealtimeBase;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
@@ -36,7 +38,7 @@ import io.ably.lib.util.Crypto;
 import io.ably.lib.util.Crypto.ChannelCipherSet;
 import io.ably.lib.util.Crypto.CipherParams;
 
-public class RealtimeCryptoTest extends ParameterizedTest {
+public abstract class RealtimeCryptoTest extends ParameterizedTest {
 
     @Rule
     public Timeout testTimeout = Timeout.seconds(30);
@@ -50,14 +52,14 @@ public class RealtimeCryptoTest extends ParameterizedTest {
     @Test
     public void single_send() {
         String channelName = "single_send_" + testParams.name;
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* create a channel */
             ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; }};
-            final Channel channel = ably.channels.get(channelName, channelOpts);
+            final RealtimeChannelBase channel = ably.channels.get(channelName, channelOpts);
 
             /* attach */
             channel.attach();
@@ -108,10 +110,10 @@ public class RealtimeCryptoTest extends ParameterizedTest {
     @Test
     public void single_send_256() {
         String channelName = "single_send_256_" + testParams.name;
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* create a key */
             KeyGenerator keygen = KeyGenerator.getInstance("AES");
@@ -121,7 +123,7 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 
             /* create a channel */
             ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; this.cipherParams = params; }};
-            final Channel channel = ably.channels.get(channelName, channelOpts);
+            final RealtimeChannelBase channel = ably.channels.get(channelName, channelOpts);
 
             /* attach */
             channel.attach();
@@ -175,10 +177,10 @@ public class RealtimeCryptoTest extends ParameterizedTest {
      * messages on that channel
      */
     private void _multiple_send(String channelName, int messageCount, long delay) {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* generate and remember message texts */
             String[] messageTexts = new String[messageCount];
@@ -187,7 +189,7 @@ public class RealtimeCryptoTest extends ParameterizedTest {
             }
             /* create a channel */
             ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; }};
-            final Channel channel = ably.channels.get(channelName, channelOpts);
+            final RealtimeChannelBase channel = ably.channels.get(channelName, channelOpts);
 
             /* attach */
             channel.attach();
@@ -262,23 +264,23 @@ public class RealtimeCryptoTest extends ParameterizedTest {
     @Test
     public void single_send_binary_text() {
         String channelName = "single_send_binary_text_" + testParams.name;
-        AblyRealtime sender = null;
-        AblyRealtime receiver = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> sender = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> receiver = null;
         try {
             ClientOptions senderOpts = createOptions(testVars.keys[0].keyStr);
-            sender = new AblyRealtime(senderOpts);
+            sender = createAblyRealtime(senderOpts);
             ClientOptions receiverOpts = createOptions(testVars.keys[0].keyStr);
             receiverOpts.useBinaryProtocol = !testParams.useBinaryProtocol;
-            receiver = new AblyRealtime(receiverOpts);
+            receiver = createAblyRealtime(receiverOpts);
 
             /* create a key */
             final CipherParams params = Crypto.getDefaultParams();
 
             /* create a channel */
             final ChannelOptions senderChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params; }};
-            final Channel senderChannel = sender.channels.get(channelName, senderChannelOpts);
+            final RealtimeChannelBase senderChannel = sender.channels.get(channelName, senderChannelOpts);
             final ChannelOptions receiverChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params; }};
-            final Channel receiverChannel = receiver.channels.get(channelName, receiverChannelOpts);
+            final RealtimeChannelBase receiverChannel = receiver.channels.get(channelName, receiverChannelOpts);
 
             /* attach */
             senderChannel.attach();
@@ -339,19 +341,19 @@ public class RealtimeCryptoTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void single_send_key_mismatch() {
-        AblyRealtime sender = null;
-        AblyRealtime receiver = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> sender = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> receiver = null;
         try {
             ClientOptions senderOpts = createOptions(testVars.keys[0].keyStr);
-            sender = new AblyRealtime(senderOpts);
+            sender = createAblyRealtime(senderOpts);
             ClientOptions receiverOpts = createOptions(testVars.keys[0].keyStr);
-            receiver = new AblyRealtime(receiverOpts);
+            receiver = createAblyRealtime(receiverOpts);
 
             /* create a channel */
             final ChannelOptions senderChannelOpts = new ChannelOptions() {{ encrypted = true; }};
-            final Channel senderChannel = sender.channels.get("single_send_binary_text", senderChannelOpts);
+            final RealtimeChannelBase senderChannel = sender.channels.get("single_send_binary_text", senderChannelOpts);
             final ChannelOptions receiverChannelOpts = new ChannelOptions() {{ encrypted = true; }};
-            final Channel receiverChannel = receiver.channels.get("single_send_binary_text", receiverChannelOpts);
+            final RealtimeChannelBase receiverChannel = receiver.channels.get("single_send_binary_text", receiverChannelOpts);
 
             /* attach */
             senderChannel.attach();
@@ -413,18 +415,18 @@ public class RealtimeCryptoTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void single_send_unencrypted() {
-        AblyRealtime sender = null;
-        AblyRealtime receiver = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> sender = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> receiver = null;
         try {
             ClientOptions senderOpts = createOptions(testVars.keys[0].keyStr);
-            sender = new AblyRealtime(senderOpts);
+            sender = createAblyRealtime(senderOpts);
             ClientOptions receiverOpts = createOptions(testVars.keys[0].keyStr);
-            receiver = new AblyRealtime(receiverOpts);
+            receiver = createAblyRealtime(receiverOpts);
 
             /* create a channel */
-            final Channel senderChannel = sender.channels.get("single_send_unencrypted");
+            final RealtimeChannelBase senderChannel = sender.channels.get("single_send_unencrypted");
             ChannelOptions receiverChannelOpts = new ChannelOptions() {{ encrypted = true; }};
-            final Channel receiverChannel = receiver.channels.get("single_send_unencrypted", receiverChannelOpts);
+            final RealtimeChannelBase receiverChannel = receiver.channels.get("single_send_unencrypted", receiverChannelOpts);
 
             /* attach */
             senderChannel.attach();
@@ -485,18 +487,18 @@ public class RealtimeCryptoTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void single_send_encrypted_unhandled() {
-        AblyRealtime sender = null;
-        AblyRealtime receiver = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> sender = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> receiver = null;
         try {
             ClientOptions senderOpts = createOptions(testVars.keys[0].keyStr);
-            sender = new AblyRealtime(senderOpts);
+            sender = createAblyRealtime(senderOpts);
             ClientOptions receiverOpts = createOptions(testVars.keys[0].keyStr);
-            receiver = new AblyRealtime(receiverOpts);
+            receiver = createAblyRealtime(receiverOpts);
 
             /* create a channel */
             ChannelOptions senderChannelOpts = new ChannelOptions() {{ encrypted = true; }};
-            final Channel senderChannel = sender.channels.get("single_send_encrypted_unhandled", senderChannelOpts);
-            final Channel receiverChannel = receiver.channels.get("single_send_encrypted_unhandled");
+            final RealtimeChannelBase senderChannel = sender.channels.get("single_send_encrypted_unhandled", senderChannelOpts);
+            final RealtimeChannelBase receiverChannel = receiver.channels.get("single_send_encrypted_unhandled");
 
             /* attach */
             senderChannel.attach();
@@ -556,23 +558,23 @@ public class RealtimeCryptoTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void set_cipher_params() {
-        AblyRealtime sender = null;
-        AblyRealtime receiver = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> sender = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> receiver = null;
         try {
             ClientOptions senderOpts = createOptions(testVars.keys[0].keyStr);
-            sender = new AblyRealtime(senderOpts);
+            sender = createAblyRealtime(senderOpts);
             ClientOptions receiverOpts = createOptions(testVars.keys[0].keyStr);
             receiverOpts.useBinaryProtocol = !testParams.useBinaryProtocol;
-            receiver = new AblyRealtime(receiverOpts);
+            receiver = createAblyRealtime(receiverOpts);
 
             /* create a key */
             final CipherParams params1 = Crypto.getDefaultParams();
 
             /* create a channel */
             ChannelOptions senderChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params1; }};
-            final Channel senderChannel = sender.channels.get("set_cipher_params", senderChannelOpts);
+            final RealtimeChannelBase senderChannel = sender.channels.get("set_cipher_params", senderChannelOpts);
             ChannelOptions receiverChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params1; }};
-            final Channel receiverChannel = receiver.channels.get("set_cipher_params", receiverChannelOpts);
+            final RealtimeChannelBase receiverChannel = receiver.channels.get("set_cipher_params", receiverChannelOpts);
 
             /* attach */
             senderChannel.attach();
@@ -672,12 +674,12 @@ public class RealtimeCryptoTest extends ParameterizedTest {
     @Deprecated
     public void channel_options_from_cipher_key() {
         String channelName = "cipher_params_test_" + testParams.name;
-        AblyRealtime sender = null;
-        AblyRealtime receiver = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> sender = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> receiver = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            sender = new AblyRealtime(opts);
-            receiver = new AblyRealtime(opts);
+            sender = createAblyRealtime(opts);
+            receiver = createAblyRealtime(opts);
 
             /* 128-bit key */
             byte[] key = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
@@ -685,9 +687,9 @@ public class RealtimeCryptoTest extends ParameterizedTest {
             String base64key = "AQIDBAUGBwgJCgsMDQ4PEA==";
 
             /* create a sending channel using byte[] array */
-            final Channel channelSend = sender.channels.get(channelName, ChannelOptions.fromCipherKey(key));
+            final RealtimeChannelBase channelSend = sender.channels.get(channelName, ChannelOptions.fromCipherKey(key));
             /* create a receiving channel using (the same) key encoded with base64 */
-            final Channel channelReceive = receiver.channels.get(channelName, ChannelOptions.fromCipherKey(base64key));
+            final RealtimeChannelBase channelReceive = receiver.channels.get(channelName, ChannelOptions.fromCipherKey(base64key));
 
             /* attach */
             channelSend.attach();
@@ -741,12 +743,12 @@ public class RealtimeCryptoTest extends ParameterizedTest {
     @Test
     public void channel_options_with_cipher_key() {
         String channelName = "cipher_params_test_" + testParams.name;
-        AblyRealtime sender = null;
-        AblyRealtime receiver = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> sender = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> receiver = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            sender = new AblyRealtime(opts);
-            receiver = new AblyRealtime(opts);
+            sender = createAblyRealtime(opts);
+            receiver = createAblyRealtime(opts);
 
             /* 128-bit key */
             byte[] key = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
@@ -754,9 +756,9 @@ public class RealtimeCryptoTest extends ParameterizedTest {
             String base64key = "AQIDBAUGBwgJCgsMDQ4PEA==";
 
             /* create a sending channel using byte[] array */
-            final Channel channelSend = sender.channels.get(channelName, ChannelOptions.withCipherKey(key));
+            final RealtimeChannelBase channelSend = sender.channels.get(channelName, ChannelOptions.withCipherKey(key));
             /* create a receiving channel using (the same) key encoded with base64 */
-            final Channel channelReceive = receiver.channels.get(channelName, ChannelOptions.withCipherKey(base64key));
+            final RealtimeChannelBase channelReceive = receiver.channels.get(channelName, ChannelOptions.withCipherKey(base64key));
 
             /* attach */
             channelSend.attach();

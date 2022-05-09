@@ -1,7 +1,7 @@
 package io.ably.lib.test.realtime;
 
 import fi.iki.elonen.NanoHTTPD;
-import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.realtime.AblyRealtimeBase;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
@@ -21,7 +21,7 @@ import static org.junit.Assert.assertNotNull;
 /**
  * Test for correct version headers passed to websocket
  */
-public class RealtimeHttpHeaderTest extends ParameterizedTest {
+public abstract class RealtimeHttpHeaderTest extends ParameterizedTest {
     private SessionHandlerNanoHTTPD server;
     private int port;
 
@@ -51,7 +51,7 @@ public class RealtimeHttpHeaderTest extends ParameterizedTest {
      */
     @Test
     public void realtime_websocket_param_test() {
-        AblyRealtime realtime = null;
+        AblyRealtimeBase realtime = null;
         try {
             /* Init values for local server */
             String key = testVars.keys[0].keyStr;
@@ -62,7 +62,7 @@ public class RealtimeHttpHeaderTest extends ParameterizedTest {
             opts.useBinaryProtocol = testParams.useBinaryProtocol;
 
             server.resetRequestParameters();
-            realtime = new AblyRealtime(opts);
+            realtime = createAblyRealtime(opts);
             Map<String, List<String>> requestParameters = null;
             for (int i = 0; requestParameters == null && i<10; i++) {
                 try { Thread.sleep(100); } catch (InterruptedException e) {}
@@ -88,7 +88,7 @@ public class RealtimeHttpHeaderTest extends ParameterizedTest {
              * Defaults.ABLY_AGENT_PARAM, as ultimately the request param has been derived from those values.
              */
             assertEquals("Verify correct lib version", requestParameters.get("agent"),
-                    Collections.singletonList("ably-java/1.2.12 jre/" + System.getProperty("java.version")));
+                    Collections.singletonList("ably-java/2.0.0 jre/" + System.getProperty("java.version")));
 
             /* Spec RTN2a */
             assertEquals("Verify correct format", requestParameters.get("format"),
@@ -102,7 +102,7 @@ public class RealtimeHttpHeaderTest extends ParameterizedTest {
             opts.useBinaryProtocol = testParams.useBinaryProtocol;
             opts.echoMessages = false;
             server.resetRequestParameters();
-            realtime = new AblyRealtime(opts);
+            realtime = createAblyRealtime(opts);
             requestParameters = null;
             for (int i = 0; requestParameters == null && i<10; i++) {
                 try { Thread.sleep(100); } catch (InterruptedException e) {}
@@ -128,7 +128,7 @@ public class RealtimeHttpHeaderTest extends ParameterizedTest {
             opts.clientId = clientId;
 
             server.resetRequestParameters();
-            realtime = new AblyRealtime(opts);
+            realtime = createAblyRealtime(opts);
             requestParameters = null;
             for (int i = 0; requestParameters == null && i<10; i++) {
                 try { Thread.sleep(100); } catch (InterruptedException e) {}

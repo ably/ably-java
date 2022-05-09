@@ -7,7 +7,7 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
-import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.realtime.AblyRealtimeBase;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
@@ -15,16 +15,16 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Log.LogHandler;
 
-public class RealtimeInitTest extends ParameterizedTest {
+public abstract class RealtimeInitTest extends ParameterizedTest {
 
     /**
      * Init library with a key only
      */
     @Test
     public void init_key_string() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase ably = null;
         try {
-            ably = new AblyRealtime(testVars.keys[0].keyStr);
+            ably = createAblyRealtime(testVars.keys[0].keyStr);
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");
@@ -38,9 +38,9 @@ public class RealtimeInitTest extends ParameterizedTest {
      */
     @Test
     public void init_key_opts() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase ably = null;
         try {
-            ably = new AblyRealtime(new ClientOptions(testVars.keys[0].keyStr));
+            ably = createAblyRealtime(new ClientOptions(testVars.keys[0].keyStr));
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init1: Unexpected exception instantiating library");
@@ -54,10 +54,10 @@ public class RealtimeInitTest extends ParameterizedTest {
      */
     @Test
     public void init_key() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase ably = null;
         try {
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init2: Unexpected exception instantiating library");
@@ -71,12 +71,12 @@ public class RealtimeInitTest extends ParameterizedTest {
      */
     @Test
     public void init_host() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase ably = null;
         try {
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
             String hostExpected = "some.other.host";
             opts.restHost = hostExpected;
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
             assertEquals("Unexpected host mismatch", hostExpected, ably.httpCore.getPrimaryHost());
         } catch (AblyException e) {
             e.printStackTrace();
@@ -91,12 +91,12 @@ public class RealtimeInitTest extends ParameterizedTest {
      */
     @Test
     public void init_port() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase ably = null;
         try {
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
             opts.port = 9998;
             opts.tlsPort = 9999;
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
             assertEquals("Unexpected port mismatch", Defaults.getPort(opts), opts.tlsPort);
         } catch (AblyException e) {
             e.printStackTrace();
@@ -111,10 +111,10 @@ public class RealtimeInitTest extends ParameterizedTest {
      */
     @Test
     public void init_default_secure() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase ably = null;
         try {
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
             assertEquals("Unexpected port mismatch", Defaults.getPort(opts), Defaults.TLS_PORT);
         } catch (AblyException e) {
             e.printStackTrace();
@@ -129,11 +129,11 @@ public class RealtimeInitTest extends ParameterizedTest {
      */
     @Test
     public void init_insecure() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase ably = null;
         try {
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
             opts.tls = false;
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
             assertEquals("Unexpected scheme mismatch", Defaults.getPort(opts), Defaults.PORT);
         } catch (AblyException e) {
             e.printStackTrace();
@@ -149,7 +149,7 @@ public class RealtimeInitTest extends ParameterizedTest {
     private boolean init8_logCalled;
     @Test
     public void init_log_handler() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase ably = null;
         try {
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
             opts.logHandler = new LogHandler() {
@@ -160,7 +160,7 @@ public class RealtimeInitTest extends ParameterizedTest {
                 }
             };
             opts.logLevel = Log.VERBOSE;
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
             assertTrue("Log handler not called", init8_logCalled);
         } catch (AblyException e) {
             e.printStackTrace();
@@ -176,7 +176,7 @@ public class RealtimeInitTest extends ParameterizedTest {
     private boolean init9_logCalled;
     @Test
     public void init_log_level() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase ably = null;
         try {
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
             opts.logHandler = new LogHandler() {
@@ -187,7 +187,7 @@ public class RealtimeInitTest extends ParameterizedTest {
                 }
             };
             opts.logLevel = Log.NONE;
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
             assertFalse("Log handler incorrectly called", init9_logCalled);
         } catch (AblyException e) {
             e.printStackTrace();

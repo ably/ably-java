@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import fi.iki.elonen.NanoHTTPD;
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.Auth.TokenDetails;
 import io.ably.lib.rest.Auth.TokenParams;
 import io.ably.lib.rest.Auth.TokenRequest;
@@ -45,7 +45,7 @@ import static fi.iki.elonen.NanoHTTPD.newFixedLengthResponse;
 
 public class TokenServer extends NanoHTTPD {
 
-    public TokenServer(AblyRest ably, int port) {
+    public TokenServer(AblyBase ably, int port) {
         super(port);
         this.ably = ably;
     }
@@ -163,6 +163,6 @@ public class TokenServer extends NanoHTTPD {
         return newFixedLengthResponse(getStatus(errorInfo.statusCode), MIME_JSON, Serialisation.gson.toJson(err));
     }
 
-    private final AblyRest ably;
+    private final AblyBase ably;
     private static final String MIME_JSON = "application/json";
 }

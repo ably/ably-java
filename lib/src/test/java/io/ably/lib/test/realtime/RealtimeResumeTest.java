@@ -1,8 +1,10 @@
 package io.ably.lib.test.realtime;
 
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.Channel;
+import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.push.PushBase;
+import io.ably.lib.realtime.AblyRealtimeBase;
+import io.ably.lib.realtime.RealtimeChannelBase;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
@@ -28,7 +30,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class RealtimeResumeTest extends ParameterizedTest {
+public abstract class RealtimeResumeTest extends ParameterizedTest {
 
     private static final String TAG = RealtimeResumeTest.class.getName();
 
@@ -42,14 +44,14 @@ public class RealtimeResumeTest extends ParameterizedTest {
      */
     @Test
     public void resume_none() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         String channelName = "resume_none";
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* create and attach channel */
-            final Channel channel = ably.channels.get(channelName);
+            final RealtimeChannelBase channel = ably.channels.get(channelName);
             System.out.println("Attaching");
             channel.attach();
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
@@ -100,24 +102,24 @@ public class RealtimeResumeTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void resume_simple() {
-        AblyRealtime ablyTx = null;
-        AblyRealtime ablyRx = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyTx = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRx = null;
         String channelName = "resume_simple";
         int messageCount = 5;
         long delay = 200;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ablyRx = new AblyRealtime(opts);
-            ablyTx = new AblyRealtime(opts);
+            ablyRx = createAblyRealtime(opts);
+            ablyTx = createAblyRealtime(opts);
 
             /* create and attach channel to send on */
-            final Channel channelTx = ablyTx.channels.get(channelName);
+            final RealtimeChannelBase channelTx = ablyTx.channels.get(channelName);
             channelTx.attach();
             (new ChannelWaiter(channelTx)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached for tx", channelTx.state, ChannelState.attached);
 
             /* create and attach channel to recv on */
-            final Channel channelRx = ablyRx.channels.get(channelName);
+            final RealtimeChannelBase channelRx = ablyRx.channels.get(channelName);
             channelRx.attach();
             (new ChannelWaiter(channelRx)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached for rx", channelRx.state, ChannelState.attached);
@@ -191,24 +193,24 @@ public class RealtimeResumeTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void resume_disconnected() {
-        AblyRealtime ablyTx = null;
-        AblyRealtime ablyRx = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyTx = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRx = null;
         String channelName = "resume_disconnected";
         int messageCount = 5;
         long delay = 200;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ablyRx = new AblyRealtime(opts);
-            ablyTx = new AblyRealtime(opts);
+            ablyRx = createAblyRealtime(opts);
+            ablyTx = createAblyRealtime(opts);
 
             /* create and attach channel to send on */
-            final Channel channelTx = ablyTx.channels.get(channelName);
+            final RealtimeChannelBase channelTx = ablyTx.channels.get(channelName);
             channelTx.attach();
             (new ChannelWaiter(channelTx)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached for tx", channelTx.state, ChannelState.attached);
 
             /* create and attach channel to recv on */
-            final Channel channelRx = ablyRx.channels.get(channelName);
+            final RealtimeChannelBase channelRx = ablyRx.channels.get(channelName);
             channelRx.attach();
             (new ChannelWaiter(channelRx)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached for rx", channelRx.state, ChannelState.attached);
@@ -277,32 +279,32 @@ public class RealtimeResumeTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void resume_multiple_channel() {
-        AblyRealtime ablyTx = null;
-        AblyRealtime ablyRx = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyTx = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRx = null;
         String channelName = "resume_multiple_channel";
         int messageCount = 5;
         long delay = 200;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ablyRx = new AblyRealtime(opts);
-            ablyTx = new AblyRealtime(opts);
+            ablyRx = createAblyRealtime(opts);
+            ablyTx = createAblyRealtime(opts);
 
             /* create and attach channels to send on */
-            final Channel channelTx1 = ablyTx.channels.get(channelName + "_1");
+            final RealtimeChannelBase channelTx1 = ablyTx.channels.get(channelName + "_1");
             channelTx1.attach();
             (new ChannelWaiter(channelTx1)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached for tx", channelTx1.state, ChannelState.attached);
-            final Channel channelTx2 = ablyTx.channels.get(channelName + "_2");
+            final RealtimeChannelBase channelTx2 = ablyTx.channels.get(channelName + "_2");
             channelTx2.attach();
             (new ChannelWaiter(channelTx2)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached for tx", channelTx2.state, ChannelState.attached);
 
             /* create and attach channel to recv on */
-            final Channel channelRx1 = ablyRx.channels.get(channelName + "_1");
+            final RealtimeChannelBase channelRx1 = ablyRx.channels.get(channelName + "_1");
             channelRx1.attach();
             (new ChannelWaiter(channelRx1)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached for rx", channelRx1.state, ChannelState.attached);
-            final Channel channelRx2 = ablyRx.channels.get(channelName + "_2");
+            final RealtimeChannelBase channelRx2 = ablyRx.channels.get(channelName + "_2");
             channelRx2.attach();
             (new ChannelWaiter(channelRx2)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached for rx", channelRx2.state, ChannelState.attached);
@@ -380,24 +382,24 @@ public class RealtimeResumeTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void resume_multiple_interval() {
-        AblyRealtime ablyTx = null;
-        AblyRealtime ablyRx = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyTx = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRx = null;
         String channelName = "resume_multiple_interval";
         int messageCount = 5;
         long delay = 200;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ablyRx = new AblyRealtime(opts);
-            ablyTx = new AblyRealtime(opts);
+            ablyRx = createAblyRealtime(opts);
+            ablyTx = createAblyRealtime(opts);
 
             /* create and attach channel to send on */
-            final Channel channelTx = ablyTx.channels.get(channelName);
+            final RealtimeChannelBase channelTx = ablyTx.channels.get(channelName);
             channelTx.attach();
             (new ChannelWaiter(channelTx)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached for tx", channelTx.state, ChannelState.attached);
 
             /* create and attach channel to recv on */
-            final Channel channelRx = ablyRx.channels.get(channelName);
+            final RealtimeChannelBase channelRx = ablyRx.channels.get(channelName);
             channelRx.attach();
             (new ChannelWaiter(channelRx)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached for rx", channelRx.state, ChannelState.attached);
@@ -469,24 +471,24 @@ public class RealtimeResumeTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void resume_verify_publish() {
-        AblyRealtime ablyTx = null;
-        AblyRealtime ablyRx = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyTx = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRx = null;
         String channelName = "resume_verify_publish";
         int messageCount = 5;
         long delay = 200;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ablyRx = new AblyRealtime(opts);
-            ablyTx = new AblyRealtime(opts);
+            ablyRx = createAblyRealtime(opts);
+            ablyTx = createAblyRealtime(opts);
 
             /* create and attach channel to send on */
-            final Channel channelTx = ablyTx.channels.get(channelName);
+            final RealtimeChannelBase channelTx = ablyTx.channels.get(channelName);
             channelTx.attach();
             (new ChannelWaiter(channelTx)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached for tx", channelTx.state, ChannelState.attached);
 
             /* create and attach channel to recv on */
-            final Channel channelRx = ablyRx.channels.get(channelName);
+            final RealtimeChannelBase channelRx = ablyRx.channels.get(channelName);
             channelRx.attach();
             (new ChannelWaiter(channelRx)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached for rx", channelRx.state, ChannelState.attached);
@@ -575,18 +577,18 @@ public class RealtimeResumeTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void resume_publish_queue() {
-        AblyRealtime receiver = null;
-        AblyRealtime sender = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> receiver = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> sender = null;
         String channelName = "resume_publish_queue";
         int messageCount = 3;
         long delay = 200;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            receiver = new AblyRealtime(opts);
-            sender = new AblyRealtime(opts);
+            receiver = createAblyRealtime(opts);
+            sender = createAblyRealtime(opts);
 
             /* create and attach channel to send on */
-            final Channel senderChannel = sender.channels.get(channelName);
+            final RealtimeChannelBase senderChannel = sender.channels.get(channelName);
             senderChannel.attach();
             (new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
             assertEquals(
@@ -595,7 +597,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
             );
 
             /* create and attach channel to recv on */
-            final Channel receiverChannel = receiver.channels.get(channelName);
+            final RealtimeChannelBase receiverChannel = receiver.channels.get(channelName);
             receiverChannel.attach();
             (new ChannelWaiter(receiverChannel)).waitFor(ChannelState.attached);
             assertEquals(
@@ -688,17 +690,17 @@ public class RealtimeResumeTest extends ParameterizedTest {
     @Test
     public void resume_rewind_1 ()
     {
-        AblyRealtime receiver1 = null;
-        AblyRealtime receiver2 = null;
-        AblyRealtime sender = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> receiver1 = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> receiver2 = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> sender = null;
         final String testMessage = "{ foo: \"bar\", count: 1, status: \"active\" }";
 
         String testName = "resume_rewind_1";
         try {
 
             ClientOptions common_opts = createOptions(testVars.keys[0].keyStr);
-            sender = new AblyRealtime(common_opts);
-            receiver1 = new AblyRealtime(common_opts);
+            sender = createAblyRealtime(common_opts);
+            receiver1 = createAblyRealtime(common_opts);
 
             DebugOptions receiver2_opts = createOptions(testVars.keys[0].keyStr);
             receiver2_opts.protocolListener = new DebugOptions.RawProtocolListener() {
@@ -715,11 +717,11 @@ public class RealtimeResumeTest extends ParameterizedTest {
                 @Override
                 public void onRawMessageRecv(ProtocolMessage message) {}
             };
-            receiver2 = new AblyRealtime(receiver2_opts);
+            receiver2 = createAblyRealtime(receiver2_opts);
 
-            Channel recever1_channel = receiver1.channels.get("[?rewind=1]" + testName);
-            Channel recever2_channel = receiver2.channels.get("[?rewind=1]" + testName);
-            Channel sender_channel = sender.channels.get(testName);
+            RealtimeChannelBase recever1_channel = receiver1.channels.get("[?rewind=1]" + testName);
+            RealtimeChannelBase recever2_channel = receiver2.channels.get("[?rewind=1]" + testName);
+            RealtimeChannelBase sender_channel = sender.channels.get(testName);
 
             sender_channel.attach();
             (new ChannelWaiter(sender_channel)).waitFor(ChannelState.attached);

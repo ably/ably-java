@@ -2,8 +2,10 @@ package io.ably.lib.test.realtime;
 
 import com.google.gson.JsonObject;
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.Channel;
+import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.push.PushBase;
+import io.ably.lib.realtime.AblyRealtimeBase;
+import io.ably.lib.realtime.RealtimeChannelBase;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.MessageWaiter;
@@ -25,7 +27,7 @@ import java.util.Objects;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-public class RealtimeDeltaDecoderTest extends ParameterizedTest {
+public abstract class RealtimeDeltaDecoderTest extends ParameterizedTest {
     private static final String[] testData = new String[] {
         "{ foo: \"bar\", count: 1, status: \"active\" }",
         "{ foo: \"bar\", count: 2, status: \"active\" }",
@@ -39,13 +41,13 @@ public class RealtimeDeltaDecoderTest extends ParameterizedTest {
 
     @Test
     public void simple_delta_codec() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         String testName = "simple_delta_codec";
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 
-            ably = new AblyRealtime(opts);
-            Channel channel = ably.channels.get("[?delta=vcdiff]" + testName);
+            ably = createAblyRealtime(opts);
+            RealtimeChannelBase channel = ably.channels.get("[?delta=vcdiff]" + testName);
 
             /* subscribe */
             MessageWaiter messageWaiter = new MessageWaiter(channel);
@@ -84,14 +86,14 @@ public class RealtimeDeltaDecoderTest extends ParameterizedTest {
     }
 
     private void delta_failure_recovery(final ITransport.Factory websocketFactory, String testName) {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
         try {
             DebugOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.transportFactory = websocketFactory;
-            ably = new AblyRealtime(opts);
+            ably = createAblyRealtime(opts);
 
             /* create a channel */
-            final Channel channel = ably.channels.get("[?delta=vcdiff]" + testName);
+            final RealtimeChannelBase channel = ably.channels.get("[?delta=vcdiff]" + testName);
 
             /* attach */
             channel.attach();

@@ -2,7 +2,7 @@ package io.ably.lib.test.rest;
 
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpHelpers;
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Setup.Key;
@@ -21,7 +21,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class RestJWTTest extends ParameterizedTest {
+public abstract class RestJWTTest extends ParameterizedTest {
 
     private Key key = testVars.keys[0];
     Param[] environment = new Param[]{ new Param("environment", testVars.environment) };
@@ -39,7 +39,7 @@ public class RestJWTTest extends ParameterizedTest {
     public void auth_jwt_request() {
         try {
             ClientOptions options = buildClientOptions(validKeys);
-            AblyRest client = new AblyRest(options);
+            AblyBase client = createAblyRest(options);
             PaginatedResult<Stats> stats = client.stats(null);
             assertNotNull("Stats should not be null", stats);
         } catch (AblyException e) {
@@ -55,7 +55,7 @@ public class RestJWTTest extends ParameterizedTest {
     public void auth_jwt_request_wrong_keys() {
         try {
             ClientOptions options = buildClientOptions(invalidKeys);
-            AblyRest client = new AblyRest(options);
+            AblyBase client = createAblyRest(options);
             PaginatedResult<Stats> stats = client.stats(null);
         } catch (AblyException e) {
             assertEquals("Unexpected code from exception", 40144, e.errorInfo.code);
@@ -71,7 +71,7 @@ public class RestJWTTest extends ParameterizedTest {
     public void auth_jwt_request_embedded_token() {
         try {
             ClientOptions options = buildClientOptions(mergeParams(new Param[][]{environment, validKeys, tokenEmbedded}));
-            AblyRest client = new AblyRest(options);
+            AblyBase client = createAblyRest(options);
             PaginatedResult<Stats> stats = client.stats(null);
             assertNotNull("Stats should not be null", stats);
         } catch (AblyException e) {
@@ -87,7 +87,7 @@ public class RestJWTTest extends ParameterizedTest {
     public void auth_jwt_request_embedded_token_encrypted() {
         try {
             ClientOptions options = buildClientOptions(mergeParams(new Param[][]{environment, validKeys, tokenEmbeddedAndEncrypted}));
-            AblyRest client = new AblyRest(options);
+            AblyBase client = createAblyRest(options);
             PaginatedResult<Stats> stats = client.stats(null);
             assertNotNull("Stats should not be null", stats);
         } catch (AblyException e) {
@@ -105,7 +105,7 @@ public class RestJWTTest extends ParameterizedTest {
             ClientOptions options = createOptions();
             options.authUrl = echoServer;
             options.authParams = mergeParams(new Param[][]{environment, validKeys, jwtReturnType});
-            AblyRest client = new AblyRest(options);
+            AblyBase client = createAblyRest(options);
             PaginatedResult<Stats> stats = client.stats(null);
             assertNotNull("Stats should not be null", stats);
         } catch (AblyException e) {
@@ -120,7 +120,7 @@ public class RestJWTTest extends ParameterizedTest {
     @Test
     public void auth_jwt_request_authcallback() {
         try {
-            final AblyRest restJWTRequester = new AblyRest(createOptions(testVars.keys[0].keyStr));
+            final AblyBase restJWTRequester = createAblyRest(createOptions(testVars.keys[0].keyStr));
             final boolean[] callbackCalled = new boolean[] { false };
             Auth.TokenCallback authCallback = new Auth.TokenCallback() {
                 @Override
@@ -131,7 +131,7 @@ public class RestJWTTest extends ParameterizedTest {
             };
             ClientOptions optionsWithCallback = createOptions();
             optionsWithCallback.authCallback = authCallback;
-            AblyRest client = new AblyRest(optionsWithCallback);
+            AblyBase client = createAblyRest(optionsWithCallback);
             PaginatedResult<Stats> stats = client.stats(null);
             assertNotNull("Stats should not be null", stats);
             assertTrue("Callback was not called", callbackCalled[0]);
@@ -148,7 +148,7 @@ public class RestJWTTest extends ParameterizedTest {
         try {
             ClientOptions options = createOptions();
             final String[] resultToken = new String[1];
-            AblyRest rest = new AblyRest(createOptions(testVars.keys[0].keyStr));
+            AblyBase rest = createAblyRest(createOptions(testVars.keys[0].keyStr));
             HttpHelpers.getUri(rest.httpCore, echoServer, null, params, new HttpCore.ResponseHandler() {
                 @Override
                 public Object handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
