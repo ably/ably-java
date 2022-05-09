@@ -8,7 +8,7 @@ import java.io.IOException;
 /**
  * Implementation of ResourceLoader for JRE environment
  */
-public class ResourceLoader {
+public class JavaResourceLoader implements ResourceLoader {
     public byte[] read(String resourceName) throws IOException {
         FileInputStream fis = null;
         System.out.println("Current dir: " + new File(".").getAbsolutePath());
