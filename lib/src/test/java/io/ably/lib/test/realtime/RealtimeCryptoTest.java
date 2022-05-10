@@ -665,7 +665,7 @@ public class RealtimeCryptoTest extends ParameterizedTest {
      * This test should be removed when we get rid of the methods
      * ChannelOptions.fromCipherKey(...) which are deprecated and have
      * been replaced with ChannelOptions.withCipherKey(...).
-     * @see <a href="https://docs.ably.io/client-lib-development-guide/features/#TB3>TB3</a>
+     * @see <a href="https://docs.ably.com/client-lib-development-guide/features/#TB3>TB3</a>
      */
     @Ignore("FIXME: fix exception")
     @Test
@@ -735,7 +735,7 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 
     /**
      * Test channel options creation with the cipher key.
-     * @see <a href="https://docs.ably.io/client-lib-development-guide/features/#TB3>TB3</a>
+     * @see <a href="https://docs.ably.com/client-lib-development-guide/features/#TB3>TB3</a>
      */
     @Ignore("FIXME: fix exception")
     @Test
@@ -1109,7 +1109,7 @@ public class RealtimeCryptoTest extends ParameterizedTest {
 
     /**
      * Test Crypto.generateRandomKey.
-     * @see <a href="https://docs.ably.io/client-lib-development-guide/features/#RSE2">RSE2</a>
+     * @see <a href="https://docs.ably.com/client-lib-development-guide/features/#RSE2">RSE2</a>
      */
     @Test
     public void generate_random_key() {
