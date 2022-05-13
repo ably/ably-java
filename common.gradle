@@ -2,8 +2,6 @@ repositories {
     mavenCentral()
 }
 
-group = 'io.ably'
-version = '2.0.0'
 description = 'Ably java client library'
 
 tasks.withType(Javadoc) {
