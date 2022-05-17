@@ -15,7 +15,7 @@ apply from: '../dependencies.gradle'
 
 // Added to make test classes from this module available in other modules
 task testJar(type: Jar) {
-    archiveClassifier = "test"
+    archiveClassifier = 'test'
     from sourceSets.test.output
 }
 
