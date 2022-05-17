@@ -12,6 +12,7 @@ sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
 apply from: '../dependencies.gradle'
+apply from: 'publish.gradle'
 
 // Added to make test classes from this module available in other modules
 task testJar(type: Jar) {
