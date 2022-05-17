@@ -97,4 +97,4 @@ configurations {
     }
 }
 
-apply from: 'maven.gradle'
+apply from: 'publish.gradle'
