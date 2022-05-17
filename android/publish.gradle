@@ -8,7 +8,7 @@ task sourcesJar(type: Jar) {
     // Copy files from main source directories to the JAR.
     from android.sourceSets.main.java.srcDirs
     // Specify the JAR type (it will be appended to its filename).
-    archiveClassifier.set("sources")
+    archiveClassifier.set('sources')
 }
 
 // Custom task to generate the javadocs from the Android source files
@@ -28,7 +28,7 @@ task javadocJar(type: Jar) {
     // Copy files from the javadocs directory to the jar.
     from javadoc.destinationDir
     // Specify the JAR type (it will be appended to its filename).
-    archiveClassifier.set("javadoc")
+    archiveClassifier.set('javadoc')
 }
 
 afterEvaluate {
@@ -111,9 +111,9 @@ signing {
     // This means that the bytes of the key should be converted to a Base64 encoded string.
     // https://docs.gradle.org/current/userguide/signing_plugin.html#using_in_memory_ascii_armored_openpgp_subkeys
     useInMemoryPgpKeys(
-        findProperty("SIGNING_KEY_ID"),
-        findProperty("SIGNING_KEY_BASE64"),
-        findProperty("SIGNING_PASSWORD"),
+        findProperty('SIGNING_KEY_ID'),
+        findProperty('SIGNING_KEY_BASE64'),
+        findProperty('SIGNING_PASSWORD'),
     )
     sign publishing.publications
 }

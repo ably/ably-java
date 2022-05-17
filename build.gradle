@@ -15,4 +15,4 @@ allprojects {
     version = '2.0.0'
 }
 
-apply from: "maven-central.gradle"
+apply from: 'maven-central.gradle'
