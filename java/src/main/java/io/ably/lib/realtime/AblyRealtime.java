@@ -2,8 +2,6 @@ package io.ably.lib.realtime;
 
 import io.ably.lib.platform.JavaPlatform;
 import io.ably.lib.push.Push;
-import io.ably.lib.rest.AblyBase;
-import io.ably.lib.rest.RestChannelBase;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ClientOptions;

@@ -15,12 +15,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import io.ably.lib.test.common.Setup;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.Message;
-import io.ably.lib.util.Base64Coder;
-import io.ably.lib.util.Crypto;
 import io.ably.lib.util.Crypto.CipherParams;
 
 @Ignore("FIXME: Initialization is failing")

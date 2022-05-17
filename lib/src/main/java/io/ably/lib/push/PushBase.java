@@ -12,7 +12,6 @@ import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.DeviceDetails;
 import io.ably.lib.rest.RestChannelBase;
-import io.ably.lib.types.AblyChannel;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.AsyncPaginatedResult;
 import io.ably.lib.types.Callback;

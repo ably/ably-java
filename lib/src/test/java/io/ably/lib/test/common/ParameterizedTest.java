@@ -7,8 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.ably.lib.types.Param;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
