@@ -10,7 +10,6 @@ buildscript {
 }
 
 apply plugin: 'com.android.library'
-apply from: '../common.gradle'
 
 ext {
     artifactId = 'ably-android'
