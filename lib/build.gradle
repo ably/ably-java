@@ -30,8 +30,13 @@ task testJar(type: Jar) {
 }
 
 // Added to make test classes from this module available in other modules
+configurations {
+    sharedTestClasses
+}
+
+// Added to make test classes from this module available in other modules
 artifacts {
-    testRuntime testJar
+    sharedTestClasses testJar
 }
 
 /*

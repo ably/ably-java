@@ -42,7 +42,7 @@ task fullJar(type: Jar) {
 dependencies {
     implementation project(':lib')
     // Enable access to test classes from the :lib module for integration test cases sharing
-    testImplementation project(path: ':lib', configuration: 'testRuntime')
+    testImplementation project(path: ':lib', configuration: 'sharedTestClasses')
 }
 
 assemble.dependsOn fullJar
