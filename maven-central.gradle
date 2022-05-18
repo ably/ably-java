@@ -1,12 +1,12 @@
 // MavenCentral publishing Sonatype configuration
-final String MAVEN_USER = hasProperty('ossrhUsername') ? ossrhUsername : ''
-final String MAVEN_PASSWORD = hasProperty('ossrhPassword') ? ossrhPassword : ''
+final String mavenUser = hasProperty('ossrhUsername') ? ossrhUsername : ''
+final String mavenPassword = hasProperty('ossrhPassword') ? ossrhPassword : ''
 
 nexusPublishing {
     repositories {
         sonatype {
-            username = MAVEN_USER
-            password = MAVEN_PASSWORD
+            username = mavenUser
+            password = mavenPassword
         }
     }
 }
