@@ -67,10 +67,10 @@ android {
 /* Fix for android test logging. Source: https://code.google.com/p/android/issues/detail?id=182307 */
 tasks.withType(com.android.build.gradle.internal.tasks.AndroidTestTask) { task ->
     task.doFirst {
-        logging.level = LogLevel.INFO
+        logging.levelInternal = LogLevel.INFO
     }
     task.doLast {
-        logging.level = LogLevel.LIFECYCLE
+        logging.levelInternal = LogLevel.LIFECYCLE
     }
 }
 
