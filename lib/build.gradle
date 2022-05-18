@@ -16,12 +16,15 @@ apply from: 'publish.gradle'
 // Make gradle properties accessible from the SDK code
 buildConfig {
     // Set the package name of the generated class
-    packageName 'io.ably.lib'
+    packageName 'io.ably.generated'
     // Set the class name of the generated class
     className 'BuildConfig'
     // Add SDK version field to the generated class
     buildConfigField 'String', 'VERSION', "\"$version\""
 }
+
+// Exclude all files from any 'generated' directory when performing checkstyle check (added to exclude BuildConfig)
+checkstyleMain.exclude '**/generated/*'
 
 // Added to make test classes from this module available in other modules
 task testJar(type: Jar) {
