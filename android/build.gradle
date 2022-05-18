@@ -26,8 +26,6 @@ android {
     compileSdkVersion 30
 
     defaultConfig {
-        buildConfigField 'String', 'LIBRARY_NAME', '"android"'
-        buildConfigField 'String', 'VERSION', "\"$version\""
         minSdkVersion 16
         targetSdkVersion 24
         versionCode 1

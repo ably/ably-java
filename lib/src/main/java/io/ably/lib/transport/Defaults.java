@@ -1,6 +1,6 @@
 package io.ably.lib.transport;
 
-import io.ably.BuildConfig;
+import io.ably.lib.BuildConfig;
 import io.ably.lib.types.ClientOptions;
 
 import java.text.DecimalFormat;
