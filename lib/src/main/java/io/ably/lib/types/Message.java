@@ -176,7 +176,7 @@ public class Message extends BaseMessage {
             this(channels.toArray(new String[0]), messages.toArray(new Message[0]));
         }
 
-        public void writeMsgpack(MessagePacker packer) throws IOException {
+        void writeMsgpack(MessagePacker packer) throws IOException {
             packer.packMapHeader(2);
             packer.packString("channels");
             packer.packArrayHeader(channels.length);
