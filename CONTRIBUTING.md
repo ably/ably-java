@@ -25,10 +25,6 @@ The JRE-specific library JAR is built with:
 
     ./gradlew java:jar
 
-There is also a task to build a fat JAR containing the dependencies:
-
-    ./gradlew java:fullJar
-
 The Android-specific library AAR is built with:
 
     ./gradlew android:assemble
