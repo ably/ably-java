@@ -18,10 +18,6 @@ dependencies {
 
 publish.dependsOn checkstyleMain
 
-configurations {
-    testsConfiguration
-}
-
 task testRealtimeSuite(type: Test) {
     filter {
         includeTestsMatching '*RealtimeSuite'
