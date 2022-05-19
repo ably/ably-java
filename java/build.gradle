@@ -10,19 +10,6 @@ apply from: 'publish.gradle'
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
-// Default jar: add io.ably classes from :lib dependency.
-jar {
-    baseName = 'ably-java'
-    from {
-        configurations.compile.collect { file ->
-            file.directory ? file : zipTree(file)
-        }
-    }
-    includes = ['**/io/ably/**']
-    includeEmptyDirs false
-    exclude 'META-INF/**'
-}
-
 // fullJar: add all classes from dependencies transitively.
 task fullJar(type: Jar) {
     baseName = 'ably-java'
