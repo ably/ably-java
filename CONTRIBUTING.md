@@ -202,19 +202,18 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 4. Commit [CHANGELOG](./CHANGELOG.md)
 5. Make a PR against `main`
 6. Once the PR is approved, merge it into `main`
-7. From the updated `main` branch on your local workstation, assemble and upload:
-    1. Run `./gradlew java:publish` to build and upload `ably-java` to Nexus staging repository
-    2. Run `./gradlew android:publish` to build and upload `ably-android` to Nexus staging repository
-    3. Find the new staging repository using the [Nexus Repository Manager](https://oss.sonatype.org/#stagingRepositories)
-    4. Check that it contains `ably-android` and `ably-java` releases
-    5. "Close" it - this will take a few minutes during which time it will say (after a refresh of your browser) that "Activity: Operation in Progress"
-    6. Once it has closed you will have "Release" available. You can allow it to "automatically drop" after successful release. A refresh or two later of the browser and the staging repository will have disappeared from the list (i.e. it's been dropped which implies it was released successfully)
-    7. A [search for Ably packages](https://oss.sonatype.org/#nexus-search;quick~io.ably) should now list the new version for both `ably-android` and `ably-java`
-8. Add a tag and push to origin - e.g.: `git tag v1.2.4 && git push origin v1.2.4`
+7. Add a tag and push to origin - e.g.: `git tag v1.2.4 && git push origin v1.2.4`
+8. Run the publish workflow:
+  - It is manually triggered, where you supply the version number so the script publishes only up to that tag
+  - It must be run from the `main` branch
+  - Run the [Maven Central](https://github.com/ably/ably-java/blob/main/.github/workflows/publish-maven-central.yml) workflow
+  - After a successful release, a [search for Ably packages](https://oss.sonatype.org/#nexus-search;quick~io.ably) should list the new version for both `ably-android` and `ably-java`
 9. Create the release on Github including populating the release notes
 10. Create the entry on the [Ably Changelog](https://changelog.ably.com/) (via [headwayapp](https://headwayapp.co/))
 
 ### Signing
+
+The signing is performed by the CI workflow and there's no need to do it manually. However, if such need arises, below are instructions on how to sign the SDKs locally.
 
 If you've not configured the signing key in your [Gradle properties](https://docs.gradle.org/current/userguide/build_environment.html#sec:gradle_configuration_properties) then release builds will complain:
 
