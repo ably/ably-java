@@ -213,9 +213,9 @@ defined to be used by our publishing workflows.
 to be used by Gradle's
 [Signing Plugin](https://docs.gradle.org/current/userguide/signing_plugin.html):
 
-- `SIGNING_KEY_ID`: The public key ID.
-- `SIGNING_KEY_PASSWORD`: The passphrase that was used to protect the private key.
-- `SIGNING_KEY_RING_FILE_BASE64`: The contents of the secret key ring file that contains the private key, base64 encoded so that it can be injected as a GitHub secret (encode from macOS using `openssl base64 < signing.key.gpg | pbcopy`).
+- `MAVEN_SIGNING_KEY_ID`: The public key ID.
+- `MAVEN_SIGNING_KEY_PASSWORD`: The passphrase that was used to protect the private key.
+- `MAVEN_SIGNING_KEY_RING_FILE_BASE64`: The contents of the secret key ring file that contains the private key, base64 encoded so that it can be injected as a GitHub secret (encode from macOS using `openssl base64 < signing.key.gpg | pbcopy`).
 
 ### Sonatype for Maven Central
 
