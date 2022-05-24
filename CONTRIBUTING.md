@@ -201,6 +201,29 @@ repositories {
 }
 ```
 
+## Secrets Required to Release
+
+This section defines the names of the
+[GitHub secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
+defined to be used by our publishing workflows.
+
+### Code Signing
+
+[OpenGPG Signatory Credentials](https://docs.gradle.org/current/userguide/signing_plugin.html#sec:signatory_credentials)
+to be used by Gradle's
+[Signing Plugin](https://docs.gradle.org/current/userguide/signing_plugin.html):
+
+- `SIGNING_KEY_ID`: The public key ID.
+- `SIGNING_KEY_PASSWORD`: The passphrase that was used to protect the private key.
+- `SIGNING_KEY_RING_FILE_BASE64`: The contents of the secret key ring file that contains the private key, base64 encoded so that it can be injected as a GitHub secret (encode from macOS using `openssl base64 < signing.key.gpg | pbcopy`).
+
+### Sonatype for Maven Central
+
+Details for the Sonatype identity to be used to publish to our Ably's `io.ably` project ([OSSRH-52871](https://issues.sonatype.org/browse/OSSRH-52871)):
+
+- `OSSRH_USERNAME`: The Sonatype user.
+- `OSSRH_PASSWORD`: The password for the Sonatype user.
+
 ## Release Process
 
 This library uses [semantic versioning](http://semver.org/). For each release, the following needs to be done:
