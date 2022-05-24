@@ -30,9 +30,9 @@ jobs:
         env:
           ORG_GRADLE_PROJECT_OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           ORG_GRADLE_PROJECT_OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-          ORG_GRADLE_PROJECT_SIGNING_KEY_ID: ${{ secrets.SIGNING_KEY_ID }}
-          ORG_GRADLE_PROJECT_SIGNING_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-          ORG_GRADLE_PROJECT_SIGNING_KEY_BASE64: ${{ secrets.SIGNING_KEY_RING_FILE_BASE64 }}
+          ORG_GRADLE_PROJECT_SIGNING_KEY_ID: ${{ secrets.MAVEN_SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_SIGNING_PASSWORD: ${{ secrets.MAVEN_SIGNING_KEY_PASSWORD }}
+          ORG_GRADLE_PROJECT_SIGNING_KEY_BASE64: ${{ secrets.MAVEN_SIGNING_KEY_RING_FILE_BASE64 }}
         run: |
           echo "Publishing version ${{ github.event.inputs.version }} to MavenCentral..."
           ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository
