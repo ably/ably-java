@@ -183,14 +183,23 @@ signing.secretKeyRingFile=/Users/username/.ably/ably-java-secring.gpg
 
 You may wish to make changes to Ably Java or Ably Android, and test it immediately in a separate project. For example, during development for [Ably Flutter](https://github.com/ably/ably-flutter) which depends on `ably-android`, a bug was found in `ably-android`. A small fix was done, the AAR was built and tested in [Ably Flutter](https://github.com/ably/ably-flutter).
 
-- Build the AAR: See [Building an Android Archive (AAR) file locally](#building-an-android-archive-aar-file-locally)
-- Open the directory printed from the output of that command. Inside that folder, get the `ably-android-x.y.z.aar`, and place it your Android project's `libs/` directory. Create this directory if it doesn't exist.
-- Add an `implementation` dependency on the `.aar`:
+### How to publish to the local repository
+
+1. Comment out the `signing { ... }` block in each of the `publish.gradle` files from modules you want to publish
+2. Run the `./gradlew publishToMavenLocal` to publish all modules or prefix the command with `:module-name:` if you want to publish only a specified module (e.g. `./gradlew :android:publishToMavenLocal`)
+3. The files can be found in the [local repository location](https://maven.apache.org/guides/mini/guide-configuring-maven.html#configuring-your-local-repository) on your computer. (e.g. `~/.m2/repository/io/ably/ably-android`)
+
+### How to use the published SDKs in another project
+
+Add the local maven repository to the **top** of the repositories block in your `build.gradle` file. This will result in Gradle looking firstly into the local repository for the Ably SDKs.
+Gradle [discourages the usage of mavenLocal()](https://docs.gradle.org/current/userguide/declaring_repositories.html#sec:case-for-maven-local) repository, so this should only be used during development.
+
 ```groovy
-implementation files('libs/ably-android-1.2.12.aar')
+repositories {
+  mavenLocal()
+  // other repositories
+}
 ```
-- Add the `implementation` (not `testImplementation`) dependencies found in `dependencies.gradle` to your project. This is because the `.aar` does not contain dependencies.
-- Build/run your application.
 
 ## Release Process
 
