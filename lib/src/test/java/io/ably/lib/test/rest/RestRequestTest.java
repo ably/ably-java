@@ -10,7 +10,7 @@ import static org.junit.Assert.fail;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import org.junit.Before;
 import org.junit.Rule;
@@ -40,7 +40,7 @@ import net.jodah.concurrentunit.Waiter;
 /* Spec: RSC19 */
 public abstract class RestRequestTest extends ParameterizedTest {
 
-    private AblyBase<PushBase, PlatformBase, RestChannelBase> setupAbly;
+    private AblyBase<PushBase, Platform, RestChannelBase> setupAbly;
     private String channelName;
     private String channelAltName;
     private String channelNamePrefix;
@@ -87,7 +87,7 @@ public abstract class RestRequestTest extends ParameterizedTest {
             fillInOptions(opts);
             RawHttpTracker httpListener = new RawHttpTracker();
             opts.httpListener = httpListener;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             Param[] testParams = new Param[] { new Param("testParam", "testValue") };
             Param[] testHeaders = new Param[] { new Param("x-test-header", "testValue") };
@@ -136,7 +136,7 @@ public abstract class RestRequestTest extends ParameterizedTest {
             fillInOptions(opts);
             final RawHttpTracker httpListener = new RawHttpTracker();
             opts.httpListener = httpListener;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             ably.requestAsync(HttpConstants.Methods.GET, channelPath, null, null, null, new AsyncHttpPaginatedResponse.Callback() {
                 @Override
@@ -195,7 +195,7 @@ public abstract class RestRequestTest extends ParameterizedTest {
         try {
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             Param[] params = new Param[] { new Param("prefix", channelNamePrefix) };
             HttpPaginatedResponse channelsResponse = ably.request(HttpConstants.Methods.GET, channelsPath, params, null, null);
@@ -238,7 +238,7 @@ public abstract class RestRequestTest extends ParameterizedTest {
         try {
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             Param[] params = new Param[] { new Param("prefix", channelNamePrefix) };
             ably.requestAsync(HttpConstants.Methods.GET, channelsPath, params, null, null, new AsyncHttpPaginatedResponse.Callback() {
@@ -307,7 +307,7 @@ public abstract class RestRequestTest extends ParameterizedTest {
         try {
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             Param[] params = new Param[] { new Param("prefix", channelNamePrefix), new Param("limit", "1") };
             HttpPaginatedResponse channelsResponse = ably.request(HttpConstants.Methods.GET, channelsPath, params, null, null);
@@ -369,7 +369,7 @@ public abstract class RestRequestTest extends ParameterizedTest {
         try {
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             Param[] params = new Param[] { new Param("prefix", channelNamePrefix), new Param("limit", "1") };
             ably.requestAsync(HttpConstants.Methods.GET, channelsPath, params, null, null, new AsyncHttpPaginatedResponse.Callback() {
@@ -477,7 +477,7 @@ public abstract class RestRequestTest extends ParameterizedTest {
             fillInOptions(opts);
             final RawHttpTracker httpListener = new RawHttpTracker();
             opts.httpListener = httpListener;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* publish a message */
             Message message = new Message("Test event", messageData);
@@ -530,7 +530,7 @@ public abstract class RestRequestTest extends ParameterizedTest {
             fillInOptions(opts);
             final RawHttpTracker httpListener = new RawHttpTracker();
             opts.httpListener = httpListener;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* publish a message */
             Message message = new Message("Test event", messageData);
@@ -601,7 +601,7 @@ public abstract class RestRequestTest extends ParameterizedTest {
         try {
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
             HttpPaginatedResponse errorResponse = ably.request(HttpConstants.Methods.GET, "/non-existent-path", null, null, null);
 
             /* check HttpPaginatedResponse details are present */
@@ -626,7 +626,7 @@ public abstract class RestRequestTest extends ParameterizedTest {
             final Waiter waiter = new Waiter();
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             ably.requestAsync(HttpConstants.Methods.GET, "/non-existent-path", null, null, null, new AsyncHttpPaginatedResponse.Callback() {
                 @Override
@@ -671,7 +671,7 @@ public abstract class RestRequestTest extends ParameterizedTest {
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
             opts.environment = "non.existent.env";
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             ably.request(HttpConstants.Methods.GET, "/", null, null, null);
             fail("request_500: Expected an exception");
@@ -692,7 +692,7 @@ public abstract class RestRequestTest extends ParameterizedTest {
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
             opts.environment = "non.existent.env";
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             ably.requestAsync(HttpConstants.Methods.GET, "/", null, null, null, new AsyncHttpPaginatedResponse.Callback() {
                 @Override
@@ -729,7 +729,7 @@ public abstract class RestRequestTest extends ParameterizedTest {
         DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
         fillInOptions(opts);
         opts.httpListener = new RawHttpTracker();
-        AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+        AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
         Message message = new Message("Test event", "Test data (invalid key)");
         message.connectionKey = "invalid";
         HttpUtils.JsonRequestBody requestBody = new HttpUtils.JsonRequestBody(message);

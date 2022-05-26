@@ -3,7 +3,7 @@ package io.ably.lib.realtime;
 import java.util.Iterator;
 import java.util.Map;
 
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.RestChannelBase;
@@ -28,7 +28,7 @@ import io.ably.lib.util.PlatformAgentProvider;
  */
 public abstract class AblyRealtimeBase<
     PushType extends PushBase,
-    PlatformType extends PlatformBase,
+    PlatformType extends Platform,
     ChannelType extends AblyChannel
     > extends AblyBase<PushType, PlatformType, ChannelType> implements AutoCloseable {
 

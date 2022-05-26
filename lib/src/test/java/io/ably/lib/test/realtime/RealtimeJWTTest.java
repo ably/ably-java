@@ -5,7 +5,7 @@ import io.ably.lib.debug.DebugOptions.RawProtocolListener;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpCore.ResponseHandler;
 import io.ably.lib.http.HttpHelpers;
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.realtime.AblyRealtimeBase;
 import io.ably.lib.realtime.RealtimeChannelBase;
@@ -99,7 +99,7 @@ public abstract class RealtimeJWTTest extends ParameterizedTest {
             /* create ably realtime with JWT token that has subscribe-only capabilities */
             ClientOptions realtimeOptions = buildClientOptions(keys, susbcribeOnlyCapability);
             assertNotNull("Expected token value", realtimeOptions.token);
-            final AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRealtime = createAblyRealtime(realtimeOptions);
+            final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(realtimeOptions);
 
             /* wait for connected state */
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ablyRealtime.connection);
@@ -144,7 +144,7 @@ public abstract class RealtimeJWTTest extends ParameterizedTest {
             /* create ably realtime with JWT token that has publish capabilities */
             ClientOptions realtimeOptions = buildClientOptions(keys, publishCapability);
             assertNotNull("Expected token value", realtimeOptions.token);
-            final AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRealtime = createAblyRealtime(realtimeOptions);
+            final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(realtimeOptions);
 
             /* wait for connected state */
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ablyRealtime.connection);

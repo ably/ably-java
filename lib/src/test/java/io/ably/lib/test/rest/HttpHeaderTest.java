@@ -1,7 +1,7 @@
 package io.ably.lib.test.rest;
 
 import fi.iki.elonen.NanoHTTPD;
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.RestChannelBase;
@@ -67,7 +67,7 @@ public abstract class HttpHeaderTest extends ParameterizedTest {
             opts.tls = false;
             opts.port = server.getListeningPort();
             opts.restHost = "localhost";
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* Publish message */
             String messageName = "test message";

@@ -2,7 +2,7 @@ package io.ably.lib.test.rest;
 
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.http.HttpCore;
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.Auth;
@@ -36,7 +36,7 @@ import static org.junit.Assert.fail;
 
 public abstract class RestChannelPublishTest extends ParameterizedTest {
 
-    private AblyBase<PushBase, PlatformBase, RestChannelBase> ably;
+    private AblyBase<PushBase, Platform, RestChannelBase> ably;
 
     @Before
     public void setUpBefore() throws Exception {
@@ -156,7 +156,7 @@ public abstract class RestChannelPublishTest extends ParameterizedTest {
                 @Override
                 public void onRawHttpException(String id, String method, Throwable t) {}
             };
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* first, publish messages */
             pubChannel = ably.channels.get(channelName);
@@ -218,7 +218,7 @@ public abstract class RestChannelPublishTest extends ParameterizedTest {
                 @Override
                 public void onRawHttpException(String id, String method, Throwable t) {}
             };
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* first, publish messages */
             pubChannel = ably.channels.get(channelName);
@@ -295,7 +295,7 @@ public abstract class RestChannelPublishTest extends ParameterizedTest {
 
         try {
             final ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyBase<PushBase, PlatformBase, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
             Auth.AuthOptions restAuthOptions = new Auth.AuthOptions() {{
                 key = optsForToken.key;
                 queryTime = true;
@@ -309,7 +309,7 @@ public abstract class RestChannelPublishTest extends ParameterizedTest {
             opts.httpListener = requestListener;
             /* generate a fallback which resolves to the same address, which the library will treat as a different host */
             opts.fallbackHosts = new String[]{ablyForToken.httpCore.getPrimaryHost().toUpperCase(Locale.ROOT)};
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* publish message */
             RestChannelBase pubChannel = ably.channels.get(channelName);
@@ -365,7 +365,7 @@ public abstract class RestChannelPublishTest extends ParameterizedTest {
                 @Override
                 public void onRawHttpException(String id, String method, Throwable t) {}
             };
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* first, publish messages */
             pubChannel = ably.channels.get(channelName);
@@ -403,7 +403,7 @@ public abstract class RestChannelPublishTest extends ParameterizedTest {
 
         try {
             final ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyBase<PushBase, PlatformBase, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
             Auth.AuthOptions restAuthOptions = new Auth.AuthOptions() {{
                 key = optsForToken.key;
                 queryTime = true;
@@ -418,7 +418,7 @@ public abstract class RestChannelPublishTest extends ParameterizedTest {
             opts.httpListener = requestListener;
             /* generate a fallback which resolves to the same address, which the library will treat as a different host */
             opts.fallbackHosts = new String[]{ablyForToken.httpCore.getPrimaryHost().toUpperCase(Locale.ROOT)};
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* publish message */
             RestChannelBase pubChannel = ably.channels.get(channelName);

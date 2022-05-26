@@ -1,7 +1,7 @@
 package io.ably.lib.test.realtime;
 
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.realtime.AblyRealtimeBase;
 import io.ably.lib.realtime.RealtimeChannelBase;
@@ -44,7 +44,7 @@ public abstract class RealtimeResumeTest extends ParameterizedTest {
      */
     @Test
     public void resume_none() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         String channelName = "resume_none";
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -102,8 +102,8 @@ public abstract class RealtimeResumeTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void resume_simple() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyTx = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRx = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyTx = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRx = null;
         String channelName = "resume_simple";
         int messageCount = 5;
         long delay = 200;
@@ -193,8 +193,8 @@ public abstract class RealtimeResumeTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void resume_disconnected() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyTx = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRx = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyTx = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRx = null;
         String channelName = "resume_disconnected";
         int messageCount = 5;
         long delay = 200;
@@ -279,8 +279,8 @@ public abstract class RealtimeResumeTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void resume_multiple_channel() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyTx = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRx = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyTx = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRx = null;
         String channelName = "resume_multiple_channel";
         int messageCount = 5;
         long delay = 200;
@@ -382,8 +382,8 @@ public abstract class RealtimeResumeTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void resume_multiple_interval() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyTx = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRx = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyTx = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRx = null;
         String channelName = "resume_multiple_interval";
         int messageCount = 5;
         long delay = 200;
@@ -471,8 +471,8 @@ public abstract class RealtimeResumeTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void resume_verify_publish() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyTx = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRx = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyTx = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRx = null;
         String channelName = "resume_verify_publish";
         int messageCount = 5;
         long delay = 200;
@@ -577,8 +577,8 @@ public abstract class RealtimeResumeTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void resume_publish_queue() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> receiver = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> sender = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> receiver = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> sender = null;
         String channelName = "resume_publish_queue";
         int messageCount = 3;
         long delay = 200;
@@ -690,9 +690,9 @@ public abstract class RealtimeResumeTest extends ParameterizedTest {
     @Test
     public void resume_rewind_1 ()
     {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> receiver1 = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> receiver2 = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> sender = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> receiver1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> receiver2 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> sender = null;
         final String testMessage = "{ foo: \"bar\", count: 1, status: \"active\" }";
 
         String testName = "resume_rewind_1";

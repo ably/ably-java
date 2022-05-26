@@ -5,7 +5,7 @@ import fi.iki.elonen.router.RouterNanoHTTPD;
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.http.HttpConstants;
 import io.ably.lib.http.HttpCore;
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.Auth;
@@ -68,7 +68,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
         if (tokenServer == null) {
             try {
                 ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
-                AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+                AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
                 tokenServer = new TokenServer(ably, 8982);
                 tokenServer.start();
 
@@ -109,7 +109,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
     @Test
     public void authinit0() {
         try {
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(testVars.keys[0].keyStr);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(testVars.keys[0].keyStr);
             assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.basic);
             assertEquals("Unexpected clientId mismatch", ably.auth.clientId, "*");
         } catch (AblyException e) {
@@ -127,7 +127,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.tls = false;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
             ably.stats(null);
             fail("Unexpected success calling with Basic auth over httpCore");
         } catch (AblyException e) {
@@ -144,7 +144,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.useTokenAuth = true;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
             assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
             /* Spec: RSA12a */
             assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
@@ -162,7 +162,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
         try {
             ClientOptions opts = new ClientOptions();
             opts.token = "this_is_not_really_a_token";
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
             assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
             /* Spec: RSA12a */
             assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
@@ -191,7 +191,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
                     authinit2_cbCalled = true;
                     return "this_is_not_really_a_token_request";
                 }};
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
             /* make a call to trigger token request */
             try {
                 ably.stats(null);
@@ -215,7 +215,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.clientId = "testClientId";
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
             assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.basic);
             assertEquals("Unexpected clientId mismatch", ably.auth.clientId, "testClientId");
         } catch (AblyException e) {
@@ -236,7 +236,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.useTokenAuth = true;
             opts.defaultTokenParams = new TokenParams() {{ this.clientId = defaultClientId; }};
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
             assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
             assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
             ably.auth.authorize(null, null);
@@ -256,7 +256,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.token = testVars.keys[0].keyStr;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
             assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
             assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
         } catch (AblyException e) {
@@ -274,7 +274,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.tokenDetails = new TokenDetails() {{ token = testVars.keys[0].keyStr; }};
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
             assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
             assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
         } catch (AblyException e) {
@@ -296,7 +296,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
                 public Object getTokenRequest(TokenParams params) throws AblyException {
                     return null;
                 }};
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
             assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
             assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
         } catch (AblyException e) {
@@ -314,7 +314,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.authUrl = "http://auth.url";
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
             assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
         } catch (AblyException e) {
             e.printStackTrace();
@@ -329,13 +329,13 @@ public abstract class RestAuthTest extends ParameterizedTest {
     public void authinit4() {
         try {
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
+            AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, null);
             assertNotNull("Expected token value", tokenDetails.token);
             ClientOptions opts = new ClientOptions();
             opts.token = tokenDetails.token;
             opts.environment = testVars.environment;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
             assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
             assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
         } catch (AblyException e) {
@@ -354,7 +354,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.environment = testVars.environment;
             opts.authUrl = "http://localhost:8982/get-token-request";
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
             /* make a call to trigger token request */
             try {
                 TokenDetails tokenDetails = ably.auth.requestToken(null, null);
@@ -380,7 +380,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             opts.environment = testVars.environment;
             opts.authUrl = "http://localhost:8982/post-token-request";
             opts.authMethod = HttpConstants.Methods.POST;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
             /* make a call to trigger token request */
             try {
                 TokenDetails tokenDetails = ably.auth.requestToken(null, null);
@@ -406,7 +406,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.environment = testVars.environment;
             opts.authUrl = "http://localhost:8982/get-token";
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
             /* make a call to trigger token request */
             try {
                 TokenDetails tokenDetails = ably.auth.requestToken(null, null);
@@ -431,7 +431,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.environment = testVars.environment;
             opts.authUrl = "http://localhost:8982/404";
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
             /* make a call to trigger token request */
             try {
                 ably.auth.requestToken(null, null);
@@ -457,7 +457,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             opts.environment = testVars.environment;
             opts.authUrl = "http://localhost:8982/wait?delay=6000";
             opts.httpRequestTimeout = 5000;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
             /* make a call to trigger token request */
             try {
                 ably.auth.requestToken(null, null);
@@ -487,7 +487,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
 
             opts.authUrl = "http://localhost:8982/get-token-request";
             opts.authParams = new Param[]{new Param("test-param", "test-value")};
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* make a call to trigger token request */
             ably.auth.requestToken(null, null);
@@ -515,7 +515,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             opts.authUrl = "http://localhost:8982/post-token-request";
             opts.authMethod = HttpConstants.Methods.POST;
             opts.authParams = new Param[]{new Param("test-param", "test-value")};
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* make a call to trigger token request */
             ably.auth.requestToken(null, null);
@@ -545,7 +545,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             opts.httpListener = httpListener;
 
             opts.authUrl = "http://localhost:8982/get-token-request?test-param=test-value";
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* make a call to trigger token request */
             ably.auth.requestToken(null, null);
@@ -572,7 +572,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
 
             opts.authUrl = "http://localhost:8982/post-token-request?test-param=test-value";
             opts.authMethod = HttpConstants.Methods.POST;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* make a call to trigger token request */
             ably.auth.requestToken(null, null);
@@ -599,7 +599,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
 
             opts.authUrl = "http://localhost:8982/get-token-request?test-param=test-value-urlParam";
             opts.authParams = new Param[]{new Param("test-param", "test-value-authParam")};
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* make a call to trigger token request */
             ably.auth.requestToken(null, null);
@@ -626,7 +626,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
 
             opts.authUrl = "http://localhost:8982/get-token-request";
             opts.authParams = new Param[]{new Param("ttl", "500")};
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* make a call to trigger token request */
             ably.auth.requestToken(new TokenParams() {{
@@ -655,7 +655,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
 
             opts.authUrl = "http://localhost:8982/get-token-request";
             opts.authHeaders = new Param[]{new Param("test-header", "test-value")};
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* make a call to trigger token request */
             ably.auth.requestToken(null, null);
@@ -683,7 +683,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
 
             opts.authUrl = "http://localhost:8982/get-token-request";
             opts.authHeaders = new Param[]{new Param("test-header", "test-value")};
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* make a call to trigger token request */
             ably.auth.requestToken(null, null);
@@ -706,7 +706,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
         try {
             /* implement callback, using Ably instance with key */
             TokenCallback authCallback = new TokenCallback() {
-                private AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(createOptions(testVars.keys[0].keyStr));
+                private AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(createOptions(testVars.keys[0].keyStr));
                 @Override
                 public Object getTokenRequest(TokenParams params) throws AblyException {
                     return ably.auth.createTokenRequest(params, null);
@@ -716,7 +716,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             /* create Ably instance without key */
             ClientOptions opts = createOptions();
             opts.authCallback = authCallback;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* make a call to trigger token request */
             try {
@@ -741,7 +741,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
         try {
             /* implement callback, using Ably instance with key */
             TokenCallback authCallback = new TokenCallback() {
-                private AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(createOptions(testVars.keys[0].keyStr));
+                private AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(createOptions(testVars.keys[0].keyStr));
                 @Override
                 public Object getTokenRequest(TokenParams params) throws AblyException {
                     return ably.auth.requestToken(params, null);
@@ -751,7 +751,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             /* create Ably instance without key */
             ClientOptions opts = createOptions();
             opts.authCallback = authCallback;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* make a call to trigger token request */
             try {
@@ -775,7 +775,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
     public void auth_authcallback_tokenstring() throws AblyException {
             /* implement callback, using Ably instance with key */
         TokenCallback authCallback = new TokenCallback() {
-            private AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(createOptions(testVars.keys[0].keyStr));
+            private AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(createOptions(testVars.keys[0].keyStr));
             @Override
             public Object getTokenRequest(TokenParams params) throws AblyException {
                 return ably.auth.requestToken(params, null).token;
@@ -785,7 +785,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
         /* create Ably instance without key */
         ClientOptions opts = createOptions();
         opts.authCallback = authCallback;
-        AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+        AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* make a call to trigger token request */
         try {
@@ -804,7 +804,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
     public void auth_authcallback_token_expire() {
         try {
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyBase<PushBase, PlatformBase, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 5000L; }}, null);
             assertNotNull("Expected token value", tokenDetails.token);
 
@@ -825,7 +825,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.token = tokenDetails.token;
             opts.authCallback = authCallback;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* wait until token expires */
             try {
@@ -859,7 +859,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             opts.clientId = "testClientId";
             opts.useTokenAuth = true;
             opts.defaultTokenParams.ttl = 5000L;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* make a request that relies on the token */
             System.out.println("auth_authcallback_key_expire: making first request");
@@ -912,7 +912,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             /* create Ably instance without key */
             ClientOptions opts = createOptions();
             opts.authCallback = authCallback;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* make a call to trigger token request */
             try {
@@ -954,7 +954,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             fillInOptions(opts);
             RawHttpTracker httpListener = new RawHttpTracker();
             opts.httpListener = httpListener;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* make a request that relies on authentication */
             try {
@@ -981,7 +981,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
         try {
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
             optsForToken.clientId = "testClientId";
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
+            AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, null);
 
             /* create Ably instance with token */
@@ -989,7 +989,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             fillInOptions(opts);
             RawHttpTracker httpListener = new RawHttpTracker();
             opts.httpListener = httpListener;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* make a request that relies on authentication */
             try {
@@ -1021,7 +1021,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             opts.useTokenAuth = true;
             RawHttpTracker httpListener = new RawHttpTracker();
             opts.httpListener = httpListener;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* make a request that relies on authentication */
             try {
@@ -1099,7 +1099,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             opts = createOptions();
             opts.tokenDetails = tokenDetails;
             opts.clientId = "options clientId";
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
             assertEquals("Verify given clientId is compatible with wildcard token clientId", ably.auth.clientId, "options clientId");
         } catch (AblyException e) {
             e.printStackTrace();
@@ -1124,7 +1124,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             opts = createOptions();
             opts.tokenDetails = tokenDetails;
             opts.clientId = null;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
             assertEquals("Verify given clientId is compatible with wildcard token clientId", ably.auth.clientId, "*");
         } catch (AblyException e) {
             e.printStackTrace();
@@ -1143,7 +1143,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
         try {
             /* implement callback, using Ably instance with key */
             TokenCallback authCallback = new TokenCallback() {
-                private AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(createOptions(testVars.keys[0].keyStr));
+                private AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(createOptions(testVars.keys[0].keyStr));
                 @Override
                 public Object getTokenRequest(TokenParams params) throws AblyException {
                     return ably.auth.requestToken(params, null);
@@ -1154,7 +1154,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             ClientOptions options = createOptions();
             options.clientId = null;
             options.authCallback = authCallback;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(options);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(options);
 
             /* Fetch token */
             TokenDetails tokenDetails = ably.auth.requestToken(null, null);
@@ -1200,12 +1200,12 @@ public abstract class RestAuthTest extends ParameterizedTest {
      */
     @Test
     public void auth_clientid_null_mismatch() throws AblyException {
-        AblyBase<PushBase, PlatformBase, RestChannelBase> ably = null;
+        AblyBase<PushBase, Platform, RestChannelBase> ably = null;
 
         try {
             /* implement callback, using Ably instance with key */
             TokenCallback authCallback = new TokenCallback() {
-                private AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(createOptions(testVars.keys[0].keyStr));
+                private AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(createOptions(testVars.keys[0].keyStr));
                 @Override
                 public Object getTokenRequest(TokenParams params) throws AblyException {
                     return ably.auth.requestToken(params, null);
@@ -1252,7 +1252,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
         try {
             /* implement callback, using Ably instance with key */
             TokenCallback authCallback = new TokenCallback() {
-                private AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(createOptions(testVars.keys[0].keyStr));
+                private AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(createOptions(testVars.keys[0].keyStr));
                 @Override
                 public Object getTokenRequest(TokenParams params) throws AblyException {
                     params.clientId = "*";
@@ -1263,7 +1263,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             /* create Ably instance with wildcard clientId */
             ClientOptions options = createOptions();
             options.authCallback = authCallback;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(options);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(options);
 
             /* Fetch token */
             TokenDetails tokenDetails = ably.auth.authorize(null, null);
@@ -1312,7 +1312,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
         try {
             /* implement callback, using Ably instance with key */
             TokenCallback authCallback = new TokenCallback() {
-                private AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(createOptions(testVars.keys[0].keyStr));
+                private AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(createOptions(testVars.keys[0].keyStr));
                 @Override
                 public Object getTokenRequest(TokenParams params) throws AblyException {
                     params.clientId = "*";
@@ -1323,7 +1323,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             /* create Ably instance with wildcard clientId */
             ClientOptions options = createOptions();
             options.authCallback = authCallback;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(options);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(options);
 
             /* Fetch token */
             TokenDetails tokenDetails = ably.auth.authorize(null, null);
@@ -1375,7 +1375,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             String clientId = "test clientId";
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
             optsForToken.clientId = clientId;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
+            AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, null);
 
             final Message[] messages = new Message[1];
@@ -1408,7 +1408,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             }};
             fillInOptions(options);
             options.tokenDetails = tokenDetails;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(options);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(options);
 
             /* Publish a message */
             Message messagePublishee = new Message(
@@ -1438,7 +1438,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
         try {
             final String messageClientId = "test clientId";
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
+            AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{
                 this.clientId = "*";
             }}, null);
@@ -1473,7 +1473,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             }};
             fillInOptions(options);
             options.tokenDetails = tokenDetails;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(options);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(options);
 
             /* Publish a message */
             Message messagePublishee = new Message(
@@ -1505,7 +1505,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
         try {
             /* create Ably instance with basic auth and no clientId */
             ClientOptions options = createOptions(testVars.keys[0].keyStr);
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(options);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(options);
 
             /* Publish message */
             String messageName = "wildcard";
@@ -1554,7 +1554,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             ClientOptions options = createOptions(testVars.keys[0].keyStr);
             options.useTokenAuth = true;
             options.defaultTokenParams = new TokenParams() {{ this.clientId = defaultClientId; }};
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(options);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(options);
 
             /* get a token with these default params */
             ably.auth.authorize(null, null);
@@ -1584,7 +1584,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             options.useTokenAuth = true;
             options.clientId = clientId;
             options.defaultTokenParams = new TokenParams() {{ this.clientId = defaultClientId; }};
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(options);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(options);
 
             /* get a token with these default params */
             ably.auth.authorize(null, null);
@@ -1606,7 +1606,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.useTokenAuth = true;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
             /* verify that we don't have a token yet. */
             assertTrue("Not expecting a token yet", ably.auth.getTokenDetails() == null);
             /* make a request that relies on the token */
@@ -1640,11 +1640,11 @@ public abstract class RestAuthTest extends ParameterizedTest {
             opts.port = nanoHTTPD.getListeningPort();
             opts.queryTime = true;
 
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably1 = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably1 = createAblyRest(opts);
             @SuppressWarnings("unused")
             Auth.TokenRequest tr1 = ably1.auth.createTokenRequest(null, null);
 
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably2 = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably2 = createAblyRest(opts);
             @SuppressWarnings("unused")
             Auth.TokenRequest tr2 = ably2.auth.createTokenRequest(null, null);
 
@@ -1669,7 +1669,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
     @Test
     public void auth_json_interop() {
         /* create a token request */
-        AblyBase<PushBase, PlatformBase, RestChannelBase> ably;
+        AblyBase<PushBase, Platform, RestChannelBase> ably;
         TokenRequest tokenRequest;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -1705,7 +1705,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
      */
     @Test
     public void auth_token_request_json_omitted_defaults() {
-        AblyBase<PushBase, PlatformBase, RestChannelBase> ably;
+        AblyBase<PushBase, Platform, RestChannelBase> ably;
         TokenRequest tokenRequest;
         try {
             for (final String cap : new String[] {null, ""}) {
@@ -1736,7 +1736,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             opts.defaultTokenParams = new TokenParams() {{
                 ttl = 500;
             }};
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             // Any request will issue a new token with the defaultTokenParams and use it.
 
@@ -1748,7 +1748,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             Thread.sleep(1000);
             ClientOptions optsWithOldToken = createOptions();
             optsWithOldToken.tokenDetails = oldToken;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ablyWithOldToken = createAblyRest(optsWithOldToken);
+            AblyBase<PushBase, Platform, RestChannelBase> ablyWithOldToken = createAblyRest(optsWithOldToken);
             try {
                 ablyWithOldToken.channels.get("test").history(null);
                 fail("expected old token to be expired already");
@@ -1778,7 +1778,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             final String testKey = testVars.keys[0].keyStr;
             ClientOptions optsForToken = createOptions(testKey);
             optsForToken.queryTime = true;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
+            AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
 
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams(){{ ttl = 100L; }}, null);
 
@@ -1789,7 +1789,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             opts.tokenDetails = tokenDetails;
             RawHttpTracker httpListener = new RawHttpTracker();
             opts.httpListener = httpListener;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* sync this library instance to server by creating a token request */
             ably.auth.createTokenRequest(null, new Auth.AuthOptions() {{ key = testKey; queryTime = true; }});
@@ -1826,7 +1826,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             final String testKey = testVars.keys[0].keyStr;
             ClientOptions optsForToken = createOptions(testKey);
             optsForToken.queryTime = true;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
+            AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
 
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams(){{ ttl = 100L; }}, null);
 
@@ -1837,7 +1837,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             opts.tokenDetails = tokenDetails;
             RawHttpTracker httpListener = new RawHttpTracker();
             opts.httpListener = httpListener;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* wait for the token to expire */
             try { Thread.sleep(200L); } catch(InterruptedException ie) {}
@@ -1870,7 +1870,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
             final String testKey = testVars.keys[0].keyStr;
             ClientOptions optsForToken = createOptions(testKey);
             optsForToken.queryTime = false;
-            final AblyBase<PushBase, PlatformBase, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
 
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams(){{ ttl = 100L; }}, null);
 
@@ -1888,7 +1888,7 @@ public abstract class RestAuthTest extends ParameterizedTest {
 
             RawHttpTracker httpListener = new RawHttpTracker();
             opts.httpListener = httpListener;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* wait for the token to expire */
             try { Thread.sleep(200L); } catch(InterruptedException ie) {}

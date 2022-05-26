@@ -15,7 +15,7 @@ import java.util.Random;
 
 import javax.crypto.KeyGenerator;
 
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.realtime.RealtimeChannelBase;
 import org.junit.Ignore;
@@ -52,7 +52,7 @@ public abstract class RealtimeCryptoTest extends ParameterizedTest {
     @Test
     public void single_send() {
         String channelName = "single_send_" + testParams.name;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -110,7 +110,7 @@ public abstract class RealtimeCryptoTest extends ParameterizedTest {
     @Test
     public void single_send_256() {
         String channelName = "single_send_256_" + testParams.name;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -177,7 +177,7 @@ public abstract class RealtimeCryptoTest extends ParameterizedTest {
      * messages on that channel
      */
     private void _multiple_send(String channelName, int messageCount, long delay) {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -264,8 +264,8 @@ public abstract class RealtimeCryptoTest extends ParameterizedTest {
     @Test
     public void single_send_binary_text() {
         String channelName = "single_send_binary_text_" + testParams.name;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> sender = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> receiver = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> sender = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> receiver = null;
         try {
             ClientOptions senderOpts = createOptions(testVars.keys[0].keyStr);
             sender = createAblyRealtime(senderOpts);
@@ -341,8 +341,8 @@ public abstract class RealtimeCryptoTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void single_send_key_mismatch() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> sender = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> receiver = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> sender = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> receiver = null;
         try {
             ClientOptions senderOpts = createOptions(testVars.keys[0].keyStr);
             sender = createAblyRealtime(senderOpts);
@@ -415,8 +415,8 @@ public abstract class RealtimeCryptoTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void single_send_unencrypted() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> sender = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> receiver = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> sender = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> receiver = null;
         try {
             ClientOptions senderOpts = createOptions(testVars.keys[0].keyStr);
             sender = createAblyRealtime(senderOpts);
@@ -487,8 +487,8 @@ public abstract class RealtimeCryptoTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void single_send_encrypted_unhandled() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> sender = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> receiver = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> sender = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> receiver = null;
         try {
             ClientOptions senderOpts = createOptions(testVars.keys[0].keyStr);
             sender = createAblyRealtime(senderOpts);
@@ -558,8 +558,8 @@ public abstract class RealtimeCryptoTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void set_cipher_params() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> sender = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> receiver = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> sender = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> receiver = null;
         try {
             ClientOptions senderOpts = createOptions(testVars.keys[0].keyStr);
             sender = createAblyRealtime(senderOpts);
@@ -674,8 +674,8 @@ public abstract class RealtimeCryptoTest extends ParameterizedTest {
     @Deprecated
     public void channel_options_from_cipher_key() {
         String channelName = "cipher_params_test_" + testParams.name;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> sender = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> receiver = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> sender = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> receiver = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             sender = createAblyRealtime(opts);
@@ -743,8 +743,8 @@ public abstract class RealtimeCryptoTest extends ParameterizedTest {
     @Test
     public void channel_options_with_cipher_key() {
         String channelName = "cipher_params_test_" + testParams.name;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> sender = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> receiver = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> sender = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> receiver = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             sender = createAblyRealtime(opts);

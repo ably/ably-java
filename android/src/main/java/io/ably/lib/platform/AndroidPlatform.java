@@ -12,7 +12,7 @@ import io.ably.lib.util.Log;
  * Even though it's internal, its visibility modifier is public because it's referenced by two other packages in this module (one for REST, one for Realtime).
  * This is something we would like to solve in future but solving that is not in the scope of the work currently being done.
  */
-public class AndroidPlatform implements PlatformBase {
+public class AndroidPlatform implements Platform {
     public static final String name = "android";
 
     public AndroidPlatform() {}

@@ -7,7 +7,7 @@ import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpScheduler;
 import io.ably.lib.http.HttpUtils;
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.DeviceDetails;
@@ -27,7 +27,7 @@ import java.util.Map;
 
 
 public class PushBase {
-    public PushBase(AblyBase<PushBase, PlatformBase, RestChannelBase> rest) {
+    public PushBase(AblyBase<PushBase, Platform, RestChannelBase> rest) {
         this.rest = rest;
         this.admin = new Admin(rest);
     }
@@ -38,7 +38,7 @@ public class PushBase {
         public final DeviceRegistrations deviceRegistrations;
         public final ChannelSubscriptions channelSubscriptions;
 
-        Admin(AblyBase<PushBase, PlatformBase, RestChannelBase> rest) {
+        Admin(AblyBase<PushBase, Platform, RestChannelBase> rest) {
             this.rest = rest;
             this.deviceRegistrations = new DeviceRegistrations(rest);
             this.channelSubscriptions = new ChannelSubscriptions(rest);
@@ -81,7 +81,7 @@ public class PushBase {
             });
         }
 
-        private final AblyBase<PushBase, PlatformBase, RestChannelBase> rest;
+        private final AblyBase<PushBase, Platform, RestChannelBase> rest;
     }
 
     public static class DeviceRegistrations {
@@ -185,11 +185,11 @@ public class PushBase {
             });
         }
 
-        DeviceRegistrations(AblyBase<PushBase, PlatformBase, RestChannelBase> rest) {
+        DeviceRegistrations(AblyBase<PushBase, Platform, RestChannelBase> rest) {
             this.rest = rest;
         }
 
-        private final AblyBase<PushBase, PlatformBase, RestChannelBase> rest;
+        private final AblyBase<PushBase, Platform, RestChannelBase> rest;
     }
 
     public static class ChannelSubscriptions {
@@ -287,11 +287,11 @@ public class PushBase {
             return new BasePaginatedQuery<String>(rest.http, "/push/channels", rest.push.pushRequestHeaders(deviceId), params, StringUtils.httpBodyHandler).get();
         }
 
-        ChannelSubscriptions(AblyBase<PushBase, PlatformBase, RestChannelBase> rest) {
+        ChannelSubscriptions(AblyBase<PushBase, Platform, RestChannelBase> rest) {
             this.rest = rest;
         }
 
-        private final AblyBase<PushBase, PlatformBase, RestChannelBase> rest;
+        private final AblyBase<PushBase, Platform, RestChannelBase> rest;
     }
 
     public static class ChannelSubscription {
@@ -368,6 +368,6 @@ public class PushBase {
         return pushRequestHeaders(false);
     }
 
-    protected final AblyBase<PushBase, PlatformBase, RestChannelBase> rest;
+    protected final AblyBase<PushBase, Platform, RestChannelBase> rest;
     public final Admin admin;
 }
