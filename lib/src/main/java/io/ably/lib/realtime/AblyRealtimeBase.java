@@ -111,7 +111,7 @@ public abstract class AblyRealtimeBase<
     protected RestChannelBase createChannel(AblyBase ablyBase, String channelName, ChannelOptions channelOptions) throws AblyException {
         // This method is here only due to the incremental refactoring work, AblyRealtime should never want to create
         // an Ably REST channel. After extracting AblyRestBase from AblyBase this method should be removed.
-        return null;
+        throw new IllegalStateException("Rest channel should not be created from the Ably Realtime instance");
     }
 
     private class InternalChannels extends InternalMap<String, RealtimeChannelBase> implements Channels<RealtimeChannelBase>, ConnectionManager.Channels {
