@@ -4,11 +4,12 @@
 
 ### Modularization
 
-The SDK was divided into modules: lib, java, android.
+The SDK has now been divided into three modules: `lib`, `java` and `android`. The `lib` module contains code that is common to both `java` and `android`.
+This is better than the previous approach whereby `java` and `android` were monoliths linked only by shared source code sets.
 
 ### API changes
 
-In order to divide the project into separate modules a refactoring of classes took place which caused below API changes:
+In order to achieve this [Modularization](#modularization), dividing the project into separate modules, a refactor was necessary which has created the following API changes:
 
 - `io.ably.lib.rest.ChannelBase` renamed -> `io.ably.lib.rest.RestChannelBase`
 - `io.ably.lib.realtime.ChannelBase` renamed -> `io.ably.lib.realtime.RealtimeChannelBase`
