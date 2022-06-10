@@ -45,6 +45,7 @@ public abstract class AblyRealtimeBase<
      * simplest case of instancing the library with a key
      * for basic authentication and no other options.
      * @param key String key (obtained from application dashboard)
+     * @param platformAgentProvider for providing the platform specific part of the agent header
      * @throws AblyException
      */
     public AblyRealtimeBase(String key, PlatformAgentProvider platformAgentProvider) throws AblyException {
@@ -54,6 +55,7 @@ public abstract class AblyRealtimeBase<
     /**
      * Instance the Ably library with the given options.
      * @param options see {@link io.ably.lib.types.ClientOptions} for options
+     * @param platformAgentProvider for providing the platform specific part of the agent header
      * @throws AblyException
      */
     public AblyRealtimeBase(ClientOptions options, PlatformAgentProvider platformAgentProvider) throws AblyException {
