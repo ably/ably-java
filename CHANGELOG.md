@@ -1,5 +1,14 @@
 # Change Log
 
+## [v1.2.13](https://github.com/ably/ably-java/tree/v1.2.13)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.12...v1.2.13)
+
+**Closed issues:**
+
+- Update dependency: com.google.code.gson:gson [\#777](https://github.com/ably/ably-java/issues/777)
+- Update dependency: org.java-websocket:Java-WebSocket [\#776](https://github.com/ably/ably-java/issues/776)
+
 ## [v1.2.12](https://github.com/ably/ably-java/tree/v1.2.12)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.11...v1.2.12)
