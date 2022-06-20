@@ -12,7 +12,6 @@ import java.util.concurrent.TimeUnit;
 public class AsyncHttpScheduler extends HttpScheduler<ThreadPoolExecutor> {
     public AsyncHttpScheduler(HttpCore httpCore, ClientOptions options) {
         super(httpCore, new ThreadPoolExecutor(options.asyncHttpThreadpoolSize, options.asyncHttpThreadpoolSize, KEEP_ALIVE_TIME, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>()));
-        executor.allowsCoreThreadTimeOut();
     }
 
     public void dispose() {
