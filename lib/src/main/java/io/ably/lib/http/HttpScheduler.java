@@ -437,9 +437,18 @@ public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
         return request;
     }
 
-    protected final Executor executor;
+    private final Executor executor;
     private final HttpCore httpCore;
 
     protected static final String TAG = HttpScheduler.class.getName();
 
+    /**
+     * Adds a {@link Runnable} to the {@link Executor} used by this scheduler instance.
+     * @apiNote This is pretty hacky and is here to support the current Push Notifications implementation.
+     *
+     * @param runnable The code to be executed.
+     */
+    public void execute(Runnable runnable) {
+        executor.execute(runnable);
+    }
 }

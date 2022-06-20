@@ -60,7 +60,7 @@ public class Http {
             @Override
             public void execute(HttpScheduler http, final Callback<Result> callback) throws AblyException {
                 //throw e;
-                http.executor.execute(new Runnable() {
+                http.execute(new Runnable() {
                 @Override
                 public void run() {
                     callback.onError(e.errorInfo);
