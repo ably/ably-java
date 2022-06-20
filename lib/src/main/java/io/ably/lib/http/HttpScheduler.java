@@ -4,6 +4,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -18,11 +19,8 @@ import io.ably.lib.util.Log;
  * HttpScheduler schedules HttpCore operations to an Executor, exposing a generic async API.
  *
  * Internal; use Http instead.
- *
- * @param <Executor> The Executor that will run blocking operations.
  */
-public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
-
+public class HttpScheduler {
     /**
      * Async HTTP GET for Ably host, with fallbacks
      * @param path
