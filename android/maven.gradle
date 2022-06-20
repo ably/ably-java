@@ -122,10 +122,8 @@ task javadoc(type: Javadoc) {
     failOnError false
 }
 
-afterEvaluate {
-    javadoc.classpath += files(android.libraryVariants.collect { variant ->
-        variant.javaCompile.classpath.files
-    })
+android.libraryVariants.all { variant ->
+    javadoc.classpath += variant.javaCompileProvider.get().classpath
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {

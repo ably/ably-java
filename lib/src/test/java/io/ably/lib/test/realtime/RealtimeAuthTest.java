@@ -1,21 +1,23 @@
 package io.ably.lib.test.realtime;
 
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.Channel;
+import io.ably.lib.platform.Platform;
+import io.ably.lib.push.PushBase;
+import io.ably.lib.realtime.AblyRealtimeBase;
+import io.ably.lib.realtime.RealtimeChannelBase;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.ConnectionEvent;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.realtime.ConnectionStateListener;
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.TokenDetails;
+import io.ably.lib.rest.RestChannelBase;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.ParameterizedTest;
-import io.ably.lib.test.common.Setup;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
@@ -33,7 +35,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class RealtimeAuthTest extends ParameterizedTest {
+public abstract class RealtimeAuthTest extends ParameterizedTest {
 
     @Rule
     public Timeout testTimeout = Timeout.seconds(30);
@@ -45,7 +47,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void auth_client_cannot_be_initialized_with_empty_key() throws AblyException {
-        new AblyRealtime("");
+        createAblyRealtime("");
     }
 
     /**
@@ -62,7 +64,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyRest ablyForToken = new AblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
 
             /* get token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -74,7 +76,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = null;
             opts.tokenDetails = tokenDetails;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
             System.out.println("done create ably");
 
             /* wait for connected state */
@@ -111,7 +113,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            AblyRest ablyForToken = new AblyRest(optsForToken);
+            AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
             /* get token */
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, null);
 
@@ -123,7 +125,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             opts.authUrl = "https://echo.ably.io/respondwith";
             opts.authParams = new Param[]{ new Param("status", 403)};
 
-            final AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
             ablyRealtime.connection.connect();
 
             /* wait for connected state */
@@ -176,7 +178,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyRest ablyForToken = new AblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
 
             /* get token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -188,7 +190,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = null;
             opts.token = tokenDetails.token;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
             System.out.println("done create ably");
 
             /* wait for connected state */
@@ -219,7 +221,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             /* create token with clientId */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
             optsForToken.clientId = clientId;
-            AblyRest ablyForToken = new AblyRest(optsForToken);
+            AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, null);
 
             /* create ably realtime */
@@ -227,7 +229,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             opts.clientId = null;
             opts.token = tokenDetails.token;
             opts.autoConnect = false;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
 
             /* check expected clientId */
             assertEquals("Auth#clientId is expected to be null", null, ablyRealtime.auth.clientId);
@@ -264,7 +266,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyRest ablyForToken = new AblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
 
             /* get token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -276,7 +278,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = "options clientId";
             opts.tokenDetails = tokenDetails;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
             System.out.println("done create ably");
 
             /* wait for connected state */
@@ -310,7 +312,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyRest ablyForToken = new AblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
 
             /* get token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -322,7 +324,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = "options clientId";
             opts.token = tokenDetails.token;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
             System.out.println("done create ably");
 
             /* wait for connected state */
@@ -354,7 +356,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyRest ablyForToken = new AblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
 
             /* get token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -366,7 +368,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = null;
             opts.tokenDetails = tokenDetails;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
             System.out.println("done create ably");
 
             /* wait for connected state */
@@ -398,7 +400,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyRest ablyForToken = new AblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
 
             /* get token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -410,7 +412,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = null;
             opts.token = tokenDetails.token;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
             System.out.println("done create ably");
 
             /* wait for connected state */
@@ -440,7 +442,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyRest ablyForToken = new AblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
 
             /* get token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -452,7 +454,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = "options clientId";
             opts.tokenDetails = tokenDetails;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
 
             /* wait for connected state */
             Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ablyRealtime.connection);
@@ -481,7 +483,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyRest ablyForToken = new AblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
 
             /* get token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -493,7 +495,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = "options clientId";
             opts.token = tokenDetails.token;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
 
             /* wait for connected state */
             Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ablyRealtime.connection);
@@ -523,7 +525,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyRest ablyForToken = new AblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
 
             /* get token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -535,7 +537,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = "options clientId";
             opts.tokenDetails = tokenDetails;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
         } catch (AblyException e) {
             assertEquals("Verify error code indicates clientId mismatch", e.errorInfo.code, 40101);
         }
@@ -555,7 +557,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyRest ablyForToken = new AblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
 
             /* get token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -567,7 +569,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = "options clientId";
             opts.token = tokenDetails.token;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
 
             /* wait for failed state */
             Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ablyRealtime.connection);
@@ -596,14 +598,14 @@ public class RealtimeAuthTest extends ParameterizedTest {
             fillInOptions(options);
             options.clientId = clientId;
             options.protocolListener = protocolListener;
-            AblyRealtime ably = new AblyRealtime(options);
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(options);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
             assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
             /* create a channel and attach */
-            Channel channel = ably.channels.get("auth_clientid_publish_implicit_" + testParams.name);
+            RealtimeChannelBase channel = ably.channels.get("auth_clientid_publish_implicit_" + testParams.name);
             channel.attach();
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
@@ -710,12 +712,12 @@ public class RealtimeAuthTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void auth_clientid_publish_explicit_before_identified() {
-        AblyRealtime ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             String clientId = "test clientId";
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
             optsForToken.clientId = clientId;
-            AblyRest ablyForToken = new AblyRest(optsForToken);
+            AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, null);
 
             /* create Ably instance with token and implied clientId */
@@ -724,13 +726,13 @@ public class RealtimeAuthTest extends ParameterizedTest {
             fillInOptions(options);
             options.token = tokenDetails.token;
             options.protocolListener = protocolListener;
-            ably = new AblyRealtime(options);
+            ably = createAblyRealtime(options);
 
             /* verify we don't yet know the implied clientId */
             assertNull("Verify clientId is unknown", ably.auth.clientId);
 
             /* create a channel */
-            Channel channel = ably.channels.get("auth_clientid_publish_explicit_before_identified_" + testParams.name);
+            RealtimeChannelBase channel = ably.channels.get("auth_clientid_publish_explicit_before_identified_" + testParams.name);
 
             /* publish before connection and attach */
             Message messageToPublish = new Message(
@@ -801,7 +803,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             /* get a TokenDetails */
             final String testKey = testVars.keys[0].keyStr;
             ClientOptions optsForToken = createOptions(testKey);
-            final AblyRest ablyForToken = new AblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
 
             final TokenDetails tokenDetails = ablyForToken.auth.requestToken(new Auth.TokenParams(){{ ttl = 1000L; }}, null);
             assertNotNull("Expected token value", tokenDetails.token);
@@ -809,7 +811,8 @@ public class RealtimeAuthTest extends ParameterizedTest {
             /* create Ably realtime instance with token and authCallback */
             class ProtocolListener extends DebugOptions implements DebugOptions.RawProtocolListener {
                 ProtocolListener() {
-                    Setup.getTestVars().fillInOptions(this);
+//                    Setup.getTestVars().fillInOptions(this);
+                    testVars.fillInOptions(this);
                     protocolListener = this;
                 }
                 @Override
@@ -838,7 +841,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
                 }
             };
 
-            final AblyRealtime ably = new AblyRealtime(opts);
+            final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts);
             synchronized (opts) {
                 ably.connect();
                 try {
@@ -872,7 +875,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             final String testKey = testVars.keys[0].keyStr;
             ClientOptions optsForToken = createOptions(testKey);
             optsForToken.queryTime = false;
-            final AblyRest ablyForToken = new AblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
 
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(new Auth.TokenParams(){{ ttl = 100L; }}, null);
             assertNotNull("Expected token value", tokenDetails.token);
@@ -894,7 +897,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             /* disable token validity check */
             opts.queryTime = false;
 
-            final AblyRealtime ably = new AblyRealtime(opts);
+            final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts);
 
             Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ably.connection);
             boolean isConnected = connectionWaiter.waitFor(ConnectionState.connected, 1, 30000L);
@@ -922,7 +925,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             final String testKey = testVars.keys[0].keyStr;
             ClientOptions optsForToken = createOptions(testKey);
             optsForToken.queryTime = true;
-            final AblyRest ablyForToken = new AblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(new Auth.TokenParams(){{ ttl = 2000L; }}, null);
             assertNotNull("Expected token value", tokenDetails.token);
 
@@ -938,7 +941,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
                 }
             };
 
-            final AblyRealtime ably = new AblyRealtime(opts);
+            final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts);
 
             Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ably.connection);
             if(connectionWaiter.waitFor(ConnectionState.connected, 2, 4000L)) {

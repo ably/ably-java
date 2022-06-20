@@ -1,9 +1,12 @@
 package io.ably.lib.test.rest;
 
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.Channel;
+import io.ably.lib.platform.Platform;
+import io.ably.lib.push.PushBase;
+import io.ably.lib.realtime.AblyRealtimeBase;
+import io.ably.lib.realtime.RealtimeChannelBase;
 import io.ably.lib.realtime.ChannelState;
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.AblyBase;
+import io.ably.lib.rest.RestChannelBase;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.MessageWaiter;
 import io.ably.lib.test.common.ParameterizedTest;
@@ -26,7 +29,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class RestChannelBulkPublishTest extends ParameterizedTest  {
+public abstract class RestChannelBulkPublishTest extends ParameterizedTest  {
 
     /**
      * Publish a single message on multiple channels
@@ -46,7 +49,7 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
         try {
             /* setup library instance */
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            AblyRest ably = new AblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* first, publish some messages */
             int channelCount = 5;
@@ -86,12 +89,12 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
      */
     @Test
     public void bulk_publish_multiple_channels_param() {
-        AblyRealtime rxAbly = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> rxAbly = null;
         try {
             /* setup library instance */
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            AblyRest ably = new AblyRest(opts);
-            rxAbly = new AblyRealtime(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
+            rxAbly = createAblyRealtime(opts);
 
             /* first, publish some messages */
             int channelCount = 5;
@@ -100,7 +103,7 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
             for (int i = 0; i < channelCount; i++) {
                 String channelId = "persisted:" + randomString();
                 channelIds.add(channelId);
-                Channel rxChannel = rxAbly.channels.get(channelId);
+                RealtimeChannelBase rxChannel = rxAbly.channels.get(channelId);
                 MessageWaiter messageWaiter = new MessageWaiter(rxChannel);
                 rxWaiters.add(messageWaiter);
                 new ChannelWaiter(rxChannel).waitFor(ChannelState.attached);
@@ -172,7 +175,7 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
             /* setup library instance */
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.idempotentRestPublishing = true;
-            AblyRest ably = new AblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* first, publish some messages */
             int channelCount = 5;
@@ -240,7 +243,7 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
         try {
             /* setup library instance */
             ClientOptions opts = createOptions(testVars.keys[6].keyStr);
-            AblyRest ably = new AblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* first, publish some messages */
             String baseChannelName = "persisted:" + testParams.name + ":channel";

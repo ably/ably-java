@@ -3,16 +3,21 @@ package io.ably.lib.realtime;
 import java.util.Iterator;
 import java.util.Map;
 
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.platform.Platform;
+import io.ably.lib.push.PushBase;
+import io.ably.lib.rest.AblyBase;
+import io.ably.lib.rest.RestChannelBase;
 import io.ably.lib.transport.ConnectionManager;
+import io.ably.lib.types.AblyChannel;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
+import io.ably.lib.types.Channels;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
-import io.ably.lib.types.ReadOnlyMap;
 import io.ably.lib.util.InternalMap;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.PlatformAgentProvider;
 
 /**
  * AblyRealtime
@@ -21,14 +26,18 @@ import io.ably.lib.util.Log;
  * This class implements {@link AutoCloseable} so you can use it in
  * try-with-resources constructs and have the JDK close it for you.
  */
-public class AblyRealtime extends AblyRest implements AutoCloseable {
+public abstract class AblyRealtimeBase<
+    PushType extends PushBase,
+    PlatformType extends Platform,
+    ChannelType extends AblyChannel
+    > extends AblyBase<PushType, PlatformType, ChannelType> implements AutoCloseable {
 
     /**
      * The {@link Connection} object for this instance.
      */
     public final Connection connection;
 
-    public final Channels channels;
+    public final Channels<ChannelType> channels;
 
     /**
      * Instance the Ably library using a key only.
@@ -36,21 +45,23 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
      * simplest case of instancing the library with a key
      * for basic authentication and no other options.
      * @param key String key (obtained from application dashboard)
+     * @param platformAgentProvider for providing the platform specific part of the agent header
      * @throws AblyException
      */
-    public AblyRealtime(String key) throws AblyException {
-        this(new ClientOptions(key));
+    public AblyRealtimeBase(String key, PlatformAgentProvider platformAgentProvider) throws AblyException {
+        this(new ClientOptions(key), platformAgentProvider);
     }
 
     /**
      * Instance the Ably library with the given options.
      * @param options see {@link io.ably.lib.types.ClientOptions} for options
+     * @param platformAgentProvider for providing the platform specific part of the agent header
      * @throws AblyException
      */
-    public AblyRealtime(ClientOptions options) throws AblyException {
-        super(options);
+    public AblyRealtimeBase(ClientOptions options, PlatformAgentProvider platformAgentProvider) throws AblyException {
+        super(options, platformAgentProvider);
         final InternalChannels channels = new InternalChannels();
-        this.channels = channels;
+        this.channels = (Channels<ChannelType>) channels;
         connection = new Connection(this, channels, platformAgentProvider);
 
         /* remove all channels when the connection is closed, to avoid stalled state */
@@ -97,38 +108,15 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
         connection.connectionManager.onAuthError(errorInfo);
     }
 
-    /**
-     * A collection of Channels associated with this Ably Realtime instance.
-     */
-    public interface Channels extends ReadOnlyMap<String, Channel> {
-        /**
-         * Get the named channel; if it does not already exist,
-         * create it with default options.
-         * @param channelName the name of the channel
-         * @return the channel
-         */
-        Channel get(String channelName);
+    protected abstract RealtimeChannelBase createChannel(AblyRealtimeBase<PushType, PlatformType, ChannelType> ablyRealtime, String channelName, ChannelOptions channelOptions) throws AblyException;
 
-        /**
-         * Get the named channel and set the given options, creating it
-         * if it does not already exist.
-         * @param channelName the name of the channel
-         * @param channelOptions the options to set (null to clear options on an existing channel)
-         * @return the channel
-         * @throws AblyException
-         */
-        Channel get(String channelName, ChannelOptions channelOptions) throws AblyException;
-
-        /**
-         * Remove this channel from this AblyRealtime instance. This detaches from the channel
-         * and releases all other resources associated with the channel in this client.
-         * This silently does nothing if the channel does not already exist.
-         * @param channelName the name of the channel
-         */
-        void release(String channelName);
+    protected RestChannelBase createChannel(AblyBase ablyBase, String channelName, ChannelOptions channelOptions) throws AblyException {
+        // This method is here only due to the incremental refactoring work, AblyRealtime should never want to create
+        // an Ably REST channel. After extracting AblyRestBase from AblyBase this method should be removed.
+        throw new IllegalStateException("Rest channel should not be created from the Ably Realtime instance");
     }
 
-    private class InternalChannels extends InternalMap<String, Channel> implements Channels, ConnectionManager.Channels {
+    private class InternalChannels extends InternalMap<String, RealtimeChannelBase> implements Channels<RealtimeChannelBase>, ConnectionManager.Channels {
         /**
          * Get the named channel; if it does not already exist,
          * create it with default options.
@@ -136,19 +124,19 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
          * @return the channel
          */
         @Override
-        public Channel get(String channelName) {
+        public RealtimeChannelBase get(String channelName) {
             try {
                 return get(channelName, null);
             } catch (AblyException e) { return null; }
         }
 
         @Override
-        public Channel get(final String channelName, final ChannelOptions channelOptions) throws AblyException {
+        public RealtimeChannelBase get(final String channelName, final ChannelOptions channelOptions) throws AblyException {
             // We're not using computeIfAbsent because that requires Java 1.8.
             // Hence there's the slight inefficiency of creating newChannel when it may not be
             // needed because there is an existingChannel.
-            final Channel newChannel = new Channel(AblyRealtime.this, channelName, channelOptions);
-            final Channel existingChannel = map.putIfAbsent(channelName, newChannel);
+            final RealtimeChannelBase newChannel = createChannel(AblyRealtimeBase.this, channelName, channelOptions);
+            final RealtimeChannelBase existingChannel = map.putIfAbsent(channelName, newChannel);
 
             if (existingChannel != null) {
                 if (channelOptions != null) {
@@ -165,7 +153,7 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
 
         @Override
         public void release(String channelName) {
-            Channel channel = map.remove(channelName);
+            RealtimeChannelBase channel = map.remove(channelName);
             if(channel != null) {
                 try {
                     channel.detach();
@@ -178,8 +166,8 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
         @Override
         public void onMessage(ProtocolMessage msg) {
             String channelName = msg.channel;
-            Channel channel;
-            synchronized(this) { channel = channels.get(channelName); }
+            RealtimeChannelBase channel;
+            synchronized(this) { channel = (RealtimeChannelBase) channels.get(channelName); }
             if(channel == null) {
                 Log.e(TAG, "Received channel message for non-existent channel");
                 return;
@@ -189,8 +177,8 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
 
         @Override
         public void suspendAll(ErrorInfo error, boolean notifyStateChange) {
-            for(Iterator<Map.Entry<String, Channel>> it = map.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, Channel> entry = it.next();
+            for(Iterator<Map.Entry<String, RealtimeChannelBase>> it = map.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, RealtimeChannelBase> entry = it.next();
                 entry.getValue().setSuspended(error, notifyStateChange);
             }
         }
@@ -204,5 +192,5 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
      * internal
      ********************/
 
-    private static final String TAG = AblyRealtime.class.getName();
+    private static final String TAG = AblyRealtimeBase.class.getName();
 }

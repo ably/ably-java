@@ -10,9 +10,10 @@ import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpScheduler;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.HttpHelpers;
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.AblyBase;
 import io.ably.lib.test.loader.ArgumentLoader;
 import io.ably.lib.test.loader.ResourceLoader;
+import io.ably.lib.test.util.AblyInstanceCreator;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ClientOptions;
@@ -45,7 +46,7 @@ public class Setup {
         }
     }
 
-    public static Object loadJson(String resourceName, Class<? extends Object> expectedType) throws IOException {
+    public static Object loadJson(String resourceName, Class<? extends Object> expectedType, ResourceLoader resourceLoader) throws IOException {
         try {
             byte[] jsonBytes = resourceLoader.read(resourceName);
             return gson.fromJson(new String(jsonBytes), expectedType);
@@ -163,11 +164,16 @@ public class Setup {
         }
     }
 
-    public static synchronized TestVars getTestVars() {
-        return (refCount++ == 0) ? __getTestVars() : testVars;
+    public static synchronized TestVars getTestVars(AblyInstanceCreator ablyInstanceCreator, ArgumentLoader argumentLoader, ResourceLoader resourceLoader) {
+        if (refCount++ == 0) {
+            Setup.ablyInstanceCreator = ablyInstanceCreator;
+            return __getTestVars(ablyInstanceCreator, argumentLoader, resourceLoader);
+        } else {
+            return testVars;
+        }
     }
 
-    private static TestVars __getTestVars() {
+    private static TestVars __getTestVars(AblyInstanceCreator ablyInstanceCreator, ArgumentLoader argumentLoader, ResourceLoader resourceLoader) {
         if(testVars == null) {
             host = argumentLoader.getTestArgument("ABLY_REST_HOST");
             environment = argumentLoader.getTestArgument("ABLY_ENV");
@@ -205,7 +211,7 @@ public class Setup {
                     opts.port = port;
                     opts.tlsPort = tlsPort;
                     opts.tls = true;
-                    ably = new AblyRest(opts);
+                    ably = ablyInstanceCreator.createAblyRest(opts);
                 } catch(AblyException e) {
                     TerminationReason.UNABLE_TO_INSTANCE_REST.exit(e);
                 }
@@ -213,7 +219,7 @@ public class Setup {
 
             Setup.AppSpec appSpec = null;
             try {
-                appSpec = (Setup.AppSpec)loadJson(specFile, Setup.AppSpec.class);
+                appSpec = (Setup.AppSpec)loadJson(specFile, Setup.AppSpec.class, resourceLoader);
                 appSpec.notes = "Test app; created by ably-java realtime tests; date = " + new Date().toString();
             } catch(IOException ioe) {
                 TerminationReason.UNABLE_TO_READ_SPEC_FILE.exit(ioe);
@@ -244,10 +250,10 @@ public class Setup {
 
     public static synchronized void clearTestVars() {
         if(--refCount == 0)
-            __clearTestVars();
+            __clearTestVars(ablyInstanceCreator);
     }
 
-    private static void __clearTestVars() {
+    private static void __clearTestVars(AblyInstanceCreator ablyInstanceCreator) {
         if(testVars != null) {
             try {
                 ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
@@ -256,7 +262,7 @@ public class Setup {
                 opts.port = port;
                 opts.tlsPort = tlsPort;
                 opts.tls = true;
-                ably = new AblyRest(opts);
+                ably = ablyInstanceCreator.createAblyRest(opts);
                 ably.http.request(new Http.Execute<Void>() {
                     @Override
                     public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
@@ -270,16 +276,9 @@ public class Setup {
         }
     }
 
-    static {
-        argumentLoader = new ArgumentLoader();
-        resourceLoader = new ResourceLoader();
-    }
-
-    private static ArgumentLoader argumentLoader;
-    private static ResourceLoader resourceLoader;
     private static final String specFile = "local/testAppSpec.json";
 
-    private static AblyRest ably;
+    private static AblyBase ably;
     private static String environment;
     private static String host;
     private static String wsHost;
@@ -289,4 +288,5 @@ public class Setup {
     private static TestVars testVars;
     private static int refCount;
     private static Gson gson = new Gson();
+    private static AblyInstanceCreator ablyInstanceCreator;
 }

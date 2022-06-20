@@ -10,12 +10,14 @@ import java.util.HashMap;
 
 import javax.crypto.KeyGenerator;
 
+import io.ably.lib.platform.Platform;
+import io.ably.lib.push.PushBase;
+import io.ably.lib.rest.RestChannelBase;
 import io.ably.lib.test.common.Helpers;
 import org.junit.Before;
 import org.junit.Test;
 
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.rest.Channel;
+import io.ably.lib.rest.AblyBase;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
@@ -26,19 +28,19 @@ import io.ably.lib.types.Param;
 import io.ably.lib.util.Crypto;
 import io.ably.lib.util.Crypto.CipherParams;
 
-public class RestCryptoTest extends ParameterizedTest {
+public abstract class RestCryptoTest extends ParameterizedTest {
 
     private static final String TAG = RestCryptoTest.class.getName();
-    private AblyRest ably;
-    private AblyRest ably_alt;
+    private AblyBase<PushBase, Platform, RestChannelBase> ably;
+    private AblyBase<PushBase, Platform, RestChannelBase> ably_alt;
 
     @Before
     public void setUpBefore() throws Exception {
         final ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        ably = new AblyRest(opts);
+        ably = createAblyRest(opts);
         final ClientOptions opts_alt = createOptions(testVars.keys[0].keyStr);
         opts_alt.useBinaryProtocol = testParams.useBinaryProtocol;
-        ably_alt = new AblyRest(opts_alt);
+        ably_alt = createAblyRest(opts_alt);
     }
 
     /**
@@ -48,7 +50,7 @@ public class RestCryptoTest extends ParameterizedTest {
     public void crypto_publish() throws AblyException {
         /* first, publish some messages */
         final ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; }};
-        final Channel publish0 = ably.channels.get("persisted:crypto_publish_" + testParams.name, channelOpts);
+        final RestChannelBase publish0 = ably.channels.get("persisted:crypto_publish_" + testParams.name, channelOpts);
 
         final Helpers.CompletionWaiter publishWaiter = new Helpers.CompletionWaiter();
         publish0.publishAsync("publish0", "This is a string message payload", publishWaiter);
@@ -89,7 +91,7 @@ public class RestCryptoTest extends ParameterizedTest {
 
         /* create a channel */
         final ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; this.cipherParams = params; }};
-        final Channel publish0 = ably.channels.get("persisted:crypto_publish_256_" + testParams.name, channelOpts);
+        final RestChannelBase publish0 = ably.channels.get("persisted:crypto_publish_256_" + testParams.name, channelOpts);
 
         final Helpers.CompletionWaiter publishWaiter = new Helpers.CompletionWaiter();
         publish0.publishAsync("publish0", "This is a string message payload", publishWaiter);
@@ -127,7 +129,7 @@ public class RestCryptoTest extends ParameterizedTest {
 
         /* create a channel */
         final ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params; }};
-        final Channel tx_publish = ably.channels.get(channelName, channelOpts);
+        final RestChannelBase tx_publish = ably.channels.get(channelName, channelOpts);
 
         final Helpers.CompletionWaiter publishWaiter = new Helpers.CompletionWaiter();
         tx_publish.publishAsync("publish0", "This is a string message payload", publishWaiter);
@@ -139,7 +141,7 @@ public class RestCryptoTest extends ParameterizedTest {
         // to succeed, but that doesn't necessarily mean the data is yet available to all clients)
 
         /* get the history for this channel */
-        final Channel rx_publish = ably_alt.channels.get(channelName, channelOpts);
+        final RestChannelBase rx_publish = ably_alt.channels.get(channelName, channelOpts);
         final PaginatedResult<Message> messages = rx_publish.history(null);
         assertNotNull(messages);
         assertEquals(2, messages.items().length);
@@ -164,7 +166,7 @@ public class RestCryptoTest extends ParameterizedTest {
 
         /* create a channel */
         final ChannelOptions tx_channelOpts = new ChannelOptions() {{ encrypted = true; }};
-        final Channel tx_publish = ably.channels.get(channelName, tx_channelOpts);
+        final RestChannelBase tx_publish = ably.channels.get(channelName, tx_channelOpts);
 
         final Helpers.CompletionWaiter publishWaiter = new Helpers.CompletionWaiter();
         tx_publish.publishAsync("publish0", "This is a string message payload", publishWaiter);
@@ -177,7 +179,7 @@ public class RestCryptoTest extends ParameterizedTest {
 
         /* get the history for this channel */
         final ChannelOptions rx_channelOpts = new ChannelOptions() {{ encrypted = true; }};
-        final Channel rx_publish = ably.channels.get(channelName, rx_channelOpts);
+        final RestChannelBase rx_publish = ably.channels.get(channelName, rx_channelOpts);
 
         final PaginatedResult<Message> messages = rx_publish.history(new Param[] { new Param("direction", "backwards"), new Param("limit", "2") });
         for (final Message failedMessage: messages.items())
@@ -195,7 +197,7 @@ public class RestCryptoTest extends ParameterizedTest {
         /* first, publish some messages */
 
         /* create a channel */
-        final Channel tx_publish = ably.channels.get(channelName);
+        final RestChannelBase tx_publish = ably.channels.get(channelName);
 
         final Helpers.CompletionWaiter publishWaiter = new Helpers.CompletionWaiter();
         tx_publish.publishAsync("publish0", "This is a string message payload", publishWaiter);
@@ -208,7 +210,7 @@ public class RestCryptoTest extends ParameterizedTest {
 
         /* get the history for this channel */
         final ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; }};
-        final Channel rx_publish = ably.channels.get(channelName, channelOpts);
+        final RestChannelBase rx_publish = ably.channels.get(channelName, channelOpts);
         final PaginatedResult<Message> messages = rx_publish.history(null);
         assertNotNull(messages);
         assertEquals(2, messages.items().length);
@@ -234,7 +236,7 @@ public class RestCryptoTest extends ParameterizedTest {
 
         /* create a channel */
         final ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; }};
-        final Channel tx_publish = ably.channels.get(channelName, channelOpts);
+        final RestChannelBase tx_publish = ably.channels.get(channelName, channelOpts);
 
         final Helpers.CompletionWaiter publishWaiter = new Helpers.CompletionWaiter();
         tx_publish.publishAsync("publish0", "This is a string message payload", publishWaiter);
@@ -246,7 +248,7 @@ public class RestCryptoTest extends ParameterizedTest {
         // to succeed, but that doesn't necessarily mean the data is yet available to all clients)
 
         /* get the history for this channel */
-        final Channel rx_publish = ably_alt.channels.get(channelName);
+        final RestChannelBase rx_publish = ably_alt.channels.get(channelName);
         final PaginatedResult<Message> messages = rx_publish.history(null);
         assertNotNull(messages);
         assertEquals(2, messages.items().length);

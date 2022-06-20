@@ -16,6 +16,7 @@ import io.ably.lib.http.HttpUtils;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ConnectionManager.QueuedMessage;
 import io.ably.lib.transport.Defaults;
+import io.ably.lib.types.AblyChannel;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.AsyncPaginatedResult;
 import io.ably.lib.types.Callback;
@@ -45,7 +46,7 @@ import io.ably.lib.util.Log;
  * attachment to the channel.
  *
  */
-public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStateListener> {
+public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, ChannelStateListener> implements AblyChannel {
 
     /************************************
      * ChannelState and state management
@@ -399,7 +400,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                     public void run() {
                         String errorMessage = String.format(Locale.ROOT, "Attach timed out for channel %s", name);
                         Log.v(TAG, errorMessage);
-                        synchronized (ChannelBase.this) {
+                        synchronized (RealtimeChannelBase.this) {
                             if(attachTimer != inProgressTimer) {
                                 return;
                             }
@@ -431,7 +432,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         reattachTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                synchronized (ChannelBase.this) {
+                synchronized (RealtimeChannelBase.this) {
                     if (inProgressTimer != reattachTimer) {
                         return;
                     }
@@ -491,7 +492,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         attachTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                synchronized (ChannelBase.this) {
+                synchronized (RealtimeChannelBase.this) {
                     if (inProgressTimer != attachTimer) {
                         return;
                     }
@@ -961,7 +962,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
     }
 
-    static Param[] replacePlaceholderParams(Channel channel, Param[] placeholderParams) throws AblyException {
+    static Param[] replacePlaceholderParams(RealtimeChannelBase channel, Param[] placeholderParams) throws AblyException {
         if (placeholderParams == null) {
             return null;
         }
@@ -1021,7 +1022,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
     private BasePaginatedQuery.ResultRequest<Message> historyImpl(Param[] params) {
         try {
-            params = replacePlaceholderParams((Channel) this, params);
+            params = replacePlaceholderParams((RealtimeChannelBase) this, params);
         } catch (AblyException e) {
             return new BasePaginatedQuery.ResultRequest.Failed<Message>(e);
         }
@@ -1047,7 +1048,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
     }
 
-    boolean shouldReattachToSetOptions(ChannelOptions options) {
+    public boolean shouldReattachToSetOptions(ChannelOptions options) {
         return
             (this.state == ChannelState.attached || this.state == ChannelState.attaching) &&
             (options.hasModes() || options.hasParams());
@@ -1080,23 +1081,23 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         @Override
         public void onChannelStateChanged(ChannelStateListener.ChannelStateChange stateChange) {
             if(stateChange.current.equals(successState)) {
-                ChannelBase.this.off(this);
+                RealtimeChannelBase.this.off(this);
                 completionListener.onSuccess();
             }
             else if(stateChange.current.equals(failureState)) {
-                ChannelBase.this.off(this);
+                RealtimeChannelBase.this.off(this);
                 completionListener.onError(reason);
             }
         }
     }
 
-    ChannelBase(AblyRealtime ably, String name, ChannelOptions options) throws AblyException {
+    RealtimeChannelBase(AblyRealtimeBase ably, String name, ChannelOptions options) throws AblyException {
         Log.v(TAG, "RealtimeChannel(); channel = " + name);
         this.ably = ably;
         this.name = name;
         this.basePath = "/channels/" + HttpUtils.encodeURIComponent(name);
         this.setOptions(options);
-        this.presence = new Presence((Channel) this);
+        this.presence = new Presence((RealtimeChannelBase) this);
         this.attachResume = false;
         state = ChannelState.initialized;
         queuedMessages = new ArrayList<QueuedMessage>();
@@ -1190,8 +1191,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         super.once(state.getChannelEvent(), listener);
     }
 
-    private static final String TAG = Channel.class.getName();
-    final AblyRealtime ably;
+    private static final String TAG = RealtimeChannelBase.class.getName();
+    final AblyRealtimeBase ably;
     final String basePath;
     ChannelOptions options;
     String syncChannelSerial;

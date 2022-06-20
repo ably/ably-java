@@ -1,0 +1,44 @@
+plugins {
+    id 'de.fuerstenau.buildconfig' version '1.1.8'
+    id 'checkstyle'
+    id 'org.gradle.test-retry' version '1.2.0'
+    id 'java'
+    id 'idea'
+}
+
+apply from: '../common.gradle'
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+apply from: '../dependencies.gradle'
+
+// Added to make test classes from this module available in other modules
+task testJar(type: Jar) {
+    archiveClassifier = 'test'
+    from sourceSets.test.output
+}
+
+// Added to make test classes from this module available in other modules
+artifacts {
+    testRuntime testJar
+}
+
+/*
+Test task to run pure unit tests, where pure means that they only run
+locally and do not need to communicate with Ably servers.
+This is achieved by excluding everything in the io.ably.lib.test package,
+as it only contains the REST and Realtime suites.
+*/
+task runUnitTests(type: Test) {
+    filter {
+        excludeTestsMatching 'io.ably.lib.test.*'
+    }
+    beforeTest { descriptor ->
+        // informational, so we're not flying blind at runtime
+        logger.lifecycle("-> $descriptor")
+    }
+
+    // force tests to run every time this task is invoked
+    outputs.upToDateWhen { false }
+}

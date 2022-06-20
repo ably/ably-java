@@ -1,23 +1,21 @@
 package io.ably.lib.platform;
 
 import android.content.Context;
-import io.ably.lib.push.ActivationContext;
-import io.ably.lib.push.ActivationStateMachine;
-import io.ably.lib.push.Push;
-import io.ably.lib.rest.AblyBase;
-import io.ably.lib.push.LocalDevice;
 import io.ably.lib.transport.NetworkConnectivity;
 import io.ably.lib.transport.NetworkConnectivity.DelegatedNetworkConnectivity;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.util.Log;
 
-import java.util.WeakHashMap;
-
-public class Platform {
+/**
+ * An internal class with platform specific logic.
+ * Even though it's internal, its visibility modifier is public because it's referenced by two other packages in this module (one for REST, one for Realtime).
+ */
+// TODO - change visibility to private or package when possible
+public class AndroidPlatform implements Platform {
     public static final String name = "android";
 
-    public Platform() {}
+    public AndroidPlatform() {}
 
     public Context getApplicationContext() {
         return applicationContext;
@@ -57,5 +55,5 @@ public class Platform {
     private Context applicationContext;
     private final DelegatedNetworkConnectivity networkConnectivity = new DelegatedNetworkConnectivity();
 
-    private static final String TAG = Platform.class.getName();
+    private static final String TAG = AndroidPlatform.class.getName();
 }

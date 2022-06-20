@@ -6,6 +6,7 @@ import io.ably.lib.http.HttpScheduler;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.realtime.CompletionListener;
+import io.ably.lib.types.AblyChannel;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.AsyncPaginatedResult;
 import io.ably.lib.types.Callback;
@@ -26,7 +27,7 @@ import io.ably.lib.util.Crypto;
  * signify that there is a realtime connection or attachment
  * to that channel.
  */
-public class ChannelBase {
+public abstract class RestChannelBase implements AblyChannel {
 
     /**
      * The Channel name
@@ -211,7 +212,7 @@ public class ChannelBase {
      * @throws AblyException
      ******************/
 
-    ChannelBase(AblyBase ably, String name, ChannelOptions options) throws AblyException {
+    public RestChannelBase(AblyBase ably, String name, ChannelOptions options) throws AblyException {
         this.ably = ably;
         this.name = name;
         this.options = options;

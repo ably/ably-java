@@ -1,8 +1,10 @@
 package io.ably.lib.test.rest;
 
 import fi.iki.elonen.NanoHTTPD;
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.rest.Channel;
+import io.ably.lib.platform.Platform;
+import io.ably.lib.push.PushBase;
+import io.ably.lib.rest.AblyBase;
+import io.ably.lib.rest.RestChannelBase;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
@@ -20,7 +22,7 @@ import static io.ably.lib.transport.Defaults.ABLY_AGENT_VERSION;
 /**
  * Created by VOstopolets on 8/17/16.
  */
-public class HttpHeaderTest extends ParameterizedTest {
+public abstract class HttpHeaderTest extends ParameterizedTest {
 
     private static SessionHandlerNanoHTTPD server;
 
@@ -65,13 +67,13 @@ public class HttpHeaderTest extends ParameterizedTest {
             opts.tls = false;
             opts.port = server.getListeningPort();
             opts.restHost = "localhost";
-            AblyRest ably = new AblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* Publish message */
             String messageName = "test message";
             String messageData = String.valueOf(System.currentTimeMillis());
 
-            Channel channel = ably.channels.get("test");
+            RestChannelBase channel = ably.channels.get("test");
             channel.publish(messageName, messageData);
 
             /* Get last headers */

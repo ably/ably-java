@@ -2,11 +2,15 @@ package io.ably.lib.test.rest;
 
 import com.google.gson.JsonObject;
 import io.ably.lib.debug.DebugOptions;
+import io.ably.lib.platform.Platform;
+import io.ably.lib.push.PushBase;
 import io.ably.lib.push.PushBase.ChannelSubscription;
-import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.realtime.AblyRealtimeBase;
 import io.ably.lib.realtime.CompletionListener;
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.realtime.RealtimeChannelBase;
+import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.DeviceDetails;
+import io.ably.lib.rest.RestChannelBase;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
 import io.ably.lib.test.common.Helpers.MessageWaiter;
@@ -32,9 +36,9 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 import static org.junit.Assert.assertEquals;
 
-public class RestPushTest extends ParameterizedTest {
-    private static AblyRest rest;
-    private static AblyRealtime realtime;
+public abstract class RestPushTest extends ParameterizedTest {
+    private static AblyBase<PushBase, Platform, RestChannelBase> rest;
+    private static AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> realtime;
 
     private static DeviceDetails deviceDetails;
     private static DeviceDetails deviceDetails1ClientA;
@@ -78,8 +82,8 @@ public class RestPushTest extends ParameterizedTest {
         httpTracker = new Helpers.RawHttpTracker();
         DebugOptions options = createOptions(testVars.keys[0].keyStr);
         options.httpListener = httpTracker;
-        rest = new AblyRest(options);
-        realtime = new AblyRealtime(options);
+        rest = createAblyRest(options);
+        realtime = createAblyRealtime(options);
 
         deviceDetails = DeviceDetails.fromJsonObject(JsonUtils.object()
                 .add("id", "testDeviceDetails")

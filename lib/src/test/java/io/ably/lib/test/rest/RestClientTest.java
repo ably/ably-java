@@ -1,7 +1,10 @@
 package io.ably.lib.test.rest;
 
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.platform.Platform;
+import io.ably.lib.push.PushBase;
+import io.ably.lib.rest.AblyBase;
+import io.ably.lib.rest.RestChannelBase;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
@@ -14,7 +17,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class RestClientTest extends ParameterizedTest {
+public abstract class RestClientTest extends ParameterizedTest {
 
     @Rule
     public Timeout testTimeout = Timeout.seconds(30);
@@ -35,7 +38,7 @@ public class RestClientTest extends ParameterizedTest {
         opts.httpListener = httpListener;
         /* disable addRequestIds */
         opts.addRequestIds = false;
-        AblyRest ablyA = new AblyRest(opts);
+        AblyBase<PushBase, Platform, RestChannelBase> ablyA = createAblyRest(opts);
 
         ablyA.channels.get("test").publish("foo", "bar");
         /* verify client_id is not a part of url query */
@@ -43,7 +46,7 @@ public class RestClientTest extends ParameterizedTest {
 
         /* enable addRequestIds */
         opts.addRequestIds = true;
-        AblyRest ablyB = new AblyRest(opts);
+        AblyBase<PushBase, Platform, RestChannelBase> ablyB = createAblyRest(opts);
 
         ablyB.channels.get("test").publish("foo", "bar");
         /* verify client_id is a part of url query */
@@ -65,7 +68,7 @@ public class RestClientTest extends ParameterizedTest {
         opts.environment = null;
         opts.restHost = "";
         opts.fallbackHosts = new String[]{"ably.com"};
-        AblyRest ably = new AblyRest(opts);
+        AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
         try{
             ably.channels.get("test").publish("foo", "bar");
@@ -92,7 +95,7 @@ public class RestClientTest extends ParameterizedTest {
         opts.environment = null;
         opts.restHost = "invalid-host1.com";
         opts.fallbackHosts = new String[]{"invalid-host2.com", "invalid-host3.com"};
-        AblyRest ably = new AblyRest(opts);
+        AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
         try{
             ably.channels.get("test").publish("foo", "bar");

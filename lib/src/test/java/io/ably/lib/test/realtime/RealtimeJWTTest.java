@@ -5,14 +5,16 @@ import io.ably.lib.debug.DebugOptions.RawProtocolListener;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpCore.ResponseHandler;
 import io.ably.lib.http.HttpHelpers;
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.Channel;
+import io.ably.lib.platform.Platform;
+import io.ably.lib.push.PushBase;
+import io.ably.lib.realtime.AblyRealtimeBase;
+import io.ably.lib.realtime.RealtimeChannelBase;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.realtime.ConnectionEvent;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.realtime.ConnectionStateListener;
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.Auth.TokenCallback;
 import io.ably.lib.rest.Auth.TokenParams;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
@@ -25,6 +27,7 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -39,21 +42,24 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class RealtimeJWTTest extends ParameterizedTest {
+public abstract class RealtimeJWTTest extends ParameterizedTest {
 
-    private AblyRest restJWTRequester;
-    private ClientOptions jwtRequesterOptions;
-    private Key key = testVars.keys[0];
     private final String clientId = "testJWTClientID";
     private final String channelName = "testJWTChannel" + UUID.randomUUID().toString();
     private final String messageName = "testJWTMessage" + UUID.randomUUID().toString();
-    Param[] keys = new Param[]{ new Param("keyName", key.keyName), new Param("keySecret", key.keySecret) };
+    Param[] keys;
     Param[] clientIdParam = new Param[] { new Param("clientId", clientId) };
     Param[] shortTokenTtl = new Param[] { new Param("expiresIn", 5) };
     Param[] mediumTokenTtl = new Param[] { new Param("expiresIn", 35) };
     private final String susbcribeOnlyCapability = "{\"" + channelName + "\": [\"subscribe\"]}";
     private final String publishCapability = "{\"" + channelName + "\": [\"publish\"]}";
     private static final String echoServer = "https://echo.ably.io/createJWT";
+
+    @Before()
+    public void setup() {
+        Key key = testVars.keys[0];
+        keys = new Param[]{new Param("keyName", key.keyName), new Param("keySecret", key.keySecret)};
+    }
 
     /**
      * Request a JWT that specifies a clientId
@@ -65,7 +71,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
             /* create ably realtime with JWT token */
             ClientOptions realtimeOptions = buildClientOptions(mergeParams(keys, clientIdParam), null);
             assertNotNull("Expected token value", realtimeOptions.token);
-            AblyRealtime ablyRealtime = new AblyRealtime(realtimeOptions);
+            AblyRealtimeBase ablyRealtime = createAblyRealtime(realtimeOptions);
 
             /* wait for connected state */
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ablyRealtime.connection);
@@ -93,7 +99,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
             /* create ably realtime with JWT token that has subscribe-only capabilities */
             ClientOptions realtimeOptions = buildClientOptions(keys, susbcribeOnlyCapability);
             assertNotNull("Expected token value", realtimeOptions.token);
-            final AblyRealtime ablyRealtime = new AblyRealtime(realtimeOptions);
+            final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(realtimeOptions);
 
             /* wait for connected state */
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ablyRealtime.connection);
@@ -101,7 +107,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
             assertEquals("Connected state was NOT reached", ConnectionState.connected, ablyRealtime.connection.state);
 
             /* attach to channel and verify attached state */
-            Channel channel = ablyRealtime.channels.get(channelName);
+            RealtimeChannelBase channel = ablyRealtime.channels.get(channelName);
             channel.attach();
             new ChannelWaiter(channel).waitFor(ChannelState.attached);
 
@@ -138,7 +144,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
             /* create ably realtime with JWT token that has publish capabilities */
             ClientOptions realtimeOptions = buildClientOptions(keys, publishCapability);
             assertNotNull("Expected token value", realtimeOptions.token);
-            final AblyRealtime ablyRealtime = new AblyRealtime(realtimeOptions);
+            final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(realtimeOptions);
 
             /* wait for connected state */
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ablyRealtime.connection);
@@ -146,7 +152,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
             assertEquals("Connected state was NOT reached", ConnectionState.connected, ablyRealtime.connection.state);
 
             /* attach to channel and verify attached state */
-            Channel channel = ablyRealtime.channels.get(channelName);
+            RealtimeChannelBase channel = ablyRealtime.channels.get(channelName);
             channel.attach();
             new ChannelWaiter(channel).waitFor(ChannelState.attached);
 
@@ -183,7 +189,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
             /* create ably realtime with JWT token that expires in 5 seconds */
             ClientOptions realtimeOptions = buildClientOptions(mergeParams(keys, shortTokenTtl), null);
             assertNotNull("Expected token value", realtimeOptions.token);
-            final AblyRealtime ablyRealtime = new AblyRealtime(realtimeOptions);
+            final AblyRealtimeBase ablyRealtime = createAblyRealtime(realtimeOptions);
 
             /* wait for connected state */
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ablyRealtime.connection);
@@ -236,7 +242,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
                     }
                 }
             };
-            final AblyRealtime ablyRealtime = new AblyRealtime(options);
+            final AblyRealtimeBase ablyRealtime = createAblyRealtime(options);
 
             /* Once connected for the first time capture the assigned token */
             ablyRealtime.connection.once(ConnectionEvent.connected, new ConnectionStateListener() {
@@ -300,7 +306,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
                 @Override
                 public Object getTokenRequest(TokenParams params) throws AblyException {
                     final String[] resultToken = new String[1];
-                    AblyRest rest = new AblyRest(createOptions(testVars.keys[0].keyStr));
+                    AblyBase rest = createAblyRest(createOptions(testVars.keys[0].keyStr));
                     HttpHelpers.getUri(rest.httpCore, echoServer, new Param[]{}, mergeParams(keys, mediumTokenTtl), new ResponseHandler() {
                         @Override
                         public Object handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
@@ -336,7 +342,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
                     }
                 }
             };
-            final AblyRealtime ablyRealtime = new AblyRealtime(options);
+            final AblyRealtimeBase ablyRealtime = createAblyRealtime(options);
 
             /* Once connected for the first time capture the assigned token and
             * verify the callback has been called once */
@@ -394,7 +400,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
     private ClientOptions buildClientOptions(Param[] params, String capability) {
         try {
             final String[] resultToken = new String[1];
-            AblyRest rest = new AblyRest(createOptions(testVars.keys[0].keyStr));
+            AblyBase rest = createAblyRest(createOptions(testVars.keys[0].keyStr));
             HttpHelpers.getUri(rest.httpCore, echoServer, null, params, new ResponseHandler() {
                 @Override
                 public Object handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {

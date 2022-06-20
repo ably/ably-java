@@ -20,19 +20,6 @@ buildConfig {
     buildConfigField 'String', 'LIBRARY_NAME', 'java'
 }
 
-sourceSets {
-    main {
-        java {
-            srcDirs = ['src/main/java', '../lib/src/main/java']
-        }
-    }
-    test {
-        java {
-            srcDirs = ['src/test/java', '../lib/src/test/java']
-        }
-    }
-}
-
 // Default jar: add io.ably classes from :lib dependency.
 jar {
     baseName = 'ably-java'
@@ -57,6 +44,13 @@ task fullJar(type: Jar) {
     }
     with jar
     exclude 'META-INF/**'
+}
+
+dependencies {
+    implementation project(':lib')
+
+    // Enable access to test classes from the :lib module for integration test cases sharing
+    testImplementation project(path: ':lib', configuration: 'testRuntime')
 }
 
 assemble.dependsOn fullJar
@@ -100,23 +94,3 @@ task testRestSuite(type: Test) {
         maxFailures = 4
     }
 }
-
-/*
-Test task to run pure unit tests, where pure means that they only run
-locally and do not need to communicate with Ably servers.
-This is achieved by excluding everything in the io.ably.lib.test package,
-as it only contains the REST and Realtime suites.
-*/
-task runUnitTests(type: Test) {
-    filter {
-        excludeTestsMatching 'io.ably.lib.test.*'
-    }
-    beforeTest { descriptor ->
-        // informational, so we're not flying blind at runtime
-        logger.lifecycle("-> $descriptor")
-    }
-
-    // force tests to run every time this task is invoked
-    outputs.upToDateWhen { false }
-}
-

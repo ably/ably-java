@@ -7,6 +7,9 @@ import static org.junit.Assert.fail;
 import java.util.HashMap;
 import java.util.UUID;
 
+import io.ably.lib.platform.Platform;
+import io.ably.lib.push.PushBase;
+import io.ably.lib.rest.RestChannelBase;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -14,8 +17,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.rest.Channel;
+import io.ably.lib.rest.AblyBase;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
@@ -23,9 +25,9 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 
-public class RestChannelHistoryTest extends ParameterizedTest {
+public abstract class RestChannelHistoryTest extends ParameterizedTest {
 
-    private AblyRest ably;
+    private AblyBase<PushBase, Platform, RestChannelBase> ably;
     private long timeOffset;
 
     @Rule
@@ -35,7 +37,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
     public void setUpBefore() throws Exception {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.useBinaryProtocol = false;
-        ably = new AblyRest(opts);
+        ably = createAblyRest(opts);
         long timeFromService = ably.time();
         timeOffset = timeFromService - System.currentTimeMillis();
     }
@@ -46,7 +48,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
     @Test
     public void channelhistory_types() {
         /* first, publish some messages */
-        Channel history0 = ably.channels.get("persisted:channelhistory_types_" + UUID.randomUUID().toString() + "_" + testParams.name);
+        RestChannelBase history0 = ably.channels.get("persisted:channelhistory_types_" + UUID.randomUUID().toString() + "_" + testParams.name);
         try {
             history0.publish("history0", "This is a string message payload");
             history0.publish("history1", "This is a byte[] message payload".getBytes());
@@ -86,7 +88,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
     @Test
     public void channelhistory_multi_50_f() {
         /* first, publish some messages */
-        Channel history1 = ably.channels.get("persisted:channelhistory_multi_50_f_" + testParams.name);
+        RestChannelBase history1 = ably.channels.get("persisted:channelhistory_multi_50_f_" + testParams.name);
         for(int i = 0; i < 50; i++)
         try {
             history1.publish("history" + i,  String.valueOf(i));
@@ -122,7 +124,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
     @Test
     public void channelhistory_multi_50_b() {
         /* first, publish some messages */
-        Channel history2 = ably.channels.get("persisted:channelhistory_multi_50_b_" + testParams.name);
+        RestChannelBase history2 = ably.channels.get("persisted:channelhistory_multi_50_b_" + testParams.name);
         for(int i = 0; i < 50; i++)
         try {
             history2.publish("history" + i,  String.valueOf(i));
@@ -158,7 +160,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
     @Test
     public void channelhistory_limit_f() {
         /* first, publish some messages */
-        Channel history3 = ably.channels.get("persisted:channelhistory_limit_f_" + testParams.name);
+        RestChannelBase history3 = ably.channels.get("persisted:channelhistory_limit_f_" + testParams.name);
         for(int i = 0; i < 50; i++)
         try {
             history3.publish("history" + i,  String.valueOf(i));
@@ -194,7 +196,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
     @Test
     public void channelhistory_limit_b() {
         /* first, publish some messages */
-        Channel history4 = ably.channels.get("persisted:channelhistory_limit_b_" + testParams.name);
+        RestChannelBase history4 = ably.channels.get("persisted:channelhistory_limit_b_" + testParams.name);
         for(int i = 0; i < 50; i++)
         try {
             history4.publish("history" + i,  String.valueOf(i));
@@ -232,7 +234,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
     public void channelhistory_time_f() {
         /* first, publish some messages */
         long intervalStart = 0, intervalEnd = 0;
-        Channel history5 = ably.channels.get("persisted:channelhistory_time_f_" + UUID.randomUUID().toString() + "_" + testParams.name);
+        RestChannelBase history5 = ably.channels.get("persisted:channelhistory_time_f_" + UUID.randomUUID().toString() + "_" + testParams.name);
         /* send batches of messages with short inter-message delay */
         try {
             for(int i = 0; i < 20; i++) {
@@ -291,7 +293,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
     public void channelhistory_time_b() {
         /* first, publish some messages */
         long intervalStart = 0, intervalEnd = 0;
-        Channel history6 = ably.channels.get("persisted:channelhistory_time_b_" + testParams.name);
+        RestChannelBase history6 = ably.channels.get("persisted:channelhistory_time_b_" + testParams.name);
         /* send batches of messages with shprt inter-message delay */
         try {
             for(int i = 0; i < 20; i++) {
@@ -349,7 +351,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
     @Test
     public void channelhistory_paginate_f() {
         /* first, publish some messages */
-        Channel history3 = ably.channels.get("persisted:channelhistory_paginate_f_" + testParams.name);
+        RestChannelBase history3 = ably.channels.get("persisted:channelhistory_paginate_f_" + testParams.name);
         for(int i = 0; i < 50; i++)
         try {
             history3.publish("history" + i,  String.valueOf(i));
@@ -417,7 +419,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
     @Test
     public void channelhistory_paginate_b() {
         /* first, publish some messages */
-        Channel history3 = ably.channels.get("persisted:channelhistory_paginate_b_" + testParams.name);
+        RestChannelBase history3 = ably.channels.get("persisted:channelhistory_paginate_b_" + testParams.name);
         for(int i = 0; i < 50; i++)
         try {
             history3.publish("history" + i,  String.valueOf(i));
@@ -485,7 +487,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
     @Test
     public void channelhistory_paginate_first_f() {
         /* first, publish some messages */
-        Channel history3 = ably.channels.get("persisted:channelhistory_paginate_first_f_" + testParams.name);
+        RestChannelBase history3 = ably.channels.get("persisted:channelhistory_paginate_first_f_" + testParams.name);
         for(int i = 0; i < 50; i++)
         try {
             history3.publish("history" + i,  String.valueOf(i));
@@ -553,7 +555,7 @@ public class RestChannelHistoryTest extends ParameterizedTest {
     @Test
     public void channelhistory_paginate_first_b() {
         /* first, publish some messages */
-        Channel history3 = ably.channels.get("persisted:channelhistory_paginate_first_b_" + testParams.name);
+        RestChannelBase history3 = ably.channels.get("persisted:channelhistory_paginate_first_b_" + testParams.name);
         for(int i = 0; i < 50; i++)
         try {
             history3.publish("history" + i,  String.valueOf(i));

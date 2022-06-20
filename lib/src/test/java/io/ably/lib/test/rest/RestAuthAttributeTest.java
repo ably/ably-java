@@ -1,6 +1,6 @@
 package io.ably.lib.test.rest;
 
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
@@ -25,15 +25,15 @@ import static org.junit.Assert.fail;
 /**
  * Created by VOstopolets on 9/3/16.
  */
-public class RestAuthAttributeTest extends ParameterizedTest {
+public abstract class RestAuthAttributeTest extends ParameterizedTest {
 
-    private AblyRest ably;
+    private AblyBase ably;
 
     @Before
     public void setupClient() throws Exception {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.useTokenAuth = true;
-        ably = new AblyRest(opts);
+        ably = createAblyRest(opts);
     }
 
     /**
@@ -60,7 +60,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
             /* init custom AuthOptions */
             Auth.AuthOptions authOptions = new Auth.AuthOptions() {{
                 authCallback = new Auth.TokenCallback() {
-                    private AblyRest ably = new AblyRest(createOptions(testVars.keys[0].keyStr));
+                    private AblyBase ably = createAblyRest(createOptions(testVars.keys[0].keyStr));
 
                     @Override
                     public Object getTokenRequest(Auth.TokenParams params) throws AblyException {
@@ -118,12 +118,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
             final String expectedClientId = "testClientId";
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.clientId = expectedClientId;
-            AblyRest ablyForTime = new AblyRest(opts) {
-                @Override
-                public long time() throws AblyException {
-                    return fakeServerTime;
-                }
-            };
+            AblyBase ablyForTime = createAblyRest(opts, fakeServerTime) ;
             final Auth.AuthOptions authOptions = new Auth.AuthOptions();
             authOptions.key = ablyForTime.options.key;
             authOptions.queryTime = true;
@@ -172,7 +167,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
             /* init ably for token */
             final ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
             optsForToken.clientId = expectedClientId;
-            final AblyRest ablyForToken = new AblyRest(optsForToken);
+            final AblyBase ablyForToken = createAblyRest(optsForToken);
 
             /* create custom token callback for capturing timestamp values */
             final List<Long> timestampCapturedList = new ArrayList<>();

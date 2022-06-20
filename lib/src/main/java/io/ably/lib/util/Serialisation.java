@@ -9,7 +9,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import io.ably.lib.http.HttpCore;
-import io.ably.lib.platform.Platform;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
@@ -50,10 +49,7 @@ public class Serialisation {
         gsonBuilder.registerTypeAdapter(ProtocolMessage.Action.class, new ProtocolMessage.ActionSerializer());
         gson = gsonBuilder.create();
 
-        msgpackPackerConfig = Platform.name.equals("android") ?
-                new PackerConfig().withSmallStringOptimizationThreshold(Integer.MAX_VALUE) :
-                MessagePack.DEFAULT_PACKER_CONFIG;
-
+        msgpackPackerConfig = MessagePack.DEFAULT_PACKER_CONFIG;
         msgpackUnpackerConfig = MessagePack.DEFAULT_UNPACKER_CONFIG;
     }
 

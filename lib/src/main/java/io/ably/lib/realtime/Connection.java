@@ -77,7 +77,7 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
      * internal
      *****************/
 
-    Connection(AblyRealtime ably, ConnectionManager.Channels channels, PlatformAgentProvider platformAgentProvider) throws AblyException {
+    Connection(AblyRealtimeBase ably, ConnectionManager.Channels channels, PlatformAgentProvider platformAgentProvider) throws AblyException {
         this.ably = ably;
         this.state = ConnectionState.initialized;
         this.connectionManager = new ConnectionManager(ably, this, channels, platformAgentProvider);
@@ -119,6 +119,6 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
     }
 
     private static final String TAG = Connection.class.getName();
-    final AblyRealtime ably;
+    final AblyRealtimeBase ably;
     public final ConnectionManager connectionManager;
 }

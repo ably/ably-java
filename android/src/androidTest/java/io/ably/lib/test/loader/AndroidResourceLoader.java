@@ -7,7 +7,7 @@ import android.util.Log;
 import java.io.InputStream;
 import java.io.IOException;
 
-public class ResourceLoader {
+public class AndroidResourceLoader implements ResourceLoader {
     public byte[] read(String resourceName) throws IOException {
         InputStream is = null;
         byte[] bytes = null;

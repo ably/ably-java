@@ -28,8 +28,8 @@ import io.ably.lib.debug.DebugOptions.RawHttpListener;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
-import io.ably.lib.realtime.Channel;
-import io.ably.lib.realtime.Channel.MessageListener;
+import io.ably.lib.realtime.RealtimeChannelBase;
+import io.ably.lib.realtime.RealtimeChannelBase.MessageListener;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.ChannelStateListener;
 import io.ably.lib.realtime.CompletionListener;
@@ -210,7 +210,7 @@ public class Helpers {
          * Track all messages on a channel.
          * @param channel
          */
-        public MessageWaiter(Channel channel) {
+        public MessageWaiter(RealtimeChannelBase channel) {
             reset();
             try {
                 channel.subscribe(this);
@@ -222,7 +222,7 @@ public class Helpers {
          * @param channel
          * @param event
          */
-        public MessageWaiter(Channel channel, String event) {
+        public MessageWaiter(RealtimeChannelBase channel, String event) {
             reset();
             try {
                 channel.subscribe(event, this);
@@ -284,19 +284,19 @@ public class Helpers {
          * Public API
          * @param channel
          */
-        public PresenceWaiter(Channel channel) {
+        public PresenceWaiter(RealtimeChannelBase channel) {
             reset();
             try {
                 channel.presence.subscribe(this);
             } catch(AblyException e) {}
         }
 
-        public PresenceWaiter(PresenceMessage.Action event, Channel channel) throws AblyException {
+        public PresenceWaiter(PresenceMessage.Action event, RealtimeChannelBase channel) throws AblyException {
             reset();
             channel.presence.subscribe(event, this);
         }
 
-        public PresenceWaiter(EnumSet<PresenceMessage.Action> events, Channel channel) throws AblyException {
+        public PresenceWaiter(EnumSet<PresenceMessage.Action> events, RealtimeChannelBase channel) throws AblyException {
             reset();
             channel.presence.subscribe(events, this);
         }
@@ -551,7 +551,7 @@ public class Helpers {
          * Public API
          * @param channel
          */
-        public ChannelWaiter(Channel channel) {
+        public ChannelWaiter(RealtimeChannelBase channel) {
             this.channel = channel;
             channel.on(this);
         }
@@ -579,7 +579,7 @@ public class Helpers {
         /**
          * Internal
          */
-        private Channel channel;
+        private RealtimeChannelBase channel;
     }
 
     /**

@@ -15,12 +15,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import io.ably.lib.test.common.Setup;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.Message;
-import io.ably.lib.util.Base64Coder;
-import io.ably.lib.util.Crypto;
 import io.ably.lib.util.Crypto.CipherParams;
 
 @Ignore("FIXME: Initialization is failing")
@@ -62,9 +59,15 @@ public class CryptoMessageTest {
         }
 
         private CryptoTestData loadTestData() throws IOException {
-            return (CryptoTestData)Setup.loadJson(
-                "ably-common/test-resources/" + fileName + ".json",
-                CryptoTestData.class);
+            // After extracting the shared code to a separate module loading test data is no longer as trivial as
+            // calling a static method. We need to rewrite tests related to this code to leverage the new platform
+            // specific integration test structure. Because tests using this FixtureSet are being currently ignored
+            // we will refactor it in the future and for now return null.
+            return null;
+            // We're leaving the old implementation for reference:
+//            return (CryptoTestData)Setup.loadJson(
+//                "ably-common/test-resources/" + fileName + ".json",
+//                CryptoTestData.class);
         }
     }
 

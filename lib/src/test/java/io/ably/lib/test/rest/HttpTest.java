@@ -8,7 +8,8 @@ import io.ably.lib.http.HttpConstants;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpHelpers;
 import io.ably.lib.http.SyncHttpScheduler;
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.AblyBase;
+import io.ably.lib.test.common.PlatformSpecificIntegrationTest;
 import io.ably.lib.test.util.EmptyPlatformAgentProvider;
 import io.ably.lib.test.util.StatusHandler;
 import io.ably.lib.test.util.TimeHandler;
@@ -63,7 +64,7 @@ import static org.mockito.Mockito.verify;
 /**
  * Created by gokhanbarisaker on 2/2/16.
  */
-public class HttpTest {
+public abstract class HttpTest extends PlatformSpecificIntegrationTest {
 
     private static final String PATTERN_HOST_FALLBACK = "(?i)[a-e]\\.ably-realtime.com";
     private static final String CUSTOM_PATTERN_HOST_FALLBACK = "(?i)[f-k]\\.ably-realtime.com";
@@ -255,7 +256,7 @@ public class HttpTest {
         ClientOptions options = new ClientOptions("not:a.key");
         options.httpMaxRetryCount = 1;
         options.fallbackRetryTimeout = 100;
-        AblyRest ably = new AblyRest(options);
+        AblyBase ably = createAblyRest(options);
 
         HttpCore httpCore = Mockito.spy(new HttpCore(ably.options, ably.auth, platformAgentProvider));
 
@@ -344,7 +345,7 @@ public class HttpTest {
         final String fakeHost = "fake.ably.io";
         ClientOptions options = new ClientOptions("not:a.key");
         options.restHost = fakeHost;
-        AblyRest ably = new AblyRest(options);
+        AblyBase ably = createAblyRest(options);
 
         HttpCore httpCore = Mockito.spy(new HttpCore(ably.options, ably.auth, platformAgentProvider));
 
@@ -440,7 +441,7 @@ public class HttpTest {
     public void http_ably_execute_empty_fallback_array() throws AblyException {
         ClientOptions options = new ClientOptions("not:a.key");
         options.fallbackHosts = new String[0];
-        AblyRest ably = new AblyRest(options);
+        AblyBase ably = createAblyRest(options);
 
         HttpCore httpCore = Mockito.spy(new HttpCore(ably.options, ably.auth, platformAgentProvider));
 
@@ -518,7 +519,7 @@ public class HttpTest {
         ClientOptions options = new ClientOptions("not.a:key");
         options.fallbackHosts = expectedFallbackHosts;
         int expectedCallCount = options.httpMaxRetryCount + 1;
-        AblyRest ably = new AblyRest(options);
+        AblyBase ably = createAblyRest(options);
 
         HttpCore httpCore = Mockito.spy(new HttpCore(ably.options, ably.auth, platformAgentProvider));
 
@@ -1296,7 +1297,7 @@ public class HttpTest {
             if(poolSize > 0) {
                 options.asyncHttpThreadpoolSize = poolSize;
             }
-            final AblyRest ablyRest = new AblyRest(options);
+            final AblyBase ablyRest = createAblyRest(options);
 
             final Object waiter = new Object();
             final long startTime = System.currentTimeMillis();

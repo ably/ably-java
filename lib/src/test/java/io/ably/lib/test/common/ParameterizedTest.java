@@ -7,8 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.ably.lib.types.Param;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
@@ -21,7 +19,7 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 
 @RunWith(Parameterized.class)
-public class ParameterizedTest {
+public abstract class ParameterizedTest extends PlatformSpecificIntegrationTest {
     @Parameters(name = "{0}")
     public static Iterable<Setup.TestParameters> data() {
         return Arrays.asList(
@@ -35,18 +33,6 @@ public class ParameterizedTest {
 
     @Rule
     public Timeout testTimeout = Timeout.seconds(10);
-
-    protected static Setup.TestVars testVars;
-
-    @BeforeClass
-    public static void setUpBeforeClass() throws Exception {
-        testVars = Setup.getTestVars();
-    }
-
-    @AfterClass
-    public static void tearDownAfterClass() throws Exception {
-        Setup.clearTestVars();
-    }
 
     protected DebugOptions createOptions() throws AblyException {
         return testVars.createOptions(testParams);

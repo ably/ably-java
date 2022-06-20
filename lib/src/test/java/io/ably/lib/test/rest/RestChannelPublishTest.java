@@ -2,9 +2,11 @@ package io.ably.lib.test.rest;
 
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.http.HttpCore;
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.platform.Platform;
+import io.ably.lib.push.PushBase;
+import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.Auth;
-import io.ably.lib.rest.Channel;
+import io.ably.lib.rest.RestChannelBase;
 import io.ably.lib.test.common.Helpers.AsyncWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.ParameterizedTest;
@@ -32,14 +34,14 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class RestChannelPublishTest extends ParameterizedTest {
+public abstract class RestChannelPublishTest extends ParameterizedTest {
 
-    private AblyRest ably;
+    private AblyBase<PushBase, Platform, RestChannelBase> ably;
 
     @Before
     public void setUpBefore() throws Exception {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        ably = new AblyRest(opts);
+        ably = createAblyRest(opts);
     }
 
     /**
@@ -49,7 +51,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
     public void channelpublish() {
         /* first, publish some messages */
         String channelName = "persisted:channelpublish_" + testParams.name;
-        Channel pubChannel = ably.channels.get(channelName);
+        RestChannelBase pubChannel = ably.channels.get(channelName);
         try {
             pubChannel.publish("pub_text", "This is a string message payload");
             pubChannel.publish("pub_binary", "This is a byte[] message payload".getBytes());
@@ -86,7 +88,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
         String channelName = "persisted:channelpublish_async_" + testParams.name;
         String textPayload = "This is a string message payload";
         byte[] binaryPayload = "This is a byte[] message payload".getBytes();
-        Channel pubChannel = ably.channels.get(channelName);
+        RestChannelBase pubChannel = ably.channels.get(channelName);
         CompletionSet pubComplete = new CompletionSet();
 
         pubChannel.publishAsync(new Message[] {new Message("pub_text", textPayload)}, pubComplete.add());
@@ -126,7 +128,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
     public void channel_idempotent_publish_client_generated_single() {
 
         String channelName = "persisted:channel_idempotent_publish_client_generated_single_" + testParams.name;
-        Channel pubChannel;
+        RestChannelBase pubChannel;
         final Message messageWithId = new Message("name_withId", "data_withId");
         messageWithId.id = "client_generated_id";
         try {
@@ -154,7 +156,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
                 @Override
                 public void onRawHttpException(String id, String method, Throwable t) {}
             };
-            AblyRest ably = new AblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* first, publish messages */
             pubChannel = ably.channels.get(channelName);
@@ -185,7 +187,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
     public void channel_idempotent_publish_client_generated_multiple() {
 
         String channelName = "persisted:channel_idempotent_publish_client_generated_multiple_" + testParams.name;
-        Channel pubChannel;
+        RestChannelBase pubChannel;
         final Message messageWithId0 = new Message("name_withId", "data_withId");
         messageWithId0.id = "client_generated_id:0";
         final Message messageWithId1 = new Message("name_withId", "data_withId");
@@ -216,7 +218,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
                 @Override
                 public void onRawHttpException(String id, String method, Throwable t) {}
             };
-            AblyRest ably = new AblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* first, publish messages */
             pubChannel = ably.channels.get(channelName);
@@ -293,7 +295,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
 
         try {
             final ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyRest ablyForToken = new AblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
             Auth.AuthOptions restAuthOptions = new Auth.AuthOptions() {{
                 key = optsForToken.key;
                 queryTime = true;
@@ -307,10 +309,10 @@ public class RestChannelPublishTest extends ParameterizedTest {
             opts.httpListener = requestListener;
             /* generate a fallback which resolves to the same address, which the library will treat as a different host */
             opts.fallbackHosts = new String[]{ablyForToken.httpCore.getPrimaryHost().toUpperCase(Locale.ROOT)};
-            AblyRest ably = new AblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* publish message */
-            Channel pubChannel = ably.channels.get(channelName);
+            RestChannelBase pubChannel = ably.channels.get(channelName);
             pubChannel.publish(new Message[]{messageWithId});
 
             /* get the history for this channel */
@@ -333,7 +335,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
     public void channel_idempotent_publish_library_generated_multiple() {
 
         String channelName = "persisted:channel_idempotent_publish_library_generated_multiple_" + testParams.name;
-        Channel pubChannel;
+        RestChannelBase pubChannel;
         final Message messageWithId0 = new Message("name0", "data0");
         final Message messageWithId1 = new Message("name1", "data1");
         try {
@@ -363,7 +365,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
                 @Override
                 public void onRawHttpException(String id, String method, Throwable t) {}
             };
-            AblyRest ably = new AblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* first, publish messages */
             pubChannel = ably.channels.get(channelName);
@@ -401,7 +403,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
 
         try {
             final ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyRest ablyForToken = new AblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
             Auth.AuthOptions restAuthOptions = new Auth.AuthOptions() {{
                 key = optsForToken.key;
                 queryTime = true;
@@ -416,10 +418,10 @@ public class RestChannelPublishTest extends ParameterizedTest {
             opts.httpListener = requestListener;
             /* generate a fallback which resolves to the same address, which the library will treat as a different host */
             opts.fallbackHosts = new String[]{ablyForToken.httpCore.getPrimaryHost().toUpperCase(Locale.ROOT)};
-            AblyRest ably = new AblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* publish message */
-            Channel pubChannel = ably.channels.get(channelName);
+            RestChannelBase pubChannel = ably.channels.get(channelName);
             pubChannel.publish(new Message[]{messageWithId});
 
             /* get the history for this channel */
