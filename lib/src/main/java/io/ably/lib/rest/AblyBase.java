@@ -39,8 +39,10 @@ import io.ably.lib.util.Serialisation;
  * AblyBase
  * The top-level class to be instanced for the Ably REST library.
  *
+ * This class implements {@link AutoCloseable} so you can use it in
+ * try-with-resources constructs and have the JDK close it for you.
  */
-public abstract class AblyBase {
+public abstract class AblyBase implements AutoCloseable {
 
     public final ClientOptions options;
     public final Http http;
@@ -94,6 +96,11 @@ public abstract class AblyBase {
 
         platform = new Platform();
         push = new Push(this);
+    }
+
+    @Override
+    public void close() throws Exception {
+        http.close();
     }
 
     /**

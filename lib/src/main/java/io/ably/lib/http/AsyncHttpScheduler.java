@@ -2,7 +2,6 @@ package io.ably.lib.http;
 
 import io.ably.lib.types.ClientOptions;
 
-import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -21,7 +20,7 @@ public class AsyncHttpScheduler extends HttpScheduler {
 
     protected static final String TAG = AsyncHttpScheduler.class.getName();
 
-    private static class WrappedExecutor implements Executor {
+    private static class WrappedExecutor implements CloseableExecutor {
         private final ThreadPoolExecutor executor;
 
         WrappedExecutor(final ClientOptions options) {
@@ -40,11 +39,16 @@ public class AsyncHttpScheduler extends HttpScheduler {
         }
 
         @Override
-        protected void finalize() throws Throwable {
+        public void close() throws Exception {
             final int drainedCount = executor.shutdownNow().size();
             if (drainedCount > 0) {
-                Log.w(TAG, "finalize() drained (cancelled) task count: " + drainedCount);
+                Log.w(TAG, "close() drained (cancelled) task count: " + drainedCount);
             }
+        }
+
+        @Override
+        protected void finalize() throws Throwable {
+            close();
         }
     }
 }

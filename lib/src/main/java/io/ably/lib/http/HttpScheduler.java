@@ -20,7 +20,7 @@ import io.ably.lib.util.Log;
  *
  * Internal; use Http instead.
  */
-public class HttpScheduler {
+public class HttpScheduler implements AutoCloseable {
     /**
      * Async HTTP GET for Ably host, with fallbacks
      * @param path
@@ -353,9 +353,14 @@ public class HttpScheduler {
         protected boolean isDone = false;
     }
 
-    protected HttpScheduler(HttpCore httpCore, Executor executor) {
+    protected HttpScheduler(HttpCore httpCore, CloseableExecutor executor) {
         this.httpCore = httpCore;
         this.executor = executor;
+    }
+
+    @Override
+    public void close() throws Exception {
+        this.executor.close();
     }
 
     /**
@@ -435,7 +440,7 @@ public class HttpScheduler {
         return request;
     }
 
-    private final Executor executor;
+    private final CloseableExecutor executor;
     private final HttpCore httpCore;
 
     protected static final String TAG = HttpScheduler.class.getName();
