@@ -14,18 +14,7 @@ public class AsyncHttpScheduler extends HttpScheduler<ThreadPoolExecutor> {
         super(httpCore, new ThreadPoolExecutor(options.asyncHttpThreadpoolSize, options.asyncHttpThreadpoolSize, KEEP_ALIVE_TIME, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>()));
     }
 
-    public void dispose() {
-        ThreadPoolExecutor threadPoolExecutor = executor;
-        threadPoolExecutor.shutdown();
-        try {
-            threadPoolExecutor.awaitTermination(SHUTDOWN_TIME, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            threadPoolExecutor.shutdownNow();
-        }
-    }
-
     private static final long KEEP_ALIVE_TIME = 2000L;
-    private static final long SHUTDOWN_TIME = 5000L;
 
     protected static final String TAG = AsyncHttpScheduler.class.getName();
 }
