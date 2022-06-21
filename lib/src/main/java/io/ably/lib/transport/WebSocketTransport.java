@@ -13,7 +13,10 @@ import java.nio.ByteBuffer;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLSession;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.exceptions.WebsocketNotConnectedException;
@@ -147,8 +150,29 @@ public class WebSocketTransport implements ITransport {
         @Override
         public void onOpen(ServerHandshake handshakedata) {
             Log.d(TAG, "onOpen()");
-            connectListener.onTransportAvailable(WebSocketTransport.this);
-            flagActivity();
+            if (isHostnameVerified(params.host)) {
+                connectListener.onTransportAvailable(WebSocketTransport.this);
+                flagActivity();
+            } else {
+                connectListener.onTransportUnavailable(WebSocketTransport.this, ConnectionManager.REASON_REFUSED);
+                close();
+            }
+        }
+
+        /**
+         * Added because we had to override the onSetSSLParameters() that usually performs this verification.
+         * When the minSdkVersion will be updated to 24 we should remove this method and its usages.
+         * https://github.com/TooTallNate/Java-WebSocket/wiki/No-such-method-error-setEndpointIdentificationAlgorithm#workaround
+         */
+        private boolean isHostnameVerified(String hostname) {
+            SSLSession session = getSSLSession();
+            if (HttpsURLConnection.getDefaultHostnameVerifier().verify(hostname, session)) {
+                Log.i(TAG, "Successfully verified hostname");
+                return true;
+            } else {
+                Log.e(TAG, "Hostname verification failed, expected " + hostname + ", found " + session.getPeerHost());
+                return false;
+            }
         }
 
         @Override
@@ -232,6 +256,13 @@ public class WebSocketTransport implements ITransport {
         public void onError(final Exception e) {
             Log.e(TAG, "Connection error ", e);
             connectListener.onTransportUnavailable(WebSocketTransport.this, new ErrorInfo(e.getMessage(), 503, 80000));
+        }
+
+        @Override
+        protected void onSetSSLParameters(SSLParameters sslParameters) {
+            // Overriding without calling the setEndpointIdentificationAlgorithm() to solve an issue on Android below 24.
+            // When the minSdkVersion will be updated to 24 we should remove this empty method.
+            // https://github.com/TooTallNate/Java-WebSocket/wiki/No-such-method-error-setEndpointIdentificationAlgorithm#workaround
         }
 
         private synchronized void dispose() {
