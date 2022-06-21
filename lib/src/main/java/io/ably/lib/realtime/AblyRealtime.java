@@ -80,11 +80,13 @@ public class AblyRealtime extends AblyRest {
         try {
             super.close(); // throws checked exception
         } catch (final Exception exception) {
-            // Convert to unchecked exception.
+            // Soften to Log, rather than throw.
             // This is because our close() method has never declared that it throws a checked exception.
             // Which is confusing, given AutoCloseable declares that it does.
             // TODO captured in https://github.com/ably/ably-java/issues/806
-            throw new RuntimeException(exception);
+            // It's also because this particular piece of resource cleanup, focussed on thread pool resources used by
+            // our REST code in the base class, is being introduced in an SDK patch release for version 1.2.
+            Log.e(TAG, "There was an exception releasing client instance base resources.", exception);
         }
 
         connection.close();
