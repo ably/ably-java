@@ -154,7 +154,6 @@ public class WebSocketTransport implements ITransport {
                 connectListener.onTransportAvailable(WebSocketTransport.this);
                 flagActivity();
             } else {
-                connectListener.onTransportUnavailable(WebSocketTransport.this, ConnectionManager.REASON_REFUSED);
                 close();
             }
         }
