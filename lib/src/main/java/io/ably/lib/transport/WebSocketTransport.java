@@ -150,11 +150,11 @@ public class WebSocketTransport implements ITransport {
         @Override
         public void onOpen(ServerHandshake handshakedata) {
             Log.d(TAG, "onOpen()");
-            if (isHostnameVerified(params.host)) {
+            if (shouldExplicitlyVerifyHostname && !isHostnameVerified(params.host)) {
+                close();
+            } else {
                 connectListener.onTransportAvailable(WebSocketTransport.this);
                 flagActivity();
-            } else {
-                close();
             }
         }
 
@@ -259,9 +259,16 @@ public class WebSocketTransport implements ITransport {
 
         @Override
         protected void onSetSSLParameters(SSLParameters sslParameters) {
-            // Overriding without calling the setEndpointIdentificationAlgorithm() to solve an issue on Android below 24.
-            // When the minSdkVersion will be updated to 24 we should remove this empty method.
-            // https://github.com/TooTallNate/Java-WebSocket/wiki/No-such-method-error-setEndpointIdentificationAlgorithm#workaround
+            try {
+                super.onSetSSLParameters(sslParameters);
+                shouldExplicitlyVerifyHostname = false;
+            } catch (NoSuchMethodError exception) {
+                // This error will be thrown on Android below level 24.
+                // When the minSdkVersion will be updated to 24 we should remove this overridden method.
+                // https://github.com/TooTallNate/Java-WebSocket/wiki/No-such-method-error-setEndpointIdentificationAlgorithm#workaround
+                Log.w(TAG, "Error when trying to set SSL parameters, most likely due to an old Java API version", exception);
+                shouldExplicitlyVerifyHostname = true;
+            }
         }
 
         private synchronized void dispose() {
@@ -337,6 +344,7 @@ public class WebSocketTransport implements ITransport {
         private Timer timer = new Timer();
         private TimerTask activityTimerTask = null;
         private long lastActivityTime;
+        private boolean shouldExplicitlyVerifyHostname = true;
     }
 
     public String toString() {
