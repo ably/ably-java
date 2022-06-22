@@ -13,17 +13,17 @@ import io.ably.lib.util.Log;
  */
 public class AsyncHttpScheduler extends HttpScheduler {
     public AsyncHttpScheduler(HttpCore httpCore, ClientOptions options) {
-        super(httpCore, new WrappedExecutor(options));
+        super(httpCore, new CloseableThreadPoolExecutor(options));
     }
 
     private static final long KEEP_ALIVE_TIME = 2000L;
 
     protected static final String TAG = AsyncHttpScheduler.class.getName();
 
-    private static class WrappedExecutor implements CloseableExecutor {
+    private static class CloseableThreadPoolExecutor implements CloseableExecutor {
         private final ThreadPoolExecutor executor;
 
-        WrappedExecutor(final ClientOptions options) {
+        CloseableThreadPoolExecutor(final ClientOptions options) {
             executor = new ThreadPoolExecutor(
                 options.asyncHttpThreadpoolSize,
                 options.asyncHttpThreadpoolSize,
