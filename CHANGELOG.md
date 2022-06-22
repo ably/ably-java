@@ -4,6 +4,18 @@
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.13...v1.2.14)
 
+We've made some changes to JDK and Android API Level minimum requirements in this release,
+which might cause problems for those with very old build toolchains,
+or application projects with really permissive minimum runtime requirements:
+
+- Java source and target compatibility level increased from 1.7 to **1.8**
+- Android minimum SDK API Level increased from 16 to **19 (4.4 KitKat)**
+
+We've also fixed an oversight in our REST support whereby it previously was not possible to fully release resources
+consumed by the background thread pool used for HTTP operations, neither explicitly nor passively via GC.
+This was most noticeably a problem for applications which created several client instances during the lifespan of
+their application process.
+
 **Fixed bugs:**
 
 - NoSuchMethodError in ably-android for API lower than 24 [\#802](https://github.com/ably/ably-java/issues/802), fixed by [\#808](https://github.com/ably/ably-java/pull/808) ([KacperKluka](https://github.com/KacperKluka))
