@@ -15,14 +15,12 @@ import io.ably.lib.util.InternalMap;
 import io.ably.lib.util.Log;
 
 /**
- * AblyRealtime
  * The top-level class to be instanced for the Ably Realtime library.
  *
  * This class implements {@link AutoCloseable} so you can use it in
  * try-with-resources constructs and have the JDK close it for you.
  */
-public class AblyRealtime extends AblyRest implements AutoCloseable {
-
+public class AblyRealtime extends AblyRest {
     /**
      * The {@link Connection} object for this instance.
      */
@@ -79,6 +77,18 @@ public class AblyRealtime extends AblyRest implements AutoCloseable {
      */
     @Override
     public void close() {
+        try {
+            super.close(); // throws checked exception
+        } catch (final Exception exception) {
+            // Soften to Log, rather than throw.
+            // This is because our close() method has never declared that it throws a checked exception.
+            // Which is confusing, given AutoCloseable declares that it does.
+            // TODO captured in https://github.com/ably/ably-java/issues/806
+            // It's also because this particular piece of resource cleanup, focussed on thread pool resources used by
+            // our REST code in the base class, is being introduced in an SDK patch release for version 1.2.
+            Log.e(TAG, "There was an exception releasing client instance base resources.", exception);
+        }
+
         connection.close();
     }
 

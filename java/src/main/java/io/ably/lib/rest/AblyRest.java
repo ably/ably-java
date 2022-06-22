@@ -4,6 +4,12 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.util.JavaPlatformAgentProvider;
 
+/**
+ * The top-level class to be instanced for the Ably REST library for JRE.
+ *
+ * This class implements {@link AutoCloseable} so you can use it in
+ * try-with-resources constructs and have the JDK close it for you.
+ */
 public class AblyRest extends AblyBase {
     /**
      * Instance the Ably library using a key only.
