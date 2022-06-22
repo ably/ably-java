@@ -164,7 +164,7 @@ public class WebSocketTransport implements ITransport {
          * https://github.com/TooTallNate/Java-WebSocket/wiki/No-such-method-error-setEndpointIdentificationAlgorithm#workaround
          */
         private boolean isHostnameVerified(String hostname) {
-            SSLSession session = getSSLSession();
+            final SSLSession session = getSSLSession();
             if (HttpsURLConnection.getDefaultHostnameVerifier().verify(hostname, session)) {
                 Log.i(TAG, "Successfully verified hostname");
                 return true;
