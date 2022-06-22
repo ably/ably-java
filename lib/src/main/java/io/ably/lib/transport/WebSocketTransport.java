@@ -166,7 +166,7 @@ public class WebSocketTransport implements ITransport {
         private boolean isHostnameVerified(String hostname) {
             final SSLSession session = getSSLSession();
             if (HttpsURLConnection.getDefaultHostnameVerifier().verify(hostname, session)) {
-                Log.i(TAG, "Successfully verified hostname");
+                Log.v(TAG, "Successfully verified hostname");
                 return true;
             } else {
                 Log.e(TAG, "Hostname verification failed, expected " + hostname + ", found " + session.getPeerHost());
