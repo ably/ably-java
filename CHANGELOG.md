@@ -1,5 +1,20 @@
 # Change Log
 
+## [v1.2.14](https://github.com/ably/ably-java/tree/v1.2.14)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.13...v1.2.14)
+
+**Fixed bugs:**
+
+- NoSuchMethodError in ably-android for API lower than 24 [\#802](https://github.com/ably/ably-java/issues/802)
+- Threads remain in parked \(waiting\) state indefinitely when `AblyRest` instance is freed [\#801](https://github.com/ably/ably-java/issues/801)
+- Minimum API Level supported for Android is 19 \(KitKat, v.4.4\) [\#804](https://github.com/ably/ably-java/pull/804) ([QuintinWillison](https://github.com/QuintinWillison))
+
+**Merged pull requests:**
+
+- Add `finalize()` and `AutoCloseable` support to `AblyRest` instances [\#807](https://github.com/ably/ably-java/pull/807) ([QuintinWillison](https://github.com/QuintinWillison))
+- Increase minimum JRE version to 1.8 [\#805](https://github.com/ably/ably-java/pull/805) ([QuintinWillison](https://github.com/QuintinWillison))
+
 ## [v1.2.13](https://github.com/ably/ably-java/tree/v1.2.13)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.12...v1.2.13)
