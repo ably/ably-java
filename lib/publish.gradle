@@ -1,8 +1,8 @@
 apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
-final String GROUP_ID = 'io.ably'
-final String ARTIFACT_ID = 'lib'
+final String sdkGroupId = 'io.ably'
+final String sdkArtifactId = 'lib'
 
 task sourcesJar(type: Jar) {
     // Copy files from main source directories to the JAR.
@@ -28,8 +28,8 @@ afterEvaluate {
             release(MavenPublication) {
                 from components.java
 
-                groupId GROUP_ID
-                artifactId ARTIFACT_ID
+                groupId sdkGroupId
+                artifactId sdkArtifactId
                 version version
 
                 // Add a JAR with source code (to enable viewing the code when the library is included from a maven repository).

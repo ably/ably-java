@@ -1,5 +1,4 @@
 plugins {
-    id 'de.fuerstenau.buildconfig' version '1.1.8'
     id 'checkstyle'
     id 'org.gradle.test-retry' version '1.2.0'
 }
@@ -13,12 +12,6 @@ sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
 apply from: '../dependencies.gradle'
-
-buildConfig {
-    packageName 'io.ably.lib'
-    clsName 'BuildConfig'
-    buildConfigField 'String', 'LIBRARY_NAME', 'java'
-}
 
 // Default jar: add io.ably classes from :lib dependency.
 jar {
@@ -50,7 +43,7 @@ dependencies {
     implementation project(':lib')
 
     // Enable access to test classes from the :lib module for integration test cases sharing
-    testImplementation project(path: ':lib', configuration: 'testRuntime')
+    testImplementation project(path: ':lib', configuration: 'sharedTestClasses')
 }
 
 assemble.dependsOn fullJar

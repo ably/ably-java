@@ -5,7 +5,7 @@ buildscript {
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.1.0'
+        classpath 'com.android.tools.build:gradle:7.0.4'
     }
 }
 
@@ -26,8 +26,6 @@ android {
     compileSdkVersion 30
 
     defaultConfig {
-        buildConfigField 'String', 'LIBRARY_NAME', '"android"'
-        buildConfigField 'String', 'VERSION', "\"$version\""
         minSdkVersion 16
         targetSdkVersion 24
         versionCode 1
@@ -69,10 +67,10 @@ android {
 /* Fix for android test logging. Source: https://code.google.com/p/android/issues/detail?id=182307 */
 tasks.withType(com.android.build.gradle.internal.tasks.AndroidTestTask) { task ->
     task.doFirst {
-        logging.level = LogLevel.INFO
+        logging.levelInternal = LogLevel.INFO
     }
     task.doLast {
-        logging.level = LogLevel.LIFECYCLE
+        logging.levelInternal = LogLevel.LIFECYCLE
     }
 }
 
@@ -82,8 +80,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-messaging:22.0.0'
 
     // Enable access to test classes from the :lib module for integration test cases sharing
-    testImplementation project(path: ':lib', configuration: 'testRuntime')
-
+    testImplementation project(path: ':lib', configuration: 'sharedTestClasses')
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test:rules:1.0.2'
     androidTestImplementation 'com.crittercism.dexmaker:dexmaker:1.4'
