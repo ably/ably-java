@@ -1,7 +1,7 @@
 package io.ably.lib.test.rest;
 
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.RestChannelBase;
@@ -38,7 +38,7 @@ public abstract class RestClientTest extends ParameterizedTest {
         opts.httpListener = httpListener;
         /* disable addRequestIds */
         opts.addRequestIds = false;
-        AblyBase<PushBase, PlatformBase, RestChannelBase> ablyA = createAblyRest(opts);
+        AblyBase<PushBase, Platform, RestChannelBase> ablyA = createAblyRest(opts);
 
         ablyA.channels.get("test").publish("foo", "bar");
         /* verify client_id is not a part of url query */
@@ -46,7 +46,7 @@ public abstract class RestClientTest extends ParameterizedTest {
 
         /* enable addRequestIds */
         opts.addRequestIds = true;
-        AblyBase<PushBase, PlatformBase, RestChannelBase> ablyB = createAblyRest(opts);
+        AblyBase<PushBase, Platform, RestChannelBase> ablyB = createAblyRest(opts);
 
         ablyB.channels.get("test").publish("foo", "bar");
         /* verify client_id is a part of url query */
@@ -68,7 +68,7 @@ public abstract class RestClientTest extends ParameterizedTest {
         opts.environment = null;
         opts.restHost = "";
         opts.fallbackHosts = new String[]{"ably.com"};
-        AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+        AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
         try{
             ably.channels.get("test").publish("foo", "bar");
@@ -95,7 +95,7 @@ public abstract class RestClientTest extends ParameterizedTest {
         opts.environment = null;
         opts.restHost = "invalid-host1.com";
         opts.fallbackHosts = new String[]{"invalid-host2.com", "invalid-host3.com"};
-        AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+        AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
         try{
             ably.channels.get("test").publish("foo", "bar");

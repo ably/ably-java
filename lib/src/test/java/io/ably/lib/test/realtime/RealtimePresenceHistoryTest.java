@@ -8,7 +8,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.realtime.RealtimeChannelBase;
 import io.ably.lib.rest.RestChannelBase;
@@ -45,7 +45,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
 
     private static final String testClientId = "testClientId";
     private long timeOffset;
-    private AblyBase<PushBase, PlatformBase, RestChannelBase> rest;
+    private AblyBase<PushBase, Platform, RestChannelBase> rest;
     private Auth.TokenDetails token;
 
     @Rule
@@ -70,7 +70,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
      */
     @Test
     public void presencehistory_simple() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
@@ -117,7 +117,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
      */
     @Test
     public void presencehistory_types() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
@@ -166,7 +166,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
      */
     @Test
     public void presencehistory_types_forward() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
@@ -218,7 +218,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
      */
     @Test
     public void presencehistory_second_channel() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> txAbly = null, rxAbly = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> txAbly = null, rxAbly = null;
         try {
             ClientOptions txOpts = createOptions();
             txOpts.token = token.token;
@@ -278,7 +278,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
      */
     @Test
     public void presencehistory_wait_b() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
@@ -331,7 +331,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
      */
     @Test
     public void presencehistory_wait_f() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
@@ -384,7 +384,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
      */
     @Test
     public void presencehistory_mixed_b() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
@@ -444,7 +444,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
      */
     @Test
     public void presencehistory_mixed_f() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
@@ -501,7 +501,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
      */
     @Test
     public void presencehistory_limit_f() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
@@ -556,7 +556,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
      */
     @Test
     public void presencehistory_limit_b() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
@@ -612,7 +612,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
      */
     @Test
     public void presencehistory_time_f() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             /* first, publish some messages */
             long intervalStart = 0, intervalEnd = 0;
@@ -679,7 +679,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
      */
     @Test
     public void presencehistory_time_b() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             /* first, publish some messages */
             long intervalStart = 0, intervalEnd = 0;
@@ -746,7 +746,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
      */
     @Test
     public void presencehistory_paginate_f() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
@@ -819,7 +819,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
      */
     @Test
     public void presencehistory_paginate_b() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
@@ -892,7 +892,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
      */
     @Test
     public void presencehistory_paginate_first_f() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
@@ -965,7 +965,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
      */
     @Test
     public void presencehistory_paginate_first_b() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
@@ -1042,7 +1042,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
     @Test
     @Ignore("Fails due to issues in sandbox. See https://github.com/ably/realtime/issues/1845 for details.")
     public void presencehistory_from_attach() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> txAbly = null, rxAbly = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> txAbly = null, rxAbly = null;
         try {
             ClientOptions txOpts = createOptions();
             txOpts.token = token.token;
@@ -1149,7 +1149,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
      */
     @Test
     public void presencehistory_until_attach() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> txAbly = null, rxAbly = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> txAbly = null, rxAbly = null;
         try {
             ClientOptions txOpts = createOptions();
             txOpts.token = token.token;
@@ -1223,7 +1223,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
     @Test(expected=AblyException.class)
     public void presencehistory_until_attach_before_attached() throws AblyException {
         ClientOptions options = createOptions(testVars.keys[0].keyStr);
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(options);
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(options);
 
         ably.channels.get("test").presence.history(new Param[]{ new Param("untilAttach", "true")});
         ably.close();
@@ -1238,7 +1238,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
     @Test(expected=AblyException.class)
     public void presencehistory_until_attach_invalid_value() throws AblyException {
         ClientOptions options = createOptions(testVars.keys[0].keyStr);
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(options);
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(options);
 
         ably.channels.get("test").presence.history(new Param[]{ new Param("untilAttach", "affirmative")});
         ably.close();
@@ -1252,7 +1252,7 @@ public abstract class RealtimePresenceHistoryTest extends ParameterizedTest {
      */
     @Test
     public void presencehistory_islast() throws AblyException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.token = token.token;

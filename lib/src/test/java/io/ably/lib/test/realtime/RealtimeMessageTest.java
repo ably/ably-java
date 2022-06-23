@@ -17,7 +17,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.realtime.RealtimeChannelBase;
 import io.ably.lib.rest.RestChannelBase;
@@ -67,7 +67,7 @@ public abstract class RealtimeMessageTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void single_send() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -112,8 +112,8 @@ public abstract class RealtimeMessageTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void single_send_noecho() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> txAbly = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> rxAbly = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> txAbly = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> rxAbly = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.echoMessages = false;
@@ -171,7 +171,7 @@ public abstract class RealtimeMessageTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void subscribe_implicit_attach() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         String channelName = "subscribe_implicit_attach_" + testParams.name;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -214,7 +214,7 @@ public abstract class RealtimeMessageTest extends ParameterizedTest {
      * messages on that channel
      */
     private void _multiple_send(String channelName, int messageCount, int msgSize, boolean binary, long delay) {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -298,7 +298,7 @@ public abstract class RealtimeMessageTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void publish_channel_state() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -357,7 +357,7 @@ public abstract class RealtimeMessageTest extends ParameterizedTest {
      * messages on that channel
      */
     private void _multiple_send_batch(String channelName, int messageCount, int batchCount, long batchDelay) {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -464,7 +464,7 @@ public abstract class RealtimeMessageTest extends ParameterizedTest {
      */
     @Test
     public void single_error() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[4].keyStr);
             ably = createAblyRealtime(opts);
@@ -497,7 +497,7 @@ public abstract class RealtimeMessageTest extends ParameterizedTest {
 
     @Test
     public void ensure_disconnect_with_error_does_not_move_to_failed() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -535,7 +535,7 @@ public abstract class RealtimeMessageTest extends ParameterizedTest {
             return;
         }
 
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -602,15 +602,15 @@ public abstract class RealtimeMessageTest extends ParameterizedTest {
 
         // Publish each data type through raw JSON POST and retrieve through MsgPack and JSON.
 
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> realtimeSubscribeClientMsgPack = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> realtimeSubscribeClientJson = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> realtimeSubscribeClientMsgPack = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> realtimeSubscribeClientJson = null;
         try {
             ClientOptions jsonOpts = createOptions(testVars.keys[0].keyStr);
 
             ClientOptions msgpackOpts = createOptions(testVars.keys[0].keyStr);
             msgpackOpts.useBinaryProtocol = !testParams.useBinaryProtocol;
 
-            AblyBase<PushBase, PlatformBase, RestChannelBase> restPublishClient = createAblyRest(jsonOpts);
+            AblyBase<PushBase, Platform, RestChannelBase> restPublishClient = createAblyRest(jsonOpts);
             realtimeSubscribeClientMsgPack = createAblyRealtime(msgpackOpts);
             realtimeSubscribeClientJson = createAblyRealtime(jsonOpts);
 
@@ -636,16 +636,16 @@ public abstract class RealtimeMessageTest extends ParameterizedTest {
                 }
             }
 
-            for(AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> realtimeSubscribeClient : new AblyRealtimeBase[]{realtimeSubscribeClientMsgPack, realtimeSubscribeClientJson}) {
+            for(AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> realtimeSubscribeClient : new AblyRealtimeBase[]{realtimeSubscribeClientMsgPack, realtimeSubscribeClientJson}) {
                 realtimeSubscribeClient.close();
                 realtimeSubscribeClient = null;
             }
 
             // Publish each data type through MsgPack and JSON and retrieve through raw JSON GET.
 
-            AblyBase<PushBase, PlatformBase, RestChannelBase> restPublishClientMsgPack = createAblyRest(msgpackOpts);
-            AblyBase<PushBase, PlatformBase, RestChannelBase> restPublishClientJson = createAblyRest(jsonOpts);
-            AblyBase<PushBase, PlatformBase, RestChannelBase> restRetrieveClient = createAblyRest(jsonOpts);
+            AblyBase<PushBase, Platform, RestChannelBase> restPublishClientMsgPack = createAblyRest(msgpackOpts);
+            AblyBase<PushBase, Platform, RestChannelBase> restPublishClientJson = createAblyRest(jsonOpts);
+            AblyBase<PushBase, Platform, RestChannelBase> restRetrieveClient = createAblyRest(jsonOpts);
 
             final RestChannelBase restPublishChannelMsgPack = restPublishClientMsgPack.channels.get("test-publish");
             final RestChannelBase restPublishChannelJson = restPublishClientJson.channels.get("test-publish");
@@ -696,7 +696,7 @@ public abstract class RealtimeMessageTest extends ParameterizedTest {
      */
     @Test
     public void message_inconsistent_encoding() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> realtimeSubscribeClient = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> realtimeSubscribeClient = null;
         final ArrayList<String> log = new ArrayList<>();
 
         try {
@@ -711,7 +711,7 @@ public abstract class RealtimeMessageTest extends ParameterizedTest {
             };
             apiOptions.logLevel = Log.INFO;
 
-            AblyBase<PushBase, PlatformBase, RestChannelBase> restPublishClient = createAblyRest(apiOptions);
+            AblyBase<PushBase, Platform, RestChannelBase> restPublishClient = createAblyRest(apiOptions);
             realtimeSubscribeClient = createAblyRealtime(apiOptions);
 
             final RealtimeChannelBase realtimeSubscribeChannelJson = realtimeSubscribeClient.channels.get("test-encoding");
@@ -942,7 +942,7 @@ public abstract class RealtimeMessageTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void opaque_message_extras() throws AblyException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             final JsonObject opaqueJson = new JsonObject();
             opaqueJson.addProperty("Some Property", "Lorem Ipsum");

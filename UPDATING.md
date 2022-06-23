@@ -2,23 +2,43 @@
 
 ## Version 1.x to 2.x
 
-### Modularization
-
-The SDK was divided into modules: lib, java, android.
-
 ### API changes
 
-In order to divide the project into separate modules a refactoring of classes took place which caused below API changes:
+In order to achieve the [Modularization](#modularization), dividing the project into separate modules, a refactor was necessary which has created the following API changes:
 
-- `io.ably.lib.rest.ChannelBase` renamed -> `io.ably.lib.rest.RestChannelBase`
-- `io.ably.lib.realtime.ChannelBase` renamed -> `io.ably.lib.realtime.RealtimeChannelBase`
-- `io.ably.lib.rest.AblyBase.Channels` moved -> `io.ably.lib.types.Channels`
-- `io.ably.lib.realtime.Channel.MessageListener` removed -> use `io.ably.lib.realtime.ChannelBase.MessageListener` (old API still works)
-- `io.ably.lib.push.Push.ChannelSubscription` moved -> `io.ably.lib.push.PushBase.ChannelSubscription` (old API still works)
+#### Channels moved
 
-### Other changes
+The `Channels` interface that's used to access realtime and rest channels has been moved from `AblyBase` to a separate file.
+Because it's mainly accessed from either `AblyRest` or `AblyRealtime` for most users no changes would be required. 
+For users who referenced this interface, only a change in the import statement would be required:
 
-Changes not related to the API but worth noting:
+`io.ably.lib.rest.AblyBase.Channels` -> `io.ably.lib.types.Channels`
 
-- `io.ably.lib.util.Serialization` - removed MsgPack optimization workaround for ably-android which was fixing a problem that has been resolved in MsgPack SDK 0.8.12
-- `io.ably.lib.push.PushChannel` - replaced Channel object with channel name string in the constructor. This allows to easily create it from Realtime and Rest channels.
+#### ChannelBase renamed
+
+The `ChannelBase` was an internal, abstract type used to share channel logic between Java and Android channels. Due to
+the project structure it was exposed, so it is possible that some users have been using it in their applications. In
+this case, they will need to update the code referencing the old `ChannelBase` depending on whether they are using rest
+or realtime channels.
+
+For the rest channel:
+`io.ably.lib.rest.ChannelBase` -> `io.ably.lib.rest.RestChannelBase`
+
+For the realtime channel:
+`io.ably.lib.realtime.ChannelBase` -> `io.ably.lib.realtime.RealtimeChannelBase`
+
+#### MessageListener moved
+
+The `MessageListener` was an empty interface (probably as some sort of the [marker interface pattern](https://en.wikipedia.org/wiki/Marker_interface_pattern)) 
+implemented in the realtime `Channel` that extended from the `ChannelBase.MessageListener` interface. Now [after renaming](#channelbase-renamed)
+the listener is present only in `RealtimeChannelBase.MessageListener`. However, this should not affect the API and the listener can still be used as `Channel.MessageListener`.
+
+`io.ably.lib.realtime.Channel.MessageListener` -> `io.ably.lib.realtime.RealtimeChannelBase.MessageListener`
+
+### Modularization
+
+The SDK has now been divided into three modules: `lib`, `java` and `android`. The `lib` module contains code that is common to both `java` and `android`.
+This is better than the previous approach whereby `java` and `android` were monoliths linked only by shared source code sets.
+
+The new `lib` module has to be published separately in order to make the SDKs work. However, this won't change the way of importing 
+the SDK into your project, as the new dependency is a transitive dependency of the `java` and `android` modules.

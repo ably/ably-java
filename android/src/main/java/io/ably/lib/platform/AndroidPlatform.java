@@ -7,7 +7,12 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.util.Log;
 
-public class AndroidPlatform implements PlatformBase {
+/**
+ * An internal class with platform specific logic.
+ * Even though it's internal, its visibility modifier is public because it's referenced by two other packages in this module (one for REST, one for Realtime).
+ */
+// TODO - change visibility to private or package when possible
+public class AndroidPlatform implements Platform {
     public static final String name = "android";
 
     public AndroidPlatform() {}

@@ -4,7 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import io.ably.lib.http.HttpUtils;
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.platform.AndroidPlatform;
 import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.RestChannelBase;
@@ -17,7 +17,7 @@ import java.util.Arrays;
 
 public class Push extends PushBase {
 
-    public Push(AblyBase<PushBase, PlatformBase, RestChannelBase> rest) {
+    public Push(AblyBase<PushBase, Platform, RestChannelBase> rest) {
         super(rest);
     }
 

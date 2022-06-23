@@ -22,6 +22,9 @@ public class PushChannel {
     protected final String channelName;
     protected final AblyBase<Push, AndroidPlatform, Channel> rest;
 
+    /**
+     * This constructor is only for internal use.
+     */
     public PushChannel(String channelName, AblyBase<Push, AndroidPlatform, Channel> rest) {
         this.channelName = channelName;
         this.rest = rest;

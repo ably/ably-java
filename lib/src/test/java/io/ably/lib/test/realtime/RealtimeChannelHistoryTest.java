@@ -11,7 +11,7 @@ import static org.junit.Assert.fail;
 import java.util.HashMap;
 import java.util.Locale;
 
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.realtime.RealtimeChannelBase;
 import org.junit.Assert;
@@ -37,7 +37,7 @@ import io.ably.lib.types.Param;
 @Ignore("FIXME: fix exceptions")
 public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
 
-    private AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably;
+    private AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably;
     private long timeOffset;
 
     @Rule
@@ -58,7 +58,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
      */
     @Test
     public void channelhistory_simple() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -104,7 +104,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
      */
     @Test
     public void channelhistory_simple_withoutlistener() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -161,7 +161,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
      */
     @Test
     public void channelhistory_types() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -216,7 +216,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
      */
     @Test
     public void channelhistory_types_forward() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -274,7 +274,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
      */
     @Test
     public void channelhistory_second_channel() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> txAbly = null, rxAbly = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> txAbly = null, rxAbly = null;
         try {
             ClientOptions txOpts = createOptions(testVars.keys[0].keyStr);
             txAbly = createAblyRealtime(txOpts);
@@ -331,7 +331,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
      */
     @Test
     public void channelhistory_wait_b() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -382,7 +382,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
      */
     @Test
     public void channelhistory_wait_f() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -433,7 +433,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
      */
     @Test
     public void channelhistory_mixed_b() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -495,7 +495,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
      */
     @Test
     public void channelhistory_mixed_f() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -554,7 +554,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
      */
     @Test
     public void channelhistory_limit_f() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -610,7 +610,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
      */
     @Test
     public void channelhistory_limit_b() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -668,7 +668,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
      */
     @Test
     public void channelhistory_time_f() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             /* first, publish some messages */
             long intervalStart = 0, intervalEnd = 0;
@@ -739,7 +739,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
      */
     @Test
     public void channelhistory_time_b() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             /* first, publish some messages */
             long intervalStart = 0, intervalEnd = 0;
@@ -810,7 +810,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
      */
     @Test
     public void channelhistory_paginate_f() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -898,7 +898,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
      */
     @Test
     public void channelhistory_paginate_b() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -986,7 +986,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
      */
     @Test
     public void channelhistory_paginate_first_f() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -1074,7 +1074,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
      */
     @Test
     public void channelhistory_paginate_first_b() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -1166,7 +1166,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
     @Test
     @Ignore("Fails due to issues in sandbox. See https://github.com/ably/realtime/issues/1834 for details.")
     public void channelhistory_from_attach() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> txAbly = null, rxAbly = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> txAbly = null, rxAbly = null;
         try {
             ClientOptions txOpts = createOptions(testVars.keys[0].keyStr);
             txAbly = createAblyRealtime(txOpts);
@@ -1256,7 +1256,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
      */
     @Test
     public void channelhistory_until_attach() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> txAbly = null, rxAbly = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> txAbly = null, rxAbly = null;
         try {
             ClientOptions txOpts = createOptions(testVars.keys[0].keyStr);
             txAbly = createAblyRealtime(txOpts);
@@ -1324,7 +1324,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
     @Test(expected=AblyException.class)
     public void channelhistory_until_attach_before_attached() throws AblyException {
         ClientOptions options = createOptions(testVars.keys[0].keyStr);
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(options);
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(options);
 
         ably.channels.get("test").history(new Param[]{ new Param("untilAttach", "true") });
     }
@@ -1338,7 +1338,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
     @Test(expected=AblyException.class)
     public void channelhistory_until_attach_invalid_value() throws AblyException {
         ClientOptions options = createOptions(testVars.keys[0].keyStr);
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(options);
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(options);
 
         ably.channels.get("test").history(new Param[]{ new Param("untilAttach", "affirmative")});
     }
@@ -1351,7 +1351,7 @@ public abstract class RealtimeChannelHistoryTest extends ParameterizedTest {
      */
     @Test
     public void channelhistory_islast() throws AblyException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);

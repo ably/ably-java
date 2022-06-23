@@ -11,7 +11,7 @@ import io.ably.lib.http.AsyncPaginatedQuery;
 import io.ably.lib.http.HttpPaginatedQuery;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.types.AblyChannel;
 import io.ably.lib.types.AblyException;
@@ -43,7 +43,7 @@ import io.ably.lib.util.Serialisation;
  */
 public abstract class AblyBase<
     PushType extends PushBase,
-    PlatformType extends PlatformBase,
+    PlatformType extends Platform,
     ChannelType extends AblyChannel
     > {
 
