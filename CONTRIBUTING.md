@@ -201,7 +201,7 @@ implementation files('libs/ably-android-1.2.12.aar')
 This library uses [semantic versioning](http://semver.org/). For each release, the following needs to be done:
 
 1. Create a branch for the release, named like `release/1.2.4` (where `1.2.4` is what you're releasing, being the new version)
-2. Replace all references of the current version number with the new version number (check the [README.md](./README.md) and [common.gradle](./common.gradle)) and commit the changes
+2. Replace all references of the current version number with the new version number (check the [README.md](./README.md) and [build.gradle](./build.gradle)) and commit the changes
 3. Run the [GitHub Changelog Generator](https://github.com/github-changelog-generator/github-changelog-generator) to update the [CHANGELOG](./CHANGELOG.md): something like: `github_changelog_generator -u ably -p ably-java --since-tag v1.2.3 --output delta.md` and then manually merge the delta contents in to the main change log (where `1.2.3` is the preceding release)
 4. Commit [CHANGELOG](./CHANGELOG.md)
 5. Make a PR against `main`

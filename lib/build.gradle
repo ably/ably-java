@@ -5,12 +5,9 @@ plugins {
     id 'idea'
 }
 
-apply from: '../common.gradle'
-
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
-apply from: '../dependencies.gradle'
 apply from: 'publish.gradle'
 
 // Make gradle properties accessible from the SDK code

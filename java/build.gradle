@@ -5,13 +5,10 @@ plugins {
 
 apply plugin: 'java-library'
 apply plugin: 'idea'
-apply from: '../common.gradle'
 apply from: 'publish.gradle'
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
-
-apply from: '../dependencies.gradle'
 
 // Default jar: add io.ably classes from :lib dependency.
 jar {
