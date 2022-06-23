@@ -7,7 +7,7 @@ plugins {
 apply plugin: 'java'
 apply plugin: 'idea'
 apply from: '../common.gradle'
-apply from: 'maven.gradle'
+apply from: 'publish.gradle'
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
@@ -54,7 +54,7 @@ dependencies {
 }
 
 assemble.dependsOn fullJar
-assembleRelease.dependsOn checkstyleMain
+publish.dependsOn checkstyleMain
 
 configurations {
     fullConfiguration
