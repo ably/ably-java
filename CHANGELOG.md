@@ -1,5 +1,11 @@
 # Change Log
 
+## Next release
+
+**Code Quality Improvements:**
+
+- Removed MsgPack optimization workaround for `ably-android` which was fixing a problem that has been resolved in MsgPack SDK 0.8.12
+
 ## [v1.2.12](https://github.com/ably/ably-java/tree/v1.2.12)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.11...v1.2.12)

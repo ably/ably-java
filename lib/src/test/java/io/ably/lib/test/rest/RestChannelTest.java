@@ -4,7 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.RestChannelBase;
@@ -24,7 +24,7 @@ public abstract class RestChannelTest extends PlatformSpecificIntegrationTest {
     @Test
     public void channel_object_caching() throws AblyException {
         ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-        AblyBase<PushBase, PlatformBase, RestChannelBase> ablyRest = createAblyRest(opts);
+        AblyBase<PushBase, Platform, RestChannelBase> ablyRest = createAblyRest(opts);
 
         RestChannelBase channel1 = ablyRest.channels.get("channel_1");
         RestChannelBase channel2 = ablyRest.channels.get("channel_2");

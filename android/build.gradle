@@ -78,6 +78,7 @@ apply from: '../dependencies.gradle'
 dependencies {
     api project(':lib')
     implementation 'com.google.firebase:firebase-messaging:23.0.4'
+
     // Enable access to test classes from the :lib module for integration test cases sharing
     testImplementation project(path: ':lib', configuration: 'sharedTestClasses')
     androidTestImplementation 'com.android.support.test:runner:1.0.2'

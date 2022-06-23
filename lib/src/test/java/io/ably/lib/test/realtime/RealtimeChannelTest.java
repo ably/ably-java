@@ -1,7 +1,7 @@
 package io.ably.lib.test.realtime;
 
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.realtime.AblyRealtimeBase;
 import io.ably.lib.realtime.RealtimeChannelBase;
@@ -67,7 +67,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void attach() {
         String channelName = "attach_" + testParams.name;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -98,7 +98,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void attach_before_connect() {
         String channelName = "attach_before_connect_" + testParams.name;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -125,7 +125,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void attach_detach() {
         String channelName = "attach_detach_" + testParams.name;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -153,7 +153,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
     /*@Test*/
     public void attach_with_channel_params_channels_get() {
         String channelName = "attach_with_channel_params_channels_get_" + testParams.name;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -186,7 +186,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
     /*@Test*/
     public void attach_with_channel_params_set_options() {
         String channelName = "attach_with_channel_params_set_options_" + testParams.name;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -219,7 +219,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
     /*@Test*/
     public void channels_get_should_throw_when_would_cause_reattach() {
         String channelName = "channels_get_should_throw_when_would_cause_reattach_" + testParams.name;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -256,7 +256,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
     /*@Test*/
     public void attach_with_channel_params_modes_and_channel_modes() {
         String channelName = "attach_with_channel_params_modes_and_channel_modes_" + testParams.name;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -292,7 +292,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
     /*@Test*/
     public void attach_with_channel_modes() {
         String channelName = "attach_with_channel_modes_" + testParams.name;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -325,7 +325,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
     /*@Test*/
     public void attach_with_params_delta_and_channel_modes() {
         String channelName = "attach_with_params_delta_and_channel_modes_" + testParams.name;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -366,7 +366,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void subscribe_unsubscribe() {
         String channelName = "subscribe_unsubscribe_" + testParams.name;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -407,9 +407,9 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void unsubscribe_all() throws AblyException {
         /* Ably instance that will emit messages */
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably1 = null;
         /* Ably instance that will receive messages */
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably2 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably2 = null;
 
         String channelName = "test.channel.unsubscribe.all" + System.currentTimeMillis();
         Message[] messages = new Message[] {
@@ -485,9 +485,9 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void unsubscribe_single() throws AblyException {
         /* Ably instance that will emit messages */
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably1 = null;
         /* Ably instance that will receive messages */
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably2 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably2 = null;
 
         String channelName = "test.channel.unsubscribe.single" + System.currentTimeMillis();
         Message[] messages = new Message[] {
@@ -564,9 +564,9 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void subscribe_all() throws AblyException {
         /* Ably instance that will emit channel messages */
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably1 = null;
         /* Ably instance that will receive channel messages */
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably2 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably2 = null;
 
         String channelName = "test.channel.subscribe.all" + System.currentTimeMillis();
         Message[] messages = new Message[]{
@@ -648,9 +648,9 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void subscribe_multiple() throws AblyException {
         /* Ably instance that will emit channel messages */
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably1 = null;
         /* Ably instance that will receive channel messages */
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably2 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably2 = null;
 
         String channelName = "test.channel.subscribe.multiple" + System.currentTimeMillis();
         Message[] messages = new Message[] {
@@ -739,9 +739,9 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void subscribe_single() throws AblyException {
         /* Ably instance that will emit channel messages */
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably1 = null;
         /* Ably instance that will receive channel messages */
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably2 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably2 = null;
 
         String channelName = "test.channel.subscribe.single" + System.currentTimeMillis();
         String messageName = "name";
@@ -821,7 +821,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void attach_fail() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
             ably = createAblyRealtime(opts);
@@ -852,7 +852,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void attach_success_callback() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -887,7 +887,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void attach_fail_callback() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
             ably = createAblyRealtime(opts);
@@ -922,7 +922,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void detach_success_callback_initialized() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -957,7 +957,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void detach_success_callback_attached() throws AblyException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -991,7 +991,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void detach_success_callback_detaching() throws AblyException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -1027,7 +1027,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void detach_success_callback_detached() throws AblyException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -1071,7 +1071,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void transient_publish_connected() throws AblyException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> pubAbly = null, subAbly = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> pubAbly = null, subAbly = null;
         String channelName = "transient_publish_connected_" + testParams.name;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -1121,7 +1121,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void transient_publish_connecting() throws AblyException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> pubAbly = null, subAbly = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> pubAbly = null, subAbly = null;
         String channelName = "transient_publish_connecting_" + testParams.name;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -1169,7 +1169,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void transient_publish_connection_failed() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> pubAbly = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> pubAbly = null;
         String channelName = "transient_publish_connection_failed_" + testParams.name;
         try {
             ClientOptions opts = createOptions("not:a.key");
@@ -1204,7 +1204,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void transient_publish_channel_failed() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> pubAbly = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> pubAbly = null;
         String channelName = "transient_publish_channel_failed_" + testParams.name;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
@@ -1246,7 +1246,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void attach_implicit_subscribe_fail() throws AblyException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
             ably = createAblyRealtime(opts);
@@ -1271,7 +1271,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
 
     @Test
     public void ensure_detach_with_error_does_not_move_to_failed() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -1305,7 +1305,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
 
     @Test
     public void channel_state_on_connection_suspended() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 
@@ -1359,7 +1359,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void channel_server_initiated_attached_detached() throws AblyException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
         final String channelName = "channel_server_initiated_attach_detach";
 
@@ -1425,7 +1425,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void channel_resume_lost_continuity() throws AblyException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         final String attachedChannelName = "channel_resume_lost_continuity_attached";
         final String suspendedChannelName = "channel_resume_lost_continuity_suspended";
 
@@ -1550,7 +1550,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void channel_attach_retry_failed() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         String channelName = "channel_attach_retry_failed_" + testParams.name;
         long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
         try {
@@ -1669,7 +1669,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void channel_reattach_failed_timeout() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         final String channelName = "channel_reattach_failed_timeout_" + testParams.name;
         long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
         try {
@@ -1734,7 +1734,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
      */
     @Test
     public void channel_reattach_failed_error() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         final String channelName = "channel_reattach_failed_error_" + testParams.name;
         final int errorCode = 12345;
         long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
@@ -1813,7 +1813,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
 
             /* init Ably */
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts);
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -1867,7 +1867,7 @@ public abstract class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void no_messages_when_channel_state_not_attached() {
 
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> senderReceiver = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> senderReceiver = null;
         final String testMessage1 = "{ foo: \"bar\", count: 1, status: \"active\" }";
         final String testMessage2 = "{ foo: \"bar\", count: 2, status: \"active\" }";
 

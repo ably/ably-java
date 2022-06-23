@@ -1,7 +1,7 @@
 package io.ably.lib.test.realtime;
 
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.realtime.AblyRealtimeBase;
 import io.ably.lib.realtime.RealtimeChannelBase;
@@ -68,7 +68,7 @@ public abstract class ConnectionManagerTest extends ParameterizedTest {
     @Test
     public void connectionmanager_fallback_none() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        try (AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
+        try (AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
             ConnectionManager connectionManager = ably.connection.connectionManager;
 
             new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
@@ -98,7 +98,7 @@ public abstract class ConnectionManagerTest extends ParameterizedTest {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.realtimeHost = "un.reachable.host.example.com";
         opts.environment = null;
-        try(AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
+        try(AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
             ConnectionManager connectionManager = ably.connection.connectionManager;
 
             new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.disconnected);
@@ -131,7 +131,7 @@ public abstract class ConnectionManagerTest extends ParameterizedTest {
         opts.realtimeHost = "un.reachable.host";
         opts.environment = null;
         opts.autoConnect = false;
-        try(AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
+        try(AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
             Connection connection = Mockito.mock(Connection.class);
             final ConnectionManager.Channels channels = Mockito.mock(ConnectionManager.Channels.class);
 
@@ -200,7 +200,7 @@ public abstract class ConnectionManagerTest extends ParameterizedTest {
             }
         });
 
-        try (AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
+        try (AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
             ConnectionManager connectionManager = ably.connection.connectionManager;
 
             new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
@@ -248,7 +248,7 @@ public abstract class ConnectionManagerTest extends ParameterizedTest {
             }
         });
 
-        try (AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
+        try (AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
             ConnectionManager connectionManager = ably.connection.connectionManager;
 
             System.out.println("waiting for disconnected");
@@ -300,7 +300,7 @@ public abstract class ConnectionManagerTest extends ParameterizedTest {
             }
         });
 
-        try (AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
+        try (AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
             ConnectionManager connectionManager = ably.connection.connectionManager;
 
             System.out.println("waiting for connected");
@@ -350,7 +350,7 @@ public abstract class ConnectionManagerTest extends ParameterizedTest {
             }
         });
 
-        try (AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
+        try (AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
             ConnectionManager connectionManager = ably.connection.connectionManager;
 
             System.out.println("waiting for connected");
@@ -374,7 +374,7 @@ public abstract class ConnectionManagerTest extends ParameterizedTest {
     @Test
     public void close_from_connectionmanager() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        final AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts);
+        final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts);
         final Thread[] threadContainer = new Thread[1];
         ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
             @Override
@@ -402,7 +402,7 @@ public abstract class ConnectionManagerTest extends ParameterizedTest {
     @Test
     public void connectionmanager_restart_race() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        final AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts);
+        final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts);
         ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
         ably.connection.once(ConnectionEvent.connected, new ConnectionStateListener() {
@@ -437,7 +437,7 @@ public abstract class ConnectionManagerTest extends ParameterizedTest {
     public void open_from_dedicated_thread() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.autoConnect = false;
-        final AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts);
+        final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts);
         final Thread[] threadContainer = new Thread[1];
         ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
             @Override
@@ -484,7 +484,7 @@ public abstract class ConnectionManagerTest extends ParameterizedTest {
     public void close_from_dedicated_thread() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.autoConnect = false;
-        final AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts);
+        final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts);
         final Thread[] threadContainer = new Thread[1];
         ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
             @Override
@@ -526,7 +526,7 @@ public abstract class ConnectionManagerTest extends ParameterizedTest {
     @Test
     public void connection_details_has_ttl() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        try (AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
+        try (AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
             final boolean[] callbackWasRun = new boolean[1];
             ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
                 @Override
@@ -560,7 +560,7 @@ public abstract class ConnectionManagerTest extends ParameterizedTest {
     public void connection_has_new_id_when_reconnecting_after_statettl_plus_idleinterval_has_passed() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.realtimeRequestTimeout = 2000L;
-        try(AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
+        try(AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
             final long newTtl = 1000L;
             final long newIdleInterval = 1000L;
             /* We want this greater than newTtl + newIdleInterval */
@@ -619,7 +619,7 @@ public abstract class ConnectionManagerTest extends ParameterizedTest {
     @Test
     public void connection_has_same_id_when_reconnecting_before_statettl_plus_idleinterval_has_passed() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        try(AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
+        try(AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
             String firstConnectionId = ably.connection.id;
@@ -642,7 +642,7 @@ public abstract class ConnectionManagerTest extends ParameterizedTest {
     @Test
     public void channels_are_reattached_after_reconnecting_when_statettl_plus_idleinterval_has_passed() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        try(AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
+        try(AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
             final long newTtl = 1000L;
             final long newIdleInterval = 1000L;
             /* We want this greater than newTtl + newIdleInterval */

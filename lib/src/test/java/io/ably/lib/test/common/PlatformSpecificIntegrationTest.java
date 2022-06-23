@@ -1,6 +1,6 @@
 package io.ably.lib.test.common;
 
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.realtime.AblyRealtimeBase;
 import io.ably.lib.realtime.RealtimeChannelBase;
@@ -57,23 +57,23 @@ public abstract class PlatformSpecificIntegrationTest {
         }
     }
 
-    protected AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> createAblyRealtime(String key) throws AblyException {
+    protected AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> createAblyRealtime(String key) throws AblyException {
         return ablyInstanceCreator.createAblyRealtime(key);
     }
 
-    protected AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> createAblyRealtime(ClientOptions options) throws AblyException {
+    protected AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> createAblyRealtime(ClientOptions options) throws AblyException {
         return ablyInstanceCreator.createAblyRealtime(options);
     }
 
-    protected AblyBase<PushBase, PlatformBase, RestChannelBase> createAblyRest(String key) throws AblyException {
+    protected AblyBase<PushBase, Platform, RestChannelBase> createAblyRest(String key) throws AblyException {
         return ablyInstanceCreator.createAblyRest(key);
     }
 
-    protected AblyBase<PushBase, PlatformBase, RestChannelBase> createAblyRest(ClientOptions options) throws AblyException {
+    protected AblyBase<PushBase, Platform, RestChannelBase> createAblyRest(ClientOptions options) throws AblyException {
         return ablyInstanceCreator.createAblyRest(options);
     }
 
-    protected AblyBase<PushBase, PlatformBase, RestChannelBase> createAblyRest(ClientOptions options, long mockedTime) throws AblyException {
+    protected AblyBase<PushBase, Platform, RestChannelBase> createAblyRest(ClientOptions options, long mockedTime) throws AblyException {
         return ablyInstanceCreator.createAblyRest(options, mockedTime);
     }
 

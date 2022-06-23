@@ -6,7 +6,7 @@ import static org.junit.Assert.fail;
 
 import java.util.HashMap;
 
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.rest.RestChannelBase;
 import org.junit.Before;
@@ -29,7 +29,7 @@ public abstract class RestPresenceTest extends ParameterizedTest {
         "client_string_3"
     };
 
-    private AblyBase<PushBase, PlatformBase, RestChannelBase> ably_text;
+    private AblyBase<PushBase, Platform, RestChannelBase> ably_text;
 
     @Before
     public void setUpBefore() throws Exception {

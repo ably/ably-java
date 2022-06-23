@@ -2,7 +2,7 @@ package io.ably.lib.test.rest;
 
 import com.google.gson.JsonObject;
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.push.PushBase.ChannelSubscription;
 import io.ably.lib.realtime.AblyRealtimeBase;
@@ -37,8 +37,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import static org.junit.Assert.assertEquals;
 
 public abstract class RestPushTest extends ParameterizedTest {
-    private static AblyBase<PushBase, PlatformBase, RestChannelBase> rest;
-    private static AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> realtime;
+    private static AblyBase<PushBase, Platform, RestChannelBase> rest;
+    private static AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> realtime;
 
     private static DeviceDetails deviceDetails;
     private static DeviceDetails deviceDetails1ClientA;

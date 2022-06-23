@@ -10,7 +10,7 @@ import java.util.HashMap;
 
 import javax.crypto.KeyGenerator;
 
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.rest.RestChannelBase;
 import io.ably.lib.test.common.Helpers;
@@ -31,8 +31,8 @@ import io.ably.lib.util.Crypto.CipherParams;
 public abstract class RestCryptoTest extends ParameterizedTest {
 
     private static final String TAG = RestCryptoTest.class.getName();
-    private AblyBase<PushBase, PlatformBase, RestChannelBase> ably;
-    private AblyBase<PushBase, PlatformBase, RestChannelBase> ably_alt;
+    private AblyBase<PushBase, Platform, RestChannelBase> ably;
+    private AblyBase<PushBase, Platform, RestChannelBase> ably_alt;
 
     @Before
     public void setUpBefore() throws Exception {
