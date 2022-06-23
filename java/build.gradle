@@ -10,32 +10,6 @@ apply from: 'publish.gradle'
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
-// Default jar: add io.ably classes from :lib dependency.
-jar {
-    baseName = 'ably-java'
-    from {
-        configurations.compile.collect { file ->
-            file.directory ? file : zipTree(file)
-        }
-    }
-    includes = ['**/io/ably/**']
-    includeEmptyDirs false
-    exclude 'META-INF/**'
-}
-
-// fullJar: add all classes from dependencies transitively.
-task fullJar(type: Jar) {
-    baseName = 'ably-java'
-    classifier = 'full'
-    from {
-        configurations.compile.collect { file ->
-            file.directory ? file : zipTree(file)
-        }
-    }
-    with jar
-    exclude 'META-INF/**'
-}
-
 dependencies {
     implementation project(':lib')
 
@@ -43,17 +17,7 @@ dependencies {
     testImplementation project(path: ':lib', configuration: 'sharedTestClasses')
 }
 
-assemble.dependsOn fullJar
 publish.dependsOn checkstyleMain
-
-configurations {
-    fullConfiguration
-    testsConfiguration
-}
-
-artifacts {
-    fullConfiguration fullJar
-}
 
 task testRealtimeSuite(type: Test) {
     filter {

@@ -35,7 +35,7 @@ repositories {
 }
 ```
 
-We only support installation via Maven / Gradle from the Maven Central repository. If you want to use a standalone fat JAR (i.e. containing all dependencies), it can be generated via a Gradle task (see [building](#building) below), creating a "Java" (JRE) library variant only. There is no standalone / self-contained AAR build option. Checkout [requirements](#requirements).
+We only support installation via Maven / Gradle from the Maven Central repository. Checkout [requirements](#requirements).
 
 ## Runtime Requirements
 
