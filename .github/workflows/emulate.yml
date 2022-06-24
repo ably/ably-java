@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        android-api-level: [ 19, 24, 30 ]
+        android-api-level: [ 19, 24, 29 ]
 
     steps:
       - uses: actions/checkout@v2
