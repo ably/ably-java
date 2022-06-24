@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - feature/emulation_test
 
 jobs:
   check:
