@@ -7,12 +7,17 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        android-api-level: [ 19, 24, 31 ]
+
     steps:
       - uses: actions/checkout@v2
 
       - uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 24
+          api-level: ${{ matrix.android-api-level }}
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           script: ./gradlew :android:connectedAndroidTest
 
