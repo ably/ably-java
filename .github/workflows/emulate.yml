@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        android-api-level: [ 19, 24, 31 ]
+        android-api-level: [ 19, 24, 30 ]
 
     steps:
       - uses: actions/checkout@v2
@@ -19,7 +19,8 @@ jobs:
       - uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.android-api-level }}
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
           script: ./gradlew :android:connectedAndroidTest
 
       - uses: actions/upload-artifact@v2
