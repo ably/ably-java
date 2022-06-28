@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.preference.PreferenceManager;
 import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
@@ -55,6 +56,8 @@ import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.IntentUtils;
 import io.ably.lib.util.JsonUtils;
 import io.ably.lib.util.Serialisation;
+import java9.util.stream.StreamSupport;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -1466,7 +1469,11 @@ public class AndroidPushTest {
 
         assertInstanceOf(NotActivated.class, activation.machine.current);
         // Since the event doesn't have a nullary constructor, it should be dropped.
-        assertEquals(0, activation.machine.pendingEvents.stream().filter(e -> e instanceof SyncRegistrationFailed).count());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            assertEquals(0, activation.machine.pendingEvents.stream().filter(e -> e instanceof SyncRegistrationFailed).count());
+        } else {
+            assertEquals(0, StreamSupport.stream(activation.machine.pendingEvents).filter(e -> e instanceof SyncRegistrationFailed).count());
+        }
     }
 
     // This is all copied and pasted from ParameterizedTest, since I can't inherit from it.
