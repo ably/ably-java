@@ -1,5 +1,6 @@
 package io.ably.lib.test.android;
 
+import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -80,6 +81,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 @RunWith(AndroidJUnit4.class)
 public class AndroidPushTest {
@@ -975,6 +977,7 @@ public class AndroidPushTest {
     // RSH3d3
     @Test
     public void WaitingForNewPushDeviceDetails_on_GotPushDeviceDetails() throws Exception {
+        assumeTrue("Can only run on API Level 21 or newer because HttpURLConnection does not support PATCH", Build.VERSION.SDK_INT >= 21);
         new UpdateRegistrationTest() {
             @Override
             protected void setUpMachineState(TestCase testCase) throws AblyException {
