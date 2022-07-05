@@ -35,6 +35,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class ConnectionManager implements ConnectListener {
+    final ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
+    final ExecutorCompletionService<AblyException> executorCompletionService = new ExecutorCompletionService<>(singleThreadExecutor);
 
     /**************************************************************
      * ConnectionManager
@@ -1023,9 +1025,7 @@ public class ConnectionManager implements ConnectListener {
             /* Wait for a currentState transition into anything other than connecting or
              * disconnected asynchrously and return a Future to the caller signifying completion.
              * This is the async alternative of above   */
-            final ExecutorService executor = Executors.newSingleThreadExecutor();
-            final ExecutorCompletionService<AblyException> service = new ExecutorCompletionService<>(executor);
-            return service.submit(() -> {
+            return executorCompletionService.submit(() -> {
                 boolean waitingForConnected = true;
                 while (waitingForConnected) {
                     final ErrorInfo reason = waiter.waitForChange();
@@ -1049,8 +1049,6 @@ public class ConnectionManager implements ConnectListener {
                 }
                 return null;
             });
-
-
         } finally {
             waiter.close();
         }
