@@ -827,7 +827,11 @@ public class Auth {
      * Renew auth credentials.
      * Will obtain a new token, even if we already have an apparently valid one.
      * Authorization will use the parameters supplied on construction.
+
+     * @deprecated this method is deprecated
+     * Please use  {@link Auth#renewAuth()} instead.
      */
+    @Deprecated
     public TokenDetails renew() throws AblyException {
         TokenDetails tokenDetails = assertValidToken(this.tokenParams, this.authOptions, true);
         ably.onAuthUpdated(tokenDetails.token, false);
