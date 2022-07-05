@@ -309,10 +309,9 @@ public abstract class AblyBase implements AutoCloseable {
     /**
      * Override this method in AblyRealtime and pass updated token to ConnectionManager
      * @param token new token
-     * @param waitForResponse wait for server response before returning from method
      * @throws AblyException
      */
-    protected void onAuthUpdated(String token, boolean waitForResponse) throws AblyException {
+    protected void onAuthUpdated(String token) throws AblyException {
         /* Default is to do nothing. Overridden by subclass. */
     }
 

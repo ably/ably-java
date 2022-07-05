@@ -541,7 +541,7 @@ public class Auth {
                 throw e;
             }
         }
-        ably.onAuthUpdated(tokenDetails.token, true);
+        ably.onAuthUpdated(tokenDetails.token);
         return tokenDetails;
     }
 
@@ -830,7 +830,7 @@ public class Auth {
      */
     public TokenDetails renew() throws AblyException {
         TokenDetails tokenDetails = assertValidToken(this.tokenParams, this.authOptions, true);
-        ably.onAuthUpdated(tokenDetails.token, false);
+        ably.onAuthUpdated(tokenDetails.token);
         return tokenDetails;
     }
 

@@ -904,7 +904,7 @@ public class ConnectionManager implements ConnectListener {
      * the current connection to use that token; or if not currently connected,
      * to connect with the token.
      */
-    public void onAuthUpdated(final String token, final boolean waitForResponse) throws AblyException {
+    public void onAuthUpdated(final String token) throws AblyException {
         final ConnectionWaiter waiter = new ConnectionWaiter();
         try {
             switch(currentState.state) {
@@ -939,10 +939,6 @@ public class ConnectionManager implements ConnectListener {
                     /* Start a new connection attempt. */
                     connect();
                     break;
-            }
-
-            if(!waitForResponse) {
-                return;
             }
 
             /* Wait for a currentState transition into anything other than connecting or
