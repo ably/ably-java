@@ -1,5 +1,17 @@
 package io.ably.lib.transport;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
 import io.ably.lib.http.HttpHelpers;
@@ -12,6 +24,7 @@ import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.realtime.ConnectionStateListener.ConnectionStateChange;
 import io.ably.lib.transport.ITransport.ConnectListener;
 import io.ably.lib.transport.ITransport.TransportParams;
+import io.ably.lib.transport.NetworkConnectivity.NetworkConnectivityListener;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ConnectionDetails;
@@ -19,16 +32,7 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolSerializer;
 import io.ably.lib.util.Log;
-import io.ably.lib.transport.NetworkConnectivity.NetworkConnectivityListener;
 import io.ably.lib.util.PlatformAgentProvider;
-
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
 public class ConnectionManager implements ConnectListener {
 
@@ -71,7 +75,9 @@ public class ConnectionManager implements ConnectListener {
      */
     public interface Channels {
         void onMessage(ProtocolMessage msg);
+
         void suspendAll(ErrorInfo error, boolean notifyStateChange);
+
         Iterable<Channel> values();
     }
 
@@ -129,6 +135,7 @@ public class ConnectionManager implements ConnectListener {
         /**
          * Called on the current state to determine the response to a
          * give state change request.
+         *
          * @param target: the state change request or event
          * @return StateIndication result: the determined response to
          * the request with the required state transition, if any. A
@@ -138,6 +145,7 @@ public class ConnectionManager implements ConnectListener {
 
         /**
          * Called when the timeout occurs for the current state.
+         *
          * @return StateIndication result: the determined response to
          * the timeout with the required state transition, if any. A
          * null result indicates that there is no resulting transition.
@@ -148,18 +156,19 @@ public class ConnectionManager implements ConnectListener {
 
         /**
          * Perform a transition to this state.
+         *
          * @param stateIndication: the transition request that triggered this transition
-         * @param change: the change event corresponding to this transition.
+         * @param change:          the change event corresponding to this transition.
          */
         void enact(StateIndication stateIndication, ConnectionStateChange change) {
-            if(change != null) {
+            if (change != null) {
                 /* if now connected, send queued messages, etc */
-                if(sendEvents) {
+                if (sendEvents) {
                     sendQueuedMessages();
-                } else if(!queueEvents) {
+                } else if (!queueEvents) {
                     failQueuedMessages(stateIndication.reason);
                 }
-                for(final Channel channel : channels.values()) {
+                for (final Channel channel : channels.values()) {
                     enactForChannel(stateIndication, change, channel);
                 }
             }
@@ -167,11 +176,13 @@ public class ConnectionManager implements ConnectListener {
 
         /**
          * Perform a transition to this state for a given channel.
+         *
          * @param stateIndication: the transition request that triggered this transition
-         * @param change: the change event corresponding to this transition.
-         * @param channel: the channel
+         * @param change:          the change event corresponding to this transition.
+         * @param channel:         the channel
          */
-        void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, Channel channel) {}
+        void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, Channel channel) {
+        }
     }
 
     /**************************************************
@@ -186,7 +197,7 @@ public class ConnectionManager implements ConnectListener {
         @Override
         StateIndication validateTransition(StateIndication target) {
             /* we can transition to any other state, other than ourselves */
-            if(target.state == this.state) {
+            if (target.state == this.state) {
                 return null;
             }
             return target;
@@ -231,7 +242,7 @@ public class ConnectionManager implements ConnectListener {
 
         @Override
         StateIndication validateTransition(StateIndication target) {
-            if(target.state == this.state) {
+            if (target.state == this.state) {
                 /* RTN24: no currentState change, so no transition, required, but there will be an update event;
                  * connected is special case because we want to deliver reauth notifications to listeners as an update */
                 addAction(new UpdateAction(null));
@@ -263,11 +274,11 @@ public class ConnectionManager implements ConnectListener {
         @Override
         StateIndication validateTransition(StateIndication target) {
             /* we can't transition to ourselves */
-            if(target.state == this.state) {
+            if (target.state == this.state) {
                 return null;
             }
             /* a closing event will transition directly to closed */
-            if(target.state == ConnectionState.closing) {
+            if (target.state == ConnectionState.closing) {
                 return new StateIndication(ConnectionState.closed);
             }
             /* otherwise, the transition is valid */
@@ -290,10 +301,10 @@ public class ConnectionManager implements ConnectListener {
         void enact(StateIndication stateIndication, ConnectionStateChange change) {
             super.enact(stateIndication, change);
             clearTransport();
-            if(change.previous == ConnectionState.connected) {
+            if (change.previous == ConnectionState.connected) {
                 setSuspendTime();
                 /* we were connected, so retry immediately */
-                if(!suppressRetry) {
+                if (!suppressRetry) {
                     requestState(ConnectionState.connecting);
                 }
             }
@@ -315,11 +326,11 @@ public class ConnectionManager implements ConnectListener {
         @Override
         StateIndication validateTransition(StateIndication target) {
             /* we can't transition to ourselves */
-            if(target.state == this.state) {
+            if (target.state == this.state) {
                 return null;
             }
             /* a closing event will transition directly to closed */
-            if(target.state == ConnectionState.closing) {
+            if (target.state == ConnectionState.closing) {
                 return new StateIndication(ConnectionState.closed);
             }
             /* otherwise, the transition is valid */
@@ -352,11 +363,11 @@ public class ConnectionManager implements ConnectListener {
         @Override
         StateIndication validateTransition(StateIndication target) {
             /* we can't transition to ourselves */
-            if(target.state == this.state) {
+            if (target.state == this.state) {
                 return null;
             }
             /* any disconnection event will transition directly to closed */
-            if(target.state == ConnectionState.disconnected || target.state == ConnectionState.suspended) {
+            if (target.state == ConnectionState.disconnected || target.state == ConnectionState.suspended) {
                 return new StateIndication(ConnectionState.closed);
             }
             /* otherwise, the transition is valid */
@@ -372,7 +383,7 @@ public class ConnectionManager implements ConnectListener {
         void enact(StateIndication stateIndication, ConnectionStateChange change) {
             super.enact(stateIndication, change);
             boolean closed = closeImpl();
-            if(closed) {
+            if (closed) {
                 addAction(new AsynchronousStateChangeAction(ConnectionState.closed));
             }
         }
@@ -392,7 +403,7 @@ public class ConnectionManager implements ConnectListener {
         @Override
         StateIndication validateTransition(StateIndication target) {
             /* we only leave the closed state via a connection attempt */
-            if(target.state == ConnectionState.connecting) {
+            if (target.state == ConnectionState.connecting) {
                 return target;
             }
             /* otherwise, the transition is not valid */
@@ -425,7 +436,7 @@ public class ConnectionManager implements ConnectListener {
         @Override
         StateIndication validateTransition(StateIndication target) {
             /* we only leave the failed state via a connection attempt */
-            if(target.state == ConnectionState.connecting) {
+            if (target.state == ConnectionState.connecting) {
                 return target;
             }
             /* otherwise, the transition is not valid */
@@ -458,7 +469,7 @@ public class ConnectionManager implements ConnectListener {
 
     /**
      * Listens for connection state changes.
-     *
+     * <p>
      * The close() method must be called when the ConnectionWaiter is no longer needed.
      */
     private class ConnectionWaiter implements ConnectionStateListener {
@@ -482,7 +493,10 @@ public class ConnectionManager implements ConnectListener {
 
             Log.d(TAG, "ConnectionWaiter.waitFor()");
             if (change == null) {
-                try { wait(); } catch(InterruptedException e) {}
+                try {
+                    wait();
+                } catch (InterruptedException e) {
+                }
             }
             Log.d(TAG, "ConnectionWaiter.waitFor done: currentState=" + currentState + ")");
             ErrorInfo reason = change.reason;
@@ -520,7 +534,8 @@ public class ConnectionManager implements ConnectListener {
     /**
      * A class that encapsulates actions to perform by the ConnectionManager
      */
-    private interface Action extends Runnable {}
+    private interface Action extends Runnable {
+    }
 
     /**
      * An class that performs a state transition
@@ -544,15 +559,15 @@ public class ConnectionManager implements ConnectListener {
         }
 
         protected void enactState() {
-            if(change != null) {
-                if(change.current != change.previous) {
+            if (change != null) {
+                if (change.current != change.previous) {
                     /* broadcast currentState change */
                     connection.onConnectionStateChange(change);
                 }
 
                 /* implement the state change */
                 states.get(stateIndication.state).enact(stateIndication, change);
-                if(currentState.terminal) {
+                if (currentState.terminal) {
                     clearTransport();
                 }
             }
@@ -583,7 +598,7 @@ public class ConnectionManager implements ConnectListener {
      * asynchronously. This applies to all transitions that are not transitions away from
      * the connected state.
      */
-    private class AsynchronousStateChangeAction extends StateChangeAction implements Action{
+    private class AsynchronousStateChangeAction extends StateChangeAction implements Action {
         AsynchronousStateChangeAction(ConnectionState state) {
             super(null, new StateIndication(state, null));
         }
@@ -649,6 +664,7 @@ public class ConnectionManager implements ConnectListener {
 
     /**
      * Append an action to the pending action queue
+     *
      * @param action: the action
      */
     private synchronized void addAction(Action action) {
@@ -662,7 +678,7 @@ public class ConnectionManager implements ConnectListener {
     class ActionHandler implements Runnable {
 
         public void run() {
-            while(true) {
+            while (true) {
                 /*
                  * Until we're committed to exit we:
                  * - wait for an action or timeout
@@ -671,10 +687,10 @@ public class ConnectionManager implements ConnectListener {
                  */
 
                 /* Hold the lock until we obtain an action */
-                synchronized(ConnectionManager.this) {
-                    while(actionQueue.size() == 0) {
+                synchronized (ConnectionManager.this) {
+                    while (actionQueue.size() == 0) {
                         /* if we're in a terminal state, then this thread is done */
-                        if(currentState.terminal) {
+                        if (currentState.terminal) {
                             /* indicate that this thread is committed to die */
                             handlerThread = null;
                             stopConnectivityListener();
@@ -703,10 +719,10 @@ public class ConnectionManager implements ConnectListener {
 
                 /* perform outstanding actions, without the ConnectionManager locked */
                 Action deferredAction;
-                while((deferredAction = actionQueue.poll()) != null) {
+                while ((deferredAction = actionQueue.poll()) != null) {
                     try {
                         deferredAction.run();
-                    } catch(Exception e) {
+                    } catch (Exception e) {
                         Log.e(TAG, "Action invocation failed with exception: action = " + deferredAction.toString(), e);
                     }
                 }
@@ -730,7 +746,7 @@ public class ConnectionManager implements ConnectListener {
         /* debug options */
         ITransport.Factory transportFactory = null;
         RawProtocolListener protocolListener = null;
-        if(options instanceof DebugOptions) {
+        if (options instanceof DebugOptions) {
             protocolListener = ((DebugOptions) options).protocolListener;
             transportFactory = ((DebugOptions) options).transportFactory;
         }
@@ -771,7 +787,7 @@ public class ConnectionManager implements ConnectListener {
 
     public synchronized void connect() {
         /* connect() is the only action that will bring the ConnectionManager out of a terminal currentState */
-        if(currentState.terminal || currentState.state == ConnectionState.initialized) {
+        if (currentState.terminal || currentState.state == ConnectionState.initialized) {
             startup();
         }
         requestState(ConnectionState.connecting);
@@ -829,11 +845,11 @@ public class ConnectionManager implements ConnectListener {
 
     public void ping(final CompletionListener listener) {
         HeartbeatWaiter waiter = new HeartbeatWaiter(listener);
-        if(currentState.state != ConnectionState.connected) {
+        if (currentState.state != ConnectionState.connected) {
             waiter.onError(new ErrorInfo("Unable to ping service; not connected", 40000, 400));
             return;
         }
-        synchronized(heartbeatWaiters) {
+        synchronized (heartbeatWaiters) {
             heartbeatWaiters.add(waiter);
             waiter.start();
         }
@@ -856,21 +872,21 @@ public class ConnectionManager implements ConnectListener {
 
         private void onSuccess() {
             clear();
-            if(listener != null) {
+            if (listener != null) {
                 listener.onSuccess();
             }
         }
 
         private void onError(ErrorInfo reason) {
             clear();
-            if(listener != null) {
+            if (listener != null) {
                 listener.onError(reason);
             }
         }
 
         private boolean clear() {
             boolean pending = heartbeatWaiters.remove(this);
-            if(pending) {
+            if (pending) {
                 interrupt();
             }
             return pending;
@@ -879,14 +895,14 @@ public class ConnectionManager implements ConnectListener {
         @Override
         public void run() {
             boolean pending;
-            synchronized(heartbeatWaiters) {
+            synchronized (heartbeatWaiters) {
                 try {
                     heartbeatWaiters.wait(HEARTBEAT_TIMEOUT);
                 } catch (InterruptedException ie) {
                 }
                 pending = clear();
             }
-            if(pending) {
+            if (pending) {
                 onError(new ErrorInfo("Timed out waiting for heartbeat response", 50000, 500));
             } else {
                 onSuccess();
@@ -907,7 +923,7 @@ public class ConnectionManager implements ConnectListener {
     public void onAuthUpdated(final String token, final boolean waitForResponse) throws AblyException {
         final ConnectionWaiter waiter = new ConnectionWaiter();
         try {
-            switch(currentState.state) {
+            switch (currentState.state) {
                 case connected:
                     /* (RTC8a) If the connection is in the CONNECTED currentState and
                      * auth.authorize is called or Ably requests a re-authentication
@@ -941,7 +957,7 @@ public class ConnectionManager implements ConnectListener {
                     break;
             }
 
-            if(!waitForResponse) {
+            if (!waitForResponse) {
                 return;
             }
 
@@ -975,6 +991,80 @@ public class ConnectionManager implements ConnectListener {
         }
     }
 
+    public Future<AblyException> onAuthUpdatedAsync(final String token) {
+        final ConnectionWaiter waiter = new ConnectionWaiter();
+        try {
+            switch (currentState.state) {
+                case connected:
+                    /* (RTC8a) If the connection is in the CONNECTED currentState and
+                     * auth.authorize is called or Ably requests a re-authentication
+                     * (see RTN22), the client must obtain a new token, then send an
+                     * AUTH ProtocolMessage to Ably with an auth attribute
+                     * containing an AuthDetails object with the token string. */
+                    try {
+                        ProtocolMessage msg = new ProtocolMessage(ProtocolMessage.Action.auth);
+                        msg.auth = new ProtocolMessage.AuthDetails(token);
+                        send(msg, false, null);
+                    } catch (AblyException e) {
+                        /* The send failed. Close the transport; if a subsequent
+                         * reconnect succeeds, it will be with the new token. */
+                        Log.v(TAG, "onAuthUpdated: closing transport after send failure");
+                        transport.close();
+                    }
+                    break;
+
+                case connecting:
+                    /* Close the connecting transport. */
+                    Log.v(TAG, "onAuthUpdated: closing connecting transport");
+                    ErrorInfo disconnectError = new ErrorInfo("Aborting incomplete connection with superseded auth params", 503, 80003);
+                    requestState(new StateIndication(ConnectionState.disconnected, disconnectError, null, null));
+                    /* Start a new connection attempt. */
+                    connect();
+                    break;
+
+                default:
+                    /* Start a new connection attempt. */
+                    connect();
+                    break;
+            }
+
+            /* Wait for a currentState transition into anything other than connecting or
+             * disconnected asynchrously and return a Future to the caller signifying completion.
+             * This is the async alternative of above   */
+            final ExecutorService executor = Executors.newSingleThreadExecutor();
+            final ExecutorCompletionService<AblyException> service = new ExecutorCompletionService<>(executor);
+            return service.submit(() -> {
+                boolean waitingForConnected = true;
+                while (waitingForConnected) {
+                    final ErrorInfo reason = waiter.waitForChange();
+                    final ConnectionState connectionState = currentState.state;
+                    switch (connectionState) {
+                        case connected:
+                            Log.v(TAG, "onAuthUpdated: got connected");
+                            waitingForConnected = false;
+                            break;
+
+                        case connecting:
+                        case disconnected:
+                            Log.v(TAG, "onAuthUpdated: " + connectionState);
+                            break;
+
+                        default:
+                            /* suspended/closed/error: throw the error. */
+                            Log.v(TAG, "onAuthUpdated: throwing exception");
+                            return AblyException.fromErrorInfo(reason);
+                    }
+                }
+                return null;
+            });
+
+
+        } finally {
+            waiter.close();
+        }
+    }
+
+
     /**
      * Called when where was an error during authentication attempt
      *
@@ -983,7 +1073,7 @@ public class ConnectionManager implements ConnectListener {
     public void onAuthError(ErrorInfo errorInfo) {
         Log.i(TAG, String.format(Locale.ROOT, "onAuthError: (%d) %s", errorInfo.code, errorInfo.message));
 
-        if(errorInfo.statusCode == 403) {
+        if (errorInfo.statusCode == 403) {
             ConnectionStateChange failedStateChange =
                 new ConnectionStateChange(
                     connection.state,
@@ -1019,6 +1109,7 @@ public class ConnectionManager implements ConnectListener {
 
     /**
      * React on message from the transport
+     *
      * @param transport transport instance or null to bypass transport correctness check (for testing)
      * @param message
      * @throws AblyException
@@ -1031,23 +1122,23 @@ public class ConnectionManager implements ConnectListener {
             Log.v(TAG, "onMessage() (transport = " + transport + "): " + message.action + ": " + new String(ProtocolSerializer.writeJSON(message)));
         }
         try {
-            if(protocolListener != null) {
+            if (protocolListener != null) {
                 protocolListener.onRawMessageRecv(message);
             }
-            switch(message.action) {
+            switch (message.action) {
                 case heartbeat:
                     onHeartbeat(message);
                     break;
                 case error:
                     ErrorInfo reason = message.error;
-                    if(reason == null) {
+                    if (reason == null) {
                         Log.e(TAG, "onMessage(): ERROR message received (no error detail)");
                     } else {
                         Log.e(TAG, "onMessage(): ERROR message received; message = " + reason.message + "; code = " + reason.code);
                     }
 
                     /* an error message may signify an error currentState in a channel, or in the connection */
-                    if(message.channel != null) {
+                    if (message.channel != null) {
                         onChannelMessage(message);
                     } else {
                         onError(message);
@@ -1075,15 +1166,14 @@ public class ConnectionManager implements ConnectListener {
                 default:
                     onChannelMessage(message);
             }
-        }
-        catch(Exception e) {
+        } catch (Exception e) {
             // Prevent any non-AblyException to be thrown
             throw AblyException.fromThrowable(e);
         }
     }
 
     private void onChannelMessage(ProtocolMessage message) {
-        if(message.connectionSerial != null) {
+        if (message.connectionSerial != null) {
             connection.serial = message.connectionSerial.longValue();
             if (connection.key != null)
                 connection.recoveryKey = connection.key + ":" + message.connectionSerial;
@@ -1103,9 +1193,9 @@ public class ConnectionManager implements ConnectListener {
          * Suspend all channels attached to the previous id;
          * this will be reattached in setConnection() */
         ErrorInfo error = message.error;
-        if(connection.id != null && !message.connectionId.equals(connection.id)) {
+        if (connection.id != null && !message.connectionId.equals(connection.id)) {
             /* we need to suspend the original connection */
-            if(error == null) {
+            if (error == null) {
                 error = REASON_SUSPENDED;
             }
             channels.suspendAll(error, false);
@@ -1119,11 +1209,11 @@ public class ConnectionManager implements ConnectListener {
              * pending message queue (which fails the messages currently in
              * there). */
             pendingMessages.reset(msgSerial,
-                    new ErrorInfo("Connection resume failed", 500, 50000));
+                new ErrorInfo("Connection resume failed", 500, 50000));
             msgSerial = 0;
         }
         connection.id = message.connectionId;
-        if(message.connectionSerial != null) {
+        if (message.connectionSerial != null) {
             connection.serial = message.connectionSerial.longValue();
             if (connection.key != null)
                 connection.recoveryKey = connection.key + ":" + message.connectionSerial;
@@ -1149,14 +1239,14 @@ public class ConnectionManager implements ConnectListener {
 
     private synchronized void onDisconnected(ProtocolMessage message) {
         ErrorInfo reason = message.error;
-        if(reason != null && isTokenError(reason)) {
+        if (reason != null && isTokenError(reason)) {
             ably.auth.onAuthError(reason);
         }
         requestState(new StateIndication(ConnectionState.disconnected, reason));
     }
 
     private synchronized void onClosed(ProtocolMessage message) {
-        if(message.error != null) {
+        if (message.error != null) {
             this.onError(message);
         } else {
             connection.key = null;
@@ -1167,7 +1257,7 @@ public class ConnectionManager implements ConnectListener {
     private synchronized void onError(ProtocolMessage message) {
         connection.key = null;
         ErrorInfo reason = message.error;
-        if(isTokenError(reason)) {
+        if (isTokenError(reason)) {
             ably.auth.onAuthError(reason);
         }
         ConnectionState destinationState = isFatalError(reason) ? ConnectionState.failed : ConnectionState.disconnected;
@@ -1183,7 +1273,7 @@ public class ConnectionManager implements ConnectListener {
     }
 
     private void onHeartbeat(ProtocolMessage message) {
-        synchronized(heartbeatWaiters) {
+        synchronized (heartbeatWaiters) {
             heartbeatWaiters.clear();
             heartbeatWaiters.notifyAll();
         }
@@ -1194,24 +1284,24 @@ public class ConnectionManager implements ConnectListener {
      ******************************/
 
     private synchronized void startup() {
-        if(handlerThread == null) {
+        if (handlerThread == null) {
             (handlerThread = new Thread(new ActionHandler())).start();
             startConnectivityListener();
         }
     }
 
     private boolean checkConnectionStale() {
-        if(lastActivity == 0) {
+        if (lastActivity == 0) {
             return false;
         }
         long now = System.currentTimeMillis();
         long intervalSinceLastActivity = now - lastActivity;
-        if(intervalSinceLastActivity > (maxIdleInterval + connectionStateTtl)) {
+        if (intervalSinceLastActivity > (maxIdleInterval + connectionStateTtl)) {
             /* RTN15g1, RTN15g2 Force a new connection if the previous one is stale;
              * Clearing connection.key will ensure that we don't attempt to resume;
              * leaving the original connection.id will mean that we notice at
              * connection time that the connectionId has changed */
-            if(connection.key != null) {
+            if (connection.key != null) {
                 Log.v(TAG, "Clearing stale connection key to suppress resume");
                 connection.key = null;
                 connection.recoveryKey = null;
@@ -1228,11 +1318,12 @@ public class ConnectionManager implements ConnectListener {
     /**
      * After a connection attempt failed, check to
      * see whether we should attempt to use a fallback.
+     *
      * @param reason
      * @return StateIndication if a fallback connection attempt is required, otherwise null
      */
     private StateIndication checkFallback(ErrorInfo reason) {
-        if(pendingConnect != null && (reason == null || reason.statusCode >= 500)) {
+        if (pendingConnect != null && (reason == null || reason.statusCode >= 500)) {
             if (checkConnectivity()) {
                 /* we will try a fallback host */
                 String hostFallback = hosts.getFallback(pendingConnect.host);
@@ -1257,12 +1348,13 @@ public class ConnectionManager implements ConnectListener {
 
     private void tryWait(long timeout) {
         try {
-            if(timeout == 0) {
+            if (timeout == 0) {
                 wait();
             } else {
                 wait(timeout);
             }
-        } catch (InterruptedException e) {}
+        } catch (InterruptedException e) {
+        }
     }
 
     private void handleReauth() {
@@ -1295,7 +1387,7 @@ public class ConnectionManager implements ConnectListener {
             Log.v(TAG, "onTransportAvailable: ignoring connection event from superseded transport");
             return;
         }
-        if(protocolListener != null) {
+        if (protocolListener != null) {
             protocolListener.onRawConnect(transport.getURL());
         }
     }
@@ -1310,21 +1402,21 @@ public class ConnectionManager implements ConnectListener {
 
         /* if this is a failure of a pending connection attempt, decide whether or not to attempt a fallback host */
         StateIndication fallbackAttempt = checkFallback(reason);
-        if(fallbackAttempt != null) {
+        if (fallbackAttempt != null) {
             requestState(fallbackAttempt);
             return;
         }
 
         StateIndication stateIndication = null;
-        if(reason != null) {
-            if(isFatalError(reason)) {
+        if (reason != null) {
+            if (isFatalError(reason)) {
                 Log.e(TAG, "onTransportUnavailable: unexpected transport error: " + reason.message);
                 stateIndication = new StateIndication(ConnectionState.failed, reason);
-            } else if(isTokenError(reason)) {
+            } else if (isTokenError(reason)) {
                 ably.auth.onAuthError(reason);
             }
         }
-        if(stateIndication == null) {
+        if (stateIndication == null) {
             stateIndication = checkSuspended(reason);
         }
         addAction(new SynchronousStateChangeAction(transport, stateIndication));
@@ -1360,13 +1452,13 @@ public class ConnectionManager implements ConnectListener {
         ITransport transport;
         try {
             transport = transportFactory.getTransport(pendingConnect, this);
-        } catch(Exception e) {
+        } catch (Exception e) {
             String msg = "Unable to instance transport class";
             Log.e(getClass().getName(), msg, e);
             throw new RuntimeException(msg, e);
         }
         ITransport oldTransport;
-        synchronized(this) {
+        synchronized (this) {
             oldTransport = this.transport;
             this.transport = transport;
         }
@@ -1374,23 +1466,24 @@ public class ConnectionManager implements ConnectListener {
             oldTransport.close();
         }
         transport.connect(this);
-        if(protocolListener != null) {
+        if (protocolListener != null) {
             protocolListener.onRawConnectRequested(transport.getURL());
         }
     }
 
     /**
      * Close any existing transport
+     *
      * @return closed if true, otherwise awaiting closed indication
      */
     private boolean closeImpl() {
-        if(transport == null) {
+        if (transport == null) {
             return true;
         }
 
         /* if connected, send an explicit close message and await response */
         boolean isConnected = currentState.state == ConnectionState.connected;
-        if(isConnected) {
+        if (isConnected) {
             try {
                 Log.v(TAG, "Requesting connection close");
                 transport.send(new ProtocolMessage(ProtocolMessage.Action.close));
@@ -1409,7 +1502,7 @@ public class ConnectionManager implements ConnectListener {
     }
 
     private void clearTransport() {
-        if(transport != null) {
+        if (transport != null) {
             transport.close();
             transport = null;
         }
@@ -1420,12 +1513,13 @@ public class ConnectionManager implements ConnectListener {
      * without reference to a specific ably host. This is to determine whether
      * it is better to try a fallback host, or keep retrying with the default
      * host.
+     *
      * @return boolean, true if network is available
      */
     protected boolean checkConnectivity() {
         try {
             return HttpHelpers.getUrlString(ably.httpCore, INTERNET_CHECK_URL).contains(INTERNET_CHECK_OK);
-        } catch(AblyException e) {
+        } catch (AblyException e) {
             return false;
         }
     }
@@ -1441,6 +1535,7 @@ public class ConnectionManager implements ConnectListener {
     public static class QueuedMessage {
         public final ProtocolMessage msg;
         public final CompletionListener listener;
+
         public QueuedMessage(ProtocolMessage msg, CompletionListener listener) {
             this.msg = msg;
             this.listener = listener;
@@ -1449,13 +1544,13 @@ public class ConnectionManager implements ConnectListener {
 
     public void send(ProtocolMessage msg, boolean queueEvents, CompletionListener listener) throws AblyException {
         State state;
-        synchronized(this) {
+        synchronized (this) {
             state = this.currentState;
-            if(state.sendEvents) {
+            if (state.sendEvents) {
                 sendImpl(msg, listener);
                 return;
             }
-            if(state.queueEvents && queueEvents) {
+            if (state.queueEvents && queueEvents) {
                 queuedMessages.add(new QueuedMessage(msg, listener));
                 return;
             }
@@ -1464,39 +1559,39 @@ public class ConnectionManager implements ConnectListener {
     }
 
     private void sendImpl(ProtocolMessage message, CompletionListener listener) throws AblyException {
-        if(transport == null) {
+        if (transport == null) {
             Log.v(TAG, "sendImpl(): Discarding message; transport unavailable");
             return;
         }
-        if(ProtocolMessage.ackRequired(message)) {
+        if (ProtocolMessage.ackRequired(message)) {
             message.msgSerial = msgSerial++;
             pendingMessages.push(new QueuedMessage(message, listener));
         }
-        if(protocolListener != null) {
+        if (protocolListener != null) {
             protocolListener.onRawMessageSend(message);
         }
         transport.send(message);
     }
 
     private void sendImpl(QueuedMessage msg) throws AblyException {
-        if(transport == null) {
+        if (transport == null) {
             Log.v(TAG, "sendImpl(): Discarding message; transport unavailable");
             return;
         }
         ProtocolMessage message = msg.msg;
-        if(ProtocolMessage.ackRequired(message)) {
+        if (ProtocolMessage.ackRequired(message)) {
             message.msgSerial = msgSerial++;
             pendingMessages.push(msg);
         }
-        if(protocolListener != null) {
+        if (protocolListener != null) {
             protocolListener.onRawMessageSend(message);
         }
         transport.send(message);
     }
 
     private void sendQueuedMessages() {
-        synchronized(this) {
-            while(queuedMessages.size() > 0) {
+        synchronized (this) {
+            while (queuedMessages.size() > 0) {
                 try {
                     sendImpl(queuedMessages.get(0));
                 } catch (AblyException e) {
@@ -1509,8 +1604,8 @@ public class ConnectionManager implements ConnectListener {
     }
 
     private void failQueuedMessages(ErrorInfo reason) {
-        synchronized(this) {
-            for (QueuedMessage queued: queuedMessages) {
+        synchronized (this) {
+            for (QueuedMessage queued : queuedMessages) {
                 if (queued.listener != null) {
                     try {
                         queued.listener.onError(reason);
@@ -1536,50 +1631,50 @@ public class ConnectionManager implements ConnectListener {
 
         public void ack(long msgSerial, int count, ErrorInfo reason) {
             QueuedMessage[] ackMessages = null, nackMessages = null;
-            synchronized(this) {
-                if(msgSerial < startSerial) {
+            synchronized (this) {
+                if (msgSerial < startSerial) {
                     /* this is an error condition and shouldn't happen but
                      * we can handle it gracefully by only processing the
                      * relevant portion of the response */
-                    count -= (int)(startSerial - msgSerial);
-                    if(count < 0)
+                    count -= (int) (startSerial - msgSerial);
+                    if (count < 0)
                         count = 0;
                     msgSerial = startSerial;
                 }
-                if(msgSerial > startSerial) {
+                if (msgSerial > startSerial) {
                     /* this counts as a nack of the messages earlier than serial,
                      * as well as an ack */
-                    int nCount = (int)(msgSerial - startSerial);
+                    int nCount = (int) (msgSerial - startSerial);
                     List<QueuedMessage> nackList = queue.subList(0, nCount);
                     nackMessages = nackList.toArray(new QueuedMessage[nCount]);
                     nackList.clear();
                     startSerial = msgSerial;
                 }
-                if(msgSerial == startSerial) {
+                if (msgSerial == startSerial) {
                     List<QueuedMessage> ackList = queue.subList(0, count);
                     ackMessages = ackList.toArray(new QueuedMessage[count]);
                     ackList.clear();
                     startSerial += count;
                 }
             }
-            if(nackMessages != null) {
-                if(reason == null)
+            if (nackMessages != null) {
+                if (reason == null)
                     reason = new ErrorInfo("Unknown error", 500, 50000);
-                for(QueuedMessage msg : nackMessages) {
+                for (QueuedMessage msg : nackMessages) {
                     try {
-                        if(msg.listener != null)
+                        if (msg.listener != null)
                             msg.listener.onError(reason);
-                    } catch(Throwable t) {
+                    } catch (Throwable t) {
                         Log.e(TAG, "ack(): listener exception", t);
                     }
                 }
             }
-            if(ackMessages != null) {
-                for(QueuedMessage msg : ackMessages) {
+            if (ackMessages != null) {
+                for (QueuedMessage msg : ackMessages) {
                     try {
-                        if(msg.listener != null)
+                        if (msg.listener != null)
                             msg.listener.onSuccess();
-                    } catch(Throwable t) {
+                    } catch (Throwable t) {
                         Log.e(TAG, "ack(): listener exception", t);
                     }
                 }
@@ -1588,12 +1683,12 @@ public class ConnectionManager implements ConnectListener {
 
         public synchronized void nack(long serial, int count, ErrorInfo reason) {
             QueuedMessage[] nackMessages = null;
-            synchronized(this) {
-                if(serial != startSerial) {
+            synchronized (this) {
+                if (serial != startSerial) {
                     /* this is an error condition and shouldn't happen but
                      * we can handle it gracefully by only processing the
                      * relevant portion of the response */
-                    count -= (int)(startSerial - serial);
+                    count -= (int) (startSerial - serial);
                     serial = startSerial;
                 }
                 List<QueuedMessage> nackList = queue.subList(0, count);
@@ -1601,14 +1696,14 @@ public class ConnectionManager implements ConnectListener {
                 nackList.clear();
                 startSerial += count;
             }
-            if(nackMessages != null) {
-                if(reason == null)
+            if (nackMessages != null) {
+                if (reason == null)
                     reason = new ErrorInfo("Unknown error", 500, 50000);
-                for(QueuedMessage msg : nackMessages) {
+                for (QueuedMessage msg : nackMessages) {
                     try {
-                        if(msg.listener != null)
+                        if (msg.listener != null)
                             msg.listener.onError(reason);
-                    } catch(Throwable t) {
+                    } catch (Throwable t) {
                         Log.e(TAG, "nack(): listener exception", t);
                     }
                 }
@@ -1618,12 +1713,13 @@ public class ConnectionManager implements ConnectListener {
         /**
          * reset the pending message queue, failing any currently pending messages.
          * Used when a resume fails and we get a different connection id.
+         *
          * @param oldMsgSerial the next message serial number for the old
-         * connection, and thus one more than the highest message serial
-         * in the queue.
+         *                     connection, and thus one more than the highest message serial
+         *                     in the queue.
          */
         public synchronized void reset(long oldMsgSerial, ErrorInfo err) {
-            nack(startSerial, (int)(oldMsgSerial - startSerial), err);
+            nack(startSerial, (int) (oldMsgSerial - startSerial), err);
             startSerial = 0;
         }
 
@@ -1640,7 +1736,7 @@ public class ConnectionManager implements ConnectListener {
             ConnectionManager cm = ConnectionManager.this;
             ConnectionState currentState = cm.getConnectionState().state;
             Log.i(TAG, "onNetworkAvailable(): currentState = " + currentState.name());
-            if(currentState == ConnectionState.disconnected || currentState == ConnectionState.suspended) {
+            if (currentState == ConnectionState.disconnected || currentState == ConnectionState.suspended) {
                 Log.i(TAG, "onNetworkAvailable(): initiating reconnect");
                 cm.connect();
             }
@@ -1651,7 +1747,7 @@ public class ConnectionManager implements ConnectListener {
             ConnectionManager cm = ConnectionManager.this;
             ConnectionState currentState = cm.getConnectionState().state;
             Log.i(TAG, "onNetworkUnavailable(); currentState = " + currentState.name() + "; reason = " + reason.toString());
-            if(currentState == ConnectionState.connected || currentState == ConnectionState.connecting) {
+            if (currentState == ConnectionState.connected || currentState == ConnectionState.connecting) {
                 Log.i(TAG, "onNetworkUnavailable(): closing connected transport");
                 cm.requestState(new StateIndication(ConnectionState.disconnected, reason));
             }
@@ -1673,7 +1769,7 @@ public class ConnectionManager implements ConnectListener {
      ******************/
 
     void disconnectAndSuppressRetries() {
-        if(transport != null) {
+        if (transport != null) {
             transport.close();
         }
         suppressRetry = true;
@@ -1688,14 +1784,20 @@ public class ConnectionManager implements ConnectListener {
     }
 
     private boolean isFatalError(ErrorInfo err) {
-        if(err.code != 0) {
+        if (err.code != 0) {
             /* token errors are assumed to be recoverable */
-            if(isTokenError(err)) { return false; }
+            if (isTokenError(err)) {
+                return false;
+            }
             /* 400 codes assumed to be fatal */
-            if((err.code >= 40000) && (err.code < 50000)) { return true; }
+            if ((err.code >= 40000) && (err.code < 50000)) {
+                return true;
+            }
         }
         /* otherwise, use statusCode */
-        if(err.statusCode != 0 && err.statusCode < 500) { return true; }
+        if (err.statusCode != 0 && err.statusCode < 500) {
+            return true;
+        }
         return false;
     }
 

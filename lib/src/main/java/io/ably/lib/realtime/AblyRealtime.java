@@ -2,6 +2,7 @@ package io.ably.lib.realtime;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.transport.ConnectionManager;
@@ -98,6 +99,11 @@ public class AblyRealtime extends AblyRest {
     @Override
     protected void onAuthUpdated(String token, boolean waitForResponse) throws AblyException {
         connection.connectionManager.onAuthUpdated(token, waitForResponse);
+    }
+
+    @Override
+    protected Future<AblyException> onAuthUpdatedAsync(String token)  {
+        return connection.connectionManager.onAuthUpdatedAsync(token);
     }
 
     /**

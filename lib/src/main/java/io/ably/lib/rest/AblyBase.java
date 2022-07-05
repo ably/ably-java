@@ -1,5 +1,6 @@
 package io.ably.lib.rest;
 
+import java.util.concurrent.Future;
 import io.ably.annotation.Experimental;
 import io.ably.lib.http.AsyncHttpScheduler;
 import io.ably.lib.http.Http;
@@ -314,6 +315,15 @@ public abstract class AblyBase implements AutoCloseable {
      */
     protected void onAuthUpdated(String token, boolean waitForResponse) throws AblyException {
         /* Default is to do nothing. Overridden by subclass. */
+    }
+
+    /**
+     * Override this method in AblyRealtime and pass updated token to ConnectionManager
+     * @param token new token
+     */
+    protected Future<AblyException> onAuthUpdatedAsync(String token)  {
+        //this must be overriden by subclass
+        return null;
     }
 
     /**
