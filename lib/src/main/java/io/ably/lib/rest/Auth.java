@@ -20,7 +20,6 @@ import io.ably.lib.http.HttpConstants;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpHelpers;
 import io.ably.lib.http.HttpUtils;
-import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.BaseMessage;
 import io.ably.lib.types.Capability;
@@ -35,6 +34,7 @@ import io.ably.lib.util.Serialisation;
  * Token-generation and authentication operations for the Ably API.
  * See the Ably Authentication documentation for details of the
  * authentication methods available.
+ *
  */
 public class Auth {
 
@@ -121,13 +121,11 @@ public class Auth {
         /**
          * Default constructor
          */
-        public AuthOptions() {
-        }
+        public AuthOptions() {}
 
         /**
          * Convenience constructor, to create an AuthOptions based
          * on the key string obtained from the application dashboard.
-         *
          * @param key the full key string as obtained from the dashboard
          * @throws AblyException
          */
@@ -138,7 +136,7 @@ public class Auth {
             if (key.isEmpty()) {
                 throw new IllegalArgumentException("Key string cannot be empty");
             }
-            if (key.indexOf(':') > -1)
+            if(key.indexOf(':') > -1)
                 this.key = key;
             else
                 this.token = key;
@@ -188,6 +186,7 @@ public class Auth {
     /**
      * A class providing details of a token and its associated metadata,
      * provided when the system successfully requests a token from the system.
+     *
      */
     public static class TokenDetails {
 
@@ -219,17 +218,12 @@ public class Auth {
          */
         public String clientId;
 
-        public TokenDetails() {
-        }
-
-        public TokenDetails(String token) {
-            this.token = token;
-        }
+        public TokenDetails() {}
+        public TokenDetails(String token) { this.token = token; }
 
         /**
          * Convert a JSON response body to a TokenDetails.
          * Deprecated: use fromJson() instead
-         *
          * @param json
          * @return
          */
@@ -241,7 +235,6 @@ public class Auth {
         /**
          * Convert a JSON element response body to a TokenDetails.
          * Spec: TD7
-         *
          * @param json
          * @return
          */
@@ -251,7 +244,6 @@ public class Auth {
 
         /**
          * Convert a JSON element response body to a TokenDetails.
-         *
          * @param json
          * @return
          */
@@ -263,7 +255,7 @@ public class Auth {
          * Convert a TokenDetails into a JSON object.
          */
         public JsonObject asJsonElement() {
-            return (JsonObject) Serialisation.gson.toJsonTree(this);
+            return (JsonObject)Serialisation.gson.toJsonTree(this);
         }
 
         /**
@@ -275,20 +267,19 @@ public class Auth {
 
         /**
          * Check equality of a TokenDetails
-         *
          * @param obj
          */
         @Override
         public boolean equals(Object obj) {
-            TokenDetails details = (TokenDetails) obj;
+            TokenDetails details = (TokenDetails)obj;
             return equalNullableStrings(this.token, details.token) &
-                equalNullableStrings(this.capability, details.capability) &
-                equalNullableStrings(this.clientId, details.clientId) &
-                (this.issued == details.issued) &
-                (this.expires == details.expires);
+                    equalNullableStrings(this.capability, details.capability) &
+                    equalNullableStrings(this.clientId, details.clientId) &
+                    (this.issued == details.issued) &
+                    (this.expires == details.expires);
         }
 
-    }
+}
 
     /**
      * A class providing parameters of a token request.
@@ -300,7 +291,7 @@ public class Auth {
          * is successful, the TTL of the returned token will be less
          * than or equal to this value depending on application settings
          * and the attributes of the issuing key.
-         * <p>
+         *
          * 0 means Ably will set it to the default value.
          */
         public long ttl;
@@ -327,30 +318,28 @@ public class Auth {
 
         /**
          * Internal; convert a TokenParams to a collection of Params
-         *
          * @return
          */
         public Map<String, Param> asMap() {
             Map<String, Param> params = new HashMap<String, Param>();
-            if (ttl > 0) params.put("ttl", new Param("ttl", String.valueOf(ttl)));
-            if (capability != null) params.put("capability", new Param("capability", capability));
-            if (clientId != null) params.put("clientId", new Param("clientId", clientId));
-            if (timestamp > 0) params.put("timestamp", new Param("timestamp", String.valueOf(timestamp)));
+            if(ttl > 0) params.put("ttl", new Param("ttl", String.valueOf(ttl)));
+            if(capability != null) params.put("capability", new Param("capability", capability));
+            if(clientId != null) params.put("clientId", new Param("clientId", clientId));
+            if(timestamp > 0) params.put("timestamp", new Param("timestamp", String.valueOf(timestamp)));
             return params;
         }
 
         /**
          * Check equality of a TokenParams
-         *
          * @param obj
          */
         @Override
         public boolean equals(Object obj) {
-            TokenParams params = (TokenParams) obj;
+            TokenParams params = (TokenParams)obj;
             return (this.ttl == params.ttl) &
-                equalNullableStrings(this.capability, params.capability) &
-                equalNullableStrings(this.clientId, params.clientId) &
-                (this.timestamp == params.timestamp);
+                    equalNullableStrings(this.capability, params.capability) &
+                    equalNullableStrings(this.clientId, params.clientId) &
+                    (this.timestamp == params.timestamp);
         }
 
         /**
@@ -388,8 +377,7 @@ public class Auth {
      */
     public static class TokenRequest extends TokenParams {
 
-        public TokenRequest() {
-        }
+        public TokenRequest() {}
 
         public TokenRequest(TokenParams params) {
             this.ttl = params.ttl;
@@ -419,7 +407,6 @@ public class Auth {
         /**
          * Convert a JSON serialisation to a TokenParams.
          * Deprecated: use fromJson() instead
-         *
          * @param json
          * @return
          */
@@ -430,7 +417,6 @@ public class Auth {
 
         /**
          * Convert a parsed JSON response body to a TokenParams.
-         *
          * @param json
          * @return
          */
@@ -441,7 +427,6 @@ public class Auth {
         /**
          * Convert a string JSON response body to a TokenParams.
          * Spec: TE6
-         *
          * @param json
          * @return
          */
@@ -453,7 +438,7 @@ public class Auth {
          * Convert a TokenParams into a JSON object.
          */
         public JsonObject asJsonElement() {
-            JsonObject o = (JsonObject) Serialisation.gson.toJsonTree(this);
+            JsonObject o = (JsonObject)Serialisation.gson.toJsonTree(this);
             if (this.ttl == 0) {
                 o.remove("ttl");
             }
@@ -472,16 +457,15 @@ public class Auth {
 
         /**
          * Check equality of a TokenRequest
-         *
          * @param obj
          */
         @Override
         public boolean equals(Object obj) {
-            TokenRequest request = (TokenRequest) obj;
+            TokenRequest request = (TokenRequest)obj;
             return super.equals(obj) &
-                equalNullableStrings(this.keyName, request.keyName) &
-                equalNullableStrings(this.nonce, request.nonce) &
-                equalNullableStrings(this.mac, request.mac);
+                    equalNullableStrings(this.keyName, request.keyName) &
+                    equalNullableStrings(this.nonce, request.nonce) &
+                    equalNullableStrings(this.mac, request.mac);
         }
     }
 
@@ -506,26 +490,28 @@ public class Auth {
      * Authorization will use the parameters supplied on construction except
      * where overridden with the options supplied in the call.
      *
-     * @param params  an object containing the request params:
-     *                - key:        (optional) the key to use; if not specified, the key
-     *                passed in constructing the Rest interface may be used
-     *                <p>
-     *                - ttl:        (optional) the requested life of any new token in ms. If none
-     *                is specified a default of 1 hour is provided. The maximum lifetime
-     *                is 24hours; any request exceeding that lifetime will be rejected
-     *                with an error.
-     *                <p>
-     *                - capability: (optional) the capability to associate with the access token.
-     *                If none is specified, a token will be requested with all of the
-     *                capabilities of the specified key.
-     *                <p>
-     *                - clientId:   (optional) a client Id to associate with the token
-     *                <p>
-     *                - timestamp:  (optional) the time in ms since the epoch. If none is specified,
-     *                the system will be queried for a time value to use.
-     *                <p>
-     *                - queryTime   (optional) boolean indicating that the Ably system should be
-     *                queried for the current time when none is specified explicitly.
+     * @param params
+     * an object containing the request params:
+     * - key:        (optional) the key to use; if not specified, the key
+     *               passed in constructing the Rest interface may be used
+     *
+     * - ttl:        (optional) the requested life of any new token in ms. If none
+     *               is specified a default of 1 hour is provided. The maximum lifetime
+     *               is 24hours; any request exceeding that lifetime will be rejected
+     *               with an error.
+     *
+     * - capability: (optional) the capability to associate with the access token.
+     *               If none is specified, a token will be requested with all of the
+     *               capabilities of the specified key.
+     *
+     * - clientId:   (optional) a client Id to associate with the token
+     *
+     * - timestamp:  (optional) the time in ms since the epoch. If none is specified,
+     *               the system will be queried for a time value to use.
+     *
+     * - queryTime   (optional) boolean indicating that the Ably system should be
+     *               queried for the current time when none is specified explicitly.
+     *
      * @param options
      */
     public TokenDetails authorize(TokenParams params, AuthOptions options) throws AblyException {
@@ -545,7 +531,7 @@ public class Auth {
             authOptions.tokenDetails = new TokenDetails(authOptions.token);
         }
         TokenDetails tokenDetails;
-        if (authOptions.tokenDetails != null) {
+        if(authOptions.tokenDetails != null) {
             tokenDetails = authOptions.tokenDetails;
             setTokenDetails(tokenDetails);
         } else {
@@ -573,8 +559,7 @@ public class Auth {
     /**
      * Make a token request. This will make a token request now, even if the library already
      * has a valid token. It would typically be used to issue tokens for use by other clients.
-     *
-     * @param params       : see {@link #authorize} for params
+     * @param params : see {@link #authorize} for params
      * @param tokenOptions : see {@link #authorize} for options
      * @return the TokenDetails
      * @throws AblyException
@@ -585,30 +570,30 @@ public class Auth {
         params = (params == null) ? this.tokenParams : params.copy();
 
         /* Spec: RSA7d */
-        if (params.clientId == null) {
+        if(params.clientId == null) {
             params.clientId = ably.options.clientId;
         }
         params.capability = Capability.c14n(params.capability);
 
         /* get the signed token request */
         TokenRequest signedTokenRequest;
-        if (tokenOptions.authCallback != null) {
+        if(tokenOptions.authCallback != null) {
             Log.i("Auth.requestToken()", "using token auth with auth_callback");
             try {
                 /* the callback can return either a signed token request, or a TokenDetails */
                 Object authCallbackResponse = tokenOptions.authCallback.getTokenRequest(params);
-                if (authCallbackResponse instanceof String)
-                    return new TokenDetails((String) authCallbackResponse);
-                if (authCallbackResponse instanceof TokenDetails)
-                    return (TokenDetails) authCallbackResponse;
-                if (authCallbackResponse instanceof TokenRequest)
-                    signedTokenRequest = (TokenRequest) authCallbackResponse;
+                if(authCallbackResponse instanceof String)
+                    return new TokenDetails((String)authCallbackResponse);
+                if(authCallbackResponse instanceof TokenDetails)
+                    return (TokenDetails)authCallbackResponse;
+                if(authCallbackResponse instanceof TokenRequest)
+                    signedTokenRequest = (TokenRequest)authCallbackResponse;
                 else
                     throw AblyException.fromErrorInfo(new ErrorInfo("Invalid authCallback response", 400, 40000));
-            } catch (AblyException e) {
+            } catch(AblyException e) {
                 throw AblyException.fromErrorInfo(e, new ErrorInfo("authCallback failed with an exception", 401, 80019));
             }
-        } else if (tokenOptions.authUrl != null) {
+        } else if(tokenOptions.authUrl != null) {
             Log.i("Auth.requestToken()", "using token auth with auth_url");
 
             /* the auth request can return either a signed token request as a TokenParams, or a TokenDetails */
@@ -617,39 +602,39 @@ public class Auth {
                 HttpCore.ResponseHandler<Object> responseHandler = new HttpCore.ResponseHandler<Object>() {
                     @Override
                     public Object handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
-                        if (error != null) {
+                        if(error != null) {
                             throw AblyException.fromErrorInfo(error);
                         }
                         try {
                             String contentType = response.contentType;
                             byte[] body = response.body;
-                            if (body == null || body.length == 0) {
+                            if(body == null || body.length == 0) {
                                 return null;
                             }
-                            if (contentType != null) {
-                                if (contentType.startsWith("text/plain") || contentType.startsWith("application/jwt")) {
+                            if(contentType != null) {
+                                if(contentType.startsWith("text/plain") || contentType.startsWith("application/jwt")) {
                                     /* assumed to be token string */
                                     String token = new String(body);
                                     return new TokenDetails(token);
                                 }
-                                if (!contentType.startsWith("application/json")) {
+                                if(!contentType.startsWith("application/json")) {
                                     throw AblyException.fromErrorInfo(new ErrorInfo("Unacceptable content type from auth callback", 406, 40170));
                                 }
                             }
                             /* if not explicitly indicated, we will just assume it's JSON */
                             JsonElement json = Serialisation.gsonParser.parse(new String(body));
-                            if (!(json instanceof JsonObject)) {
+                            if(!(json instanceof JsonObject)) {
                                 throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected response type from auth callback", 406, 40170));
                             }
-                            JsonObject jsonObject = (JsonObject) json;
-                            if (jsonObject.has("issued")) {
+                            JsonObject jsonObject = (JsonObject)json;
+                            if(jsonObject.has("issued")) {
                                 /* we assume this is a token details */
                                 return TokenDetails.fromJsonElement(jsonObject);
                             } else {
                                 /* otherwise it's a signed token request */
                                 return TokenRequest.fromJsonElement(jsonObject);
                             }
-                        } catch (JsonParseException e) {
+                        } catch(JsonParseException e) {
                             throw AblyException.fromErrorInfo(new ErrorInfo("Unable to parse response from auth callback", 406, 40170));
                         }
                     }
@@ -659,15 +644,15 @@ public class Auth {
                 Map<String, Param> urlParams = null;
                 URL authUrl = HttpUtils.parseUrl(authOptions.authUrl);
                 String queryString = authUrl.getQuery();
-                if (queryString != null && !queryString.isEmpty()) {
+                if(queryString != null && !queryString.isEmpty()) {
                     urlParams = HttpUtils.decodeParams(queryString);
                 }
                 Map<String, Param> tokenParams = params.asMap();
-                if (tokenOptions.authParams != null) {
-                    for (Param p : tokenOptions.authParams) {
+                if(tokenOptions.authParams != null) {
+                    for(Param p : tokenOptions.authParams) {
                         /* (RSA8c2) TokenParams take precedence over any configured
                          * authParams when a name conflict occurs */
-                        if (!tokenParams.containsKey(p.key)) {
+                        if(!tokenParams.containsKey(p.key)) {
                             tokenParams.put(p.key, p);
                         }
                     }
@@ -678,19 +663,19 @@ public class Auth {
                     Map<String, Param> requestParams = (urlParams != null) ? HttpUtils.mergeParams(urlParams, tokenParams) : tokenParams;
                     authUrlResponse = HttpHelpers.getUri(ably.httpCore, tokenOptions.authUrl, tokenOptions.authHeaders, HttpUtils.flattenParams(requestParams), responseHandler);
                 }
-            } catch (AblyException e) {
+            } catch(AblyException e) {
                 throw AblyException.fromErrorInfo(e, new ErrorInfo("authUrl failed with an exception", e.errorInfo.statusCode, 80019));
             }
-            if (authUrlResponse == null) {
+            if(authUrlResponse == null) {
                 throw AblyException.fromErrorInfo(null, new ErrorInfo("Empty response received from authUrl", 401, 80019));
             }
-            if (authUrlResponse instanceof TokenDetails) {
+            if(authUrlResponse instanceof TokenDetails) {
                 /* we're done */
-                return (TokenDetails) authUrlResponse;
+                return (TokenDetails)authUrlResponse;
             }
             /* otherwise it's a signed token request */
-            signedTokenRequest = (TokenRequest) authUrlResponse;
-        } else if (tokenOptions.key != null) {
+            signedTokenRequest = (TokenRequest)authUrlResponse;
+        } else if(tokenOptions.key != null) {
             Log.i("Auth.requestToken()", "using token auth with client-side signing");
             signedTokenRequest = createTokenRequest(params, tokenOptions);
         } else {
@@ -701,14 +686,14 @@ public class Auth {
         return HttpHelpers.postSync(ably.http, tokenPath, null, null, new HttpUtils.JsonRequestBody(signedTokenRequest.asJsonElement().toString()), new HttpCore.ResponseHandler<TokenDetails>() {
             @Override
             public TokenDetails handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
-                if (error != null) {
+                if(error != null) {
                     throw AblyException.fromErrorInfo(error);
                 }
                 try {
                     String jsonText = new String(response.body);
-                    JsonObject json = (JsonObject) Serialisation.gsonParser.parse(jsonText);
+                    JsonObject json = (JsonObject)Serialisation.gsonParser.parse(jsonText);
                     return TokenDetails.fromJsonElement(json);
-                } catch (JsonParseException e) {
+                } catch(JsonParseException e) {
                     throw AblyException.fromThrowable(e);
                 }
             }
@@ -719,8 +704,7 @@ public class Auth {
      * Create a signed token request based on known credentials
      * and the given token params. This would typically be used if creating
      * signed requests for submission by another client.
-     *
-     * @param params  : see {@link #authorize} for params
+     * @param params : see {@link #authorize} for params
      * @param options : see {@link #authorize} for options
      * @return the params augmented with the mac.
      * @throws AblyException
@@ -734,17 +718,17 @@ public class Auth {
         TokenRequest request = new TokenRequest(params);
 
         String key = options.key;
-        if (key == null)
+        if(key == null)
             throw AblyException.fromErrorInfo(new ErrorInfo("No key specified", 401, 40101));
 
         String[] keyParts = key.split(":");
-        if (keyParts.length != 2)
+        if(keyParts.length != 2)
             throw AblyException.fromErrorInfo(new ErrorInfo("Invalid key specified", 401, 40101));
 
         String keyName = keyParts[0], keySecret = keyParts[1];
-        if (request.keyName == null)
+        if(request.keyName == null)
             request.keyName = keyName;
-        else if (!request.keyName.equals(keyName))
+        else if(!request.keyName.equals(keyName))
             throw AblyException.fromErrorInfo(new ErrorInfo("Incompatible keys specified", 401, 40102));
 
         /* expires */
@@ -758,14 +742,14 @@ public class Auth {
         String clientIdText = (request.clientId == null) ? "" : request.clientId;
 
         /* timestamp */
-        if (request.timestamp == 0) {
-            if (options.queryTime) {
+        if(request.timestamp == 0) {
+            if(options.queryTime) {
                 long oldNanoTimeDelta = nanoTimeDelta;
-                long currentNanoTimeDelta = System.currentTimeMillis() - System.nanoTime() / (1000 * 1000);
+                long currentNanoTimeDelta = System.currentTimeMillis() - System.nanoTime()/(1000*1000);
 
                 if (timeDelta != Long.MAX_VALUE) {
                     /* system time changed by more than 500ms since last time? */
-                    if (Math.abs(oldNanoTimeDelta - currentNanoTimeDelta) > 500)
+                    if(Math.abs(oldNanoTimeDelta - currentNanoTimeDelta) > 500)
                         timeDelta = Long.MAX_VALUE;
                 }
 
@@ -776,7 +760,8 @@ public class Auth {
                     request.timestamp = ably.time();
                     timeDelta = request.timestamp - timestamp();
                 }
-            } else {
+            }
+            else {
                 request.timestamp = timestamp();
             }
         }
@@ -800,7 +785,6 @@ public class Auth {
 
     /**
      * Get the authentication method for this library instance.
-     *
      * @return
      */
     public AuthMethod getAuthMethod() {
@@ -809,7 +793,6 @@ public class Auth {
 
     /**
      * Get the credentials for HTTP basic auth, if available.
-     *
      * @return
      */
     public String getBasicCredentials() {
@@ -818,20 +801,19 @@ public class Auth {
 
     /**
      * Get query params representing the current authentication method and credentials.
-     *
      * @return
      * @throws AblyException
      */
     public Param[] getAuthParams() throws AblyException {
         Param[] params = null;
-        switch (method) {
-            case basic:
-                params = new Param[]{new Param("key", authOptions.key)};
-                break;
-            case token:
-                assertValidToken();
-                params = new Param[]{new Param("accessToken", getTokenDetails().token)};
-                break;
+        switch(method) {
+        case basic:
+            params = new Param[]{new Param("key", authOptions.key) };
+            break;
+        case token:
+            assertValidToken();
+            params = new Param[]{new Param("accessToken", getTokenDetails().token) };
+            break;
         }
         return params;
     }
@@ -847,9 +829,7 @@ public class Auth {
      * Renew auth credentials.
      * Will obtain a new token, even if we already have an apparently valid one.
      * Authorization will use the parameters supplied on construction.
-     *
-     * @deprecated this method is deprecated
-     * Please use  {@link Auth#renewAuth()} instead.
+     * @deprecated Use {@link Auth#renewAuth} instead
      */
     @Deprecated
     public TokenDetails renew() throws AblyException {
@@ -862,23 +842,24 @@ public class Auth {
      * Renew auth credentials.
      * Will obtain a new token, even if we already have an apparently valid one.
      * Authorization will use the parameters supplied on construction.
+     *
+     * @return
+     * A single entry that contain a token detail and a future that represent an asynchronous result
+     * Clients must wait for the future result to finish before processing. If there is an exception happened during
+     * asynchronous operation the future will contain an AblyException
      */
     public Map.Entry<TokenDetails, Future<AblyException>> renewAuth() throws AblyException {
         final TokenDetails tokenDetails = assertValidToken(this.tokenParams, this.authOptions, true);
         return new AbstractMap.SimpleImmutableEntry<>(tokenDetails, ably.onAuthUpdatedAsync(tokenDetails.token));
     }
 
-    //add a new method renewAuthorization -
-
     public void onAuthError(ErrorInfo err) {
         /* we're only interested in token expiry errors */
-        if (err.code >= 40140 && err.code < 40150)
+        if(err.code >= 40140 && err.code < 40150)
             clearTokenDetails();
     }
 
-    public static long timestamp() {
-        return System.currentTimeMillis();
-    }
+    public static long timestamp() { return System.currentTimeMillis(); }
 
     /********************
      * internal
@@ -886,7 +867,6 @@ public class Auth {
 
     /**
      * Private constructor.
-     *
      * @param ably
      * @param options
      * @throws AblyException
@@ -895,11 +875,11 @@ public class Auth {
         this.ably = ably;
         authOptions = options;
         tokenParams = options.defaultTokenParams != null ?
-            options.defaultTokenParams : new TokenParams();
+                options.defaultTokenParams : new TokenParams();
 
         /* set clientId (spec Rsa7b1) */
-        if (options.clientId != null) {
-            if (options.clientId.equals(WILDCARD_CLIENTID)) {
+        if(options.clientId != null) {
+            if(options.clientId.equals(WILDCARD_CLIENTID)) {
                 /* RSA7c */
                 throw AblyException.fromErrorInfo(new ErrorInfo("Disallowed wildcard clientId in ClientOptions", 400, 40000));
             }
@@ -910,12 +890,12 @@ public class Auth {
         }
 
         /* decide default auth method (spec: RSA4) */
-        if (authOptions.key != null) {
-            if (!options.useTokenAuth &&
-                options.token == null &&
-                options.tokenDetails == null &&
-                options.authCallback == null &&
-                options.authUrl == null) {
+        if(authOptions.key != null) {
+            if(!options.useTokenAuth &&
+                    options.token == null &&
+                    options.tokenDetails == null &&
+                    options.authCallback == null &&
+                    options.authUrl == null) {
                 /* we have the key and do not need to authenticate the client,
                  * so default to using basic auth */
                 Log.i("Auth()", "anonymous, using basic auth");
@@ -927,21 +907,22 @@ public class Auth {
         }
         /* using token auth, but decide the method */
         this.method = AuthMethod.token;
-        if (authOptions.token != null) {
+        if(authOptions.token != null) {
             setTokenDetails(authOptions.token);
-        } else if (authOptions.tokenDetails != null) {
+        }
+        else if(authOptions.tokenDetails != null) {
             setTokenDetails(authOptions.tokenDetails);
         }
 
-        if (authOptions.authCallback != null) {
+        if(authOptions.authCallback != null) {
             Log.i("Auth()", "using token auth with authCallback");
-        } else if (authOptions.authUrl != null) {
+        } else if(authOptions.authUrl != null) {
             /* verify configured URL parses */
             HttpUtils.parseUrl(authOptions.authUrl);
             Log.i("Auth()", "using token auth with authUrl");
-        } else if (authOptions.key != null) {
+        } else if(authOptions.key != null) {
             Log.i("Auth()", "using token auth with client-side signing");
-        } else if (tokenDetails != null) {
+        } else if(tokenDetails != null) {
             Log.i("Auth()", "using token auth with supplied token only");
         } else {
             /* no means to authenticate (Spec: RSA14) */
@@ -986,8 +967,8 @@ public class Auth {
 
     private TokenDetails assertValidToken(TokenParams params, AuthOptions options, boolean force) throws AblyException {
         Log.i("Auth.assertValidToken()", "");
-        if (tokenDetails != null) {
-            if (!force && (tokenDetails.expires == 0 || tokenValid(tokenDetails))) {
+        if(tokenDetails != null) {
+            if(!force && (tokenDetails.expires == 0 || tokenValid(tokenDetails))) {
                 Log.i("Auth.assertValidToken()", "using cached token; expires = " + tokenDetails.expires);
                 return tokenDetails;
             } else {
@@ -1008,16 +989,15 @@ public class Auth {
 
     /**
      * Get the Authorization header, forcing the creation of a new token if requested
-     *
      * @param forceRenew
      * @return
      * @throws AblyException
      */
     public void assertAuthorizationHeader(boolean forceRenew) throws AblyException {
-        if (authHeader != null && !forceRenew) {
+        if(authHeader != null && !forceRenew) {
             return;
         }
-        if (getAuthMethod() == AuthMethod.basic) {
+        if(getAuthMethod() == AuthMethod.basic) {
             authHeader = "Basic " + Base64Coder.encodeString(getBasicCredentials());
         } else {
             if (forceRenew) {
@@ -1033,9 +1013,7 @@ public class Auth {
         return authHeader;
     }
 
-    private static String random() {
-        return String.format(Locale.ROOT, "%016d", (long) (Math.random() * 1E16));
-    }
+    private static String random() { return String.format(Locale.ROOT, "%016d", (long)(Math.random() * 1E16)); }
 
     private static boolean equalNullableStrings(String one, String two) {
         return (one == null) ? (two == null) : one.equals(two);
@@ -1046,38 +1024,34 @@ public class Auth {
             Mac mac = Mac.getInstance("HmacSHA256");
             mac.init(new SecretKeySpec(key.getBytes(Charset.forName("UTF-8")), "HmacSHA256"));
             return new String(Base64Coder.encode(mac.doFinal(text.getBytes(Charset.forName("UTF-8")))));
-        } catch (GeneralSecurityException e) {
-            Log.e("Auth.hmac", "Unexpected exception", e);
-            return null;
-        }
+        } catch (GeneralSecurityException e) { Log.e("Auth.hmac", "Unexpected exception", e); return null; }
     }
 
     /**
      * Set the clientId, after first initialisation in the construction of the library
      * therefore an existing null value is significant - it means that ClientOptions.clientId
      * was null
-     *
      * @param clientId
      * @throws AblyException
      */
     public void setClientId(String clientId) throws AblyException {
-        if (clientId == null) {
+        if(clientId == null) {
             /* do nothing - we received a token without a clientId */
             return;
         }
 
-        if (this.clientId == null) {
+        if(this.clientId == null) {
             /* RSA12a, RSA12b, RSA7b2, RSA7b3, RSA7b4: the given clientId is now our clientId */
             this.clientId = clientId;
             this.ably.onClientIdSet(clientId);
             return;
         }
         /* now this.clientId != null */
-        if (this.clientId.equals(clientId)) {
+        if(this.clientId.equals(clientId)) {
             /* this includes the wildcard case RSA7b4 */
             return;
         }
-        if (WILDCARD_CLIENTID.equals(clientId)) {
+        if(WILDCARD_CLIENTID.equals(clientId)) {
             /* this signifies that the credentials permit the use of any specific clientId */
             return;
         }
@@ -1087,10 +1061,9 @@ public class Auth {
     /**
      * Verify that a message, possibly containing a clientId,
      * is compatible with Auth.clientId if it is set
-     *
      * @param msg
      * @param allowNullClientId true if it is ok for there to be no resolved clientId
-     * @param connected         true if connected; if false it is ok for the library to be unidentified
+     * @param connected true if connected; if false it is ok for the library to be unidentified
      * @return the resolved clientId
      * @throws AblyException
      */
@@ -1098,22 +1071,22 @@ public class Auth {
         /* Check that the message doesn't contain the disallowed wildcard clientId
          * RTL6g3 */
         String msgClientId = msg.clientId;
-        if (WILDCARD_CLIENTID.equals(msgClientId)) {
+        if(WILDCARD_CLIENTID.equals(msgClientId)) {
             throw AblyException.fromErrorInfo(new ErrorInfo("Invalid wildcard clientId specified in message", 400, 40000));
         }
 
         /* Check that any clientId given in the message is compatible with the library clientId */
         boolean undeterminedClientId = (clientId == null && !connected);
-        if (msgClientId != null) {
-            if (msgClientId.equals(clientId) || WILDCARD_CLIENTID.equals(clientId) || undeterminedClientId) {
+        if(msgClientId != null) {
+            if(msgClientId.equals(clientId) || WILDCARD_CLIENTID.equals(clientId) || undeterminedClientId) {
                 /* RTL6g4: be lenient checking against a null clientId if we're not connected */
                 return msgClientId;
             }
             throw AblyException.fromErrorInfo(new ErrorInfo("Incompatible clientId specified in message", 400, 40012));
         }
 
-        if (clientId == null || clientId.equals(WILDCARD_CLIENTID)) {
-            if (allowNullClientId || undeterminedClientId) {
+        if(clientId == null || clientId.equals(WILDCARD_CLIENTID)) {
+            if(allowNullClientId || undeterminedClientId) {
                 /* the message is sent with no clientId */
                 return null;
             }
@@ -1152,10 +1125,9 @@ public class Auth {
      * Time delta between System.nanoTime() and System.currentTimeMillis. If it changes significantly it
      * suggests device time/date has changed
      */
-    private long nanoTimeDelta = System.currentTimeMillis() - System.nanoTime() / (1000 * 1000);
+    private long nanoTimeDelta = System.currentTimeMillis() - System.nanoTime()/(1000*1000);
 
     public static final String WILDCARD_CLIENTID = "*";
-
     /**
      * For testing purposes we need method to clear cached timeDelta
      */
