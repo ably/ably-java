@@ -834,6 +834,19 @@ public class Auth {
         return tokenDetails;
     }
 
+    /**
+     * Renew auth credentials.
+     * Will obtain a new token, even if we already have an apparently valid one.
+     * Authorization will use the parameters supplied on construction.
+     */
+    public TokenDetails renewAuth() throws AblyException {
+        TokenDetails tokenDetails = assertValidToken(this.tokenParams, this.authOptions, true);
+        ably.onAuthUpdated(tokenDetails.token, true);
+        return tokenDetails;
+    }
+
+    //add a new method renewAuthorization -
+
     public void onAuthError(ErrorInfo err) {
         /* we're only interested in token expiry errors */
         if(err.code >= 40140 && err.code < 40150)
