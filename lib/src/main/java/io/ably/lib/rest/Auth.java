@@ -847,10 +847,9 @@ public class Auth {
      *
      * @return
      * A single entry that contain a token detail and a future that represent an asynchronous result
-     * Clients must wait for the future result to finish before processing. If there is an exception happened during
-     * asynchronous operation the future will contain an AblyException
+     * Clients must wait for the future result to finish before processing.
      */
-    public Map.Entry<TokenDetails, Future<AblyException>> renewAuth() throws AblyException {
+    public Map.Entry<TokenDetails, Future<Void>> renewAuth() throws AblyException {
         final TokenDetails tokenDetails = assertValidToken(this.tokenParams, this.authOptions, true);
         return new AbstractMap.SimpleImmutableEntry<>(tokenDetails, ably.onAuthUpdatedAsync(tokenDetails.token));
     }

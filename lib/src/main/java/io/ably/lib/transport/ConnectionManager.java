@@ -1,27 +1,5 @@
 package io.ably.lib.transport;
 
-import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.debug.DebugOptions.RawProtocolListener;
-import io.ably.lib.http.HttpHelpers;
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.Channel;
-import io.ably.lib.realtime.CompletionListener;
-import io.ably.lib.realtime.Connection;
-import io.ably.lib.realtime.ConnectionState;
-import io.ably.lib.realtime.ConnectionStateListener;
-import io.ably.lib.realtime.ConnectionStateListener.ConnectionStateChange;
-import io.ably.lib.transport.ITransport.ConnectListener;
-import io.ably.lib.transport.ITransport.TransportParams;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ConnectionDetails;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.ProtocolMessage;
-import io.ably.lib.types.ProtocolSerializer;
-import io.ably.lib.util.Log;
-import io.ably.lib.transport.NetworkConnectivity.NetworkConnectivityListener;
-import io.ably.lib.util.PlatformAgentProvider;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,9 +12,32 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import io.ably.lib.debug.DebugOptions;
+import io.ably.lib.debug.DebugOptions.RawProtocolListener;
+import io.ably.lib.http.HttpHelpers;
+import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.realtime.Channel;
+import io.ably.lib.realtime.CompletionListener;
+import io.ably.lib.realtime.Connection;
+import io.ably.lib.realtime.ConnectionState;
+import io.ably.lib.realtime.ConnectionStateListener;
+import io.ably.lib.realtime.ConnectionStateListener.ConnectionStateChange;
+import io.ably.lib.transport.ITransport.ConnectListener;
+import io.ably.lib.transport.ITransport.TransportParams;
+import io.ably.lib.transport.NetworkConnectivity.NetworkConnectivityListener;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ConnectionDetails;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.types.ProtocolSerializer;
+import io.ably.lib.util.Log;
+import io.ably.lib.util.PlatformAgentProvider;
+
 public class ConnectionManager implements ConnectListener {
     final ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
-    final ExecutorCompletionService<AblyException> executorCompletionService = new ExecutorCompletionService<>(singleThreadExecutor);
+    final ExecutorCompletionService<Void> executorCompletionService =
+        new ExecutorCompletionService<>(singleThreadExecutor);
 
     /**************************************************************
      * ConnectionManager
@@ -985,7 +986,7 @@ public class ConnectionManager implements ConnectListener {
     /**
      * Async version of onAuthUpdated that returns a Future that includes an option Ably exception
      * **/
-    public Future<AblyException> onAuthUpdatedAsync(final String token) {
+    public Future<Void> onAuthUpdatedAsync(final String token) {
         final ConnectionWaiter waiter = new ConnectionWaiter();
         try {
             switch (currentState.state) {
@@ -1044,7 +1045,7 @@ public class ConnectionManager implements ConnectListener {
                         default:
                             /* suspended/closed/error: throw the error. */
                             Log.v(TAG, "onAuthUpdated: throwing exception");
-                            return AblyException.fromErrorInfo(reason);
+                            throw  AblyException.fromErrorInfo(reason);
                     }
                 }
                 return null;

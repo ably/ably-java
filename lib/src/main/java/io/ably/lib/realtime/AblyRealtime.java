@@ -102,7 +102,7 @@ public class AblyRealtime extends AblyRest {
     }
 
     @Override
-    protected Future<AblyException> onAuthUpdatedAsync(String token)  {
+    protected Future<Void> onAuthUpdatedAsync(String token)  {
         return connection.connectionManager.onAuthUpdatedAsync(token);
     }
 
