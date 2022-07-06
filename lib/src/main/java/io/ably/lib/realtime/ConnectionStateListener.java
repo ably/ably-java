@@ -2,8 +2,18 @@ package io.ably.lib.realtime;
 
 import io.ably.lib.types.ErrorInfo;
 
+/**
+ * An interface whereby a client may be notified of state changes for a connection.
+ */
 public interface ConnectionStateListener {
 
+    /**
+     * Called when connection state changes.
+     * <p>
+     * This callback is triggered on background thread.
+     *
+     * @param state information about the new state. Check {@link ConnectionState ConnectionState} - for all states available.
+     */
     void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange state);
 
     class ConnectionStateChange {
