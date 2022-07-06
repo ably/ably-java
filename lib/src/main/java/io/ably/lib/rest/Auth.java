@@ -829,7 +829,9 @@ public class Auth {
      * Renew auth credentials.
      * Will obtain a new token, even if we already have an apparently valid one.
      * Authorization will use the parameters supplied on construction.
-     * @deprecated Use {@link Auth#renewAuth} instead
+     * @deprecated Because the method returns early before renew() completes and does not provide a completion
+     * handler for callers.
+     * Please use {@link Auth#renewAuth} instead
      */
     @Deprecated
     public TokenDetails renew() throws AblyException {
