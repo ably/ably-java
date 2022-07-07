@@ -410,11 +410,11 @@ channel.presence.enter("john.doe", new CompletionListener() {
         runOnUiThread(new Runnable() {
         @Override
         public void run() {
-            //Update your UI here
+                //Update your UI here
             }
         });
         
-        //If you are in fragment or other class
+        //If you are in Fragment or other class
         Handler handler = new Handler(Looper.getMainLooper());
         handler.post(new Runnable() {
             @Override
