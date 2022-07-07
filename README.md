@@ -400,7 +400,7 @@ Log.setHandler(null);
 #### Threads
 
 AblyRealtime will invoke all callbacks on background thread. 
-If you are using Ably in Android application it is advised to switch to main thread to update UI. 
+If you are using Ably in Android application you must switch to main thread to update UI. 
 
 ```java
 channel.presence.enter("john.doe", new CompletionListener() {
