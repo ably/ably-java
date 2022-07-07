@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
@@ -22,6 +21,7 @@ import io.ably.lib.realtime.Connection;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.realtime.ConnectionStateListener.ConnectionStateChange;
+import io.ably.lib.rest.Auth;
 import io.ably.lib.transport.ITransport.ConnectListener;
 import io.ably.lib.transport.ITransport.TransportParams;
 import io.ably.lib.transport.NetworkConnectivity.NetworkConnectivityListener;
@@ -985,8 +985,8 @@ public class ConnectionManager implements ConnectListener {
 
     /**
      * Async version of onAuthUpdated that returns a Future that includes an option Ably exception
-     * **/
-    public Future<Void> onAuthUpdatedAsync(final String token) {
+     **/
+    public void onAuthUpdatedAsync(final String token, final Auth.AuthUpdateResult authUpdateResult) {
         final ConnectionWaiter waiter = new ConnectionWaiter();
         try {
             switch (currentState.state) {
@@ -1024,9 +1024,8 @@ public class ConnectionManager implements ConnectListener {
             }
 
             /* Wait for a currentState transition into anything other than connecting or
-             * disconnected asynchrously and return a Future to the caller signifying completion.
-             * This is the async alternative of above   */
-            return executorCompletionService.submit(() -> {
+             * disconnected in a background thread */
+            singleThreadExecutor.execute(() -> {
                 boolean waitingForConnected = true;
                 while (waitingForConnected) {
                     final ErrorInfo reason = waiter.waitForChange();
@@ -1045,10 +1044,11 @@ public class ConnectionManager implements ConnectListener {
                         default:
                             /* suspended/closed/error: throw the error. */
                             Log.v(TAG, "onAuthUpdated: throwing exception");
-                            throw  AblyException.fromErrorInfo(reason);
+                            authUpdateResult.onUpdate(false, reason);
+                            waitingForConnected = false;
                     }
                 }
-                return null;
+                authUpdateResult.onUpdate(true, null);
             });
         } finally {
             waiter.close();

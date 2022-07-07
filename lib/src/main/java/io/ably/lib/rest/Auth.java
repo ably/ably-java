@@ -3,11 +3,9 @@ package io.ably.lib.rest;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
-import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.Future;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -37,7 +35,6 @@ import io.ably.lib.util.Serialisation;
  *
  */
 public class Auth {
-
     /**
      * Authentication methods
      */
@@ -470,6 +467,33 @@ public class Auth {
     }
 
     /**
+     * An interface providing update result for onAuthUpdated
+     */
+    public interface AuthUpdateResult{
+        /**
+         * Signals an update from {@link io.ably.lib.transport.ConnectionManager#onAuthUpdatedAsync(String, AuthUpdateResult)}
+         * @param success If Update was successful
+         * @param errorInfo optional errorInfo if update wasn't successful
+         */
+        void onUpdate(boolean success, ErrorInfo errorInfo);
+    }
+
+    /**
+     * An interface providing completion callbackk for renewAuth
+     */
+    public interface RenewAuthResult {
+        /**
+         * Signals completion of {@link Auth#renewAuth(RenewAuthResult)}
+         * @param success if token renewal was successful. Please note that success for this operation means that
+         *                other operations relating to this also succeeded.
+         * @param tokenDetails New token details. Please note that this value can exist regardless of value of
+         *                     success state.
+         * @param errorInfo Error details if operation is completed with error.
+         */
+        void onCompletion(boolean success,TokenDetails tokenDetails, ErrorInfo errorInfo);
+    }
+
+    /**
      * An interface implemented by a callback that provides either tokens,
      * or signed token requests, in response to a request with given token params.
      */
@@ -844,14 +868,14 @@ public class Auth {
      * Renew auth credentials.
      * Will obtain a new token, even if we already have an apparently valid one.
      * Authorization will use the parameters supplied on construction.
-     *
-     * @return
-     * A single entry that contain a token detail and a future that represent an asynchronous result
-     * Clients must wait for the future result to finish before processing.
+     * @param result Asynchronous result the completion
+     * Please note that completion callback  {@link RenewAuthResult#onCompletion(boolean, TokenDetails, ErrorInfo)}
+     *              is called on a background thread.
      */
-    public Map.Entry<TokenDetails, Future<Void>> renewAuth() throws AblyException {
+    public void renewAuth(RenewAuthResult result) throws AblyException {
         final TokenDetails tokenDetails = assertValidToken(this.tokenParams, this.authOptions, true);
-        return new AbstractMap.SimpleImmutableEntry<>(tokenDetails, ably.onAuthUpdatedAsync(tokenDetails.token));
+
+        ably.onAuthUpdatedAsync(tokenDetails.token, (success, errorInfo) -> result.onCompletion(success,tokenDetails,errorInfo));
     }
 
     public void onAuthError(ErrorInfo err) {

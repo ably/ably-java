@@ -2,9 +2,9 @@ package io.ably.lib.realtime;
 
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.Future;
 
 import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.Auth;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
@@ -101,9 +101,12 @@ public class AblyRealtime extends AblyRest {
         connection.connectionManager.onAuthUpdated(token, waitForResponse);
     }
 
+    /**
+     * Authentication token has changed. Async version
+     */
     @Override
-    protected Future<Void> onAuthUpdatedAsync(String token)  {
-        return connection.connectionManager.onAuthUpdatedAsync(token);
+    protected void onAuthUpdatedAsync(String token, Auth.AuthUpdateResult authUpdateResult)  {
+        connection.connectionManager.onAuthUpdatedAsync(token,authUpdateResult);
     }
 
     /**

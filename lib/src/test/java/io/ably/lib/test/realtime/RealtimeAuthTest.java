@@ -914,7 +914,9 @@ public class RealtimeAuthTest extends ParameterizedTest {
                 try {
                     opts.wait();
                 } catch(InterruptedException ie) {}
-                ably.auth.renewAuth();
+                ably.auth.renewAuth((success, tokenDetails1, errorInfo) -> {
+                    //Ignore completion handling
+                });
             }
 
             Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ably.connection);
