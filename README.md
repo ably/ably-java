@@ -397,6 +397,35 @@ import io.ably.lib.util.Log;
 Log.setHandler(null);
 ```
 
+#### Threads
+
+AblyRealtime will return all callbacks on background thread. 
+If you are using Ably in Android application it is advised to switch to main thread to update UI. 
+
+```java
+channel.presence.enter("john.doe", new CompletionListener() {
+    @Override
+    public void onSuccess() {
+        //If you are in Activity
+        runOnUiThread(new Runnable() {
+        @Override
+        public void run() {
+            //Update your UI here
+            }
+        });
+        
+        //If you are in fragment or other class
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                //Update your UI here
+            }
+        });
+    }
+});
+```
+
 ### Using the Push API
 
 #### Delivering push notifications
