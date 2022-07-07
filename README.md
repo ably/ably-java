@@ -399,7 +399,7 @@ Log.setHandler(null);
 
 #### Threads
 
-AblyRealtime will return all callbacks on background thread. 
+AblyRealtime will invoke all callbacks on background thread. 
 If you are using Ably in Android application it is advised to switch to main thread to update UI. 
 
 ```java
