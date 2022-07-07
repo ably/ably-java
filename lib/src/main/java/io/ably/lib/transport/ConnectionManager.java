@@ -1032,6 +1032,7 @@ public class ConnectionManager implements ConnectListener {
                     final ConnectionState connectionState = currentState.state;
                     switch (connectionState) {
                         case connected:
+                            authUpdateResult.onUpdate(true, null);
                             Log.v(TAG, "onAuthUpdated: got connected");
                             waitingForConnected = false;
                             break;
@@ -1048,7 +1049,6 @@ public class ConnectionManager implements ConnectListener {
                             waitingForConnected = false;
                     }
                 }
-                authUpdateResult.onUpdate(true, null);
             });
         } finally {
             waiter.close();
