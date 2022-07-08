@@ -11,15 +11,11 @@ import io.ably.lib.types.Callback;
 public interface CompletionListener {
     /**
      * Called when the associated operation completes successfully.
-     * <p>
-     * This callback is triggered on background thread.
      */
     void onSuccess();
 
     /**
      * Called when the associated operation completes with an error.
-     * <p>
-     * This callback is triggered on background thread.
      * @param reason information about the error.
      */
     void onError(ErrorInfo reason);

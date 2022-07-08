@@ -9,9 +9,6 @@ public interface ConnectionStateListener {
 
     /**
      * Called when connection state changes.
-     * <p>
-     * This callback is triggered on background thread.
-     *
      * @param state information about the new state. Check {@link ConnectionState ConnectionState} - for all states available.
      */
     void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange state);

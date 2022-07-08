@@ -55,6 +55,8 @@ public class Auth {
          * to obtain token requests or tokens from another entity,
          * so tokens can be renewed without the client requiring a
          * key
+         * <p>
+         * This callback is invoked on a background thread.
          */
         public TokenCallback authCallback;
 

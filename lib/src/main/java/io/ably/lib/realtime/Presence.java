@@ -101,6 +101,9 @@ public class Presence {
     /**
      * Subscribe to presence events on the associated Channel. This implicitly
      * attaches the Channel if it is not already attached.
+     * <p>
+     * These listeners are invoked on a background thread.
+     *
      * @param listener the listener to me notified on arrival of presence messages.
      * @param completionListener listener to be called on success/failure
      * @throws AblyException
@@ -112,6 +115,8 @@ public class Presence {
 
     /**
      * Same as above without completion listener
+     * <p>
+     * This listener is invoked on a background thread.
      */
     public void subscribe(PresenceListener listener) throws AblyException {
         subscribe(listener, null);
@@ -131,6 +136,8 @@ public class Presence {
     /**
      * Subscribe to presence events with a specific action on the associated Channel.
      * This implicitly attaches the Channel if it is not already attached.
+     * <p>
+     * These listeners are invoked on a background thread.
      *
      * @param action to be observed
      * @param listener
@@ -397,6 +404,9 @@ public class Presence {
     /**
      * Enter this client into this channel. This client will be added to the presence set
      * and presence subscribers will see an enter message for this client.
+     * <p>
+     * This listener is invoked on a background thread.
+     *
      * @param data optional data (eg a status message) for this member.
      * See {@link io.ably.types.Data} for the supported data types.
      * @param listener a listener to be notified on completion of the operation.
@@ -411,6 +421,9 @@ public class Presence {
      * Update the presence data for this client. If the client is not already a member of
      * the presence set it will be added, and presence subscribers will see an enter or
      * update message for this client.
+     * <p>
+     * This listener is invoked on a background thread.
+     *
      * @param data optional data (eg a status message) for this member.
      * See {@link io.ably.types.Data} for the supported data types.
      * @param listener a listener to be notified on completion of the operation.
@@ -424,6 +437,9 @@ public class Presence {
     /**
      * Leave this client from this channel. This client will be removed from the presence
      * set and presence subscribers will see a leave message for this client.
+     * <p>
+     * This listener is invoked on a background thread.
+     *
      * @param data optional data (eg a status message) for this member.
      * See {@link io.ably.types.Data} for the supported data types.
      * @param listener a listener to be notified on completion of the operation.
@@ -437,6 +453,9 @@ public class Presence {
     /**
      * Leave this client from this channel. This client will be removed from the presence
      * set and presence subscribers will see a leave message for this client.
+     * <p>
+     * This listener is invoked on a background thread.
+     *
      * @param listener a listener to be notified on completion of the operation.
      * @throws AblyException
      */
@@ -480,6 +499,9 @@ public class Presence {
      * server instances) that act on behalf of multiple clientIds. In order to be able to
      * enter the channel with this method, the client library must have been instanced
      * either with a key, or with a token bound to the wildcard clientId.
+     * <p>
+     * This listener is invoked on a background thread.
+     *
      * @param clientId the id of the client.
      * @param data optional data (eg a status message) for this member.
      * @param listener a listener to be notified on completion of the operation.
@@ -531,6 +553,9 @@ public class Presence {
      * presence subscribers will see an enter or update message for this client.
      * As for #enterClient above, the connection must be authenticated in a way that
      * enables it to represent an arbitrary clientId.
+     * <p>
+     * This listener is invoked on a background thread.
+     *
      * @param clientId the id of the client.
      * @param data optional data (eg a status message) for this member.
      * @param listener a listener to be notified on completion of the operation.
@@ -574,6 +599,9 @@ public class Presence {
     /**
      * Leave a given client from this channel. This client will be removed from the
      * presence set and presence subscribers will see a leave message for this client.
+     * <p>
+     * This listener is invoked on a background thread.
+     *
      * @param clientId the id of the client.
      * @param data optional data (eg a status message) for this member.
      * @param listener a listener to be notified on completion of the operation.
@@ -596,6 +624,9 @@ public class Presence {
      * Update the presence for this channel with a given PresenceMessage update.
      * The connection must be authenticated in a way that enables it to represent
      * the clientId in the message.
+     * <p>
+     * This listener is invoked on a background thread.
+     *
      * @param msg the presence message
      * @param listener a listener to be notified on completion of the operation.
      * @throws AblyException

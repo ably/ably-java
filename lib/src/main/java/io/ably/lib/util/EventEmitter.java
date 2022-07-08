@@ -25,6 +25,8 @@ public abstract class EventEmitter<Event, Listener> {
 
     /**
      * Register the given listener for all events
+     * <p>
+     * This listener is invoked on a background thread.
      * @param listener
      */
     public synchronized void on(Listener listener) {
@@ -34,6 +36,8 @@ public abstract class EventEmitter<Event, Listener> {
 
     /**
      * Register the given listener for a single occurrence of any event
+     * <p>
+     * This listener is invoked on a background thread.
      * @param listener
      */
     public synchronized void once(Listener listener) {
@@ -51,6 +55,8 @@ public abstract class EventEmitter<Event, Listener> {
 
     /**
      * Register the given listener for a specific event
+     * <p>
+     * This listener is invoked on a background thread.
      * @param listener
      */
     public synchronized void on(Event event, Listener listener) {
@@ -59,6 +65,8 @@ public abstract class EventEmitter<Event, Listener> {
 
     /**
      * Register the given listener for a single occurrence of a specific event
+     * <p>
+     * This listener is invoked on a background thread.
      * @param listener
      */
     public synchronized void once(Event event, Listener listener) {

@@ -9,9 +9,6 @@ public interface ChannelStateListener {
 
     /**
      * Called when channel state changes.
-     * <p>
-     * This callback is triggered on background thread.
-     *
      * @param stateChange information about the new state. Check {@link ChannelState ChannelState} - for all states available.
      */
     void onChannelStateChanged(ChannelStateChange stateChange);
