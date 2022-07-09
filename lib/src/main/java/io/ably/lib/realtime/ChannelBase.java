@@ -127,11 +127,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * attach() is called implicitly when publishing or subscribing
      * on this channel, so it is not usually necessary for a client
      * to call attach() explicitly.
-     * <p>
-     * This listener is invoked on a background thread.
      *
      * @param listener When the channel is attached successfully or the attach fails and
      * the ErrorInfo error is passed as an argument to the callback
+     * <p>
+     * This listener is invoked on a background thread.
      * @throws AblyException
      */
     public void attach(CompletionListener listener) throws  AblyException {
@@ -209,9 +209,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * Detach from this channel.
      * This call initiates the detach request, and the response
      * is indicated asynchronously in the resulting state change.
+     *
+     * @param listener When the channel is detached successfully or the detach fails and
+     * the ErrorInfo error is passed as an argument to the callback
      * <p>
      * This listener is invoked on a background thread.
-     *
      * @throws AblyException
      */
     public void detach(CompletionListener listener) throws AblyException {
@@ -609,10 +611,10 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     /**
      * Subscribe for messages on this channel. This implicitly attaches the channel if
      * not already attached.
-     * <p>
-     * This listener is invoked on a background thread.
      *
      * @param listener the MessageListener
+     * <p>
+     * This listener is invoked on a background thread.
      * @throws AblyException
      */
     public synchronized void subscribe(MessageListener listener) throws AblyException {
@@ -623,10 +625,10 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
     /**
      * Unsubscribe a previously subscribed listener from this channel.
-     * <p>
-     * This listener is invoked on a background thread.
      *
      * @param listener the previously subscribed listener.
+     * <p>
+     * This listener is invoked on a background thread.
      */
     public synchronized void unsubscribe(MessageListener listener) {
         Log.v(TAG, "unsubscribe(); channel = " + this.name);
@@ -639,11 +641,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     /**
      * Subscribe for messages with a specific event name on this channel.
      * This implicitly attaches the channel if not already attached.
-     * <p>
-     * This listener is invoked on a background thread.
      *
      * @param name the event name
      * @param listener the MessageListener
+     * <p>
+     * This listener is invoked on a background thread.
      * @throws AblyException
      */
     public synchronized void subscribe(String name, MessageListener listener) throws AblyException {
@@ -654,11 +656,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
     /**
      * Unsubscribe a previously subscribed event listener from this channel.
-     * <p>
-     * This listener is invoked on a background thread.
      *
      * @param name the event name
      * @param listener the previously subscribed listener.
+     * <p>
+     * This listener is invoked on a background thread.
      */
     public synchronized void unsubscribe(String name, MessageListener listener) {
         Log.v(TAG, "unsubscribe(); channel = " + this.name + "; event = " + name);
@@ -668,11 +670,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     /**
      * Subscribe for messages with an array of event names on this channel.
      * This implicitly attaches the channel if not already attached.
-     * <p>
-     * This listener is invoked on a background thread.
      *
      * @param names the event names
      * @param listener the MessageListener
+     * <p>
+     * This listener is invoked on a background thread.
      * @throws AblyException
      */
     public synchronized void subscribe(String[] names, MessageListener listener) throws AblyException {
@@ -684,11 +686,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
     /**
      * Unsubscribe a previously subscribed event listener from this channel.
-     * <p>
-     * This listener is invoked on a background thread.
      *
      * @param names the event names
      * @param listener the previously subscribed listener.
+     * <p>
+     * This listener is invoked on a background thread.
      */
     public synchronized void unsubscribe(String[] names, MessageListener listener) {
         Log.v(TAG, "unsubscribe(); channel = " + this.name + "; (multiple events)");
@@ -870,12 +872,12 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     /**
      * Publish a message on this channel. This implicitly attaches the channel if
      * not already attached.
-     * <p>
-     * This listener is invoked on a background thread.
      *
      * @param name the event name
      * @param data the message payload. See {@link io.ably.types.Data} for supported datatypes
      * @param listener a listener to be notified of the outcome of this message.
+     * <p>
+     * This listener is invoked on a background thread.
      * @throws AblyException
      */
     public void publish(String name, Object data, CompletionListener listener) throws AblyException {
@@ -886,11 +888,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     /**
      * Publish a message on this channel. This implicitly attaches the channel if
      * not already attached.
-     * <p>
-     * This listener is invoked on a background thread.
      *
      * @param message the message
      * @param listener a listener to be notified of the outcome of this message.
+     * <p>
+     * This listener is invoked on a background thread.
      * @throws AblyException
      */
     public void publish(Message message, CompletionListener listener) throws AblyException {
@@ -901,11 +903,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     /**
      * Publish an array of messages on this channel. This implicitly attaches the channel if
      * not already attached.
-     * <p>
-     * This listener is invoked on a background thread.
      *
      * @param messages the message
      * @param listener a listener to be notified of the outcome of this message.
+     * <p>
+     * This listener is invoked on a background thread.
      * @throws AblyException
      */
     public synchronized void publish(Message[] messages, CompletionListener listener) throws AblyException {
