@@ -214,10 +214,11 @@ while(result.hasNext()) {
 ```java
 ChannelStateListener listener = new ChannelStateListener() {
 	@Override
-	public void onChannelStateChanged(ChannelState state, ErrorInfo reason) {
-		System.out.println("Channel state changed to " + state.name());
-		if (reason != null) System.out.println(reason.toString());
-	}
+  public void onChannelStateChanged(ChannelStateChange stateChange) {
+    System.out.println("Channel state changed to " + stateChange.current.name());
+    if (stateChange.reason != null)
+        System.out.println("Channel state error" + stateChange.reason.message);
+  }
 };
 ```
 
