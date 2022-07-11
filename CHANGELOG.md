@@ -11,8 +11,6 @@ We also updated the documentation to clarify the thread policy for public method
 
 **Implemented enhancements:**
 
-- Prepare the "lib" module configuration for publishing to Maven Central [\#772](https://github.com/ably/ably-java/issues/772)
-- Split library into core and platform modules [\#728](https://github.com/ably/ably-java/issues/728)
 - Add new renew async method [\#816](https://github.com/ably/ably-java/pull/816) ([ikbalkaya](https://github.com/ikbalkaya))
 
 **Fixed bugs:**
@@ -23,13 +21,6 @@ We also updated the documentation to clarify the thread policy for public method
 
 - Invalid method implementation in README [\#819](https://github.com/ably/ably-java/issues/819)
 - Document which thread is whole SDK or callbacks using [\#800](https://github.com/ably/ably-java/issues/800)
-- Use OIDC to publish from GitHub workflow runners to AWS S3 for `sdk.ably.com` deployments [\#786](https://github.com/ably/ably-java/issues/786)
-- Use the "java-library" plugin for ably-java [\#780](https://github.com/ably/ably-java/issues/780)
-- Improve build.gradle files configuration [\#779](https://github.com/ably/ably-java/issues/779)
-- Update dependency: Gradle and Gradle Android plugin com.android.tools.build:gradle [\#778](https://github.com/ably/ably-java/issues/778)
-- Update dependency: org.msgpack:msgpack-core [\#775](https://github.com/ably/ably-java/issues/775)
-- Update dependency: com.google.firebase:firebase-messaging [\#774](https://github.com/ably/ably-java/issues/774)
-- Replace the deprecated "maven" plugin with "maven-publish" [\#773](https://github.com/ably/ably-java/issues/773)
 
 **Merged pull requests:**
 
