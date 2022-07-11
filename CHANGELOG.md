@@ -7,7 +7,7 @@
 In this release we have added a new method that provides a completion handler for renewing an authentication token. 
 We also updated the documentation to clarify the thread policy for public method callbacks. 
 
-- A new `renewAuth` method was added to `Auth` and `renew` method was deprecated
+- A new `renewAuth` method was added to `Auth` and the `renew` method was deprecated
 
 **Implemented enhancements:**
 
