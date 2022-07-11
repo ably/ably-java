@@ -5,7 +5,7 @@
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.14...v1.2.15)
 
 In this release we have added a new method that provides a completion handler for renewing an authentication token. 
-We also updated documentation to clarify thread policy for public method callbacks. 
+We also updated the documentation to clarify the thread policy for public method callbacks. 
 
 - A new `renewAuth` method was added to `Auth` and `renew` method was deprecated
 
