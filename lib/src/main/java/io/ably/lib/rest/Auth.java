@@ -35,7 +35,6 @@ import io.ably.lib.util.Serialisation;
  *
  */
 public class Auth {
-
     /**
      * Authentication methods
      */
@@ -468,6 +467,33 @@ public class Auth {
     }
 
     /**
+     * An interface providing update result for onAuthUpdated
+     */
+    public interface AuthUpdateResult{
+        /**
+         * Signals an update from {@link io.ably.lib.transport.ConnectionManager#onAuthUpdatedAsync(String, AuthUpdateResult)}
+         * @param success If Update was successful
+         * @param errorInfo optional errorInfo if update wasn't successful
+         */
+        void onUpdate(boolean success, ErrorInfo errorInfo);
+    }
+
+    /**
+     * An interface providing completion callbackk for renewAuth
+     */
+    public interface RenewAuthResult {
+        /**
+         * Signals completion of {@link Auth#renewAuth(RenewAuthResult)}
+         * @param success if token renewal was successful. Please note that success for this operation means that
+         *                other operations relating to this also succeeded.
+         * @param tokenDetails New token details. Please note that this value can exist regardless of value of
+         *                     success state.
+         * @param errorInfo Error details if operation is completed with error.
+         */
+        void onCompletion(boolean success,TokenDetails tokenDetails, ErrorInfo errorInfo);
+    }
+
+    /**
      * An interface implemented by a callback that provides either tokens,
      * or signed token requests, in response to a request with given token params.
      */
@@ -827,11 +853,29 @@ public class Auth {
      * Renew auth credentials.
      * Will obtain a new token, even if we already have an apparently valid one.
      * Authorization will use the parameters supplied on construction.
+     * @deprecated Because the method returns early before renew() completes and does not provide a completion
+     * handler for callers.
+     * Please use {@link Auth#renewAuth} instead
      */
+    @Deprecated
     public TokenDetails renew() throws AblyException {
         TokenDetails tokenDetails = assertValidToken(this.tokenParams, this.authOptions, true);
         ably.onAuthUpdated(tokenDetails.token, false);
         return tokenDetails;
+    }
+
+    /**
+     * Renew auth credentials.
+     * Will obtain a new token, even if we already have an apparently valid one.
+     * Authorization will use the parameters supplied on construction.
+     * @param result Asynchronous result the completion
+     * Please note that completion callback  {@link RenewAuthResult#onCompletion(boolean, TokenDetails, ErrorInfo)}
+     *              is called on a background thread.
+     */
+    public void renewAuth(RenewAuthResult result) throws AblyException {
+        final TokenDetails tokenDetails = assertValidToken(this.tokenParams, this.authOptions, true);
+
+        ably.onAuthUpdatedAsync(tokenDetails.token, (success, errorInfo) -> result.onCompletion(success,tokenDetails,errorInfo));
     }
 
     public void onAuthError(ErrorInfo err) {

@@ -861,6 +861,78 @@ public class RealtimeAuthTest extends ParameterizedTest {
         }
     }
 
+
+    /**
+     * Call renewAuth() whilst connecting; verify there's no crash (see https://github.com/ably/ably-java/issues/503)
+     */
+    @Test
+    public void auth_renewAuth_whilst_connecting() {
+        try {
+            /* get a TokenDetails */
+            final String testKey = testVars.keys[0].keyStr;
+            ClientOptions optsForToken = createOptions(testKey);
+            final AblyRest ablyForToken = new AblyRest(optsForToken);
+
+            final TokenDetails tokenDetails = ablyForToken.auth.requestToken(new Auth.TokenParams(){{ ttl = 1000L; }}, null);
+            assertNotNull("Expected token value", tokenDetails.token);
+
+            /* create Ably realtime instance with token and authCallback */
+            class ProtocolListener extends DebugOptions implements DebugOptions.RawProtocolListener {
+                ProtocolListener() {
+                    Setup.getTestVars().fillInOptions(this);
+                    protocolListener = this;
+                }
+                @Override
+                public void onRawConnectRequested(String url) {
+                    synchronized(this) {
+                        notify();
+                    }
+                }
+
+                @Override
+                public void onRawConnect(String url) {}
+                @Override
+                public void onRawMessageSend(ProtocolMessage message) {}
+                @Override
+                public void onRawMessageRecv(ProtocolMessage message) {}
+            }
+
+            ProtocolListener opts = new ProtocolListener();
+            opts.autoConnect = false;
+            opts.tokenDetails = tokenDetails;
+            opts.authCallback = new Auth.TokenCallback() {
+                /* implement callback, using Ably instance with key */
+                @Override
+                public Object getTokenRequest(Auth.TokenParams params) {
+                    return tokenDetails;
+                }
+            };
+
+            final AblyRealtime ably = new AblyRealtime(opts);
+            synchronized (opts) {
+                ably.connect();
+                try {
+                    opts.wait();
+                } catch(InterruptedException ie) {}
+                ably.auth.renewAuth((success, tokenDetails1, errorInfo) -> {
+                    //Ignore completion handling
+                });
+            }
+
+            Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ably.connection);
+            boolean isConnected = connectionWaiter.waitFor(ConnectionState.connected, 1, 4000L);
+            if(isConnected) {
+                /* done */
+                ably.close();
+            } else {
+                fail("auth_expired_token_expire_renew: unable to connect; final state = " + ably.connection.state);
+            }
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail("auth_expired_token_expire_renew: Unexpected exception instantiating library");
+        }
+    }
+
     /**
      * Verify that with queryTime=false, when instancing with an already-expired token and authCallback,
      * connection can succeed

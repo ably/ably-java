@@ -317,6 +317,15 @@ public abstract class AblyBase implements AutoCloseable {
     }
 
     /**
+     * Override this method in AblyRealtime and pass updated token to ConnectionManager
+     * @param token new token
+     * @param authUpdateResult Callback result
+     */
+    protected void onAuthUpdatedAsync(String token, Auth.AuthUpdateResult authUpdateResult)  {
+        //this must be overriden by subclass
+    }
+
+    /**
      * Authentication error occurred
      */
     protected void onAuthError(ErrorInfo errorInfo) {

@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.Auth;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
@@ -98,6 +99,14 @@ public class AblyRealtime extends AblyRest {
     @Override
     protected void onAuthUpdated(String token, boolean waitForResponse) throws AblyException {
         connection.connectionManager.onAuthUpdated(token, waitForResponse);
+    }
+
+    /**
+     * Authentication token has changed. Async version
+     */
+    @Override
+    protected void onAuthUpdatedAsync(String token, Auth.AuthUpdateResult authUpdateResult)  {
+        connection.connectionManager.onAuthUpdatedAsync(token,authUpdateResult);
     }
 
     /**

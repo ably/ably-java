@@ -1,5 +1,16 @@
 package io.ably.lib.transport;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
 import io.ably.lib.http.HttpHelpers;
@@ -10,8 +21,10 @@ import io.ably.lib.realtime.Connection;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.realtime.ConnectionStateListener.ConnectionStateChange;
+import io.ably.lib.rest.Auth;
 import io.ably.lib.transport.ITransport.ConnectListener;
 import io.ably.lib.transport.ITransport.TransportParams;
+import io.ably.lib.transport.NetworkConnectivity.NetworkConnectivityListener;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ConnectionDetails;
@@ -19,18 +32,12 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolSerializer;
 import io.ably.lib.util.Log;
-import io.ably.lib.transport.NetworkConnectivity.NetworkConnectivityListener;
 import io.ably.lib.util.PlatformAgentProvider;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
 public class ConnectionManager implements ConnectListener {
+    final ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
+    final ExecutorCompletionService<Void> executorCompletionService =
+        new ExecutorCompletionService<>(singleThreadExecutor);
 
     /**************************************************************
      * ConnectionManager
@@ -970,6 +977,79 @@ public class ConnectionManager implements ConnectListener {
                         throw AblyException.fromErrorInfo(reason);
                 }
             }
+        } finally {
+            waiter.close();
+        }
+    }
+
+
+    /**
+     * Async version of onAuthUpdated that returns a Future that includes an option Ably exception
+     **/
+    public void onAuthUpdatedAsync(final String token, final Auth.AuthUpdateResult authUpdateResult) {
+        final ConnectionWaiter waiter = new ConnectionWaiter();
+        try {
+            switch (currentState.state) {
+                case connected:
+                    /* (RTC8a) If the connection is in the CONNECTED currentState and
+                     * auth.authorize is called or Ably requests a re-authentication
+                     * (see RTN22), the client must obtain a new token, then send an
+                     * AUTH ProtocolMessage to Ably with an auth attribute
+                     * containing an AuthDetails object with the token string. */
+                    try {
+                        ProtocolMessage msg = new ProtocolMessage(ProtocolMessage.Action.auth);
+                        msg.auth = new ProtocolMessage.AuthDetails(token);
+                        send(msg, false, null);
+                    } catch (AblyException e) {
+                        /* The send failed. Close the transport; if a subsequent
+                         * reconnect succeeds, it will be with the new token. */
+                        Log.v(TAG, "onAuthUpdated: closing transport after send failure");
+                        transport.close();
+                    }
+                    break;
+
+                case connecting:
+                    /* Close the connecting transport. */
+                    Log.v(TAG, "onAuthUpdated: closing connecting transport");
+                    ErrorInfo disconnectError = new ErrorInfo("Aborting incomplete connection with superseded auth params", 503, 80003);
+                    requestState(new StateIndication(ConnectionState.disconnected, disconnectError, null, null));
+                    /* Start a new connection attempt. */
+                    connect();
+                    break;
+
+                default:
+                    /* Start a new connection attempt. */
+                    connect();
+                    break;
+            }
+
+            /* Wait for a currentState transition into anything other than connecting or
+             * disconnected in a background thread */
+            singleThreadExecutor.execute(() -> {
+                boolean waitingForConnected = true;
+                while (waitingForConnected) {
+                    final ErrorInfo reason = waiter.waitForChange();
+                    final ConnectionState connectionState = currentState.state;
+                    switch (connectionState) {
+                        case connected:
+                            authUpdateResult.onUpdate(true, null);
+                            Log.v(TAG, "onAuthUpdated: got connected");
+                            waitingForConnected = false;
+                            break;
+
+                        case connecting:
+                        case disconnected:
+                            Log.v(TAG, "onAuthUpdated: " + connectionState);
+                            break;
+
+                        default:
+                            /* suspended/closed/error: throw the error. */
+                            Log.v(TAG, "onAuthUpdated: throwing exception");
+                            authUpdateResult.onUpdate(false, reason);
+                            waitingForConnected = false;
+                    }
+                }
+            });
         } finally {
             waiter.close();
         }
