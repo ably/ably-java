@@ -2,7 +2,7 @@
 
 ## [1.2.15](https://github.com/ably/ably-java/tree/v1.2.15)
 
-[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.14...1.2.15)
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.14...v1.2.15)
 
 In this release we have added a new method that provides a completion handler for renewing an authentication token. 
 We also updated documentation to clarify thread policy for public method callbacks. 
