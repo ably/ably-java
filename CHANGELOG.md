@@ -1,5 +1,41 @@
 # Change Log
 
+## [1.2.15](https://github.com/ably/ably-java/tree/1.2.15)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.14...1.2.15)
+
+In this release we have added a new method that provides a completion handler for renewing an authentication token. 
+We also updated documentation to clarify thread policy for public method callbacks. 
+
+- A new `renewAuth` method was added to `Auth` and `renew` method was deprecated
+
+**Implemented enhancements:**
+
+- Prepare the "lib" module configuration for publishing to Maven Central [\#772](https://github.com/ably/ably-java/issues/772)
+- Split library into core and platform modules [\#728](https://github.com/ably/ably-java/issues/728)
+- Add new renew async method [\#816](https://github.com/ably/ably-java/pull/816) ([ikbalkaya](https://github.com/ikbalkaya))
+
+**Fixed bugs:**
+
+- Early return from  onAuthUpdated creates issues [\#814](https://github.com/ably/ably-java/issues/814)
+
+**Closed issues:**
+
+- Invalid method implementation in README [\#819](https://github.com/ably/ably-java/issues/819)
+- Document which thread is whole SDK or callbacks using [\#800](https://github.com/ably/ably-java/issues/800)
+- Use OIDC to publish from GitHub workflow runners to AWS S3 for `sdk.ably.com` deployments [\#786](https://github.com/ably/ably-java/issues/786)
+- Use the "java-library" plugin for ably-java [\#780](https://github.com/ably/ably-java/issues/780)
+- Improve build.gradle files configuration [\#779](https://github.com/ably/ably-java/issues/779)
+- Update dependency: Gradle and Gradle Android plugin com.android.tools.build:gradle [\#778](https://github.com/ably/ably-java/issues/778)
+- Update dependency: org.msgpack:msgpack-core [\#775](https://github.com/ably/ably-java/issues/775)
+- Update dependency: com.google.firebase:firebase-messaging [\#774](https://github.com/ably/ably-java/issues/774)
+- Replace the deprecated "maven" plugin with "maven-publish" [\#773](https://github.com/ably/ably-java/issues/773)
+
+**Merged pull requests:**
+
+- Update onChannelStateChanged readme with current implementation [\#820](https://github.com/ably/ably-java/pull/820) ([qsdigor](https://github.com/qsdigor))
+- Document thread policy for callbacks and add missing documentation for callbacks [\#818](https://github.com/ably/ably-java/pull/818) ([qsdigor](https://github.com/qsdigor))
+
 ## [v1.2.14](https://github.com/ably/ably-java/tree/v1.2.14)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.13...v1.2.14)
