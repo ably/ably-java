@@ -55,9 +55,12 @@ public class ChannelBase {
      * Publish a message on this channel using the REST API.
      * Since the REST API is stateless, this request is made independently
      * of any other request on this or any other channel.
+     *
      * @param name the event name
      * @param data the message payload; see {@link io.ably.types.Data} for
-     * @param listener
+     * @param listener a listener to be notified of the outcome of this message.
+     * <p>
+     * This listener is invoked on a background thread.
      */
     public void publishAsync(String name, Object data, CompletionListener listener) {
         publishImpl(name, data).async(new CompletionListener.ToCallback(listener));
@@ -81,8 +84,11 @@ public class ChannelBase {
 
     /**
      * Asynchronously publish an array of messages on this channel
-     * @param messages
-     * @param listener
+     *
+     * @param messages the message
+     * @param listener a listener to be notified of the outcome of this message.
+     * <p>
+     * This listener is invoked on a background thread.
      */
     public void publishAsync(final Message[] messages, final CompletionListener listener) {
         publishImpl(messages).async(new CompletionListener.ToCallback(listener));
@@ -165,7 +171,10 @@ public class ChannelBase {
 
         /**
          * Asynchronously get the presence state for this Channel.
+         *
          * @param callback on success returns the currently present members.
+         * <p>
+         * This callback is invoked on a background thread.
          */
         public void getAsync(Param[] params, Callback<AsyncPaginatedResult<PresenceMessage>> callback) {
             getImpl(params).async(callback);
@@ -190,8 +199,11 @@ public class ChannelBase {
 
         /**
          * Asynchronously obtain recent history for this channel using the REST API.
+         *
          * @param params the request params. See the Ably REST API
          * @param callback
+         * <p>
+         * This callback is invoked on a background thread.
          * @return
          */
         public void historyAsync(Param[] params, Callback<AsyncPaginatedResult<PresenceMessage>> callback) {

@@ -26,6 +26,8 @@ public abstract class EventEmitter<Event, Listener> {
     /**
      * Register the given listener for all events
      * @param listener
+     * <p>
+     * This listener is invoked on a background thread.
      */
     public synchronized void on(Listener listener) {
         if(!listeners.contains(listener))
@@ -35,6 +37,8 @@ public abstract class EventEmitter<Event, Listener> {
     /**
      * Register the given listener for a single occurrence of any event
      * @param listener
+     * <p>
+     * This listener is invoked on a background thread.
      */
     public synchronized void once(Listener listener) {
         filters.put(listener, new Filter(null, listener, true));
@@ -52,6 +56,8 @@ public abstract class EventEmitter<Event, Listener> {
     /**
      * Register the given listener for a specific event
      * @param listener
+     * <p>
+     * This listener is invoked on a background thread.
      */
     public synchronized void on(Event event, Listener listener) {
         filters.put(listener, new Filter(event, listener, false));
@@ -60,6 +66,8 @@ public abstract class EventEmitter<Event, Listener> {
     /**
      * Register the given listener for a single occurrence of a specific event
      * @param listener
+     * <p>
+     * This listener is invoked on a background thread.
      */
     public synchronized void once(Event event, Listener listener) {
         filters.put(listener, new Filter(event, listener, true));

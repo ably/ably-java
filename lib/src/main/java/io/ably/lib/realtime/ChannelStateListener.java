@@ -7,6 +7,10 @@ import io.ably.lib.types.ErrorInfo;
  */
 public interface ChannelStateListener {
 
+    /**
+     * Called when channel state changes.
+     * @param stateChange information about the new state. Check {@link ChannelState ChannelState} - for all states available.
+     */
     void onChannelStateChanged(ChannelStateChange stateChange);
 
     /**

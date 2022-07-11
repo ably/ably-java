@@ -10,7 +10,7 @@ import io.ably.lib.types.Callback;
  */
 public interface CompletionListener {
     /**
-     * Called when the associated operation completes successfully,
+     * Called when the associated operation completes successfully.
      */
     void onSuccess();
 
