@@ -1,5 +1,32 @@
 # Change Log
 
+## [1.2.15](https://github.com/ably/ably-java/tree/v1.2.15)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.14...v1.2.15)
+
+In this release we have added a new method that provides a completion handler for renewing an authentication token. 
+We also updated the documentation to clarify the thread policy for public method callbacks. 
+
+- A new `renewAuth` method was added to `Auth` and the `renew` method was deprecated
+
+**Implemented enhancements:**
+
+- Add new renew async method [\#816](https://github.com/ably/ably-java/pull/816) ([ikbalkaya](https://github.com/ikbalkaya))
+
+**Fixed bugs:**
+
+- Early return from  onAuthUpdated creates issues [\#814](https://github.com/ably/ably-java/issues/814)
+
+**Closed issues:**
+
+- Invalid method implementation in README [\#819](https://github.com/ably/ably-java/issues/819)
+- Document which thread is whole SDK or callbacks using [\#800](https://github.com/ably/ably-java/issues/800)
+
+**Merged pull requests:**
+
+- Update onChannelStateChanged readme with current implementation [\#820](https://github.com/ably/ably-java/pull/820) ([qsdigor](https://github.com/qsdigor))
+- Document thread policy for callbacks and add missing documentation for callbacks [\#818](https://github.com/ably/ably-java/pull/818) ([qsdigor](https://github.com/qsdigor))
+
 ## [v1.2.14](https://github.com/ably/ably-java/tree/v1.2.14)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.13...v1.2.14)
