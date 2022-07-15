@@ -1,0 +1,59 @@
+plugins {
+    id 'com.github.gmazzo.buildconfig' version '3.0.3'
+    id 'checkstyle'
+    id 'java-library'
+    id 'idea'
+}
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+apply from: 'publish.gradle'
+
+// Make gradle properties accessible from the SDK code
+buildConfig {
+    // Set the package name of the generated class
+    packageName 'io.ably.generated'
+    // Set the class name of the generated class
+    className 'BuildConfig'
+    // Add SDK version field to the generated class
+    buildConfigField 'String', 'VERSION', "\"$version\""
+}
+
+// Exclude all files from any 'generated' directory when performing checkstyle check (added to exclude BuildConfig)
+checkstyleMain.exclude '**/generated/*'
+
+// Added to make test classes from this module available in other modules
+task testJar(type: Jar) {
+    archiveClassifier = 'test'
+    from sourceSets.test.output
+}
+
+// Added to make test classes from this module available in other modules
+configurations {
+    sharedTestClasses
+}
+
+// Added to make test classes from this module available in other modules
+artifacts {
+    sharedTestClasses testJar
+}
+
+/*
+Test task to run pure unit tests, where pure means that they only run
+locally and do not need to communicate with Ably servers.
+This is achieved by excluding everything in the io.ably.core.test package,
+as it only contains the REST and Realtime suites.
+*/
+task runUnitTests(type: Test) {
+    filter {
+        excludeTestsMatching 'io.ably.core.test.*'
+    }
+    beforeTest { descriptor ->
+        // informational, so we're not flying blind at runtime
+        logger.lifecycle("-> $descriptor")
+    }
+
+    // force tests to run every time this task is invoked
+    outputs.upToDateWhen { false }
+}

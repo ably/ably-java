@@ -48,7 +48,7 @@
 
 **Fixed bugs:**
 
-- IllegalArgumentException: No enum constant io.ably.lib.http.HttpAuth.Type.BASİC [\#711](https://github.com/ably/ably-java/issues/711)
+- IllegalArgumentException: No enum constant io.ably.core.http.HttpAuth.Type.BASİC [\#711](https://github.com/ably/ably-java/issues/711)
 - ProGuard warnings emitted by Android build against 1.1.6 [\#529](https://github.com/ably/ably-java/issues/529)
 
 **Merged pull requests:**
@@ -580,7 +580,7 @@ Note: this release reverts the changes in 1.1.6 due to regressions in that relea
 - Remove calls to System.xxx.println\(\) [\#217](https://github.com/ably/ably-java/issues/217)
 - Race condition when lib is closed soon after being instantiated [\#319](https://github.com/ably/ably-java/issues/319)
 - Crash inside a library [\#309](https://github.com/ably/ably-java/issues/309)
-- Android System.out: \(ERROR\): io.ably.lib.transport.WebSocketTransport: No activity for 25000ms, closing connection [\#306](https://github.com/ably/ably-java/issues/306)
+- Android System.out: \(ERROR\): io.ably.core.transport.WebSocketTransport: No activity for 25000ms, closing connection [\#306](https://github.com/ably/ably-java/issues/306)
 - RSC19 is not implemented according to the spec in 0.9 [\#278](https://github.com/ably/ably-java/issues/278)
 - Invalid binary error message [\#247](https://github.com/ably/ably-java/issues/247)
 

@@ -31,8 +31,8 @@ android {
         versionName version
         setProperty('archivesBaseName', "ably-android-$versionName")
         testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
-        testInstrumentationRunnerArgument 'class', 'io.ably.lib.test.android.AndroidPushTest'
-        //testInstrumentationRunnerArgument "class", "io.ably.lib.test.rest.RestSuite,io.ably.lib.test.realtime.RealtimeSuite,io.ably.lib.test.android.AndroidSuite,io.ably.lib.test.android.AndroidPushTest"
+        testInstrumentationRunnerArgument 'class', 'io.ably.core.test.android.AndroidPushTest'
+        //testInstrumentationRunnerArgument "class", "io.ably.core.test.rest.RestSuite,io.ably.core.test.realtime.RealtimeSuite,io.ably.core.test.android.AndroidSuite,io.ably.core.test.android.AndroidPushTest"
         testInstrumentationRunnerArgument 'timeout_msec', '300000'
 //        testInstrumentationRunnerArgument "ABLY_ENV", "\"$System.env.ABLY_ENV\""
         consumerProguardFiles 'proguard.txt'
@@ -57,7 +57,7 @@ android {
         androidTest {
             assets {
                 // Append the shared tests resources to the Android assets
-                srcDirs '../lib/src/test/resources'
+                srcDirs '../core/src/test/resources'
             }
         }
     }
@@ -74,11 +74,11 @@ tasks.withType(com.android.build.gradle.internal.tasks.AndroidTestTask) { task -
 }
 
 dependencies {
-    api project(':lib')
+    api project(':core')
     implementation 'com.google.firebase:firebase-messaging:23.0.4'
 
     // Enable access to test classes from the :lib module for integration test cases sharing
-    testImplementation project(path: ':lib', configuration: 'sharedTestClasses')
+    testImplementation project(configuration: 'sharedTestClasses', path: ':core')
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test:rules:1.0.2'
     androidTestImplementation 'com.crittercism.dexmaker:dexmaker:1.4'

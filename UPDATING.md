@@ -12,7 +12,7 @@ The `Channels` interface that's used to access realtime and rest channels has be
 Because it's mainly accessed from either `AblyRest` or `AblyRealtime` for most users no changes would be required. 
 For users who referenced this interface, only a change in the import statement would be required:
 
-`io.ably.lib.rest.AblyBase.Channels` -> `io.ably.lib.types.Channels`
+`io.ably.core.rest.AblyBase.Channels` -> `io.ably.core.types.Channels`
 
 #### ChannelBase renamed
 
@@ -22,10 +22,10 @@ this case, they will need to update the code referencing the old `ChannelBase` d
 or realtime channels.
 
 For the rest channel:
-`io.ably.lib.rest.ChannelBase` -> `io.ably.lib.rest.RestChannelBase`
+`io.ably.core.rest.ChannelBase` -> `io.ably.core.rest.RestChannelBase`
 
 For the realtime channel:
-`io.ably.lib.realtime.ChannelBase` -> `io.ably.lib.realtime.RealtimeChannelBase`
+`io.ably.core.realtime.ChannelBase` -> `io.ably.core.realtime.RealtimeChannelBase`
 
 #### MessageListener moved
 
@@ -33,7 +33,7 @@ The `MessageListener` was an empty interface (probably as some sort of the [mark
 implemented in the realtime `Channel` that extended from the `ChannelBase.MessageListener` interface. Now [after renaming](#channelbase-renamed)
 the listener is present only in `RealtimeChannelBase.MessageListener`. However, this should not affect the API and the listener can still be used as `Channel.MessageListener`.
 
-`io.ably.lib.realtime.Channel.MessageListener` -> `io.ably.lib.realtime.RealtimeChannelBase.MessageListener`
+`io.ably.core.realtime.Channel.MessageListener` -> `io.ably.core.realtime.RealtimeChannelBase.MessageListener`
 
 ### Modularization
 

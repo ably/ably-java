@@ -11,10 +11,9 @@ sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
 dependencies {
-    implementation project(':lib')
-
+    implementation project(':core')
     // Enable access to test classes from the :lib module for integration test cases sharing
-    testImplementation project(path: ':lib', configuration: 'sharedTestClasses')
+    testImplementation project(configuration: 'sharedTestClasses', path: ':core')
 }
 
 publish.dependsOn checkstyleMain
