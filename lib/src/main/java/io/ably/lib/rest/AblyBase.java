@@ -33,6 +33,7 @@ import io.ably.lib.types.StatsReader;
 import io.ably.lib.util.Crypto;
 import io.ably.lib.util.InternalMap;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.ObjectCopyUtil;
 import io.ably.lib.util.PlatformAgentProvider;
 import io.ably.lib.util.Serialisation;
 
@@ -83,17 +84,18 @@ public abstract class AblyBase<
             Log.e(getClass().getName(), msg);
             throw AblyException.fromErrorInfo(new ErrorInfo(msg, 400, 40000));
         }
-        this.options = options;
+
+        this.options = ObjectCopyUtil.copy(options);
 
         /* process options */
-        Log.setLevel(options.logLevel);
-        Log.setHandler(options.logHandler);
+        Log.setLevel(this.options.logLevel);
+        Log.setHandler(this.options.logHandler);
         Log.i(getClass().getName(), "started");
 
         this.platformAgentProvider = platformAgentProvider;
-        auth = new Auth(this, options);
-        httpCore = new HttpCore(options, auth, this.platformAgentProvider);
-        http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
+        auth = new Auth(this, this.options);
+        httpCore = new HttpCore(this.options, auth, this.platformAgentProvider);
+        http = new Http(new AsyncHttpScheduler(httpCore, this.options), new SyncHttpScheduler(httpCore));
 
         channels = (Channels<ChannelType>) new InternalChannels();
 
