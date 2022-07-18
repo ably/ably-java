@@ -362,12 +362,12 @@ long serviceTime = ably.time();
 You can get log output from the library by modifying the log level:
 
 ```java
-import io.ably.core.util.Log;
+import io.ably.lib.util.Log;
 
-ClientOptions opts = new ClientOptions(key);
-opts.logLevel = Log.VERBOSE;
-AblyRest ably = new AblyRest(opts);
-...
+ClientOptions opts=new ClientOptions(key);
+  opts.logLevel=Log.VERBOSE;
+  AblyRest ably=new AblyRest(opts);
+  ...
 ```
 
 By default, log output will go to `System.out` for the java library, and logcat for Android.
@@ -375,16 +375,16 @@ By default, log output will go to `System.out` for the java library, and logcat 
 You can redirect the log output to a logger of your own by specifying a custom log handler:
 
 ```java
-import io.ably.core.util.Log.LogHandler;
+import io.ably.lib.util.Log.LogHandler;
 
-ClientOptions opts = new ClientOptions(key);
-opts.logHandler = new LogHandler() {
-	public void println(int severity, String tag, String msg, Throwable tr) {
-		/* handle log output here ... */
-	}
-};
-AblyRest ably = new AblyRest(opts);
-...
+ClientOptions opts=new ClientOptions(key);
+  opts.logHandler=new LogHandler(){
+public void println(int severity,String tag,String msg,Throwable tr){
+  /* handle log output here ... */
+  }
+  };
+  AblyRest ably=new AblyRest(opts);
+  ...
 ```
 
 Note that any logger you specify in this way has global scope - it will set as a static of the library
@@ -392,7 +392,7 @@ and will apply to all Ably library instances. If you need to release your custom
 garbage-collected, you need to clear that static reference:
 
 ```java
-import io.ably.core.util.Log;
+import io.ably.lib.util.Log;
 
 Log.setHandler(null);
 ```
@@ -409,12 +409,12 @@ To publish a message to a channel including a push payload:
 
 ```java
 Message message = new Message("example", "realtime data");
-message.extras = io.ably.core.util.JsonUtils.object()
-    .add("push", io.ably.core.util.JsonUtils.object()
-        .add("notification", io.ably.core.util.JsonUtils.object()
+message.extras = io.ably.lib.util.JsonUtils.object()
+    .add("push", io.ably.lib.util.JsonUtils.object()
+        .add("notification", io.ably.lib.util.JsonUtils.object()
             .add("title", "Hello from Ably!")
             .add("body", "Example push notification from Ably."))
-        .add("data", io.ably.core.util.JsonUtils.object()
+        .add("data", io.ably.lib.util.JsonUtils.object()
             .add("foo", "bar")
             .add("baz", "qux")));
 
@@ -434,11 +434,11 @@ To publish a push payload directly to a registered device:
 ```java
 Param[] recipient = new Param[]{new Param("deviceId", "xxxxxxxxxxx");
 
-JsonObject payload = io.ably.core.util.JsonUtils.object()
-        .add("notification", io.ably.core.util.JsonUtils.object()
+JsonObject payload = io.ably.lib.util.JsonUtils.object()
+        .add("notification", io.ably.lib.util.JsonUtils.object()
             .add("title", "Hello from Ably!")
             .add("body", "Example push notification from Ably."))
-        .add("data", io.ably.core.util.JsonUtils.object()
+        .add("data", io.ably.lib.util.JsonUtils.object()
             .add("foo", "bar")
             .add("baz", "qux")));
 

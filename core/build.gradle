@@ -42,12 +42,12 @@ artifacts {
 /*
 Test task to run pure unit tests, where pure means that they only run
 locally and do not need to communicate with Ably servers.
-This is achieved by excluding everything in the io.ably.core.test package,
+This is achieved by excluding everything in the io.ably.lib.test package,
 as it only contains the REST and Realtime suites.
 */
 task runUnitTests(type: Test) {
     filter {
-        excludeTestsMatching 'io.ably.core.test.*'
+        excludeTestsMatching 'io.ably.lib.test.*'
     }
     beforeTest { descriptor ->
         // informational, so we're not flying blind at runtime

@@ -31,8 +31,8 @@ android {
         versionName version
         setProperty('archivesBaseName', "ably-android-$versionName")
         testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
-        testInstrumentationRunnerArgument 'class', 'io.ably.core.test.android.AndroidPushTest'
-        //testInstrumentationRunnerArgument "class", "io.ably.core.test.rest.RestSuite,io.ably.core.test.realtime.RealtimeSuite,io.ably.core.test.android.AndroidSuite,io.ably.core.test.android.AndroidPushTest"
+        testInstrumentationRunnerArgument 'class', 'io.ably.lib.test.android.AndroidPushTest'
+        //testInstrumentationRunnerArgument "class", "io.ably.lib.test.rest.RestSuite,io.ably.lib.test.realtime.RealtimeSuite,io.ably.lib.test.android.AndroidSuite,io.ably.lib.test.android.AndroidPushTest"
         testInstrumentationRunnerArgument 'timeout_msec', '300000'
 //        testInstrumentationRunnerArgument "ABLY_ENV", "\"$System.env.ABLY_ENV\""
         consumerProguardFiles 'proguard.txt'
