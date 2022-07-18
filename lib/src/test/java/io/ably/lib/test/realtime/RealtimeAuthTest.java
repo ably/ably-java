@@ -34,6 +34,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RealtimeAuthTest extends ParameterizedTest {
@@ -917,16 +918,10 @@ public class RealtimeAuthTest extends ParameterizedTest {
                 try {
                     opts.wait();
                 } catch(InterruptedException ie) {}
-                final CountDownLatch latch = new CountDownLatch(1);
+
                 ably.auth.renewAuth((success, tokenDetails1, errorInfo) -> {
                     //Ignore completion handling
-                    latch.countDown();
                 });
-                try {
-                    latch.await();
-                } catch (InterruptedException e) {
-                    fail("auth_expired_token_expire_renew: interrupted");
-                }
             }
 
             Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ably.connection);
@@ -951,7 +946,9 @@ public class RealtimeAuthTest extends ParameterizedTest {
             final ClientOptions clientOptions = createOptions(testKey);
             final AblyRest ablyRest = new AblyRest(clientOptions);
 
-            final TokenDetails tokenDetails = ablyRest.auth.requestToken(new Auth.TokenParams(){{ ttl = 1000L; }}, null);
+            final TokenDetails tokenDetails = ablyRest.auth.requestToken(new Auth.TokenParams() {{
+                ttl = 1000L;
+            }}, null);
             assertNotNull("Expected token value", tokenDetails.token);
 
             // create Ably realtime instance with token and authCallback
@@ -960,19 +957,25 @@ public class RealtimeAuthTest extends ParameterizedTest {
                     Setup.getTestVars().fillInOptions(this);
                     protocolListener = this;
                 }
+
                 @Override
                 public void onRawConnectRequested(String url) {
-                    synchronized(this) {
+                    synchronized (this) {
                         notify();
                     }
                 }
 
                 @Override
-                public void onRawConnect(String url) {}
+                public void onRawConnect(String url) {
+                }
+
                 @Override
-                public void onRawMessageSend(ProtocolMessage message) {}
+                public void onRawMessageSend(ProtocolMessage message) {
+                }
+
                 @Override
-                public void onRawMessageRecv(ProtocolMessage message) {}
+                public void onRawMessageRecv(ProtocolMessage message) {
+                }
             }
 
             final ProtocolListener protocolListener = new ProtocolListener();
@@ -986,21 +989,22 @@ public class RealtimeAuthTest extends ParameterizedTest {
                 ably.connect();
                 try {
                     protocolListener.wait();
-                } catch(InterruptedException ie) {
-                    fail( "auth_expired_token_expire_renew protocolListener.wait(): interrupted -"+ie.getMessage());
+                } catch (InterruptedException ie) {
+                    fail("auth_expired_token_expire_renew protocolListener.wait(): interrupted -" + ie.getMessage());
                 }
             }
 
             final Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ably.connection);
             boolean isConnected = connectionWaiter.waitFor(ConnectionState.connected, 1, 4000L);
-            if(isConnected) {
-               AtomicBoolean isCalled = new AtomicBoolean(false);
-               ably.auth.renewAuth((success, tokenDetails1, errorInfo) -> {
+            if (isConnected) {
+                final CountDownLatch latch = new CountDownLatch(1);
+                final AtomicBoolean isCalled = new AtomicBoolean(false);
+                ably.auth.renewAuth((success, tokenDetails1, errorInfo) -> {
+                    latch.countDown();
                     isCalled.set(true);
                 });
-                Thread.sleep(1200);
+                latch.await(30, TimeUnit.SECONDS);
                 assertTrue("Callback not invoked", isCalled.get());
-                assertTrue(isConnected);
                 ably.close();
             } else {
                 fail("auth_renewAuth_callback_invoked: unable to connect; final state = " + ably.connection.state);
