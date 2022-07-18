@@ -1,6 +1,6 @@
 package io.ably.lib.test.realtime;
 
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.realtime.AblyRealtimeBase;
 import io.ably.lib.realtime.RealtimeChannelBase;
@@ -72,7 +72,7 @@ public abstract class RealtimeReauthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = testClientId;
             opts.tokenDetails = firstToken;
-            AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
 
             /* wait for connected state */
             Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ablyRealtime.connection);
@@ -156,7 +156,7 @@ public abstract class RealtimeReauthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = testClientId;
             opts.tokenDetails = firstToken;
-            AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
 
             /* wait for connected state */
             Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ablyRealtime.connection);
@@ -232,7 +232,7 @@ public abstract class RealtimeReauthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = testClientId;
             opts.tokenDetails = firstToken;
-            AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
 
             /* wait for connected state */
             Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ablyRealtime.connection);
@@ -316,7 +316,7 @@ public abstract class RealtimeReauthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = testClientId;
             opts.tokenDetails = firstToken;
-            AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
 
             ablyRealtime.connection.on(new ConnectionStateListener() {
                 @Override
@@ -407,7 +407,7 @@ public abstract class RealtimeReauthTest extends ParameterizedTest {
                     return ablyForToken.auth.requestToken(params, null);
                 }
             };
-            AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts);
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts);
 
             /* Test UPDATE event delivery */
             ably.connection.on(ConnectionEvent.update, new ConnectionStateListener() {
@@ -466,7 +466,7 @@ public abstract class RealtimeReauthTest extends ParameterizedTest {
             opts.clientId = "testClientId";
             opts.useTokenAuth = true;
             opts.defaultTokenParams.ttl = 34000L;
-            AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = createAblyRealtime(opts);
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts);
 
             /* Test UPDATE event delivery */
             ably.connection.on(ConnectionEvent.update, new ConnectionStateListener() {

@@ -7,7 +7,7 @@ import static org.junit.Assert.fail;
 import java.util.HashMap;
 import java.util.UUID;
 
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.rest.RestChannelBase;
 import org.junit.Assert;
@@ -27,7 +27,7 @@ import io.ably.lib.types.Param;
 
 public abstract class RestChannelHistoryTest extends ParameterizedTest {
 
-    private AblyBase<PushBase, PlatformBase, RestChannelBase> ably;
+    private AblyBase<PushBase, Platform, RestChannelBase> ably;
     private long timeOffset;
 
     @Rule

@@ -1,6 +1,6 @@
 package io.ably.lib.test.rest;
 
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.realtime.AblyRealtimeBase;
 import io.ably.lib.realtime.RealtimeChannelBase;
@@ -49,7 +49,7 @@ public abstract class RestChannelBulkPublishTest extends ParameterizedTest  {
         try {
             /* setup library instance */
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* first, publish some messages */
             int channelCount = 5;
@@ -89,11 +89,11 @@ public abstract class RestChannelBulkPublishTest extends ParameterizedTest  {
      */
     @Test
     public void bulk_publish_multiple_channels_param() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> rxAbly = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> rxAbly = null;
         try {
             /* setup library instance */
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
             rxAbly = createAblyRealtime(opts);
 
             /* first, publish some messages */
@@ -175,7 +175,7 @@ public abstract class RestChannelBulkPublishTest extends ParameterizedTest  {
             /* setup library instance */
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.idempotentRestPublishing = true;
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* first, publish some messages */
             int channelCount = 5;
@@ -243,7 +243,7 @@ public abstract class RestChannelBulkPublishTest extends ParameterizedTest  {
         try {
             /* setup library instance */
             ClientOptions opts = createOptions(testVars.keys[6].keyStr);
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ably = createAblyRest(opts);
+            AblyBase<PushBase, Platform, RestChannelBase> ably = createAblyRest(opts);
 
             /* first, publish some messages */
             String baseChannelName = "persisted:" + testParams.name + ":channel";

@@ -3,7 +3,7 @@ package io.ably.lib.realtime;
 import java.util.Iterator;
 import java.util.Map;
 
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.RestChannelBase;
@@ -28,7 +28,7 @@ import io.ably.lib.util.PlatformAgentProvider;
  */
 public abstract class AblyRealtimeBase<
     PushType extends PushBase,
-    PlatformType extends PlatformBase,
+    PlatformType extends Platform,
     ChannelType extends AblyChannel
     > extends AblyBase<PushType, PlatformType, ChannelType> implements AutoCloseable {
 
@@ -45,6 +45,7 @@ public abstract class AblyRealtimeBase<
      * simplest case of instancing the library with a key
      * for basic authentication and no other options.
      * @param key String key (obtained from application dashboard)
+     * @param platformAgentProvider for providing the platform specific part of the agent header
      * @throws AblyException
      */
     public AblyRealtimeBase(String key, PlatformAgentProvider platformAgentProvider) throws AblyException {
@@ -54,6 +55,7 @@ public abstract class AblyRealtimeBase<
     /**
      * Instance the Ably library with the given options.
      * @param options see {@link io.ably.lib.types.ClientOptions} for options
+     * @param platformAgentProvider for providing the platform specific part of the agent header
      * @throws AblyException
      */
     public AblyRealtimeBase(ClientOptions options, PlatformAgentProvider platformAgentProvider) throws AblyException {
@@ -111,7 +113,7 @@ public abstract class AblyRealtimeBase<
     protected RestChannelBase createChannel(AblyBase ablyBase, String channelName, ChannelOptions channelOptions) throws AblyException {
         // This method is here only due to the incremental refactoring work, AblyRealtime should never want to create
         // an Ably REST channel. After extracting AblyRestBase from AblyBase this method should be removed.
-        return null;
+        throw new IllegalStateException("Rest channel should not be created from the Ably Realtime instance");
     }
 
     private class InternalChannels extends InternalMap<String, RealtimeChannelBase> implements Channels<RealtimeChannelBase>, ConnectionManager.Channels {

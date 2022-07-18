@@ -2,7 +2,7 @@ package io.ably.lib.test.realtime;
 
 import com.google.gson.JsonObject;
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.realtime.AblyRealtimeBase;
 import io.ably.lib.realtime.RealtimeChannelBase;
@@ -41,7 +41,7 @@ public abstract class RealtimeDeltaDecoderTest extends ParameterizedTest {
 
     @Test
     public void simple_delta_codec() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         String testName = "simple_delta_codec";
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -86,7 +86,7 @@ public abstract class RealtimeDeltaDecoderTest extends ParameterizedTest {
     }
 
     private void delta_failure_recovery(final ITransport.Factory websocketFactory, String testName) {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             DebugOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.transportFactory = websocketFactory;

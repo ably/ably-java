@@ -12,6 +12,7 @@ targetCompatibility = 1.7
 
 dependencies {
     api project(':lib')
+
     // Enable access to test classes from the :lib module for integration test cases sharing
     testImplementation project(path: ':lib', configuration: 'sharedTestClasses')
 }

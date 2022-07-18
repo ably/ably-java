@@ -1,7 +1,7 @@
 package io.ably.lib.test.realtime;
 
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.realtime.AblyRealtimeBase;
 import io.ably.lib.realtime.RealtimeChannelBase;
@@ -46,7 +46,7 @@ public abstract class RealtimeRecoverTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void recover_disconnected() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRx = null, ablyTx = null, ablyRxRecover = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRx = null, ablyTx = null, ablyRxRecover = null;
         String channelName = "recover_disconnected";
         int messageCount = 5;
         long delay = 200;
@@ -146,7 +146,7 @@ public abstract class RealtimeRecoverTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void recover_implicit_connect() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRx = null, ablyTx = null, ablyRxRecover = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRx = null, ablyTx = null, ablyRxRecover = null;
         String channelName = "recover_implicit_connect";
         int messageCount = 5;
         long delay = 200;
@@ -241,7 +241,7 @@ public abstract class RealtimeRecoverTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void recover_verify_publish() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ablyRx = null, ablyTx = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRx = null, ablyTx = null;
         String channelName = "recover_verify_publish";
         int messageCount = 5;
         long delay = 200;
@@ -338,7 +338,7 @@ public abstract class RealtimeRecoverTest extends ParameterizedTest {
      */
     @Test
     public void recover_transport_send_exception() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         final String channelName = "recover_transport_send_exception";
         try {
             MockWebsocketFactory mockTransport = new MockWebsocketFactory();

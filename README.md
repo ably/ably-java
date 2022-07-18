@@ -482,7 +482,7 @@ Visit https://www.ably.com/docs for a complete API reference and more examples.
 
 For Java, JRE 7 or later is required. Note that the [Java Unlimited JCE extensions](http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html) must be installed in the Java runtime environment.
 
-For Android, 4.1 (API level 16) or later is required.
+For Android, 4.4 (API level 19) or later is required.
 
 ## Support, feedback and troubleshooting
 

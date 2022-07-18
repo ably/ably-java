@@ -30,7 +30,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.platform.PlatformBase;
+import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.realtime.AblyRealtimeBase;
 import io.ably.lib.realtime.RealtimeChannelBase;
@@ -119,8 +119,8 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
         }
 
         String channelName = random();
-        AblyBase<PushBase, PlatformBase, RestChannelBase> rest;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> realtime;
+        AblyBase<PushBase, Platform, RestChannelBase> rest;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> realtime;
         RestChannelBase restChannel;
         RealtimeChannelBase realtimeChannel;
     }
@@ -132,7 +132,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     public void setUpBefore() throws Exception {
         /* create tokens for specific clientIds */
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        AblyBase<PushBase, PlatformBase, RestChannelBase> rest = createAblyRest(opts);
+        AblyBase<PushBase, Platform, RestChannelBase> rest = createAblyRest(opts);
         token1 = rest.auth.requestToken(new TokenParams() {{ clientId = testClientId1; }}, null);
         token2 = rest.auth.requestToken(new TokenParams() {{ clientId = testClientId2; }}, null);
         wildcardToken = rest.auth.requestToken(new TokenParams() {{ clientId = "*"; }}, null);
@@ -144,7 +144,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void enter_simple() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly1 = null;
         TestChannel testChannel = new TestChannel();
         try {
             /* subscribe for presence events in the anonymous connection */
@@ -195,7 +195,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void enter_before_attach() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly1 = null;
         TestChannel testChannel = new TestChannel();
         try {
             /* subscribe for presence events in the anonymous connection */
@@ -244,7 +244,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void enter_before_connect() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly1 = null;
         TestChannel testChannel = new TestChannel();
         try {
             /* subscribe for presence events in the anonymous connection */
@@ -290,7 +290,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void enter_leave_simple() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly1 = null;
         TestChannel testChannel = new TestChannel();
         try {
             /* subscribe for presence events in the anonymous connection */
@@ -351,7 +351,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void enter_enter_simple() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly1 = null;
         TestChannel testChannel = new TestChannel();
         try {
             /* subscribe for presence events in the anonymous connection */
@@ -421,7 +421,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void enter_update_simple() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly1 = null;
         TestChannel testChannel = new TestChannel();
         try {
             /* subscribe for presence events in the anonymous connection */
@@ -490,7 +490,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
      */
     @Test
     public void enter_update_null() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly1 = null;
         TestChannel testChannel = new TestChannel();
         try {
             /* subscribe for presence events in the anonymous connection */
@@ -561,7 +561,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void update_noenter() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly1 = null;
         TestChannel testChannel = new TestChannel();
         try {
             /* subscribe for presence events in the anonymous connection */
@@ -620,7 +620,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void enter_leave_nodata() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly1 = null;
         TestChannel testChannel = new TestChannel();
         try {
             /* subscribe for presence events in the anonymous connection */
@@ -676,7 +676,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void realtime_get_simple() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly1 = null;
         TestChannel testChannel = new TestChannel();
         try {
             /* subscribe for presence events in the anonymous connection */
@@ -731,7 +731,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void realtime_get_leave() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly1 = null;
         TestChannel testChannel = new TestChannel();
         try {
             /* subscribe for presence events in the anonymous connection */
@@ -790,8 +790,8 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void attach_enter_simple() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly1 = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly2 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly2 = null;
         TestChannel testChannel = new TestChannel();
         try {
             /* subscribe for presence events in the anonymous connection */
@@ -867,8 +867,8 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void attach_enter_multiple() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly1 = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly2 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly2 = null;
         TestChannel testChannel = new TestChannel();
         int clientCount = 250;
         try {
@@ -952,8 +952,8 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void realtime_enter_multiple() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly1 = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly2 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly2 = null;
         TestChannel testChannel = new TestChannel();
         try {
             /* subscribe for presence events in the anonymous connection */
@@ -1023,7 +1023,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void rest_get_simple() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly1 = null;
         TestChannel testChannel = new TestChannel();
         try {
             /* subscribe for presence events in the anonymous connection */
@@ -1076,7 +1076,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void rest_get_leave() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly1 = null;
         TestChannel testChannel = new TestChannel();
         try {
             /* subscribe for presence events in the anonymous connection */
@@ -1134,8 +1134,8 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void rest_enter_multiple() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly1 = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly2 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly2 = null;
         TestChannel testChannel = new TestChannel();
         try {
             /* subscribe for presence events in the anonymous connection */
@@ -1200,7 +1200,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void rest_paginated_get() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly1 = null;
         TestChannel testChannel = new TestChannel();
         int clientCount = 30;
         long delay = 100L;
@@ -1286,7 +1286,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void disconnect_leave() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly1 = null;
         TestChannel testChannel = new TestChannel();
         boolean requiresClose = false;
         try {
@@ -1350,9 +1350,9 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Test
     public void realtime_presence_unsubscribe_all() throws AblyException {
         /* Ably instance that will emit presence events */
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably1 = null;
         /* Ably instance that will receive presence events */
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably2 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably2 = null;
 
         String channelName = "test.presence.unsubscribe.all" + System.currentTimeMillis();
 
@@ -1429,9 +1429,9 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Test
     public void realtime_presence_unsubscribe_single() throws AblyException {
         /* Ably instance that will emit presence events */
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably1 = null;
         /* Ably instance that will receive presence events */
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably2 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably2 = null;
 
         String channelName = "test.presence.unsubscribe.single" + System.currentTimeMillis();
 
@@ -1509,9 +1509,9 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Test
     public void realtime_presence_subscribe_all() throws AblyException {
         /* Ably instance that will emit presence events */
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably1 = null;
         /* Ably instance that will receive presence events */
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably2 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably2 = null;
 
         String channelName = "test.presence.subscribe.all" + System.currentTimeMillis();
 
@@ -1585,9 +1585,9 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Test
     public void realtime_presence_subscribe_multiple() throws AblyException {
         /* Ably instance that will emit presence events */
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably1 = null;
         /* Ably instance that will receive presence events */
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably2 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably2 = null;
 
         String channelName = "test.presence.subscribe.multiple" + System.currentTimeMillis();
         EnumSet<PresenceMessage.Action> actions = EnumSet.of(Action.update, Action.leave);
@@ -1663,9 +1663,9 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Test
     public void realtime_presence_subscribe_single() throws AblyException {
         /* Ably instance that will emit presence events */
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably1 = null;
         /* Ably instance that will receive presence events */
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably2 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably2 = null;
 
         String channelName = "test.presence.subscribe.single." + System.currentTimeMillis();
         PresenceMessage.Action action = Action.enter;
@@ -1743,10 +1743,10 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: flaky test")
     @Test
     public void realtime_presence_attach_implicit_subscribe_fail() throws AblyException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyBase<PushBase, PlatformBase, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
             final String channelName = "realtime_presence_attach_implicit_subscribe_fail" + testParams.name;
 
             /* get first token */
@@ -1866,7 +1866,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
      */
     @Test
     public void realtime_presence_attach_implicit_enter_fail() throws AblyException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
             opts.clientId = "theClient";
@@ -1906,7 +1906,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
      */
     @Test
     public void realtime_presence_attach_implicit_get_fail() throws AblyException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
             ably = createAblyRealtime(opts);
@@ -1943,7 +1943,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
      */
     @Test
     public void realtime_presence_attach_implicit_enterclient_fail() throws AblyException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
             ably = createAblyRealtime(opts);
@@ -1983,7 +1983,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
      */
     @Test
     public void realtime_presence_attach_implicit_updateclient_fail() throws AblyException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
             ably = createAblyRealtime(opts);
@@ -2023,7 +2023,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
      */
     @Test
     public void realtime_presence_attach_implicit_leaveclient_fail() throws AblyException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
             ably = createAblyRealtime(opts);
@@ -2061,7 +2061,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void realtime_presence_get_throws_when_channel_failed() throws AblyException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
             ably = createAblyRealtime(opts);
@@ -2097,7 +2097,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void realtime_presence_suspended_reenter() throws AblyException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             MockWebsocketFactory mockTransport = new MockWebsocketFactory();
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
@@ -2199,7 +2199,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
                 } catch (InterruptedException e) {
                 }
 
-                AblyBase<PushBase, PlatformBase, RestChannelBase> ablyRest = createAblyRest(opts);
+                AblyBase<PushBase, Platform, RestChannelBase> ablyRest = createAblyRest(opts);
                 RestChannelBase restChannel = ablyRest.channels.get(channelName);
                 assertEquals("Verify presence data is received by the server",
                         restChannel.presence.get(null).items().length, i==0 ? 1 : 2);
@@ -2229,7 +2229,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
      */
     @Test
     public void realtime_presence_map_test() throws AblyException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -2386,8 +2386,8 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void reattach_resume_broken_sync() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly1 = null;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly2 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly2 = null;
         TestChannel testChannel = new TestChannel();
         int clientCount = 150; /* Should be greater than 100 to break sync into several messages */
         try {
@@ -2499,7 +2499,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
      */
     @Test
     public void presence_sync() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
@@ -2652,7 +2652,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void presence_state_change () {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
@@ -2770,13 +2770,13 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Test
     public void presence_without_subscribe_capability() throws AblyException {
         String channelName = "presence_without_subscribe" + testParams.name;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         String presenceData = "presence_test_data";
 
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyBase<PushBase, PlatformBase, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
 
             /* get first token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -2833,7 +2833,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void sync_complete() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably1 = null, ably2 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably1 = null, ably2 = null;
         final String channelName = "sync_complete" + testParams.name;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -2869,12 +2869,12 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Test
     public void presence_enter_without_permission() throws AblyException {
         String channelName = "presence_enter_without_permission" + testParams.name;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
 
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyBase<PushBase, PlatformBase, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
 
             /* get first token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -2914,12 +2914,12 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Test
     public void presence_enter_mismatched_clientid() throws AblyException {
         String channelName = "presence_enter_mismatched_clientid" + testParams.name;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
 
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyBase<PushBase, PlatformBase, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
 
             /* get first token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -2969,12 +2969,12 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Test
     public void presence_enterclient_null_clientid() throws AblyException {
         String channelName = "presence_enterclient_null_clientid_" + testParams.name;
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
 
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final AblyBase<PushBase, PlatformBase, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
 
             /* get first token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -3027,7 +3027,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
      */
     @Test
     public void protocol_enter_message_format() throws AblyException, InterruptedException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
 
         try {
             final ArrayList<PresenceMessage> sentPresence = new ArrayList<>();
@@ -3092,7 +3092,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
      */
     @Test
     public void protocol_enterclient_message_format() throws AblyException, InterruptedException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
 
         try {
             final ArrayList<PresenceMessage> sentPresence = new ArrayList<>();
@@ -3155,7 +3155,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: flaky test")
     @Test
     public void presence_encoding() throws AblyException, InterruptedException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably1 = null, ably2 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably1 = null, ably2 = null;
         try {
             /* Set up two connections: one for entering, one for listening */
             final String channelName = "presence_encoding" + testParams.name;
@@ -3226,7 +3226,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore("FIXME: fix exception")
     @Test
     public void presence_get() throws AblyException, InterruptedException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably1 = null, ably2 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably1 = null, ably2 = null;
         try {
             /* Set up two connections: one for entering, one for listening */
             final String channelName = "presence_get" + testParams.name;
@@ -3322,7 +3322,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
     @Ignore
     @Test
     public void test_consistent_presence_for_members() {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> clientAbly1 = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> clientAbly1 = null;
         TestChannel testChannel = new TestChannel();
         try {
             /* subscribe for presence events in the anonymous connection */
@@ -3380,10 +3380,10 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
      */
     @Test
     public void enter_before_clientid_is_known() throws AblyException {
-        AblyRealtimeBase<PushBase, PlatformBase, RealtimeChannelBase> ably = null;
+        AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = null;
         try {
             ClientOptions restOpts = createOptions(testVars.keys[0].keyStr);
-            AblyBase<PushBase, PlatformBase, RestChannelBase> ablyForToken = createAblyRest(restOpts);
+            AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(restOpts);
 
             /* Initialize connection so clientId is not known before actual connection */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
