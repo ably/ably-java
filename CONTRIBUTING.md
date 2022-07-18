@@ -183,14 +183,46 @@ signing.secretKeyRingFile=/Users/username/.ably/ably-java-secring.gpg
 
 You may wish to make changes to Ably Java or Ably Android, and test it immediately in a separate project. For example, during development for [Ably Flutter](https://github.com/ably/ably-flutter) which depends on `ably-android`, a bug was found in `ably-android`. A small fix was done, the AAR was built and tested in [Ably Flutter](https://github.com/ably/ably-flutter).
 
-- Build the AAR: See [Building an Android Archive (AAR) file locally](#building-an-android-archive-aar-file-locally)
-- Open the directory printed from the output of that command. Inside that folder, get the `ably-android-x.y.z.aar`, and place it your Android project's `libs/` directory. Create this directory if it doesn't exist.
-- Add an `implementation` dependency on the `.aar`:
+### How to publish to the local repository
+
+1. Comment out the `signing { ... }` block in each of the `publish.gradle` files from modules you want to publish
+2. Run the `./gradlew publishToMavenLocal` to publish all modules or prefix the command with `:module-name:` if you want to publish only a specified module (e.g. `./gradlew :android:publishToMavenLocal`)
+3. The files can be found in the [local repository location](https://maven.apache.org/guides/mini/guide-configuring-maven.html#configuring-your-local-repository) on your computer. (e.g. `~/.m2/repository/io/ably/ably-android`)
+
+### How to use the published SDKs in another project
+
+Add the local maven repository to the **top** of the repositories block in your `build.gradle` file. This will result in Gradle looking firstly into the local repository for the Ably SDKs.
+Gradle [discourages the usage of mavenLocal()](https://docs.gradle.org/current/userguide/declaring_repositories.html#sec:case-for-maven-local) repository, so this should only be used during development.
+
 ```groovy
-implementation files('libs/ably-android-1.2.12.aar')
+repositories {
+  mavenLocal()
+  // other repositories
+}
 ```
-- Add the `implementation` (not `testImplementation`) dependencies found in `dependencies.gradle` to your project. This is because the `.aar` does not contain dependencies.
-- Build/run your application.
+
+## Secrets Required to Release
+
+This section defines the names of the
+[GitHub secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
+defined to be used by our publishing workflows.
+
+### Code Signing
+
+[OpenGPG Signatory Credentials](https://docs.gradle.org/current/userguide/signing_plugin.html#sec:signatory_credentials)
+to be used by Gradle's
+[Signing Plugin](https://docs.gradle.org/current/userguide/signing_plugin.html):
+
+- `MAVEN_SIGNING_KEY_ID`: The public key ID.
+- `MAVEN_SIGNING_KEY_PASSWORD`: The passphrase that was used to protect the private key.
+- `MAVEN_SIGNING_KEY_RING_FILE_BASE64`: The contents of the secret key ring file that contains the private key, base64 encoded so that it can be injected as a GitHub secret (encode from macOS using `openssl base64 < signing.key.gpg | pbcopy`).
+
+### Sonatype for Maven Central
+
+Details for the Sonatype identity to be used to publish to our Ably's `io.ably` project ([OSSRH-52871](https://issues.sonatype.org/browse/OSSRH-52871)):
+
+- `OSSRH_USERNAME`: The Sonatype user.
+- `OSSRH_PASSWORD`: The password for the Sonatype user.
 
 ## Release Process
 
@@ -202,19 +234,18 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 4. Commit [CHANGELOG](./CHANGELOG.md)
 5. Make a PR against `main`
 6. Once the PR is approved, merge it into `main`
-7. From the updated `main` branch on your local workstation, assemble and upload:
-    1. Run `./gradlew java:publish` to build and upload `ably-java` to Nexus staging repository
-    2. Run `./gradlew android:publish` to build and upload `ably-android` to Nexus staging repository
-    3. Find the new staging repository using the [Nexus Repository Manager](https://oss.sonatype.org/#stagingRepositories)
-    4. Check that it contains `ably-android` and `ably-java` releases
-    5. "Close" it - this will take a few minutes during which time it will say (after a refresh of your browser) that "Activity: Operation in Progress"
-    6. Once it has closed you will have "Release" available. You can allow it to "automatically drop" after successful release. A refresh or two later of the browser and the staging repository will have disappeared from the list (i.e. it's been dropped which implies it was released successfully)
-    7. A [search for Ably packages](https://oss.sonatype.org/#nexus-search;quick~io.ably) should now list the new version for both `ably-android` and `ably-java`
-8. Add a tag and push to origin - e.g.: `git tag v1.2.4 && git push origin v1.2.4`
+7. Add a tag and push to origin - e.g.: `git tag v1.2.4 && git push origin v1.2.4`
+8. Run the publish workflow:
+  - It is manually triggered, where you supply the version number so the script publishes only up to that tag
+  - It must be run from the `main` branch
+  - Run the [Maven Central](https://github.com/ably/ably-java/blob/main/.github/workflows/publish-maven-central.yml) workflow
+  - After a successful release, a [search for Ably packages](https://oss.sonatype.org/#nexus-search;quick~io.ably) should list the new version for both `ably-android` and `ably-java`
 9. Create the release on Github including populating the release notes
 10. Create the entry on the [Ably Changelog](https://changelog.ably.com/) (via [headwayapp](https://headwayapp.co/))
 
 ### Signing
+
+The signing is performed by the CI workflow and there's no need to do it manually. However, if such need arises, below are instructions on how to sign the SDKs locally.
 
 If you've not configured the signing key in your [Gradle properties](https://docs.gradle.org/current/userguide/build_environment.html#sec:gradle_configuration_properties) then release builds will complain:
 
