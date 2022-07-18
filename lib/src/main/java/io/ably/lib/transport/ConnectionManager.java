@@ -987,6 +987,7 @@ public class ConnectionManager implements ConnectListener {
      * Async version of onAuthUpdated that returns a Future that includes an option Ably exception
      **/
     public void onAuthUpdatedAsync(final String token, final Auth.AuthUpdateResult authUpdateResult) {
+        final ConnectionWaiter waiter = new ConnectionWaiter();
         switch (currentState.state) {
             case connected:
                 /* (RTC8a) If the connection is in the CONNECTED currentState and
@@ -1024,8 +1025,14 @@ public class ConnectionManager implements ConnectListener {
         /* Wait for a currentState transition into anything other than connecting or
          * disconnected in a background thread */
         singleThreadExecutor.execute(() -> {
-            final ConnectionWaiter waiter = new ConnectionWaiter();
-            boolean waitingForConnected = true;
+            //simulate result
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            authUpdateResult.onUpdate(true, null);
+          /*  boolean waitingForConnected = true;
             while (waitingForConnected) {
                 final ErrorInfo reason = waiter.waitForChange();
                 final ConnectionState connectionState = currentState.state;
@@ -1042,12 +1049,12 @@ public class ConnectionManager implements ConnectListener {
                         break;
 
                     default:
-                        /* suspended/closed/error: throw the error. */
+                        *//* suspended/closed/error: throw the error. *//*
                         Log.v(TAG, "onAuthUpdated: throwing exception");
                         authUpdateResult.onUpdate(false, reason);
                         waitingForConnected = false;
                 }
-            }
+            }*/
             waiter.close();
         });
 

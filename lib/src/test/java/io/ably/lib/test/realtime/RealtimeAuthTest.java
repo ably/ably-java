@@ -33,6 +33,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class RealtimeAuthTest extends ParameterizedTest {
 
     @Rule
@@ -914,9 +917,16 @@ public class RealtimeAuthTest extends ParameterizedTest {
                 try {
                     opts.wait();
                 } catch(InterruptedException ie) {}
+                final CountDownLatch latch = new CountDownLatch(1);
                 ably.auth.renewAuth((success, tokenDetails1, errorInfo) -> {
                     //Ignore completion handling
+                    latch.countDown();
                 });
+                try {
+                    latch.await();
+                } catch (InterruptedException e) {
+                    fail("auth_expired_token_expire_renew: interrupted");
+                }
             }
 
             Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ably.connection);
@@ -932,6 +942,75 @@ public class RealtimeAuthTest extends ParameterizedTest {
             fail("auth_expired_token_expire_renew: Unexpected exception instantiating library");
         }
     }
+
+    @Test
+    public void auth_renewAuth_callback_invoked() throws InterruptedException {
+        try {
+            /* get a TokenDetails */
+            final String testKey = testVars.keys[0].keyStr;
+            final ClientOptions clientOptions = createOptions(testKey);
+            final AblyRest ablyRest = new AblyRest(clientOptions);
+
+            final TokenDetails tokenDetails = ablyRest.auth.requestToken(new Auth.TokenParams(){{ ttl = 1000L; }}, null);
+            assertNotNull("Expected token value", tokenDetails.token);
+
+            // create Ably realtime instance with token and authCallback
+            class ProtocolListener extends DebugOptions implements DebugOptions.RawProtocolListener {
+                ProtocolListener() {
+                    Setup.getTestVars().fillInOptions(this);
+                    protocolListener = this;
+                }
+                @Override
+                public void onRawConnectRequested(String url) {
+                    synchronized(this) {
+                        notify();
+                    }
+                }
+
+                @Override
+                public void onRawConnect(String url) {}
+                @Override
+                public void onRawMessageSend(ProtocolMessage message) {}
+                @Override
+                public void onRawMessageRecv(ProtocolMessage message) {}
+            }
+
+            final ProtocolListener protocolListener = new ProtocolListener();
+            protocolListener.autoConnect = false;
+            protocolListener.tokenDetails = tokenDetails;
+            //   implement callback, using Ably instance with key
+            protocolListener.authCallback = params -> tokenDetails;
+
+            final AblyRealtime ably = new AblyRealtime(protocolListener);
+            synchronized (protocolListener) {
+                ably.connect();
+                try {
+                    protocolListener.wait();
+                } catch(InterruptedException ie) {
+                    fail( "auth_expired_token_expire_renew protocolListener.wait(): interrupted -"+ie.getMessage());
+                }
+            }
+
+            final Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ably.connection);
+            boolean isConnected = connectionWaiter.waitFor(ConnectionState.connected, 1, 4000L);
+            if(isConnected) {
+               AtomicBoolean isCalled = new AtomicBoolean(false);
+               ably.auth.renewAuth((success, tokenDetails1, errorInfo) -> {
+                    isCalled.set(true);
+                });
+                Thread.sleep(1200);
+                assertTrue("Callback not invoked", isCalled.get());
+                assertTrue(isConnected);
+                ably.close();
+            } else {
+                fail("auth_renewAuth_callback_invoked: unable to connect; final state = " + ably.connection.state);
+            }
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail("auth_renewAuth_callback_invoked: Unexpected exception instantiating library: " + e.getMessage());
+        }
+    }
+
 
     /**
      * Verify that with queryTime=false, when instancing with an already-expired token and authCallback,
