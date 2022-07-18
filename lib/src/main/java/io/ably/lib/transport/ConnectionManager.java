@@ -1032,29 +1032,6 @@ public class ConnectionManager implements ConnectListener {
                 e.printStackTrace();
             }
             authUpdateResult.onUpdate(true, null);
-          /*  boolean waitingForConnected = true;
-            while (waitingForConnected) {
-                final ErrorInfo reason = waiter.waitForChange();
-                final ConnectionState connectionState = currentState.state;
-                switch (connectionState) {
-                    case connected:
-                        authUpdateResult.onUpdate(true, null);
-                        Log.v(TAG, "onAuthUpdated: got connected");
-                        waitingForConnected = false;
-                        break;
-
-                    case connecting:
-                    case disconnected:
-                        Log.v(TAG, "onAuthUpdated: " + connectionState);
-                        break;
-
-                    default:
-                        *//* suspended/closed/error: throw the error. *//*
-                        Log.v(TAG, "onAuthUpdated: throwing exception");
-                        authUpdateResult.onUpdate(false, reason);
-                        waitingForConnected = false;
-                }
-            }*/
             waiter.close();
         });
 
