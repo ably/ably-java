@@ -269,6 +269,9 @@ public class Auth {
          */
         @Override
         public boolean equals(Object obj) {
+            if (!(obj instanceof TokenDetails)) {
+                return false;
+            }
             TokenDetails details = (TokenDetails)obj;
             return equalNullableStrings(this.token, details.token) &
                     equalNullableStrings(this.capability, details.capability) &
@@ -360,7 +363,7 @@ public class Auth {
          *
          * @return copied object
          */
-        private TokenParams copy() {
+        public TokenParams copy() {
             TokenParams result = new TokenParams();
             result.ttl = this.ttl;
             result.capability = this.capability;
