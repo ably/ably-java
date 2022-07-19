@@ -24,16 +24,21 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.util.Log;
+
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import java.util.HashMap;
 
 public abstract class RealtimeAuthTest extends ParameterizedTest {
 
@@ -953,6 +958,66 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
         } catch (AblyException e) {
             e.printStackTrace();
             fail("auth_expired_token_expire_renew: Unexpected exception instantiating library");
+        }
+    }
+
+    /**
+     * Verify that instance of ClientOptions cannot change AblyRealtime options once it is provided to constructor
+     */
+    @Test
+    public void auth_client_options_immutable() {
+        try {
+            /* create token with clientId */
+            ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
+            optsForToken.clientId = "token_clientId";
+            AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
+            TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, null);
+
+            /* create ably realtime */
+            ClientOptions opts = createOptions();
+            opts.clientId = null;
+            opts.token = tokenDetails.token;
+            opts.autoConnect = false;
+            opts.headers = new HashMap<>();
+            //opts.headers.put("old_key", "old_value");
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
+
+            opts.clientId = "my_new_clientId";
+            assertNotEquals("Verify if clientId has changed", opts.clientId, ablyRealtime.options.clientId);
+            opts.logLevel = 33;
+            assertNotEquals("Verify if logLevel has changed", opts.logLevel, ablyRealtime.options.logLevel);
+            opts.autoConnect = true;
+            assertNotEquals("Verify if autoConnect has changed", opts.autoConnect, ablyRealtime.options.autoConnect);
+            opts.logHandler = new Log.DefaultHandler();
+            assertNotEquals("Verify if logHandler has changed", opts.logHandler, ablyRealtime.options.logHandler);
+
+            assertEquals("Verify if logHandler has changed", opts.authCallback, ablyRealtime.options.authCallback);
+            opts.authCallback = new Auth.TokenCallback() {
+                @Override
+                public Object getTokenRequest(Auth.TokenParams params) {
+                    return null;
+                }
+            };
+            assertNotEquals("Verify if logHandler has changed", opts.authCallback, ablyRealtime.options.authCallback);
+
+            opts.token = "my_new_token";
+            assertNotEquals("Verify if logHandler has changed", opts.token, ablyRealtime.options.token);
+
+            opts.tokenDetails = new TokenDetails("my_new_details_token");
+            assertNotEquals("Verify if tokenDetails has changed", opts.tokenDetails, ablyRealtime.options.tokenDetails);
+
+            opts.headers = new HashMap<>();
+            opts.headers.put("new_key", "new_value");
+            assertNotEquals("Verify if headers has changed", opts.headers, ablyRealtime.options.headers);
+
+            opts.authHeaders = new Param[1];
+            opts.authHeaders[0] = new Param("new_key","new_key");
+            assertNotEquals("Verify if headers has changed", opts.authHeaders, ablyRealtime.options.authHeaders);
+
+            ablyRealtime.close();
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail();
         }
     }
 
