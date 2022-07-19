@@ -7,7 +7,7 @@
 In this release, we have fixed a bug that was introduced in 1.2.15 that caused the SDK to return early from the 
 `Auth#renewAuth` method.
 
-- call waiter.close\(\) after breaking from while loop [\#825](https://github.com/ably/ably-java/pull/825) ([ikbalkaya](https://github.com/ikbalkaya))
+- call waiter.close() after breaking from while loop [\#825](https://github.com/ably/ably-java/pull/825) ([ikbalkaya](https://github.com/ikbalkaya))
 
 
 ## [1.2.15](https://github.com/ably/ably-java/tree/v1.2.15)
