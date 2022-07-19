@@ -14,9 +14,9 @@ public class JavaResourceLoader implements ResourceLoader {
         System.out.println("Current dir: " + new File(".").getAbsolutePath());
         try {
             try {
-                fis = new FileInputStream(new File("../lib/src/test/resources", resourceName));
+                fis = new FileInputStream(new File("../core/src/test/resources", resourceName));
             } catch(FileNotFoundException fnfe) {
-                fis = new FileInputStream(new File("lib/src/test/resources", resourceName));
+                fis = new FileInputStream(new File("core/src/test/resources", resourceName));
             }
             byte[] bytes = new byte[fis.available()];
             fis.read(bytes);

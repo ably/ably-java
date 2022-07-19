@@ -5,10 +5,10 @@ import java.util.Map;
 
 public final class CollectionUtils {
     private CollectionUtils() { }
-    
+
     /**
      * Creates a shallow copy.
-     * 
+     *
      * @param <K> Key type.
      * @param <V> Value type.
      * @param map The map to be copied.
