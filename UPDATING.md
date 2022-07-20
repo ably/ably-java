@@ -37,8 +37,8 @@ the listener is present only in `RealtimeChannelBase.MessageListener`. However, 
 
 ### Modularization
 
-The SDK has now been divided into three modules: `lib`, `java` and `android`. The `lib` module contains code that is common to both `java` and `android`.
+The SDK has now been divided into three modules: `core`, `java` and `android`. The `core` module contains code that is common to both `java` and `android`.
 This is better than the previous approach whereby `java` and `android` were monoliths linked only by shared source code sets.
 
-The new `lib` module has to be published separately in order to make the SDKs work. However, this won't change the way of importing 
+The new `core` module has to be published separately in order to make the SDKs work. However, this won't change the way of importing 
 the SDK into your project, as the new dependency is a transitive dependency of the `java` and `android` modules.

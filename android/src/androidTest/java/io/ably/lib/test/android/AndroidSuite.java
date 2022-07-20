@@ -9,7 +9,6 @@ import io.ably.lib.test.util.AndroidAblyInstanceCreator;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runners.JUnit4;
 
 import static org.junit.Assert.fail;
 import static org.junit.Assert.assertTrue;

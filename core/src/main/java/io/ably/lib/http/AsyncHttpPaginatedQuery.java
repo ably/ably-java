@@ -123,7 +123,7 @@ public class AsyncHttpPaginatedQuery implements HttpCore.ResponseHandler<AsyncHt
             } catch(UnsupportedEncodingException uee) {}
             exec(params, callback);
         }
-    
+
         @Override
         public boolean hasFirst() { return relFirst != null; }
 

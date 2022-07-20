@@ -1,7 +1,5 @@
 package io.ably.lib.types;
 
-import io.ably.lib.types.ErrorInfo;
-
 /**
  * An interface allowing a client to be notified of the outcome
  * of an asynchronous operation.

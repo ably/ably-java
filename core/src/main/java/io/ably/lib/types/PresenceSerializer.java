@@ -22,7 +22,7 @@ public class PresenceSerializer {
      *            Msgpack decode
      ****************************************/
 
-    public static PresenceMessage[] readMsgpackArray(MessageUnpacker unpacker) throws IOException {
+    static PresenceMessage[] readMsgpackArray(MessageUnpacker unpacker) throws IOException {
         int count = unpacker.unpackArrayHeader();
         PresenceMessage[] result = new PresenceMessage[count];
         for(int i = 0; i < count; i++)
@@ -53,7 +53,7 @@ public class PresenceSerializer {
         } catch(IOException e) { return null; }
     }
 
-    public static void writeMsgpackArray(PresenceMessage[] messages, MessagePacker packer) {
+    static void writeMsgpackArray(PresenceMessage[] messages, MessagePacker packer) {
         try {
             int count = messages.length;
             packer.packArrayHeader(count);

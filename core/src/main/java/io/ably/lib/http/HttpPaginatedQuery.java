@@ -117,7 +117,7 @@ public class HttpPaginatedQuery implements HttpCore.ResponseHandler<HttpPaginate
             }
             throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected link URL format", 500, 50000));
         }
-    
+
         private String relFirst, relCurrent, relNext;
 
         @Override

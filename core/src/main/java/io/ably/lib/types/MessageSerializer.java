@@ -26,7 +26,7 @@ public class MessageSerializer {
      *            Msgpack decode
      ****************************************/
 
-    public static Message[] readMsgpackArray(MessageUnpacker unpacker) throws IOException {
+    static Message[] readMsgpackArray(MessageUnpacker unpacker) throws IOException {
         int count = unpacker.unpackArrayHeader();
         Message[] result = new Message[count];
         for(int i = 0; i < count; i++)
@@ -65,7 +65,7 @@ public class MessageSerializer {
         } catch(IOException e) { return null; }
     }
 
-    public static void writeMsgpackArray(Message[] messages, MessagePacker packer) {
+    static void writeMsgpackArray(Message[] messages, MessagePacker packer) {
         try {
             int count = messages.length;
             packer.packArrayHeader(count);
@@ -74,7 +74,7 @@ public class MessageSerializer {
         } catch(IOException e) {}
     }
 
-    public static void write(final Map<String, String> map, final MessagePacker packer) throws IOException {
+    static void write(final Map<String, String> map, final MessagePacker packer) throws IOException {
         packer.packMapHeader(map.size());
         for (final Map.Entry<String, String> entry : map.entrySet()) {
             packer.packString(entry.getKey());
@@ -82,7 +82,7 @@ public class MessageSerializer {
         }
     }
 
-    public static Map<String, String> readStringMap(final MessageUnpacker unpacker) throws IOException {
+    static Map<String, String> readStringMap(final MessageUnpacker unpacker) throws IOException {
         final Map<String, String> map = new HashMap<>();
         final int fieldCount = unpacker.unpackMapHeader();
         for(int i = 0; i < fieldCount; i++) {

@@ -2,7 +2,7 @@ apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
 final String sdkGroupId = 'io.ably'
-final String sdkArtifactId = 'lib'
+final String sdkArtifactId = 'core'
 
 task sourcesJar(type: Jar) {
     // Copy files from main source directories to the JAR.
