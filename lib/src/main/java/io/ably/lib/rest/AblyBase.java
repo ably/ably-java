@@ -1,6 +1,7 @@
 package io.ably.lib.rest;
 
 import io.ably.annotation.Experimental;
+import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.http.AsyncHttpScheduler;
 import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
@@ -85,7 +86,11 @@ public abstract class AblyBase<
             throw AblyException.fromErrorInfo(new ErrorInfo(msg, 400, 40000));
         }
 
-        this.options = ObjectCopyUtil.copy(options);
+        if (options instanceof DebugOptions) {
+            this.options = options;
+        } else {
+            this.options = ObjectCopyUtil.copy(options);
+        }
 
         /* process options */
         Log.setLevel(this.options.logLevel);

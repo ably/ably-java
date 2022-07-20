@@ -90,6 +90,7 @@ public class ObjectCopyUtil {
             tokenDetails.issued = options.tokenDetails.issued;
             tokenDetails.capability = options.tokenDetails.capability;
             tokenDetails.clientId = options.tokenDetails.clientId;
+            copyOptions.tokenDetails = tokenDetails;
         }
 
         return copyOptions;
