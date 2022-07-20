@@ -24,6 +24,7 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.types.ProxyOptions;
 import io.ably.lib.util.Log;
 
 import org.junit.Ignore;
@@ -31,6 +32,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
@@ -974,45 +976,73 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, null);
 
             /* create ably realtime */
-            ClientOptions opts = createOptions();
+            ClientOptions opts = new ClientOptions();
             opts.clientId = null;
             opts.token = tokenDetails.token;
             opts.autoConnect = false;
             opts.headers = new HashMap<>();
-            //opts.headers.put("old_key", "old_value");
-            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
-
-            opts.clientId = "my_new_clientId";
-            assertNotEquals("Verify if clientId has changed", opts.clientId, ablyRealtime.options.clientId);
-            opts.logLevel = 33;
-            assertNotEquals("Verify if logLevel has changed", opts.logLevel, ablyRealtime.options.logLevel);
-            opts.autoConnect = true;
-            assertNotEquals("Verify if autoConnect has changed", opts.autoConnect, ablyRealtime.options.autoConnect);
+            opts.headers.put("old_key", "old_value");
+            opts.tokenDetails = new TokenDetails("my_old_details_token");
             opts.logHandler = new Log.DefaultHandler();
-            assertNotEquals("Verify if logHandler has changed", opts.logHandler, ablyRealtime.options.logHandler);
-
-            assertEquals("Verify if logHandler has changed", opts.authCallback, ablyRealtime.options.authCallback);
             opts.authCallback = new Auth.TokenCallback() {
                 @Override
                 public Object getTokenRequest(Auth.TokenParams params) {
                     return null;
                 }
             };
-            assertNotEquals("Verify if logHandler has changed", opts.authCallback, ablyRealtime.options.authCallback);
+            opts.authHeaders = new Param[1];
+            opts.authHeaders[0] = new Param("old_key", "old_key");
+            opts.proxy = new ProxyOptions();
+            opts.proxy.host = "https://ably.com";
+            opts.proxy.port = 8080;
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
 
+            assertEquals("Verify if clientId has changed", opts.clientId, ablyRealtime.options.clientId);
+            opts.clientId = "my_new_clientId";
+            assertNotEquals("Verify if clientId has changed", opts.clientId, ablyRealtime.options.clientId);
+
+            assertEquals("Verify if logLevel has changed", opts.logLevel, ablyRealtime.options.logLevel);
+            opts.logLevel = 33;
+            assertNotEquals("Verify if logLevel has changed", opts.logLevel, ablyRealtime.options.logLevel);
+
+            assertEquals("Verify if autoConnect has changed", opts.autoConnect, ablyRealtime.options.autoConnect);
+            opts.autoConnect = true;
+            assertNotEquals("Verify if autoConnect has changed", opts.autoConnect, ablyRealtime.options.autoConnect);
+
+            assertEquals("Verify if logHandler has changed", opts.logHandler, ablyRealtime.options.logHandler);
+            opts.logHandler = new Log.DefaultHandler();
+            assertNotEquals("Verify if logHandler has changed", opts.logHandler, ablyRealtime.options.logHandler);
+
+            assertEquals("Verify if authCallback has changed", opts.authCallback, ablyRealtime.options.authCallback);
+            opts.authCallback = new Auth.TokenCallback() {
+                @Override
+                public Object getTokenRequest(Auth.TokenParams params) {
+                    return null;
+                }
+            };
+            assertNotEquals("Verify if authCallback has changed", opts.authCallback, ablyRealtime.options.authCallback);
+
+            assertEquals("Verify if token has changed", opts.token, ablyRealtime.options.token);
             opts.token = "my_new_token";
-            assertNotEquals("Verify if logHandler has changed", opts.token, ablyRealtime.options.token);
+            assertNotEquals("Verify if token has changed", opts.token, ablyRealtime.options.token);
 
+            assertEquals("Verify if tokenDetails has changed", opts.tokenDetails, ablyRealtime.options.tokenDetails);
             opts.tokenDetails = new TokenDetails("my_new_details_token");
             assertNotEquals("Verify if tokenDetails has changed", opts.tokenDetails, ablyRealtime.options.tokenDetails);
 
+            assertEquals("Verify if headers has changed", opts.headers, ablyRealtime.options.headers);
             opts.headers = new HashMap<>();
             opts.headers.put("new_key", "new_value");
             assertNotEquals("Verify if headers has changed", opts.headers, ablyRealtime.options.headers);
 
+            assertArrayEquals("Verify if authHeaders has changed", opts.authHeaders, ablyRealtime.options.authHeaders);
             opts.authHeaders = new Param[1];
-            opts.authHeaders[0] = new Param("new_key","new_key");
-            assertNotEquals("Verify if headers has changed", opts.authHeaders, ablyRealtime.options.authHeaders);
+            opts.authHeaders[0] = new Param("new_key", "new_key");
+            assertNotEquals("Verify if authHeaders has changed", opts.authHeaders, ablyRealtime.options.authHeaders);
+
+            assertEquals("Verify if proxy.port has changed", opts.proxy.port, ablyRealtime.options.proxy.port);
+            opts.proxy.port = 9090;
+            assertNotEquals("Verify if proxy.port has changed", opts.proxy.port, ablyRealtime.options.proxy.port);
 
             ablyRealtime.close();
         } catch (AblyException e) {
