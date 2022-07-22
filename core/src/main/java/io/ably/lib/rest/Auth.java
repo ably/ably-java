@@ -272,6 +272,7 @@ public class Auth {
             if (!(obj instanceof TokenDetails)) {
                 return false;
             }
+
             TokenDetails details = (TokenDetails)obj;
             return equalNullableStrings(this.token, details.token) &
                     equalNullableStrings(this.capability, details.capability) &

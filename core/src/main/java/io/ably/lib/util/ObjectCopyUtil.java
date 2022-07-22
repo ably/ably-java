@@ -79,7 +79,7 @@ public class ObjectCopyUtil {
             po.username = options.proxy.username;
             po.password = options.proxy.password;
             po.nonProxyHosts = options.proxy.nonProxyHosts;
-            po.prefAuthType = options.proxy.prefAuthType; //maybe deep copy this
+            po.prefAuthType = options.proxy.prefAuthType;
             copyOptions.proxy = po;
         }
 
