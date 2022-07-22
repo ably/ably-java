@@ -997,52 +997,52 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
             opts.proxy.port = 8080;
             AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
 
-            assertEquals("Verify if clientId has changed", opts.clientId, ablyRealtime.options.clientId);
+            assertEquals("clientId should be equal before change", opts.clientId, ablyRealtime.options.clientId);
             opts.clientId = "my_new_clientId";
-            assertNotEquals("Verify if clientId has changed", opts.clientId, ablyRealtime.options.clientId);
+            assertNotEquals("clientId should not be equal after change", opts.clientId, ablyRealtime.options.clientId);
 
-            assertEquals("Verify if logLevel has changed", opts.logLevel, ablyRealtime.options.logLevel);
+            assertEquals("logLevel should be equal before change", opts.logLevel, ablyRealtime.options.logLevel);
             opts.logLevel = 33;
-            assertNotEquals("Verify if logLevel has changed", opts.logLevel, ablyRealtime.options.logLevel);
+            assertNotEquals("logLevel should not be equal after change", opts.logLevel, ablyRealtime.options.logLevel);
 
-            assertEquals("Verify if autoConnect has changed", opts.autoConnect, ablyRealtime.options.autoConnect);
+            assertEquals("autoConnect should be equal before change", opts.autoConnect, ablyRealtime.options.autoConnect);
             opts.autoConnect = true;
-            assertNotEquals("Verify if autoConnect has changed", opts.autoConnect, ablyRealtime.options.autoConnect);
+            assertNotEquals("autoConnect should not be equal after change", opts.autoConnect, ablyRealtime.options.autoConnect);
 
-            assertEquals("Verify if logHandler has changed", opts.logHandler, ablyRealtime.options.logHandler);
+            assertEquals("logHandler should be equal before change", opts.logHandler, ablyRealtime.options.logHandler);
             opts.logHandler = new Log.DefaultHandler();
-            assertNotEquals("Verify if logHandler has changed", opts.logHandler, ablyRealtime.options.logHandler);
+            assertNotEquals("logHandler should not be equal after change", opts.logHandler, ablyRealtime.options.logHandler);
 
-            assertEquals("Verify if authCallback has changed", opts.authCallback, ablyRealtime.options.authCallback);
+            assertEquals("authCallback should be equal before change", opts.authCallback, ablyRealtime.options.authCallback);
             opts.authCallback = new Auth.TokenCallback() {
                 @Override
                 public Object getTokenRequest(Auth.TokenParams params) {
                     return null;
                 }
             };
-            assertNotEquals("Verify if authCallback has changed", opts.authCallback, ablyRealtime.options.authCallback);
+            assertNotEquals("authCallback should not be equal after change", opts.authCallback, ablyRealtime.options.authCallback);
 
-            assertEquals("Verify if token has changed", opts.token, ablyRealtime.options.token);
+            assertEquals("token should be equal before change", opts.token, ablyRealtime.options.token);
             opts.token = "my_new_token";
-            assertNotEquals("Verify if token has changed", opts.token, ablyRealtime.options.token);
+            assertNotEquals("token should not be equal after change", opts.token, ablyRealtime.options.token);
 
-            assertEquals("Verify if tokenDetails has changed", opts.tokenDetails, ablyRealtime.options.tokenDetails);
+            assertEquals("tokenDetails should be equal before change", opts.tokenDetails, ablyRealtime.options.tokenDetails);
             opts.tokenDetails = new TokenDetails("my_new_details_token");
-            assertNotEquals("Verify if tokenDetails has changed", opts.tokenDetails, ablyRealtime.options.tokenDetails);
+            assertNotEquals("tokenDetails should not be equal after change", opts.tokenDetails, ablyRealtime.options.tokenDetails);
 
-            assertEquals("Verify if headers has changed", opts.headers, ablyRealtime.options.headers);
+            assertEquals("headers should be equal before change", opts.headers, ablyRealtime.options.headers);
             opts.headers = new HashMap<>();
             opts.headers.put("new_key", "new_value");
-            assertNotEquals("Verify if headers has changed", opts.headers, ablyRealtime.options.headers);
+            assertNotEquals("headers should not be equal after change", opts.headers, ablyRealtime.options.headers);
 
-            assertArrayEquals("Verify if authHeaders has changed", opts.authHeaders, ablyRealtime.options.authHeaders);
+            assertArrayEquals("authHeaders should be equal before change", opts.authHeaders, ablyRealtime.options.authHeaders);
             opts.authHeaders = new Param[1];
             opts.authHeaders[0] = new Param("new_key", "new_key");
-            assertNotEquals("Verify if authHeaders has changed", opts.authHeaders, ablyRealtime.options.authHeaders);
+            assertNotEquals("authHeaders should not be equal after change", opts.authHeaders, ablyRealtime.options.authHeaders);
 
-            assertEquals("Verify if proxy.port has changed", opts.proxy.port, ablyRealtime.options.proxy.port);
+            assertEquals("proxy.port should be equal before change", opts.proxy.port, ablyRealtime.options.proxy.port);
             opts.proxy.port = 9090;
-            assertNotEquals("Verify if proxy.port has changed", opts.proxy.port, ablyRealtime.options.proxy.port);
+            assertNotEquals("proxy.port should not be equal after change", opts.proxy.port, ablyRealtime.options.proxy.port);
 
             ablyRealtime.close();
         } catch (AblyException e) {
