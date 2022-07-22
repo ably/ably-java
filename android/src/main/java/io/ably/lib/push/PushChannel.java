@@ -6,8 +6,9 @@ import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpScheduler;
 import io.ably.lib.http.HttpUtils;
+import io.ably.lib.platform.AndroidPlatform;
 import io.ably.lib.realtime.CompletionListener;
-import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.Channel;
 import io.ably.lib.rest.DeviceDetails;
 import io.ably.lib.types.AblyException;
@@ -18,11 +19,14 @@ import io.ably.lib.types.Param;
 import io.ably.lib.util.ParamsUtils;
 
 public class PushChannel {
-    protected final Channel channel;
-    protected final AblyRest rest;
+    protected final String channelName;
+    protected final AblyBase<Push, AndroidPlatform, Channel> rest;
 
-    public PushChannel(Channel channel, AblyRest rest) {
-        this.channel = channel;
+    /**
+     * This constructor is only for internal use.
+     */
+    public PushChannel(String channelName, AblyBase<Push, AndroidPlatform, Channel> rest) {
+        this.channelName = channelName;
         this.rest = rest;
     }
 
@@ -66,7 +70,7 @@ public class PushChannel {
     }
 
     protected Http.Request<Void> postSubscription(JsonObject bodyJson) {
-        bodyJson.addProperty("channel", channel.name);
+        bodyJson.addProperty("channel", channelName);
         final HttpCore.RequestBody body = HttpUtils.requestBodyFromGson(bodyJson, rest.options.useBinaryProtocol);
 
         return rest.http.request(new Http.Execute<Void>() {
@@ -88,7 +92,7 @@ public class PushChannel {
 
     protected Http.Request<Void> unsubscribeClientImpl() {
         try {
-            Param[] params = new Param[] { new Param("channel", channel.name), new Param("clientId", getClientId()) };
+            Param[] params = new Param[] { new Param("channel", channelName), new Param("clientId", getClientId()) };
             return delSubscription(params);
         } catch(AblyException e) {
             return rest.http.failedRequest(e);
@@ -106,7 +110,7 @@ public class PushChannel {
     protected Http.Request<Void> unsubscribeDeviceImpl() {
         try {
             DeviceDetails device = getDevice();
-            Param[] params = new Param[] { new Param("channel", channel.name), new Param("deviceId", device.id) };
+            Param[] params = new Param[] { new Param("channel", channelName), new Param("deviceId", device.id) };
             return delSubscription(params);
         } catch(AblyException e) {
             return rest.http.failedRequest(e);

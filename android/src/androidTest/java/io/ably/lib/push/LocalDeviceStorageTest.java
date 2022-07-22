@@ -3,8 +3,7 @@ package io.ably.lib.push;
 import android.content.Context;
 import android.support.test.runner.AndroidJUnit4;
 import io.ably.lib.types.RegistrationToken;
-import junit.extensions.TestSetup;
-import junit.framework.TestSuite;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;

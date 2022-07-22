@@ -1,0 +1,9 @@
+// MavenCentral publishing Sonatype configuration
+nexusPublishing {
+    repositories {
+        sonatype {
+            username = findProperty('OSSRH_USERNAME') ?: ''
+            password = findProperty('OSSRH_PASSWORD') ?: ''
+        }
+    }
+}

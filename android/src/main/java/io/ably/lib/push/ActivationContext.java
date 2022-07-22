@@ -8,6 +8,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.WeakHashMap;
 
+import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
@@ -53,12 +54,12 @@ public class ActivationContext {
         return activationStateMachine;
     }
 
-    public void setAbly(AblyRest ably) {
+    public void setAbly(AblyBase ably) {
         this.ably = ably;
         this.clientId = ably.auth.clientId;
     }
 
-    AblyRest getAbly() throws AblyException {
+    AblyBase getAbly() throws AblyException {
         if(ably != null) {
             Log.v(TAG, "getAbly(): returning existing Ably instance");
             return ably;
@@ -126,7 +127,7 @@ public class ActivationContext {
         return getActivationContext(applicationContext, null);
     }
 
-    public static ActivationContext getActivationContext(Context applicationContext, AblyRest ably) {
+    public static ActivationContext getActivationContext(Context applicationContext, AblyBase ably) {
         ActivationContext activationContext;
         synchronized (activationContexts) {
             activationContext = activationContexts.get(applicationContext);
@@ -164,7 +165,7 @@ public class ActivationContext {
         activationContexts.put(applicationContext, activationContext);
     }
 
-    protected AblyRest ably;
+    protected AblyBase ably;
     protected String clientId;
     protected ActivationStateMachine activationStateMachine;
     protected LocalDevice localDevice;
