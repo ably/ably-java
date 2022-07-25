@@ -10,7 +10,7 @@ import io.ably.lib.types.ProxyOptions;
 public class ObjectCopyUtil {
 
     public static ClientOptions copy(ClientOptions options) {
-        ClientOptions copyOptions = new ClientOptions();
+        final ClientOptions copyOptions = new ClientOptions();
         copyOptions.clientId = options.clientId;
         copyOptions.logLevel = options.logLevel;
         copyOptions.logHandler = options.logHandler;
