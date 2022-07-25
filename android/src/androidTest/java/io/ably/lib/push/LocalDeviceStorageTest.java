@@ -91,7 +91,6 @@ public class LocalDeviceStorageTest {
         assertNotNull(localDevice.id);
         assertNotNull(localDevice.deviceSecret);
         assertTrue(localDevice.isCreated());
-        assertEquals("FCM", localDevice.getRegistrationToken().type.name());
         assertEquals("ABLY", localDevice.getRegistrationToken().token);
 
         /* reset all properties */
@@ -140,7 +139,6 @@ public class LocalDeviceStorageTest {
         assertNotNull(localDevice.id);
         assertNotNull(localDevice.deviceSecret);
         assertTrue(localDevice.isCreated());
-        assertEquals("FCM", localDevice.getRegistrationToken().type.name());
         assertEquals("ABLY", localDevice.getRegistrationToken().token);
 
         /* reset all properties */
