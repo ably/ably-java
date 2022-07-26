@@ -7,7 +7,7 @@ import io.ably.lib.rest.Auth;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ProxyOptions;
 
-public class ObjectCopyUtil {
+public class AblyObjectsCopyUtil {
 
     public static ClientOptions copy(ClientOptions options) {
         final ClientOptions copyOptions = new ClientOptions();
