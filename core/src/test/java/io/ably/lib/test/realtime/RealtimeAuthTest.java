@@ -1048,7 +1048,7 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
             assertEquals("headers given for options must be equal to the one in in AblyRealtime before change", opts.headers, ablyRealtime.options.headers);
             Map<String, String> origHeaders = ablyRealtime.options.headers;
             String origHeaderElementValue = origHeaders.entrySet().iterator().next().getValue();
-            opts.headers = new HashMap<>();
+            opts.headers.clear();
             opts.headers.put("new_key", "new_value");
             assertNotEquals("headers given for options should not be equal to the one in in AblyRealtime after change", opts.headers, ablyRealtime.options.headers);
             assertEquals("headers in AblyRealtime should be equal to original one after ClientOptions change", origHeaders, ablyRealtime.options.headers);
@@ -1057,7 +1057,6 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
             assertArrayEquals("authHeaders given for options must be equal to the one in in AblyRealtime before change", opts.authHeaders, ablyRealtime.options.authHeaders);
             Param[] origParams = ablyRealtime.options.authHeaders;
             String origParamValue = ablyRealtime.options.authHeaders[0].value;
-            opts.authHeaders = new Param[1];
             opts.authHeaders[0] = new Param("new_key", "new_key");
             assertNotEquals("authHeaders given for options should not be equal to the one in in AblyRealtime after change", opts.authHeaders, ablyRealtime.options.authHeaders);
             assertArrayEquals("authHeaders in AblyRealtime should be equal to original one after ClientOptions change", origParams, ablyRealtime.options.authHeaders);
