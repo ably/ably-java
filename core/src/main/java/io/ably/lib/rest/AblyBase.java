@@ -31,7 +31,6 @@ import io.ably.lib.types.Param;
 import io.ably.lib.types.PublishResponse;
 import io.ably.lib.types.Stats;
 import io.ably.lib.types.StatsReader;
-import io.ably.lib.util.AblyObjectsCopyUtil;
 import io.ably.lib.util.Crypto;
 import io.ably.lib.util.InternalMap;
 import io.ably.lib.util.Log;
@@ -89,7 +88,7 @@ public abstract class AblyBase<
         if (options instanceof DebugOptions) {
             this.options = options;
         } else {
-            this.options = AblyObjectsCopyUtil.copy(options);
+            this.options = options.copy();
         }
 
         /* process options */
