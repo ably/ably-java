@@ -74,7 +74,7 @@ public class LocalDevice extends DeviceDetails {
         }
 
         final String tokenType = recipient.get("transportType").getAsString();
-        if (!RegistrationToken.TOKEN_TYPE_FCM.equals(tokenType)) {
+        if (!RegistrationToken.TOKEN_TYPE_FCM.equalsIgnoreCase(tokenType)) {
             // FCM is only supported as we do not support other types.
             Log.e(TAG, "getRegistrationToken(): returning null because push.recipient.transportType is not FCM (it's \"" + tokenType + "\")");
             return null;
