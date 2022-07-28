@@ -1,14 +1,15 @@
 # [Ably](https://www.ably.io)
 
-![.github/workflows/check.yml](https://github.com/ably/ably-java/workflows/.github/workflows/check.yml/badge.svg)
-![.github/workflows/integration-test.yml](https://github.com/ably/ably-java/workflows/.github/workflows/integration-test.yml/badge.svg)
+[![.github/workflows/check.yml](https://github.com/ably/ably-java/workflows/.github/workflows/check.yml/badge.svg)](https://github.com/ably/ably-java/actions/workflows/check.yml)
+[![.github/workflows/integration-test.yml](https://github.com/ably/ably-java/workflows/.github/workflows/integration-test.yml/badge.svg)](https://github.com/ably/ably-java/actions/workflows/integration-test.yml)
+[![.github/workflows/emulate.yml](https://github.com/ably/ably-java/actions/workflows/emulate.yml/badge.svg)](https://github.com/ably/ably-java/actions/workflows/emulate.yml)
 
 _[Ably](https://ably.com) is the platform that powers synchronized digital experiences in realtime. Whether attending an event in a virtual venue, receiving realtime financial information, or monitoring live car performance data – consumers simply expect realtime digital experiences as standard. Ably provides a suite of APIs to build, extend, and deliver powerful digital experiences in realtime for more than 250 million devices across 80 countries each month. Organizations like Bloomberg, HubSpot, Verizon, and Hopin depend on Ably’s platform to offload the growing complexity of business-critical realtime data synchronization at global scale. For more information, see the [Ably documentation](https://ably.com/documentation)._
 
 ## Overview
 
 A Java Realtime and REST client library.
-This library currently targets the [Ably client library features spec](https://www.ably.io/documentation/client-lib-development-guide/features/) Version 1.2.
+This library currently targets the [Ably client library features spec](https://www.ably.com/docs/client-lib-development-guide/features/) Version 1.2.
 
 ## Installation
 
@@ -16,29 +17,33 @@ Include the library by adding an `implementation` reference to `dependencies` bl
 
 For [Java](https://mvnrepository.com/artifact/io.ably/ably-java/latest):
 
-```
-implementation 'io.ably:ably-java:1.2.10'
+```groovy
+implementation 'io.ably:ably-java:1.2.12'
 ```
 
 For [Android](https://mvnrepository.com/artifact/io.ably/ably-android/latest):
 
-```
-implementation 'io.ably:ably-android:1.2.10'
+```groovy
+implementation 'io.ably:ably-android:1.2.12'
 ```
 
 The library is hosted on [Maven Central](https://mvnrepository.com/repos/central), so you need to ensure that the repository is referenced also; IDEs will typically include this by default:
 
-```
+```groovy
 repositories {
 	mavenCentral()
 }
 ```
 
-We only support installation via Maven / Gradle from the Maven Central repository. If you want to use a standalone fat JAR (i.e. containing all dependencies), it can be generated via a Gradle task (see [building](#building) below), creating a "Java" (JRE) library variant only. There is no standalone / self-contained AAR build option. Checkout [requirements](#requirements).
+We only support installation via Maven / Gradle from the Maven Central repository. Checkout [requirements](#requirements).
+
+## Runtime Requirements
+
+The library requires that the runtime environment is able to establish a safe TLS connection (TLS v1.2 or v1.3). It will fail to connect with a `SecurityException` if this level of security is not available.
 
 ## Usage
 
-Please refer to the [documentation](https://www.ably.io/documentation) for a full API reference.
+Please refer to the [documentation](https://www.ably.com/docs) for a full API reference.
 
 ### Using the Realtime API
 
@@ -56,7 +61,7 @@ AblyRealtime will attempt to connect automatically once new instance is created.
 ably.connection.on(new ConnectionStateListener() {
 	@Override
 	public void onConnectionStateChanged(ConnectionStateChange state) {
-		System.out.println("New state is " + change.current.name());
+		System.out.println("New state is " + state.current.name());
 		switch (state.current) {
 			case connected: {
 				// Successful connection
@@ -104,7 +109,7 @@ channel.subscribe(events, new MessageListener() {
 
 #### Subscribing to a channel in delta mode
 
-Subscribing to a channel in delta mode enables [delta compression](https://www.ably.io/documentation/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
+Subscribing to a channel in delta mode enables [delta compression](https://www.ably.com/docs/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
 
 Request a Vcdiff formatted delta stream using channel options when you get the channel:
 
@@ -396,13 +401,13 @@ Log.setHandler(null);
 
 #### Delivering push notifications
 
-See [documentation](https://www.ably.io/documentation/general/push/publish)  for detail.
+See [documentation](https://www.ably.com/docs/general/push/publish)  for detail.
 
 Ably provides two models for delivering push notifications to devices.
 
 To publish a message to a channel including a push payload:
 
-```
+```java
 Message message = new Message("example", "realtime data");
 message.extras = io.ably.lib.util.JsonUtils.object()
     .add("push", io.ably.lib.util.JsonUtils.object()
@@ -426,7 +431,7 @@ rest.channels.get("pushenabled:foo").publishAsync(message, new CompletionListene
 
 To publish a push payload directly to a registered device:
 
-```
+```java
 Param[] recipient = new Param[]{new Param("deviceId", "xxxxxxxxxxx");
 
 JsonObject payload = io.ably.lib.util.JsonUtils.object()
@@ -450,7 +455,7 @@ rest.push.admin.publishAsync(recipient, payload, , new CompletionListener() {
 
 #### Activating a device and receiving notifications (Android only)
 
-See https://www.ably.io/documentation/general/push/activate-subscribe for detail.
+See https://www.ably.com/docs/general/push/activate-subscribe for detail.
 In order to enable an app as a recipient of Ably push messages:
 
 - register your app with Firebase Cloud Messaging (FCM) and configure the FCM credentials in the app dashboard;
@@ -458,14 +463,14 @@ In order to enable an app as a recipient of Ably push messages:
   - Override [`onNewToken`](https://firebase.google.com/docs/reference/android/com/google/firebase/messaging/FirebaseMessagingService#public-void-onnewtoken-string-token), and provide Ably with the registration token: `ActivationContext.getActivationContext(this).onNewRegistrationToken(RegistrationToken.Type.FCM, token);`. This method will be called whenever a new token is provided by Android.
 - Activate the device for push notifications:
 
-```
+```java
 realtime.setAndroidContext(context);
 realtime.push.activate();
 ```
 
 ## Resources
 
-Visit https://www.ably.io/documentation for a complete API reference and more examples.
+Visit https://www.ably.com/docs for a complete API reference and more examples.
 
 ### Example projects:
 
@@ -477,7 +482,7 @@ Visit https://www.ably.io/documentation for a complete API reference and more ex
 
 For Java, JRE 7 or later is required. Note that the [Java Unlimited JCE extensions](http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html) must be installed in the Java runtime environment.
 
-For Android, 4.1 (API level 16) or later is required.
+For Android, 5.0 (API level 21) or later is required.
 
 ## Support, feedback and troubleshooting
 

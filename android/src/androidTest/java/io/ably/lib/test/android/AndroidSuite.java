@@ -1,9 +1,14 @@
 package io.ably.lib.test.android;
 
+import io.ably.lib.test.loader.AndroidArgumentLoader;
+import io.ably.lib.test.loader.AndroidResourceLoader;
+import io.ably.lib.test.loader.ArgumentLoader;
+import io.ably.lib.test.loader.ResourceLoader;
+import io.ably.lib.test.util.AblyInstanceCreator;
+import io.ably.lib.test.util.AndroidAblyInstanceCreator;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runners.JUnit4;
 
 import static org.junit.Assert.fail;
 import static org.junit.Assert.assertTrue;
@@ -26,6 +31,9 @@ import io.ably.lib.types.ClientOptions;
  * Tests specific for Android
  */
 public class AndroidSuite {
+    private static final AblyInstanceCreator ablyInstanceCreator = new AndroidAblyInstanceCreator();
+    private static final ArgumentLoader argumentLoader = new AndroidArgumentLoader();
+    private static final ResourceLoader resourceLoader = new AndroidResourceLoader();
     private static SessionHandlerNanoHTTPD server;
 
     @BeforeClass
@@ -52,7 +60,7 @@ public class AndroidSuite {
     public void android_http_header_test() {
         try {
             /* Init values for local server */
-            Setup.TestVars testVars = Setup.getTestVars();
+            Setup.TestVars testVars = Setup.getTestVars(ablyInstanceCreator, argumentLoader, resourceLoader);
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
             opts.tls = false;
             opts.port = server.getListeningPort();

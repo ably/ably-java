@@ -1,0 +1,119 @@
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
+
+final String sdkGroupId = 'io.ably'
+final String sdkArtifactId = 'ably-android'
+
+task sourcesJar(type: Jar) {
+    // Copy files from main source directories to the JAR.
+    from android.sourceSets.main.java.srcDirs
+    // Specify the JAR type (it will be appended to its filename).
+    archiveClassifier.set('sources')
+}
+
+// Custom task to generate the javadocs from the Android source files
+task javadoc(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.bootClasspath.join(File.pathSeparator))
+}
+
+// Append dependencies classpaths to the javadoc task (otherwise it fails with "missing symbols" error)
+android.libraryVariants.all { variant ->
+    javadoc.classpath += variant.javaCompileProvider.get().classpath
+}
+
+task javadocJar(type: Jar) {
+    // Generate the javadocs.
+    dependsOn javadoc
+    // Copy files from the javadocs directory to the jar.
+    from javadoc.destinationDir
+    // Specify the JAR type (it will be appended to its filename).
+    archiveClassifier.set('javadoc')
+}
+
+afterEvaluate {
+    // Based on: https://developer.android.com/studio/build/maven-publish-plugin
+    // See: https://docs.gradle.org/current/dsl/org.gradle.api.publish.PublishingExtension.html
+    publishing {
+        publications {
+            release(MavenPublication) {
+                from components.release
+
+                groupId sdkGroupId
+                artifactId sdkArtifactId
+                version version
+
+                // Add a JAR with source code (to enable viewing the code when the library is included from a maven repository).
+                artifact sourcesJar
+                // Add a JAR with javadocs.
+                artifact javadocJar
+
+                // Add POM metadata
+                pom {
+                    name = 'Ably Android client library SDK'
+                    description = 'An Android Realtime and REST client library SDK for the Ably platform.'
+                    packaging = 'aar'
+                    inceptionYear = '2015'
+                    url = 'https://www.github.com/ably/ably-java'
+                    developers {
+                        // https://docs.gradle.org/current/dsl/org.gradle.api.publish.maven.MavenPomDeveloper.html
+                        developer {
+                            id = 'ably' // our company org in GitHub: https://github.com/ably
+                            name = 'Ably' // UK based company: Ably Real-time Ltd
+                            email = 'support@ably.com'
+                            url = 'https://ably.com/'
+                        }
+                    }
+                    scm {
+                        url = 'https://github.com/ably/ably-java'
+                        connection = 'scm:git:git://github.com/ably/ably-java.git'
+                        developerConnection = 'scm:git:ssh://github.com/ably/ably-java.git'
+                        tag = 'v' + version
+                    }
+                    organization {
+                        name = 'Ably' // UK based company: Ably Real-time Ltd
+                        url = 'https://ably.com/'
+                    }
+                    issueManagement {
+                        system = 'Github'
+                        url = 'https://github.com/ably/ably-java/issues'
+                    }
+                    licenses {
+                        license {
+                            name = 'The Apache Software License, Version 2.0'
+                            url = 'https://raw.github.com/ably/ably-java/main/LICENSE'
+                            distribution = 'repo'
+                        }
+                    }
+                }
+                // Exclude Google services since we don't want to impose a particular
+                // version on users. Ideally we would specify a version range,
+                // but the Google services Gradle plugin doesn't seem to support that.
+                pom.withXml {
+                    // Look through all dependencies
+                    asNode().dependencies.'*'.findAll { dependency ->
+                        // Find unwanted Google services dependencies
+                        String artifactId = dependency.artifactId.text()
+                        artifactId == 'play-services-gcm' || artifactId == 'firebase-messaging'
+                    }.each { unwantedDependency ->
+                        // Remove the unwanted dependencies from the POM file
+                        unwantedDependency.parent().remove(unwantedDependency)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Sign the artifacts
+signing {
+    // According to signing plugin docs we should be providing the secret key in the ascii-armored format.
+    // This means that the bytes of the key should be converted to a Base64 encoded string.
+    // https://docs.gradle.org/current/userguide/signing_plugin.html#using_in_memory_ascii_armored_openpgp_subkeys
+    useInMemoryPgpKeys(
+        findProperty('SIGNING_KEY_ID'),
+        findProperty('SIGNING_KEY_BASE64'),
+        findProperty('SIGNING_PASSWORD'),
+    )
+    sign publishing.publications
+}

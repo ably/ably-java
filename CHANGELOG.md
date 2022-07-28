@@ -1,5 +1,35 @@
 # Change Log
 
+## Next release
+
+**Code Quality Improvements:**
+
+- Removed MsgPack optimization workaround for `ably-android` which was fixing a problem that has been resolved in MsgPack SDK 0.8.12
+
+## [v1.2.12](https://github.com/ably/ably-java/tree/v1.2.12)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.11...v1.2.12)
+
+**Fixed bugs:**
+
+- Cannot automatically re-enter channel due to mismatched connectionId [\#761](https://github.com/ably/ably-java/issues/761)
+- Ensure that weak SSL/TLS protocols are not used [\#749](https://github.com/ably/ably-java/issues/749)
+
+## [v1.2.11](https://github.com/ably/ably-java/tree/v1.2.11)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.10...v1.2.11)
+
+**Fixed bugs:**
+
+- `ConcurrentModificationException` when `unsubscribe` then `detach` channel presence listener [\#743](https://github.com/ably/ably-java/issues/743), fixed in [\#744](https://github.com/ably/ably-java/pull/744) ([QuintinWillison](https://github.com/QuintinWillison))
+- `IllegalStateException` in `Crypto` `CBCCipher`'s `decrypt` method [\#741](https://github.com/ably/ably-java/issues/741), fixed in [\#746](https://github.com/ably/ably-java/pull/746) ([QuintinWillison](https://github.com/QuintinWillison))
+- Incorrect use of locale sensitive String APIs [\#713](https://github.com/ably/ably-java/issues/713), fixed in [\#722](https://github.com/ably/ably-java/pull/722) ([martin-morek](https://github.com/martin-morek))
+- `push.listSubscriptionsImpl` method not respecting params [\#705](https://github.com/ably/ably-java/issues/705), fixed in [\#710](https://github.com/ably/ably-java/pull/710) ([martin-morek](https://github.com/martin-morek))
+
+**Other merged pull requests:**
+
+- Fix indentation and typos in authCallback example [\#724](https://github.com/ably/ably-java/pull/724) ([QuintinWillison](https://github.com/QuintinWillison))
+
 ## [v1.2.10](https://github.com/ably/ably-java/tree/v1.2.10)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.9...v1.2.10)
