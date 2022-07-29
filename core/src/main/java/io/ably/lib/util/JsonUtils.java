@@ -15,6 +15,10 @@ public class JsonUtils {
             json = new JsonObject();
         }
 
+        /**
+         * Adds the key-value pair to the JSON object.
+         * If the value type is unsupported an IllegalArgumentException is thrown.
+         */
         public JsonUtilsObject add(String key, Object value) {
             if (value == null) {
                 json.add(key, null);
