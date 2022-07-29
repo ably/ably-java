@@ -409,12 +409,12 @@ To publish a message to a channel including a push payload:
 
 ```java
 Message message = new Message("example", "realtime data");
-JsonObject jsonObject = io.ably.lib.util.JsonUtils.object()
-    .add("push", io.ably.lib.util.JsonUtils.object()
-        .add("notification", io.ably.lib.util.JsonUtils.object()
+JsonObject jsonObject = JsonUtils.object()
+    .add("push", JsonUtils.object()
+        .add("notification", JsonUtils.object()
             .add("title", "Hello from Ably!")
             .add("body", "Example push notification from Ably."))
-        .add("data", io.ably.lib.util.JsonUtils.object()
+        .add("data", JsonUtils.object()
             .add("foo", "bar")
             .add("baz", "qux"))).toJson();
 message.extras = new MessageExtras(jsonObject);
@@ -435,11 +435,11 @@ To publish a push payload directly to a registered device:
 ```java
 Param[] recipient = new Param[]{new Param("deviceId", "xxxxxxxxxxx")};
 
-JsonObject payload = io.ably.lib.util.JsonUtils.object()
-        .add("notification", io.ably.lib.util.JsonUtils.object()
+JsonObject payload = JsonUtils.object()
+        .add("notification", JsonUtils.object()
             .add("title", "Hello from Ably!")
             .add("body", "Example push notification from Ably."))
-        .add("data", io.ably.lib.util.JsonUtils.object()
+        .add("data", JsonUtils.object()
             .add("foo", "bar")
             .add("baz", "qux")).toJson();
 
