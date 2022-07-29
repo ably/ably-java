@@ -408,7 +408,6 @@ Ably provides two models for delivering push notifications to devices.
 To publish a message to a channel including a push payload:
 
 ```java
-Message message = new Message("example", "realtime data");
 JsonObject jsonObject = JsonUtils.object()
     .add("push", JsonUtils.object()
         .add("notification", JsonUtils.object()
@@ -416,7 +415,10 @@ JsonObject jsonObject = JsonUtils.object()
             .add("body", "Example push notification from Ably."))
         .add("data", JsonUtils.object()
             .add("foo", "bar")
-            .add("baz", "qux"))).toJson();
+            .add("baz", "qux")))
+        .toJson();
+
+Message message = new Message("example", "realtime data");
 message.extras = new MessageExtras(jsonObject);
 
 rest.channels.get("pushenabled:foo").publishAsync(new Message[]{message}, new CompletionListener() {
@@ -441,7 +443,8 @@ JsonObject payload = JsonUtils.object()
             .add("body", "Example push notification from Ably."))
         .add("data", JsonUtils.object()
             .add("foo", "bar")
-            .add("baz", "qux")).toJson();
+            .add("baz", "qux"))
+        .toJson();
 
 rest.push.admin.publishAsync(recipient, payload , new CompletionListener() {
 	 @Override
@@ -455,7 +458,7 @@ rest.push.admin.publishAsync(recipient, payload , new CompletionListener() {
 ```
 
 Note that only JsonElement, String, Boolean, Character, Number, and JsonUtilsObject are supported by JsonUtils.
-If an unsupported type is added JsonUtils will throw JsonParseException!
+If an unsupported type is added JsonUtils will throw IllegalArgumentException.
 
 #### Activating a device and receiving notifications (Android only)
 

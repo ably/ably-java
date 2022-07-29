@@ -1,16 +1,16 @@
 package io.ably.lib.util;
 
+import static com.google.gson.JsonNull.INSTANCE;
+import static org.junit.Assert.assertEquals;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
+
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import static com.google.gson.JsonNull.INSTANCE;
-import static org.junit.Assert.assertEquals;
 
 public class JsonUtilsTest {
 
@@ -33,13 +33,11 @@ public class JsonUtilsTest {
         assertEquals(new JsonPrimitive('a'), jsonObject.get("character"));
         assertEquals(new JsonPrimitive(12.3), jsonObject.get("number"));
         assertEquals(new JsonObject(), jsonObject.get("jsonUtilsObject"));
-
     }
 
-    @Test(expected = JsonParseException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void add_throw_exception_on_unsupported_type() {
-        Map<String, String> simpleMap = new HashMap<String, String>()
-        {
+        Map<String, String> simpleMap = new HashMap<String, String>() {
             {
                 put("key1", "value1");
                 put("key2", "value2");
