@@ -15,6 +15,10 @@ public class JsonUtils {
             json = new JsonObject();
         }
 
+        /**
+         * Adds the key-value pair to the JSON object.
+         * If the value type is unsupported an IllegalArgumentException is thrown.
+         */
         public JsonUtilsObject add(String key, Object value) {
             if (value == null) {
                 json.add(key, null);
@@ -30,7 +34,10 @@ public class JsonUtils {
                 json.addProperty(key, (Number) value);
             } else if (value instanceof JsonUtilsObject) {
                 json.add(key, ((JsonUtilsObject) value).toJson());
+            } else {
+                throw new IllegalArgumentException("Unsupported Object Type");
             }
+
             return this;
         }
 
