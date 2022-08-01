@@ -24,16 +24,24 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.types.ProxyOptions;
+import io.ably.lib.util.Log;
+
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public abstract class RealtimeAuthTest extends ParameterizedTest {
 
@@ -953,6 +961,117 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
         } catch (AblyException e) {
             e.printStackTrace();
             fail("auth_expired_token_expire_renew: Unexpected exception instantiating library");
+        }
+    }
+
+    /**
+     * Verify that instance of ClientOptions cannot change AblyRealtime options once it is provided to constructor
+     */
+    @Test
+    public void auth_client_options_immutable() {
+        try {
+            /* create token with clientId */
+            ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
+            optsForToken.clientId = "token_clientId";
+            AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
+            TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, null);
+
+            /* create ably realtime */
+            ClientOptions opts = new ClientOptions();
+            opts.clientId = null;
+            opts.token = tokenDetails.token;
+            opts.autoConnect = false;
+            opts.headers = new HashMap<>();
+            opts.headers.put("old_key", "old_value");
+            opts.tokenDetails = new TokenDetails("my_old_details_token");
+            opts.logHandler = new Log.DefaultHandler();
+            opts.authCallback = new Auth.TokenCallback() {
+                @Override
+                public Object getTokenRequest(Auth.TokenParams params) {
+                    return null;
+                }
+            };
+            opts.authHeaders = new Param[1];
+            opts.authHeaders[0] = new Param("old_key", "old_key");
+            opts.proxy = new ProxyOptions();
+            opts.proxy.host = "https://ably.com";
+            opts.proxy.port = 8080;
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtime(opts);
+
+            assertEquals("clientId given for options must be equal to the one in in AblyRealtime before change", opts.clientId, ablyRealtime.options.clientId);
+            String origClientId = ablyRealtime.options.clientId;
+            opts.clientId = "my_new_clientId";
+            assertNotEquals("clientId given for options should not be equal to the one in in AblyRealtime after change", opts.clientId, ablyRealtime.options.clientId);
+            assertEquals("clientId in AblyRealtime should be equal to original one after ClientOptions change", origClientId, ablyRealtime.options.clientId);
+
+            assertEquals("logLevel given for options must be equal to the one in in AblyRealtime before change", opts.logLevel, ablyRealtime.options.logLevel);
+            int origLogLevel = ablyRealtime.options.logLevel;
+            opts.logLevel = 33;
+            assertNotEquals("logLevel given for options should not be equal to the one in in AblyRealtime after change", opts.logLevel, ablyRealtime.options.logLevel);
+            assertEquals("logLevel in AblyRealtime should be equal to original one after ClientOptions change", origLogLevel, ablyRealtime.options.logLevel);
+
+            assertEquals("autoConnect given for options must be equal to the one in in AblyRealtime before change", opts.autoConnect, ablyRealtime.options.autoConnect);
+            boolean origAutoConnect = ablyRealtime.options.autoConnect;
+            opts.autoConnect = true;
+            assertNotEquals("autoConnect given for options should not be equal to the one in in AblyRealtime after change", opts.autoConnect, ablyRealtime.options.autoConnect);
+            assertEquals("autoConnect in AblyRealtime should be equal to original one after ClientOptions change", origAutoConnect, ablyRealtime.options.autoConnect);
+
+            assertEquals("logHandler given for options must be equal to the one in in AblyRealtime before change", opts.logHandler, ablyRealtime.options.logHandler);
+            Log.LogHandler origHandler = ablyRealtime.options.logHandler;
+            opts.logHandler = new Log.DefaultHandler();
+            assertNotEquals("logHandler given for options should not be equal to the one in in AblyRealtime after change", opts.logHandler, ablyRealtime.options.logHandler);
+            assertEquals("logHandler in AblyRealtime should be equal to original one after ClientOptions change", origHandler, ablyRealtime.options.logHandler);
+
+            assertEquals("authCallback given for options must be equal to the one in in AblyRealtime before change", opts.authCallback, ablyRealtime.options.authCallback);
+            Auth.TokenCallback origTokenCallback = ablyRealtime.options.authCallback;
+            opts.authCallback = new Auth.TokenCallback() {
+                @Override
+                public Object getTokenRequest(Auth.TokenParams params) {
+                    return null;
+                }
+            };
+            assertNotEquals("authCallback given for options should not be equal to the one in in AblyRealtime after change", opts.authCallback, ablyRealtime.options.authCallback);
+            assertEquals("authCallback in AblyRealtime should be equal to original one after ClientOptions change", origTokenCallback, ablyRealtime.options.authCallback);
+
+            assertEquals("token given for options must be equal to the one in in AblyRealtime before change", opts.token, ablyRealtime.options.token);
+            String origToken = ablyRealtime.options.token;
+            opts.token = "my_new_token";
+            assertNotEquals("token given for options should not be equal to the one in in AblyRealtime after change", opts.token, ablyRealtime.options.token);
+            assertEquals("token in AblyRealtime should be equal to original one after ClientOptions change", origToken, ablyRealtime.options.token);
+
+            assertEquals("tokenDetails given for options must be equal to the one in in AblyRealtime before change", opts.tokenDetails, ablyRealtime.options.tokenDetails);
+            TokenDetails origTokenDetails = ablyRealtime.options.tokenDetails;
+            opts.tokenDetails = new TokenDetails("my_new_details_token");
+            assertNotEquals("tokenDetails given for options should not be equal to the one in in AblyRealtime after change", opts.tokenDetails, ablyRealtime.options.tokenDetails);
+            assertEquals("tokenDetails in AblyRealtime should be equal to original one after ClientOptions change", origTokenDetails, ablyRealtime.options.tokenDetails);
+
+            assertEquals("headers given for options must be equal to the one in in AblyRealtime before change", opts.headers, ablyRealtime.options.headers);
+            Map<String, String> origHeaders = ablyRealtime.options.headers;
+            String origHeaderElementValue = origHeaders.entrySet().iterator().next().getValue();
+            opts.headers.clear();
+            opts.headers.put("new_key", "new_value");
+            assertNotEquals("headers given for options should not be equal to the one in in AblyRealtime after change", opts.headers, ablyRealtime.options.headers);
+            assertEquals("headers in AblyRealtime should be equal to original one after ClientOptions change", origHeaders, ablyRealtime.options.headers);
+            assertEquals("first header in AblyRealtime should be equal to original one after ClientOptions change", origHeaderElementValue, ablyRealtime.options.headers.entrySet().iterator().next().getValue());
+
+            assertArrayEquals("authHeaders given for options must be equal to the one in in AblyRealtime before change", opts.authHeaders, ablyRealtime.options.authHeaders);
+            Param[] origParams = ablyRealtime.options.authHeaders;
+            String origParamValue = ablyRealtime.options.authHeaders[0].value;
+            opts.authHeaders[0] = new Param("new_key", "new_key");
+            assertNotEquals("authHeaders given for options should not be equal to the one in in AblyRealtime after change", opts.authHeaders, ablyRealtime.options.authHeaders);
+            assertArrayEquals("authHeaders in AblyRealtime should be equal to original one after ClientOptions change", origParams, ablyRealtime.options.authHeaders);
+            assertEquals("first authHeader in AblyRealtime should be equal to original one after ClientOptions change", origParamValue, ablyRealtime.options.authHeaders[0].value);
+
+            assertEquals("proxy.port given for options must be equal to the one in in AblyRealtime before change", opts.proxy.port, ablyRealtime.options.proxy.port);
+            int origProxyPort = ablyRealtime.options.proxy.port;
+            opts.proxy.port = 9090;
+            assertNotEquals("proxy.port given for options should not be equal to the one in in AblyRealtime after change", opts.proxy.port, ablyRealtime.options.proxy.port);
+            assertEquals("proxy.port in AblyRealtime should be equal to original one after ClientOptions change", origProxyPort, ablyRealtime.options.proxy.port);
+
+            ablyRealtime.close();
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail();
         }
     }
 

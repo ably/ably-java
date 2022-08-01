@@ -1,6 +1,7 @@
 package io.ably.lib.rest;
 
 import io.ably.annotation.Experimental;
+import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.http.AsyncHttpScheduler;
 import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
@@ -83,17 +84,22 @@ public abstract class AblyBase<
             Log.e(getClass().getName(), msg);
             throw AblyException.fromErrorInfo(new ErrorInfo(msg, 400, 40000));
         }
-        this.options = options;
+
+        if (options instanceof DebugOptions) {
+            this.options = options;
+        } else {
+            this.options = options.copy();
+        }
 
         /* process options */
-        Log.setLevel(options.logLevel);
-        Log.setHandler(options.logHandler);
+        Log.setLevel(this.options.logLevel);
+        Log.setHandler(this.options.logHandler);
         Log.i(getClass().getName(), "started");
 
         this.platformAgentProvider = platformAgentProvider;
-        auth = new Auth(this, options);
-        httpCore = new HttpCore(options, auth, this.platformAgentProvider);
-        http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
+        auth = new Auth(this, this.options);
+        httpCore = new HttpCore(this.options, auth, this.platformAgentProvider);
+        http = new Http(new AsyncHttpScheduler(httpCore, this.options), new SyncHttpScheduler(httpCore));
 
         channels = (Channels<ChannelType>) new InternalChannels();
 

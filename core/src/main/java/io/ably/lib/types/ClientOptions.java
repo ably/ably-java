@@ -1,12 +1,15 @@
 package io.ably.lib.types;
 
 import io.ably.lib.push.Storage;
+import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.AuthOptions;
 import io.ably.lib.rest.Auth.TokenParams;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Log.LogHandler;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -220,4 +223,95 @@ public class ClientOptions extends AuthOptions {
      * Agent versions are optional, if you don't want to specify it pass `null` as the map entry value.
      */
     public Map<String, String> agents;
+
+    /**
+     * Creates new copy of this object
+     * @return copy of ClientOptions
+     */
+    public ClientOptions copy() {
+        final ClientOptions copyOptions = new ClientOptions();
+        copyOptions.clientId = this.clientId;
+        copyOptions.logLevel = this.logLevel;
+        copyOptions.logHandler = this.logHandler;
+        copyOptions.tls = this.tls;
+        copyOptions.restHost = this.restHost;
+        copyOptions.realtimeHost = this.realtimeHost;
+        copyOptions.port = this.port;
+        copyOptions.tlsPort = this.tlsPort;
+        copyOptions.autoConnect = this.autoConnect;
+        copyOptions.useBinaryProtocol = this.useBinaryProtocol;
+        copyOptions.queueMessages = this.queueMessages;
+        copyOptions.echoMessages = this.echoMessages;
+        copyOptions.recover = this.recover;
+        copyOptions.idempotentRestPublishing = this.idempotentRestPublishing;
+        copyOptions.httpOpenTimeout = this.httpOpenTimeout;
+        copyOptions.httpRequestTimeout = this.httpRequestTimeout;
+        copyOptions.httpMaxRetryCount = this.httpMaxRetryCount;
+        copyOptions.realtimeRequestTimeout = this.realtimeRequestTimeout;
+        copyOptions.fallbackHostsUseDefault = this.fallbackHostsUseDefault;
+        copyOptions.fallbackRetryTimeout = this.fallbackRetryTimeout;
+        copyOptions.defaultTokenParams = this.defaultTokenParams.copy();
+        copyOptions.channelRetryTimeout = this.channelRetryTimeout;
+        copyOptions.asyncHttpThreadpoolSize = this.asyncHttpThreadpoolSize;
+        copyOptions.pushFullWait = this.pushFullWait;
+        copyOptions.localStorage = this.localStorage;
+        copyOptions.addRequestIds = this.addRequestIds;
+        copyOptions.environment = this.environment;
+
+        //params from AuthOptions
+        copyOptions.authCallback = this.authCallback;
+        copyOptions.authUrl = this.authUrl;
+        copyOptions.authMethod = this.authMethod;
+        copyOptions.key = this.key;
+        copyOptions.token = this.token;
+        copyOptions.queryTime = this.queryTime;
+        copyOptions.useTokenAuth = this.useTokenAuth;
+
+        if (this.headers != null) {
+            copyOptions.headers = new HashMap<>(this.headers);
+        }
+
+        if (this.agents != null) {
+            copyOptions.agents = new HashMap<>(this.agents);
+        }
+
+        if (this.authParams != null) {
+            copyOptions.authParams = Arrays.copyOf(this.authParams, this.authParams.length);
+        }
+
+        if (this.authHeaders != null) {
+            copyOptions.authHeaders = Arrays.copyOf(this.authHeaders, this.authHeaders.length);
+        }
+
+        if (this.transportParams != null) {
+            copyOptions.transportParams = Arrays.copyOf(this.transportParams, this.transportParams.length);
+        }
+
+        if (this.fallbackHosts != null) {
+            copyOptions.fallbackHosts = Arrays.copyOf(this.fallbackHosts, this.fallbackHosts.length);
+        }
+
+        if (this.proxy != null) {
+            ProxyOptions po = new ProxyOptions();
+            po.host = this.proxy.host;
+            po.port = this.proxy.port;
+            po.username = this.proxy.username;
+            po.password = this.proxy.password;
+            po.nonProxyHosts = this.proxy.nonProxyHosts;
+            po.prefAuthType = this.proxy.prefAuthType;
+            copyOptions.proxy = po;
+        }
+
+        if (this.tokenDetails != null) {
+            Auth.TokenDetails tokenDetails = new Auth.TokenDetails();
+            tokenDetails.token = this.tokenDetails.token;
+            tokenDetails.expires = this.tokenDetails.expires;
+            tokenDetails.issued = this.tokenDetails.issued;
+            tokenDetails.capability = this.tokenDetails.capability;
+            tokenDetails.clientId = this.tokenDetails.clientId;
+            copyOptions.tokenDetails = tokenDetails;
+        }
+
+        return copyOptions;
+    }
 }
