@@ -36,8 +36,7 @@ import io.ably.lib.util.PlatformAgentProvider;
 import io.ably.lib.util.Serialisation;
 
 /**
- * AblyBase
- * The top-level class to be instanced for the Ably REST library.
+ * A client that offers a simple stateless API to interact directly with Ably's REST API.
  *
  * This class implements {@link AutoCloseable} so you can use it in
  * try-with-resources constructs and have the JDK close it for you.

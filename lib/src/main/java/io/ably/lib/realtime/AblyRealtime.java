@@ -16,7 +16,7 @@ import io.ably.lib.util.InternalMap;
 import io.ably.lib.util.Log;
 
 /**
- * The top-level class to be instanced for the Ably Realtime library.
+ * A client that extends the functionality of the {@link AblyRest} and provides additional realtime-specific features.
  *
  * This class implements {@link AutoCloseable} so you can use it in
  * try-with-resources constructs and have the JDK close it for you.

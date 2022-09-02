@@ -5,7 +5,7 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.util.JavaPlatformAgentProvider;
 
 /**
- * The top-level class to be instanced for the Ably REST library for JRE.
+ * A client that offers a simple stateless API to interact directly with Ably's REST API.
  *
  * This class implements {@link AutoCloseable} so you can use it in
  * try-with-resources constructs and have the JDK close it for you.
