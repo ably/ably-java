@@ -30,11 +30,8 @@ public class AblyRealtime extends AblyRest {
     public final Channels channels;
 
     /**
-     * Instance the Ably library using a key only.
-     * This is simply a convenience constructor for the
-     * simplest case of instancing the library with a key
-     * for basic authentication and no other options.
-     * @param key String key (obtained from application dashboard)
+     * Constructs a Realtime client object using an Ably API key or token string.
+     * @param key The Ably API key or token string used to validate the client.
      * @throws AblyException
      */
     public AblyRealtime(String key) throws AblyException {
@@ -42,8 +39,8 @@ public class AblyRealtime extends AblyRest {
     }
 
     /**
-     * Instance the Ably library with the given options.
-     * @param options see {@link io.ably.lib.types.ClientOptions} for options
+     * Constructs a RealtimeClient object using an Ably {@link ClientOptions} object.
+     * @param options A {@link ClientOptions} object.
      * @throws AblyException
      */
     public AblyRealtime(ClientOptions options) throws AblyException {
@@ -64,17 +61,18 @@ public class AblyRealtime extends AblyRest {
     }
 
     /**
-     * Initiate a connection.
-     * {@link Connection#connect}.
+     * Calls {@link Connection#connect} and causes the connection to open,
+     * entering the connecting state. Explicitly calling connect() is unnecessary
+     * unless the {@link ClientOptions#autoConnect} property is disabled.
      */
     public void connect() {
         connection.connect();
     }
 
     /**
-     * Close this instance. This closes the connection.
-     * The connection can be re-opened by calling
-     * {@link Connection#connect}.
+     * Calls {@link Connection#close} and causes the connection to close, entering the closing state.
+     * Once closed, the library will not attempt to re-establish the connection
+     * without an explicit call to {@link Connection#connect}.
      */
     @Override
     public void close() {
