@@ -12,11 +12,8 @@ import io.ably.lib.util.JavaPlatformAgentProvider;
  */
 public class AblyRest extends AblyBase {
     /**
-     * Instance the Ably library using a key only.
-     * This is simply a convenience constructor for the
-     * simplest case of instancing the library with a key
-     * for basic authentication and no other options.
-     * @param key; String key (obtained from application dashboard)
+     * Constructs a client object using an Ably API key or token string.
+     * @param key The Ably API key or token string used to validate the client.
      * @throws AblyException
      */
     public AblyRest(String key) throws AblyException {
@@ -24,8 +21,8 @@ public class AblyRest extends AblyBase {
     }
 
     /**
-     * Instance the Ably library with the given options.
-     * @param options: see {@link io.ably.lib.types.ClientOptions} for options
+     * Construct a client object using an Ably {@link ClientOptions} object.
+     * @param options A {@link ClientOptions} object to configure the client connection to Ably.
      * @throws AblyException
      */
     public AblyRest(ClientOptions options) throws AblyException {
