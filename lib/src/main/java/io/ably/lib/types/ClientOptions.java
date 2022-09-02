@@ -10,7 +10,7 @@ import io.ably.lib.util.Log.LogHandler;
 import java.util.Map;
 
 /**
- * Options: Ably library options for REST and Realtime APIs
+ * Passes additional client-specific properties to the {@link io.ably.lib.rest.AblyRest} or the {@link io.ably.lib.realtime.AblyRealtime}.
  */
 public class ClientOptions extends AuthOptions {
 
@@ -31,29 +31,35 @@ public class ClientOptions extends AuthOptions {
     }
 
     /**
-     * The id of the client represented by this instance. The clientId is relevant
-     * to presence operations, where the clientId is the principal identifier of the
-     * client in presence update messages. The clientId is also relevant to
-     * authentication; a token issued for a specific client may be used to authenticate
-     * the bearer of that token to the service.
+     * A client ID, used for identifying this client when publishing messages or for presence purposes.
+     * The clientId can be any non-empty string, except it cannot contain a *.
+     * This option is primarily intended to be used in situations where the library is instantiated with a key.
+     * Note that a clientId may also be implicit in a token used to instantiate the library.
+     * An error will be raised if a clientId specified here conflicts with the clientId implicit in the token.
+     * <p>
+     * Spec: RSC17, RSA4, RSA15, TO3a
      */
     public String clientId;
 
     /**
-     * Log level; controls the level of verbosity of log messages from the library.
+     * Controls the verbosity of the logs output from the library. Levels include verbose, debug, info, warn and error.
+     * <p>
+     * Spec: TO3b
      */
     public int logLevel;
 
     /**
-     * Log handler: allows the client to intercept log messages and handle them in a
-     * client-specific way.
+     * Controls the log output of the library. This is a function to handle each line of log output.
+     * <p>
+     * Spec: TO3c
      */
     public LogHandler logHandler;
 
-
     /**
-     * Encrypted transport: if true, TLS will be used for all connections (whether REST/HTTP
-     * or Realtime WebSocket or Comet connections).
+     * When false, the client will use an insecure connection.
+     * The default is true, meaning a TLS connection will be used to connect to Ably.
+     * <p>
+     * Spec: RSC18, TO3d
      */
     public boolean tls = true;
 
@@ -63,54 +69,82 @@ public class ClientOptions extends AuthOptions {
     public Map<String, String> headers;
 
     /**
-     * For development environments only; allows a non-default Ably host to be specified.
+     * Enables a non-default Ably host to be specified. For development environments only.
+     * The default value is rest.ably.io.
+     * <p>
+     * Spec: RSC12, TO3k2
      */
     public String restHost;
 
     /**
-     * For development environments only; allows a non-default Ably host to be specified for
-     * websocket connections.
+     * Enables a non-default Ably host to be specified for realtime connections.
+     * For development environments only. The default value is realtime.ably.io.
+     * <p>
+     * Spec: RTC1d, TO3k3
      */
     public String realtimeHost;
 
     /**
-     * For development environments only; allows a non-default Ably port to be specified.
+     * Enables a non-default Ably port to be specified. For development environments only. The default value is 80.
+     * <p>
+     * Spec: TO3k4
      */
     public int port;
 
     /**
-     * For development environments only; allows a non-default Ably TLS port to be specified.
+     * Enables a non-default Ably TLS port to be specified. For development environments only.
+     * The default value is 443.
+     * <p>
+     * Spec: TO3k5
      */
     public int tlsPort;
 
     /**
-     * If false, suppresses the automatic initiation of a connection when the library is instanced.
+     * When true, the client connects to Ably as soon as it is instantiated.
+     * You can set this to false and explicitly connect to Ably using the
+     * {@link io.ably.lib.realtime.Connection#connect} method. The default is true.
+     * <p>
+     * Spec: RTC1b, TO3e
      */
     public boolean autoConnect = true;
 
     /**
-     * If false, forces the library to use the JSON encoding for REST and Realtime operations,
-     * instead of the default binary msgpack encoding.
+     * When true, the more efficient MsgPack binary encoding is used. When false, JSON text encoding is used.
+     * The default is true.
+     * <p>
+     * Spec: TO3f
      */
     public boolean useBinaryProtocol = true;
 
     /**
-     * If false, suppresses the default queueing of messages when connection states that
-     * anticipate imminent connection (connecting and disconnected). Instead, publish and
-     * presence state changes will fail immediately if not in the connected state.
+     * If false, this disables the default behavior whereby the library queues messages
+     * on a connection in the disconnected or connecting states.
+     * The default behavior enables applications to submit messages immediately upon
+     * instantiating the library without having to wait for the connection to be established.
+     * Applications may use this option to disable queueing if they wish to have
+     * application-level control over the queueing. The default is true.
+     * <p>
+     * Spec: RTP16b, TO3g
      */
     public boolean queueMessages = true;
 
     /**
-     * If false, suppresses messages originating from this connection being echoed back
-     * on the same connection.
+     * If false, prevents messages originating from this connection being echoed back on the same connection. The default is true.
+     * <p>
+     * Spec: RTC1a, TO3h
      */
     public boolean echoMessages = true;
 
     /**
-     * A connection recovery string, specified by a client when initialising the library
-     * with the intention of inheriting the state of an earlier connection. See the Ably
-     * Realtime API documentation for further information on connection state recovery.
+     * Enables a connection to inherit the state of a previous connection that may have existed under a
+     * different instance of the Realtime library. This might typically be used by clients of the browser
+     * library to ensure connection state can be preserved when the user refreshes the page.
+     * A recovery key string can be explicitly provided, or alternatively if a callback function is provided,
+     * the client library will automatically persist the recovery key between page reloads and call the callback
+     * when the connection is recoverable. The callback is then responsible for confirming whether the connection
+     * should be recovered or not. See connection state recovery for further information.
+     * <p>
+     * Spec: RTC1c, TO3i
      */
     public String recover;
 
@@ -120,69 +154,108 @@ public class ClientOptions extends AuthOptions {
     public ProxyOptions proxy;
 
     /**
-     * For development environments only; allows a non-default Ably environment
-     * to be used such as 'sandbox'.
-     * Spec: TO3k1
+     * Enables a <a href="https://ably.com/docs/platform-customization">custom environment</a> to be used with the Ably service.
+     * <p>
+     * Spec: RSC15b, TO3k1
      */
     public String environment;
 
     /**
-     * Spec: TO3n
+     * When true, enables idempotent publishing by assigning a unique message ID client-side,
+     * allowing the Ably servers to discard automatic publish retries following a failure such as a network fault.
+     * The default is true.
+     * <p>
+     * Spec: RSL1k1, RTL6a1, TO3n
      */
     public boolean idempotentRestPublishing = (Defaults.ABLY_VERSION_NUMBER >= 1.2);
 
     /**
-     * Spec: TO313
+     * Timeout for opening a connection to Ably to initiate an HTTP request.
+     * The default is 4 seconds.
+     * <p>
+     * Spec: TO3l3
      */
     public int httpOpenTimeout = Defaults.TIMEOUT_HTTP_OPEN;
 
     /**
-     * Spec: TO314
+     * Timeout for a client performing a complete HTTP request to Ably, including the connection phase.
+     * The default is 10 seconds.
+     * <p>
+     * Spec: TO3l4
      */
     public int httpRequestTimeout = Defaults.TIMEOUT_HTTP_REQUEST;
 
     /**
-     * Max number of fallback hosts to use as a fallback when an HTTP request to
-     * the primary host is unreachable or indicates that it is unserviceable
+     * The maximum number of fallback hosts to use as a fallback when an HTTP request to the primary host
+     * is unreachable or indicates that it is unserviceable.
+     * The default value is 3.
+     * <p>
+     * Spec: TO3l5
      */
     public int httpMaxRetryCount = Defaults.HTTP_MAX_RETRY_COUNT;
 
     /**
-     * Spec: DF1b
+     * Timeout for the wait of acknowledgement for operations performed via a realtime connection,
+     * before the client library considers a request failed and triggers a failure condition.
+     * Operations include establishing a connection with Ably, or sending a HEARTBEAT, CONNECT, ATTACH, DETACH or CLOSE request.
+     * It is the equivalent of httpRequestTimeout but for realtime operations, rather than REST.
+     * The default is 10 seconds.
+     * <p>
+     * Spec: TO3l11
      */
     public long realtimeRequestTimeout = Defaults.realtimeRequestTimeout;
 
     /**
-     * Spec: TO3k6,RSC15a,RSC15b,RTN17b list of custom fallback hosts.
+     * An array of fallback hosts to be used in the case of an error necessitating the use of an alternative host.
+     * If you have been provided a set of custom fallback hosts by Ably, please specify them here.
+     * <p>
+     * Spec: RSC15b, RSC15a, TO3k6
      */
     public String[] fallbackHosts;
 
     /**
-     * Spec: TO3k7 Set to use default fallbackHosts even when overriding
-     * environment or restHost/realtimeHost
+     * An array of fallback hosts to be used in the case of an error necessitating the use of an alternative host.
+     * If you have been provided a set of custom fallback hosts by Ably, please specify them here.
+     * <p>
+     * Spec: RSC15b, RSC15a, TO3k6
      */
     @Deprecated
     public boolean fallbackHostsUseDefault;
 
     /**
+     * The maximum time before HTTP requests are retried against the default endpoint.
+     * The default is 600 seconds.
+     * <p>
      * Spec: TO3l10
      */
     public long fallbackRetryTimeout = Defaults.fallbackRetryTimeout;
+
     /**
-     * When a TokenParams object is provided, it will override
-     * the client library defaults described in TokenParams
+     * When a {@link TokenParams} object is provided, it overrides the client library
+     * defaults when issuing new Ably Tokens or Ably {@link io.ably.lib.rest.Auth.TokenRequest}.
+     * <p>
      * Spec: TO3j11
      */
     public TokenParams defaultTokenParams = new TokenParams();
 
     /**
-     * Channel reattach timeout
-     * Spec: RTL13b
+     * When a channel becomes {@link io.ably.lib.realtime.ConnectionState#suspended}
+     * following a server initiated {@link io.ably.lib.realtime.ConnectionState#detached},
+     * after this delay, if the channel is still {@link io.ably.lib.realtime.ConnectionState#suspended}
+     * and the connection is {@link io.ably.lib.realtime.ConnectionState#connected},
+     * the client library will attempt to re-attach the channel automatically.
+     * The default is 15 seconds.
+     * <p>
+     * Spec: RTL13b, TO3l7
      */
     public int channelRetryTimeout = Defaults.TIMEOUT_CHANNEL_RETRY;
 
     /**
-     * Additional parameters to be sent in the querystring when initiating a realtime connection
+     * A set of key-value pairs that can be used to pass in arbitrary connection parameters,
+     * such as <a href="https://ably.com/docs/realtime/connection#heartbeats">heartbeatInterval</a>
+     * or <a href="https://ably.com/docs/realtime/presence#unstable-connections">remainPresentFor</a>.
+     * <p>
+     * Spec: RTC1f
      */
     public Param[] transportParams;
 
@@ -204,20 +277,21 @@ public class ClientOptions extends AuthOptions {
     public Storage localStorage = null;
 
     /**
-     If enabled, every REST request to Ably includes a `request_id` query string parameter. This request ID
-     remain the same if a request is retried to a fallback host.
+     * When true, every REST request to Ably should include a random string in the request_id query string parameter.
+     * The random string should be a url-safe base64-encoding sequence of at least 9 bytes, obtained from a source of randomness.
+     * This request ID must remain the same if a request is retried to a fallback host.
+     * Any log messages associated with the request should include the request ID.
+     * If the request fails, the request ID must be included in the {@link ErrorInfo} returned to the user.
+     * The default is false.
+     * <p>
+     * Spec: TO3p
      */
     public boolean addRequestIds = false;
 
     /**
-     * Map of agents that will be appended to the agent header.
-     *
-     * This should only be used by Ably-authored SDKs.
-     * If you need to use this then you have to add the agent to the agents.json file:
-     * https://github.com/ably/ably-common/blob/main/protocol/agents.json
-     *
-     * The keys represent agent names and its corresponding values represent agent versions.
-     * Agent versions are optional, if you don't want to specify it pass `null` as the map entry value.
+     * A set of additional entries for the Ably agent header. Each entry can be a key string or set of key-value pairs.
+     * <p>
+     * Spec: RSC7d6
      */
     public Map<String, String> agents;
 }
