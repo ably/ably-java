@@ -234,37 +234,51 @@ public class Auth {
     }
 
     /**
-     * A class providing details of a token and its associated metadata,
-     * provided when the system successfully requests a token from the system.
-     *
+     * Contains an Ably Token and its associated metadata.
      */
     public static class TokenDetails {
 
         /**
-         * The token itself
+         * The <a href="https://ably.com/docs/core-features/authentication#ably-tokens">Ably Token</a> itself.
+         * <p>
+         * A typical Ably Token string appears with the form xVLyHw.A-pwh7wicf3afTfgiw4k2Ku33kcnSA7z6y8FjuYpe3QaNRTEo4.
+         * <p>
+         * Spec: TD2
          */
         public String token;
 
         /**
-         * The time (in millis since the epoch) at which this token expires.
+         * The timestamp at which this token expires as milliseconds since the Unix epoch.
+         * <p>
+         * Spec: TD3
          */
         public long expires;
 
         /**
-         * The time (in millis since the epoch) at which this token was issued.
+         * The timestamp at which this token was issued as milliseconds since the Unix epoch.
+         * <p>
+         * Spec: TD4
          */
         public long issued;
 
         /**
-         * The capability associated with this token. See the Ably Authentication
-         * documentation for details.
+         * The capabilities associated with this Ably Token.
+         * The capabilities value is a JSON-encoded representation of the resource paths and associated operations.
+         * Read more about capabilities in the
+         * <a href="https://ably.com/docs/core-features/authentication/#capabilities-explained">capabilities docs</a>.
+         * <p>
+         * Spec: TD5
          */
         public String capability;
 
         /**
-         * The clientId, if any, bound to this token. If a clientId is included,
-         * then the token authenticates its bearer as that clientId, and the
-         * token may only be used to perform operations on behalf of that clientId.
+         * The client ID, if any, bound to this Ably Token.
+         * If a client ID is included, then the Ably Token authenticates its bearer as that client ID,
+         * and the Ably Token may only be used to perform operations on behalf of that client ID.
+         * The client is then considered to be an
+         * <a href="https://ably.com/docs/core-features/authentication#identified-clients">identified client</a>.
+         * <p>
+         * Spec: TD6
          */
         public String clientId;
 
@@ -272,10 +286,17 @@ public class Auth {
         public TokenDetails(String token) { this.token = token; }
 
         /**
-         * Convert a JSON response body to a TokenDetails.
-         * Deprecated: use fromJson() instead
-         * @param json
-         * @return
+         * A static factory method to create a TokenDetails object from a deserialized
+         * TokenDetails-like object or a JSON stringified TokenDetails object.
+         * This method is provided to minimize bugs as a result of differing types by platform for fields such as timestamp or ttl.
+         * For example, in Ruby ttl in the TokenDetails object is exposed in seconds as that is idiomatic for the language,
+         * yet when serialized to JSON using to_json it is automatically converted to the Ably standard which is milliseconds.
+         * By using the fromJson() method when constructing a TokenDetails object,
+         * Ably ensures that all fields are consistently serialized and deserialized across platforms.
+         * <p>
+         * Spec: TD7
+         * @param json A deserialized TokenDetails-like object or a JSON stringified TokenDetails object.
+         * @return An Ably authentication token.
          */
         @Deprecated
         public static TokenDetails fromJSON(JsonObject json) {
@@ -283,19 +304,34 @@ public class Auth {
         }
 
         /**
-         * Convert a JSON element response body to a TokenDetails.
+         * A static factory method to create a TokenDetails object from a deserialized
+         * TokenDetails-like object or a JSON stringified TokenDetails object.
+         * This method is provided to minimize bugs as a result of differing types by platform for fields such as timestamp or ttl.
+         * For example, in Ruby ttl in the TokenDetails object is exposed in seconds as that is idiomatic for the language,
+         * yet when serialized to JSON using to_json it is automatically converted to the Ably standard which is milliseconds.
+         * By using the fromJson() method when constructing a TokenDetails object,
+         * Ably ensures that all fields are consistently serialized and deserialized across platforms.
+         * <p>
          * Spec: TD7
-         * @param json
-         * @return
+         * @param json A deserialized TokenDetails-like object or a JSON stringified TokenDetails object.
+         * @return An Ably authentication token.
          */
         public static TokenDetails fromJson(String json) {
             return Serialisation.gson.fromJson(json, TokenDetails.class);
         }
 
         /**
-         * Convert a JSON element response body to a TokenDetails.
-         * @param json
-         * @return
+         * A static factory method to create a TokenDetails object from a deserialized
+         * TokenDetails-like object or a JSON stringified TokenDetails object.
+         * This method is provided to minimize bugs as a result of differing types by platform for fields such as timestamp or ttl.
+         * For example, in Ruby ttl in the TokenDetails object is exposed in seconds as that is idiomatic for the language,
+         * yet when serialized to JSON using to_json it is automatically converted to the Ably standard which is milliseconds.
+         * By using the fromJson() method when constructing a TokenDetails object,
+         * Ably ensures that all fields are consistently serialized and deserialized across platforms.
+         * <p>
+         * Spec: TD7
+         * @param json A deserialized TokenDetails-like object or a JSON stringified TokenDetails object.
+         * @return An Ably authentication token.
          */
         public static TokenDetails fromJsonElement(JsonObject json) {
             return Serialisation.gson.fromJson(json, TokenDetails.class);
