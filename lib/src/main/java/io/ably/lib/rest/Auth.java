@@ -44,7 +44,9 @@ public class Auth {
     }
 
     /**
-     * Authentication options when instancing the Ably library
+     * Passes authentication-specific properties in authentication requests to Ably.
+     * Properties set using AuthOptions are used instead of the default values set when the client library
+     * is instantiated, as opposed to being merged with them.
      */
     public static class AuthOptions {
 
