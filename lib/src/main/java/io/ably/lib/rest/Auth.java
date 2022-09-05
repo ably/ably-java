@@ -332,37 +332,46 @@ public class Auth {
 }
 
     /**
-     * A class providing parameters of a token request.
+     * Defines the properties of an Ably Token.
      */
     public static class TokenParams {
 
         /**
-         * Requested time to live for the token. If the token request
-         * is successful, the TTL of the returned token will be less
-         * than or equal to this value depending on application settings
-         * and the attributes of the issuing key.
-         *
-         * 0 means Ably will set it to the default value.
+         * Requested time to live for the token in milliseconds. The default is 60 minutes.
+         * <p>
+         * Spec: RSA9e, TK2a
          */
         public long ttl;
 
         /**
-         * Capability of the token. If the token request is successful,
-         * the capability of the returned token will be the intersection of
-         * this capability with the capability of the issuing key.
+         * The capabilities associated with this Ably Token.
+         * The capabilities value is a JSON-encoded representation of the resource paths and associated operations.
+         * Read more about capabilities in the
+         * <a href="https://ably.com/docs/core-features/authentication/#capabilities-explained">capabilities docs</a>.
+         * <p>
+         * Spec: RSA9f, TK2b
          */
         public String capability;
 
         /**
-         * A clientId to associate with this token. The generated token
-         * may be used to authenticate as this clientId.
+         * A client ID, used for identifying this client when publishing messages or for presence purposes.
+         * The clientId can be any non-empty string, except it cannot contain a *.
+         * This option is primarily intended to be used in situations where the library is instantiated with a key.
+         * Note that a clientId may also be implicit in a token used to instantiate the library.
+         * An error is raised if a clientId specified here conflicts with the clientId implicit in the token.
+         * Find out more about <a href="https://ably.com/docs/core-features/authentication#identified-clients">identified clients</a>.
+         * <p>
+         * Spec: TK2c
          */
         public String clientId;
 
         /**
-         * The timestamp (in millis since the epoch) of this request.
-         * Timestamps, in conjunction with the nonce, are used to prevent
-         * token requests from being replayed.
+         * The timestamp of this request as milliseconds since the Unix epoch.
+         * Timestamps, in conjunction with the nonce, are used to prevent requests from being replayed.
+         * timestamp is a "one-time" value, and is valid in a request,
+         * but is not validly a member of any default token params such as ClientOptions.defaultTokenParams.
+         * <p>
+         * Spec: RSA9d, Tk2d
          */
         public long timestamp;
 
