@@ -32,7 +32,7 @@ import io.ably.lib.util.Serialisation;
  * Token-generation and authentication operations for the Ably API.
  * See the Ably Authentication documentation for details of the
  * authentication methods available.
- *
+ * Creates Ably {@link TokenRequest} objects and obtains Ably Tokens from Ably to subsequently issue to less trusted clients.
  */
 public class Auth {
     /**
@@ -564,41 +564,32 @@ public class Auth {
     }
 
     /**
-     * The clientId for this library instance
-     * Spec RSA7b
+     * A client ID, used for identifying this client when publishing messages or for presence purposes.
+     * The clientId can be any non-empty string, except it cannot contain a *.
+     * This option is primarily intended to be used in situations where the library is instantiated with a key.
+     * Note that a clientId may also be implicit in a token used to instantiate the library.
+     * An error is raised if a clientId specified here conflicts with the clientId implicit in the token.
+     * Find out more about <a href="https://ably.com/docs/core-features/authentication#identified-clients">identified clients</a>.
+     * <p>
+     * Spec: RSA7, RSC17, RSA12
      */
     public String clientId;
 
     /**
-     * Ensure valid auth credentials are present. This may rely in an already-known
-     * and valid token, and will obtain a new token if necessary or explicitly
-     * requested.
-     * Authorization will use the parameters supplied on construction except
-     * where overridden with the options supplied in the call.
+     * Instructs the library to get a new token immediately.
+     * When using the realtime client, it upgrades the current realtime connection to use the new token,
+     * or if not connected, initiates a connection to Ably, once the new token has been obtained.
+     * Also stores any {@link TokenParams} and {@link AuthOptions} passed in as the new defaults,
+     * to be used for all subsequent implicit or explicit token requests.
+     * Any {@link TokenParams} and {@link AuthOptions} objects passed in entirely replace,
+     * as opposed to being merged with, the current client library saved values.
+     * <p>
+     * Spec: RSA10
      *
-     * @param params
-     * an object containing the request params:
-     * - key:        (optional) the key to use; if not specified, the key
-     *               passed in constructing the Rest interface may be used
-     *
-     * - ttl:        (optional) the requested life of any new token in ms. If none
-     *               is specified a default of 1 hour is provided. The maximum lifetime
-     *               is 24hours; any request exceeding that lifetime will be rejected
-     *               with an error.
-     *
-     * - capability: (optional) the capability to associate with the access token.
-     *               If none is specified, a token will be requested with all of the
-     *               capabilities of the specified key.
-     *
-     * - clientId:   (optional) a client Id to associate with the token
-     *
-     * - timestamp:  (optional) the time in ms since the epoch. If none is specified,
-     *               the system will be queried for a time value to use.
-     *
-     * - queryTime   (optional) boolean indicating that the Ably system should be
-     *               queried for the current time when none is specified explicitly.
-     *
-     * @param options
+     * @param params A {@link TokenParams} object.
+     * @param options An {@link AuthOptions} object.
+     * @return A {@link TokenDetails} object.
+     * @throws AblyException
      */
     public TokenDetails authorize(TokenParams params, AuthOptions options) throws AblyException {
         /* Spec: RSA10g */
@@ -643,11 +634,20 @@ public class Auth {
     }
 
     /**
-     * Make a token request. This will make a token request now, even if the library already
-     * has a valid token. It would typically be used to issue tokens for use by other clients.
-     * @param params : see {@link #authorize} for params
-     * @param tokenOptions : see {@link #authorize} for options
-     * @return the TokenDetails
+     * Calls the requestToken REST API endpoint to obtain an Ably Token
+     * according to the specified {@link TokenParams} and {@link AuthOptions}.
+     * Both {@link TokenParams} and {@link AuthOptions} are optional.
+     * When omitted or null, the default token parameters and authentication options for the client library are used,
+     * as specified in the {@link ClientOptions} when the client library was instantiated,
+     * or later updated with an explicit authorize request. Values passed in are used instead of,
+     * rather than being merged with, the default values.
+     * To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token,
+     * see <a href="https://ably.com/docs/core-features/authentication/#token-authentication">Token Authentication explained</a>.
+     * <p>
+     * Spec: RSA8e
+     * @param params : A {@link TokenParams} object.
+     * @param tokenOptions : An {@link AuthOptions} object.
+     * @return A {@link TokenDetails} object.
      * @throws AblyException
      */
     public TokenDetails requestToken(TokenParams params, AuthOptions tokenOptions) throws AblyException {
@@ -787,12 +787,23 @@ public class Auth {
     }
 
     /**
-     * Create a signed token request based on known credentials
-     * and the given token params. This would typically be used if creating
-     * signed requests for submission by another client.
-     * @param params : see {@link #authorize} for params
-     * @param options : see {@link #authorize} for options
-     * @return the params augmented with the mac.
+     * Creates and signs an Ably {@link TokenRequest} based on the specified
+     * (or if none specified, the client library stored) {@link TokenParams} and {@link AuthOptions}.
+     * Note this can only be used when the API key value is available locally.
+     * Otherwise, the Ably {@link TokenRequest} must be obtained from the key owner.
+     * Use this to generate an Ably {@link TokenRequest} in order to implement an
+     * Ably Token request callback for use by other clients. Both {@link TokenParams} and {@link AuthOptions} are optional.
+     * When omitted or null, the default token parameters and authentication options for the client library are used,
+     * as specified in the {@link ClientOptions} when the client library was instantiated,
+     * or later updated with an explicit authorize request.
+     * Values passed in are used instead of, rather than being merged with, the default values.
+     * To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token,
+     * see <a href="https://ably.com/docs/core-features/authentication/#token-authentication">Token Authentication explained</a>.
+     * <p>
+     * Spec: RSA9
+     * @param params : A {@link TokenParams} object.
+     * @param options : An {@link AuthOptions} object.
+     * @return A {@link TokenRequest} object.
      * @throws AblyException
      */
     public TokenRequest createTokenRequest(TokenParams params, AuthOptions options) throws AblyException {
