@@ -468,7 +468,8 @@ public class Auth {
     }
 
     /**
-     * A class providing parameters of a token request.
+     * Contains the properties of a request for a token to Ably.
+     * Tokens are generated using {@link Auth#requestToken}.
      */
     public static class TokenRequest extends TokenParams {
 
@@ -482,28 +483,39 @@ public class Auth {
         }
 
         /**
-         * The keyName of the key against which this request is made.
+         * The name of the key against which this request is made. The key name is public, whereas the key secret is private.
+         * <p>
+         * Spec: TE2
          */
         public String keyName;
 
         /**
-         * An opaque nonce string of at least 16 characters to ensure
-         * uniqueness of this request. Any subsequent request using the
-         * same nonce will be rejected.
+         * A cryptographically secure random string of at least 16 characters, used to ensure the TokenRequest cannot be reused.
+         * <p>
+         * Spec: TE2
          */
         public String nonce;
 
         /**
-         * The Message Authentication Code for this request. See the Ably
-         * Authentication documentation for more details.
+         * The Message Authentication Code for this request.
+         * <p>
+         * Spec: TE2
          */
         public String mac;
 
         /**
-         * Convert a JSON serialisation to a TokenParams.
-         * Deprecated: use fromJson() instead
-         * @param json
-         * @return
+         * A static factory method to create a TokenRequest object from a deserialized TokenRequest-like object
+         * or a JSON stringified TokenRequest object.
+         * This method is provided to minimize bugs as a result of differing types by platform for fields such as timestamp or ttl.
+         * For example, in Ruby ttl in the TokenRequest object is exposed in seconds as that is idiomatic for the language,
+         * yet when serialized to JSON using to_json it is automatically converted to the Ably standard which is milliseconds.
+         * By using the fromJson() method when constructing a TokenRequest object,
+         * Ably ensures that all fields are consistently serialized and deserialized across platforms.
+         * <p>
+         * Spec: TE6
+         * @param json A deserialized TokenRequest-like object or a JSON stringified TokenRequest object to create a TokenRequest.
+         * @return An Ably token request object.
+         * @deprecated use fromJsonElement(JsonObject json) instead
          */
         @Deprecated
         public static TokenRequest fromJSON(JsonObject json) {
@@ -511,19 +523,34 @@ public class Auth {
         }
 
         /**
-         * Convert a parsed JSON response body to a TokenParams.
-         * @param json
-         * @return
+         * A static factory method to create a TokenRequest object from a deserialized TokenRequest-like object
+         * or a JSON stringified TokenRequest object.
+         * This method is provided to minimize bugs as a result of differing types by platform for fields such as timestamp or ttl.
+         * For example, in Ruby ttl in the TokenRequest object is exposed in seconds as that is idiomatic for the language,
+         * yet when serialized to JSON using to_json it is automatically converted to the Ably standard which is milliseconds.
+         * By using the fromJson() method when constructing a TokenRequest object,
+         * Ably ensures that all fields are consistently serialized and deserialized across platforms.
+         * <p>
+         * Spec: TE6
+         * @param json A deserialized TokenRequest-like object or a JSON stringified TokenRequest object to create a TokenRequest.
+         * @return An Ably token request object.
          */
         public static TokenRequest fromJsonElement(JsonObject json) {
             return Serialisation.gson.fromJson(json, TokenRequest.class);
         }
 
         /**
-         * Convert a string JSON response body to a TokenParams.
+         * A static factory method to create a TokenRequest object from a deserialized TokenRequest-like object
+         * or a JSON stringified TokenRequest object.
+         * This method is provided to minimize bugs as a result of differing types by platform for fields such as timestamp or ttl.
+         * For example, in Ruby ttl in the TokenRequest object is exposed in seconds as that is idiomatic for the language,
+         * yet when serialized to JSON using to_json it is automatically converted to the Ably standard which is milliseconds.
+         * By using the fromJson() method when constructing a TokenRequest object,
+         * Ably ensures that all fields are consistently serialized and deserialized across platforms.
+         * <p>
          * Spec: TE6
-         * @param json
-         * @return
+         * @param json A deserialized TokenRequest-like object or a JSON stringified TokenRequest object to create a TokenRequest.
+         * @return An Ably token request object.
          */
         public static TokenRequest fromJson(String json) {
             return Serialisation.gson.fromJson(json, TokenRequest.class);
