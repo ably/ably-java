@@ -49,71 +49,120 @@ public class Auth {
     public static class AuthOptions {
 
         /**
-         * A callback to call to obtain a signed TokenRequest,
-         * TokenDetails or a token string. This enables a client
-         * to obtain token requests or tokens from another entity,
-         * so tokens can be renewed without the client requiring a
-         * key
+         * Called when a new token is required.
+         * The role of the callback is to obtain a fresh token, one of: an Ably Token string (in plain text format);
+         * a signed {@link TokenRequest}; a {@link TokenDetails} (in JSON format);
+         * an <a href="https://ably.com/docs/core-features/authentication#ably-jwt">Ably JWT</a>.
+         * See <a href="https://ably.com/docs/realtime/authentication">the authentication documentation</a>
+         * for details of the Ably {@link TokenRequest} format and associated API calls.
          * <p>
          * This callback is invoked on a background thread.
+         * <p>
+         * Spec:
+         * RSA4a, RSA4, TO3j5, AO2b
          */
         public TokenCallback authCallback;
 
         /**
-         * A URL to query to obtain a signed TokenRequest,
-         * TokenDetails or a token string. This enables a client
-         * to obtain token request or token from another entity,
-         * so tokens can be renewed without the client requiring
-         * a key
+         * A URL that the library may use to obtain a token string (in plain text format), or a signed {@link TokenRequest}
+         * or {@link TokenDetails} (in JSON format) from.
+         * <p>
+         * Spec:
+         * RSA4a, RSA4, RSA8c, TO3j6, AO2c
          */
         public String authUrl;
 
         /**
-         * TO3j7: authMethod: The HTTP verb to be used when a request
-         * is made by the library to the authUrl. Defaults to GET,
-         * supports GET and POST
+         * The HTTP verb to use for any request made to the authUrl, either GET or POST. The default value is GET.
+         * <p>
+         * Spec:
+         * RSA8c, TO3j7, AO2d
          */
         public String authMethod;
 
         /**
-         * Full Ably key string as obtained from dashboard.
+         * The full API key string, as obtained from the <a href="https://ably.com/dashboard">Ably dashboard</a>.
+         * Use this option if you wish to use Basic authentication,
+         * or wish to be able to issue Ably Tokens without needing to defer to a separate entity to sign Ably {@link TokenRequest}.
+         * Read more about <a href="https://ably.com/docs/core-features/authentication#basic-authentication">Basic authentication</a>.
+         * <p>
+         * Spec:
+         * RSA11, RSA14, TO3j1, AO2a
          */
         public String key;
 
         /**
-         * An authentication token issued for this application
-         * against a specific key and {@link TokenParams}
+         * An authenticated token.
+         * This can either be a {@link TokenDetails} object, a {@link TokenRequest} object, or token string
+         * (obtained from the token property of a {@link TokenDetails} component of an Ably {@link TokenRequest} response, or a
+         * JSON Web Token satisfying the
+         * <a href="https://ably.com/docs/core-features/authentication#ably-jwt">Ably requirements for JWTs</a>).
+         * This option is mostly useful for testing: since tokens are short-lived,
+         * in production you almost always want to use an authentication method that enables the
+         * client library to renew the token automatically when the previous one expires, such as authUrl or authCallback.
+         * Read more about Token authentication.
+         * <p>
+         * Spec:
+         * RSA4a, RSA4, TO3j2
          */
         public String token;
 
         /**
-         * An authentication token issued for this application
-         * against a specific key and {@link TokenParams}
+         * An authenticated {@link TokenDetails} object (most commonly obtained from an Ably Token Request response).
+         * This option is mostly useful for testing: since tokens are short-lived,
+         * in production you almost always want to use an authentication method that enables the
+         * client library to renew the token automatically when the previous one expires, such as authUrl or authCallback.
+         * Use this option if you wish to use Token authentication.
+         * Read more about <a href="https://ably.com/docs/core-features/authentication#token-authentication">Token authentication</a>.
+         * <p>
+         * Spec:
+         * RSA4a, RSA4, TO3j2
          */
         public TokenDetails tokenDetails;
 
         /**
-         * Headers to be included in any request made by the library
-         * to the authURL.
+         * A set of key-value pair headers to be added to any request made to the authUrl.
+         * Useful when an application requires these to be added to validate the request or implement the response.
+         * If the authHeaders object contains an authorization key, then withCredentials is set on the XHR request.
+         * <p>
+         * Spec:
+         * RSA8c3, TO3j8, AO2e
          */
         public Param[] authHeaders;
 
         /**
-         * Query params to be included in any request made by the library
-         * to the authURL.
+         * A set of key-value pair params to be added to any request made to the authUrl.
+         * When the authMethod is GET, query params are added to the URL, whereas when authMethod is POST,
+         * the params are sent as URL encoded form data.
+         * Useful when an application requires these to be added to validate the request or implement the response.
+         * <p>
+         * Spec:
+         * RSA8c3, RSA8c1, TO3j9, AO2f
          */
         public Param[] authParams;
 
         /**
-         * This may be set in instances that the library is to sign
-         * token requests based on a given key. If true, the library
-         * will query the Ably system for the current time instead of
-         * relying on a locally-available time of day.
+         * If true, the library queries the Ably servers for the current time when issuing {@link TokenRequest}
+         * instead of relying on a locally-available time of day.
+         * Knowing the time accurately is needed to create valid signed Ably {@link TokenRequest},
+         * so this option is useful for library instances on auth servers where for some reason the server clock
+         * cannot be kept synchronized through normal means, such as an <a href="https://en.wikipedia.org/wiki/Ntpd">NTP daemon</a>.
+         * The server is queried for the current time once per client library instance (which stores the offset from the local clock),
+         * so if using this option you should avoid instancing a new version of the library for each request.
+         * The default is false.
+         * <p>
+         * Spec:
+         * RSA9d, TO3j10, AO2a
          */
         public boolean queryTime;
 
         /**
-         * TO3j4: Use token authorization even if no clientId
+         * When true, forces token authentication to be used by the library.
+         * If a clientId is not specified in the {@link ClientOptions} or {@link TokenParams},
+         * then the Ably Token issued is anonymous.
+         * <p>
+         * Spec:
+         * RSA4, RSA14, TO3j4
          */
         public boolean useTokenAuth;
 
