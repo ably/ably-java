@@ -17,6 +17,9 @@ import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.util.ParamsUtils;
 
+/**
+ * Enables devices to subscribe to push notifications for a channel.
+ */
 public class PushChannel {
     protected final Channel channel;
     protected final AblyRest rest;
