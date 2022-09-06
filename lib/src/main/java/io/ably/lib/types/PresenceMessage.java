@@ -24,13 +24,44 @@ import io.ably.lib.util.Log;
 public class PresenceMessage extends BaseMessage implements Cloneable {
 
     /**
-     * Presence Action: the event signified by a PresenceMessage
+     * Describes the possible actions members in the presence set can emit.
      */
     public enum Action {
+        /**
+         * A member is not present in the channel.
+         * <p>
+         * Spec: TP2
+         */
         absent,
+        /**
+         * When subscribing to presence events on a channel that already has members present,
+         * this event is emitted for every member already present on the channel before the subscribe listener was registered.
+         * <p>
+         * Spec: TP2
+         */
         present,
+        /**
+         * A new member has entered the channel.
+         * <p>
+         * Spec: TP2
+         */
         enter,
+        /**
+         * A member who was present has now left the channel.
+         * This may be a result of an explicit request to leave or implicitly when detaching from the channel.
+         * Alternatively, if a member's connection is abruptly disconnected and they do not resume their connection within a minute,
+         * Ably treats this as a leave event as the client is no longer present.
+         * <p>
+         * Spec: TP2
+         */
         leave,
+        /**
+         * An already present member has updated their member data.
+         * Being notified of member data updates can be very useful, for example,
+         * it can be used to update the status of a user when they are typing a message.
+         * <p>
+         * Spec: TP2
+         */
         update;
 
         public int getValue() { return ordinal(); }
