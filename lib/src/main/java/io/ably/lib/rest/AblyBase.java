@@ -312,10 +312,9 @@ public abstract class AblyBase implements AutoCloseable {
      * Spec: BO2a
      * @param pubSpecs An array of {@link Message.Batch} objects.
      * @param channelOptions A {@link ClientOptions} object to configure the client connection to Ably.
-     * @param callback A callback may optionally be passed in to this call to be notified of success or failure of the operation.
+     * @param callback callback A callback with {@link PublishResponse} object.
      * <p>
      * This callback is invoked on a background thread
-     * @return A {@link PublishResponse} object.
      * @throws AblyException
      */
     @Experimental
@@ -332,10 +331,9 @@ public abstract class AblyBase implements AutoCloseable {
      * @param pubSpecs An array of {@link Message.Batch} objects.
      * @param channelOptions A {@link ClientOptions} object to configure the client connection to Ably.
      * @param params params to pass into the initial query
-     * @param callback A callback may optionally be passed in to this call to be notified of success or failure of the operation.
+     * @param callback A callback with {@link PublishResponse} object.
      * <p>
      * This callback is invoked on a background thread
-     * @return A {@link PublishResponse} object.
      * @throws AblyException
      */
     @Experimental
