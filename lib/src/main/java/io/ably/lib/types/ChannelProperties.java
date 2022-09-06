@@ -1,7 +1,7 @@
 package io.ably.lib.types;
 
 /**
- * (RTL15) Channel#properties attribute is a ChannelProperties object representing properties of the channel state
+ * Describes the properties of the channel state.
  */
 public class ChannelProperties {
     /**
