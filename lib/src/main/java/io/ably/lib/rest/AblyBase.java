@@ -272,11 +272,14 @@ public abstract class AblyBase implements AutoCloseable {
     }
 
     /**
-     * Publish a messages on one or more channels. When there are
-     * messages to be sent on multiple channels simultaneously,
-     * it is more efficient to use this method to publish them in
-     * a single request, as compared with publishing via multiple
-     * independent requests.
+     * Publish an array of {@link Message.Batch} objects to one or more channels, up to a maximum of 100 channels.
+     * Each {@link Message.Batch} object can contain a single message or an array of messages.
+     * Returns an array of {@link PublishResponse} object.
+     * <p>
+     * Spec: BO2a
+     * @param pubSpecs An array of {@link Message.Batch} objects.
+     * @param channelOptions A {@link ClientOptions} object to configure the client connection to Ably.
+     * @return A {@link PublishResponse} object.
      * @throws AblyException
      */
     @Experimental
@@ -284,16 +287,57 @@ public abstract class AblyBase implements AutoCloseable {
         return publishBatchImpl(pubSpecs, channelOptions, null).sync();
     }
 
+    /**
+     * Publish an array of {@link Message.Batch} objects to one or more channels, up to a maximum of 100 channels.
+     * Each {@link Message.Batch} object can contain a single message or an array of messages.
+     * Returns an array of {@link PublishResponse} object.
+     * <p>
+     * Spec: BO2a
+     * @param pubSpecs An array of {@link Message.Batch} objects.
+     * @param channelOptions A {@link ClientOptions} object to configure the client connection to Ably.
+     * @param params params to pass into the initial query
+     * @return A {@link PublishResponse} object.
+     * @throws AblyException
+     */
     @Experimental
     public PublishResponse[] publishBatch(Message.Batch[] pubSpecs, ChannelOptions channelOptions, Param[] params) throws AblyException {
         return publishBatchImpl(pubSpecs, channelOptions, params).sync();
     }
 
+    /**
+     * Asynchronously publish an array of {@link Message.Batch} objects to one or more channels, up to a maximum of 100 channels.
+     * Each {@link Message.Batch} object can contain a single message or an array of messages.
+     * Returns an array of {@link PublishResponse} object.
+     * <p>
+     * Spec: BO2a
+     * @param pubSpecs An array of {@link Message.Batch} objects.
+     * @param channelOptions A {@link ClientOptions} object to configure the client connection to Ably.
+     * @param callback A callback may optionally be passed in to this call to be notified of success or failure of the operation.
+     * <p>
+     * This callback is invoked on a background thread
+     * @return A {@link PublishResponse} object.
+     * @throws AblyException
+     */
     @Experimental
     public void publishBatchAsync(Message.Batch[] pubSpecs, ChannelOptions channelOptions, final Callback<PublishResponse[]> callback) throws AblyException {
         publishBatchImpl(pubSpecs, channelOptions, null).async(callback);
     }
 
+    /**
+     * Asynchronously publish an array of {@link Message.Batch} objects to one or more channels, up to a maximum of 100 channels.
+     * Each {@link Message.Batch} object can contain a single message or an array of messages.
+     * Returns an array of {@link PublishResponse} object.
+     * <p>
+     * Spec: BO2a
+     * @param pubSpecs An array of {@link Message.Batch} objects.
+     * @param channelOptions A {@link ClientOptions} object to configure the client connection to Ably.
+     * @param params params to pass into the initial query
+     * @param callback A callback may optionally be passed in to this call to be notified of success or failure of the operation.
+     * <p>
+     * This callback is invoked on a background thread
+     * @return A {@link PublishResponse} object.
+     * @throws AblyException
+     */
     @Experimental
     public void publishBatchAsync(Message.Batch[] pubSpecs, ChannelOptions channelOptions, Param[] params, final Callback<PublishResponse[]> callback) throws AblyException {
         publishBatchImpl(pubSpecs, channelOptions, params).async(callback);
