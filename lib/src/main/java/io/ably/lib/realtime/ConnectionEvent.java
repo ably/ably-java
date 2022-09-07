@@ -14,6 +14,8 @@ public enum ConnectionEvent {
     failed,
     /**
      * An event for changes to connection conditions for which the {@link ConnectionState} does not change.
+     * <p>
+     * Spec: RTN4h
      */
     update
 }
