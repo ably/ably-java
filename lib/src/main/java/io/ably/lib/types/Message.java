@@ -19,18 +19,22 @@ import org.msgpack.core.MessageUnpacker;
 import io.ably.lib.util.Log;
 
 /**
- * A class representing an individual message to be sent or received
- * via the Ably Realtime service.
+ * Contains an individual message that is sent to, or received from, Ably.
  */
 public class Message extends BaseMessage {
 
     /**
-     * The event name, if available.
+     * The event name.
+     * <p>
+     * Spec: TM2g
      */
     public String name;
 
     /**
-     * Extras, if available.
+     * A MessageExtras object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
+     * Valid payloads include {@link DeltaExtras}, {@link JsonObject}.
+     * <p>
+     * Spec: TM2i
      */
     public MessageExtras extras;
 
@@ -50,44 +54,52 @@ public class Message extends BaseMessage {
     }
 
     /**
-     * Construct a message from event name and data.
+     * Construct a Message object with an event name and payload.
+     * <p>
+     * Spec: TM2
      *
-     * @param name the event name
-     * @param data the message payload
+     * @param name The event name.
+     * @param data The message payload.
      */
     public Message(String name, Object data) {
         this(name, data, null, null);
     }
 
     /**
-     * Construct a message from name, data, and client id.
+     * Construct a Message object with an event name, payload, and a unique client ID.
+     * <p>
+     * Spec: TM2
      *
-     * @param name the event name
-     * @param data the message payload
-     * @param clientId the client identifier
+     * @param name The event name.
+     * @param data The message payload.
+     * @param clientId The client ID of the publisher of this message.
      */
     public Message(String name, Object data, String clientId) {
         this(name, data, clientId, null);
     }
 
     /**
-     * Construct a message from name, data, and extras.
+     * Construct a Message object with an event name, payload, and a extras.
+     * <p>
+     * Spec: TM2
      *
-     * @param name the event name
-     * @param data the message payload
-     * @param extras extra information to be sent with this message
+     * @param name The event name.
+     * @param data The message payload.
+     * @param extras Extra information to be sent with this message.
      */
     public Message(String name, Object data, MessageExtras extras) {
         this(name, data, null, extras);
     }
 
     /**
-     * Construct a message from name, data, client id, and extras.
+     * Construct a Message object with an event name, payload, extras, and a unique client ID.
+     * <p>
+     * Spec: TM2
      *
-     * @param name the event name
-     * @param data the message payload
-     * @param clientId the client identifier
-     * @param extras extra information to be sent with this message
+     * @param name The event name.
+     * @param data The message payload.
+     * @param clientId The client ID of the publisher of this message.
+     * @param extras Extra information to be sent with this message.
      */
     public Message(String name, Object data, String clientId, MessageExtras extras) {
         this.name = name;
@@ -151,11 +163,16 @@ public class Message extends BaseMessage {
     }
 
     /**
-     * A specification for a collection of messages to be sent using the batch API
-     * @author paddy
+     * Sets the channel names and message contents to {@link io.ably.lib.realtime.AblyRealtime#publishBatch}.
      */
     public static class Batch {
+        /**
+         * An array of channel names to publish messages to.
+         */
         public String[] channels;
+        /**
+         * An array of {@link Message} objects to publish.
+         */
         public Message[] messages;
 
         public Batch(String channel, Message[] messages) {
@@ -191,11 +208,13 @@ public class Message extends BaseMessage {
     }
 
     /**
-     * Refer Spec TM3 <br>
-     * An alternative constructor that take an Message-JSON object and a channelOptions (optional), and return a Message
-     * @param messageJson
-     * @param channelOptions
-     * @return
+     * A static factory method to create a Message object from a deserialized Message-like object encoded using Ably's wire protocol.
+     * <p>
+     * Spec: TM3
+     * @param messageJson A Message-like deserialized object.
+     * @param channelOptions A {@link ChannelOptions} object.
+     *                       If you have an encrypted channel, use this to allow the library to decrypt the data.
+     * @return A Message object.
      * @throws MessageDecodeException
      */
     public static Message fromEncoded(JsonObject messageJson, ChannelOptions channelOptions) throws MessageDecodeException {
@@ -210,11 +229,13 @@ public class Message extends BaseMessage {
     }
 
     /**
-     * Refer Spec TM3 <br>
-     * An alternative constructor that takes a Stringified Message-JSON and a channelOptions (optional), and return a Message
-     * @param messageJson
-     * @param channelOptions
-     * @return
+     * A static factory method to create a Message object from a deserialized Message-like object encoded using Ably's wire protocol.
+     * <p>
+     * Spec: TM3
+     * @param messageJson A Message-like deserialized object.
+     * @param channelOptions A {@link ChannelOptions} object.
+     *                       If you have an encrypted channel, use this to allow the library to decrypt the data.
+     * @return A Message object.
      * @throws MessageDecodeException
      */
     public static Message fromEncoded(String messageJson, ChannelOptions channelOptions) throws MessageDecodeException {
@@ -228,11 +249,14 @@ public class Message extends BaseMessage {
     }
 
     /**
-     * Refer Spec TM3 <br>
-     * An alternative constructor that takes a Messages JsonArray and a channelOptions (optional), and return array of Messages.
-     * @param messageArray
-     * @param channelOptions
-     * @return
+     * A static factory method to create an array of Message objects from an array of deserialized
+     * Message-like object encoded using Ably's wire protocol.
+     * <p>
+     * Spec: TM3
+     * @param messageArray An array of Message-like deserialized objects.
+     * @param channelOptions A {@link ChannelOptions} object.
+     *                       If you have an encrypted channel, use this to allow the library to decrypt the data.
+     * @return An array of {@link Message} objects.
      * @throws MessageDecodeException
      */
     public static Message[] fromEncodedArray(JsonArray messageArray, ChannelOptions channelOptions) throws MessageDecodeException {
@@ -253,10 +277,14 @@ public class Message extends BaseMessage {
     }
 
     /**
-     *
-     * @param messagesArray
-     * @param channelOptions
-     * @return
+     * A static factory method to create an array of Message objects from an array of deserialized
+     * Message-like object encoded using Ably's wire protocol.
+     * <p>
+     * Spec: TM3
+     * @param messagesArray An array of Message-like deserialized objects.
+     * @param channelOptions A {@link ChannelOptions} object.
+     *                       If you have an encrypted channel, use this to allow the library to decrypt the data.
+     * @return An array of {@link Message} objects.
      * @throws MessageDecodeException
      */
     public static Message[] fromEncodedArray(String messagesArray, ChannelOptions channelOptions) throws MessageDecodeException {
