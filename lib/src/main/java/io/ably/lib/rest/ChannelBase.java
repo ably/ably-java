@@ -5,6 +5,7 @@ import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpScheduler;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
+import io.ably.lib.push.Push;
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.AsyncPaginatedResult;
@@ -153,16 +154,24 @@ public class ChannelBase {
     }
 
     /**
-     * A class enabling access to Channel Presence information via the REST API.
-     * Since the library is stateless, REST clients are therefore never present
-     * themselves. This API enables the service to be queried to determine
-     * presence state for other clients on this channel.
+     * Enables the retrieval of the current and historic presence set for a channel.
      */
     public class Presence {
 
         /**
-         * Get the presence state for this Channel.
-         * @return the current present members.
+         * Retrieves the current members present on the channel and the metadata for each member,
+         * such as their {@link io.ably.lib.types.PresenceMessage.Action} and ID. Returns a {@link PaginatedResult} object,
+         * containing an array of {@link PresenceMessage} objects.
+         * <p>
+         * Spec: RSPa
+         * @param params the request params:
+         * <p>
+         * limit (RSP3a) - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
+         * <p>
+         * clientId (RSP3a2) - Filters the list of returned presence members by a specific client using its ID.
+         * <p>
+         * connectionId (RSP3a3) - Filters the list of returned presence members by a specific connection using its ID.
+         * @return A {@link PaginatedResult} object containing an array of {@link PresenceMessage} objects.
          * @throws AblyException
          */
         public PaginatedResult<PresenceMessage> get(Param[] params) throws AblyException {
@@ -170,9 +179,19 @@ public class ChannelBase {
         }
 
         /**
-         * Asynchronously get the presence state for this Channel.
-         *
-         * @param callback on success returns the currently present members.
+         * Asynchronously retrieves the current members present on the channel and the metadata for each member,
+         * such as their {@link io.ably.lib.types.PresenceMessage.Action} and ID. Returns a {@link PaginatedResult} object,
+         * containing an array of {@link PresenceMessage} objects.
+         * <p>
+         * Spec: RSPa
+         * @param params the request params:
+         * <p>
+         * limit (RSP3a) - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
+         * <p>
+         * clientId (RSP3a2) - Filters the list of returned presence members by a specific client using its ID.
+         * <p>
+         * connectionId (RSP3a3) - Filters the list of returned presence members by a specific connection using its ID.
+         * @param callback A Callback returning {@link AsyncPaginatedResult} object containing an array of {@link PresenceMessage} objects.
          * <p>
          * This callback is invoked on a background thread.
          */
@@ -187,24 +206,52 @@ public class ChannelBase {
         }
 
         /**
-         * Asynchronously obtain presence history for this channel using the REST API.
-         * The history provided relqtes to all clients of this application,
-         * not just this instance.
-         * @param params the request params. See the Ably REST API
-         * documentation for more details.
+         * Retrieves a {@link PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel.
+         * If the channel is configured to persist messages,
+         * then presence messages can be retrieved from history for up to 72 hours in the past.
+         * If not, presence messages can only be retrieved from history for up to two minutes in the past.
+         * <p>
+         * Spec: RSP4a
+         * @param params the request params:
+         * <p>
+         * start (RSP4b1) - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
+         * <p>
+         * end (RSP4b1) - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
+         * <p>
+         * direction (RSP4b2) - The order for which messages are returned in.
+         *               Valid values are backwards which orders messages from most recent to oldest,
+         *               or forwards which orders messages from oldest to most recent.
+         *               The default is backwards.
+         * limit (RSP4b3) - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
+         * @return A {@link PaginatedResult} object containing an array of {@link PresenceMessage} objects.
+         * @throws AblyException
          */
         public PaginatedResult<PresenceMessage> history(Param[] params) throws AblyException {
             return historyImpl(params).sync();
         }
 
         /**
-         * Asynchronously obtain recent history for this channel using the REST API.
-         *
-         * @param params the request params. See the Ably REST API
-         * @param callback
+         * Asynchronously retrieves a {@link PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel.
+         * If the channel is configured to persist messages,
+         * then presence messages can be retrieved from history for up to 72 hours in the past.
+         * If not, presence messages can only be retrieved from history for up to two minutes in the past.
+         * <p>
+         * Spec: RSP4a
+         * @param params the request params:
+         * <p>
+         * start (RSP4b1) - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
+         * <p>
+         * end (RSP4b1) - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
+         * <p>
+         * direction (RSP4b2) - The order for which messages are returned in.
+         *               Valid values are backwards which orders messages from most recent to oldest,
+         *               or forwards which orders messages from oldest to most recent.
+         *               The default is backwards.
+         * limit (RSP4b3) - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
+         * @param callback  A Callback returning {@link AsyncPaginatedResult} object containing an array of {@link PresenceMessage} objects.
          * <p>
          * This callback is invoked on a background thread.
-         * @return
+         * @throws AblyException
          */
         public void historyAsync(Param[] params, Callback<AsyncPaginatedResult<PresenceMessage>> callback) {
             historyImpl(params).async(callback);

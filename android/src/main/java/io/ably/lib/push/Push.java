@@ -13,16 +13,34 @@ import io.ably.lib.util.Log;
 
 import java.util.Arrays;
 
+/**
+ * Enables a device to be registered and deregistered from receiving push notifications.
+ */
 public class Push extends PushBase {
 
     public Push(AblyBase rest) {
         super(rest);
     }
 
+    /**
+     * Activates the device for push notifications with FCM or APNS, obtaining a unique identifier from them.
+     * Subsequently registers the device with Ably and stores the deviceIdentityToken in local storage.
+     * <p>
+     * Spec: RSH2a
+     * @throws AblyException
+     */
     public void activate() throws AblyException {
         activate(false);
     }
 
+    /**
+     * Activates the device for push notifications with FCM or APNS, obtaining a unique identifier from them.
+     * Subsequently registers the device with Ably and stores the deviceIdentityToken in local storage.
+     * <p>
+     * Spec: RSH2a
+     * @param useCustomRegistrar
+     * @throws AblyException
+     */
     public void activate(boolean useCustomRegistrar) throws AblyException {
         Log.v(TAG, "activate(): useCustomRegistrar=" + useCustomRegistrar);
         Context context = getApplicationContext();
@@ -30,10 +48,23 @@ public class Push extends PushBase {
         getStateMachine().handleEvent(ActivationStateMachine.CalledActivate.useCustomRegistrar(useCustomRegistrar, prefs));
     }
 
+    /**
+     * Deactivates the device from receiving push notifications with Ably and FCM or APNS.
+     * <p>
+     * Spec: RSH2b
+     * @throws AblyException
+     */
     public void deactivate() throws AblyException {
         deactivate(false);
     }
 
+    /**
+     * Deactivates the device from receiving push notifications with Ably and FCM or APNS.
+     * <p>
+     * Spec: RSH2b
+     * @param useCustomRegistrar
+     * @throws AblyException
+     */
     public void deactivate(boolean useCustomRegistrar) throws AblyException {
         Log.v(TAG, "deactivate(): useCustomRegistrar=" + useCustomRegistrar);
         Context context = getApplicationContext();
