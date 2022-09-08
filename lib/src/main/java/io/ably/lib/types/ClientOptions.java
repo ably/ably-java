@@ -11,6 +11,10 @@ import java.util.Map;
 
 /**
  * Passes additional client-specific properties to the {@link io.ably.lib.rest.AblyRest} or the {@link io.ably.lib.realtime.AblyRealtime}.
+ *
+ * Extends an {@link AuthOptions} object.
+ * <p>
+ * Spec: TO3j
  */
 public class ClientOptions extends AuthOptions {
 

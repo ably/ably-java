@@ -10,7 +10,7 @@ import io.ably.lib.util.PlatformAgentProvider;
 
 /**
  * Enables the management of a connection to Ably.
- * Embeds an {@link EventEmitter} object.
+ * Extends an {@link EventEmitter} object.
  * <p>
  * Spec: RTN4a, RTN4e, RTN4g
  */
