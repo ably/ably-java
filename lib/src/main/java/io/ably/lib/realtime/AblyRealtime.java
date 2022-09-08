@@ -24,13 +24,22 @@ import io.ably.lib.util.Log;
 public class AblyRealtime extends AblyRest {
     /**
      * The {@link Connection} object for this instance.
+     * <p>
+     * Spec: RTC2
      */
     public final Connection connection;
 
+    /**
+     * A {@link Channels} object.
+     * <p>
+     * Spec: RTC3, RTS1
+     */
     public final Channels channels;
 
     /**
      * Constructs a Realtime client object using an Ably API key or token string.
+     * <p>
+     * Spec: RSC1
      * @param key The Ably API key or token string used to validate the client.
      * @throws AblyException
      */
@@ -40,6 +49,8 @@ public class AblyRealtime extends AblyRest {
 
     /**
      * Constructs a RealtimeClient object using an Ably {@link ClientOptions} object.
+     * <p>
+     * Spec: RSC1
      * @param options A {@link ClientOptions} object.
      * @throws AblyException
      */
@@ -64,6 +75,8 @@ public class AblyRealtime extends AblyRest {
      * Calls {@link Connection#connect} and causes the connection to open,
      * entering the connecting state. Explicitly calling connect() is unnecessary
      * unless the {@link ClientOptions#autoConnect} property is disabled.
+     * <p>
+     * Spec: RTN11
      */
     public void connect() {
         connection.connect();
@@ -73,6 +86,8 @@ public class AblyRealtime extends AblyRest {
      * Calls {@link Connection#close} and causes the connection to close, entering the closing state.
      * Once closed, the library will not attempt to re-establish the connection
      * without an explicit call to {@link Connection#connect}.
+     * <p>
+     * Spec: RTN12
      */
     @Override
     public void close() {
