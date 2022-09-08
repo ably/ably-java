@@ -1,0 +1,28 @@
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: eu-west-2
+          role-to-assume: arn:aws:iam::${{ secrets.ABLY_AWS_ACCOUNT_ID_SDK }}:role/ably-sdk-builds-ably-flutter
+          role-session-name: "${{ github.run_id }}-${{ github.run_number }}"
+
+      - name: Generate Javadoc
+        run: ./gradlew javadoc
+
+      - name: Upload Documentation
+        uses: ably/sdk-upload-action@v1
+        with:
+          sourcePath: ../
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          artifactName: javadoc
