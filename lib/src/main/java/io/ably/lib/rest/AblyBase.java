@@ -47,14 +47,31 @@ public abstract class AblyBase implements AutoCloseable {
     public final Http http;
     public final HttpCore httpCore;
 
+    /**
+     * An {@link Auth} object.
+     * <p>
+     * Spec: RSC5
+     */
     public final Auth auth;
+    /**
+     * An {@link Channels} object.
+     * <p>
+     * Spec: RSN1
+     */
     public final Channels channels;
     public final Platform platform;
+    /**
+     * An {@link Push} object.
+     * <p>
+     * Spec: RSH7
+     */
     public final Push push;
     protected final PlatformAgentProvider platformAgentProvider;
 
     /**
      * Constructs a client object using an Ably API key or token string.
+     * <p>
+     * Spec: RSC1
      * @param key The Ably API key or token string used to validate the client.
      * @param platformAgentProvider provides platform agent for the agent header.
      * @throws AblyException
@@ -65,6 +82,8 @@ public abstract class AblyBase implements AutoCloseable {
 
     /**
      * Construct a client object using an Ably {@link ClientOptions} object.
+     * <p>
+     * Spec: RSC1
      * @param options A {@link ClientOptions} object to configure the client connection to Ably.
      * @param platformAgentProvider provides platform agent for the agent header.
      * @throws AblyException
@@ -145,6 +164,8 @@ public abstract class AblyBase implements AutoCloseable {
      * to issue Ably {@link Auth.TokenRequest} with
      * a more accurate timestamp should use the
      * {@link ClientOptions#queryTime} property instead of this method.
+     * <p>
+     * Spec: RSC16
      * @return The time as milliseconds since the Unix epoch.
      * @throws AblyException
      */
@@ -159,7 +180,11 @@ public abstract class AblyBase implements AutoCloseable {
      * to issue Ably {@link Auth.TokenRequest} with
      * a more accurate timestamp should use the
      * {@link ClientOptions#queryTime} property instead of this method.
+     * <p>
+     * Spec: RSC16
      * @param callback Listener with the time as milliseconds since the Unix epoch.
+     * <p>
+     * This callback is invoked on a background thread
      */
     public void timeAsync(Callback<Long> callback) {
         timeImpl().async(callback);
@@ -187,18 +212,19 @@ public abstract class AblyBase implements AutoCloseable {
      * Queries the REST /stats API and retrieves your application's usage statistics.
      * @param params query options:
      * <p>
-     * start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
+     * start (RSC6b1) - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
      * <p>
-     * end - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
+     * end (RSC6b1) - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
      * <p>
-     * direction - The order for which stats are returned in. Valid values are backwards which orders stats from most recent to oldest,
+     * direction (RSC6b2) - The order for which stats are returned in. Valid values are backwards which orders stats from most recent to oldest,
      * or forwards which orders stats from oldest to most recent. The default is backwards.
      * <p>
-     * limit - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
+     * limit (RSC6b3) - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
      * <p>
-     * unit - minute, hour, day or month. Based on the unit selected, the given start or end times are rounded down to the start of the relevant interval depending on the unit granularity of the query.)
+     * unit (RSC6b4) - minute, hour, day or month. Based on the unit selected, the given start or end times are rounded down to the start of the relevant interval depending on the unit granularity of the query.)
+     * <p>
+     * Spec: RSC6a
      * @return A {@link PaginatedResult} object containing an array of {@link Stats} objects.
-     * See the <a href="https://ably.com/docs/general/statistics">Stats docs</a>.
      * @throws AblyException
      */
     public PaginatedResult<Stats> stats(Param[] params) throws AblyException {
@@ -209,18 +235,21 @@ public abstract class AblyBase implements AutoCloseable {
      * Asynchronously queries the REST /stats API and retrieves your application's usage statistics.
      * @param params query options:
      * <p>
-     * start - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
+     * start (RSC6b1) - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
      * <p>
-     * end - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
+     * end (RSC6b1) - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
      * <p>
-     * direction - The order for which stats are returned in. Valid values are backwards which orders stats from most recent to oldest,
+     * direction (RSC6b2) - The order for which stats are returned in. Valid values are backwards which orders stats from most recent to oldest,
      * or forwards which orders stats from oldest to most recent. The default is backwards.
      * <p>
-     * limit - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
+     * limit (RSC6b3) - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
      * <p>
-     * unit - minute, hour, day or month. Based on the unit selected, the given start or end times are rounded down to the start of the relevant interval depending on the unit granularity of the query.)
+     * unit (RSC6b4) - minute, hour, day or month. Based on the unit selected, the given start or end times are rounded down to the start of the relevant interval depending on the unit granularity of the query.)
+     * <p>
+     * Spec: RSC6a
      * @param callback Listener which returns a {@link AsyncPaginatedResult} object containing an array of {@link Stats} objects.
-     * See the <a href="https://ably.com/docs/general/statistics">Stats docs</a>.
+     * <p>
+     * This callback is invoked on a background thread
      */
     public void statsAsync(Param[] params, Callback<AsyncPaginatedResult<Stats>> callback)  {
         (new AsyncPaginatedQuery<Stats>(http, "/stats", HttpUtils.defaultAcceptHeaders(false), params, StatsReader.statsResponseHandler)).get(callback);
@@ -232,6 +261,8 @@ public abstract class AblyBase implements AutoCloseable {
      * documented or is not yet included in the public API, without having to
      * directly handle features such as authentication, paging, fallback hosts,
      * MsgPack and JSON support.
+     * <p>
+     * Spec: RSC19
      * @param method The request method to use, such as GET, POST.
      * @param path The request path.
      * @param params The parameters to include in the URL query of the request.
@@ -254,6 +285,8 @@ public abstract class AblyBase implements AutoCloseable {
      * documented or is not yet included in the public API, without having to
      * directly handle features such as authentication, paging, fallback hosts,
      * MsgPack and JSON support.
+     * <p>
+     * Spec: RSC19
      * @param method The request method to use, such as GET, POST.
      * @param path The request path.
      * @param params The parameters to include in the URL query of the request.
@@ -265,6 +298,8 @@ public abstract class AblyBase implements AutoCloseable {
      * @param callback called with the asynchronous result,
      *                 returns an {@link AsyncHttpPaginatedResponse} object returned by the HTTP request,
      *                 containing an empty or JSON-encodable object.
+     * <p>
+     * This callback is invoked on a background thread
      */
     public void requestAsync(String method, String path, Param[] params, HttpCore.RequestBody body, Param[] headers, final AsyncHttpPaginatedResponse.Callback callback)  {
         headers = HttpUtils.mergeHeaders(HttpUtils.defaultAcceptHeaders(false), headers);

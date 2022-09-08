@@ -13,6 +13,8 @@ import io.ably.lib.util.JavaPlatformAgentProvider;
 public class AblyRest extends AblyBase {
     /**
      * Constructs a client object using an Ably API key or token string.
+     * <p>
+     * Spec: RSC1
      * @param key The Ably API key or token string used to validate the client.
      * @throws AblyException
      */
@@ -22,6 +24,8 @@ public class AblyRest extends AblyBase {
 
     /**
      * Construct a client object using an Ably {@link ClientOptions} object.
+     * <p>
+     * Spec: RSC1
      * @param options A {@link ClientOptions} object to configure the client connection to Ably.
      * @throws AblyException
      */
