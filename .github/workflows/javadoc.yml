@@ -17,12 +17,18 @@ jobs:
           role-to-assume: arn:aws:iam::${{ secrets.ABLY_AWS_ACCOUNT_ID_SDK }}:role/ably-sdk-builds-ably-flutter
           role-session-name: "${{ github.run_id }}-${{ github.run_number }}"
 
-      - name: Generate Javadoc
-        run: ./gradlew javadoc
+      - name: Set up the Java JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+          distribution: 'adopt'
+
+      - name: Build docs with Maven
+        run: mvn javadoc:javadoc
 
       - name: Upload Documentation
         uses: ably/sdk-upload-action@v1
         with:
-          sourcePath: ../
+          sourcePath: docs
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           artifactName: javadoc
