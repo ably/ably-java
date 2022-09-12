@@ -616,7 +616,7 @@ public class Auth {
                     signedTokenRequest = (TokenRequest)authCallbackResponse;
                 else
                     throw AblyException.fromErrorInfo(new ErrorInfo("Invalid authCallback response", 400, 40000));
-            } catch(AblyException e) {
+            } catch (Exception e) {
                 throw AblyException.fromErrorInfo(e, new ErrorInfo("authCallback failed with an exception", 401, 80019));
             }
         } else if(tokenOptions.authUrl != null) {
