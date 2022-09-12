@@ -27,12 +27,12 @@ jobs:
           java-version: '8'
           distribution: 'adopt'
 
-      - name: Build docs with Maven
+      - name: Build docs
         run: ./gradlew javadoc
 
       - name: Upload Documentation
         uses: ably/sdk-upload-action@v1
         with:
-          sourcePath: docs
+          sourcePath: ..\java\build\docs\javadoc
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           artifactName: javadoc
