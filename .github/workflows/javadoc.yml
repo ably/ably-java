@@ -28,7 +28,7 @@ jobs:
           distribution: 'adopt'
 
       - name: Build docs with Maven
-        run: mvn javadoc:javadoc
+        run: ./gradlew javadoc
 
       - name: Upload Documentation
         uses: ably/sdk-upload-action@v1
