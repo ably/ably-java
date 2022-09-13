@@ -40,6 +40,9 @@ public class Message extends BaseMessage {
 
     /**
      * Key needed only in case one client is publishing this message on behalf of another client.
+     * The connectionKey will never be populated for messages received.
+     * <p>
+     * Spec: TM2h
      */
     public String connectionKey;
 
