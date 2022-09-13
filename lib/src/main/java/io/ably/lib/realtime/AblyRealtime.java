@@ -134,28 +134,32 @@ public class AblyRealtime extends AblyRest {
      */
     public interface Channels extends ReadOnlyMap<String, Channel> {
         /**
-         * Get the named channel; if it does not already exist,
-         * create it with default options.
-         * @param channelName the name of the channel
-         * @return the channel
+         * Creates a new {@link Channel} object, or returns the existing channel object.
+         * <p>
+         * Spec: RSN3a, RTS3a
+         * @param channelName The channel name.
+         * @return A {@link Channel} object.
          */
         Channel get(String channelName);
 
         /**
-         * Get the named channel and set the given options, creating it
-         * if it does not already exist.
-         * @param channelName the name of the channel
-         * @param channelOptions the options to set (null to clear options on an existing channel)
-         * @return the channel
+         * Creates a new {@link Channel} object, with the specified {@link ChannelOptions}, or returns the existing channel object.
+         * <p>
+         * Spec: RSN3c, RTS3c
+         * @param channelName The channel name.
+         * @param channelOptions A {@link ChannelOptions} object.
+         * @return A {@link Channel} object.
          * @throws AblyException
          */
         Channel get(String channelName, ChannelOptions channelOptions) throws AblyException;
 
         /**
-         * Remove this channel from this AblyRealtime instance. This detaches from the channel
-         * and releases all other resources associated with the channel in this client.
-         * This silently does nothing if the channel does not already exist.
-         * @param channelName the name of the channel
+         * Releases a {@link Channel} object, deleting it, and enabling it to be garbage collected.
+         * It also removes any listeners associated with the channel.
+         * To release a channel, the {@link ChannelState} must be INITIALIZED, DETACHED, or FAILED.
+         * <p>
+         * Spec: RSN4, RTS4
+         * @param channelName The channel name.
          */
         void release(String channelName);
     }
