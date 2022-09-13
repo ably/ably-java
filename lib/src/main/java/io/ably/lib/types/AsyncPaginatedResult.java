@@ -30,9 +30,11 @@ public interface AsyncPaginatedResult<T> {
      */
     void current(Callback<AsyncPaginatedResult<T>> callback);
     /**
-     * Returns a new PaginatedResult for the next page of results.
+     * Returns a new PaginatedResult loaded with the next page of results.
+     * If there are no further pages, then null is returned.
      * <p>
-     * Spec: TG5
+     * Spec: TG4
+     * @return A page of results for message and presence history, stats, and REST presence requests.
      */
     void next(Callback<AsyncPaginatedResult<T>> callback);
 
