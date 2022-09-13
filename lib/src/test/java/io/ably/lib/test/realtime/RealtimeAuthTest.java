@@ -20,6 +20,7 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
+import io.ably.lib.types.NonRetriableTokenException;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
 import org.junit.Ignore;
@@ -160,6 +161,30 @@ public class RealtimeAuthTest extends ParameterizedTest {
             connectionWaiter.waitFor(ConnectionState.failed);
             assertEquals("Verify connected state has failed", ConnectionState.failed, ablyRealtime.connection.state);
             assertEquals("Check correct cause error code", 403, ablyRealtime.connection.reason.statusCode);
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail();
+        }
+    }
+
+    /**
+     * Spec: RSA4d
+     */
+    @Test
+    public void auth_client_fails_when_auth_token_fails_with_non_retriable_exception() {
+        try {
+            class NonRetriableRuntimeException extends RuntimeException implements NonRetriableTokenException {
+                NonRetriableRuntimeException(){
+                    super("Non retriable runtime exception");
+                }
+            }
+
+            Exception exception = new NonRetriableRuntimeException();
+            final AblyRealtime ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
+
+            ablyRealtime.connection.connect();
+
+            waitAndAssertConnectionState(ablyRealtime, ConnectionState.failed, 403, 80019);
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
