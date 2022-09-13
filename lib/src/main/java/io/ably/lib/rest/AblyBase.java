@@ -13,6 +13,7 @@ import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
 import io.ably.lib.platform.Platform;
 import io.ably.lib.push.Push;
+import io.ably.lib.realtime.Connection;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.AsyncHttpPaginatedResponse;
 import io.ably.lib.types.AsyncPaginatedResult;
@@ -113,6 +114,14 @@ public abstract class AblyBase implements AutoCloseable {
         push = new Push(this);
     }
 
+    /**
+     * Causes the connection to close, entering the [{@link io.ably.lib.realtime.ConnectionState#closing} state.
+     * Once closed, the library does not attempt to re-establish the connection without an explicit call to
+     * {@link Connection#connect()}.
+     * <p>
+     * Spec: RTN12
+     * @throws Exception
+     */
     @Override
     public void close() throws Exception {
         http.close();
