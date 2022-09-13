@@ -19,14 +19,13 @@ import java.util.Map;
 public class ClientOptions extends AuthOptions {
 
     /**
-     * Default constructor
+     * Creates a ClientOptions instance used to configure Rest and Realtime clients
      */
     public ClientOptions() {}
 
     /**
-     * Construct an options with a single key string. The key string is obtained
-     * from the application dashboard.
-     * @param key the key string
+     * Creates a ClientOptions instance used to configure Rest and Realtime clients
+     * @param key the key obtained from the application dashboard.
      * @throws AblyException if the key is not in a valid format
      */
     public ClientOptions(String key) throws AblyException {
@@ -243,9 +242,9 @@ public class ClientOptions extends AuthOptions {
     public TokenParams defaultTokenParams = new TokenParams();
 
     /**
-     * When a channel becomes {@link io.ably.lib.realtime.ConnectionState#suspended}
-     * following a server initiated {@link io.ably.lib.realtime.ConnectionState#detached},
-     * after this delay, if the channel is still {@link io.ably.lib.realtime.ConnectionState#suspended}
+     * When a channel becomes {@link io.ably.lib.realtime.ChannelState#suspended}
+     * following a server initiated {@link io.ably.lib.realtime.ChannelState#detached},
+     * after this delay, if the channel is still {@link io.ably.lib.realtime.ChannelState#suspended}
      * and the connection is {@link io.ably.lib.realtime.ConnectionState#connected},
      * the client library will attempt to re-attach the channel automatically.
      * The default is 15 seconds.
