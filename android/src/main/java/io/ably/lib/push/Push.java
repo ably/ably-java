@@ -111,6 +111,13 @@ public class Push extends PushBase {
         return activationContext;
     }
 
+    /**
+     * Retrieves a {@link LocalDevice} object that represents the current state of the device as a target for push notifications.
+     * <p>
+     * Spec: RSH8
+     * @return
+     * @throws AblyException
+     */
     public LocalDevice getLocalDevice() throws AblyException {
         return getActivationContext().getLocalDevice();
     }
