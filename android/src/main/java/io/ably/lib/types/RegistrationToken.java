@@ -1,45 +1,32 @@
 package io.ably.lib.types;
 
-import java.util.Locale;
+import androidx.annotation.NonNull;
 
 public class RegistrationToken {
-    public Type type;
+    /**
+     * The token value.
+     */
     public String token;
 
-    public RegistrationToken(Type type, String token) {
-        this.type = type;
+    /**
+     * Initializes a newly created RegistrationToken object representing an FCM registration token.
+     *
+     * @param token The FCM token value.
+     */
+    public RegistrationToken(String token) {
         this.token = token;
     }
 
-    public enum Type {
-        @Deprecated GCM,
-        FCM;
+    /**
+     * The Ably transportType used to categorise an FCM registration token.
+     */
+    public static final String TOKEN_TYPE_FCM = "fcm";
 
-        public static Type fromOrdinal(int i) {
-            try {
-                return Type.values()[i];
-            } catch(Throwable t) {
-                return null;
-            }
-        }
-
-        public static Type fromName(String name) {
-            try {
-                return Type.valueOf(name.toUpperCase(Locale.ROOT));
-            } catch(Throwable t) {
-                return null;
-            }
-        }
-
-        public String toName() {
-            return name().toLowerCase(Locale.ROOT);
-        }
-    }
-
+    @NonNull
     @Override
     public String toString() {
         return "RegistrationToken{" +
-            "type=" + type +
+            "type=" + TOKEN_TYPE_FCM +
             ", token='" + token + '\'' +
             '}';
     }

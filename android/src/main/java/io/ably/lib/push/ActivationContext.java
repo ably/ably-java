@@ -96,21 +96,18 @@ public class ActivationContext {
         return updated;
     }
 
-    public void onNewRegistrationToken(RegistrationToken.Type type, String token) {
-        Log.v(TAG, "onNewRegistrationToken(): type=" + type + ", token=" + token);
+    public void onNewRegistrationToken(String token) {
+        Log.v(TAG, "onNewRegistrationToken(): token=" + token);
         LocalDevice localDevice = getLocalDevice();
         RegistrationToken previous = localDevice.getRegistrationToken();
         if (previous != null) {
-            if (previous.type != type) {
-                Log.e(TAG, "trying to register device with " + type + ", but it was already registered with " + previous.type);
-                return;
-            }
             if (previous.token.equals(token)) {
+                Log.v(TAG, "onNewRegistrationToken(): token does not need to be updated");
                 return;
             }
         }
         Log.v(TAG, "onNewRegistrationToken(): updating token");
-        localDevice.setAndPersistRegistrationToken(new RegistrationToken(type, token));
+        localDevice.setAndPersistRegistrationToken(new RegistrationToken(token));
         getActivationStateMachine().handleEvent(new ActivationStateMachine.GotPushDeviceDetails());
     }
 
