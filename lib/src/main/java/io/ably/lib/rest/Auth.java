@@ -617,11 +617,11 @@ public class Auth {
                     signedTokenRequest = (TokenRequest)authCallbackResponse;
                 else
                     throw AblyException.fromErrorInfo(new ErrorInfo("Invalid authCallback response", 400, 40000));
-            } catch (Exception e) {
-                boolean isTokenExceptionNonRetriable = e instanceof NonRetriableTokenException;
-                boolean isAblyExceptionNonRetriable = e instanceof AblyException && ((AblyException) e).errorInfo.statusCode == 403;
-                boolean shouldNotRetryAuthOperation = isTokenExceptionNonRetriable || isAblyExceptionNonRetriable;
-                int statusCode = shouldNotRetryAuthOperation ? 403 : 401; // RSA4c & RSA4d
+            } catch (final Exception e) {
+                final boolean isTokenExceptionNonRetriable = e instanceof NonRetriableTokenException;
+                final boolean isAblyExceptionNonRetriable = e instanceof AblyException && ((AblyException) e).errorInfo.statusCode == 403;
+                final boolean shouldNotRetryAuthOperation = isTokenExceptionNonRetriable || isAblyExceptionNonRetriable;
+                final int statusCode = shouldNotRetryAuthOperation ? 403 : 401; // RSA4c & RSA4d
                 throw AblyException.fromErrorInfo(e, new ErrorInfo("authCallback failed with an exception", statusCode, 80019));
             }
         } else if(tokenOptions.authUrl != null) {
