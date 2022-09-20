@@ -5,7 +5,6 @@ import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpScheduler;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
-import io.ably.lib.push.Push;
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.AsyncPaginatedResult;
