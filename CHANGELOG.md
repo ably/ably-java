@@ -1,5 +1,18 @@
 # Change Log
 
+## [1.2.17](https://github.com/ably/ably-java/tree/v1.2.17)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.16...v1.2.17)
+
+**Fixed bugs:**
+
+- RSA4d is not implemented correctly [\#829](https://github.com/ably/ably-java/issues/829)
+- JSONUtilsObject.add() silently discards data of unsupported type [\#501](https://github.com/ably/ably-java/issues/501)
+
+**Merged pull requests:**
+
+- Fail Ably connection if auth callback throws specific errors [\#834](https://github.com/ably/ably-java/pull/834) ([KacperKluka](https://github.com/KacperKluka))
+
 ## [1.2.16](https://github.com/ably/ably-java/tree/v1.2.16)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.15...v1.2.16)
