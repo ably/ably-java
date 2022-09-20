@@ -20,6 +20,7 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
+import io.ably.lib.types.NonRetriableTokenException;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
 import org.junit.Ignore;
@@ -164,6 +165,119 @@ public class RealtimeAuthTest extends ParameterizedTest {
             e.printStackTrace();
             fail();
         }
+    }
+
+    /**
+     * Spec: RSA4d
+     */
+    @Test
+    public void auth_client_fails_when_auth_token_fails_with_non_retriable_exception() {
+        try {
+            class NonRetriableRuntimeException extends RuntimeException implements NonRetriableTokenException {
+                NonRetriableRuntimeException(){
+                    super("Non retriable runtime exception");
+                }
+            }
+
+            Exception exception = new NonRetriableRuntimeException();
+            final AblyRealtime ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
+
+            ablyRealtime.connection.connect();
+
+            waitAndAssertConnectionState(ablyRealtime, ConnectionState.failed, 403, 80019);
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail();
+        }
+    }
+
+    /**
+     * Spec: RSA4d
+     */
+    @Test
+    public void auth_client_fails_when_auth_token_fails_with_ably_exception_with_status_code_403() {
+        try {
+            Exception exception = AblyException.fromErrorInfo(new ErrorInfo("A non retriable Ably exception", 403, 80040));
+            final AblyRealtime ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
+
+            ablyRealtime.connection.connect();
+
+            waitAndAssertConnectionState(ablyRealtime, ConnectionState.failed, 403, 80019);
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail();
+        }
+    }
+
+    /**
+     * Spec: RSA4c
+     */
+    @Test
+    public void auth_client_does_not_fail_when_auth_token_fails_with_an_ably_exception() {
+        try {
+            Exception exception = AblyException.fromErrorInfo(new ErrorInfo("An Ably exception", 401, 80040));
+            final AblyRealtime ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
+
+            ablyRealtime.connection.connect();
+
+            waitAndAssertConnectionState(ablyRealtime, ConnectionState.disconnected, 401, 80019);
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail();
+        }
+    }
+
+    /**
+     * Spec: RSA4c
+     */
+    @Test
+    public void auth_client_does_not_fail_when_auth_token_fails_with_a_runtime_exception() {
+        try {
+            Exception exception = new RuntimeException("A runtime exception");
+            final AblyRealtime ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
+
+            ablyRealtime.connection.connect();
+
+            waitAndAssertConnectionState(ablyRealtime, ConnectionState.disconnected, 401, 80019);
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail();
+        }
+    }
+
+    /**
+     * Waits for the Ably connection to enter the [connectionState] and once it happens asserts that the connection state,
+     * status code and code have expected values.
+     */
+    private void waitAndAssertConnectionState(AblyRealtime ablyRealtime,ConnectionState connectionState, int statusCode, int code){
+        Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ablyRealtime.connection);
+        connectionWaiter.waitFor(connectionState);
+
+        assertEquals("Verify connected state has changed", connectionState, ablyRealtime.connection.state);
+        assertEquals("Check correct cause error status code", statusCode, ablyRealtime.connection.reason.statusCode);
+        assertEquals("Check correct cause error code", code, ablyRealtime.connection.reason.code);
+    }
+
+    /**
+     * Create ably realtime with auth callback which throws the specified exception.
+     */
+    private AblyRealtime createAblyRealtimeWithTokenAuthError(final Exception exception) throws AblyException {
+        ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+        opts.autoConnect = false;
+        opts.useTokenAuth = true;
+        opts.authCallback = new Auth.TokenCallback() {
+            @Override
+            public Object getTokenRequest(Auth.TokenParams params) throws AblyException {
+                if (exception instanceof AblyException) {
+                    throw (AblyException) exception;
+                } else if (exception instanceof RuntimeException) {
+                    throw (RuntimeException) exception;
+                } else {
+                    throw AblyException.fromThrowable(exception);
+                }
+            }
+        };
+        return new AblyRealtime(opts);
     }
 
     /**

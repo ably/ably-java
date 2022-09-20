@@ -23,6 +23,7 @@ import io.ably.lib.types.BaseMessage;
 import io.ably.lib.types.Capability;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.NonRetriableTokenException;
 import io.ably.lib.types.Param;
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Log;
@@ -616,8 +617,12 @@ public class Auth {
                     signedTokenRequest = (TokenRequest)authCallbackResponse;
                 else
                     throw AblyException.fromErrorInfo(new ErrorInfo("Invalid authCallback response", 400, 40000));
-            } catch(AblyException e) {
-                throw AblyException.fromErrorInfo(e, new ErrorInfo("authCallback failed with an exception", 401, 80019));
+            } catch (final Exception e) {
+                final boolean isTokenExceptionNonRetriable = e instanceof NonRetriableTokenException;
+                final boolean isAblyExceptionNonRetriable = e instanceof AblyException && ((AblyException) e).errorInfo.statusCode == 403;
+                final boolean shouldNotRetryAuthOperation = isTokenExceptionNonRetriable || isAblyExceptionNonRetriable;
+                final int statusCode = shouldNotRetryAuthOperation ? 403 : 401; // RSA4c & RSA4d
+                throw AblyException.fromErrorInfo(e, new ErrorInfo("authCallback failed with an exception", statusCode, 80019));
             }
         } else if(tokenOptions.authUrl != null) {
             Log.i("Auth.requestToken()", "using token auth with auth_url");
@@ -1005,8 +1010,26 @@ public class Auth {
             }
         }
         Log.i("Auth.assertValidToken()", "requesting new token");
-        setTokenDetails(requestToken(params, options));
+        TokenDetails newTokenDetails;
+        try {
+            newTokenDetails = requestToken(params, options);
+        } catch (AblyException ablyException) {
+            if (shouldFailConnectionDueToAuthError(ablyException.errorInfo)) {
+                ably.onAuthError(ablyException.errorInfo); // RSA4d
+            }
+            throw ablyException;
+        }
+        setTokenDetails(newTokenDetails);
         return tokenDetails;
+    }
+
+    /**
+     * RSA4d
+     * [...] the client library should transition to the FAILED state, with an ErrorInfo
+     * (with code 80019, statusCode 403, and cause set to the underlying cause) [...]
+     */
+    private boolean shouldFailConnectionDueToAuthError(ErrorInfo errorInfo) {
+        return errorInfo.statusCode == 403 && errorInfo.code == 80019;
     }
 
     private boolean tokenValid(TokenDetails tokenDetails) {
