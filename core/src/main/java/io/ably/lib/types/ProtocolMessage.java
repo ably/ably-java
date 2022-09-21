@@ -98,7 +98,6 @@ public class ProtocolMessage {
     public String channel;
     public String channelSerial;
     public String connectionId;
-    public Long connectionSerial;
     public Long msgSerial;
     public long timestamp;
     public Message[] messages;
@@ -197,9 +196,6 @@ public class ProtocolMessage {
                     break;
                 case "connectionId":
                     connectionId = unpacker.unpackString();
-                    break;
-                case "connectionSerial":
-                    connectionSerial = Long.valueOf(unpacker.unpackLong());
                     break;
                 case "msgSerial":
                     msgSerial = Long.valueOf(unpacker.unpackLong());

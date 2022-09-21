@@ -1083,10 +1083,6 @@ public class ConnectionManager implements ConnectListener {
     }
 
     private void onChannelMessage(ProtocolMessage message) {
-        if(message.connectionSerial != null) {
-            if (connection.key != null)
-                connection.recoveryKey = connection.key + ":" + message.connectionSerial;
-        }
         channels.onMessage(message);
     }
 
@@ -1122,10 +1118,6 @@ public class ConnectionManager implements ConnectListener {
             msgSerial = 0;
         }
         connection.id = message.connectionId;
-        if(message.connectionSerial != null) {
-            if (connection.key != null)
-                connection.recoveryKey = connection.key + ":" + message.connectionSerial;
-        }
 
         /* Get any parameters from connectionDetails. */
         maxIdleInterval = connectionDetails.maxIdleInterval;
