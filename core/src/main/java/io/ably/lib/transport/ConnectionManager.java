@@ -1084,7 +1084,6 @@ public class ConnectionManager implements ConnectListener {
 
     private void onChannelMessage(ProtocolMessage message) {
         if(message.connectionSerial != null) {
-            connection.serial = message.connectionSerial.longValue();
             if (connection.key != null)
                 connection.recoveryKey = connection.key + ":" + message.connectionSerial;
         }
@@ -1124,7 +1123,6 @@ public class ConnectionManager implements ConnectListener {
         }
         connection.id = message.connectionId;
         if(message.connectionSerial != null) {
-            connection.serial = message.connectionSerial.longValue();
             if (connection.key != null)
                 connection.recoveryKey = connection.key + ":" + message.connectionSerial;
         }
@@ -1334,7 +1332,6 @@ public class ConnectionManager implements ConnectListener {
         ConnectParams(ClientOptions options, PlatformAgentProvider platformAgentProvider) {
             super(options, platformAgentProvider);
             this.connectionKey = connection.key;
-            this.connectionSerial = String.valueOf(connection.serial);
             this.port = Defaults.getPort(options);
         }
     }

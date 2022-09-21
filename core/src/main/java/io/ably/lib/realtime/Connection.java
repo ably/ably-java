@@ -42,11 +42,6 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
     public String id;
 
     /**
-     * The serial number of the last message to be received on this connection.
-     */
-    public long serial;
-
-    /**
      * Causes the library to re-attempt connection, if it was previously explicitly
      * closed by the user, or was closed as a result of an unrecoverable error.
      */
