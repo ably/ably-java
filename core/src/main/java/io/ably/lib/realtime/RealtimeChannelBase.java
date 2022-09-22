@@ -1196,6 +1196,7 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
     final String basePath;
     ChannelOptions options;
     String syncChannelSerial;
+    String channelSerial;
     private Map<String, String> params;
     private Set<ChannelMode> modes;
     private String lastPayloadMessageId;

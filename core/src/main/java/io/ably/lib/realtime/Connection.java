@@ -30,12 +30,6 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
     public String key;
 
     /**
-     * RTN16b) Connection#recoveryKey is an attribute composed of the connection key and latest
-     * serial received on the connection
-     */
-    public String recoveryKey;
-
-    /**
      * A public identifier for this connection, used to identify
      * this member in presence events and message ids.
      */
@@ -51,6 +45,7 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
 
     /**
      * Send a heartbeat message to the Ably service and await a response.
+     *
      * @param listener a listener to be notified of the outcome of this message.
      */
     public void ping(CompletionListener listener) {
@@ -64,7 +59,6 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
      */
     public void close() {
         key = null;
-        recoveryKey = null;
         connectionManager.close();
     }
 
@@ -87,7 +81,7 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
     @Override
     protected void apply(ConnectionStateListener listener, ConnectionEvent event, Object... args) {
         try {
-            listener.onConnectionStateChanged((ConnectionStateChange)args[0]);
+            listener.onConnectionStateChanged((ConnectionStateChange) args[0]);
         } catch (Throwable t) {
             Log.e(TAG, "Unexpected exception calling ConnectionStateListener", t);
         }
@@ -96,6 +90,37 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
     public void emitUpdate(ErrorInfo errorInfo) {
         if (state == ConnectionState.connected)
             emit(ConnectionEvent.update, ConnectionStateListener.ConnectionStateChange.createUpdateEvent(errorInfo));
+    }
+
+    /**
+     * <p>
+     * Spec: RTN16g
+     *
+     * @return
+     */
+    public String getRecoveryKey() {
+        //RTN16c
+        if (key == null || connectionManager == null || connectionManager.getConnectionState() == null ||
+            connectionManager.getConnectionState().state == ConnectionState.closed ||
+            connectionManager.getConnectionState().state == ConnectionState.closing ||
+            connectionManager.getConnectionState().state == ConnectionState.failed ||
+            connectionManager.getConnectionState().state == ConnectionState.suspended
+        ) {
+            return null;
+        }
+
+        ConnectionRecoveryKey recoveryKey = new ConnectionRecoveryKey();
+        recoveryKey.connectionKey = key;
+        recoveryKey.msgSerial = connectionManager.msgSerial;
+
+        for (Object channel : ably.channels.values()) {
+            if (channel instanceof RealtimeChannelBase) {
+                RealtimeChannelBase rcb = (RealtimeChannelBase) channel;
+                recoveryKey.serials.put(rcb.name, rcb.channelSerial);
+            }
+        }
+
+        return recoveryKey.asJson();
     }
 
     @Deprecated

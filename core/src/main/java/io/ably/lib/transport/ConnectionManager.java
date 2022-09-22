@@ -1204,7 +1204,6 @@ public class ConnectionManager implements ConnectListener {
             if(connection.key != null) {
                 Log.v(TAG, "Clearing stale connection key to suppress resume");
                 connection.key = null;
-                connection.recoveryKey = null;
             }
             return true;
         }
@@ -1711,7 +1710,7 @@ public class ConnectionManager implements ConnectListener {
     private boolean suppressRetry; /* for tests only; modified via reflection */
     private ITransport transport;
     private long suspendTime;
-    private long msgSerial;
+    public long msgSerial;
     private long lastActivity;
     private CMConnectivityListener connectivityListener;
     private long connectionStateTtl = Defaults.connectionStateTtl;
