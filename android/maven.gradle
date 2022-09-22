@@ -120,6 +120,8 @@ task javadoc(type: Javadoc) {
     source = android.sourceSets.main.java.srcDirs
     classpath += project.files(android.bootClasspath.join(File.pathSeparator))
     failOnError false
+    title = 'Ably documentation'
+    options.overview = '../overview.html'
 }
 
 afterEvaluate {
@@ -131,6 +133,8 @@ afterEvaluate {
 task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier = 'javadoc'
     from javadoc.destinationDir
+    javadoc.title = 'Ably documentation'
+    javadoc.options.overview = '../overview.html'
 }
 
 artifacts {
