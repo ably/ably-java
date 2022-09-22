@@ -9,7 +9,7 @@ import java.util.Locale;
 
 public class Defaults {
     /* versions */
-    public static final float ABLY_VERSION_NUMBER   = 1.2f;
+    public static final float ABLY_VERSION_NUMBER   = 2.0f;
     public static final String ABLY_VERSION         = new DecimalFormat("0.0", new DecimalFormatSymbols(Locale.ENGLISH)).format(ABLY_VERSION_NUMBER);
     public static final String ABLY_AGENT_VERSION   = String.format("%s/%s", "ably-java", BuildConfig.VERSION);
 
