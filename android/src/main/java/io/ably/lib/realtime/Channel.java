@@ -6,7 +6,9 @@ import io.ably.lib.push.PushChannel;
 
 public class Channel extends ChannelBase {
     /**
-     * The push instance for this channel.
+     * A {@link PushChannel} object.
+     * <p>
+     * Spec: RSH4
      */
     public final PushChannel push;
 

@@ -1,7 +1,8 @@
 package io.ably.lib.realtime;
 
 /**
- * Channel event
+ * Describes the events emitted by a {@link Channel} object.
+ * An event is either an UPDATE or a {@link ChannelState}.
  */
 public enum ChannelEvent {
     initialized,
@@ -11,5 +12,10 @@ public enum ChannelEvent {
     detached,
     failed,
     suspended,
+    /**
+     * An event for changes to channel conditions that do not result in a change in {@link ChannelState}.
+     * <p>
+     * Spec: RTL2g
+     */
     update
 }

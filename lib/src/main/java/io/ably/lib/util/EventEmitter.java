@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * An interface exposing the ability to register listeners for a class of events
- * @author paddy
+ * A generic interface for event registration and delivery used in a number of the types in the Realtime client library.
+ * For example, the {@link io.ably.lib.realtime.Connection} object emits events for connection state using the EventEmitter pattern.
  *
  * @param <Event> an Enum containing the event names that listeners may be registered for
  * @param <Listener> the interface type of the listener
@@ -16,7 +16,9 @@ import java.util.Map;
 public abstract class EventEmitter<Event, Listener> {
 
     /**
-     * Remove all registered listeners irrespective of type
+     * Deregisters all registrations, for all events and listeners.
+     * <p>
+     * Spec: RTE5
      */
     public synchronized void off() {
         listeners.clear();
@@ -24,8 +26,15 @@ public abstract class EventEmitter<Event, Listener> {
     }
 
     /**
-     * Register the given listener for all events
-     * @param listener
+     * Registers the provided listener all events.
+     * If on() is called more than once with the same listener and event,
+     * the listener is added multiple times to its listener registry.
+     * Therefore, as an example, assuming the same listener is registered twice using on(),
+     * and an event is emitted once, the listener would be invoked twice.
+     * <p>
+     * Spec: RTE4
+     *
+     * @param listener The event listener.
      * <p>
      * This listener is invoked on a background thread.
      */
@@ -35,8 +44,16 @@ public abstract class EventEmitter<Event, Listener> {
     }
 
     /**
-     * Register the given listener for a single occurrence of any event
-     * @param listener
+     * Registers the provided listener for the first event that is emitted.
+     * If once() is called more than once with the same listener,
+     * the listener is added multiple times to its listener registry.
+     * Therefore, as an example, assuming the same listener is registered twice using once(),
+     * and an event is emitted once, the listener would be invoked twice.
+     * However, all subsequent events emitted would not invoke the listener as once() ensures that each registration is only invoked once.
+     * <p>
+     * Spec: RTE4
+     *
+     * @param listener The event listener.
      * <p>
      * This listener is invoked on a background thread.
      */
@@ -45,8 +62,11 @@ public abstract class EventEmitter<Event, Listener> {
     }
 
     /**
-     * Remove a previously registered listener irrespective of type
-     * @param listener
+     * Deregisters the specified listener.
+     * Removes all registrations matching the given listener, regardless of whether they are associated with an event or not.
+     * <p>
+     * Spec: RTE5
+     * @param listener The event listener.
      */
     public synchronized void off(Listener listener) {
         listeners.remove(listener);
@@ -54,8 +74,16 @@ public abstract class EventEmitter<Event, Listener> {
     }
 
     /**
-     * Register the given listener for a specific event
-     * @param listener
+     * Registers the provided listener for the specified event.
+     * If on() is called more than once with the same listener and event,
+     * the listener is added multiple times to its listener registry.
+     * Therefore, as an example, assuming the same listener is registered twice using on(),
+     * and an event is emitted once, the listener would be invoked twice.
+     * <p>
+     * Spec: RTE4
+     *
+     * @param event The named event to listen for.
+     * @param listener The event listener.
      * <p>
      * This listener is invoked on a background thread.
      */
@@ -64,8 +92,16 @@ public abstract class EventEmitter<Event, Listener> {
     }
 
     /**
-     * Register the given listener for a single occurrence of a specific event
-     * @param listener
+     * Registers the provided listener for the first occurrence of a single named event specified as the Event argument.
+     * If once() is called more than once with the same listener, the listener is added multiple times to its listener registry.
+     * Therefore, as an example, assuming the same listener is registered twice using once(), and an event is emitted once,
+     * the listener would be invoked twice.
+     * However, all subsequent events emitted would not invoke the listener as once() ensures that each registration is only invoked once.
+     * <p>
+     * Spec: RTE4
+     *
+     * @param listener The event listener.
+     * @param event The named event to listen for.
      * <p>
      * This listener is invoked on a background thread.
      */
@@ -74,9 +110,11 @@ public abstract class EventEmitter<Event, Listener> {
     }
 
     /**
-     * Remove a previously registered event-specific listener
-     * @param listener
-     * @param event
+     * Removes all registrations that match both the specified listener and the specified event.
+     * <p>
+     * Spec: RTE5
+     * @param listener The event listener.
+     * @param event The named event.
      */
     public synchronized void off(Event event, Listener listener) {
         Filter filter = filters.get(listener);
@@ -85,8 +123,13 @@ public abstract class EventEmitter<Event, Listener> {
     }
 
     /**
-     * Emit the given event (broadcasting to registered listeners)
-     * @param event the Event
+     * Emits an event, calling registered listeners with the given event name and any other given arguments.
+     * If an exception is raised in any of the listeners,
+     * the exception is caught by the EventEmitter and the exception is logged to the Ably logger.
+     * <p>
+     * Spec: RTE5
+     *
+     * @param event The named event.
      * @param args the arguments to pass to listeners
      */
     public synchronized void emit(Event event, Object... args) {

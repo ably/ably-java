@@ -9,14 +9,28 @@ import org.msgpack.core.MessageUnpacker;
 
 import java.io.IOException;
 
-/****************************************
- *            PublishResponse
- ****************************************/
-
+/**
+ * Contains the responses from a {@link PublishResponse} {@link PublishResponse#publish} request.
+ */
 public class PublishResponse {
+    /**
+     * Describes the reason for which a message, or messages failed to publish to a channel as an {@link ErrorInfo} object.
+     * <p>
+     * Spec: BPB2c
+     */
     public ErrorInfo error;
+    /**
+     * The channel name a message was successfully published to, or the channel name for which an error was returned.
+     * <p>
+     * Spec: BPB2a
+     */
     @SerializedName("channel")
     public String channelId;
+    /**
+     * The unique ID for a successfully published message.
+     * <p>
+     * Spec: BPB2b
+     */
     public String messageId;
 
     private static PublishResponse[] fromJSONArray(byte[] json) {
@@ -71,8 +85,24 @@ public class PublishResponse {
         return (statusCode < 300) ? bulkResponseBodyHandler : batchErrorBodyHandler;
     }
 
+    /**
+     * Contains the results of a {@link PublishResponse} request.
+     */
     private static class BatchErrorResponse {
+        /**
+         * Describes the reason for which a batch operation failed, or states that the batch operation was only
+         * partially successful as an {@link ErrorInfo} object.
+         * Will be null if the operation was successful.
+         * <p>
+         * Spec: BPA2b
+         */
         public ErrorInfo error;
+        /**
+         * An array of [BatchPublishResponse]{@link PublishResponse} objects that contain details of successful
+         * and partially successful batch operations.
+         * <p>
+         * Spec: BPA2a
+         */
         public PublishResponse[] batchResponse;
 
         static BatchErrorResponse readJSON(byte[] json) {

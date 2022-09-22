@@ -16,7 +16,7 @@ import io.ably.lib.util.InternalMap;
 import io.ably.lib.util.Log;
 
 /**
- * The top-level class to be instanced for the Ably Realtime library.
+ * A client that extends the functionality of the {@link AblyRest} and provides additional realtime-specific features.
  *
  * This class implements {@link AutoCloseable} so you can use it in
  * try-with-resources constructs and have the JDK close it for you.
@@ -24,17 +24,23 @@ import io.ably.lib.util.Log;
 public class AblyRealtime extends AblyRest {
     /**
      * The {@link Connection} object for this instance.
+     * <p>
+     * Spec: RTC2
      */
     public final Connection connection;
 
+    /**
+     * A {@link Channels} object.
+     * <p>
+     * Spec: RTC3, RTS1
+     */
     public final Channels channels;
 
     /**
-     * Instance the Ably library using a key only.
-     * This is simply a convenience constructor for the
-     * simplest case of instancing the library with a key
-     * for basic authentication and no other options.
-     * @param key String key (obtained from application dashboard)
+     * Constructs a Realtime client object using an Ably API key or token string.
+     * <p>
+     * Spec: RSC1
+     * @param key The Ably API key or token string used to validate the client.
      * @throws AblyException
      */
     public AblyRealtime(String key) throws AblyException {
@@ -42,8 +48,10 @@ public class AblyRealtime extends AblyRest {
     }
 
     /**
-     * Instance the Ably library with the given options.
-     * @param options see {@link io.ably.lib.types.ClientOptions} for options
+     * Constructs a RealtimeClient object using an Ably {@link ClientOptions} object.
+     * <p>
+     * Spec: RSC1
+     * @param options A {@link ClientOptions} object.
      * @throws AblyException
      */
     public AblyRealtime(ClientOptions options) throws AblyException {
@@ -64,17 +72,22 @@ public class AblyRealtime extends AblyRest {
     }
 
     /**
-     * Initiate a connection.
-     * {@link Connection#connect}.
+     * Calls {@link Connection#connect} and causes the connection to open,
+     * entering the connecting state. Explicitly calling connect() is unnecessary
+     * unless the {@link ClientOptions#autoConnect} property is disabled.
+     * <p>
+     * Spec: RTN11
      */
     public void connect() {
         connection.connect();
     }
 
     /**
-     * Close this instance. This closes the connection.
-     * The connection can be re-opened by calling
-     * {@link Connection#connect}.
+     * Calls {@link Connection#close} and causes the connection to close, entering the closing state.
+     * Once closed, the library will not attempt to re-establish the connection
+     * without an explicit call to {@link Connection#connect}.
+     * <p>
+     * Spec: RTN12
      */
     @Override
     public void close() {
@@ -121,28 +134,32 @@ public class AblyRealtime extends AblyRest {
      */
     public interface Channels extends ReadOnlyMap<String, Channel> {
         /**
-         * Get the named channel; if it does not already exist,
-         * create it with default options.
-         * @param channelName the name of the channel
-         * @return the channel
+         * Creates a new {@link Channel} object, or returns the existing channel object.
+         * <p>
+         * Spec: RSN3a, RTS3a
+         * @param channelName The channel name.
+         * @return A {@link Channel} object.
          */
         Channel get(String channelName);
 
         /**
-         * Get the named channel and set the given options, creating it
-         * if it does not already exist.
-         * @param channelName the name of the channel
-         * @param channelOptions the options to set (null to clear options on an existing channel)
-         * @return the channel
+         * Creates a new {@link Channel} object, with the specified {@link ChannelOptions}, or returns the existing channel object.
+         * <p>
+         * Spec: RSN3c, RTS3c
+         * @param channelName The channel name.
+         * @param channelOptions A {@link ChannelOptions} object.
+         * @return A {@link Channel} object.
          * @throws AblyException
          */
         Channel get(String channelName, ChannelOptions channelOptions) throws AblyException;
 
         /**
-         * Remove this channel from this AblyRealtime instance. This detaches from the channel
-         * and releases all other resources associated with the channel in this client.
-         * This silently does nothing if the channel does not already exist.
-         * @param channelName the name of the channel
+         * Releases a {@link Channel} object, deleting it, and enabling it to be garbage collected.
+         * It also removes any listeners associated with the channel.
+         * To release a channel, the {@link ChannelState} must be INITIALIZED, DETACHED, or FAILED.
+         * <p>
+         * Spec: RSN4, RTS4
+         * @param channelName The channel name.
          */
         void release(String channelName);
     }

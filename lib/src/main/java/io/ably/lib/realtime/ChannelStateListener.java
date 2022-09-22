@@ -14,26 +14,40 @@ public interface ChannelStateListener {
     void onChannelStateChanged(ChannelStateChange stateChange);
 
     /**
-     * Channel state change. See Ably Realtime API documentation for more details.
+     * Contains state change information emitted by {@link Channel} objects.
      */
     class ChannelStateChange {
+        /**
+         * The event that triggered this{@link ChannelState} change.
+         * <p>
+         * Spec: TH5
+         */
         final public ChannelEvent event;
-        /* (TH2) The ChannelStateChange object contains the current state in
-         * attribute current, the previous state in attribute previous. */
+        /**
+         * The new current {@link ChannelState}.
+         * <p>
+         * Spec: RTL2a, RTL2b
+         */
         final public ChannelState current;
+        /**
+         * The previous state.
+         * For the {@link ChannelEvent#update} event, this is equal to the current {@link ChannelState}.
+         * <p>
+         * Spec: RTL2a, RTL2b
+         */
         final public ChannelState previous;
-        /* (TH3) If the channel state change includes error information, then
-         * the reason attribute will contain an ErrorInfo object describing the
-         * reason for the error. */
+        /**
+         * An {@link ErrorInfo} object containing any information relating to the transition.
+         * <p>
+         * Spec: RTL2e, TH3
+         */
         final public ErrorInfo reason;
-        /* (TH4) The ChannelStateChange object contains an attribute resumed which
-         * in combination with an ATTACHED state, indicates whether the channel
-         * attach successfully resumed its state following the connection being
-         * resumed or recovered. If resumed is true, then the attribute indicates
-         * that the attach within Ably successfully recovered the state for the
-         * channel, and as such there is no loss of message continuity. In all
-         * other cases, resumed is false, and may be accompanied with a "channel
-         * state change error reason". */
+        /**
+         * Indicates whether message continuity on this channel is preserved,
+         * see <a href="https://ably.com/docs/realtime/channels#nonfatal-errors">Nonfatal channel errors</a> for more info.
+         * <p>
+         * Spec: RTL2f, TH4
+         */
         final public boolean resumed;
 
         ChannelStateChange(ChannelState current, ChannelState previous, ErrorInfo reason, boolean resumed) {
