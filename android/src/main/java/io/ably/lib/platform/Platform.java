@@ -1,18 +1,11 @@
 package io.ably.lib.platform;
 
 import android.content.Context;
-import io.ably.lib.push.ActivationContext;
-import io.ably.lib.push.ActivationStateMachine;
-import io.ably.lib.push.Push;
-import io.ably.lib.rest.AblyBase;
-import io.ably.lib.push.LocalDevice;
 import io.ably.lib.transport.NetworkConnectivity;
 import io.ably.lib.transport.NetworkConnectivity.DelegatedNetworkConnectivity;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.util.Log;
-
-import java.util.WeakHashMap;
 
 public class Platform {
     public static final String name = "android";
@@ -48,7 +41,7 @@ public class Platform {
 
     /**
      * Get the NetworkConnectivity tracker instance for this context
-     * @return
+     * @return A {@link NetworkConnectivity} object
      */
     public NetworkConnectivity getNetworkConnectivity() {
         return networkConnectivity;

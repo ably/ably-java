@@ -16,7 +16,13 @@ public final class DeltaExtras {
     private static final String FROM = "from";
     private static final String FORMAT = "format";
 
+    /**
+     * The delta compression format. Only vcdiff is supported.
+     */
     private final String format;
+    /**
+     * The ID of the message the delta was generated from.
+     */
     private final String from;
 
     private DeltaExtras(final String format, final String from) {

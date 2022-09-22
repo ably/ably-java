@@ -3,19 +3,46 @@ package io.ably.lib.types;
 import com.google.gson.JsonElement;
 
 /**
- * A type that represents a page of results from a paginated http query.
- * The response is accompanied by response details and metadata that
- * indicates the relative queries available.
+ * A superset of {@link PaginatedResult} which represents a page of results plus metadata indicating the relative queries available to it.
+ * HttpPaginatedResponse additionally carries information about the response to an HTTP request.
  */
 public abstract class HttpPaginatedResponse {
+    /**
+     * Whether statusCode indicates success. This is equivalent to 200 <= statusCode < 300.
+     * <p>
+     * Spec: HP5
+     */
     public boolean success;
+    /**
+     * The HTTP status code of the response.
+     * <p>
+     * Spec: HP4
+     */
     public int statusCode;
+    /**
+     * The error code if the X-Ably-Errorcode HTTP header is sent in the response.
+     * <p>
+     * Spec: HP6
+     */
     public int errorCode;
+    /**
+     * The error message if the X-Ably-Errormessage HTTP header is sent in the response.
+     * <p>
+     * Spec: HP7
+     */
     public String errorMessage;
+    /**
+     * The headers of the response.
+     * <p>
+     * Spec: HP8
+     */
     public Param[] headers;
 
     /**
-     * Get the contents as an array of component type
+     * Contains a page of results; for example,
+     * an array of {@link Message} or {@link PresenceMessage} objects for a channel history request.
+     * <p>
+     * Spec: HP3
      */
     public abstract JsonElement[] items();
 
