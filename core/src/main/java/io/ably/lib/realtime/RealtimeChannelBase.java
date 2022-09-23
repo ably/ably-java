@@ -102,6 +102,9 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
             /* broadcast state change */
             emit(newState, stateChange);
         }
+
+        if (newState == ChannelState.detached || newState == ChannelState.suspended || newState == ChannelState.failed)
+            channelSerial = null;
     }
 
     /************************************
@@ -906,6 +909,7 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
         switch(state) {
         case failed:
         case suspended:
+            channelSerial = null;
             throw AblyException.fromErrorInfo(new ErrorInfo("Unable to publish in failed or suspended state", 400, 40000));
         default:
             connectionManager.send(msg, queueMessages, listener);
