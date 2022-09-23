@@ -4,7 +4,7 @@
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.17...v1.2.18)
 
-In this release we have updated the documentation to match specs the thread policy for public method callbacks.
+In this release we have updated the documentation to match specs.
 
 ## [1.2.17](https://github.com/ably/ably-java/tree/v1.2.17)
 
