@@ -168,6 +168,7 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
         /* send attach request and pending state */
         Log.v(TAG, "attach(); channel = " + name + "; sending ATTACH request");
         ProtocolMessage attachMessage = new ProtocolMessage(Action.attach, this.name);
+        attachMessage.channelSerial = this.channelSerial;
         if(this.options != null) {
             if(this.options.hasParams()) {
                 attachMessage.params = CollectionUtils.copy(this.options.params);
@@ -301,6 +302,7 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
         properties.attachSerial = message.channelSerial;
         params = message.params;
         modes = ChannelMode.toSet(message.flags);
+        channelSerial = message.channelSerial;
         if(state == ChannelState.attached) {
             Log.v(TAG, String.format(Locale.ROOT, "Server initiated attach for channel %s", name));
             /* emit UPDATE event according to RTL12 */
@@ -728,6 +730,7 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
 
         lastPayloadMessageId = lastMessage.id;
         lastPayloadProtocolMessageChannelSerial = protocolMessage.channelSerial;
+        channelSerial = protocolMessage.channelSerial;
 
         for (final Message msg : messages) {
             this.listeners.onMessage(msg);
@@ -768,6 +771,7 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
             if(msg.timestamp == 0) msg.timestamp = message.timestamp;
             if(msg.id == null) msg.id = message.id + ':' + i;
         }
+        channelSerial = message.channelSerial;
         presence.setPresence(messages, true, syncChannelSerial);
     }
 
