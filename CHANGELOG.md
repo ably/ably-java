@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.2.18](https://github.com/ably/ably-java/tree/v1.2.18)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.17...v1.2.18)
+
+This release improves our Javadoc API commentaries for this SDK.
+Other than that, there are no functional changes (features, bug fixes, etc..).
+
 ## [1.2.17](https://github.com/ably/ably-java/tree/v1.2.17)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.16...v1.2.17)
