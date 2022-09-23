@@ -181,7 +181,7 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
             }
         }
         if(this.decodeFailureRecoveryInProgress) {
-            attachMessage.channelSerial = this.lastPayloadProtocolMessageChannelSerial;
+            Log.v(TAG, "attach(); message decode recovery in progress.");
         }
         try {
             if (listener != null) {
@@ -732,7 +732,6 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
         }
 
         lastPayloadMessageId = lastMessage.id;
-        lastPayloadProtocolMessageChannelSerial = protocolMessage.channelSerial;
         channelSerial = protocolMessage.channelSerial;
 
         for (final Message msg : messages) {
@@ -1208,7 +1207,6 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
     private Map<String, String> params;
     private Set<ChannelMode> modes;
     private String lastPayloadMessageId;
-    private String lastPayloadProtocolMessageChannelSerial;
     private boolean decodeFailureRecoveryInProgress;
     private final DecodingContext decodingContext;
 }
