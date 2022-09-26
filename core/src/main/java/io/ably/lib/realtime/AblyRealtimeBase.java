@@ -190,6 +190,7 @@ public abstract class AblyRealtimeBase<
                 if (channel.state == ChannelState.attaching || channel.state == ChannelState.attached || channel.state == ChannelState.suspended) {
                     try {
                         Log.d(TAG, "reAttach(); channel = " + channel.name);
+                        channel.state = ChannelState.attaching;
                         channel.attach();
                     } catch (AblyException e) {
                         e.printStackTrace();
