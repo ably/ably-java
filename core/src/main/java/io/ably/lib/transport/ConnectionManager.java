@@ -72,6 +72,7 @@ public class ConnectionManager implements ConnectListener {
     public interface Channels {
         void onMessage(ProtocolMessage msg);
         void suspendAll(ErrorInfo error, boolean notifyStateChange);
+        void reAttach();
         Iterable<RealtimeChannelBase> values();
     }
 
@@ -1087,34 +1088,25 @@ public class ConnectionManager implements ConnectListener {
     }
 
     private synchronized void onConnected(ProtocolMessage message) {
-        /* if the returned connection id differs from
-         * the existing connection id, then this means
-         * we need to suspend all existing attachments to
-         * the old connection.
-         * If realtime did not reply with an error, it
-         * signifies that this was a result of an earlier
-         * connection being invalidated due to being stale.
-         *
-         * Suspend all channels attached to the previous id;
-         * this will be reattached in setConnection() */
         ErrorInfo error = message.error;
-        if(connection.id != null && !message.connectionId.equals(connection.id)) {
-            /* we need to suspend the original connection */
-            if(error == null) {
-                error = REASON_SUSPENDED;
-            }
-            channels.suspendAll(error, false);
+
+        if (message.connectionId.equals(connection.id)) { // RTN15c6
+            channels.reAttach();
         }
 
         /* set the new connection id */
         ConnectionDetails connectionDetails = message.connectionDetails;
         connection.key = connectionDetails.connectionKey;
         if (!message.connectionId.equals(connection.id)) {
+            /* we need to suspend the original connection */
+            if(error == null) {
+                error = REASON_SUSPENDED;
+            }
+            channels.suspendAll(error, false);
             /* The connection id has changed. Reset the message serial and the
              * pending message queue (which fails the messages currently in
              * there). */
-            pendingMessages.reset(msgSerial,
-                    new ErrorInfo("Connection resume failed", 500, 50000));
+            pendingMessages.reset(msgSerial, new ErrorInfo("Connection resume failed", 500, 50000));
             msgSerial = 0;
         }
         connection.id = message.connectionId;

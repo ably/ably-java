@@ -183,6 +183,21 @@ public abstract class AblyRealtimeBase<
             }
         }
 
+        @Override
+        public void reAttach() {
+            for (Map.Entry<String, RealtimeChannelBase> entry : map.entrySet()) {
+                RealtimeChannelBase channel = entry.getValue();
+                if (channel.state == ChannelState.attaching || channel.state == ChannelState.attached || channel.state == ChannelState.suspended) {
+                    try {
+                        Log.d(TAG, "reAttach(); channel = " + channel.name);
+                        channel.attach();
+                    } catch (AblyException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+
         private void clear() {
             map.clear();
         }
