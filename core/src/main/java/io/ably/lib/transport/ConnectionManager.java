@@ -1090,7 +1090,7 @@ public class ConnectionManager implements ConnectListener {
     private synchronized void onConnected(ProtocolMessage message) {
         ErrorInfo error = message.error;
 
-        if (message.connectionId.equals(connection.id)) { // RTN15c6
+        if (message.connectionId.equals(connection.id) && error == null) { // RTN15c6
             channels.reAttach();
         }
 
