@@ -1090,28 +1090,37 @@ public class ConnectionManager implements ConnectListener {
     private synchronized void onConnected(ProtocolMessage message) {
         ErrorInfo error = message.error;
 
-        if (message.connectionId.equals(connection.id) && error == null) { // RTN15c6
+        if (message.action == ProtocolMessage.Action.connected && message.connectionId.equals(connection.id) && error == null) {
+            //RTN15c6
+            Log.d(TAG, "connection has reconnected and resumed successfully");
+            connection.reason = null;
             channels.reAttach();
-        }
-
-        /* set the new connection id */
-        ConnectionDetails connectionDetails = message.connectionDetails;
-        connection.key = connectionDetails.connectionKey;
-        if (!message.connectionId.equals(connection.id)) {
+            requestState(new StateIndication(ConnectionState.connected, null));
+        } else if (message.action == ProtocolMessage.Action.connected && !message.connectionId.equals(connection.id) && error != null) {
+            //RTN15c7
+            Log.d(TAG, "connection resume is invalid: " + error.message);
+            connection.reason = error;
+            msgSerial = 0;
+            channels.reAttach();
+            requestState(new StateIndication(ConnectionState.connected, error));
+        } else if (!message.connectionId.equals(connection.id)) {
+            Log.d(TAG, "connection resume failed: " + error.message);
             /* we need to suspend the original connection */
-            if(error == null) {
-                error = REASON_SUSPENDED;
-            }
+            error = REASON_SUSPENDED;
             channels.suspendAll(error, false);
             /* The connection id has changed. Reset the message serial and the
              * pending message queue (which fails the messages currently in
              * there). */
             pendingMessages.reset(msgSerial, new ErrorInfo("Connection resume failed", 500, 50000));
             msgSerial = 0;
+        } else {
+            Log.d(TAG, "connection has reconnected and resumed successfully");
         }
-        connection.id = message.connectionId;
 
+        connection.id = message.connectionId;
+        ConnectionDetails connectionDetails = message.connectionDetails;
         /* Get any parameters from connectionDetails. */
+        connection.key = connectionDetails.connectionKey;
         maxIdleInterval = connectionDetails.maxIdleInterval;
         connectionStateTtl = connectionDetails.connectionStateTtl;
 

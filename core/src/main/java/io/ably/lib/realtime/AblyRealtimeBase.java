@@ -183,6 +183,9 @@ public abstract class AblyRealtimeBase<
             }
         }
 
+        /**
+         * By spec RTN15c6, RTN15c7
+         */
         @Override
         public void reAttach() {
             for (Map.Entry<String, RealtimeChannelBase> entry : map.entrySet()) {
