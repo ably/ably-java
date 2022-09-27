@@ -58,7 +58,7 @@ public abstract class AblyRealtimeBase<
      * @param platformAgentProvider for providing the platform specific part of the agent header
      * @throws AblyException
      */
-    public AblyRealtimeBase(ClientOptions options, PlatformAgentProvider platformAgentProvider) throws AblyException {
+    public AblyRealtimeBase(final ClientOptions options, PlatformAgentProvider platformAgentProvider) throws AblyException {
         super(options, platformAgentProvider);
         final InternalChannels channels = new InternalChannels();
         this.channels = (Channels<ChannelType>) channels;
@@ -71,6 +71,34 @@ public abstract class AblyRealtimeBase<
                 channels.clear();
             }
         });
+
+        if (options.recover != null) {
+            ConnectionRecoveryKey recoveryKey = ConnectionRecoveryKey.fromJson(options.recover);
+            if (recoveryKey == null) {
+                Log.d(TAG, "Recovery key initialization failed!");
+                connection.connectionManager.msgSerial = 0; //RTN16f
+                return;
+            }
+            connection.connectionManager.msgSerial = recoveryKey.msgSerial; //RTN16f
+
+            for (Map.Entry<String, String> entry : recoveryKey.serials.entrySet()) {
+                //Key is channel name and value is channel serial
+                RealtimeChannelBase channel = channels.get(entry.getKey());
+                String channelSerial = entry.getValue();
+                if (channel != null) {
+                    channel.channelSerial = channelSerial;
+                    //channel.attach();
+                }
+            }
+
+            connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
+                @Override
+                public void onConnectionStateChanged(ConnectionStateChange state) {
+                    options.recover = null;
+                    channels.reAttach();
+                }
+            });
+        }
 
         if(options.autoConnect) connection.connect();
     }
