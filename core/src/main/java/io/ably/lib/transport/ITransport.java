@@ -1,5 +1,6 @@
 package io.ably.lib.transport;
 
+import io.ably.lib.realtime.ConnectionRecoveryKey;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
@@ -73,13 +74,11 @@ public interface ITransport {
                 paramList.add(new Param("resume", connectionKey));
                 if(connectionSerial != null)
                     paramList.add(new Param("connectionSerial", connectionSerial));
-            } else if(options.recover != null) {
+            } else if(options.recover != null) { //RTN16k
                 mode = Mode.recover;
-                Pattern recoverSpec = Pattern.compile("^([\\w\\-\\!]+):(\\-?\\d+)$");
-                Matcher match = recoverSpec.matcher(options.recover);
-                if(match.matches()) {
-                    paramList.add(new Param("recover", match.group(1)));
-                    paramList.add(new Param("connectionSerial", match.group(2)));
+                ConnectionRecoveryKey recoveryKey = ConnectionRecoveryKey.fromJson(options.recover);
+                if (recoveryKey != null && recoveryKey.connectionKey != null) {
+                    paramList.add(new Param("recover", recoveryKey.connectionKey));
                 } else {
                     Log.e(TAG, "Invalid recover string specified");
                 }

@@ -14,4 +14,9 @@ public class ConnectionRecoveryKey {
     public String asJson() {
         return Serialisation.gson.toJson(this);
     }
+
+    public static ConnectionRecoveryKey fromJson(String json) {
+        return Serialisation.gson.fromJson(json, ConnectionRecoveryKey.class);
+    }
+
 }
