@@ -87,7 +87,6 @@ public abstract class AblyRealtimeBase<
                 String channelSerial = entry.getValue();
                 if (channel != null) {
                     channel.channelSerial = channelSerial;
-                    //channel.attach();
                 }
             }
 
@@ -95,7 +94,6 @@ public abstract class AblyRealtimeBase<
                 @Override
                 public void onConnectionStateChanged(ConnectionStateChange state) {
                     options.recover = null;
-                    channels.reAttach();
                 }
             });
         }
