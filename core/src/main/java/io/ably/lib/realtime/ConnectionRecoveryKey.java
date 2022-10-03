@@ -1,5 +1,7 @@
 package io.ably.lib.realtime;
 
+import com.google.gson.JsonSyntaxException;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -9,6 +11,11 @@ public class ConnectionRecoveryKey {
 
     public String connectionKey;
     public long msgSerial;
+    /**
+     * Key - channel name,
+     * <p>
+     * Value - channel serial
+     */
     public Map<String, String> serials = new HashMap<>();
 
     public String asJson() {
@@ -16,7 +23,12 @@ public class ConnectionRecoveryKey {
     }
 
     public static ConnectionRecoveryKey fromJson(String json) {
-        return Serialisation.gson.fromJson(json, ConnectionRecoveryKey.class);
+        try {
+            return Serialisation.gson.fromJson(json, ConnectionRecoveryKey.class);
+        } catch (JsonSyntaxException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
 }

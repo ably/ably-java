@@ -81,12 +81,11 @@ public abstract class AblyRealtimeBase<
             }
             connection.connectionManager.msgSerial = recoveryKey.msgSerial; //RTN16f
 
-            for (Map.Entry<String, String> entry : recoveryKey.serials.entrySet()) {
+            for (Map.Entry<String, String> entry : recoveryKey.serials.entrySet()) { //RTN16j
                 //Key is channel name and value is channel serial
                 RealtimeChannelBase channel = channels.get(entry.getKey());
-                String channelSerial = entry.getValue();
                 if (channel != null) {
-                    channel.channelSerial = channelSerial;
+                    channel.channelSerial = entry.getValue(); //RTN16i
                 }
             }
 
