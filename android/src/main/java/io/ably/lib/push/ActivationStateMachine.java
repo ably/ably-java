@@ -19,7 +19,6 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
-import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.util.IntentUtils;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.ParamsUtils;

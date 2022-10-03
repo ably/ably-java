@@ -53,7 +53,6 @@ import io.ably.lib.types.Callback;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
-import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.IntentUtils;
 import io.ably.lib.util.JsonUtils;
