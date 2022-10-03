@@ -305,7 +305,7 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
         properties.attachSerial = message.channelSerial;
         params = message.params;
         modes = ChannelMode.toSet(message.flags);
-        channelSerial = message.channelSerial;
+        channelSerial = message.channelSerial; //RTL4c1
         if(state == ChannelState.attached) {
             Log.v(TAG, String.format(Locale.ROOT, "Server initiated attach for channel %s", name));
             /* emit UPDATE event according to RTL12 */
@@ -732,7 +732,7 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
         }
 
         lastPayloadMessageId = lastMessage.id;
-        channelSerial = protocolMessage.channelSerial;
+        channelSerial = protocolMessage.channelSerial; //RTL15b
 
         for (final Message msg : messages) {
             this.listeners.onMessage(msg);
@@ -773,7 +773,7 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
             if(msg.timestamp == 0) msg.timestamp = message.timestamp;
             if(msg.id == null) msg.id = message.id + ':' + i;
         }
-        channelSerial = message.channelSerial;
+        channelSerial = message.channelSerial; //RTL15b
         presence.setPresence(messages, true, syncChannelSerial);
     }
 

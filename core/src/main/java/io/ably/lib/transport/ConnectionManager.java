@@ -1120,7 +1120,7 @@ public class ConnectionManager implements ConnectListener {
         connection.id = message.connectionId;
         ConnectionDetails connectionDetails = message.connectionDetails;
         /* Get any parameters from connectionDetails. */
-        connection.key = connectionDetails.connectionKey;
+        connection.key = connectionDetails.connectionKey; //RTN16d
         maxIdleInterval = connectionDetails.maxIdleInterval;
         connectionStateTtl = connectionDetails.connectionStateTtl;
 
