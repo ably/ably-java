@@ -99,13 +99,13 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
      * @return
      */
     public String getRecoveryKey() {
-        //RTN16c
         if (key == null || connectionManager == null || connectionManager.getConnectionState() == null ||
             connectionManager.getConnectionState().state == ConnectionState.closed ||
             connectionManager.getConnectionState().state == ConnectionState.closing ||
             connectionManager.getConnectionState().state == ConnectionState.failed ||
             connectionManager.getConnectionState().state == ConnectionState.suspended
         ) {
+            //RTN16h
             return null;
         }
 
