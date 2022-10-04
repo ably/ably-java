@@ -77,15 +77,15 @@ public abstract class AblyRealtimeBase<
             if (recoveryKey == null) {
                 Log.d(TAG, "Recovery key initialization failed!");
                 connection.connectionManager.msgSerial = 0; //RTN16f
-                return;
-            }
-            connection.connectionManager.msgSerial = recoveryKey.msgSerial; //RTN16f
+            } else {
+                connection.connectionManager.msgSerial = recoveryKey.msgSerial; //RTN16f
 
-            for (Map.Entry<String, String> entry : recoveryKey.serials.entrySet()) { //RTN16j
-                //Key is channel name and value is channel serial
-                RealtimeChannelBase channel = channels.get(entry.getKey());
-                if (channel != null) {
-                    channel.channelSerial = entry.getValue(); //RTN16i
+                for (Map.Entry<String, String> entry : recoveryKey.serials.entrySet()) { //RTN16j
+                    //Key is channel name and value is channel serial
+                    RealtimeChannelBase channel = channels.get(entry.getKey());
+                    if (channel != null) {
+                        channel.channelSerial = entry.getValue(); //RTN16i
+                    }
                 }
             }
 
