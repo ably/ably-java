@@ -1095,14 +1095,23 @@ public class ConnectionManager implements ConnectListener {
             Log.d(TAG, "connection has reconnected and resumed successfully");
             connection.reason = null;
             channels.reAttach();
-            requestState(new StateIndication(ConnectionState.connected, null));
+
+            //RTN19a
+            if (pendingMessages.queue != null && !pendingMessages.queue.isEmpty()) {
+                for (QueuedMessage queuedMessage : pendingMessages.queue) {
+                    try {
+                        send(queuedMessage.msg, false, null);
+                    } catch (AblyException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
         } else if (message.action == ProtocolMessage.Action.connected && !message.connectionId.equals(connection.id) && error != null) {
             //RTN15c7
             Log.d(TAG, "connection resume is invalid: " + error.message);
             connection.reason = error;
             msgSerial = 0;
             channels.reAttach();
-            requestState(new StateIndication(ConnectionState.connected, error));
         } else if (!message.connectionId.equals(connection.id)) {
             Log.d(TAG, "connection resume failed: " + error.message);
             /* we need to suspend the original connection */
@@ -1113,8 +1122,6 @@ public class ConnectionManager implements ConnectListener {
              * there). */
             pendingMessages.reset(msgSerial, new ErrorInfo("Connection resume failed", 500, 50000));
             msgSerial = 0;
-        } else {
-            Log.d(TAG, "connection has reconnected and resumed successfully");
         }
 
         connection.id = message.connectionId;
