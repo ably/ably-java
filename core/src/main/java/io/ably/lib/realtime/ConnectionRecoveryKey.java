@@ -12,9 +12,9 @@ public class ConnectionRecoveryKey {
     public String connectionKey;
     public long msgSerial;
     /**
-     * Key - channel name,
+     * Key - channel name
      * <p>
-     * Value - channel serial
+     * Value - channelSerial
      */
     public Map<String, String> serials = new HashMap<>();
 

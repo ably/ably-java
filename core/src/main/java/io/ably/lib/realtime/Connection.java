@@ -93,10 +93,10 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
     }
 
     /**
-     * <p>
      * Spec: RTN16g
      *
-     * @return
+     * @return a json string which incorporates the @connectionKey@, the current @msgSerial@,
+     * and a collection of pairs of channel @name@ and current @channelSerial@ for every currently attached channel.
      */
     public String getRecoveryKey() {
         if (key == null || connectionManager == null || connectionManager.getConnectionState() == null ||

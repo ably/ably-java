@@ -80,8 +80,8 @@ public abstract class AblyRealtimeBase<
             } else {
                 connection.connectionManager.msgSerial = recoveryKey.msgSerial; //RTN16f
 
-                for (Map.Entry<String, String> entry : recoveryKey.serials.entrySet()) { //RTN16j
-                    //Key is channel name and value is channel serial
+                for (Map.Entry<String, String> entry : recoveryKey.serials.entrySet()) {
+                    //RTN16j
                     RealtimeChannelBase channel = channels.get(entry.getKey());
                     if (channel != null) {
                         channel.properties.channelSerial = entry.getValue(); //RTN16i
@@ -92,7 +92,7 @@ public abstract class AblyRealtimeBase<
             connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
                 @Override
                 public void onConnectionStateChanged(ConnectionStateChange state) {
-                    options.recover = null;
+                    options.recover = null; //RTN16k
                 }
             });
         }
