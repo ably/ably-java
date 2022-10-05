@@ -221,13 +221,5 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
         }
     }
 
-    /**
-     * Get the member key for the PresenceMessage.
-     * @return
-     */
-    public String memberKey() {
-        return connectionId + ':' + clientId;
-    }
-
     private static final String TAG = PresenceMessage.class.getName();
 }

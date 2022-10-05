@@ -872,7 +872,7 @@ public class Presence {
          * false if the message is already superseded
          */
         synchronized boolean put(PresenceMessage item) {
-            String key = item.memberKey();
+            String key = item.clientId; //RTP17h
             /* we've seen this member, so do not remove it at the end of sync */
             if(residualMembers != null)
                 residualMembers.remove(key);
@@ -967,7 +967,7 @@ public class Presence {
          * @return
          */
         synchronized boolean remove(PresenceMessage item) {
-            String key = item.memberKey();
+            String key = item.clientId; //RTP17h
             if (hasNewerItem(key, item))
                 return false;
             PresenceMessage existingItem = members.remove(key);
