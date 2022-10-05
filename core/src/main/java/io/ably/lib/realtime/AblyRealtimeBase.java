@@ -84,7 +84,7 @@ public abstract class AblyRealtimeBase<
                     //Key is channel name and value is channel serial
                     RealtimeChannelBase channel = channels.get(entry.getKey());
                     if (channel != null) {
-                        channel.channelSerial = entry.getValue(); //RTN16i
+                        channel.properties.channelSerial = entry.getValue(); //RTN16i
                     }
                 }
             }

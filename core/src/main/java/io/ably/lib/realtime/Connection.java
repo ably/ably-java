@@ -116,7 +116,7 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
         for (Object channel : ably.channels.values()) {
             if (channel instanceof RealtimeChannelBase) {
                 RealtimeChannelBase rcb = (RealtimeChannelBase) channel;
-                recoveryKey.serials.put(rcb.name, rcb.channelSerial);
+                recoveryKey.serials.put(rcb.name, rcb.properties.channelSerial);
             }
         }
 
