@@ -295,6 +295,15 @@ public class Presence {
         }
     }
 
+    /**
+     * Spec: RTP17f, RTP17g
+     */
+    public void reEnter(ChannelState newState) {
+        if (newState == ChannelState.attached && channel.state == ChannelState.attached) {
+            internalPresence.reEnter();
+        }
+    }
+
     void setPresence(PresenceMessage[] messages, boolean broadcast, String syncChannelSerial) {
         Log.v(TAG, "setPresence(); channel = " + channel.name + "; broadcast = " + broadcast + "; syncChannelSerial = " + syncChannelSerial);
         String syncCursor = null;
@@ -1029,6 +1038,21 @@ public class Presence {
             members.clear();
             if(residualMembers != null)
                 residualMembers.clear();
+        }
+
+        /**
+         * Spec: RTP17g
+         */
+        synchronized void reEnter() {
+            for (Map.Entry<String, PresenceMessage> entry: members.entrySet()) {
+                PresenceMessage member = entry.getValue();
+                member.action = PresenceMessage.Action.enter;
+                try {
+                    updatePresence(member, null);
+                } catch (AblyException e) {
+                    e.printStackTrace();
+                }
+            }
         }
 
         private boolean syncInProgress;

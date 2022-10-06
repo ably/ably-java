@@ -92,19 +92,24 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
     private void setState(ChannelState newState, ErrorInfo reason, boolean resumed, boolean notifyStateChange) {
         Log.v(TAG, "setState(): channel = " + name + "; setting " + newState);
         ChannelStateListener.ChannelStateChange stateChange;
-        synchronized(this) {
+        synchronized (this) {
             stateChange = new ChannelStateListener.ChannelStateChange(newState, this.state, reason, resumed);
             this.state = stateChange.current;
             this.reason = stateChange.reason;
         }
 
-        if(notifyStateChange) {
+        if (newState == ChannelState.detached || newState == ChannelState.suspended || newState == ChannelState.failed)
+            properties.channelSerial = null; //RTP5a1
+
+        if (newState == ChannelState.attached && state == ChannelState.attached) {
+            //RTP17f
+            presence.reEnter(newState);
+        }
+
+        if (notifyStateChange) {
             /* broadcast state change */
             emit(newState, stateChange);
         }
-
-        if (newState == ChannelState.detached || newState == ChannelState.suspended || newState == ChannelState.failed)
-            properties.channelSerial = null; //RTP5a1
     }
 
     /************************************
