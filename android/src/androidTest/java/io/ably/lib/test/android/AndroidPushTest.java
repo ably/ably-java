@@ -1366,11 +1366,12 @@ public class AndroidPushTest extends PlatformSpecificIntegrationTest {
                 }
 
                 testActivation.registerAndWait();
-                DeviceDetails otherDevice = DeviceDetails.fromJsonObject(JsonUtils.object()
+                LocalDevice otherDevice = LocalDevice.fromJsonObject(JsonUtils.object()
                         .add("id", "other")
                         .add("platform", "android")
                         .add("formFactor", "tablet")
                         .add("metadata", JsonUtils.object())
+                        .add("deviceSecret", "testdevicesecret==") //Required by API protocol 2.0
                         .add("push", JsonUtils.object()
                                 .add("recipient", JsonUtils.object()
                                         .add("transportType", "fcm")

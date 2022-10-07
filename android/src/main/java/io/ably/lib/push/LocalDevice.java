@@ -15,6 +15,7 @@ import io.ably.lib.types.Param;
 import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.Serialisation;
 
 public class LocalDevice extends DeviceDetails {
     public String deviceSecret;
@@ -41,6 +42,10 @@ public class LocalDevice extends DeviceDetails {
         }
 
         return o;
+    }
+
+    public static LocalDevice fromJsonObject(JsonObject o) {
+        return Serialisation.gson.fromJson(o, LocalDevice.class);
     }
 
     private void loadPersisted() {
