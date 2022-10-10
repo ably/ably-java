@@ -1112,16 +1112,6 @@ public class ConnectionManager implements ConnectListener {
             connection.reason = error;
             msgSerial = 0;
             channels.reAttach();
-        } else if (!message.connectionId.equals(connection.id)) {
-            Log.d(TAG, "connection resume failed: " + error.message);
-            /* we need to suspend the original connection */
-            error = REASON_SUSPENDED;
-            channels.suspendAll(error, false);
-            /* The connection id has changed. Reset the message serial and the
-             * pending message queue (which fails the messages currently in
-             * there). */
-            pendingMessages.reset(msgSerial, new ErrorInfo("Connection resume failed", 500, 50000));
-            msgSerial = 0;
         }
 
         connection.id = message.connectionId;
