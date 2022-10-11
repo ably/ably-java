@@ -642,7 +642,8 @@ public abstract class ConnectionManagerTest extends ParameterizedTest {
     @Test
     public void channels_are_reattached_after_reconnecting_when_statettl_plus_idleinterval_has_passed() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        try(AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts)) {
+        final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts);
+        try {
             final long newTtl = 1000L;
             final long newIdleInterval = 1000L;
             /* We want this greater than newTtl + newIdleInterval */
@@ -651,6 +652,9 @@ public abstract class ConnectionManagerTest extends ParameterizedTest {
             final List<String> expectedAttachedChannelHistory = Arrays.asList("attaching", "attached", "attaching", "attached");
             final List<String> suspendedChannelHistory = new ArrayList<String>();
             final List<String> expectedSuspendedChannelHistory = Arrays.asList("attaching", "attached");
+//            final List<String> expectedAttachedChannelHistory =
+//                opts.useBinaryProtocol ? Arrays.asList("attaching", "attached") : Arrays.asList("attaching", "attached", "detached", "attaching");
+
             ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
                 @Override
                 public void onConnectionStateChanged(ConnectionStateChange state) {
@@ -729,8 +733,14 @@ public abstract class ConnectionManagerTest extends ParameterizedTest {
             /* Wait for both channels to reattach and verify state histories match the expected ones */
             attachedChannelWaiter.waitFor(ChannelState.attached);
             suspendedChannelWaiter.waitFor(ChannelState.attached);
-            assertEquals("Attached channel histories do not match", attachedChannelHistory, expectedAttachedChannelHistory);
-            assertEquals("Suspended channel histories do not match", suspendedChannelHistory, expectedSuspendedChannelHistory);
+            assertEquals("Attached channel histories do not match", expectedAttachedChannelHistory, attachedChannelHistory);
+            assertEquals("Suspended channel histories do not match", expectedSuspendedChannelHistory, suspendedChannelHistory);
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail("channels_are_reattached_after_reconnecting_when_statettl_plus_idleinterval_has_passed: Unexpected exception");
+        } finally {
+            if (ably != null)
+                ably.close();
         }
     }
 }
