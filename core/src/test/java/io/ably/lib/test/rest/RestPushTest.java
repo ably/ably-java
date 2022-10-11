@@ -181,12 +181,17 @@ public abstract class RestPushTest extends ParameterizedTest {
 
     @AfterClass
     public static void tearDownAfter() throws Exception {
-        for (DeviceDetails device : allDeviceDetails) {
-            rest.push.admin.deviceRegistrations.remove(device);
-        }
-        for (ChannelSubscription sub : allSubscriptions) {
-            rest.push.admin.channelSubscriptions.remove(sub);
-        }
+        if (allDeviceDetails != null)
+            for (DeviceDetails device : allDeviceDetails) {
+                if(device != null)
+                    rest.push.admin.deviceRegistrations.remove(device);
+            }
+
+        if (allSubscriptions != null)
+            for (ChannelSubscription sub : allSubscriptions) {
+                    if(sub != null)
+                        rest.push.admin.channelSubscriptions.remove(sub);
+            }
     }
 
     // RHS1a
