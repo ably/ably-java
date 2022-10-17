@@ -18,7 +18,7 @@ import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 
 public class LocalDevice extends DeviceDetails {
-    public String deviceSecret;
+
     public String deviceIdentityToken;
     private final Storage storage;
 
@@ -36,12 +36,7 @@ public class LocalDevice extends DeviceDetails {
     }
 
     public JsonObject toJsonObject() {
-        JsonObject o = super.toJsonObject();
-        if (deviceSecret != null) {
-            o.addProperty("deviceSecret", deviceSecret);
-        }
-
-        return o;
+        return super.toJsonObject();
     }
 
     public static LocalDevice fromJsonObject(JsonObject o) {

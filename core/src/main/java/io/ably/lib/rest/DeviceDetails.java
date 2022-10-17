@@ -13,6 +13,7 @@ public class DeviceDetails {
     public String platform;
     public String formFactor;
     public String clientId;
+    public String deviceSecret;
     public JsonObject metadata;
 
     public Push push;
@@ -82,6 +83,9 @@ public class DeviceDetails {
         }
         if (push != null) {
             o.add("push", push.toJsonObject());
+        }
+        if (deviceSecret != null) {
+            o.addProperty("deviceSecret", deviceSecret);
         }
 
         return o;
