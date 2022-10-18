@@ -50,12 +50,15 @@ public abstract class RealtimeResumeTest extends ParameterizedTest {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = createAblyRealtime(opts);
 
+            ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+
             /* create and attach channel */
             final RealtimeChannelBase channel = ably.channels.get(channelName);
             System.out.println("Attaching");
             channel.attach();
-            (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
-            assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+            ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+            channelWaiter.waitFor(ChannelState.attached);
+            assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
 
             /* disconnect the connection, without closing,
             /* suppressing automatic retries by the connection manager */
@@ -68,11 +71,15 @@ public abstract class RealtimeResumeTest extends ParameterizedTest {
                 fail("Unexpected exception in suppressing retries");
             }
 
+            connectionWaiter.waitFor(ConnectionState.disconnected);
+            System.out.println("Connection is disconnected and channels is: " + channel.state.name());
+            assertEquals("Disconnected state was not reached", ConnectionState.disconnected, ably.connection.state);
+
             /* reconnect the rx connection */
             ably.connection.connect();
             System.out.println("Waiting for reconnection");
-            ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
+            System.out.println("Connection reconnected and channel is " + channel.state.name());
             assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
 
             /* wait */
@@ -81,7 +88,6 @@ public abstract class RealtimeResumeTest extends ParameterizedTest {
 
             /* Check the channel is still attached. */
             assertEquals("Verify channel still attached", channel.state, ChannelState.attached);
-
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");
