@@ -145,7 +145,7 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
         this.attach(false, listener);
     }
 
-    private void attach(boolean forceReattach, CompletionListener listener) {
+    void attach(boolean forceReattach, CompletionListener listener) {
         clearAttachTimers();
         attachWithTimeout(forceReattach, listener);
     }
