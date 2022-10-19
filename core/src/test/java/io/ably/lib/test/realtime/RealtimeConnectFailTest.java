@@ -417,7 +417,6 @@ public abstract class RealtimeConnectFailTest extends ParameterizedTest {
      */
     @Test
     public void connect_reauth_failure_state_flow_test() {
-
         try {
             AblyBase ablyRest = null;
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -464,6 +463,13 @@ public abstract class RealtimeConnectFailTest extends ParameterizedTest {
                     ConnectionState.connecting,
                     ConnectionState.disconnected
             );
+
+            //wait for connection to not include connect state in list
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+            }
+
             final int maxDisconnections = 3;
             ablyRealtime.connection.on(new ConnectionStateListener() {
                 int disconnections = 0;
@@ -474,7 +480,7 @@ public abstract class RealtimeConnectFailTest extends ParameterizedTest {
                         if (state.current == ConnectionState.disconnected) {
                             disconnections++;
                             if (disconnections == maxDisconnections) {
-                                assertTrue("Verifying state change history", stateHistory.equals(correctHistory));
+                                assertEquals("Verifying state change history", correctHistory, stateHistory);
                                 ablyRealtime.close();
                             }
                         }
@@ -484,6 +490,7 @@ public abstract class RealtimeConnectFailTest extends ParameterizedTest {
 
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ablyRealtime.connection);
             connectionWaiter.waitFor(ConnectionState.closed);
+            assertEquals("Verifying state closed", ConnectionState.closed, ablyRealtime.connection.state);
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");
