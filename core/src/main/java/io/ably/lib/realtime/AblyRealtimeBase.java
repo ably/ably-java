@@ -6,6 +6,7 @@ import java.util.Map;
 import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.rest.AblyBase;
+import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.RestChannelBase;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyChannel;
@@ -20,7 +21,7 @@ import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
 
 /**
- * A client that extends the functionality of the {@link AblyRest} and provides additional realtime-specific features.
+ * A client that extends the functionality of the {@link AblyBase} and provides additional realtime-specific features.
  *
  * This class implements {@link AutoCloseable} so you can use it in
  * try-with-resources constructs and have the JDK close it for you.
