@@ -38,7 +38,6 @@ public interface ITransport {
         protected String host;
         protected int port;
         protected String connectionKey;
-        protected String connectionSerial;
         protected Mode mode;
         protected boolean heartbeats;
         private final PlatformAgentProvider platformAgentProvider;
@@ -70,8 +69,6 @@ public interface ITransport {
             if(connectionKey != null) {
                 mode = Mode.resume;
                 paramList.add(new Param("resume", connectionKey));
-                if(connectionSerial != null)
-                    paramList.add(new Param("connectionSerial", connectionSerial));
             } else if(options.recover != null) { //RTN16k
                 mode = Mode.recover;
                 ConnectionRecoveryKey recoveryKey = ConnectionRecoveryKey.fromJson(options.recover);
