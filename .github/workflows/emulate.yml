@@ -6,14 +6,20 @@ on:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        android-api-level: [ 19, 21, 24, 29 ]
+
     steps:
       - uses: actions/checkout@v2
 
       - uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 24
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          api-level: ${{ matrix.android-api-level }}
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
           script: ./gradlew :android:connectedAndroidTest
 
       - uses: actions/upload-artifact@v2

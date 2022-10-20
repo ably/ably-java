@@ -6,6 +6,98 @@
 
 - Removed MsgPack optimization workaround for `ably-android` which was fixing a problem that has been resolved in MsgPack SDK 0.8.12
 
+## [1.2.18](https://github.com/ably/ably-java/tree/v1.2.18)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.17...v1.2.18)
+
+This release improves our Javadoc API commentaries for this SDK.
+Other than that, there are no functional changes (features, bug fixes, etc..).
+
+## [1.2.17](https://github.com/ably/ably-java/tree/v1.2.17)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.16...v1.2.17)
+
+**Fixed bugs:**
+
+- RSA4d is not implemented correctly [\#829](https://github.com/ably/ably-java/issues/829)
+- JSONUtilsObject.add() silently discards data of unsupported type [\#501](https://github.com/ably/ably-java/issues/501)
+
+**Merged pull requests:**
+
+- Fail Ably connection if auth callback throws specific errors [\#834](https://github.com/ably/ably-java/pull/834) ([KacperKluka](https://github.com/KacperKluka))
+
+## [1.2.16](https://github.com/ably/ably-java/tree/v1.2.16)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.15...v1.2.16)
+
+In this release, we have fixed a bug that was introduced in 1.2.15 that caused the SDK to return early from the 
+`Auth#renewAuth` method.
+
+- call waiter.close() after breaking from while loop [\#825](https://github.com/ably/ably-java/pull/825) ([ikbalkaya](https://github.com/ikbalkaya))
+
+
+## [1.2.15](https://github.com/ably/ably-java/tree/v1.2.15)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.14...v1.2.15)
+
+In this release we have added a new method that provides a completion handler for renewing an authentication token. 
+We also updated the documentation to clarify the thread policy for public method callbacks. 
+
+- A new `renewAuth` method was added to `Auth` and the `renew` method was deprecated
+
+**Implemented enhancements:**
+
+- Add new renew async method [\#816](https://github.com/ably/ably-java/pull/816) ([ikbalkaya](https://github.com/ikbalkaya))
+
+**Fixed bugs:**
+
+- Early return from  onAuthUpdated creates issues [\#814](https://github.com/ably/ably-java/issues/814)
+
+**Closed issues:**
+
+- Invalid method implementation in README [\#819](https://github.com/ably/ably-java/issues/819)
+- Document which thread is whole SDK or callbacks using [\#800](https://github.com/ably/ably-java/issues/800)
+
+**Merged pull requests:**
+
+- Update onChannelStateChanged readme with current implementation [\#820](https://github.com/ably/ably-java/pull/820) ([qsdigor](https://github.com/qsdigor))
+- Document thread policy for callbacks and add missing documentation for callbacks [\#818](https://github.com/ably/ably-java/pull/818) ([qsdigor](https://github.com/qsdigor))
+
+## [v1.2.14](https://github.com/ably/ably-java/tree/v1.2.14)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.13...v1.2.14)
+
+We've made some changes to JDK and Android API Level minimum requirements in this release,
+which might cause problems for those with very old build toolchains,
+or application projects with really permissive minimum runtime requirements:
+
+- Java source and target compatibility level increased from 1.7 to **1.8**
+- Android minimum SDK API Level increased from 16 to **19 (4.4 KitKat)**
+
+We've also fixed an oversight in our REST support whereby it previously was not possible to fully release resources
+consumed by the background thread pool used for HTTP operations, neither explicitly nor passively via GC.
+This was most noticeably a problem for applications which created several client instances during the lifespan of
+their application process.
+
+**Fixed bugs:**
+
+- NoSuchMethodError in ably-android for API lower than 24 [\#802](https://github.com/ably/ably-java/issues/802), fixed by [\#808](https://github.com/ably/ably-java/pull/808) ([KacperKluka](https://github.com/KacperKluka))
+- Threads remain in parked \(waiting\) state indefinitely when `AblyRest` instance is freed [\#801](https://github.com/ably/ably-java/issues/801), addressed by adding `finalize()` and `AutoCloseable` support to `AblyRest` instances [\#807](https://github.com/ably/ably-java/pull/807) ([QuintinWillison](https://github.com/QuintinWillison))
+- Minimum API Level supported for Android is 19 \(KitKat, v.4.4\) [\#804](https://github.com/ably/ably-java/pull/804) ([QuintinWillison](https://github.com/QuintinWillison))
+
+**Merged pull requests:**
+
+- Increase minimum JRE version to 1.8 [\#805](https://github.com/ably/ably-java/pull/805) ([QuintinWillison](https://github.com/QuintinWillison))
+
+## [v1.2.13](https://github.com/ably/ably-java/tree/v1.2.13)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.12...v1.2.13)
+
+**Closed issues:**
+
+- Update dependency: com.google.code.gson:gson [\#777](https://github.com/ably/ably-java/issues/777)
+- Update dependency: org.java-websocket:Java-WebSocket [\#776](https://github.com/ably/ably-java/issues/776)
+
 ## [v1.2.12](https://github.com/ably/ably-java/tree/v1.2.12)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.11...v1.2.12)

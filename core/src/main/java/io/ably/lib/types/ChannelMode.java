@@ -5,10 +5,25 @@ import java.util.Set;
 
 import io.ably.lib.types.ProtocolMessage.Flag;
 
+/**
+ * Describes the possible flags used to configure client capabilities, using {@link ChannelOptions}.
+ */
 public enum ChannelMode {
+    /**
+     * The client can enter the presence set.
+     */
     presence(Flag.presence),
+    /**
+     * The client can publish messages.
+     */
     publish(Flag.publish),
+    /**
+     * The client can subscribe to messages.
+     */
     subscribe(Flag.subscribe),
+    /**
+     * The client can receive presence messages.
+     */
     presence_subscribe(Flag.presence_subscribe);
 
     private final int mask;

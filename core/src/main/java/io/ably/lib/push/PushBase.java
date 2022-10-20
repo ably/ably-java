@@ -25,7 +25,9 @@ import io.ably.lib.util.StringUtils;
 import java.util.Arrays;
 import java.util.Map;
 
-
+/**
+ * Enables a device to be registered and deregistered from receiving push notifications.
+ */
 public class PushBase {
     public PushBase(AblyBase<PushBase, Platform, RestChannelBase> rest) {
         this.rest = rest;
@@ -35,7 +37,17 @@ public class PushBase {
     public static class Admin {
         private static final String TAG = Admin.class.getName();
 
+        /**
+         * A {@link DeviceRegistrations} object.
+         * <p>
+         * Spec: RSH1b
+         */
         public final DeviceRegistrations deviceRegistrations;
+        /**
+         * A {@link ChannelSubscriptions} object.
+         * <p>
+         * Spec: RSH1c
+         */
         public final ChannelSubscriptions channelSubscriptions;
 
         Admin(AblyBase<PushBase, Platform, RestChannelBase> rest) {
@@ -44,10 +56,31 @@ public class PushBase {
             this.channelSubscriptions = new ChannelSubscriptions(rest);
         }
 
+        /**
+         * Sends a push notification directly to a device, or a group of devices sharing the same clientId.
+         * <p>
+         * Spec: RSH1a
+         *
+         * @param recipient A JSON object containing the recipient details using clientId, deviceId or the underlying notifications service.
+         * @param payload A JSON object containing the push notification payload.
+         * @throws AblyException
+         */
         public void publish(Param[] recipient, JsonObject payload) throws AblyException {
             publishImpl(recipient, payload).sync();
         }
 
+        /**
+         * Asynchronously sends a push notification directly to a device, or a group of devices sharing the same clientId.
+         * <p>
+         * Spec: RSH1a
+         *
+         * @param recipient A JSON object containing the recipient details using clientId, deviceId or the underlying notifications service.
+         * @param payload A JSON object containing the push notification payload.
+         * @param listener A listener to be notified of success or failure.
+         * <p>
+         * This listener is invoked on a background thread.
+         * @throws AblyException
+         */
         public void publishAsync(Param[] recipient, JsonObject payload, final CompletionListener listener) {
             publishImpl(recipient, payload).async(new CompletionListener.ToCallback(listener));
         }
@@ -84,13 +117,35 @@ public class PushBase {
         private final AblyBase<PushBase, Platform, RestChannelBase> rest;
     }
 
+    /**
+     * Enables the management of push notification registrations with Ably.
+     */
     public static class DeviceRegistrations {
         private static final String TAG = DeviceRegistrations.class.getName();
 
+        /**
+         * Registers or updates a {@link DeviceDetails} object with Ably.
+         * Returns the new, or updated {@link DeviceDetails} object.
+         * <p>
+         * Spec: RSH1b3
+         *
+         * @param device The {@link DeviceDetails} object to create or update.
+         * @return A {@link DeviceDetails} object.
+         * @throws AblyException
+         */
         public DeviceDetails save(DeviceDetails device) throws AblyException {
             return saveImpl(device).sync();
         }
 
+        /**
+         * Asynchronously registers or updates a {@link DeviceDetails} object with Ably.
+         * Returns the new, or updated {@link DeviceDetails} object.
+         * <p>
+         * Spec: RSH1b3
+         *
+         * @param device The {@link DeviceDetails} object to create or update.
+         * @param callback A callback returning a {@link DeviceDetails} object.
+         */
         public void saveAsync(DeviceDetails device, final Callback<DeviceDetails> callback) {
             saveImpl(device).async(callback);
         }
@@ -107,10 +162,27 @@ public class PushBase {
             });
         }
 
+        /**
+         * Retrieves the {@link DeviceDetails} of a device registered to receive push notifications using its deviceId.
+         * <p>
+         * Spec: RSH1b1
+         *
+         * @param deviceId The unique ID of the device.
+         * @return A {@link DeviceDetails} object.
+         * @throws AblyException
+         */
         public DeviceDetails get(String deviceId) throws AblyException {
             return getImpl(deviceId).sync();
         }
 
+        /**
+         * Asynchronously retrieves the {@link DeviceDetails} of a device registered to receive push notifications using its deviceId.
+         * <p>
+         * Spec: RSH1b1
+         *
+         * @param deviceId The unique ID of the device.
+         * @param callback A callback returning a {@link DeviceDetails} object.
+         */
         public void getAsync(String deviceId, final Callback<DeviceDetails> callback) {
             getImpl(deviceId).async(callback);
         }
@@ -126,10 +198,31 @@ public class PushBase {
             });
         }
 
+        /**
+         * Retrieves all devices matching the filter params provided.
+         * Returns a {@link PaginatedResult} object, containing an array of {@link DeviceDetails} objects.
+         * <p>
+         * Spec: RSH1b2
+         *
+         * @param params An object containing key-value pairs to filter devices by.
+         *               Can contain clientId, deviceId and a limit on the number of devices returned, up to 1,000.
+         * @return A {@link PaginatedResult} object containing an array of {@link DeviceDetails} objects.
+         * @throws AblyException
+         */
         public PaginatedResult<DeviceDetails> list(Param[] params) throws AblyException {
             return listImpl(params).sync();
         }
 
+        /**
+         * Asynchronously retrieves all devices matching the filter params provided.
+         * Returns a {@link AsyncPaginatedResult} object, containing an array of {@link DeviceDetails} objects.
+         * <p>
+         * Spec: RSH1b2
+         *
+         * @param params An object containing key-value pairs to filter devices by.
+         *               Can contain clientId, deviceId and a limit on the number of devices returned, up to 1,000.
+         * @param callback A callback returning a {@link AsyncPaginatedResult} object containing an array of {@link DeviceDetails} objects.
+         */
         public void listAsync(Param[] params, Callback<AsyncPaginatedResult<DeviceDetails>> callback) {
             listImpl(params).async(callback);
         }
@@ -139,18 +232,50 @@ public class PushBase {
             return new BasePaginatedQuery<DeviceDetails>(rest.http, "/push/deviceRegistrations", HttpUtils.defaultAcceptHeaders(rest.options.useBinaryProtocol), params, DeviceDetails.httpBodyHandler).get();
         }
 
+        /**
+         * Removes a device registered to receive push notifications from Ably using the id property of a {@link DeviceDetails} object.
+         * <p>
+         * Spec: RSH1b4
+         *
+         * @param device The {@link DeviceDetails} object containing the id property of the device.
+         * @throws AblyException
+         */
         public void remove(DeviceDetails device) throws AblyException {
             remove(device.id);
         }
 
+        /**
+         * Asynchronously removes a device registered to receive push notifications from Ably using the id property of a {@link DeviceDetails} object.
+         * <p>
+         * Spec: RSH1b4
+         *
+         * @param device The {@link DeviceDetails} object containing the id property of the device.
+         * @param listener A listener to be notified of success or failure.
+         */
         public void removeAsync(DeviceDetails device, CompletionListener listener) {
             removeAsync(device.id, listener);
         }
 
+        /**
+         * Removes a device registered to receive push notifications from Ably using its deviceId.
+         * <p>
+         * Spec: RSH1b4
+         *
+         * @param deviceId The unique ID of the device.
+         * @throws AblyException
+         */
         public void remove(String deviceId) throws AblyException {
             removeImpl(deviceId).sync();
         }
 
+        /**
+         * Asynchronously removes a device registered to receive push notifications from Ably using its deviceId.
+         * <p>
+         * Spec: RSH1b4
+         *
+         * @param deviceId The unique ID of the device.
+         * @param listener A listener to be notified of success or failure.
+         */
         public void removeAsync(String deviceId, CompletionListener listener) {
             removeImpl(deviceId).async(new CompletionListener.ToCallback(listener));
         }
@@ -166,10 +291,26 @@ public class PushBase {
             });
         }
 
+        /**
+         * Removes all devices registered to receive push notifications from Ably matching the filter params provided.
+         * <p>
+         * Spec: RSH1b5
+         *
+         * @param params An object containing key-value pairs to filter devices by. Can contain clientId and deviceId.
+         * @throws AblyException
+         */
         public void removeWhere(Param[] params) throws AblyException {
             removeWhereImpl(params).sync();
         }
 
+        /**
+         * Removes all devices registered to receive push notifications from Ably matching the filter params provided.
+         * <p>
+         * Spec: RSH1b5
+         *
+         * @param params An object containing key-value pairs to filter devices by. Can contain clientId and deviceId.
+         * @param listener A listener to be notified of success or failure.
+         */
         public void removeWhereAsync(Param[] params, CompletionListener listener) {
             removeWhereImpl(params).async(new CompletionListener.ToCallback(listener));
         }
@@ -192,13 +333,35 @@ public class PushBase {
         private final AblyBase<PushBase, Platform, RestChannelBase> rest;
     }
 
+    /**
+     * Enables device push channel subscriptions.
+     */
     public static class ChannelSubscriptions {
         private static final String TAG = ChannelSubscriptions.class.getName();
 
+        /**
+         * Subscribes a device, or a group of devices sharing the same clientId to push notifications on a channel.
+         * Returns a {@link ChannelSubscription} object.
+         * <p>
+         * Spec: RSH1c3
+         *
+         * @param subscription A {@link ChannelSubscription} object.
+         * @return A {@link ChannelSubscription} object describing the new or updated subscriptions.
+         * @throws AblyException
+         */
         public ChannelSubscription save(ChannelSubscription subscription) throws AblyException {
             return saveImpl(subscription).sync();
         }
 
+        /**
+         * Asynchronously subscribes a device, or a group of devices sharing the same clientId to push notifications on a channel.
+         * Returns a {@link ChannelSubscription} object.
+         * <p>
+         * Spec: RSH1c3
+         *
+         * @param subscription A {@link ChannelSubscription} object.
+         * @param callback A callback returning {@link ChannelSubscription} object describing the new or updated subscriptions.
+         */
         public void saveAsync(ChannelSubscription subscription, final Callback<ChannelSubscription> callback) {
             saveImpl(subscription).async(callback);
         }
@@ -215,10 +378,32 @@ public class PushBase {
             });
         }
 
+        /**
+         * Retrieves all push channel subscriptions matching the filter params provided.
+         * Returns a {@link PaginatedResult} object, containing an array of {@link ChannelSubscription} objects.
+         * <p>
+         * Spec: RSH1c1
+         *
+         * @param params An object containing key-value pairs to filter subscriptions by.
+         *               Can contain channel, clientId, deviceId and a limit on the number of devices returned, up to 1,000.
+         * @return A {@link PaginatedResult} object containing an array of {@link ChannelSubscription} objects.
+         * @throws AblyException
+         */
         public PaginatedResult<ChannelSubscription> list(Param[] params) throws AblyException {
             return listImpl(params).sync();
         }
 
+        /**
+         * Asynchronously retrieves all push channel subscriptions matching the filter params provided.
+         * Returns a {@link PaginatedResult} object, containing an array of {@link ChannelSubscription} objects.
+         * <p>
+         * Spec: RSH1c1
+         *
+         * @param params An object containing key-value pairs to filter subscriptions by.
+         *               Can contain channel, clientId, deviceId and a limit on the number of devices returned, up to 1,000.
+         * @param callback A callback returning {@link AsyncPaginatedResult} object containing an array of {@link ChannelSubscription} objects.
+         * @throws AblyException
+         */
         public void listAsync(Param[] params, Callback<AsyncPaginatedResult<ChannelSubscription>> callback) {
             listImpl(params).async(callback);
         }
@@ -229,10 +414,28 @@ public class PushBase {
             return new BasePaginatedQuery<>(rest.http, "/push/channelSubscriptions", rest.push.pushRequestHeaders(deviceId), params, ChannelSubscription.httpBodyHandler).get();
         }
 
+        /**
+         * Unsubscribes a device, or a group of devices sharing the same clientId from receiving push notifications on a channel.
+         * <p>
+         * Spec: RSH1c4
+         *
+         * @param subscription A {@link ChannelSubscription} object.
+         * @throws AblyException
+         */
         public void remove(ChannelSubscription subscription) throws AblyException {
             removeImpl(subscription).sync();
         }
 
+        /**
+         * Asynchronously unsubscribes a device,
+         * or a group of devices sharing the same clientId from receiving push notifications on a channel.
+         * <p>
+         * Spec: RSH1c4
+         *
+         * @param subscription A {@link ChannelSubscription} object.
+         * @param listener A listener to be notified of success or failure.
+         * @throws AblyException
+         */
         public void removeAsync(ChannelSubscription subscription, CompletionListener listener) {
             removeImpl(subscription).async(new CompletionListener.ToCallback(listener));
         }
@@ -251,11 +454,29 @@ public class PushBase {
             return removeWhereImpl(params);
         }
 
-
+        /**
+         * Unsubscribes all devices from receiving push notifications on a channel that match the filter params provided.
+         * <p>
+         * Spec: RSH1c5
+         *
+         * @param params An object containing key-value pairs to filter subscriptions by.
+         *               Can contain channel, and optionally either clientId or deviceId.
+         * @throws AblyException
+         */
         public void removeWhere(Param[] params) throws AblyException {
             removeWhereImpl(params).sync();
         }
 
+        /**
+         * Asynchronously unsubscribes all devices from receiving push notifications on a channel that match the filter params provided.
+         * <p>
+         * Spec: RSH1c5
+         *
+         * @param params An object containing key-value pairs to filter subscriptions by.
+         *               Can contain channel, and optionally either clientId or deviceId.
+         * @param listener A listener to be notified of success or failure.
+         * @throws AblyException
+         */
         public void removeWhereAsync(Param[] params, CompletionListener listener) {
             removeWhereImpl(params).async(new CompletionListener.ToCallback(listener));
         }
@@ -273,10 +494,32 @@ public class PushBase {
             });
         }
 
+        /**
+         * Retrieves all channels with at least one device subscribed to push notifications.
+         * Returns a {@link PaginatedResult} object, containing an array of channel names.
+         * <p>
+         * Spec: RSH1c2
+         *
+         * @param params An object containing key-value pairs to filter channels by.
+         *               Can contain a limit on the number of channels returned, up to 1,000.
+         * @return A {@link PaginatedResult} object containing an array of channel names.
+         * @throws AblyException
+         */
         public PaginatedResult<String> listChannels(Param[] params) throws AblyException {
             return listChannelsImpl(params).sync();
         }
 
+        /**
+         * Asynchronously retrieves all channels with at least one device subscribed to push notifications.
+         * Returns a {@link PaginatedResult} object, containing an array of channel names.
+         * <p>
+         * Spec: RSH1c2
+         *
+         * @param params An object containing key-value pairs to filter channels by.
+         *               Can contain a limit on the number of channels returned, up to 1,000.
+         * @param callback A {@link AsyncPaginatedResult} callback returning object containing an array of channel names.
+         * @throws AblyException
+         */
         public void listChannelsAsync(Param[] params, Callback<AsyncPaginatedResult<String>> callback) {
             listChannelsImpl(params).async(callback);
         }
@@ -294,15 +537,46 @@ public class PushBase {
         private final AblyBase<PushBase, Platform, RestChannelBase> rest;
     }
 
+    /**
+     * Contains the subscriptions of a device, or a group of devices sharing the same clientId,
+     * has to a channel in order to receive push notifications.
+     */
     public static class ChannelSubscription {
+        /**
+         * The channel the push notification subscription is for.
+         * <p>
+         * Spec: PCS4
+         */
         public final String channel;
+        /**
+         * The unique ID of the device.
+         * <p>
+         * Spec: PCS2, PCS5, PCS6
+         */
         public final String deviceId;
+        /**
+         * The ID of the client the device, or devices are associated to.
+         * <p>
+         * Spec: PCS3, PCS6
+         */
         public final String clientId;
 
+        /**
+         * A static factory method to create a PushChannelSubscription object for a channel and single device.
+         * @param channel The channel name.
+         * @param deviceId The unique ID of the device.
+         * @return A {@link ChannelSubscription} object.
+         */
         public static ChannelSubscription forDevice(String channel, String deviceId) {
             return new ChannelSubscription(channel, deviceId, null);
         }
 
+        /**
+         * A static factory method to create a PushChannelSubscription object for a channel and group of devices sharing the same clientId.
+         * @param channel The channel name.
+         * @param clientId The ID of the client.
+         * @return A {@link ChannelSubscription} object.
+         */
         public static ChannelSubscription forClientId(String channel, String clientId) {
             return new ChannelSubscription(channel, null, clientId);
         }
@@ -369,5 +643,10 @@ public class PushBase {
     }
 
     protected final AblyBase<PushBase, Platform, RestChannelBase> rest;
+    /**
+     * A {@link PushBase.Admin} object.
+     * <p>
+     * Spec: RSH1
+     */
     public final Admin admin;
 }

@@ -84,6 +84,7 @@ dependencies {
     androidTestImplementation 'com.crittercism.dexmaker:dexmaker:1.4'
     androidTestImplementation 'com.crittercism.dexmaker:dexmaker-dx:1.4'
     androidTestImplementation 'com.crittercism.dexmaker:dexmaker-mockito:1.4'
+    androidTestImplementation 'net.sourceforge.streamsupport:android-retrostreams:1.7.4'
 }
 
 configurations {

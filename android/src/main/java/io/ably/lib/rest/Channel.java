@@ -8,7 +8,9 @@ import io.ably.lib.types.ChannelOptions;
 
 public class Channel extends RestChannelBase {
     /**
-     * The push instance for this channel.
+     * A {@link PushChannel} object.
+     * <p>
+     * Spec: RSH4
      */
     public final PushChannel push;
 

@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.preference.PreferenceManager;
 import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
@@ -78,6 +79,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 @RunWith(AndroidJUnit4.class)
 public class AndroidPushTest extends PlatformSpecificIntegrationTest {
@@ -973,6 +975,7 @@ public class AndroidPushTest extends PlatformSpecificIntegrationTest {
     // RSH3d3
     @Test
     public void WaitingForNewPushDeviceDetails_on_GotPushDeviceDetails() throws Exception {
+        assumeTrue("Can only run on API Level 21 or newer because HttpURLConnection does not support PATCH", Build.VERSION.SDK_INT >= 21);
         new UpdateRegistrationTest() {
             @Override
             protected void setUpMachineState(TestCase testCase) throws AblyException {
@@ -1467,7 +1470,11 @@ public class AndroidPushTest extends PlatformSpecificIntegrationTest {
 
         assertInstanceOf(NotActivated.class, activation.machine.current);
         // Since the event doesn't have a nullary constructor, it should be dropped.
-        assertEquals(0, activation.machine.pendingEvents.stream().filter(e -> e instanceof SyncRegistrationFailed).count());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            assertEquals(0, activation.machine.pendingEvents.stream().filter(e -> e instanceof SyncRegistrationFailed).count());
+        } else {
+            assertEquals(0, StreamSupport.stream(activation.machine.pendingEvents).filter(e -> e instanceof SyncRegistrationFailed).count());
+        }
     }
 
     // This is all copied and pasted from ParameterizedTest, since I can't inherit from it.
