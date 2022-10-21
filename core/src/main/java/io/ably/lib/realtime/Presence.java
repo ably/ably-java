@@ -803,11 +803,11 @@ public class Presence {
      */
     private class PresenceMap {
 
-        public PresenceMap() {
+        PresenceMap() {
             this.keyByClientID = false;
         }
 
-        public PresenceMap(boolean keyByClientID) {
+        PresenceMap(boolean keyByClientID) {
             this.keyByClientID = keyByClientID;
         }
 
