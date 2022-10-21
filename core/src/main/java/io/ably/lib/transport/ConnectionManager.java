@@ -1107,17 +1107,6 @@ public class ConnectionManager implements ConnectListener {
             channels.reAttach();
         }
 
-        //RTN19a
-        if (pendingMessages.queue != null && !pendingMessages.queue.isEmpty()) {
-            for (QueuedMessage queuedMessage : pendingMessages.queue) {
-                try {
-                    send(queuedMessage.msg, false, null);
-                } catch (AblyException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
         connection.id = message.connectionId;
         ConnectionDetails connectionDetails = message.connectionDetails;
         /* Get any parameters from connectionDetails. */
@@ -1133,6 +1122,9 @@ public class ConnectionManager implements ConnectListener {
             requestState(transport, new StateIndication(ConnectionState.failed, e.errorInfo));
             return;
         }
+
+        //RTN19a
+        sendPendingQueueMessages();
 
         /* indicated connected currentState */
         setSuspendTime();
@@ -1434,6 +1426,34 @@ public class ConnectionManager implements ConnectListener {
         public QueuedMessage(ProtocolMessage msg, CompletionListener listener) {
             this.msg = msg;
             this.listener = listener;
+        }
+    }
+
+    /**
+     * Send all pending messages which are queue.
+     * Remove them from the queue once they are send successfully
+     * Spec: RTN19a
+     */
+    public void sendPendingQueueMessages() {
+        //RTN19a
+        if (pendingMessages.queue != null && !pendingMessages.queue.isEmpty()) {
+            for (final QueuedMessage queuedMessage : pendingMessages.queue) {
+                try {
+                    send(queuedMessage.msg, false, new CompletionListener() {
+                        @Override
+                        public void onSuccess() {
+                            pendingMessages.queue.remove(queuedMessage);
+                        }
+
+                        @Override
+                        public void onError(ErrorInfo reason) {
+                            Log.d(TAG, "Unable to send pending message - " + reason.message);
+                        }
+                    });
+                } catch (AblyException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
