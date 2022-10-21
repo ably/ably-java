@@ -1,5 +1,17 @@
 package io.ably.lib.realtime;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
 import io.ably.lib.http.BasePaginatedQuery;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
@@ -14,17 +26,6 @@ import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.PresenceSerializer;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * A class that provides access to presence operations and state for the
@@ -802,6 +803,14 @@ public class Presence {
      */
     private class PresenceMap {
 
+        public PresenceMap() {
+            this.keyByClientID = false;
+        }
+
+        public PresenceMap(boolean keyByClientID) {
+            this.keyByClientID = keyByClientID;
+        }
+
         /**
          * Wait for sync to be complete. If we are in attaching state wait for initial sync to
          * complete as well. Return false if wait was interrupted because channel transitioned to
@@ -881,7 +890,7 @@ public class Presence {
          * false if the message is already superseded
          */
         synchronized boolean put(PresenceMessage item) {
-            String key = item.clientId; //RTP17h
+            String key = memberKey(item);
             /* we've seen this member, so do not remove it at the end of sync */
             if(residualMembers != null)
                 residualMembers.remove(key);
@@ -976,7 +985,7 @@ public class Presence {
          * @return
          */
         synchronized boolean remove(PresenceMessage item) {
-            String key = item.clientId; //RTP17h
+            String key = memberKey(item);
             if (hasNewerItem(key, item))
                 return false;
             PresenceMessage existingItem = members.remove(key);
@@ -1055,13 +1064,31 @@ public class Presence {
             }
         }
 
+        /**
+         * Get the member key for the PresenceMessage.
+         * Spec: RTP17h
+         * @return key of the presence message
+         */
+        public String memberKey(PresenceMessage item) {
+            if (this.keyByClientID) {
+                return item.clientId;
+            } else {
+                return item.connectionId + ':' + item.clientId;
+            }
+        }
+
         private boolean syncInProgress;
         private Collection<String> residualMembers;
         private final HashMap<String, PresenceMessage> members = new HashMap<String, PresenceMessage>();
+        /**
+         * Used for differentiating between main and internal presence map
+         * Spec: RTP17h
+         */
+        private boolean keyByClientID;
     }
 
     private final PresenceMap presence = new PresenceMap();
-    private final PresenceMap internalPresence = new PresenceMap();
+    private final PresenceMap internalPresence = new PresenceMap(true);
 
     /************************************
      * general
