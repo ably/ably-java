@@ -98,13 +98,11 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
             this.reason = stateChange.reason;
         }
 
-        if (newState == ChannelState.detached || newState == ChannelState.suspended || newState == ChannelState.failed)
+        if (newState == ChannelState.detached || newState == ChannelState.suspended || newState == ChannelState.failed) {
             properties.channelSerial = null; //RTP5a1
-
-        if (newState == ChannelState.attached && state == ChannelState.attached) {
-            //RTP17f
-            presence.reEnter(newState);
         }
+
+        presence.reEnter(newState); //RTP17f
 
         if (notifyStateChange) {
             /* broadcast state change */

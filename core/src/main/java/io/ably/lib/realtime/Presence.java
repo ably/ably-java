@@ -299,7 +299,7 @@ public class Presence {
      * Spec: RTP17f, RTP17g
      */
     public void reEnter(ChannelState newState) {
-        if (newState == ChannelState.attached && channel.state == ChannelState.attached) {
+        if (newState == ChannelState.attached && channel.state != ChannelState.attached) {
             internalPresence.reEnter();
         }
     }
