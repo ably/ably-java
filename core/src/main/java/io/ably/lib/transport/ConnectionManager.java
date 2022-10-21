@@ -1087,10 +1087,14 @@ public class ConnectionManager implements ConnectListener {
         channels.onMessage(message);
     }
 
+    /**
+     * Handle {@link ProtocolMessage.Action.connected} messages
+     * @param message a ProtocolMessage object
+     */
     private synchronized void onConnected(ProtocolMessage message) {
         ErrorInfo error = message.error;
 
-        if (message.action == ProtocolMessage.Action.connected && message.connectionId.equals(connection.id) && error == null) {
+        if (message.connectionId.equals(connection.id) && error == null) {
             //RTN15c6
             Log.d(TAG, "connection has reconnected and resumed successfully");
             connection.reason = null;
@@ -1106,7 +1110,7 @@ public class ConnectionManager implements ConnectListener {
                     }
                 }
             }
-        } else if (message.action == ProtocolMessage.Action.connected && !message.connectionId.equals(connection.id) && error != null) {
+        } else if (!message.connectionId.equals(connection.id) && error != null) {
             //RTN15c7
             Log.d(TAG, "connection resume is invalid: " + error.message);
             connection.reason = error;
