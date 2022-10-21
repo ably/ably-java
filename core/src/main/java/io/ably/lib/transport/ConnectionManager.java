@@ -1099,23 +1099,23 @@ public class ConnectionManager implements ConnectListener {
             Log.d(TAG, "connection has reconnected and resumed successfully");
             connection.reason = null;
             channels.reAttach();
-
-            //RTN19a
-            if (pendingMessages.queue != null && !pendingMessages.queue.isEmpty()) {
-                for (QueuedMessage queuedMessage : pendingMessages.queue) {
-                    try {
-                        send(queuedMessage.msg, false, null);
-                    } catch (AblyException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
         } else if (!message.connectionId.equals(connection.id) && error != null) {
             //RTN15c7
             Log.d(TAG, "connection resume is invalid: " + error.message);
             connection.reason = error;
             msgSerial = 0;
             channels.reAttach();
+        }
+
+        //RTN19a
+        if (pendingMessages.queue != null && !pendingMessages.queue.isEmpty()) {
+            for (QueuedMessage queuedMessage : pendingMessages.queue) {
+                try {
+                    send(queuedMessage.msg, false, null);
+                } catch (AblyException e) {
+                    e.printStackTrace();
+                }
+            }
         }
 
         connection.id = message.connectionId;
