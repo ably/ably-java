@@ -67,7 +67,7 @@ public abstract class AblyBase<
     public final Channels<ChannelType> channels;
     public final PlatformType platform;
     /**
-     * An {@link Push} object.
+     * An {@link io.ably.lib.push.PushBase} object.
      * <p>
      * Spec: RSH7
      */
@@ -131,7 +131,7 @@ public abstract class AblyBase<
     /**
      * Causes the connection to close, entering the [{@link io.ably.lib.realtime.ConnectionState#closing} state.
      * Once closed, the library does not attempt to re-establish the connection without an explicit call to
-     * {@link Connection#connect()}.
+     * {@link io.ably.lib.realtime.Connection#connect()}.
      * <p>
      * Spec: RTN12
      * @throws Exception
