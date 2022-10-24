@@ -43,6 +43,9 @@ import static org.junit.Assert.fail;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class RealtimeAuthTest extends ParameterizedTest {
 
@@ -186,7 +189,7 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
             }
 
             Exception exception = new NonRetriableRuntimeException();
-            final AblyRealtime ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
+            final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
 
             ablyRealtime.connection.connect();
 
@@ -204,7 +207,7 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
     public void auth_client_fails_when_auth_token_fails_with_ably_exception_with_status_code_403() {
         try {
             Exception exception = AblyException.fromErrorInfo(new ErrorInfo("A non retriable Ably exception", 403, 80040));
-            final AblyRealtime ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
+            final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
 
             ablyRealtime.connection.connect();
 
@@ -222,7 +225,7 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
     public void auth_client_does_not_fail_when_auth_token_fails_with_an_ably_exception() {
         try {
             Exception exception = AblyException.fromErrorInfo(new ErrorInfo("An Ably exception", 401, 80040));
-            final AblyRealtime ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
+            final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
 
             ablyRealtime.connection.connect();
 
@@ -240,7 +243,7 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
     public void auth_client_does_not_fail_when_auth_token_fails_with_a_runtime_exception() {
         try {
             Exception exception = new RuntimeException("A runtime exception");
-            final AblyRealtime ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
+            final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
 
             ablyRealtime.connection.connect();
 
@@ -255,7 +258,7 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
      * Waits for the Ably connection to enter the [connectionState] and once it happens asserts that the connection state,
      * status code and code have expected values.
      */
-    private void waitAndAssertConnectionState(AblyRealtime ablyRealtime,ConnectionState connectionState, int statusCode, int code){
+    private void waitAndAssertConnectionState(AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime,ConnectionState connectionState, int statusCode, int code){
         Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ablyRealtime.connection);
         connectionWaiter.waitFor(connectionState);
 
@@ -267,7 +270,7 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
     /**
      * Create ably realtime with auth callback which throws the specified exception.
      */
-    private AblyRealtime createAblyRealtimeWithTokenAuthError(final Exception exception) throws AblyException {
+    private final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase>  createAblyRealtimeWithTokenAuthError(final Exception exception) throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.autoConnect = false;
         opts.useTokenAuth = true;
@@ -283,7 +286,7 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
                 }
             }
         };
-        return new AblyRealtime(opts);
+        return createAblyRealtime(opts);
     }
 
     /**
@@ -933,7 +936,6 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
             /* create Ably realtime instance with token and authCallback */
             class ProtocolListener extends DebugOptions implements DebugOptions.RawProtocolListener {
                 ProtocolListener() {
-//                    Setup.getTestVars().fillInOptions(this);
                     testVars.fillInOptions(this);
                     protocolListener = this;
                 }
@@ -996,7 +998,7 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
             /* get a TokenDetails */
             final String testKey = testVars.keys[0].keyStr;
             ClientOptions optsForToken = createOptions(testKey);
-            final AblyRest ablyForToken = new AblyRest(optsForToken);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyForToken = createAblyRest(optsForToken);
 
             final TokenDetails tokenDetails = ablyForToken.auth.requestToken(new Auth.TokenParams(){{ ttl = 1000L; }}, null);
             assertNotNull("Expected token value", tokenDetails.token);
@@ -1004,7 +1006,7 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
             /* create Ably realtime instance with token and authCallback */
             class ProtocolListener extends DebugOptions implements DebugOptions.RawProtocolListener {
                 ProtocolListener() {
-                    Setup.getTestVars().fillInOptions(this);
+                    testVars.fillInOptions(this);
                     protocolListener = this;
                 }
                 @Override
@@ -1033,7 +1035,7 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
                 }
             };
 
-            final AblyRealtime ably = new AblyRealtime(opts);
+            final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(opts);
             synchronized (opts) {
                 ably.connect();
                 try {
@@ -1065,7 +1067,7 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
             /* get a TokenDetails */
             final String testKey = testVars.keys[0].keyStr;
             final ClientOptions clientOptions = createOptions(testKey);
-            final AblyRest ablyRest = new AblyRest(clientOptions);
+            final AblyBase<PushBase, Platform, RestChannelBase> ablyRest = createAblyRest(clientOptions);
 
             final TokenDetails tokenDetails = ablyRest.auth.requestToken(new Auth.TokenParams() {{
                 ttl = 1000L;
@@ -1075,7 +1077,7 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
             // create Ably realtime instance with token and authCallback
             class ProtocolListener extends DebugOptions implements DebugOptions.RawProtocolListener {
                 ProtocolListener() {
-                    Setup.getTestVars().fillInOptions(this);
+                    testVars.fillInOptions(this);
                     protocolListener = this;
                 }
 
@@ -1105,7 +1107,7 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
             //   implement callback, using Ably instance with key
             protocolListener.authCallback = params -> tokenDetails;
 
-            final AblyRealtime ably = new AblyRealtime(protocolListener);
+            final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ably = createAblyRealtime(protocolListener);
             synchronized (protocolListener) {
                 ably.connect();
                 try {
