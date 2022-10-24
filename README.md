@@ -18,13 +18,13 @@ Include the library by adding an `implementation` reference to `dependencies` bl
 For [Java](https://mvnrepository.com/artifact/io.ably/ably-java/latest):
 
 ```groovy
-implementation 'io.ably:ably-java:1.2.12'
+implementation 'io.ably:ably-java:2.0'
 ```
 
 For [Android](https://mvnrepository.com/artifact/io.ably/ably-android/latest):
 
 ```groovy
-implementation 'io.ably:ably-android:1.2.12'
+implementation 'io.ably:ably-android:2.0'
 ```
 
 The library is hosted on [Maven Central](https://mvnrepository.com/repos/central), so you need to ensure that the repository is referenced also; IDEs will typically include this by default:
@@ -213,12 +213,13 @@ while(result.hasNext()) {
 
 ```java
 ChannelStateListener listener = new ChannelStateListener() {
-	@Override
-	public void onChannelStateChanged(ChannelState state, ErrorInfo reason) {
-		System.out.println("Channel state changed to " + state.name());
-		if (reason != null) System.out.println(reason.toString());
-	}
-};
+    @Override
+    public void onChannelStateChanged(ChannelStateChange stateChange) {
+        System.out.println("Channel state changed to " + stateChange.current.name());
+        if (stateChange.reason != null)
+            System.out.println("Channel state error" + stateChange.reason.message);
+    }
+  };
 ```
 
 You can register using
@@ -487,7 +488,7 @@ Visit https://www.ably.com/docs for a complete API reference and more examples.
 
 ## Requirements
 
-For Java, JRE 7 or later is required. Note that the [Java Unlimited JCE extensions](http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html) must be installed in the Java runtime environment.
+For Java, JRE 8 or later is required. Note that the [Java Unlimited JCE extensions](http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html) must be installed in the Java runtime environment.
 
 For Android, 5.0 (API level 21) or later is required.
 
