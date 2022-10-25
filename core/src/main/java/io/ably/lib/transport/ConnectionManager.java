@@ -1098,14 +1098,14 @@ public class ConnectionManager implements ConnectListener {
             //RTN15c6
             Log.d(TAG, "connection has reconnected and resumed successfully");
             connection.reason = null;
-            channels.reAttach();
         } else if (!message.connectionId.equals(connection.id) && error != null) {
             //RTN15c7
             Log.d(TAG, "connection resume is invalid: " + error.message);
             connection.reason = error;
             msgSerial = 0;
-            channels.reAttach();
         }
+
+        channels.reAttach();
 
         connection.id = message.connectionId;
         ConnectionDetails connectionDetails = message.connectionDetails;
