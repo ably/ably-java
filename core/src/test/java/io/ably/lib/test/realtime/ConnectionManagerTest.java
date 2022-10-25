@@ -649,7 +649,7 @@ public abstract class ConnectionManagerTest extends ParameterizedTest {
             /* We want this greater than newTtl + newIdleInterval */
             final long waitInDisconnectedState = 3000L;
             final List<String> attachedChannelHistory = new ArrayList<String>();
-            final List<String> expectedAttachedChannelHistory = Arrays.asList("attaching", "attached", "detached", "attaching", "attached");
+            final List<String> expectedAttachedChannelHistory = Arrays.asList("attaching", "attached", "attaching", "attached");
             final List<String> suspendedChannelHistory = new ArrayList<String>();
             final List<String> expectedSuspendedChannelHistory = Arrays.asList("attaching", "attached");
 
