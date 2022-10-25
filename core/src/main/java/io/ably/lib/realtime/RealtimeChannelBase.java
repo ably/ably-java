@@ -102,7 +102,7 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
             properties.channelSerial = null; //RTP5a1
         }
 
-        presence.reEnter(newState); //RTP17f
+        presence.reEnter(stateChange.current, stateChange.previous); //RTP17f
 
         if (notifyStateChange) {
             /* broadcast state change */
