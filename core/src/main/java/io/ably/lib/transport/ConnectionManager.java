@@ -1439,17 +1439,7 @@ public class ConnectionManager implements ConnectListener {
         if (pendingMessages.queue != null && !pendingMessages.queue.isEmpty()) {
             for (final QueuedMessage queuedMessage : pendingMessages.queue) {
                 try {
-                    send(queuedMessage.msg, false, new CompletionListener() {
-                        @Override
-                        public void onSuccess() {
-                            pendingMessages.queue.remove(queuedMessage);
-                        }
-
-                        @Override
-                        public void onError(ErrorInfo reason) {
-                            Log.d(TAG, "Unable to send pending message - " + reason.message);
-                        }
-                    });
+                    send(queuedMessage.msg, false, null);
                 } catch (AblyException e) {
                     e.printStackTrace();
                 }
