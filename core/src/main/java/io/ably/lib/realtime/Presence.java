@@ -299,10 +299,8 @@ public class Presence {
     /**
      * Spec: RTP17f, RTP17g
      */
-    public void reEnter(ChannelState newState, ChannelState previousState) {
-        if (newState == ChannelState.attached && previousState != ChannelState.attached) {
-            internalPresence.reEnter();
-        }
+    public void reEnter() {
+        internalPresence.reEnter();
     }
 
     void setPresence(PresenceMessage[] messages, boolean broadcast, String syncChannelSerial) {

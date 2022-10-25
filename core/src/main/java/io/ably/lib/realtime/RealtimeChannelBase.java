@@ -102,8 +102,6 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
             properties.channelSerial = null; //RTP5a1
         }
 
-        presence.reEnter(stateChange.current, stateChange.previous); //RTP17f
-
         if (notifyStateChange) {
             /* broadcast state change */
             emit(newState, stateChange);
@@ -319,6 +317,7 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
         } else {
             this.attachResume = true;
             setState(ChannelState.attached, message.error, resumed);
+            presence.reEnter(); //RTP17f
             sendQueuedMessages();
             presence.setAttached(message.hasFlag(Flag.has_presence));
         }
