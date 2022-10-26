@@ -225,7 +225,7 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
     public void auth_client_does_not_fail_when_auth_token_fails_with_an_ably_exception() {
         try {
             Exception exception = AblyException.fromErrorInfo(new ErrorInfo("An Ably exception", 401, 80040));
-            final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
+            AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase> ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
 
             ablyRealtime.connection.connect();
 
