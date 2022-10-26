@@ -73,7 +73,7 @@ public class AndroidSuite {
 
             assertNotNull("Verify ably server was reached", headers);
             String header = headers.get(Defaults.ABLY_AGENT_HEADER.toLowerCase(Locale.ROOT));
-            assertTrue("Verify correct library header was passed to the server", header != null && header.startsWith("android"));
+            assertTrue("Verify correct library header was passed to the server", header != null && header.contains("android"));
         }
         catch (AblyException e) {
             e.printStackTrace();
