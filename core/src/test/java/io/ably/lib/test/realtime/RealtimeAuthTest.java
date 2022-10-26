@@ -270,7 +270,7 @@ public abstract class RealtimeAuthTest extends ParameterizedTest {
     /**
      * Create ably realtime with auth callback which throws the specified exception.
      */
-    private final AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase>  createAblyRealtimeWithTokenAuthError(final Exception exception) throws AblyException {
+    private AblyRealtimeBase<PushBase, Platform, RealtimeChannelBase>  createAblyRealtimeWithTokenAuthError(final Exception exception) throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.autoConnect = false;
         opts.useTokenAuth = true;
