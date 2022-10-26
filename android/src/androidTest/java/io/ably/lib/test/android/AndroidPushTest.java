@@ -59,6 +59,8 @@ import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.IntentUtils;
 import io.ably.lib.util.JsonUtils;
 import io.ably.lib.util.Serialisation;
+import java9.util.stream.StreamSupport;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
