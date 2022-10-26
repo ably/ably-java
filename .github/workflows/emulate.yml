@@ -10,16 +10,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        android-api-level: [ 19, 21, 24, 29 ]
+        android-api-level: [ 21, 24, 29 ]
 
     steps:
       - uses: actions/checkout@v2
-
-      - name: Set up the JDK
-        uses: actions/setup-java@v2
-        with:
-          java-version: '11'
-          distribution: 'adopt'
 
       - uses: reactivecircus/android-emulator-runner@v2
         with:
