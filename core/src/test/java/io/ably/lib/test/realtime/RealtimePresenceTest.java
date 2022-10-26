@@ -2194,10 +2194,7 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
                 channelWaiter.waitFor(ChannelState.attached);
                 long reconnectTimestamp = System.currentTimeMillis();
 
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                }
+                try {Thread.sleep(500);} catch (InterruptedException e) {}
 
                 AblyBase<PushBase, Platform, RestChannelBase> ablyRest = createAblyRest(opts);
                 RestChannelBase restChannel = ablyRest.channels.get(channelName);
@@ -3068,16 +3065,19 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
                             sentPresence.get(0).clientId == null
             );
 
+            //Wait for channel to reach attached state before detaching
+            try {Thread.sleep(500L);} catch(InterruptedException e) {}
+
             channel.detach();
             new ChannelWaiter(channel).waitFor(ChannelState.detached);
 
             try {
+                assertEquals("Verify if channel is detached", ChannelState.detached, channel.state);
                 channel.presence.enter(null, null);
                 fail("Presence.enter() shouldn't succeed in detached state");
             } catch (AblyException e) {
                 assertEquals("Verify exception error code", e.errorInfo.code, 91001 /* unable to enter presence channel (invalid channel state) */);
             }
-
         } finally {
             if (ably != null)
                 ably.close();
@@ -3132,16 +3132,19 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
                             sentPresence.get(0).clientId.equals(testClientId2)
             );
 
+            //Wait for channel to reach attached state before detaching
+            try {Thread.sleep(500L);} catch(InterruptedException e) {}
+
             channel.detach();
             new ChannelWaiter(channel).waitFor(ChannelState.detached);
 
             try {
+                assertEquals("Verify if channel is detached", ChannelState.detached, channel.state);
                 channel.presence.enterClient("testClient3");
                 fail("Presence.enterClient() shouldn't succeed in detached state");
             } catch (AblyException e) {
                 assertEquals("Verify exception error code", e.errorInfo.code, 91001 /* unable to enter presence channel (invalid channel state) */);
             }
-
         } finally {
             if (ably != null)
                 ably.close();
