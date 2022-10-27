@@ -3065,9 +3065,6 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
                             sentPresence.get(0).clientId == null
             );
 
-            //Wait for channel to reach attached state before detaching
-            try {Thread.sleep(500L);} catch(InterruptedException e) {}
-
             channel.detach();
             new ChannelWaiter(channel).waitFor(ChannelState.detached);
 
@@ -3131,9 +3128,6 @@ public abstract class RealtimePresenceTest extends ParameterizedTest {
                     sentPresence.get(0).action == Action.enter &&
                             sentPresence.get(0).clientId.equals(testClientId2)
             );
-
-            //Wait for channel to reach attached state before detaching
-            try {Thread.sleep(500L);} catch(InterruptedException e) {}
 
             channel.detach();
             new ChannelWaiter(channel).waitFor(ChannelState.detached);

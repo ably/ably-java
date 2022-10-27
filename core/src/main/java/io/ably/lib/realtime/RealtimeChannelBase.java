@@ -314,6 +314,10 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
             Log.v(TAG, String.format(Locale.ROOT, "Server initiated attach for channel %s", name));
             /* emit UPDATE event according to RTL12 */
             emitUpdate(null, resumed);
+        } else if (state == ChannelState.detaching || state == ChannelState.detached) {
+            //RTL5k
+            Log.v(TAG, "setAttached(): channel is in detaching state so no need to attach it!");
+            setDetached((message.error != null) ? message.error : REASON_NOT_ATTACHED);
         } else {
             this.attachResume = true;
             setState(ChannelState.attached, message.error, resumed);
