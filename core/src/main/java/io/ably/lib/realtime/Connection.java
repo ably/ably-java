@@ -98,7 +98,7 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
      * @return a json string which incorporates the @connectionKey@, the current @msgSerial@,
      * and a collection of pairs of channel @name@ and current @channelSerial@ for every currently attached channel.
      */
-    public String getRecoveryKey() {
+    public String createRecoveryKey() {
         if (key == null || connectionManager == null || connectionManager.getConnectionState() == null ||
             connectionManager.getConnectionState().state == ConnectionState.closed ||
             connectionManager.getConnectionState().state == ConnectionState.closing ||
