@@ -89,7 +89,7 @@ public abstract class RealtimeRecoverTest extends ParameterizedTest {
              * NOTE this depends on knowledge of the internal structure
              * of the library, to simulate a dropped transport without
              * causing the connection itself to be disposed */
-            String recoverConnectionKey = ablyRx.connection.getRecoveryKey();
+            String recoverConnectionKey = ablyRx.connection.createRecoveryKey();
             ablyRx.connection.connectionManager.requestState(ConnectionState.failed);
 
             /* wait */
@@ -189,7 +189,7 @@ public abstract class RealtimeRecoverTest extends ParameterizedTest {
              * NOTE this depends on knowledge of the internal structure
              * of the library, to simulate a dropped transport without
              * causing the connection itself to be disposed */
-            String recoverConnectionKey = ablyRx.connection.getRecoveryKey();
+            String recoverConnectionKey = ablyRx.connection.createRecoveryKey();
             ablyRx.connection.connectionManager.requestState(ConnectionState.failed);
 
             /* wait */
