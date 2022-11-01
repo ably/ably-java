@@ -800,15 +800,6 @@ public class Presence {
      *
      */
     private class PresenceMap {
-
-        PresenceMap() {
-            this.keyByClientID = false;
-        }
-
-        PresenceMap(boolean keyByClientID) {
-            this.keyByClientID = keyByClientID;
-        }
-
         /**
          * Wait for sync to be complete. If we are in attaching state wait for initial sync to
          * complete as well. Return false if wait was interrupted because channel transitioned to
@@ -1068,25 +1059,24 @@ public class Presence {
          * @return key of the presence message
          */
         public String memberKey(PresenceMessage item) {
-            if (this.keyByClientID) {
-                return item.clientId;
-            } else {
-                return item.connectionId + ':' + item.clientId;
-            }
+            return item.connectionId + ':' + item.clientId;
         }
 
         private boolean syncInProgress;
         private Collection<String> residualMembers;
         private final HashMap<String, PresenceMessage> members = new HashMap<String, PresenceMessage>();
-        /**
-         * Used for differentiating between main and internal presence map
-         * Spec: RTP17h
-         */
-        private boolean keyByClientID;
+    }
+
+    // RTP17h
+    private class InternalPresenceMap extends PresenceMap {
+        @Override
+        public String memberKey(PresenceMessage item) {
+            return item.clientId;
+        }
     }
 
     private final PresenceMap presence = new PresenceMap();
-    private final PresenceMap internalPresence = new PresenceMap(true);
+    private final PresenceMap internalPresence = new InternalPresenceMap();
 
     /************************************
      * general
