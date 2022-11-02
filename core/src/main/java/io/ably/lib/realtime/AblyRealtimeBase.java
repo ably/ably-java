@@ -80,11 +80,11 @@ public abstract class AblyRealtimeBase<
             } else {
                 connection.connectionManager.msgSerial = recoveryKey.msgSerial; //RTN16f
 
-                for (Map.Entry<String, String> entry : recoveryKey.serials.entrySet()) {
+                for (Map.Entry<String, String> serial : recoveryKey.serials.entrySet()) {
                     //RTN16j
-                    RealtimeChannelBase channel = channels.get(entry.getKey());
+                    RealtimeChannelBase channel = channels.get(serial.getKey());
                     if (channel != null) {
-                        channel.properties.channelSerial = entry.getValue(); //RTN16i
+                        channel.properties.channelSerial = serial.getValue(); //RTN16i
                     }
                 }
             }
@@ -213,8 +213,8 @@ public abstract class AblyRealtimeBase<
          */
         @Override
         public void reAttach() {
-            for (Map.Entry<String, RealtimeChannelBase> entry : map.entrySet()) {
-                RealtimeChannelBase channel = entry.getValue();
+            for (Map.Entry<String, RealtimeChannelBase> channelEntry : map.entrySet()) {
+                RealtimeChannelBase channel = channelEntry.getValue();
                 if (channel.state == ChannelState.attaching || channel.state == ChannelState.attached || channel.state == ChannelState.suspended) {
                     Log.d(TAG, "reAttach(); channel = " + channel.name);
                     channel.state = ChannelState.attaching;
