@@ -1434,7 +1434,7 @@ public class ConnectionManager implements ConnectListener {
      * Remove them from the queue once they are send successfully
      * Spec: RTN19a
      */
-    public void sendPendingQueueMessages() {
+    private void sendPendingQueueMessages() {
         //RTN19a
         if (pendingMessages.queue != null && !pendingMessages.queue.isEmpty()) {
             for (final QueuedMessage queuedMessage : pendingMessages.queue) {
