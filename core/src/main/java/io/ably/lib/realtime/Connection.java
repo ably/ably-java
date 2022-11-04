@@ -109,14 +109,12 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
             return null;
         }
 
-        ConnectionRecoveryKey recoveryKey = new ConnectionRecoveryKey();
-        recoveryKey.connectionKey = key;
-        recoveryKey.msgSerial = connectionManager.msgSerial;
+        ConnectionRecoveryKey recoveryKey = new ConnectionRecoveryKey(key, connectionManager.msgSerial);
 
         for (Object channel : ably.channels.values()) {
             if (channel instanceof RealtimeChannelBase) {
                 RealtimeChannelBase rcb = (RealtimeChannelBase) channel;
-                recoveryKey.serials.put(rcb.name, rcb.properties.channelSerial);
+                recoveryKey.addSerials(rcb.name, rcb.properties.channelSerial);
             }
         }
 

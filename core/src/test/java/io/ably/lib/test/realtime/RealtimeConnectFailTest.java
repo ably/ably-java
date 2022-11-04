@@ -26,6 +26,7 @@ import org.junit.rules.Timeout;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
@@ -337,10 +338,8 @@ public abstract class RealtimeConnectFailTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 
-            ConnectionRecoveryKey recovery = new ConnectionRecoveryKey();
-            recovery.connectionKey = "0123456789abcdef-99";
-            recovery.msgSerial = 0;
-            recovery.serials.put("name","0");
+            ConnectionRecoveryKey recovery = new ConnectionRecoveryKey("0123456789abcdef-99", 0);
+            recovery.addSerials("name","0");
             opts.recover = recovery.asJson();
 
             ably = createAblyRealtime(opts);
@@ -350,7 +349,7 @@ public abstract class RealtimeConnectFailTest extends ParameterizedTest {
             assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
             assertNotNull("Verify error is returned", connectedError);
             assertEquals("Verify correct error code is given", 80018, connectedError.code);
-            assertNotEquals("Verify new connection id is assigned", recovery.connectionKey, ably.connection.key);
+            assertNotEquals("Verify new connection id is assigned", recovery.getConnectionKey(), ably.connection.key);
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");

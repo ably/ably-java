@@ -72,8 +72,8 @@ public interface ITransport {
             } else if(options.recover != null) { //RTN16k
                 mode = Mode.recover;
                 ConnectionRecoveryKey recoveryKey = ConnectionRecoveryKey.fromJson(options.recover);
-                if (recoveryKey != null && recoveryKey.connectionKey != null) {
-                    paramList.add(new Param("recover", recoveryKey.connectionKey));
+                if (recoveryKey != null && recoveryKey.getConnectionKey() != null) {
+                    paramList.add(new Param("recover", recoveryKey.getConnectionKey()));
                 } else {
                     Log.e(TAG, "Invalid recover string specified");
                 }

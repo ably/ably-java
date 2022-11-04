@@ -9,14 +9,40 @@ import io.ably.lib.util.Serialisation;
 
 public class ConnectionRecoveryKey {
 
-    public String connectionKey;
-    public long msgSerial;
+    private final String connectionKey;
+    private final long msgSerial;
     /**
      * Key - channel name
      * <p>
      * Value - channelSerial
      */
-    public Map<String, String> serials = new HashMap<>();
+    private final Map<String, String> serials = new HashMap<>();
+
+    public ConnectionRecoveryKey(String connectionKey, long msgSerial) {
+        this.connectionKey = connectionKey;
+        this.msgSerial = msgSerial;
+    }
+
+    public String getConnectionKey() {
+        return connectionKey;
+    }
+
+    public long getMsgSerial() {
+        return msgSerial;
+    }
+
+    public Map<String, String> getSerials() {
+        return serials;
+    }
+
+    public void setSerials(Map<String, String> serials) {
+        this.serials.clear();
+        this.serials.putAll(serials);
+    }
+
+    public void addSerials(String channelName, String channelSerial) {
+        this.serials.put(channelName, channelSerial);
+    }
 
     public String asJson() {
         return Serialisation.gson.toJson(this);
