@@ -1088,7 +1088,7 @@ public class ConnectionManager implements ConnectListener {
     }
 
     /**
-     * Handle {@link ProtocolMessage.Action.connected} messages
+     * Handle {@link ProtocolMessage.Action#connected} messages
      * @param message a ProtocolMessage object
      */
     private synchronized void onConnected(ProtocolMessage message) {
@@ -1441,7 +1441,9 @@ public class ConnectionManager implements ConnectListener {
                 try {
                     send(queuedMessage.msg, false, null);
                 } catch (AblyException e) {
-                    e.printStackTrace();
+                    String errorString = String.format(Locale.ROOT, "Unable to send pending message %s (%s)",
+                        queuedMessage.msg.id, e.errorInfo.message);
+                    Log.e(TAG, errorString);
                 }
             }
         }

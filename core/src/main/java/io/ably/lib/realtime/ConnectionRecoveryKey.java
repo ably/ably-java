@@ -5,9 +5,11 @@ import com.google.gson.JsonSyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 
 public class ConnectionRecoveryKey {
+    private static final String TAG = "RecoveryKey";
 
     private final String connectionKey;
     private final long msgSerial;
@@ -52,7 +54,7 @@ public class ConnectionRecoveryKey {
         try {
             return Serialisation.gson.fromJson(json, ConnectionRecoveryKey.class);
         } catch (JsonSyntaxException e) {
-            e.printStackTrace();
+            Log.e(TAG, "Cannot create recovery key from json: " + e.getMessage());
             return null;
         }
     }

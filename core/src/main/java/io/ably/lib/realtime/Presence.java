@@ -1048,7 +1048,9 @@ public class Presence {
                 try {
                     updatePresence(member, null);
                 } catch (AblyException e) {
-                    e.printStackTrace();
+                    String errorString = String.format(Locale.ROOT, "Cannot automatically re-enter %s on channel %s (%s)",
+                        member.clientId, channel.name, e.errorInfo.message);
+                    Log.e(TAG, errorString);
                 }
             }
         }
