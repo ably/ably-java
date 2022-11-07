@@ -740,7 +740,7 @@ public abstract class ConnectionManagerTest extends ParameterizedTest {
             assertEquals("Suspended channel histories do not match", expectedSuspendedChannelHistory, suspendedChannelHistory);
         } catch (AblyException e) {
             e.printStackTrace();
-            fail("channels_are_reattached_after_reconnecting_when_statettl_plus_idleinterval_has_passed: Unexpected exception");
+            fail("channels_are_reattached_after_reconnecting_when_statettl_plus_idleinterval_has_passed: " + e.errorInfo.message);
         } finally {
             if (ably != null)
                 ably.close();
