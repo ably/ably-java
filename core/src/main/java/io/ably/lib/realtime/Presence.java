@@ -239,61 +239,6 @@ public class Presence {
             member.timestamp = System.currentTimeMillis();
         }
         broadcastPresence(residualMembers.toArray(new PresenceMessage[residualMembers.size()]));
-
-        /**
-         * (RTP5c2) If a SYNC is initiated as part of the attach, then once the SYNC is complete,
-         * all members not present in the PresenceMap but present in the internal PresenceMap must
-         * be re-entered automatically by the client using the clientId and data attributes from
-         * each. The members re-entered automatically must be removed from the internal PresenceMap
-         * ensuring that members present on the channel are constructed from presence events sent
-         * from Ably since the channel became ATTACHED
-         */
-        if (syncAsResultOfAttach) {
-            syncAsResultOfAttach = false;
-            for (PresenceMessage item: internalPresence.values()) {
-                if (presence.put(item)) {
-                    /* Message is new to presence map, send it */
-                    final String clientId = item.clientId;
-                    try {
-                        /**
-                         * (RTP17d) [...] publishing a PresenceMessage with an ENTER action using the
-                         * clientId and data attributes from that member [...]
-                         */
-                        PresenceMessage itemToSend = new PresenceMessage();
-                        itemToSend.clientId = item.clientId;
-                        itemToSend.data = item.data;
-                        itemToSend.action = PresenceMessage.Action.enter;
-                        updatePresence(itemToSend, new CompletionListener() {
-                            @Override
-                            public void onSuccess() {
-                            }
-
-                            @Override
-                            public void onError(ErrorInfo reason) {
-                                    /*
-                                     * (RTP5c3)  If any of the automatic ENTER presence messages published
-                                     * in RTP5c2 fail, then an UPDATE event should be emitted on the channel
-                                     * with resumed set to true and reason set to an ErrorInfo object with error
-                                     * code value 91004 and the error message string containing the message
-                                     * received from Ably (if applicable), the code received from Ably
-                                     * (if applicable) and the explicit or implicit client_id of the PresenceMessage
-                                     */
-                                String errorString = String.format(Locale.ROOT, "Cannot automatically re-enter %s on channel %s (%s)",
-                                        clientId, channel.name, reason.message);
-                                Log.e(TAG, errorString);
-                                channel.emitUpdate(new ErrorInfo(errorString, 91004), true);
-                            }
-                        });
-                    } catch(AblyException e) {
-                        String errorString = String.format(Locale.ROOT, "Cannot automatically re-enter %s on channel %s (%s)",
-                                clientId, channel.name, e.errorInfo.message);
-                        Log.e(TAG, errorString);
-                        channel.emitUpdate(new ErrorInfo(errorString, 91004), true);
-                    }
-                }
-            }
-            internalPresence.clear();
-        }
     }
 
     /**
@@ -748,7 +693,6 @@ public class Presence {
     void setAttached(boolean hasPresence) {
         /* Start sync, if hasPresence is not set end sync immediately dropping all the current presence members */
         presence.startSync();
-        syncAsResultOfAttach = true;
         if (!hasPresence) {
             /*
              * RTP19a  If the PresenceMap has existing members when an ATTACHED message is received without a
@@ -1095,8 +1039,6 @@ public class Presence {
 
     /* channel serial if sync is in progress */
     private String currentSyncChannelSerial;
-    /* Sync in progress is a result of attach operation */
-    private boolean syncAsResultOfAttach;
 
     /**
      * (RTP13) Presence#syncComplete returns true if the initial SYNC operation has completed for
