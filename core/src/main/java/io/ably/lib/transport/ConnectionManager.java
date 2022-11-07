@@ -1444,6 +1444,7 @@ public class ConnectionManager implements ConnectListener {
                     String errorString = String.format(Locale.ROOT, "Unable to send pending message %s (%s)",
                         queuedMessage.msg.id, e.errorInfo.message);
                     Log.e(TAG, errorString);
+                    connection.emitUpdate(e.errorInfo);
                 }
             }
         }
