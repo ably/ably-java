@@ -338,7 +338,7 @@ public abstract class RealtimeConnectFailTest extends ParameterizedTest {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 
             ConnectionRecoveryKey recovery = new ConnectionRecoveryKey("0123456789abcdef-99", 0);
-            recovery.addSerials("name","0");
+            recovery.addSerial("name","0");
             opts.recover = recovery.asJson();
 
             ably = createAblyRealtime(opts);
