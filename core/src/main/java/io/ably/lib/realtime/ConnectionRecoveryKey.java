@@ -42,7 +42,7 @@ public class ConnectionRecoveryKey {
         this.serials.putAll(serials);
     }
 
-    public void addSerials(String channelName, String channelSerial) {
+    public void addSerial(String channelName, String channelSerial) {
         this.serials.put(channelName, channelSerial);
     }
 
