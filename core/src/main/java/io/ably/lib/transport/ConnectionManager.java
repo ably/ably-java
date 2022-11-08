@@ -1430,8 +1430,8 @@ public class ConnectionManager implements ConnectListener {
     }
 
     /**
-     * Send all pending messages which are queue.
-     * Remove them from the queue once they are send successfully
+     * Send all pending messages which are in the queue.
+     * Remove them from the queue once they are sent successfully
      * Spec: RTN19a
      */
     private void sendPendingQueueMessages() {
