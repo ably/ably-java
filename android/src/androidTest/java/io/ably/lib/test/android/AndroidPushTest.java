@@ -33,9 +33,9 @@ import io.ably.lib.push.ActivationStateMachine.WaitingForNewPushDeviceDetails;
 import io.ably.lib.push.ActivationStateMachine.WaitingForPushDeviceDetails;
 import io.ably.lib.push.ActivationStateMachine.WaitingForRegistrationSync;
 import io.ably.lib.push.LocalDevice;
-import io.ably.lib.push.Push;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.push.PushChannel;
+import io.ably.lib.push.Push;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
@@ -44,7 +44,10 @@ import io.ably.lib.rest.DeviceDetails;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Helpers.AsyncWaiter;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
+import io.ably.lib.test.common.PlatformSpecificIntegrationTest;
 import io.ably.lib.test.common.Setup;
+import io.ably.lib.test.util.AndroidTestConfigurationCreator;
+import io.ably.lib.test.util.IntegrationTestConfigurationCreator;
 import io.ably.lib.test.util.TestCases;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
@@ -58,8 +61,6 @@ import io.ably.lib.util.JsonUtils;
 import io.ably.lib.util.Serialisation;
 import java9.util.stream.StreamSupport;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -83,7 +84,7 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 @RunWith(AndroidJUnit4.class)
-public class AndroidPushTest {
+public class AndroidPushTest extends PlatformSpecificIntegrationTest {
     private static final int TIMEOUT_SECONDS = 30;
 
     private class TestActivation {
@@ -151,7 +152,7 @@ public class AndroidPushTest {
             AsyncWaiter<Helpers.RawHttpRequest> requestWaiter = httpTracker.getRequestWaiter();
             AsyncWaiter<Intent> activateWaiter = broadcastWaiter("PUSH_ACTIVATE");
 
-            rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.FCM, "testToken");
+            rest.push.getActivationContext().onNewRegistrationToken("testToken");
             rest.push.activate(false);
 
             activateWaiter.waitFor();
@@ -168,7 +169,7 @@ public class AndroidPushTest {
 
             rest.push.activate(true); // Just to set useCustomRegistrar to true.
             AsyncWaiter<Intent> customRegisterer = broadcastWaiter("PUSH_REGISTER_DEVICE");
-            rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.FCM, "testTokenFailed");
+            rest.push.getActivationContext().onNewRegistrationToken("testTokenFailed");
             customRegisterer.waitFor();
 
             CompletionWaiter failedWaiter = machine.getTransitionedToWaiter(AfterRegistrationSyncFailed.class);
@@ -716,7 +717,7 @@ public class AndroidPushTest {
     @Test
     public void NotActivated_on_CalledActivate_with_registrationToken() throws InterruptedException, AblyException {
         TestActivation activation = new TestActivation();
-        activation.rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.FCM, "testToken");
+        activation.rest.push.getActivationContext().onNewRegistrationToken("testToken");
 
         State state = new NotActivated(activation.machine);
         State to = state.transition(new CalledActivate());
@@ -831,7 +832,7 @@ public class AndroidPushTest {
                     }
 
                     // Will send GotPushDeviceDetails event.
-                    activation.rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.FCM, "testToken");
+                    activation.rest.push.getActivationContext().onNewRegistrationToken("testToken");
 
                     handled.waitFor();
 
@@ -1482,18 +1483,6 @@ public class AndroidPushTest {
     // I need to inherit from AndroidPushTest, and Java doesn't have multiple inheritance
     // or mixins or something like that.
 
-    protected static Setup.TestVars testVars;
-
-    @BeforeClass
-    public static void setUpBeforeClass() throws Exception {
-        testVars = Setup.getTestVars();
-    }
-
-    @AfterClass
-    public static void tearDownAfterClass() throws Exception {
-        Setup.clearTestVars();
-    }
-
     private Setup.TestParameters testParams = Setup.TestParameters.getDefault();
 
     protected DebugOptions createOptions() throws AblyException {
@@ -1944,8 +1933,13 @@ public class AndroidPushTest {
         protected String sendInitialEvent(TestCase testCase) throws AblyException {
             // Will send GotPushDeviceDetails event.
             CalledActivate.useCustomRegistrar(testCase.useCustomRegistrar, PreferenceManager.getDefaultSharedPreferences(getContext()));
-            testCase.testActivation.rest.push.getActivationContext().onNewRegistrationToken(RegistrationToken.Type.FCM, "testTokenUpdated");
+            testCase.testActivation.rest.push.getActivationContext().onNewRegistrationToken("testTokenUpdated");
             return "testTokenUpdated";
         }
+    }
+
+    @Override
+    protected IntegrationTestConfigurationCreator createTestConfigurationCreator() {
+        return new AndroidTestConfigurationCreator();
     }
 }

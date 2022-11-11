@@ -3,6 +3,7 @@ package io.ably.lib.push;
 import android.content.Context;
 import android.support.test.runner.AndroidJUnit4;
 import io.ably.lib.types.RegistrationToken;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -78,7 +79,7 @@ public class LocalDeviceStorageTest {
     public void shared_preferences_storage_works_correctly() {
         LocalDevice localDevice = new LocalDevice(activationContext, null);
 
-        RegistrationToken registrationToken= new RegistrationToken(RegistrationToken.Type.FCM, "ABLY");
+        RegistrationToken registrationToken= new RegistrationToken("ABLY");
         /* initialize properties in storage */
         localDevice.create();
         localDevice.setAndPersistRegistrationToken(registrationToken);
@@ -90,7 +91,6 @@ public class LocalDeviceStorageTest {
         assertNotNull(localDevice.id);
         assertNotNull(localDevice.deviceSecret);
         assertTrue(localDevice.isCreated());
-        assertEquals("FCM", localDevice.getRegistrationToken().type.name());
         assertEquals("ABLY", localDevice.getRegistrationToken().token);
 
         /* reset all properties */
@@ -127,7 +127,7 @@ public class LocalDeviceStorageTest {
     public void custom_storage_works_correctly() {
         LocalDevice localDevice = new LocalDevice(activationContext, inMemoryStorage);
 
-        RegistrationToken registrationToken= new RegistrationToken(RegistrationToken.Type.FCM, "ABLY");
+        RegistrationToken registrationToken= new RegistrationToken("ABLY");
         /* initialize properties in storage */
         localDevice.create();
         localDevice.setAndPersistRegistrationToken(registrationToken);
@@ -139,7 +139,6 @@ public class LocalDeviceStorageTest {
         assertNotNull(localDevice.id);
         assertNotNull(localDevice.deviceSecret);
         assertTrue(localDevice.isCreated());
-        assertEquals("FCM", localDevice.getRegistrationToken().type.name());
         assertEquals("ABLY", localDevice.getRegistrationToken().token);
 
         /* reset all properties */

@@ -1,8 +1,11 @@
 package io.ably.lib.rest;
 
 import android.content.Context;
+import io.ably.lib.platform.AndroidPlatform;
 import io.ably.lib.push.LocalDevice;
+import io.ably.lib.push.Push;
 import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.util.AndroidPlatformAgentProvider;
 import io.ably.lib.util.Log;
@@ -13,7 +16,8 @@ import io.ably.lib.util.Log;
  * This class implements {@link AutoCloseable} so you can use it in
  * try-with-resources constructs and have the JDK close it for you.
  */
-public class AblyRest extends AblyBase {
+public class AblyRest extends AblyBase<Push, AndroidPlatform, Channel> {
+
     /**
      * Constructs a client object using an Ably API key or token string.
      * <p>
@@ -34,6 +38,21 @@ public class AblyRest extends AblyBase {
      */
     public AblyRest(ClientOptions options) throws AblyException {
         super(options, new AndroidPlatformAgentProvider());
+    }
+
+    @Override
+    protected AndroidPlatform createPlatform() {
+        return new AndroidPlatform();
+    }
+
+    @Override
+    protected Push createPush() {
+        return new Push((AblyBase) this);
+    }
+
+    @Override
+    protected RestChannelBase createChannel(AblyBase<Push, AndroidPlatform, Channel> ablyBase, String channelName, ChannelOptions channelOptions) throws AblyException {
+        return new Channel(ablyBase, channelName, channelOptions);
     }
 
     /**

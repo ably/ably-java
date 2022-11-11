@@ -4,7 +4,7 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.push.PushChannel;
 
-public class Channel extends ChannelBase {
+public class Channel extends RealtimeChannelBase {
     /**
      * A {@link PushChannel} object.
      * <p>
@@ -12,13 +12,8 @@ public class Channel extends ChannelBase {
      */
     public final PushChannel push;
 
-    Channel(AblyRealtime ably, String name, ChannelOptions options) throws AblyException {
+    Channel(AblyRealtimeBase ably, String name, ChannelOptions options) throws AblyException {
         super(ably, name, options);
-        this.push = ((io.ably.lib.rest.AblyRest) ably).channels.get(name, options).push;
+        this.push = new PushChannel(name, ably);
     }
-
-    /**
-     * An interface whereby a client maybe notified of messages changes on a channel.
-     */
-    public interface MessageListener extends ChannelBase.MessageListener {}
 }

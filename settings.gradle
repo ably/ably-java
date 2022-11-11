@@ -1,4 +1,5 @@
 rootProject.name = 'ably-java'
 include 'java',
     'android',
+    'core',
     'gradle-lint'

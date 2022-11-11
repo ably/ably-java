@@ -1,6 +1,9 @@
 package io.ably.lib.rest;
 
+import io.ably.lib.platform.JavaPlatform;
+import io.ably.lib.push.Push;
 import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.util.JavaPlatformAgentProvider;
 
@@ -10,7 +13,7 @@ import io.ably.lib.util.JavaPlatformAgentProvider;
  * This class implements {@link AutoCloseable} so you can use it in
  * try-with-resources constructs and have the JDK close it for you.
  */
-public class AblyRest extends AblyBase {
+public class AblyRest extends AblyBase<Push, JavaPlatform, Channel> {
     /**
      * Constructs a client object using an Ably API key or token string.
      * <p>
@@ -31,5 +34,20 @@ public class AblyRest extends AblyBase {
      */
     public AblyRest(ClientOptions options) throws AblyException {
         super(options, new JavaPlatformAgentProvider());
+    }
+
+    @Override
+    protected JavaPlatform createPlatform() {
+        return new JavaPlatform();
+    }
+
+    @Override
+    protected Push createPush() {
+        return new Push(this);
+    }
+
+    @Override
+    protected RestChannelBase createChannel(AblyBase ablyBase, String channelName, ChannelOptions channelOptions) throws AblyException {
+        return new Channel(ablyBase, channelName, channelOptions);
     }
 }

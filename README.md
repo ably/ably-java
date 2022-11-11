@@ -18,13 +18,13 @@ Include the library by adding an `implementation` reference to `dependencies` bl
 For [Java](https://mvnrepository.com/artifact/io.ably/ably-java/latest):
 
 ```groovy
-implementation 'io.ably:ably-java:1.2.18'
+implementation 'io.ably:ably-java:2.0.0'
 ```
 
 For [Android](https://mvnrepository.com/artifact/io.ably/ably-android/latest):
 
 ```groovy
-implementation 'io.ably:ably-android:1.2.18'
+implementation 'io.ably:ably-android:2.0.0'
 ```
 
 The library is hosted on [Maven Central](https://mvnrepository.com/repos/central), so you need to ensure that the repository is referenced also; IDEs will typically include this by default:
@@ -35,7 +35,7 @@ repositories {
 }
 ```
 
-We only support installation via Maven / Gradle from the Maven Central repository. If you want to use a standalone fat JAR (i.e. containing all dependencies), it can be generated via a Gradle task (see [building](#building) below), creating a "Java" (JRE) library variant only. There is no standalone / self-contained AAR build option. Checkout [requirements](#requirements).
+We only support installation via Maven / Gradle from the Maven Central repository. Checkout [requirements](#requirements).
 
 ## Runtime Requirements
 
@@ -438,17 +438,20 @@ Ably provides two models for delivering push notifications to devices.
 To publish a message to a channel including a push payload:
 
 ```java
-Message message = new Message("example", "realtime data");
-message.extras = io.ably.lib.util.JsonUtils.object()
-    .add("push", io.ably.lib.util.JsonUtils.object()
-        .add("notification", io.ably.lib.util.JsonUtils.object()
+JsonObject jsonObject = JsonUtils.object()
+    .add("push", JsonUtils.object()
+        .add("notification", JsonUtils.object()
             .add("title", "Hello from Ably!")
             .add("body", "Example push notification from Ably."))
-        .add("data", io.ably.lib.util.JsonUtils.object()
+        .add("data", JsonUtils.object()
             .add("foo", "bar")
-            .add("baz", "qux")));
+            .add("baz", "qux")))
+        .toJson();
 
-rest.channels.get("pushenabled:foo").publishAsync(message, new CompletionListener() {
+Message message = new Message("example", "realtime data");
+message.extras = new MessageExtras(jsonObject);
+
+rest.channels.get("pushenabled:foo").publishAsync(new Message[]{message}, new CompletionListener() {
     @Override
     public void onSuccess() {}
 
@@ -462,17 +465,18 @@ rest.channels.get("pushenabled:foo").publishAsync(message, new CompletionListene
 To publish a push payload directly to a registered device:
 
 ```java
-Param[] recipient = new Param[]{new Param("deviceId", "xxxxxxxxxxx");
+Param[] recipient = new Param[]{new Param("deviceId", "xxxxxxxxxxx")};
 
-JsonObject payload = io.ably.lib.util.JsonUtils.object()
-        .add("notification", io.ably.lib.util.JsonUtils.object()
+JsonObject payload = JsonUtils.object()
+        .add("notification", JsonUtils.object()
             .add("title", "Hello from Ably!")
             .add("body", "Example push notification from Ably."))
-        .add("data", io.ably.lib.util.JsonUtils.object()
+        .add("data", JsonUtils.object()
             .add("foo", "bar")
-            .add("baz", "qux")));
+            .add("baz", "qux"))
+        .toJson();
 
-rest.push.admin.publishAsync(recipient, payload, , new CompletionListener() {
+rest.push.admin.publishAsync(recipient, payload , new CompletionListener() {
 	 @Override
 	 public void onSuccess() {}
  
@@ -482,6 +486,9 @@ rest.push.admin.publishAsync(recipient, payload, , new CompletionListener() {
 	 }
  });
 ```
+
+Note that only JsonElement, String, Boolean, Character, Number, and JsonUtilsObject are supported by JsonUtils.
+If an unsupported type is added JsonUtils will throw IllegalArgumentException.
 
 #### Activating a device and receiving notifications (Android only)
 
@@ -512,7 +519,7 @@ Visit https://www.ably.com/docs for a complete API reference and more examples.
 
 For Java, JRE 8 or later is required. Note that the [Java Unlimited JCE extensions](https://www.oracle.com/uk/java/technologies/javase-jce8-downloads.html) must be installed in the Java runtime environment.
 
-For Android, 4.4 KitKat (API level 19) or later is required.
+For Android, 5.0 (API level 21) or later is required.
 
 ## Support, feedback and troubleshooting
 
