@@ -986,16 +986,35 @@ public class Presence {
          * Spec: RTP17g
          */
         synchronized void reEnter() {
-            for (Map.Entry<String, PresenceMessage> entry: members.entrySet()) {
-                PresenceMessage member = entry.getValue();
-                member.action = PresenceMessage.Action.enter;
-                try {
-                    updatePresence(member, null);
-                } catch (AblyException e) {
-                    String errorString = String.format(Locale.ROOT, "Cannot automatically re-enter %s on channel %s (%s)",
-                        member.clientId, channel.name, e.errorInfo.message);
-                    Log.e(TAG, errorString);
-                    channel.emitUpdate(new ErrorInfo(errorString, 91004), true);
+            for (PresenceMessage item: internalPresence.values()) {
+                if (presence.put(item)) {
+                    /* Message is new to presence map, send it */
+                    final String clientId = item.clientId;
+                    try {
+                        PresenceMessage itemToSend = new PresenceMessage();
+                        itemToSend.id = item.id;
+                        itemToSend.clientId = item.clientId;
+                        itemToSend.data = item.data;
+                        itemToSend.action = PresenceMessage.Action.enter;
+                        updatePresence(itemToSend, new CompletionListener() {
+                            @Override
+                            public void onSuccess() {
+                            }
+
+                            @Override
+                            public void onError(ErrorInfo reason) {
+                                String errorString = String.format(Locale.ROOT, "Cannot automatically re-enter %s on channel %s (%s)",
+                                    clientId, channel.name, reason.message);
+                                Log.e(TAG, errorString);
+                                channel.emitUpdate(new ErrorInfo(errorString, 91004), true);
+                            }
+                        });
+                    } catch(AblyException e) {
+                        String errorString = String.format(Locale.ROOT, "Cannot automatically re-enter %s on channel %s (%s)",
+                            clientId, channel.name, e.errorInfo.message);
+                        Log.e(TAG, errorString);
+                        channel.emitUpdate(new ErrorInfo(errorString, 91004), true);
+                    }
                 }
             }
         }
