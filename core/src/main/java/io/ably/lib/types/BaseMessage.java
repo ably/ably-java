@@ -23,32 +23,46 @@ import java.util.regex.Pattern;
 
 public class BaseMessage implements Cloneable {
     /**
-     * A unique id for this message
+     * A Unique ID assigned by Ably to this message.
+     * <p>
+     * Spec: TM2a
      */
     public String id;
 
     /**
-     * The timestamp for this message
+     * Timestamp of when the message was received by Ably, as milliseconds since the Unix epoch.
+     * <p>
+     * Spec: TM2f
      */
     public long timestamp;
 
     /**
-     * The id of the publisher of this message
+     * The client ID of the publisher of this message.
+     * <p>
+     * Spec: RSL1g1, TM2b
      */
     public String clientId;
 
     /**
-     * The connection id of the publisher of this message
+     * The connection ID of the publisher of this message.
+     * <p>
+     * Spec: TM2c
      */
     public String connectionId;
 
     /**
-     * Any transformation applied to the data for this message
+     * This is typically empty, as all messages received from Ably are automatically decoded client-side using this value.
+     * However, if the message encoding cannot be processed, this attribute contains the remaining transformations
+     * not applied to the data payload.
+     * <p>
+     * Spec: TM2e
      */
     public String encoding;
 
     /**
-     * The message payload.
+     * The message payload, if provided.
+     * <p>
+     * Spec: TM2d
      */
     public Object data;
 

@@ -56,9 +56,12 @@ public abstract class RestChannelBase implements AblyChannel {
      * Publish a message on this channel using the REST API.
      * Since the REST API is stateless, this request is made independently
      * of any other request on this or any other channel.
+     *
      * @param name the event name
      * @param data the message payload; see {@link io.ably.types.Data} for
-     * @param listener
+     * @param listener a listener to be notified of the outcome of this message.
+     * <p>
+     * This listener is invoked on a background thread.
      */
     public void publishAsync(String name, Object data, CompletionListener listener) {
         publishImpl(name, data).async(new CompletionListener.ToCallback(listener));
@@ -82,8 +85,11 @@ public abstract class RestChannelBase implements AblyChannel {
 
     /**
      * Asynchronously publish an array of messages on this channel
-     * @param messages
-     * @param listener
+     *
+     * @param messages the message
+     * @param listener a listener to be notified of the outcome of this message.
+     * <p>
+     * This listener is invoked on a background thread.
      */
     public void publishAsync(final Message[] messages, final CompletionListener listener) {
         publishImpl(messages).async(new CompletionListener.ToCallback(listener));
@@ -148,16 +154,24 @@ public abstract class RestChannelBase implements AblyChannel {
     }
 
     /**
-     * A class enabling access to Channel Presence information via the REST API.
-     * Since the library is stateless, REST clients are therefore never present
-     * themselves. This API enables the service to be queried to determine
-     * presence state for other clients on this channel.
+     * Enables the retrieval of the current and historic presence set for a channel.
      */
     public class Presence {
 
         /**
-         * Get the presence state for this Channel.
-         * @return the current present members.
+         * Retrieves the current members present on the channel and the metadata for each member,
+         * such as their {@link io.ably.lib.types.PresenceMessage.Action} and ID. Returns a {@link PaginatedResult} object,
+         * containing an array of {@link PresenceMessage} objects.
+         * <p>
+         * Spec: RSPa
+         * @param params the request params:
+         * <p>
+         * limit (RSP3a) - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
+         * <p>
+         * clientId (RSP3a2) - Filters the list of returned presence members by a specific client using its ID.
+         * <p>
+         * connectionId (RSP3a3) - Filters the list of returned presence members by a specific connection using its ID.
+         * @return A {@link PaginatedResult} object containing an array of {@link PresenceMessage} objects.
          * @throws AblyException
          */
         public PaginatedResult<PresenceMessage> get(Param[] params) throws AblyException {
@@ -165,8 +179,21 @@ public abstract class RestChannelBase implements AblyChannel {
         }
 
         /**
-         * Asynchronously get the presence state for this Channel.
-         * @param callback on success returns the currently present members.
+         * Asynchronously retrieves the current members present on the channel and the metadata for each member,
+         * such as their {@link io.ably.lib.types.PresenceMessage.Action} and ID. Returns a {@link PaginatedResult} object,
+         * containing an array of {@link PresenceMessage} objects.
+         * <p>
+         * Spec: RSPa
+         * @param params the request params:
+         * <p>
+         * limit (RSP3a) - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
+         * <p>
+         * clientId (RSP3a2) - Filters the list of returned presence members by a specific client using its ID.
+         * <p>
+         * connectionId (RSP3a3) - Filters the list of returned presence members by a specific connection using its ID.
+         * @param callback A Callback returning {@link AsyncPaginatedResult} object containing an array of {@link PresenceMessage} objects.
+         * <p>
+         * This callback is invoked on a background thread.
          */
         public void getAsync(Param[] params, Callback<AsyncPaginatedResult<PresenceMessage>> callback) {
             getImpl(params).async(callback);
@@ -179,21 +206,52 @@ public abstract class RestChannelBase implements AblyChannel {
         }
 
         /**
-         * Asynchronously obtain presence history for this channel using the REST API.
-         * The history provided relqtes to all clients of this application,
-         * not just this instance.
-         * @param params the request params. See the Ably REST API
-         * documentation for more details.
+         * Retrieves a {@link PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel.
+         * If the channel is configured to persist messages,
+         * then presence messages can be retrieved from history for up to 72 hours in the past.
+         * If not, presence messages can only be retrieved from history for up to two minutes in the past.
+         * <p>
+         * Spec: RSP4a
+         * @param params the request params:
+         * <p>
+         * start (RSP4b1) - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
+         * <p>
+         * end (RSP4b1) - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
+         * <p>
+         * direction (RSP4b2) - The order for which messages are returned in.
+         *               Valid values are backwards which orders messages from most recent to oldest,
+         *               or forwards which orders messages from oldest to most recent.
+         *               The default is backwards.
+         * limit (RSP4b3) - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
+         * @return A {@link PaginatedResult} object containing an array of {@link PresenceMessage} objects.
+         * @throws AblyException
          */
         public PaginatedResult<PresenceMessage> history(Param[] params) throws AblyException {
             return historyImpl(params).sync();
         }
 
         /**
-         * Asynchronously obtain recent history for this channel using the REST API.
-         * @param params the request params. See the Ably REST API
-         * @param callback
-         * @return
+         * Asynchronously retrieves a {@link PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel.
+         * If the channel is configured to persist messages,
+         * then presence messages can be retrieved from history for up to 72 hours in the past.
+         * If not, presence messages can only be retrieved from history for up to two minutes in the past.
+         * <p>
+         * Spec: RSP4a
+         * @param params the request params:
+         * <p>
+         * start (RSP4b1) - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
+         * <p>
+         * end (RSP4b1) - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
+         * <p>
+         * direction (RSP4b2) - The order for which messages are returned in.
+         *               Valid values are backwards which orders messages from most recent to oldest,
+         *               or forwards which orders messages from oldest to most recent.
+         *               The default is backwards.
+         * limit (RSP4b3) - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
+         * @param callback  A Callback returning {@link AsyncPaginatedResult} object containing an array of {@link PresenceMessage} objects.
+         * <p>
+         * This callback is invoked on a background thread.
+         * @throws AblyException
          */
         public void historyAsync(Param[] params, Callback<AsyncPaginatedResult<PresenceMessage>> callback) {
             historyImpl(params).async(callback);

@@ -4,6 +4,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -18,11 +19,8 @@ import io.ably.lib.util.Log;
  * HttpScheduler schedules HttpCore operations to an Executor, exposing a generic async API.
  *
  * Internal; use Http instead.
- *
- * @param <Executor> The Executor that will run blocking operations.
  */
-public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
-
+public class HttpScheduler implements AutoCloseable {
     /**
      * Async HTTP GET for Ably host, with fallbacks
      * @param path
@@ -355,9 +353,14 @@ public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
         protected boolean isDone = false;
     }
 
-    protected HttpScheduler(HttpCore httpCore, Executor executor) {
+    protected HttpScheduler(HttpCore httpCore, CloseableExecutor executor) {
         this.httpCore = httpCore;
         this.executor = executor;
+    }
+
+    @Override
+    public void close() throws Exception {
+        this.executor.close();
     }
 
     /**
@@ -437,9 +440,18 @@ public class HttpScheduler<Executor extends java.util.concurrent.Executor> {
         return request;
     }
 
-    protected final Executor executor;
+    private final CloseableExecutor executor;
     private final HttpCore httpCore;
 
     protected static final String TAG = HttpScheduler.class.getName();
 
+    /**
+     * Adds a {@link Runnable} to the {@link Executor} used by this scheduler instance.
+     * @apiNote This is pretty hacky and is here to support the current Push Notifications implementation.
+     *
+     * @param runnable The code to be executed.
+     */
+    public void execute(Runnable runnable) {
+        executor.execute(runnable);
+    }
 }

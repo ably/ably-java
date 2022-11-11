@@ -9,7 +9,7 @@ import io.ably.lib.types.ErrorInfo;
  */
 public interface CompletionListener {
     /**
-     * Called when the associated operation completes successfully,
+     * Called when the associated operation completes successfully.
      */
     void onSuccess();
 

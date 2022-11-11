@@ -11,28 +11,36 @@ import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
 
 /**
- * An exception type encapsulating error information containing
- * an Ably-specific error code and generic status code.
+ * A generic Ably error object that contains an Ably-specific status code, and a generic status code.
+ * Errors returned from the Ably server are compatible with the ErrorInfo structure and should result in errors that inherit from ErrorInfo.
  */
 public class ErrorInfo {
 
     /**
-     * Ably error code (see ably-common/protocol/errors.json)
+     * Ably <a href="https://github.com/ably/ably-common/blob/main/protocol/errors.json">error code</a>.
+     * <p>
+     * Spec: TI1
      */
     public int code;
 
     /**
-     * HTTP Status Code corresponding to this error, where applicable
+     * HTTP Status Code corresponding to this error, where applicable.
+     * <p>
+     * Spec: TI1
      */
     public int statusCode;
 
     /**
-     * Additional message information, where available
+     * Additional message information, where available.
+     * <p>
+     * Spec: TI1
      */
     public String message;
 
     /**
-     * Link to specification detail for this error code, where available. Spec TI4.
+     * This is included for REST responses to provide a URL for additional help on the error code.
+     * <p>
+     * Spec: TI4
      */
     public String href;
 
@@ -43,8 +51,8 @@ public class ErrorInfo {
 
     /**
      * Construct an ErrorInfo from message and code
-     * @param message
-     * @param code
+     * @param message Additional message information, where available.
+     * @param code Ably <a href="https://github.com/ably/ably-common/blob/main/protocol/errors.json">error code</a>.
      */
     public ErrorInfo(String message, int code) {
         this.code = code;
@@ -52,10 +60,10 @@ public class ErrorInfo {
     }
 
     /**
-     * Generic constructor
-     * @param message
-     * @param statusCode
-     * @param code
+     * Construct an ErrorInfo from message, statusCode, and code
+     * @param message Additional message information, where available.
+     * @param statusCode HTTP Status Code corresponding to this error, where applicable.
+     * @param code Ably <a href="https://github.com/ably/ably-common/blob/main/protocol/errors.json">error code</a>.
      */
     public ErrorInfo(String message, int statusCode, int code) {
         this(message, code);

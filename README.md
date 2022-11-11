@@ -18,13 +18,13 @@ Include the library by adding an `implementation` reference to `dependencies` bl
 For [Java](https://mvnrepository.com/artifact/io.ably/ably-java/latest):
 
 ```groovy
-implementation 'io.ably:ably-java:2.0'
+implementation 'io.ably:ably-java:2.0.0'
 ```
 
 For [Android](https://mvnrepository.com/artifact/io.ably/ably-android/latest):
 
 ```groovy
-implementation 'io.ably:ably-android:2.0'
+implementation 'io.ably:ably-android:2.0.0'
 ```
 
 The library is hosted on [Maven Central](https://mvnrepository.com/repos/central), so you need to ensure that the repository is referenced also; IDEs will typically include this by default:
@@ -213,13 +213,13 @@ while(result.hasNext()) {
 
 ```java
 ChannelStateListener listener = new ChannelStateListener() {
-    @Override
-    public void onChannelStateChanged(ChannelStateChange stateChange) {
-        System.out.println("Channel state changed to " + stateChange.current.name());
-        if (stateChange.reason != null)
-            System.out.println("Channel state error" + stateChange.reason.message);
-    }
-  };
+	@Override
+  public void onChannelStateChanged(ChannelStateChange stateChange) {
+    System.out.println("Channel state changed to " + stateChange.current.name());
+    if (stateChange.reason != null)
+        System.out.println("Channel state error" + stateChange.reason.message);
+  }
+};
 ```
 
 You can register using
@@ -398,6 +398,35 @@ import io.ably.lib.util.Log;
 Log.setHandler(null);
 ```
 
+#### Threads
+
+AblyRealtime will invoke all callbacks on background thread. 
+If you are using Ably in Android application you must switch to main thread to update UI. 
+
+```java
+channel.presence.enter("john.doe", new CompletionListener() {
+    @Override
+    public void onSuccess() {
+        //If you are in Activity
+        runOnUiThread(new Runnable() {
+        @Override
+        public void run() {
+                //Update your UI here
+            }
+        });
+        
+        //If you are in Fragment or other class
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                //Update your UI here
+            }
+        });
+    }
+});
+```
+
 ### Using the Push API
 
 #### Delivering push notifications
@@ -488,7 +517,7 @@ Visit https://www.ably.com/docs for a complete API reference and more examples.
 
 ## Requirements
 
-For Java, JRE 8 or later is required. Note that the [Java Unlimited JCE extensions](http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html) must be installed in the Java runtime environment.
+For Java, JRE 8 or later is required. Note that the [Java Unlimited JCE extensions](https://www.oracle.com/uk/java/technologies/javase-jce8-downloads.html) must be installed in the Java runtime environment.
 
 For Android, 5.0 (API level 21) or later is required.
 

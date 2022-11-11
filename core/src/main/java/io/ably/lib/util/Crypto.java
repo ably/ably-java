@@ -21,21 +21,7 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 
 /**
- * Utility classes and interfaces for message payload encryption.
- *
- * This class supports AES/CBC/PKCS5 with a default key length of 256 bits
- * but supporting other key lengths. Other algorithms and chaining modes are
- * not supported directly, but supportable by extending/implementing the base
- * classes and interfaces here.
- *
- * Secure random data for creation of Initialisation Vectors (IVs) and keys
- * is obtained from the default system SecureRandom. Future extensions of this
- * class might make the SecureRandom pluggable or at least seedable with
- * client-provided entropy.
- *
- * Each message payload is encrypted with an IV in CBC mode, and the IV is
- * concatenated with the resulting raw ciphertext to construct the "ciphertext"
- * data passed to the recipient.
+ * Contains the properties required to configure the encryption of {@link io.ably.lib.types.Message} payloads.
  */
 public class Crypto {
 
@@ -44,17 +30,20 @@ public class Crypto {
     public static final int DEFAULT_BLOCKLENGTH = 16; // bytes
 
     /**
-     * A class encapsulating the client-specifiable parameters for
-     * the cipher.
-     *
-     * algorithm is the name of the algorithm in the default system provider,
-     * or the lower-cased version of it; eg "aes" or "AES".
-     *
-     * Clients may instance a CipherParams directly and populate it, or may
-     * query the implementation to obtain a default system CipherParams.
+     * Sets the properties to configure encryption for a {@link io.ably.lib.rest.Channel} or {@link io.ably.lib.realtime.Channel} object.
      */
     public static class CipherParams {
+        /**
+         * The algorithm to use for encryption. Only AES is supported and is the default value.
+         * <p>
+         * Spec: TZ2a
+         */
         private final String algorithm;
+        /**
+         * The length of the key in bits; for example 128 or 256.
+         * <p>
+         * Spec: TZ2b
+         */
         private final int keyLength;
         private final SecretKeySpec keySpec;
         private final IvParameterSpec ivSpec;
@@ -86,26 +75,19 @@ public class Crypto {
     }
 
     /**
-     * Obtain a default CipherParams. This uses default algorithm, mode and
-     * padding and key length. A key and IV are generated using the default
-     * system SecureRandom; the key may be obtained from the returned CipherParams
-     * for out-of-band distribution to other clients.
-     * @return the CipherParams
+     * <p>
+     * Spec: RSE1
+     * @return A {@link CipherParams} object, using the default values for all fields.
      */
     public static CipherParams getDefaultParams() {
         return getParams(DEFAULT_ALGORITHM, DEFAULT_KEYLENGTH);
     }
 
     /**
-     * Obtain a default CipherParams. This uses default algorithm, mode and
-     * padding and initialises a key based on the given key data. The cipher
-     * key length is derived from the length of the given key data. An IV is
-     * generated using the default system SecureRandom.
-     *
-     * Use this method of constructing CipherParams if initialising a Channel
-     * with a client-provided key, or to obtain a system-generated key of a
-     * non-default key length.
-     * @return the CipherParams
+     * <p>
+     * Spec: RSE1
+     * @param key client-provided key
+     * @return A {@link CipherParams} object, using the default values for any fields not supplied.
      */
     public static CipherParams getDefaultParams(byte[] key) {
         try {
@@ -114,25 +96,32 @@ public class Crypto {
     }
 
     /**
-     * Package scoped method for unit testing purposes.
+     * <p>
+     * Spec: RSE1
+     * @param key client-provided key
+     * @param iv the buffer with the IV
+     * @return A {@link CipherParams} object, using the default values for any fields not supplied.
      */
     static CipherParams getDefaultParams(byte[] key, byte[] iv) throws NoSuchAlgorithmException {
         return new CipherParams(DEFAULT_ALGORITHM, key, iv);
     }
 
     /**
-     * Obtain a default CipherParams using Base64-encoded key. Same as above, throws
-     * IllegalArgumentException if base64Key is invalid
-     *
-     * @param base64Key
-     * @return
+     * <p>
+     * Spec: RSE1
+     * @param base64Key Base64-encoded key
+     * @return A {@link CipherParams} object, using the default values for any fields not supplied.
      */
     public static CipherParams getDefaultParams(String base64Key) {
         return getDefaultParams(Base64Coder.decode(base64Key));
     }
 
     /**
-     * Package scoped method for unit testing purposes.
+     * <p>
+     * Spec: RSE1
+     * @param base64Key Base64-encoded key
+     * @param iv the buffer with the IV
+     * @return A {@link CipherParams} object, using the default values for any fields not supplied.
      */
     static CipherParams getDefaultParams(String base64Key, byte[] iv) throws NoSuchAlgorithmException {
         return new CipherParams(null, Base64Coder.decode(base64Key), iv);
@@ -159,12 +148,30 @@ public class Crypto {
         return new CipherParams(algorithm, key, iv);
     }
 
+    /**
+     * Generates a random key to be used in the encryption of the channel.
+     * If the language cryptographic randomness primitives are blocking or async, a callback is used.
+     * The callback returns a generated binary key.
+     * <p>
+     * Spec: RSE2
+     * @param keyLength The length of the key, in bits, to be generated.
+     *                  If not specified, this is equal to the default keyLength of the default algorithm: for AES this is 256 bits.
+     * @return The key as a binary, in a byte array.
+     */
     public static byte[] generateRandomKey(int keyLength) {
         byte[] result = new byte[(keyLength + 7)/8];
         secureRandom.nextBytes(result);
         return result;
     }
 
+    /**
+     * Generates a random key to be used in the encryption of the channel.
+     * If the language cryptographic randomness primitives are blocking or async, a callback is used.
+     * The callback returns a generated binary key.
+     * <p>
+     * Spec: RSE2
+     * @return The key as a binary, in a byte array.
+     */
     public static byte[] generateRandomKey() {
         return generateRandomKey(DEFAULT_KEYLENGTH);
     }

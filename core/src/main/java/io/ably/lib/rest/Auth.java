@@ -23,6 +23,7 @@ import io.ably.lib.types.BaseMessage;
 import io.ably.lib.types.Capability;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.NonRetriableTokenException;
 import io.ably.lib.types.Param;
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Log;
@@ -32,10 +33,9 @@ import io.ably.lib.util.Serialisation;
  * Token-generation and authentication operations for the Ably API.
  * See the Ably Authentication documentation for details of the
  * authentication methods available.
- *
+ * Creates Ably {@link TokenRequest} objects and obtains Ably Tokens from Ably to subsequently issue to less trusted clients.
  */
 public class Auth {
-
     /**
      * Authentication methods
      */
@@ -45,74 +45,127 @@ public class Auth {
     }
 
     /**
-     * Authentication options when instancing the Ably library
+     * Passes authentication-specific properties in authentication requests to Ably.
+     * Properties set using AuthOptions are used instead of the default values set when the client library
+     * is instantiated, as opposed to being merged with them.
      */
     public static class AuthOptions {
 
         /**
-         * A callback to call to obtain a signed TokenRequest,
-         * TokenDetails or a token string. This enables a client
-         * to obtain token requests or tokens from another entity,
-         * so tokens can be renewed without the client requiring a
-         * key
+         * Called when a new token is required.
+         * The role of the callback is to obtain a fresh token, one of: an Ably Token string (in plain text format);
+         * a signed {@link TokenRequest}; a {@link TokenDetails} (in JSON format);
+         * an <a href="https://ably.com/docs/core-features/authentication#ably-jwt">Ably JWT</a>.
+         * See <a href="https://ably.com/docs/realtime/authentication">the authentication documentation</a>
+         * for details of the Ably {@link TokenRequest} format and associated API calls.
+         * <p>
+         * This callback is invoked on a background thread.
+         * <p>
+         * Spec:
+         * RSA4a, RSA4, TO3j5, AO2b
          */
         public TokenCallback authCallback;
 
         /**
-         * A URL to query to obtain a signed TokenRequest,
-         * TokenDetails or a token string. This enables a client
-         * to obtain token request or token from another entity,
-         * so tokens can be renewed without the client requiring
-         * a key
+         * A URL that the library may use to obtain a token string (in plain text format), or a signed {@link TokenRequest}
+         * or {@link TokenDetails} (in JSON format) from.
+         * <p>
+         * Spec:
+         * RSA4a, RSA4, RSA8c, TO3j6, AO2c
          */
         public String authUrl;
 
         /**
-         * TO3j7: authMethod: The HTTP verb to be used when a request
-         * is made by the library to the authUrl. Defaults to GET,
-         * supports GET and POST
+         * The HTTP verb to use for any request made to the authUrl, either GET or POST. The default value is GET.
+         * <p>
+         * Spec:
+         * RSA8c, TO3j7, AO2d
          */
         public String authMethod;
 
         /**
-         * Full Ably key string as obtained from dashboard.
+         * The full API key string, as obtained from the <a href="https://ably.com/dashboard">Ably dashboard</a>.
+         * Use this option if you wish to use Basic authentication,
+         * or wish to be able to issue Ably Tokens without needing to defer to a separate entity to sign Ably {@link TokenRequest}.
+         * Read more about <a href="https://ably.com/docs/core-features/authentication#basic-authentication">Basic authentication</a>.
+         * <p>
+         * Spec:
+         * RSA11, RSA14, TO3j1, AO2a
          */
         public String key;
 
         /**
-         * An authentication token issued for this application
-         * against a specific key and {@link TokenParams}
+         * An authenticated token.
+         * This can either be a {@link TokenDetails} object, a {@link TokenRequest} object, or token string
+         * (obtained from the token property of a {@link TokenDetails} component of an Ably {@link TokenRequest} response, or a
+         * JSON Web Token satisfying the
+         * <a href="https://ably.com/docs/core-features/authentication#ably-jwt">Ably requirements for JWTs</a>).
+         * This option is mostly useful for testing: since tokens are short-lived,
+         * in production you almost always want to use an authentication method that enables the
+         * client library to renew the token automatically when the previous one expires, such as authUrl or authCallback.
+         * Read more about Token authentication.
+         * <p>
+         * Spec:
+         * RSA4a, RSA4, TO3j2
          */
         public String token;
 
         /**
-         * An authentication token issued for this application
-         * against a specific key and {@link TokenParams}
+         * An authenticated {@link TokenDetails} object (most commonly obtained from an Ably Token Request response).
+         * This option is mostly useful for testing: since tokens are short-lived,
+         * in production you almost always want to use an authentication method that enables the
+         * client library to renew the token automatically when the previous one expires, such as authUrl or authCallback.
+         * Use this option if you wish to use Token authentication.
+         * Read more about <a href="https://ably.com/docs/core-features/authentication#token-authentication">Token authentication</a>.
+         * <p>
+         * Spec:
+         * RSA4a, RSA4, TO3j2
          */
         public TokenDetails tokenDetails;
 
         /**
-         * Headers to be included in any request made by the library
-         * to the authURL.
+         * A set of key-value pair headers to be added to any request made to the authUrl.
+         * Useful when an application requires these to be added to validate the request or implement the response.
+         * If the authHeaders object contains an authorization key, then withCredentials is set on the XHR request.
+         * <p>
+         * Spec:
+         * RSA8c3, TO3j8, AO2e
          */
         public Param[] authHeaders;
 
         /**
-         * Query params to be included in any request made by the library
-         * to the authURL.
+         * A set of key-value pair params to be added to any request made to the authUrl.
+         * When the authMethod is GET, query params are added to the URL, whereas when authMethod is POST,
+         * the params are sent as URL encoded form data.
+         * Useful when an application requires these to be added to validate the request or implement the response.
+         * <p>
+         * Spec:
+         * RSA8c3, RSA8c1, TO3j9, AO2f
          */
         public Param[] authParams;
 
         /**
-         * This may be set in instances that the library is to sign
-         * token requests based on a given key. If true, the library
-         * will query the Ably system for the current time instead of
-         * relying on a locally-available time of day.
+         * If true, the library queries the Ably servers for the current time when issuing {@link TokenRequest}
+         * instead of relying on a locally-available time of day.
+         * Knowing the time accurately is needed to create valid signed Ably {@link TokenRequest},
+         * so this option is useful for library instances on auth servers where for some reason the server clock
+         * cannot be kept synchronized through normal means, such as an <a href="https://en.wikipedia.org/wiki/Ntpd">NTP daemon</a>.
+         * The server is queried for the current time once per client library instance (which stores the offset from the local clock),
+         * so if using this option you should avoid instancing a new version of the library for each request.
+         * The default is false.
+         * <p>
+         * Spec:
+         * RSA9d, TO3j10, AO2a
          */
         public boolean queryTime;
 
         /**
-         * TO3j4: Use token authorization even if no clientId
+         * When true, forces token authentication to be used by the library.
+         * If a clientId is not specified in the {@link ClientOptions} or {@link TokenParams},
+         * then the Ably Token issued is anonymous.
+         * <p>
+         * Spec:
+         * RSA4, RSA14, TO3j4
          */
         public boolean useTokenAuth;
 
@@ -182,37 +235,51 @@ public class Auth {
     }
 
     /**
-     * A class providing details of a token and its associated metadata,
-     * provided when the system successfully requests a token from the system.
-     *
+     * Contains an Ably Token and its associated metadata.
      */
     public static class TokenDetails {
 
         /**
-         * The token itself
+         * The <a href="https://ably.com/docs/core-features/authentication#ably-tokens">Ably Token</a> itself.
+         * <p>
+         * A typical Ably Token string appears with the form xVLyHw.A-pwh7wicf3afTfgiw4k2Ku33kcnSA7z6y8FjuYpe3QaNRTEo4.
+         * <p>
+         * Spec: TD2
          */
         public String token;
 
         /**
-         * The time (in millis since the epoch) at which this token expires.
+         * The timestamp at which this token expires as milliseconds since the Unix epoch.
+         * <p>
+         * Spec: TD3
          */
         public long expires;
 
         /**
-         * The time (in millis since the epoch) at which this token was issued.
+         * The timestamp at which this token was issued as milliseconds since the Unix epoch.
+         * <p>
+         * Spec: TD4
          */
         public long issued;
 
         /**
-         * The capability associated with this token. See the Ably Authentication
-         * documentation for details.
+         * The capabilities associated with this Ably Token.
+         * The capabilities value is a JSON-encoded representation of the resource paths and associated operations.
+         * Read more about capabilities in the
+         * <a href="https://ably.com/docs/core-features/authentication/#capabilities-explained">capabilities docs</a>.
+         * <p>
+         * Spec: TD5
          */
         public String capability;
 
         /**
-         * The clientId, if any, bound to this token. If a clientId is included,
-         * then the token authenticates its bearer as that clientId, and the
-         * token may only be used to perform operations on behalf of that clientId.
+         * The client ID, if any, bound to this Ably Token.
+         * If a client ID is included, then the Ably Token authenticates its bearer as that client ID,
+         * and the Ably Token may only be used to perform operations on behalf of that client ID.
+         * The client is then considered to be an
+         * <a href="https://ably.com/docs/core-features/authentication#identified-clients">identified client</a>.
+         * <p>
+         * Spec: TD6
          */
         public String clientId;
 
@@ -220,10 +287,17 @@ public class Auth {
         public TokenDetails(String token) { this.token = token; }
 
         /**
-         * Convert a JSON response body to a TokenDetails.
-         * Deprecated: use fromJson() instead
-         * @param json
-         * @return
+         * A static factory method to create a TokenDetails object from a deserialized
+         * TokenDetails-like object or a JSON stringified TokenDetails object.
+         * This method is provided to minimize bugs as a result of differing types by platform for fields such as timestamp or ttl.
+         * For example, in Ruby ttl in the TokenDetails object is exposed in seconds as that is idiomatic for the language,
+         * yet when serialized to JSON using to_json it is automatically converted to the Ably standard which is milliseconds.
+         * By using the fromJson() method when constructing a TokenDetails object,
+         * Ably ensures that all fields are consistently serialized and deserialized across platforms.
+         * <p>
+         * Spec: TD7
+         * @param json A deserialized TokenDetails-like object or a JSON stringified TokenDetails object.
+         * @return An Ably authentication token.
          */
         @Deprecated
         public static TokenDetails fromJSON(JsonObject json) {
@@ -231,19 +305,34 @@ public class Auth {
         }
 
         /**
-         * Convert a JSON element response body to a TokenDetails.
+         * A static factory method to create a TokenDetails object from a deserialized
+         * TokenDetails-like object or a JSON stringified TokenDetails object.
+         * This method is provided to minimize bugs as a result of differing types by platform for fields such as timestamp or ttl.
+         * For example, in Ruby ttl in the TokenDetails object is exposed in seconds as that is idiomatic for the language,
+         * yet when serialized to JSON using to_json it is automatically converted to the Ably standard which is milliseconds.
+         * By using the fromJson() method when constructing a TokenDetails object,
+         * Ably ensures that all fields are consistently serialized and deserialized across platforms.
+         * <p>
          * Spec: TD7
-         * @param json
-         * @return
+         * @param json A deserialized TokenDetails-like object or a JSON stringified TokenDetails object.
+         * @return An Ably authentication token.
          */
         public static TokenDetails fromJson(String json) {
             return Serialisation.gson.fromJson(json, TokenDetails.class);
         }
 
         /**
-         * Convert a JSON element response body to a TokenDetails.
-         * @param json
-         * @return
+         * A static factory method to create a TokenDetails object from a deserialized
+         * TokenDetails-like object or a JSON stringified TokenDetails object.
+         * This method is provided to minimize bugs as a result of differing types by platform for fields such as timestamp or ttl.
+         * For example, in Ruby ttl in the TokenDetails object is exposed in seconds as that is idiomatic for the language,
+         * yet when serialized to JSON using to_json it is automatically converted to the Ably standard which is milliseconds.
+         * By using the fromJson() method when constructing a TokenDetails object,
+         * Ably ensures that all fields are consistently serialized and deserialized across platforms.
+         * <p>
+         * Spec: TD7
+         * @param json A deserialized TokenDetails-like object or a JSON stringified TokenDetails object.
+         * @return An Ably authentication token.
          */
         public static TokenDetails fromJsonElement(JsonObject json) {
             return Serialisation.gson.fromJson(json, TokenDetails.class);
@@ -284,37 +373,46 @@ public class Auth {
 }
 
     /**
-     * A class providing parameters of a token request.
+     * Defines the properties of an Ably Token.
      */
     public static class TokenParams {
 
         /**
-         * Requested time to live for the token. If the token request
-         * is successful, the TTL of the returned token will be less
-         * than or equal to this value depending on application settings
-         * and the attributes of the issuing key.
-         *
-         * 0 means Ably will set it to the default value.
+         * Requested time to live for the token in milliseconds. The default is 60 minutes.
+         * <p>
+         * Spec: RSA9e, TK2a
          */
         public long ttl;
 
         /**
-         * Capability of the token. If the token request is successful,
-         * the capability of the returned token will be the intersection of
-         * this capability with the capability of the issuing key.
+         * The capabilities associated with this Ably Token.
+         * The capabilities value is a JSON-encoded representation of the resource paths and associated operations.
+         * Read more about capabilities in the
+         * <a href="https://ably.com/docs/core-features/authentication/#capabilities-explained">capabilities docs</a>.
+         * <p>
+         * Spec: RSA9f, TK2b
          */
         public String capability;
 
         /**
-         * A clientId to associate with this token. The generated token
-         * may be used to authenticate as this clientId.
+         * A client ID, used for identifying this client when publishing messages or for presence purposes.
+         * The clientId can be any non-empty string, except it cannot contain a *.
+         * This option is primarily intended to be used in situations where the library is instantiated with a key.
+         * Note that a clientId may also be implicit in a token used to instantiate the library.
+         * An error is raised if a clientId specified here conflicts with the clientId implicit in the token.
+         * Find out more about <a href="https://ably.com/docs/core-features/authentication#identified-clients">identified clients</a>.
+         * <p>
+         * Spec: TK2c
          */
         public String clientId;
 
         /**
-         * The timestamp (in millis since the epoch) of this request.
-         * Timestamps, in conjunction with the nonce, are used to prevent
-         * token requests from being replayed.
+         * The timestamp of this request as milliseconds since the Unix epoch.
+         * Timestamps, in conjunction with the nonce, are used to prevent requests from being replayed.
+         * timestamp is a "one-time" value, and is valid in a request,
+         * but is not validly a member of any default token params such as ClientOptions.defaultTokenParams.
+         * <p>
+         * Spec: RSA9d, Tk2d
          */
         public long timestamp;
 
@@ -375,7 +473,8 @@ public class Auth {
     }
 
     /**
-     * A class providing parameters of a token request.
+     * Contains the properties of a request for a token to Ably.
+     * Tokens are generated using {@link Auth#requestToken}.
      */
     public static class TokenRequest extends TokenParams {
 
@@ -389,28 +488,39 @@ public class Auth {
         }
 
         /**
-         * The keyName of the key against which this request is made.
+         * The name of the key against which this request is made. The key name is public, whereas the key secret is private.
+         * <p>
+         * Spec: TE2
          */
         public String keyName;
 
         /**
-         * An opaque nonce string of at least 16 characters to ensure
-         * uniqueness of this request. Any subsequent request using the
-         * same nonce will be rejected.
+         * A cryptographically secure random string of at least 16 characters, used to ensure the TokenRequest cannot be reused.
+         * <p>
+         * Spec: TE2
          */
         public String nonce;
 
         /**
-         * The Message Authentication Code for this request. See the Ably
-         * Authentication documentation for more details.
+         * The Message Authentication Code for this request.
+         * <p>
+         * Spec: TE2
          */
         public String mac;
 
         /**
-         * Convert a JSON serialisation to a TokenParams.
-         * Deprecated: use fromJson() instead
-         * @param json
-         * @return
+         * A static factory method to create a TokenRequest object from a deserialized TokenRequest-like object
+         * or a JSON stringified TokenRequest object.
+         * This method is provided to minimize bugs as a result of differing types by platform for fields such as timestamp or ttl.
+         * For example, in Ruby ttl in the TokenRequest object is exposed in seconds as that is idiomatic for the language,
+         * yet when serialized to JSON using to_json it is automatically converted to the Ably standard which is milliseconds.
+         * By using the fromJson() method when constructing a TokenRequest object,
+         * Ably ensures that all fields are consistently serialized and deserialized across platforms.
+         * <p>
+         * Spec: TE6
+         * @param json A deserialized TokenRequest-like object or a JSON stringified TokenRequest object to create a TokenRequest.
+         * @return An Ably token request object.
+         * @deprecated use fromJsonElement(JsonObject json) instead
          */
         @Deprecated
         public static TokenRequest fromJSON(JsonObject json) {
@@ -418,19 +528,34 @@ public class Auth {
         }
 
         /**
-         * Convert a parsed JSON response body to a TokenParams.
-         * @param json
-         * @return
+         * A static factory method to create a TokenRequest object from a deserialized TokenRequest-like object
+         * or a JSON stringified TokenRequest object.
+         * This method is provided to minimize bugs as a result of differing types by platform for fields such as timestamp or ttl.
+         * For example, in Ruby ttl in the TokenRequest object is exposed in seconds as that is idiomatic for the language,
+         * yet when serialized to JSON using to_json it is automatically converted to the Ably standard which is milliseconds.
+         * By using the fromJson() method when constructing a TokenRequest object,
+         * Ably ensures that all fields are consistently serialized and deserialized across platforms.
+         * <p>
+         * Spec: TE6
+         * @param json A deserialized TokenRequest-like object or a JSON stringified TokenRequest object to create a TokenRequest.
+         * @return An Ably token request object.
          */
         public static TokenRequest fromJsonElement(JsonObject json) {
             return Serialisation.gson.fromJson(json, TokenRequest.class);
         }
 
         /**
-         * Convert a string JSON response body to a TokenParams.
+         * A static factory method to create a TokenRequest object from a deserialized TokenRequest-like object
+         * or a JSON stringified TokenRequest object.
+         * This method is provided to minimize bugs as a result of differing types by platform for fields such as timestamp or ttl.
+         * For example, in Ruby ttl in the TokenRequest object is exposed in seconds as that is idiomatic for the language,
+         * yet when serialized to JSON using to_json it is automatically converted to the Ably standard which is milliseconds.
+         * By using the fromJson() method when constructing a TokenRequest object,
+         * Ably ensures that all fields are consistently serialized and deserialized across platforms.
+         * <p>
          * Spec: TE6
-         * @param json
-         * @return
+         * @param json A deserialized TokenRequest-like object or a JSON stringified TokenRequest object to create a TokenRequest.
+         * @return An Ably token request object.
          */
         public static TokenRequest fromJson(String json) {
             return Serialisation.gson.fromJson(json, TokenRequest.class);
@@ -472,6 +597,33 @@ public class Auth {
     }
 
     /**
+     * An interface providing update result for onAuthUpdated
+     */
+    public interface AuthUpdateResult{
+        /**
+         * Signals an update from {@link io.ably.lib.transport.ConnectionManager#onAuthUpdatedAsync(String, AuthUpdateResult)}
+         * @param success If Update was successful
+         * @param errorInfo optional errorInfo if update wasn't successful
+         */
+        void onUpdate(boolean success, ErrorInfo errorInfo);
+    }
+
+    /**
+     * An interface providing completion callbackk for renewAuth
+     */
+    public interface RenewAuthResult {
+        /**
+         * Signals completion of {@link Auth#renewAuth(RenewAuthResult)}
+         * @param success if token renewal was successful. Please note that success for this operation means that
+         *                other operations relating to this also succeeded.
+         * @param tokenDetails New token details. Please note that this value can exist regardless of value of
+         *                     success state.
+         * @param errorInfo Error details if operation is completed with error.
+         */
+        void onCompletion(boolean success,TokenDetails tokenDetails, ErrorInfo errorInfo);
+    }
+
+    /**
      * An interface implemented by a callback that provides either tokens,
      * or signed token requests, in response to a request with given token params.
      */
@@ -480,41 +632,32 @@ public class Auth {
     }
 
     /**
-     * The clientId for this library instance
-     * Spec RSA7b
+     * A client ID, used for identifying this client when publishing messages or for presence purposes.
+     * The clientId can be any non-empty string, except it cannot contain a *.
+     * This option is primarily intended to be used in situations where the library is instantiated with a key.
+     * Note that a clientId may also be implicit in a token used to instantiate the library.
+     * An error is raised if a clientId specified here conflicts with the clientId implicit in the token.
+     * Find out more about <a href="https://ably.com/docs/core-features/authentication#identified-clients">identified clients</a>.
+     * <p>
+     * Spec: RSA7, RSC17, RSA12
      */
     public String clientId;
 
     /**
-     * Ensure valid auth credentials are present. This may rely in an already-known
-     * and valid token, and will obtain a new token if necessary or explicitly
-     * requested.
-     * Authorization will use the parameters supplied on construction except
-     * where overridden with the options supplied in the call.
+     * Instructs the library to get a new token immediately.
+     * When using the realtime client, it upgrades the current realtime connection to use the new token,
+     * or if not connected, initiates a connection to Ably, once the new token has been obtained.
+     * Also stores any {@link TokenParams} and {@link AuthOptions} passed in as the new defaults,
+     * to be used for all subsequent implicit or explicit token requests.
+     * Any {@link TokenParams} and {@link AuthOptions} objects passed in entirely replace,
+     * as opposed to being merged with, the current client library saved values.
+     * <p>
+     * Spec: RSA10
      *
-     * @param params
-     * an object containing the request params:
-     * - key:        (optional) the key to use; if not specified, the key
-     *               passed in constructing the Rest interface may be used
-     *
-     * - ttl:        (optional) the requested life of any new token in ms. If none
-     *               is specified a default of 1 hour is provided. The maximum lifetime
-     *               is 24hours; any request exceeding that lifetime will be rejected
-     *               with an error.
-     *
-     * - capability: (optional) the capability to associate with the access token.
-     *               If none is specified, a token will be requested with all of the
-     *               capabilities of the specified key.
-     *
-     * - clientId:   (optional) a client Id to associate with the token
-     *
-     * - timestamp:  (optional) the time in ms since the epoch. If none is specified,
-     *               the system will be queried for a time value to use.
-     *
-     * - queryTime   (optional) boolean indicating that the Ably system should be
-     *               queried for the current time when none is specified explicitly.
-     *
-     * @param options
+     * @param params A {@link TokenParams} object.
+     * @param options An {@link AuthOptions} object.
+     * @return A {@link TokenDetails} object.
+     * @throws AblyException
      */
     public TokenDetails authorize(TokenParams params, AuthOptions options) throws AblyException {
         /* Spec: RSA10g */
@@ -559,11 +702,20 @@ public class Auth {
     }
 
     /**
-     * Make a token request. This will make a token request now, even if the library already
-     * has a valid token. It would typically be used to issue tokens for use by other clients.
-     * @param params : see {@link #authorize} for params
-     * @param tokenOptions : see {@link #authorize} for options
-     * @return the TokenDetails
+     * Calls the requestToken REST API endpoint to obtain an Ably Token
+     * according to the specified {@link TokenParams} and {@link AuthOptions}.
+     * Both {@link TokenParams} and {@link AuthOptions} are optional.
+     * When omitted or null, the default token parameters and authentication options for the client library are used,
+     * as specified in the {@link ClientOptions} when the client library was instantiated,
+     * or later updated with an explicit authorize request. Values passed in are used instead of,
+     * rather than being merged with, the default values.
+     * To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token,
+     * see <a href="https://ably.com/docs/core-features/authentication/#token-authentication">Token Authentication explained</a>.
+     * <p>
+     * Spec: RSA8e
+     * @param params : A {@link TokenParams} object.
+     * @param tokenOptions : An {@link AuthOptions} object.
+     * @return A {@link TokenDetails} object.
      * @throws AblyException
      */
     public TokenDetails requestToken(TokenParams params, AuthOptions tokenOptions) throws AblyException {
@@ -592,8 +744,12 @@ public class Auth {
                     signedTokenRequest = (TokenRequest)authCallbackResponse;
                 else
                     throw AblyException.fromErrorInfo(new ErrorInfo("Invalid authCallback response", 400, 40000));
-            } catch(AblyException e) {
-                throw AblyException.fromErrorInfo(e, new ErrorInfo("authCallback failed with an exception", 401, 80019));
+            } catch (final Exception e) {
+                final boolean isTokenExceptionNonRetriable = e instanceof NonRetriableTokenException;
+                final boolean isAblyExceptionNonRetriable = e instanceof AblyException && ((AblyException) e).errorInfo.statusCode == 403;
+                final boolean shouldNotRetryAuthOperation = isTokenExceptionNonRetriable || isAblyExceptionNonRetriable;
+                final int statusCode = shouldNotRetryAuthOperation ? 403 : 401; // RSA4c & RSA4d
+                throw AblyException.fromErrorInfo(e, new ErrorInfo("authCallback failed with an exception", statusCode, 80019));
             }
         } else if(tokenOptions.authUrl != null) {
             Log.i("Auth.requestToken()", "using token auth with auth_url");
@@ -703,12 +859,23 @@ public class Auth {
     }
 
     /**
-     * Create a signed token request based on known credentials
-     * and the given token params. This would typically be used if creating
-     * signed requests for submission by another client.
-     * @param params : see {@link #authorize} for params
-     * @param options : see {@link #authorize} for options
-     * @return the params augmented with the mac.
+     * Creates and signs an Ably {@link TokenRequest} based on the specified
+     * (or if none specified, the client library stored) {@link TokenParams} and {@link AuthOptions}.
+     * Note this can only be used when the API key value is available locally.
+     * Otherwise, the Ably {@link TokenRequest} must be obtained from the key owner.
+     * Use this to generate an Ably {@link TokenRequest} in order to implement an
+     * Ably Token request callback for use by other clients. Both {@link TokenParams} and {@link AuthOptions} are optional.
+     * When omitted or null, the default token parameters and authentication options for the client library are used,
+     * as specified in the {@link ClientOptions} when the client library was instantiated,
+     * or later updated with an explicit authorize request.
+     * Values passed in are used instead of, rather than being merged with, the default values.
+     * To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token,
+     * see <a href="https://ably.com/docs/core-features/authentication/#token-authentication">Token Authentication explained</a>.
+     * <p>
+     * Spec: RSA9
+     * @param params : A {@link TokenParams} object.
+     * @param options : An {@link AuthOptions} object.
+     * @return A {@link TokenRequest} object.
      * @throws AblyException
      */
     public TokenRequest createTokenRequest(TokenParams params, AuthOptions options) throws AblyException {
@@ -831,11 +998,29 @@ public class Auth {
      * Renew auth credentials.
      * Will obtain a new token, even if we already have an apparently valid one.
      * Authorization will use the parameters supplied on construction.
+     * @deprecated Because the method returns early before renew() completes and does not provide a completion
+     * handler for callers.
+     * Please use {@link Auth#renewAuth} instead
      */
+    @Deprecated
     public TokenDetails renew() throws AblyException {
         TokenDetails tokenDetails = assertValidToken(this.tokenParams, this.authOptions, true);
         ably.onAuthUpdated(tokenDetails.token, false);
         return tokenDetails;
+    }
+
+    /**
+     * Renew auth credentials.
+     * Will obtain a new token, even if we already have an apparently valid one.
+     * Authorization will use the parameters supplied on construction.
+     * @param result Asynchronous result the completion
+     * Please note that completion callback  {@link RenewAuthResult#onCompletion(boolean, TokenDetails, ErrorInfo)}
+     *              is called on a background thread.
+     */
+    public void renewAuth(RenewAuthResult result) throws AblyException {
+        final TokenDetails tokenDetails = assertValidToken(this.tokenParams, this.authOptions, true);
+
+        ably.onAuthUpdatedAsync(tokenDetails.token, (success, errorInfo) -> result.onCompletion(success,tokenDetails,errorInfo));
     }
 
     public void onAuthError(ErrorInfo err) {
@@ -963,8 +1148,26 @@ public class Auth {
             }
         }
         Log.i("Auth.assertValidToken()", "requesting new token");
-        setTokenDetails(requestToken(params, options));
+        TokenDetails newTokenDetails;
+        try {
+            newTokenDetails = requestToken(params, options);
+        } catch (AblyException ablyException) {
+            if (shouldFailConnectionDueToAuthError(ablyException.errorInfo)) {
+                ably.onAuthError(ablyException.errorInfo); // RSA4d
+            }
+            throw ablyException;
+        }
+        setTokenDetails(newTokenDetails);
         return tokenDetails;
+    }
+
+    /**
+     * RSA4d
+     * [...] the client library should transition to the FAILED state, with an ErrorInfo
+     * (with code 80019, statusCode 403, and cause set to the underlying cause) [...]
+     */
+    private boolean shouldFailConnectionDueToAuthError(ErrorInfo errorInfo) {
+        return errorInfo.statusCode == 403 && errorInfo.code == 80019;
     }
 
     private boolean tokenValid(TokenDetails tokenDetails) {

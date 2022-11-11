@@ -46,7 +46,7 @@ public class AndroidPlatform implements Platform {
 
     /**
      * Get the NetworkConnectivity tracker instance for this context
-     * @return
+     * @return A {@link NetworkConnectivity} object
      */
     public NetworkConnectivity getNetworkConnectivity() {
         return networkConnectivity;

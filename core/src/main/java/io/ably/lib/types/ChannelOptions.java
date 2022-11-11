@@ -7,15 +7,34 @@ import io.ably.lib.util.Crypto;
 import io.ably.lib.util.Crypto.ChannelCipher;
 import io.ably.lib.util.Crypto.ChannelCipherSet;
 
+/**
+ * Passes additional properties to a {@link io.ably.lib.rest.Channel} or {@link io.ably.lib.realtime.Channel} object,
+ * such as encryption, {@link ChannelMode} and channel parameters.
+ */
 public class ChannelOptions {
+    /**
+     * <a href="https://ably.com/docs/realtime/channels/channel-parameters/overview">Channel Parameters</a>
+     * that configure the behavior of the channel.
+     * <p>
+     * Spec: TB2c
+     */
     public Map<String, String> params;
 
+    /**
+     * An array of {@link ChannelMode} objects.
+     * <p>
+     * Spec: TB2d
+     */
     public ChannelMode[] modes;
 
     private ChannelCipherSet cipherSet;
 
     /**
-     * Parameters for the cipher.
+     * Requests encryption for this channel when not null,
+     * and specifies encryption-related parameters (such as algorithm, chaining mode, key length and key).
+     * See <a href="https://ably.com/docs/realtime/encryption#getting-started">an example</a>.
+     * <p>
+     * Spec: RSL5a, TB2b
      */
     public Object cipherParams;
 
@@ -117,9 +136,11 @@ public class ChannelOptions {
     }
 
     /**
-     * Create ChannelOptions with the given cipher key.
-     * @param key Byte array cipher key.
-     * @return Created ChannelOptions.
+     * Constructor withCipherKey, that takes a key only.
+     * <p>
+     * Spec: TB3
+     * @param key A private key used to encrypt and decrypt payloads.
+     * @return A ChannelOptions object.
      * @throws AblyException If something goes wrong.
      */
     public static ChannelOptions withCipherKey(byte[] key) throws AblyException {
@@ -130,9 +151,11 @@ public class ChannelOptions {
     }
 
     /**
-     * Create ChannelOptions with the given cipher key.
-     * @param base64Key The cipher key as a base64-encoded String,
-     * @return Created ChannelOptions.
+     * Constructor withCipherKey, that takes a key only.
+     * <p>
+     * Spec: TB3
+     * @param base64Key A private key used to encrypt and decrypt payloads.
+     * @return A ChannelOptions object.
      * @throws AblyException If something goes wrong.
      */
     public static ChannelOptions withCipherKey(String base64Key) throws AblyException {
