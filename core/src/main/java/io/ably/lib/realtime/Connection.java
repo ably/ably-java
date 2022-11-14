@@ -9,53 +9,85 @@ import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
 
 /**
- * A class representing the connection associated with an AblyRealtime instance.
- * The Connection object exposes the lifecycle and parameters of the realtime connection.
+ * Enables the management of a connection to Ably.
+ * Extends an {@link EventEmitter} object.
+ * <p>
+ * Spec: RTN4a, RTN4e, RTN4g
  */
 public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateListener> {
 
     /**
-     * The current state of this Connection.
+     * The current {@link ConnectionState} of the connection.
+     * <p>
+     * Spec: RTN4d
      */
     public ConnectionState state;
 
     /**
-     * Error information associated with a connection failure.
+     * An {@link ErrorInfo} object describing the last error received if a connection failure occurs.
+     * <p>
+     * Spec: RTN14a
      */
     public ErrorInfo reason;
 
     /**
-     * The assigned connection key.
+     * A unique private connection key used to recover or resume a connection, assigned by Ably.
+     * When recovering a connection explicitly, the recoveryKey is used in the recover client options
+     * as it contains both the key and the last message serial.
+     * This private connection key can also be used by other REST clients to publish on behalf of this client.
+     * See the
+     * <a href="https://ably.com/docs/rest/channels#publish-on-behalf">publishing over REST on behalf of a realtime client docs</a>
+     * for more info.
+     * <p>
+     * Spec: RTN9
      */
     public String key;
 
     /**
-     * A public identifier for this connection, used to identify
-     * this member in presence events and message ids.
+     * The recovery key string can be used by another client to recover this connection's state in the recover client options property.
+     * See <a href="https://ably.com/docs/realtime/connection#connection-state-recover-options">connection state recover options</a>
+     * for more information.
+     * <p>
+     * Spec: RTN16b, RTN16c
+     */
+    public String recoveryKey;
+
+    /**
+     * A unique public identifier for this connection, used to identify this member.
+     * <p>
+     * Spec: RTN8
      */
     public String id;
 
     /**
-     * Causes the library to re-attempt connection, if it was previously explicitly
-     * closed by the user, or was closed as a result of an unrecoverable error.
+     * Explicitly calling connect() is unnecessary unless the autoConnect attribute of the {@link io.ably.lib.types.ClientOptions}
+     * object is false.
+     * Unless already connected or connecting, this method causes the connection to open,
+     * entering the {@link ConnectionState#connecting} state.
+     * <p>
+     * Spec: RTC1b, RTN3, RTN11
      */
     public void connect() {
         connectionManager.connect();
     }
 
     /**
-     * Send a heartbeat message to the Ably service and await a response.
-     *
-     * @param listener a listener to be notified of the outcome of this message.
+     * When connected, sends a heartbeat ping to the Ably server and executes the callback with any error and the response
+     * time in milliseconds when a heartbeat ping request is echoed from the server.
+     * This can be useful for measuring true round-trip latency to the connected Ably server.
+     * @param listener A listener to be notified of success or failure.
+     * <p>
+     * Spec: RTN13
      */
     public void ping(CompletionListener listener) {
         connectionManager.ping(listener);
     }
 
     /**
-     * Causes the connection to close, entering the closed state, from any state except
-     * the failed state. Once closed, the library will not attempt to re-establish the
-     * connection without a call to {@link #connect}.
+     * Causes the connection to close, entering the {@link ConnectionState#closing} state.
+     * Once closed, the library does not attempt to re-establish the connection without an explicit call to {@link Connection#connect}.
+     * <p>
+     * Spec: RTN12
      */
     public void close() {
         key = null;

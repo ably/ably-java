@@ -26,7 +26,7 @@ android {
 
     defaultConfig {
         minSdkVersion 21
-        targetSdkVersion 24
+        targetSdkVersion 30
         versionCode 1
         versionName version
         setProperty('archivesBaseName', "ably-android-$versionName")
@@ -84,6 +84,7 @@ dependencies {
     androidTestImplementation 'com.crittercism.dexmaker:dexmaker:1.4'
     androidTestImplementation 'com.crittercism.dexmaker:dexmaker-dx:1.4'
     androidTestImplementation 'com.crittercism.dexmaker:dexmaker-mockito:1.4'
+    androidTestImplementation 'net.sourceforge.streamsupport:android-retrostreams:1.7.4'
 }
 
 configurations {

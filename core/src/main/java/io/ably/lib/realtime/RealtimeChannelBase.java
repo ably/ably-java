@@ -40,11 +40,8 @@ import io.ably.lib.util.EventEmitter;
 import io.ably.lib.util.Log;
 
 /**
- * A class representing a Channel belonging to this application.
- * The Channel instance allows messages to be published and
- * received, and controls the lifecycle of this instance's
- * attachment to the channel.
- *
+ * Enables messages to be published and subscribed to.
+ * Also enables historic messages to be retrieved and provides access to the {@link Presence} object of a channel.
  */
 public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, ChannelStateListener> implements AblyChannel {
 
@@ -53,29 +50,35 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
      ************************************/
 
     /**
-     * The name of this channel.
+     * The channel name.
      */
     public final String name;
 
     /**
-     * The {@link Presence} object for this channel. This controls this client's
-     * presence on the channel and may also be used to obtain presence information
-     * and change events for other members of the channel.
+     * A {@link Presence} object.
+     * <p>
+     * Spec: RTL9
      */
     public final Presence presence;
 
     /**
-     * The current channel state.
+     * The current {@link ChannelState} of the channel.
+     * <p>
+     * Spec: RTL2b
      */
     public ChannelState state;
 
     /**
-     * Error information associated with a failed channel state.
+     * An {@link ErrorInfo} object describing the last error which occurred on the channel, if any.
+     * <p>
+     * Spec: RTL4e
      */
     public ErrorInfo reason;
 
     /**
-     * Properties of Channel
+     * A {@link ChannelProperties} object.
+     * <p>
+     * Spec: CP1, RTL15
      */
     public ChannelProperties properties = new ChannelProperties();
 
@@ -113,12 +116,14 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
      ************************************/
 
     /**
-     * Attach to this channel.
-     * This call initiates the attach request, and the response
-     * is indicated asynchronously in the resulting state change.
-     * attach() is called implicitly when publishing or subscribing
-     * on this channel, so it is not usually necessary for a client
-     * to call attach() explicitly.
+     * Attach to this channel ensuring the channel is created in the Ably system and all messages published
+     * on the channel are received by any channel listeners registered using {@link Channel#subscribe}.
+     * Any resulting channel state change will be emitted to any listeners registered using the
+     * {@link EventEmitter#on} or {@link EventEmitter#once} methods.
+     * As a convenience, attach() is called implicitly if {@link Channel#subscribe} for the channel is called,
+     * or {@link Presence#enter} or {@link Presence#subscribe} are called on the {@link Presence} object for this channel.
+     * <p>
+     * Spec: RTL4d
      * @throws AblyException
      */
     public void attach() throws AblyException {
@@ -126,15 +131,17 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
     }
 
     /**
-     * Attach to this channel.
-     * This call initiates the attach request, and the response
-     * is indicated asynchronously in the resulting state change.
-     * attach() is called implicitly when publishing or subscribing
-     * on this channel, so it is not usually necessary for a client
-     * to call attach() explicitly.
-     *
-     * @param listener When the channel is attached successfully or the attach fails and
-     * the ErrorInfo error is passed as an argument to the callback
+     * Attach to this channel ensuring the channel is created in the Ably system and all messages published
+     * on the channel are received by any channel listeners registered using {@link Channel#subscribe}.
+     * Any resulting channel state change will be emitted to any listeners registered using the
+     * {@link EventEmitter#on} or {@link EventEmitter#once} methods.
+     * As a convenience, attach() is called implicitly if {@link Channel#subscribe} for the channel is called,
+     * or {@link Presence#enter} or {@link Presence#subscribe} are called on the {@link Presence} object for this channel.
+     * <p>
+     * Spec: RTL4d
+     * @param listener A callback may optionally be passed in to this call to be notified of success or failure of the operation.
+     * <p>
+     * This listener is invoked on a background thread.
      * @throws AblyException
      */
     public void attach(CompletionListener listener) throws  AblyException {
@@ -201,8 +208,11 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
 
     /**
      * Detach from this channel.
-     * This call initiates the detach request, and the response
-     * is indicated asynchronously in the resulting state change.
+     * Any resulting channel state change is emitted to any listeners registered using the
+     * {@link EventEmitter#on} or {@link EventEmitter#once} methods.
+     * Once all clients globally have detached from the channel, the channel will be released in the Ably service within two minutes.
+     * <p>
+     * Spec: RTL5e
      * @throws AblyException
      */
     public void detach() throws AblyException {
@@ -211,8 +221,14 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
 
     /**
      * Detach from this channel.
-     * This call initiates the detach request, and the response
-     * is indicated asynchronously in the resulting state change.
+     * Any resulting channel state change is emitted to any listeners registered using the
+     * {@link EventEmitter#on} or {@link EventEmitter#once} methods.
+     * Once all clients globally have detached from the channel, the channel will be released in the Ably service within two minutes.
+     * <p>
+     * Spec: RTL5e
+     * @param listener A callback may optionally be passed in to this call to be notified of success or failure of the operation.
+     * <p>
+     * This listener is invoked on a background thread.
      * @throws AblyException
      */
     public void detach(CompletionListener listener) throws AblyException {
@@ -603,12 +619,10 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
     }
 
     /**
+     * Deregisters all listeners to messages on this channel.
+     * This removes all earlier subscriptions.
      * <p>
-     * Unsubscribe all subscribed listeners from this channel.
-     * </p>
-     * <p>
-     * Spec: RTL8a
-     * </p>
+     * Spec: RTL8a, RTE5
      */
     public synchronized void unsubscribe() {
         Log.v(TAG, "unsubscribe(); channel = " + this.name);
@@ -617,9 +631,14 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
     }
 
     /**
-     * Subscribe for messages on this channel. This implicitly attaches the channel if
-     * not already attached.
-     * @param listener the MessageListener
+     * Registers a listener for messages on this channel.
+     * The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
+     * <p>
+     * Spec: RTL7a
+     * @param listener A listener may optionally be passed in to this call to be notified of success or failure
+     *                 of the channel {@link Channel#attach} operation.
+     * <p>
+     * This listener is invoked on a background thread.
      * @throws AblyException
      */
     public synchronized void subscribe(MessageListener listener) throws AblyException {
@@ -629,8 +648,13 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
     }
 
     /**
-     * Unsubscribe a previously subscribed listener from this channel.
-     * @param listener the previously subscribed listener.
+     * Deregisters the given listener (for any/all event names).
+     * This removes an earlier subscription.
+     * <p>
+     * Spec: RTL8a
+     * @param listener An event listener function.
+     * <p>
+     * This listener is invoked on a background thread.
      */
     public synchronized void unsubscribe(MessageListener listener) {
         Log.v(TAG, "unsubscribe(); channel = " + this.name);
@@ -641,10 +665,15 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
     }
 
     /**
-     * Subscribe for messages with a specific event name on this channel.
-     * This implicitly attaches the channel if not already attached.
-     * @param name the event name
-     * @param listener the MessageListener
+     * Registers a listener for messages with a given event name on this channel.
+     * The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel.
+     * <p>
+     * Spec: RTL7b
+     * @param name The event name.
+     * @param listener A listener may optionally be passed in to this call to be notified of success or failure
+     *                 of the channel {@link Channel#attach} operation.
+     * <p>
+     * This listener is invoked on a background thread.
      * @throws AblyException
      */
     public synchronized void subscribe(String name, MessageListener listener) throws AblyException {
@@ -654,9 +683,14 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
     }
 
     /**
-     * Unsubscribe a previously subscribed event listener from this channel.
-     * @param name the event name
-     * @param listener the previously subscribed listener.
+     * Deregisters the given listener for the specified event name.
+     * This removes an earlier event-specific subscription
+     * <p>
+     * Spec: RTL8a
+     * @param name The event name.
+     * @param listener An event listener function.
+     * <p>
+     * This listener is invoked on a background thread.
      */
     public synchronized void unsubscribe(String name, MessageListener listener) {
         Log.v(TAG, "unsubscribe(); channel = " + this.name + "; event = " + name);
@@ -664,10 +698,15 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
     }
 
     /**
-     * Subscribe for messages with an array of event names on this channel.
-     * This implicitly attaches the channel if not already attached.
-     * @param names the event names
-     * @param listener the MessageListener
+     * Registers a listener for messages on this channel for multiple event name values.
+     * The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel.
+     * <p>
+     * Spec: RTL7a
+     * @param names An array of event names.
+     * @param listener A listener may optionally be passed in to this call to be notified of success or failure
+     *                 of the channel {@link Channel#attach} operation.
+     * <p>
+     * This listener is invoked on a background thread.
      * @throws AblyException
      */
     public synchronized void subscribe(String[] names, MessageListener listener) throws AblyException {
@@ -678,9 +717,13 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
     }
 
     /**
-     * Unsubscribe a previously subscribed event listener from this channel.
-     * @param names the event names
-     * @param listener the previously subscribed listener.
+     * Deregisters the given listener from all event names in the array.
+     * <p>
+     * Spec: RTL8a
+     * @param names An array of event names.
+     * @param listener An event listener function.
+     * <p>
+     * This listener is invoked on a background thread.
      */
     public synchronized void unsubscribe(String[] names, MessageListener listener) {
         Log.v(TAG, "unsubscribe(); channel = " + this.name + "; (multiple events)");
@@ -835,8 +878,12 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
      ************************************/
 
     /**
-     * Publish a message on this channel. This implicitly attaches the channel if
-     * not already attached.
+     * Publishes a single message to the channel with the given event name and payload.
+     * When publish is called with this client library, it won't attempt to implicitly attach to the channel,
+     * so long as <a href="https://ably.com/docs/realtime/channels#transient-publish">transient publishing</a> is available in the library.
+     * Otherwise, the client will implicitly attach.
+     * <p>
+     * Spec: RTL6i
      * @param name the event name
      * @param data the message payload
      * @throws AblyException
@@ -846,9 +893,11 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
     }
 
     /**
-     * Publish a message on this channel. This implicitly attaches the channel if
-     * not already attached.
-     * @param message the message
+     * Publishes a message to the channel.
+     * When publish is called with this client library, it won't attempt to implicitly attach to the channel.
+     * <p>
+     * Spec: RTL6i
+     * @param message A {@link Message} object.
      * @throws AblyException
      */
     public void publish(Message message) throws AblyException {
@@ -856,9 +905,11 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
     }
 
     /**
-     * Publish an array of messages on this channel. This implicitly attaches the channel if
-     * not already attached.
-     * @param messages the message
+     * Publishes an array of messages to the channel.
+     * When publish is called with this client library, it won't attempt to implicitly attach to the channel.
+     * <p>
+     * Spec: RTL6i
+     * @param messages An array of {@link Message} objects.
      * @throws AblyException
      */
     public void publish(Message[] messages) throws AblyException {
@@ -866,11 +917,17 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
     }
 
     /**
-     * Publish a message on this channel. This implicitly attaches the channel if
-     * not already attached.
+     * Publishes a single message to the channel with the given event name and payload.
+     * When publish is called with this client library, it won't attempt to implicitly attach to the channel,
+     * so long as <a href="https://ably.com/docs/realtime/channels#transient-publish">transient publishing</a> is available in the library.
+     * Otherwise, the client will implicitly attach.
+     * <p>
+     * Spec: RTL6i
      * @param name the event name
-     * @param data the message payload. See {@link io.ably.types.Data} for supported datatypes
-     * @param listener a listener to be notified of the outcome of this message.
+     * @param data the message payload
+     * @param listener A listener may optionally be passed in to this call to be notified of success or failure of the operation.
+     * <p>
+     * This listener is invoked on a background thread.
      * @throws AblyException
      */
     public void publish(String name, Object data, CompletionListener listener) throws AblyException {
@@ -879,10 +936,14 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
     }
 
     /**
-     * Publish a message on this channel. This implicitly attaches the channel if
-     * not already attached.
-     * @param message the message
-     * @param listener a listener to be notified of the outcome of this message.
+     * Publishes a message to the channel.
+     * When publish is called with this client library, it won't attempt to implicitly attach to the channel.
+     * <p>
+     * Spec: RTL6i
+     * @param message A {@link Message} object.
+     * @param listener A listener may optionally be passed in to this call to be notified of success or failure of the operation.
+     * <p>
+     * This listener is invoked on a background thread.
      * @throws AblyException
      */
     public void publish(Message message, CompletionListener listener) throws AblyException {
@@ -891,10 +952,14 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
     }
 
     /**
-     * Publish an array of messages on this channel. This implicitly attaches the channel if
-     * not already attached.
-     * @param messages the message
-     * @param listener a listener to be notified of the outcome of this message.
+     * Publishes an array of messages to the channel.
+     * When publish is called with this client library, it won't attempt to implicitly attach to the channel.
+     * <p>
+     * Spec: RTL6i
+     * @param messages An array of {@link Message} objects.
+     * @param listener A listener may optionally be passed in to this call to be notified of success or failure of the operation.
+     * <p>
+     * This listener is invoked on a background thread.
      * @throws AblyException
      */
     public synchronized void publish(Message[] messages, CompletionListener listener) throws AblyException {
@@ -1025,18 +1090,59 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
      ************************************/
 
     /**
-     * Obtain recent history for this channel using the REST API.
-     * The history provided relqtes to all clients of this application,
-     * not just this instance.
-     * @param params the request params. See the Ably REST API
-     * documentation for more details.
-     * @return an array of Messgaes for this Channel.
+     * Retrieves a {@link PaginatedResult} object, containing an array of historical {@link Message} objects for the channel.
+     * If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past.
+     * If not, messages can only be retrieved from history for up to two minutes in the past.
+     * <p>
+     * Spec: RSL2a
+     * @param params the request params:
+     * <p>
+     * start (RTL10a) - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
+     * <p>
+     * end (RTL10a) - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
+     * <p>
+     * direction (RTL10a) - The order for which messages are returned in.
+     * Valid values are backwards which orders messages from most recent to oldest,
+     * or forwards which orders messages from oldest to most recent. The default is backwards.
+     * <p>
+     * limit (RTL10a) - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
+     * <p>
+     * untilAttach (RTL10b) - When true, ensures message history is up until the point of the channel being attached.
+     *               See <a href="https://ably.com/docs/realtime/history#continuous-history">continuous history</a> for more info.
+     *               Requires the direction to be backwards.
+     *               If the channel is not attached, or if direction is set to forwards, this option results in an error.
+     * @return A {@link PaginatedResult} object containing an array of {@link Message} objects.
      * @throws AblyException
      */
     public PaginatedResult<Message> history(Param[] params) throws AblyException {
         return historyImpl(params).sync();
     }
 
+    /**
+     * Asynchronously retrieves a {@link PaginatedResult} object, containing an array of historical {@link Message} objects for the channel.
+     * If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past.
+     * If not, messages can only be retrieved from history for up to two minutes in the past.
+     * <p>
+     * Spec: RSL2a
+     * @param params the request params:
+     * <p>
+     * start (RTL10a) - The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
+     * <p>
+     * end (RTL10a) - The time until messages are retrieved, specified as milliseconds since the Unix epoch.
+     * <p>
+     * direction (RTL10a) - The order for which messages are returned in.
+     * Valid values are backwards which orders messages from most recent to oldest,
+     * or forwards which orders messages from oldest to most recent. The default is backwards.
+     * <p>
+     * limit (RTL10a) - An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
+     * <p>
+     * untilAttach (RTL10b) - When true, ensures message history is up until the point of the channel being attached.
+     *               See <a href="https://ably.com/docs/realtime/history#continuous-history">continuous history</a> for more info.
+     *               Requires the direction to be backwards.
+     *               If the channel is not attached, or if direction is set to forwards, this option results in an error.
+     * @param callback Callback with {@link AsyncPaginatedResult} object containing an array of {@link Message} objects.
+     * @throws AblyException
+     */
     public void historyAsync(Param[] params, Callback<AsyncPaginatedResult<Message>> callback) {
         historyImpl(params).async(callback);
     }
@@ -1056,10 +1162,25 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
      * Channel options
      ************************************/
 
+    /**
+     * Sets the {@link ChannelOptions} for the channel.
+     * <p>
+     * Spec: RTL16
+     * @param options A {@link ChannelOptions} object.
+     * @throws AblyException
+     */
     public void setOptions(ChannelOptions options) throws AblyException {
         this.setOptions(options, null);
     }
 
+    /**
+     * Sets the {@link ChannelOptions} for the channel.
+     * <p>
+     * Spec: RTL16
+     * @param options A {@link ChannelOptions} object.
+     * @param listener An optional listener may be provided to notify of the success or failure of the operation.
+     * @throws AblyException
+     */
     public void setOptions(ChannelOptions options, CompletionListener listener) throws AblyException {
         this.options = options;
         if(this.shouldReattachToSetOptions(options)) {
@@ -1217,7 +1338,18 @@ public abstract class RealtimeChannelBase extends EventEmitter<ChannelEvent, Cha
     final String basePath;
     ChannelOptions options;
     String syncChannelSerial;
+    /**
+     * Optional <a href="https://ably.com/docs/realtime/channels/channel-parameters/overview">channel parameters</a>
+     * that configure the behavior of the channel.
+     * <p>
+     * Spec: RTL4k1
+     */
     private Map<String, String> params;
+    /**
+     * An array of {@link ChannelMode} objects.
+     * <p>
+     * Spec: RTL4m
+     */
     private Set<ChannelMode> modes;
     private String lastPayloadMessageId;
     private boolean decodeFailureRecoveryInProgress;

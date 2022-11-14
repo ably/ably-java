@@ -5,10 +5,9 @@ package io.ably.lib.types;
  */
 public class ChannelProperties {
     /**
-     * A message identifier indicating the time of attachment to the channel;
-     * used when recovering a message history to mesh exactly with messages
-     * received on this channel subsequent to attachment.
-     * contains the last @channelSerial@ received in an @ATTACHED@ @ProtocolMessage@ for the channel, see spec #RTL15a
+     * Starts unset when a channel is instantiated, then updated with the channelSerial
+     * from each {@link io.ably.lib.realtime.ChannelState#attached} event that matches the channel.
+     * Used as the value for {@link io.ably.lib.realtime.Channel#history}.
      * <p>
      * Spec: CP2a
      */

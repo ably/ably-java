@@ -136,16 +136,6 @@ public class HttpCore {
         auth.assertAuthorizationHeader(renew);
     }
 
-    synchronized void dispose() {
-        if(!isDisposed) {
-            isDisposed = true;
-        }
-    }
-
-    public void finalize() {
-        dispose();
-    }
-
     /**
      * Make a synchronous HTTP request specified by URL and proxy
      * @param url
@@ -520,7 +510,6 @@ public class HttpCore {
     private final ProxyOptions proxyOptions;
     private HttpAuth proxyAuth;
     private Proxy proxy = Proxy.NO_PROXY;
-    private boolean isDisposed;
     private final PlatformAgentProvider platformAgentProvider;
 
     private static final String TAG = HttpCore.class.getName();

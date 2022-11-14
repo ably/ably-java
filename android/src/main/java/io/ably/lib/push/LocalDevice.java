@@ -19,7 +19,11 @@ import io.ably.lib.util.Serialisation;
 
 public class LocalDevice extends DeviceDetails {
 
+    /**
+     * A unique device identity token used to communicate with APNS or FCM.
+     */
     public String deviceIdentityToken;
+
     private final Storage storage;
 
     private final ActivationContext activationContext;

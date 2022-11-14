@@ -247,10 +247,26 @@ public class ProtocolMessage {
         }
     }
 
+    /**
+     * Contains the token string used to authenticate a client with Ably.
+     */
     public static class AuthDetails {
+        /**
+         * The authentication token string.
+         * <p>
+         * Spec: AD2
+         */
         public String accessToken;
 
+        /**
+         * Default constructor
+         */
         private AuthDetails() { }
+
+        /**
+         * Creates AuthDetails object with provided authentication token string.
+         * @param s Authentication token string.
+         */
         public AuthDetails(String s) { accessToken = s; }
 
         AuthDetails readMsgpack(MessageUnpacker unpacker) throws IOException {

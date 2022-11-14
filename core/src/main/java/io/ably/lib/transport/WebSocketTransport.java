@@ -13,7 +13,10 @@ import java.nio.ByteBuffer;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLSession;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.exceptions.WebsocketNotConnectedException;
@@ -147,8 +150,28 @@ public class WebSocketTransport implements ITransport {
         @Override
         public void onOpen(ServerHandshake handshakedata) {
             Log.d(TAG, "onOpen()");
-            connectListener.onTransportAvailable(WebSocketTransport.this);
-            flagActivity();
+            if (shouldExplicitlyVerifyHostname && !isHostnameVerified(params.host)) {
+                close();
+            } else {
+                connectListener.onTransportAvailable(WebSocketTransport.this);
+                flagActivity();
+            }
+        }
+
+        /**
+         * Added because we had to override the onSetSSLParameters() that usually performs this verification.
+         * When the minSdkVersion will be updated to 24 we should remove this method and its usages.
+         * https://github.com/TooTallNate/Java-WebSocket/wiki/No-such-method-error-setEndpointIdentificationAlgorithm#workaround
+         */
+        private boolean isHostnameVerified(String hostname) {
+            final SSLSession session = getSSLSession();
+            if (HttpsURLConnection.getDefaultHostnameVerifier().verify(hostname, session)) {
+                Log.v(TAG, "Successfully verified hostname");
+                return true;
+            } else {
+                Log.e(TAG, "Hostname verification failed, expected " + hostname + ", found " + session.getPeerHost());
+                return false;
+            }
         }
 
         @Override
@@ -234,6 +257,20 @@ public class WebSocketTransport implements ITransport {
             connectListener.onTransportUnavailable(WebSocketTransport.this, new ErrorInfo(e.getMessage(), 503, 80000));
         }
 
+        @Override
+        protected void onSetSSLParameters(SSLParameters sslParameters) {
+            try {
+                super.onSetSSLParameters(sslParameters);
+                shouldExplicitlyVerifyHostname = false;
+            } catch (NoSuchMethodError exception) {
+                // This error will be thrown on Android below level 24.
+                // When the minSdkVersion will be updated to 24 we should remove this overridden method.
+                // https://github.com/TooTallNate/Java-WebSocket/wiki/No-such-method-error-setEndpointIdentificationAlgorithm#workaround
+                Log.w(TAG, "Error when trying to set SSL parameters, most likely due to an old Java API version", exception);
+                shouldExplicitlyVerifyHostname = true;
+            }
+        }
+
         private synchronized void dispose() {
             /* dispose timer */
             try {
@@ -307,6 +344,7 @@ public class WebSocketTransport implements ITransport {
         private Timer timer = new Timer();
         private TimerTask activityTimerTask = null;
         private long lastActivityTime;
+        private boolean shouldExplicitlyVerifyHostname = true;
     }
 
     public String toString() {

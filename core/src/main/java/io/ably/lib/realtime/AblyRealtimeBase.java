@@ -6,6 +6,7 @@ import java.util.Map;
 import io.ably.lib.platform.Platform;
 import io.ably.lib.push.PushBase;
 import io.ably.lib.rest.AblyBase;
+import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.RestChannelBase;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyChannel;
@@ -20,8 +21,7 @@ import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
 
 /**
- * AblyRealtime
- * The top-level class to be instanced for the Ably Realtime library.
+ * A client that extends the functionality of the {@link AblyBase} and provides additional realtime-specific features.
  *
  * This class implements {@link AutoCloseable} so you can use it in
  * try-with-resources constructs and have the JDK close it for you.
@@ -34,18 +34,23 @@ public abstract class AblyRealtimeBase<
 
     /**
      * The {@link Connection} object for this instance.
+     * <p>
+     * Spec: RTC2
      */
     public final Connection connection;
 
+    /**
+     * A {@link Channels} object.
+     * <p>
+     * Spec: RTC3, RTS1
+     */
     public final Channels<ChannelType> channels;
 
     /**
-     * Instance the Ably library using a key only.
-     * This is simply a convenience constructor for the
-     * simplest case of instancing the library with a key
-     * for basic authentication and no other options.
-     * @param key String key (obtained from application dashboard)
-     * @param platformAgentProvider for providing the platform specific part of the agent header
+     * Constructs a Realtime client object using an Ably API key or token string.
+     * <p>
+     * Spec: RSC1
+     * @param key The Ably API key or token string used to validate the client.
      * @throws AblyException
      */
     public AblyRealtimeBase(String key, PlatformAgentProvider platformAgentProvider) throws AblyException {
@@ -53,8 +58,10 @@ public abstract class AblyRealtimeBase<
     }
 
     /**
-     * Instance the Ably library with the given options.
-     * @param options see {@link io.ably.lib.types.ClientOptions} for options
+     * Constructs a RealtimeClient object using an Ably {@link ClientOptions} object.
+     * <p>
+     * Spec: RSC1
+     * @param options A {@link ClientOptions} object.
      * @param platformAgentProvider for providing the platform specific part of the agent header
      * @throws AblyException
      */
@@ -101,20 +108,37 @@ public abstract class AblyRealtimeBase<
     }
 
     /**
-     * Initiate a connection.
-     * {@link Connection#connect}.
+     * Calls {@link Connection#connect} and causes the connection to open,
+     * entering the connecting state. Explicitly calling connect() is unnecessary
+     * unless the {@link ClientOptions#autoConnect} property is disabled.
+     * <p>
+     * Spec: RTN11
      */
     public void connect() {
         connection.connect();
     }
 
     /**
-     * Close this instance. This closes the connection.
-     * The connection can be re-opened by calling
-     * {@link Connection#connect}.
+     * Calls {@link Connection#close} and causes the connection to close, entering the closing state.
+     * Once closed, the library will not attempt to re-establish the connection
+     * without an explicit call to {@link Connection#connect}.
+     * <p>
+     * Spec: RTN12
      */
     @Override
     public void close() {
+        try {
+            super.close(); // throws checked exception
+        } catch (final Exception exception) {
+            // Soften to Log, rather than throw.
+            // This is because our close() method has never declared that it throws a checked exception.
+            // Which is confusing, given AutoCloseable declares that it does.
+            // TODO captured in https://github.com/ably/ably-java/issues/806
+            // It's also because this particular piece of resource cleanup, focussed on thread pool resources used by
+            // our REST code in the base class, is being introduced in an SDK patch release for version 1.2.
+            Log.e(TAG, "There was an exception releasing client instance base resources.", exception);
+        }
+
         connection.close();
     }
 
@@ -124,6 +148,13 @@ public abstract class AblyRealtimeBase<
     @Override
     protected void onAuthUpdated(String token, boolean waitForResponse) throws AblyException {
         connection.connectionManager.onAuthUpdated(token, waitForResponse);
+    }
+
+    /**
+     * Authentication token has changed. Async version
+     */
+    protected void onAuthUpdatedAsync(String token, Auth.AuthUpdateResult authUpdateResult)  {
+        connection.connectionManager.onAuthUpdatedAsync(token,authUpdateResult);
     }
 
     /**
@@ -143,10 +174,11 @@ public abstract class AblyRealtimeBase<
 
     private class InternalChannels extends InternalMap<String, RealtimeChannelBase> implements Channels<RealtimeChannelBase>, ConnectionManager.Channels {
         /**
-         * Get the named channel; if it does not already exist,
-         * create it with default options.
-         * @param channelName the name of the channel
-         * @return the channel
+         * Creates a new {@link Channel} object, with the specified {@link ChannelOptions}, or returns the existing channel object.
+         * <p>
+         * Spec: RSN3c, RTS3c
+         * @param channelName The channel name.
+         * @return A {@link RealtimeChannelBase} object.
          */
         @Override
         public RealtimeChannelBase get(String channelName) {
@@ -155,6 +187,15 @@ public abstract class AblyRealtimeBase<
             } catch (AblyException e) { return null; }
         }
 
+        /**
+         * Creates a new {@link Channel} object, with the specified {@link ChannelOptions}, or returns the existing channel object.
+         * <p>
+         * Spec: RSN3c, RTS3c
+         * @param channelName The channel name.
+         * @param channelOptions A {@link ChannelOptions} object.
+         * @return A {@link RealtimeChannelBase} object.
+         * @throws AblyException
+         */
         @Override
         public RealtimeChannelBase get(final String channelName, final ChannelOptions channelOptions) throws AblyException {
             // We're not using computeIfAbsent because that requires Java 1.8.
@@ -176,6 +217,14 @@ public abstract class AblyRealtimeBase<
             return newChannel;
         }
 
+        /**
+         * Releases a {@link Channel} object, deleting it, and enabling it to be garbage collected.
+         * It also removes any listeners associated with the channel.
+         * To release a channel, the {@link ChannelState} must be INITIALIZED, DETACHED, or FAILED.
+         * <p>
+         * Spec: RSN4, RTS4
+         * @param channelName The channel name.
+         */
         @Override
         public void release(String channelName) {
             RealtimeChannelBase channel = map.remove(channelName);
