@@ -1188,12 +1188,14 @@ public class Presence {
         }
 
         /**
-         * Get the member key for the PresenceMessage.
-         * Spec: RTP17h
-         * @return key of the presence message
+         * Combines clientId and connectionId to ensure that multiple connected clients with an identical clientId are uniquely identifiable.
+         * A string function that returns the combined clientId and connectionId.
+         * <p>
+         * Spec: TP3h
+         * @return A combination of clientId and connectionId.
          */
         public String memberKey(PresenceMessage item) {
-            return item.connectionId + ':' + item.clientId;
+            return  item.clientId + ':' + item.connectionId;
         }
 
         private boolean syncInProgress;
@@ -1203,6 +1205,12 @@ public class Presence {
 
     // RTP17h
     private class InternalPresenceMap extends PresenceMap {
+
+        /**
+         * Get the member key for the internal PresenceMessage.
+         * Spec: RTP17h
+         * @return key of the presence message
+         */
         @Override
         public String memberKey(PresenceMessage item) {
             return item.clientId;
