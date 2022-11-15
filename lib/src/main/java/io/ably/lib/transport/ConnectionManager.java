@@ -33,6 +33,7 @@ import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolSerializer;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
+import io.ably.lib.util.TimerUtil;
 
 public class ConnectionManager implements ConnectListener {
     final ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
@@ -815,15 +816,27 @@ public class ConnectionManager implements ConnectListener {
             return null;
         }
 
+        if (stateIndication.state == ConnectionState.suspended || stateIndication.state == ConnectionState.connected) {
+            this.disconnectedRetryCount = 0;
+        }
+
         /* update currentState */
         ConnectionState newConnectionState = validatedStateIndication.state;
         State newState = states.get(newConnectionState);
+
         ErrorInfo reason = validatedStateIndication.reason;
         if (reason == null) {
             reason = newState.defaultErrorInfo;
         }
         Log.v(TAG, "setState(): setting " + newState.state + "; reason " + reason);
-        ConnectionStateChange change = new ConnectionStateChange(currentState.state, newConnectionState, newState.timeout, reason);
+
+        long retryDelay = newState.timeout;
+        if (newState.state == ConnectionState.disconnected) {
+            this.disconnectedRetryCount++;
+            retryDelay = TimerUtil.getRetryTime((int) newState.timeout, this.disconnectedRetryCount);
+        }
+
+        ConnectionStateChange change = new ConnectionStateChange(currentState.state, newConnectionState, retryDelay, reason);
         currentState = newState;
         stateError = reason;
 
@@ -1805,6 +1818,7 @@ public class ConnectionManager implements ConnectListener {
     private CMConnectivityListener connectivityListener;
     private long connectionStateTtl = Defaults.connectionStateTtl;
     long maxIdleInterval = Defaults.maxIdleInterval;
+    private int disconnectedRetryCount = 0;
 
     /* for debug/test only */
     private final RawProtocolListener protocolListener;
