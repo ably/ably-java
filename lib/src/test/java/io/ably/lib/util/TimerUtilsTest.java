@@ -12,7 +12,7 @@ public class TimerUtilsTest {
             int defaultTimerMs = 15000;
             int timerMs = TimerUtil.getRetryTime(defaultTimerMs, i);
             int higherRange = defaultTimerMs * i;
-            int lowerRange = Double.valueOf(defaultTimerMs * (i * 0.3)).intValue();
+            int lowerRange = Double.valueOf(defaultTimerMs * (i * 0.2)).intValue();
             System.out.println("--------------------------------------------------");
             System.out.println("Timer value: " + timerMs + "ms for i: " + i);
             System.out.println("Expected timer lower range: " + lowerRange + "ms");
