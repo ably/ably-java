@@ -36,6 +36,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -730,5 +732,51 @@ public class ConnectionManagerTest extends ParameterizedTest {
             assertEquals("Attached channel histories do not match", attachedChannelHistory, expectedAttachedChannelHistory);
             assertEquals("Suspended channel histories do not match", suspendedChannelHistory, expectedSuspendedChannelHistory);
         }
+    }
+
+    /**
+     * Connect, and then perform a close() from the calling ConnectionManager context;
+     * verify that the closed state is reached, and the connectionmanager thread has exited
+     */
+    @Test
+    public void disconnect_retry_timeout_jitter_backoff() throws AblyException {
+        ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+        int disconnectedRetryTimeout = 100;
+        opts.channelRetryTimeout = disconnectedRetryTimeout;
+        opts.realtimeHost = "invalid";
+        opts.restHost = "invalid";
+        final AblyRealtime ably = new AblyRealtime(opts);
+
+        final AtomicBoolean retrySuccess = new AtomicBoolean(false);
+        final AtomicInteger retryCount = new AtomicInteger(0);
+
+        ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
+            @Override
+            public void onConnectionStateChanged(ConnectionStateChange state) {
+                if (state.previous == ConnectionState.connecting && state.current == ConnectionState.disconnected) {
+                    if (retryCount.get() > 4) {
+                        retrySuccess.set(true);
+                        ably.close();
+                        return;
+                    }
+                    assertTrue("retry time higher range is not in valid",
+                        state.retryIn < disconnectedRetryTimeout + Math.min(retryCount.get(), 3) * 50L);
+                    assertTrue("retry time lower range is not in valid",
+                        state.retryIn > 0.8 * (disconnectedRetryTimeout + Math.min(retryCount.get(), 3) * 50L));
+                    retryCount.incrementAndGet();
+                }
+            }
+        });
+
+        ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+        connectionWaiter.waitFor(ConnectionState.connected);
+
+        //Wait 2 sec for connection to retry
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+        }
+
+        assertTrue("Retry was not finished", retrySuccess.get());
     }
 }
