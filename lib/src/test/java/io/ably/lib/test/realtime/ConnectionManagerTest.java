@@ -36,8 +36,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -732,62 +730,5 @@ public class ConnectionManagerTest extends ParameterizedTest {
             assertEquals("Attached channel histories do not match", attachedChannelHistory, expectedAttachedChannelHistory);
             assertEquals("Suspended channel histories do not match", suspendedChannelHistory, expectedSuspendedChannelHistory);
         }
-    }
-
-    /**
-     * Connect, and then perform a close() from the calling ConnectionManager context;
-     * verify that the closed state is reached, and the connectionmanager thread has exited
-     */
-    @Test
-    public void disconnect_retry_timeout_jitter_backoff() throws AblyException {
-        ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        int disconnectedRetryTimeout = 150;
-        opts.channelRetryTimeout = disconnectedRetryTimeout;
-        opts.fallbackRetryTimeout = disconnectedRetryTimeout;
-        opts.realtimeRequestTimeout = disconnectedRetryTimeout;
-        opts.realtimeHost = "non.existent.host";
-        opts.environment = null;
-
-        final AblyRealtime ably = new AblyRealtime(opts);
-        final AtomicInteger retryCount = new AtomicInteger(0);
-
-        try {
-            Field field = ably.connection.connectionManager.getClass().getDeclaredField("maxIdleInterval");
-            field.setAccessible(true);
-            field.setLong(ably.connection.connectionManager, disconnectedRetryTimeout);
-        } catch (NoSuchFieldException|IllegalAccessException e) {
-            fail("Unexpected exception in checking connectionStateTtl");
-        }
-
-        ably.connection.on(new ConnectionStateListener() {
-            @Override
-            public void onConnectionStateChanged(ConnectionStateChange state) {
-                System.out.println("onConnectionStateChanged current state is: " + state.current.name() + " previous state was: " + state.previous.name());
-                if (state.previous == ConnectionState.connecting && state.current == ConnectionState.disconnected) {
-                    System.out.println("onConnectionStateChanged retry count is: " + retryCount.get());
-                    if (retryCount.get() > 4) {
-                        System.out.println("onConnectionStateChanged retry is successful and done!");
-                        ably.close();
-                        return;
-                    }
-                    retryCount.incrementAndGet();
-                    assertTrue("retry time higher range is not in valid",
-                        state.retryIn < (disconnectedRetryTimeout + Math.min(retryCount.get(), 3) * 50L));
-                    assertTrue("retry time lower range is not in valid",
-                        state.retryIn > (0.8 * (disconnectedRetryTimeout + Math.min(retryCount.get(), 3) * 50L)));
-                }
-            }
-        });
-
-        //Wait 10 sec for connection for retry to populate
-        //TODO fix disconnect timer to reduce wait time
-        try {
-            Thread.sleep(50000);
-        } catch (InterruptedException e) {
-        }
-
-        //TODO test array of callback results
-        assertTrue("Disconnect retry was not finished, count was: " + retryCount.get(), retryCount.get() >= 4);
-        ably.close();
     }
 }

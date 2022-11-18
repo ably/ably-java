@@ -8,18 +8,20 @@ public class TimerUtilsTest {
 
     @Test
     public void timer_retry_time_is_incremental() {
-        for (int i = 1; i <= 6; i++) {
-            int defaultTimerMs = 15000;
+        for (int i = 1; i <= 5; i++) {
+            int defaultTimerMs = 150;
             int timerMs = TimerUtil.getRetryTime(defaultTimerMs, i);
-            int higherRange = defaultTimerMs * i;
-            int lowerRange = Double.valueOf(defaultTimerMs * (i * 0.2)).intValue();
+            long higherRange = defaultTimerMs + Math.min(i, 3) * 50L;
+            double lowerRange = 0.3 * defaultTimerMs + Math.min(i, 3) * 50L;
             System.out.println("--------------------------------------------------");
             System.out.println("Timer value: " + timerMs + "ms for i: " + i);
             System.out.println("Expected timer lower range: " + lowerRange + "ms");
             System.out.println("Expected timer higher range: " + higherRange + "ms");
             System.out.println("--------------------------------------------------");
-            assertTrue("Timer lower value " + lowerRange +"ms is not in range: " + timerMs + "ms for i: " + i, timerMs > lowerRange);
-            assertTrue("Timer higher value " + higherRange + "ms is not in range: " + timerMs + "ms for i: " + i, timerMs < higherRange);
+            assertTrue("retry time higher range for count " + i + " is not in valid: " + timerMs + " expected: " + higherRange,
+                timerMs < higherRange);
+            assertTrue("retry time lower range for count " + i + " is not in valid: " + timerMs + " expected: " + lowerRange,
+                timerMs > lowerRange);
         }
     }
 }
