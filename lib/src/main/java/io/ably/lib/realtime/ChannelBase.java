@@ -947,7 +947,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         ConnectionManager.State connectionState = connectionManager.getConnectionState();
         boolean queueMessages = ably.options.queueMessages;
         if(!connectionManager.isActive() || (connectionState.queueEvents && !queueMessages)) {
-            listener.onError(connectionState.defaultErrorInfo);
             throw AblyException.fromErrorInfo(connectionState.defaultErrorInfo);
         }
         boolean connected = (connectionState.sendEvents);
