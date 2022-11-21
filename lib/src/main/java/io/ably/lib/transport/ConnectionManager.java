@@ -1545,7 +1545,7 @@ public class ConnectionManager implements ConnectListener {
         if(transport == null) {
             Log.v(TAG, "sendImpl(): Discarding message; transport unavailable");
             if (listener != null){
-                listener.onError(new ErrorInfo("Unable to send message; transport unavailable", 500, 50000));
+                listener.onError(new ErrorInfo("Unable to send message; transport unavailable", 80009, 80009));
             }
 
             return;
