@@ -1544,7 +1544,10 @@ public class ConnectionManager implements ConnectListener {
     private void sendImpl(ProtocolMessage message, CompletionListener listener) throws AblyException {
         if(transport == null) {
             Log.v(TAG, "sendImpl(): Discarding message; transport unavailable");
-            listener.onError(new ErrorInfo("Unable to send message; transport unavailable", 500, 50000));
+            if (listener != null){
+                listener.onError(new ErrorInfo("Unable to send message; transport unavailable", 500, 50000));
+            }
+
             return;
         }
         if(ProtocolMessage.ackRequired(message)) {
