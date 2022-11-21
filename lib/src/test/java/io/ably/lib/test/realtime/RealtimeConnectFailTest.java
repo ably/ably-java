@@ -621,8 +621,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             }
             System.out.println("------------------------------------------------------------");
         } catch (AblyException e) {
-            e.printStackTrace();
-            fail("init0: Unexpected exception instantiating library");
+            fail("Unexpected exception: " + e.getMessage());
         } finally {
             Defaults.TIMEOUT_DISCONNECT = oldDisconnectTimeout;
             if (ably != null)
@@ -739,8 +738,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             }
             System.out.println("------------------------------------------------------------");
         } catch (AblyException e) {
-            e.printStackTrace();
-            fail("init0: Unexpected exception instantiating library");
+            fail("Unexpected exception: " + e.getMessage());
         } finally {
             if (ably != null)
                 ably.close();
