@@ -82,7 +82,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      */
     public ChannelProperties properties = new ChannelProperties();
 
-    public int retryCount = 0;
+    private int retryCount = 0;
 
     /***
      * internal
