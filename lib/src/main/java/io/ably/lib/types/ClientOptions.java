@@ -170,7 +170,7 @@ public class ClientOptions extends AuthOptions {
      * <p>
      * Spec: RSL1k1, RTL6a1, TO3n
      */
-    public boolean idempotentRestPublishing = (Defaults.ABLY_VERSION_NUMBER >= 1.2);
+    public boolean idempotentRestPublishing = true;
 
     /**
      * Timeout for opening a connection to Ably to initiate an HTTP request.
