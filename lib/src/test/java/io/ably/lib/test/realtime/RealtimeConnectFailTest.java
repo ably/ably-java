@@ -1,22 +1,11 @@
 package io.ably.lib.test.realtime;
 
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.CompletionListener;
-import io.ably.lib.realtime.ConnectionEvent;
-import io.ably.lib.realtime.ConnectionState;
-import io.ably.lib.realtime.ConnectionStateListener;
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.rest.Auth;
-import io.ably.lib.rest.Auth.TokenCallback;
-import io.ably.lib.rest.Auth.TokenDetails;
-import io.ably.lib.rest.Auth.TokenParams;
-import io.ably.lib.test.common.Helpers.ConnectionWaiter;
-import io.ably.lib.test.common.ParameterizedTest;
-import io.ably.lib.transport.Defaults;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.ProtocolMessage;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,12 +16,32 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import io.ably.lib.debug.DebugOptions;
+import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.realtime.Channel;
+import io.ably.lib.realtime.ChannelState;
+import io.ably.lib.realtime.ChannelStateListener;
+import io.ably.lib.realtime.CompletionListener;
+import io.ably.lib.realtime.ConnectionEvent;
+import io.ably.lib.realtime.ConnectionState;
+import io.ably.lib.realtime.ConnectionStateListener;
+import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.Auth;
+import io.ably.lib.rest.Auth.TokenCallback;
+import io.ably.lib.rest.Auth.TokenDetails;
+import io.ably.lib.rest.Auth.TokenParams;
+import io.ably.lib.test.common.Helpers;
+import io.ably.lib.test.common.Helpers.ConnectionWaiter;
+import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.test.util.MockWebsocketFactory;
+import io.ably.lib.transport.Defaults;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.ProtocolMessage;
 
 public class RealtimeConnectFailTest extends ParameterizedTest {
 
@@ -543,6 +552,198 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             Defaults.TIMEOUT_DISCONNECT = oldDisconnectTimeout;
             if (ablyRealtime != null)
                 ablyRealtime.close();
+        }
+    }
+
+    /**
+     * Connect to unknown host and check if timer time is jittered
+     * Spec: RTB1
+     */
+    @Test
+    public void disconnect_retry_connection_timeout_jitter() {
+        int oldDisconnectTimeout = Defaults.TIMEOUT_DISCONNECT;
+        int disconnectedRetryTimeout = 150;
+        Defaults.TIMEOUT_DISCONNECT = 150;
+        AblyRealtime ably = null;
+
+        try {
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+            opts.realtimeHost = "non.existent.host";
+            opts.environment = null;
+            ably = new AblyRealtime(opts);
+
+            final AtomicInteger retryCount = new AtomicInteger(0);
+            final ArrayList<Long> retryValues = new ArrayList();
+
+            ably.connection.on(new ConnectionStateListener() {
+                @Override
+                public void onConnectionStateChanged(ConnectionStateChange state) {
+                    System.out.println("onConnectionStateChanged current state is: " + state.current.name() + " previous state was: " + state.previous.name());
+                    if (state.previous == ConnectionState.connecting && state.current == ConnectionState.disconnected) {
+                        System.out.println("onConnectionStateChanged retry count is: " + retryCount.get());
+                        if (retryCount.get() > 4) {
+                            System.out.println("onConnectionStateChanged retry is successful and done!");
+                            return;
+                        }
+                        retryCount.incrementAndGet();
+                        retryValues.add(state.retryIn);
+                    }
+                }
+            });
+
+            int waitAtMost = 5 * 10; //5 seconds * 10 times per second
+            int waitCount = 0;
+            while (retryCount.get() < 4 && waitCount < waitAtMost) {
+                try {
+                    Thread.sleep(100);
+                    waitCount++;
+                } catch (InterruptedException e) {
+                    fail(e.getMessage());
+                }
+            }
+            System.out.println("wait done in: " + (waitCount / 10) + " seconds");
+
+            assertTrue("Disconnect retry was not finished, count was: " + retryCount.get(), retryCount.get() >= 4);
+
+            //check for all received retry times in onConnectionStateChanged callback
+            System.out.println("------------------------------------------------------------");
+            for (int i = 0; i < retryValues.size(); i++) {
+                long retryTime = retryValues.get(i);
+                long higherRange = disconnectedRetryTimeout + Math.min(i, 3) * 50L;
+                double lowerRange = 0.6 * disconnectedRetryTimeout + Math.min(i, 3) * 50L;
+
+                System.out.println("higher range: " + higherRange + " - lower range: " + lowerRange + " | checked value: " + retryTime);
+
+                assertTrue("retry time higher range for count " + i + " is not in valid: " + retryTime + " expected: " + higherRange,
+                    retryTime < higherRange);
+                assertTrue("retry time lower range for count " + i + " is not in valid: " + retryTime + " expected: " + lowerRange,
+                    retryTime > lowerRange);
+            }
+            System.out.println("------------------------------------------------------------");
+        } catch (AblyException e) {
+            fail("Unexpected exception: " + e.getMessage());
+        } finally {
+            Defaults.TIMEOUT_DISCONNECT = oldDisconnectTimeout;
+            if (ably != null)
+                ably.close();
+        }
+    }
+
+    /**
+     * Connect and check if timer time is jittered
+     * Spec: RTB1
+     */
+    @Test
+    public void disconnect_retry_channel_timeout_jitter() {
+        long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
+        int channelRetryTimeout = 150;
+        /* Reduce timeout for test to run faster */
+        Defaults.realtimeRequestTimeout = channelRetryTimeout;
+        AblyRealtime ably = null;
+        final String channelName = "failed_attach";
+        final int errorCode = 12345;
+
+        try {
+            DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+            fillInOptions(opts);
+            opts.channelRetryTimeout = channelRetryTimeout;
+            opts.realtimeRequestTimeout = 1L;
+
+            /* Mock transport to block send */
+            final MockWebsocketFactory mockTransport = new MockWebsocketFactory();
+            opts.transportFactory = mockTransport;
+            mockTransport.allowSend();
+
+            ably = new AblyRealtime(opts);
+            ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+            connectionWaiter.waitFor(ConnectionState.connected);
+
+            Channel channel = ably.channels.get(channelName);
+            Helpers.ChannelWaiter channelWaiter = new Helpers.ChannelWaiter(channel);
+            channel.attach();
+            channelWaiter.waitFor(ChannelState.attached);
+
+            /* Block send() */
+            mockTransport.blockSend();
+
+            final AtomicInteger retryCount = new AtomicInteger(0);
+            final ArrayList<Long> retryValues = new ArrayList();
+            AtomicLong lastSuspended = new AtomicLong(System.currentTimeMillis());
+
+            channel.on(new ChannelStateListener() {
+                @Override
+                public void onChannelStateChanged(ChannelStateChange stateChange) {
+                    //System.out.println("onChannelStateChanged current state is: " + stateChange.current.name());
+                    if (stateChange.current == ChannelState.suspended) {
+                        if (retryCount.get() > 6) {
+                            System.out.println("onConnectionStateChanged retry is successful and done!");
+                            return;
+                        }
+                        long elapsedSinceSuspended = System.currentTimeMillis() - lastSuspended.get();
+                        lastSuspended.set(System.currentTimeMillis());
+                        retryValues.add(elapsedSinceSuspended);
+                        retryCount.incrementAndGet();
+                    }
+                }
+            });
+
+            /* Inject detached message as if from the server */
+            ProtocolMessage detachedMessage = new ProtocolMessage() {{
+                action = Action.detached;
+                channel = channelName;
+                error = new ErrorInfo("Test error", errorCode);
+            }};
+            ably.connection.connectionManager.onMessage(null, detachedMessage);
+
+            /* wait for the client reattempt attachment */
+            channelWaiter.waitFor(ChannelState.attaching);
+
+            /* Inject detached+error message as if from the server */
+            ProtocolMessage errorMessage = new ProtocolMessage() {{
+                action = Action.detached;
+                channel = channelName;
+                error = new ErrorInfo("Test error", errorCode);
+            }};
+            ably.connection.connectionManager.onMessage(null, errorMessage);
+
+            int waitAtMost = 5 * 10; //5 seconds * 10 times per second
+            int waitCount = 0;
+            while (retryCount.get() < 6 && waitCount < waitAtMost) {
+                try {
+                    Thread.sleep(100);
+                    waitCount++;
+                } catch (InterruptedException e) {
+                    fail(e.getMessage());
+                }
+            }
+            System.out.println("wait done in: " + (waitCount / 10) + " seconds");
+
+            mockTransport.allowSend();
+
+            assertTrue("Disconnect retry was not finished, count was: " + retryCount.get(), retryCount.get() >= 6);
+
+            System.out.println("------------------------------------------------------------");
+            //check for all received retry times in onChannelStateChanged callback
+            //ignore first one as it is immediately done and the second one as it is close to our calculation
+            for (int i = 2; i < retryValues.size(); i++) {
+                long retryTime = retryValues.get(i);
+                long higherRange = channelRetryTimeout + Math.min(i, 3) * 50L * (i + 1);
+                double lowerRange = 0.6 * channelRetryTimeout + Math.min(i, 3) * 50;
+                System.out.println("higher range: " + higherRange + " - lower range: " + lowerRange + " | checked value: " + retryTime);
+
+                assertTrue("retry time higher range for count " + i + " is not in valid: " + retryTime + " expected: " + higherRange,
+                    retryTime < higherRange);
+                assertTrue("retry time lower range for count " + i + " is not in valid: " + retryTime + " expected: " + lowerRange,
+                    retryTime > lowerRange);
+            }
+            System.out.println("------------------------------------------------------------");
+        } catch (AblyException e) {
+            fail("Unexpected exception: " + e.getMessage());
+        } finally {
+            if (ably != null)
+                ably.close();
+            /* Restore default values to run other tests */
+            Defaults.realtimeRequestTimeout = oldRealtimeTimeout;
         }
     }
 
