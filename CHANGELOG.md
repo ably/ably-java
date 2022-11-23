@@ -1,5 +1,17 @@
 # Change Log
 
+## [1.2.19](https://github.com/ably/ably-java/tree/v1.2.19)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.18...v1.2.19)
+
+**Implemented enhancements:**
+
+- Implement incremental backoff and jitter [\#795](https://github.com/ably/ably-java/issues/795) in [\#852](https://github.com/ably/ably-java/pull/852) ([qsdigor](https://github.com/qsdigor))
+
+**Fixed bugs:**
+
+- Automatic presence re-enter after network connection is back does not work [\#857](https://github.com/ably/ably-java/issues/857) in Revert to protocol 1.1 [\#858](https://github.com/ably/ably-java/pull/858) ([KacperKluka](https://github.com/KacperKluka))
+
 ## [1.2.18](https://github.com/ably/ably-java/tree/v1.2.18)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.17...v1.2.18)
