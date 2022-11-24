@@ -81,7 +81,7 @@ public class RealtimeHttpHeaderTest extends ParameterizedTest {
              * Defaults.ABLY_VERSION_PARAM, as ultimately the request param has been derived from those values.
              */
             assertEquals("Verify correct version", requestParameters.get("v"),
-                    Collections.singletonList("1.1"));
+                    Collections.singletonList("1.0"));
 
             /* Spec RSC7d3
              * This test should not directly validate version against Defaults.ABLY_AGENT_VERSION, nor
