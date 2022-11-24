@@ -1,5 +1,14 @@
 # Change Log
 
+## [1.2.20](https://github.com/ably/ably-java/tree/v1.2.20)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.19...v1.2.20)
+
+Sorry for the release noise, but the big fix we thought we had made in [1.2.19](https://github.com/ably/ably-java/releases/tag/v1.2.19) turned out not to fix the problem...
+
+**Second Attempt at Bug Fix:**
+Automatic presence re-enter after network connection is back does not work [\#857](https://github.com/ably/ably-java/issues/857) in Revert to protocol 1.0 [\#864](https://github.com/ably/ably-java/pull/864) ([QuintinWillison](https://github.com/QuintinWillison))
+
 ## [1.2.19](https://github.com/ably/ably-java/tree/v1.2.19)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.18...v1.2.19)
