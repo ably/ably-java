@@ -8,11 +8,10 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout repository and submodules
         uses: actions/checkout@v2
-
-      - name: Checkout submodules
-        run: git submodule update --init --recursive
+        with:
+          submodules: recursive
 
       - name: Run tests with gradle
         run: ./gradlew :java:testRestSuite :java:testRealtimeSuite
