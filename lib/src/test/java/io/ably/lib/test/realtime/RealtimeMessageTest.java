@@ -512,7 +512,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
         }
     }
 
-    @Ignore("FIXME: fix exception")
     @Test
     public void messages_encoding_fixtures() {
         MessagesEncodingData fixtures;
@@ -577,7 +576,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
         }
     }
 
-    @Ignore("FIXME: fix exception")
     @Test
     public void messages_msgpack_and_json_encoding_is_compatible() {
         MessagesEncodingData fixtures;
@@ -879,7 +877,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
      * Refer Spec. TM3
      * @throws AblyException
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void messages_from_encoded_json_array() throws AblyException {
         JsonArray fixtures = null;
