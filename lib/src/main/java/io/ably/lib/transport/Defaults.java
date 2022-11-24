@@ -8,7 +8,7 @@ import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 
 public class Defaults {
-    public static final float ABLY_VERSION_NUMBER   = 1.1f;
+    public static final float ABLY_VERSION_NUMBER   = 1.0f;
 
     /**
      * The level of compatibility with the Ably service that this SDK supports, also referred to as the 'wire protocol version'.

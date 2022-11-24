@@ -9,7 +9,7 @@ public class DefaultsTest {
 
     @Test
     public void versions() {
-        assertThat(Defaults.ABLY_VERSION, is("1.1"));
+        assertThat(Defaults.ABLY_VERSION, is("1.0"));
     }
 
     @Test
