@@ -8,11 +8,17 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-      - run: ./gradlew :java:testRestSuite :java:testRealtimeSuite
+      - name: Checkout submodules
+        run: git submodule update --init --recursive
 
-      - uses: actions/upload-artifact@v2
+      - name: Run tests with gradle
+        run: ./gradlew :java:testRestSuite :java:testRealtimeSuite
+
+      - name: Upload results
+        uses: actions/upload-artifact@v2
         if: always()
         with:
           name: java-build-reports
