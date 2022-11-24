@@ -8,9 +8,14 @@ import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 
 public class Defaults {
-    /* versions */
     public static final float ABLY_VERSION_NUMBER   = 1.1f;
+
+    /**
+     * The level of compatibility with the Ably service that this SDK supports, also referred to as the 'wire protocol version'.
+     * This value is presented as a string, as specified in G4a.
+     */
     public static final String ABLY_VERSION         = new DecimalFormat("0.0", new DecimalFormatSymbols(Locale.ENGLISH)).format(ABLY_VERSION_NUMBER);
+
     public static final String ABLY_AGENT_VERSION   = String.format("%s/%s", "ably-java", BuildConfig.VERSION);
 
     /* params */
