@@ -998,7 +998,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
             assertEquals(ChannelState.attached, channel.state);
 
-            // publish and await success
+            // publish and await expected failure (completion with error)
             final CompletionWaiter completionWaiter = new CompletionWaiter();
             channel.publish(message, completionWaiter);
             completionWaiter.waitFor();
