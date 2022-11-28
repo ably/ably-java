@@ -84,7 +84,7 @@ public class HttpHeaderTest extends ParameterizedTest {
              * from those values.
              */
             Assert.assertNotNull("Expected headers", headers);
-            Assert.assertEquals(headers.get("x-ably-version"), "1.1");
+            Assert.assertEquals(headers.get("x-ably-version"), "1.0");
             Assert.assertEquals(headers.get("ably-agent"), expectedAblyAgentHeader);
         } catch (AblyException e) {
             e.printStackTrace();
