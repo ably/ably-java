@@ -4,10 +4,15 @@ on:
     branches:
       - main
 
+concurrency:
+  group: it-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check-rest:
     name: Run REST tests
     runs-on: ubuntu-latest
+    concurrency: it-job-${{ github.ref }}
     steps:
       - name: Checkout repository and submodules
         uses: actions/checkout@v2
@@ -26,9 +31,8 @@ jobs:
 
   check-realtime:
     name: Run Realtime tests
-    if: ${{ always() }}
-    needs: check-rest
     runs-on: ubuntu-latest
+    concurrency: it-job-${{ github.ref }}
     steps:
       - name: Checkout repository and submodules
         uses: actions/checkout@v2
