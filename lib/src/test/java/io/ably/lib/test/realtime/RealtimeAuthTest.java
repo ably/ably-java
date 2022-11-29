@@ -1,5 +1,20 @@
 package io.ably.lib.test.realtime;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.Timeout;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
@@ -23,20 +38,6 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.NonRetriableTokenException;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RealtimeAuthTest extends ParameterizedTest {
 
@@ -1114,8 +1115,8 @@ public class RealtimeAuthTest extends ParameterizedTest {
                 final CountDownLatch latch = new CountDownLatch(1);
                 final AtomicBoolean isCalled = new AtomicBoolean(false);
                 ably.auth.renewAuth((success, tokenDetails1, errorInfo) -> {
-                    latch.countDown();
                     isCalled.set(true);
+                    latch.countDown();
                 });
                 latch.await(30, TimeUnit.SECONDS);
                 assertTrue("Callback not invoked", isCalled.get());
