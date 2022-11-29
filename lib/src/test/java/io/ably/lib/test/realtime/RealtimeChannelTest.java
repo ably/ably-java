@@ -1,5 +1,27 @@
 package io.ably.lib.test.realtime;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import org.hamcrest.Matchers;
+import org.junit.Test;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
@@ -24,28 +46,6 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.ProtocolMessage;
-import org.hamcrest.Matchers;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class RealtimeChannelTest extends ParameterizedTest {
 
@@ -1066,7 +1066,6 @@ public class RealtimeChannelTest extends ParameterizedTest {
      * </p>
      *
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void transient_publish_connected() throws AblyException {
         AblyRealtime pubAbly = null, subAbly = null;
@@ -1116,7 +1115,6 @@ public class RealtimeChannelTest extends ParameterizedTest {
      * </p>
      *
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void transient_publish_connecting() throws AblyException {
         AblyRealtime pubAbly = null, subAbly = null;
