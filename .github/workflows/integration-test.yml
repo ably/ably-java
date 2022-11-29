@@ -5,7 +5,7 @@ on:
       - main
 
 jobs:
-  check:
+  check-rest:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository and submodules
@@ -13,8 +13,26 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Run tests with gradle
-        run: ./gradlew :java:testRestSuite :java:testRealtimeSuite
+      - name: Run REST tests
+        run: ./gradlew :java:testRestSuite
+
+      - name: Upload results
+        uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: java-build-reports
+          path: java/build/reports/
+
+  check-realtime:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Run Realtime tests
+        run: ./gradlew :java:testRealtimeSuite
 
       - name: Upload results
         uses: actions/upload-artifact@v2
