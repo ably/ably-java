@@ -1,5 +1,30 @@
 package io.ably.lib.test.realtime;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.Timeout;
+import org.mockito.Mockito;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
@@ -22,30 +47,6 @@ import io.ably.lib.transport.Defaults;
 import io.ably.lib.transport.Hosts;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.mockito.Mockito;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * Created by gokhanbarisaker on 3/9/16.
@@ -122,7 +123,6 @@ public class ConnectionManagerTest extends ParameterizedTest {
      *
      * @throws AblyException
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void connectionmanager_fallback_none_withoutconnection() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -144,12 +144,8 @@ public class ConnectionManagerTest extends ParameterizedTest {
 
             new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.disconnected);
 
-            /* Verify that,
-             *   - connectionManager is disconnected
-             *   - connectionManager did not apply any fallback behavior
-             */
-            assertThat(connectionManager.getConnectionState().state, is(ConnectionState.disconnected));
-            assertThat(connectionManager.getHost(), is(equalTo(opts.realtimeHost)));
+            assertThat("connectionManager is not disconnected", connectionManager.getConnectionState().state, is(ConnectionState.disconnected));
+            assertNull("connectionManager applied fallback, in disconnected state fallback should be null", connectionManager.getHost());
 
             connectionManager.close();
         }
@@ -318,13 +314,15 @@ public class ConnectionManagerTest extends ParameterizedTest {
      * Test that default fallback happens with a non-default host if
      * fallbackHostsUseDefault is set.
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void connectionmanager_reconnect_default_fallback() throws AblyException {
         DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
         fillInOptions(opts);
 
         opts.fallbackHostsUseDefault = true;
+        //fallbackHostsUseDefault cannot be set when port or tlsPort are set
+        opts.port = 0;
+        opts.tlsPort = 0;
 
         final Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, opts);
         final String primaryHost = hosts.getPrimaryHost();
