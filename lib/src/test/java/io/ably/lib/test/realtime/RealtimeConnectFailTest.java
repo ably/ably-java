@@ -312,7 +312,6 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
      * Verify that the connection fails when attempting to recover with a
      * malformed connection id
      */
-    //@Ignore("FIXME: flaky test, Sometimes received error code is 40100 for binary protocol")
     @Test
     public void connect_invalid_recover_fail() {
         AblyRealtime ably = null;
