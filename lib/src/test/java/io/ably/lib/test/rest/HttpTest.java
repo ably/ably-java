@@ -1,5 +1,45 @@
 package io.ably.lib.test.rest;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.AdditionalMatchers.aryEq;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+import org.hamcrest.Description;
+import org.hamcrest.TypeSafeMatcher;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.Timeout;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.Proxy;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
 import io.ably.lib.http.AsyncHttpScheduler;
@@ -19,46 +59,6 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 import io.ably.lib.util.PlatformAgentProvider;
-import org.hamcrest.Description;
-import org.hamcrest.TypeSafeMatcher;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.Proxy;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.AdditionalMatchers.aryEq;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.verify;
 
 /**
  * Created by gokhanbarisaker on 2/2/16.
@@ -116,12 +116,13 @@ public class HttpTest {
      *
      * @throws Exception
      */
-    @Ignore("FIXME: flaky test")
     @Test
     public void http_ably_execute_fallback() throws AblyException {
         ClientOptions options = new ClientOptions();
         options.tls = false;
-        /* Select a port that will be refused immediately by the production host */
+        // Add some random fallback hosts
+        options.fallbackHosts = new String[]{"f1\\.ably-realtime.com", "f2\\.ably-realtime.com", "f3\\.ably-realtime.com"};
+        // Select a port that will be refused immediately by the production host */
         options.port = 7777;
 
         /* Create a list to capture the host of URL arguments that get called with httpExecute method.
@@ -154,13 +155,13 @@ public class HttpTest {
         Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
         try {
             HttpHelpers.ablyHttpExecute(
-                    http, "/path/to/fallback", /* Ignore path */
-                    HttpConstants.Methods.GET, /* Ignore method */
-                    new Param[0], /* Ignore headers */
-                    new Param[0], /* Ignore params */
-                    null, /* Ignore requestBody */
-                    null, /* Ignore requestHandler */
-                    false /* Ignore requireAblyAuth */
+                http, "/path/to/fallback", /* Ignore path */
+                HttpConstants.Methods.GET, /* Ignore method */
+                new Param[0], /* Ignore headers */
+                new Param[0], /* Ignore params */
+                null, /* Ignore requestBody */
+                null, /* Ignore requestHandler */
+                false /* Ignore requireAblyAuth */
             );
         } catch (AblyException e) {
             /* Verify that,
@@ -174,13 +175,8 @@ public class HttpTest {
          *      - first call executed against production rest host
          *      - other calls executed against a random fallback host
          */
-        int expectedCallCount = options.httpMaxRetryCount + 1;
-        assertThat(urlHostArgumentStack.size(), is(equalTo(expectedCallCount)));
-        assertThat(urlHostArgumentStack.get(0), is(equalTo(Defaults.HOST_REST)));
-
-        for (int i = 1; i < expectedCallCount; i++) {
-            urlHostArgumentStack.get(i).matches(PATTERN_HOST_FALLBACK);
-        }
+        assertEquals(urlHostArgumentStack.size(), options.httpMaxRetryCount + 1);
+        assertEquals(urlHostArgumentStack.get(0), Defaults.HOST_REST);
     }
 
     /**
