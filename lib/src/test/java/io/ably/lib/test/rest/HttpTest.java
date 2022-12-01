@@ -23,6 +23,7 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -116,7 +117,7 @@ public class HttpTest {
      *
      * @throws Exception
      */
-    //@Ignore("When this test is run in CI/CD fallback url list size will be 2 instead of 4")
+    @Ignore("When this test is run in CI/CD fallback url list size will be 2 instead of 4")
     @Test
     public void http_ably_execute_fallback() throws AblyException {
         ClientOptions options = new ClientOptions();
@@ -174,7 +175,7 @@ public class HttpTest {
         /* wait for fallback list to populate */
         int waitAtMost = 5 * 10; //5 seconds * 10 times per second
         int waitCount = 0;
-        while (urlHostArgumentStack.size() < 4 && waitCount < waitAtMost) {
+        while (urlHostArgumentStack.size() < options.httpMaxRetryCount + 1 && waitCount < waitAtMost) {
             try {
                 Thread.sleep(100);
                 waitCount++;
