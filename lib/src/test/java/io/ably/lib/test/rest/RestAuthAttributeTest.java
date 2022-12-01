@@ -1,18 +1,5 @@
 package io.ably.lib.test.rest;
 
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.rest.Auth;
-import io.ably.lib.test.common.ParameterizedTest;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.Capability;
-import io.ably.lib.types.ClientOptions;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -21,6 +8,19 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import io.ably.lib.rest.AblyRest;
+import io.ably.lib.rest.Auth;
+import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.Capability;
+import io.ably.lib.types.ClientOptions;
 
 /**
  * Created by VOstopolets on 9/3/16.
@@ -42,7 +42,6 @@ public class RestAuthAttributeTest extends ParameterizedTest {
      * Spec: RSA10g,RSA10j
      * </p>
      */
-    @Ignore("FIXME: flaky test")
     @Test
     public void auth_stores_options_params() {
         try {
@@ -52,7 +51,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
             final String capabilityStr = capability.toString();
             final String testClientId = "firstClientId";
             Auth.TokenParams tokenParams = new Auth.TokenParams() {{
-                ttl = 4000L;
+                ttl = 2000L;
                 clientId = testClientId;
                 capability = capabilityStr;
             }};
@@ -85,7 +84,7 @@ public class RestAuthAttributeTest extends ParameterizedTest {
 
             /* wait until token expires */
             try {
-                Thread.sleep(5000L);
+                Thread.sleep(3000L);
             } catch(InterruptedException ie) {}
 
             /* authorize with default options */
