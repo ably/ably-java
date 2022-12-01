@@ -116,6 +116,7 @@ public class HttpTest {
      *
      * @throws Exception
      */
+    //@Ignore("When this test is run in CI/CD fallbacks will be 2 instead of 4")
     @Test
     public void http_ably_execute_fallback() throws AblyException {
         ClientOptions options = new ClientOptions();
@@ -169,6 +170,11 @@ public class HttpTest {
              */
             assertThat(e.errorInfo.statusCode / 10, is(equalTo(50)));
         }
+
+        /* wait for fallback list to populate */
+        try {
+            Thread.sleep(500L);
+        } catch(InterruptedException ie) {}
 
         /* Verify that,
          *      - {code HttpCore#httpExecute} have been called with (httpMaxRetryCount + 1) URLs
