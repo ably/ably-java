@@ -668,7 +668,6 @@ public class RealtimeAuthTest extends ParameterizedTest {
      * object that contains an incompatible clientId, the library should ... transition
      *  the connection state to FAILED
      */
-    @Ignore("FIXME flaky test, Verify failure error code indicates clientId mismatch expected:<40100> but was:<40101>")
     @Test
     public void auth_client_match_token_clientId_fail() {
         try {
@@ -678,13 +677,13 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             /* get token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
-            tokenParams.clientId = "token clientId";
+            tokenParams.clientId = "tokenclientid";
             Auth.TokenDetails tokenDetails = ablyForToken.auth.requestToken(tokenParams, null);
             assertNotNull("Expected token value", tokenDetails.token);
 
             /* create ably realtime with tokenDetails and clientId */
             ClientOptions opts = createOptions();
-            opts.clientId = "options clientId";
+            opts.clientId = "optionsclientid";
             opts.token = tokenDetails.token;
             AblyRealtime ablyRealtime = new AblyRealtime(opts);
 

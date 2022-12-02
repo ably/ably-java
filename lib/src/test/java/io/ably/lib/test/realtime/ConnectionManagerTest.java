@@ -725,6 +725,13 @@ public class ConnectionManagerTest extends ParameterizedTest {
             /* Wait for both channels to reattach and verify state histories match the expected ones */
             attachedChannelWaiter.waitFor(ChannelState.attached);
             suspendedChannelWaiter.waitFor(ChannelState.attached);
+
+            /* Wait for callback to fill lists after attached event*/
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+            }
+
             assertEquals("Attached channel histories do not match", attachedChannelHistory, expectedAttachedChannelHistory);
             assertEquals("Suspended channel histories do not match", suspendedChannelHistory, expectedSuspendedChannelHistory);
         }
