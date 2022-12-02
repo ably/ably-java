@@ -1420,7 +1420,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
      *
      * Tests RTN15c3
      */
-    @Ignore("FIXME flaky test, Verify channel was attached expected:<false> but was:<true>")
+    //@Ignore("FIXME flaky test, Verify channel was attached expected:<false> but was:<true>")
     @Test
     public void channel_resume_lost_continuity() throws AblyException {
         AblyRealtime ably = null;
@@ -1515,6 +1515,9 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             /* previously attached channel should remain attached */
             attachedChannelWaiter.waitFor(ChannelState.attached);
+
+            /* wait for callbacks to fill in*/
+            try { Thread.sleep(200L); } catch(InterruptedException e) {}
 
             /*
              * Verify each channel undergoes relevant events:
