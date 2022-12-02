@@ -117,13 +117,10 @@ public class HttpTest {
      *
      * @throws Exception
      */
-    @Ignore("When this test is run in CI/CD fallback url list size will be 2 instead of 4")
     @Test
-    public void http_ably_execute_fallback() throws AblyException {
+    public void http_ably_execute_default_fallback() throws AblyException {
         ClientOptions options = new ClientOptions();
         options.tls = false;
-        // Add some random fallback hosts
-        options.fallbackHosts = new String[]{"f1\\.ably-realtime.com", "f2\\.ably-realtime.com", "f3\\.ably-realtime.com"};
         // Select a port that will be refused immediately by the production host */
         options.port = 7777;
 
@@ -172,26 +169,8 @@ public class HttpTest {
             assertThat(e.errorInfo.statusCode / 10, is(equalTo(50)));
         }
 
-        /* wait for fallback list to populate */
-        int waitAtMost = 5 * 10; //5 seconds * 10 times per second
-        int waitCount = 0;
-        while (urlHostArgumentStack.size() < options.httpMaxRetryCount + 1 && waitCount < waitAtMost) {
-            try {
-                Thread.sleep(100);
-                waitCount++;
-            } catch (InterruptedException e) {
-                fail(e.getMessage());
-            }
-        }
-        System.out.println("wait done in: " + (waitCount * 100) + " ms");
-
-        /* Verify that,
-         *      - {code HttpCore#httpExecute} have been called with (httpMaxRetryCount + 1) URLs
-         *      - first call executed against production rest host
-         *      - other calls executed against a random fallback host
-         */
-        assertEquals(urlHostArgumentStack.size(), options.httpMaxRetryCount + 1);
-        assertEquals(urlHostArgumentStack.get(0), Defaults.HOST_REST);
+        assertEquals("only one default host should exist, no fallbacks are available if not provided by client", urlHostArgumentStack.size(), 1);
+        assertEquals("first call executed against production rest is NOT default host", urlHostArgumentStack.get(0), Defaults.HOST_REST);
     }
 
     /**
