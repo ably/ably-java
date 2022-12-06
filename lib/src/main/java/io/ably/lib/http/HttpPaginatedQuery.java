@@ -1,5 +1,7 @@
 package io.ably.lib.http;
 
+import static io.ably.lib.util.AblyErrors.INTERNAL_ERROR;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
@@ -115,9 +117,9 @@ public class HttpPaginatedQuery implements HttpCore.ResponseHandler<HttpPaginate
                 } catch(UnsupportedEncodingException uee) {}
                 return exec(params);
             }
-            throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected link URL format", 500, 50000));
+            throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected link URL format", 500, INTERNAL_ERROR.code));
         }
-    
+
         private String relFirst, relCurrent, relNext;
 
         @Override
@@ -139,7 +141,7 @@ public class HttpPaginatedQuery implements HttpCore.ResponseHandler<HttpPaginate
         @Override
         public JsonElement[] handleResponseBody(String contentType, byte[] body) throws AblyException {
             if(!"application/json".equals(contentType)) {
-                throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected content type: " + contentType, 500, 50000));
+                throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected content type: " + contentType, 500, INTERNAL_ERROR.code));
             }
             JsonElement jsonBody = Serialisation.gsonParser.parse(new String(body, Charset.forName("UTF-8")));
             if(!jsonBody.isJsonArray()) {

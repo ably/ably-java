@@ -42,6 +42,7 @@ import io.ably.lib.types.ErrorResponse;
 import io.ably.lib.util.Serialisation;
 
 import static fi.iki.elonen.NanoHTTPD.newFixedLengthResponse;
+import static io.ably.lib.util.AblyErrors.BAD_REQUEST;
 
 public class TokenServer extends NanoHTTPD {
 
@@ -60,7 +61,7 @@ public class TokenServer extends NanoHTTPD {
             try {
                 session.parseBody(new HashMap<String, String>());
             } catch (IOException | ResponseException e) {
-                return error2Response(new ErrorInfo("Bad POST token request", 400, 40000));
+                return error2Response(new ErrorInfo("Bad POST token request", 400, BAD_REQUEST.code));
             }
         }
 

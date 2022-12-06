@@ -59,6 +59,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
+import static io.ably.lib.util.AblyErrors.INTERNAL_ERROR;
 
 /**
  * Created by gokhanbarisaker on 2/2/16.
@@ -385,7 +386,7 @@ public class HttpTest {
             /* Verify that,
              *      - an {@code AblyException} with {@code ErrorInfo} having the 500 error from above
              */
-            ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, 50000);
+            ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, INTERNAL_ERROR.code);
             assertThat(e, new ErrorInfoMatcher(expectedErrorInfo));
         }
 
@@ -405,7 +406,7 @@ public class HttpTest {
             /* Verify that,
              *      - an {@code AblyException} with {@code ErrorInfo} having the 500 error from above
              */
-            ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, 50000);
+            ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, INTERNAL_ERROR.code);
             assertThat(e, new ErrorInfoMatcher(expectedErrorInfo));
         }
 
@@ -479,7 +480,7 @@ public class HttpTest {
             );
         } catch (AblyException e) {
             /* Verify that, an {@code AblyException} with {@code ErrorInfo} with the 500 error from above. */
-            ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, 50000);
+            ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, INTERNAL_ERROR.code);
             assertThat(e, new ErrorInfoMatcher(expectedErrorInfo));
         }
 

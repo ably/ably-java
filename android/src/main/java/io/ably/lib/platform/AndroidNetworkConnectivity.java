@@ -1,5 +1,7 @@
 package io.ably.lib.platform;
 
+import static io.ably.lib.util.AblyErrors.DISCONNECTED;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -65,7 +67,7 @@ public class AndroidNetworkConnectivity extends NetworkConnectivity {
             if(ni != null && ni.getState() == NetworkInfo.State.CONNECTED) {
                 notifyNetworkAvailable();
             } else if(intent.getBooleanExtra(ConnectivityManager.EXTRA_NO_CONNECTIVITY,Boolean.FALSE)) {
-                notifyNetworkUnavailable(new ErrorInfo("No network connection available", 503, 80003));
+                notifyNetworkUnavailable(new ErrorInfo("No network connection available", 503, DISCONNECTED.code));
             }
         }
     }

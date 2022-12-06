@@ -1,5 +1,7 @@
 package io.ably.lib.types;
 
+import static io.ably.lib.util.AblyErrors.BATCH_ERROR;
+
 import com.google.gson.annotations.SerializedName;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.util.Log;
@@ -166,7 +168,7 @@ public class PublishResponse {
                 if(response == null) {
                     return null;
                 }
-                if(response.error != null && response.error.code != 40020) {
+                if(response.error != null && response.error.code != BATCH_ERROR.code) {
                     throw AblyException.fromErrorInfo(response.error);
                 }
                 return response.batchResponse;

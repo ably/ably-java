@@ -4,6 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
+import static io.ably.lib.util.AblyErrors.BAD_REQUEST;
+import static io.ably.lib.util.AblyErrors.OPERATION_NOT_PERMITTED_WITH_PROVIDED_CAPABILITY;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -81,7 +84,7 @@ public class RestCapabilityTest extends ParameterizedTest {
             ably.auth.requestToken(tokenParams, authOptions);
             fail("Invalid capability, expected rejection");
         } catch(AblyException e) {
-            assertEquals("Unexpected error code", e.errorInfo.code, 40160);
+            assertEquals("Unexpected error code", e.errorInfo.code, OPERATION_NOT_PERMITTED_WITH_PROVIDED_CAPABILITY.code);
         }
     }
 
@@ -101,7 +104,7 @@ public class RestCapabilityTest extends ParameterizedTest {
             ably.auth.requestToken(tokenParams, authOptions);
             fail("Invalid capability, expected rejection");
         } catch(AblyException e) {
-            assertEquals("Unexpected error code", e.errorInfo.code, 40160);
+            assertEquals("Unexpected error code", e.errorInfo.code, OPERATION_NOT_PERMITTED_WITH_PROVIDED_CAPABILITY.code);
         }
     }
 
@@ -269,7 +272,7 @@ public class RestCapabilityTest extends ParameterizedTest {
             ably.auth.requestToken(tokenParams, null);
             fail("Invalid capability, expected rejection");
         } catch(AblyException e) {
-            assertEquals("Unexpected error code", e.errorInfo.code, 40000);
+            assertEquals("Unexpected error code", e.errorInfo.code, BAD_REQUEST.code);
         }
     }
     @Test
@@ -282,7 +285,7 @@ public class RestCapabilityTest extends ParameterizedTest {
             ably.auth.requestToken(tokenParams, null);
             fail("Invalid capability, expected rejection");
         } catch(AblyException e) {
-            assertEquals("Unexpected error code", e.errorInfo.code, 40000);
+            assertEquals("Unexpected error code", e.errorInfo.code, BAD_REQUEST.code);
         }
     }
     @Test
@@ -295,7 +298,7 @@ public class RestCapabilityTest extends ParameterizedTest {
             ably.auth.requestToken(tokenParams, null);
             fail("Invalid capability, expected rejection");
         } catch(AblyException e) {
-            assertEquals("Unexpected error code", e.errorInfo.code, 40000);
+            assertEquals("Unexpected error code", e.errorInfo.code, BAD_REQUEST.code);
         }
     }
 }

@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static io.ably.lib.util.AblyErrors.INVALID_JWT_FORMAT;
 
 public class RestJWTTest extends ParameterizedTest {
 
@@ -58,7 +59,7 @@ public class RestJWTTest extends ParameterizedTest {
             AblyRest client = new AblyRest(options);
             PaginatedResult<Stats> stats = client.stats(null);
         } catch (AblyException e) {
-            assertEquals("Unexpected code from exception", 40144, e.errorInfo.code);
+            assertEquals("Unexpected code from exception", INVALID_JWT_FORMAT.code, e.errorInfo.code);
             assertEquals("Unexpected statusCode from exception", 401, e.errorInfo.statusCode);
             assertTrue("Error message not matching the expected one", e.errorInfo.message.contains("signature verification failed"));
         }

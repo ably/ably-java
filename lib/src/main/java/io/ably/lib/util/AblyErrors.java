@@ -34,7 +34,7 @@ public enum AblyErrors {
     INVALID_PUBLISH_REQUEST_IMPERMISSIBLE_EXTRAS(40032, "Invalid publish request (impermissible extras field)"),
     RESERVED_FOR_ARTIFICIAL_ERROR(40099, "Reserved for artificial errors for testing"),
     UNAUTHORIZED(40100, "unauthorized"),
-    INVALID_CREDENTIALS_2(40101, "invalid credentials"),
+    INVALID_CREDENTIALS_AUTH(40101, "invalid credentials"),
     INCOMPATIBLE_CREDENTIALS(40102, "incompatible credentials"),
     INVALID_USE_OF_BASIC_AUTH(40103, "invalid use of Basic auth over non-TLS transport"),
     TIMESTAMP_NOT_CURRENT(40104, "timestamp not current"),

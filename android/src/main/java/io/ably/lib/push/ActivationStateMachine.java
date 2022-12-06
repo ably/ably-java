@@ -1,5 +1,7 @@
 package io.ably.lib.push;
 
+import static io.ably.lib.util.AblyErrors.BAD_REQUEST;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -306,7 +308,7 @@ public class ActivationStateMachine {
                             JsonObject deviceIdentityTokenJson = response.getAsJsonObject("deviceIdentityToken");
                             if(deviceIdentityTokenJson == null) {
                                 Log.e(TAG, "invalid device registration response (no deviceIdentityToken); deviceId = " + device.id);
-                                machine.handleEvent(new ActivationStateMachine.GettingDeviceRegistrationFailed(new ErrorInfo("Invalid deviceIdentityToken in response", 40000, 400)));
+                                machine.handleEvent(new ActivationStateMachine.GettingDeviceRegistrationFailed(new ErrorInfo("Invalid deviceIdentityToken in response", BAD_REQUEST.code, 400)));
                                 return;
                             }
                             JsonPrimitive responseClientIdJson = response.getAsJsonPrimitive("clientId");

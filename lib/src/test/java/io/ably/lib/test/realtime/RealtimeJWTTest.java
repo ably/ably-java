@@ -38,6 +38,8 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static io.ably.lib.util.AblyErrors.OPERATION_NOT_PERMITTED_WITH_PROVIDED_CAPABILITY;
+import static io.ably.lib.util.AblyErrors.TOKEN_EXPIRED;
 
 public class RealtimeJWTTest extends ParameterizedTest {
 
@@ -116,7 +118,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
                 @Override
                 public void onError(ErrorInfo error) {
                     assertEquals("Unexpected status code", 401, error.statusCode);
-                    assertEquals("Unexpected error code", 40160, error.code);
+                    assertEquals("Unexpected error code", OPERATION_NOT_PERMITTED_WITH_PROVIDED_CAPABILITY.code, error.code);
                     assertEquals("Unexpected error message", "Unable to perform channel operation (permission denied)", error.message);
                     ablyRealtime.close();
                 }
@@ -195,7 +197,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
 
                 @Override
                 public void onConnectionStateChanged(ConnectionStateChange stateChange) {
-                    assertEquals("Unexpected connection stage change", 40142, stateChange.reason.code);
+                    assertEquals("Unexpected connection stage change", TOKEN_EXPIRED.code, stateChange.reason.code);
                     assertTrue("Unexpected error message", stateChange.reason.message.contains("Key/token status changed (expire)"));
                 }
             });

@@ -16,6 +16,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static io.ably.lib.util.AblyErrors.INVALID_PARAMETER_VALUE;
+import static io.ably.lib.util.AblyErrors.TIMESTAMP_NOT_CURRENT;
 
 public class RestTokenTest extends ParameterizedTest {
 
@@ -102,7 +104,7 @@ public class RestTokenTest extends ParameterizedTest {
             ably.auth.requestToken(tokenParams, null);
             fail("Expected token request rejection");
         } catch(AblyException e) {
-            assertEquals("Unexpected error code", e.errorInfo.code, 40104);
+            assertEquals("Unexpected error code", e.errorInfo.code, TIMESTAMP_NOT_CURRENT.code);
         }
     }
 
@@ -216,7 +218,7 @@ public class RestTokenTest extends ParameterizedTest {
             ably.auth.requestToken(tokenParams, null);
             fail("Expected token request rejection");
         } catch(AblyException e) {
-            assertEquals("Unexpected error code", e.errorInfo.code, 40003);
+            assertEquals("Unexpected error code", e.errorInfo.code, INVALID_PARAMETER_VALUE.code);
         }
     }
 
@@ -231,7 +233,7 @@ public class RestTokenTest extends ParameterizedTest {
             ably.auth.requestToken(tokenParams, null);
             fail("Expected token request rejection");
         } catch(AblyException e) {
-            assertEquals("Unexpected error code", e.errorInfo.code, 40003);
+            assertEquals("Unexpected error code", e.errorInfo.code, INVALID_PARAMETER_VALUE.code);
         }
     }
 

@@ -26,6 +26,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static io.ably.lib.util.AblyErrors.BAD_REQUEST;
 
 public class RealtimeRecoverTest extends ParameterizedTest {
 
@@ -409,7 +410,7 @@ public class RealtimeRecoverTest extends ParameterizedTest {
             public void send(ProtocolMessage msg) throws AblyException {
                 if (throwOnSend) {
                     exceptionsThrown++;
-                    throw AblyException.fromErrorInfo(new ErrorInfo("TestException", 40000));
+                    throw AblyException.fromErrorInfo(new ErrorInfo("TestException", BAD_REQUEST.code));
                 } else {
                     super.send(msg);
                 }

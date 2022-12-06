@@ -1,5 +1,8 @@
 package io.ably.lib.types;
 
+import static io.ably.lib.util.AblyErrors.INVALID_MESSAGE_DATA_OR_ENCODING;
+import static io.ably.lib.util.AblyErrors.UNABLE_TO_DECODE_MESSAGE;
+
 import com.davidehrmann.vcdiff.VCDiffDecoder;
 import com.davidehrmann.vcdiff.VCDiffDecoderBuilder;
 import com.google.gson.JsonElement;
@@ -102,7 +105,7 @@ public class BaseMessage implements Cloneable {
             vcdiffDecoder.decode(base, delta, decoded);
             return decoded.toByteArray();
         } catch (Throwable t) {
-            throw MessageDecodeException.fromThrowableAndErrorInfo(t, new ErrorInfo("VCDIFF delta decode failed", 400, 40018));
+            throw MessageDecodeException.fromThrowableAndErrorInfo(t, new ErrorInfo("VCDIFF delta decode failed", 400, UNABLE_TO_DECODE_MESSAGE.code));
         }
     }
 
@@ -189,7 +192,7 @@ public class BaseMessage implements Cloneable {
                 }
             } else if(!(data instanceof byte[])) {
                 Log.d(TAG, "Message data must be either `byte[]`, `String` or `JSONElement`; implicit coercion of other types to String is deprecated");
-                throw AblyException.fromErrorInfo(new ErrorInfo("Invalid message data or encoding", 400, 40013));
+                throw AblyException.fromErrorInfo(new ErrorInfo("Invalid message data or encoding", 400, INVALID_MESSAGE_DATA_OR_ENCODING.code));
             }
         }
         if (opts != null && opts.encrypted) {

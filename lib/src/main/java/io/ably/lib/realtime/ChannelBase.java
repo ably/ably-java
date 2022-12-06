@@ -1,5 +1,10 @@
 package io.ably.lib.realtime;
 
+import static io.ably.lib.util.AblyErrors.BAD_REQUEST;
+import static io.ably.lib.util.AblyErrors.CHANNEL_OPERATION_FAILED_INVALID_STATE;
+import static io.ably.lib.util.AblyErrors.CHANNEL_RECOVER_ERROR_NO_RESPONSE;
+import static io.ably.lib.util.AblyErrors.UNABLE_TO_DECODE_MESSAGE;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -279,7 +284,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             case initialized:
             case detaching:
             case detached:
-                throw AblyException.fromErrorInfo(new ErrorInfo("Unable to sync to channel; not attached", 40000));
+                throw AblyException.fromErrorInfo(new ErrorInfo("Unable to sync to channel; not attached", BAD_REQUEST.code));
             default:
         }
         ConnectionManager connectionManager = ably.connection.connectionManager;
@@ -523,7 +528,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                     }
                     attachTimer = null;
                     if (state == ChannelState.detaching) {
-                        ErrorInfo reason = new ErrorInfo("Detach operation timed out", 90007);
+                        ErrorInfo reason = new ErrorInfo("Detach operation timed out", CHANNEL_RECOVER_ERROR_NO_RESPONSE.code);
                         callCompletionListenerError(listener, reason);
                         setState(originalState, reason);
                     }
@@ -600,7 +605,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
     }
 
-    static ErrorInfo REASON_NOT_ATTACHED = new ErrorInfo("Channel not attached", 400, 90001);
+    static ErrorInfo REASON_NOT_ATTACHED = new ErrorInfo("Channel not attached", 400, CHANNEL_OPERATION_FAILED_INVALID_STATE.code);
 
     /************************************
      * subscriptions and MessageListener
@@ -754,7 +759,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             try {
                 msg.decode(options, decodingContext);
             } catch (MessageDecodeException e) {
-                if (e.errorInfo.code == 40018) {
+                if (e.errorInfo.code == UNABLE_TO_DECODE_MESSAGE.code) {
                     Log.e(TAG, String.format(Locale.ROOT, "Delta message decode failure - %s. Message id = %s, channel = %s", e.errorInfo.message, msg.id, name));
                     startDecodeFailureRecovery();
 
@@ -976,7 +981,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         switch(state) {
         case failed:
         case suspended:
-            throw AblyException.fromErrorInfo(new ErrorInfo("Unable to publish in failed or suspended state", 400, 40000));
+            throw AblyException.fromErrorInfo(new ErrorInfo("Unable to publish in failed or suspended state", 400, BAD_REQUEST.code));
         default:
             connectionManager.send(msg, queueMessages, listener);
         }
@@ -1050,13 +1055,13 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             if(KEY_UNTIL_ATTACH.equals(param.key)) {
                 if("true".equalsIgnoreCase(param.value)) {
                     if (channel.state != ChannelState.attached) {
-                        throw AblyException.fromErrorInfo(new ErrorInfo("option untilAttach requires the channel to be attached", 40000, 400));
+                        throw AblyException.fromErrorInfo(new ErrorInfo("option untilAttach requires the channel to be attached", BAD_REQUEST.code, 400));
                     }
 
                     params.add(new Param(KEY_FROM_SERIAL, channel.properties.attachSerial));
                 }
                 else if(!"false".equalsIgnoreCase(param.value)) {
-                    throw AblyException.fromErrorInfo(new ErrorInfo("option untilAttach is invalid. \"true\" or \"false\" expected", 40000, 400));
+                    throw AblyException.fromErrorInfo(new ErrorInfo("option untilAttach is invalid. \"true\" or \"false\" expected", BAD_REQUEST.code, 400));
                 }
             }
             else {

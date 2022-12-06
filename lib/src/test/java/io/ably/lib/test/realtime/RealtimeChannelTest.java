@@ -46,6 +46,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static io.ably.lib.util.AblyErrors.BAD_REQUEST;
 
 public class RealtimeChannelTest extends ParameterizedTest {
 
@@ -239,7 +240,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
                 ably.channels.get(channelName, options);
             } catch (AblyException e) {
                 assertEquals("Verify error code", 400, e.errorInfo.code);
-                assertEquals("Verify error status code", 40000, e.errorInfo.statusCode);
+                assertEquals("Verify error status code", BAD_REQUEST.code, e.errorInfo.statusCode);
                 assertTrue("Verify error message", e.errorInfo.message.contains("setOptions"));
             }
         } catch (AblyException e) {

@@ -1,5 +1,8 @@
 package io.ably.lib.rest;
 
+import static io.ably.lib.util.AblyErrors.BAD_REQUEST;
+import static io.ably.lib.util.AblyErrors.BATCH_ERROR;
+
 import io.ably.annotation.Experimental;
 import io.ably.lib.http.AsyncHttpScheduler;
 import io.ably.lib.http.Http;
@@ -94,7 +97,7 @@ public abstract class AblyBase implements AutoCloseable {
         if(options == null) {
             String msg = "no options provided";
             Log.e(getClass().getName(), msg);
-            throw AblyException.fromErrorInfo(new ErrorInfo(msg, 400, 40000));
+            throw AblyException.fromErrorInfo(new ErrorInfo(msg, 400, BAD_REQUEST.code));
         }
         this.options = options;
 
@@ -412,7 +415,7 @@ public abstract class AblyBase implements AutoCloseable {
                 http.post("/messages", HttpUtils.defaultAcceptHeaders(options.useBinaryProtocol), params, requestBody, new HttpCore.ResponseHandler<PublishResponse[]>() {
                     @Override
                     public PublishResponse[] handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
-                        if(error != null && error.code != 40020) {
+                        if(error != null && error.code != BATCH_ERROR.code) {
                             throw AblyException.fromErrorInfo(error);
                         }
                         return PublishResponse.getBulkPublishResponseHandler(response.statusCode).handleResponseBody(response.contentType, response.body);

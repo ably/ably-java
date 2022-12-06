@@ -1,5 +1,8 @@
 package io.ably.lib.types;
 
+import static io.ably.lib.util.AblyErrors.INTERNAL_CONNECTION_ERROR;
+import static io.ably.lib.util.AblyErrors.INTERNAL_ERROR;
+
 import io.ably.lib.util.Serialisation;
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessageUnpacker;
@@ -150,13 +153,13 @@ public class ErrorInfo {
         ErrorInfo errorInfo;
         if(throwable instanceof UnknownHostException
                 || throwable instanceof NoRouteToHostException) {
-            errorInfo = new ErrorInfo(throwable.getLocalizedMessage(), 500, 50002);
+            errorInfo = new ErrorInfo(throwable.getLocalizedMessage(), 500, INTERNAL_CONNECTION_ERROR.code);
         }
         else if(throwable instanceof IOException) {
-            errorInfo = new ErrorInfo(throwable.getLocalizedMessage(), 500, 50000);
+            errorInfo = new ErrorInfo(throwable.getLocalizedMessage(), 500, INTERNAL_ERROR.code);
         }
         else {
-            errorInfo = new ErrorInfo("Unexpected exception: " + throwable.getLocalizedMessage(), 50000, 500);
+            errorInfo = new ErrorInfo("Unexpected exception: " + throwable.getLocalizedMessage(), INTERNAL_ERROR.code, 500);
         }
 
         return errorInfo;

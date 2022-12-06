@@ -1,5 +1,7 @@
 package io.ably.lib.transport;
 
+import static io.ably.lib.util.AblyErrors.CONNECTION_FAILED;
+
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
@@ -254,7 +256,7 @@ public class WebSocketTransport implements ITransport {
         @Override
         public void onError(final Exception e) {
             Log.e(TAG, "Connection error ", e);
-            connectListener.onTransportUnavailable(WebSocketTransport.this, new ErrorInfo(e.getMessage(), 503, 80000));
+            connectListener.onTransportUnavailable(WebSocketTransport.this, new ErrorInfo(e.getMessage(), 503, CONNECTION_FAILED.code));
         }
 
         @Override

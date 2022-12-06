@@ -1,5 +1,7 @@
 package io.ably.lib.http;
 
+import static io.ably.lib.util.AblyErrors.INTERNAL_ERROR;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.HashMap;
@@ -107,7 +109,7 @@ public class AsyncHttpPaginatedQuery implements HttpCore.ResponseHandler<AsyncHt
             /* we're expecting the format to be ./path-component?name=value&name=value... */
             Matcher urlMatch = BasePaginatedQuery.urlPattern.matcher(linkUrl);
             if(!urlMatch.matches()) {
-                callback.onError(new ErrorInfo("Unexpected link URL format", 500, 50000));
+                callback.onError(new ErrorInfo("Unexpected link URL format", 500, INTERNAL_ERROR.code));
                 return;
             }
 
@@ -123,7 +125,7 @@ public class AsyncHttpPaginatedQuery implements HttpCore.ResponseHandler<AsyncHt
             } catch(UnsupportedEncodingException uee) {}
             exec(params, callback);
         }
-    
+
         @Override
         public boolean hasFirst() { return relFirst != null; }
 

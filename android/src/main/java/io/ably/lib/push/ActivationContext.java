@@ -1,5 +1,7 @@
 package io.ably.lib.push;
 
+import static io.ably.lib.util.AblyErrors.BAD_REQUEST;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
@@ -69,7 +71,7 @@ public class ActivationContext {
         String deviceIdentityToken = getLocalDevice().deviceIdentityToken;
         if(deviceIdentityToken == null) {
             Log.e(TAG, "getAbly(): unable to create Ably instance using deviceIdentityToken");
-            throw AblyException.fromErrorInfo(new ErrorInfo("Unable to get Ably library instance; no device identity token", 40000, 400));
+            throw AblyException.fromErrorInfo(new ErrorInfo("Unable to get Ably library instance; no device identity token", BAD_REQUEST.code, 400));
         }
         Log.v(TAG, "getAbly(): returning Ably instance using deviceIdentityToken");
         return (ably = new AblyRest(deviceIdentityToken));
