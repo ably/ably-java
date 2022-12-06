@@ -174,7 +174,7 @@ public enum AblyErrors {
         }
     }
 
-    private AblyErrors(int code, String message) {
+    AblyErrors(int code, String message) {
         this.code = code;
         this.message = message;
     }
