@@ -1,4 +1,24 @@
 # Change Log
+## [1.2.21](https://github.com/ably/ably-java/tree/v1.2.21)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.20...1.2.21)
+
+**Fixed bugs:**
+
+- Presence.endSync throws NullPointerException when processing a message [\#853](https://github.com/ably/ably-java/issues/853)
+
+**Closed issues:**
+
+- handling of channel options in InternalChannels.get is not thread safe [\#663](https://github.com/ably/ably-java/issues/663)
+- Remove hardcoded name from Maven Gradle files [\#565](https://github.com/ably/ably-java/issues/565)
+- Android CI fails due to unaccepted licenses [\#554](https://github.com/ably/ably-java/issues/554)
+- AsyncHttpScheduler.dispose\(\) is never used [\#523](https://github.com/ably/ably-java/issues/523)
+- More Encapsulation Needed [\#508](https://github.com/ably/ably-java/issues/508)
+
+**Merged pull requests:**
+
+- added null check to prevent NullPointerExceptions [\#873](https://github.com/ably/ably-java/pull/873) ([davyskiba](https://github.com/davyskiba))
+- Stop hiding flakey test failures [\#861](https://github.com/ably/ably-java/pull/861) ([QuintinWillison](https://github.com/QuintinWillison))
 
 ## [1.2.20](https://github.com/ably/ably-java/tree/v1.2.20)
 
