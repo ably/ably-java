@@ -1,6 +1,9 @@
 package io.ably.lib.platform;
 
+import static io.ably.lib.util.HttpCodes.BAD_REQUEST;
+
 import android.content.Context;
+
 import io.ably.lib.transport.NetworkConnectivity;
 import io.ably.lib.transport.NetworkConnectivity.DelegatedNetworkConnectivity;
 import io.ably.lib.types.AblyException;
@@ -27,7 +30,7 @@ public class Platform {
                 Log.v(TAG, "setAndroidContext(): existing applicationContext is compatible with that being set");
                 return;
             }
-            throw AblyException.fromErrorInfo(new ErrorInfo("Incompatible application context set", 40000, 400));
+            throw AblyException.fromErrorInfo(new ErrorInfo("Incompatible application context set", 40000, BAD_REQUEST.code));
         } else {
             Log.v(TAG, "setAndroidContext(): there was no existing applicationContext");
         }

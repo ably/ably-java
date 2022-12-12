@@ -1,5 +1,7 @@
 package io.ably.lib.test.util;
 
+import static io.ably.lib.util.HttpCodes.INTERNAL_SERVER_ERROR;
+
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ITransport;
 import io.ably.lib.transport.WebSocketTransport;
@@ -143,13 +145,13 @@ public class MockWebsocketFactory implements ITransport.Factory {
                         super.connect(connectListener);
                     } else {
                         System.out.println("MockWebsocketTransport: disallowing " + host);
-                        connectListener.onTransportUnavailable(this, new ErrorInfo("MockWebsocketTransport: connection disallowed by hostFilter", 500, 50000));
+                        connectListener.onTransportUnavailable(this, new ErrorInfo("MockWebsocketTransport: connection disallowed by hostFilter", INTERNAL_SERVER_ERROR.code, 50000));
                     }
                     break;
                 case fail:
                     if (hostFilter == null || hostFilter.matches(host)) {
                         System.out.println("MockWebsocketTransport: failing " + host);
-                        connectListener.onTransportUnavailable(this, new ErrorInfo("MockWebsocketTransport: connection failed by hostFilter", 500, 50000));
+                        connectListener.onTransportUnavailable(this, new ErrorInfo("MockWebsocketTransport: connection failed by hostFilter", INTERNAL_SERVER_ERROR.code, 50000));
                     } else {
                         System.out.println("MockWebsocketTransport: not failing " + host);
                         super.connect(connectListener);

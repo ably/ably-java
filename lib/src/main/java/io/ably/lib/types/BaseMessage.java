@@ -1,5 +1,7 @@
 package io.ably.lib.types;
 
+import static io.ably.lib.util.HttpCodes.BAD_REQUEST;
+
 import com.davidehrmann.vcdiff.VCDiffDecoder;
 import com.davidehrmann.vcdiff.VCDiffDecoderBuilder;
 import com.google.gson.JsonElement;
@@ -7,10 +9,7 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
-import io.ably.lib.util.Base64Coder;
-import io.ably.lib.util.Crypto.EncryptingChannelCipher;
-import io.ably.lib.util.Log;
-import io.ably.lib.util.Serialisation;
+
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
@@ -20,6 +19,11 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import io.ably.lib.util.Base64Coder;
+import io.ably.lib.util.Crypto.EncryptingChannelCipher;
+import io.ably.lib.util.Log;
+import io.ably.lib.util.Serialisation;
 
 public class BaseMessage implements Cloneable {
     /**
@@ -102,7 +106,7 @@ public class BaseMessage implements Cloneable {
             vcdiffDecoder.decode(base, delta, decoded);
             return decoded.toByteArray();
         } catch (Throwable t) {
-            throw MessageDecodeException.fromThrowableAndErrorInfo(t, new ErrorInfo("VCDIFF delta decode failed", 400, 40018));
+            throw MessageDecodeException.fromThrowableAndErrorInfo(t, new ErrorInfo("VCDIFF delta decode failed", BAD_REQUEST.code, 40018));
         }
     }
 
@@ -189,7 +193,7 @@ public class BaseMessage implements Cloneable {
                 }
             } else if(!(data instanceof byte[])) {
                 Log.d(TAG, "Message data must be either `byte[]`, `String` or `JSONElement`; implicit coercion of other types to String is deprecated");
-                throw AblyException.fromErrorInfo(new ErrorInfo("Invalid message data or encoding", 400, 40013));
+                throw AblyException.fromErrorInfo(new ErrorInfo("Invalid message data or encoding", BAD_REQUEST.code, 40013));
             }
         }
         if (opts != null && opts.encrypted) {

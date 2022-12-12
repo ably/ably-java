@@ -1,15 +1,18 @@
 package io.ably.lib.platform;
 
+import static io.ably.lib.util.HttpCodes.SERVICE_UNAVAILABLE;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import io.ably.lib.transport.NetworkConnectivity;
-import io.ably.lib.types.ErrorInfo;
 
 import java.util.WeakHashMap;
+
+import io.ably.lib.transport.NetworkConnectivity;
+import io.ably.lib.types.ErrorInfo;
 
 public class AndroidNetworkConnectivity extends NetworkConnectivity {
 
@@ -65,7 +68,7 @@ public class AndroidNetworkConnectivity extends NetworkConnectivity {
             if(ni != null && ni.getState() == NetworkInfo.State.CONNECTED) {
                 notifyNetworkAvailable();
             } else if(intent.getBooleanExtra(ConnectivityManager.EXTRA_NO_CONNECTIVITY,Boolean.FALSE)) {
-                notifyNetworkUnavailable(new ErrorInfo("No network connection available", 503, 80003));
+                notifyNetworkUnavailable(new ErrorInfo("No network connection available", SERVICE_UNAVAILABLE.code, 80003));
             }
         }
     }

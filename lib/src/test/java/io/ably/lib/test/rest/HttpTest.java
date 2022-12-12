@@ -1,24 +1,24 @@
 package io.ably.lib.test.rest;
 
-import fi.iki.elonen.NanoHTTPD;
-import fi.iki.elonen.router.RouterNanoHTTPD;
-import io.ably.lib.http.AsyncHttpScheduler;
-import io.ably.lib.http.Http;
-import io.ably.lib.http.HttpConstants;
-import io.ably.lib.http.HttpCore;
-import io.ably.lib.http.HttpHelpers;
-import io.ably.lib.http.SyncHttpScheduler;
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.test.util.EmptyPlatformAgentProvider;
-import io.ably.lib.test.util.StatusHandler;
-import io.ably.lib.test.util.TimeHandler;
-import io.ably.lib.transport.Defaults;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.Callback;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.Param;
-import io.ably.lib.util.PlatformAgentProvider;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.AdditionalMatchers.aryEq;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static io.ably.lib.util.HttpCodes.INTERNAL_SERVER_ERROR;
+
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.AfterClass;
@@ -42,23 +42,25 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.AdditionalMatchers.aryEq;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.verify;
+import fi.iki.elonen.NanoHTTPD;
+import fi.iki.elonen.router.RouterNanoHTTPD;
+import io.ably.lib.http.AsyncHttpScheduler;
+import io.ably.lib.http.Http;
+import io.ably.lib.http.HttpConstants;
+import io.ably.lib.http.HttpCore;
+import io.ably.lib.http.HttpHelpers;
+import io.ably.lib.http.SyncHttpScheduler;
+import io.ably.lib.rest.AblyRest;
+import io.ably.lib.test.util.EmptyPlatformAgentProvider;
+import io.ably.lib.test.util.StatusHandler;
+import io.ably.lib.test.util.TimeHandler;
+import io.ably.lib.transport.Defaults;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.Callback;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Param;
+import io.ably.lib.util.PlatformAgentProvider;
 
 /**
  * Created by gokhanbarisaker on 2/2/16.
@@ -265,7 +267,7 @@ public class HttpTest {
         /* Partially mock httpCore */
         Answer answer = new GrumpyAnswer(
                 1, /* Throw exception */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus(INTERNAL_SERVER_ERROR.message, INTERNAL_SERVER_ERROR.code)), /* That is HostFailedException */
                 responseExpected /* Then return a valid response with second call */
         );
 
@@ -354,7 +356,7 @@ public class HttpTest {
         /* Partially mock httpCore */
         Answer answer = new GrumpyAnswer(
                 1, /* Throw exception */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus(INTERNAL_SERVER_ERROR.message, INTERNAL_SERVER_ERROR.code)), /* That is HostFailedException */
                 responseExpected /* Then return a valid response with second call */
         );
 
@@ -385,7 +387,7 @@ public class HttpTest {
             /* Verify that,
              *      - an {@code AblyException} with {@code ErrorInfo} having the 500 error from above
              */
-            ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, 50000);
+            ErrorInfo expectedErrorInfo = new ErrorInfo(INTERNAL_SERVER_ERROR.message, INTERNAL_SERVER_ERROR.code, 50000);
             assertThat(e, new ErrorInfoMatcher(expectedErrorInfo));
         }
 
@@ -405,7 +407,7 @@ public class HttpTest {
             /* Verify that,
              *      - an {@code AblyException} with {@code ErrorInfo} having the 500 error from above
              */
-            ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, 50000);
+            ErrorInfo expectedErrorInfo = new ErrorInfo(INTERNAL_SERVER_ERROR.message, INTERNAL_SERVER_ERROR.code, 50000);
             assertThat(e, new ErrorInfoMatcher(expectedErrorInfo));
         }
 
@@ -450,7 +452,7 @@ public class HttpTest {
         /* Partially mock httpCore */
         Answer answer = new GrumpyAnswer(
                 2, /* Throw exception twice (2) */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus(INTERNAL_SERVER_ERROR.message, INTERNAL_SERVER_ERROR.code)), /* That is HostFailedException */
                 responseExpected /* Then return a valid response with third call */
         );
 
@@ -479,7 +481,7 @@ public class HttpTest {
             );
         } catch (AblyException e) {
             /* Verify that, an {@code AblyException} with {@code ErrorInfo} with the 500 error from above. */
-            ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, 50000);
+            ErrorInfo expectedErrorInfo = new ErrorInfo(INTERNAL_SERVER_ERROR.message, INTERNAL_SERVER_ERROR.code, 50000);
             assertThat(e, new ErrorInfoMatcher(expectedErrorInfo));
         }
 
@@ -528,7 +530,7 @@ public class HttpTest {
         /* Partially mock httpCore */
         Answer answer = new GrumpyAnswer(
                 options.httpMaxRetryCount, /* Throw exception options.httpMaxRetryCount */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus(INTERNAL_SERVER_ERROR.message, INTERNAL_SERVER_ERROR.code)), /* That is HostFailedException */
                 responseExpected /* Then return a valid response with third call */
         );
 
@@ -725,7 +727,7 @@ public class HttpTest {
         /* Partially mock httpCore */
         Answer answer = new GrumpyAnswer(
                 1, /* Throw exception once (1) */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus(INTERNAL_SERVER_ERROR.message, INTERNAL_SERVER_ERROR.code)), /* That is HostFailedException */
                 responseExpected /* Then return a valid response with the second call */
         );
 
@@ -796,7 +798,7 @@ public class HttpTest {
         /* Partially mock httpCore */
         Answer answer = new GrumpyAnswer(
                 2, /* Throw exception twice (2) */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus(INTERNAL_SERVER_ERROR.message, INTERNAL_SERVER_ERROR.code)), /* That is HostFailedException */
                 responseExpected /* Then return a valid response with third call */
         );
 
@@ -875,7 +877,7 @@ public class HttpTest {
         /* Partially mock httpCore */
         Answer answer = new GrumpyAnswer(
                 1, /* Throw exception once (1) */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus(INTERNAL_SERVER_ERROR.message, INTERNAL_SERVER_ERROR.code)), /* That is HostFailedException */
                 "Lorem Ipsum" /* Ignore */
         );
 
@@ -962,7 +964,7 @@ public class HttpTest {
         /* Partially mock httpCore */
         Answer answer = new GrumpyAnswer(
                 1, /* Throw exception once */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus(INTERNAL_SERVER_ERROR.message, INTERNAL_SERVER_ERROR.code)), /* That is HostFailedException */
                 "Lorem Ipsum" /* Ignore */
         );
 
@@ -999,7 +1001,7 @@ public class HttpTest {
         /* reset the mocked response so that the next request fails */
         answer = new GrumpyAnswer(
                 1, /* Throw exception once */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus(INTERNAL_SERVER_ERROR.message, INTERNAL_SERVER_ERROR.code)), /* That is HostFailedException */
                 "Lorem Ipsum" /* Ignore */
         );
 
@@ -1053,7 +1055,7 @@ public class HttpTest {
         /* Partially mock httpCore */
         Answer answer = new GrumpyAnswer(
                 1, /* Throw exception once (1) */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus(INTERNAL_SERVER_ERROR.message, INTERNAL_SERVER_ERROR.code)), /* That is HostFailedException */
                 "Lorem Ipsum" /* Ignore */
         );
 
@@ -1137,7 +1139,7 @@ public class HttpTest {
         /* Partially mock httpCore */
         Answer answer = new GrumpyAnswer(
                 excessiveFallbackCount, /* Throw exception more than httpMaxRetryCount number of times */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus(INTERNAL_SERVER_ERROR.message, INTERNAL_SERVER_ERROR.code)), /* That is HostFailedException */
                 "Lorem Ipsum" /* Ignore */
         );
 

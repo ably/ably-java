@@ -1,5 +1,19 @@
 package io.ably.lib.test.android;
 
+import static android.support.test.InstrumentationRegistry.getContext;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
+import static io.ably.lib.test.common.Helpers.assertArrayUnorderedEquals;
+import static io.ably.lib.test.common.Helpers.assertInstanceOf;
+import static io.ably.lib.test.common.Helpers.assertSize;
+import static io.ably.lib.util.HttpCodes.OK;
+import static io.ably.lib.util.Serialisation.gson;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -8,8 +22,22 @@ import android.os.Build;
 import android.preference.PreferenceManager;
 import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
+
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
 import com.google.gson.JsonObject;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.util.ArrayList;
+import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.push.ActivationContext;
@@ -57,30 +85,6 @@ import io.ably.lib.util.IntentUtils;
 import io.ably.lib.util.JsonUtils;
 import io.ably.lib.util.Serialisation;
 import java9.util.stream.StreamSupport;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import java.util.ArrayList;
-import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
-
-import static android.support.test.InstrumentationRegistry.getContext;
-import static io.ably.lib.test.common.Helpers.assertArrayUnorderedEquals;
-import static io.ably.lib.test.common.Helpers.assertInstanceOf;
-import static io.ably.lib.test.common.Helpers.assertSize;
-import static io.ably.lib.util.Serialisation.gson;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
 @RunWith(AndroidJUnit4.class)
 public class AndroidPushTest {
@@ -449,8 +453,8 @@ public class AndroidPushTest {
         fakeToken.addProperty("token", "fakeToken");
         body.add("deviceIdentityToken", fakeToken);
         HttpCore.Response response = new HttpCore.Response();
-        response.statusCode = 200;
-        response.statusLine = "OK";
+        response.statusCode = OK.code;
+        response.statusLine = OK.message;
         response.contentType = "application/json";
         response.body = gson.toJson(body).getBytes();
         response.contentLength = response.body.length;

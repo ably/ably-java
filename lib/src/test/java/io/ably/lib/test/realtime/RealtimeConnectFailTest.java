@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static io.ably.lib.util.HttpCodes.UNAUTHORIZED;
 
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -83,7 +84,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
 
             ErrorInfo fail = connectionWaiter.waitFor(ConnectionState.failed);
             assertEquals("Verify failed state is reached", ConnectionState.failed, ably.connection.state);
-            assertEquals("Verify correct error code is given", 401, fail.statusCode);
+            assertEquals("Verify correct error code is given", UNAUTHORIZED.code, fail.statusCode);
         } finally {
             ably.close();
         }

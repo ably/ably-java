@@ -1,5 +1,22 @@
 package io.ably.lib.test.rest;
 
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static io.ably.lib.util.HttpCodes.INTERNAL_SERVER_ERROR;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import java.net.HttpURLConnection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.rest.AblyRest;
@@ -16,21 +33,6 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.MessageSerializer;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.net.HttpURLConnection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class RestChannelPublishTest extends ParameterizedTest {
 
@@ -271,7 +273,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
         @Override
         public void onRawHttpResponse(String id, String method, HttpCore.Response response) {
             if(method.equalsIgnoreCase("POST") && postRequestCount == 1) {
-                response.statusCode = 500;
+                response.statusCode = INTERNAL_SERVER_ERROR.code;
             }
         }
 

@@ -1,5 +1,7 @@
 package io.ably.lib.http;
 
+import static io.ably.lib.util.HttpCodes.INTERNAL_SERVER_ERROR;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.Collection;
@@ -119,7 +121,7 @@ public class BasePaginatedQuery<T> implements HttpCore.ResponseHandler<BasePagin
                     /* we're expecting the format to be ./path-component?name=value&name=value... */
                     Matcher urlMatch = urlPattern.matcher(linkUrl);
                     if(!urlMatch.matches()) {
-                        throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected link URL format", 500, 50000));
+                        throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected link URL format", INTERNAL_SERVER_ERROR.code, 50000));
                     }
                     String[] paramSpecs = urlMatch.group(2).split("&");
                     Param[] params = new Param[paramSpecs.length];

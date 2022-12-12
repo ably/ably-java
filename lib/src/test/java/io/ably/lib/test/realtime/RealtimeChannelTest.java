@@ -1,5 +1,30 @@
 package io.ably.lib.test.realtime;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static io.ably.lib.util.HttpCodes.BAD_REQUEST;
+import static io.ably.lib.util.HttpCodes.UNAUTHORIZED;
+
+import org.hamcrest.Matchers;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
@@ -24,28 +49,6 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.ProtocolMessage;
-import org.hamcrest.Matchers;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class RealtimeChannelTest extends ParameterizedTest {
 
@@ -238,7 +241,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             try {
                 ably.channels.get(channelName, options);
             } catch (AblyException e) {
-                assertEquals("Verify error code", 400, e.errorInfo.code);
+                assertEquals("Verify error code", BAD_REQUEST.code, e.errorInfo.code);
                 assertEquals("Verify error status code", 40000, e.errorInfo.statusCode);
                 assertTrue("Verify error message", e.errorInfo.message.contains("setOptions"));
             }
@@ -833,7 +836,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             channel.attach();
             ErrorInfo fail = (new ChannelWaiter(channel)).waitFor(ChannelState.failed);
             assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-            assertEquals("Verify reason code gives correct failure reason", fail.statusCode, 401);
+            assertEquals("Verify reason code gives correct failure reason", fail.statusCode, UNAUTHORIZED.code);
 
         } catch (AblyException e) {
             e.printStackTrace();
@@ -900,11 +903,11 @@ public class RealtimeChannelTest extends ParameterizedTest {
             channel.attach(waiter);
             ErrorInfo fail = (new ChannelWaiter(channel)).waitFor(ChannelState.failed);
             assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-            assertEquals("Verify reason code gives correct failure reason", fail.statusCode, 401);
+            assertEquals("Verify reason code gives correct failure reason", fail.statusCode, UNAUTHORIZED.code);
 
             /* Verify error callback gets called with correct status code */
             waiter.waitFor();
-            assertThat(waiter.error.statusCode, is(equalTo(401)));
+            assertEquals(waiter.error.statusCode, UNAUTHORIZED.code);
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");
@@ -1260,7 +1263,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             ErrorInfo fail = new ChannelWaiter(channel).waitFor(ChannelState.failed);
             assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-            assertEquals("Verify reason code gives correct failure reason", fail.statusCode, 401);
+            assertEquals("Verify reason code gives correct failure reason", fail.statusCode, UNAUTHORIZED.code);
         } finally {
             if(ably != null)
                 ably.close();
@@ -1818,7 +1821,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
             /* create a channel; put into failed state */
-            ably.connection.connectionManager.requestState(new ConnectionManager.StateIndication(ConnectionState.failed, new ErrorInfo("Test error", 400, 12345)));
+            ably.connection.connectionManager.requestState(new ConnectionManager.StateIndication(ConnectionState.failed, new ErrorInfo("Test error", BAD_REQUEST.code, 12345)));
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.failed);
             assertEquals("Verify failed state reached", ably.connection.state, ConnectionState.failed);
 

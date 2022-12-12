@@ -1,13 +1,17 @@
 package io.ably.lib.types;
 
+import static io.ably.lib.util.HttpCodes.MULTIPLE_CHOICES;
+
 import com.google.gson.annotations.SerializedName;
-import io.ably.lib.http.HttpCore;
-import io.ably.lib.util.Log;
-import io.ably.lib.util.Serialisation;
+
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessageUnpacker;
 
 import java.io.IOException;
+
+import io.ably.lib.http.HttpCore;
+import io.ably.lib.util.Log;
+import io.ably.lib.util.Serialisation;
 
 /**
  * Contains the responses from a {@link PublishResponse} {@link PublishResponse#publish} request.
@@ -82,7 +86,7 @@ public class PublishResponse {
     }
 
     public static HttpCore.BodyHandler<PublishResponse> getBulkPublishResponseHandler(int statusCode) {
-        return (statusCode < 300) ? bulkResponseBodyHandler : batchErrorBodyHandler;
+        return (statusCode < MULTIPLE_CHOICES.code) ? bulkResponseBodyHandler : batchErrorBodyHandler;
     }
 
     /**

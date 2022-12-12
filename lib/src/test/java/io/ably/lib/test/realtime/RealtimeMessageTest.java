@@ -5,24 +5,24 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
+import static io.ably.lib.util.HttpCodes.UNAUTHORIZED;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import io.ably.lib.types.MessageExtras;
-import io.ably.lib.util.Serialisation;
+
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 
 import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
@@ -34,12 +34,12 @@ import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.rest.AblyRest;
+import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.Helpers.MessageWaiter;
-import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.transport.ConnectionManager;
@@ -48,8 +48,10 @@ import io.ably.lib.types.Callback;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
+import io.ably.lib.types.MessageExtras;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.Serialisation;
 
 public class RealtimeMessageTest extends ParameterizedTest {
 
@@ -482,7 +484,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 
             /* wait for the publish callback to be called */
             ErrorInfo fail = msgComplete.waitFor();
-            assertEquals("Verify error callback was called", fail.statusCode, 401);
+            assertEquals("Verify error callback was called", fail.statusCode, UNAUTHORIZED.code);
 
         } catch(AblyException e) {
             e.printStackTrace();

@@ -15,6 +15,18 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static io.ably.lib.util.HttpCodes.UNAUTHORIZED;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,10 +37,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
@@ -40,23 +48,6 @@ import io.ably.lib.realtime.ConnectionEvent;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.realtime.Presence;
-import io.ably.lib.test.common.Setup;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.Capability;
-import io.ably.lib.types.ChannelOptions;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.PaginatedResult;
-import io.ably.lib.types.Param;
-import io.ably.lib.types.PresenceMessage;
-import io.ably.lib.types.ProtocolMessage;
-import io.ably.lib.util.Serialisation;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.TokenParams;
@@ -67,9 +58,20 @@ import io.ably.lib.test.common.Helpers.CompletionWaiter;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.Helpers.PresenceWaiter;
 import io.ably.lib.test.common.ParameterizedTest;
+import io.ably.lib.test.common.Setup;
 import io.ably.lib.test.util.MockWebsocketFactory;
 import io.ably.lib.transport.ConnectionManager;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.Capability;
+import io.ably.lib.types.ChannelOptions;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.PaginatedResult;
+import io.ably.lib.types.Param;
+import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.PresenceMessage.Action;
+import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.util.Serialisation;
 
 public class RealtimePresenceTest extends ParameterizedTest {
 
@@ -1794,7 +1796,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
             completionWaiter.waitFor(1);
             assertFalse("Verify subscribe failed", completionWaiter.success);
-            assertEquals("Verify subscribe failure error status", completionWaiter.error.statusCode, 401);
+            assertEquals("Verify subscribe failure error status", completionWaiter.error.statusCode, UNAUTHORIZED.code);
             assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
 
             try {
@@ -1884,7 +1886,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
             new ChannelWaiter(channel).waitFor(ChannelState.failed);
             assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-            assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
+            assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, UNAUTHORIZED.code);
         } finally {
             if(ably != null)
                 ably.close();
@@ -1920,7 +1922,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
             ErrorInfo fail = new ChannelWaiter(channel).waitFor(ChannelState.failed);
             assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-            assertEquals("Verify reason code gives correct failure reason", fail.statusCode, 401);
+            assertEquals("Verify reason code gives correct failure reason", fail.statusCode, UNAUTHORIZED.code);
         } finally {
             if(ably != null)
                 ably.close();
@@ -1960,7 +1962,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
             new ChannelWaiter(channel).waitFor(ChannelState.failed);
             assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-            assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
+            assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, UNAUTHORIZED.code);
         } finally {
             if(ably != null)
                 ably.close();
@@ -2000,7 +2002,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
             new ChannelWaiter(channel).waitFor(ChannelState.failed);
             assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-            assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
+            assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, UNAUTHORIZED.code);
         } finally {
             if(ably != null)
                 ably.close();
@@ -2041,7 +2043,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
             new ChannelWaiter(channel).waitFor(ChannelState.failed);
             assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-            assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
+            assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, UNAUTHORIZED.code);
         } finally {
             if(ably != null)
                 ably.close();

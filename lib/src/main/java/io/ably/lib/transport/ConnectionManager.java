@@ -1,5 +1,12 @@
 package io.ably.lib.transport;
 
+import static io.ably.lib.util.HttpCodes.BAD_REQUEST;
+import static io.ably.lib.util.HttpCodes.FORBIDDEN;
+import static io.ably.lib.util.HttpCodes.INTERNAL_SERVER_ERROR;
+import static io.ably.lib.util.HttpCodes.OK;
+import static io.ably.lib.util.HttpCodes.SERVICE_UNAVAILABLE;
+import static io.ably.lib.util.HttpCodes.UNAUTHORIZED;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -66,12 +73,12 @@ public class ConnectionManager implements ConnectListener {
      * default errors
      ***********************************/
 
-    static ErrorInfo REASON_CLOSED = new ErrorInfo("Can't attach when not in an active state", 200, 10000);
-    static ErrorInfo REASON_DISCONNECTED = new ErrorInfo("Connection temporarily unavailable", 503, 80003);
-    static ErrorInfo REASON_SUSPENDED = new ErrorInfo("Connection unavailable", 503, 80002);
-    static ErrorInfo REASON_FAILED = new ErrorInfo("Connection failed", 400, 80000);
-    static ErrorInfo REASON_REFUSED = new ErrorInfo("Access refused", 401, 40100);
-    static ErrorInfo REASON_TOO_BIG = new ErrorInfo("Connection closed; message too large", 400, 40000);
+    static ErrorInfo REASON_CLOSED = new ErrorInfo("Can't attach when not in an active state", OK.code, 10000);
+    static ErrorInfo REASON_DISCONNECTED = new ErrorInfo("Connection temporarily unavailable", SERVICE_UNAVAILABLE.code, 80003);
+    static ErrorInfo REASON_SUSPENDED = new ErrorInfo("Connection unavailable", SERVICE_UNAVAILABLE.code, 80002);
+    static ErrorInfo REASON_FAILED = new ErrorInfo("Connection failed", BAD_REQUEST.code, 80000);
+    static ErrorInfo REASON_REFUSED = new ErrorInfo("Access refused", UNAUTHORIZED.code, 40100);
+    static ErrorInfo REASON_TOO_BIG = new ErrorInfo("Connection closed; message too large", BAD_REQUEST.code, 40000);
 
     /**
      * Methods on the channels map owned by the {@link AblyRealtime} instance
@@ -850,7 +857,7 @@ public class ConnectionManager implements ConnectListener {
     public void ping(final CompletionListener listener) {
         HeartbeatWaiter waiter = new HeartbeatWaiter(listener);
         if(currentState.state != ConnectionState.connected) {
-            waiter.onError(new ErrorInfo("Unable to ping service; not connected", 40000, 400));
+            waiter.onError(new ErrorInfo("Unable to ping service; not connected", 40000, BAD_REQUEST.code));
             return;
         }
         synchronized(heartbeatWaiters) {
@@ -907,7 +914,7 @@ public class ConnectionManager implements ConnectListener {
                 pending = clear();
             }
             if(pending) {
-                onError(new ErrorInfo("Timed out waiting for heartbeat response", 50000, 500));
+                onError(new ErrorInfo("Timed out waiting for heartbeat response", 50000, INTERNAL_SERVER_ERROR.code));
             } else {
                 onSuccess();
             }
@@ -949,7 +956,7 @@ public class ConnectionManager implements ConnectListener {
                 case connecting:
                     /* Close the connecting transport. */
                     Log.v(TAG, "onAuthUpdated: closing connecting transport");
-                    ErrorInfo disconnectError = new ErrorInfo("Aborting incomplete connection with superseded auth params", 503, 80003);
+                    ErrorInfo disconnectError = new ErrorInfo("Aborting incomplete connection with superseded auth params", SERVICE_UNAVAILABLE.code, 80003);
                     requestState(new StateIndication(ConnectionState.disconnected, disconnectError, null, null));
                     /* Start a new connection attempt. */
                     connect();
@@ -1023,7 +1030,7 @@ public class ConnectionManager implements ConnectListener {
             case connecting:
                 /* Close the connecting transport. */
                 Log.v(TAG, "onAuthUpdated: closing connecting transport");
-                ErrorInfo disconnectError = new ErrorInfo("Aborting incomplete connection with superseded auth params", 503, 80003);
+                ErrorInfo disconnectError = new ErrorInfo("Aborting incomplete connection with superseded auth params", SERVICE_UNAVAILABLE.code, 80003);
                 requestState(new StateIndication(ConnectionState.disconnected, disconnectError, null, null));
                 /* Start a new connection attempt. */
                 connect();
@@ -1074,7 +1081,7 @@ public class ConnectionManager implements ConnectListener {
     public void onAuthError(ErrorInfo errorInfo) {
         Log.i(TAG, String.format(Locale.ROOT, "onAuthError: (%d) %s", errorInfo.code, errorInfo.message));
 
-        if(errorInfo.statusCode == 403) {
+        if(errorInfo.statusCode == FORBIDDEN.code) {
             ConnectionStateChange failedStateChange =
                 new ConnectionStateChange(
                     connection.state,
@@ -1210,7 +1217,7 @@ public class ConnectionManager implements ConnectListener {
              * pending message queue (which fails the messages currently in
              * there). */
             pendingMessages.reset(msgSerial,
-                    new ErrorInfo("Connection resume failed", 500, 50000));
+                    new ErrorInfo("Connection resume failed", INTERNAL_SERVER_ERROR.code, 50000));
             msgSerial = 0;
         }
         connection.id = message.connectionId;
@@ -1323,7 +1330,7 @@ public class ConnectionManager implements ConnectListener {
      * @return StateIndication if a fallback connection attempt is required, otherwise null
      */
     private StateIndication checkFallback(ErrorInfo reason) {
-        if(pendingConnect != null && (reason == null || reason.statusCode >= 500)) {
+        if(pendingConnect != null && (reason == null || reason.statusCode >= INTERNAL_SERVER_ERROR.code)) {
             if (checkConnectivity()) {
                 /* we will try a fallback host */
                 String hostFallback = hosts.getFallback(pendingConnect.host);
@@ -1655,7 +1662,7 @@ public class ConnectionManager implements ConnectListener {
             }
             if(nackMessages != null) {
                 if(reason == null)
-                    reason = new ErrorInfo("Unknown error", 500, 50000);
+                    reason = new ErrorInfo("Unknown error", INTERNAL_SERVER_ERROR.code, 50000);
                 for(QueuedMessage msg : nackMessages) {
                     try {
                         if(msg.listener != null)
@@ -1694,7 +1701,7 @@ public class ConnectionManager implements ConnectListener {
             }
             if(nackMessages != null) {
                 if(reason == null)
-                    reason = new ErrorInfo("Unknown error", 500, 50000);
+                    reason = new ErrorInfo("Unknown error", INTERNAL_SERVER_ERROR.code, 50000);
                 for(QueuedMessage msg : nackMessages) {
                     try {
                         if(msg.listener != null)
@@ -1775,7 +1782,7 @@ public class ConnectionManager implements ConnectListener {
      ******************/
 
     private boolean isTokenError(ErrorInfo err) {
-        return ((err.code >= 40140) && (err.code < 40150)) || (err.code == 80019 && err.statusCode == 401);
+        return ((err.code >= 40140) && (err.code < 40150)) || (err.code == 80019 && err.statusCode == UNAUTHORIZED.code);
     }
 
     private boolean isFatalError(ErrorInfo err) {
@@ -1786,7 +1793,7 @@ public class ConnectionManager implements ConnectListener {
             if((err.code >= 40000) && (err.code < 50000)) { return true; }
         }
         /* otherwise, use statusCode */
-        if(err.statusCode != 0 && err.statusCode < 500) { return true; }
+        if(err.statusCode != 0 && err.statusCode < INTERNAL_SERVER_ERROR.code) { return true; }
         return false;
     }
 

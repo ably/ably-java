@@ -3,6 +3,7 @@ package io.ably.lib.test.rest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static io.ably.lib.util.HttpCodes.INTERNAL_SERVER_ERROR;
 
 import org.junit.Test;
 
@@ -59,7 +60,7 @@ public class RestTimeTest extends ParameterizedTest {
             ably.time();
             fail("time2: Unexpected success getting time");
         } catch (AblyException e) {
-            assertEquals("time2: Unexpected error code", e.errorInfo.statusCode, 500);
+            assertEquals("time2: Unexpected error code", e.errorInfo.statusCode, INTERNAL_SERVER_ERROR.code);
         }
     }
 

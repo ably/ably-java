@@ -1,6 +1,24 @@
 package io.ably.lib.test.rest;
 
+import static org.junit.Assert.assertEquals;
+import static io.ably.lib.util.HttpCodes.BAD_REQUEST;
+import static io.ably.lib.util.HttpCodes.NOT_FOUND;
+import static io.ably.lib.util.HttpCodes.UNAUTHORIZED;
+
 import com.google.gson.JsonObject;
+
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.Timeout;
+
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
+
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.push.PushBase.ChannelSubscription;
 import io.ably.lib.realtime.AblyRealtime;
@@ -18,19 +36,6 @@ import io.ably.lib.types.Callback;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.util.JsonUtils;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
-
-import static org.junit.Assert.assertEquals;
 
 public class RestPushTest extends ParameterizedTest {
     private static AblyRest rest;
@@ -252,7 +257,7 @@ public class RestPushTest extends ParameterizedTest {
                 JsonUtils.object()
                         .add("data", JsonUtils.object()
                                 .add("foo", "bar")).toJson(),
-                "", 400));
+                "", BAD_REQUEST.code));
         testCases.add(new TestCase(
                 "empty recipient",
                 new Param[]{},
@@ -306,7 +311,7 @@ public class RestPushTest extends ParameterizedTest {
         TestCases testCases = new TestCases();
 
         testCases.add(new TestCase("found", deviceDetails.id, deviceDetails, null, 0));
-        testCases.add(new TestCase("not found", "madeup", null, "not found", 404));
+        testCases.add(new TestCase("not found", "madeup", null, "not found", NOT_FOUND.code));
 
         testCases.run();
     }
@@ -428,7 +433,7 @@ public class RestPushTest extends ParameterizedTest {
                             get.apply(saved);
                             return null;
                         }
-                    }, "", 400);
+                    }, "", BAD_REQUEST.code);
                 } finally {
                     rest.push.admin.deviceRegistrations.remove(saved);
                 }
@@ -478,7 +483,7 @@ public class RestPushTest extends ParameterizedTest {
                             rest.push.admin.deviceRegistrations.get(saved.id);
                             return null;
                         }
-                    }, "", 404);
+                    }, "", NOT_FOUND.code);
 
                     // Non-existing
                     get.apply(null);
@@ -693,7 +698,7 @@ public class RestPushTest extends ParameterizedTest {
                             get.apply(ChannelSubscription.forClientId("notpushenabled", "foo"));
                             return null;
                         }
-                    }, "not enabled", 401);
+                    }, "not enabled", UNAUTHORIZED.code);
                 } finally {
                     rest.push.admin.channelSubscriptions.remove(saved);
                 }

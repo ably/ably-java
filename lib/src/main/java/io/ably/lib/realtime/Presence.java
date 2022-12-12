@@ -1,5 +1,19 @@
 package io.ably.lib.realtime;
 
+import static io.ably.lib.util.HttpCodes.BAD_REQUEST;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
 import io.ably.lib.http.BasePaginatedQuery;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
@@ -14,17 +28,6 @@ import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.PresenceSerializer;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Enables the presence set to be entered and subscribed to, and the historic presence set to be retrieved for a channel.
@@ -764,7 +767,7 @@ public class Presence {
                 connectionManager.send(message, ably.options.queueMessages, listener);
                 break;
             default:
-                throw AblyException.fromErrorInfo(new ErrorInfo("Unable to enter presence channel in detached or failed state", 400, 91001));
+                throw AblyException.fromErrorInfo(new ErrorInfo("Unable to enter presence channel in detached or failed state", BAD_REQUEST.code, 91001));
             }
         }
     }

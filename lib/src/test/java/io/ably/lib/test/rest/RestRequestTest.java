@@ -6,16 +6,23 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static io.ably.lib.util.HttpCodes.BAD_REQUEST;
+import static io.ably.lib.util.HttpCodes.CREATED;
+import static io.ably.lib.util.HttpCodes.INTERNAL_SERVER_ERROR;
+import static io.ably.lib.util.HttpCodes.NOT_FOUND;
+import static io.ably.lib.util.HttpCodes.OK;
 
-import java.util.Map;
-import java.util.concurrent.TimeoutException;
+import com.google.gson.JsonElement;
+
+import net.jodah.concurrentunit.Waiter;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import com.google.gson.JsonElement;
+import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.http.HttpConstants;
@@ -33,7 +40,6 @@ import io.ably.lib.types.HttpPaginatedResponse;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
-import net.jodah.concurrentunit.Waiter;
 
 /* Spec: RSC19 */
 public class RestRequestTest extends ParameterizedTest {
@@ -92,7 +98,7 @@ public class RestRequestTest extends ParameterizedTest {
             HttpPaginatedResponse channelResponse = ably.request(HttpConstants.Methods.GET, channelPath, testParams, null, testHeaders);
 
             /* check HttpPagninatedResponse details are present */
-            assertEquals("Verify statusCode is present", channelResponse.statusCode, 200);
+            assertEquals("Verify statusCode is present", channelResponse.statusCode, OK.code);
             assertTrue("Verify success is indicated", channelResponse.success);
             assertNull("Verify no error is indicated", channelResponse.errorMessage);
             Map<String, Param> headers = HttpUtils.indexParams(channelResponse.headers);
@@ -141,7 +147,7 @@ public class RestRequestTest extends ParameterizedTest {
                 public void onResponse(AsyncHttpPaginatedResponse channelResponse) {
 
                     /* check HttpPaginatedResponse details are present */
-                    waiter.assertEquals(channelResponse.statusCode, 200);
+                    waiter.assertEquals(channelResponse.statusCode, OK.code);
                     waiter.assertTrue(channelResponse.success);
                     waiter.assertNull(channelResponse.errorMessage);
                     Map<String, Param> headers = HttpUtils.indexParams(channelResponse.headers);
@@ -199,7 +205,7 @@ public class RestRequestTest extends ParameterizedTest {
             HttpPaginatedResponse channelsResponse = ably.request(HttpConstants.Methods.GET, channelsPath, params, null, null);
 
             /* check HttpPagninatedResponse details are present */
-            assertEquals("Verify statusCode is present", channelsResponse.statusCode, 200);
+            assertEquals("Verify statusCode is present", channelsResponse.statusCode, OK.code);
             assertTrue("Verify success is indicated", channelsResponse.success);
             assertNull("Verify no error is indicated", channelsResponse.errorMessage);
             Map<String, Param> headers = HttpUtils.indexParams(channelsResponse.headers);
@@ -244,7 +250,7 @@ public class RestRequestTest extends ParameterizedTest {
                 public void onResponse(AsyncHttpPaginatedResponse channelResponse) {
 
                     /* check HttpPaginatedResponse details are present */
-                    waiter.assertEquals(channelResponse.statusCode, 200);
+                    waiter.assertEquals(channelResponse.statusCode, OK.code);
                     waiter.assertTrue(channelResponse.success);
                     waiter.assertNull(channelResponse.errorMessage);
                     Map<String, Param> headers = HttpUtils.indexParams(channelResponse.headers);
@@ -311,7 +317,7 @@ public class RestRequestTest extends ParameterizedTest {
             HttpPaginatedResponse channelsResponse = ably.request(HttpConstants.Methods.GET, channelsPath, params, null, null);
 
             /* check HttpPagninatedResponse details are present */
-            assertEquals("Verify statusCode is present", channelsResponse.statusCode, 200);
+            assertEquals("Verify statusCode is present", channelsResponse.statusCode, OK.code);
             assertTrue("Verify success is indicated", channelsResponse.success);
             assertNull("Verify no error is indicated", channelsResponse.errorMessage);
             Map<String, Param> headers = HttpUtils.indexParams(channelsResponse.headers);
@@ -375,7 +381,7 @@ public class RestRequestTest extends ParameterizedTest {
                 public void onResponse(AsyncHttpPaginatedResponse channelsResponse) {
 
                     /* check HttpPagninatedResponse details are present */
-                    assertEquals("Verify statusCode is present", channelsResponse.statusCode, 200);
+                    assertEquals("Verify statusCode is present", channelsResponse.statusCode, OK.code);
                     assertTrue("Verify success is indicated", channelsResponse.success);
                     assertNull("Verify no error is indicated", channelsResponse.errorMessage);
                     Map<String, Param> headers = HttpUtils.indexParams(channelsResponse.headers);
@@ -484,7 +490,7 @@ public class RestRequestTest extends ParameterizedTest {
             RawHttpRequest req = httpListener.getLastRequest();
 
             /* check HttpPagninatedResponse details are present */
-            assertEquals("Verify statusCode is present", publishResponse.statusCode, 201);
+            assertEquals("Verify statusCode is present", publishResponse.statusCode, CREATED.code);
             assertTrue("Verify success is indicated", publishResponse.success);
             assertNull("Verify no error is indicated", publishResponse.errorMessage);
 
@@ -538,7 +544,7 @@ public class RestRequestTest extends ParameterizedTest {
                 public void onResponse(AsyncHttpPaginatedResponse publishResponse) {
 
                     /* check HttpPaginatedResponse details are present */
-                    assertEquals("Verify statusCode is present", publishResponse.statusCode, 201);
+                    assertEquals("Verify statusCode is present", publishResponse.statusCode, CREATED.code);
                     assertTrue("Verify success is indicated", publishResponse.success);
                     assertNull("Verify no error is indicated", publishResponse.errorMessage);
 
@@ -603,7 +609,7 @@ public class RestRequestTest extends ParameterizedTest {
             HttpPaginatedResponse errorResponse = ably.request(HttpConstants.Methods.GET, "/non-existent-path", null, null, null);
 
             /* check HttpPaginatedResponse details are present */
-            assertEquals("Verify statusCode is present", errorResponse.statusCode, 404);
+            assertEquals("Verify statusCode is present", errorResponse.statusCode, NOT_FOUND.code);
             assertFalse("Verify non-success is indicated", errorResponse.success);
             assertNotNull("Verify error is indicated", errorResponse.errorMessage);
             Map<String, Param> headers = HttpUtils.indexParams(errorResponse.headers);
@@ -631,7 +637,7 @@ public class RestRequestTest extends ParameterizedTest {
                 public void onResponse(AsyncHttpPaginatedResponse response) {
 
                     /* check HttpPaginatedResponse details are present */
-                    waiter.assertEquals(response.statusCode, 404);
+                    waiter.assertEquals(response.statusCode, NOT_FOUND.code);
                     waiter.assertFalse(response.success);
                     waiter.assertNotNull(response.errorMessage);
                     waiter.assertTrue(response.errorCode != 0);
@@ -674,7 +680,7 @@ public class RestRequestTest extends ParameterizedTest {
             ably.request(HttpConstants.Methods.GET, "/", null, null, null);
             fail("request_500: Expected an exception");
         } catch(AblyException e) {
-            assertEquals("Verify expected status code in error response", e.errorInfo.statusCode, 500);
+            assertEquals("Verify expected status code in error response", e.errorInfo.statusCode, INTERNAL_SERVER_ERROR.code);
             return;
         }
     }
@@ -700,7 +706,7 @@ public class RestRequestTest extends ParameterizedTest {
                 }
                 @Override
                 public void onError(ErrorInfo reason) {
-                    waiter.assertEquals(reason.statusCode, 500);
+                    waiter.assertEquals(reason.statusCode, INTERNAL_SERVER_ERROR.code);
                     waiter.resume();
                 }
             });
@@ -738,7 +744,7 @@ public class RestRequestTest extends ParameterizedTest {
         // Then
         assertFalse("Verify failure is indicated", publishResponse.success);
         assertNotNull("Verify error is indicated", publishResponse.errorMessage);
-        assertEquals("Verify statusCode is present", publishResponse.statusCode, 400);
+        assertEquals("Verify statusCode is present", publishResponse.statusCode, BAD_REQUEST.code);
         assertEquals("Verify errorCode is present", publishResponse.errorCode, 40006);
     }
 }

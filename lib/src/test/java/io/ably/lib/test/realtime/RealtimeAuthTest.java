@@ -1,5 +1,22 @@
 package io.ably.lib.test.realtime;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static io.ably.lib.util.HttpCodes.FORBIDDEN;
+import static io.ably.lib.util.HttpCodes.UNAUTHORIZED;
+
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.Timeout;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
@@ -23,20 +40,6 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.NonRetriableTokenException;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RealtimeAuthTest extends ParameterizedTest {
 
@@ -126,7 +129,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             opts.tokenDetails = tokenDetails;
             opts.useTokenAuth = true;
             opts.authUrl = "https://echo.ably.io/respondwith";
-            opts.authParams = new Param[]{ new Param("status", 403)};
+            opts.authParams = new Param[]{ new Param("status", FORBIDDEN.code)};
 
             final AblyRealtime ablyRealtime = new AblyRealtime(opts);
             ablyRealtime.connection.connect();
@@ -143,7 +146,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
                     assertEquals(ConnectionState.connected, stateChange.previous);
                     assertEquals(80019, stateChange.reason.code);
                     assertEquals(80019, ablyRealtime.connection.reason.code);
-                    assertEquals(403, ablyRealtime.connection.reason.statusCode);
+                    assertEquals(FORBIDDEN.code, ablyRealtime.connection.reason.statusCode);
                 }
             });
 
@@ -153,14 +156,14 @@ public class RealtimeAuthTest extends ParameterizedTest {
                 ablyRealtime.auth.authorize(null, opts);
             } catch (AblyException e) {
                 /* check expected error codes */
-                assertEquals(403, e.errorInfo.statusCode);
+                assertEquals(FORBIDDEN.code, e.errorInfo.statusCode);
                 assertEquals(80019, e.errorInfo.code);
             }
 
             /* wait for failed state */
             connectionWaiter.waitFor(ConnectionState.failed);
             assertEquals("Verify connected state has failed", ConnectionState.failed, ablyRealtime.connection.state);
-            assertEquals("Check correct cause error code", 403, ablyRealtime.connection.reason.statusCode);
+            assertEquals("Check correct cause error code", FORBIDDEN.code, ablyRealtime.connection.reason.statusCode);
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
@@ -184,7 +187,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             ablyRealtime.connection.connect();
 
-            waitAndAssertConnectionState(ablyRealtime, ConnectionState.failed, 403, 80019);
+            waitAndAssertConnectionState(ablyRealtime, ConnectionState.failed, FORBIDDEN.code, 80019);
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
@@ -197,12 +200,12 @@ public class RealtimeAuthTest extends ParameterizedTest {
     @Test
     public void auth_client_fails_when_auth_token_fails_with_ably_exception_with_status_code_403() {
         try {
-            Exception exception = AblyException.fromErrorInfo(new ErrorInfo("A non retriable Ably exception", 403, 80040));
+            Exception exception = AblyException.fromErrorInfo(new ErrorInfo("A non retriable Ably exception", FORBIDDEN.code, 80040));
             final AblyRealtime ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
 
             ablyRealtime.connection.connect();
 
-            waitAndAssertConnectionState(ablyRealtime, ConnectionState.failed, 403, 80019);
+            waitAndAssertConnectionState(ablyRealtime, ConnectionState.failed, FORBIDDEN.code, 80019);
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
@@ -215,12 +218,12 @@ public class RealtimeAuthTest extends ParameterizedTest {
     @Test
     public void auth_client_does_not_fail_when_auth_token_fails_with_an_ably_exception() {
         try {
-            Exception exception = AblyException.fromErrorInfo(new ErrorInfo("An Ably exception", 401, 80040));
+            Exception exception = AblyException.fromErrorInfo(new ErrorInfo("An Ably exception", UNAUTHORIZED.code, 80040));
             final AblyRealtime ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
 
             ablyRealtime.connection.connect();
 
-            waitAndAssertConnectionState(ablyRealtime, ConnectionState.disconnected, 401, 80019);
+            waitAndAssertConnectionState(ablyRealtime, ConnectionState.disconnected, UNAUTHORIZED.code, 80019);
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
@@ -238,7 +241,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             ablyRealtime.connection.connect();
 
-            waitAndAssertConnectionState(ablyRealtime, ConnectionState.disconnected, 401, 80019);
+            waitAndAssertConnectionState(ablyRealtime, ConnectionState.disconnected, UNAUTHORIZED.code, 80019);
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
