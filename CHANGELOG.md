@@ -1,4 +1,5 @@
 # Change Log
+
 ## [1.2.21](https://github.com/ably/ably-java/tree/v1.2.21)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.20...1.2.21)
