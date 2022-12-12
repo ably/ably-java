@@ -1,7 +1,5 @@
 package io.ably.lib.util;
 
-import androidx.annotation.NonNull;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -101,7 +99,6 @@ public enum HttpCodes {
         return BY_MESSAGE.get(message);
     }
 
-    @NonNull
     @Override
     public String toString() {
         return code + message + "";
