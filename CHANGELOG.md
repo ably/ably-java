@@ -1,4 +1,15 @@
 # Change Log
+## [1.2.21](https://github.com/ably/ably-java/tree/v1.2.21)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.20...1.2.21)
+
+**Fixed bugs:**
+
+- Presence.endSync throws NullPointerException when processing a message [\#853](https://github.com/ably/ably-java/issues/853)
+
+**Merged pull requests:**
+
+- added null check to prevent NullPointerExceptions [\#873](https://github.com/ably/ably-java/pull/873) ([davyskiba](https://github.com/davyskiba))
 
 ## [1.2.20](https://github.com/ably/ably-java/tree/v1.2.20)
 
