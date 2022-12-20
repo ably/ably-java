@@ -1,5 +1,46 @@
 package io.ably.lib.test.rest;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.AdditionalMatchers.aryEq;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static io.ably.lib.util.AblyErrors.INTERNAL_ERROR;
+
+import org.hamcrest.Description;
+import org.hamcrest.TypeSafeMatcher;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.Timeout;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.Proxy;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
 import io.ably.lib.http.AsyncHttpScheduler;
@@ -19,47 +60,6 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 import io.ably.lib.util.PlatformAgentProvider;
-import org.hamcrest.Description;
-import org.hamcrest.TypeSafeMatcher;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.Proxy;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.AdditionalMatchers.aryEq;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.verify;
-import static io.ably.lib.util.AblyErrors.INTERNAL_ERROR;
 
 /**
  * Created by gokhanbarisaker on 2/2/16.
@@ -68,7 +68,7 @@ public class HttpTest {
 
     private static final String PATTERN_HOST_FALLBACK = "(?i)[a-e]\\.ably-realtime.com";
     private static final String CUSTOM_PATTERN_HOST_FALLBACK = "(?i)[f-k]\\.ably-realtime.com";
-    private static final String[] CUSTOM_HOSTS = { "f.ably-realtime.com", "g.ably-realtime.com", "h.ably-realtime.com", "i.ably-realtime.com", "j.ably-realtime.com", "k.ably-realtime.com" };
+    private static final String[] CUSTOM_HOSTS = {"f.ably-realtime.com", "g.ably-realtime.com", "h.ably-realtime.com", "i.ably-realtime.com", "j.ably-realtime.com", "k.ably-realtime.com"};
     private static final String TEST_SERVER_HOST = "localhost";
     private static final int TEST_SERVER_PORT = 27331;
     private static final PlatformAgentProvider platformAgentProvider = new EmptyPlatformAgentProvider();
@@ -117,12 +117,11 @@ public class HttpTest {
      *
      * @throws Exception
      */
-    @Ignore("FIXME: flaky test")
     @Test
-    public void http_ably_execute_fallback() throws AblyException {
+    public void http_ably_execute_default_fallback() throws AblyException {
         ClientOptions options = new ClientOptions();
         options.tls = false;
-        /* Select a port that will be refused immediately by the production host */
+        // Select a port that will be refused immediately by the production host */
         options.port = 7777;
 
         /* Create a list to capture the host of URL arguments that get called with httpExecute method.
@@ -155,13 +154,13 @@ public class HttpTest {
         Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
         try {
             HttpHelpers.ablyHttpExecute(
-                    http, "/path/to/fallback", /* Ignore path */
-                    HttpConstants.Methods.GET, /* Ignore method */
-                    new Param[0], /* Ignore headers */
-                    new Param[0], /* Ignore params */
-                    null, /* Ignore requestBody */
-                    null, /* Ignore requestHandler */
-                    false /* Ignore requireAblyAuth */
+                http, "/path/to/fallback", /* Ignore path */
+                HttpConstants.Methods.GET, /* Ignore method */
+                new Param[0], /* Ignore headers */
+                new Param[0], /* Ignore params */
+                null, /* Ignore requestBody */
+                null, /* Ignore requestHandler */
+                false /* Ignore requireAblyAuth */
             );
         } catch (AblyException e) {
             /* Verify that,
@@ -170,22 +169,13 @@ public class HttpTest {
             assertThat(e.errorInfo.statusCode / 10, is(equalTo(50)));
         }
 
-        /* Verify that,
-         *      - {code HttpCore#httpExecute} have been called with (httpMaxRetryCount + 1) URLs
-         *      - first call executed against production rest host
-         *      - other calls executed against a random fallback host
-         */
-        int expectedCallCount = options.httpMaxRetryCount + 1;
-        assertThat(urlHostArgumentStack.size(), is(equalTo(expectedCallCount)));
-        assertThat(urlHostArgumentStack.get(0), is(equalTo(Defaults.HOST_REST)));
-
-        for (int i = 1; i < expectedCallCount; i++) {
-            urlHostArgumentStack.get(i).matches(PATTERN_HOST_FALLBACK);
-        }
+        assertEquals("only one default host should exist, no fallbacks are available if not provided by client", urlHostArgumentStack.size(), 1);
+        assertEquals("first call executed against production rest is NOT default host", urlHostArgumentStack.get(0), Defaults.HOST_REST);
     }
 
     /**
      * Validates that fallbacks are disabled when ClientOptions#fallbackHosts are set to empty and the only host used is Defaults#HOST_REST
+     *
      * @throws AblyException
      */
 
@@ -216,13 +206,13 @@ public class HttpTest {
         Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
         try {
             HttpHelpers.ablyHttpExecute(
-                    http, "/path/to/fallback", /* Ignore path */
-                    HttpConstants.Methods.GET, /* Ignore method */
-                    new Param[0], /* Ignore headers */
-                    new Param[0], /* Ignore params */
-                    null, /* Ignore requestBody */
-                    null, /* Ignore requestHandler */
-                    false /* Ignore requireAblyAuth */
+                http, "/path/to/fallback", /* Ignore path */
+                HttpConstants.Methods.GET, /* Ignore method */
+                new Param[0], /* Ignore headers */
+                new Param[0], /* Ignore params */
+                null, /* Ignore requestBody */
+                null, /* Ignore requestHandler */
+                false /* Ignore requireAblyAuth */
             );
         } catch (AblyException.HostFailedException e) {
             /* Verify that,
@@ -265,32 +255,32 @@ public class HttpTest {
 
         /* Partially mock httpCore */
         Answer answer = new GrumpyAnswer(
-                1, /* Throw exception */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
-                responseExpected /* Then return a valid response with second call */
+            1, /* Throw exception */
+            AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+            responseExpected /* Then return a valid response with second call */
         );
 
         doAnswer(answer) /* Behave as defined above */
-                .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
-                .httpExecute(
-                        url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid fallback url */
-                        any(Proxy.class), /* Ignore */
-                        anyString(), /* Ignore */
-                        aryEq(new Param[0]), /* Ignore */
-                        any(HttpCore.RequestBody.class), /* Ignore */
-                        anyBoolean(), /* Ignore */
-                        any(HttpCore.ResponseHandler.class) /* Ignore */
-                );
+            .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
+            .httpExecute(
+                url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid fallback url */
+                any(Proxy.class), /* Ignore */
+                anyString(), /* Ignore */
+                aryEq(new Param[0]), /* Ignore */
+                any(HttpCore.RequestBody.class), /* Ignore */
+                anyBoolean(), /* Ignore */
+                any(HttpCore.ResponseHandler.class) /* Ignore */
+            );
 
         Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
         String responseActual = (String) HttpHelpers.ablyHttpExecute(
-                http, "", /* Ignore */
-                "", /* Ignore */
-                new Param[0], /* Ignore */
-                new Param[0], /* Ignore */
-                mock(HttpCore.RequestBody.class), /* Ignore */
-                mock(HttpCore.ResponseHandler.class), /* Ignore */
-                false /* Ignore */
+            http, "", /* Ignore */
+            "", /* Ignore */
+            new Param[0], /* Ignore */
+            new Param[0], /* Ignore */
+            mock(HttpCore.RequestBody.class), /* Ignore */
+            mock(HttpCore.ResponseHandler.class), /* Ignore */
+            false /* Ignore */
         );
 
         assertThat("Unexpected default primary host", url.getAllValues().get(0).getHost(), is(equalTo(Defaults.HOST_REST)));
@@ -300,30 +290,31 @@ public class HttpTest {
         /* wait for expiry of fallbackRetryTimeout */
         try {
             Thread.sleep(200L);
-        } catch(InterruptedException ie) {}
+        } catch (InterruptedException ie) {
+        }
 
         String responseActual2 = (String) HttpHelpers.ablyHttpExecute(
-                http, "", /* Ignore */
-                "", /* Ignore */
-                new Param[0], /* Ignore */
-                new Param[0], /* Ignore */
-                mock(HttpCore.RequestBody.class), /* Ignore */
-                mock(HttpCore.ResponseHandler.class), /* Ignore */
-                false /* Ignore */
+            http, "", /* Ignore */
+            "", /* Ignore */
+            new Param[0], /* Ignore */
+            new Param[0], /* Ignore */
+            mock(HttpCore.RequestBody.class), /* Ignore */
+            mock(HttpCore.ResponseHandler.class), /* Ignore */
+            false /* Ignore */
         );
 
         /* Verify call causes captor to capture same arguments thrice.
          * Do the validation, after we completed the {@code ArgumentCaptor} related assertions */
         verify(httpCore, times(3))
-                .httpExecute( /* Just validating call counter. Ignore following parameters */
-                        any(URL.class), /* Ignore */
-                        any(Proxy.class), /* Ignore */
-                        anyString(), /* Ignore */
-                        aryEq(new Param[0]), /* Ignore */
-                        any(HttpCore.RequestBody.class), /* Ignore */
-                        anyBoolean(), /* Ignore */
-                        any(HttpCore.ResponseHandler.class) /* Ignore */
-                );
+            .httpExecute( /* Just validating call counter. Ignore following parameters */
+                any(URL.class), /* Ignore */
+                any(Proxy.class), /* Ignore */
+                anyString(), /* Ignore */
+                aryEq(new Param[0]), /* Ignore */
+                any(HttpCore.RequestBody.class), /* Ignore */
+                anyBoolean(), /* Ignore */
+                any(HttpCore.ResponseHandler.class) /* Ignore */
+            );
         assertThat("Unexpected default primary host", url.getAllValues().get(2).getHost(), is(equalTo(Defaults.HOST_REST)));
         assertThat("Unexpected response", responseActual2, is(equalTo(responseExpected)));
     }
@@ -354,33 +345,33 @@ public class HttpTest {
 
         /* Partially mock httpCore */
         Answer answer = new GrumpyAnswer(
-                1, /* Throw exception */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
-                responseExpected /* Then return a valid response with second call */
+            1, /* Throw exception */
+            AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+            responseExpected /* Then return a valid response with second call */
         );
 
         doAnswer(answer) /* Behave as defined above */
-                .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
-                .httpExecute(
-                        url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid fallback url */
-                        any(Proxy.class), /* Ignore */
-                        anyString(), /* Ignore */
-                        aryEq(new Param[0]), /* Ignore */
-                        any(HttpCore.RequestBody.class), /* Ignore */
-                        anyBoolean(), /* Ignore */
-                        any(HttpCore.ResponseHandler.class) /* Ignore */
-                );
+            .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
+            .httpExecute(
+                url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid fallback url */
+                any(Proxy.class), /* Ignore */
+                anyString(), /* Ignore */
+                aryEq(new Param[0]), /* Ignore */
+                any(HttpCore.RequestBody.class), /* Ignore */
+                anyBoolean(), /* Ignore */
+                any(HttpCore.ResponseHandler.class) /* Ignore */
+            );
 
         Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
         try {
             HttpHelpers.ablyHttpExecute(
-                    http, "", /* Ignore */
-                    "", /* Ignore */
-                    new Param[0], /* Ignore */
-                    new Param[0], /* Ignore */
-                    mock(HttpCore.RequestBody.class), /* Ignore */
-                    mock(HttpCore.ResponseHandler.class), /* Ignore */
-                    false /* Ignore */
+                http, "", /* Ignore */
+                "", /* Ignore */
+                new Param[0], /* Ignore */
+                new Param[0], /* Ignore */
+                mock(HttpCore.RequestBody.class), /* Ignore */
+                mock(HttpCore.ResponseHandler.class), /* Ignore */
+                false /* Ignore */
             );
         } catch (AblyException e) {
             /* Verify that,
@@ -394,13 +385,13 @@ public class HttpTest {
 
         try {
             HttpHelpers.ablyHttpExecute(
-                    http, "", /* Ignore */
-                    "", /* Ignore */
-                    new Param[0], /* Ignore */
-                    new Param[0], /* Ignore */
-                    mock(HttpCore.RequestBody.class), /* Ignore */
-                    mock(HttpCore.ResponseHandler.class), /* Ignore */
-                    false /* Ignore */
+                http, "", /* Ignore */
+                "", /* Ignore */
+                new Param[0], /* Ignore */
+                new Param[0], /* Ignore */
+                mock(HttpCore.RequestBody.class), /* Ignore */
+                mock(HttpCore.ResponseHandler.class), /* Ignore */
+                false /* Ignore */
             );
         } catch (AblyException e) {
             /* Verify that,
@@ -413,15 +404,15 @@ public class HttpTest {
         /* Verify call causes captor to capture same arguments twice.
          * Do the validation, after we completed the {@code ArgumentCaptor} related assertions */
         verify(httpCore, times(2))
-                .httpExecute( /* Just validating call counter. Ignore following parameters */
-                        any(URL.class), /* Ignore */
-                        any(Proxy.class), /* Ignore */
-                        anyString(), /* Ignore */
-                        aryEq(new Param[0]), /* Ignore */
-                        any(HttpCore.RequestBody.class), /* Ignore */
-                        anyBoolean(), /* Ignore */
-                        any(HttpCore.ResponseHandler.class) /* Ignore */
-                );
+            .httpExecute( /* Just validating call counter. Ignore following parameters */
+                any(URL.class), /* Ignore */
+                any(Proxy.class), /* Ignore */
+                anyString(), /* Ignore */
+                aryEq(new Param[0]), /* Ignore */
+                any(HttpCore.RequestBody.class), /* Ignore */
+                anyBoolean(), /* Ignore */
+                any(HttpCore.ResponseHandler.class) /* Ignore */
+            );
         assertThat("Unexpected host", url.getAllValues().get(1).getHost(), is(equalTo(fakeHost)));
     }
 
@@ -450,33 +441,33 @@ public class HttpTest {
 
         /* Partially mock httpCore */
         Answer answer = new GrumpyAnswer(
-                2, /* Throw exception twice (2) */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
-                responseExpected /* Then return a valid response with third call */
+            2, /* Throw exception twice (2) */
+            AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+            responseExpected /* Then return a valid response with third call */
         );
 
         doAnswer(answer) /* Behave as defined above */
-                .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
-                .httpExecute(
-                        url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid fallback url */
-                        any(Proxy.class), /* Ignore */
-                        anyString(), /* Ignore */
-                        aryEq(new Param[0]), /* Ignore */
-                        any(HttpCore.RequestBody.class), /* Ignore */
-                        anyBoolean(), /* Ignore */
-                        any(HttpCore.ResponseHandler.class) /* Ignore */
-                );
+            .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
+            .httpExecute(
+                url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid fallback url */
+                any(Proxy.class), /* Ignore */
+                anyString(), /* Ignore */
+                aryEq(new Param[0]), /* Ignore */
+                any(HttpCore.RequestBody.class), /* Ignore */
+                anyBoolean(), /* Ignore */
+                any(HttpCore.ResponseHandler.class) /* Ignore */
+            );
 
         Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
         try {
             HttpHelpers.ablyHttpExecute(
-                    http, "", /* Ignore */
-                    "", /* Ignore */
-                    new Param[0], /* Ignore */
-                    new Param[0], /* Ignore */
-                    mock(HttpCore.RequestBody.class), /* Ignore */
-                    mock(HttpCore.ResponseHandler.class), /* Ignore */
-                    false /* Ignore */
+                http, "", /* Ignore */
+                "", /* Ignore */
+                new Param[0], /* Ignore */
+                new Param[0], /* Ignore */
+                mock(HttpCore.RequestBody.class), /* Ignore */
+                mock(HttpCore.ResponseHandler.class), /* Ignore */
+                false /* Ignore */
             );
         } catch (AblyException e) {
             /* Verify that, an {@code AblyException} with {@code ErrorInfo} with the 500 error from above. */
@@ -487,15 +478,15 @@ public class HttpTest {
         /* Verify call causes captor to capture same arguments once.
          * Do the validation, after we completed the {@code ArgumentCaptor} related assertions */
         verify(httpCore, times(1))
-                .httpExecute( /* Just validating call counter. Ignore following parameters */
-                        any(URL.class), /* Ignore */
-                        any(Proxy.class), /* Ignore */
-                        anyString(), /* Ignore */
-                        aryEq(new Param[0]), /* Ignore */
-                        any(HttpCore.RequestBody.class), /* Ignore */
-                        anyBoolean(), /* Ignore */
-                        any(HttpCore.ResponseHandler.class) /* Ignore */
-                );
+            .httpExecute( /* Just validating call counter. Ignore following parameters */
+                any(URL.class), /* Ignore */
+                any(Proxy.class), /* Ignore */
+                anyString(), /* Ignore */
+                aryEq(new Param[0]), /* Ignore */
+                any(HttpCore.RequestBody.class), /* Ignore */
+                anyBoolean(), /* Ignore */
+                any(HttpCore.ResponseHandler.class) /* Ignore */
+            );
         assertThat("Unexpected host", url.getAllValues().get(0).getHost(), is(equalTo(Defaults.HOST_REST)));
     }
 
@@ -528,45 +519,45 @@ public class HttpTest {
 
         /* Partially mock httpCore */
         Answer answer = new GrumpyAnswer(
-                options.httpMaxRetryCount, /* Throw exception options.httpMaxRetryCount */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
-                responseExpected /* Then return a valid response with third call */
+            options.httpMaxRetryCount, /* Throw exception options.httpMaxRetryCount */
+            AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+            responseExpected /* Then return a valid response with third call */
         );
 
         doAnswer(answer) /* Behave as defined above */
-                .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
-                .httpExecute(
-                        url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid fallback url */
-                        any(Proxy.class), /* Ignore */
-                        anyString(), /* Ignore */
-                        aryEq(new Param[0]), /* Ignore */
-                        any(HttpCore.RequestBody.class), /* Ignore */
-                        anyBoolean(), /* Ignore */
-                        any(HttpCore.ResponseHandler.class) /* Ignore */
-                );
+            .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
+            .httpExecute(
+                url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid fallback url */
+                any(Proxy.class), /* Ignore */
+                anyString(), /* Ignore */
+                aryEq(new Param[0]), /* Ignore */
+                any(HttpCore.RequestBody.class), /* Ignore */
+                anyBoolean(), /* Ignore */
+                any(HttpCore.ResponseHandler.class) /* Ignore */
+            );
 
         Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
         String responseActual = (String) HttpHelpers.ablyHttpExecute(
-                http, "", /* Ignore */
-                "", /* Ignore */
-                new Param[0], /* Ignore */
-                new Param[0], /* Ignore */
-                mock(HttpCore.RequestBody.class), /* Ignore */
-                mock(HttpCore.ResponseHandler.class), /* Ignore */
-                false /* Ignore */
+            http, "", /* Ignore */
+            "", /* Ignore */
+            new Param[0], /* Ignore */
+            new Param[0], /* Ignore */
+            mock(HttpCore.RequestBody.class), /* Ignore */
+            mock(HttpCore.ResponseHandler.class), /* Ignore */
+            false /* Ignore */
         );
 
         /* Verify {code HttpCore#httpExecute} have been called (httpMaxRetryCount + 1) times */
         verify(httpCore, times(expectedCallCount))
-                .httpExecute( /* Just validating call counter. Ignore following parameters */
-                        any(URL.class), /* Ignore */
-                        any(Proxy.class), /* Ignore */
-                        anyString(), /* Ignore */
-                        aryEq(new Param[0]), /* Ignore */
-                        any(HttpCore.RequestBody.class), /* Ignore */
-                        anyBoolean(), /* Ignore */
-                        any(HttpCore.ResponseHandler.class) /* Ignore */
-                );
+            .httpExecute( /* Just validating call counter. Ignore following parameters */
+                any(URL.class), /* Ignore */
+                any(Proxy.class), /* Ignore */
+                anyString(), /* Ignore */
+                aryEq(new Param[0]), /* Ignore */
+                any(HttpCore.RequestBody.class), /* Ignore */
+                anyBoolean(), /* Ignore */
+                any(HttpCore.ResponseHandler.class) /* Ignore */
+            );
 
         /* Verify that,
          * - delivered expected response
@@ -582,6 +573,7 @@ public class HttpTest {
 
     /**
      * Validates that HttpCore uses ClientOptions#fallbackHosts when there is AblyException.HostFailedException thrown
+     *
      * @throws AblyException
      */
 
@@ -602,7 +594,7 @@ public class HttpTest {
             public <T> T httpExecuteWithRetry(URL url, String method, Param[] headers, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean allowAblyAuth) throws AblyException {
                 urlArgumentStack.add(url.getHost());
                 /* verify if fallback hosts are from specified list */
-                if(!url.getHost().equals(Defaults.HOST_REST))
+                if (!url.getHost().equals(Defaults.HOST_REST))
                     assertTrue(Arrays.asList(CUSTOM_HOSTS).contains(url.getHost()));
 
                 return super.httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, allowAblyAuth);
@@ -617,13 +609,13 @@ public class HttpTest {
         Http http = new Http(new AsyncHttpScheduler(httpCore, options), new SyncHttpScheduler(httpCore));
         try {
             HttpHelpers.ablyHttpExecute(
-                    http, "/path/to/fallback", /* Ignore path */
-                    HttpConstants.Methods.GET, /* Ignore method */
-                    new Param[0], /* Ignore headers */
-                    new Param[0], /* Ignore params */
-                    null, /* Ignore requestBody */
-                    null, /* Ignore requestHandler */
-                    false /* Ignore requireAblyAuth */
+                http, "/path/to/fallback", /* Ignore path */
+                HttpConstants.Methods.GET, /* Ignore method */
+                new Param[0], /* Ignore headers */
+                new Param[0], /* Ignore params */
+                null, /* Ignore requestBody */
+                null, /* Ignore requestHandler */
+                false /* Ignore requireAblyAuth */
             );
         } catch (AblyException.HostFailedException e) {
             /* Verify that, a {@code AblyException.HostFailedException} is thrown. */
@@ -662,26 +654,26 @@ public class HttpTest {
 
         /* Partially mock httpCore */
         doReturn(responseExpected) /* Provide response */
-                .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
-                .httpExecute(
-                        url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
-                        anyString(), /* Ignore */
-                        aryEq(new Param[0]), /* Ignore */
-                        any(HttpCore.RequestBody.class), /* Ignore */
-                        anyBoolean(), /* Ignore */
-                        any(HttpCore.ResponseHandler.class) /* Ignore */
-                );
+            .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
+            .httpExecute(
+                url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+                any(Proxy.class), /* Ignore */
+                anyString(), /* Ignore */
+                aryEq(new Param[0]), /* Ignore */
+                any(HttpCore.RequestBody.class), /* Ignore */
+                anyBoolean(), /* Ignore */
+                any(HttpCore.ResponseHandler.class) /* Ignore */
+            );
 
         Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
         String responseActual = (String) HttpHelpers.ablyHttpExecute(
-                http, "", /* Ignore */
-                "", /* Ignore */
-                new Param[0], /* Ignore */
-                new Param[0], /* Ignore */
-                mock(HttpCore.RequestBody.class), /* Ignore */
-                mock(HttpCore.ResponseHandler.class), /* Ignore */
-                false /* Ignore */
+            http, "", /* Ignore */
+            "", /* Ignore */
+            new Param[0], /* Ignore */
+            new Param[0], /* Ignore */
+            mock(HttpCore.RequestBody.class), /* Ignore */
+            mock(HttpCore.ResponseHandler.class), /* Ignore */
+            false /* Ignore */
         );
 
 
@@ -690,15 +682,15 @@ public class HttpTest {
          *   - with given host,
          *   - and delivered expected response */
         verify(httpCore, times(1))
-                .httpExecute( /* Just validating call counter. Ignore following parameters */
-                        url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
-                        anyString(), /* Ignore */
-                        aryEq(new Param[0]), /* Ignore */
-                        any(HttpCore.RequestBody.class), /* Ignore */
-                        anyBoolean(), /* Ignore */
-                        any(HttpCore.ResponseHandler.class) /* Ignore */
-                );
+            .httpExecute( /* Just validating call counter. Ignore following parameters */
+                url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+                any(Proxy.class), /* Ignore */
+                anyString(), /* Ignore */
+                aryEq(new Param[0]), /* Ignore */
+                any(HttpCore.RequestBody.class), /* Ignore */
+                anyBoolean(), /* Ignore */
+                any(HttpCore.ResponseHandler.class) /* Ignore */
+            );
 
         assertThat(url.getValue().getHost(), is(equalTo(hostExpected)));
         assertThat(responseActual, is(equalTo(responseExpected)));
@@ -725,33 +717,33 @@ public class HttpTest {
 
         /* Partially mock httpCore */
         Answer answer = new GrumpyAnswer(
-                1, /* Throw exception once (1) */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
-                responseExpected /* Then return a valid response with the second call */
+            1, /* Throw exception once (1) */
+            AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+            responseExpected /* Then return a valid response with the second call */
         );
 
         doAnswer(answer) /* Behave as defined above */
-                .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
-                .httpExecute(
-                        url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
-                        anyString(), /* Ignore */
-                        aryEq(new Param[0]), /* Ignore */
-                        any(HttpCore.RequestBody.class), /* Ignore */
-                        anyBoolean(), /* Ignore */
-                        any(HttpCore.ResponseHandler.class) /* Ignore */
-                );
+            .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
+            .httpExecute(
+                url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+                any(Proxy.class), /* Ignore */
+                anyString(), /* Ignore */
+                aryEq(new Param[0]), /* Ignore */
+                any(HttpCore.RequestBody.class), /* Ignore */
+                anyBoolean(), /* Ignore */
+                any(HttpCore.ResponseHandler.class) /* Ignore */
+            );
 
         /* Call method with real parameters */
         Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
         String responseActual = (String) HttpHelpers.ablyHttpExecute(
-                http, "", /* Ignore */
-                "", /* Ignore */
-                new Param[0], /* Ignore */
-                new Param[0], /* Ignore */
-                mock(HttpCore.RequestBody.class), /* Ignore */
-                mock(HttpCore.ResponseHandler.class), /* Ignore */
-                false /* Ignore */
+            http, "", /* Ignore */
+            "", /* Ignore */
+            new Param[0], /* Ignore */
+            new Param[0], /* Ignore */
+            mock(HttpCore.RequestBody.class), /* Ignore */
+            mock(HttpCore.ResponseHandler.class), /* Ignore */
+            false /* Ignore */
         );
 
 
@@ -761,15 +753,15 @@ public class HttpTest {
          *   - and fallback host delivered expected response */
 
         verify(httpCore, times(2))
-                .httpExecute( /* Just validating call counter. Ignore following parameters */
-                        url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
-                        anyString(), /* Ignore */
-                        aryEq(new Param[0]), /* Ignore */
-                        any(HttpCore.RequestBody.class), /* Ignore */
-                        anyBoolean(), /* Ignore */
-                        any(HttpCore.ResponseHandler.class) /* Ignore */
-                );
+            .httpExecute( /* Just validating call counter. Ignore following parameters */
+                url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+                any(Proxy.class), /* Ignore */
+                anyString(), /* Ignore */
+                aryEq(new Param[0]), /* Ignore */
+                any(HttpCore.RequestBody.class), /* Ignore */
+                anyBoolean(), /* Ignore */
+                any(HttpCore.ResponseHandler.class) /* Ignore */
+            );
 
         assertThat(url.getValue().getHost().matches(hostExpectedPattern), is(true));
         assertThat(responseActual, is(equalTo(responseExpected)));
@@ -796,32 +788,32 @@ public class HttpTest {
 
         /* Partially mock httpCore */
         Answer answer = new GrumpyAnswer(
-                2, /* Throw exception twice (2) */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
-                responseExpected /* Then return a valid response with third call */
+            2, /* Throw exception twice (2) */
+            AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+            responseExpected /* Then return a valid response with third call */
         );
 
         doAnswer(answer) /* Behave as defined above */
-                .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
-                .httpExecute(
-                        url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
-                        anyString(), /* Ignore */
-                        aryEq(new Param[0]), /* Ignore */
-                        any(HttpCore.RequestBody.class), /* Ignore */
-                        anyBoolean(), /* Ignore */
-                        any(HttpCore.ResponseHandler.class) /* Ignore */
-                );
+            .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
+            .httpExecute(
+                url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+                any(Proxy.class), /* Ignore */
+                anyString(), /* Ignore */
+                aryEq(new Param[0]), /* Ignore */
+                any(HttpCore.RequestBody.class), /* Ignore */
+                anyBoolean(), /* Ignore */
+                any(HttpCore.ResponseHandler.class) /* Ignore */
+            );
 
         Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
         String responseActual = (String) HttpHelpers.ablyHttpExecute(
-                http, "", /* Ignore */
-                "", /* Ignore */
-                new Param[0], /* Ignore */
-                new Param[0], /* Ignore */
-                mock(HttpCore.RequestBody.class), /* Ignore */
-                mock(HttpCore.ResponseHandler.class), /* Ignore */
-                false /* Ignore */
+            http, "", /* Ignore */
+            "", /* Ignore */
+            new Param[0], /* Ignore */
+            new Param[0], /* Ignore */
+            mock(HttpCore.RequestBody.class), /* Ignore */
+            mock(HttpCore.ResponseHandler.class), /* Ignore */
+            false /* Ignore */
         );
 
 
@@ -840,15 +832,15 @@ public class HttpTest {
         /* Verify call causes captor to capture same arguments twice.
          * Do the validation, after we completed the {@code ArgumentCaptor} related assertions */
         verify(httpCore, times(3))
-                .httpExecute( /* Just validating call counter. Ignore following parameters */
-                        url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
-                        anyString(), /* Ignore */
-                        aryEq(new Param[0]), /* Ignore */
-                        any(HttpCore.RequestBody.class), /* Ignore */
-                        anyBoolean(), /* Ignore */
-                        any(HttpCore.ResponseHandler.class) /* Ignore */
-                );
+            .httpExecute( /* Just validating call counter. Ignore following parameters */
+                url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+                any(Proxy.class), /* Ignore */
+                anyString(), /* Ignore */
+                aryEq(new Param[0]), /* Ignore */
+                any(HttpCore.RequestBody.class), /* Ignore */
+                anyBoolean(), /* Ignore */
+                any(HttpCore.ResponseHandler.class) /* Ignore */
+            );
     }
 
     /**
@@ -875,32 +867,32 @@ public class HttpTest {
 
         /* Partially mock httpCore */
         Answer answer = new GrumpyAnswer(
-                1, /* Throw exception once (1) */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
-                "Lorem Ipsum" /* Ignore */
+            1, /* Throw exception once (1) */
+            AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+            "Lorem Ipsum" /* Ignore */
         );
 
         doAnswer(answer) /* Behave as defined above */
-                .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
-                .httpExecute(
-                        url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
-                        anyString(), /* Ignore */
-                        aryEq(new Param[0]), /* Ignore */
-                        any(HttpCore.RequestBody.class), /* Ignore */
-                        anyBoolean(), /* Ignore */
-                        any(HttpCore.ResponseHandler.class) /* Ignore */
-                );
+            .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
+            .httpExecute(
+                url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+                any(Proxy.class), /* Ignore */
+                anyString(), /* Ignore */
+                aryEq(new Param[0]), /* Ignore */
+                any(HttpCore.RequestBody.class), /* Ignore */
+                anyBoolean(), /* Ignore */
+                any(HttpCore.ResponseHandler.class) /* Ignore */
+            );
 
         Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
         HttpHelpers.ablyHttpExecute(
-                http, "", /* Ignore */
-                "", /* Ignore */
-                new Param[0], /* Ignore */
-                new Param[0], /* Ignore */
-                mock(HttpCore.RequestBody.class), /* Ignore */
-                mock(HttpCore.ResponseHandler.class), /* Ignore */
-                false /* Ignore */
+            http, "", /* Ignore */
+            "", /* Ignore */
+            new Param[0], /* Ignore */
+            new Param[0], /* Ignore */
+            mock(HttpCore.RequestBody.class), /* Ignore */
+            mock(HttpCore.ResponseHandler.class), /* Ignore */
+            false /* Ignore */
         );
 
         /* Verify there was a fallback with first call */
@@ -908,30 +900,33 @@ public class HttpTest {
         assertThat(successFallback.matches(PATTERN_HOST_FALLBACK), is(true));
 
         /* wait for a short time, but not enough for the fallbackRetryTimeout to expire */
-        try { Thread.sleep(200L); } catch(InterruptedException ie) {}
+        try {
+            Thread.sleep(200L);
+        } catch (InterruptedException ie) {
+        }
 
         /* Update behavior to succeed on next attempt */
         url = ArgumentCaptor.forClass(URL.class);
         doReturn("Lorem Ipsum") /* Return some response string that we will ignore */
-                .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
-                .httpExecute(
-                        url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
-                        anyString(), /* Ignore */
-                        aryEq(new Param[0]), /* Ignore */
-                        any(HttpCore.RequestBody.class), /* Ignore */
-                        anyBoolean(), /* Ignore */
-                        any(HttpCore.ResponseHandler.class) /* Ignore */
-                );
+            .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
+            .httpExecute(
+                url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+                any(Proxy.class), /* Ignore */
+                anyString(), /* Ignore */
+                aryEq(new Param[0]), /* Ignore */
+                any(HttpCore.RequestBody.class), /* Ignore */
+                anyBoolean(), /* Ignore */
+                any(HttpCore.ResponseHandler.class) /* Ignore */
+            );
 
         HttpHelpers.ablyHttpExecute(
-                http, "", /* Ignore */
-                "", /* Ignore */
-                new Param[0], /* Ignore */
-                new Param[0], /* Ignore */
-                mock(HttpCore.RequestBody.class), /* Ignore */
-                mock(HttpCore.ResponseHandler.class), /* Ignore */
-                false /* Ignore */
+            http, "", /* Ignore */
+            "", /* Ignore */
+            new Param[0], /* Ignore */
+            new Param[0], /* Ignore */
+            mock(HttpCore.RequestBody.class), /* Ignore */
+            mock(HttpCore.ResponseHandler.class), /* Ignore */
+            false /* Ignore */
         );
 
         /* Verify second call was called with the cached fallback host */
@@ -962,32 +957,32 @@ public class HttpTest {
 
         /* Partially mock httpCore */
         Answer answer = new GrumpyAnswer(
-                1, /* Throw exception once */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
-                "Lorem Ipsum" /* Ignore */
+            1, /* Throw exception once */
+            AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+            "Lorem Ipsum" /* Ignore */
         );
 
         doAnswer(answer) /* Behave as defined above */
-                .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
-                .httpExecute(
-                        url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
-                        anyString(), /* Ignore */
-                        aryEq(new Param[0]), /* Ignore */
-                        any(HttpCore.RequestBody.class), /* Ignore */
-                        anyBoolean(), /* Ignore */
-                        any(HttpCore.ResponseHandler.class) /* Ignore */
-                );
+            .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
+            .httpExecute(
+                url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+                any(Proxy.class), /* Ignore */
+                anyString(), /* Ignore */
+                aryEq(new Param[0]), /* Ignore */
+                any(HttpCore.RequestBody.class), /* Ignore */
+                anyBoolean(), /* Ignore */
+                any(HttpCore.ResponseHandler.class) /* Ignore */
+            );
 
         Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
         HttpHelpers.ablyHttpExecute(
-                http, "", /* Ignore */
-                "", /* Ignore */
-                new Param[0], /* Ignore */
-                new Param[0], /* Ignore */
-                mock(HttpCore.RequestBody.class), /* Ignore */
-                mock(HttpCore.ResponseHandler.class), /* Ignore */
-                false /* Ignore */
+            http, "", /* Ignore */
+            "", /* Ignore */
+            new Param[0], /* Ignore */
+            new Param[0], /* Ignore */
+            mock(HttpCore.RequestBody.class), /* Ignore */
+            mock(HttpCore.ResponseHandler.class), /* Ignore */
+            false /* Ignore */
         );
 
         /* Verify there was a fallback with first call */
@@ -995,35 +990,38 @@ public class HttpTest {
         assertThat(failFallback.matches(PATTERN_HOST_FALLBACK), is(true));
 
         /* wait for a short time, but not enough for the fallbackRetryTimeout to expire */
-        try { Thread.sleep(200L); } catch(InterruptedException ie) {}
+        try {
+            Thread.sleep(200L);
+        } catch (InterruptedException ie) {
+        }
 
         /* reset the mocked response so that the next request fails */
         answer = new GrumpyAnswer(
-                1, /* Throw exception once */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
-                "Lorem Ipsum" /* Ignore */
+            1, /* Throw exception once */
+            AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+            "Lorem Ipsum" /* Ignore */
         );
 
         doAnswer(answer) /* Behave as defined above */
-                .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
-                .httpExecute(
-                        url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
-                        anyString(), /* Ignore */
-                        aryEq(new Param[0]), /* Ignore */
-                        any(HttpCore.RequestBody.class), /* Ignore */
-                        anyBoolean(), /* Ignore */
-                        any(HttpCore.ResponseHandler.class) /* Ignore */
-                );
+            .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
+            .httpExecute(
+                url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+                any(Proxy.class), /* Ignore */
+                anyString(), /* Ignore */
+                aryEq(new Param[0]), /* Ignore */
+                any(HttpCore.RequestBody.class), /* Ignore */
+                anyBoolean(), /* Ignore */
+                any(HttpCore.ResponseHandler.class) /* Ignore */
+            );
 
         HttpHelpers.ablyHttpExecute(
-                http, "", /* Ignore */
-                "", /* Ignore */
-                new Param[0], /* Ignore */
-                new Param[0], /* Ignore */
-                mock(HttpCore.RequestBody.class), /* Ignore */
-                mock(HttpCore.ResponseHandler.class), /* Ignore */
-                false /* Ignore */
+            http, "", /* Ignore */
+            "", /* Ignore */
+            new Param[0], /* Ignore */
+            new Param[0], /* Ignore */
+            mock(HttpCore.RequestBody.class), /* Ignore */
+            mock(HttpCore.ResponseHandler.class), /* Ignore */
+            false /* Ignore */
         );
 
         /* Verify second call was called with httpCore host */
@@ -1053,62 +1051,65 @@ public class HttpTest {
 
         /* Partially mock httpCore */
         Answer answer = new GrumpyAnswer(
-                1, /* Throw exception once (1) */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
-                "Lorem Ipsum" /* Ignore */
+            1, /* Throw exception once (1) */
+            AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+            "Lorem Ipsum" /* Ignore */
         );
 
         doAnswer(answer) /* Behave as defined above */
-                .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
-                .httpExecute(
-                        url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
-                        anyString(), /* Ignore */
-                        aryEq(new Param[0]), /* Ignore */
-                        any(HttpCore.RequestBody.class), /* Ignore */
-                        anyBoolean(), /* Ignore */
-                        any(HttpCore.ResponseHandler.class) /* Ignore */
-                );
+            .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
+            .httpExecute(
+                url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+                any(Proxy.class), /* Ignore */
+                anyString(), /* Ignore */
+                aryEq(new Param[0]), /* Ignore */
+                any(HttpCore.RequestBody.class), /* Ignore */
+                anyBoolean(), /* Ignore */
+                any(HttpCore.ResponseHandler.class) /* Ignore */
+            );
 
         Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
         HttpHelpers.ablyHttpExecute(
-                http, "", /* Ignore */
-                "", /* Ignore */
-                new Param[0], /* Ignore */
-                new Param[0], /* Ignore */
-                mock(HttpCore.RequestBody.class), /* Ignore */
-                mock(HttpCore.ResponseHandler.class), /* Ignore */
-                false /* Ignore */
+            http, "", /* Ignore */
+            "", /* Ignore */
+            new Param[0], /* Ignore */
+            new Param[0], /* Ignore */
+            mock(HttpCore.RequestBody.class), /* Ignore */
+            mock(HttpCore.ResponseHandler.class), /* Ignore */
+            false /* Ignore */
         );
 
         /* Verify there was a fallback with first call */
         assertThat(url.getValue().getHost().matches(PATTERN_HOST_FALLBACK), is(true));
 
         /* wait for the fallbackRetryTimeout to expire */
-        try { Thread.sleep(2000L); } catch(InterruptedException ie) {}
+        try {
+            Thread.sleep(2000L);
+        } catch (InterruptedException ie) {
+        }
 
         /* Update behavior to perform a call without a fallback */
         url = ArgumentCaptor.forClass(URL.class);
         doReturn("Lorem Ipsum") /* Return some response string that we will ignore */
-                .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
-                .httpExecute(
-                        url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
-                        anyString(), /* Ignore */
-                        aryEq(new Param[0]), /* Ignore */
-                        any(HttpCore.RequestBody.class), /* Ignore */
-                        anyBoolean(), /* Ignore */
-                        any(HttpCore.ResponseHandler.class) /* Ignore */
-                );
+            .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
+            .httpExecute(
+                url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+                any(Proxy.class), /* Ignore */
+                anyString(), /* Ignore */
+                aryEq(new Param[0]), /* Ignore */
+                any(HttpCore.RequestBody.class), /* Ignore */
+                anyBoolean(), /* Ignore */
+                any(HttpCore.ResponseHandler.class) /* Ignore */
+            );
 
         HttpHelpers.ablyHttpExecute(
-                http, "", /* Ignore */
-                "", /* Ignore */
-                new Param[0], /* Ignore */
-                new Param[0], /* Ignore */
-                mock(HttpCore.RequestBody.class), /* Ignore */
-                mock(HttpCore.ResponseHandler.class), /* Ignore */
-                false /* Ignore */
+            http, "", /* Ignore */
+            "", /* Ignore */
+            new Param[0], /* Ignore */
+            new Param[0], /* Ignore */
+            mock(HttpCore.RequestBody.class), /* Ignore */
+            mock(HttpCore.ResponseHandler.class), /* Ignore */
+            false /* Ignore */
         );
 
         /* Verify second call was called with httpCore host */
@@ -1137,22 +1138,22 @@ public class HttpTest {
 
         /* Partially mock httpCore */
         Answer answer = new GrumpyAnswer(
-                excessiveFallbackCount, /* Throw exception more than httpMaxRetryCount number of times */
-                AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
-                "Lorem Ipsum" /* Ignore */
+            excessiveFallbackCount, /* Throw exception more than httpMaxRetryCount number of times */
+            AblyException.fromErrorInfo(ErrorInfo.fromResponseStatus("Internal Server Error", 500)), /* That is HostFailedException */
+            "Lorem Ipsum" /* Ignore */
         );
 
         doAnswer(answer) /* Behave as defined above */
-                .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
-                .httpExecute(
-                        url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
-                        anyString(), /* Ignore */
-                        aryEq(new Param[0]), /* Ignore */
-                        any(HttpCore.RequestBody.class), /* Ignore */
-                        anyBoolean(), /* Ignore */
-                        any(HttpCore.ResponseHandler.class) /* Ignore */
-                );
+            .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
+            .httpExecute(
+                url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
+                any(Proxy.class), /* Ignore */
+                anyString(), /* Ignore */
+                aryEq(new Param[0]), /* Ignore */
+                any(HttpCore.RequestBody.class), /* Ignore */
+                anyBoolean(), /* Ignore */
+                any(HttpCore.ResponseHandler.class) /* Ignore */
+            );
 
 
         /* Verify
@@ -1162,13 +1163,13 @@ public class HttpTest {
 
         Http http = new Http(new AsyncHttpScheduler(httpCore, new ClientOptions()), new SyncHttpScheduler(httpCore));
         HttpHelpers.ablyHttpExecute(
-                http, "", /* Ignore */
-                "", /* Ignore */
-                new Param[0], /* Ignore */
-                new Param[0], /* Ignore */
-                mock(HttpCore.RequestBody.class), /* Ignore */
-                mock(HttpCore.ResponseHandler.class), /* Ignore */
-                false /* Ignore */
+            http, "", /* Ignore */
+            "", /* Ignore */
+            new Param[0], /* Ignore */
+            new Param[0], /* Ignore */
+            mock(HttpCore.RequestBody.class), /* Ignore */
+            mock(HttpCore.ResponseHandler.class), /* Ignore */
+            false /* Ignore */
         );
     }
 
@@ -1294,7 +1295,7 @@ public class HttpTest {
             options.tls = false;
             options.restHost = TEST_SERVER_HOST;
             options.port = TEST_SERVER_PORT;
-            if(poolSize > 0) {
+            if (poolSize > 0) {
                 options.asyncHttpThreadpoolSize = poolSize;
             }
             final AblyRest ablyRest = new AblyRest(options);
@@ -1305,11 +1306,11 @@ public class HttpTest {
             final boolean[] error = new boolean[1];
 
             /* start parallel requests */
-            for(int i = 0; i < requestCount; i++) {
+            for (int i = 0; i < requestCount; i++) {
                 ablyRest.timeAsync(new Callback<Long>() {
                     @Override
                     public void onSuccess(Long result) {
-                        synchronized(waiter) {
+                        synchronized (waiter) {
                             counter[0]++;
                             waiter.notify();
                         }
@@ -1317,7 +1318,7 @@ public class HttpTest {
 
                     @Override
                     public void onError(ErrorInfo reason) {
-                        synchronized(waiter) {
+                        synchronized (waiter) {
                             counter[0]++;
                             error[0] = true;
                             waiter.notify();
@@ -1328,11 +1329,12 @@ public class HttpTest {
             }
 
             /* wait for all requests to complete */
-            while(counter[0] < requestCount) {
-                synchronized(waiter) {
+            while (counter[0] < requestCount) {
+                synchronized (waiter) {
                     try {
                         waiter.wait();
-                    } catch(InterruptedException ie) {}
+                    } catch (InterruptedException ie) {
+                    }
                 }
             }
 
@@ -1344,7 +1346,7 @@ public class HttpTest {
             assertTrue("Verify duration at least minimum", duration >= expectedMinDuration);
             assertTrue("Verify duration at most maximum", duration <= expectedMaxDuration);
 
-        } catch(AblyException ae) {
+        } catch (AblyException ae) {
             ae.printStackTrace();
         }
     }
@@ -1392,7 +1394,7 @@ public class HttpTest {
         @Override
         protected boolean matchesSafely(AblyException item) {
             return errorInfo.code == item.errorInfo.code &&
-                    errorInfo.statusCode == item.errorInfo.statusCode;
+                errorInfo.statusCode == item.errorInfo.statusCode;
         }
 
         @Override

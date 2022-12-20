@@ -1,29 +1,25 @@
 package io.ably.lib.util;
 
-import static io.ably.lib.test.common.Helpers.assertMessagesEqual;
 import static org.hamcrest.core.StringEndsWith.endsWith;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static io.ably.lib.test.common.Helpers.assertMessagesEqual;
 
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.Message;
-import io.ably.lib.util.Base64Coder;
-import io.ably.lib.util.Crypto;
 import io.ably.lib.util.Crypto.CipherParams;
 
-@Ignore("FIXME: Initialization is failing")
 @RunWith(Parameterized.class)
 public class CryptoMessageTest {
     public enum FixtureSet {
@@ -87,8 +83,8 @@ public class CryptoMessageTest {
         final CryptoTestData testData = fixtureSet.loadTestData();
         final String algorithm = testData.algorithm;
 
-        final CipherParams params = Crypto.getParams(algorithm, fixtureSet.key, fixtureSet.iv);
-        final ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
+        final CipherParams cParams = Crypto.getParams(algorithm, fixtureSet.key, fixtureSet.iv);
+        final ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = cParams;}};
 
         for(final CryptoTestItem item : testData.items) {
             final Message plain = item.encoded;
@@ -113,10 +109,10 @@ public class CryptoMessageTest {
         final CryptoTestData testData = fixtureSet.loadTestData();
         final String algorithm = testData.algorithm;
 
-        final CipherParams params = Crypto.getParams(algorithm, fixtureSet.key, fixtureSet.iv);
+        final CipherParams cParams = Crypto.getParams(algorithm, fixtureSet.key, fixtureSet.iv);
 
         for(final CryptoTestItem item : testData.items) {
-            final ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
+            final ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = cParams;}};
             final Message plain = item.encoded;
             final Message encrypted = item.encrypted;
             assertThat(encrypted.encoding, endsWith(fixtureSet.cipherName + "/base64"));

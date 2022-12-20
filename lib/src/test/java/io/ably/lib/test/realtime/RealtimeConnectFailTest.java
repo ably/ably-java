@@ -5,12 +5,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static io.ably.lib.util.AblyErrors.CHANNEL_OPERATION_FAILED;
 import static io.ably.lib.util.AblyErrors.FAIL_RECOVER_CONNECTION_EXPIRED;
 import static io.ably.lib.util.AblyErrors.INVALID_CONNECTION_ID_BAD_FORMAT;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -317,7 +315,6 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
      * Verify that the connection fails when attempting to recover with a
      * malformed connection id
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void connect_invalid_recover_fail() {
         AblyRealtime ably = null;
@@ -333,7 +330,9 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");
         } finally {
-            ably.close();
+            if (ably != null) {
+                ably.close();
+            }
         }
     }
 

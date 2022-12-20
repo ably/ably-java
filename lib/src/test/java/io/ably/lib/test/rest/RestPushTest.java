@@ -1,6 +1,20 @@
 package io.ably.lib.test.rest;
 
+import static org.junit.Assert.assertEquals;
+
 import com.google.gson.JsonObject;
+
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.Timeout;
+
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
+
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.push.PushBase.ChannelSubscription;
 import io.ably.lib.realtime.AblyRealtime;
@@ -18,19 +32,6 @@ import io.ably.lib.types.Callback;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.util.JsonUtils;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
-
-import static org.junit.Assert.assertEquals;
 
 public class RestPushTest extends ParameterizedTest {
     private static AblyRest rest;
@@ -636,7 +637,6 @@ public class RestPushTest extends ParameterizedTest {
 
     // RHS1c2
     @Test
-    @Ignore("FIXME: tests interfere")
     public void push_admin_channelSubscriptions_listChannels() throws Exception {
         new Helpers.SyncAndAsync<Void, String[]>(){
             @Override

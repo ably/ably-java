@@ -6,8 +6,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
@@ -21,7 +21,6 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
-import org.junit.rules.Timeout;
 
 public class RealtimeConnectTest extends ParameterizedTest {
 
@@ -81,7 +80,6 @@ public class RealtimeConnectTest extends ParameterizedTest {
      * Perform a simple connect, close the connection, and verify that
      * the connection can be re-established by calling connect().
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void connect_after_close() {
         try {
@@ -95,7 +93,7 @@ public class RealtimeConnectTest extends ParameterizedTest {
             for (int i = 0; i < 3; i++) {
                 /* publish to the channel */
                 CompletionWaiter msgComplete = new CompletionWaiter();
-                ably.channels.get("test_channel").publish("test_event", "Test message", msgComplete);
+                ably.channels.get("test_channel").publish("test_event", "Test message " + i, msgComplete);
                 /* wait for the publish callback to be called */
                 msgComplete.waitFor();
                 assertTrue("Verify success callback was called", msgComplete.success);
@@ -112,7 +110,7 @@ public class RealtimeConnectTest extends ParameterizedTest {
 
             /* publish to the channel in the new connection to check that it works */
             CompletionWaiter msgComplete = new CompletionWaiter();
-            ably.channels.get("test_channel").publish("test_event", "Test message", msgComplete);
+            ably.channels.get("test_channel").publish("test_event", "Test message after restart", msgComplete);
             /* wait for the publish callback to be called */
             msgComplete.waitFor();
             assertTrue("Verify success callback was called", msgComplete.success);

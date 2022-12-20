@@ -1,5 +1,22 @@
 package io.ably.lib.test.realtime;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static io.ably.lib.util.AblyErrors.OPERATION_NOT_PERMITTED_WITH_PROVIDED_CAPABILITY;
+import static io.ably.lib.util.AblyErrors.TOKEN_EXPIRED;
+
+import org.junit.Test;
+
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
 import io.ably.lib.http.HttpCore;
@@ -25,21 +42,6 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static io.ably.lib.util.AblyErrors.OPERATION_NOT_PERMITTED_WITH_PROVIDED_CAPABILITY;
-import static io.ably.lib.util.AblyErrors.TOKEN_EXPIRED;
 
 public class RealtimeJWTTest extends ParameterizedTest {
 
@@ -88,7 +90,6 @@ public class RealtimeJWTTest extends ParameterizedTest {
      * Request a JWT with subscribe-only capabilities
      * Verifies that publishing on a channel fails
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void auth_jwt_with_subscribe_only_capability() {
         try {
@@ -152,22 +153,27 @@ public class RealtimeJWTTest extends ParameterizedTest {
             channel.attach();
             new ChannelWaiter(channel).waitFor(ChannelState.attached);
 
+            AtomicBoolean publishError = new AtomicBoolean(true);
+
             /* publish, verify that it succeeds then close */
             final Message message = new Message(messageName, null);
             channel.publish(message, new CompletionListener() {
                 @Override
                 public void onSuccess() {
                     System.out.println("Message " + messageName + " published successfully");
+                    publishError.set(false);
                     ablyRealtime.close();
                 }
 
                 @Override
                 public void onError(ErrorInfo reason) {
+                    publishError.set(true);
                     ablyRealtime.close();
                     fail("Publish should not fail");
                 }
             });
             connectionWaiter.waitFor(ConnectionState.closed);
+            assertFalse("Publish should not fail", publishError.get());
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
