@@ -1,5 +1,17 @@
 package io.ably.lib.test.rest;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Random;
+
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
@@ -13,18 +25,6 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.PublishResponse;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Random;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class RestChannelBulkPublishTest extends ParameterizedTest  {
 
@@ -234,7 +234,6 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
      *
      * It attempts to publish the given message on all of the given channels.
      */
-    @Ignore // awaiting channel member in error responses
     @Test
     public void bulk_publish_multiple_channels_partial_error() {
         try {

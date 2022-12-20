@@ -9,7 +9,6 @@ import com.google.gson.JsonObject;
 
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -641,7 +640,6 @@ public class RestPushTest extends ParameterizedTest {
 
     // RHS1c2
     @Test
-    @Ignore("FIXME: tests interfere")
     public void push_admin_channelSubscriptions_listChannels() throws Exception {
         new Helpers.SyncAndAsync<Void, String[]>(){
             @Override

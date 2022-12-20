@@ -4,16 +4,47 @@ on:
     branches:
       - main
 
+concurrency:
+  group: it-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  check:
+  check-rest:
+    name: Run REST tests
     runs-on: ubuntu-latest
+    concurrency: it-job-${{ github.ref }}
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
 
-      - run: ./gradlew :java:testRestSuite :java:testRealtimeSuite
+      - name: Run REST tests
+        run: ./gradlew :java:testRestSuite
 
-      - uses: actions/upload-artifact@v2
+      - name: Upload results
+        uses: actions/upload-artifact@v2
         if: always()
         with:
-          name: java-build-reports
+          name: java-build-reports-rest
+          path: java/build/reports/
+
+  check-realtime:
+    name: Run Realtime tests
+    runs-on: ubuntu-latest
+    concurrency: it-job-${{ github.ref }}
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Run Realtime tests
+        run: ./gradlew :java:testRealtimeSuite
+
+      - name: Upload results
+        uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: java-build-reports-realtime
           path: java/build/reports/

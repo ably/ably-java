@@ -14,7 +14,6 @@ import static io.ably.lib.util.HttpCodes.BAD_REQUEST;
 import static io.ably.lib.util.HttpCodes.UNAUTHORIZED;
 
 import org.hamcrest.Matchers;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.lang.reflect.InvocationTargetException;
@@ -1069,7 +1068,6 @@ public class RealtimeChannelTest extends ParameterizedTest {
      * </p>
      *
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void transient_publish_connected() throws AblyException {
         AblyRealtime pubAbly = null, subAbly = null;
@@ -1119,7 +1117,6 @@ public class RealtimeChannelTest extends ParameterizedTest {
      * </p>
      *
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void transient_publish_connecting() throws AblyException {
         AblyRealtime pubAbly = null, subAbly = null;
@@ -1518,6 +1515,9 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             /* previously attached channel should remain attached */
             attachedChannelWaiter.waitFor(ChannelState.attached);
+
+            /* wait for callbacks to fill in*/
+            try { Thread.sleep(200L); } catch(InterruptedException e) {}
 
             /*
              * Verify each channel undergoes relevant events:

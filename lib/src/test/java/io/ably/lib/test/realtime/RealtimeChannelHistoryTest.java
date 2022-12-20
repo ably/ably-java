@@ -8,15 +8,13 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.util.HashMap;
-import java.util.Locale;
-
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
+
+import java.util.HashMap;
+import java.util.Locale;
 
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
@@ -32,22 +30,10 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 
-@Ignore("FIXME: fix exceptions")
 public class RealtimeChannelHistoryTest extends ParameterizedTest {
-
-    private AblyRealtime ably;
-    private long timeOffset;
 
     @Rule
     public Timeout testTimeout = Timeout.seconds(300);
-
-    @Before
-    public void setUpBefore() throws Exception {
-        ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        ably = new AblyRealtime(opts);
-        long timeFromService = ably.time();
-        timeOffset = timeFromService - System.currentTimeMillis();
-    }
 
     /**
      * Send a single message on a channel and verify that it can be
@@ -672,6 +658,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
             long intervalStart = 0, intervalEnd = 0;
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = new AblyRealtime(opts);
+            long timeOffset = ably.time() - System.currentTimeMillis();
             String channelName = "persisted:channelhistory_time_f_" + testParams.name;
 
             /* create a channel */
@@ -743,6 +730,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
             long intervalStart = 0, intervalEnd = 0;
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = new AblyRealtime(opts);
+            long timeOffset = ably.time() - System.currentTimeMillis();
             String channelName = "persisted:channelhistory_time_b_" + testParams.name;
 
             /* create a channel */
@@ -1162,7 +1150,6 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
      * history up to the point of attachment can be obtained.
      */
     @Test
-    @Ignore("Fails due to issues in sandbox. See https://github.com/ably/realtime/issues/1834 for details.")
     public void channelhistory_from_attach() {
         AblyRealtime txAbly = null, rxAbly = null;
         try {
