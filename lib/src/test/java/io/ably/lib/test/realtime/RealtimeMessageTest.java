@@ -34,6 +34,7 @@ import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.rest.AblyRest;
+import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
