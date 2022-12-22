@@ -153,7 +153,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
             channel.attach();
             new ChannelWaiter(channel).waitFor(ChannelState.attached);
 
-            AtomicBoolean publishError = new AtomicBoolean(true);
+            final AtomicBoolean publishError = new AtomicBoolean(true);
 
             /* publish, verify that it succeeds then close */
             final Message message = new Message(messageName, null);
