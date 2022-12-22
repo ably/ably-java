@@ -1,8 +1,5 @@
 package io.ably.lib.util;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public enum AblyErrors {
 
     NO_ERROR(10000, "no error"),
@@ -164,26 +161,9 @@ public enum AblyErrors {
 
     public final int code;
     public final String message;
-    private static final Map<Integer, AblyErrors> BY_CODE = new HashMap<>();
-    private static final Map<String, AblyErrors> BY_MESSAGE = new HashMap<>();
-
-    static {
-        for (AblyErrors e : values()) {
-            BY_CODE.put(e.code, e);
-            BY_MESSAGE.put(e.message, e);
-        }
-    }
 
     AblyErrors(int code, String message) {
         this.code = code;
         this.message = message;
-    }
-
-    public static AblyErrors valueOfCode(int code) {
-        return BY_CODE.get(code);
-    }
-
-    public static AblyErrors valueOfMessage(String message) {
-        return BY_MESSAGE.get(message);
     }
 }
