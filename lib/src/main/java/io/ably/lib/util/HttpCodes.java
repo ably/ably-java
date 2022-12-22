@@ -1,8 +1,5 @@
 package io.ably.lib.util;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public enum HttpCodes {
 
     //Informational responses (100 – 199)
@@ -76,27 +73,10 @@ public enum HttpCodes {
 
     public final int code;
     public final String message;
-    private static final Map<Integer, HttpCodes> BY_CODE = new HashMap<>();
-    private static final Map<String, HttpCodes> BY_MESSAGE = new HashMap<>();
-
-    static {
-        for (HttpCodes e : values()) {
-            BY_CODE.put(e.code, e);
-            BY_MESSAGE.put(e.message, e);
-        }
-    }
 
     HttpCodes(int code, String message) {
         this.code = code;
         this.message = message;
-    }
-
-    public static HttpCodes valueOfCode(int code) {
-        return BY_CODE.get(code);
-    }
-
-    public static HttpCodes valueOfMessage(String message) {
-        return BY_MESSAGE.get(message);
     }
 
     @Override
