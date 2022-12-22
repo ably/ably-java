@@ -174,6 +174,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
      */
     @Test
     public void auth_client_fails_when_auth_token_fails_with_non_retriable_exception() {
+        AblyRealtime ablyRealtime = null;
         try {
             class NonRetriableRuntimeException extends RuntimeException implements NonRetriableTokenException {
                 NonRetriableRuntimeException(){
@@ -182,15 +183,16 @@ public class RealtimeAuthTest extends ParameterizedTest {
             }
 
             Exception exception = new NonRetriableRuntimeException();
-            final AblyRealtime ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
-
+            ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
             ablyRealtime.connection.connect();
 
             waitAndAssertConnectionState(ablyRealtime, ConnectionState.failed, 403, 80019);
-            ablyRealtime.close();
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
+        } finally {
+            if (ablyRealtime != null)
+                ablyRealtime.close();
         }
     }
 
@@ -199,17 +201,19 @@ public class RealtimeAuthTest extends ParameterizedTest {
      */
     @Test
     public void auth_client_fails_when_auth_token_fails_with_ably_exception_with_status_code_403() {
+        AblyRealtime ablyRealtime = null;
         try {
             Exception exception = AblyException.fromErrorInfo(new ErrorInfo("A non retriable Ably exception", 403, 80040));
-            final AblyRealtime ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
-
+            ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
             ablyRealtime.connection.connect();
 
             waitAndAssertConnectionState(ablyRealtime, ConnectionState.failed, 403, 80019);
-            ablyRealtime.close();
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
+        } finally {
+            if (ablyRealtime != null)
+                ablyRealtime.close();
         }
     }
 
@@ -218,17 +222,19 @@ public class RealtimeAuthTest extends ParameterizedTest {
      */
     @Test
     public void auth_client_does_not_fail_when_auth_token_fails_with_an_ably_exception() {
+        AblyRealtime ablyRealtime = null;
         try {
             Exception exception = AblyException.fromErrorInfo(new ErrorInfo("An Ably exception", 401, 80040));
-            final AblyRealtime ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
-
+            ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
             ablyRealtime.connection.connect();
 
             waitAndAssertConnectionState(ablyRealtime, ConnectionState.disconnected, 401, 80019);
-            ablyRealtime.close();
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
+        } finally {
+            if (ablyRealtime != null)
+                ablyRealtime.close();
         }
     }
 
@@ -237,17 +243,19 @@ public class RealtimeAuthTest extends ParameterizedTest {
      */
     @Test
     public void auth_client_does_not_fail_when_auth_token_fails_with_a_runtime_exception() {
+        AblyRealtime ablyRealtime = null;
         try {
             Exception exception = new RuntimeException("A runtime exception");
-            final AblyRealtime ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
-
+            ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
             ablyRealtime.connection.connect();
 
             waitAndAssertConnectionState(ablyRealtime, ConnectionState.disconnected, 401, 80019);
-            ablyRealtime.close();
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
+        } finally {
+            if (ablyRealtime != null)
+                ablyRealtime.close();
         }
     }
 
