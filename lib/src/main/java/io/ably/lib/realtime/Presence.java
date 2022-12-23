@@ -1176,9 +1176,13 @@ public class Presence {
                 /* any members that were present at the start of the sync,
                  * and have not been seen in sync, can be removed */
                 for(String itemKey: residualMembers) {
-                    /* clone presence message as it still can be in the internal presence map */
-                    removedEntries.add((PresenceMessage)members.get(itemKey).clone());
-                    members.remove(itemKey);
+                    PresenceMessage removedMember = members.remove(itemKey);
+                    /* This null check is added as a potential fix for an issue that
+                     * could not be reproduced, reported here https://github.com/ably/ably-java/issues/853 */
+                    if(removedMember != null) {
+                        /* clone presence message as it still can be in the internal presence map */
+                        removedEntries.add((PresenceMessage) removedMember.clone());
+                    }
                 }
                 residualMembers = null;
 
