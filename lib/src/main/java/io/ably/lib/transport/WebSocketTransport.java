@@ -150,7 +150,7 @@ public class WebSocketTransport implements ITransport {
         @Override
         public void onOpen(ServerHandshake handshakedata) {
             Log.d(TAG, "onOpen()");
-            if (shouldExplicitlyVerifyHostname && !isHostnameVerified(params.host)) {
+            if (params.options.tls && shouldExplicitlyVerifyHostname && !isHostnameVerified(params.host)) {
                 close();
             } else {
                 connectListener.onTransportAvailable(WebSocketTransport.this);
