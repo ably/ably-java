@@ -1,7 +1,5 @@
 package io.ably.lib.transport;
 
-import static io.ably.lib.util.HttpCodes.SERVICE_UNAVAILABLE;
-
 import org.java_websocket.WebSocket;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.exceptions.WebsocketNotConnectedException;
@@ -25,6 +23,7 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolSerializer;
+import io.ably.lib.util.HttpCode;
 import io.ably.lib.util.Log;
 
 public class WebSocketTransport implements ITransport {
@@ -256,7 +255,7 @@ public class WebSocketTransport implements ITransport {
         @Override
         public void onError(final Exception e) {
             Log.e(TAG, "Connection error ", e);
-            connectListener.onTransportUnavailable(WebSocketTransport.this, new ErrorInfo(e.getMessage(), SERVICE_UNAVAILABLE.code, 80000));
+            connectListener.onTransportUnavailable(WebSocketTransport.this, new ErrorInfo(e.getMessage(), HttpCode.SERVICE_UNAVAILABLE, 80000));
         }
 
         @Override

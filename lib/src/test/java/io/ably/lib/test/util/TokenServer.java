@@ -26,9 +26,6 @@
  */
 package io.ably.lib.test.util;
 
-import static io.ably.lib.util.HttpCodes.BAD_REQUEST;
-import static io.ably.lib.util.HttpCodes.NOT_FOUND;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,6 +39,7 @@ import io.ably.lib.rest.Auth.TokenRequest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ErrorResponse;
+import io.ably.lib.util.HttpCode;
 import io.ably.lib.util.Serialisation;
 
 public class TokenServer extends NanoHTTPD {
@@ -61,7 +59,7 @@ public class TokenServer extends NanoHTTPD {
             try {
                 session.parseBody(new HashMap<String, String>());
             } catch (IOException | ResponseException e) {
-                return error2Response(new ErrorInfo("Bad POST token request", BAD_REQUEST.code, 40000));
+                return error2Response(new ErrorInfo("Bad POST token request", HttpCode.BAD_REQUEST, 40000));
             }
         }
 
@@ -94,7 +92,7 @@ public class TokenServer extends NanoHTTPD {
             }
         }
         else if(target.equals("/404")) {
-            return error2Response(new ErrorInfo("Not found", NOT_FOUND.code, 0));
+            return error2Response(new ErrorInfo("Not found", HttpCode.NOT_FOUND, 0));
         }
         else if(target.equals("/wait")) {
             long delay = 30000;

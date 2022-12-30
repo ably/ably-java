@@ -1,7 +1,5 @@
 package io.ably.lib.realtime;
 
-import static io.ably.lib.util.HttpCodes.BAD_REQUEST;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -27,6 +25,7 @@ import io.ably.lib.types.Param;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.PresenceSerializer;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.util.HttpCode;
 import io.ably.lib.util.Log;
 
 /**
@@ -767,7 +766,7 @@ public class Presence {
                 connectionManager.send(message, ably.options.queueMessages, listener);
                 break;
             default:
-                throw AblyException.fromErrorInfo(new ErrorInfo("Unable to enter presence channel in detached or failed state", BAD_REQUEST.code, 91001));
+                throw AblyException.fromErrorInfo(new ErrorInfo("Unable to enter presence channel in detached or failed state", HttpCode.BAD_REQUEST, 91001));
             }
         }
     }

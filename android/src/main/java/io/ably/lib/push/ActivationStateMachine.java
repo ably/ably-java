@@ -1,7 +1,5 @@
 package io.ably.lib.push;
 
-import static io.ably.lib.util.HttpCodes.BAD_REQUEST;
-
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -28,6 +26,7 @@ import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.RegistrationToken;
+import io.ably.lib.util.HttpCode;
 import io.ably.lib.util.IntentUtils;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.ParamsUtils;
@@ -310,7 +309,7 @@ public class ActivationStateMachine {
                             JsonObject deviceIdentityTokenJson = response.getAsJsonObject("deviceIdentityToken");
                             if(deviceIdentityTokenJson == null) {
                                 Log.e(TAG, "invalid device registration response (no deviceIdentityToken); deviceId = " + device.id);
-                                machine.handleEvent(new ActivationStateMachine.GettingDeviceRegistrationFailed(new ErrorInfo("Invalid deviceIdentityToken in response", 40000, BAD_REQUEST.code)));
+                                machine.handleEvent(new ActivationStateMachine.GettingDeviceRegistrationFailed(new ErrorInfo("Invalid deviceIdentityToken in response", 40000, HttpCode.BAD_REQUEST)));
                                 return;
                             }
                             JsonPrimitive responseClientIdJson = response.getAsJsonPrimitive("clientId");
@@ -688,7 +687,7 @@ public class ActivationStateMachine {
         /* Spec: RSH3a2a1, RSH8g: verify that the existing registration is compatible with the present credentials */
         String presentClientId = ably.auth.clientId;
         if(presentClientId != null && device.clientId != null && !presentClientId.equals(device.clientId)) {
-            ErrorInfo clientIdErr = new ErrorInfo("Activation failed: present clientId is not compatible with existing device registration", BAD_REQUEST.code, 61002);
+            ErrorInfo clientIdErr = new ErrorInfo("Activation failed: present clientId is not compatible with existing device registration", HttpCode.BAD_REQUEST, 61002);
             handleEvent(new SyncRegistrationFailed(clientIdErr));
             return;
         }

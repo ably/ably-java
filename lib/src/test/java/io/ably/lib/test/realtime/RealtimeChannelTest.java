@@ -10,8 +10,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static io.ably.lib.util.HttpCodes.BAD_REQUEST;
-import static io.ably.lib.util.HttpCodes.UNAUTHORIZED;
 
 import org.hamcrest.Matchers;
 import org.junit.Test;
@@ -48,6 +46,7 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.util.HttpCode;
 
 public class RealtimeChannelTest extends ParameterizedTest {
 
@@ -240,7 +239,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             try {
                 ably.channels.get(channelName, options);
             } catch (AblyException e) {
-                assertEquals("Verify error code", BAD_REQUEST.code, e.errorInfo.code);
+                assertEquals("Verify error code", HttpCode.BAD_REQUEST, e.errorInfo.code);
                 assertEquals("Verify error status code", 40000, e.errorInfo.statusCode);
                 assertTrue("Verify error message", e.errorInfo.message.contains("setOptions"));
             }
@@ -835,7 +834,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             channel.attach();
             ErrorInfo fail = (new ChannelWaiter(channel)).waitFor(ChannelState.failed);
             assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-            assertEquals("Verify reason code gives correct failure reason", fail.statusCode, UNAUTHORIZED.code);
+            assertEquals("Verify reason code gives correct failure reason", fail.statusCode, HttpCode.UNAUTHORIZED);
 
         } catch (AblyException e) {
             e.printStackTrace();
@@ -902,11 +901,11 @@ public class RealtimeChannelTest extends ParameterizedTest {
             channel.attach(waiter);
             ErrorInfo fail = (new ChannelWaiter(channel)).waitFor(ChannelState.failed);
             assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-            assertEquals("Verify reason code gives correct failure reason", fail.statusCode, UNAUTHORIZED.code);
+            assertEquals("Verify reason code gives correct failure reason", fail.statusCode, HttpCode.UNAUTHORIZED);
 
             /* Verify error callback gets called with correct status code */
             waiter.waitFor();
-            assertEquals(waiter.error.statusCode, UNAUTHORIZED.code);
+            assertEquals(waiter.error.statusCode, HttpCode.UNAUTHORIZED);
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");
@@ -1260,7 +1259,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             ErrorInfo fail = new ChannelWaiter(channel).waitFor(ChannelState.failed);
             assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-            assertEquals("Verify reason code gives correct failure reason", fail.statusCode, UNAUTHORIZED.code);
+            assertEquals("Verify reason code gives correct failure reason", fail.statusCode, HttpCode.UNAUTHORIZED);
         } finally {
             if(ably != null)
                 ably.close();
@@ -1821,7 +1820,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
 
             /* create a channel; put into failed state */
-            ably.connection.connectionManager.requestState(new ConnectionManager.StateIndication(ConnectionState.failed, new ErrorInfo("Test error", BAD_REQUEST.code, 12345)));
+            ably.connection.connectionManager.requestState(new ConnectionManager.StateIndication(ConnectionState.failed, new ErrorInfo("Test error", HttpCode.BAD_REQUEST, 12345)));
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.failed);
             assertEquals("Verify failed state reached", ably.connection.state, ConnectionState.failed);
 

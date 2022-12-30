@@ -6,7 +6,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static io.ably.lib.util.HttpCodes.INTERNAL_SERVER_ERROR;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -33,6 +32,7 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.MessageSerializer;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
+import io.ably.lib.util.HttpCode;
 
 public class RestChannelPublishTest extends ParameterizedTest {
 
@@ -273,7 +273,7 @@ public class RestChannelPublishTest extends ParameterizedTest {
         @Override
         public void onRawHttpResponse(String id, String method, HttpCore.Response response) {
             if(method.equalsIgnoreCase("POST") && postRequestCount == 1) {
-                response.statusCode = INTERNAL_SERVER_ERROR.code;
+                response.statusCode = HttpCode.INTERNAL_SERVER_ERROR;
             }
         }
 

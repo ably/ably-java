@@ -1,7 +1,5 @@
 package io.ably.lib.types;
 
-import static io.ably.lib.util.HttpCodes.INTERNAL_SERVER_ERROR;
-
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessageUnpacker;
 
@@ -9,6 +7,7 @@ import java.io.IOException;
 import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
 
+import io.ably.lib.util.HttpCode;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 
@@ -152,13 +151,13 @@ public class ErrorInfo {
         ErrorInfo errorInfo;
         if(throwable instanceof UnknownHostException
                 || throwable instanceof NoRouteToHostException) {
-            errorInfo = new ErrorInfo(throwable.getLocalizedMessage(), INTERNAL_SERVER_ERROR.code, 50002);
+            errorInfo = new ErrorInfo(throwable.getLocalizedMessage(), HttpCode.INTERNAL_SERVER_ERROR, 50002);
         }
         else if(throwable instanceof IOException) {
-            errorInfo = new ErrorInfo(throwable.getLocalizedMessage(), INTERNAL_SERVER_ERROR.code, 50000);
+            errorInfo = new ErrorInfo(throwable.getLocalizedMessage(), HttpCode.INTERNAL_SERVER_ERROR, 50000);
         }
         else {
-            errorInfo = new ErrorInfo("Unexpected exception: " + throwable.getLocalizedMessage(), 50000, INTERNAL_SERVER_ERROR.code);
+            errorInfo = new ErrorInfo("Unexpected exception: " + throwable.getLocalizedMessage(), 50000, HttpCode.INTERNAL_SERVER_ERROR);
         }
 
         return errorInfo;

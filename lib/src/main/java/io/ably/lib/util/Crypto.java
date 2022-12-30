@@ -1,7 +1,5 @@
 package io.ably.lib.util;
 
-import static io.ably.lib.util.HttpCodes.BAD_REQUEST;
-
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -247,7 +245,7 @@ public class Crypto {
         else if (cipherParams instanceof CipherParams)
             nonNullParams = (CipherParams)cipherParams;
         else
-            throw AblyException.fromErrorInfo(new ErrorInfo("ChannelOptions not supported", BAD_REQUEST.code, 40000));
+            throw AblyException.fromErrorInfo(new ErrorInfo("ChannelOptions not supported", HttpCode.BAD_REQUEST, 40000));
 
         return new ChannelCipherSet() {
             private final EncryptingChannelCipher encipher = new EncryptingCBCCipher(nonNullParams);

@@ -4,7 +4,6 @@ import static junit.framework.Assert.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static io.ably.lib.util.HttpCodes.BAD_REQUEST;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -54,6 +53,7 @@ import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.util.Base64Coder;
+import io.ably.lib.util.HttpCode;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 
@@ -113,7 +113,7 @@ public class Helpers {
     public static HttpCore.Response httpResponseFromErrorInfo(final ErrorInfo errorInfo) {
         HttpCore.Response response = new HttpCore.Response();
         response.contentType = "application/json";
-        response.statusCode = errorInfo.statusCode > 0 ? errorInfo.statusCode : BAD_REQUEST.code;
+        response.statusCode = errorInfo.statusCode > 0 ? errorInfo.statusCode : HttpCode.BAD_REQUEST;
         response.body = Serialisation.gson.toJson(new ErrorResponse() {{
             error = errorInfo;
         }}, ErrorResponse.class).getBytes();

@@ -1,7 +1,5 @@
 package io.ably.lib.push;
 
-import static io.ably.lib.util.HttpCodes.BAD_REQUEST;
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
@@ -14,6 +12,7 @@ import io.ably.lib.rest.AblyRest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
+import io.ably.lib.util.HttpCode;
 import io.ably.lib.util.Log;
 
 /**
@@ -96,7 +95,7 @@ public class Push extends PushBase {
         Context applicationContext = rest.platform.getApplicationContext();
         if(applicationContext == null) {
             Log.e(TAG, "getApplicationContext(): Unable to get application context; not set");
-            throw AblyException.fromErrorInfo(new ErrorInfo("Unable to get application context; not set", 40000, BAD_REQUEST.code));
+            throw AblyException.fromErrorInfo(new ErrorInfo("Unable to get application context; not set", 40000, HttpCode.BAD_REQUEST));
         }
         return applicationContext;
     }

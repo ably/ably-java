@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static io.ably.lib.util.HttpCodes.UNAUTHORIZED;
 
 import org.junit.Test;
 
@@ -22,6 +21,7 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.Stats;
+import io.ably.lib.util.HttpCode;
 
 public class RestJWTTest extends ParameterizedTest {
 
@@ -61,7 +61,7 @@ public class RestJWTTest extends ParameterizedTest {
             PaginatedResult<Stats> stats = client.stats(null);
         } catch (AblyException e) {
             assertEquals("Unexpected code from exception", 40144, e.errorInfo.code);
-            assertEquals("Unexpected statusCode from exception", UNAUTHORIZED.code, e.errorInfo.statusCode);
+            assertEquals("Unexpected statusCode from exception", HttpCode.UNAUTHORIZED, e.errorInfo.statusCode);
             assertTrue("Error message not matching the expected one", e.errorInfo.message.contains("signature verification failed"));
         }
     }

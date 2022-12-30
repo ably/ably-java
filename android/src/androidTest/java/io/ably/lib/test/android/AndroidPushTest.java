@@ -11,7 +11,6 @@ import static org.junit.Assume.assumeTrue;
 import static io.ably.lib.test.common.Helpers.assertArrayUnorderedEquals;
 import static io.ably.lib.test.common.Helpers.assertInstanceOf;
 import static io.ably.lib.test.common.Helpers.assertSize;
-import static io.ably.lib.util.HttpCodes.OK;
 import static io.ably.lib.util.Serialisation.gson;
 
 import android.content.BroadcastReceiver;
@@ -81,6 +80,7 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.util.Base64Coder;
+import io.ably.lib.util.HttpCode;
 import io.ably.lib.util.IntentUtils;
 import io.ably.lib.util.JsonUtils;
 import io.ably.lib.util.Serialisation;
@@ -453,8 +453,8 @@ public class AndroidPushTest {
         fakeToken.addProperty("token", "fakeToken");
         body.add("deviceIdentityToken", fakeToken);
         HttpCore.Response response = new HttpCore.Response();
-        response.statusCode = OK.code;
-        response.statusLine = OK.message;
+        response.statusCode = HttpCode.OK;
+        response.statusLine = HttpCode.describe(HttpCode.OK);
         response.contentType = "application/json";
         response.body = gson.toJson(body).getBytes();
         response.contentLength = response.body.length;

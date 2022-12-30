@@ -1,7 +1,5 @@
 package io.ably.lib.rest;
 
-import static io.ably.lib.util.HttpCodes.BAD_REQUEST;
-
 import io.ably.annotation.Experimental;
 import io.ably.lib.http.AsyncHttpPaginatedQuery;
 import io.ably.lib.http.AsyncHttpScheduler;
@@ -33,6 +31,7 @@ import io.ably.lib.types.ReadOnlyMap;
 import io.ably.lib.types.Stats;
 import io.ably.lib.types.StatsReader;
 import io.ably.lib.util.Crypto;
+import io.ably.lib.util.HttpCode;
 import io.ably.lib.util.InternalMap;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
@@ -96,7 +95,7 @@ public abstract class AblyBase implements AutoCloseable {
         if(options == null) {
             String msg = "no options provided";
             Log.e(getClass().getName(), msg);
-            throw AblyException.fromErrorInfo(new ErrorInfo(msg, BAD_REQUEST.code, 40000));
+            throw AblyException.fromErrorInfo(new ErrorInfo(msg, HttpCode.BAD_REQUEST, 40000));
         }
         this.options = options;
 

@@ -1,7 +1,5 @@
 package io.ably.lib.http;
 
-import static io.ably.lib.util.HttpCodes.INTERNAL_SERVER_ERROR;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 
@@ -17,6 +15,7 @@ import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.HttpPaginatedResponse;
 import io.ably.lib.types.Param;
+import io.ably.lib.util.HttpCode;
 import io.ably.lib.util.Serialisation;
 
 public class HttpPaginatedQuery implements HttpCore.ResponseHandler<HttpPaginatedResponse> {
@@ -141,7 +140,7 @@ public class HttpPaginatedQuery implements HttpCore.ResponseHandler<HttpPaginate
         @Override
         public JsonElement[] handleResponseBody(String contentType, byte[] body) throws AblyException {
             if(!"application/json".equals(contentType)) {
-                throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected content type: " + contentType, INTERNAL_SERVER_ERROR.code, 50000));
+                throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected content type: " + contentType, HttpCode.INTERNAL_SERVER_ERROR, 50000));
             }
             JsonElement jsonBody = Serialisation.gsonParser.parse(new String(body, Charset.forName("UTF-8")));
             if(!jsonBody.isJsonArray()) {

@@ -1,9 +1,6 @@
 package io.ably.lib.test.rest;
 
 import static org.junit.Assert.assertEquals;
-import static io.ably.lib.util.HttpCodes.BAD_REQUEST;
-import static io.ably.lib.util.HttpCodes.NOT_FOUND;
-import static io.ably.lib.util.HttpCodes.UNAUTHORIZED;
 
 import com.google.gson.JsonObject;
 
@@ -34,6 +31,7 @@ import io.ably.lib.types.AsyncPaginatedResult;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
+import io.ably.lib.util.HttpCode;
 import io.ably.lib.util.JsonUtils;
 
 public class RestPushTest extends ParameterizedTest {
@@ -256,7 +254,7 @@ public class RestPushTest extends ParameterizedTest {
                 JsonUtils.object()
                         .add("data", JsonUtils.object()
                                 .add("foo", "bar")).toJson(),
-                "", BAD_REQUEST.code));
+                "", HttpCode.BAD_REQUEST));
         testCases.add(new TestCase(
                 "empty recipient",
                 new Param[]{},
@@ -310,7 +308,7 @@ public class RestPushTest extends ParameterizedTest {
         TestCases testCases = new TestCases();
 
         testCases.add(new TestCase("found", deviceDetails.id, deviceDetails, null, 0));
-        testCases.add(new TestCase("not found", "madeup", null, "not found", NOT_FOUND.code));
+        testCases.add(new TestCase("not found", "madeup", null, "not found", HttpCode.NOT_FOUND));
 
         testCases.run();
     }
@@ -432,7 +430,7 @@ public class RestPushTest extends ParameterizedTest {
                             get.apply(saved);
                             return null;
                         }
-                    }, "", BAD_REQUEST.code);
+                    }, "", HttpCode.BAD_REQUEST);
                 } finally {
                     rest.push.admin.deviceRegistrations.remove(saved);
                 }
@@ -482,7 +480,7 @@ public class RestPushTest extends ParameterizedTest {
                             rest.push.admin.deviceRegistrations.get(saved.id);
                             return null;
                         }
-                    }, "", NOT_FOUND.code);
+                    }, "", HttpCode.NOT_FOUND);
 
                     // Non-existing
                     get.apply(null);
@@ -696,7 +694,7 @@ public class RestPushTest extends ParameterizedTest {
                             get.apply(ChannelSubscription.forClientId("notpushenabled", "foo"));
                             return null;
                         }
-                    }, "not enabled", UNAUTHORIZED.code);
+                    }, "not enabled", HttpCode.UNAUTHORIZED);
                 } finally {
                     rest.push.admin.channelSubscriptions.remove(saved);
                 }

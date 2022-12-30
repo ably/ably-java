@@ -7,9 +7,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static io.ably.lib.util.HttpCodes.INTERNAL_SERVER_ERROR;
-import static io.ably.lib.util.HttpCodes.NOT_FOUND;
-import static io.ably.lib.util.HttpCodes.UNAUTHORIZED;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -51,6 +48,7 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.MessageSerializer;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
+import io.ably.lib.util.HttpCode;
 
 public class RestAuthTest extends ParameterizedTest {
 
@@ -130,7 +128,7 @@ public class RestAuthTest extends ParameterizedTest {
             fail("Unexpected success calling with Basic auth over httpCore");
         } catch (AblyException e) {
             e.printStackTrace();
-            assertEquals("Verify expected error code", e.errorInfo.statusCode, UNAUTHORIZED.code);
+            assertEquals("Verify expected error code", e.errorInfo.statusCode, HttpCode.UNAUTHORIZED);
         }
     }
 
@@ -436,7 +434,7 @@ public class RestAuthTest extends ParameterizedTest {
                 fail("auth_authURL_err: Unexpected success requesting token");
             } catch (AblyException e) {
                 assertEquals("Expected error code", e.errorInfo.code, 80019);
-                assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.statusCode, NOT_FOUND.code);
+                assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.statusCode, HttpCode.NOT_FOUND);
             }
         } catch (AblyException e) {
             e.printStackTrace();
@@ -462,7 +460,7 @@ public class RestAuthTest extends ParameterizedTest {
                 fail("auth_authURL_err: Unexpected success requesting token");
             } catch (AblyException e) {
                 assertEquals("Expected error code", e.errorInfo.code, 80019);
-                assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.statusCode, INTERNAL_SERVER_ERROR.code);
+                assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.statusCode, HttpCode.INTERNAL_SERVER_ERROR);
                 assertTrue("Expected forwarded forwarded exception", (e.getCause().getCause()) instanceof SocketTimeoutException);
             }
         } catch (AblyException e) {
@@ -903,7 +901,7 @@ public class RestAuthTest extends ParameterizedTest {
             TokenCallback authCallback = new TokenCallback() {
                 @Override
                 public Object getTokenRequest(TokenParams params) throws AblyException {
-                    throw AblyException.fromErrorInfo(new ErrorInfo("test exception", NOT_FOUND.code, 12345));
+                    throw AblyException.fromErrorInfo(new ErrorInfo("test exception", HttpCode.NOT_FOUND, 12345));
                 }
             };
 
