@@ -17,7 +17,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static io.ably.lib.util.AblyErrors.INTERNAL_ERROR;
 
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
@@ -59,6 +58,7 @@ import io.ably.lib.types.Callback;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
+import io.ably.lib.util.AblyError;
 import io.ably.lib.util.PlatformAgentProvider;
 
 /**
@@ -377,7 +377,7 @@ public class HttpTest {
             /* Verify that,
              *      - an {@code AblyException} with {@code ErrorInfo} having the 500 error from above
              */
-            ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, INTERNAL_ERROR.code);
+            ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, AblyError.INTERNAL_ERROR);
             assertThat(e, new ErrorInfoMatcher(expectedErrorInfo));
         }
 
@@ -397,7 +397,7 @@ public class HttpTest {
             /* Verify that,
              *      - an {@code AblyException} with {@code ErrorInfo} having the 500 error from above
              */
-            ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, INTERNAL_ERROR.code);
+            ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, AblyError.INTERNAL_ERROR);
             assertThat(e, new ErrorInfoMatcher(expectedErrorInfo));
         }
 
@@ -471,7 +471,7 @@ public class HttpTest {
             );
         } catch (AblyException e) {
             /* Verify that, an {@code AblyException} with {@code ErrorInfo} with the 500 error from above. */
-            ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, INTERNAL_ERROR.code);
+            ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, AblyError.INTERNAL_ERROR);
             assertThat(e, new ErrorInfoMatcher(expectedErrorInfo));
         }
 

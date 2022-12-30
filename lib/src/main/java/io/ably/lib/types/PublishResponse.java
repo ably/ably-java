@@ -1,15 +1,16 @@
 package io.ably.lib.types;
 
-import static io.ably.lib.util.AblyErrors.BATCH_ERROR;
-
 import com.google.gson.annotations.SerializedName;
-import io.ably.lib.http.HttpCore;
-import io.ably.lib.util.Log;
-import io.ably.lib.util.Serialisation;
+
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessageUnpacker;
 
 import java.io.IOException;
+
+import io.ably.lib.http.HttpCore;
+import io.ably.lib.util.AblyError;
+import io.ably.lib.util.Log;
+import io.ably.lib.util.Serialisation;
 
 /**
  * Contains the responses from a {@link PublishResponse} {@link PublishResponse#publish} request.
@@ -168,7 +169,7 @@ public class PublishResponse {
                 if(response == null) {
                     return null;
                 }
-                if(response.error != null && response.error.code != BATCH_ERROR.code) {
+                if(response.error != null && response.error.code != AblyError.BATCH_ERROR) {
                     throw AblyException.fromErrorInfo(response.error);
                 }
                 return response.batchResponse;

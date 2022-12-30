@@ -1,13 +1,13 @@
 package io.ably.lib.transport;
 
-import static io.ably.lib.util.AblyErrors.BAD_REQUEST;
+
+import java.util.Arrays;
+import java.util.Collections;
 
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
-
-import java.util.Arrays;
-import java.util.Collections;
+import io.ably.lib.util.AblyError;
 
 
 /**
@@ -48,10 +48,10 @@ public class Hosts {
         String[] tempFallbackHosts = options.fallbackHosts;
         if (options.fallbackHostsUseDefault) {
             if (options.fallbackHosts != null) {
-                throw AblyException.fromErrorInfo(new ErrorInfo("fallbackHosts and fallbackHostsUseDefault cannot both be set", BAD_REQUEST.code, 400));
+                throw AblyException.fromErrorInfo(new ErrorInfo("fallbackHosts and fallbackHostsUseDefault cannot both be set", AblyError.BAD_REQUEST, 400));
             }
             if (options.port != 0 || options.tlsPort != 0) {
-                throw AblyException.fromErrorInfo(new ErrorInfo("fallbackHostsUseDefault cannot be set when port or tlsPort are set", BAD_REQUEST.code, 400));
+                throw AblyException.fromErrorInfo(new ErrorInfo("fallbackHostsUseDefault cannot be set when port or tlsPort are set", AblyError.BAD_REQUEST, 400));
             }
             tempFallbackHosts = Defaults.HOST_FALLBACKS;
         }
@@ -67,7 +67,7 @@ public class Hosts {
             if (options.environment != null) {
                 /* TO3k2: It is never valid to provide both a restHost and environment value
                  * TO3k3: It is never valid to provide both a realtimeHost and environment value */
-                throw AblyException.fromErrorInfo(new ErrorInfo("cannot set both restHost/realtimeHost and environment options", BAD_REQUEST.code, 400));
+                throw AblyException.fromErrorInfo(new ErrorInfo("cannot set both restHost/realtimeHost and environment options", AblyError.BAD_REQUEST, 400));
             }
         } else {
             this.primaryHost = isProduction ? defaultHost : options.environment + "-" + defaultHost;

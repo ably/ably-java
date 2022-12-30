@@ -1,5 +1,29 @@
 package io.ably.lib.test.rest;
 
+import static junit.framework.TestCase.assertNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.Timeout;
+
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
 import io.ably.lib.debug.DebugOptions;
@@ -24,35 +48,7 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.MessageSerializer;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
-
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.SocketTimeoutException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
-import static junit.framework.TestCase.assertNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static io.ably.lib.util.AblyErrors.BAD_REQUEST;
-import static io.ably.lib.util.AblyErrors.CLIENT_AUTH_REQUEST_FAILED;
-import static io.ably.lib.util.AblyErrors.INVALID_CLIENT_ID;
-import static io.ably.lib.util.AblyErrors.INVALID_CREDENTIALS_AUTH;
-import static io.ably.lib.util.AblyErrors.TOKEN_EXPIRED;
-import static io.ably.lib.util.AblyErrors.UNABLE_TO_OBTAIN_CREDENTIALS;
+import io.ably.lib.util.AblyError;
 
 public class RestAuthTest extends ParameterizedTest {
 
@@ -437,7 +433,7 @@ public class RestAuthTest extends ParameterizedTest {
                 ably.auth.requestToken(null, null);
                 fail("auth_authURL_err: Unexpected success requesting token");
             } catch (AblyException e) {
-                assertEquals("Expected error code", e.errorInfo.code, CLIENT_AUTH_REQUEST_FAILED.code);
+                assertEquals("Expected error code", e.errorInfo.code, AblyError.CLIENT_AUTH_REQUEST_FAILED);
                 assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.statusCode, 404);
             }
         } catch (AblyException e) {
@@ -463,7 +459,7 @@ public class RestAuthTest extends ParameterizedTest {
                 ably.auth.requestToken(null, null);
                 fail("auth_authURL_err: Unexpected success requesting token");
             } catch (AblyException e) {
-                assertEquals("Expected error code", e.errorInfo.code, CLIENT_AUTH_REQUEST_FAILED.code);
+                assertEquals("Expected error code", e.errorInfo.code, AblyError.CLIENT_AUTH_REQUEST_FAILED);
                 assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.statusCode, 500);
                 assertTrue("Expected forwarded forwarded exception", (e.getCause().getCause()) instanceof SocketTimeoutException);
             }
@@ -919,7 +915,7 @@ public class RestAuthTest extends ParameterizedTest {
                 ably.auth.requestToken(null, null);
                 fail("auth_authURL_err: Unexpected success requesting token");
             } catch (AblyException e) {
-                assertEquals("Expected error code", e.errorInfo.code, CLIENT_AUTH_REQUEST_FAILED.code);
+                assertEquals("Expected error code", e.errorInfo.code, AblyError.CLIENT_AUTH_REQUEST_FAILED);
                 assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.code, 12345);
             }
         } catch (AblyException e) {
@@ -939,7 +935,7 @@ public class RestAuthTest extends ParameterizedTest {
             new AblyRest(opts);
             fail("authinit_no_auth: Unexpected success instantiating library");
         } catch (AblyException e) {
-            assertEquals("Verify exception thrown initialising library", e.errorInfo.code, BAD_REQUEST.code);
+            assertEquals("Verify exception thrown initialising library", e.errorInfo.code, AblyError.BAD_REQUEST);
         }
     }
 
@@ -1052,7 +1048,7 @@ public class RestAuthTest extends ParameterizedTest {
             opts.clientId = "*";
             new AblyRest(opts);
         } catch (AblyException e) {
-            assertEquals("Verify exception raised from disallowed wildcard clientId", e.errorInfo.code, BAD_REQUEST.code);
+            assertEquals("Verify exception raised from disallowed wildcard clientId", e.errorInfo.code, AblyError.BAD_REQUEST);
         }
     }
 
@@ -1076,7 +1072,7 @@ public class RestAuthTest extends ParameterizedTest {
             opts.clientId = "options clientId";
             new AblyRest(opts);
         } catch (AblyException e) {
-            assertEquals("Verify exception raised from incompatible clientIds", e.errorInfo.code, INVALID_CREDENTIALS_AUTH.code);
+            assertEquals("Verify exception raised from incompatible clientIds", e.errorInfo.code, AblyError.INVALID_CREDENTIALS_AUTH);
         }
     }
 
@@ -1237,7 +1233,7 @@ public class RestAuthTest extends ParameterizedTest {
             Channel channel = ably.channels.get("test");
             channel.publish(new Message[]{ message });
         } catch(AblyException e) {
-            assertEquals("Verify exception is raised with expected error code", e.errorInfo.code, INVALID_CLIENT_ID.code);
+            assertEquals("Verify exception is raised with expected error code", e.errorInfo.code, AblyError.INVALID_CLIENT_ID);
         }
     }
 
@@ -1803,7 +1799,7 @@ public class RestAuthTest extends ParameterizedTest {
                 fail("auth_local_token_expiry_check_sync: API call unexpectedly succeeded");
                 return;
             } catch (AblyException e) {
-                assertEquals("Verify that API request failed with credentials error", e.errorInfo.code, UNABLE_TO_OBTAIN_CREDENTIALS.code);
+                assertEquals("Verify that API request failed with credentials error", e.errorInfo.code, AblyError.UNABLE_TO_OBTAIN_CREDENTIALS);
                 for(Helpers.RawHttpRequest req : httpListener.values()) {
                     assertFalse("Verify no API request attempted", req.url.getPath().contains("stats"));
                 }
@@ -1849,8 +1845,8 @@ public class RestAuthTest extends ParameterizedTest {
                 return;
             } catch (AblyException e) {
                 assertEquals("Verify API request attempted", httpListener.size(), 1);
-                assertEquals("Verify API request failed with token expiry error", httpListener.getFirstRequest().response.headers.get("x-ably-errorcode").get(0), String.valueOf(TOKEN_EXPIRED.code));
-                assertEquals("Verify that API request failed with credentials error", e.errorInfo.code, UNABLE_TO_OBTAIN_CREDENTIALS.code);
+                assertEquals("Verify API request failed with token expiry error", httpListener.getFirstRequest().response.headers.get("x-ably-errorcode").get(0), String.valueOf(AblyError.TOKEN_EXPIRED));
+                assertEquals("Verify that API request failed with credentials error", e.errorInfo.code, AblyError.UNABLE_TO_OBTAIN_CREDENTIALS);
             }
         } catch (AblyException e) {
             e.printStackTrace();
@@ -1904,7 +1900,7 @@ public class RestAuthTest extends ParameterizedTest {
             for(Helpers.RawHttpRequest x : httpListener.values()) {
                 System.out.println(x.url.toString());
             }
-            assertEquals("Verify API request failed with token expiry error", httpListener.getFirstRequest().response.headers.get("x-ably-errorcode").get(0), String.valueOf(TOKEN_EXPIRED.code));
+            assertEquals("Verify API request failed with token expiry error", httpListener.getFirstRequest().response.headers.get("x-ably-errorcode").get(0), String.valueOf(AblyError.TOKEN_EXPIRED));
         } catch (AblyException e) {
             e.printStackTrace();
             fail("auth_local_token_expiry_check_nosync: Unexpected exception instantiating library");

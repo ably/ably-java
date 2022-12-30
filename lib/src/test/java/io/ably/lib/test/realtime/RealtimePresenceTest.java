@@ -15,14 +15,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static io.ably.lib.util.AblyErrors.BAD_REQUEST;
-import static io.ably.lib.util.AblyErrors.CHANEL_PRESENCE_RE_ENTER_ERROR;
-import static io.ably.lib.util.AblyErrors.CHANNEL_OPERATION_FAILED_INVALID_STATE;
-import static io.ably.lib.util.AblyErrors.CHANNEL_PRESENCE_ENTER_CLIENT_ID_ERROR;
-import static io.ably.lib.util.AblyErrors.CHANNEL_PRESENCE_ENTER_STATE_ERROR;
-import static io.ably.lib.util.AblyErrors.INTERNAL_ERROR;
-import static io.ably.lib.util.AblyErrors.INVALID_CLIENT_ID;
-import static io.ably.lib.util.AblyErrors.PRESENCE_STATE_BAD_SYNC;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -78,6 +70,7 @@ import io.ably.lib.types.Param;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.PresenceMessage.Action;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.util.AblyError;
 import io.ably.lib.util.Serialisation;
 
 public class RealtimePresenceTest extends ParameterizedTest {
@@ -1787,7 +1780,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 channel.presence.subscribe(new PresenceWaiter(channel));
                 fail("Presence.subscribe() shouldn't succeed");
             } catch (AblyException e) {
-                assertEquals("Verify failure error code", e.errorInfo.code, CHANNEL_OPERATION_FAILED_INVALID_STATE.code);
+                assertEquals("Verify failure error code", e.errorInfo.code, AblyError.CHANNEL_OPERATION_FAILED_INVALID_STATE);
             }
 
             /* Change token to allow channel subscription so we can enter client and verify listener was set despite the failure */
@@ -2062,7 +2055,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 channel.presence.get(false);
                 fail("Presence#get(...) should throw an exception when channel is in failed state");
             } catch(AblyException e) {
-                assertEquals(e.errorInfo.code, CHANNEL_OPERATION_FAILED_INVALID_STATE.code);
+                assertEquals(e.errorInfo.code, AblyError.CHANNEL_OPERATION_FAILED_INVALID_STATE);
                 assertEquals(e.errorInfo.message, "channel operation failed (invalid channel state)");
             }
         } finally {
@@ -2427,7 +2420,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                             public void onPresenceMessage(PresenceMessage message) {
                                 if (!disconnectedTransport[0]) {
                                     mockTransport20.lastCreatedTransport.close();
-                                    connectionManager.onTransportUnavailable(mockTransport20.lastCreatedTransport, new ErrorInfo("Mock", INTERNAL_ERROR.code));
+                                    connectionManager.onTransportUnavailable(mockTransport20.lastCreatedTransport, new ErrorInfo("Mock", AblyError.INTERNAL_ERROR));
 
                                 }
                                 disconnectedTransport[0] = true;
@@ -2714,7 +2707,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
             channel.on(ChannelEvent.update, new ChannelStateListener() {
                 @Override
                 public void onChannelStateChanged(ChannelStateChange stateChange) {
-                    if (stateChange.reason.code == CHANEL_PRESENCE_RE_ENTER_ERROR.code)
+                    if (stateChange.reason.code == AblyError.CHANEL_PRESENCE_RE_ENTER_ERROR)
                         reenterFailureReceived[0] = true;
                 }
             });
@@ -2971,21 +2964,21 @@ public class RealtimePresenceTest extends ParameterizedTest {
             channel.presence.enterClient(null, null, presenceWaiter);
             ErrorInfo enterErr = presenceWaiter.waitFor();
             assertNotNull("Verify error result", enterErr);
-            assertEquals("Verify error result with expected error code", enterErr.code, BAD_REQUEST.code);
+            assertEquals("Verify error result with expected error code", enterErr.code, AblyError.BAD_REQUEST);
 
             /* should fail with null clientId */
             presenceWaiter.reset();
             channel.presence.leaveClient(null, null, presenceWaiter);
             ErrorInfo leaveErr = presenceWaiter.waitFor();
             assertNotNull("Verify error result", leaveErr);
-            assertEquals("Verify error result with expected error code", leaveErr.code, BAD_REQUEST.code);
+            assertEquals("Verify error result with expected error code", leaveErr.code, AblyError.BAD_REQUEST);
 
             /* should fail with null clientId */
             presenceWaiter.reset();
             channel.presence.updateClient(null, null, presenceWaiter);
             ErrorInfo updateErr = presenceWaiter.waitFor();
             assertNotNull("Verify error result", updateErr);
-            assertEquals("Verify error result with expected error code", updateErr.code, BAD_REQUEST.code);
+            assertEquals("Verify error result with expected error code", updateErr.code, AblyError.BAD_REQUEST);
         } finally {
             if (ably != null)
                 ably.close();
@@ -3048,7 +3041,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 channel.presence.enter(null, null);
                 fail("Presence.enter() shouldn't succeed in detached state");
             } catch (AblyException e) {
-                assertEquals("Verify exception error code", e.errorInfo.code, CHANNEL_PRESENCE_ENTER_STATE_ERROR.code /* unable to enter presence channel (invalid channel state) */);
+                assertEquals("Verify exception error code", e.errorInfo.code, AblyError.CHANNEL_PRESENCE_ENTER_STATE_ERROR /* unable to enter presence channel (invalid channel state) */);
             }
 
         } finally {
@@ -3112,7 +3105,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 channel.presence.enterClient("testClient3");
                 fail("Presence.enterClient() shouldn't succeed in detached state");
             } catch (AblyException e) {
-                assertEquals("Verify exception error code", e.errorInfo.code, CHANNEL_PRESENCE_ENTER_STATE_ERROR.code /* unable to enter presence channel (invalid channel state) */);
+                assertEquals("Verify exception error code", e.errorInfo.code, AblyError.CHANNEL_PRESENCE_ENTER_STATE_ERROR /* unable to enter presence channel (invalid channel state) */);
             }
 
         } finally {
@@ -3273,7 +3266,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 channel2.presence.get(true);
                 fail("Presence.get() with waitForSync=true shouldn't succeed in SUSPENDED state");
             } catch (AblyException e) {
-                assertEquals("Verify correct error code for Presence.get() with waitForSync=true in SUSPENDED state", e.errorInfo.code, PRESENCE_STATE_BAD_SYNC.code);
+                assertEquals("Verify correct error code for Presence.get() with waitForSync=true in SUSPENDED state", e.errorInfo.code, AblyError.PRESENCE_STATE_BAD_SYNC);
             }
         } finally {
             if (ably1 != null)
@@ -3384,27 +3377,27 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
             completionWaiter.waitFor(1);
             assertFalse("Verify enter() failed", completionWaiter.success);
-            assertEquals("Verify error code", completionWaiter.error.code, INVALID_CLIENT_ID.code);
+            assertEquals("Verify error code", completionWaiter.error.code, AblyError.INVALID_CLIENT_ID);
 
             /* Now clientId is known to be "*" and subsequent enter() should fail immediately */
             completionWaiter.reset();
             channel.presence.enter(null, completionWaiter);
             completionWaiter.waitFor(1);
             assertFalse("Verify enter() failed", completionWaiter.success);
-            assertEquals("Verify error code", completionWaiter.error.code, CHANNEL_PRESENCE_ENTER_CLIENT_ID_ERROR.code);
+            assertEquals("Verify error code", completionWaiter.error.code, AblyError.CHANNEL_PRESENCE_ENTER_CLIENT_ID_ERROR);
 
             /* and so should update() and leave() */
             completionWaiter.reset();
             channel.presence.update(null, completionWaiter);
             completionWaiter.waitFor(1);
             assertFalse("Verify update() failed", completionWaiter.success);
-            assertEquals("Verify error code", completionWaiter.error.code, CHANNEL_PRESENCE_ENTER_CLIENT_ID_ERROR.code);
+            assertEquals("Verify error code", completionWaiter.error.code, AblyError.CHANNEL_PRESENCE_ENTER_CLIENT_ID_ERROR);
 
             completionWaiter.reset();
             channel.presence.leave(null, completionWaiter);
             completionWaiter.waitFor(1);
             assertFalse("Verify update() failed", completionWaiter.success);
-            assertEquals("Verify error code", completionWaiter.error.code, CHANNEL_PRESENCE_ENTER_CLIENT_ID_ERROR.code);
+            assertEquals("Verify error code", completionWaiter.error.code, AblyError.CHANNEL_PRESENCE_ENTER_CLIENT_ID_ERROR);
 
         } finally {
             if (ably != null)

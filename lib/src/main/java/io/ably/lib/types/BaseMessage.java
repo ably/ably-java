@@ -1,8 +1,5 @@
 package io.ably.lib.types;
 
-import static io.ably.lib.util.AblyErrors.INVALID_MESSAGE_DATA_OR_ENCODING;
-import static io.ably.lib.util.AblyErrors.UNABLE_TO_DECODE_MESSAGE;
-
 import com.davidehrmann.vcdiff.VCDiffDecoder;
 import com.davidehrmann.vcdiff.VCDiffDecoderBuilder;
 import com.google.gson.JsonElement;
@@ -10,10 +7,7 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
-import io.ably.lib.util.Base64Coder;
-import io.ably.lib.util.Crypto.EncryptingChannelCipher;
-import io.ably.lib.util.Log;
-import io.ably.lib.util.Serialisation;
+
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
@@ -23,6 +17,12 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import io.ably.lib.util.AblyError;
+import io.ably.lib.util.Base64Coder;
+import io.ably.lib.util.Crypto.EncryptingChannelCipher;
+import io.ably.lib.util.Log;
+import io.ably.lib.util.Serialisation;
 
 public class BaseMessage implements Cloneable {
     /**
@@ -105,7 +105,7 @@ public class BaseMessage implements Cloneable {
             vcdiffDecoder.decode(base, delta, decoded);
             return decoded.toByteArray();
         } catch (Throwable t) {
-            throw MessageDecodeException.fromThrowableAndErrorInfo(t, new ErrorInfo("VCDIFF delta decode failed", 400, UNABLE_TO_DECODE_MESSAGE.code));
+            throw MessageDecodeException.fromThrowableAndErrorInfo(t, new ErrorInfo("VCDIFF delta decode failed", 400, AblyError.UNABLE_TO_DECODE_MESSAGE));
         }
     }
 
@@ -192,7 +192,7 @@ public class BaseMessage implements Cloneable {
                 }
             } else if(!(data instanceof byte[])) {
                 Log.d(TAG, "Message data must be either `byte[]`, `String` or `JSONElement`; implicit coercion of other types to String is deprecated");
-                throw AblyException.fromErrorInfo(new ErrorInfo("Invalid message data or encoding", 400, INVALID_MESSAGE_DATA_OR_ENCODING.code));
+                throw AblyException.fromErrorInfo(new ErrorInfo("Invalid message data or encoding", 400, AblyError.INVALID_MESSAGE_DATA_OR_ENCODING));
             }
         }
         if (opts != null && opts.encrypted) {

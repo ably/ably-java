@@ -1,17 +1,15 @@
 package io.ably.lib.types;
 
-import static io.ably.lib.util.AblyErrors.INTERNAL_CONNECTION_ERROR;
-import static io.ably.lib.util.AblyErrors.INTERNAL_ERROR;
-
-import io.ably.lib.util.Serialisation;
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessageUnpacker;
-
-import io.ably.lib.util.Log;
 
 import java.io.IOException;
 import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
+
+import io.ably.lib.util.AblyError;
+import io.ably.lib.util.Log;
+import io.ably.lib.util.Serialisation;
 
 /**
  * A generic Ably error object that contains an Ably-specific status code, and a generic status code.
@@ -153,13 +151,13 @@ public class ErrorInfo {
         ErrorInfo errorInfo;
         if(throwable instanceof UnknownHostException
                 || throwable instanceof NoRouteToHostException) {
-            errorInfo = new ErrorInfo(throwable.getLocalizedMessage(), 500, INTERNAL_CONNECTION_ERROR.code);
+            errorInfo = new ErrorInfo(throwable.getLocalizedMessage(), 500, AblyError.INTERNAL_CONNECTION_ERROR);
         }
         else if(throwable instanceof IOException) {
-            errorInfo = new ErrorInfo(throwable.getLocalizedMessage(), 500, INTERNAL_ERROR.code);
+            errorInfo = new ErrorInfo(throwable.getLocalizedMessage(), 500, AblyError.INTERNAL_ERROR);
         }
         else {
-            errorInfo = new ErrorInfo("Unexpected exception: " + throwable.getLocalizedMessage(), INTERNAL_ERROR.code, 500);
+            errorInfo = new ErrorInfo("Unexpected exception: " + throwable.getLocalizedMessage(), AblyError.INTERNAL_ERROR, 500);
         }
 
         return errorInfo;

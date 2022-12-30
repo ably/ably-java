@@ -6,7 +6,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static io.ably.lib.util.AblyErrors.BAD_REQUEST;
 
 import org.junit.Test;
 
@@ -27,6 +26,7 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.util.AblyError;
 
 public class RealtimeRecoverTest extends ParameterizedTest {
 
@@ -407,7 +407,7 @@ public class RealtimeRecoverTest extends ParameterizedTest {
             public void send(ProtocolMessage msg) throws AblyException {
                 if (throwOnSend) {
                     exceptionsThrown++;
-                    throw AblyException.fromErrorInfo(new ErrorInfo("TestException", BAD_REQUEST.code));
+                    throw AblyException.fromErrorInfo(new ErrorInfo("TestException", AblyError.BAD_REQUEST));
                 } else {
                     super.send(msg);
                 }

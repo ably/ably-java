@@ -1,15 +1,8 @@
 package io.ably.lib.rest;
 
-import static io.ably.lib.util.AblyErrors.BAD_REQUEST;
-import static io.ably.lib.util.AblyErrors.CHANNEL_PRESENCE_ENTER_CLIENT_ID_ERROR;
-import static io.ably.lib.util.AblyErrors.CLIENT_AUTH_REQUEST_FAILED;
-import static io.ably.lib.util.AblyErrors.CONNECTION_BLOCKED_LIMIT_EXCEED;
-import static io.ably.lib.util.AblyErrors.ERROR_CLIENT_TOKEN_CALLBACK;
-import static io.ably.lib.util.AblyErrors.INCOMPATIBLE_CREDENTIALS;
-import static io.ably.lib.util.AblyErrors.INVALID_CLIENT_ID;
-import static io.ably.lib.util.AblyErrors.INVALID_CREDENTIALS_AUTH;
-import static io.ably.lib.util.AblyErrors.TOKEN_ERROR_UNSPECIFIED;
-import static io.ably.lib.util.AblyErrors.UNABLE_TO_OBTAIN_CREDENTIALS;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -20,10 +13,6 @@ import java.util.Map;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
 
 import io.ably.lib.http.HttpConstants;
 import io.ably.lib.http.HttpCore;
@@ -36,6 +25,7 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.NonRetriableTokenException;
 import io.ably.lib.types.Param;
+import io.ably.lib.util.AblyError;
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
@@ -193,7 +183,7 @@ public class Auth {
          */
         public AuthOptions(String key) throws AblyException {
             if (key == null) {
-                throw AblyException.fromErrorInfo(new ErrorInfo("key string cannot be null", BAD_REQUEST.code, 400));
+                throw AblyException.fromErrorInfo(new ErrorInfo("key string cannot be null", AblyError.BAD_REQUEST, 400));
             }
             if (key.isEmpty()) {
                 throw new IllegalArgumentException("Key string cannot be empty");
@@ -750,13 +740,13 @@ public class Auth {
                 if(authCallbackResponse instanceof TokenRequest)
                     signedTokenRequest = (TokenRequest)authCallbackResponse;
                 else
-                    throw AblyException.fromErrorInfo(new ErrorInfo("Invalid authCallback response", 400, BAD_REQUEST.code));
+                    throw AblyException.fromErrorInfo(new ErrorInfo("Invalid authCallback response", 400, AblyError.BAD_REQUEST));
             } catch (final Exception e) {
                 final boolean isTokenExceptionNonRetriable = e instanceof NonRetriableTokenException;
                 final boolean isAblyExceptionNonRetriable = e instanceof AblyException && ((AblyException) e).errorInfo.statusCode == 403;
                 final boolean shouldNotRetryAuthOperation = isTokenExceptionNonRetriable || isAblyExceptionNonRetriable;
                 final int statusCode = shouldNotRetryAuthOperation ? 403 : 401; // RSA4c & RSA4d
-                throw AblyException.fromErrorInfo(e, new ErrorInfo("authCallback failed with an exception", statusCode, CLIENT_AUTH_REQUEST_FAILED.code));
+                throw AblyException.fromErrorInfo(e, new ErrorInfo("authCallback failed with an exception", statusCode, AblyError.CLIENT_AUTH_REQUEST_FAILED));
             }
         } else if(tokenOptions.authUrl != null) {
             Log.i("Auth.requestToken()", "using token auth with auth_url");
@@ -783,13 +773,13 @@ public class Auth {
                                     return new TokenDetails(token);
                                 }
                                 if(!contentType.startsWith("application/json")) {
-                                    throw AblyException.fromErrorInfo(new ErrorInfo("Unacceptable content type from auth callback", 406, ERROR_CLIENT_TOKEN_CALLBACK.code));
+                                    throw AblyException.fromErrorInfo(new ErrorInfo("Unacceptable content type from auth callback", 406, AblyError.ERROR_CLIENT_TOKEN_CALLBACK));
                                 }
                             }
                             /* if not explicitly indicated, we will just assume it's JSON */
                             JsonElement json = Serialisation.gsonParser.parse(new String(body));
                             if(!(json instanceof JsonObject)) {
-                                throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected response type from auth callback", 406, ERROR_CLIENT_TOKEN_CALLBACK.code));
+                                throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected response type from auth callback", 406, AblyError.ERROR_CLIENT_TOKEN_CALLBACK));
                             }
                             JsonObject jsonObject = (JsonObject)json;
                             if(jsonObject.has("issued")) {
@@ -800,7 +790,7 @@ public class Auth {
                                 return TokenRequest.fromJsonElement(jsonObject);
                             }
                         } catch(JsonParseException e) {
-                            throw AblyException.fromErrorInfo(new ErrorInfo("Unable to parse response from auth callback", 406, ERROR_CLIENT_TOKEN_CALLBACK.code));
+                            throw AblyException.fromErrorInfo(new ErrorInfo("Unable to parse response from auth callback", 406, AblyError.ERROR_CLIENT_TOKEN_CALLBACK));
                         }
                     }
                 };
@@ -829,10 +819,10 @@ public class Auth {
                     authUrlResponse = HttpHelpers.getUri(ably.httpCore, tokenOptions.authUrl, tokenOptions.authHeaders, HttpUtils.flattenParams(requestParams), responseHandler);
                 }
             } catch(AblyException e) {
-                throw AblyException.fromErrorInfo(e, new ErrorInfo("authUrl failed with an exception", e.errorInfo.statusCode, CLIENT_AUTH_REQUEST_FAILED.code));
+                throw AblyException.fromErrorInfo(e, new ErrorInfo("authUrl failed with an exception", e.errorInfo.statusCode, AblyError.CLIENT_AUTH_REQUEST_FAILED));
             }
             if(authUrlResponse == null) {
-                throw AblyException.fromErrorInfo(null, new ErrorInfo("Empty response received from authUrl", 401, CLIENT_AUTH_REQUEST_FAILED.code));
+                throw AblyException.fromErrorInfo(null, new ErrorInfo("Empty response received from authUrl", 401, AblyError.CLIENT_AUTH_REQUEST_FAILED));
             }
             if(authUrlResponse instanceof TokenDetails) {
                 /* we're done */
@@ -844,7 +834,7 @@ public class Auth {
             Log.i("Auth.requestToken()", "using token auth with client-side signing");
             signedTokenRequest = createTokenRequest(params, tokenOptions);
         } else {
-            throw AblyException.fromErrorInfo(new ErrorInfo("Auth.requestToken(): options must include valid authentication parameters", 400, UNABLE_TO_OBTAIN_CREDENTIALS.code));
+            throw AblyException.fromErrorInfo(new ErrorInfo("Auth.requestToken(): options must include valid authentication parameters", 400, AblyError.UNABLE_TO_OBTAIN_CREDENTIALS));
         }
 
         String tokenPath = "/keys/" + signedTokenRequest.keyName + "/requestToken";
@@ -895,17 +885,17 @@ public class Auth {
 
         String key = options.key;
         if(key == null)
-            throw AblyException.fromErrorInfo(new ErrorInfo("No key specified", 401, INVALID_CREDENTIALS_AUTH.code));
+            throw AblyException.fromErrorInfo(new ErrorInfo("No key specified", 401, AblyError.INVALID_CREDENTIALS_AUTH));
 
         String[] keyParts = key.split(":");
         if(keyParts.length != 2)
-            throw AblyException.fromErrorInfo(new ErrorInfo("Invalid key specified", 401, INVALID_CREDENTIALS_AUTH.code));
+            throw AblyException.fromErrorInfo(new ErrorInfo("Invalid key specified", 401, AblyError.INVALID_CREDENTIALS_AUTH));
 
         String keyName = keyParts[0], keySecret = keyParts[1];
         if(request.keyName == null)
             request.keyName = keyName;
         else if(!request.keyName.equals(keyName))
-            throw AblyException.fromErrorInfo(new ErrorInfo("Incompatible keys specified", 401, INCOMPATIBLE_CREDENTIALS.code));
+            throw AblyException.fromErrorInfo(new ErrorInfo("Incompatible keys specified", 401, AblyError.INCOMPATIBLE_CREDENTIALS));
 
         /* expires */
         String ttlText = (request.ttl == 0) ? "" : String.valueOf(request.ttl);
@@ -1032,7 +1022,7 @@ public class Auth {
 
     public void onAuthError(ErrorInfo err) {
         /* we're only interested in token expiry errors */
-        if(err.code >= TOKEN_ERROR_UNSPECIFIED.code && err.code < CONNECTION_BLOCKED_LIMIT_EXCEED.code)
+        if(err.code >= AblyError.TOKEN_ERROR_UNSPECIFIED && err.code < AblyError.CONNECTION_BLOCKED_LIMIT_EXCEED)
             clearTokenDetails();
     }
 
@@ -1058,7 +1048,7 @@ public class Auth {
         if(options.clientId != null) {
             if(options.clientId.equals(WILDCARD_CLIENTID)) {
                 /* RSA7c */
-                throw AblyException.fromErrorInfo(new ErrorInfo("Disallowed wildcard clientId in ClientOptions", 400, BAD_REQUEST.code));
+                throw AblyException.fromErrorInfo(new ErrorInfo("Disallowed wildcard clientId in ClientOptions", 400, AblyError.BAD_REQUEST));
             }
             /* RSC17 */
             setClientId(options.clientId);
@@ -1104,7 +1094,7 @@ public class Auth {
         } else {
             /* no means to authenticate (Spec: RSA14) */
             Log.e("Auth()", "no authentication parameters supplied");
-            throw AblyException.fromErrorInfo(new ErrorInfo("No authentication parameters supplied", 400, BAD_REQUEST.code));
+            throw AblyException.fromErrorInfo(new ErrorInfo("No authentication parameters supplied", 400, AblyError.BAD_REQUEST));
         }
     }
 
@@ -1174,7 +1164,7 @@ public class Auth {
      * (with code 80019, statusCode 403, and cause set to the underlying cause) [...]
      */
     private boolean shouldFailConnectionDueToAuthError(ErrorInfo errorInfo) {
-        return errorInfo.statusCode == 403 && errorInfo.code == CLIENT_AUTH_REQUEST_FAILED.code;
+        return errorInfo.statusCode == 403 && errorInfo.code == AblyError.CLIENT_AUTH_REQUEST_FAILED;
     }
 
     private boolean tokenValid(TokenDetails tokenDetails) {
@@ -1250,7 +1240,7 @@ public class Auth {
             /* this signifies that the credentials permit the use of any specific clientId */
             return;
         }
-        throw AblyException.fromErrorInfo(new ErrorInfo("Unable to set different clientId from that given in options", 401, INVALID_CREDENTIALS_AUTH.code));
+        throw AblyException.fromErrorInfo(new ErrorInfo("Unable to set different clientId from that given in options", 401, AblyError.INVALID_CREDENTIALS_AUTH));
     }
 
     /**
@@ -1267,7 +1257,7 @@ public class Auth {
          * RTL6g3 */
         String msgClientId = msg.clientId;
         if(WILDCARD_CLIENTID.equals(msgClientId)) {
-            throw AblyException.fromErrorInfo(new ErrorInfo("Invalid wildcard clientId specified in message", 400, BAD_REQUEST.code));
+            throw AblyException.fromErrorInfo(new ErrorInfo("Invalid wildcard clientId specified in message", 400, AblyError.BAD_REQUEST));
         }
 
         /* Check that any clientId given in the message is compatible with the library clientId */
@@ -1277,7 +1267,7 @@ public class Auth {
                 /* RTL6g4: be lenient checking against a null clientId if we're not connected */
                 return msgClientId;
             }
-            throw AblyException.fromErrorInfo(new ErrorInfo("Incompatible clientId specified in message", 400, INVALID_CLIENT_ID.code));
+            throw AblyException.fromErrorInfo(new ErrorInfo("Incompatible clientId specified in message", 400, AblyError.INVALID_CLIENT_ID));
         }
 
         if(clientId == null || clientId.equals(WILDCARD_CLIENTID)) {
@@ -1286,7 +1276,7 @@ public class Auth {
                 return null;
             }
             /* this case only applies to presence, when allowNullClientId=false */
-            throw AblyException.fromErrorInfo(new ErrorInfo("Invalid attempt to enter with no clientId", 400, CHANNEL_PRESENCE_ENTER_CLIENT_ID_ERROR.code));
+            throw AblyException.fromErrorInfo(new ErrorInfo("Invalid attempt to enter with no clientId", 400, AblyError.CHANNEL_PRESENCE_ENTER_CLIENT_ID_ERROR));
         }
 
         /* the message is sent with no explicit clientId, but implicitly has the library clientId */

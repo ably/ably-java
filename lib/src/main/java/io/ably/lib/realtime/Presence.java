@@ -1,10 +1,16 @@
 package io.ably.lib.realtime;
 
-import static io.ably.lib.util.AblyErrors.BAD_REQUEST;
-import static io.ably.lib.util.AblyErrors.CHANEL_PRESENCE_RE_ENTER_ERROR;
-import static io.ably.lib.util.AblyErrors.CHANNEL_OPERATION_FAILED_INVALID_STATE;
-import static io.ably.lib.util.AblyErrors.CHANNEL_PRESENCE_ENTER_STATE_ERROR;
-import static io.ably.lib.util.AblyErrors.PRESENCE_STATE_BAD_SYNC;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 import io.ably.lib.http.BasePaginatedQuery;
 import io.ably.lib.http.HttpCore;
@@ -19,18 +25,8 @@ import io.ably.lib.types.Param;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.PresenceSerializer;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.util.AblyError;
 import io.ably.lib.util.Log;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Enables the presence set to be entered and subscribed to, and the historic presence set to be retrieved for a channel.
@@ -71,7 +67,7 @@ public class Presence {
      */
     public synchronized PresenceMessage[] get(Param... params) throws AblyException {
         if (channel.state == ChannelState.failed) {
-            throw AblyException.fromErrorInfo(new ErrorInfo("channel operation failed (invalid channel state)", CHANNEL_OPERATION_FAILED_INVALID_STATE.code));
+            throw AblyException.fromErrorInfo(new ErrorInfo("channel operation failed (invalid channel state)", AblyError.CHANNEL_OPERATION_FAILED_INVALID_STATE));
         }
 
         channel.attach();
@@ -308,7 +304,7 @@ public class Presence {
         if (channel.state == ChannelState.failed) {
             String errorString = String.format(Locale.ROOT, "Channel %s: subscribe in FAILED channel state", channel.name);
             Log.v(TAG, errorString);
-            ErrorInfo errorInfo = new ErrorInfo(errorString, CHANNEL_OPERATION_FAILED_INVALID_STATE.code);
+            ErrorInfo errorInfo = new ErrorInfo(errorString, AblyError.CHANNEL_OPERATION_FAILED_INVALID_STATE);
             throw AblyException.fromErrorInfo(errorInfo);
         }
         channel.attach(completionListener);
@@ -371,14 +367,14 @@ public class Presence {
                                 String errorString = String.format(Locale.ROOT, "Cannot automatically re-enter %s on channel %s (%s)",
                                         clientId, channel.name, reason.message);
                                 Log.e(TAG, errorString);
-                                channel.emitUpdate(new ErrorInfo(errorString, CHANEL_PRESENCE_RE_ENTER_ERROR.code), true);
+                                channel.emitUpdate(new ErrorInfo(errorString, AblyError.CHANEL_PRESENCE_RE_ENTER_ERROR), true);
                             }
                         });
                     } catch(AblyException e) {
                         String errorString = String.format(Locale.ROOT, "Cannot automatically re-enter %s on channel %s (%s)",
                                 clientId, channel.name, e.errorInfo.message);
                         Log.e(TAG, errorString);
-                        channel.emitUpdate(new ErrorInfo(errorString, CHANEL_PRESENCE_RE_ENTER_ERROR.code), true);
+                        channel.emitUpdate(new ErrorInfo(errorString, AblyError.CHANEL_PRESENCE_RE_ENTER_ERROR), true);
                     }
                 }
             }
@@ -605,7 +601,7 @@ public class Presence {
             String errorMessage = String.format(Locale.ROOT, "Channel %s: unable to enter presence channel (null clientId specified)", channel.name);
             Log.v(TAG, errorMessage);
             if(listener != null) {
-                listener.onError(new ErrorInfo(errorMessage, BAD_REQUEST.code));
+                listener.onError(new ErrorInfo(errorMessage, AblyError.BAD_REQUEST));
                 return;
             }
         }
@@ -664,7 +660,7 @@ public class Presence {
             String errorMessage = String.format(Locale.ROOT, "Channel %s: unable to update presence channel (null clientId specified)", channel.name);
             Log.v(TAG, errorMessage);
             if(listener != null) {
-                listener.onError(new ErrorInfo(errorMessage, BAD_REQUEST.code));
+                listener.onError(new ErrorInfo(errorMessage, AblyError.BAD_REQUEST));
                 return;
             }
         }
@@ -720,7 +716,7 @@ public class Presence {
             String errorMessage = String.format(Locale.ROOT, "Channel %s: unable to leave presence channel (null clientId specified)", channel.name);
             Log.v(TAG, errorMessage);
             if(listener != null) {
-                listener.onError(new ErrorInfo(errorMessage, BAD_REQUEST.code));
+                listener.onError(new ErrorInfo(errorMessage, AblyError.BAD_REQUEST));
                 return;
             }
         }
@@ -770,7 +766,7 @@ public class Presence {
                 connectionManager.send(message, ably.options.queueMessages, listener);
                 break;
             default:
-                throw AblyException.fromErrorInfo(new ErrorInfo("Unable to enter presence channel in detached or failed state", 400, CHANNEL_PRESENCE_ENTER_STATE_ERROR.code));
+                throw AblyException.fromErrorInfo(new ErrorInfo("Unable to enter presence channel in detached or failed state", 400, AblyError.CHANNEL_PRESENCE_ENTER_STATE_ERROR));
             }
         }
     }
@@ -994,12 +990,12 @@ public class Presence {
                 /* (RTP11d) If the Channel is in the SUSPENDED state then the get function will by default,
                  * or if waitForSync is set to true, result in an error with code 91005 and a message stating
                  * that the presence state is out of sync due to the channel being in a SUSPENDED state */
-                errorCode = PRESENCE_STATE_BAD_SYNC.code;
+                errorCode = AblyError.PRESENCE_STATE_BAD_SYNC;
                 errorMessage = String.format(Locale.ROOT, "Channel %s: presence state is out of sync due to the channel being in a SUSPENDED state", channel.name);
             } else if(syncIsComplete) {
                 return;
             } else {
-                errorCode = CHANNEL_OPERATION_FAILED_INVALID_STATE.code;
+                errorCode = AblyError.CHANNEL_OPERATION_FAILED_INVALID_STATE;
                 errorMessage = String.format(Locale.ROOT, "Channel %s: cannot get presence state because channel is in invalid state", channel.name);
             }
             Log.v(TAG, errorMessage);

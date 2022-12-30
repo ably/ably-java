@@ -5,7 +5,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static io.ably.lib.util.AblyErrors.OPERATION_NOT_PERMITTED_WITH_PROVIDED_CAPABILITY;
 
 import org.junit.Test;
 
@@ -26,6 +25,7 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.PublishResponse;
+import io.ably.lib.util.AblyError;
 
 public class RestChannelBulkPublishTest extends ParameterizedTest  {
 
@@ -262,7 +262,7 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
                     assertNull("Verify no publish error", response.error);
                 } else {
                     assertNotNull("Verify expected publish error", response.error);
-                    assertEquals("Verify expected publish error code", response.error.code, OPERATION_NOT_PERMITTED_WITH_PROVIDED_CAPABILITY.code);
+                    assertEquals("Verify expected publish error code", response.error.code, AblyError.OPERATION_NOT_PERMITTED_WITH_PROVIDED_CAPABILITY);
                 }
             }
 

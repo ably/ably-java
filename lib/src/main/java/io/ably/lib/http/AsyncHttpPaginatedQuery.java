@@ -1,6 +1,6 @@
 package io.ably.lib.http;
 
-import static io.ably.lib.util.AblyErrors.INTERNAL_ERROR;
+import com.google.gson.JsonElement;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -8,13 +8,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Matcher;
 
-import com.google.gson.JsonElement;
-
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.AsyncHttpPaginatedResponse;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
+import io.ably.lib.util.AblyError;
 
 public class AsyncHttpPaginatedQuery implements HttpCore.ResponseHandler<AsyncHttpPaginatedResponse> {
 
@@ -109,7 +108,7 @@ public class AsyncHttpPaginatedQuery implements HttpCore.ResponseHandler<AsyncHt
             /* we're expecting the format to be ./path-component?name=value&name=value... */
             Matcher urlMatch = BasePaginatedQuery.urlPattern.matcher(linkUrl);
             if(!urlMatch.matches()) {
-                callback.onError(new ErrorInfo("Unexpected link URL format", 500, INTERNAL_ERROR.code));
+                callback.onError(new ErrorInfo("Unexpected link URL format", 500, AblyError.INTERNAL_ERROR));
                 return;
             }
 

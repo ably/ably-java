@@ -1,7 +1,5 @@
 package io.ably.lib.realtime;
 
-import static io.ably.lib.util.AblyErrors.BAD_REQUEST;
-
 import java.util.Iterator;
 import java.util.Map;
 
@@ -14,6 +12,7 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ReadOnlyMap;
+import io.ably.lib.util.AblyError;
 import io.ably.lib.util.InternalMap;
 import io.ably.lib.util.Log;
 
@@ -191,7 +190,7 @@ public class AblyRealtime extends AblyRest {
             if (existingChannel != null) {
                 if (channelOptions != null) {
                     if (existingChannel.shouldReattachToSetOptions(channelOptions)) {
-                        throw AblyException.fromErrorInfo(new ErrorInfo("Channels.get() cannot be used to set channel options that would cause the channel to reattach. Please, use Channel.setOptions() instead.", BAD_REQUEST.code, 400));
+                        throw AblyException.fromErrorInfo(new ErrorInfo("Channels.get() cannot be used to set channel options that would cause the channel to reattach. Please, use Channel.setOptions() instead.", AblyError.BAD_REQUEST, 400));
                     }
                     existingChannel.setOptions(channelOptions);
                 }

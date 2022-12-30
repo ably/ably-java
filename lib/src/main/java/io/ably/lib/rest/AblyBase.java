@@ -1,19 +1,16 @@
 package io.ably.lib.rest;
 
-import static io.ably.lib.util.AblyErrors.BAD_REQUEST;
-import static io.ably.lib.util.AblyErrors.BATCH_ERROR;
-
 import io.ably.annotation.Experimental;
+import io.ably.lib.http.AsyncHttpPaginatedQuery;
 import io.ably.lib.http.AsyncHttpScheduler;
+import io.ably.lib.http.AsyncPaginatedQuery;
 import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
-import io.ably.lib.http.HttpScheduler;
-import io.ably.lib.http.SyncHttpScheduler;
-import io.ably.lib.http.AsyncHttpPaginatedQuery;
-import io.ably.lib.http.AsyncPaginatedQuery;
 import io.ably.lib.http.HttpPaginatedQuery;
+import io.ably.lib.http.HttpScheduler;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
+import io.ably.lib.http.SyncHttpScheduler;
 import io.ably.lib.platform.Platform;
 import io.ably.lib.push.Push;
 import io.ably.lib.realtime.Connection;
@@ -33,6 +30,7 @@ import io.ably.lib.types.PublishResponse;
 import io.ably.lib.types.ReadOnlyMap;
 import io.ably.lib.types.Stats;
 import io.ably.lib.types.StatsReader;
+import io.ably.lib.util.AblyError;
 import io.ably.lib.util.Crypto;
 import io.ably.lib.util.InternalMap;
 import io.ably.lib.util.Log;
@@ -97,7 +95,7 @@ public abstract class AblyBase implements AutoCloseable {
         if(options == null) {
             String msg = "no options provided";
             Log.e(getClass().getName(), msg);
-            throw AblyException.fromErrorInfo(new ErrorInfo(msg, 400, BAD_REQUEST.code));
+            throw AblyException.fromErrorInfo(new ErrorInfo(msg, 400, AblyError.BAD_REQUEST));
         }
         this.options = options;
 
@@ -415,7 +413,7 @@ public abstract class AblyBase implements AutoCloseable {
                 http.post("/messages", HttpUtils.defaultAcceptHeaders(options.useBinaryProtocol), params, requestBody, new HttpCore.ResponseHandler<PublishResponse[]>() {
                     @Override
                     public PublishResponse[] handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
-                        if(error != null && error.code != BATCH_ERROR.code) {
+                        if(error != null && error.code != AblyError.BATCH_ERROR) {
                             throw AblyException.fromErrorInfo(error);
                         }
                         return PublishResponse.getBulkPublishResponseHandler(response.statusCode).handleResponseBody(response.contentType, response.body);

@@ -1,5 +1,13 @@
 package io.ably.lib.test.rest;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import org.junit.Before;
+import org.junit.Test;
+
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth.AuthOptions;
 import io.ably.lib.rest.Auth.TokenDetails;
@@ -9,15 +17,7 @@ import io.ably.lib.test.common.Setup.Key;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Capability;
 import io.ably.lib.types.ClientOptions;
-import org.junit.Before;
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static io.ably.lib.util.AblyErrors.INVALID_PARAMETER_VALUE;
-import static io.ably.lib.util.AblyErrors.TIMESTAMP_NOT_CURRENT;
+import io.ably.lib.util.AblyError;
 
 public class RestTokenTest extends ParameterizedTest {
 
@@ -104,7 +104,7 @@ public class RestTokenTest extends ParameterizedTest {
             ably.auth.requestToken(tokenParams, null);
             fail("Expected token request rejection");
         } catch(AblyException e) {
-            assertEquals("Unexpected error code", e.errorInfo.code, TIMESTAMP_NOT_CURRENT.code);
+            assertEquals("Unexpected error code", e.errorInfo.code, AblyError.TIMESTAMP_NOT_CURRENT);
         }
     }
 
@@ -218,7 +218,7 @@ public class RestTokenTest extends ParameterizedTest {
             ably.auth.requestToken(tokenParams, null);
             fail("Expected token request rejection");
         } catch(AblyException e) {
-            assertEquals("Unexpected error code", e.errorInfo.code, INVALID_PARAMETER_VALUE.code);
+            assertEquals("Unexpected error code", e.errorInfo.code, AblyError.INVALID_PARAMETER_VALUE);
         }
     }
 
@@ -233,7 +233,7 @@ public class RestTokenTest extends ParameterizedTest {
             ably.auth.requestToken(tokenParams, null);
             fail("Expected token request rejection");
         } catch(AblyException e) {
-            assertEquals("Unexpected error code", e.errorInfo.code, INVALID_PARAMETER_VALUE.code);
+            assertEquals("Unexpected error code", e.errorInfo.code, AblyError.INVALID_PARAMETER_VALUE);
         }
     }
 

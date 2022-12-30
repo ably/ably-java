@@ -1,5 +1,14 @@
 package io.ably.lib.test.rest;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import org.junit.Test;
+
+import java.io.UnsupportedEncodingException;
+
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpHelpers;
 import io.ably.lib.rest.AblyRest;
@@ -12,15 +21,7 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.Stats;
-import org.junit.Test;
-
-import java.io.UnsupportedEncodingException;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static io.ably.lib.util.AblyErrors.INVALID_JWT_FORMAT;
+import io.ably.lib.util.AblyError;
 
 public class RestJWTTest extends ParameterizedTest {
 
@@ -59,7 +60,7 @@ public class RestJWTTest extends ParameterizedTest {
             AblyRest client = new AblyRest(options);
             PaginatedResult<Stats> stats = client.stats(null);
         } catch (AblyException e) {
-            assertEquals("Unexpected code from exception", INVALID_JWT_FORMAT.code, e.errorInfo.code);
+            assertEquals("Unexpected code from exception", AblyError.INVALID_JWT_FORMAT, e.errorInfo.code);
             assertEquals("Unexpected statusCode from exception", 401, e.errorInfo.statusCode);
             assertTrue("Error message not matching the expected one", e.errorInfo.message.contains("signature verification failed"));
         }

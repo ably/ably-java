@@ -5,9 +5,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static io.ably.lib.util.AblyErrors.CHANNEL_OPERATION_FAILED;
-import static io.ably.lib.util.AblyErrors.FAIL_RECOVER_CONNECTION_EXPIRED;
-import static io.ably.lib.util.AblyErrors.INVALID_CONNECTION_ID_BAD_FORMAT;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,6 +41,7 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.util.AblyError;
 
 public class RealtimeConnectFailTest extends ParameterizedTest {
 
@@ -325,7 +323,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             ErrorInfo fail = connectionWaiter.waitFor(ConnectionState.failed);
             assertEquals("Verify failed state is reached", ConnectionState.failed, ably.connection.state);
-            assertEquals("Verify correct error code is given", INVALID_CONNECTION_ID_BAD_FORMAT.code, fail.code);
+            assertEquals("Verify correct error code is given", AblyError.INVALID_CONNECTION_ID_BAD_FORMAT, fail.code);
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");
@@ -353,7 +351,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             ErrorInfo connectedError = connectionWaiter.waitFor(ConnectionState.connected);
             assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
             assertNotNull("Verify error is returned", connectedError);
-            assertEquals("Verify correct error code is given", FAIL_RECOVER_CONNECTION_EXPIRED.code, connectedError.code);
+            assertEquals("Verify correct error code is given", AblyError.FAIL_RECOVER_CONNECTION_EXPIRED, connectedError.code);
             assertFalse("Verify new connection id is assigned", recoverConnectionId.equals(ably.connection.key));
         } catch (AblyException e) {
             e.printStackTrace();
@@ -523,7 +521,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
                     if (numberOfAuthCalls[0]++ == 0)
                         return tokenDetails;
                     else
-                        throw AblyException.fromErrorInfo(new ErrorInfo("Auth failure", CHANNEL_OPERATION_FAILED.code));
+                        throw AblyException.fromErrorInfo(new ErrorInfo("Auth failure", AblyError.CHANNEL_OPERATION_FAILED));
                 }
             };
             ablyRealtime = new AblyRealtime(optsForRealtime);

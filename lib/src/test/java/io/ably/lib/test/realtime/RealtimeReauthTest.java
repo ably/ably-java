@@ -1,5 +1,19 @@
 package io.ably.lib.test.realtime;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.Timeout;
+
+import java.util.ArrayList;
+
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
@@ -17,21 +31,7 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Capability;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-
-import java.util.ArrayList;
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static io.ably.lib.util.AblyErrors.CLIENT_AUTH_REQUEST_FAILED;
-import static io.ably.lib.util.AblyErrors.OPERATION_NOT_PERMITTED_WITH_PROVIDED_CAPABILITY;
+import io.ably.lib.util.AblyError;
 
 /**
  * Created by VOstopolets on 8/26/16.
@@ -85,7 +85,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
             channel.attach(waiter);
             ErrorInfo error = waiter.waitFor();
             assertNotNull("Expected error", error);
-            assertEquals("Verify error code 40160 (channel is denied access)", error.code, OPERATION_NOT_PERMITTED_WITH_PROVIDED_CAPABILITY.code);
+            assertEquals("Verify error code 40160 (channel is denied access)", error.code, AblyError.OPERATION_NOT_PERMITTED_WITH_PROVIDED_CAPABILITY);
 
             /* get second token */
             tokenParams = new Auth.TokenParams();
@@ -192,7 +192,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
             long before = System.currentTimeMillis();
             ErrorInfo err = waiter.waitFor(ChannelState.failed);
             assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-            assertEquals("Verify error code", err.code, OPERATION_NOT_PERMITTED_WITH_PROVIDED_CAPABILITY.code);
+            assertEquals("Verify error code", err.code, AblyError.OPERATION_NOT_PERMITTED_WITH_PROVIDED_CAPABILITY);
             assertTrue("Expected channel to fail quickly", System.currentTimeMillis() - before < 2000);
 
             ablyRealtime.close();
@@ -362,7 +362,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
                 /* should stay in connected state, errorInfo should indicate authentication non-fatal error */
                 ConnectionStateListener.ConnectionStateChange lastChange = stateChangeHistory.get(stateChangeHistory.size()-1);
                 assertEquals("Verify connection stayed in connected state", lastChange.current, ConnectionState.connected);
-                assertEquals("Verify authentication failure error code", lastChange.reason.code, CLIENT_AUTH_REQUEST_FAILED.code);
+                assertEquals("Verify authentication failure error code", lastChange.reason.code, AblyError.CLIENT_AUTH_REQUEST_FAILED);
             }
 
             ablyRealtime.close();

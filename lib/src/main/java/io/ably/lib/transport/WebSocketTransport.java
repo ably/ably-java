@@ -1,14 +1,11 @@
 package io.ably.lib.transport;
 
-import static io.ably.lib.util.AblyErrors.CONNECTION_FAILED;
-
-import io.ably.lib.http.HttpUtils;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.Param;
-import io.ably.lib.types.ProtocolMessage;
-import io.ably.lib.types.ProtocolSerializer;
-import io.ably.lib.util.Log;
+import org.java_websocket.WebSocket;
+import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.exceptions.WebsocketNotConnectedException;
+import org.java_websocket.framing.CloseFrame;
+import org.java_websocket.framing.Framedata;
+import org.java_websocket.handshake.ServerHandshake;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -20,12 +17,14 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSession;
 
-import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.exceptions.WebsocketNotConnectedException;
-import org.java_websocket.framing.CloseFrame;
-import org.java_websocket.framing.Framedata;
-import org.java_websocket.handshake.ServerHandshake;
-import org.java_websocket.WebSocket;
+import io.ably.lib.http.HttpUtils;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Param;
+import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.types.ProtocolSerializer;
+import io.ably.lib.util.AblyError;
+import io.ably.lib.util.Log;
 
 public class WebSocketTransport implements ITransport {
 
@@ -256,7 +255,7 @@ public class WebSocketTransport implements ITransport {
         @Override
         public void onError(final Exception e) {
             Log.e(TAG, "Connection error ", e);
-            connectListener.onTransportUnavailable(WebSocketTransport.this, new ErrorInfo(e.getMessage(), 503, CONNECTION_FAILED.code));
+            connectListener.onTransportUnavailable(WebSocketTransport.this, new ErrorInfo(e.getMessage(), 503, AblyError.CONNECTION_FAILED));
         }
 
         @Override
