@@ -13,7 +13,7 @@ import io.ably.lib.types.AsyncHttpPaginatedResponse;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
-import io.ably.lib.util.AblyError;
+import io.ably.lib.util.AblyErrorCode;
 
 public class AsyncHttpPaginatedQuery implements HttpCore.ResponseHandler<AsyncHttpPaginatedResponse> {
 
@@ -108,7 +108,7 @@ public class AsyncHttpPaginatedQuery implements HttpCore.ResponseHandler<AsyncHt
             /* we're expecting the format to be ./path-component?name=value&name=value... */
             Matcher urlMatch = BasePaginatedQuery.urlPattern.matcher(linkUrl);
             if(!urlMatch.matches()) {
-                callback.onError(new ErrorInfo("Unexpected link URL format", 500, AblyError.INTERNAL_ERROR));
+                callback.onError(new ErrorInfo("Unexpected link URL format", 500, AblyErrorCode.INTERNAL_ERROR));
                 return;
             }
 

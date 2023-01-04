@@ -245,7 +245,7 @@ public class Crypto {
         else if (cipherParams instanceof CipherParams)
             nonNullParams = (CipherParams)cipherParams;
         else
-            throw AblyException.fromErrorInfo(new ErrorInfo("ChannelOptions not supported", 400, AblyError.BAD_REQUEST));
+            throw AblyException.fromErrorInfo(new ErrorInfo("ChannelOptions not supported", 400, AblyErrorCode.BAD_REQUEST));
 
         return new ChannelCipherSet() {
             private final EncryptingChannelCipher encipher = new EncryptingCBCCipher(nonNullParams);

@@ -31,7 +31,7 @@ import io.ably.lib.types.ConnectionDetails;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolSerializer;
-import io.ably.lib.util.AblyError;
+import io.ably.lib.util.AblyErrorCode;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
 import io.ably.lib.util.TimerUtil;
@@ -67,12 +67,12 @@ public class ConnectionManager implements ConnectListener {
      * default errors
      ***********************************/
 
-    static ErrorInfo REASON_CLOSED = new ErrorInfo("Can't attach when not in an active state", 200, AblyError.NO_ERROR);
-    static ErrorInfo REASON_DISCONNECTED = new ErrorInfo("Connection temporarily unavailable", 503, AblyError.DISCONNECTED);
-    static ErrorInfo REASON_SUSPENDED = new ErrorInfo("Connection unavailable", 503, AblyError.CONNECTION_SUSPENDED);
-    static ErrorInfo REASON_FAILED = new ErrorInfo("Connection failed", 400, AblyError.CONNECTION_FAILED);
-    static ErrorInfo REASON_REFUSED = new ErrorInfo("Access refused", 401, AblyError.UNAUTHORIZED);
-    static ErrorInfo REASON_TOO_BIG = new ErrorInfo("Connection closed; message too large", 400, AblyError.BAD_REQUEST);
+    static ErrorInfo REASON_CLOSED = new ErrorInfo("Can't attach when not in an active state", 200, AblyErrorCode.NO_ERROR);
+    static ErrorInfo REASON_DISCONNECTED = new ErrorInfo("Connection temporarily unavailable", 503, AblyErrorCode.DISCONNECTED);
+    static ErrorInfo REASON_SUSPENDED = new ErrorInfo("Connection unavailable", 503, AblyErrorCode.CONNECTION_SUSPENDED);
+    static ErrorInfo REASON_FAILED = new ErrorInfo("Connection failed", 400, AblyErrorCode.CONNECTION_FAILED);
+    static ErrorInfo REASON_REFUSED = new ErrorInfo("Access refused", 401, AblyErrorCode.UNAUTHORIZED);
+    static ErrorInfo REASON_TOO_BIG = new ErrorInfo("Connection closed; message too large", 400, AblyErrorCode.BAD_REQUEST);
 
     /**
      * Methods on the channels map owned by the {@link AblyRealtime} instance
@@ -851,7 +851,7 @@ public class ConnectionManager implements ConnectListener {
     public void ping(final CompletionListener listener) {
         HeartbeatWaiter waiter = new HeartbeatWaiter(listener);
         if(currentState.state != ConnectionState.connected) {
-            waiter.onError(new ErrorInfo("Unable to ping service; not connected", AblyError.BAD_REQUEST, 400));
+            waiter.onError(new ErrorInfo("Unable to ping service; not connected", AblyErrorCode.BAD_REQUEST, 400));
             return;
         }
         synchronized(heartbeatWaiters) {
@@ -908,7 +908,7 @@ public class ConnectionManager implements ConnectListener {
                 pending = clear();
             }
             if(pending) {
-                onError(new ErrorInfo("Timed out waiting for heartbeat response", AblyError.INTERNAL_ERROR, 500));
+                onError(new ErrorInfo("Timed out waiting for heartbeat response", AblyErrorCode.INTERNAL_ERROR, 500));
             } else {
                 onSuccess();
             }
@@ -950,7 +950,7 @@ public class ConnectionManager implements ConnectListener {
                 case connecting:
                     /* Close the connecting transport. */
                     Log.v(TAG, "onAuthUpdated: closing connecting transport");
-                    ErrorInfo disconnectError = new ErrorInfo("Aborting incomplete connection with superseded auth params", 503, AblyError.DISCONNECTED);
+                    ErrorInfo disconnectError = new ErrorInfo("Aborting incomplete connection with superseded auth params", 503, AblyErrorCode.DISCONNECTED);
                     requestState(new StateIndication(ConnectionState.disconnected, disconnectError, null, null));
                     /* Start a new connection attempt. */
                     connect();
@@ -1024,7 +1024,7 @@ public class ConnectionManager implements ConnectListener {
             case connecting:
                 /* Close the connecting transport. */
                 Log.v(TAG, "onAuthUpdated: closing connecting transport");
-                ErrorInfo disconnectError = new ErrorInfo("Aborting incomplete connection with superseded auth params", 503, AblyError.DISCONNECTED);
+                ErrorInfo disconnectError = new ErrorInfo("Aborting incomplete connection with superseded auth params", 503, AblyErrorCode.DISCONNECTED);
                 requestState(new StateIndication(ConnectionState.disconnected, disconnectError, null, null));
                 /* Start a new connection attempt. */
                 connect();
@@ -1211,7 +1211,7 @@ public class ConnectionManager implements ConnectListener {
              * pending message queue (which fails the messages currently in
              * there). */
             pendingMessages.reset(msgSerial,
-                    new ErrorInfo("Connection resume failed", 500, AblyError.INTERNAL_ERROR));
+                    new ErrorInfo("Connection resume failed", 500, AblyErrorCode.INTERNAL_ERROR));
             msgSerial = 0;
         }
         connection.id = message.connectionId;
@@ -1656,7 +1656,7 @@ public class ConnectionManager implements ConnectListener {
             }
             if(nackMessages != null) {
                 if(reason == null)
-                    reason = new ErrorInfo("Unknown error", 500, AblyError.INTERNAL_ERROR);
+                    reason = new ErrorInfo("Unknown error", 500, AblyErrorCode.INTERNAL_ERROR);
                 for(QueuedMessage msg : nackMessages) {
                     try {
                         if(msg.listener != null)
@@ -1695,7 +1695,7 @@ public class ConnectionManager implements ConnectListener {
             }
             if(nackMessages != null) {
                 if(reason == null)
-                    reason = new ErrorInfo("Unknown error", 500, AblyError.INTERNAL_ERROR);
+                    reason = new ErrorInfo("Unknown error", 500, AblyErrorCode.INTERNAL_ERROR);
                 for(QueuedMessage msg : nackMessages) {
                     try {
                         if(msg.listener != null)
@@ -1776,7 +1776,7 @@ public class ConnectionManager implements ConnectListener {
      ******************/
 
     private boolean isTokenError(ErrorInfo err) {
-        return ((err.code >= AblyError.TOKEN_ERROR_UNSPECIFIED) && (err.code < AblyError.CONNECTION_BLOCKED_LIMIT_EXCEED)) || (err.code == AblyError.CLIENT_AUTH_REQUEST_FAILED && err.statusCode == 401);
+        return ((err.code >= AblyErrorCode.TOKEN_ERROR_UNSPECIFIED) && (err.code < AblyErrorCode.CONNECTION_BLOCKED_LIMIT_EXCEED)) || (err.code == AblyErrorCode.CLIENT_AUTH_REQUEST_FAILED && err.statusCode == 401);
     }
 
     private boolean isFatalError(ErrorInfo err) {
@@ -1784,7 +1784,7 @@ public class ConnectionManager implements ConnectListener {
             /* token errors are assumed to be recoverable */
             if(isTokenError(err)) { return false; }
             /* 400 codes assumed to be fatal */
-            if((err.code >= AblyError.BAD_REQUEST) && (err.code < AblyError.INTERNAL_ERROR)) { return true; }
+            if((err.code >= AblyErrorCode.BAD_REQUEST) && (err.code < AblyErrorCode.INTERNAL_ERROR)) { return true; }
         }
         /* otherwise, use statusCode */
         if(err.statusCode != 0 && err.statusCode < 500) { return true; }

@@ -25,7 +25,7 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.PublishResponse;
-import io.ably.lib.util.AblyError;
+import io.ably.lib.util.AblyErrorCode;
 
 public class RestChannelBulkPublishTest extends ParameterizedTest  {
 
@@ -262,7 +262,7 @@ public class RestChannelBulkPublishTest extends ParameterizedTest  {
                     assertNull("Verify no publish error", response.error);
                 } else {
                     assertNotNull("Verify expected publish error", response.error);
-                    assertEquals("Verify expected publish error code", response.error.code, AblyError.OPERATION_NOT_PERMITTED_WITH_PROVIDED_CAPABILITY);
+                    assertEquals("Verify expected publish error code", response.error.code, AblyErrorCode.OPERATION_NOT_PERMITTED_WITH_PROVIDED_CAPABILITY);
                 }
             }
 

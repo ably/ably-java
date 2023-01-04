@@ -18,7 +18,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import io.ably.lib.util.AblyError;
+import io.ably.lib.util.AblyErrorCode;
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Crypto.EncryptingChannelCipher;
 import io.ably.lib.util.Log;
@@ -105,7 +105,7 @@ public class BaseMessage implements Cloneable {
             vcdiffDecoder.decode(base, delta, decoded);
             return decoded.toByteArray();
         } catch (Throwable t) {
-            throw MessageDecodeException.fromThrowableAndErrorInfo(t, new ErrorInfo("VCDIFF delta decode failed", 400, AblyError.UNABLE_TO_DECODE_MESSAGE));
+            throw MessageDecodeException.fromThrowableAndErrorInfo(t, new ErrorInfo("VCDIFF delta decode failed", 400, AblyErrorCode.UNABLE_TO_DECODE_MESSAGE));
         }
     }
 
@@ -192,7 +192,7 @@ public class BaseMessage implements Cloneable {
                 }
             } else if(!(data instanceof byte[])) {
                 Log.d(TAG, "Message data must be either `byte[]`, `String` or `JSONElement`; implicit coercion of other types to String is deprecated");
-                throw AblyException.fromErrorInfo(new ErrorInfo("Invalid message data or encoding", 400, AblyError.INVALID_MESSAGE_DATA_OR_ENCODING));
+                throw AblyException.fromErrorInfo(new ErrorInfo("Invalid message data or encoding", 400, AblyErrorCode.INVALID_MESSAGE_DATA_OR_ENCODING));
             }
         }
         if (opts != null && opts.encrypted) {

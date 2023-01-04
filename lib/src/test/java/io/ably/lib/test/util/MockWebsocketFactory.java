@@ -6,7 +6,7 @@ import io.ably.lib.transport.WebSocketTransport;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
-import io.ably.lib.util.AblyError;
+import io.ably.lib.util.AblyErrorCode;
 
 /**
  * Websocket factory that creates transport with capability of modifying the behaviour of send() and other calls
@@ -126,7 +126,7 @@ public class MockWebsocketFactory implements ITransport.Factory {
                     break;
                 case fail:
                     if (messageFilter == null || messageFilter.matches(msg)) {
-                        throw AblyException.fromErrorInfo(new ErrorInfo("Mock", AblyError.BAD_REQUEST));
+                        throw AblyException.fromErrorInfo(new ErrorInfo("Mock", AblyErrorCode.BAD_REQUEST));
                     } else {
                         super.send(msg);
                     }
@@ -144,13 +144,13 @@ public class MockWebsocketFactory implements ITransport.Factory {
                         super.connect(connectListener);
                     } else {
                         System.out.println("MockWebsocketTransport: disallowing " + host);
-                        connectListener.onTransportUnavailable(this, new ErrorInfo("MockWebsocketTransport: connection disallowed by hostFilter", 500, AblyError.INTERNAL_ERROR));
+                        connectListener.onTransportUnavailable(this, new ErrorInfo("MockWebsocketTransport: connection disallowed by hostFilter", 500, AblyErrorCode.INTERNAL_ERROR));
                     }
                     break;
                 case fail:
                     if (hostFilter == null || hostFilter.matches(host)) {
                         System.out.println("MockWebsocketTransport: failing " + host);
-                        connectListener.onTransportUnavailable(this, new ErrorInfo("MockWebsocketTransport: connection failed by hostFilter", 500, AblyError.INTERNAL_ERROR));
+                        connectListener.onTransportUnavailable(this, new ErrorInfo("MockWebsocketTransport: connection failed by hostFilter", 500, AblyErrorCode.INTERNAL_ERROR));
                     } else {
                         System.out.println("MockWebsocketTransport: not failing " + host);
                         super.connect(connectListener);

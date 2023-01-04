@@ -23,7 +23,7 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolSerializer;
-import io.ably.lib.util.AblyError;
+import io.ably.lib.util.AblyErrorCode;
 import io.ably.lib.util.Log;
 
 public class WebSocketTransport implements ITransport {
@@ -255,7 +255,7 @@ public class WebSocketTransport implements ITransport {
         @Override
         public void onError(final Exception e) {
             Log.e(TAG, "Connection error ", e);
-            connectListener.onTransportUnavailable(WebSocketTransport.this, new ErrorInfo(e.getMessage(), 503, AblyError.CONNECTION_FAILED));
+            connectListener.onTransportUnavailable(WebSocketTransport.this, new ErrorInfo(e.getMessage(), 503, AblyErrorCode.CONNECTION_FAILED));
         }
 
         @Override

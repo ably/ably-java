@@ -11,7 +11,7 @@ import java.util.WeakHashMap;
 
 import io.ably.lib.transport.NetworkConnectivity;
 import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.util.AblyError;
+import io.ably.lib.util.AblyErrorCode;
 
 public class AndroidNetworkConnectivity extends NetworkConnectivity {
 
@@ -67,7 +67,7 @@ public class AndroidNetworkConnectivity extends NetworkConnectivity {
             if(ni != null && ni.getState() == NetworkInfo.State.CONNECTED) {
                 notifyNetworkAvailable();
             } else if(intent.getBooleanExtra(ConnectivityManager.EXTRA_NO_CONNECTIVITY,Boolean.FALSE)) {
-                notifyNetworkUnavailable(new ErrorInfo("No network connection available", 503, AblyError.DISCONNECTED));
+                notifyNetworkUnavailable(new ErrorInfo("No network connection available", 503, AblyErrorCode.DISCONNECTED));
             }
         }
     }

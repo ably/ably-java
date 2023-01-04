@@ -15,7 +15,7 @@ import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.HttpPaginatedResponse;
 import io.ably.lib.types.Param;
-import io.ably.lib.util.AblyError;
+import io.ably.lib.util.AblyErrorCode;
 import io.ably.lib.util.Serialisation;
 
 public class HttpPaginatedQuery implements HttpCore.ResponseHandler<HttpPaginatedResponse> {
@@ -116,7 +116,7 @@ public class HttpPaginatedQuery implements HttpCore.ResponseHandler<HttpPaginate
                 } catch(UnsupportedEncodingException uee) {}
                 return exec(params);
             }
-            throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected link URL format", 500, AblyError.INTERNAL_ERROR));
+            throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected link URL format", 500, AblyErrorCode.INTERNAL_ERROR));
         }
 
         private String relFirst, relCurrent, relNext;
@@ -140,7 +140,7 @@ public class HttpPaginatedQuery implements HttpCore.ResponseHandler<HttpPaginate
         @Override
         public JsonElement[] handleResponseBody(String contentType, byte[] body) throws AblyException {
             if(!"application/json".equals(contentType)) {
-                throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected content type: " + contentType, 500, AblyError.INTERNAL_ERROR));
+                throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected content type: " + contentType, 500, AblyErrorCode.INTERNAL_ERROR));
             }
             JsonElement jsonBody = Serialisation.gsonParser.parse(new String(body, Charset.forName("UTF-8")));
             if(!jsonBody.isJsonArray()) {

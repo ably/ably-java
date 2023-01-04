@@ -46,7 +46,7 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.ProtocolMessage;
-import io.ably.lib.util.AblyError;
+import io.ably.lib.util.AblyErrorCode;
 
 public class RealtimeChannelTest extends ParameterizedTest {
 
@@ -240,7 +240,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
                 ably.channels.get(channelName, options);
             } catch (AblyException e) {
                 assertEquals("Verify error code", 400, e.errorInfo.code);
-                assertEquals("Verify error status code", AblyError.BAD_REQUEST, e.errorInfo.statusCode);
+                assertEquals("Verify error status code", AblyErrorCode.BAD_REQUEST, e.errorInfo.statusCode);
                 assertTrue("Verify error message", e.errorInfo.message.contains("setOptions"));
             }
         } catch (AblyException e) {

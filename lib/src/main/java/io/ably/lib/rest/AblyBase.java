@@ -30,7 +30,7 @@ import io.ably.lib.types.PublishResponse;
 import io.ably.lib.types.ReadOnlyMap;
 import io.ably.lib.types.Stats;
 import io.ably.lib.types.StatsReader;
-import io.ably.lib.util.AblyError;
+import io.ably.lib.util.AblyErrorCode;
 import io.ably.lib.util.Crypto;
 import io.ably.lib.util.InternalMap;
 import io.ably.lib.util.Log;
@@ -95,7 +95,7 @@ public abstract class AblyBase implements AutoCloseable {
         if(options == null) {
             String msg = "no options provided";
             Log.e(getClass().getName(), msg);
-            throw AblyException.fromErrorInfo(new ErrorInfo(msg, 400, AblyError.BAD_REQUEST));
+            throw AblyException.fromErrorInfo(new ErrorInfo(msg, 400, AblyErrorCode.BAD_REQUEST));
         }
         this.options = options;
 
@@ -413,7 +413,7 @@ public abstract class AblyBase implements AutoCloseable {
                 http.post("/messages", HttpUtils.defaultAcceptHeaders(options.useBinaryProtocol), params, requestBody, new HttpCore.ResponseHandler<PublishResponse[]>() {
                     @Override
                     public PublishResponse[] handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
-                        if(error != null && error.code != AblyError.BATCH_ERROR) {
+                        if(error != null && error.code != AblyErrorCode.BATCH_ERROR) {
                             throw AblyException.fromErrorInfo(error);
                         }
                         return PublishResponse.getBulkPublishResponseHandler(response.statusCode).handleResponseBody(response.contentType, response.body);

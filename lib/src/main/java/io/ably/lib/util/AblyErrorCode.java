@@ -1,6 +1,6 @@
 package io.ably.lib.util;
 
-public class AblyError {
+public class AblyErrorCode {
     public static final int NO_ERROR = 10000; //No error
 
     public static final int BAD_REQUEST = 40000; // "bad request"

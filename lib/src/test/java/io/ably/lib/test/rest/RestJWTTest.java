@@ -21,7 +21,7 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.Stats;
-import io.ably.lib.util.AblyError;
+import io.ably.lib.util.AblyErrorCode;
 
 public class RestJWTTest extends ParameterizedTest {
 
@@ -60,7 +60,7 @@ public class RestJWTTest extends ParameterizedTest {
             AblyRest client = new AblyRest(options);
             PaginatedResult<Stats> stats = client.stats(null);
         } catch (AblyException e) {
-            assertEquals("Unexpected code from exception", AblyError.INVALID_JWT_FORMAT, e.errorInfo.code);
+            assertEquals("Unexpected code from exception", AblyErrorCode.INVALID_JWT_FORMAT, e.errorInfo.code);
             assertEquals("Unexpected statusCode from exception", 401, e.errorInfo.statusCode);
             assertTrue("Error message not matching the expected one", e.errorInfo.message.contains("signature verification failed"));
         }

@@ -26,7 +26,7 @@ import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.RegistrationToken;
-import io.ably.lib.util.AblyError;
+import io.ably.lib.util.AblyErrorCode;
 import io.ably.lib.util.IntentUtils;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.ParamsUtils;
@@ -309,7 +309,7 @@ public class ActivationStateMachine {
                             JsonObject deviceIdentityTokenJson = response.getAsJsonObject("deviceIdentityToken");
                             if(deviceIdentityTokenJson == null) {
                                 Log.e(TAG, "invalid device registration response (no deviceIdentityToken); deviceId = " + device.id);
-                                machine.handleEvent(new ActivationStateMachine.GettingDeviceRegistrationFailed(new ErrorInfo("Invalid deviceIdentityToken in response", AblyError.BAD_REQUEST, 400)));
+                                machine.handleEvent(new ActivationStateMachine.GettingDeviceRegistrationFailed(new ErrorInfo("Invalid deviceIdentityToken in response", AblyErrorCode.BAD_REQUEST, 400)));
                                 return;
                             }
                             JsonPrimitive responseClientIdJson = response.getAsJsonPrimitive("clientId");

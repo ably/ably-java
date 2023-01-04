@@ -8,7 +8,7 @@ import org.msgpack.core.MessageUnpacker;
 import java.io.IOException;
 
 import io.ably.lib.http.HttpCore;
-import io.ably.lib.util.AblyError;
+import io.ably.lib.util.AblyErrorCode;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 
@@ -169,7 +169,7 @@ public class PublishResponse {
                 if(response == null) {
                     return null;
                 }
-                if(response.error != null && response.error.code != AblyError.BATCH_ERROR) {
+                if(response.error != null && response.error.code != AblyErrorCode.BATCH_ERROR) {
                     throw AblyException.fromErrorInfo(response.error);
                 }
                 return response.batchResponse;

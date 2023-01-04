@@ -58,7 +58,7 @@ import io.ably.lib.types.Callback;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
-import io.ably.lib.util.AblyError;
+import io.ably.lib.util.AblyErrorCode;
 import io.ably.lib.util.PlatformAgentProvider;
 
 /**
@@ -377,7 +377,7 @@ public class HttpTest {
             /* Verify that,
              *      - an {@code AblyException} with {@code ErrorInfo} having the 500 error from above
              */
-            ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, AblyError.INTERNAL_ERROR);
+            ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, AblyErrorCode.INTERNAL_ERROR);
             assertThat(e, new ErrorInfoMatcher(expectedErrorInfo));
         }
 
@@ -397,7 +397,7 @@ public class HttpTest {
             /* Verify that,
              *      - an {@code AblyException} with {@code ErrorInfo} having the 500 error from above
              */
-            ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, AblyError.INTERNAL_ERROR);
+            ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, AblyErrorCode.INTERNAL_ERROR);
             assertThat(e, new ErrorInfoMatcher(expectedErrorInfo));
         }
 
@@ -471,7 +471,7 @@ public class HttpTest {
             );
         } catch (AblyException e) {
             /* Verify that, an {@code AblyException} with {@code ErrorInfo} with the 500 error from above. */
-            ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, AblyError.INTERNAL_ERROR);
+            ErrorInfo expectedErrorInfo = new ErrorInfo("Internal Server Error", 500, AblyErrorCode.INTERNAL_ERROR);
             assertThat(e, new ErrorInfoMatcher(expectedErrorInfo));
         }
 
