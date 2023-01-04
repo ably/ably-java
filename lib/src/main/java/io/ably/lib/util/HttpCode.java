@@ -71,8 +71,8 @@ public class HttpCode {
     public static final int NOT_EXTENDED = 510;
     public static final int NETWORK_AUTHENTICATION_REQUIRED = 511;
 
-    public static String describe(int errorCode) {
-        switch (errorCode) {
+    public static String describe(int httpCode) {
+        switch (httpCode) {
             case CONTINUE:
                 return "Continue";
             case SWITCHING_PROTOCOLS:
