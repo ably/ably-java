@@ -41,6 +41,7 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.util.AblyErrorCode;
 
 public class RealtimeConnectFailTest extends ParameterizedTest {
 
@@ -322,7 +323,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             ErrorInfo fail = connectionWaiter.waitFor(ConnectionState.failed);
             assertEquals("Verify failed state is reached", ConnectionState.failed, ably.connection.state);
-            assertEquals("Verify correct error code is given", 80018, fail.code);
+            assertEquals("Verify correct error code is given", AblyErrorCode.INVALID_CONNECTION_ID_BAD_FORMAT, fail.code);
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");
@@ -350,7 +351,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             ErrorInfo connectedError = connectionWaiter.waitFor(ConnectionState.connected);
             assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
             assertNotNull("Verify error is returned", connectedError);
-            assertEquals("Verify correct error code is given", 80008, connectedError.code);
+            assertEquals("Verify correct error code is given", AblyErrorCode.FAIL_RECOVER_CONNECTION_EXPIRED, connectedError.code);
             assertFalse("Verify new connection id is assigned", recoverConnectionId.equals(ably.connection.key));
         } catch (AblyException e) {
             e.printStackTrace();
@@ -520,7 +521,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
                     if (numberOfAuthCalls[0]++ == 0)
                         return tokenDetails;
                     else
-                        throw AblyException.fromErrorInfo(new ErrorInfo("Auth failure", 90000));
+                        throw AblyException.fromErrorInfo(new ErrorInfo("Auth failure", AblyErrorCode.CHANNEL_OPERATION_FAILED));
                 }
             };
             ablyRealtime = new AblyRealtime(optsForRealtime);

@@ -7,15 +7,17 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.util.Map;
-import java.util.concurrent.TimeoutException;
+import com.google.gson.JsonElement;
+
+import net.jodah.concurrentunit.Waiter;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import com.google.gson.JsonElement;
+import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.http.HttpConstants;
@@ -33,7 +35,7 @@ import io.ably.lib.types.HttpPaginatedResponse;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
-import net.jodah.concurrentunit.Waiter;
+import io.ably.lib.util.AblyErrorCode;
 
 /* Spec: RSC19 */
 public class RestRequestTest extends ParameterizedTest {
@@ -739,6 +741,6 @@ public class RestRequestTest extends ParameterizedTest {
         assertFalse("Verify failure is indicated", publishResponse.success);
         assertNotNull("Verify error is indicated", publishResponse.errorMessage);
         assertEquals("Verify statusCode is present", publishResponse.statusCode, 400);
-        assertEquals("Verify errorCode is present", publishResponse.errorCode, 40006);
+        assertEquals("Verify errorCode is present", publishResponse.errorCode, AblyErrorCode.INVALID_CONNECTION_ID);
     }
 }

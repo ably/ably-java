@@ -1,5 +1,8 @@
 package io.ably.lib.http;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
@@ -7,14 +10,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Matcher;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.HttpPaginatedResponse;
 import io.ably.lib.types.Param;
+import io.ably.lib.util.AblyErrorCode;
 import io.ably.lib.util.Serialisation;
 
 public class HttpPaginatedQuery implements HttpCore.ResponseHandler<HttpPaginatedResponse> {
@@ -115,9 +116,9 @@ public class HttpPaginatedQuery implements HttpCore.ResponseHandler<HttpPaginate
                 } catch(UnsupportedEncodingException uee) {}
                 return exec(params);
             }
-            throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected link URL format", 500, 50000));
+            throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected link URL format", 500, AblyErrorCode.INTERNAL_ERROR));
         }
-    
+
         private String relFirst, relCurrent, relNext;
 
         @Override
@@ -139,7 +140,7 @@ public class HttpPaginatedQuery implements HttpCore.ResponseHandler<HttpPaginate
         @Override
         public JsonElement[] handleResponseBody(String contentType, byte[] body) throws AblyException {
             if(!"application/json".equals(contentType)) {
-                throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected content type: " + contentType, 500, 50000));
+                throw AblyException.fromErrorInfo(new ErrorInfo("Unexpected content type: " + contentType, 500, AblyErrorCode.INTERNAL_ERROR));
             }
             JsonElement jsonBody = Serialisation.gsonParser.parse(new String(body, Charset.forName("UTF-8")));
             if(!jsonBody.isJsonArray()) {

@@ -1,8 +1,10 @@
 package io.ably.lib.http;
 
+import com.google.gson.JsonParseException;
+
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.net.HttpURLConnection;
@@ -13,8 +15,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import com.google.gson.JsonParseException;
 
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.debug.DebugOptions.RawHttpListener;
@@ -27,6 +27,7 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ErrorResponse;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProxyOptions;
+import io.ably.lib.util.AblyErrorCode;
 import io.ably.lib.util.AgentHeaderCreator;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
@@ -51,14 +52,14 @@ public class HttpCore {
         this.proxyOptions = options.proxy;
         if(proxyOptions != null) {
             String proxyHost = proxyOptions.host;
-            if(proxyHost == null) { throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy host", 40000, 400)); }
+            if(proxyHost == null) { throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy host", AblyErrorCode.BAD_REQUEST, 400)); }
             int proxyPort = proxyOptions.port;
-            if(proxyPort == 0) { throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy port", 40000, 400)); }
+            if(proxyPort == 0) { throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy port", AblyErrorCode.BAD_REQUEST, 400)); }
             this.proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
             String proxyUser = proxyOptions.username;
             if(proxyUser != null) {
                 String proxyPassword = proxyOptions.password;
-                if(proxyPassword == null) { throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy password", 40000, 400)); }
+                if(proxyPassword == null) { throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy password", AblyErrorCode.BAD_REQUEST, 400)); }
                 proxyAuth = new HttpAuth(proxyUser, proxyPassword, proxyOptions.prefAuthType);
             }
         }
@@ -322,7 +323,7 @@ public class HttpCore {
 
         /* handle www-authenticate */
         if(response.statusCode == 401) {
-            boolean stale = (error != null && error.code == 40140);
+            boolean stale = (error != null && error.code == AblyErrorCode.TOKEN_ERROR_UNSPECIFIED);
             List<String> wwwAuthHeaders = response.getHeaderFields(HttpConstants.Headers.WWW_AUTHENTICATE);
             if(wwwAuthHeaders != null && wwwAuthHeaders.size() > 0) {
                 Map<HttpAuth.Type, String> headersByType = HttpAuth.sortAuthenticateHeaders(wwwAuthHeaders);

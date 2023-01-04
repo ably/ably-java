@@ -38,6 +38,8 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.NonRetriableTokenException;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.util.AblyErrorCode;
+
 
 public class RealtimeAuthTest extends ParameterizedTest {
 
@@ -144,8 +146,8 @@ public class RealtimeAuthTest extends ParameterizedTest {
                 public void onConnectionStateChanged(ConnectionStateChange stateChange) {
                     /* assert that state changes correctly */
                     assertEquals(ConnectionState.connected, stateChange.previous);
-                    assertEquals(80019, stateChange.reason.code);
-                    assertEquals(80019, ablyRealtime.connection.reason.code);
+                    assertEquals(AblyErrorCode.CLIENT_AUTH_REQUEST_FAILED, stateChange.reason.code);
+                    assertEquals(AblyErrorCode.CLIENT_AUTH_REQUEST_FAILED, ablyRealtime.connection.reason.code);
                     assertEquals(403, ablyRealtime.connection.reason.statusCode);
                 }
             });
@@ -157,7 +159,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             } catch (AblyException e) {
                 /* check expected error codes */
                 assertEquals(403, e.errorInfo.statusCode);
-                assertEquals(80019, e.errorInfo.code);
+                assertEquals(AblyErrorCode.CLIENT_AUTH_REQUEST_FAILED, e.errorInfo.code);
             }
 
             /* wait for failed state */
@@ -188,7 +190,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
             ablyRealtime.connection.connect();
 
-            waitAndAssertConnectionState(ablyRealtime, ConnectionState.failed, 403, 80019);
+            waitAndAssertConnectionState(ablyRealtime, ConnectionState.failed, 403, AblyErrorCode.CLIENT_AUTH_REQUEST_FAILED);
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
@@ -209,7 +211,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
             ablyRealtime.connection.connect();
 
-            waitAndAssertConnectionState(ablyRealtime, ConnectionState.failed, 403, 80019);
+            waitAndAssertConnectionState(ablyRealtime, ConnectionState.failed, 403, AblyErrorCode.CLIENT_AUTH_REQUEST_FAILED);
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
@@ -230,7 +232,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
             ablyRealtime.connection.connect();
 
-            waitAndAssertConnectionState(ablyRealtime, ConnectionState.disconnected, 401, 80019);
+            waitAndAssertConnectionState(ablyRealtime, ConnectionState.disconnected, 401, AblyErrorCode.CLIENT_AUTH_REQUEST_FAILED);
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
@@ -251,7 +253,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
             ablyRealtime.connection.connect();
 
-            waitAndAssertConnectionState(ablyRealtime, ConnectionState.disconnected, 401, 80019);
+            waitAndAssertConnectionState(ablyRealtime, ConnectionState.disconnected, 401, AblyErrorCode.CLIENT_AUTH_REQUEST_FAILED);
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
@@ -686,7 +688,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             AblyRealtime ablyRealtime = new AblyRealtime(opts);
             ablyRealtime.close();
         } catch (AblyException e) {
-            assertEquals("Verify error code indicates clientId mismatch", e.errorInfo.code, 40101);
+            assertEquals("Verify error code indicates clientId mismatch", e.errorInfo.code, AblyErrorCode.INVALID_CREDENTIALS_AUTH);
         }
     }
 
@@ -723,7 +725,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ablyRealtime.connection);
             ErrorInfo failure = connectionWaiter.waitFor(ConnectionState.failed);
             assertEquals("Verify failed state is reached", ConnectionState.failed, ablyRealtime.connection.state);
-            assertEquals("Verify failure error code indicates clientId mismatch", failure.code, 40101);
+            assertEquals("Verify failure error code indicates clientId mismatch", failure.code, AblyErrorCode.INVALID_CREDENTIALS_AUTH);
         } catch (AblyException e) {
             fail("Unknown error occurred: " + e.getMessage());
         } finally {
@@ -820,7 +822,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             pubComplete.waitFor();
             assertTrue("Verify publish callback called on completion", pubComplete.pending.isEmpty());
             assertEquals("Verify publish callback returns an error", 1, pubComplete.errors.size());
-            assertEquals("Verify publish callback error has expected error code", pubComplete.errors.iterator().next().code, 40012);
+            assertEquals("Verify publish callback error has expected error code", pubComplete.errors.iterator().next().code, AblyErrorCode.INVALID_CLIENT_ID);
 
             /* verify no message sent or received on transport */
             assertTrue("Verify no messages sent", protocolListener.sentMessages.isEmpty());

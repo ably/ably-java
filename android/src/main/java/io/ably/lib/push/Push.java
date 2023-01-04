@@ -3,15 +3,17 @@ package io.ably.lib.push;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+
+import java.util.Arrays;
+
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.rest.AblyBase;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
+import io.ably.lib.util.AblyErrorCode;
 import io.ably.lib.util.Log;
-
-import java.util.Arrays;
 
 /**
  * Enables a device to be registered and deregistered from receiving push notifications.
@@ -93,7 +95,7 @@ public class Push extends PushBase {
         Context applicationContext = rest.platform.getApplicationContext();
         if(applicationContext == null) {
             Log.e(TAG, "getApplicationContext(): Unable to get application context; not set");
-            throw AblyException.fromErrorInfo(new ErrorInfo("Unable to get application context; not set", 40000, 400));
+            throw AblyException.fromErrorInfo(new ErrorInfo("Unable to get application context; not set", AblyErrorCode.BAD_REQUEST, 400));
         }
         return applicationContext;
     }
