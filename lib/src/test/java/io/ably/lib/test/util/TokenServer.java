@@ -39,9 +39,8 @@ import io.ably.lib.rest.Auth.TokenRequest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ErrorResponse;
+import io.ably.lib.util.HttpCode;
 import io.ably.lib.util.Serialisation;
-
-import static fi.iki.elonen.NanoHTTPD.newFixedLengthResponse;
 
 public class TokenServer extends NanoHTTPD {
 
@@ -60,7 +59,7 @@ public class TokenServer extends NanoHTTPD {
             try {
                 session.parseBody(new HashMap<String, String>());
             } catch (IOException | ResponseException e) {
-                return error2Response(new ErrorInfo("Bad POST token request", 400, 40000));
+                return error2Response(new ErrorInfo("Bad POST token request", HttpCode.BAD_REQUEST, 40000));
             }
         }
 
@@ -93,7 +92,7 @@ public class TokenServer extends NanoHTTPD {
             }
         }
         else if(target.equals("/404")) {
-            return error2Response(new ErrorInfo("Not found", 404, 0));
+            return error2Response(new ErrorInfo("Not found", HttpCode.NOT_FOUND, 0));
         }
         else if(target.equals("/wait")) {
             long delay = 30000;

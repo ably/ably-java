@@ -36,6 +36,7 @@ import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.types.ProtocolMessage.Flag;
 import io.ably.lib.util.CollectionUtils;
 import io.ably.lib.util.EventEmitter;
+import io.ably.lib.util.HttpCode;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.TimerUtil;
 
@@ -600,7 +601,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
     }
 
-    static ErrorInfo REASON_NOT_ATTACHED = new ErrorInfo("Channel not attached", 400, 90001);
+    static ErrorInfo REASON_NOT_ATTACHED = new ErrorInfo("Channel not attached", HttpCode.BAD_REQUEST, 90001);
 
     /************************************
      * subscriptions and MessageListener
@@ -976,7 +977,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         switch(state) {
         case failed:
         case suspended:
-            throw AblyException.fromErrorInfo(new ErrorInfo("Unable to publish in failed or suspended state", 400, 40000));
+            throw AblyException.fromErrorInfo(new ErrorInfo("Unable to publish in failed or suspended state", HttpCode.BAD_REQUEST, 40000));
         default:
             connectionManager.send(msg, queueMessages, listener);
         }
@@ -1050,13 +1051,13 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             if(KEY_UNTIL_ATTACH.equals(param.key)) {
                 if("true".equalsIgnoreCase(param.value)) {
                     if (channel.state != ChannelState.attached) {
-                        throw AblyException.fromErrorInfo(new ErrorInfo("option untilAttach requires the channel to be attached", 40000, 400));
+                        throw AblyException.fromErrorInfo(new ErrorInfo("option untilAttach requires the channel to be attached", 40000, HttpCode.BAD_REQUEST));
                     }
 
                     params.add(new Param(KEY_FROM_SERIAL, channel.properties.attachSerial));
                 }
                 else if(!"false".equalsIgnoreCase(param.value)) {
-                    throw AblyException.fromErrorInfo(new ErrorInfo("option untilAttach is invalid. \"true\" or \"false\" expected", 40000, 400));
+                    throw AblyException.fromErrorInfo(new ErrorInfo("option untilAttach is invalid. \"true\" or \"false\" expected", 40000, HttpCode.BAD_REQUEST));
                 }
             }
             else {

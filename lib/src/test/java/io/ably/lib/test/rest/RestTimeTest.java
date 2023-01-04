@@ -11,6 +11,7 @@ import io.ably.lib.test.common.Helpers.AsyncWaiter;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
+import io.ably.lib.util.HttpCode;
 
 public class RestTimeTest extends ParameterizedTest {
 
@@ -59,7 +60,7 @@ public class RestTimeTest extends ParameterizedTest {
             ably.time();
             fail("time2: Unexpected success getting time");
         } catch (AblyException e) {
-            assertEquals("time2: Unexpected error code", e.errorInfo.statusCode, 500);
+            assertEquals("time2: Unexpected error code", e.errorInfo.statusCode, HttpCode.INTERNAL_SERVER_ERROR);
         }
     }
 

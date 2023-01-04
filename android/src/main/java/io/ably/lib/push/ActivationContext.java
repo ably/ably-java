@@ -13,6 +13,7 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.RegistrationToken;
+import io.ably.lib.util.HttpCode;
 import io.ably.lib.util.Log;
 
 public class ActivationContext {
@@ -69,7 +70,7 @@ public class ActivationContext {
         String deviceIdentityToken = getLocalDevice().deviceIdentityToken;
         if(deviceIdentityToken == null) {
             Log.e(TAG, "getAbly(): unable to create Ably instance using deviceIdentityToken");
-            throw AblyException.fromErrorInfo(new ErrorInfo("Unable to get Ably library instance; no device identity token", 40000, 400));
+            throw AblyException.fromErrorInfo(new ErrorInfo("Unable to get Ably library instance; no device identity token", 40000, HttpCode.BAD_REQUEST));
         }
         Log.v(TAG, "getAbly(): returning Ably instance using deviceIdentityToken");
         return (ably = new AblyRest(deviceIdentityToken));

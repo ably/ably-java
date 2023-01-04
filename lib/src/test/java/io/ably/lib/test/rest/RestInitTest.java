@@ -5,6 +5,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import org.junit.Test;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Locale;
@@ -16,10 +18,9 @@ import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.util.HttpCode;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Log.LogHandler;
-
-import org.junit.Test;
 
 public class RestInitTest {
 
@@ -103,7 +104,7 @@ public class RestInitTest {
             fail("init2: Unexpected success instantiating library");
         } catch (AblyException e) {
             ErrorInfo err = e.errorInfo;
-            assertEquals("Verify expected error code", err.statusCode, 400);
+            assertEquals("Verify expected error code", err.statusCode, HttpCode.BAD_REQUEST);
         }
     }
 

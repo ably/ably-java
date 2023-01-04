@@ -1,16 +1,16 @@
 package io.ably.lib.rest;
 
 import io.ably.annotation.Experimental;
+import io.ably.lib.http.AsyncHttpPaginatedQuery;
 import io.ably.lib.http.AsyncHttpScheduler;
+import io.ably.lib.http.AsyncPaginatedQuery;
 import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
-import io.ably.lib.http.HttpScheduler;
-import io.ably.lib.http.SyncHttpScheduler;
-import io.ably.lib.http.AsyncHttpPaginatedQuery;
-import io.ably.lib.http.AsyncPaginatedQuery;
 import io.ably.lib.http.HttpPaginatedQuery;
+import io.ably.lib.http.HttpScheduler;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.http.PaginatedQuery;
+import io.ably.lib.http.SyncHttpScheduler;
 import io.ably.lib.platform.Platform;
 import io.ably.lib.push.Push;
 import io.ably.lib.realtime.Connection;
@@ -31,6 +31,7 @@ import io.ably.lib.types.ReadOnlyMap;
 import io.ably.lib.types.Stats;
 import io.ably.lib.types.StatsReader;
 import io.ably.lib.util.Crypto;
+import io.ably.lib.util.HttpCode;
 import io.ably.lib.util.InternalMap;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
@@ -94,7 +95,7 @@ public abstract class AblyBase implements AutoCloseable {
         if(options == null) {
             String msg = "no options provided";
             Log.e(getClass().getName(), msg);
-            throw AblyException.fromErrorInfo(new ErrorInfo(msg, 400, 40000));
+            throw AblyException.fromErrorInfo(new ErrorInfo(msg, HttpCode.BAD_REQUEST, 40000));
         }
         this.options = options;
 

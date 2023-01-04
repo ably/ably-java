@@ -1,5 +1,15 @@
 package io.ably.lib.test.common;
 
+import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -18,11 +28,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.regex.Pattern;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 
 import io.ably.lib.debug.DebugOptions.RawHttpListener;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
@@ -48,13 +53,9 @@ import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.util.Base64Coder;
+import io.ably.lib.util.HttpCode;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
-
-import static junit.framework.Assert.assertTrue;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class Helpers {
 
@@ -112,7 +113,7 @@ public class Helpers {
     public static HttpCore.Response httpResponseFromErrorInfo(final ErrorInfo errorInfo) {
         HttpCore.Response response = new HttpCore.Response();
         response.contentType = "application/json";
-        response.statusCode = errorInfo.statusCode > 0 ? errorInfo.statusCode : 400;
+        response.statusCode = errorInfo.statusCode > 0 ? errorInfo.statusCode : HttpCode.BAD_REQUEST;
         response.body = Serialisation.gson.toJson(new ErrorResponse() {{
             error = errorInfo;
         }}, ErrorResponse.class).getBytes();

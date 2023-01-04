@@ -70,6 +70,7 @@ import io.ably.lib.types.Param;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.PresenceMessage.Action;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.util.HttpCode;
 import io.ably.lib.util.Serialisation;
 
 public class RealtimePresenceTest extends ParameterizedTest {
@@ -1772,7 +1773,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
             completionWaiter.waitFor(1);
             assertFalse("Verify subscribe failed", completionWaiter.success);
-            assertEquals("Verify subscribe failure error status", completionWaiter.error.statusCode, 401);
+            assertEquals("Verify subscribe failure error status", completionWaiter.error.statusCode, HttpCode.UNAUTHORIZED);
             assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
 
             try {
@@ -1862,7 +1863,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
             new ChannelWaiter(channel).waitFor(ChannelState.failed);
             assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-            assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
+            assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, HttpCode.UNAUTHORIZED);
         } finally {
             if(ably != null)
                 ably.close();
@@ -1898,7 +1899,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
             ErrorInfo fail = new ChannelWaiter(channel).waitFor(ChannelState.failed);
             assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-            assertEquals("Verify reason code gives correct failure reason", fail.statusCode, 401);
+            assertEquals("Verify reason code gives correct failure reason", fail.statusCode, HttpCode.UNAUTHORIZED);
         } finally {
             if(ably != null)
                 ably.close();
@@ -1938,7 +1939,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
             new ChannelWaiter(channel).waitFor(ChannelState.failed);
             assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-            assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
+            assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, HttpCode.UNAUTHORIZED);
         } finally {
             if(ably != null)
                 ably.close();
@@ -1978,7 +1979,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
             new ChannelWaiter(channel).waitFor(ChannelState.failed);
             assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-            assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
+            assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, HttpCode.UNAUTHORIZED);
         } finally {
             if(ably != null)
                 ably.close();
@@ -2019,7 +2020,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
             new ChannelWaiter(channel).waitFor(ChannelState.failed);
             assertEquals("Verify failed state reached", channel.state, ChannelState.failed);
-            assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, 401);
+            assertEquals("Verify reason code gives correct failure reason", errorInfo.statusCode, HttpCode.UNAUTHORIZED);
         } finally {
             if(ably != null)
                 ably.close();

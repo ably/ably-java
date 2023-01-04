@@ -40,6 +40,7 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.util.HttpCode;
 
 public class RealtimeJWTTest extends ParameterizedTest {
 
@@ -116,7 +117,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
 
                 @Override
                 public void onError(ErrorInfo error) {
-                    assertEquals("Unexpected status code", 401, error.statusCode);
+                    assertEquals("Unexpected status code", HttpCode.UNAUTHORIZED, error.statusCode);
                     assertEquals("Unexpected error code", 40160, error.code);
                     assertEquals("Unexpected error message", "Unable to perform channel operation (permission denied)", error.message);
                     ablyRealtime.close();

@@ -49,6 +49,7 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.MessageExtras;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.util.HttpCode;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 
@@ -472,7 +473,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 
             /* wait for the publish callback to be called */
             ErrorInfo fail = msgComplete.waitFor();
-            assertEquals("Verify error callback was called", fail.statusCode, 401);
+            assertEquals("Verify error callback was called", fail.statusCode, HttpCode.UNAUTHORIZED);
 
         } catch(AblyException e) {
             e.printStackTrace();

@@ -1,5 +1,29 @@
 package io.ably.lib.test.rest;
 
+import static junit.framework.TestCase.assertNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.Timeout;
+
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
 import io.ably.lib.debug.DebugOptions;
@@ -24,29 +48,7 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.MessageSerializer;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
-
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.SocketTimeoutException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
-import static junit.framework.TestCase.assertNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import io.ably.lib.util.HttpCode;
 
 public class RestAuthTest extends ParameterizedTest {
 
@@ -126,7 +128,7 @@ public class RestAuthTest extends ParameterizedTest {
             fail("Unexpected success calling with Basic auth over httpCore");
         } catch (AblyException e) {
             e.printStackTrace();
-            assertEquals("Verify expected error code", e.errorInfo.statusCode, 401);
+            assertEquals("Verify expected error code", e.errorInfo.statusCode, HttpCode.UNAUTHORIZED);
         }
     }
 
@@ -432,7 +434,7 @@ public class RestAuthTest extends ParameterizedTest {
                 fail("auth_authURL_err: Unexpected success requesting token");
             } catch (AblyException e) {
                 assertEquals("Expected error code", e.errorInfo.code, 80019);
-                assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.statusCode, 404);
+                assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.statusCode, HttpCode.NOT_FOUND);
             }
         } catch (AblyException e) {
             e.printStackTrace();
@@ -458,7 +460,7 @@ public class RestAuthTest extends ParameterizedTest {
                 fail("auth_authURL_err: Unexpected success requesting token");
             } catch (AblyException e) {
                 assertEquals("Expected error code", e.errorInfo.code, 80019);
-                assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.statusCode, 500);
+                assertEquals("Expected forwarded error code", ((AblyException)e.getCause()).errorInfo.statusCode, HttpCode.INTERNAL_SERVER_ERROR);
                 assertTrue("Expected forwarded forwarded exception", (e.getCause().getCause()) instanceof SocketTimeoutException);
             }
         } catch (AblyException e) {
@@ -899,7 +901,7 @@ public class RestAuthTest extends ParameterizedTest {
             TokenCallback authCallback = new TokenCallback() {
                 @Override
                 public Object getTokenRequest(TokenParams params) throws AblyException {
-                    throw AblyException.fromErrorInfo(new ErrorInfo("test exception", 404, 12345));
+                    throw AblyException.fromErrorInfo(new ErrorInfo("test exception", HttpCode.NOT_FOUND, 12345));
                 }
             };
 

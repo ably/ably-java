@@ -7,8 +7,14 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+
+import java.lang.reflect.Field;
+import java.util.ArrayDeque;
+import java.util.Locale;
+
 import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpScheduler;
@@ -20,14 +26,11 @@ import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.RegistrationToken;
+import io.ably.lib.util.HttpCode;
 import io.ably.lib.util.IntentUtils;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.ParamsUtils;
 import io.ably.lib.util.Serialisation;
-
-import java.lang.reflect.Field;
-import java.util.ArrayDeque;
-import java.util.Locale;
 
 public class ActivationStateMachine {
     public static class CalledActivate extends ActivationStateMachine.Event {
@@ -306,7 +309,7 @@ public class ActivationStateMachine {
                             JsonObject deviceIdentityTokenJson = response.getAsJsonObject("deviceIdentityToken");
                             if(deviceIdentityTokenJson == null) {
                                 Log.e(TAG, "invalid device registration response (no deviceIdentityToken); deviceId = " + device.id);
-                                machine.handleEvent(new ActivationStateMachine.GettingDeviceRegistrationFailed(new ErrorInfo("Invalid deviceIdentityToken in response", 40000, 400)));
+                                machine.handleEvent(new ActivationStateMachine.GettingDeviceRegistrationFailed(new ErrorInfo("Invalid deviceIdentityToken in response", 40000, HttpCode.BAD_REQUEST)));
                                 return;
                             }
                             JsonPrimitive responseClientIdJson = response.getAsJsonPrimitive("clientId");
@@ -684,7 +687,7 @@ public class ActivationStateMachine {
         /* Spec: RSH3a2a1, RSH8g: verify that the existing registration is compatible with the present credentials */
         String presentClientId = ably.auth.clientId;
         if(presentClientId != null && device.clientId != null && !presentClientId.equals(device.clientId)) {
-            ErrorInfo clientIdErr = new ErrorInfo("Activation failed: present clientId is not compatible with existing device registration", 400, 61002);
+            ErrorInfo clientIdErr = new ErrorInfo("Activation failed: present clientId is not compatible with existing device registration", HttpCode.BAD_REQUEST, 61002);
             handleEvent(new SyncRegistrationFailed(clientIdErr));
             return;
         }
