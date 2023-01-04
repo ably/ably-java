@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.2.22](https://github.com/ably/ably-java/tree/v1.2.22)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.21...v1.2.22)
+
+**Merged pull requests:**
+
+- Skip checking WS hostname when not using SSL [\#883](https://github.com/ably/ably-java/pull/883) ([cruickshankpg](https://github.com/cruickshankpg))
+
 ## [1.2.21](https://github.com/ably/ably-java/tree/v1.2.21)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.20...v1.2.21)
