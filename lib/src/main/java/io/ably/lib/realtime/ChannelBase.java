@@ -88,6 +88,17 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * internal
      *
      */
+    private static class AttachRequest{
+        final boolean forceReattach;
+        final CompletionListener completionListener;
+
+        private AttachRequest(boolean forceReattach, CompletionListener completionListener) {
+            this.forceReattach = forceReattach;
+            this.completionListener = completionListener;
+        }
+    }
+    private AttachRequest pendingAttachRequest;
+
     private void setState(ChannelState newState, ErrorInfo reason) {
         setState(newState, reason, false, true);
     }
@@ -110,6 +121,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         if(notifyStateChange) {
             /* broadcast state change */
             emit(newState, stateChange);
+        }
+        if (newState == ChannelState.detached && pendingAttachRequest != null){
+            Log.v(TAG, "Pending attach request - now reattaching channel:"+name);
+            attach(pendingAttachRequest.forceReattach, pendingAttachRequest.completionListener);
+            pendingAttachRequest = null;
         }
     }
 
@@ -166,6 +182,10 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                     if(listener != null) {
                         on(new ChannelStateCompletionListener(listener, ChannelState.attached, ChannelState.failed));
                     }
+                    return;
+                case detaching:
+                    //add to pending attach after detach has succeeded
+                    pendingAttachRequest = new AttachRequest(forceReattach,listener);
                     return;
                 case attached:
                     callCompletionListenerSuccess(listener);
