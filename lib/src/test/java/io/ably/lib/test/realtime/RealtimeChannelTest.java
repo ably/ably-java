@@ -1049,20 +1049,21 @@ public class RealtimeChannelTest extends ParameterizedTest {
             assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
 
             /* detach */
-            channel.detach();
-            assertEquals("Verify detaching state reached", channel.state, ChannelState.detaching);
-            final Helpers.CompletionWaiter attachCompletionWaiter = new Helpers.CompletionWaiter();
-            channel.attach();
-
             final Helpers.CompletionWaiter detachCompletionWaiter = new Helpers.CompletionWaiter();
             channel.detach(detachCompletionWaiter);
+            assertEquals("Verify detaching state reached", channel.state, ChannelState.detaching);
+            final Helpers.CompletionWaiter attachCompletionWaiter = new Helpers.CompletionWaiter();
+            //attempt to attach while detaching
+            channel.attach(attachCompletionWaiter);
 
             /* Verify onSuccess callback gets called */
             detachCompletionWaiter.waitFor();
             assertThat(detachCompletionWaiter.success, is(true));
+            assertThat(channel.state, is(ChannelState.detached));
             //verify reattach - after detach
             attachCompletionWaiter.waitFor();
             assertThat(attachCompletionWaiter.success,is(true));
+            assertThat(channel.state, is(ChannelState.attached));
         } finally {
             if(ably != null)
                 ably.close();
