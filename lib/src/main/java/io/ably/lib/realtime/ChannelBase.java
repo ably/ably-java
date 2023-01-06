@@ -97,7 +97,14 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             this.completionListener = completionListener;
         }
     }
+    private static class DetachRequest{
+        final CompletionListener completionListener;
+        private DetachRequest(CompletionListener completionListener) {
+            this.completionListener = completionListener;
+        }
+    }
     private AttachRequest pendingAttachRequest;
+    private DetachRequest pendingDetachRequest;
 
     private void setState(ChannelState newState, ErrorInfo reason) {
         setState(newState, reason, false, true);
@@ -123,9 +130,17 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             emit(newState, stateChange);
         }
         if (newState == ChannelState.detached && pendingAttachRequest != null){
-            Log.v(TAG, "Pending attach request - now reattaching channel:"+name);
+            Log.v(TAG, "Pending attach request after detach- now reattaching channel:"+name);
             attach(pendingAttachRequest.forceReattach, pendingAttachRequest.completionListener);
             pendingAttachRequest = null;
+        }else if (newState == ChannelState.attached && pendingDetachRequest != null){
+            Log.v(TAG, "Pending detach request after attach. Now detaching channel:"+name);
+            try {
+                detach(pendingDetachRequest.completionListener);
+                pendingDetachRequest = null;
+            } catch (AblyException e) {
+                Log.e(TAG,"Channel ailed to detach after attach:"+name,e);
+            }
         }
     }
 
@@ -270,6 +285,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                 if (listener != null) {
                     on(new ChannelStateCompletionListener(listener, ChannelState.detached, ChannelState.failed));
                 }
+                return;
+            case attaching:
+                pendingDetachRequest = new DetachRequest(listener);
                 return;
             default:
         }
