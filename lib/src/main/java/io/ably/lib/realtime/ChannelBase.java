@@ -198,8 +198,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                         on(new ChannelStateCompletionListener(listener, ChannelState.attached, ChannelState.failed));
                     }
                     return;
-                case detaching:
-                    //add to pending attach after detach has succeeded
+                case detaching: //RTL4h
                     pendingAttachRequest = new AttachRequest(forceReattach,listener);
                     return;
                 case attached:
@@ -286,7 +285,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                     on(new ChannelStateCompletionListener(listener, ChannelState.detached, ChannelState.failed));
                 }
                 return;
-            case attaching:
+            case attaching: //RTL5i
                 pendingDetachRequest = new DetachRequest(listener);
                 return;
             default:
