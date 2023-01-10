@@ -13,7 +13,7 @@ jobs:
         android-api-level: [ 19, 21, 24, 29 ]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -22,7 +22,7 @@ jobs:
           disable-animations: true
           script: ./gradlew :android:connectedAndroidTest
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: always()
         with:
           name: android-build-reports
