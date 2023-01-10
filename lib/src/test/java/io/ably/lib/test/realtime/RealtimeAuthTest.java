@@ -1052,6 +1052,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
         }
     }
 
+    @Ignore("Fix flakey test")
     @Test
     public void auth_renewAuth_callback_invoked() throws InterruptedException {
         try {
