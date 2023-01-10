@@ -76,10 +76,11 @@ public abstract class EventEmitter<Event, Listener> {
 
     /**
      * Registers the provided listener for the specified event.
-     * If on() is called more than once with the same listener and event,
-     * the listener is added multiple times to its listener registry.
-     * Therefore, as an example, assuming the same listener is registered twice using on(),
-     * and an event is emitted once, the listener would be invoked twice.
+     *
+     * If on() is called more than once with the same listener, even with
+     * a different event, the original listener is replaced.
+     *
+     * Note: This is in deviation from the spec (see below).
      * <p>
      * Spec: RTE4
      *
