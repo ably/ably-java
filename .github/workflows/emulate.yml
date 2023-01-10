@@ -1,3 +1,5 @@
+name: Emulate
+
 on:
   pull_request:
   push:
