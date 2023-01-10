@@ -7,7 +7,7 @@ on:
       - main
 
 jobs:
-  integration-test-jre-rest:
+  check-rest:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -20,7 +20,7 @@ jobs:
           name: java-build-reports-rest
           path: java/build/reports/
 
-  integration-test-jre-realtime:
+  check-realtime:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
