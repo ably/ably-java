@@ -1,3 +1,5 @@
+name: Integration Test
+
 on:
   pull_request:
   push:
@@ -5,15 +7,28 @@ on:
       - main
 
 jobs:
-  check:
+  integration-test-jre-rest:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - run: ./gradlew :java:testRestSuite :java:testRealtimeSuite
+      - run: ./gradlew :java:testRestSuite
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: java-build-reports
+          name: java-build-reports-rest
+          path: java/build/reports/
+
+  integration-test-jre-realtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - run: ./gradlew :java:testRealtimeSuite
+
+      - uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: java-build-reports-realtime
           path: java/build/reports/
