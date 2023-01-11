@@ -73,6 +73,22 @@ public class EventEmitterTest {
         assertEquals(listener.counts.get(MyEvents.event_1), Integer.valueOf(1));
     }
 
+        /**
+     * Register a listener twice, and verify it is called twice
+     * when the event is emitted
+     */
+    @Test
+    public void on_multiple_registrations() {
+        MyEmitter emitter = new MyEmitter();
+        CountingListener listener = new CountingListener();
+        emitter.on(listener);
+        emitter.on(listener);
+        emitter.emit(MyEvents.event_0, "on_multiple_0");
+        emitter.emit(MyEvents.event_1, "on_multiple_1");
+        assertEquals(listener.counts.get(MyEvents.event_0), Integer.valueOf(2));
+        assertEquals(listener.counts.get(MyEvents.event_1), Integer.valueOf(2));
+    }
+
     /**
      * Register and unregister listener, and verify it
      * is not called when the event is emitted
@@ -111,7 +127,7 @@ public class EventEmitterTest {
 
     /**
      * Register a listener for a specific event, and verify it is called
-     * only when that event is emitted
+     * only when that event is emitted.
      */
     @Test
     public void on_event_simple() {
@@ -123,6 +139,23 @@ public class EventEmitterTest {
         emitter.emit(MyEvents.event_1, "on_event_simple_1");
         assertEquals(listener.counts.get(MyEvents.event_0), Integer.valueOf(2));
         assertNull(listener.counts.get(MyEvents.event_1));
+    }
+
+    /**
+     * Register a listener multiple times for a specific event, and verify it is called
+     * multiple times when that event is emitted
+     */
+    @Test
+    public void on_event_multiple_registrations() {
+        MyEmitter emitter = new MyEmitter();
+        CountingListener listener = new CountingListener();
+        emitter.on(MyEvents.event_0, listener);
+        emitter.on(MyEvents.event_0, listener);
+        emitter.on(MyEvents.event_1, listener);
+        emitter.emit(MyEvents.event_0, "on_event_simple_0");
+        emitter.emit(MyEvents.event_1, "on_event_simple_1");
+        assertEquals(listener.counts.get(MyEvents.event_0), Integer.valueOf(2));
+        assertEquals(listener.counts.get(MyEvents.event_1), Integer.valueOf(1));
     }
 
     /**
