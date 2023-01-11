@@ -1039,19 +1039,19 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
-            assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+            assertEquals("Verify connected state reached", ConnectionState.connected, ably.connection.state);
 
             /* create a channel and attach */
             final String channelName = "attach_channel";
             final Channel channel = ably.channels.get(channelName);
             channel.attach();
             new ChannelWaiter(channel).waitFor(ChannelState.attached);
-            assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+            assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
 
             /* detach */
             final Helpers.CompletionWaiter detachCompletionWaiter = new Helpers.CompletionWaiter();
             channel.detach(detachCompletionWaiter);
-            assertEquals("Verify detaching state reached", channel.state, ChannelState.detaching);
+            assertEquals("Verify detaching state reached", ChannelState.detaching, channel.state);
             final Helpers.CompletionWaiter attachCompletionWaiter = new Helpers.CompletionWaiter();
             //attempt to attach while detaching
             channel.attach(attachCompletionWaiter);
@@ -1087,20 +1087,20 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
-            assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+            assertEquals("Verify connected state reached", ConnectionState.connected, ably.connection.state);
 
             /* create a channel and attach */
             final String channelName = "attach_channel";
             final Channel channel = ably.channels.get(channelName);
             final Helpers.CompletionWaiter attachCompletionWaiter = new Helpers.CompletionWaiter();
             channel.attach(attachCompletionWaiter);
-            assertEquals("Verify detaching state reached", channel.state, ChannelState.attaching);
+            assertEquals("Verify detaching state reached", ChannelState.attaching, channel.state);
             //immediately start detach operation
             final Helpers.CompletionWaiter detachCompletionWaiter = new Helpers.CompletionWaiter();
             channel.detach(detachCompletionWaiter);
 
             new ChannelWaiter(channel).waitFor(ChannelState.attached);
-            assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+            assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
 
             //now wait for detach to complete
             new ChannelWaiter(channel).waitFor(ChannelState.detached);
