@@ -1104,7 +1104,6 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             //now wait for detach to complete
             (new ChannelWaiter(channel)).waitFor(ChannelState.detached);
-            /* detach */
             detachCompletionWaiter.waitFor();
 
             assertThat(detachCompletionWaiter.success,is(true));
