@@ -1103,7 +1103,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
 
             //now wait for detach to complete
-            new ChannelWaiter(channel).waitFor(ChannelState.detached);
+            (new ChannelWaiter(channel)).waitFor(ChannelState.detached);
             /* detach */
             detachCompletionWaiter.waitFor();
 
