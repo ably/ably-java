@@ -139,7 +139,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                 detach(pendingDetachRequest.completionListener);
                 pendingDetachRequest = null;
             } catch (AblyException e) {
-                Log.e(TAG,"Channel ailed to detach after attach:"+name,e);
+                Log.e(TAG,"Channel failed to detach after attach:"+name,e);
             }
         }
     }
