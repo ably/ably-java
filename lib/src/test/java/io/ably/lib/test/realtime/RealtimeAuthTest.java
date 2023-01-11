@@ -1,5 +1,20 @@
 package io.ably.lib.test.realtime;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.Timeout;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
@@ -23,20 +38,6 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.NonRetriableTokenException;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RealtimeAuthTest extends ParameterizedTest {
 
@@ -64,6 +65,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
      */
     @Test
     public void auth_client_match_tokendetails_null_clientId() {
+        AblyRealtime ablyRealtime = null;
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
@@ -79,7 +81,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = null;
             opts.tokenDetails = tokenDetails;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            ablyRealtime = new AblyRealtime(opts);
             System.out.println("done create ably");
 
             /* wait for connected state */
@@ -88,12 +90,13 @@ public class RealtimeAuthTest extends ParameterizedTest {
             assertEquals("Verify connected state is reached", ConnectionState.connected, ablyRealtime.connection.state);
 
             /* check expected clientId */
-            assertEquals("Auth#clientId is expected to be null", null, ablyRealtime.auth.clientId);
-
-            ablyRealtime.close();
+            assertNull("Auth#clientId is expected to be null", ablyRealtime.auth.clientId);
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
+        } finally {
+            if (ablyRealtime != null)
+                ablyRealtime.close();
         }
     }
 
@@ -161,6 +164,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             connectionWaiter.waitFor(ConnectionState.failed);
             assertEquals("Verify connected state has failed", ConnectionState.failed, ablyRealtime.connection.state);
             assertEquals("Check correct cause error code", 403, ablyRealtime.connection.reason.statusCode);
+            ablyRealtime.close();
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
@@ -172,6 +176,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
      */
     @Test
     public void auth_client_fails_when_auth_token_fails_with_non_retriable_exception() {
+        AblyRealtime ablyRealtime = null;
         try {
             class NonRetriableRuntimeException extends RuntimeException implements NonRetriableTokenException {
                 NonRetriableRuntimeException(){
@@ -180,14 +185,16 @@ public class RealtimeAuthTest extends ParameterizedTest {
             }
 
             Exception exception = new NonRetriableRuntimeException();
-            final AblyRealtime ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
-
+            ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
             ablyRealtime.connection.connect();
 
             waitAndAssertConnectionState(ablyRealtime, ConnectionState.failed, 403, 80019);
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
+        } finally {
+            if (ablyRealtime != null)
+                ablyRealtime.close();
         }
     }
 
@@ -196,16 +203,19 @@ public class RealtimeAuthTest extends ParameterizedTest {
      */
     @Test
     public void auth_client_fails_when_auth_token_fails_with_ably_exception_with_status_code_403() {
+        AblyRealtime ablyRealtime = null;
         try {
             Exception exception = AblyException.fromErrorInfo(new ErrorInfo("A non retriable Ably exception", 403, 80040));
-            final AblyRealtime ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
-
+            ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
             ablyRealtime.connection.connect();
 
             waitAndAssertConnectionState(ablyRealtime, ConnectionState.failed, 403, 80019);
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
+        } finally {
+            if (ablyRealtime != null)
+                ablyRealtime.close();
         }
     }
 
@@ -214,16 +224,19 @@ public class RealtimeAuthTest extends ParameterizedTest {
      */
     @Test
     public void auth_client_does_not_fail_when_auth_token_fails_with_an_ably_exception() {
+        AblyRealtime ablyRealtime = null;
         try {
             Exception exception = AblyException.fromErrorInfo(new ErrorInfo("An Ably exception", 401, 80040));
-            final AblyRealtime ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
-
+            ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
             ablyRealtime.connection.connect();
 
             waitAndAssertConnectionState(ablyRealtime, ConnectionState.disconnected, 401, 80019);
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
+        } finally {
+            if (ablyRealtime != null)
+                ablyRealtime.close();
         }
     }
 
@@ -232,16 +245,19 @@ public class RealtimeAuthTest extends ParameterizedTest {
      */
     @Test
     public void auth_client_does_not_fail_when_auth_token_fails_with_a_runtime_exception() {
+        AblyRealtime ablyRealtime = null;
         try {
             Exception exception = new RuntimeException("A runtime exception");
-            final AblyRealtime ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
-
+            ablyRealtime = createAblyRealtimeWithTokenAuthError(exception);
             ablyRealtime.connection.connect();
 
             waitAndAssertConnectionState(ablyRealtime, ConnectionState.disconnected, 401, 80019);
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
+        } finally {
+            if (ablyRealtime != null)
+                ablyRealtime.close();
         }
     }
 
@@ -291,6 +307,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
      */
     @Test
     public void auth_client_match_token_null_clientId() {
+        AblyRealtime ablyRealtime = null;
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
@@ -306,7 +323,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = null;
             opts.token = tokenDetails.token;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            ablyRealtime = new AblyRealtime(opts);
             System.out.println("done create ably");
 
             /* wait for connected state */
@@ -315,12 +332,13 @@ public class RealtimeAuthTest extends ParameterizedTest {
             assertEquals("Verify connected state is reached", ConnectionState.connected, ablyRealtime.connection.state);
 
             /* check expected clientId */
-            assertEquals("Auth#clientId is expected to be null", null, ablyRealtime.auth.clientId);
-
-            ablyRealtime.close();
+            assertNull("Auth#clientId is expected to be null", ablyRealtime.auth.clientId);
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
+        } finally {
+            if (ablyRealtime != null)
+                ablyRealtime.close();
         }
     }
 
@@ -331,6 +349,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
      */
     @Test
     public void auth_clientid_null_before_auth() {
+        AblyRealtime ablyRealtime = null;
         try {
             final String clientId = "token clientId";
 
@@ -345,10 +364,10 @@ public class RealtimeAuthTest extends ParameterizedTest {
             opts.clientId = null;
             opts.token = tokenDetails.token;
             opts.autoConnect = false;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            ablyRealtime = new AblyRealtime(opts);
 
             /* check expected clientId */
-            assertEquals("Auth#clientId is expected to be null", null, ablyRealtime.auth.clientId);
+            assertNull("Auth#clientId is expected to be null", ablyRealtime.auth.clientId);
 
             /* wait for connected state */
             ablyRealtime.connection.connect();
@@ -358,11 +377,12 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             /* check expected clientId */
             assertEquals("Auth#clientId is expected to be set", clientId, ablyRealtime.auth.clientId);
-
-            ablyRealtime.close();
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
+        } finally {
+            if (ablyRealtime != null)
+                ablyRealtime.close();
         }
     }
 
@@ -379,6 +399,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
      */
     @Test
     public void auth_client_match_tokendetails_wildcard_clientId() {
+        AblyRealtime ablyRealtime = null;
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
@@ -394,7 +415,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = "options clientId";
             opts.tokenDetails = tokenDetails;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            ablyRealtime = new AblyRealtime(opts);
             System.out.println("done create ably");
 
             /* wait for connected state */
@@ -404,11 +425,12 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             /* check expected clientId */
             assertEquals("Auth#clientId is expected to be set", "options clientId", ablyRealtime.auth.clientId);
-
-            ablyRealtime.close();
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
+        } finally {
+            if (ablyRealtime != null)
+                ablyRealtime.close();
         }
     }
 
@@ -425,6 +447,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
      */
     @Test
     public void auth_client_match_token_wildcard_clientId() {
+        AblyRealtime ablyRealtime = null;
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
@@ -440,7 +463,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = "options clientId";
             opts.token = tokenDetails.token;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            ablyRealtime = new AblyRealtime(opts);
             System.out.println("done create ably");
 
             /* wait for connected state */
@@ -450,11 +473,12 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             /* check expected clientId */
             assertEquals("Auth#clientId is expected to be set", "options clientId", ablyRealtime.auth.clientId);
-
-            ablyRealtime.close();
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
+        } finally {
+            if (ablyRealtime != null)
+                ablyRealtime.close();
         }
     }
 
@@ -469,6 +493,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
      */
     @Test
     public void auth_client_null_match_tokendetails_wildcard_clientId() {
+        AblyRealtime ablyRealtime = null;
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
@@ -484,7 +509,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = null;
             opts.tokenDetails = tokenDetails;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            ablyRealtime = new AblyRealtime(opts);
             System.out.println("done create ably");
 
             /* wait for connected state */
@@ -494,11 +519,12 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             /* check expected clientId */
             assertEquals("Auth#clientId is expected to be set", "*", ablyRealtime.auth.clientId);
-
-            ablyRealtime.close();
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
+        } finally {
+            if (ablyRealtime != null)
+                ablyRealtime.close();
         }
     }
 
@@ -513,6 +539,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
      */
     @Test
     public void auth_client_null_match_token_wildcard_clientId() {
+        AblyRealtime ablyRealtime = null;
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
@@ -528,7 +555,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = null;
             opts.token = tokenDetails.token;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            ablyRealtime = new AblyRealtime(opts);
             System.out.println("done create ably");
 
             /* wait for connected state */
@@ -538,11 +565,12 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             /* check expected clientId */
             assertEquals("Auth#clientId is expected to be set", "*", ablyRealtime.auth.clientId);
-
-            ablyRealtime.close();
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
+        } finally {
+            if (ablyRealtime != null)
+                ablyRealtime.close();
         }
     }
 
@@ -555,6 +583,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
      */
     @Test
     public void auth_client_match_tokendetails_clientId() {
+        AblyRealtime ablyRealtime = null;
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
@@ -570,7 +599,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = "options clientId";
             opts.tokenDetails = tokenDetails;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            ablyRealtime = new AblyRealtime(opts);
 
             /* wait for connected state */
             Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ablyRealtime.connection);
@@ -579,11 +608,11 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             /* check expected clientId */
             assertEquals("Auth#clientId is expected to be set", "options clientId", ablyRealtime.auth.clientId);
-
-            ablyRealtime.close();
         } catch (AblyException e) {
-            e.printStackTrace();
-            fail();
+            fail("Unknown error occurred: " + e.getMessage());
+        } finally {
+            if (ablyRealtime != null)
+                ablyRealtime.close();
         }
     }
 
@@ -596,6 +625,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
      */
     @Test
     public void auth_client_match_token_clientId() {
+        AblyRealtime ablyRealtime = null;
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
@@ -611,7 +641,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = "options clientId";
             opts.token = tokenDetails.token;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            ablyRealtime = new AblyRealtime(opts);
 
             /* wait for connected state */
             Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ablyRealtime.connection);
@@ -620,11 +650,11 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             /* check expected clientId */
             assertEquals("Auth#clientId is expected to be set", "options clientId", ablyRealtime.auth.clientId);
-
-            ablyRealtime.close();
         } catch (AblyException e) {
-            e.printStackTrace();
-            fail();
+            fail("Unknown error occurred: " + e.getMessage());
+        } finally {
+            if (ablyRealtime != null)
+                ablyRealtime.close();
         }
     }
 
@@ -654,6 +684,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             opts.clientId = "options clientId";
             opts.tokenDetails = tokenDetails;
             AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            ablyRealtime.close();
         } catch (AblyException e) {
             assertEquals("Verify error code indicates clientId mismatch", e.errorInfo.code, 40101);
         }
@@ -667,9 +698,10 @@ public class RealtimeAuthTest extends ParameterizedTest {
      * object that contains an incompatible clientId, the library should ... transition
      *  the connection state to FAILED
      */
-    @Ignore("FIXME: fix exception")
+    @Ignore("FIXME flaky test, Verify failure error code indicates clientId mismatch expected:<40100> but was:<40101>")
     @Test
     public void auth_client_match_token_clientId_fail() {
+        AblyRealtime ablyRealtime = null;
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
@@ -677,15 +709,15 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             /* get token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
-            tokenParams.clientId = "token clientId";
+            tokenParams.clientId = "tokenclientid";
             Auth.TokenDetails tokenDetails = ablyForToken.auth.requestToken(tokenParams, null);
             assertNotNull("Expected token value", tokenDetails.token);
 
             /* create ably realtime with tokenDetails and clientId */
             ClientOptions opts = createOptions();
-            opts.clientId = "options clientId";
+            opts.clientId = "optionsclientid";
             opts.token = tokenDetails.token;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            ablyRealtime = new AblyRealtime(opts);
 
             /* wait for failed state */
             Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ablyRealtime.connection);
@@ -693,8 +725,10 @@ public class RealtimeAuthTest extends ParameterizedTest {
             assertEquals("Verify failed state is reached", ConnectionState.failed, ablyRealtime.connection.state);
             assertEquals("Verify failure error code indicates clientId mismatch", failure.code, 40101);
         } catch (AblyException e) {
-            e.printStackTrace();
-            fail();
+            fail("Unknown error occurred: " + e.getMessage());
+        } finally {
+            if (ablyRealtime != null)
+                ablyRealtime.close();
         }
     }
 
@@ -705,6 +739,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
      */
     @Test
     public void auth_clientid_publish_implicit() {
+        AblyRealtime ablyRealtime = null;
         try {
             String clientId = "test clientId";
 
@@ -714,14 +749,14 @@ public class RealtimeAuthTest extends ParameterizedTest {
             fillInOptions(options);
             options.clientId = clientId;
             options.protocolListener = protocolListener;
-            AblyRealtime ably = new AblyRealtime(options);
+            ablyRealtime = new AblyRealtime(options);
 
             /* wait until connected */
-            (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
-            assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+            (new ConnectionWaiter(ablyRealtime.connection)).waitFor(ConnectionState.connected);
+            assertEquals("Verify connected state reached", ablyRealtime.connection.state, ConnectionState.connected);
 
             /* create a channel and attach */
-            Channel channel = ably.channels.get("auth_clientid_publish_implicit_" + testParams.name);
+            Channel channel = ablyRealtime.channels.get("auth_clientid_publish_implicit_" + testParams.name);
             channel.attach();
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
@@ -738,7 +773,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             /* Get sent message */
             Message messagePublished = protocolListener.sentMessages.get(0).messages[0];
-            assertEquals("Sent message does not contain clientId", messagePublished.clientId, null);
+            assertNull("Sent message does not contain clientId", messagePublished.clientId);
 
             /* wait until message received on transport */
             protocolListener.waitForRecv(1);
@@ -784,7 +819,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             channel.publish(messageToPublish, pubComplete.add());
             pubComplete.waitFor();
             assertTrue("Verify publish callback called on completion", pubComplete.pending.isEmpty());
-            assertTrue("Verify publish callback returns an error", pubComplete.errors.size() == 1);
+            assertEquals("Verify publish callback returns an error", 1, pubComplete.errors.size());
             assertEquals("Verify publish callback error has expected error code", pubComplete.errors.iterator().next().code, 40012);
 
             /* verify no message sent or received on transport */
@@ -803,7 +838,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             /* Get sent message */
             messagePublished = protocolListener.sentMessages.get(0).messages[0];
-            assertEquals("Sent message does not contain clientId", messagePublished.clientId, null);
+            assertNull("Sent message does not contain clientId", messagePublished.clientId);
 
             /* wait until message received on transport */
             protocolListener.waitForRecv(1);
@@ -811,11 +846,12 @@ public class RealtimeAuthTest extends ParameterizedTest {
             /* Get received message */
             messageReceived = protocolListener.receivedMessages.get(0).messages[0];
             assertEquals("Received message does contain clientId", messageReceived.clientId, clientId);
-
-            ably.close();
         } catch (Exception e) {
             e.printStackTrace();
             fail("auth_clientid_publish_implicit: Unexpected exception");
+        } finally {
+            if (ablyRealtime != null)
+                ablyRealtime.close();
         }
     }
 
@@ -825,7 +861,6 @@ public class RealtimeAuthTest extends ParameterizedTest {
      * are sent with explicit clientId
      * Spec: RTL6g4
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void auth_clientid_publish_explicit_before_identified() {
         AblyRealtime ably = null;
@@ -892,7 +927,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             /* Get sent message */
             messagePublished = protocolListener.sentMessages.get(0).messages[0];
-            assertEquals("Sent message does not contain clientId", messagePublished.clientId, null);
+            assertNull("Sent message does not contain clientId", messagePublished.clientId);
 
             /* wait until message received on transport */
             protocolListener.waitForRecv(1);
@@ -1114,8 +1149,8 @@ public class RealtimeAuthTest extends ParameterizedTest {
                 final CountDownLatch latch = new CountDownLatch(1);
                 final AtomicBoolean isCalled = new AtomicBoolean(false);
                 ably.auth.renewAuth((success, tokenDetails1, errorInfo) -> {
-                    latch.countDown();
                     isCalled.set(true);
+                    latch.countDown();
                 });
                 latch.await(30, TimeUnit.SECONDS);
                 assertTrue("Callback not invoked", isCalled.get());

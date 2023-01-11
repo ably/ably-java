@@ -1,5 +1,17 @@
 package io.ably.lib.test.realtime;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.Timeout;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.List;
+
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
@@ -15,18 +27,6 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.ProtocolMessage;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class RealtimeResumeTest extends ParameterizedTest {
 
@@ -97,7 +97,6 @@ public class RealtimeResumeTest extends ParameterizedTest {
      * the connection continues to receive messages on attached
      * channels after reconnection.
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void resume_simple() {
         AblyRealtime ablyTx = null;
@@ -188,7 +187,6 @@ public class RealtimeResumeTest extends ParameterizedTest {
      * verify that the messages sent whilst disconnected are delivered
      * on resume
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void resume_disconnected() {
         AblyRealtime ablyTx = null;
@@ -274,7 +272,6 @@ public class RealtimeResumeTest extends ParameterizedTest {
     /**
      * Verify resume behaviour with multiple channels
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void resume_multiple_channel() {
         AblyRealtime ablyTx = null;
@@ -377,7 +374,6 @@ public class RealtimeResumeTest extends ParameterizedTest {
      * Verify resume behaviour across disconnect periods covering
      * multiple subminute intervals
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void resume_multiple_interval() {
         AblyRealtime ablyTx = null;
@@ -466,7 +462,6 @@ public class RealtimeResumeTest extends ParameterizedTest {
      * Disconnect and then reconnect the send connection; verify that
      * each subsequent publish causes a CompletionListener call.
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void resume_verify_publish() {
         AblyRealtime ablyTx = null;
@@ -572,7 +567,6 @@ public class RealtimeResumeTest extends ParameterizedTest {
      * round of messages which should be queued and published after
      * we reconnect the sender.
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void resume_publish_queue() {
         AblyRealtime receiver = null;

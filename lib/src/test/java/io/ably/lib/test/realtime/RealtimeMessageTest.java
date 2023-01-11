@@ -3,26 +3,25 @@ package io.ably.lib.test.realtime;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import io.ably.lib.types.MessageExtras;
-import io.ably.lib.util.Serialisation;
-import org.junit.Ignore;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 
 import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
@@ -34,12 +33,12 @@ import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.rest.AblyRest;
+import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.Helpers.MessageWaiter;
-import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.common.Setup;
 import io.ably.lib.transport.ConnectionManager;
@@ -48,8 +47,10 @@ import io.ably.lib.types.Callback;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
+import io.ably.lib.types.MessageExtras;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.Serialisation;
 
 public class RealtimeMessageTest extends ParameterizedTest {
 
@@ -62,7 +63,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
     /**
      * Connect to the service and attach, subscribe to an event, and publish on that channel
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void single_send() {
         AblyRealtime ably = null;
@@ -107,7 +107,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
      * attach, subscribe to an event, publish on one
      * connection and confirm receipt on the other.
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void single_send_noecho() {
         AblyRealtime txAbly = null;
@@ -166,7 +165,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
      * Get a channel and subscribe without explicitly attaching.
      * Verify that the channel reaches the attached state.
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void subscribe_implicit_attach() {
         AblyRealtime ably = null;
@@ -289,11 +287,10 @@ public class RealtimeMessageTest extends ParameterizedTest {
         }
     }
 
-    /*
+    /**
      * Test right and wrong channel states to publish messages
      * Tests RTL6c
-     */
-    @Ignore("FIXME: fix exception")
+     **/
     @Test
     public void publish_channel_state() {
         AblyRealtime ably = null;
@@ -399,7 +396,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
         }
     }
 
-    @Ignore("FIXME: fix exception")
     @Test
     public void multiple_send_10_1000_16_string() {
         int messageCount = 10;
@@ -407,7 +403,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
         _multiple_send("multiple_send_10_1000_16_string_" + testParams.name, messageCount, 16, false, delay);
     }
 
-    @Ignore("FIXME: fix exception")
     @Test
     public void multiple_send_10_1000_16_binary() {
         int messageCount = 10;
@@ -415,7 +410,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
         _multiple_send("multiple_send_10_1000_16_binary_" + testParams.name, messageCount, 16, true, delay);
     }
 
-    @Ignore("FIXME: fix exception")
     @Test
     public void multiple_send_10_1000_512_string() {
         int messageCount = 10;
@@ -423,7 +417,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
         _multiple_send("multiple_send_10_1000_512_string_" + testParams.name, messageCount, 512, false, delay);
     }
 
-    @Ignore("FIXME: fix exception")
     @Test
     public void multiple_send_10_1000_512_binary() {
         int messageCount = 10;
@@ -431,7 +424,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
         _multiple_send("multiple_send_10_1000_512_binary_" + testParams.name, messageCount, 512, true, delay);
     }
 
-    @Ignore("FIXME: fix exception")
     @Test
     public void multiple_send_20_200() {
         int messageCount = 20;
@@ -439,7 +431,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
         _multiple_send("multiple_send_20_200_" + testParams.name, messageCount, 256, true, delay);
     }
 
-    @Ignore("FIXME: fix exception")
     @Test
     public void multiple_send_200_50() {
         int messageCount = 200;
@@ -447,7 +438,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
         _multiple_send("multiple_send_binary_200_50_" + testParams.name, messageCount, 256, true, delay);
     }
 
-    @Ignore("FIXME: fix exception")
     @Test
     public void multiple_send_1000_10() {
         int messageCount = 1000;
@@ -522,7 +512,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
         }
     }
 
-    @Ignore("FIXME: fix exception")
     @Test
     public void messages_encoding_fixtures() {
         MessagesEncodingData fixtures;
@@ -587,7 +576,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
         }
     }
 
-    @Ignore("FIXME: fix exception")
     @Test
     public void messages_msgpack_and_json_encoding_is_compatible() {
         MessagesEncodingData fixtures;
@@ -889,7 +877,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
      * Refer Spec. TM3
      * @throws AblyException
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void messages_from_encoded_json_array() throws AblyException {
         JsonArray fixtures = null;
@@ -937,15 +924,12 @@ public class RealtimeMessageTest extends ParameterizedTest {
      *
      * @see <a href="https://docs.ably.com/client-lib-development-guide/features/#RSL6a2">RSL6a2</a>
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void opaque_message_extras() throws AblyException {
         AblyRealtime ably = null;
         try {
             final JsonObject opaqueJson = new JsonObject();
-            opaqueJson.addProperty("Some Property", "Lorem Ipsum");
-            opaqueJson.addProperty("Some Truth", false);
-            opaqueJson.addProperty("Some Number", 321);
+            opaqueJson.addProperty("headers", "{\"key_text\":\"text value\",\"key_boolean\":true,\"key_int\":33}\n");
 
             final MessageExtras extras = new MessageExtras(opaqueJson);
             final Message message = new Message();
@@ -980,6 +964,45 @@ public class RealtimeMessageTest extends ParameterizedTest {
             assertEquals("The Test Message", received.name);
             assertEquals("Some Value", received.data);
             assertEquals(extras, received.extras);
+        } finally {
+            if(ably != null) {
+                ably.close();
+            }
+        }
+    }
+
+    /**
+     * Publish a message that contains extras of invalid format.
+     */
+    @Test
+    public void opaque_message_extras_fail() throws AblyException {
+        AblyRealtime ably = null;
+        try {
+            final JsonObject opaqueJson = new JsonObject();
+            opaqueJson.addProperty("Some Property", "Lorem Ipsum");
+            opaqueJson.addProperty("Some Truth", false);
+            opaqueJson.addProperty("Some Number", 321);
+
+            final MessageExtras extras = new MessageExtras(opaqueJson);
+            final Message message = new Message();
+            message.name = "The Test Message";
+            message.data = "Some Value";
+            message.extras = extras;
+
+            final ClientOptions clientOptions = createOptions(testVars.keys[0].keyStr);
+            ably = new AblyRealtime(clientOptions);
+
+            // create a channel and attach to it
+            final Channel channel = ably.channels.get(createChannelName("opaque_message_extras_fail"));
+            channel.attach();
+            (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+            assertEquals(ChannelState.attached, channel.state);
+
+            // publish and await expected failure (completion with error)
+            final CompletionWaiter completionWaiter = new CompletionWaiter();
+            channel.publish(message, completionWaiter);
+            completionWaiter.waitFor();
+            assertNotNull("error is not received for invalid extras format", completionWaiter.error);
         } finally {
             if(ably != null) {
                 ably.close();

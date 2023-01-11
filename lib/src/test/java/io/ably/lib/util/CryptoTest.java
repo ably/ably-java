@@ -4,18 +4,17 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.google.gson.stream.JsonWriter;
+
+import org.junit.Test;
+import org.msgpack.core.MessagePack;
+import org.msgpack.core.MessagePacker;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-
-import org.junit.Ignore;
-import org.junit.Test;
-import org.msgpack.core.MessagePack;
-import org.msgpack.core.MessagePacker;
-
-import com.google.gson.stream.JsonWriter;
 
 import io.ably.lib.types.AblyException;
 import io.ably.lib.util.Crypto.ChannelCipherSet;
@@ -87,7 +86,6 @@ public class CryptoTest {
      * testEncryptAndDecrypt in Spec/CryptoTest.m
      * @throws IOException
      */
-    @Ignore("FIXME: NullPointerException should be fixed")
     @Test
     public void encryptAndDecrypt() throws NoSuchAlgorithmException, AblyException, IOException {
         final FixtureSet fixtureSet = FixtureSet.AES256;

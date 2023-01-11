@@ -39,7 +39,7 @@ public class RestProxyTest extends ParameterizedTest {
             /* Verify we got a 50x */
             assertTrue(true);
         } catch (AblyException e) {
-            fail("Wrong error code");
+            fail("Wrong error code: " + e.getMessage());
         }
     }
 
@@ -64,7 +64,7 @@ public class RestProxyTest extends ParameterizedTest {
             /* Verify we got a 50x */
             assertTrue(true);
         } catch (AblyException e) {
-            fail("Wrong error code");
+            fail("Wrong error code: " + e.getMessage());
         }
     }
 
@@ -90,7 +90,7 @@ public class RestProxyTest extends ParameterizedTest {
             assertNotNull("Expected non-null stats", stats);
         } catch (AblyException e) {
             e.printStackTrace();
-            fail("proxy_simple_plain: Unexpected exception");
+            fail("proxy_simple_plain: Unexpected exception: " + e.getMessage());
             return;
         }
     }
@@ -115,7 +115,7 @@ public class RestProxyTest extends ParameterizedTest {
             assertNotNull("Expected non-null stats", stats);
         } catch (AblyException e) {
             e.printStackTrace();
-            fail("proxy_simple_tls: Unexpected exception");
+            fail("proxy_simple_tls: Unexpected exception: " + e.getMessage());
             return;
         }
     }
@@ -138,13 +138,13 @@ public class RestProxyTest extends ParameterizedTest {
                 password = "password";
             }};
             AblyRest ably = new AblyRest(opts);
-    
+
             /* attempt the call, expecting no exception */
             PaginatedResult<Stats> stats = ably.stats(null);
             assertNotNull("Expected non-null stats", stats);
         } catch (AblyException e) {
             e.printStackTrace();
-            fail("proxy_basic_auth_plain: Unexpected exception");
+            fail("proxy_basic_auth_plain: Unexpected exception: " + e.getMessage());
             return;
         }
     }
@@ -167,13 +167,13 @@ public class RestProxyTest extends ParameterizedTest {
                 prefAuthType = HttpAuth.Type.DIGEST;
             }};
             AblyRest ably = new AblyRest(opts);
-    
+
             /* attempt the call, expecting no exception */
             PaginatedResult<Stats> stats = ably.stats(null);
             assertNotNull("Expected non-null stats", stats);
         } catch (AblyException e) {
             e.printStackTrace();
-            fail("proxy_digest_auth_plain: Unexpected exception");
+            fail("proxy_digest_auth_plain: Unexpected exception: " + e.getMessage());
             return;
         }
     }
@@ -193,13 +193,13 @@ public class RestProxyTest extends ParameterizedTest {
                 password = "password";
             }};
             AblyRest ably = new AblyRest(opts);
-    
+
             /* attempt the call, expecting no exception */
             PaginatedResult<Stats> stats = ably.stats(null);
             assertNotNull("Expected non-null stats", stats);
         } catch (AblyException e) {
             e.printStackTrace();
-            fail("proxy_basic_auth_tls: Unexpected exception");
+            fail("proxy_basic_auth_tls: Unexpected exception: " + e.getMessage());
             return;
         }
     }

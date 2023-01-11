@@ -9,10 +9,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
+
+import java.util.Locale;
 
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.AblyRealtime;
@@ -24,7 +25,6 @@ import io.ably.lib.rest.Auth.TokenParams;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
-import io.ably.lib.test.common.Helpers.PresenceWaiter;
 import io.ably.lib.test.common.Helpers.RawProtocolMonitor;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
@@ -32,12 +32,8 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.PresenceMessage;
-import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
 
-import java.util.Locale;
-
-@Ignore("FIXME: fix ably exception")
 public class RealtimePresenceHistoryTest extends ParameterizedTest {
 
     private static final String testClientId = "testClientId";
@@ -1031,114 +1027,6 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
     }
 
     /**
-     * Connect twice to the service.
-     * Publish messages on one connection to a given channel; while in progress,
-     * attach the second connection to the same channel and verify a message
-     * history up to the point of attachment can be obtained.
-     */
-    @Test
-    @Ignore("Fails due to issues in sandbox. See https://github.com/ably/realtime/issues/1845 for details.")
-    public void presencehistory_from_attach() {
-        AblyRealtime txAbly = null, rxAbly = null;
-        try {
-            ClientOptions txOpts = createOptions();
-            txOpts.token = token.token;
-            txOpts.clientId = testClientId;
-            txAbly = new AblyRealtime(txOpts);
-
-            DebugOptions rxOpts = new DebugOptions(testVars.keys[0].keyStr);
-            fillInOptions(rxOpts);
-            RawProtocolMonitor rawPresenceWaiter = RawProtocolMonitor.createReceiver(Action.presence);
-            rxOpts.protocolListener = rawPresenceWaiter;
-            rxAbly = new AblyRealtime(rxOpts);
-            String channelName = "persisted:presencehistory_from_attach_" + testParams.name;
-
-            /* create a channel */
-            final Channel txChannel = txAbly.channels.get(channelName);
-            final Channel rxChannel = rxAbly.channels.get(channelName);
-
-            /* attach sender */
-            txChannel.attach();
-            (new ChannelWaiter(txChannel)).waitFor(ChannelState.attached);
-            assertEquals("Verify attached state reached", txChannel.state, ChannelState.attached);
-
-            /* publish messages to the channel */
-            final CompletionSet msgComplete = new CompletionSet();
-            Thread publisherThread = new Thread() {
-                @Override
-                public void run() {
-                    for(int i = 0; i < 50; i++) {
-                        try {
-                            txChannel.presence.enter(String.valueOf(i), msgComplete.add());
-                            try {
-                                sleep(100L);
-                            } catch(InterruptedException ie) {}
-                        } catch(AblyException e) {
-                            e.printStackTrace();
-                            fail("presencehistory_from_attach: Unexpected exception");
-                            return;
-                        }
-                    }
-                    msgComplete.waitFor();
-                }
-            };
-            publisherThread.start();
-
-            /* wait 2 seconds */
-            try {
-                Thread.sleep(2000L);
-            } catch(InterruptedException ie) {
-                fail("presencehistory_from_attach: exception in publisher thread");
-            }
-
-            /* subscribe; this will trigger the attach */
-            PresenceWaiter presenceWaiter =  new PresenceWaiter(rxChannel);
-
-            /* get the channel history from the attachSerial when we get the attach indication */
-            (new ChannelWaiter(rxChannel)).waitFor(ChannelState.attached);
-            assertEquals("Verify attached state reached", rxChannel.state, ChannelState.attached);
-            assertNotNull("Verify attachSerial provided", rxChannel.properties.attachSerial);
-
-            /* the subscription callback will be called first on the "sync" presence message
-             * delivered immediately following attach; so wait for this and then the first
-             * "realtime" message to be received */
-            presenceWaiter.waitFor(2);
-            PresenceMessage firstReceivedRealtimeMessage = null;
-            for(ProtocolMessage msg : rawPresenceWaiter.receivedMessages) {
-                if(msg.channelSerial != null) {
-                    firstReceivedRealtimeMessage = msg.presence[0];
-                    break;
-                }
-            }
-
-            /* wait for the end of the tx thread */
-            try {
-                publisherThread.join();
-            } catch (InterruptedException e) {}
-            assertTrue("Verify success callback was called", msgComplete.errors.isEmpty());
-
-            /* get the history for this channel */
-            PaginatedResult<PresenceMessage> messages = rxChannel.presence.history(new Param[] { new Param("from_serial", rxChannel.properties.attachSerial)});
-            assertNotNull("Expected non-null messages", messages);
-            assertTrue("Expected at least one message", messages.items().length >= 1);
-
-            /* verify that the history and received messages meet */
-            int earliestReceivedOnConnection = Integer.valueOf((String)firstReceivedRealtimeMessage.data);
-            int latestReceivedInHistory = Integer.valueOf((String)messages.items()[0].data);
-            assertEquals("Verify that the history and received messages meet", earliestReceivedOnConnection, latestReceivedInHistory + 1);
-
-        } catch (AblyException e) {
-            e.printStackTrace();
-            fail("presencehistory_from_attach: Unexpected exception instantiating library");
-        } finally {
-            if(txAbly != null)
-                txAbly.close();
-            if(rxAbly != null)
-                rxAbly.close();
-        }
-    }
-
-    /**
      * Connect twice to the service, each using the default (binary) protocol.
      * Publish messages on one connection to a given channel; while in progress,
      * attach the second connection to the same channel and verify a message
@@ -1185,7 +1073,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             assertNotNull("Verify attachSerial provided", rxChannel.properties.attachSerial);
 
             /* get the history for this channel */
-            PaginatedResult<PresenceMessage> messages = rxChannel.presence.history(new Param[] { new Param("untilAttach", "true") });
+            PaginatedResult<PresenceMessage> messages = rxChannel.presence.history(null);
             assertNotNull("Expected non-null messages", messages);
             assertTrue("Expected at least one message", messages.items().length >= 1);
 
@@ -1202,7 +1090,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             }
         } catch (AblyException e) {
             e.printStackTrace();
-            fail("presencehistory_from_attach: Unexpected exception instantiating library");
+            fail("presencehistory_from_attach: Unexpected exception instantiating library: " + e.getMessage());
         } finally {
             if(txAbly != null)
                 txAbly.close();

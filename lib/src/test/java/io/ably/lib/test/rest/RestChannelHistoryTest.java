@@ -4,15 +4,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-import java.util.HashMap;
-import java.util.UUID;
-
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
+
+import java.util.HashMap;
+import java.util.UUID;
 
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Channel;
@@ -228,7 +227,6 @@ public class RestChannelHistoryTest extends ParameterizedTest {
      * Publish events and check expected history based on time slice (forwards)
      */
     @Test
-    @Ignore("Fails in sandbox due to timing issues")
     public void channelhistory_time_f() {
         /* first, publish some messages */
         long intervalStart = 0, intervalEnd = 0;

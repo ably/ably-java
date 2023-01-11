@@ -1,5 +1,14 @@
 package io.ably.lib.test.realtime;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import org.junit.Test;
+
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
@@ -17,15 +26,6 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class RealtimeRecoverTest extends ParameterizedTest {
 
@@ -41,7 +41,6 @@ public class RealtimeRecoverTest extends ParameterizedTest {
      * on recover
      * Spec: RTN16a,RTN16b
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void recover_disconnected() {
         AblyRealtime ablyRx = null, ablyTx = null, ablyRxRecover = null;
@@ -141,7 +140,6 @@ public class RealtimeRecoverTest extends ParameterizedTest {
      * on recover
      * Spec: RTN16a,RTN16b
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void recover_implicit_connect() {
         AblyRealtime ablyRx = null, ablyTx = null, ablyRxRecover = null;
@@ -236,7 +234,6 @@ public class RealtimeRecoverTest extends ParameterizedTest {
      * Disconnect+suspend and then reconnect the send connection; verify that
      * each subsequent publish causes a CompletionListener call.
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void recover_verify_publish() {
         AblyRealtime ablyRx = null, ablyTx = null;
