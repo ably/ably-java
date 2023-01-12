@@ -1,10 +1,7 @@
 package io.ably.lib.util;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 /**
  * A generic interface for event registration and delivery used in a number of the types in the Realtime client library.
@@ -26,8 +23,8 @@ public abstract class EventEmitter<Event, Listener> {
     }
 
     /**
-     * Registers the provided listener all events.
-     * If on() is called more than once with the same listener and event,
+     * Registers the provided listener for all events.
+     * If on() is called more than once with the same listener,
      * the listener is added multiple times to its listener registry.
      * Therefore, as an example, assuming the same listener is registered twice using on(),
      * and an event is emitted once, the listener would be invoked twice.
@@ -39,8 +36,7 @@ public abstract class EventEmitter<Event, Listener> {
      * This listener is invoked on a background thread.
      */
     public synchronized void on(Listener listener) {
-        if(!listeners.contains(listener))
-            listeners.add(listener);
+        listeners.add(listener);
     }
 
     /**
@@ -58,7 +54,7 @@ public abstract class EventEmitter<Event, Listener> {
      * This listener is invoked on a background thread.
      */
     public synchronized void once(Listener listener) {
-        filters.put(listener, new Filter(null, listener, true));
+        filters.add(new Filter(null, listener, true));
     }
 
     /**
@@ -70,7 +66,7 @@ public abstract class EventEmitter<Event, Listener> {
      */
     public synchronized void off(Listener listener) {
         listeners.remove(listener);
-        filters.remove(listener);
+        filters.removeIf(pair -> pair.listener == listener);
     }
 
     /**
@@ -88,7 +84,7 @@ public abstract class EventEmitter<Event, Listener> {
      * This listener is invoked on a background thread.
      */
     public synchronized void on(Event event, Listener listener) {
-        filters.put(listener, new Filter(event, listener, false));
+        filters.add(new Filter(event, listener, false));
     }
 
     /**
@@ -106,7 +102,7 @@ public abstract class EventEmitter<Event, Listener> {
      * This listener is invoked on a background thread.
      */
     public synchronized void once(Event event, Listener listener) {
-        filters.put(listener, new Filter(event, listener, true));
+        filters.add(new Filter(event, listener, true));
     }
 
     /**
@@ -117,9 +113,7 @@ public abstract class EventEmitter<Event, Listener> {
      * @param event The named event.
      */
     public synchronized void off(Event event, Listener listener) {
-        Filter filter = filters.get(listener);
-        if(filter != null && filter.event == event)
-            filters.remove(listener);
+        filters.removeIf(filter -> filter.listener == listener && filter.event != null && filter.event == event);
     }
 
     /**
@@ -144,17 +138,19 @@ public abstract class EventEmitter<Event, Listener> {
             apply(listener, event, args);
         }
 
-        Map<Listener, Filter> clonedFilters = new HashMap<>(filters);
-        for (Iterator<Map.Entry<Listener, Filter>> it = clonedFilters.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<Listener, Filter> entry = it.next();
-            if (entry.getValue().apply(event, args)) {
-                filters.remove(entry.getKey());
+        List<Filter> clonedFilters = new ArrayList<>(filters);
+        for (Filter entry: clonedFilters) {
+            if (entry.apply(event, args)) {
+                filters.remove(entry);
             }
         }
     }
 
     protected abstract void apply(Listener listener, Event event, Object... args);
 
+    /**
+     * Used to determine whether or not a listener is interested
+     */
     protected class Filter {
         Filter(Event event, Listener listener, boolean once) { this.event = event; this.listener = listener; this.once = once; }
         private Event event;
@@ -169,6 +165,6 @@ public abstract class EventEmitter<Event, Listener> {
         }
     }
 
-    Map<Listener, Filter> filters = new HashMap<Listener, Filter>();
+    List<Filter> filters = new ArrayList<Filter>();
     List<Listener> listeners = new ArrayList<Listener>();
 }
