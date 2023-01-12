@@ -73,7 +73,7 @@ public class EventEmitterTest {
         assertEquals(listener.counts.get(MyEvents.event_1), Integer.valueOf(1));
     }
 
-        /**
+    /**
      * Register a listener twice, and verify it is called twice
      * when the event is emitted
      */
