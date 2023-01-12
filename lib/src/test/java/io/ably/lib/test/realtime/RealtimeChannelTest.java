@@ -24,6 +24,8 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.util.Log;
+
 import org.hamcrest.Matchers;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -1013,6 +1015,99 @@ public class RealtimeChannelTest extends ParameterizedTest {
             /* Verify onSuccess callback gets called */
             waiter.waitFor();
             assertThat(waiter.success, is(true));
+        } finally {
+            if(ably != null)
+                ably.close();
+        }
+    }
+
+
+    /**
+     * When client attaches to a channel in detaching state, verify that attach call will be done after detach
+     * response is received
+     * verify attach {@code CompletionListener#onSuccess()} gets called.
+     */
+    // Spec: RTL4h
+    // https://github.com/ably/ably-java/issues/885
+    @Test
+    public void attach_when_channel_in_detaching_state() throws AblyException {
+        AblyRealtime ably = null;
+        try {
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+            opts.logLevel = Log.VERBOSE;
+            ably = new AblyRealtime(opts);
+
+            /* wait until connected */
+            (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+            assertEquals("Verify connected state reached", ConnectionState.connected, ably.connection.state);
+
+            /* create a channel and attach */
+            final String channelName = "attach_channel";
+            final Channel channel = ably.channels.get(channelName);
+            channel.attach();
+            new ChannelWaiter(channel).waitFor(ChannelState.attached);
+            assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
+
+            /* detach */
+            final Helpers.CompletionWaiter detachCompletionWaiter = new Helpers.CompletionWaiter();
+            channel.detach(detachCompletionWaiter);
+            assertEquals("Verify detaching state reached", ChannelState.detaching, channel.state);
+            final Helpers.CompletionWaiter attachCompletionWaiter = new Helpers.CompletionWaiter();
+            //attempt to attach while detaching
+            channel.attach(attachCompletionWaiter);
+
+            /* Verify onSuccess callback gets called */
+            detachCompletionWaiter.waitFor();
+            assertThat(detachCompletionWaiter.success, is(true));
+            assertThat(channel.state, is(ChannelState.detached));
+            //verify reattach - after detach
+            attachCompletionWaiter.waitFor();
+            assertThat(attachCompletionWaiter.success,is(true));
+            assertThat(channel.state, is(ChannelState.attached));
+        } finally {
+            if(ably != null)
+                ably.close();
+        }
+    }
+
+    /**
+     * When client detaches from a channel in attaching state, verify that detach call will be done after attach
+     * response is received
+     * verify attach {@code CompletionListener#onSuccess()} gets called.
+     */
+    // Spec: RTL5i
+    // https://github.com/ably/ably-java/issues/885
+    @Test
+    public void detach_when_channel_in_attaching_state() throws AblyException {
+        AblyRealtime ably = null;
+        try {
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+            opts.logLevel = Log.VERBOSE;
+            ably = new AblyRealtime(opts);
+
+            /* wait until connected */
+            (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+            assertEquals("Verify connected state reached", ConnectionState.connected, ably.connection.state);
+
+            /* create a channel and attach */
+            final String channelName = "attach_channel";
+            final Channel channel = ably.channels.get(channelName);
+            final Helpers.CompletionWaiter attachCompletionWaiter = new Helpers.CompletionWaiter();
+            channel.attach(attachCompletionWaiter);
+            assertEquals("Verify detaching state reached", ChannelState.attaching, channel.state);
+            //immediately start detach operation
+            final Helpers.CompletionWaiter detachCompletionWaiter = new Helpers.CompletionWaiter();
+            channel.detach(detachCompletionWaiter);
+
+            new ChannelWaiter(channel).waitFor(ChannelState.attached);
+            assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
+
+            //now wait for detach to complete
+            (new ChannelWaiter(channel)).waitFor(ChannelState.detached);
+            detachCompletionWaiter.waitFor();
+
+            assertThat(detachCompletionWaiter.success,is(true));
+            assertThat(channel.state, is(ChannelState.detached));
         } finally {
             if(ably != null)
                 ably.close();
