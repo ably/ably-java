@@ -81,6 +81,8 @@ public class ConnectionManager implements ConnectListener {
         void onMessage(ProtocolMessage msg);
         void suspendAll(ErrorInfo error, boolean notifyStateChange);
         Iterable<Channel> values();
+
+        void reattachOnResumeFailure();
     }
 
     /***********************************
@@ -1183,44 +1185,38 @@ public class ConnectionManager implements ConnectListener {
     }
 
     private synchronized void onConnected(ProtocolMessage message) {
-        /* if the returned connection id differs from
-         * the existing connection id, then this means
-         * we need to suspend all existing attachments to
-         * the old connection.
-         * If realtime did not reply with an error, it
-         * signifies that this was a result of an earlier
-         * connection being invalidated due to being stale.
-         *
-         * Suspend all channels attached to the previous id;
-         * this will be reattached in setConnection() */
         ErrorInfo error = message.error;
-        if(connection.id != null && !message.connectionId.equals(connection.id)) {
-            /* we need to suspend the original connection */
-            if(error == null) {
-                error = REASON_SUSPENDED;
+
+        if (message.connectionId.equals(connection.id)) {
+            //RTN15c1
+            if (error == null) {
+                Log.d(TAG, "connection has reconnected and resumed successfully");
+                connection.reason = null;
+            }else { //RTN15c2
+                Log.d(TAG, "connection resume success with non-fatal error: " + error.message);
+                connection.reason = error;
             }
-            channels.suspendAll(error, false);
+        //make sure it's not a fresh connection
+        } else if (connection.id != null) { //RTN15c3
+            if (error != null){
+                Log.d(TAG, "connection resume failed with error: " + error.message);
+                connection.reason = error;
+            }
+            channels.reattachOnResumeFailure();
+            connection.connectionManager.msgSerial = 0;
         }
 
-        /* set the new connection id */
-        ConnectionDetails connectionDetails = message.connectionDetails;
-        connection.key = connectionDetails.connectionKey;
-        if (!message.connectionId.equals(connection.id)) {
-            /* The connection id has changed. Reset the message serial and the
-             * pending message queue (which fails the messages currently in
-             * there). */
-            pendingMessages.reset(msgSerial,
-                    new ErrorInfo("Connection resume failed", 500, 50000));
-            msgSerial = 0;
-        }
         connection.id = message.connectionId;
+
         if(message.connectionSerial != null) {
-            connection.serial = message.connectionSerial.longValue();
+            connection.serial = message.connectionSerial;
             if (connection.key != null)
                 connection.recoveryKey = connection.key + ":" + message.connectionSerial;
         }
 
+        ConnectionDetails connectionDetails = message.connectionDetails;
         /* Get any parameters from connectionDetails. */
+        connection.key = connectionDetails.connectionKey; //RTN16d
         maxIdleInterval = connectionDetails.maxIdleInterval;
         connectionStateTtl = connectionDetails.connectionStateTtl;
 
@@ -1233,10 +1229,33 @@ public class ConnectionManager implements ConnectListener {
             return;
         }
 
+        //RTN19a
+        sendPendingQueueMessages();
+
         /* indicated connected currentState */
         setSuspendTime();
         requestState(new StateIndication(ConnectionState.connected, error));
     }
+
+    /**
+     * Send all pending messages which are in the queue.
+     * Remove them from the queue once they are sent successfully
+     * Spec: RTN19a
+     */
+    private void sendPendingQueueMessages() {
+        //RTN19a
+        for (final QueuedMessage queuedMessage : pendingMessages.queue) {
+            try {
+                send(queuedMessage.msg, false, null);
+            } catch (AblyException e) {
+                String errorString = String.format(Locale.ROOT, "Unable to send pending message %s (%s)",
+                    queuedMessage.msg.id, e.errorInfo.message);
+                Log.e(TAG, errorString);
+                connection.emitUpdate(e.errorInfo);
+            }
+        }
+    }
+
 
     private synchronized void onDisconnected(ProtocolMessage message) {
         ErrorInfo reason = message.error;

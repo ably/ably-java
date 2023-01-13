@@ -231,6 +231,20 @@ public class AblyRealtime extends AblyRest {
             }
         }
 
+        /**
+         * By spec RTN15c3
+         */
+        @Override
+        public void reattachOnResumeFailure() {
+            for (Map.Entry<String, Channel> channelEntry : map.entrySet()) {
+                Channel channel = channelEntry.getValue();
+                if (channel.state == ChannelState.attaching || channel.state == ChannelState.attached || channel.state == ChannelState.suspended) {
+                    Log.d(TAG, "reAttach(); channel = " + channel.name);
+                    channel.attach(true, null);
+                }
+            }
+        }
+
         private void clear() {
             map.clear();
         }

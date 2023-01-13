@@ -181,7 +181,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         this.attach(false, listener);
     }
 
-    private void attach(boolean forceReattach, CompletionListener listener) {
+    void attach(boolean forceReattach, CompletionListener listener) {
         clearAttachTimers();
         attachWithTimeout(forceReattach, listener);
     }
