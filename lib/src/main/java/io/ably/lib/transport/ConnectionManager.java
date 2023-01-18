@@ -1249,28 +1249,20 @@ public class ConnectionManager implements ConnectListener {
      * on pending queue, for example when a connection resume failed
      */
     private void addPendingMessagesToQueuedMessages(boolean resetMessageSerial) {
+        // Add messages from pending messages to front of queuedMessages in order to retry them
+        queuedMessages.addAll(0, pendingMessages.queue);
+        //rewind start serial back to the first serial since we are clearing the queue
+        if (!pendingMessages.queue.isEmpty()){
+            //Reset current serial to the first pending message on previous queue as we are going to clear the queue now
+            msgSerial =  pendingMessages.queue.get(0).msg.msgSerial;
+            pendingMessages.resetStartSerial((int) (msgSerial));
+            pendingMessages.clearQueue();
+        }
+
         //RTN19a
         if (resetMessageSerial){
             pendingMessages.resetStartSerial(0);
             msgSerial = 0; //msgSerial will increase in sendImpl when messages are sent
-        }
-        //put messages from pending messages to front of queuedMessages, the ones with the message serials will already
-        //have been assigned new message serial to them at this point
-        final int pendingMessageCount = pendingMessages.queue.size();
-        queuedMessages.addAll(0, pendingMessages.queue);
-        //Clear the pendingQueue now, because we do not want the retried messages to accumulate on it.
-        pendingMessages.clearQueue();
-
-
-        // reassign new serials for remaining queued messages if reset was required
-        if (resetMessageSerial) {
-            int startIndex = pendingMessageCount != 0 ? pendingMessageCount - 1 : 0;
-            for (int i = startIndex; i < queuedMessages.size(); i++) {
-                //if index is 0, it means there wasn't any previous pending messages so we use newly reset msgSerial as
-                //starting serial
-                final long previousMessageSerial = i == 0 ? msgSerial : queuedMessages.get(i - 1).msg.msgSerial;
-                queuedMessages.get(i).msg.msgSerial = previousMessageSerial + 1;
-            }
         }
     }
 
