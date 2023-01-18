@@ -1185,25 +1185,35 @@ public class ConnectionManager implements ConnectListener {
     }
 
     private synchronized void onConnected(ProtocolMessage message) {
-        ErrorInfo error = message.error;
+        final ErrorInfo error = message.error;
+        connection.reason = error;
+        if (connection.id != null) { // there was a previous connection, so this is a resume and RTN15c applies
+            if(message.connectionId.equals(connection.id)) {
+                // resume succeeded
+                if(message.error == null) {
+                    // RTN15c1: no action required wrt channel state
+                    Log.d(TAG, "connection has reconnected and resumed successfully");
+                } else {
+                    // RTN15c2: no action required wrt channel state
+                    Log.d(TAG, "connection resume success with non-fatal error: " + error.message);
+                }
+                // send any messages still pending from the previous transport (RTN19a)
+                sendPendingQueueMessages();
+            } else {
+                // RTN15c3: resume failed
+                if (error != null){
+                    Log.d(TAG, "connection resume failed with error: " + error.message);
+                }else { // This shouldn't happen but, putting it here for safety
+                    Log.d(TAG, "connection resume failed without error" );
+                }
 
-        if (message.connectionId.equals(connection.id)) {
-            //RTN15c1
-            if (error == null) {
-                Log.d(TAG, "connection has reconnected and resumed successfully");
-                connection.reason = null;
-            }else { //RTN15c2
-                Log.d(TAG, "connection resume success with non-fatal error: " + error.message);
-                connection.reason = error;
+                channels.reattachOnResumeFailure();
+                connection.connectionManager.msgSerial = 0;
+                // send any messages still pending from the previous transport (RTN19a)
+                // however, this time the re-sent pending messages have to have newly assigned `
+                // msgSerial`s. They can't simply be replayed, as they are in the successful resume case
+                sendPendingQueueMessages();
             }
-        //make sure it's not a fresh connection
-        } else if (connection.id != null) { //RTN15c3
-            if (error != null){
-                Log.d(TAG, "connection resume failed with error: " + error.message);
-                connection.reason = error;
-            }
-            channels.reattachOnResumeFailure();
-            connection.connectionManager.msgSerial = 0;
         }
 
         connection.id = message.connectionId;
