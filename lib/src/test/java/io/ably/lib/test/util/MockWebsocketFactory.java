@@ -1,5 +1,8 @@
 package io.ably.lib.test.util;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ITransport;
 import io.ably.lib.transport.WebSocketTransport;
@@ -17,6 +20,13 @@ public class MockWebsocketFactory implements ITransport.Factory {
         block,
         fail
     }
+
+    enum ReceiveBehaviour {
+        allow,
+        block,
+        fail
+    }
+
     enum ConnectBehaviour {
         allow,
         fail
@@ -35,8 +45,10 @@ public class MockWebsocketFactory implements ITransport.Factory {
     }
 
     SendBehaviour sendBehaviour = SendBehaviour.allow;
+    ReceiveBehaviour receiveBehaviour = ReceiveBehaviour.allow;
     ConnectBehaviour connectBehaviour = ConnectBehaviour.allow;
-    MessageFilter messageFilter = null;
+    MessageFilter sendMessageFilter = null;
+    MessageFilter receiveMessageFilter = null;
     HostFilter hostFilter = null;
     HostTransform hostTransform = null;
 
@@ -63,26 +75,38 @@ public class MockWebsocketFactory implements ITransport.Factory {
         return lastCreatedTransport;
     }
 
+    //only use this when you know when transport is created - just for tests
+    public MockWebsocketTransport getCreatedTransport() {
+        return (MockWebsocketTransport) lastCreatedTransport;
+    }
+
     public void blockSend(MessageFilter filter) {
-        messageFilter = filter;
+        sendMessageFilter = filter;
         sendBehaviour = SendBehaviour.block;
     }
+
+    //use the same filters temporarily
+    public void blockReceive(MessageFilter filter) {
+        receiveMessageFilter = filter;
+        receiveBehaviour = ReceiveBehaviour.block;
+    }
+
     public void blockSend() { blockSend(null); }
 
     public void allowSend(MessageFilter filter) {
-        messageFilter = filter;
+        sendMessageFilter = filter;
         sendBehaviour = SendBehaviour.allow;
     }
     public void allowSend() { allowSend(null);}
 
     public void failSend(MessageFilter filter) {
-        messageFilter = filter;
+        sendMessageFilter = filter;
         sendBehaviour = SendBehaviour.fail;
     }
     public void failSend() { failSend(null); }
 
-    public void setMessageFilter(MessageFilter filter) {
-        messageFilter = filter;
+    public void setSendMessageFilter(MessageFilter filter) {
+        sendMessageFilter = filter;
     }
 
     public void failConnect(HostFilter filter) {
@@ -98,9 +122,10 @@ public class MockWebsocketFactory implements ITransport.Factory {
     /*
      * Special transport class that allows blocking send() and other operations
      */
-    private class MockWebsocketTransport extends WebSocketTransport {
+    public class MockWebsocketTransport extends WebSocketTransport {
         private final TransportParams givenTransportParams;
         private final TransportParams transformedTransportParams;
+        private final List<ProtocolMessage> publishedMessages = new ArrayList<>();
 
         private MockWebsocketTransport(TransportParams givenTransportParams, TransportParams transformedTransportParams, ConnectionManager connectionManager) {
             super(transformedTransportParams, connectionManager);
@@ -108,23 +133,34 @@ public class MockWebsocketFactory implements ITransport.Factory {
             this.transformedTransportParams = transformedTransportParams;
         }
 
+        public List<ProtocolMessage> getPublishedMessages() {
+            return publishedMessages;
+        }
+
+        public void clearPublishedMessages() {
+            publishedMessages.clear();
+        }
+
         @Override
         public void send(ProtocolMessage msg) throws AblyException {
+            if (msg.action == ProtocolMessage.Action.message){
+                publishedMessages.add(msg);
+            }
             switch (sendBehaviour) {
                 case allow:
-                    if (messageFilter == null || messageFilter.matches(msg)) {
+                    if (sendMessageFilter == null || sendMessageFilter.matches(msg)) {
                         super.send(msg);
                     }
                     break;
                 case block:
-                    if (messageFilter == null || messageFilter.matches(msg)) {
+                    if (sendMessageFilter == null || sendMessageFilter.matches(msg)) {
                         /* do nothing */
                     } else {
                         super.send(msg);
                     }
                     break;
                 case fail:
-                    if (messageFilter == null || messageFilter.matches(msg)) {
+                    if (sendMessageFilter == null || sendMessageFilter.matches(msg)) {
                         throw AblyException.fromErrorInfo(new ErrorInfo("Mock", 40000));
                     } else {
                         super.send(msg);
@@ -132,6 +168,32 @@ public class MockWebsocketFactory implements ITransport.Factory {
                     break;
             }
         }
+
+        @Override
+        public void receive(ProtocolMessage msg) throws AblyException {
+            switch (receiveBehaviour) {
+                case allow:
+                    if (receiveMessageFilter == null || receiveMessageFilter.matches(msg)) {
+                        super.receive(msg);
+                    }
+                    break;
+                case block:
+                    if (receiveMessageFilter == null || receiveMessageFilter.matches(msg)) {
+                        /* do nothing */
+                    } else {
+                        super.receive(msg);
+                    }
+                    break;
+                case fail:
+                    if (receiveMessageFilter == null || receiveMessageFilter.matches(msg)) {
+                        throw AblyException.fromErrorInfo(new ErrorInfo("Mock", 40000));
+                    } else {
+                        super.receive(msg);
+                    }
+                    break;
+            }
+        }
+
 
         @Override
         public void connect(ConnectListener connectListener) {

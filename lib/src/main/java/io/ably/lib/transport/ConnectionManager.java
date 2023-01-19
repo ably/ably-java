@@ -1188,6 +1188,7 @@ public class ConnectionManager implements ConnectListener {
         final ErrorInfo error = message.error;
         connection.reason = error;
         if (connection.id != null) { // there was a previous connection, so this is a resume and RTN15c applies
+            Log.d(TAG, "There was a connection resume");
             if(message.connectionId.equals(connection.id)) {
                 // resume succeeded
                 if(message.error == null) {
@@ -1266,6 +1267,9 @@ public class ConnectionManager implements ConnectListener {
         }
     }
 
+    public List<QueuedMessage> getPendingMessages() {
+        return pendingMessages.queue;
+    }
 
     private synchronized void onDisconnected(ProtocolMessage message) {
         ErrorInfo reason = message.error;

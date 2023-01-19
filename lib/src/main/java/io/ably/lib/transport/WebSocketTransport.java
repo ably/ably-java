@@ -70,7 +70,7 @@ public class WebSocketTransport implements ITransport {
 
             Log.d(TAG, "connect(); wsUri = " + wsUri);
             synchronized(this) {
-                wsConnection = new WsClient(URI.create(wsUri));
+                wsConnection = new WsClient(URI.create(wsUri), this::receive);
                 if(isTls) {
                     SSLContext sslContext = SSLContext.getInstance("TLS");
                     sslContext.init( null, null, null );
@@ -97,6 +97,11 @@ public class WebSocketTransport implements ITransport {
                 wsConnection = null;
             }
         }
+    }
+
+    @Override
+    public void receive(ProtocolMessage msg) throws AblyException {
+        connectionManager.onMessage(this, msg);
     }
 
     @Override
@@ -137,14 +142,21 @@ public class WebSocketTransport implements ITransport {
         //Gives the chance to child classes to do message pre-processing
     }
 
+    //interface to transfer Protocol message from websocket
+    interface WebSocketReceiver {
+        void onMessage(ProtocolMessage protocolMessage) throws AblyException;
+    }
+
     /**************************
      * WebSocketHandler methods
      **************************/
 
-    class WsClient extends WebSocketClient {
+     class WsClient extends WebSocketClient {
+       private final WebSocketReceiver receiver;
 
-        WsClient(URI serverUri) {
+        WsClient(URI serverUri, WebSocketReceiver receiver) {
             super(serverUri);
+            this.receiver = receiver;
         }
 
         @Override
@@ -180,7 +192,7 @@ public class WebSocketTransport implements ITransport {
                 ProtocolMessage msg = ProtocolSerializer.readMsgpack(blob.array());
                 Log.d(TAG, "onMessage(): msg (binary) = " + msg);
                 WebSocketTransport.this.preProcessReceivedMessage(msg);
-                connectionManager.onMessage(WebSocketTransport.this, msg);
+                receiver.onMessage(msg);
             } catch (AblyException e) {
                 String msg = "Unexpected exception processing received binary message";
                 Log.e(TAG, msg, e);
@@ -194,7 +206,7 @@ public class WebSocketTransport implements ITransport {
                 ProtocolMessage msg = ProtocolSerializer.fromJSON(string);
                 Log.d(TAG, "onMessage(): msg (text) = " + msg);
                 WebSocketTransport.this.preProcessReceivedMessage(msg);
-                connectionManager.onMessage(WebSocketTransport.this, msg);
+                receiver.onMessage(msg);
             } catch (AblyException e) {
                 String msg = "Unexpected exception processing received text message";
                 Log.e(TAG, msg, e);
