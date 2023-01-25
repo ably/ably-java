@@ -81,6 +81,8 @@ public class ConnectionManager implements ConnectListener {
         void onMessage(ProtocolMessage msg);
         void suspendAll(ErrorInfo error, boolean notifyStateChange);
         Iterable<Channel> values();
+
+        void reattachOnResumeFailure();
     }
 
     /***********************************
@@ -1183,44 +1185,48 @@ public class ConnectionManager implements ConnectListener {
     }
 
     private synchronized void onConnected(ProtocolMessage message) {
-        /* if the returned connection id differs from
-         * the existing connection id, then this means
-         * we need to suspend all existing attachments to
-         * the old connection.
-         * If realtime did not reply with an error, it
-         * signifies that this was a result of an earlier
-         * connection being invalidated due to being stale.
-         *
-         * Suspend all channels attached to the previous id;
-         * this will be reattached in setConnection() */
-        ErrorInfo error = message.error;
-        if(connection.id != null && !message.connectionId.equals(connection.id)) {
-            /* we need to suspend the original connection */
-            if(error == null) {
-                error = REASON_SUSPENDED;
+        final ErrorInfo error = message.error;
+        connection.reason = error;
+        if (connection.id != null) { // there was a previous connection, so this is a resume and RTN15c applies
+            Log.d(TAG, "There was a connection resume");
+            if(message.connectionId.equals(connection.id)) {
+                // resume succeeded
+                if(message.error == null) {
+                    // RTN15c1: no action required wrt channel state
+                    Log.d(TAG, "connection has reconnected and resumed successfully");
+                } else {
+                    // RTN15c2: no action required wrt channel state
+                    Log.d(TAG, "connection resume success with non-fatal error: " + error.message);
+                }
+                // Add pending messages to the front of queued messages to be sent later
+                addPendingMessagesToQueuedMessages(false);
+            } else {
+                // RTN15c3: resume failed
+                if (error != null){
+                    Log.d(TAG, "connection resume failed with error: " + error.message);
+                }else { // This shouldn't happen but, putting it here for safety
+                    Log.d(TAG, "connection resume failed without error" );
+                }
+
+                channels.reattachOnResumeFailure();
+                // Add any messages still pending from the previous transport (RTN19a) to the front of queued messages
+                // however, this time the pending messages have to have newly assigned `
+                // msgSerial`s. They can't simply be replayed, as they are in the successful resume case
+                addPendingMessagesToQueuedMessages(true);
             }
-            channels.suspendAll(error, false);
         }
 
-        /* set the new connection id */
-        ConnectionDetails connectionDetails = message.connectionDetails;
-        connection.key = connectionDetails.connectionKey;
-        if (!message.connectionId.equals(connection.id)) {
-            /* The connection id has changed. Reset the message serial and the
-             * pending message queue (which fails the messages currently in
-             * there). */
-            pendingMessages.reset(msgSerial,
-                    new ErrorInfo("Connection resume failed", 500, 50000));
-            msgSerial = 0;
-        }
         connection.id = message.connectionId;
+
         if(message.connectionSerial != null) {
-            connection.serial = message.connectionSerial.longValue();
+            connection.serial = message.connectionSerial;
             if (connection.key != null)
                 connection.recoveryKey = connection.key + ":" + message.connectionSerial;
         }
 
+        ConnectionDetails connectionDetails = message.connectionDetails;
         /* Get any parameters from connectionDetails. */
+        connection.key = connectionDetails.connectionKey; //RTN16d
         maxIdleInterval = connectionDetails.maxIdleInterval;
         connectionStateTtl = connectionDetails.connectionStateTtl;
 
@@ -1232,10 +1238,37 @@ public class ConnectionManager implements ConnectListener {
             requestState(transport, new StateIndication(ConnectionState.failed, e.errorInfo));
             return;
         }
-
         /* indicated connected currentState */
         setSuspendTime();
         requestState(new StateIndication(ConnectionState.connected, error));
+    }
+
+    /**
+     * Add all pending queued messages to the front of QueuedMessages for them to be sent later
+     * Spec: RTN19a
+     * @param resetMessageSerial whether to reset message serial, this will determine whether to reset message serials
+     * on pending queue, for example when a connection resume failed
+     */
+    private void addPendingMessagesToQueuedMessages(boolean resetMessageSerial) {
+        // Add messages from pending messages to front of queuedMessages in order to retry them
+        queuedMessages.addAll(0, pendingMessages.queue);
+        //rewind start serial back to the first serial since we are clearing the queue
+        if (!pendingMessages.queue.isEmpty()){
+            //Reset current serial to the first pending message on previous queue as we are going to clear the queue now
+            msgSerial =  pendingMessages.queue.get(0).msg.msgSerial;
+            pendingMessages.resetStartSerial((int) (msgSerial));
+            pendingMessages.clearQueue();
+        }
+
+        //RTN19a
+        if (resetMessageSerial){
+            pendingMessages.resetStartSerial(0);
+            msgSerial = 0; //msgSerial will increase in sendImpl when messages are sent
+        }
+    }
+
+    public List<QueuedMessage> getPendingMessages() {
+        return pendingMessages.queue;
     }
 
     private synchronized void onDisconnected(ProtocolMessage message) {
@@ -1718,6 +1751,13 @@ public class ConnectionManager implements ConnectListener {
             startSerial = 0;
         }
 
+        public void resetStartSerial(int from) {
+             startSerial = from;
+        }
+
+        synchronized void clearQueue() {
+            queue.clear();
+        }
     }
 
     /***********************

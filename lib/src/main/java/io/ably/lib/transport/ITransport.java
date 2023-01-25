@@ -122,6 +122,8 @@ public interface ITransport {
      */
     void send(ProtocolMessage msg) throws AblyException;
 
+    void receive(ProtocolMessage msg) throws AblyException;
+
     /**
      * Get connection URL
      * @return
