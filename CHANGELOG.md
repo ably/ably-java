@@ -1,5 +1,20 @@
 # Change Log
 
+## [1.2.23](https://github.com/ably/ably-java/tree/v1.2.23)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.22...v1.2.23)
+
+**Fixed bugs:**
+
+- Re-attach fails due to previous detach request [\#885](https://github.com/ably/ably-java/issues/885)
+- Lib is not re-sending pending messages on new transport after a resume [\#474](https://github.com/ably/ably-java/issues/474)
+
+**Merged pull requests:**
+
+- Connection resumption improvements [\#900](https://github.com/ably/ably-java/pull/900) ([ikbalkaya](https://github.com/ikbalkaya))
+- Make EventEmitter.on\(\) documentation reflect implementation [\#889](https://github.com/ably/ably-java/pull/889) ([AndyTWF](https://github.com/AndyTWF))
+- Fix attach/detach race condition [\#887](https://github.com/ably/ably-java/pull/887) ([ikbalkaya](https://github.com/ikbalkaya))
+
 ## [1.2.22](https://github.com/ably/ably-java/tree/v1.2.22)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.21...v1.2.22)
