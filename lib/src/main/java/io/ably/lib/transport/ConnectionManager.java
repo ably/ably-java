@@ -1644,6 +1644,9 @@ public class ConnectionManager implements ConnectListener {
                 }
             }
             queuedMessages.clear();
+
+            //also fail pending messages
+            pendingMessages.failAll(reason);
         }
     }
 
@@ -1756,6 +1759,19 @@ public class ConnectionManager implements ConnectListener {
         }
 
         synchronized void clearQueue() {
+            queue.clear();
+        }
+        /**
+         * Fails all messages in pending queue and calls the error callback for each
+         * and clears the queue
+         * @param reason Reason for failing
+        * */
+        synchronized void failAll(ErrorInfo reason) {
+            for (QueuedMessage queuedMessage : queue) {
+                if (queuedMessage.listener != null) {
+                    queuedMessage.listener.onError(reason);
+                }
+            }
             queue.clear();
         }
     }
