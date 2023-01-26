@@ -82,7 +82,7 @@ public class ConnectionManager implements ConnectListener {
         void suspendAll(ErrorInfo error, boolean notifyStateChange);
         Iterable<Channel> values();
 
-        void reattachOnResumeFailure();
+        void reattach(List<QueuedMessage> queuedMessages);
     }
 
     /***********************************
@@ -1208,11 +1208,13 @@ public class ConnectionManager implements ConnectListener {
                     Log.d(TAG, "connection resume failed without error" );
                 }
 
-                channels.reattachOnResumeFailure();
-                // Add any messages still pending from the previous transport (RTN19a) to the front of queued messages
-                // however, this time the pending messages have to have newly assigned `
-                // msgSerial`s. They can't simply be replayed, as they are in the successful resume case
+                //we are going to add pending messages and update pending queue state
                 addPendingMessagesToQueuedMessages(true);
+
+                //We are going to transfer those messages to channel level so that they are published after
+                //their respective channels are attached
+                channels.reattach(new ArrayList<>(queuedMessages));
+                queuedMessages.clear();
             }
         }
 
@@ -1252,19 +1254,16 @@ public class ConnectionManager implements ConnectListener {
     private void addPendingMessagesToQueuedMessages(boolean resetMessageSerial) {
         // Add messages from pending messages to front of queuedMessages in order to retry them
         queuedMessages.addAll(0, pendingMessages.queue);
-        //rewind start serial back to the first serial since we are clearing the queue
-        if (!pendingMessages.queue.isEmpty()){
-            //Reset current serial to the first pending message on previous queue as we are going to clear the queue now
+        //rewind start serial back to the first serial since we are clearing the queue if the queue is not empty
+        //this shouldn't be the case for resume failure
+        if (!resetMessageSerial && !pendingMessages.queue.isEmpty()){
             msgSerial =  pendingMessages.queue.get(0).msg.msgSerial;
             pendingMessages.resetStartSerial((int) (msgSerial));
-            pendingMessages.clearQueue();
-        }
-
-        //RTN19a
-        if (resetMessageSerial){
-            pendingMessages.resetStartSerial(0);
+        }else if (resetMessageSerial){
             msgSerial = 0; //msgSerial will increase in sendImpl when messages are sent
+            pendingMessages.resetStartSerial(0);
         }
+        pendingMessages.queue.clear();
     }
 
     public List<QueuedMessage> getPendingMessages() {
@@ -1645,8 +1644,8 @@ public class ConnectionManager implements ConnectListener {
             }
             queuedMessages.clear();
 
-            //also fail pending messages
-            pendingMessages.failAll(reason);
+            //also pending messages
+            pendingMessages.fail();
         }
     }
 
@@ -1755,22 +1754,13 @@ public class ConnectionManager implements ConnectListener {
         }
 
         public void resetStartSerial(int from) {
-             startSerial = from;
+            startSerial = from;
         }
 
-        synchronized void clearQueue() {
-            queue.clear();
-        }
-        /**
-         * Fails all messages in pending queue and calls the error callback for each
-         * and clears the queue
-         * @param reason Reason for failing
-        * */
-        synchronized void failAll(ErrorInfo reason) {
-            for (QueuedMessage queuedMessage : queue) {
-                if (queuedMessage.listener != null) {
-                    queuedMessage.listener.onError(reason);
-                }
+        //fail all pending queued emssages
+        synchronized void fail() {
+            for (QueuedMessage queuedMessage: queue){
+                queuedMessage.listener.onError(new ErrorInfo());
             }
             queue.clear();
         }

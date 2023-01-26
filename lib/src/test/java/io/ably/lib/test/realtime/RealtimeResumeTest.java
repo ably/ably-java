@@ -18,6 +18,8 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.util.Log;
+
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -695,16 +697,18 @@ public class RealtimeResumeTest extends ParameterizedTest {
      * */
     @Test
     public void resume_publish_resend_pending_messages_when_resume_is_successful() {
-        final long delay = 200;
         final String channelName = "resume_publish_queue";
         AblyRealtime sender = null;
         try {
             final MockWebsocketFactory mockWebsocketFactory = new MockWebsocketFactory();
             String keyStr = testVars.keys[0].keyStr;
             DebugOptions senderOptions = createOptions(keyStr);
+            senderOptions.logLevel = Log.VERBOSE;
             senderOptions.queueMessages = true;
             senderOptions.transportFactory = mockWebsocketFactory;
             sender = new AblyRealtime(senderOptions);
+
+            (new ConnectionWaiter(sender.connection)).waitFor(ConnectionState.connected);
             final Channel senderChannel = sender.channels.get(channelName);
             senderChannel.attach();
             (new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
@@ -731,17 +735,20 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
             //assert that messages sent till now are sent with correct size and serials
             assertEquals("First round of messages has incorrect size", 3, transport.getPublishedMessages().size());
-
             for (int i = 0; i < transport.getPublishedMessages().size(); i++) {
                 ProtocolMessage protocolMessage = transport.getPublishedMessages().get(i);
                 assertEquals("Sent serial incorrect", Long.valueOf(i), protocolMessage.msgSerial);
             }
+            System.out.println("resume_publish_test: First round of messages are sent");
 
-            //now clear published messages
+            //now clear published messages - new messages should start with serial 3
             transport.clearPublishedMessages();
 
             //block ack/nack messages to simulate pending message
-            mockWebsocketFactory.blockReceive(message -> message.action == ProtocolMessage.Action.ack ||
+            //note that this will only block ack/nack messages received by connection manager
+
+            System.out.println("resume_publish_test: Blocking ack/nacks");
+            mockWebsocketFactory.blockReceiveProcessing(message -> message.action == ProtocolMessage.Action.ack ||
                 message.action == ProtocolMessage.Action.nack);
 
             for (int i = 0; i < 3; i++) {
@@ -755,17 +762,23 @@ public class RealtimeResumeTest extends ParameterizedTest {
             //now let's disconnect
             sender.connection.connectionManager.requestState(ConnectionState.disconnected);
             (new ConnectionWaiter(sender.connection)).waitFor(ConnectionState.disconnected);
+            assertEquals("Connection must be connected", ConnectionState.disconnected, sender.connection.state);
+
+            System.out.println("resume_publish_test: Disconnected");
 
             //send 3 more messages while disconnected
             for (int i = 0; i < 3; i++) {
                 senderChannel.publish("queued_message_" + i, "Test pending queued messages " + i,
                     senderCompletion.add());
             }
+            System.out.println("resume_publish_test: Unblocking receiver");
             //now let's unblock the ack nacks and reconnect
-            mockWebsocketFactory.blockReceive(message -> false);
+            mockWebsocketFactory.blockReceiveProcessing(message -> false);
             /* reconnect the sender */
-            sender.connection.connect();
+            System.out.println("resume_publish_test: Reconnecting");
+            //  sender.connection.connect();
             (new ConnectionWaiter(sender.connection)).waitFor(ConnectionState.connected);
+            System.out.println("resume_publish_test: Reconnected");
             assertEquals("Connection must be connected", ConnectionState.connected, sender.connection.state);
             //make sure connection id is a resume success
             assertEquals("Connection id has changed", connectionId, sender.connection.id);
@@ -773,18 +786,20 @@ public class RealtimeResumeTest extends ParameterizedTest {
             //replace mock transport
             transport = mockWebsocketFactory.getCreatedTransport();
 
+            (new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
             /* wait for the publish callback to be called.*/
             ErrorInfo[] senderErrors = senderCompletion.waitFor();
             assertTrue(
                 "Second round of send has errors",
                 senderErrors.length == 0
             );
+            System.out.println("resume_publish_test: Second round of sender completion is done");
 
             assertEquals("Second round of messages has incorrect size", 6, transport.getPublishedMessages().size());
             //make sure they were sent with correct serials
             for (int i = 0; i < transport.getPublishedMessages().size(); i++) {
                 ProtocolMessage protocolMessage = transport.getPublishedMessages().get(i);
-                assertEquals("Sent serial incorrect", Long.valueOf(i+3), protocolMessage.msgSerial);
+                assertEquals("Second round sent serial incorrect", Long.valueOf(i+3), protocolMessage.msgSerial);
             }
 
             //make sure that pending queue is cleared
@@ -806,10 +821,10 @@ public class RealtimeResumeTest extends ParameterizedTest {
      * */
     @Test
     public void resume_publish_resend_pending_messages_when_resume_failed() throws AblyException {
-        final long delay = 200;
         final String channelName = "sender_channel";
         final MockWebsocketFactory mockWebsocketFactory = new MockWebsocketFactory();
         final DebugOptions options = createOptions(testVars.keys[0].keyStr);
+        options.logLevel = Log.VERBOSE;
         options.realtimeRequestTimeout = 2000L;
         options.transportFactory = mockWebsocketFactory;
         try(AblyRealtime ably = new AblyRealtime(options)) {
@@ -855,10 +870,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
             /* wait for the publish callback to be called.*/
             ErrorInfo[] errors = senderCompletion.waitFor();
-            assertTrue(
-                "First completion has errors",
-                errors.length == 0
-            );
+            assertEquals("First completion has errors", 0, errors.length);
 
             //assert that messages sent till now are sent with correct size and serials
             assertEquals("First round of messages has incorrect size", 3, transport.getPublishedMessages().size());
@@ -868,7 +880,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
             }
 
             //block acks nacks before send
-            mockWebsocketFactory.blockReceive(message -> message.action == ProtocolMessage.Action.ack ||
+            mockWebsocketFactory.blockReceiveProcessing(message -> message.action == ProtocolMessage.Action.ack ||
                 message.action == ProtocolMessage.Action.nack);
             for (int i = 0; i < 3; i++) {
                 senderChannel.publish("pending_queued_message_" + i, "Test pending queued messages " + i,
@@ -894,7 +906,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
                     senderCompletion.add());
             }
             //now let's unblock the ack nacks and reconnect
-            mockWebsocketFactory.blockReceive(message -> false);
+            mockWebsocketFactory.blockReceiveProcessing(message -> false);
             /* Wait for the connection to go stale, then reconnect */
             try {
                 Thread.sleep(waitInDisconnectedState);
@@ -909,7 +921,14 @@ public class RealtimeResumeTest extends ParameterizedTest {
             assertNotNull(ably.connection.id);
             assertNotEquals("Connection has the same id", firstConnectionId, ably.connection.id);
 
-            /* wait for the publish callback to be called.*/
+            // wait for channel to get attached
+            (new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
+            assertEquals("Connection has the same id", ChannelState.attached, senderChannel.state);
+
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+            }
 
             ErrorInfo[] resendErrors = senderCompletion.waitFor();
             assertTrue(

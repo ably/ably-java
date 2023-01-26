@@ -117,6 +117,11 @@ public class Presence {
         return get(new Param(GET_WAITFORSYNC, String.valueOf(wait)), new Param(GET_CLIENTID, clientId));
     }
 
+    void addPendingPresence(String clientId, PresenceMessage presenceMessage, CompletionListener listener) {
+        final QueuedPresence queuedPresence = new QueuedPresence(presenceMessage,listener);
+        pendingPresence.put(clientId,queuedPresence);
+    }
+
     /**
      * An interface allowing a listener to be notified of arrival of a presence message.
      */

@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.ably.lib.http.BasePaginatedQuery;
 import io.ably.lib.http.HttpCore;
@@ -83,6 +84,12 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     public ChannelProperties properties = new ChannelProperties();
 
     private int retryCount = 0;
+
+    /**
+     * This flag is determining whether the attach should be reattampted when a setConnected() event us receuved
+     * This is a workaround and the mechanism to handle this should be rethought in the future
+     * */
+    private final AtomicBoolean reattachOnConnectionResume = new AtomicBoolean(false);
 
     /***
      * internal
@@ -184,6 +191,38 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     void attach(boolean forceReattach, CompletionListener listener) {
         clearAttachTimers();
         attachWithTimeout(forceReattach, listener);
+    }
+
+    /**
+     * This method carries queued messages accumulated on connection manager while the channel
+     * isn't attached yet. It's added in the queue here and start a new attach call
+     * */
+    void reattach(List<QueuedMessage> messagesToTransfer) {
+        state = ChannelState.attaching;
+        for (QueuedMessage queuedMessage : messagesToTransfer) {
+            if (queuedMessage.msg.action == Action.message) {
+
+                queuedMessages.add(queuedMessage);
+            }else if (queuedMessage.msg.action == Action.presence) {
+                PresenceMessage[] presenceMessages = queuedMessage.msg.presence;
+                if (presenceMessages != null && presenceMessages.length > 0){
+                    for (PresenceMessage presenceMessage : presenceMessages) {
+                        String clientId;
+                        try {
+                            clientId = ably.auth.checkClientId(presenceMessage, false, true);
+                        } catch(AblyException e) {
+                            if(queuedMessage.listener != null) {
+                                queuedMessage.listener.onError(e.errorInfo);
+                            }
+                            return;
+                        }
+                        this.presence.addPendingPresence(clientId, presenceMessage, queuedMessage.listener);
+                    }
+                }
+            }
+        }
+        reattachOnConnectionResume.set(true);
+        //attach call should happen when setConnected() is called
     }
 
     private boolean attachResume;
@@ -406,6 +445,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                 t.cancel();
                 t.purge();
             }
+
         }
     }
 
@@ -572,13 +612,10 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     /* State changes provoked by ConnectionManager state changes. */
 
     public void setConnected() {
-        if(state == ChannelState.attached) {
-            try {
-                sync();
-            } catch (AblyException e) {
-                Log.e(TAG, "setConnected(): Unable to sync; channel = " + name, e);
-            }
-        } else if (state == ChannelState.suspended) {
+        if (reattachOnConnectionResume.get()){
+            attach(true,null);
+            reattachOnConnectionResume.set(false);
+        }else if (state == ChannelState.suspended) {
             /* (RTL3d) If the connection state enters the CONNECTED state, then
              * a SUSPENDED channel will initiate an attach operation. If the
              * attach operation for the channel times out and the channel
@@ -624,7 +661,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             Log.v(TAG, "setSuspended(); channel = " + name);
             presence.setSuspended(reason);
             setState(ChannelState.suspended, reason, false, notifyStateChange);
-            failQueuedMessages(reason);
+            // failQueuedMessages(reason);
         }
     }
 
@@ -1282,6 +1319,12 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             switch(oldState) {
                 case attached:
                     /* Unexpected detach, reattach when possible */
+                    if (msg.error != null){
+                        System.out.println("Unexpected detach "+msg.error);
+                    }else {
+                        System.out.println("Unexpected detach ");
+                    }
+
                     setDetached((msg.error != null) ? msg.error : REASON_NOT_ATTACHED);
                     Log.v(TAG, String.format(Locale.ROOT, "Server initiated detach for channel %s; attempting reattach", name));
                     try {
@@ -1295,6 +1338,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                 case attaching:
                     /* RTL13b says we need to be suspended, but continue to retry */
                     Log.v(TAG, String.format(Locale.ROOT, "Server initiated detach for channel %s whilst attaching; moving to suspended", name));
+                    System.out.println("test for suspended: from attaching (onChannelMessage)");
                     setSuspended(msg.error, true);
                     reattachAfterTimeout();
                     break;

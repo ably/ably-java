@@ -85,8 +85,11 @@ public class MockWebsocketFactory implements ITransport.Factory {
         sendBehaviour = SendBehaviour.block;
     }
 
-    //use the same filters temporarily
-    public void blockReceive(MessageFilter filter) {
+    /*
+    We cannot prevent server sending us messages from here so instead, this will block processing messages from this
+    point. That is they will not be triggering connection manager's onMessage which will help simulate some conditions
+    * */
+    public void blockReceiveProcessing(MessageFilter filter) {
         receiveMessageFilter = filter;
         receiveBehaviour = ReceiveBehaviour.block;
     }
