@@ -759,7 +759,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
             final String connectionId = sender.connection.id;
 
-            //now let's disconnect
+            //block connect send before disconnecting
+            mockWebsocketFactory.blockSend(message -> message.action == ProtocolMessage.Action.connect);
             sender.connection.connectionManager.requestState(ConnectionState.disconnected);
             (new ConnectionWaiter(sender.connection)).waitFor(ConnectionState.disconnected);
             assertEquals("Connection must be connected", ConnectionState.disconnected, sender.connection.state);
@@ -771,6 +772,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
                 senderChannel.publish("queued_message_" + i, "Test pending queued messages " + i,
                     senderCompletion.add());
             }
+            //now allow send
+            mockWebsocketFactory.allowSend();
             System.out.println("resume_publish_test: Unblocking receiver");
             //now let's unblock the ack nacks and reconnect
             mockWebsocketFactory.blockReceiveProcessing(message -> false);
