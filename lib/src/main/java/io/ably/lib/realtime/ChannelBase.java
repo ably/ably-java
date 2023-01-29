@@ -199,24 +199,26 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * */
     void reattach(List<QueuedMessage> messagesToTransfer) {
         state = ChannelState.attaching;
-        for (QueuedMessage queuedMessage : messagesToTransfer) {
-            if (queuedMessage.msg.action == Action.message) {
+        if (messagesToTransfer != null) {
+            for (QueuedMessage queuedMessage : messagesToTransfer) {
+                if (queuedMessage.msg.action == Action.message) {
 
-                queuedMessages.add(queuedMessage);
-            }else if (queuedMessage.msg.action == Action.presence) {
-                PresenceMessage[] presenceMessages = queuedMessage.msg.presence;
-                if (presenceMessages != null && presenceMessages.length > 0){
-                    for (PresenceMessage presenceMessage : presenceMessages) {
-                        String clientId;
-                        try {
-                            clientId = ably.auth.checkClientId(presenceMessage, false, true);
-                        } catch(AblyException e) {
-                            if(queuedMessage.listener != null) {
-                                queuedMessage.listener.onError(e.errorInfo);
+                    queuedMessages.add(queuedMessage);
+                }else if (queuedMessage.msg.action == Action.presence) {
+                    PresenceMessage[] presenceMessages = queuedMessage.msg.presence;
+                    if (presenceMessages != null && presenceMessages.length > 0){
+                        for (PresenceMessage presenceMessage : presenceMessages) {
+                            String clientId;
+                            try {
+                                clientId = ably.auth.checkClientId(presenceMessage, false, true);
+                            } catch(AblyException e) {
+                                if(queuedMessage.listener != null) {
+                                    queuedMessage.listener.onError(e.errorInfo);
+                                }
+                                return;
                             }
-                            return;
+                            this.presence.addPendingPresence(clientId, presenceMessage, queuedMessage.listener);
                         }
-                        this.presence.addPendingPresence(clientId, presenceMessage, queuedMessage.listener);
                     }
                 }
             }

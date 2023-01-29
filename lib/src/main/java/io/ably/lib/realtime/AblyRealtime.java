@@ -257,6 +257,8 @@ public class AblyRealtime extends AblyRest {
 
                     if (channelQueueMap.containsKey(channel.name)){
                         channel.reattach(channelQueueMap.get(channel.name));
+                    }else {
+                        channel.reattach(null);
                     }
                 }
             }
