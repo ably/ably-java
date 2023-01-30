@@ -207,16 +207,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                     PresenceMessage[] presenceMessages = queuedMessage.msg.presence;
                     if (presenceMessages != null && presenceMessages.length > 0){
                         for (PresenceMessage presenceMessage : presenceMessages) {
-                            String clientId;
-                            try {
-                                clientId = ably.auth.checkClientId(presenceMessage, false, true);
-                            } catch(AblyException e) {
-                                if(queuedMessage.listener != null) {
-                                    queuedMessage.listener.onError(e.errorInfo);
-                                }
-                                return;
-                            }
-                            this.presence.addPendingPresence(clientId, presenceMessage, queuedMessage.listener);
+                            this.presence.addPendingPresence(presenceMessage.clientId, presenceMessage,
+                                queuedMessage.listener);
                         }
                     }
                 }
