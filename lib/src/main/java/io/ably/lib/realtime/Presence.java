@@ -910,8 +910,11 @@ public class Presence {
      * attach / detach
      ************************************/
 
-    void setAttached(boolean hasPresence) {
+    void setAttached(boolean hasPresence, String connectionId) {
         /* Start sync, if hasPresence is not set end sync immediately dropping all the current presence members */
+        if (hasPresence){
+            replaceInternalMembersIfNeeded(connectionId);
+        }
         presence.startSync();
         syncAsResultOfAttach = true;
         if (!hasPresence) {
@@ -922,6 +925,27 @@ public class Presence {
             endSyncAndEmitLeaves();
         }
         sendQueuedMessages();
+    }
+
+    /*
+    Old internal members are stuck with old member ids, we need to replace them with new one
+    * */
+    private void replaceInternalMembersIfNeeded(String connectionId) {
+        final Map<String,PresenceMessage> newMap = new HashMap<>();
+        for (Map.Entry<String,PresenceMessage> entry: internalPresence.members.entrySet()){
+            final String key = entry.getKey();
+            if (!key.contains(connectionId)){ //connection has changed - replace key
+                final String[] keyParts = key.split(":");
+                final String newKey = key.replace(keyParts[0], connectionId);
+                newMap.put(newKey, internalPresence.members.get(key));
+                System.out.println("presence_resume_test: Replacing key:"+key+" with new key:"+newKey);
+            }else {
+                newMap.put(key,internalPresence.members.get(key));
+            }
+        }
+        //replace old map
+        internalPresence.members.clear();
+        internalPresence.members.putAll(newMap);
     }
 
     void setDetached(ErrorInfo reason) {

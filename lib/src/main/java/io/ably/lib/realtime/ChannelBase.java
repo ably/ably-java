@@ -391,7 +391,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             this.attachResume = true;
             setState(ChannelState.attached, message.error, resumed);
             sendQueuedMessages();
-            presence.setAttached(message.hasFlag(Flag.has_presence));
+            presence.setAttached(message.hasFlag(Flag.has_presence), this.ably.connection.id);
         }
     }
 

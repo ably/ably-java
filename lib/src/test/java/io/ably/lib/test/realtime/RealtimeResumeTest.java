@@ -17,6 +17,7 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
+import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
 
@@ -939,6 +940,145 @@ public class RealtimeResumeTest extends ParameterizedTest {
             for (int i = 0; i < transport.getPublishedMessages().size(); i++) {
                 ProtocolMessage protocolMessage = transport.getPublishedMessages().get(i);
                 assertEquals("Sent serial incorrect", Long.valueOf(i), protocolMessage.msgSerial);
+            }
+        }
+    }
+
+
+    /**
+     * In case of resume failure verify that presence messages are resent
+     * */
+    @Test
+    public void resume_publish_reenter_when_resume_failed() throws AblyException {
+        final String channelName = "sender_channel";
+        final MockWebsocketFactory mockWebsocketFactory = new MockWebsocketFactory();
+        final DebugOptions options = createOptions(testVars.keys[0].keyStr);
+        final String[] clients = new String[]{"client1","client2","client3",
+            "client4","client5","client6","client7","client8","client9"};
+        options.logLevel = Log.VERBOSE;
+        options.realtimeRequestTimeout = 2000L;
+
+        /* We want this greater than newTtl + newIdleInterval */
+        final long waitInDisconnectedState = 3000L;
+        options.transportFactory = mockWebsocketFactory;
+        try(AblyRealtime ably = new AblyRealtime(options)) {
+            final long newTtl = 1000L;
+            final long newIdleInterval = 1000L;
+            /* We want this greater than newTtl + newIdleInterval */
+            ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
+                @Override
+                public void onConnectionStateChanged(ConnectionStateChange state) {
+                    try {
+                        Field connectionStateField = ably.connection.connectionManager.getClass().getDeclaredField("connectionStateTtl");
+                        connectionStateField.setAccessible(true);
+                        connectionStateField.setLong(ably.connection.connectionManager, newTtl);
+                        Field maxIdleField = ably.connection.connectionManager.getClass().getDeclaredField("maxIdleInterval");
+                        maxIdleField.setAccessible(true);
+                        maxIdleField.setLong(ably.connection.connectionManager, newIdleInterval);
+                    } catch (NoSuchFieldException | IllegalAccessException e) {
+                        fail("Unexpected exception in checking connectionStateTtl");
+                    }
+                }
+            });
+
+            ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+            connectionWaiter.waitFor(ConnectionState.connected);
+
+            final Channel senderChannel = ably.channels.get(channelName);
+            senderChannel.attach();
+            (new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
+            assertEquals(
+                "The sender's channel should be attached",
+                senderChannel.state, ChannelState.attached
+            );
+
+            MockWebsocketFactory.MockWebsocketTransport transport = mockWebsocketFactory.getCreatedTransport();
+            CompletionSet presenceCompletion = new CompletionSet();
+            //enter first three clients
+            for (int i = 0; i < 3; i++) {
+                senderChannel.presence.enterClient(clients[i],null,presenceCompletion.add());
+            }
+            /* wait for the publish callback to be called.*/
+            ErrorInfo[] errors = presenceCompletion.waitFor();
+            assertEquals("Firstenter has errors", 0, errors.length);
+
+            //assert that messages sent till now are sent with correct size and client ids
+            assertEquals("First round of presence messages have incorrect size", 3,
+                transport.getSentPresenceMessages().size());
+            for (int i = 0; i < transport.getSentPresenceMessages().size(); i++) {
+                PresenceMessage presenceMessage = transport.getSentPresenceMessages().get(i);
+                assertEquals("Sent presence serial incorrect", clients[i], presenceMessage.clientId);
+            }
+
+            //block acks nacks before send
+            mockWebsocketFactory.blockReceiveProcessing(message -> message.action == ProtocolMessage.Action.ack ||
+                message.action == ProtocolMessage.Action.nack);
+
+            /* Wait for the connection to go stale, then reconnect */
+            try {
+                Thread.sleep(waitInDisconnectedState);
+            } catch (InterruptedException e) {
+            }
+
+            //enter next 3 clients
+            for (int i = 0; i < 3; i++) {
+                senderChannel.presence.enterClient(clients[i+3],null,presenceCompletion.add());
+            }
+
+            final String firstConnectionId = ably.connection.id;
+
+            /* suppress automatic retries by the connection manager and disconnect */
+            try {
+                Method method = ably.connection.connectionManager.getClass().getDeclaredMethod("disconnectAndSuppressRetries");
+                method.setAccessible(true);
+                method.invoke(ably.connection.connectionManager);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                fail("Unexpected exception in suppressing retries");
+            }
+            connectionWaiter.waitFor(ConnectionState.disconnected);
+            assertEquals("Disconnected state was not reached", ConnectionState.disconnected, ably.connection.state);
+
+            //enter last 3 clients while disconnected
+            for (int i = 0; i < 3; i++) {
+                senderChannel.presence.enterClient(clients[i+6],null,presenceCompletion.add());
+            }
+            //now let's unblock the ack nacks and reconnect
+            mockWebsocketFactory.blockReceiveProcessing(message -> false);
+            /* Wait for the connection to go stale, then reconnect */
+            ably.connection.connect();
+            connectionWaiter.waitFor(ConnectionState.connected);
+            assertEquals("Connected state was not reached", ConnectionState.connected, ably.connection.state);
+            //replace transport
+            transport = mockWebsocketFactory.getCreatedTransport();
+            /* Verify the connection is new */
+            assertNotNull(ably.connection.id);
+            assertNotEquals("Connection has the same id", firstConnectionId, ably.connection.id);
+
+            System.out.println("presence_resume_test: First connection id:"+firstConnectionId);
+            System.out.println("presence_resume_test: Second connection id:"+ably.connection.id);
+
+            // wait for channel to get attached
+            (new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
+            assertEquals("Connection has the same id", ChannelState.attached, senderChannel.state);
+
+
+            ErrorInfo[] resendErrors = presenceCompletion.waitFor();
+            assertTrue(
+                "Second round of messages (queued) has errors",
+                resendErrors.length == 0
+            );
+
+            for (PresenceMessage presenceMessage:
+                transport.getSentPresenceMessages()) {
+                System.out.println("presence_resume_test: sent message with client: "+presenceMessage.clientId);
+            }
+            assertEquals("Second round of messages has incorrect size", 6, transport.getSentPresenceMessages().size());
+            //make sure they were sent with correct client ids
+
+            for (int i = 0; i < transport.getSentPresenceMessages().size(); i++) {
+                PresenceMessage presenceMessage = transport.getSentPresenceMessages().get(i);
+                //first 3 clients will have been discarded
+                assertEquals("Sent client incorrect", clients[i+3], presenceMessage.clientId);
             }
         }
     }

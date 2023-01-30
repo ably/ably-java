@@ -1,13 +1,19 @@
 package io.ably.lib.test.util;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ITransport;
 import io.ably.lib.transport.WebSocketTransport;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Message;
+import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.ProtocolMessage;
 
 /**
@@ -128,7 +134,8 @@ public class MockWebsocketFactory implements ITransport.Factory {
     public class MockWebsocketTransport extends WebSocketTransport {
         private final TransportParams givenTransportParams;
         private final TransportParams transformedTransportParams;
-        private final List<ProtocolMessage> publishedMessages = new ArrayList<>();
+        //Sent presence or normal messages
+        private final List<ProtocolMessage> sentMessages = new ArrayList<>();
 
         private MockWebsocketTransport(TransportParams givenTransportParams, TransportParams transformedTransportParams, ConnectionManager connectionManager) {
             super(transformedTransportParams, connectionManager);
@@ -136,18 +143,33 @@ public class MockWebsocketFactory implements ITransport.Factory {
             this.transformedTransportParams = transformedTransportParams;
         }
 
+        public List<ProtocolMessage> getSentMessages() {
+            return sentMessages;
+        }
+
         public List<ProtocolMessage> getPublishedMessages() {
-            return publishedMessages;
+            return sentMessages.stream().filter(protocolMessage -> protocolMessage.action == ProtocolMessage.Action.message).collect(Collectors.toList());
+        }
+
+        public List<PresenceMessage> getSentPresenceMessages() {
+            final List<ProtocolMessage> protocolMessages = sentMessages.stream()
+                .filter(protocolMessage -> protocolMessage.action == ProtocolMessage.Action.presence)
+                .collect(Collectors.toList());
+            final List<PresenceMessage> presenceMessages = new ArrayList<>();
+            protocolMessages.forEach(protocolMessage -> {
+                Collections.addAll(presenceMessages, protocolMessage.presence);
+            });
+            return presenceMessages;
         }
 
         public void clearPublishedMessages() {
-            publishedMessages.clear();
+            sentMessages.clear();
         }
 
         @Override
         public void send(ProtocolMessage msg) throws AblyException {
-            if (msg.action == ProtocolMessage.Action.message){
-                publishedMessages.add(msg);
+            if (msg.action == ProtocolMessage.Action.message || msg.action == ProtocolMessage.Action.presence){
+                sentMessages.add(msg);
             }
             switch (sendBehaviour) {
                 case allow:
@@ -174,6 +196,19 @@ public class MockWebsocketFactory implements ITransport.Factory {
 
         @Override
         public void receive(ProtocolMessage msg) throws AblyException {
+
+            System.out.println("presence_resume_test: Received protocol message :"+msg.action+" messages:");
+           if (msg.messages != null){
+               for (Message message : msg.messages) {
+                   System.out.println("presence_resume_test: message"+ message);
+               }
+           }
+           if (msg.presence != null){
+               for (PresenceMessage presenceMessage : msg.presence) {
+                   System.out.println("presence_resume_test: presence:"+ presenceMessage.action +" clientId:"+presenceMessage.clientId);
+               }
+           }
+
             switch (receiveBehaviour) {
                 case allow:
                     if (receiveMessageFilter == null || receiveMessageFilter.matches(msg)) {
