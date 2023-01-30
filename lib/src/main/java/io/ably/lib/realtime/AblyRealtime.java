@@ -236,11 +236,11 @@ public class AblyRealtime extends AblyRest {
 
         /**
          * By spec RTN15c3
-         * Move queued messages from connection manager to their respective channel and reattach
-         * @param queuedMessages Queued messages transferred from connection
+         * Move queued messages from connection manager to their respective channel for them to be sent after reattach
+         * @param queuedMessages Queued messages transferred from ConnectionManager
          */
         @Override
-        public void reattach(List<ConnectionManager.QueuedMessage> queuedMessages) {
+        public void transferToChannels(List<ConnectionManager.QueuedMessage> queuedMessages) {
             final Map<String, List<ConnectionManager.QueuedMessage>> channelQueueMap  = new HashMap<>();
             for (ConnectionManager.QueuedMessage queuedMessage : queuedMessages) {
                 final String channelName = queuedMessage.msg.channel;
@@ -256,9 +256,9 @@ public class AblyRealtime extends AblyRest {
                     Log.d(TAG, "reAttach(); channel = " + channel.name);
 
                     if (channelQueueMap.containsKey(channel.name)){
-                        channel.reattach(channelQueueMap.get(channel.name));
+                        channel.transferQueuedMessages(channelQueueMap.get(channel.name));
                     }else {
-                        channel.reattach(null);
+                        channel.transferQueuedMessages(null);
                     }
                 }
             }

@@ -82,7 +82,7 @@ public class ConnectionManager implements ConnectListener {
         void suspendAll(ErrorInfo error, boolean notifyStateChange);
         Iterable<Channel> values();
 
-        void reattach(List<QueuedMessage> queuedMessages);
+        void transferToChannels(List<QueuedMessage> queuedMessages);
     }
 
     /***********************************
@@ -1228,7 +1228,7 @@ public class ConnectionManager implements ConnectListener {
 
                 //We are going to transfer those messages to channel level so that they are published after
                 //their respective channels are attached
-                channels.reattach(new ArrayList<>(queuedMessages));
+                channels.transferToChannels(new ArrayList<>(queuedMessages));
                 queuedMessages.clear();
                 reattachOnResumeFailure = true;
             }

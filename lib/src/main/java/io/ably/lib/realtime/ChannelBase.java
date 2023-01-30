@@ -188,9 +188,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
     /**
      * This method carries queued messages accumulated on connection manager while the channel
-     * isn't attached yet. It's added in the queue here and start a new attach call
+     * isn't attached yet. It's added in the queue here
      * */
-    void reattach(List<QueuedMessage> messagesToTransfer) {
+    synchronized void transferQueuedMessages(List<QueuedMessage> messagesToTransfer) {
         state = ChannelState.attaching;
         if (messagesToTransfer != null) {
             for (QueuedMessage queuedMessage : messagesToTransfer) {
