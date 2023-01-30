@@ -663,7 +663,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             Log.v(TAG, "setSuspended(); channel = " + name);
             presence.setSuspended(reason);
             setState(ChannelState.suspended, reason, false, notifyStateChange);
-            // failQueuedMessages(reason);
+            failQueuedMessages(reason);
         }
     }
 
