@@ -1270,18 +1270,20 @@ public class ConnectionManager implements ConnectListener {
      * on pending queue, for example when a connection resume failed
      */
     private void addPendingMessagesToQueuedMessages(boolean resetMessageSerial) {
-        // Add messages from pending messages to front of queuedMessages in order to retry them
-        queuedMessages.addAll(0, pendingMessages.queue);
+        synchronized (this) {
+            // Add messages from pending messages to front of queuedMessages in order to retry them
+            queuedMessages.addAll(0, pendingMessages.queue);
 
-        if (resetMessageSerial){  // failed resume, so all new published messages start with msgSerial = 0
-            msgSerial = 0; //msgSerial will increase in sendImpl when messages are sent
-            pendingMessages.resetStartSerial(0);
-        } else if(!pendingMessages.queue.isEmpty()) { // pendingMessages needs to expect next msgSerial to be the earliest previously unacknowledged message
-            msgSerial =  pendingMessages.queue.get(0).msg.msgSerial;
-            pendingMessages.resetStartSerial((int) (msgSerial));
+            if (resetMessageSerial){  // failed resume, so all new published messages start with msgSerial = 0
+                msgSerial = 0; //msgSerial will increase in sendImpl when messages are sent
+                pendingMessages.resetStartSerial(0);
+            } else if(!pendingMessages.queue.isEmpty()) { // pendingMessages needs to expect next msgSerial to be the earliest previously unacknowledged message
+                msgSerial =  pendingMessages.queue.get(0).msg.msgSerial;
+                pendingMessages.resetStartSerial((int) (msgSerial));
+            }
+
+            pendingMessages.queue.clear();
         }
-
-        pendingMessages.queue.clear();
     }
 
     public List<QueuedMessage> getPendingMessages() {
