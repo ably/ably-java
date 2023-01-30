@@ -928,11 +928,6 @@ public class RealtimeResumeTest extends ParameterizedTest {
             (new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
             assertEquals("Connection has the same id", ChannelState.attached, senderChannel.state);
 
-            try {
-                Thread.sleep(3000);
-            } catch (InterruptedException e) {
-            }
-
             ErrorInfo[] resendErrors = senderCompletion.waitFor();
             assertTrue(
                 "Second round of messages (queued) has errors",
