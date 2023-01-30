@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.ably.lib.http.BasePaginatedQuery;
 import io.ably.lib.http.HttpCore;
@@ -84,12 +83,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     public ChannelProperties properties = new ChannelProperties();
 
     private int retryCount = 0;
-
-    /**
-     * This flag is determining whether the attach should be reattampted when a setConnected() event us receuved
-     * This is a workaround and the mechanism to handle this should be rethought in the future
-     * */
-    private final AtomicBoolean reattachOnConnectionResume = new AtomicBoolean(false);
 
     /***
      * internal
@@ -214,8 +207,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                 }
             }
         }
-        reattachOnConnectionResume.set(true);
-        //attach call should happen when setConnected() is called
     }
 
     private boolean attachResume;
@@ -603,11 +594,10 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
     /* State changes provoked by ConnectionManager state changes. */
 
-    public void setConnected() {
-        if (reattachOnConnectionResume.get()){
+    public void setConnected(boolean reattachOnResumeFailure) {
+        if (reattachOnResumeFailure){
             attach(true,null);
-            reattachOnConnectionResume.set(false);
-        }else if (state == ChannelState.suspended) {
+        } else if (state == ChannelState.suspended) {
             /* (RTL3d) If the connection state enters the CONNECTED state, then
              * a SUSPENDED channel will initiate an attach operation. If the
              * attach operation for the channel times out and the channel

@@ -96,6 +96,7 @@ public class ConnectionManager implements ConnectListener {
         final ErrorInfo reason;
         final String fallback;
         final String currentHost;
+        final boolean reattachOnResumeFailure;
 
         StateIndication(ConnectionState state) {
             this(state, null);
@@ -110,6 +111,16 @@ public class ConnectionManager implements ConnectListener {
             this.reason = reason;
             this.fallback = fallback;
             this.currentHost = currentHost;
+            this.reattachOnResumeFailure = false;
+        }
+
+        StateIndication(ConnectionState state, ErrorInfo reason, String fallback, String currentHost,
+                         boolean reattachOnResumeFailure) {
+            this.state = state;
+            this.reason = reason;
+            this.fallback = fallback;
+            this.currentHost = currentHost;
+            this.reattachOnResumeFailure = reattachOnResumeFailure;
         }
     }
 
@@ -254,7 +265,7 @@ public class ConnectionManager implements ConnectListener {
 
         @Override
         void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, Channel channel) {
-            channel.setConnected();
+            channel.setConnected(stateIndication.reattachOnResumeFailure);
         }
     }
 
@@ -1186,6 +1197,9 @@ public class ConnectionManager implements ConnectListener {
 
     private synchronized void onConnected(ProtocolMessage message) {
         final ErrorInfo error = message.error;
+        boolean reattachOnResumeFailure = false; // this will indicate that channel must reattach when connected
+        // event is received
+
         connection.reason = error;
         if (connection.id != null) { // there was a previous connection, so this is a resume and RTN15c applies
             Log.d(TAG, "There was a connection resume");
@@ -1216,6 +1230,7 @@ public class ConnectionManager implements ConnectListener {
                 //their respective channels are attached
                 channels.reattach(new ArrayList<>(queuedMessages));
                 queuedMessages.clear();
+                reattachOnResumeFailure = true;
             }
         }
 
@@ -1243,7 +1258,9 @@ public class ConnectionManager implements ConnectListener {
         }
         /* indicated connected currentState */
         setSuspendTime();
-        requestState(new StateIndication(ConnectionState.connected, error));
+        final StateIndication stateIndication = new StateIndication(ConnectionState.connected, error, null, null,
+            reattachOnResumeFailure);
+        requestState(stateIndication);
     }
 
     /**
