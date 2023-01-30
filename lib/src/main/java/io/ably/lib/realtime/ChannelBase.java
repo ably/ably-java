@@ -202,9 +202,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         if (messagesToTransfer != null) {
             for (QueuedMessage queuedMessage : messagesToTransfer) {
                 if (queuedMessage.msg.action == Action.message) {
-
                     queuedMessages.add(queuedMessage);
-                }else if (queuedMessage.msg.action == Action.presence) {
+                } else if (queuedMessage.msg.action == Action.presence) {
                     PresenceMessage[] presenceMessages = queuedMessage.msg.presence;
                     if (presenceMessages != null && presenceMessages.length > 0){
                         for (PresenceMessage presenceMessage : presenceMessages) {
@@ -447,7 +446,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                 t.cancel();
                 t.purge();
             }
-
         }
     }
 
