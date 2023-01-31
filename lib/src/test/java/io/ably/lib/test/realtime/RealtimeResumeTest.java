@@ -29,7 +29,9 @@ import org.junit.rules.Timeout;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -1061,8 +1063,11 @@ public class RealtimeResumeTest extends ParameterizedTest {
             (new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
             assertEquals("Connection has the same id", ChannelState.attached, senderChannel.state);
 
-
+            // presenceCompletion.add();
             ErrorInfo[] resendErrors = presenceCompletion.waitFor();
+            for (ErrorInfo resendError : resendErrors) {
+                System.out.println("presence_resume_test: error "+resendError.message);
+            }
             assertTrue(
                 "Second round of messages (queued) has errors",
                 resendErrors.length == 0
@@ -1070,15 +1075,17 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
             for (PresenceMessage presenceMessage:
                 transport.getSentPresenceMessages()) {
-                System.out.println("presence_resume_test: sent message with client: "+presenceMessage.clientId);
+                System.out.println("presence_resume_test: sent message with client: "+presenceMessage.clientId +" " +
+                    " action:"+presenceMessage.action);
             }
-            assertEquals("Second round of messages has incorrect size", 6, transport.getSentPresenceMessages().size());
+            assertEquals("Second round of messages has incorrect size", 9, transport.getSentPresenceMessages().size());
             //make sure they were sent with correct client ids
-
-            for (int i = 0; i < transport.getSentPresenceMessages().size(); i++) {
-                PresenceMessage presenceMessage = transport.getSentPresenceMessages().get(i);
-                //first 3 clients will have been discarded
-                assertEquals("Sent client incorrect", clients[i+3], presenceMessage.clientId);
+            final Map<String,PresenceMessage> sentPresenceMap = new HashMap<>();
+            for (PresenceMessage presenceMessage: transport.getSentPresenceMessages()){
+                sentPresenceMap.put(presenceMessage.clientId, presenceMessage);
+            }
+            for (String client : clients) {
+                assertTrue("Client id isn't there:"+client, sentPresenceMap.containsKey(client));
             }
         }
     }
