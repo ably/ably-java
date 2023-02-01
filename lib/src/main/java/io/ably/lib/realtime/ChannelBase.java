@@ -1,6 +1,5 @@
 package io.ably.lib.realtime;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -386,7 +385,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         } else {
             this.attachResume = true;
             setState(ChannelState.attached, message.error, resumed);
-            sendQueuedMessages();
             presence.setAttached(message.hasFlag(Flag.has_presence), this.ably.connection.id);
         }
     }
@@ -396,7 +394,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         Log.v(TAG, "setDetached(); channel = " + name);
         presence.setDetached(reason);
         setState(ChannelState.detached, reason);
-        failQueuedMessages(reason);
     }
 
     private void setFailed(ErrorInfo reason) {
@@ -405,7 +402,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         presence.setDetached(reason);
         this.attachResume = false;
         setState(ChannelState.failed, reason);
-        failQueuedMessages(reason);
     }
 
     /* Timer for attach operation */
@@ -639,7 +635,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             Log.v(TAG, "setSuspended(); channel = " + name);
             presence.setSuspended(reason);
             setState(ChannelState.suspended, reason, false, notifyStateChange);
-            failQueuedMessages(reason);
         }
     }
 
@@ -1048,46 +1043,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
     }
 
-    private void sendQueuedMessages() {
-        Log.v(TAG, "sendQueuedMessages()");
-        ArrayList<FailedMessage> failedMessages = new ArrayList<>();
-        synchronized (this) {
-            boolean queueMessages = ably.options.queueMessages;
-            ConnectionManager connectionManager = ably.connection.connectionManager;
-            for (QueuedMessage msg : queuedMessages)
-                try {
-                    connectionManager.send(msg.msg, queueMessages, msg.listener);
-                } catch (AblyException e) {
-                    Log.e(TAG, "sendQueuedMessages(): Unexpected exception sending message", e);
-                    if (msg.listener != null)
-                        failedMessages.add(new FailedMessage(msg, e.errorInfo));
-                }
-            queuedMessages.clear();
-        }
-
-        /* Call completion callbacks for failed messages without holding the lock */
-        for (FailedMessage failed: failedMessages) {
-            callCompletionListenerError(failed.msg.listener, failed.reason);
-        }
-    }
-
-    private void failQueuedMessages(ErrorInfo reason) {
-        Log.v(TAG, "failQueuedMessages()");
-
-        ArrayList<FailedMessage> failedMessages = new ArrayList<>();
-        synchronized (this) {
-            for (QueuedMessage msg: queuedMessages) {
-                if (msg.listener != null)
-                    failedMessages.add(new FailedMessage(msg, reason));
-            }
-            queuedMessages.clear();
-        }
-
-        for(FailedMessage failed : failedMessages) {
-            callCompletionListenerError(failed.msg.listener, failed.reason);
-        }
-    }
-
     static Param[] replacePlaceholderParams(Channel channel, Param[] placeholderParams) throws AblyException {
         if (placeholderParams == null) {
             return null;
@@ -1123,7 +1078,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
     private static final String KEY_UNTIL_ATTACH = "untilAttach";
     private static final String KEY_FROM_SERIAL = "fromSerial";
-    private List<QueuedMessage> queuedMessages;
 
     /************************************
      * Channel history
@@ -1282,7 +1236,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         this.presence = new Presence((Channel) this);
         this.attachResume = false;
         state = ChannelState.initialized;
-        queuedMessages = new ArrayList<QueuedMessage>();
         this.decodingContext = new DecodingContext();
     }
 
