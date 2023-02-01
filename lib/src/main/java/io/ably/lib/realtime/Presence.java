@@ -734,7 +734,7 @@ public class Presence {
      * @throws AblyException
      */
     public void updatePresence(PresenceMessage msg, CompletionListener listener) throws AblyException {
-        Log.v(TAG, "update(); channel = " + channel.name);
+        Log.v(TAG, "updatePresence(); channel = " + channel.name);
 
         AblyRealtime ably = channel.ably;
         boolean connected = (ably.connection.state == ConnectionState.connected);
