@@ -1649,6 +1649,125 @@ public class RealtimePresenceTest extends ParameterizedTest {
         }
     }
 
+    private final class CountingCompletionListener implements CompletionListener
+    {
+        public int successfulListeners = 0;
+        public int failedListeners = 0;
+
+        @Override
+        public void onSuccess() {
+            synchronized(this) {
+                successfulListeners++;
+                notifyAll();
+            }
+        }
+
+        @Override
+        public void onError(ErrorInfo reason) {
+            synchronized(this) {
+                failedListeners++;
+                notifyAll();
+            }
+        }
+    }
+
+    /**
+     * <p>
+     * Validates a client sending multiple presence updates when the channel is in the attaching
+     * state will have all messages sent once the channel attaches, and all listeners will be called.
+     * </p>
+     *
+     * @throws AblyException
+     */
+    @Test
+    public void realtime_presence_update_multiple_queued_messages() throws AblyException {
+        /* Ably instance that will emit presence events */
+        AblyRealtime ably1 = null;
+        /* Ably instance that will receive presence events */
+        AblyRealtime ably2 = null;
+
+        String channelName = "test.presence.subscribe.update_multiple_queued_messages" + System.currentTimeMillis();
+        EnumSet<PresenceMessage.Action> actions = EnumSet.of(Action.update, Action.enter);
+
+        try {
+            ClientOptions option1 = createOptions(testVars.keys[0].keyStr);
+            option1.clientId = "emitter client";
+            ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
+            option2.clientId = "receiver client";
+
+            ably1 = new AblyRealtime(option1);
+            ably2 = new AblyRealtime(option2);
+
+            Channel channel1 = ably1.channels.get(channelName);
+
+            Channel channel2 = ably2.channels.get(channelName);
+            channel2.attach();
+            (new ChannelWaiter(channel2)).waitFor(ChannelState.attached);
+
+            CountingCompletionListener messageCompletionListener = new CountingCompletionListener();
+
+            final ArrayList<PresenceMessage> receivedMessageStack = new ArrayList<>();
+            channel2.presence.subscribe(actions, new Presence.PresenceListener() {
+                @Override
+                public void onPresenceMessage(PresenceMessage message) {
+                    synchronized (receivedMessageStack) {
+                        receivedMessageStack.add(message);
+                        receivedMessageStack.notify();
+                    }
+                }
+            });
+
+            /* Start emitting channel with ably client 1 (emitter) */
+            channel1.presence.enter("Hello, #2!", messageCompletionListener);
+            channel1.presence.update("Lorem ipsum", messageCompletionListener);
+            channel1.presence.update("Dolor sit!", messageCompletionListener);
+
+            /* Wait until receiver client (ably2) observes {@code Action.leave}
+             * is emitted from emitter client (ably1)
+             */
+            try {
+                synchronized (receivedMessageStack) {
+                    while (receivedMessageStack.size() == 0 ||
+                            !receivedMessageStack.get(receivedMessageStack.size()-1).clientId.equals(ably1.options.clientId) ||
+                            !receivedMessageStack.get(receivedMessageStack.size()-1).data.equals("Dolor sit!"))
+                                receivedMessageStack.wait();
+                }
+            } catch(InterruptedException e) {}
+
+            /* Validate that,
+             *- we received specific actions
+             */
+            assertThat(receivedMessageStack.size(), is(equalTo(3)));
+            for (PresenceMessage message : receivedMessageStack) {
+                assertTrue(actions.contains(message.action));
+            }
+
+            /*
+             * Validate that
+             * - our listeners are called
+             */
+            try {
+                while (true) {
+                    synchronized (messageCompletionListener) {
+                        assertEquals(0, messageCompletionListener.failedListeners);
+
+                        if (messageCompletionListener.successfulListeners != 3) {
+                            messageCompletionListener.wait(5000);
+                            continue;
+                        }
+                    }
+
+                    break;
+                }
+            } catch (InterruptedException exception) {
+                fail();
+            }
+        } finally {
+            if (ably1 != null) ably1.close();
+            if (ably2 != null) ably2.close();
+        }
+    }
+
     /**
      * <p>
      * Validates a client can observe presence messages of other client,

@@ -738,9 +738,8 @@ public class Presence {
 
         AblyRealtime ably = channel.ably;
         boolean connected = (ably.connection.state == ConnectionState.connected);
-        String clientId;
         try {
-            clientId = ably.auth.checkClientId(msg, false, connected);
+            ably.auth.checkClientId(msg, false, connected);
         } catch(AblyException e) {
             if(listener != null) {
                 listener.onError(e.errorInfo);
@@ -754,8 +753,7 @@ public class Presence {
             case initialized:
                 channel.attach();
             case attaching:
-                QueuedPresence queued = new QueuedPresence(msg, listener);
-                pendingPresence.put(clientId, queued);
+                pendingPresence.add(new QueuedPresence(msg, listener));
                 break;
             case attached:
                 ProtocolMessage message = new ProtocolMessage(ProtocolMessage.Action.presence, channel.name);
@@ -847,7 +845,7 @@ public class Presence {
         QueuedPresence(PresenceMessage msg, CompletionListener listener) { this.msg = msg; this.listener = listener; }
     }
 
-    private final Map<String, QueuedPresence> pendingPresence = new HashMap<String, QueuedPresence>();
+    private final List<QueuedPresence> pendingPresence = new ArrayList<QueuedPresence>();
 
     private void sendQueuedMessages() {
         Log.v(TAG, "sendQueuedMessages()");
@@ -859,7 +857,7 @@ public class Presence {
             return;
 
         ProtocolMessage message = new ProtocolMessage(ProtocolMessage.Action.presence, channel.name);
-        Iterator<QueuedPresence> allQueued = pendingPresence.values().iterator();
+        Iterator<QueuedPresence> allQueued = pendingPresence.iterator();
         PresenceMessage[] presenceMessages = message.presence = new PresenceMessage[count];
         CompletionListener listener;
 
@@ -878,7 +876,9 @@ public class Presence {
             }
             listener = mListener.isEmpty() ? null : mListener;
         }
+
         pendingPresence.clear();
+
         try {
             connectionManager.send(message, queueMessages, listener);
         } catch(AblyException e) {
@@ -890,7 +890,7 @@ public class Presence {
 
     private void failQueuedMessages(ErrorInfo reason) {
         Log.v(TAG, "failQueuedMessages()");
-        for(QueuedPresence msg : pendingPresence.values())
+        for(QueuedPresence msg : pendingPresence)
             if(msg.listener != null)
                 try {
                     msg.listener.onError(reason);
