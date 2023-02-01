@@ -1250,12 +1250,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             switch(oldState) {
                 case attached:
                     /* Unexpected detach, reattach when possible */
-                    if (msg.error != null){
-                        System.out.println("Unexpected detach "+msg.error);
-                    }else {
-                        System.out.println("Unexpected detach ");
-                    }
-
                     setDetached((msg.error != null) ? msg.error : REASON_NOT_ATTACHED);
                     Log.v(TAG, String.format(Locale.ROOT, "Server initiated detach for channel %s; attempting reattach", name));
                     try {
@@ -1269,7 +1263,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                 case attaching:
                     /* RTL13b says we need to be suspended, but continue to retry */
                     Log.v(TAG, String.format(Locale.ROOT, "Server initiated detach for channel %s whilst attaching; moving to suspended", name));
-                    System.out.println("test for suspended: from attaching (onChannelMessage)");
                     setSuspended(msg.error, true);
                     reattachAfterTimeout();
                     break;

@@ -1216,7 +1216,6 @@ public class ConnectionManager implements ConnectListener {
                 // Add pending messages to the front of queued messages to be sent later
                 addPendingMessagesToQueuedMessages(false);
             } else {
-                System.out.println("resume_channel_test: resume has failed ");
                 // RTN15c3: resume failed
                 if (error != null){
                     Log.d(TAG, "connection resume failed with error: " + error.message);

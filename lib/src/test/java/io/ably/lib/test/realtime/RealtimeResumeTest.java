@@ -742,7 +742,6 @@ public class RealtimeResumeTest extends ParameterizedTest {
                 ProtocolMessage protocolMessage = transport.getPublishedMessages().get(i);
                 assertEquals("Sent serial incorrect", Long.valueOf(i), protocolMessage.msgSerial);
             }
-            System.out.println("resume_publish_test: First round of messages are sent");
 
             //now clear published messages - new messages should start with serial 3
             transport.clearPublishedMessages();
@@ -750,7 +749,6 @@ public class RealtimeResumeTest extends ParameterizedTest {
             //block ack/nack messages to simulate pending message
             //note that this will only block ack/nack messages received by connection manager
 
-            System.out.println("resume_publish_test: Blocking ack/nacks");
             mockWebsocketFactory.blockReceiveProcessing(message -> message.action == ProtocolMessage.Action.ack ||
                 message.action == ProtocolMessage.Action.nack);
 
@@ -762,11 +760,20 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
             final String connectionId = sender.connection.id;
 
-            //block connect send before disconnecting
-            mockWebsocketFactory.blockSend(message -> message.action == ProtocolMessage.Action.connect);
+            /* suppress automatic retries by the connection manager and disconnect */
+            try {
+                Method method = sender.connection.connectionManager.getClass().getDeclaredMethod(
+                    "disconnectAndSuppressRetries");
+                method.setAccessible(true);
+                method.invoke(sender.connection.connectionManager);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                fail("Unexpected exception in suppressing retries");
+            }
+            (new ConnectionWaiter(sender.connection)).waitFor(ConnectionState.disconnected);
+
             sender.connection.connectionManager.requestState(ConnectionState.disconnected);
             (new ConnectionWaiter(sender.connection)).waitFor(ConnectionState.disconnected);
-            assertEquals("Connection must be connected", ConnectionState.disconnected, sender.connection.state);
+            assertEquals("Connection must be disconnected", ConnectionState.disconnected, sender.connection.state);
 
             System.out.println("resume_publish_test: Disconnected");
 
@@ -775,16 +782,11 @@ public class RealtimeResumeTest extends ParameterizedTest {
                 senderChannel.publish("queued_message_" + i, "Test pending queued messages " + i,
                     senderCompletion.add());
             }
-            //now allow send
-            mockWebsocketFactory.allowSend();
-            System.out.println("resume_publish_test: Unblocking receiver");
+
             //now let's unblock the ack nacks and reconnect
             mockWebsocketFactory.blockReceiveProcessing(message -> false);
-            /* reconnect the sender */
-            System.out.println("resume_publish_test: Reconnecting");
-            //  sender.connection.connect();
+            sender.connection.connect();
             (new ConnectionWaiter(sender.connection)).waitFor(ConnectionState.connected);
-            System.out.println("resume_publish_test: Reconnected");
             assertEquals("Connection must be connected", ConnectionState.connected, sender.connection.state);
             //make sure connection id is a resume success
             assertEquals("Connection id has changed", connectionId, sender.connection.id);
@@ -799,7 +801,6 @@ public class RealtimeResumeTest extends ParameterizedTest {
                 "Second round of send has errors",
                 senderErrors.length == 0
             );
-            System.out.println("resume_publish_test: Second round of sender completion is done");
 
             assertEquals("Second round of messages has incorrect size", 6, transport.getPublishedMessages().size());
             //make sure they were sent with correct serials
