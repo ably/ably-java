@@ -1649,28 +1649,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
         }
     }
 
-    private final class CountingCompletionListener implements CompletionListener
-    {
-        public int successfulListeners = 0;
-        public int failedListeners = 0;
-
-        @Override
-        public void onSuccess() {
-            synchronized(this) {
-                successfulListeners++;
-                notifyAll();
-            }
-        }
-
-        @Override
-        public void onError(ErrorInfo reason) {
-            synchronized(this) {
-                failedListeners++;
-                notifyAll();
-            }
-        }
-    }
-
     /**
      * <p>
      * Validates a client sending multiple presence updates when the channel is in the attaching
@@ -1704,7 +1682,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
             channel2.attach();
             (new ChannelWaiter(channel2)).waitFor(ChannelState.attached);
 
-            CountingCompletionListener messageCompletionListener = new CountingCompletionListener();
+            CompletionWaiter messageCompletionListener = new CompletionWaiter();
 
             final ArrayList<PresenceMessage> receivedMessageStack = new ArrayList<>();
             channel2.presence.subscribe(actions, new Presence.PresenceListener() {
@@ -1746,24 +1724,9 @@ public class RealtimePresenceTest extends ParameterizedTest {
              * Validate that
              * - our listeners are called within 10 seconds
              */
-            long waitUntil = System.currentTimeMillis() + 10000;
-            try {
-                while (true) {
-                    synchronized (messageCompletionListener) {
-                        assertEquals(0, messageCompletionListener.failedListeners);
+            messageCompletionListener.waitFor(3, 10000);
+            assertTrue(messageCompletionListener.success);
 
-                        if (messageCompletionListener.successfulListeners != 3) {
-                            messageCompletionListener.wait(500);
-                            assertTrue(System.currentTimeMillis() < waitUntil);
-                            continue;
-                        }
-                    }
-
-                    break;
-                }
-            } catch (InterruptedException exception) {
-                fail();
-            }
         } finally {
             if (ably1 != null) ably1.close();
             if (ably2 != null) ably2.close();
