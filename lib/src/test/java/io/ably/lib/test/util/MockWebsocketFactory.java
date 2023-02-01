@@ -1,13 +1,16 @@
 package io.ably.lib.test.util;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ITransport;
 import io.ably.lib.transport.WebSocketTransport;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.ProtocolMessage;
 
 /**
@@ -24,6 +27,7 @@ public class MockWebsocketFactory implements ITransport.Factory {
     enum ReceiveBehaviour {
         allow,
         block,
+        blockAndQueue,
         fail
     }
 
@@ -51,6 +55,8 @@ public class MockWebsocketFactory implements ITransport.Factory {
     MessageFilter receiveMessageFilter = null;
     HostFilter hostFilter = null;
     HostTransform hostTransform = null;
+
+    final List<ProtocolMessage> blockedReceiveQueue = new ArrayList<>();
 
     public ITransport lastCreatedTransport =  null;
 
@@ -85,10 +91,27 @@ public class MockWebsocketFactory implements ITransport.Factory {
         sendBehaviour = SendBehaviour.block;
     }
 
-    //use the same filters temporarily
-    public void blockReceive(MessageFilter filter) {
+    /*
+    We cannot prevent server sending us messages from here so instead, this will block processing messages from this
+    point. That is they will not be triggering connection manager's onMessage which will help simulate some conditions
+    * */
+    public void blockReceiveProcessing(MessageFilter filter) {
         receiveMessageFilter = filter;
         receiveBehaviour = ReceiveBehaviour.block;
+    }
+
+    /*
+  We cannot prevent server sending us messages from here so instead, this will block processing messages from this
+  point. That is they will not be triggering connection manager's onMessage which will help simulate some conditions
+  * */
+    public void blockReceiveProcessingAndQueueBlockedMessages(MessageFilter filter) {
+        receiveMessageFilter = filter;
+        receiveBehaviour = ReceiveBehaviour.blockAndQueue;
+    }
+
+    public void allowReceiveProcessing(MessageFilter filter) {
+        receiveMessageFilter = filter;
+        receiveBehaviour = ReceiveBehaviour.allow;
     }
 
     public void blockSend() { blockSend(null); }
@@ -125,7 +148,8 @@ public class MockWebsocketFactory implements ITransport.Factory {
     public class MockWebsocketTransport extends WebSocketTransport {
         private final TransportParams givenTransportParams;
         private final TransportParams transformedTransportParams;
-        private final List<ProtocolMessage> publishedMessages = new ArrayList<>();
+        //Sent presence or normal messages
+        private final List<ProtocolMessage> sentMessages = new ArrayList<>();
 
         private MockWebsocketTransport(TransportParams givenTransportParams, TransportParams transformedTransportParams, ConnectionManager connectionManager) {
             super(transformedTransportParams, connectionManager);
@@ -133,18 +157,33 @@ public class MockWebsocketFactory implements ITransport.Factory {
             this.transformedTransportParams = transformedTransportParams;
         }
 
+        public List<ProtocolMessage> getSentMessages() {
+            return sentMessages;
+        }
+
         public List<ProtocolMessage> getPublishedMessages() {
-            return publishedMessages;
+            return sentMessages.stream().filter(protocolMessage -> protocolMessage.action == ProtocolMessage.Action.message).collect(Collectors.toList());
+        }
+
+        public List<PresenceMessage> getSentPresenceMessages() {
+            final List<ProtocolMessage> protocolMessages = sentMessages.stream()
+                .filter(protocolMessage -> protocolMessage.action == ProtocolMessage.Action.presence)
+                .collect(Collectors.toList());
+            final List<PresenceMessage> presenceMessages = new ArrayList<>();
+            protocolMessages.forEach(protocolMessage -> {
+                Collections.addAll(presenceMessages, protocolMessage.presence);
+            });
+            return presenceMessages;
         }
 
         public void clearPublishedMessages() {
-            publishedMessages.clear();
+            sentMessages.clear();
         }
 
         @Override
         public void send(ProtocolMessage msg) throws AblyException {
-            if (msg.action == ProtocolMessage.Action.message){
-                publishedMessages.add(msg);
+            if (msg.action == ProtocolMessage.Action.message || msg.action == ProtocolMessage.Action.presence){
+                sentMessages.add(msg);
             }
             switch (sendBehaviour) {
                 case allow:
@@ -171,15 +210,28 @@ public class MockWebsocketFactory implements ITransport.Factory {
 
         @Override
         public void receive(ProtocolMessage msg) throws AblyException {
+
             switch (receiveBehaviour) {
                 case allow:
+                    for (ProtocolMessage queuedMessage: blockedReceiveQueue) {
+                        if (receiveMessageFilter == null || receiveMessageFilter.matches(queuedMessage)) {
+                            super.receive(queuedMessage);
+                        }
+                    }
                     if (receiveMessageFilter == null || receiveMessageFilter.matches(msg)) {
                         super.receive(msg);
                     }
                     break;
                 case block:
                     if (receiveMessageFilter == null || receiveMessageFilter.matches(msg)) {
-                        /* do nothing */
+                        //process queued messages
+                    } else {
+                        super.receive(msg);
+                    }
+                    break;
+                case blockAndQueue:
+                    if (receiveMessageFilter == null || receiveMessageFilter.matches(msg)) {
+                        blockedReceiveQueue.add(msg);
                     } else {
                         super.receive(msg);
                     }

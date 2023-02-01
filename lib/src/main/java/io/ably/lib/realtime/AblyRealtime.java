@@ -1,6 +1,9 @@
 package io.ably.lib.realtime;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import io.ably.lib.rest.AblyRest;
@@ -233,14 +236,30 @@ public class AblyRealtime extends AblyRest {
 
         /**
          * By spec RTN15c3
+         * Move queued messages from connection manager to their respective channel for them to be sent after reattach
+         * @param queuedMessages Queued messages transferred from ConnectionManager
          */
         @Override
-        public void reattachOnResumeFailure() {
+        public void transferToChannels(List<ConnectionManager.QueuedMessage> queuedMessages) {
+            final Map<String, List<ConnectionManager.QueuedMessage>> channelQueueMap  = new HashMap<>();
+            for (ConnectionManager.QueuedMessage queuedMessage : queuedMessages) {
+                final String channelName = queuedMessage.msg.channel;
+                if (!channelQueueMap.containsKey(channelName)){
+                    channelQueueMap.put(channelName, new ArrayList<>());
+                }
+                channelQueueMap.get(channelName).add(queuedMessage);
+            }
+
             for (Map.Entry<String, Channel> channelEntry : map.entrySet()) {
                 Channel channel = channelEntry.getValue();
                 if (channel.state == ChannelState.attaching || channel.state == ChannelState.attached || channel.state == ChannelState.suspended) {
                     Log.d(TAG, "reAttach(); channel = " + channel.name);
-                    channel.attach(true, null);
+
+                    if (channelQueueMap.containsKey(channel.name)){
+                        channel.transferQueuedPresenceMessages(channelQueueMap.get(channel.name));
+                    }else {
+                        channel.transferQueuedPresenceMessages(null);
+                    }
                 }
             }
         }
