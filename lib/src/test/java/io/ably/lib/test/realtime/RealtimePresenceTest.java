@@ -1695,7 +1695,12 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 }
             });
 
-            /* Start emitting channel with ably client 1 (emitter) */
+            /*
+                Start emitting channel with ably client 1 (emitter)
+
+                This is synchronized against the channel so that channel.setState cant mark
+                the channel as attached until we're done queueing up events.
+            */
             synchronized (channel1) {
                 channel1.presence.enter("Hello, #2!", messageCompletionListener);
                 channel1.presence.update("Lorem ipsum", messageCompletionListener);
