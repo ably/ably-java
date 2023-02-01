@@ -1696,9 +1696,11 @@ public class RealtimePresenceTest extends ParameterizedTest {
             });
 
             /* Start emitting channel with ably client 1 (emitter) */
-            channel1.presence.enter("Hello, #2!", messageCompletionListener);
-            channel1.presence.update("Lorem ipsum", messageCompletionListener);
-            channel1.presence.update("Dolor sit!", messageCompletionListener);
+            synchronized (channel1) {
+                channel1.presence.enter("Hello, #2!", messageCompletionListener);
+                channel1.presence.update("Lorem ipsum", messageCompletionListener);
+                channel1.presence.update("Dolor sit!", messageCompletionListener);
+            }
 
             /* Wait until receiver client (ably2) observes {@code Action.leave}
              * is emitted from emitter client (ably1)
