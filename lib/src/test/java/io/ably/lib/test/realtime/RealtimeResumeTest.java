@@ -17,7 +17,10 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
+import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.util.Log;
+
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,7 +29,9 @@ import org.junit.rules.Timeout;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -695,16 +700,18 @@ public class RealtimeResumeTest extends ParameterizedTest {
      * */
     @Test
     public void resume_publish_resend_pending_messages_when_resume_is_successful() {
-        final long delay = 200;
         final String channelName = "resume_publish_queue";
         AblyRealtime sender = null;
         try {
             final MockWebsocketFactory mockWebsocketFactory = new MockWebsocketFactory();
             String keyStr = testVars.keys[0].keyStr;
             DebugOptions senderOptions = createOptions(keyStr);
+            senderOptions.logLevel = Log.VERBOSE;
             senderOptions.queueMessages = true;
             senderOptions.transportFactory = mockWebsocketFactory;
             sender = new AblyRealtime(senderOptions);
+
+            (new ConnectionWaiter(sender.connection)).waitFor(ConnectionState.connected);
             final Channel senderChannel = sender.channels.get(channelName);
             senderChannel.attach();
             (new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
@@ -731,17 +738,18 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
             //assert that messages sent till now are sent with correct size and serials
             assertEquals("First round of messages has incorrect size", 3, transport.getPublishedMessages().size());
-
             for (int i = 0; i < transport.getPublishedMessages().size(); i++) {
                 ProtocolMessage protocolMessage = transport.getPublishedMessages().get(i);
                 assertEquals("Sent serial incorrect", Long.valueOf(i), protocolMessage.msgSerial);
             }
 
-            //now clear published messages
+            //now clear published messages - new messages should start with serial 3
             transport.clearPublishedMessages();
 
             //block ack/nack messages to simulate pending message
-            mockWebsocketFactory.blockReceive(message -> message.action == ProtocolMessage.Action.ack ||
+            //note that this will only block ack/nack messages received by connection manager
+
+            mockWebsocketFactory.blockReceiveProcessing(message -> message.action == ProtocolMessage.Action.ack ||
                 message.action == ProtocolMessage.Action.nack);
 
             for (int i = 0; i < 3; i++) {
@@ -752,18 +760,31 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
             final String connectionId = sender.connection.id;
 
-            //now let's disconnect
+            /* suppress automatic retries by the connection manager and disconnect */
+            try {
+                Method method = sender.connection.connectionManager.getClass().getDeclaredMethod(
+                    "disconnectAndSuppressRetries");
+                method.setAccessible(true);
+                method.invoke(sender.connection.connectionManager);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                fail("Unexpected exception in suppressing retries");
+            }
+            (new ConnectionWaiter(sender.connection)).waitFor(ConnectionState.disconnected);
+
             sender.connection.connectionManager.requestState(ConnectionState.disconnected);
             (new ConnectionWaiter(sender.connection)).waitFor(ConnectionState.disconnected);
+            assertEquals("Connection must be disconnected", ConnectionState.disconnected, sender.connection.state);
+
+            System.out.println("resume_publish_test: Disconnected");
 
             //send 3 more messages while disconnected
             for (int i = 0; i < 3; i++) {
                 senderChannel.publish("queued_message_" + i, "Test pending queued messages " + i,
                     senderCompletion.add());
             }
+
             //now let's unblock the ack nacks and reconnect
-            mockWebsocketFactory.blockReceive(message -> false);
-            /* reconnect the sender */
+            mockWebsocketFactory.blockReceiveProcessing(message -> false);
             sender.connection.connect();
             (new ConnectionWaiter(sender.connection)).waitFor(ConnectionState.connected);
             assertEquals("Connection must be connected", ConnectionState.connected, sender.connection.state);
@@ -773,6 +794,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
             //replace mock transport
             transport = mockWebsocketFactory.getCreatedTransport();
 
+            (new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
             /* wait for the publish callback to be called.*/
             ErrorInfo[] senderErrors = senderCompletion.waitFor();
             assertTrue(
@@ -784,7 +806,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
             //make sure they were sent with correct serials
             for (int i = 0; i < transport.getPublishedMessages().size(); i++) {
                 ProtocolMessage protocolMessage = transport.getPublishedMessages().get(i);
-                assertEquals("Sent serial incorrect", Long.valueOf(i+3), protocolMessage.msgSerial);
+                assertEquals("Second round sent serial incorrect", Long.valueOf(i+3), protocolMessage.msgSerial);
             }
 
             //make sure that pending queue is cleared
@@ -806,10 +828,10 @@ public class RealtimeResumeTest extends ParameterizedTest {
      * */
     @Test
     public void resume_publish_resend_pending_messages_when_resume_failed() throws AblyException {
-        final long delay = 200;
         final String channelName = "sender_channel";
         final MockWebsocketFactory mockWebsocketFactory = new MockWebsocketFactory();
         final DebugOptions options = createOptions(testVars.keys[0].keyStr);
+        options.logLevel = Log.VERBOSE;
         options.realtimeRequestTimeout = 2000L;
         options.transportFactory = mockWebsocketFactory;
         try(AblyRealtime ably = new AblyRealtime(options)) {
@@ -855,10 +877,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
             /* wait for the publish callback to be called.*/
             ErrorInfo[] errors = senderCompletion.waitFor();
-            assertTrue(
-                "First completion has errors",
-                errors.length == 0
-            );
+            assertEquals("First completion has errors", 0, errors.length);
 
             //assert that messages sent till now are sent with correct size and serials
             assertEquals("First round of messages has incorrect size", 3, transport.getPublishedMessages().size());
@@ -868,7 +887,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
             }
 
             //block acks nacks before send
-            mockWebsocketFactory.blockReceive(message -> message.action == ProtocolMessage.Action.ack ||
+            mockWebsocketFactory.blockReceiveProcessing(message -> message.action == ProtocolMessage.Action.ack ||
                 message.action == ProtocolMessage.Action.nack);
             for (int i = 0; i < 3; i++) {
                 senderChannel.publish("pending_queued_message_" + i, "Test pending queued messages " + i,
@@ -894,7 +913,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
                     senderCompletion.add());
             }
             //now let's unblock the ack nacks and reconnect
-            mockWebsocketFactory.blockReceive(message -> false);
+            mockWebsocketFactory.blockReceiveProcessing(message -> false);
             /* Wait for the connection to go stale, then reconnect */
             try {
                 Thread.sleep(waitInDisconnectedState);
@@ -909,7 +928,9 @@ public class RealtimeResumeTest extends ParameterizedTest {
             assertNotNull(ably.connection.id);
             assertNotEquals("Connection has the same id", firstConnectionId, ably.connection.id);
 
-            /* wait for the publish callback to be called.*/
+            // wait for channel to get attached
+            (new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
+            assertEquals("Connection has the same id", ChannelState.attached, senderChannel.state);
 
             ErrorInfo[] resendErrors = senderCompletion.waitFor();
             assertTrue(
@@ -922,6 +943,150 @@ public class RealtimeResumeTest extends ParameterizedTest {
             for (int i = 0; i < transport.getPublishedMessages().size(); i++) {
                 ProtocolMessage protocolMessage = transport.getPublishedMessages().get(i);
                 assertEquals("Sent serial incorrect", Long.valueOf(i), protocolMessage.msgSerial);
+            }
+        }
+    }
+
+
+    /**
+     * In case of resume failure verify that presence messages are resent
+     * */
+    @Test
+    public void resume_publish_reenter_when_resume_failed() throws AblyException {
+        final String channelName = "sender_channel";
+        final MockWebsocketFactory mockWebsocketFactory = new MockWebsocketFactory();
+        final DebugOptions options = createOptions(testVars.keys[0].keyStr);
+        final String[] clients = new String[]{"client1","client2","client3",
+            "client4","client5","client6","client7","client8","client9"};
+        options.logLevel = Log.VERBOSE;
+        options.realtimeRequestTimeout = 2000L;
+
+        /* We want this greater than newTtl + newIdleInterval */
+        final long waitInDisconnectedState = 3000L;
+        options.transportFactory = mockWebsocketFactory;
+        try(AblyRealtime ably = new AblyRealtime(options)) {
+            final long newTtl = 1000L;
+            final long newIdleInterval = 1000L;
+            /* We want this greater than newTtl + newIdleInterval */
+            ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
+                @Override
+                public void onConnectionStateChanged(ConnectionStateChange state) {
+                    try {
+                        Field connectionStateField = ably.connection.connectionManager.getClass().getDeclaredField("connectionStateTtl");
+                        connectionStateField.setAccessible(true);
+                        connectionStateField.setLong(ably.connection.connectionManager, newTtl);
+                        Field maxIdleField = ably.connection.connectionManager.getClass().getDeclaredField("maxIdleInterval");
+                        maxIdleField.setAccessible(true);
+                        maxIdleField.setLong(ably.connection.connectionManager, newIdleInterval);
+                    } catch (NoSuchFieldException | IllegalAccessException e) {
+                        fail("Unexpected exception in checking connectionStateTtl");
+                    }
+                }
+            });
+
+            ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+            connectionWaiter.waitFor(ConnectionState.connected);
+
+            final Channel senderChannel = ably.channels.get(channelName);
+            senderChannel.attach();
+            (new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
+            assertEquals(
+                "The sender's channel should be attached",
+                senderChannel.state, ChannelState.attached
+            );
+
+            MockWebsocketFactory.MockWebsocketTransport transport = mockWebsocketFactory.getCreatedTransport();
+            CompletionSet presenceCompletion = new CompletionSet();
+            //enter first three clients
+            for (int i = 0; i < 3; i++) {
+                senderChannel.presence.enterClient(clients[i],null,presenceCompletion.add());
+            }
+            /* wait for the publish callback to be called.*/
+            ErrorInfo[] errors = presenceCompletion.waitFor();
+            assertEquals("Firstenter has errors", 0, errors.length);
+
+            //assert that messages sent till now are sent with correct size and client ids
+            assertEquals("First round of presence messages have incorrect size", 3,
+                transport.getSentPresenceMessages().size());
+            for (int i = 0; i < transport.getSentPresenceMessages().size(); i++) {
+                PresenceMessage presenceMessage = transport.getSentPresenceMessages().get(i);
+                assertEquals("Sent presence serial incorrect", clients[i], presenceMessage.clientId);
+            }
+
+            //block acks nacks before send
+            mockWebsocketFactory.blockReceiveProcessing(message -> message.action == ProtocolMessage.Action.ack ||
+                message.action == ProtocolMessage.Action.nack);
+
+            /* Wait for the connection to go stale, then reconnect */
+            try {
+                Thread.sleep(waitInDisconnectedState);
+            } catch (InterruptedException e) {
+            }
+
+            //enter next 3 clients
+            for (int i = 0; i < 3; i++) {
+                senderChannel.presence.enterClient(clients[i+3],null,presenceCompletion.add());
+            }
+
+            final String firstConnectionId = ably.connection.id;
+
+            /* suppress automatic retries by the connection manager and disconnect */
+            try {
+                Method method = ably.connection.connectionManager.getClass().getDeclaredMethod("disconnectAndSuppressRetries");
+                method.setAccessible(true);
+                method.invoke(ably.connection.connectionManager);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                fail("Unexpected exception in suppressing retries");
+            }
+            connectionWaiter.waitFor(ConnectionState.disconnected);
+            assertEquals("Disconnected state was not reached", ConnectionState.disconnected, ably.connection.state);
+
+            //enter last 3 clients while disconnected
+            for (int i = 0; i < 3; i++) {
+                senderChannel.presence.enterClient(clients[i+6],null,presenceCompletion.add());
+            }
+            //now let's unblock the ack nacks and reconnect
+            mockWebsocketFactory.blockReceiveProcessing(message -> false);
+            /* Wait for the connection to go stale, then reconnect */
+            ably.connection.connect();
+            connectionWaiter.waitFor(ConnectionState.connected);
+            assertEquals("Connected state was not reached", ConnectionState.connected, ably.connection.state);
+            //replace transport
+            transport = mockWebsocketFactory.getCreatedTransport();
+            /* Verify the connection is new */
+            assertNotNull(ably.connection.id);
+            assertNotEquals("Connection has the same id", firstConnectionId, ably.connection.id);
+
+            System.out.println("presence_resume_test: First connection id:"+firstConnectionId);
+            System.out.println("presence_resume_test: Second connection id:"+ably.connection.id);
+
+            // wait for channel to get attached
+            (new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
+            assertEquals("Connection has the same id", ChannelState.attached, senderChannel.state);
+
+            // presenceCompletion.add();
+            ErrorInfo[] resendErrors = presenceCompletion.waitFor();
+            for (ErrorInfo resendError : resendErrors) {
+                System.out.println("presence_resume_test: error "+resendError.message);
+            }
+            assertTrue(
+                "Second round of messages (queued) has errors",
+                resendErrors.length == 0
+            );
+
+            for (PresenceMessage presenceMessage:
+                transport.getSentPresenceMessages()) {
+                System.out.println("presence_resume_test: sent message with client: "+presenceMessage.clientId +" " +
+                    " action:"+presenceMessage.action);
+            }
+            assertEquals("Second round of messages has incorrect size", 9, transport.getSentPresenceMessages().size());
+            //make sure they were sent with correct client ids
+            final Map<String,PresenceMessage> sentPresenceMap = new HashMap<>();
+            for (PresenceMessage presenceMessage: transport.getSentPresenceMessages()){
+                sentPresenceMap.put(presenceMessage.clientId, presenceMessage);
+            }
+            for (String client : clients) {
+                assertTrue("Client id isn't there:"+client, sentPresenceMap.containsKey(client));
             }
         }
     }

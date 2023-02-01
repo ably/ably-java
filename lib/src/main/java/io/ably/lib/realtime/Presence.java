@@ -117,6 +117,11 @@ public class Presence {
         return get(new Param(GET_WAITFORSYNC, String.valueOf(wait)), new Param(GET_CLIENTID, clientId));
     }
 
+    synchronized void addPendingPresence(String clientId, PresenceMessage presenceMessage, CompletionListener listener) {
+        final QueuedPresence queuedPresence = new QueuedPresence(presenceMessage,listener);
+        pendingPresence.put(clientId,queuedPresence);
+    }
+
     /**
      * An interface allowing a listener to be notified of arrival of a presence message.
      */
@@ -905,8 +910,11 @@ public class Presence {
      * attach / detach
      ************************************/
 
-    void setAttached(boolean hasPresence) {
+    void setAttached(boolean hasPresence, String connectionId) {
         /* Start sync, if hasPresence is not set end sync immediately dropping all the current presence members */
+        if (hasPresence){
+            internalPresence.replaceMembersIfNeeded(connectionId);
+        }
         presence.startSync();
         syncAsResultOfAttach = true;
         if (!hasPresence) {
@@ -1202,6 +1210,21 @@ public class Presence {
             if(residualMembers != null)
                 residualMembers.clear();
         }
+
+        /*
+  Old internal members are stuck with old member ids, we need to replace them with new one
+  * */
+        synchronized void replaceMembersIfNeeded(String connectionId) {
+            for (Map.Entry<String, PresenceMessage> entry : members.entrySet()) {
+                final String key = entry.getKey();
+                if (!key.contains(connectionId)) { //connection has changed - replace key
+                    PresenceMessage presenceMessage = internalPresence.members.get(key);
+                    presenceMessage.connectionId = connectionId;
+                    internalPresence.members.put(key, presenceMessage);
+                }
+            }
+        }
+
 
         private boolean syncInProgress;
         private Collection<String> residualMembers;

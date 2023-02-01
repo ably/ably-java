@@ -4,6 +4,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -82,7 +83,7 @@ public class ConnectionManager implements ConnectListener {
         void suspendAll(ErrorInfo error, boolean notifyStateChange);
         Iterable<Channel> values();
 
-        void reattachOnResumeFailure();
+        void transferToChannels(List<QueuedMessage> queuedMessages);
     }
 
     /***********************************
@@ -96,6 +97,7 @@ public class ConnectionManager implements ConnectListener {
         final ErrorInfo reason;
         final String fallback;
         final String currentHost;
+        final boolean reattachOnResumeFailure;
 
         StateIndication(ConnectionState state) {
             this(state, null);
@@ -110,6 +112,16 @@ public class ConnectionManager implements ConnectListener {
             this.reason = reason;
             this.fallback = fallback;
             this.currentHost = currentHost;
+            this.reattachOnResumeFailure = false;
+        }
+
+        StateIndication(ConnectionState state, ErrorInfo reason, String fallback, String currentHost,
+                         boolean reattachOnResumeFailure) {
+            this.state = state;
+            this.reason = reason;
+            this.fallback = fallback;
+            this.currentHost = currentHost;
+            this.reattachOnResumeFailure = reattachOnResumeFailure;
         }
     }
 
@@ -254,7 +266,7 @@ public class ConnectionManager implements ConnectListener {
 
         @Override
         void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, Channel channel) {
-            channel.setConnected();
+            channel.setConnected(stateIndication.reattachOnResumeFailure);
         }
     }
 
@@ -1186,6 +1198,9 @@ public class ConnectionManager implements ConnectListener {
 
     private synchronized void onConnected(ProtocolMessage message) {
         final ErrorInfo error = message.error;
+        boolean reattachOnResumeFailure = false; // this will indicate that channel must reattach when connected
+        // event is received
+
         connection.reason = error;
         if (connection.id != null) { // there was a previous connection, so this is a resume and RTN15c applies
             Log.d(TAG, "There was a connection resume");
@@ -1208,11 +1223,13 @@ public class ConnectionManager implements ConnectListener {
                     Log.d(TAG, "connection resume failed without error" );
                 }
 
-                channels.reattachOnResumeFailure();
-                // Add any messages still pending from the previous transport (RTN19a) to the front of queued messages
-                // however, this time the pending messages have to have newly assigned `
-                // msgSerial`s. They can't simply be replayed, as they are in the successful resume case
+                //we are going to add pending messages and update pending queue state
                 addPendingMessagesToQueuedMessages(true);
+
+                //We are going to transfer presence messages as they need to be sent when the channel is attached
+                final List<QueuedMessage> queuedPresenceMessages = removeAndGetQueuedPresenceMessages();
+                channels.transferToChannels(queuedPresenceMessages);
+                reattachOnResumeFailure = true;
             }
         }
 
@@ -1240,7 +1257,27 @@ public class ConnectionManager implements ConnectListener {
         }
         /* indicated connected currentState */
         setSuspendTime();
-        requestState(new StateIndication(ConnectionState.connected, error));
+        final StateIndication stateIndication = new StateIndication(ConnectionState.connected, error, null, null,
+            reattachOnResumeFailure);
+        requestState(stateIndication);
+    }
+
+    /*
+    This method removes all messages in queuedMessages which has presence in them, moves them to a new
+    list and returns them. We can't yet use Java 8's stream and predicates for this purpose as we support below
+    Android v24.
+    * */
+    private synchronized List<QueuedMessage> removeAndGetQueuedPresenceMessages() {
+        final Iterator<QueuedMessage> queuedIterator = queuedMessages.iterator();
+        final List<QueuedMessage> queuedPresenceMessages = new ArrayList<>();
+        while (queuedIterator.hasNext()){
+            final QueuedMessage queuedMessage = queuedIterator.next();
+            if (queuedMessage.msg.presence != null){
+                queuedPresenceMessages.add(queuedMessage);
+                queuedIterator.remove();
+            }
+        }
+        return queuedPresenceMessages;
     }
 
     /**
@@ -1250,20 +1287,19 @@ public class ConnectionManager implements ConnectListener {
      * on pending queue, for example when a connection resume failed
      */
     private void addPendingMessagesToQueuedMessages(boolean resetMessageSerial) {
-        // Add messages from pending messages to front of queuedMessages in order to retry them
-        queuedMessages.addAll(0, pendingMessages.queue);
-        //rewind start serial back to the first serial since we are clearing the queue
-        if (!pendingMessages.queue.isEmpty()){
-            //Reset current serial to the first pending message on previous queue as we are going to clear the queue now
-            msgSerial =  pendingMessages.queue.get(0).msg.msgSerial;
-            pendingMessages.resetStartSerial((int) (msgSerial));
-            pendingMessages.clearQueue();
-        }
+        synchronized (this) {
+            // Add messages from pending messages to front of queuedMessages in order to retry them
+            queuedMessages.addAll(0, pendingMessages.queue);
 
-        //RTN19a
-        if (resetMessageSerial){
-            pendingMessages.resetStartSerial(0);
-            msgSerial = 0; //msgSerial will increase in sendImpl when messages are sent
+            if (resetMessageSerial){  // failed resume, so all new published messages start with msgSerial = 0
+                msgSerial = 0; //msgSerial will increase in sendImpl when messages are sent
+                pendingMessages.resetStartSerial(0);
+            } else if(!pendingMessages.queue.isEmpty()) { // pendingMessages needs to expect next msgSerial to be the earliest previously unacknowledged message
+                msgSerial =  pendingMessages.queue.get(0).msg.msgSerial;
+                pendingMessages.resetStartSerial((int) (msgSerial));
+            }
+
+            pendingMessages.queue.clear();
         }
     }
 
@@ -1644,6 +1680,9 @@ public class ConnectionManager implements ConnectListener {
                 }
             }
             queuedMessages.clear();
+
+            //also pending messages
+            pendingMessages.fail();
         }
     }
 
@@ -1752,10 +1791,14 @@ public class ConnectionManager implements ConnectListener {
         }
 
         public void resetStartSerial(int from) {
-             startSerial = from;
+            startSerial = from;
         }
 
-        synchronized void clearQueue() {
+        //fail all pending queued emssages
+        synchronized void fail() {
+            for (QueuedMessage queuedMessage: queue){
+                queuedMessage.listener.onError(new ErrorInfo());
+            }
             queue.clear();
         }
     }
