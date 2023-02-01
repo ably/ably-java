@@ -1744,15 +1744,17 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
             /*
              * Validate that
-             * - our listeners are called
+             * - our listeners are called within 10 seconds
              */
+            long waitUntil = System.currentTimeMillis() + 10000;
             try {
                 while (true) {
                     synchronized (messageCompletionListener) {
                         assertEquals(0, messageCompletionListener.failedListeners);
 
                         if (messageCompletionListener.successfulListeners != 3) {
-                            messageCompletionListener.wait(5000);
+                            messageCompletionListener.wait(500);
+                            assertTrue(System.currentTimeMillis() < waitUntil);
                             continue;
                         }
                     }
