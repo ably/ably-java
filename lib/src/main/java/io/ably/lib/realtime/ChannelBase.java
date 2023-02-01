@@ -196,8 +196,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                 PresenceMessage[] presenceMessages = queuedMessage.msg.presence;
                 if (presenceMessages != null && presenceMessages.length > 0) {
                     for (PresenceMessage presenceMessage : presenceMessages) {
-                        this.presence.addPendingPresence(presenceMessage.clientId, presenceMessage,
-                            queuedMessage.listener);
+                        this.presence.addPendingPresence(presenceMessage, queuedMessage.listener);
                     }
                 }
             }

@@ -117,9 +117,11 @@ public class Presence {
         return get(new Param(GET_WAITFORSYNC, String.valueOf(wait)), new Param(GET_CLIENTID, clientId));
     }
 
-    synchronized void addPendingPresence(String clientId, PresenceMessage presenceMessage, CompletionListener listener) {
-        final QueuedPresence queuedPresence = new QueuedPresence(presenceMessage,listener);
-        pendingPresence.put(clientId,queuedPresence);
+    void addPendingPresence(PresenceMessage presenceMessage, CompletionListener listener) {
+        synchronized(channel) {
+            final QueuedPresence queuedPresence = new QueuedPresence(presenceMessage,listener);
+            pendingPresence.add(queuedPresence);
+        }
     }
 
     /**
