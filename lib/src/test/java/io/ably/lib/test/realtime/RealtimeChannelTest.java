@@ -1033,14 +1033,16 @@ public class RealtimeChannelTest extends ParameterizedTest {
     public void attach_when_channel_in_detaching_state() throws AblyException {
         AblyRealtime ably = null;
         try {
-            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+            final DebugOptions opts = createOptions(testVars.keys[0].keyStr);
+            final MockWebsocketFactory transportFactory = new MockWebsocketFactory();
+            opts.transportFactory = transportFactory;
             opts.logLevel = Log.VERBOSE;
             ably = new AblyRealtime(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
             assertEquals("Verify connected state reached", ConnectionState.connected, ably.connection.state);
-
+            final MockWebsocketFactory.MockWebsocketTransport transport = transportFactory.getCreatedTransport();
             /* create a channel and attach */
             final String channelName = "attach_channel";
             final Channel channel = ably.channels.get(channelName);
@@ -1048,15 +1050,21 @@ public class RealtimeChannelTest extends ParameterizedTest {
             new ChannelWaiter(channel).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
 
+            //block detached so we can ensure that we are in detaching state but unblock immediately after assertion
+            transportFactory.blockReceiveProcessingAndQueueBlockedMessages(message -> message.action == ProtocolMessage.Action.detached);
             /* detach */
             final Helpers.CompletionWaiter detachCompletionWaiter = new Helpers.CompletionWaiter();
             channel.detach(detachCompletionWaiter);
             assertEquals("Verify detaching state reached", ChannelState.detaching, channel.state);
+
+            //now we can send an attach as we previously blocked detaching
             final Helpers.CompletionWaiter attachCompletionWaiter = new Helpers.CompletionWaiter();
-            //attempt to attach while detaching
+            //attempt to attach while detaching without blocking attached
             channel.attach(attachCompletionWaiter);
 
-            /* Verify onSuccess callback gets called */
+            //unblock and let the queued messages arrive
+            transportFactory.allowReceiveProcessing(message -> true);
+
             detachCompletionWaiter.waitFor();
             assertThat(detachCompletionWaiter.success, is(true));
             assertThat(channel.state, is(ChannelState.detached));

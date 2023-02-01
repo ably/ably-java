@@ -10,7 +10,6 @@ import io.ably.lib.transport.ITransport;
 import io.ably.lib.transport.WebSocketTransport;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.Message;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.ProtocolMessage;
 
@@ -28,6 +27,7 @@ public class MockWebsocketFactory implements ITransport.Factory {
     enum ReceiveBehaviour {
         allow,
         block,
+        blockAndQueue,
         fail
     }
 
@@ -55,6 +55,8 @@ public class MockWebsocketFactory implements ITransport.Factory {
     MessageFilter receiveMessageFilter = null;
     HostFilter hostFilter = null;
     HostTransform hostTransform = null;
+
+    final List<ProtocolMessage> blockedReceiveQueue = new ArrayList<>();
 
     public ITransport lastCreatedTransport =  null;
 
@@ -96,6 +98,20 @@ public class MockWebsocketFactory implements ITransport.Factory {
     public void blockReceiveProcessing(MessageFilter filter) {
         receiveMessageFilter = filter;
         receiveBehaviour = ReceiveBehaviour.block;
+    }
+
+    /*
+  We cannot prevent server sending us messages from here so instead, this will block processing messages from this
+  point. That is they will not be triggering connection manager's onMessage which will help simulate some conditions
+  * */
+    public void blockReceiveProcessingAndQueueBlockedMessages(MessageFilter filter) {
+        receiveMessageFilter = filter;
+        receiveBehaviour = ReceiveBehaviour.blockAndQueue;
+    }
+
+    public void allowReceiveProcessing(MessageFilter filter) {
+        receiveMessageFilter = filter;
+        receiveBehaviour = ReceiveBehaviour.allow;
     }
 
     public void blockSend() { blockSend(null); }
@@ -195,27 +211,27 @@ public class MockWebsocketFactory implements ITransport.Factory {
         @Override
         public void receive(ProtocolMessage msg) throws AblyException {
 
-            System.out.println("presence_resume_test: Received protocol message :"+msg.action+" messages:");
-           if (msg.messages != null){
-               for (Message message : msg.messages) {
-                   System.out.println("presence_resume_test: message"+ message);
-               }
-           }
-           if (msg.presence != null){
-               for (PresenceMessage presenceMessage : msg.presence) {
-                   System.out.println("presence_resume_test: presence:"+ presenceMessage.action +" clientId:"+presenceMessage.clientId);
-               }
-           }
-
             switch (receiveBehaviour) {
                 case allow:
+                    for (ProtocolMessage queuedMessage: blockedReceiveQueue) {
+                        if (receiveMessageFilter == null || receiveMessageFilter.matches(queuedMessage)) {
+                            super.receive(queuedMessage);
+                        }
+                    }
                     if (receiveMessageFilter == null || receiveMessageFilter.matches(msg)) {
                         super.receive(msg);
                     }
                     break;
                 case block:
                     if (receiveMessageFilter == null || receiveMessageFilter.matches(msg)) {
-                        /* do nothing */
+                        //process queued messages
+                    } else {
+                        super.receive(msg);
+                    }
+                    break;
+                case blockAndQueue:
+                    if (receiveMessageFilter == null || receiveMessageFilter.matches(msg)) {
+                        blockedReceiveQueue.add(msg);
                     } else {
                         super.receive(msg);
                     }
