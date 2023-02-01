@@ -190,19 +190,15 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * This method carries queued messages accumulated on connection manager while the channel
      * isn't attached yet. It's added in the queue here
      * */
-    synchronized void transferQueuedMessages(List<QueuedMessage> messagesToTransfer) {
+    synchronized void transferQueuedPresenceMessages(List<QueuedMessage> messagesToTransfer) {
         state = ChannelState.attaching;
         if (messagesToTransfer != null) {
             for (QueuedMessage queuedMessage : messagesToTransfer) {
-                if (queuedMessage.msg.action == Action.message) {
-                    queuedMessages.add(queuedMessage);
-                } else if (queuedMessage.msg.action == Action.presence) {
-                    PresenceMessage[] presenceMessages = queuedMessage.msg.presence;
-                    if (presenceMessages != null && presenceMessages.length > 0){
-                        for (PresenceMessage presenceMessage : presenceMessages) {
-                            this.presence.addPendingPresence(presenceMessage.clientId, presenceMessage,
-                                queuedMessage.listener);
-                        }
+                PresenceMessage[] presenceMessages = queuedMessage.msg.presence;
+                if (presenceMessages != null && presenceMessages.length > 0) {
+                    for (PresenceMessage presenceMessage : presenceMessages) {
+                        this.presence.addPendingPresence(presenceMessage.clientId, presenceMessage,
+                            queuedMessage.listener);
                     }
                 }
             }

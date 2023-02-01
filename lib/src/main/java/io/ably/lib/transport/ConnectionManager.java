@@ -4,6 +4,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -1226,10 +1227,9 @@ public class ConnectionManager implements ConnectListener {
                 //we are going to add pending messages and update pending queue state
                 addPendingMessagesToQueuedMessages(true);
 
-                //We are going to transfer those messages to channel level so that they are published after
-                //their respective channels are attached
-                channels.transferToChannels(new ArrayList<>(queuedMessages));
-                queuedMessages.clear();
+                //We are going to transfer presence messages as they need to be sent when the channel is attached
+                final List<QueuedMessage> queuedPresenceMessages = removeAndGetQueuedPresenceMessages();
+                channels.transferToChannels(queuedPresenceMessages);
                 reattachOnResumeFailure = true;
             }
         }
@@ -1261,6 +1261,24 @@ public class ConnectionManager implements ConnectListener {
         final StateIndication stateIndication = new StateIndication(ConnectionState.connected, error, null, null,
             reattachOnResumeFailure);
         requestState(stateIndication);
+    }
+
+    /*
+    This method removes all messages in queuedMessages which has presence in them, moves them to a new
+    list and returns them. We can't yet use Java 8's stream and predicates for this purpose as we support below
+    Android v24.
+    * */
+    private synchronized List<QueuedMessage> removeAndGetQueuedPresenceMessages() {
+        final Iterator<QueuedMessage> queuedIterator = queuedMessages.iterator();
+        final List<QueuedMessage> queuedPresenceMessages = new ArrayList<>();
+        while (queuedIterator.hasNext()){
+            final QueuedMessage queuedMessage = queuedIterator.next();
+            if (queuedMessage.msg.presence != null){
+                queuedPresenceMessages.add(queuedMessage);
+                queuedIterator.remove();
+            }
+        }
+        return queuedPresenceMessages;
     }
 
     /**

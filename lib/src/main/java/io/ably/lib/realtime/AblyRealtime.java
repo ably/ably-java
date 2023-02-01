@@ -256,9 +256,9 @@ public class AblyRealtime extends AblyRest {
                     Log.d(TAG, "reAttach(); channel = " + channel.name);
 
                     if (channelQueueMap.containsKey(channel.name)){
-                        channel.transferQueuedMessages(channelQueueMap.get(channel.name));
+                        channel.transferQueuedPresenceMessages(channelQueueMap.get(channel.name));
                     }else {
-                        channel.transferQueuedMessages(null);
+                        channel.transferQueuedPresenceMessages(null);
                     }
                 }
             }
