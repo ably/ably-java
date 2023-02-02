@@ -164,15 +164,35 @@ public class Helpers {
             error = null;
         }
 
-        public synchronized ErrorInfo waitFor(int count) {
+        /**
+         * Wait for a specified amount of time, or until success occurs.
+         */
+        public synchronized ErrorInfo waitFor(int count, long timeoutInMillis) {
+            long timeoutAt = System.currentTimeMillis() + timeoutInMillis;
             while(successCount<count && error == null)
-                try { wait(); } catch(InterruptedException e) {}
+                try {
+                    if (System.currentTimeMillis() > timeoutAt) {
+                        break;
+                    }
+                    
+                     wait(); 
+                } catch(InterruptedException e) {}
             success = successCount >= count;
             return error;
         }
 
+        /**
+         * Wait for a specified number of successes, with an arbitrarily long timeout.
+         */
+        public synchronized ErrorInfo waitFor(int count) {
+            return waitFor(count, 600000);
+        }
+
+        /**
+         * Wait for a single success with an arbitrarily long timeout.
+         */
         public synchronized ErrorInfo waitFor() {
-            return waitFor(1);
+            return waitFor(1, 600000);
         }
 
         /**

@@ -117,9 +117,11 @@ public class Presence {
         return get(new Param(GET_WAITFORSYNC, String.valueOf(wait)), new Param(GET_CLIENTID, clientId));
     }
 
-    synchronized void addPendingPresence(String clientId, PresenceMessage presenceMessage, CompletionListener listener) {
-        final QueuedPresence queuedPresence = new QueuedPresence(presenceMessage,listener);
-        pendingPresence.put(clientId,queuedPresence);
+    void addPendingPresence(PresenceMessage presenceMessage, CompletionListener listener) {
+        synchronized(channel) {
+            final QueuedPresence queuedPresence = new QueuedPresence(presenceMessage,listener);
+            pendingPresence.add(queuedPresence);
+        }
     }
 
     /**
@@ -739,13 +741,12 @@ public class Presence {
      * @throws AblyException
      */
     public void updatePresence(PresenceMessage msg, CompletionListener listener) throws AblyException {
-        Log.v(TAG, "update(); channel = " + channel.name);
+        Log.v(TAG, "updatePresence(); channel = " + channel.name);
 
         AblyRealtime ably = channel.ably;
         boolean connected = (ably.connection.state == ConnectionState.connected);
-        String clientId;
         try {
-            clientId = ably.auth.checkClientId(msg, false, connected);
+            ably.auth.checkClientId(msg, false, connected);
         } catch(AblyException e) {
             if(listener != null) {
                 listener.onError(e.errorInfo);
@@ -759,8 +760,7 @@ public class Presence {
             case initialized:
                 channel.attach();
             case attaching:
-                QueuedPresence queued = new QueuedPresence(msg, listener);
-                pendingPresence.put(clientId, queued);
+                pendingPresence.add(new QueuedPresence(msg, listener));
                 break;
             case attached:
                 ProtocolMessage message = new ProtocolMessage(ProtocolMessage.Action.presence, channel.name);
@@ -852,7 +852,7 @@ public class Presence {
         QueuedPresence(PresenceMessage msg, CompletionListener listener) { this.msg = msg; this.listener = listener; }
     }
 
-    private final Map<String, QueuedPresence> pendingPresence = new HashMap<String, QueuedPresence>();
+    private final List<QueuedPresence> pendingPresence = new ArrayList<QueuedPresence>();
 
     private void sendQueuedMessages() {
         Log.v(TAG, "sendQueuedMessages()");
@@ -864,7 +864,7 @@ public class Presence {
             return;
 
         ProtocolMessage message = new ProtocolMessage(ProtocolMessage.Action.presence, channel.name);
-        Iterator<QueuedPresence> allQueued = pendingPresence.values().iterator();
+        Iterator<QueuedPresence> allQueued = pendingPresence.iterator();
         PresenceMessage[] presenceMessages = message.presence = new PresenceMessage[count];
         CompletionListener listener;
 
@@ -883,7 +883,9 @@ public class Presence {
             }
             listener = mListener.isEmpty() ? null : mListener;
         }
+
         pendingPresence.clear();
+
         try {
             connectionManager.send(message, queueMessages, listener);
         } catch(AblyException e) {
@@ -895,7 +897,7 @@ public class Presence {
 
     private void failQueuedMessages(ErrorInfo reason) {
         Log.v(TAG, "failQueuedMessages()");
-        for(QueuedPresence msg : pendingPresence.values())
+        for(QueuedPresence msg : pendingPresence)
             if(msg.listener != null)
                 try {
                     msg.listener.onError(reason);
