@@ -1,5 +1,22 @@
 # Change Log
 
+## [1.2.24](https://github.com/ably/ably-java/tree/v1.2.24)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.23...v1.2.24)
+
+**Fixed bugs:**
+
+- Presence messages superseded whilst channel in attaching state [\#908](https://github.com/ably/ably-java/issues/908)
+- A failed resume incorrectly retries queued messages prior to reattachment [\#905](https://github.com/ably/ably-java/issues/905)
+- Pending messages are not failed when transitioning to suspended [\#904](https://github.com/ably/ably-java/issues/904)
+
+**Merged pull requests:**
+
+- Presence message superseded [\#909](https://github.com/ably/ably-java/pull/909) ([AndyTWF](https://github
+.com/AndyTWF))
+- Improvements on connection resume failure [\#906](https://github.com/ably/ably-java/pull/906) ([ikbalkaya](https://github.com/ikbalkaya))
+
+
 ## [1.2.23](https://github.com/ably/ably-java/tree/v1.2.23)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.22...v1.2.23)
