@@ -5,8 +5,13 @@ apply plugin: 'signing'
 final String GROUP_ID = 'io.ably'
 final String ARTIFACT_ID = 'ably-java'
 final String LOCAL_RELEASE_DESTINATION = "${buildDir}/release/${version}"
-final String MAVEN_USER = hasProperty('ossrhUsername') ? ossrhUsername : ''
-final String MAVEN_PASSWORD = hasProperty('ossrhPassword') ? ossrhPassword : ''
+final MAVEN_USER = findProperty('ossrhUsername')
+final MAVEN_PASSWORD = findProperty('ossrhPassword')
+
+final isPublishingToMavenCentral = findProperty('publishTarget') == 'MavenCentral'
+if (isPublishingToMavenCentral && (null == MAVEN_USER || null == MAVEN_PASSWORD)) {
+    throw new GradleException('Either ossrhUsername or ossrhPassword not specified when publishTarget is MavenCentral.')
+}
 
 /*
  * Task which signs and uploads the Java artifacts to Nexus OSSRH.
@@ -16,17 +21,7 @@ uploadArchives {
         sign configurations.archives
     }
     repositories.mavenDeployer {
-        logger.lifecycle('OSSRH auth with username: ' + MAVEN_USER)
-
         beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-
-        repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/') {
-            authentication(userName: MAVEN_USER, password: MAVEN_PASSWORD)
-        }
-
-        snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots/') {
-            authentication(userName: MAVEN_USER, password: MAVEN_PASSWORD)
-        }
 
         pom.groupId = GROUP_ID
         pom.artifactId = ARTIFACT_ID
@@ -76,10 +71,18 @@ uploadArchives {
             }
         }
 
-        // Export files to local storage
-        // COMMENT OUT THIS LINE IN ORDER TO RELEASE TO SONATYPE NEXUS STAGING
-        // TODO https://github.com/ably/ably-java/issues/566
-        repository(url: "file://${LOCAL_RELEASE_DESTINATION}")
+        if (isPublishingToMavenCentral) {
+            repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/') {
+                authentication(userName: MAVEN_USER, password: MAVEN_PASSWORD)
+            }
+
+            snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots/') {
+                authentication(userName: MAVEN_USER, password: MAVEN_PASSWORD)
+            }
+        } else {
+            // Export files to local storage
+            repository(url: "file://${LOCAL_RELEASE_DESTINATION}")
+        }
     }
 }
 
@@ -91,8 +94,12 @@ task zipRelease(type: Zip) {
 
 task assembleRelease {
     doLast {
-        logger.quiet("Release ${version} can be found at ${LOCAL_RELEASE_DESTINATION}")
-        logger.quiet("Release ${version} zipped can be found ${buildDir}/release-${version}.zip")
+        if (isPublishingToMavenCentral) {
+            logger.quiet("✅ Release uploaded to Sonatype Staging Repository")
+        } else {
+            logger.quiet("✅ Release ${version} can be found at ${LOCAL_RELEASE_DESTINATION}")
+            logger.quiet("✅ Release ${version} zipped can be found ${buildDir}/release-${version}.zip")
+        }
     }
     dependsOn(uploadArchives)
     dependsOn(zipRelease)
