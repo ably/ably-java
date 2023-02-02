@@ -12,8 +12,7 @@
 
 **Merged pull requests:**
 
-- Presence message superseded [\#909](https://github.com/ably/ably-java/pull/909) ([AndyTWF](https://github
-.com/AndyTWF))
+- Presence message superseded [\#909](https://github.com/ably/ably-java/pull/909) ([AndyTWF](https://github.com/AndyTWF))
 - Improvements on connection resume failure [\#906](https://github.com/ably/ably-java/pull/906) ([ikbalkaya](https://github.com/ikbalkaya))
 
 
