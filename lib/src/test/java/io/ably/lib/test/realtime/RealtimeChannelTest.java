@@ -2007,6 +2007,44 @@ public class RealtimeChannelTest extends ParameterizedTest {
         }
     }
 
+    /*
+     * Without creating a channel, send a DETACHED protocol message to a named channel.
+     *
+     * Assert that the channel is not created when processing the message and that, therefore,
+     * the message is dropped. This prevents issues where releasing a channel - dropping it from
+     * the channel map and calling detach, can cause the channel to be re-created when the
+     * DETATCHED response comes back from ably.
+     */
+    @Test
+    public void messages_to_non_existent_channels_are_dropped() throws AblyException {
+        AblyRealtime ably = null;
+        long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
+        final String channelName = "messages_to_non_existent_channels_are_dropped";
+
+        try {
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+
+            /* Make test faster */
+            Defaults.realtimeRequestTimeout = 1000;
+            opts.channelRetryTimeout = 1000;
+
+            ably = new AblyRealtime(opts);
+
+            /* Inject detached message as if from the server */
+            ProtocolMessage detachedMessage = new ProtocolMessage() {{
+                action = Action.detached;
+                channel = channelName;
+            }};
+            ably.connection.connectionManager.onMessage(null, detachedMessage);
+
+            assertFalse(ably.channels.containsKey("messages_to_non_existent_channels_are_dropped"));
+        } finally {
+            if (ably != null)
+                ably.close();
+            Defaults.realtimeRequestTimeout = oldRealtimeTimeout;
+        }
+    }
+
     class DetachingProtocolListener implements DebugOptions.RawProtocolListener {
 
         public Channel theChannel;

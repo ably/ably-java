@@ -217,8 +217,12 @@ public class AblyRealtime extends AblyRest {
         @Override
         public void onMessage(ProtocolMessage msg) {
             String channelName = msg.channel;
-            Channel channel;
-            synchronized(this) { channel = channels.get(channelName); }
+            Channel channel = null;
+            synchronized(this) {
+                if (channels.containsKey(channelName)) {
+                    channel = channels.get(channelName);
+                }
+            }
             if(channel == null) {
                 Log.e(TAG, "Received channel message for non-existent channel");
                 return;
