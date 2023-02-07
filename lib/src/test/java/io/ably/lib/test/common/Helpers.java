@@ -632,24 +632,56 @@ public class Helpers {
          * Wait for a given number of messages
          */
         public void waitForRecv() {
-            waitForRecv(1);
+            waitForRecv(1, 6000000);
         }
         public void waitForSend() {
-            waitForSend(1);
+            waitForSend(1, 6000000);
+        }
+        public void waitForRecv(int count) {
+            waitForRecv(count, 6000000);
+        }
+        public void waitForSend(int count) {
+            waitForSend(count, 6000000);
         }
 
         /**
          * Wait for a given number of messages
          * @param count
          */
-        public synchronized void waitForRecv(int count) {
+        public synchronized void waitForRecv(int count, long timeoutInMillis) {
+            long timeoutAt = System.currentTimeMillis() + timeoutInMillis;
             while(receivedMessages.size() < count) {
-                try { wait(); } catch(InterruptedException e) {}
+                synchronized (this) {
+                    try {
+                        if (System.currentTimeMillis() > timeoutAt || receivedMessages.size() >= count) {
+                            break;
+                        }
+
+                        wait();
+                    } catch(InterruptedException e) {}
+                }
+            }
+
+            if (receivedMessages.size() < count) {
+                throw new AssertionError("Did not receive expected number of messages");
             }
         }
-        public synchronized void waitForSend(int count) {
+        public synchronized void waitForSend(int count, long timeoutInMillis) {
+            long timeoutAt = System.currentTimeMillis() + timeoutInMillis;
             while(sentMessages.size() < count) {
-                try { wait(); } catch(InterruptedException e) {}
+                synchronized (this) {
+                    try {
+                        if (System.currentTimeMillis() > timeoutAt || sentMessages.size() >= count) {
+                            break;
+                        }
+
+                        wait();
+                    } catch(InterruptedException e) {}
+                }
+            }
+
+            if (sentMessages.size() < count) {
+                throw new AssertionError("Did not send expected number of messages");
             }
         }
 
