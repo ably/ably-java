@@ -21,7 +21,7 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 
 @RunWith(Parameterized.class)
-public class ParameterizedTest {
+abstract public class ParameterizedTest {
     @Parameters(name = "{0}")
     public static Iterable<Setup.TestParameters> data() {
         return Arrays.asList(
