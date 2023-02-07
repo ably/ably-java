@@ -2,7 +2,7 @@
 
 ## [1.2.25](https://github.com/ably/ably-java/tree/v1.2.25)
 
-[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.24...1.2.25)
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.24...v1.2.25)
 
 **Fixed bugs:**
 
