@@ -30,7 +30,8 @@ android {
         buildConfigField 'String', 'VERSION', "\"$version\""
         minSdkVersion 19
         targetSdkVersion 30
-        versionCode 1
+        // This MUST be incremented by 1 on each ably-java release
+        versionCode 2
         versionName version
         setProperty('archivesBaseName', "ably-android-$versionName")
         testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
