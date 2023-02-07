@@ -33,6 +33,7 @@ import org.junit.Test;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -1046,6 +1047,15 @@ public class RealtimeChannelTest extends ParameterizedTest {
             /* create a channel and attach */
             final String channelName = "attach_channel";
             final Channel channel = ably.channels.get(channelName);
+
+            final List<String> channelHistory = new ArrayList<String>();
+            final List<String> expectedChannelHistory = Arrays.asList("attaching", "attached", "detaching", "detached", "attaching", "attached");
+            channel.on(new ChannelStateListener() {
+                @Override
+                public void onChannelStateChanged(ChannelStateChange stateChange) {
+                    channelHistory.add(stateChange.current.name());
+                }
+            });
             channel.attach();
             new ChannelWaiter(channel).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
@@ -1067,11 +1077,11 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             detachCompletionWaiter.waitFor();
             assertThat(detachCompletionWaiter.success, is(true));
-            assertThat(channel.state, is(ChannelState.detached));
-            //verify reattach - after detach
             attachCompletionWaiter.waitFor();
             assertThat(attachCompletionWaiter.success,is(true));
-            assertThat(channel.state, is(ChannelState.attached));
+
+            // Verify order of channel state transitions
+            assertEquals("Channel made expected state transitions", expectedChannelHistory, channelHistory);
         } finally {
             if(ably != null)
                 ably.close();
