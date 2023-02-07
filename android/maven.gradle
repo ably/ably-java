@@ -4,11 +4,11 @@ apply plugin: 'signing'
 final String GROUP_ID = 'io.ably'
 final String ARTIFACT_ID = 'ably-android'
 final String LOCAL_RELEASE_DESTINATION = "${buildDir}/release/${version}"
-final MAVEN_USER = findProperty('ossrhUsername')
-final MAVEN_PASSWORD = findProperty('ossrhPassword')
+final String MAVEN_USER = findProperty('ossrhUsername')
+final String MAVEN_PASSWORD = findProperty('ossrhPassword')
 
-final isPublishingToMavenCentral = findProperty('publishTarget') == 'MavenCentral'
-if (isPublishingToMavenCentral && (null == MAVEN_USER || null == MAVEN_PASSWORD)) {
+final boolean IS_PUBLISHING_TO_MAVEN_CENTRAL = findProperty('publishTarget') == 'MavenCentral'
+if (IS_PUBLISHING_TO_MAVEN_CENTRAL && (MAVEN_USER == null || MAVEN_PASSWORD == null)) {
     throw new GradleException('Either ossrhUsername or ossrhPassword not specified when publishTarget is MavenCentral.')
 }
 
@@ -77,7 +77,7 @@ uploadArchives {
             }
         }
 
-        if (isPublishingToMavenCentral) {
+        if (IS_PUBLISHING_TO_MAVEN_CENTRAL) {
             repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/') {
                 authentication(userName: MAVEN_USER, password: MAVEN_PASSWORD)
             }
@@ -105,7 +105,7 @@ tasks.whenTaskAdded { task ->
     if (task.name == 'assembleRelease') {
         task.doLast {
             if (isPublishingToMavenCentral) {
-                logger.quiet("✅ Release uploaded to Sonatype Staging Repository")
+                logger.quiet('✅ Release uploaded to Sonatype Staging Repository')
             } else {
                 logger.quiet("✅ Release ${version} can be found at ${LOCAL_RELEASE_DESTINATION}/")
                 logger.quiet("✅ Release ${version} zipped can be found ${buildDir}/release-${version}.zip")
