@@ -104,7 +104,7 @@ task zipRelease(type: Zip) {
 tasks.whenTaskAdded { task ->
     if (task.name == 'assembleRelease') {
         task.doLast {
-            if (isPublishingToMavenCentral) {
+            if (IS_PUBLISHING_TO_MAVEN_CENTRAL) {
                 logger.quiet('✅ Release uploaded to Sonatype Staging Repository')
             } else {
                 logger.quiet("✅ Release ${version} can be found at ${LOCAL_RELEASE_DESTINATION}/")
