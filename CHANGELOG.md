@@ -1,5 +1,19 @@
 # Change Log
 
+## [1.2.25](https://github.com/ably/ably-java/tree/1.2.25)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.24...1.2.25)
+
+**Fixed bugs:**
+
+- Released channel re-added to the channel map after DETACHED message [\#913](https://github.com/ably/ably-java/issues/913)
+
+**Merged pull requests:**
+
+- Drop messages where channel does not exist [\#914](https://github.com/ably/ably-java/pull/914) ([AndyTWF](https://github.com/AndyTWF))
+- Improve `1.2`-series Release Process [\#912](https://github.com/ably/ably-java/pull/912) ([QuintinWillison](https://github.com/QuintinWillison))
+- Fix link formatting in changelog [\#911](https://github.com/ably/ably-java/pull/911) ([AndyTWF](https://github.com/AndyTWF))
+
 ## [1.2.24](https://github.com/ably/ably-java/tree/v1.2.24)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.23...v1.2.24)
