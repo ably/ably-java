@@ -724,11 +724,35 @@ public class ConnectionManagerTest extends ParameterizedTest {
                 }
             });
 
-            /* Wait for both channels to reattach and verify state histories match the expected ones */
+            /*
+                Wait for both channels to reattach and verify state histories match the expected ones.
+                There's sometimes a delay between the channel becoming attached and the status appearing
+                in the array, so allow some waiting.
+            */
             attachedChannelWaiter.waitFor(ChannelState.attached);
             suspendedChannelWaiter.waitFor(ChannelState.attached);
-            assertEquals("Attached channel histories do not match", attachedChannelHistory, expectedAttachedChannelHistory);
-            assertEquals("Suspended channel histories do not match", suspendedChannelHistory, expectedSuspendedChannelHistory);
+
+            long attachedHistoryTimeout = System.currentTimeMillis() + 5000;
+            while (!expectedAttachedChannelHistory.equals(attachedChannelHistory)) {
+                if (System.currentTimeMillis() > attachedHistoryTimeout) {
+                    throw new AssertionError("Timed out wait for attached channel history");
+                }
+
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException ie) {}
+            }
+
+            long suspendedHistoryTimeout = System.currentTimeMillis() + 5000;
+            while (!expectedSuspendedChannelHistory.equals(suspendedChannelHistory)) {
+                if (System.currentTimeMillis() > suspendedHistoryTimeout) {
+                    throw new AssertionError("Timed out wait for suspended channel history");
+                }
+
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException ie) {}
+            }
         }
     }
 }
