@@ -38,8 +38,6 @@ import io.ably.lib.util.TimerUtil;
 
 public class ConnectionManager implements ConnectListener {
     final ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
-    final ExecutorCompletionService<Void> executorCompletionService =
-        new ExecutorCompletionService<>(singleThreadExecutor);
 
     /**************************************************************
      * ConnectionManager
