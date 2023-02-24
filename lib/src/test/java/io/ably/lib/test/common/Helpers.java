@@ -174,10 +174,13 @@ public class Helpers {
                     if (System.currentTimeMillis() > timeoutAt) {
                         break;
                     }
-                    
-                     wait(); 
+
+                     wait();
                 } catch(InterruptedException e) {}
             success = successCount >= count;
+            if (error != null) {
+                assertNotNull(error.message);
+            }
             return error;
         }
 
