@@ -1797,7 +1797,9 @@ public class ConnectionManager implements ConnectListener {
         //fail all pending queued emssages
         synchronized void fail(ErrorInfo reason) {
             for (QueuedMessage queuedMessage: queue){
-                queuedMessage.listener.onError(reason);
+                if (queuedMessage.listener != null) {
+                    queuedMessage.listener.onError(reason);
+                }
             }
             queue.clear();
         }
