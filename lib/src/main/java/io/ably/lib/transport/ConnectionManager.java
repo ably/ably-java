@@ -1682,7 +1682,7 @@ public class ConnectionManager implements ConnectListener {
             queuedMessages.clear();
 
             //also pending messages
-            pendingMessages.fail();
+            pendingMessages.fail(reason);
         }
     }
 
@@ -1795,9 +1795,9 @@ public class ConnectionManager implements ConnectListener {
         }
 
         //fail all pending queued emssages
-        synchronized void fail() {
+        synchronized void fail(ErrorInfo reason) {
             for (QueuedMessage queuedMessage: queue){
-                queuedMessage.listener.onError(new ErrorInfo());
+                queuedMessage.listener.onError(reason);
             }
             queue.clear();
         }
