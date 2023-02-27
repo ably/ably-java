@@ -1,0 +1,123 @@
+%YAML 1.2
+---
+common-version: 1.2.0
+compliance:
+  Agent Identifier:
+    Agents:
+    Operating System:
+      .variants: Android
+    Runtime:
+      .variants: JRE
+  Authentication:
+    API Key:
+    Token:
+      Callback:
+      Literal:
+      URL:
+        Query Time:
+  Debugging:
+    Error Information:
+    Logs:
+  Protocol:
+    JSON:
+    Maximum Message Size:
+    MessagePack:
+  Realtime:
+    Authentication:
+      Get Confirmed Client Identifier:
+    Channel:
+      Attach:
+      Encryption:
+      History:
+      Mode:
+      Presence:
+        Enter:
+          Client:
+        Get:
+        History:
+        Subscribe:
+        Update:
+          Client:
+      Publish:
+      Retry Timeout:
+      State Events:
+      Subscribe:
+        Deltas:
+        Rewind:
+    Connection:
+      Get Identifier:
+      Lifecycle Control:
+      Ping:
+      Recovery:
+      State Events:
+    Message Echoes:
+    Message Queuing:
+    Push Notifications:
+      .variants: Android
+      Local Device State:
+    Transport Parameters:
+  REST:
+    Authentication:
+      Authorize:
+      Create Token Request:
+      Get Client Identifier:
+      Request Token:
+    Channel:
+      Encryption:
+      Get:
+      History:
+      Name:
+      Presence:
+        History:
+        Member List:
+      Publish:
+        Idempotence:
+      Push Notifications:
+        List Subscriptions:
+        Subscribe:
+      Release:
+    Opaque Request:
+    Push Notifications Administration:
+      Channel Subscription:
+        List:
+        List Channels:
+        Remove:
+        Save:
+      Device Registration:
+        Get:
+        List:
+        Remove:
+        Save:
+      Publish:
+    Request Identifiers:
+      .caveats: |
+        Returned `ErrorInfo` instances for failed requests do not include the request identifier.
+        We will fix this under https://github.com/ably/ably-java/issues/843.
+    Request Timeout:
+    Service:
+      Get Time:
+    Statistics:
+      Query:
+    Support Hyperlink on Request Failure:
+  Service:
+    Environment:
+    Fallbacks:
+      Hosts:
+      Internet Up Check:
+      Retry Count:
+      Retry Timeout:
+    Host:
+  Testing:
+    Disable TLS:
+    TCP Insecure Port:
+    TCP Secure Port:
+  Transport:
+    Connection Open Timeout:
+    Proxy:
+variants:
+  Android:
+    .synopsis: |
+      Builds `aar` artifact(s) for use by applications running on the Android operating system.
+  JRE:
+    .synopsis: |
+      Builds `jar` artifact(s) for use by applications running in a Java Runtime Environment (JRE).
