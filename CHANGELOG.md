@@ -1,5 +1,17 @@
 # Change Log
 
+## [1.2.26](https://github.com/ably/ably-java/tree/v1.2.26)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.25...v1.2.26)
+
+**Fixed bugs:**
+
+- Provide an error code and error message for failed queued messages [\#920](https://github.com/ably/ably-java/issues/920)
+
+**Merged pull requests:**
+
+- Add reason to pending message instead of creating an ErrorInfo [\#922](https://github.com/ably/ably-java/pull/922) ([ikbalkaya](https://github.com/ikbalkaya))
+
 ## [1.2.25](https://github.com/ably/ably-java/tree/v1.2.25)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.24...v1.2.25)
