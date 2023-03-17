@@ -1465,6 +1465,11 @@ public class ConnectionManager implements ConnectListener {
             return;
         }
 
+        // If we're currently connected, start the suspend timer
+        if (currentState.state == ConnectionState.connected) {
+            setSuspendTime();
+        }
+
         /* if this is a failure of a pending connection attempt, decide whether or not to attempt a fallback host */
         StateIndication fallbackAttempt = checkFallback(reason);
         if(fallbackAttempt != null) {
