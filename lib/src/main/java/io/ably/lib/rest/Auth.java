@@ -358,6 +358,8 @@ public class Auth {
          */
         @Override
         public boolean equals(Object obj) {
+            if (!(obj instanceof TokenDetails)) return false;
+
             TokenDetails details = (TokenDetails)obj;
             return equalNullableStrings(this.token, details.token) &
                     equalNullableStrings(this.capability, details.capability) &
