@@ -6,6 +6,7 @@ import java.security.GeneralSecurityException;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -358,6 +359,8 @@ public class Auth {
          */
         @Override
         public boolean equals(Object obj) {
+            if (!(obj instanceof TokenDetails)) return false;
+
             TokenDetails details = (TokenDetails)obj;
             return equalNullableStrings(this.token, details.token) &
                     equalNullableStrings(this.capability, details.capability) &
@@ -366,7 +369,12 @@ public class Auth {
                     (this.expires == details.expires);
         }
 
-}
+        @Override
+        public int hashCode() {
+            return Objects.hash(token, capability, clientId, issued, expires);
+        }
+
+    }
 
     /**
      * Defines the properties of an Ably Token.
