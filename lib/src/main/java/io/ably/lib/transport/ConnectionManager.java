@@ -309,12 +309,10 @@ public class ConnectionManager implements ConnectListener {
         void enact(StateIndication stateIndication, ConnectionStateChange change) {
             super.enact(stateIndication, change);
             clearTransport();
-            if(change.previous == ConnectionState.connected) {
-                setSuspendTime();
-                /* we were connected, so retry immediately */
-                if(!suppressRetry) {
-                    requestState(ConnectionState.connecting);
-                }
+
+            // If we were connected, immediately retry
+            if(change.previous == ConnectionState.connected && !suppressRetry) {
+                requestState(ConnectionState.connecting);
             }
         }
     }
