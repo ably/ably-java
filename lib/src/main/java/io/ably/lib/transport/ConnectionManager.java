@@ -1464,6 +1464,11 @@ public class ConnectionManager implements ConnectListener {
             return;
         }
 
+        // If we're currently connected, start the suspend timer
+        if (currentState.state == ConnectionState.connected) {
+            setSuspendTime();
+        }
+
         /* if this is a failure of a pending connection attempt, decide whether or not to attempt a fallback host */
         StateIndication fallbackAttempt = checkFallback(reason);
         if(fallbackAttempt != null) {
@@ -1480,14 +1485,9 @@ public class ConnectionManager implements ConnectListener {
                 ably.auth.onAuthError(reason);
             }
         }
-
-        // If we're currently connected, transition to the disconnected state, which starts the suspend timer
         if(stateIndication == null) {
-            stateIndication = currentState.state == ConnectionState.connected
-                ? new StateIndication(ConnectionState.disconnected, reason)
-                : checkSuspended(reason);
+            stateIndication = checkSuspended(reason);
         }
-
         addAction(new SynchronousStateChangeAction(transport, stateIndication));
     }
 
