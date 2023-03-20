@@ -1456,6 +1456,7 @@ public class ConnectionManager implements ConnectListener {
 
     @Override
     public synchronized void onTransportUnavailable(ITransport transport, ErrorInfo reason) {
+        Log.v(TAG, "onTransportUnavailable()");
         if (this.transport != transport) {
             /* This is from a transport that we have already abandoned. */
             Log.v(TAG, "onTransportUnavailable: ignoring disconnection event from superseded transport");
