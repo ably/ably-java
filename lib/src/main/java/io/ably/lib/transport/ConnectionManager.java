@@ -1253,7 +1253,6 @@ public class ConnectionManager implements ConnectListener {
             return;
         }
         /* indicated connected currentState */
-        setSuspendTime();
         final StateIndication stateIndication = new StateIndication(ConnectionState.connected, error, null, null,
             reattachOnResumeFailure);
         requestState(stateIndication);
