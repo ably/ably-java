@@ -311,10 +311,13 @@ public class ConnectionManager implements ConnectListener {
             clearTransport();
 
             // If we were connected, immediately retry
-            if(change.previous == ConnectionState.connected && !suppressRetry) {
-                Log.v(TAG, "Was previously connected, retrying immediately");
+            if(change.previous == ConnectionState.connected) {
                 setSuspendTime();
-                requestState(ConnectionState.connecting);
+
+                if (!suppressRetry) {
+                    Log.v(TAG, "Was previously connected, retrying immediately");
+                    requestState(ConnectionState.connecting);
+                }
             }
         }
     }
