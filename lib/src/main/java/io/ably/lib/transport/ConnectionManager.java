@@ -309,10 +309,13 @@ public class ConnectionManager implements ConnectListener {
         void enact(StateIndication stateIndication, ConnectionStateChange change) {
             super.enact(stateIndication, change);
             clearTransport();
+
+            // If we were connected, immediately retry
             if(change.previous == ConnectionState.connected) {
                 setSuspendTime();
-                /* we were connected, so retry immediately */
-                if(!suppressRetry) {
+
+                if (!suppressRetry) {
+                    Log.v(TAG, "Was previously connected, retrying immediately");
                     requestState(ConnectionState.connecting);
                 }
             }
@@ -1253,7 +1256,6 @@ public class ConnectionManager implements ConnectListener {
             return;
         }
         /* indicated connected currentState */
-        setSuspendTime();
         final StateIndication stateIndication = new StateIndication(ConnectionState.connected, error, null, null,
             reattachOnResumeFailure);
         requestState(stateIndication);
@@ -1459,10 +1461,16 @@ public class ConnectionManager implements ConnectListener {
 
     @Override
     public synchronized void onTransportUnavailable(ITransport transport, ErrorInfo reason) {
+        Log.v(TAG, "onTransportUnavailable()");
         if (this.transport != transport) {
             /* This is from a transport that we have already abandoned. */
             Log.v(TAG, "onTransportUnavailable: ignoring disconnection event from superseded transport");
             return;
+        }
+
+        // If we're currently connected, start the suspend timer
+        if (currentState.state == ConnectionState.connected) {
+            setSuspendTime();
         }
 
         /* if this is a failure of a pending connection attempt, decide whether or not to attempt a fallback host */

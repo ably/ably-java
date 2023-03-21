@@ -20,14 +20,17 @@ import io.ably.lib.test.util.MockWebsocketFactory;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.transport.Hosts;
+import io.ably.lib.transport.ITransport;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.mockito.Mockito;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -729,6 +732,83 @@ public class ConnectionManagerTest extends ParameterizedTest {
             suspendedChannelWaiter.waitFor(ChannelState.attached);
             assertEquals("Attached channel histories do not match", attachedChannelHistory, expectedAttachedChannelHistory);
             assertEquals("Suspended channel histories do not match", suspendedChannelHistory, expectedSuspendedChannelHistory);
+        }
+    }
+
+    /**
+     * <p>
+     * Verifies that the {@code ConnectionManager} enters the disconnected state and sets the suspend timer
+     * upon unavailable transport.
+     * </p>
+     * <p>
+     * Spec: RTN15g
+     * </p>
+     */
+    @Test
+    public void connection_manager_enters_disconnected_state_on_transport_failure() throws AblyException, NoSuchFieldException, IllegalAccessException {
+        ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+        try(AblyRealtime ably = new AblyRealtime(opts)) {
+            ConnectionManager connectionManager = ably.connection.connectionManager;
+            connectionManager.connect();
+            new Helpers.ConnectionManagerWaiter(ably.connection.connectionManager).waitFor(ConnectionState.connected);
+
+            // Here, we "fake" being online for 2 minutes - the suspendTime is set by onConnected and the default is 2 minutes
+            Field suspendTimeField = connectionManager.getClass().getDeclaredField("suspendTime");
+            suspendTimeField.setAccessible(true);
+            suspendTimeField.set(connectionManager, System.currentTimeMillis() - 10);
+
+            // We also have to grab the "real" transport to pass the superseded test
+            Field transportField = connectionManager.getClass().getDeclaredField("transport");
+            transportField.setAccessible(true);
+
+            connectionManager.onTransportUnavailable((ITransport) transportField.get(connectionManager), new ErrorInfo());
+            new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.disconnected);
+
+            assertTrue((long) suspendTimeField.get(connectionManager) >= System.currentTimeMillis());
+
+            connectionManager.close();
+        }
+    }
+
+    /**
+     * <p>
+     * Verifies that the {@code ConnectionManager} enters the suspended state if the transport is unavailable and the
+     * timer has been exceeded.
+     * </p>
+     * <p>
+     * Spec: RTN15g, RTN14d
+     * </p>
+     */
+    @Test
+    public void connection_manager_enters_suspended_state_on_transport_failure_after_already_being_disconnected_for_2_minutes() throws AblyException, NoSuchFieldException, IllegalAccessException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException {
+        ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+        try(AblyRealtime ably = new AblyRealtime(opts)) {
+            ConnectionManager connectionManager = ably.connection.connectionManager;
+            connectionManager.connect();
+            new Helpers.ConnectionManagerWaiter(ably.connection.connectionManager).waitFor(ConnectionState.connected);
+
+            // Here, we "fake" being disconnected beyond the suspend timer
+            Class<?> connectionManagerClass = Class.forName("io.ably.lib.transport.ConnectionManager");
+            Class<?> disconnectedState = Class.forName("io.ably.lib.transport.ConnectionManager$Disconnected");
+            Constructor<?> disconnectedStateCtor = disconnectedState.getDeclaredConstructor(connectionManagerClass);
+            disconnectedStateCtor.setAccessible(true);
+            Field connectionStateField = connectionManager.getClass().getDeclaredField("currentState");
+            connectionStateField.setAccessible(true);
+            connectionStateField.set(connectionManager, disconnectedStateCtor.newInstance(connectionManager));
+
+            Field suspendTimeField = connectionManager.getClass().getDeclaredField("suspendTime");
+            suspendTimeField.setAccessible(true);
+            suspendTimeField.set(connectionManager, System.currentTimeMillis() - 5000);
+
+            // We also have to grab the "real" transport to pass the superseded test
+            Field transportField = connectionManager.getClass().getDeclaredField("transport");
+            transportField.setAccessible(true);
+
+            connectionManager.onTransportUnavailable((ITransport) transportField.get(connectionManager), new ErrorInfo());
+
+            new Helpers.ConnectionManagerWaiter(connectionManager).waitFor(ConnectionState.suspended);
+
+            connectionManager.close();
         }
     }
 }
