@@ -312,6 +312,8 @@ public class ConnectionManager implements ConnectListener {
 
             // If we were connected, immediately retry
             if(change.previous == ConnectionState.connected && !suppressRetry) {
+                Log.v(TAG, "Was previously connected, retrying immediately");
+                setSuspendTime();
                 requestState(ConnectionState.connecting);
             }
         }
