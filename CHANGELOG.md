@@ -1,4 +1,19 @@
-# Change Log
+# Chang Log
+
+## [1.2.27](https://github.com/ably/ably-java/tree/v1.2.27)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.26...v1.2.27)
+
+**Fixed bugs:**
+
+- equals\(\) for TokenDetails is broken [\#926](https://github.com/ably/ably-java/issues/926)
+- Long-lived connections are immediately transitioned to `SUSPENDED` after disconnection [\#925](https://github.com/ably/ably-java/issues/925)
+
+**Merged pull requests:**
+
+- Suspend timer is set when transport is unavailable and last state was connected [\#928](https://github.com/ably/ably-java/pull/928) ([AndyTWF](https://github.com/AndyTWF))
+- Fix equals\(\) on token details  [\#927](https://github.com/ably/ably-java/pull/927) ([ikbalkaya](https://github.com/ikbalkaya))
+
 
 ## [1.2.26](https://github.com/ably/ably-java/tree/v1.2.26)
 
