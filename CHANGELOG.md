@@ -1,4 +1,4 @@
-# Chang Log
+# Change Log
 
 ## [1.2.27](https://github.com/ably/ably-java/tree/v1.2.27)
 
