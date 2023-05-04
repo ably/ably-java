@@ -34,6 +34,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.net.URLEncoder;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -89,6 +90,40 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             /* check expected clientId */
             assertEquals("Auth#clientId is expected to be null", null, ablyRealtime.auth.clientId);
+
+            ablyRealtime.close();
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail();
+        }
+    }
+
+    /**
+     * Given authUrl in the form of query string,ensure that realtime will connect without any problem
+     */
+    @Test
+    public void realtime_connection_with_auth_url_in_query_string_connects() {
+        try {
+            /* init ably for token */
+            ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
+            final AblyRest ablyForToken = new AblyRest(optsForToken);
+
+            /* get token */
+            Auth.TokenParams tokenParams = new Auth.TokenParams();
+            Auth.TokenDetails tokenDetails = ablyForToken.auth.requestToken(tokenParams, null);
+            assertNotNull("Expected token value", tokenDetails.token);
+
+            /* create ably realtime with tokenDetails and clientId */
+            ClientOptions opts = createOptions();
+            opts.authUrl = "https://echo.ably.io/?body="+ URLEncoder.encode(tokenDetails.token);
+            opts.useTokenAuth = true;
+            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            System.out.println("done create ably");
+
+            /* wait for connected state */
+            Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ablyRealtime.connection);
+            connectionWaiter.waitFor(ConnectionState.connected);
+            assertEquals("Verify connected state is reached", ConnectionState.connected, ablyRealtime.connection.state);
 
             ablyRealtime.close();
         } catch (AblyException e) {
