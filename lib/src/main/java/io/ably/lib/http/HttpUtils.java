@@ -81,15 +81,15 @@ public class HttpUtils {
     }
 
     /**
-     * Remvoes queery string from a url string and return the url string with the new url string
-     * @param url Url string that needs query string part removed
+     * Removes querystring from given url string and returns the url string without query string(s)
+     * @param url Url string that needs querystring part removed
      *
      * @return  Url string with query string part removed, if existed in the first place
      *
      * @throws AblyException  built from URISyntaxException if java.net.URI fails to build
      * the URI given url
      * */
-    public static String removeQueryFromURL(String url) throws AblyException {
+    public static String urlWithQueryStringRemoved(String url) throws AblyException {
         try {
             final URI uri = new URI(url);
             return new URI(uri.getScheme(),
