@@ -4,6 +4,8 @@ import com.google.gson.JsonElement;
 
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -74,6 +76,28 @@ public class HttpUtils {
         try {
             return new URL(url);
         } catch (MalformedURLException e) {
+            throw AblyException.fromThrowable(e);
+        }
+    }
+
+    /**
+     * Remvoes queery string from a url string and return the url string with the new url string
+     * @param url Url string that needs query string part removed
+     *
+     * @return  Url string with query string part removed, if existed in the first place
+     *
+     * @throws AblyException  built from URISyntaxException if java.net.URI fails to build
+     * the URI given url
+     * */
+    public static String removeQueryFromURL(String url) throws AblyException {
+        try {
+            final URI uri = new URI(url);
+            return new URI(uri.getScheme(),
+                uri.getAuthority(),
+                uri.getPath(),
+                null, // Ignore the query part of the input url
+                uri.getFragment()).toString();
+        } catch (URISyntaxException e) {
             throw AblyException.fromThrowable(e);
         }
     }
