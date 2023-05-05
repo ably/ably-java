@@ -805,6 +805,7 @@ public class Auth {
                 /* append all relevant params to token params */
                 Map<String, Param> urlParams = null;
                 URL authUrl = HttpUtils.parseUrl(authOptions.authUrl);
+                final String urlWithoutQueryParams = HttpUtils.urlWithQueryStringRemoved(authOptions.authUrl);
                 String queryString = authUrl.getQuery();
                 if(queryString != null && !queryString.isEmpty()) {
                     urlParams = HttpUtils.decodeParams(queryString);
@@ -820,10 +821,12 @@ public class Auth {
                     }
                 }
                 if (HttpConstants.Methods.POST.equals(tokenOptions.authMethod)) {
-                    authUrlResponse = HttpHelpers.postUri(ably.httpCore, tokenOptions.authUrl, tokenOptions.authHeaders, HttpUtils.flattenParams(urlParams), HttpUtils.flattenParams(tokenParams), responseHandler);
+                    authUrlResponse = HttpHelpers.postUri(ably.httpCore, urlWithoutQueryParams, tokenOptions.authHeaders,
+                        HttpUtils.flattenParams(urlParams), HttpUtils.flattenParams(tokenParams), responseHandler);
                 } else {
                     Map<String, Param> requestParams = (urlParams != null) ? HttpUtils.mergeParams(urlParams, tokenParams) : tokenParams;
-                    authUrlResponse = HttpHelpers.getUri(ably.httpCore, tokenOptions.authUrl, tokenOptions.authHeaders, HttpUtils.flattenParams(requestParams), responseHandler);
+                    authUrlResponse = HttpHelpers.getUri(ably.httpCore, urlWithoutQueryParams, tokenOptions.authHeaders,
+                        HttpUtils.flattenParams(requestParams), responseHandler);
                 }
             } catch(AblyException e) {
                 throw AblyException.fromErrorInfo(e, new ErrorInfo("authUrl failed with an exception", e.errorInfo.statusCode, 80019));
