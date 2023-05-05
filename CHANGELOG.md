@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.2.28](https://github.com/ably/ably-java/tree/v1.2.28)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.27...v1.2.28)
+
+**Fixed bugs:**
+
+- Realtime with authUrl with token in query string fails to connect [\#935](https://github.com/ably/ably-java/issues/935)
+
 ## [1.2.27](https://github.com/ably/ably-java/tree/v1.2.27)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.26...v1.2.27)
