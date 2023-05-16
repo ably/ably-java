@@ -712,13 +712,13 @@ public class ConnectionManagerTest extends ParameterizedTest {
             });
             final Channel suspendedChannel = ably.channels.get("test-reattach-suspended-after-ttl" + testParams.name);
             suspendedChannel.state = ChannelState.suspended;
-            ChannelWaiter suspendedChannelWaiter = new Helpers.ChannelWaiter(suspendedChannel);
             suspendedChannel.on(new ChannelStateListener() {
                 @Override
                 public void onChannelStateChanged(ChannelStateChange stateChange) {
                     suspendedChannelHistory.add(stateChange.current.name());
                 }
             });
+            ChannelWaiter suspendedChannelWaiter = new Helpers.ChannelWaiter(suspendedChannel);
 
             /* attach first channel and wait for it to be attached */
             attachedChannel.attach();
