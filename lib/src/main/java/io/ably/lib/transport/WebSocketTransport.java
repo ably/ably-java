@@ -306,7 +306,7 @@ public class WebSocketTransport implements ITransport {
         }
 
         private synchronized void checkActivity() {
-            long timeout = connectionManager.maxIdleInterval;
+            long timeout = getActivityTimeout();
             if (timeout == 0) {
                 Log.v(TAG, "checkActivity: infinite timeout");
                 return;
@@ -351,7 +351,7 @@ public class WebSocketTransport implements ITransport {
         {
             activityTimerTask = null;
             long timeSinceLastActivity = System.currentTimeMillis() - lastActivityTime;
-            long timeRemaining = connectionManager.maxIdleInterval - timeSinceLastActivity;
+            long timeRemaining = getActivityTimeout() - timeSinceLastActivity;
 
             // If we have no time remaining, then close the connection
             if (timeRemaining <= 0) {
@@ -363,6 +363,11 @@ public class WebSocketTransport implements ITransport {
             // Otherwise, we've had some activity, restart the timer for the next timeout
             Log.v(TAG, "onActivityTimerExpiry: ok");
             startActivityTimer(timeRemaining + 100);
+        }
+
+        private long getActivityTimeout()
+        {
+            return connectionManager.maxIdleInterval + connectionManager.ably.options.realtimeRequestTimeout;
         }
 
         /***************************
