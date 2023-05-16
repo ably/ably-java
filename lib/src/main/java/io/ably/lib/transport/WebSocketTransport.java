@@ -355,7 +355,7 @@ public class WebSocketTransport implements ITransport {
 
             // If we have no time remaining, then close the connection
             if (timeRemaining <= 0) {
-                Log.e(TAG, "No activity for " + connectionManager.maxIdleInterval + "ms, closing connection");
+                Log.e(TAG, "No activity for " + getActivityTimeout() + "ms, closing connection");
                 closeConnection(CloseFrame.ABNORMAL_CLOSE, "timed out");
                 return;
             }
