@@ -31,7 +31,7 @@ android {
         minSdkVersion 19
         targetSdkVersion 30
         // This MUST be incremented by 1 on each ably-java release
-        versionCode 3
+        versionCode 4
         versionName version
         setProperty('archivesBaseName', "ably-android-$versionName")
         testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
