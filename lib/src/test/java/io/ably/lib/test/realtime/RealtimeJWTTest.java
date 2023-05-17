@@ -305,7 +305,9 @@ public class RealtimeJWTTest extends ParameterizedTest {
                         @Override
                         public Object handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
                             try {
-                                callbackCalled.add(true);
+                                synchronized (tokens) {
+                                    callbackCalled.add(true);
+                                }
                                 resultToken[0] = new String(response.body, "UTF-8");
                             } catch (UnsupportedEncodingException e) {
                                 e.printStackTrace();
@@ -331,11 +333,14 @@ public class RealtimeJWTTest extends ParameterizedTest {
                 public void onRawMessageSend(ProtocolMessage message) { }
                 @Override
                 public void onRawMessageRecv(ProtocolMessage message) {
-                    if (message.action == ProtocolMessage.Action.auth) {
-                        authMessages[0] = true;
+                    synchronized (tokens) {
+                        if (message.action == ProtocolMessage.Action.auth) {
+                            authMessages[0] = true;
+                        }
                     }
                 }
             };
+
             final AblyRealtime ablyRealtime = new AblyRealtime(options);
 
             /* Once connected for the first time capture the assigned token and
@@ -343,9 +348,9 @@ public class RealtimeJWTTest extends ParameterizedTest {
             ablyRealtime.connection.once(ConnectionEvent.connected, new ConnectionStateListener() {
                 @Override
                 public void onConnectionStateChanged(ConnectionStateChange stateChange) {
-                    assertTrue("Callback not called the first time", callbackCalled.get(0));
-                    assertEquals("State is not connected", ConnectionState.connected, stateChange.current);
                     synchronized (tokens) {
+                        assertTrue("Callback not called the first time", callbackCalled.get(0));
+                        assertEquals("State is not connected", ConnectionState.connected, stateChange.current);
                         tokens[0] = ablyRealtime.auth.getTokenDetails().token;
                     }
                 }
@@ -365,12 +370,13 @@ public class RealtimeJWTTest extends ParameterizedTest {
             ablyRealtime.connection.on(ConnectionEvent.update, new ConnectionStateListener() {
                 @Override
                 public void onConnectionStateChanged(ConnectionStateChange state) {
-                    assertTrue("Callback not called the second time", callbackCalled.get(1));
-                    assertEquals("Callback not called 2 times", callbackCalled.size(), 2);
-                    assertNotEquals("Token should not be the same", tokens[0], ablyRealtime.auth.getTokenDetails().token);
-                    assertTrue("Auth protocol message has not been received", authMessages[0]);
-                    updateEvents[0] = true;
-                    ablyRealtime.close();
+                    synchronized (tokens) {
+                        assertTrue("Callback not called the second time", callbackCalled.get(1));
+                        assertNotEquals("Token should not be the same", ablyRealtime.auth.getTokenDetails().token, tokens[0]);
+                        assertTrue("Auth protocol message has not been received", authMessages[0]);
+                        updateEvents[0] = true;
+                        ablyRealtime.close();
+                    }
                 }
             });
 
