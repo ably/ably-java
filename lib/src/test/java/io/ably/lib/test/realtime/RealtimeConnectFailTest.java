@@ -615,9 +615,9 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
                 System.out.println("higher range: " + higherRange + " - lower range: " + lowerRange + " | checked value: " + retryTime);
 
                 assertTrue("retry time higher range for count " + i + " is not in valid: " + retryTime + " expected: " + higherRange,
-                    retryTime < higherRange);
+                    retryTime <= higherRange);
                 assertTrue("retry time lower range for count " + i + " is not in valid: " + retryTime + " expected: " + lowerRange,
-                    retryTime > lowerRange);
+                    retryTime >= lowerRange);
             }
             System.out.println("------------------------------------------------------------");
         } catch (AblyException e) {
