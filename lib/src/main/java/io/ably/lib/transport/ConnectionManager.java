@@ -1553,18 +1553,14 @@ public class ConnectionManager implements ConnectListener {
             return true;
         }
 
-        /* if connected, send an explicit close message and await response */
-        boolean isConnected = currentState.state == ConnectionState.connected;
-        if(isConnected) {
-            try {
-                Log.v(TAG, "Requesting connection close");
-                transport.send(new ProtocolMessage(ProtocolMessage.Action.close));
-                return false;
-            } catch (AblyException e) {
-                /* we're closing, and the attempt to send the CLOSE message failed;
-                 * continue, because we're not going to reinstate the transport
-                 * just to send a CLOSE message */
-            }
+        try {
+            Log.v(TAG, "Requesting connection close");
+            transport.send(new ProtocolMessage(ProtocolMessage.Action.close));
+            return false;
+        } catch (AblyException e) {
+            /* we're closing, and the attempt to send the CLOSE message failed;
+             * continue, because we're not going to reinstate the transport
+             * just to send a CLOSE message */
         }
 
         /* just close the transport */

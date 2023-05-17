@@ -21,9 +21,11 @@ import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.transport.Hosts;
 import io.ably.lib.transport.ITransport;
+import io.ably.lib.transport.WebSocketTransport;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.ProtocolMessage;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -745,11 +747,12 @@ public class ConnectionManagerTest extends ParameterizedTest {
      * </p>
      */
     @Test
-    public void connection_manager_enters_disconnected_state_on_transport_failure() throws AblyException, NoSuchFieldException, IllegalAccessException {
+    public void connection_manager_enters_disconnected_state_on_transport_failure() throws AblyException, NoSuchFieldException, IllegalAccessException, InterruptedException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         try(AblyRealtime ably = new AblyRealtime(opts)) {
             ConnectionManager connectionManager = ably.connection.connectionManager;
             connectionManager.connect();
+
             new Helpers.ConnectionManagerWaiter(ably.connection.connectionManager).waitFor(ConnectionState.connected);
 
             // Here, we "fake" being online for 2 minutes - the suspendTime is set by onConnected and the default is 2 minutes
@@ -810,5 +813,75 @@ public class ConnectionManagerTest extends ParameterizedTest {
 
             connectionManager.close();
         }
+    }
+
+    /**
+     * <p>
+     * Verifies that the {@code ConnectionManager} sends a close protocol message when closed.
+     * </p>
+     * <p>
+     * Spec: RTN12
+     * </p>
+     */
+    @Test
+    public void connection_manager_sends_close_message_on_closed() throws AblyException, NoSuchFieldException, IllegalAccessException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, InterruptedException {
+        DebugOptions opts = createOptions(testVars.keys[0].keyStr);
+        opts.transportFactory = new ObservedWebsocketTransport.Factory();
+
+        // Connect
+        try(AblyRealtime ably = new AblyRealtime(opts)) {
+            ConnectionManager connectionManager = ably.connection.connectionManager;
+            connectionManager.connect();
+            // Wait for connected status
+            while (connectionManager.getConnectionState().state != ConnectionState.connected) {
+                Thread.sleep(100);
+            }
+
+            connectionManager.close();
+
+            long checkStartTime = System.currentTimeMillis();
+            while (true) {
+                if (System.currentTimeMillis() > checkStartTime + 5000) {
+                    fail("Protocol message not sent");
+                }
+
+                boolean found = false;
+                for (int i = 0; i < ObservedWebsocketTransport.messages.size(); i++) {
+                    if (ObservedWebsocketTransport.messages.get(i).action.equals(ProtocolMessage.Action.close)) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (found) {
+                    break;
+                }
+
+                Thread.sleep(100);
+            }
+        }
+    }
+}
+
+// Create a transport we can observe and a factory for it
+class ObservedWebsocketTransport extends WebSocketTransport
+{
+    public static ArrayList<ProtocolMessage> messages = new ArrayList<>();
+
+    public static class Factory implements ITransport.Factory {
+        @Override
+        public ObservedWebsocketTransport getTransport(TransportParams params, ConnectionManager connectionManager) {
+            return new ObservedWebsocketTransport(params, connectionManager);
+        }
+    }
+
+    protected ObservedWebsocketTransport(TransportParams params, ConnectionManager connectionManager) {
+        super(params, connectionManager);
+    }
+
+    @Override
+    public void send(ProtocolMessage msg) throws AblyException {
+        messages.add(msg);
+        super.send(msg);
     }
 }
