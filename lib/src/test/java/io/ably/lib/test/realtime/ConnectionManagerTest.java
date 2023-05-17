@@ -556,6 +556,35 @@ public class ConnectionManagerTest extends ParameterizedTest {
     }
 
     /**
+     * RTN23
+     */
+    @Test
+    public void connection_is_closed_after_max_idle_interval() throws AblyException {
+        ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+        opts.realtimeRequestTimeout = 2000;
+        try(AblyRealtime ably = new AblyRealtime(opts)) {
+            final long newIdleInterval = 500L;
+
+            // When we connect, we set the max idle interval to be very small
+            ably.connection.on(ConnectionEvent.connected, state -> {
+                try {
+                    Field maxIdleField = ably.connection.connectionManager.getClass().getDeclaredField("maxIdleInterval");
+                    maxIdleField.setAccessible(true);
+                    maxIdleField.setLong(ably.connection.connectionManager, newIdleInterval);
+                } catch (NoSuchFieldException | IllegalAccessException e) {
+                    fail("Unexpected exception in checking connectionStateTtl");
+                }
+            });
+
+            // The original max idle interval we receive from the server is 15s.
+            // We should wait for this, plus a tiny bit extra (as we set the new idle interval to be very low
+            // after connecting) to make sure that the connection is disconnected
+            ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+            assertTrue(connectionWaiter.waitFor(ConnectionState.disconnected, 1, 25000));
+        }
+    }
+
+    /**
      * RTN15g1, RTN15g2. Connect, disconnect, reconnect after (ttl + idle interval) period has passed,
      * check that the connection is a new one;
      */
@@ -685,13 +714,13 @@ public class ConnectionManagerTest extends ParameterizedTest {
             });
             final Channel suspendedChannel = ably.channels.get("test-reattach-suspended-after-ttl" + testParams.name);
             suspendedChannel.state = ChannelState.suspended;
-            ChannelWaiter suspendedChannelWaiter = new Helpers.ChannelWaiter(suspendedChannel);
             suspendedChannel.on(new ChannelStateListener() {
                 @Override
                 public void onChannelStateChanged(ChannelStateChange stateChange) {
                     suspendedChannelHistory.add(stateChange.current.name());
                 }
             });
+            ChannelWaiter suspendedChannelWaiter = new Helpers.ChannelWaiter(suspendedChannel);
 
             /* attach first channel and wait for it to be attached */
             attachedChannel.attach();

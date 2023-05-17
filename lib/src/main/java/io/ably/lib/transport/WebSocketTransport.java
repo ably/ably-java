@@ -306,36 +306,34 @@ public class WebSocketTransport implements ITransport {
         }
 
         private synchronized void checkActivity() {
-            long timeout = connectionManager.maxIdleInterval;
+            long timeout = getActivityTimeout();
             if (timeout == 0) {
                 Log.v(TAG, "checkActivity: infinite timeout");
                 return;
             }
-            if(activityTimerTask != null) {
-                /* timer already running */
+
+            // Check if timer already running
+            if (activityTimerTask != null) {
                 return;
             }
-            timeout += connectionManager.ably.options.realtimeRequestTimeout;
-            long now = System.currentTimeMillis();
-            long next = lastActivityTime + timeout;
-            if (now < next) {
-                /* We have not reached maxIdleInterval+realtimeRequestTimeout
-                 * of inactivity.  Schedule a new timer for that long after the
-                 * last activity time. */
-                Log.v(TAG, "checkActivity: ok");
+
+            // Start the activity timer task
+            startActivityTimer(timeout + 100);
+        }
+
+
+        private synchronized void startActivityTimer(long timeout)
+        {
+            if (activityTimerTask == null) {
                 schedule((activityTimerTask = new TimerTask() {
                     public void run() {
                         try {
-                            checkActivity();
+                            onActivityTimerExpiry();
                         } catch(Throwable t) {
                             Log.e(TAG, "Unexpected exception in activity timer handler", t);
                         }
                     }
-                }), next - now);
-            } else {
-                /* Timeout has been reached. Close the connection. */
-                Log.e(TAG, "No activity for " + timeout + "ms, closing connection");
-                closeConnection(CloseFrame.ABNORMAL_CLOSE, "timed out");
+                }), timeout);
             }
         }
 
@@ -347,6 +345,29 @@ public class WebSocketTransport implements ITransport {
                     Log.e(TAG, "Unexpected exception scheduling activity timer", ise);
                 }
             }
+        }
+
+        private synchronized void onActivityTimerExpiry()
+        {
+            activityTimerTask = null;
+            long timeSinceLastActivity = System.currentTimeMillis() - lastActivityTime;
+            long timeRemaining = getActivityTimeout() - timeSinceLastActivity;
+
+            // If we have no time remaining, then close the connection
+            if (timeRemaining <= 0) {
+                Log.e(TAG, "No activity for " + getActivityTimeout() + "ms, closing connection");
+                closeConnection(CloseFrame.ABNORMAL_CLOSE, "timed out");
+                return;
+            }
+
+            // Otherwise, we've had some activity, restart the timer for the next timeout
+            Log.v(TAG, "onActivityTimerExpiry: ok");
+            startActivityTimer(timeRemaining + 100);
+        }
+
+        private long getActivityTimeout()
+        {
+            return connectionManager.maxIdleInterval + connectionManager.ably.options.realtimeRequestTimeout;
         }
 
         /***************************
