@@ -1,5 +1,18 @@
 # Change Log
 
+## [1.2.29](https://github.com/ably/ably-java/tree/v1.2.29)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.28...v1.2.29)
+
+**Fixed bugs:**
+
+- RTN23a: Transport not disconnecting after TTL passed [\#932](https://github.com/ably/ably-java/issues/932)
+
+**Merged pull requests:**
+
+- fix: transport not disconnecting after ttl passed [\#939](https://github.com/ably/ably-java/pull/939) ([AndyTWF](https://github.com/AndyTWF))
+- fix\(ConnectionManager\): don't check state before sending close message [\#938](https://github.com/ably/ably-java/pull/938) ([owenpearson](https://github.com/owenpearson))
+
 ## [1.2.28](https://github.com/ably/ably-java/tree/v1.2.28)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.27...v1.2.28)
