@@ -962,7 +962,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
         options.realtimeRequestTimeout = 2000L;
 
         /* We want this greater than newTtl + newIdleInterval */
-        final long waitInDisconnectedState = 3000L;
+        final long waitInDisconnectedState = 5000L;
         options.transportFactory = mockWebsocketFactory;
         try(AblyRealtime ably = new AblyRealtime(options)) {
             final long newTtl = 1000L;
@@ -1017,12 +1017,6 @@ public class RealtimeResumeTest extends ParameterizedTest {
             mockWebsocketFactory.blockReceiveProcessing(message -> message.action == ProtocolMessage.Action.ack ||
                 message.action == ProtocolMessage.Action.nack);
 
-            /* Wait for the connection to go stale, then reconnect */
-            try {
-                Thread.sleep(waitInDisconnectedState);
-            } catch (InterruptedException e) {
-            }
-
             //enter next 3 clients
             for (int i = 0; i < 3; i++) {
                 senderChannel.presence.enterClient(clients[i+3],null,presenceCompletion.add());
@@ -1045,6 +1039,13 @@ public class RealtimeResumeTest extends ParameterizedTest {
             for (int i = 0; i < 3; i++) {
                 senderChannel.presence.enterClient(clients[i+6],null,presenceCompletion.add());
             }
+
+            /* Wait for the connection to go stale, then reconnect */
+            try {
+                Thread.sleep(waitInDisconnectedState);
+            } catch (InterruptedException e) {
+            }
+
             //now let's unblock the ack nacks and reconnect
             mockWebsocketFactory.blockReceiveProcessing(message -> false);
             /* Wait for the connection to go stale, then reconnect */

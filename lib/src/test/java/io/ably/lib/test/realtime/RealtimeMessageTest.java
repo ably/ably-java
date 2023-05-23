@@ -796,34 +796,18 @@ public class RealtimeMessageTest extends ParameterizedTest {
     }
 
     @Test
+
     public void reject_invalid_message_data() throws AblyException {
         HashMap<String, Integer> data = new HashMap<String, Integer>();
         Message message = new Message("event", data);
-        Log.LogHandler originalLogHandler = Log.handler;
-        int originalLogLevel = Log.level;
-        Log.setLevel(Log.DEBUG);
-        final ArrayList<LogLine> capturedLog = new ArrayList<>();
-        Log.setHandler(new Log.LogHandler() {
-            @Override
-            public void println(int severity, String tag, String msg, Throwable tr) {
-                capturedLog.add(new LogLine(severity, tag, msg, tr));
-            }
-        });
-
         try {
             message.encode(null);
+            fail("reject_invalid_message_data: Expected AblyException to be thrown.");
         } catch(AblyException e) {
             assertEquals(null, message.encoding);
             assertEquals(data, message.data);
-            assertEquals(1, capturedLog.size());
-            LogLine capturedLine = capturedLog.get(0);
-            assertTrue(capturedLine.tag.contains("ably"));
-            assertTrue(capturedLine.msg.contains("Message data must be either `byte[]`, `String` or `JSONElement`; implicit coercion of other types to String is deprecated"));
         } catch(Throwable t) {
             fail("reject_invalid_message_data: Unexpected exception");
-        } finally {
-            Log.setHandler(originalLogHandler);
-            Log.setLevel(originalLogLevel);
         }
     }
 
