@@ -1560,13 +1560,12 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             /* prepare channels */
             Channel attachedChannel = ably.channels.get(attachedChannelName);
-            ChannelWaiter attachedChannelWaiter = new ChannelWaiter(attachedChannel);
+            ChannelWaiter preAttachChannelWaiter = new ChannelWaiter(attachedChannel);
             attachedChannel.attach();
-            attachedChannelWaiter.waitFor(ChannelState.attached);
+            preAttachChannelWaiter.waitFor(ChannelState.attached);
 
             Channel suspendedChannel = ably.channels.get(suspendedChannelName);
             suspendedChannel.state = ChannelState.suspended;
-            ChannelWaiter suspendedChannelWaiter = new ChannelWaiter(suspendedChannel);
 
             final boolean[] suspendedStateReached = new boolean[2];
             final boolean[] attachingStateReached = new boolean[2];
@@ -1607,6 +1606,17 @@ public class RealtimeChannelTest extends ParameterizedTest {
                     }
                 }
             });
+
+            /*
+                We need to set up the waiters after the above state listeners, as listeners
+                without filters are run in the order registered.
+
+                This ensures that the various state changes have been recorded by the above
+                listeners, before the waiters are notified of a state change, thus allowing
+                the main test to continue.
+             */
+            ChannelWaiter attachedChannelWaiter = new ChannelWaiter(attachedChannel);
+            ChannelWaiter suspendedChannelWaiter = new ChannelWaiter(suspendedChannel);
 
             /* disconnect, and sabotage the resume */
             String originalConnectionId = ably.connection.id;
