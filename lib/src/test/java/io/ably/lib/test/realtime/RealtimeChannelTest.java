@@ -37,6 +37,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -1021,6 +1022,19 @@ public class RealtimeChannelTest extends ParameterizedTest {
         }
     }
 
+    class RealtimeChannelTestDetachingListener implements ChannelStateListener
+    {
+        public AtomicBoolean detachedReceived = new AtomicBoolean(false);
+
+        @Override
+        public void onChannelStateChanged(ChannelStateChange stateChange) {
+            System.out.println(stateChange.current == ChannelState.detached);
+            if (stateChange.current == ChannelState.detached) {
+                detachedReceived.set(true);
+            }
+        }
+    }
+
 
     /**
      * When client attaches to a channel in detaching state, verify that attach call will be done after detach
@@ -1052,9 +1066,12 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             //block detached so we can ensure that we are in detaching state but unblock immediately after assertion
             transportFactory.blockReceiveProcessingAndQueueBlockedMessages(message -> message.action == ProtocolMessage.Action.detached);
-            /* detach */
-            final Helpers.CompletionWaiter detachCompletionWaiter = new Helpers.CompletionWaiter();
-            channel.detach(detachCompletionWaiter);
+
+            // Attach a listener for the channel state and start the detach process
+            RealtimeChannelTestDetachingListener detachingListener = new RealtimeChannelTestDetachingListener();
+            channel.on(detachingListener);
+            channel.detach();
+
             assertEquals("Verify detaching state reached", ChannelState.detaching, channel.state);
 
             //now we can send an attach as we previously blocked detaching
@@ -1065,9 +1082,16 @@ public class RealtimeChannelTest extends ParameterizedTest {
             //unblock and let the queued messages arrive
             transportFactory.allowReceiveProcessing(message -> true);
 
-            detachCompletionWaiter.waitFor();
-            assertThat(detachCompletionWaiter.success, is(true));
-            assertThat(channel.state, is(ChannelState.detached));
+            // Wait to receive the detached state
+            long timeNow = System.currentTimeMillis();
+            do {
+                if (System.currentTimeMillis() > timeNow + 5000) {
+                    fail("Channel did not enter detached state: " + detachingListener.detachedReceived);
+                    return;
+                }
+
+            } while (!detachingListener.detachedReceived.get());
+
             //verify reattach - after detach
             attachCompletionWaiter.waitFor();
             assertThat(attachCompletionWaiter.success,is(true));
