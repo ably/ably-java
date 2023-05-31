@@ -265,6 +265,12 @@ public class ConnectionManager implements ConnectListener {
         void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, Channel channel) {
             channel.setConnected(stateIndication.reattachOnResumeFailure);
         }
+
+        @Override
+        void enact(StateIndication stateIndication, ConnectionStateChange change) {
+            super.enact(stateIndication, change);
+            pendingConnect = null;
+        }
     }
 
     /**************************************************
