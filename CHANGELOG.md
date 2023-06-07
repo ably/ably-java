@@ -1,5 +1,17 @@
 # Change Log
 
+## [1.2.30](https://github.com/ably/ably-java/tree/v1.2.30)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.29...v1.2.30)
+
+**Fixed bugs:**
+
+- Connection manager switches to fallback hosts on close [\#950](https://github.com/ably/ably-java/issues/950)
+
+**Merged pull requests:**
+
+- fix: fallback hosts always being used on transport error [\#951](https://github.com/ably/ably-java/pull/951) ([AndyTWF](https://github.com/AndyTWF))
+
 ## [1.2.29](https://github.com/ably/ably-java/tree/v1.2.29)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.28...v1.2.29)
