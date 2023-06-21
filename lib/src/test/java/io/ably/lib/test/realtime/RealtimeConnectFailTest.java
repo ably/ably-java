@@ -565,6 +565,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
     @Test
     public void disconnect_retry_connection_timeout_jitter() throws AblyException {
 
+        int originalTimeout = Defaults.TIMEOUT_CONNECT;
         Defaults.TIMEOUT_DISCONNECT = 5000; // Disconnected retry timeout set to 5 seconds.
 
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -598,6 +599,8 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
         {
             assertTimeoutBetween(disconnectedRetryTimeouts.get(i).intValue(), 8000d, 10000d + 50);
         }
+
+        Defaults.TIMEOUT_DISCONNECT = originalTimeout;
     }
 
     /**
@@ -626,8 +629,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             mockTransport.allowSend();
 
             ably = new AblyRealtime(opts);
-            ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
-            connectionWaiter.waitFor(ConnectionState.connected);
+            new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
 
             Channel channel = ably.channels.get(channelName);
             Helpers.ChannelWaiter channelWaiter = new Helpers.ChannelWaiter(channel);
