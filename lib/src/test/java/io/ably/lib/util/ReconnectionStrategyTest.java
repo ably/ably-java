@@ -1,10 +1,9 @@
 package io.ably.lib.util;
 
-import static org.hamcrest.Matchers.*;
+import static io.ably.lib.test.common.Helpers.between;
 import static org.junit.Assert.assertThat;
 
 import com.sun.tools.javac.util.Pair;
-import org.hamcrest.Matcher;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -39,10 +38,6 @@ public class ReconnectionStrategyTest {
 
     public void assertTimeoutBetween(int timeout, Double min, Double max) {
         assertThat(String.format("timeout %d should be between %f and %f", timeout, min, max ), (double) timeout, between(min, max));
-    }
-
-    public static Matcher<Double> between(Double min, Double max) {
-        return allOf(greaterThanOrEqualTo(min), lessThanOrEqualTo(max));
     }
 
     public static Pair<Double, Double> calculateRetryBounds(int retryAttempt, int initialTimeout)

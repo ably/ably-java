@@ -50,8 +50,10 @@ import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
+import org.hamcrest.Matcher;
 
 import static junit.framework.Assert.assertTrue;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -807,6 +809,10 @@ public class Helpers {
         } else {
             assertEquals("Message data contents differ.", expected.data, actual.data);
         }
+    }
+
+    public static Matcher<Double> between(Double min, Double max) {
+        return allOf(greaterThanOrEqualTo(min), lessThanOrEqualTo(max));
     }
 
     public static class AsyncWaiter<T> implements Callback<T> {
