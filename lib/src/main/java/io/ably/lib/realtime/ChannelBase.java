@@ -36,7 +36,7 @@ import io.ably.lib.types.ProtocolMessage.Flag;
 import io.ably.lib.util.CollectionUtils;
 import io.ably.lib.util.EventEmitter;
 import io.ably.lib.util.Log;
-import io.ably.lib.util.TimerUtil;
+import io.ably.lib.util.ReconnectionStrategy;
 
 /**
  * Enables messages to be published and subscribed to.
@@ -502,7 +502,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         reattachTimer = currentReattachTimer;
 
         this.retryCount++;
-        int retryDelay = TimerUtil.getRetryTime(ably.options.channelRetryTimeout, retryCount);
+        int retryDelay = ReconnectionStrategy.getRetryTime(ably.options.channelRetryTimeout, retryCount);
 
         final Timer inProgressTimer = currentReattachTimer;
         reattachTimer.schedule(new TimerTask() {

@@ -33,7 +33,7 @@ import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolSerializer;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
-import io.ably.lib.util.TimerUtil;
+import io.ably.lib.util.ReconnectionStrategy;
 
 public class ConnectionManager implements ConnectListener {
     final ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
@@ -853,7 +853,7 @@ public class ConnectionManager implements ConnectListener {
         long retryDelay = newState.timeout;
         if (newState.state == ConnectionState.disconnected) {
             this.disconnectedRetryCount++;
-            retryDelay = TimerUtil.getRetryTime((int) newState.timeout, this.disconnectedRetryCount);
+            retryDelay = ReconnectionStrategy.getRetryTime((int) newState.timeout, this.disconnectedRetryCount);
         }
 
         ConnectionStateChange change = new ConnectionStateChange(currentState.state, newConnectionState, retryDelay, reason);
