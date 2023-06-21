@@ -566,6 +566,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
     public void disconnect_retry_connection_timeout_jitter() throws AblyException {
 
         int originalTimeout = Defaults.TIMEOUT_CONNECT;
+        // todo - this should be part of clientOptions.
         Defaults.TIMEOUT_DISCONNECT = 5000; // Disconnected retry timeout set to 5 seconds.
 
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
