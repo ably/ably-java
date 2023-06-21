@@ -1,21 +1,24 @@
 package io.ably.lib.test.realtime;
 
+import static io.ably.lib.test.common.Helpers.assertTimeoutBetween;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import io.ably.lib.util.ReconnectionStrategy;
+import io.ably.lib.util.ReconnectionStrategyTest;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Stopwatch;
 import org.junit.rules.Timeout;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -560,72 +563,40 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
      * Spec: RTB1
      */
     @Test
-    public void disconnect_retry_connection_timeout_jitter() {
-        int oldDisconnectTimeout = Defaults.TIMEOUT_DISCONNECT;
-        int disconnectedRetryTimeout = 150;
-        Defaults.TIMEOUT_DISCONNECT = 150;
-        AblyRealtime ably = null;
+    public void disconnect_retry_connection_timeout_jitter() throws AblyException {
 
-        try {
-            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            opts.realtimeHost = "non.existent.host";
-            opts.environment = null;
-            ably = new AblyRealtime(opts);
+        Defaults.TIMEOUT_DISCONNECT = 5000; // Disconnected retry timeout set to 5 seconds.
 
-            final AtomicInteger retryCount = new AtomicInteger(0);
-            final ArrayList<Long> retryValues = new ArrayList();
+        ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+        opts.realtimeHost = "non.existent.host";
+        opts.environment = null;
+        AblyRealtime ably = new AblyRealtime(opts);
 
-            ably.connection.on(new ConnectionStateListener() {
-                @Override
-                public void onConnectionStateChanged(ConnectionStateChange state) {
-                    System.out.println("onConnectionStateChanged current state is: " + state.current.name() + " previous state was: " + state.previous.name());
-                    if (state.previous == ConnectionState.connecting && state.current == ConnectionState.disconnected) {
-                        System.out.println("onConnectionStateChanged retry count is: " + retryCount.get());
-                        if (retryCount.get() > 4) {
-                            System.out.println("onConnectionStateChanged retry is successful and done!");
-                            return;
-                        }
-                        retryCount.incrementAndGet();
-                        retryValues.add(state.retryIn);
-                    }
-                }
-            });
+        final ArrayList<Long> disconnectedRetryTimeouts = new ArrayList<>();
 
-            int waitAtMost = 5 * 10; //5 seconds * 10 times per second
-            int waitCount = 0;
-            while (retryCount.get() < 4 && waitCount < waitAtMost) {
-                try {
-                    Thread.sleep(100);
-                    waitCount++;
-                } catch (InterruptedException e) {
-                    fail(e.getMessage());
-                }
-            }
-            System.out.println("wait done in: " + (waitCount / 10) + " seconds");
+        new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.connecting);
 
-            assertTrue("Disconnect retry was not finished, count was: " + retryCount.get(), retryCount.get() >= 4);
+        do {
+            new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.disconnected);
+            Instant start = Instant.now();
+            new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.connecting);
+            Instant end = Instant.now();
+            disconnectedRetryTimeouts.add(Duration.between(start, end).toMillis());
+        } while (disconnectedRetryTimeouts.stream().reduce(0L, Long::sum) + 10000 < Defaults.connectionStateTtl);
 
-            //check for all received retry times in onConnectionStateChanged callback
-            System.out.println("------------------------------------------------------------");
-            for (int i = 0; i < retryValues.size(); i++) {
-                long retryTime = retryValues.get(i);
-                long higherRange = disconnectedRetryTimeout + Math.min(i, 3) * 50L;
-                double lowerRange = 0.6 * disconnectedRetryTimeout + Math.min(i, 3) * 50L;
+        System.out.println("Generated retry timeout values => ");
+        System.out.println(String.join(",", disconnectedRetryTimeouts.stream().map(Object::toString).toArray(String[]::new)));
 
-                System.out.println("higher range: " + higherRange + " - lower range: " + lowerRange + " | checked value: " + retryTime);
+        // Upper bound = min((retryAttempt + 2) / 3, 2) * initialTimeout
+        // Lower bound = 0.8 * Upper bound
+        // Add deviation of 50ms since Instant.now() is being calculated after connecting state is reached
+        assertTimeoutBetween(disconnectedRetryTimeouts.get(0).intValue(), 4000d, 5000d + 50);
+        assertTimeoutBetween(disconnectedRetryTimeouts.get(1).intValue(), 5333.33, 6666.66 + 50);
+        assertTimeoutBetween(disconnectedRetryTimeouts.get(2).intValue(), 6666.66, 8333.33 + 50);
 
-                assertTrue("retry time higher range for count " + i + " is not in valid: " + retryTime + " expected: " + higherRange,
-                    retryTime <= higherRange);
-                assertTrue("retry time lower range for count " + i + " is not in valid: " + retryTime + " expected: " + lowerRange,
-                    retryTime >= lowerRange);
-            }
-            System.out.println("------------------------------------------------------------");
-        } catch (AblyException e) {
-            fail("Unexpected exception: " + e.getMessage());
-        } finally {
-            Defaults.TIMEOUT_DISCONNECT = oldDisconnectTimeout;
-            if (ably != null)
-                ably.close();
+        for (int i = 3; i < disconnectedRetryTimeouts.size(); i++)
+        {
+            assertTimeoutBetween(disconnectedRetryTimeouts.get(i).intValue(), 8000d, 10000d + 50);
         }
     }
 

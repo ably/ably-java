@@ -54,9 +54,7 @@ import org.hamcrest.Matcher;
 
 import static junit.framework.Assert.assertTrue;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class Helpers {
 
@@ -809,6 +807,10 @@ public class Helpers {
         } else {
             assertEquals("Message data contents differ.", expected.data, actual.data);
         }
+    }
+
+    public static void assertTimeoutBetween(int timeout, Double min, Double max) {
+        assertThat(String.format("timeout %d should be between %f and %f", timeout, min, max ), (double) timeout, between(min, max));
     }
 
     public static Matcher<Double> between(Double min, Double max) {

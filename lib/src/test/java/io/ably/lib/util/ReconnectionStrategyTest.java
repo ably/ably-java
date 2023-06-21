@@ -1,5 +1,6 @@
 package io.ably.lib.util;
 
+import static io.ably.lib.test.common.Helpers.assertTimeoutBetween;
 import static io.ably.lib.test.common.Helpers.between;
 import static org.junit.Assert.assertThat;
 
@@ -34,10 +35,6 @@ public class ReconnectionStrategyTest {
 
             assertTimeoutBetween(retryTimeout, pair.fst, pair.snd);
         }
-    }
-
-    public void assertTimeoutBetween(int timeout, Double min, Double max) {
-        assertThat(String.format("timeout %d should be between %f and %f", timeout, min, max ), (double) timeout, between(min, max));
     }
 
     public static Pair<Double, Double> calculateRetryBounds(int retryAttempt, int initialTimeout)
