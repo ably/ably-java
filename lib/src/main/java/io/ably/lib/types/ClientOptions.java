@@ -209,6 +209,15 @@ public class ClientOptions extends AuthOptions {
     public long realtimeRequestTimeout = Defaults.realtimeRequestTimeout;
 
     /**
+     * When the connection enters the disconnected state, after this timeout,
+     * if the state is still disconnected, the client library will attempt to reconnect automatically.
+     * The default is 15 seconds (TO3l1).
+     * <p>
+     * Spec: TO3l1
+     */
+    public long disconnectedRetryTimeout = Defaults.TIMEOUT_DISCONNECT;
+
+    /**
      * An array of fallback hosts to be used in the case of an error necessitating the use of an alternative host.
      * If you have been provided a set of custom fallback hosts by Ably, please specify them here.
      * <p>

@@ -32,7 +32,7 @@ public class ReconnectionStrategy {
      * Lower bound = 0.8 * Upper bound,
      * Lower bound < x < Upper bound
      */
-    public static int getRetryTime(int initialTimeout, int retryAttempt) {
+    public static int getRetryTime(long initialTimeout, int retryAttempt) {
         return Double.valueOf(initialTimeout * getJitterCoefficient() * getBackoffCoefficient(retryAttempt)).intValue();
     }
 }

@@ -501,16 +501,14 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
     public void connect_auth_failure_and_suspend_test() {
         AblyRealtime ablyRealtime = null;
         AblyRest ablyRest = null;
-        int oldDisconnectTimeout = Defaults.TIMEOUT_DISCONNECT;
 
         try {
             /* Make test faster */
-            Defaults.TIMEOUT_DISCONNECT = 1000;
-
             final int[] numberOfAuthCalls = new int[] {0};
             final boolean[] reachedFinalState = new boolean[] {false};
 
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+            opts.disconnectedRetryTimeout = 1000;
 
             ablyRest = new AblyRest(opts);
             final TokenDetails tokenDetails = ablyRest.auth.requestToken(new TokenParams() {{ ttl = 5000L; }}, null);
@@ -552,7 +550,6 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");
         } finally {
-            Defaults.TIMEOUT_DISCONNECT = oldDisconnectTimeout;
             if (ablyRealtime != null)
                 ablyRealtime.close();
         }
@@ -565,14 +562,11 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
     @Test
     public void disconnect_retry_connection_timeout_jitter() throws AblyException {
 
-        int originalTimeout = Defaults.TIMEOUT_CONNECT;
-        // todo - this should be part of clientOptions.
-        Defaults.TIMEOUT_DISCONNECT = 5000; // Disconnected retry timeout set to 5 seconds.
-
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.realtimeHost = "non.existent.host";
         opts.environment = null;
         AblyRealtime ably = new AblyRealtime(opts);
+        opts.disconnectedRetryTimeout = 5000; // Disconnected retry timeout set to 5 seconds.
 
         final ArrayList<Long> disconnectedRetryTimeouts = new ArrayList<>();
 
@@ -601,7 +595,6 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             assertTimeoutBetween(disconnectedRetryTimeouts.get(i).intValue(), 8000d, 10000d + 50);
         }
 
-        Defaults.TIMEOUT_DISCONNECT = originalTimeout;
         ably.close();
     }
 
@@ -613,7 +606,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
     public void disconnect_retry_channel_timeout_jitter_after_first_detach() throws AblyException {
 
         DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
-        opts.channelRetryTimeout = 5000; // Disconnected retry timeout set to 5 seconds.
+        opts.channelRetryTimeout = 5000; //  channel retry timeout set to 5 seconds.
         opts.realtimeRequestTimeout = 100; // quickly timeout and transition to suspended
         opts.transportFactory = new MockWebsocketFactory();
         ((MockWebsocketFactory)opts.transportFactory).allowSend();
@@ -673,7 +666,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
     public void disconnect_retry_channel_timeout_jitter_after_consistent_detach() throws AblyException {
 
         DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
-        opts.channelRetryTimeout = 5000; // Disconnected retry timeout set to 5 seconds, no realtimeRequestTimeout is set.
+        opts.channelRetryTimeout = 5000; // channel retry timeout set to 5 seconds., no realtimeRequestTimeout is set.
         opts.transportFactory = new MockWebsocketFactory();
         ((MockWebsocketFactory)opts.transportFactory).allowSend();
         fillInOptions(opts);
