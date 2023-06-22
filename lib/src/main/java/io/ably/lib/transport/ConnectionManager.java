@@ -283,7 +283,7 @@ public class ConnectionManager implements ConnectListener {
     class Disconnected extends State {
         Disconnected() {
             super(ConnectionState.disconnected, true, false, false,
-                ReconnectionStrategy.getRetryTime(ably.options.disconnectedRetryTimeout, disconnectedRetryAttempt), REASON_DISCONNECTED);
+                ReconnectionStrategy.getRetryTime(ably.options.disconnectedRetryTimeout, ++disconnectedRetryAttempt), REASON_DISCONNECTED);
         }
 
         @Override
@@ -302,8 +302,7 @@ public class ConnectionManager implements ConnectListener {
 
         @Override
         StateIndication onTimeout() {
-            disconnectedRetryAttempt++;
-            this.timeout = ReconnectionStrategy.getRetryTime(ably.options.disconnectedRetryTimeout, disconnectedRetryAttempt);
+            this.timeout = ReconnectionStrategy.getRetryTime(ably.options.disconnectedRetryTimeout, ++disconnectedRetryAttempt);
             return new StateIndication(ConnectionState.connecting);
         }
 
@@ -1903,7 +1902,7 @@ public class ConnectionManager implements ConnectListener {
     private CMConnectivityListener connectivityListener;
     private long connectionStateTtl = Defaults.connectionStateTtl;
     long maxIdleInterval = Defaults.maxIdleInterval;
-    private int disconnectedRetryAttempt = 1;
+    private int disconnectedRetryAttempt = 0;
 
     /* for debug/test only */
     private final RawProtocolListener protocolListener;
