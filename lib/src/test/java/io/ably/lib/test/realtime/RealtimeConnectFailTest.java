@@ -560,42 +560,49 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
      * Spec: RTB1
      */
     @Test
-    public void disconnect_retry_connection_timeout_jitter() throws AblyException {
+    public void disconnect_retry_connection_timeout_jitter()  {
 
-        ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        opts.realtimeHost = "non.existent.host";
-        opts.environment = null;
-        AblyRealtime ably = new AblyRealtime(opts);
-        opts.disconnectedRetryTimeout = 5000; // Disconnected retry timeout set to 5 seconds.
+        AblyRealtime ably = null;
+        try {
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+            opts.realtimeHost = "non.existent.host";
+            opts.environment = null;
+            opts.disconnectedRetryTimeout = 5000; // Disconnected retry timeout set to 5 seconds.
+            ably = new AblyRealtime(opts);
 
-        final ArrayList<Long> disconnectedRetryTimeouts = new ArrayList<>();
+            final ArrayList<Long> disconnectedRetryTimeouts = new ArrayList<>();
 
-        new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.connecting);
-
-        do {
-            new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.disconnected);
-            Instant start = Instant.now();
             new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.connecting);
-            Instant end = Instant.now();
-            disconnectedRetryTimeouts.add(Duration.between(start, end).toMillis());
-        } while (disconnectedRetryTimeouts.stream().reduce(0L, Long::sum) + 10000 < Defaults.connectionStateTtl);
 
-        System.out.println("Generated retry timeout values => ");
-        System.out.println(String.join(",", disconnectedRetryTimeouts.stream().map(Object::toString).toArray(String[]::new)));
+            do {
+                new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.disconnected);
+                Instant start = Instant.now();
+                new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.connecting);
+                Instant end = Instant.now();
+                disconnectedRetryTimeouts.add(Duration.between(start, end).toMillis());
+            } while (disconnectedRetryTimeouts.stream().reduce(0L, Long::sum) + 10000 < Defaults.connectionStateTtl);
 
-        // Upper bound = min((retryAttempt + 2) / 3, 2) * initialTimeout
-        // Lower bound = 0.8 * Upper bound
-        // Add deviation of 50ms since Instant.now() is being calculated after connecting state is reached
-        assertTimeoutBetween(disconnectedRetryTimeouts.get(0).intValue(), 4000d, 5000d + 50);
-        assertTimeoutBetween(disconnectedRetryTimeouts.get(1).intValue(), 5333.33, 6666.66 + 50);
-        assertTimeoutBetween(disconnectedRetryTimeouts.get(2).intValue(), 6666.66, 8333.33 + 50);
+            System.out.println("Generated retry timeout values => ");
+            System.out.println(String.join(",", disconnectedRetryTimeouts.stream().map(Object::toString).toArray(String[]::new)));
 
-        for (int i = 3; i < disconnectedRetryTimeouts.size(); i++)
-        {
-            assertTimeoutBetween(disconnectedRetryTimeouts.get(i).intValue(), 8000d, 10000d + 50);
+            // Upper bound = min((retryAttempt + 2) / 3, 2) * initialTimeout
+            // Lower bound = 0.8 * Upper bound
+            // Add deviation of 50ms since Instant.now() is being calculated after connecting state is reached
+            assertTimeoutBetween(disconnectedRetryTimeouts.get(0).intValue(), 4000d, 5000d + 50);
+            assertTimeoutBetween(disconnectedRetryTimeouts.get(1).intValue(), 5333.33, 6666.66 + 50);
+            assertTimeoutBetween(disconnectedRetryTimeouts.get(2).intValue(), 6666.66, 8333.33 + 50);
+
+            for (int i = 3; i < disconnectedRetryTimeouts.size(); i++)
+            {
+                assertTimeoutBetween(disconnectedRetryTimeouts.get(i).intValue(), 8000d, 10000d + 50);
+            }
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail("init0: Unexpected exception instantiating library");
+        } finally {
+            if (ably != null)
+                ably.close();
         }
-
-        ably.close();
     }
 
     /**
@@ -603,123 +610,135 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
      * Spec: RTB1
      */
     @Test
-    public void disconnect_retry_channel_timeout_jitter_after_first_detach() throws AblyException {
+    public void disconnect_retry_channel_timeout_jitter_after_first_detach()  {
+        AblyRealtime ably = null;
+        try {
+            DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+            opts.channelRetryTimeout = 5000; //  channel retry timeout set to 5 seconds.
+            opts.realtimeRequestTimeout = 100; // quickly timeout and transition to suspended
+            opts.transportFactory = new MockWebsocketFactory();
+            ((MockWebsocketFactory)opts.transportFactory).allowSend();
+            fillInOptions(opts);
 
-        DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
-        opts.channelRetryTimeout = 5000; //  channel retry timeout set to 5 seconds.
-        opts.realtimeRequestTimeout = 100; // quickly timeout and transition to suspended
-        opts.transportFactory = new MockWebsocketFactory();
-        ((MockWebsocketFactory)opts.transportFactory).allowSend();
-        fillInOptions(opts);
+            ably = new AblyRealtime(opts);
+            new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
 
-        AblyRealtime ably = new AblyRealtime(opts);
-        new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+            /* Block send() */
+            ((MockWebsocketFactory)opts.transportFactory).blockSend();
 
-        /* Block send() */
-        ((MockWebsocketFactory)opts.transportFactory).blockSend();
-
-        Channel channel = ably.channels.get("failed_attach");
-        Helpers.ChannelWaiter channelWaiter = new Helpers.ChannelWaiter(channel);
-        channel.attach();
-        channelWaiter.waitFor(ChannelState.attaching);
-
-        final ArrayList<Long> channelRetryTimeouts = new ArrayList<>();
-
-        /* Inject detached message as if from the server */
-        ProtocolMessage detachedMessage = new ProtocolMessage() {{
-            action = Action.detached;
-            channel = "failed_attach";
-            error = new ErrorInfo("Test error", 12345);
-        }};
-        ably.connection.connectionManager.onMessage(null, detachedMessage);
-
-        do
-        {
-            channelWaiter.waitFor(ChannelState.suspended);
-            Instant start = Instant.now();
-
+            Channel channel = ably.channels.get("failed_attach");
+            Helpers.ChannelWaiter channelWaiter = new Helpers.ChannelWaiter(channel);
+            channel.attach();
             channelWaiter.waitFor(ChannelState.attaching);
-            Instant end = Instant.now();
 
-            channelRetryTimeouts.add(Duration.between(start, end).toMillis());
-        } while (channelRetryTimeouts.size() < 8); // channel keeps retrying attach indefinitely, limit the number of retries.
+            final ArrayList<Long> channelRetryTimeouts = new ArrayList<>();
 
-        System.out.println("Generated retry timeout values => ");
-        System.out.println(String.join(",", channelRetryTimeouts.stream().map(Object::toString).toArray(String[]::new)));
+            /* Inject detached message as if from the server */
+            ProtocolMessage detachedMessage = new ProtocolMessage() {{
+                action = Action.detached;
+                channel = "failed_attach";
+                error = new ErrorInfo("Test error", 12345);
+            }};
+            ably.connection.connectionManager.onMessage(null, detachedMessage);
 
-        // Upper bound = min((retryAttempt + 2) / 3, 2) * initialTimeout
-        // Lower bound = 0.8 * Upper bound
-        // Add deviation of 50ms since Instant.now() is being calculated after connecting state is reached
-        assertTimeoutBetween(channelRetryTimeouts.get(0).intValue(), 4000d, 5000d + 50);
-        assertTimeoutBetween(channelRetryTimeouts.get(1).intValue(), 5333.33, 6666.66 + 50);
-        assertTimeoutBetween(channelRetryTimeouts.get(2).intValue(), 6666.66, 8333.33 + 50);
+            do
+            {
+                channelWaiter.waitFor(ChannelState.suspended);
+                Instant start = Instant.now();
 
-        for (int i = 3; i < channelRetryTimeouts.size(); i++)
-        {
-            assertTimeoutBetween(channelRetryTimeouts.get(i).intValue(), 8000d, 10000d + 50);
+                channelWaiter.waitFor(ChannelState.attaching);
+                Instant end = Instant.now();
+
+                channelRetryTimeouts.add(Duration.between(start, end).toMillis());
+            } while (channelRetryTimeouts.size() < 8); // channel keeps retrying attach indefinitely, limit the number of retries.
+
+            System.out.println("Generated retry timeout values => ");
+            System.out.println(String.join(",", channelRetryTimeouts.stream().map(Object::toString).toArray(String[]::new)));
+
+            // Upper bound = min((retryAttempt + 2) / 3, 2) * initialTimeout
+            // Lower bound = 0.8 * Upper bound
+            // Add deviation of 50ms since Instant.now() is being calculated after connecting state is reached
+            assertTimeoutBetween(channelRetryTimeouts.get(0).intValue(), 4000d, 5000d + 50);
+            assertTimeoutBetween(channelRetryTimeouts.get(1).intValue(), 5333.33, 6666.66 + 50);
+            assertTimeoutBetween(channelRetryTimeouts.get(2).intValue(), 6666.66, 8333.33 + 50);
+
+            for (int i = 3; i < channelRetryTimeouts.size(); i++)
+            {
+                assertTimeoutBetween(channelRetryTimeouts.get(i).intValue(), 8000d, 10000d + 50);
+            }
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail("init0: Unexpected exception instantiating library");
+        } finally {
+            if (ably != null)
+                ably.close();
         }
-
-        ably.close();
     }
 
     @Test
-    public void disconnect_retry_channel_timeout_jitter_after_consistent_detach() throws AblyException {
+    public void disconnect_retry_channel_timeout_jitter_after_consistent_detach() {
+        AblyRealtime ably = null;
+        try {
+            DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+            opts.channelRetryTimeout = 5000; // channel retry timeout set to 5 seconds., no realtimeRequestTimeout is set.
+            opts.transportFactory = new MockWebsocketFactory();
+            ((MockWebsocketFactory)opts.transportFactory).allowSend();
+            fillInOptions(opts);
 
-        DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
-        opts.channelRetryTimeout = 5000; // channel retry timeout set to 5 seconds., no realtimeRequestTimeout is set.
-        opts.transportFactory = new MockWebsocketFactory();
-        ((MockWebsocketFactory)opts.transportFactory).allowSend();
-        fillInOptions(opts);
+            ably = new AblyRealtime(opts);
+            new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
 
-        AblyRealtime ably = new AblyRealtime(opts);
-        new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+            /* Block send() */
+            ((MockWebsocketFactory)opts.transportFactory).blockSend();
 
-        /* Block send() */
-        ((MockWebsocketFactory)opts.transportFactory).blockSend();
-
-        Channel channel = ably.channels.get("failed_attach");
-        Helpers.ChannelWaiter channelWaiter = new Helpers.ChannelWaiter(channel);
-        channel.attach();
-        channelWaiter.waitFor(ChannelState.attaching);
-
-        final ArrayList<Long> channelRetryTimeouts = new ArrayList<>();
-
-        /* Inject detached message as if from the server */
-        ProtocolMessage detachedMessage = new ProtocolMessage() {{
-            action = Action.detached;
-            channel = "failed_attach";
-            error = new ErrorInfo("Test error", 12345);
-        }};
-
-        do
-        {
-            ably.connection.connectionManager.onMessage(null, detachedMessage);
-
-            channelWaiter.waitFor(ChannelState.suspended);
-            Instant start = Instant.now();
-
+            Channel channel = ably.channels.get("failed_attach");
+            Helpers.ChannelWaiter channelWaiter = new Helpers.ChannelWaiter(channel);
+            channel.attach();
             channelWaiter.waitFor(ChannelState.attaching);
-            Instant end = Instant.now();
 
-            channelRetryTimeouts.add(Duration.between(start, end).toMillis());
-        } while (channelRetryTimeouts.size() < 8); // channel keeps retrying attach indefinitely, limit the number of retries.
+            final ArrayList<Long> channelRetryTimeouts = new ArrayList<>();
 
-        System.out.println("Generated retry timeout values => ");
-        System.out.println(String.join(",", channelRetryTimeouts.stream().map(Object::toString).toArray(String[]::new)));
+            /* Inject detached message as if from the server */
+            ProtocolMessage detachedMessage = new ProtocolMessage() {{
+                action = Action.detached;
+                channel = "failed_attach";
+                error = new ErrorInfo("Test error", 12345);
+            }};
 
-        // Upper bound = min((retryAttempt + 2) / 3, 2) * initialTimeout
-        // Lower bound = 0.8 * Upper bound
-        // Add deviation of 50ms since Instant.now() is being calculated after connecting state is reached
-        assertTimeoutBetween(channelRetryTimeouts.get(0).intValue(), 4000d, 5000d + 50);
-        assertTimeoutBetween(channelRetryTimeouts.get(1).intValue(), 5333.33, 6666.66 + 50);
-        assertTimeoutBetween(channelRetryTimeouts.get(2).intValue(), 6666.66, 8333.33 + 50);
+            do
+            {
+                ably.connection.connectionManager.onMessage(null, detachedMessage);
 
-        for (int i = 3; i < channelRetryTimeouts.size(); i++)
-        {
-            assertTimeoutBetween(channelRetryTimeouts.get(i).intValue(), 8000d, 10000d + 50);
+                channelWaiter.waitFor(ChannelState.suspended);
+                Instant start = Instant.now();
+
+                channelWaiter.waitFor(ChannelState.attaching);
+                Instant end = Instant.now();
+
+                channelRetryTimeouts.add(Duration.between(start, end).toMillis());
+            } while (channelRetryTimeouts.size() < 8); // channel keeps retrying attach indefinitely, limit the number of retries.
+
+            System.out.println("Generated retry timeout values => ");
+            System.out.println(String.join(",", channelRetryTimeouts.stream().map(Object::toString).toArray(String[]::new)));
+
+            // Upper bound = min((retryAttempt + 2) / 3, 2) * initialTimeout
+            // Lower bound = 0.8 * Upper bound
+            // Add deviation of 50ms since Instant.now() is being calculated after connecting state is reached
+            assertTimeoutBetween(channelRetryTimeouts.get(0).intValue(), 4000d, 5000d + 50);
+            assertTimeoutBetween(channelRetryTimeouts.get(1).intValue(), 5333.33, 6666.66 + 50);
+            assertTimeoutBetween(channelRetryTimeouts.get(2).intValue(), 6666.66, 8333.33 + 50);
+
+            for (int i = 3; i < channelRetryTimeouts.size(); i++)
+            {
+                assertTimeoutBetween(channelRetryTimeouts.get(i).intValue(), 8000d, 10000d + 50);
+            }
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail("init0: Unexpected exception instantiating library");
+        } finally {
+            if (ably != null)
+                ably.close();
         }
-
-        ably.close();
     }
 
 }
