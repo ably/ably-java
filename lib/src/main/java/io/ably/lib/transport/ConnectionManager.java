@@ -134,7 +134,7 @@ public class ConnectionManager implements ConnectListener {
         public final boolean sendEvents;
 
         final boolean terminal;
-        public final long timeout;
+        public long timeout;
 
         State(ConnectionState state, boolean queueEvents, boolean sendEvents, boolean terminal, long timeout, ErrorInfo defaultErrorInfo) {
             this.state = state;
@@ -282,7 +282,8 @@ public class ConnectionManager implements ConnectListener {
 
     class Disconnected extends State {
         Disconnected() {
-            super(ConnectionState.disconnected, true, false, false, Defaults.TIMEOUT_DISCONNECT, REASON_DISCONNECTED);
+            super(ConnectionState.disconnected, true, false, false,
+                ReconnectionStrategy.getRetryTime(Defaults.TIMEOUT_DISCONNECT, disconnectedRetryAttempt), REASON_DISCONNECTED);
         }
 
         @Override
@@ -301,6 +302,8 @@ public class ConnectionManager implements ConnectListener {
 
         @Override
         StateIndication onTimeout() {
+            disconnectedRetryAttempt++;
+            this.timeout = ReconnectionStrategy.getRetryTime(Defaults.TIMEOUT_DISCONNECT, disconnectedRetryAttempt);
             return new StateIndication(ConnectionState.connecting);
         }
 
@@ -836,10 +839,6 @@ public class ConnectionManager implements ConnectListener {
             return null;
         }
 
-        if (stateIndication.state == ConnectionState.suspended || stateIndication.state == ConnectionState.connected) {
-            this.disconnectedRetryCount = 0;
-        }
-
         /* update currentState */
         ConnectionState newConnectionState = validatedStateIndication.state;
         State newState = states.get(newConnectionState);
@@ -849,14 +848,7 @@ public class ConnectionManager implements ConnectListener {
             reason = newState.defaultErrorInfo;
         }
         Log.v(TAG, "setState(): setting " + newState.state + "; reason " + reason);
-
-        long retryDelay = newState.timeout;
-        if (newState.state == ConnectionState.disconnected) {
-            this.disconnectedRetryCount++;
-            retryDelay = ReconnectionStrategy.getRetryTime((int) newState.timeout, this.disconnectedRetryCount);
-        }
-
-        ConnectionStateChange change = new ConnectionStateChange(currentState.state, newConnectionState, retryDelay, reason);
+        ConnectionStateChange change = new ConnectionStateChange(currentState.state, newConnectionState, newState.timeout, reason);
         currentState = newState;
         stateError = reason;
 
@@ -1165,6 +1157,7 @@ public class ConnectionManager implements ConnectListener {
                     }
                     break;
                 case connected:
+                    disconnectedRetryAttempt = 0;
                     onConnected(message);
                     break;
                 case disconnect:
@@ -1910,7 +1903,7 @@ public class ConnectionManager implements ConnectListener {
     private CMConnectivityListener connectivityListener;
     private long connectionStateTtl = Defaults.connectionStateTtl;
     long maxIdleInterval = Defaults.maxIdleInterval;
-    private int disconnectedRetryCount = 0;
+    private int disconnectedRetryAttempt = 1;
 
     /* for debug/test only */
     private final RawProtocolListener protocolListener;
