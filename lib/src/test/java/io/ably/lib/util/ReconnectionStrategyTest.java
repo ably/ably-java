@@ -1,13 +1,11 @@
 package io.ably.lib.util;
 
-import static io.ably.lib.test.common.Helpers.assertTimeoutBetween;
-import static io.ably.lib.test.common.Helpers.between;
-import static org.junit.Assert.assertThat;
-
 import com.sun.tools.javac.util.Pair;
 import org.junit.Test;
 
 import java.util.Arrays;
+
+import static io.ably.lib.test.common.Helpers.assertTimeoutBetween;
 
 public class ReconnectionStrategyTest {
 
