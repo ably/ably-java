@@ -1,10 +1,7 @@
 package io.ably.lib.util;
 
-import com.sun.tools.javac.util.Pair;
 import org.junit.Test;
-
 import java.util.Arrays;
-
 import static io.ably.lib.test.common.Helpers.assertTimeoutBetween;
 
 public class ReconnectionStrategyTest {
@@ -29,16 +26,25 @@ public class ReconnectionStrategyTest {
         for (int retryAttempt : retryAttempts) {
 
             int retryTimeout = ReconnectionStrategy.getRetryTime(initialTimeoutValue, retryAttempt);
-            Pair<Double, Double> pair = calculateRetryBounds(retryAttempt, initialTimeoutValue);
+            Bounds bounds = calculateRetryBounds(retryAttempt, initialTimeoutValue);
 
-            assertTimeoutBetween(retryTimeout, pair.fst, pair.snd);
+            assertTimeoutBetween(retryTimeout, bounds.lower, bounds.upper);
         }
     }
 
-    public static Pair<Double, Double> calculateRetryBounds(int retryAttempt, int initialTimeout)
+    static class Bounds {
+        public Bounds(Double lower, Double upper) {
+            this.lower = lower;
+            this.upper = upper;
+        }
+        public Double lower;
+        public Double upper;
+    }
+
+    public Bounds calculateRetryBounds(int retryAttempt, int initialTimeout)
     {
         double upperBound = Math.min((retryAttempt + 2) / 3d, 2d) * initialTimeout;
         double lowerBound = 0.8 * upperBound;
-        return new Pair<>(lowerBound, upperBound);
+        return new Bounds(lowerBound, upperBound);
     }
 }
