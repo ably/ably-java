@@ -217,6 +217,15 @@ public class ClientOptions extends AuthOptions {
     public String[] fallbackHosts;
 
     /**
+     * This is a timeout when the connection enters the suspendedState.
+     * Client will try to connect indefinitely in thi state.
+     * The default is 30 seconds.
+     * <p>
+     * Spec: RTN14d, TO3l2
+     */
+    public long suspendedRetryTimeout = Defaults.suspendedRetryTimeout;
+
+    /**
      * An array of fallback hosts to be used in the case of an error necessitating the use of an alternative host.
      * If you have been provided a set of custom fallback hosts by Ably, please specify them here.
      * <p>
