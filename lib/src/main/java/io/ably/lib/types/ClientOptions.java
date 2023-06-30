@@ -189,6 +189,13 @@ public class ClientOptions extends AuthOptions {
     public int httpRequestTimeout = Defaults.TIMEOUT_HTTP_REQUEST;
 
     /**
+     * Denotes elapsed time in which fallback host retries for HTTP requests will be attempted.
+     * Default is 15 seconds.
+     * Spec: TO3l6
+     */
+    public int httpMaxRetryDuration = Defaults.httpMaxRetryDuration;
+
+    /**
      * The maximum number of fallback hosts to use as a fallback when an HTTP request to the primary host
      * is unreachable or indicates that it is unserviceable.
      * The default value is 3.
