@@ -218,7 +218,7 @@ public class ClientOptions extends AuthOptions {
 
     /**
      * This is a timeout when the connection enters the suspendedState.
-     * Client will try to connect indefinitely in thi state.
+     * Client will try to connect indefinitely till state changes to connected.
      * The default is 30 seconds.
      * <p>
      * Spec: RTN14d, TO3l2
