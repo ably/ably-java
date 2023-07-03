@@ -13,7 +13,7 @@ public class MessageDecodeException extends AblyException {
     public static MessageDecodeException fromDescription(String description) {
         return new MessageDecodeException(
             new Exception(description),
-            new ErrorInfo(description, 91200));
+            new ErrorInfo(description, 40013));
     }
 
     public static MessageDecodeException fromThrowableAndErrorInfo(Throwable e, ErrorInfo errorInfo) {
