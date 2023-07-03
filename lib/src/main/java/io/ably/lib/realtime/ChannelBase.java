@@ -479,7 +479,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                             }
                             attachTimer = null;
                             if(state == ChannelState.attaching) {
-                                setSuspended(new ErrorInfo(errorMessage, 91200), true);
+                                setSuspended(new ErrorInfo(errorMessage, 90007), true);
                                 reattachAfterTimeout();
                             }
                         }

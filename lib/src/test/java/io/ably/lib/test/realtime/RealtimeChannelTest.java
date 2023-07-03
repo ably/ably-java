@@ -1808,7 +1808,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             /* Should get to suspended soon because send() is blocked */
             ErrorInfo suspendReason = channelWaiter.waitFor(ChannelState.suspended);
-            assertEquals("Verify the suspended event contains the detach reason", 91200, suspendReason.code);
+            assertEquals("Verify the suspended event contains the detach reason", 90007, suspendReason.code);
 
             /* Unblock send(), and expect a transition to attached */
             mockTransport.allowSend();
