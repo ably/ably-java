@@ -838,6 +838,10 @@ public class ConnectionManager implements ConnectListener {
             return null;
         }
 
+        if (stateIndication.state == ConnectionState.suspended || stateIndication.state == ConnectionState.connected) {
+            this.disconnectedRetryAttempt = 0;
+        }
+
         /* update currentState */
         ConnectionState newConnectionState = validatedStateIndication.state;
         State newState = states.get(newConnectionState);
@@ -1156,7 +1160,6 @@ public class ConnectionManager implements ConnectListener {
                     }
                     break;
                 case connected:
-                    disconnectedRetryAttempt = 0;
                     onConnected(message);
                     break;
                 case disconnect:
