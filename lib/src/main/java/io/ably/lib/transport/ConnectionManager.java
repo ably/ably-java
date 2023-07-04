@@ -282,7 +282,7 @@ public class ConnectionManager implements ConnectListener {
 
     class Disconnected extends State {
         Disconnected() {
-            super(ConnectionState.disconnected, true, false, false,0, REASON_DISCONNECTED);
+            super(ConnectionState.disconnected, true, false, false, ably.options.disconnectedRetryTimeout, REASON_DISCONNECTED);
         }
 
         @Override
