@@ -314,7 +314,6 @@ public class ConnectionManager implements ConnectListener {
         @Override
         void enact(StateIndication stateIndication, ConnectionStateChange change) {
             super.enact(stateIndication, change);
-            this.timeout = ReconnectionStrategy.getRetryTime(ably.options.disconnectedRetryTimeout, ++disconnectedRetryAttempt);
             clearTransport();
 
             // If we were connected, immediately retry
@@ -837,8 +836,13 @@ public class ConnectionManager implements ConnectListener {
             return null;
         }
 
-        if (stateIndication.state == ConnectionState.suspended || stateIndication.state == ConnectionState.connected) {
+        if (stateIndication.state == ConnectionState.connected || stateIndication.state == ConnectionState.suspended) {
             this.disconnectedRetryAttempt = 0;
+        }
+
+        if (stateIndication.state == ConnectionState.disconnected) {
+            states.get(ConnectionState.disconnected).timeout =
+                ReconnectionStrategy.getRetryTime(ably.options.disconnectedRetryTimeout, ++disconnectedRetryAttempt);
         }
 
         /* update currentState */
