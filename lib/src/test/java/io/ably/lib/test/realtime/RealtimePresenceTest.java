@@ -2317,7 +2317,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
      * Tests RTP2a, RTP2b1, RTP2b2, RTP2c, RTP2d, RTP2g, RTP18c, RTP6a features
      */
     @Test
-    public void realtime_presence_map_test() throws AblyException {
+    public void realtime_presence_map_test() {
         AblyRealtime ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);

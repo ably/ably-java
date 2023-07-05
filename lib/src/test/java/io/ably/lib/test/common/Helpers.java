@@ -50,11 +50,16 @@ import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
+import org.hamcrest.Matcher;
 
 import static junit.framework.Assert.assertTrue;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 public class Helpers {
 
@@ -807,6 +812,14 @@ public class Helpers {
         } else {
             assertEquals("Message data contents differ.", expected.data, actual.data);
         }
+    }
+
+    public static void assertTimeoutBetween(int timeout, Double min, Double max) {
+        assertThat(String.format("timeout %d should be between %f and %f", timeout, min, max ), (double) timeout, between(min, max));
+    }
+
+    public static Matcher<Double> between(Double min, Double max) {
+        return allOf(greaterThanOrEqualTo(min), lessThanOrEqualTo(max));
     }
 
     public static class AsyncWaiter<T> implements Callback<T> {
