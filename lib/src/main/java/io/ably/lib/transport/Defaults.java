@@ -42,14 +42,19 @@ public class Defaults {
     public static int TIMEOUT_HTTP_OPEN = 4000;
     /* TO3l4 */
     public static int TIMEOUT_HTTP_REQUEST = 15000;
+    /* TO3l6 */
+    public static int httpMaxRetryDuration = 15000;
+
     /* DF1b */
     public static long realtimeRequestTimeout = 10000L;
+    /* TO3l2 */
+    public static long suspendedRetryTimeout = 30000L;
     /* TO3l10 */
     public static long fallbackRetryTimeout = 10*60*1000L;
     /* CD2h (but no default in the spec) */
     public static long maxIdleInterval = 20000L;
     /* DF1a */
-    public static long connectionStateTtl = 60000L;
+    public static long connectionStateTtl = 120000L;
 
     public static final ITransport.Factory TRANSPORT = new WebSocketTransport.Factory();
     public static final int HTTP_MAX_RETRY_COUNT    = 3;

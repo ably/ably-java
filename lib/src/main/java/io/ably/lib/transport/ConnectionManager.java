@@ -337,7 +337,7 @@ public class ConnectionManager implements ConnectListener {
 
     class Suspended extends State {
         Suspended() {
-            super(ConnectionState.suspended, false, false, false, Defaults.connectionStateTtl, REASON_SUSPENDED);
+            super(ConnectionState.suspended, false, false, false, ably.options.suspendedRetryTimeout, REASON_SUSPENDED);
         }
 
         @Override
