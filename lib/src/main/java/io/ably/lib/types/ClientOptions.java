@@ -189,6 +189,13 @@ public class ClientOptions extends AuthOptions {
     public int httpRequestTimeout = Defaults.TIMEOUT_HTTP_REQUEST;
 
     /**
+     * Denotes elapsed time in which fallback host retries for HTTP requests will be attempted.
+     * Default is 15 seconds.
+     * Spec: TO3l6
+     */
+    public int httpMaxRetryDuration = Defaults.httpMaxRetryDuration;
+
+    /**
      * The maximum number of fallback hosts to use as a fallback when an HTTP request to the primary host
      * is unreachable or indicates that it is unserviceable.
      * The default value is 3.
@@ -224,6 +231,15 @@ public class ClientOptions extends AuthOptions {
      * Spec: RSC15b, RSC15a, TO3k6
      */
     public String[] fallbackHosts;
+
+    /**
+     * This is a timeout when the connection enters the suspendedState.
+     * Client will try to connect indefinitely till state changes to connected.
+     * The default is 30 seconds.
+     * <p>
+     * Spec: RTN14d, TO3l2
+     */
+    public long suspendedRetryTimeout = Defaults.suspendedRetryTimeout;
 
     /**
      * An array of fallback hosts to be used in the case of an error necessitating the use of an alternative host.
