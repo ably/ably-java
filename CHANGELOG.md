@@ -1,5 +1,23 @@
 # Change Log
 
+## [1.2.31](https://github.com/ably/ably-java/tree/v1.2.31)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.30...v1.2.31)
+
+**Fixed bugs:**
+
+- Update error code for channel attachment timed out [\#959](https://github.com/ably/ably-java/issues/959)
+- Update error code for message decoding failure [\#958](https://github.com/ably/ably-java/issues/958)
+- Fix incremental backoff while reconnecting [\#954](https://github.com/ably/ably-java/issues/954)
+- Add `suspendedRetryTimeout` and `httpMaxRetryDuration` client options [\#956](https://github.com/ably/ably-java/issues/956)
+
+**Merged pull requests:**
+
+- fix: use appropriate error code for channel attachment timeout [\#961](https://github.com/ably/ably-java/pull/961) ([AndyTWF](https://github.com/AndyTWF))
+- fix: use error code 40013 for message decoding failures [\#960](https://github.com/ably/ably-java/pull/960) ([AndyTWF](https://github.com/AndyTWF))
+- Fix incremental backoff jitter [\#955](https://github.com/ably/ably-java/pull/955) ([sacOO7](https://github.com/sacOO7))
+- Add missing clientOptions [\#957](https://github.com/ably/ably-java/pull/957) ([sacOO7](https://github.com/sacOO7))
+
 ## [1.2.30](https://github.com/ably/ably-java/tree/v1.2.30)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.29...v1.2.30)
