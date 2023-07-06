@@ -6,10 +6,10 @@
 
 **Fixed bugs:**
 
-- Error code for channel attachment timed out [\#959](https://github.com/ably/ably-java/issues/959)
-- Error code for message decoding failure [\#958](https://github.com/ably/ably-java/issues/958)
+- Update error code for channel attachment timed out [\#959](https://github.com/ably/ably-java/issues/959)
+- Update error code for message decoding failure [\#958](https://github.com/ably/ably-java/issues/958)
 - Fix incremental backoff while reconnecting [\#954](https://github.com/ably/ably-java/issues/954)
-- Add missing clientOptions [\#956](https://github.com/ably/ably-java/issues/956)
+- Add `suspendedRetryTimeout` and `httpMaxRetryDuration` client options [\#956](https://github.com/ably/ably-java/issues/956)
 
 **Merged pull requests:**
 
