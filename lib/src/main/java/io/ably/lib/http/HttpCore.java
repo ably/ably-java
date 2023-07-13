@@ -251,7 +251,6 @@ public class HttpCore {
                 rawHttpListener.onRawHttpResponse(id, method, response);
             }
         } catch(IOException ioe) {
-            ioe.printStackTrace();
             if(rawHttpListener != null) {
                 rawHttpListener.onRawHttpException(id, method, ioe);
             }

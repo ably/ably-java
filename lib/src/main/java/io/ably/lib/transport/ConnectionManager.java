@@ -1591,6 +1591,7 @@ public class ConnectionManager implements ConnectListener {
         try {
             return HttpHelpers.getUrlString(ably.httpCore, INTERNET_CHECK_URL).contains(INTERNET_CHECK_OK);
         } catch(AblyException e) {
+            Log.d(TAG, "Exception whilst checking connectivity", e);
             return false;
         }
     }
