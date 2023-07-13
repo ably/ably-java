@@ -1136,6 +1136,7 @@ public class ConnectionManager implements ConnectListener {
         if (transport != null && this.transport != transport) {
             return;
         }
+        // Logging level is checked before logging for performance reasons in building the entry
         if (Log.level <= Log.VERBOSE) {
             Log.v(TAG, "onMessage() (transport = " + transport + "): " + message.action + ": " + new String(ProtocolSerializer.writeJSON(message)));
         }
