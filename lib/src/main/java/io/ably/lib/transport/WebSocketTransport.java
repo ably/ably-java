@@ -110,12 +110,15 @@ public class WebSocketTransport implements ITransport {
         try {
             if(channelBinaryMode) {
                 byte[] encodedMsg = ProtocolSerializer.writeMsgpack(msg);
+
+                // Check the logging level to avoid performance hit associated with building the message
                 if (Log.level <= Log.VERBOSE) {
                     ProtocolMessage decodedMsg = ProtocolSerializer.readMsgpack(encodedMsg);
                     Log.v(TAG, "send(): " + decodedMsg.action + ": " + new String(ProtocolSerializer.writeJSON(decodedMsg)));
                 }
                 wsConnection.send(encodedMsg);
             } else {
+                // Check the logging level to avoid performance hit associated with building the message
                 if (Log.level <= Log.VERBOSE)
                     Log.v(TAG, "send(): " + new String(ProtocolSerializer.writeJSON(msg)));
                 wsConnection.send(ProtocolSerializer.writeJSON(msg));

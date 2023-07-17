@@ -274,7 +274,7 @@ public class Message extends BaseMessage {
             }
             return messages;
         } catch(Exception e) {
-            e.printStackTrace();
+            Log.e(Message.class.getName(), e.getMessage(), e);
             throw MessageDecodeException.fromDescription(e.getMessage());
         }
     }
@@ -295,7 +295,7 @@ public class Message extends BaseMessage {
             JsonArray jsonArray = Serialisation.gson.fromJson(messagesArray, JsonArray.class);
             return fromEncodedArray(jsonArray, channelOptions);
         } catch(Exception e) {
-            e.printStackTrace();
+            Log.e(Message.class.getName(), e.getMessage(), e);
             throw MessageDecodeException.fromDescription(e.getMessage());
         }
     }
@@ -341,7 +341,7 @@ public class Message extends BaseMessage {
             try {
                 message.read((JsonObject)json);
             } catch (MessageDecodeException e) {
-                e.printStackTrace();
+                Log.e(Message.class.getName(), e.getMessage(), e);
                 throw new JsonParseException("Failed to deserialize Message from JSON.", e);
             }
             return message;

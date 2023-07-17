@@ -216,12 +216,14 @@ public class HttpCore {
             byte[] body = null;
             if(requestBody != null) {
                 body = prepareRequestBody(requestBody, conn);
+                // Check the logging level to avoid performance hit associated with building the message
                 if (Log.level <= Log.VERBOSE)
                     Log.v(TAG, System.lineSeparator() + new String(body));
             }
 
             /* log raw request details */
             Map<String, List<String>> requestProperties = conn.getRequestProperties();
+            // Check the logging level to avoid performance hit associated with building the message
             if (Log.level <= Log.VERBOSE) {
                 Log.v(TAG, "HTTP request: " + conn.getURL() + " " + method);
                 if (credentialsIncluded)
@@ -251,7 +253,6 @@ public class HttpCore {
                 rawHttpListener.onRawHttpResponse(id, method, response);
             }
         } catch(IOException ioe) {
-            ioe.printStackTrace();
             if(rawHttpListener != null) {
                 rawHttpListener.onRawHttpException(id, method, ioe);
             }
@@ -400,6 +401,7 @@ public class HttpCore {
         for (Map.Entry<String, List<String>> entry : caseSensitiveHeaders.entrySet()) {
             if (entry.getKey() != null) {
                 response.headers.put(entry.getKey().toLowerCase(Locale.ROOT), entry.getValue());
+                // Check the logging level to avoid performance hit associated with building the message
                 if (Log.level <= Log.VERBOSE)
                     for (String val : entry.getValue())
                         Log.v(TAG, entry.getKey() + ": " + val);

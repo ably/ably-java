@@ -1136,6 +1136,7 @@ public class ConnectionManager implements ConnectListener {
         if (transport != null && this.transport != transport) {
             return;
         }
+        // Check the logging level to avoid performance hit associated with building the message
         if (Log.level <= Log.VERBOSE) {
             Log.v(TAG, "onMessage() (transport = " + transport + "): " + message.action + ": " + new String(ProtocolSerializer.writeJSON(message)));
         }
@@ -1591,6 +1592,7 @@ public class ConnectionManager implements ConnectListener {
         try {
             return HttpHelpers.getUrlString(ably.httpCore, INTERNET_CHECK_URL).contains(INTERNET_CHECK_OK);
         } catch(AblyException e) {
+            Log.d(TAG, "Exception whilst checking connectivity", e);
             return false;
         }
     }
