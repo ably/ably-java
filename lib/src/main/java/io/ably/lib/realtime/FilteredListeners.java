@@ -16,6 +16,11 @@ public class FilteredListeners implements IFilteredListeners {
         return filteredListeners;
     }
 
+    public void clear()
+    {
+        filteredListeners.clear();
+    }
+
     public synchronized ChannelBase.MessageListener addFilteredListener(MessageFilter filter, ChannelBase.MessageListener originalListener) {
         MessageExtrasFilter extrasFilter = new MessageExtrasFilter(filter);
         FilteredMessageListener filteredListener = new FilteredMessageListener(originalListener, extrasFilter);

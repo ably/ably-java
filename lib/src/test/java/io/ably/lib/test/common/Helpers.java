@@ -44,6 +44,7 @@ import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ErrorResponse;
 import io.ably.lib.types.Message;
+import io.ably.lib.types.MessageFilter;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
@@ -254,6 +255,17 @@ public class Helpers {
             reset();
             try {
                 channel.subscribe(event, this);
+            } catch(AblyException e) {}
+        }
+
+        /**
+         * Track all messages on a channel, with a filter.
+         * @param channel
+         */
+        public MessageWaiter(Channel channel, MessageFilter filter) {
+            reset();
+            try {
+                channel.subscribe(filter, this);
             } catch(AblyException e) {}
         }
 

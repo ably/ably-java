@@ -17,12 +17,14 @@ import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.util.MockWebsocketFactory;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.Defaults;
+import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelMode;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
+import io.ably.lib.types.MessageFilter;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
 
@@ -2039,6 +2041,80 @@ public class RealtimeChannelTest extends ParameterizedTest {
             if (ably != null)
                 ably.close();
             Defaults.realtimeRequestTimeout = oldRealtimeTimeout;
+        }
+    }
+
+    /*
+     * Checks that we can subscribe with a filter for messages.
+     */
+    @Test
+    public void subscribe_with_a_filter() throws AblyException {
+        AblyRealtime subscriber = null;
+        AblyRealtime publisher = null;
+
+        final String channelName = "filtered_messages_test";
+        try {
+            DebugOptions opts = createOptions(testVars.keys[0].keyStr);
+
+            // Create two channel subscribers, one with a filter and one without
+            subscriber = new AblyRealtime(opts);
+            Channel subscribeChannel = subscriber.channels.get(channelName);
+            MessageFilter filter = new MessageFilter(null, null, null, "event-name", null);
+            Helpers.MessageWaiter filteredWaiter = new Helpers.MessageWaiter(subscribeChannel, filter);
+            Helpers.MessageWaiter unfilteredWaiter = new Helpers.MessageWaiter(subscribeChannel);
+
+            // Wait for attach
+            new ChannelWaiter(subscribeChannel).waitFor(ChannelState.attached);
+
+            // Publish some messages
+            publisher = new AblyRealtime(opts);
+            Channel publishChannel = publisher.channels.get(channelName);
+            publishChannel.publish("event-name", "test1");
+            publishChannel.publish("event-name-b", "test2");
+            publishChannel.publish("event-name-c", "test3");
+            publishChannel.publish("event-name", "test4");
+
+            // Make sure both of our waiters get their messages
+            unfilteredWaiter.waitFor(4, 5000);
+            filteredWaiter.waitFor(2, 5000);
+
+            // Check the messages on the unfiltered waiter
+            assertEquals(4, unfilteredWaiter.receivedMessages.size());
+            assertEquals("event-name", unfilteredWaiter.receivedMessages.get(0).name);
+            assertEquals("test1", unfilteredWaiter.receivedMessages.get(0).data);
+            assertEquals("event-name-b", unfilteredWaiter.receivedMessages.get(1).name);
+            assertEquals("test2", unfilteredWaiter.receivedMessages.get(1).data);
+            assertEquals("event-name-c", unfilteredWaiter.receivedMessages.get(2).name);
+            assertEquals("test3", unfilteredWaiter.receivedMessages.get(2).data);
+            assertEquals("event-name", unfilteredWaiter.receivedMessages.get(3).name);
+            assertEquals("test4", unfilteredWaiter.receivedMessages.get(3).data);
+
+            // Check the messages on the filtered waiter
+            assertEquals(2, filteredWaiter.receivedMessages.size());
+            assertEquals("event-name", filteredWaiter.receivedMessages.get(0).name);
+            assertEquals("test1", filteredWaiter.receivedMessages.get(0).data);
+            assertEquals("event-name", filteredWaiter.receivedMessages.get(1).name);
+            assertEquals("test4", filteredWaiter.receivedMessages.get(1).data);
+
+            // Unsubscribe the filtered waiter and reset
+            subscribeChannel.unsubscribe(filteredWaiter);
+            unfilteredWaiter.reset();
+            filteredWaiter.reset();
+
+            // Publish some messages and make sure the filtered waiter hasn't received them
+            publishChannel.publish("event-name", "test5");
+            publishChannel.publish("event-name", "test6");
+
+            unfilteredWaiter.waitFor(2, 5000);
+            assertEquals("test5", unfilteredWaiter.receivedMessages.get(0).data);
+            assertEquals("test6", unfilteredWaiter.receivedMessages.get(1).data);
+            assertEquals(0, filteredWaiter.receivedMessages.size());
+
+        } finally {
+            if (subscriber != null)
+                subscriber.close();
+            if (publisher != null)
+                publisher.close();;
         }
     }
 

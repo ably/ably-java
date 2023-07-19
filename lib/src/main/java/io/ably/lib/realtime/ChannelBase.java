@@ -26,6 +26,7 @@ import io.ably.lib.types.DeltaExtras;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.MessageDecodeException;
+import io.ably.lib.types.MessageFilter;
 import io.ably.lib.types.MessageSerializer;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
@@ -669,6 +670,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         Log.v(TAG, "unsubscribe(); channel = " + this.name);
         listeners.clear();
         eventListeners.clear();
+        filteredListeners.clear();
     }
 
     /**
@@ -676,10 +678,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
      * <p>
      * Spec: RTL7a
+     *
      * @param listener A listener may optionally be passed in to this call to be notified of success or failure
      *                 of the channel {@link Channel#attach} operation.
-     * <p>
-     * This listener is invoked on a background thread.
+     *                 <p>
+     *                 This listener is invoked on a background thread.
      * @throws AblyException
      */
     public synchronized void subscribe(MessageListener listener) throws AblyException {
@@ -703,6 +706,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         for (MessageMulticaster multicaster: eventListeners.values()) {
             multicaster.remove(listener);
         }
+        removeFilteredListeners(null, listener);
     }
 
     /**
@@ -724,6 +728,27 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     }
 
     /**
+     * Registers a listener for messages with that match a given filter.
+     * <p>
+     * The caller supplies a listener function and filters, which is called each time one or more matching messages arrives on the channel.
+     * <p>
+     * Spec: RTL22
+     *
+     * @param filter    The filter.
+     * @param listener A listener may optionally be passed in to this call to be notified of success or failure
+     *                 of the channel {@link Channel#attach} operation.
+     *                 <p>
+     *                 This listener is invoked on a background thread.
+     * @throws AblyException
+     */
+    public synchronized void subscribe(MessageFilter filter, MessageListener listener) throws AblyException {
+        Log.v(TAG, "subscribe(); channel = " + this.name + "; filter=" + filter);
+        MessageListener filteredListener = filteredListeners.addFilteredListener(filter, listener);
+        listeners.add(filteredListener);
+        attach();
+    }
+
+    /**
      * Deregisters the given listener for the specified event name.
      * This removes an earlier event-specific subscription
      * <p>
@@ -736,6 +761,25 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     public synchronized void unsubscribe(String name, MessageListener listener) {
         Log.v(TAG, "unsubscribe(); channel = " + this.name + "; event = " + name);
         unsubscribeImpl(name, listener);
+    }
+
+    /**
+     * De-registers the given listener for the specified filter.
+     *
+     * Providing only a filter will remove all the listeners for the given filter.
+     * Providing only a listener will remove the listener for all filters.
+     * Providing both a listener and a filter will
+     * <p>
+     * Spec: RTL22
+     *
+     * @param filter    An optional filter that
+     * @param listener An event listener function.
+     *                 <p>
+     *                 This listener is invoked on a background thread.
+     */
+    public synchronized void unsubscribe(MessageFilter filter, MessageListener listener) {
+        Log.v(TAG, "unsubscribe(); channel = " + this.name + "; filter= " + filter);
+        removeFilteredListeners(filter, listener);
     }
 
     /**
@@ -761,15 +805,27 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * Deregisters the given listener from all event names in the array.
      * <p>
      * Spec: RTL8a
-     * @param names An array of event names.
+     *
+     * @param names    An array of event names.
      * @param listener An event listener function.
-     * <p>
-     * This listener is invoked on a background thread.
+     *                 <p>
+     *                 This listener is invoked on a background thread.
      */
     public synchronized void unsubscribe(String[] names, MessageListener listener) {
         Log.v(TAG, "unsubscribe(); channel = " + this.name + "; (multiple events)");
-        for(String name : names)
+        for (String name : names)
             unsubscribeImpl(name, listener);
+    }
+
+    private void removeFilteredListeners(MessageFilter filter, MessageListener listener)
+    {
+        if (filter == null && listener == null) {
+            return;
+        }
+
+        for (MessageListener removedListener: filteredListeners.removeFilteredListener(filter, listener)) {
+            listeners.remove(removedListener);
+        }
     }
 
     /***
@@ -876,6 +932,12 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     }
 
     private MessageMulticaster listeners = new MessageMulticaster();
+
+    /**
+     *  All the listeners that are "filtered".
+     */
+    private final IFilteredListeners filteredListeners = new FilteredListeners();
+
     private HashMap<String, MessageMulticaster> eventListeners = new HashMap<String, MessageMulticaster>();
 
     private static class MessageMulticaster extends io.ably.lib.util.Multicaster<MessageListener> implements MessageListener {

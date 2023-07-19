@@ -16,27 +16,13 @@ public class MessageExtrasFilterTest {
             name,
             new Object(), // Fake data
             clientId,
-            new MessageExtras(JsonParser.parseString(String.valueOf(extrasJson)).getAsJsonObject())
+            extrasJson == null ? null : new MessageExtras(JsonParser.parseString(extrasJson).getAsJsonObject())
         );
     }
 
     private MessageExtrasFilter createFilter(Boolean isRef, String refTimeSerial, String refType, String name, String clientId)
     {
         return new MessageExtrasFilter(new MessageFilter(isRef, refTimeSerial, refType, name, clientId));
-    }
-
-    @Test
-    public void it_fails_on_no_message_extras()
-    {
-        MessageExtrasFilter filter = createFilter(false, null, null, "name", "clientId");
-        Message message = new Message(
-            "name",
-            new Object(), // Fake data
-            "clientId",
-            null
-        );
-
-        assertFalse(filter.onMessage(message));
     }
 
     @Test
@@ -131,6 +117,19 @@ public class MessageExtrasFilterTest {
     }
 
     @Test
+    public void it_passes_on_clientId_no_extras()
+    {
+        MessageExtrasFilter filter = createFilter(null, null, null, null, "clientId");
+        Message message = createMessage(
+            null,
+            "name",
+            "clientId"
+        );
+
+        assertTrue(filter.onMessage(message));
+    }
+
+    @Test
     public void it_fails_on_clientId_mismatch()
     {
         MessageExtrasFilter filter = createFilter(null, null, null, null, "clientId");
@@ -149,6 +148,19 @@ public class MessageExtrasFilterTest {
         MessageExtrasFilter filter = createFilter(null, null, null, "name", null);
         Message message = createMessage(
             "{\"ref\": {\"type\": \"refType\", \"timeserial\": \"refTimeserial\"}}",
+            "name",
+            "clientId"
+        );
+
+        assertTrue(filter.onMessage(message));
+    }
+
+    @Test
+    public void it_passes_on_name_match_no_extras()
+    {
+        MessageExtrasFilter filter = createFilter(null, null, null, "name", null);
+        Message message = createMessage(
+            null,
             "name",
             "clientId"
         );
@@ -209,7 +221,20 @@ public class MessageExtrasFilterTest {
     }
 
     @Test
-    public void it_fails_on_is_ref_mismatch_without_timeserial()
+    public void it_fails_on_is_ref_match_no_extras()
+    {
+        MessageExtrasFilter filter = createFilter(true, null, null, null, null);
+        Message message = createMessage(
+            null,
+            "name",
+            "clientId"
+        );
+
+        assertFalse(filter.onMessage(message));
+    }
+
+    @Test
+    public void it_fails_on_is_ref_mismatch()
     {
         MessageExtrasFilter filter = createFilter(false, null, null, null, null);
         Message message = createMessage(
@@ -274,6 +299,19 @@ public class MessageExtrasFilterTest {
     }
 
     @Test
+    public void it_fails_on_is_refTimeserial_no_extras()
+    {
+        MessageExtrasFilter filter = createFilter(null, "refTimeserial", null, null, null);
+        Message message = createMessage(
+            null,
+            "name",
+            "clientId"
+        );
+
+        assertFalse(filter.onMessage(message));
+    }
+
+    @Test
     public void it_passes_on_refType_match()
     {
         MessageExtrasFilter filter = createFilter(null, null, "refType", null, null);
@@ -318,6 +356,19 @@ public class MessageExtrasFilterTest {
         MessageExtrasFilter filter = createFilter(null, null, "refType", null, null);
         Message message = createMessage(
             "{}",
+            "name",
+            "clientId"
+        );
+
+        assertFalse(filter.onMessage(message));
+    }
+
+    @Test
+    public void it_fails_on_is_refType_no_extras()
+    {
+        MessageExtrasFilter filter = createFilter(null, null, "refType", null, null);
+        Message message = createMessage(
+            null,
             "name",
             "clientId"
         );
