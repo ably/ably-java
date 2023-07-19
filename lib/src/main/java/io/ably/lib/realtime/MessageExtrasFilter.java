@@ -10,7 +10,7 @@ import io.ably.lib.types.Message;
 final class MessageExtrasFilter implements FilteredListeners.IMessageFilter {
     public final io.ably.lib.types.MessageFilter filter;
 
-    public MessageExtrasFilter(io.ably.lib.types.MessageFilter filter) {
+    MessageExtrasFilter(io.ably.lib.types.MessageFilter filter) {
         this.filter = filter;
     }
 

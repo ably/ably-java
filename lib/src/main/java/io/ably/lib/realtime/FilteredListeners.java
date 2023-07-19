@@ -3,7 +3,11 @@ package io.ably.lib.realtime;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.MessageFilter;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Objects;
 
 public class FilteredListeners implements IFilteredListeners {
 
