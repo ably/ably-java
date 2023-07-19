@@ -1,5 +1,7 @@
 package io.ably.lib.types;
 
+import java.util.Objects;
+
 /**
  * Supplies filter options for subscriptions.
  * Spec: MFI1, MFI2
@@ -9,7 +11,7 @@ public final class MessageFilter {
      * Whether the message should contain a `extras.ref` field.
      * Spec: MFI2a
      */
-    public final boolean isRef;
+    public final Boolean isRef;
 
     /**
      * Value to check against `extras.ref.timeserial`.
@@ -35,11 +37,29 @@ public final class MessageFilter {
      */
     public final String clientId;
 
-    public MessageFilter(boolean isRef, String refTimeSerial, String refType, String name, String clientId) {
+    public MessageFilter(Boolean isRef, String refTimeSerial, String refType, String name, String clientId) {
         this.isRef = isRef;
         this.refTimeSerial = refTimeSerial;
         this.refType = refType;
         this.name = name;
         this.clientId = clientId;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        MessageFilter that = (MessageFilter) o;
+        return isRef == that.isRef &&
+            Objects.equals(refTimeSerial, that.refTimeSerial) &&
+            Objects.equals(refType, that.refType) &&
+            Objects.equals(name, that.name) &&
+            Objects.equals(clientId, that.clientId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(isRef, refTimeSerial, refType, name, clientId);
     }
 }
