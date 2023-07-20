@@ -11,39 +11,31 @@ public final class MessageFilter {
      * Whether the message should contain a `extras.ref` field.
      * Spec: MFI2a
      */
-    public final Boolean isRef;
+    public Boolean isRef;
 
     /**
      * Value to check against `extras.ref.timeserial`.
      * Spec: MFI2b
      */
-    public final String refTimeSerial;
+    public String refTimeserial;
 
     /**
      * Value to check against `extras.ref.type`.
      * Spec: MFI2c
      */
-    public final String refType;
+    public String refType;
 
     /**
      * Value to check against the `name` of a message.
      * Spec: MFI2d
      */
-    public final String name;
+    public String name;
 
     /**
      * Value to check against the `cliendId` that published the message.
      * Spec: MFI2e
      */
-    public final String clientId;
-
-    public MessageFilter(Boolean isRef, String refTimeSerial, String refType, String name, String clientId) {
-        this.isRef = isRef;
-        this.refTimeSerial = refTimeSerial;
-        this.refType = refType;
-        this.name = name;
-        this.clientId = clientId;
-    }
+    public String clientId;
 
     @Override
     public boolean equals(Object o) {
@@ -52,7 +44,7 @@ public final class MessageFilter {
 
         MessageFilter that = (MessageFilter) o;
         return isRef == that.isRef &&
-            Objects.equals(refTimeSerial, that.refTimeSerial) &&
+            Objects.equals(refTimeserial, that.refTimeserial) &&
             Objects.equals(refType, that.refType) &&
             Objects.equals(name, that.name) &&
             Objects.equals(clientId, that.clientId);
@@ -60,6 +52,6 @@ public final class MessageFilter {
 
     @Override
     public int hashCode() {
-        return Objects.hash(isRef, refTimeSerial, refType, name, clientId);
+        return Objects.hash(isRef, refTimeserial, refType, name, clientId);
     }
 }

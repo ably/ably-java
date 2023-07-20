@@ -2059,7 +2059,10 @@ public class RealtimeChannelTest extends ParameterizedTest {
             // Create two channel subscribers, one with a filter and one without
             subscriber = new AblyRealtime(opts);
             Channel subscribeChannel = subscriber.channels.get(channelName);
-            MessageFilter filter = new MessageFilter(null, null, null, "event-name", null);
+
+            MessageFilter filter = new MessageFilter();
+            filter.name = "event-name";
+
             Helpers.MessageWaiter filteredWaiter = new Helpers.MessageWaiter(subscribeChannel, filter);
             Helpers.MessageWaiter unfilteredWaiter = new Helpers.MessageWaiter(subscribeChannel);
 

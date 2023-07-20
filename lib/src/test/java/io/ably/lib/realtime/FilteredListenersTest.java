@@ -15,7 +15,10 @@ import static org.junit.Assert.assertFalse;
 public class FilteredListenersTest {
 
     private MessageFilter getFilter(String name) {
-        return new MessageFilter(null, null, null, name, null);
+        MessageFilter filter = new MessageFilter();
+        filter.name = name;
+
+        return filter;
     }
 
     private class MockListener implements ChannelBase.MessageListener {

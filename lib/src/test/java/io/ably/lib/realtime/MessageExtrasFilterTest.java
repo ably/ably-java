@@ -20,9 +20,16 @@ public class MessageExtrasFilterTest {
         );
     }
 
-    private MessageExtrasFilter createFilter(Boolean isRef, String refTimeSerial, String refType, String name, String clientId)
+    private MessageExtrasFilter createFilter(Boolean isRef, String refTimeserial, String refType, String name, String clientId)
     {
-        return new MessageExtrasFilter(new MessageFilter(isRef, refTimeSerial, refType, name, clientId));
+        MessageFilter filter = new MessageFilter();
+        filter.isRef = isRef;
+        filter.refTimeserial = refTimeserial;
+        filter.refType = refType;
+        filter.name = name;
+        filter.clientId = clientId;
+
+        return new MessageExtrasFilter(filter);
     }
 
     @Test

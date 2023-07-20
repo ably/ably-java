@@ -31,7 +31,7 @@ final class MessageExtrasFilter implements FilteredListeners.IMessageFilter {
 
     private boolean referenceMatchesFilter(Message message) {
         // No reference-based filters, so we can skip.
-        if (filter.isRef == null && filter.refType == null && filter.refTimeSerial == null) {
+        if (filter.isRef == null && filter.refType == null && filter.refTimeserial == null) {
             return true;
         }
 
@@ -76,7 +76,7 @@ final class MessageExtrasFilter implements FilteredListeners.IMessageFilter {
     }
 
     private boolean refTimeserialMatchesFilter(MessageRef messageRef) {
-        return filter.refTimeSerial == null || (messageRef != null && filter.refTimeSerial.equals(messageRef.timeserial));
+        return filter.refTimeserial == null || (messageRef != null && filter.refTimeserial.equals(messageRef.timeserial));
     }
 
     private static final class MessageRef {
