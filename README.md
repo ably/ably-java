@@ -299,6 +299,42 @@ channel.publishAsync(message, new CompletionListener() {
 });
 ```
 
+### Message interactions
+
+Message Interactions allow you to interact with messages previously sent to a channel. Once a channel is enabled with Message Interactions, messages received by that channel will contain a unique `timeSerial` that can be referenced by later messages.
+
+#### Publishing an Interaction
+
+This example assumes you are using the Google Gson library and that a message with timeserial `1656424960320-1` has previously been published on the channel.
+
+```java
+  String extrasJson = "{\"ref\": {\"type\": \"com.ably.reaction\", \"timeserial\": \"1656424960320-1\"}}";
+  MessageExtras extras = new MessageExtras(JsonParser.parseString(extrasJson).getAsJsonObject());
+  Message message = new Message("message-name", "message-data", extras);
+  channel.publish(message);
+```
+
+
+#### Subscribing to Interactions
+
+You can also filter messages received on the channel so that only messages matching the filter are passed on to your listener.
+
+The following example sets up a listener that only receives messages that have an interaction type of `com.ably.reaction`.
+
+```java
+  MessageFilter filter = new MessageFilter();
+  filter.refType = "com.ably.reaction";
+  channel.subscribe(
+      filter,
+      new Channel.MessageListener() {
+          @Override
+          public void onMessage(Message message) {
+              System.out.println(message.data);
+          }
+      }
+  );
+```
+
 #### Querying the history
 
 ```java
