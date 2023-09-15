@@ -116,8 +116,6 @@ public class ActivationContext {
     public void reset() {
         Log.v(TAG, "reset()");
 
-        ably = null;
-
         getActivationStateMachine().reset();
         activationStateMachine = null;
 
