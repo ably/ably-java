@@ -33,7 +33,8 @@ import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.util.Crypto;
-import io.ably.lib.util.Crypto.ChannelCipherSet;
+import io.ably.lib.util.Crypto.EncryptingChannelCipher;
+import io.ably.lib.util.Crypto.DecryptingChannelCipher;
 import io.ably.lib.util.Crypto.CipherParams;
 
 public class RealtimeCryptoTest extends ParameterizedTest {
@@ -805,12 +806,13 @@ public class RealtimeCryptoTest extends ParameterizedTest {
     @Test
     public void encodeDecodeVariableSizesWithAES256CBC() throws NoSuchAlgorithmException, AblyException {
         final CipherParams params = Crypto.getParams("aes", generateNonce(32), generateNonce(16));
-        final ChannelCipherSet cipherSet = Crypto.createChannelCipherSet(params);
+        final Crypto.EncryptingChannelCipher encipher = Crypto.createChannelEncipher(params);
+        final Crypto.DecryptingChannelCipher decipher = Crypto.createChannelDecipher(params);
         for (int i=1; i<1000; i++) {
             final int size = RANDOM.nextInt(2000) + 1;
             final byte[] message = generateNonce(size);
-            final byte[] encrypted = cipherSet.getEncipher().encrypt(message);
-            final byte[] decrypted = cipherSet.getDecipher().decrypt(encrypted);
+            final byte[] encrypted = encipher.encrypt(message);
+            final byte[] decrypted = decipher.decrypt(encrypted);
             try {
                 assertArrayEquals(message, decrypted);
             } catch (final AssertionError e) {
@@ -1066,12 +1068,13 @@ public class RealtimeCryptoTest extends ParameterizedTest {
             // We have to create a new ChannelCipher for each message we encode because
             // cipher instances only use the IV we've supplied via CipherParams for the
             // encryption of the very first message.
-            final ChannelCipherSet cipherSet = Crypto.createChannelCipherSet(params);
+            final EncryptingChannelCipher encipher = Crypto.createChannelEncipher(params);
+            final DecryptingChannelCipher decipher = Crypto.createChannelDecipher(params);
 
             final byte[] appleMessage = hexStringToByteArray(entry.getKey());
             final byte[] appleEncrypted = hexStringToByteArray(entry.getValue());
-            final byte[] encrypted = cipherSet.getEncipher().encrypt(appleMessage);
-            final byte[] decrypted = cipherSet.getDecipher().decrypt(appleEncrypted);
+            final byte[] encrypted = encipher.encrypt(appleMessage);
+            final byte[] decrypted = decipher.decrypt(appleEncrypted);
 
             try {
                 assertArrayEquals(appleMessage, decrypted);
