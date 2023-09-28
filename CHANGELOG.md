@@ -1,5 +1,18 @@
 # Change Log
 
+## [1.2.32](https://github.com/ably/ably-java/tree/v1.2.32)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.31...v1.2.32)
+
+**Fixed bugs:**
+
+- Create Cipher instance in place, do not store it in `ChannelOptions` [\#969](https://github.com/ably/ably-java/pull/969)
+- Late Disconnection [\#937](https://github.com/ably/ably-java/issues/937)
+
+**Closed issues:**
+
+- Stack traces not being sent to error logs [\#963](https://github.com/ably/ably-java/issues/963)
+
 ## [1.2.31](https://github.com/ably/ably-java/tree/v1.2.31)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.30...v1.2.31)
