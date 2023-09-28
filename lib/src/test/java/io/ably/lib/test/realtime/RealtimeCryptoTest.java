@@ -121,7 +121,9 @@ public class RealtimeCryptoTest extends ParameterizedTest {
             final CipherParams params = Crypto.getDefaultParams(key);
 
             /* create a channel */
-            ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; this.cipherParams = params; }};
+            ChannelOptions channelOpts = new ChannelOptions();
+            channelOpts.encrypted = true;
+            channelOpts.cipherParams = params;
             final Channel channel = ably.channels.get(channelName, channelOpts);
 
             /* attach */
@@ -276,9 +278,16 @@ public class RealtimeCryptoTest extends ParameterizedTest {
             final CipherParams params = Crypto.getDefaultParams();
 
             /* create a channel */
-            final ChannelOptions senderChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params; }};
+            final ChannelOptions senderChannelOpts = new ChannelOptions();
+            senderChannelOpts.encrypted = true;
+            senderChannelOpts.cipherParams = params;
+
             final Channel senderChannel = sender.channels.get(channelName, senderChannelOpts);
-            final ChannelOptions receiverChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params; }};
+
+            final ChannelOptions receiverChannelOpts = new ChannelOptions();
+            receiverChannelOpts.encrypted = true;
+            receiverChannelOpts.cipherParams = params;
+
             final Channel receiverChannel = receiver.channels.get(channelName, receiverChannelOpts);
 
             /* attach */
@@ -570,9 +579,14 @@ public class RealtimeCryptoTest extends ParameterizedTest {
             final CipherParams params1 = Crypto.getDefaultParams();
 
             /* create a channel */
-            ChannelOptions senderChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params1; }};
+            ChannelOptions senderChannelOpts = new ChannelOptions();
+            senderChannelOpts.encrypted = true;
+            senderChannelOpts.cipherParams = params1;
             final Channel senderChannel = sender.channels.get("set_cipher_params", senderChannelOpts);
-            ChannelOptions receiverChannelOpts = new ChannelOptions() {{ encrypted = true; cipherParams = params1; }};
+
+            ChannelOptions receiverChannelOpts = new ChannelOptions();
+            receiverChannelOpts.encrypted = true;
+            receiverChannelOpts.cipherParams = params1;
             final Channel receiverChannel = receiver.channels.get("set_cipher_params", receiverChannelOpts);
 
             /* attach */

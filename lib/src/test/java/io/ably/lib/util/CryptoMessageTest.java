@@ -88,7 +88,9 @@ public class CryptoMessageTest {
         final String algorithm = testData.algorithm;
 
         final CipherParams params = Crypto.getParams(algorithm, fixtureSet.key, fixtureSet.iv);
-        final ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
+        final ChannelOptions options = new ChannelOptions();
+        options.encrypted = true;
+        options.cipherParams = params;
 
         for(final CryptoTestItem item : testData.items) {
             final Message plain = item.encoded;
@@ -116,7 +118,10 @@ public class CryptoMessageTest {
         final CipherParams params = Crypto.getParams(algorithm, fixtureSet.key, fixtureSet.iv);
 
         for(final CryptoTestItem item : testData.items) {
-            final ChannelOptions options = new ChannelOptions() {{encrypted = true; cipherParams = params;}};
+            final ChannelOptions options = new ChannelOptions();
+            options.encrypted = true;
+            options.cipherParams = params;
+
             final Message plain = item.encoded;
             final Message encrypted = item.encrypted;
             assertThat(encrypted.encoding, endsWith(fixtureSet.cipherName + "/base64"));

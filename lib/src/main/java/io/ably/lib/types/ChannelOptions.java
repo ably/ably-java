@@ -4,6 +4,7 @@ import java.util.Map;
 
 import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Crypto;
+import io.ably.lib.util.Crypto.CipherParams;
 
 /**
  * Passes additional properties to a {@link io.ably.lib.rest.Channel} or {@link io.ably.lib.realtime.Channel} object,
@@ -104,5 +105,16 @@ public class ChannelOptions {
      */
     public static ChannelOptions withCipherKey(String base64Key) throws AblyException {
         return withCipherKey(Base64Coder.decode(base64Key));
+    }
+
+    /**
+     * Internal; returns cipher params or generate default
+     */
+    public synchronized CipherParams getCipherParamsOrDefault() throws AblyException {
+        CipherParams params = Crypto.checkCipherParams(this.cipherParams);
+        if (this.cipherParams == null) {
+            this.cipherParams = params;
+        }
+        return params;
     }
 }

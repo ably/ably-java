@@ -147,7 +147,7 @@ public class BaseMessage implements Cloneable {
                         case "cipher":
                             if(opts != null && opts.encrypted) {
                                 try {
-                                    DecryptingChannelCipher cipher = Crypto.createChannelDecipher(opts);
+                                    DecryptingChannelCipher cipher = Crypto.createChannelDecipher(opts.getCipherParamsOrDefault());
                                     data = cipher.decrypt((byte[]) data);
                                 } catch(AblyException e) {
                                     throw MessageDecodeException.fromDescription(e.errorInfo.message);
@@ -196,7 +196,7 @@ public class BaseMessage implements Cloneable {
             }
         }
         if (opts != null && opts.encrypted) {
-            EncryptingChannelCipher cipher = Crypto.createChannelEncipher(opts);
+            EncryptingChannelCipher cipher = Crypto.createChannelEncipher(opts.getCipherParamsOrDefault());
             data = cipher.encrypt((byte[]) data);
             encoding = ((encoding == null) ? "" : encoding + "/") + "cipher+" + cipher.getAlgorithm();
         }

@@ -212,18 +212,21 @@ public class Crypto {
     /**
      * Internal; get an encrypting cipher instance based on the given channel options.
      */
-    public static EncryptingChannelCipher createChannelEncipher(final Object cipherParams) throws AblyException {
-        return new EncryptingCBCCipher(checkCipherParams(cipherParams));
+    public static EncryptingChannelCipher createChannelEncipher(final CipherParams cipherParams) throws AblyException {
+        return new EncryptingCBCCipher(cipherParams);
     }
 
     /**
      * Internal; get a decrypting cipher instance based on the given channel options.
      */
-    public static DecryptingChannelCipher createChannelDecipher(final Object cipherParams) throws AblyException {
-        return new DecryptingCBCCipher(checkCipherParams(cipherParams));
+    public static DecryptingChannelCipher createChannelDecipher(final CipherParams cipherParams) throws AblyException {
+        return new DecryptingCBCCipher(cipherParams);
     }
 
-    private static CipherParams checkCipherParams(final Object cipherParams) throws AblyException {
+    /**
+     * Internal; if `cipherParams` is null returns default params otherwise check if params valid and returns them
+     */
+    public static CipherParams checkCipherParams(final Object cipherParams) throws AblyException {
         if (null == cipherParams) {
             return Crypto.getDefaultParams();
         } else if (cipherParams instanceof CipherParams) {
