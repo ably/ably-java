@@ -6,7 +6,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ConcurrentModificationException;
 import java.util.Locale;
-import java.util.concurrent.Semaphore;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -177,22 +176,6 @@ public class Crypto {
     }
 
     /**
-     * Interface for a ChannelCipher instance that may be associated with a Channel.
-     *
-     * The operational methods implemented by channel cipher instances (encrypt and decrypt) are not designed to be
-     * safe to be called from any thread.
-     *
-     * @deprecated Since version 1.2.11, this interface (which was only ever intended for internal use within this
-     * library) has been replaced by {@link ChannelCipherSet}. It will be removed in the future.
-     */
-    @Deprecated
-    public interface ChannelCipher {
-        byte[] encrypt(byte[] plaintext) throws AblyException;
-        byte[] decrypt(byte[] ciphertext) throws AblyException;
-        String getAlgorithm();
-    }
-
-    /**
      * Internal; a cipher used to encrypt plaintext to ciphertext, for a channel.
      */
     public interface EncryptingChannelCipher {
@@ -227,40 +210,30 @@ public class Crypto {
     }
 
     /**
-     * Internal; a matching encipher and decipher pair, where both are guaranteed to have been configured with the same
-     * {@link CipherParams} as each other.
+     * Internal; get an encrypting cipher instance based on the given channel options.
      */
-    public interface ChannelCipherSet {
-        EncryptingChannelCipher getEncipher();
-        DecryptingChannelCipher getDecipher();
+    public static EncryptingChannelCipher createChannelEncipher(final CipherParams cipherParams) throws AblyException {
+        return new EncryptingCBCCipher(cipherParams);
     }
 
     /**
-     * Internal; get an encrypting cipher instance based on the given channel options.
+     * Internal; get a decrypting cipher instance based on the given channel options.
      */
-    public static ChannelCipherSet createChannelCipherSet(final Object cipherParams) throws AblyException {
-        final CipherParams nonNullParams;
-        if (null == cipherParams)
-            nonNullParams = Crypto.getDefaultParams();
-        else if (cipherParams instanceof CipherParams)
-            nonNullParams = (CipherParams)cipherParams;
-        else
+    public static DecryptingChannelCipher createChannelDecipher(final CipherParams cipherParams) throws AblyException {
+        return new DecryptingCBCCipher(cipherParams);
+    }
+
+    /**
+     * Internal; if `cipherParams` is null returns default params otherwise check if params valid and returns them
+     */
+    public static CipherParams checkCipherParams(final Object cipherParams) throws AblyException {
+        if (null == cipherParams) {
+            return Crypto.getDefaultParams();
+        } else if (cipherParams instanceof CipherParams) {
+            return (CipherParams) cipherParams;
+        } else {
             throw AblyException.fromErrorInfo(new ErrorInfo("ChannelOptions not supported", 400, 40000));
-
-        return new ChannelCipherSet() {
-            private final EncryptingChannelCipher encipher = new EncryptingCBCCipher(nonNullParams);
-            private final DecryptingChannelCipher decipher = new DecryptingCBCCipher(nonNullParams);
-
-            @Override
-            public EncryptingChannelCipher getEncipher() {
-                return encipher;
-            }
-
-            @Override
-            public DecryptingChannelCipher getDecipher() {
-                return decipher;
-            }
-        };
+        }
     }
 
     /**
@@ -277,7 +250,6 @@ public class Crypto {
         protected final Cipher cipher;
         protected final int blockLength;
         protected final String algorithm;
-        private final Semaphore semaphore = new Semaphore(1);
 
         protected CBCCipher(final CipherParams params) throws AblyException {
             final String cipherAlgorithm = params.getAlgorithm();
@@ -292,28 +264,6 @@ public class Crypto {
             catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
                 throw AblyException.fromThrowable(e);
             }
-        }
-
-        /**
-         * Subclasses must call this method before performing any work that uses the {@link #cipher} or otherwise
-         * mutates the state of this instance.
-         *
-         * TODO: under https://github.com/ably/ably-java/issues/747 we can then:
-         * - remove the need for the {@link #releaseOperationalPermit()} method, and
-         * - make this method return an AutoCloseable implementation that releases the semaphore.
-         */
-        protected void acquireOperationalPermit() {
-            if (!semaphore.tryAcquire()) {
-                throw new ConcurrentModificationException("ChannelCipher instances are not designed to be operated from multiple threads simultaneously.");
-            }
-        }
-
-        /**
-         * Subclasses must call this method after performing any work that uses the {@link #cipher} or otherwise
-         * mutates the state of this instance.
-         */
-        protected void releaseOperationalPermit() {
-            semaphore.release();
         }
     }
 
@@ -390,23 +340,17 @@ public class Crypto {
         public byte[] encrypt(byte[] plaintext) {
             if (plaintext == null) return null;
 
-            acquireOperationalPermit();
-            try {
-                final int plaintextLength = plaintext.length;
-                final int paddedLength = getPaddedLength(plaintextLength);
-                final byte[] cipherIn = new byte[paddedLength];
-                final byte[] ciphertext = new byte[paddedLength + blockLength];
-                final int padding = paddedLength - plaintextLength;
-                System.arraycopy(plaintext, 0, cipherIn, 0, plaintextLength);
-                System.arraycopy(pkcs5Padding[padding], 0, cipherIn, plaintextLength, padding);
-                System.arraycopy(getNextIv(), 0, ciphertext, 0, blockLength);
-                final byte[] cipherOut = cipher.update(cipherIn);
-                System.arraycopy(cipherOut, 0, ciphertext, blockLength, paddedLength);
-                return ciphertext;
-            } finally {
-                // TODO: under https://github.com/ably/ably-java/issues/747 we will remove this call.
-                releaseOperationalPermit();
-            }
+            final int plaintextLength = plaintext.length;
+            final int paddedLength = getPaddedLength(plaintextLength);
+            final byte[] cipherIn = new byte[paddedLength];
+            final byte[] ciphertext = new byte[paddedLength + blockLength];
+            final int padding = paddedLength - plaintextLength;
+            System.arraycopy(plaintext, 0, cipherIn, 0, plaintextLength);
+            System.arraycopy(pkcs5Padding[padding], 0, cipherIn, plaintextLength, padding);
+            System.arraycopy(getNextIv(), 0, ciphertext, 0, blockLength);
+            final byte[] cipherOut = cipher.update(cipherIn);
+            System.arraycopy(cipherOut, 0, ciphertext, blockLength, paddedLength);
+            return ciphertext;
         }
     }
 
@@ -417,17 +361,13 @@ public class Crypto {
 
         @Override
         public byte[] decrypt(byte[] ciphertext) throws AblyException {
-            if(ciphertext == null) return null;
+            if (ciphertext == null) return null;
 
-            acquireOperationalPermit();
             try {
                 cipher.init(Cipher.DECRYPT_MODE, keySpec, new IvParameterSpec(ciphertext, 0, blockLength));
                 return cipher.doFinal(ciphertext, blockLength, ciphertext.length - blockLength);
             } catch (InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException | InvalidKeyException e) {
                 throw AblyException.fromThrowable(e);
-            } finally {
-                // TODO: under https://github.com/ably/ably-java/issues/747 we will remove this call.
-                releaseOperationalPermit();
             }
         }
     }
