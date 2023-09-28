@@ -142,6 +142,9 @@ public class DeviceDetails {
         thisJson.remove("deviceSecret");
         otherJson.remove("deviceSecret");
 
+        normalizeRecipientField(thisJson);
+        normalizeRecipientField(otherJson);
+
         if ((this.metadata == null || this.metadata.entrySet().isEmpty()) && (other.metadata == null || other.metadata.entrySet().isEmpty())) {
             // Empty metadata == null metadata.
             thisJson.remove("metadata");
@@ -170,4 +173,20 @@ public class DeviceDetails {
     public static HttpCore.ResponseHandler<DeviceDetails> httpResponseHandler = new Serialisation.HttpResponseHandler<DeviceDetails>(DeviceDetails.class, fromJsonElement);
 
     public static HttpCore.BodyHandler<DeviceDetails> httpBodyHandler = new Serialisation.HttpBodyHandler<DeviceDetails>(DeviceDetails[].class, fromJsonElement);
+
+    /**
+     * Push recipient can contain some additional field, but `transportType`, `deviceToken`, `registrationToken` only matters for equals
+     */
+    private static void normalizeRecipientField(JsonObject deviceDetailsJson) {
+        JsonElement push = deviceDetailsJson.get("push");
+        if (push == null) return;
+        JsonElement recipient = push.getAsJsonObject().get("recipient");
+        if (recipient == null) return;
+        JsonObject normalizedRecipient = JsonUtils.object()
+                .add("transportType", recipient.getAsJsonObject().get("transportType"))
+                .add("deviceToken", recipient.getAsJsonObject().get("deviceToken"))
+                .add("registrationToken", recipient.getAsJsonObject().get("registrationToken"))
+                .toJson();
+        push.getAsJsonObject().add("recipient", normalizedRecipient);
+    }
 }
