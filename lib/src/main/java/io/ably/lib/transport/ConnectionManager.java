@@ -65,10 +65,15 @@ public class ConnectionManager implements ConnectListener {
      ***********************************/
 
     static ErrorInfo REASON_CLOSED = new ErrorInfo("Can't attach when not in an active state", 200, 10000);
+    // Non-fatal
     static ErrorInfo REASON_DISCONNECTED = new ErrorInfo("Connection temporarily unavailable", 503, 80003);
+    // Non-fatal
     static ErrorInfo REASON_SUSPENDED = new ErrorInfo("Connection unavailable", 503, 80002);
+    // Fatal
     static ErrorInfo REASON_FAILED = new ErrorInfo("Connection failed", 400, 80000);
+    // Fatal
     static ErrorInfo REASON_REFUSED = new ErrorInfo("Access refused", 401, 40100);
+    // Fatal
     static ErrorInfo REASON_TOO_BIG = new ErrorInfo("Connection closed; message too large", 400, 40000);
 
     /**

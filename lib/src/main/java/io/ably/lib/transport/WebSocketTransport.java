@@ -81,9 +81,11 @@ public class WebSocketTransport implements ITransport {
             wsConnection.connect();
         } catch(AblyException e) {
             Log.e(TAG, "Unexpected exception attempting connection; wsUri = " + wsUri, e);
+            // Fatality depends on e.errorInfo
             connectListener.onTransportUnavailable(this, e.errorInfo);
         } catch(Throwable t) {
             Log.e(TAG, "Unexpected exception attempting connection; wsUri = " + wsUri, t);
+            // Non-fatal
             connectListener.onTransportUnavailable(this, AblyException.fromThrowable(t).errorInfo);
         }
     }
@@ -126,6 +128,7 @@ public class WebSocketTransport implements ITransport {
         }
         catch (WebsocketNotConnectedException e){
             if(connectListener != null) {
+                // Non-fatal
                 connectListener.onTransportUnavailable(this, AblyException.fromThrowable(e).errorInfo);
             } else
                 throw AblyException.fromThrowable(e);
@@ -233,32 +236,43 @@ public class WebSocketTransport implements ITransport {
             ErrorInfo reason;
             switch(wsCode) {
                 case NEVER_CONNECTED:
-                case CLOSE_NORMAL:
                 case BUGGYCLOSE:
+                case CLOSE_NORMAL:
                 case GOING_AWAY:
                 case ABNORMAL_CLOSE:
                     /* we don't know the specific reason that the connection closed in these cases,
                      * but we have to assume it's a problem with connectivity rather than some other
                      * application problem */
+                    // Non-fatal
                     reason = ConnectionManager.REASON_DISCONNECTED;
                     break;
                 case REFUSE:
                 case POLICY_VALIDATION:
+                    // Fatal
                     reason = ConnectionManager.REASON_REFUSED;
                     break;
                 case TOOBIG:
+                    // Fatal
                     reason = ConnectionManager.REASON_TOO_BIG;
                     break;
                 case NO_UTF8:
                 case CLOSE_PROTOCOL_ERROR:
                 case UNEXPECTED_CONDITION:
                 case EXTENSION:
+                /**
+                 * > 1015 is a reserved value and MUST NOT be set as a status code in a
+                 * > Close control frame by an endpoint.  It is designated for use in
+                 * > applications expecting a status code to indicate that the
+                 * > connection was closed due to a failure to perform a TLS handshake
+                 * > (e.g., the server certificate can't be verified).
+                 */
                 case TLS_ERROR:
                 default:
                     /* we don't know the specific reason that the connection closed in these cases,
                      * but we have to assume it's an application problem, and the problem will
                      * recur if we try again. The failed state means that we won't automatically
                      * try again. */
+                    // Fatal
                     reason = ConnectionManager.REASON_FAILED;
                     break;
             }
@@ -269,6 +283,7 @@ public class WebSocketTransport implements ITransport {
         @Override
         public void onError(final Exception e) {
             Log.e(TAG, "Connection error ", e);
+            // Non-fatal
             connectListener.onTransportUnavailable(WebSocketTransport.this, new ErrorInfo(e.getMessage(), 503, 80000));
         }
 

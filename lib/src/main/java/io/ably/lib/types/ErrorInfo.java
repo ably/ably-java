@@ -146,6 +146,7 @@ public class ErrorInfo {
         return (new ErrorInfo()).readMsgpack(unpacker);
     }
 
+    // All errors returned here are non-fatal
     public static ErrorInfo fromThrowable(Throwable throwable) {
         ErrorInfo errorInfo;
         if(throwable instanceof UnknownHostException
