@@ -133,6 +133,7 @@ public class LocalDevice extends DeviceDetails {
         storage.put(SharedPrefKeys.DEVICE_ID, (id = UUID.randomUUID().toString()));
         storage.put(SharedPrefKeys.CLIENT_ID, (clientId = activationContext.clientId));
         storage.put(SharedPrefKeys.DEVICE_SECRET, (deviceSecret = generateSecret()));
+        storage.put(SharedPrefKeys.DEVICE_TOKEN, (deviceIdentityToken = null));
     }
 
     public void reset() {

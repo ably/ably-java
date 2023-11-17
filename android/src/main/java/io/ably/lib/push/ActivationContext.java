@@ -174,6 +174,6 @@ public class ActivationContext {
     protected final SharedPreferences prefs;
     protected final Context context;
 
-    private static WeakHashMap<Context, ActivationContext> activationContexts = new WeakHashMap<Context, ActivationContext>();
+    private static final WeakHashMap<Context, ActivationContext> activationContexts = new WeakHashMap<>();
     private static final String TAG = ActivationContext.class.getName();
 }

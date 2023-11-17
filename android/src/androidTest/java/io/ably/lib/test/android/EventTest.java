@@ -44,7 +44,7 @@ public class EventTest {
 
     @Test
     public void events_with_constructor_parameter_do_not_have_persisted_name() {
-        assertNull(new GotDeviceRegistration(null).getPersistedName());
+        assertNull(new GotDeviceRegistration(null, null).getPersistedName());
         assertNull(new GettingDeviceRegistrationFailed(null).getPersistedName());
         assertNull(new GettingPushDeviceDetailsFailed(null).getPersistedName());
         assertNull(new SyncRegistrationFailed(null).getPersistedName());
