@@ -83,8 +83,13 @@ public class ActivationStateMachine {
     }
 
     public static class GotDeviceRegistration extends ActivationStateMachine.Event {
+        final String deviceId;
         final String deviceIdentityToken;
-        public GotDeviceRegistration(String token) { this.deviceIdentityToken = token; }
+
+        public GotDeviceRegistration(String deviceId, String token) {
+            this.deviceId = deviceId;
+            this.deviceIdentityToken = token;
+        }
 
         @Override
         public String toString() {
@@ -317,7 +322,7 @@ public class ActivationStateMachine {
                                     activationContext.setClientId(responseClientId, false);
                                 }
                             }
-                            machine.handleEvent(new ActivationStateMachine.GotDeviceRegistration(deviceIdentityTokenJson.getAsJsonPrimitive("token").getAsString()));
+                            machine.handleEvent(new ActivationStateMachine.GotDeviceRegistration(device.id, deviceIdentityTokenJson.getAsJsonPrimitive("token").getAsString()));
                         }
                         @Override
                         public void onError(ErrorInfo reason) {
@@ -346,7 +351,13 @@ public class ActivationStateMachine {
                 return this;
             } else if (event instanceof ActivationStateMachine.GotDeviceRegistration) {
                 LocalDevice device = machine.getDevice();
-                device.setDeviceIdentityToken(((ActivationStateMachine.GotDeviceRegistration) event).deviceIdentityToken);
+                ActivationStateMachine.GotDeviceRegistration gotDeviceRegistration = (ActivationStateMachine.GotDeviceRegistration) event;
+                if (device.id.equals(gotDeviceRegistration.deviceId)) {
+                    device.setDeviceIdentityToken(gotDeviceRegistration.deviceIdentityToken);
+                } else {
+                    Log.e(TAG, "error registering " + device.id + ": " + "deviceId has been changed during registration, it was " + gotDeviceRegistration.deviceId);
+                    throw new IllegalStateException("DeviceId has been changed during registration");
+                }
                 machine.callActivatedCallback(null);
                 return new ActivationStateMachine.WaitingForNewPushDeviceDetails(machine);
             } else if (event instanceof ActivationStateMachine.GettingDeviceRegistrationFailed) {
@@ -553,19 +564,20 @@ public class ActivationStateMachine {
     }
 
     private void invokeCustomRegistration(final DeviceDetails device, final boolean isNew) {
+        final String deviceId = device.id;
         registerOnceReceiver("PUSH_DEVICE_REGISTERED", new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 ErrorInfo error = IntentUtils.getErrorInfo(intent);
                 if (error == null) {
-                    Log.i(TAG, "custom registration for " + device.id);
+                    Log.i(TAG, "custom registration for " + deviceId);
                     if (isNew) {
-                        handleEvent(new ActivationStateMachine.GotDeviceRegistration(intent.getStringExtra("deviceIdentityToken")));
+                        handleEvent(new ActivationStateMachine.GotDeviceRegistration(deviceId, intent.getStringExtra("deviceIdentityToken")));
                     } else {
                         handleEvent(new RegistrationSynced());
                     }
                 } else {
-                    Log.e(TAG, "error from custom registration for " + device.id + ": " + error.toString());
+                    Log.e(TAG, "error from custom registration for " + deviceId + ": " + error.toString());
                     if (isNew) {
                         handleEvent(new ActivationStateMachine.GettingDeviceRegistrationFailed(error));
                     } else {
