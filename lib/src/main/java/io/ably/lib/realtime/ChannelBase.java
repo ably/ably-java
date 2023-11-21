@@ -83,6 +83,13 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
     private int retryCount = 0;
 
+    /**
+     * @see #markAsReleased()
+     */
+    private boolean released = false;
+
+
+
     /***
      * internal
      *
@@ -272,6 +279,13 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     }
 
     /**
+     * Mark channel as released that means we can't perform any operation on this channel anymore
+     */
+    public synchronized void markAsReleased() {
+        released = true;
+    }
+
+    /**
      * Detach from this channel.
      * Any resulting channel state change is emitted to any listeners registered using the
      * {@link EventEmitter#on} or {@link EventEmitter#once} methods.
@@ -319,7 +333,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             }
 
             this.attachResume = false;
-            setState(ChannelState.detaching, null);
+            if (released) {
+                setDetached(null);
+            } else {
+                setState(ChannelState.detaching, null);
+            }
             connectionManager.send(detachMessage, true, null);
         } catch(AblyException e) {
             throw e;
@@ -432,6 +450,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * set up timer to reattach it later
      */
     synchronized private void attachWithTimeout(final boolean forceReattach, final CompletionListener listener) {
+        checkChannelIsNotReleased();
         Timer currentAttachTimer;
         try {
             currentAttachTimer = new Timer();
@@ -487,6 +506,10 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                 }, Defaults.realtimeRequestTimeout);
     }
 
+    private void checkChannelIsNotReleased() {
+        if (released) throw new IllegalStateException("Can't perform any operation on released channel");
+    }
+
     /**
      * Must be called in suspended state. Wait for timeout specified in clientOptions, and then
      * try to attach the channel
@@ -539,10 +562,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             callCompletionListenerError(listener, ErrorInfo.fromThrowable(t));
             return;
         }
-        attachTimer = currentDetachTimer;
+        attachTimer = released ? null : currentDetachTimer;
 
         try {
-            detachImpl(new CompletionListener() {
+            // If channel has been released, completionListener won't be invoked anyway
+            CompletionListener completionListener = released ? null : new CompletionListener() {
                 @Override
                 public void onSuccess() {
                     clearAttachTimers();
@@ -554,7 +578,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                     clearAttachTimers();
                     callCompletionListenerError(listener, reason);
                 }
-            });
+            };
+            detachImpl(completionListener);
         } catch (AblyException e) {
             attachTimer = null;
         }

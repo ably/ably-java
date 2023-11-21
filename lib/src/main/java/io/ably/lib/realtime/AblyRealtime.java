@@ -206,6 +206,7 @@ public class AblyRealtime extends AblyRest {
         public void release(String channelName) {
             Channel channel = map.remove(channelName);
             if(channel != null) {
+                channel.markAsReleased();
                 try {
                     channel.detach();
                 } catch (AblyException e) {
