@@ -256,7 +256,7 @@ public class AblyRealtime extends AblyRest {
 
             for (Map.Entry<String, Channel> channelEntry : map.entrySet()) {
                 Channel channel = channelEntry.getValue();
-                if (channel.state == ChannelState.attaching || channel.state == ChannelState.attached || channel.state == ChannelState.suspended) {
+                if (channel.state.isReattachable()) {
                     Log.d(TAG, "reAttach(); channel = " + channel.name);
 
                     if (channelQueueMap.containsKey(channel.name)){

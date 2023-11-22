@@ -586,7 +586,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     /* State changes provoked by ConnectionManager state changes. */
 
     public void setConnected(boolean reattachOnResumeFailure) {
-        if (reattachOnResumeFailure){
+        if (reattachOnResumeFailure && state.isReattachable()){
             attach(true,null);
         } else if (state == ChannelState.suspended) {
             /* (RTL3d) If the connection state enters the CONNECTED state, then
