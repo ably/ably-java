@@ -37,7 +37,6 @@ import io.ably.lib.util.CollectionUtils;
 import io.ably.lib.util.EventEmitter;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.ReconnectionStrategy;
-import io.ably.lib.util.Exceptions;
 
 /**
  * Enables messages to be published and subscribed to.
@@ -508,7 +507,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     }
 
     private void checkChannelIsNotReleased() {
-        if (released) Exceptions.sneakyThrow(AblyException.fromErrorInfo(new ErrorInfo("Unable to perform any operation on released channel", 90001)));
+        if (released) throw new IllegalStateException("Unable to perform any operation on released channel");
     }
 
     /**
