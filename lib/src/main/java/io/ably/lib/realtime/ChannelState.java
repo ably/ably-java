@@ -47,4 +47,8 @@ public enum ChannelState {
     public ChannelEvent getChannelEvent() {
         return event;
     }
+
+    public boolean isReattachable() {
+        return this == ChannelState.attaching || this == ChannelState.attached || this == ChannelState.suspended;
+    }
 }
