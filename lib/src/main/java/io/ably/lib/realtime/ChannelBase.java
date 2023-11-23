@@ -33,10 +33,7 @@ import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.types.ProtocolMessage.Flag;
-import io.ably.lib.util.CollectionUtils;
-import io.ably.lib.util.EventEmitter;
-import io.ably.lib.util.Log;
-import io.ably.lib.util.ReconnectionStrategy;
+import io.ably.lib.util.*;
 
 /**
  * Enables messages to be published and subscribed to.
@@ -507,7 +504,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     }
 
     private void checkChannelIsNotReleased() {
-        if (released) throw new IllegalStateException("Can't perform any operation on released channel");
+        if (released) Exceptions.sneakyThrow(AblyException.fromErrorInfo(new ErrorInfo("Unable to perform any operation on released channel", 90001)));
     }
 
     /**
