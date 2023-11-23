@@ -33,7 +33,11 @@ import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.types.ProtocolMessage.Flag;
-import io.ably.lib.util.*;
+import io.ably.lib.util.CollectionUtils;
+import io.ably.lib.util.EventEmitter;
+import io.ably.lib.util.Log;
+import io.ably.lib.util.ReconnectionStrategy;
+import io.ably.lib.util.Exceptions;
 
 /**
  * Enables messages to be published and subscribed to.
