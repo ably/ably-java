@@ -1,5 +1,19 @@
 # Change Log
 
+## [1.2.33](https://github.com/ably/ably-java/tree/v1.2.33)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.32...v1.2.33)
+
+**Closed issues:**
+
+- Throw exception on `released` Ably Channel methods [\#971](https://github.com/ably/ably-java/issues/971)
+
+**Merged pull requests:**
+
+- fix: prevent reattaching of detached channels [\#977](https://github.com/ably/ably-java/pull/977) ([ttypic](https://github.com/ttypic))
+- feat: throw exception when trying to attach on released channel [\#973](https://github.com/ably/ably-java/pull/973) ([ttypic](https://github.com/ttypic))
+- fix: deviceId and deviceToken consistence [\#972](https://github.com/ably/ably-java/pull/972) ([ttypic](https://github.com/ttypic))
+
 ## [1.2.32](https://github.com/ably/ably-java/tree/v1.2.32)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.31...v1.2.32)
