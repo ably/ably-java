@@ -272,6 +272,18 @@ public class AblyRealtime extends AblyRest {
         private void clear() {
             map.clear();
         }
+
+        protected void setChannelSerialsFromRecoverOption(HashMap<String, String> serials) {
+            for (Map.Entry<String, String> entry : serials.entrySet()) {
+                String channelName = entry.getKey();
+                String channelSerial = entry.getValue();
+                Channel channel = this.get(channelName);
+                if (channel != null) {
+                    channel.properties.channelSerial = channelSerial;
+                }
+            }
+        }
+
     }
 
     /********************
