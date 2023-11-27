@@ -9,7 +9,7 @@ import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
 
 public class RecoveryKeyContext {
-    private static final String TAG = "RecoveryKey";
+    private static final String TAG = "RecoveryKeyContext";
 
     private final String connectionKey;
     private final long msgSerial;
@@ -18,7 +18,7 @@ public class RecoveryKeyContext {
      * <p>
      * Value - channelSerial
      */
-    private final Map<String, String> serials = new HashMap<>();
+    private final Map<String, String> channelSerials = new HashMap<>();
 
     public RecoveryKeyContext(String connectionKey, long msgSerial) {
         this.connectionKey = connectionKey;
@@ -33,24 +33,24 @@ public class RecoveryKeyContext {
         return msgSerial;
     }
 
-    public Map<String, String> getSerials() {
-        return serials;
+    public Map<String, String> getChannelSerials() {
+        return channelSerials;
     }
 
-    public void setSerials(Map<String, String> serials) {
-        this.serials.clear();
-        this.serials.putAll(serials);
+    public void setChannelSerials(Map<String, String> channelSerials) {
+        this.channelSerials.clear();
+        this.channelSerials.putAll(channelSerials);
     }
 
     public void addSerial(String channelName, String channelSerial) {
-        this.serials.put(channelName, channelSerial);
+        this.channelSerials.put(channelName, channelSerial);
     }
 
-    public String asJson() {
+    public String encode() {
         return Serialisation.gson.toJson(this);
     }
 
-    public static RecoveryKeyContext fromJson(String json) {
+    public static RecoveryKeyContext decode(String json) {
         try {
             return Serialisation.gson.fromJson(json, RecoveryKeyContext.class);
         } catch (JsonSyntaxException e) {
