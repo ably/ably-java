@@ -12,6 +12,7 @@ import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.*;
 import io.ably.lib.util.InternalMap;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.StringUtils;
 
 /**
  * A client that extends the functionality of the {@link AblyRest} and provides additional realtime-specific features.
@@ -66,7 +67,7 @@ public class AblyRealtime extends AblyRest {
             }
         });
 
-        if (options.recover != null && !options.recover.isEmpty()) {
+        if (!StringUtils.isNullOrEmpty(options.recover)) {
             RecoveryKeyContext recoveryKeyContext = RecoveryKeyContext.decode(options.recover);
             if (recoveryKeyContext != null) {
                 setChannelSerialsFromRecoverOption(recoveryKeyContext.getChannelSerials());

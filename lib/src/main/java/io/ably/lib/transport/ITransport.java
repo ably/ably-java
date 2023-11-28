@@ -4,6 +4,7 @@ import io.ably.lib.types.*;
 import io.ably.lib.util.AgentHeaderCreator;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
+import io.ably.lib.util.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -61,10 +62,10 @@ public interface ITransport {
             paramList.add(new Param("format", (options.useBinaryProtocol ? "msgpack" : "json")));
             if(!options.echoMessages)
                 paramList.add(new Param("echo", "false"));
-            if(connectionKey != null) {
+            if(!StringUtils.isNullOrEmpty(connectionKey)) {
                 mode = Mode.resume;
                 paramList.add(new Param("resume", connectionKey));
-            } else if(options.recover != null && !options.recover.isEmpty()) { // RTN16k
+            } else if(!StringUtils.isNullOrEmpty(options.recover)) { // RTN16k
                 mode = Mode.recover;
                 RecoveryKeyContext recoveryKeyContext = RecoveryKeyContext.decode(options.recover);
                 if (recoveryKeyContext != null) {

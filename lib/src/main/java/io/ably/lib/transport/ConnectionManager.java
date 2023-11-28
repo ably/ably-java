@@ -34,6 +34,7 @@ import io.ably.lib.types.ProtocolSerializer;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
 import io.ably.lib.util.ReconnectionStrategy;
+import io.ably.lib.util.StringUtils;
 
 public class ConnectionManager implements ConnectListener {
     final ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
@@ -1201,6 +1202,10 @@ public class ConnectionManager implements ConnectListener {
         final ErrorInfo error = message.error;
         boolean reattachOnResumeFailure = false; // this will indicate that channel must reattach when connected
         // event is received
+
+        boolean isConnectionResumeOrRecoverAttempt = !StringUtils.isNullOrEmpty(connection.key) ||
+            !StringUtils.isNullOrEmpty(ably.options.recover);
+        ably.options.recover = null; // RTN16k, explicitly setting null, so it won't be used for subsequent connection requests
 
         connection.reason = error;
         if (connection.id != null) { // there was a previous connection, so this is a resume and RTN15c applies

@@ -4,6 +4,11 @@ import com.google.gson.JsonElement;
 import io.ably.lib.http.HttpCore;
 
 public class StringUtils {
+
+    public static boolean isNullOrEmpty(String value) {
+        return value == null || value.isEmpty();
+    }
+
     public static Serialisation.FromJsonElement<String> fromJsonElement = new Serialisation.FromJsonElement<String>() {
         @Override
         public String fromJsonElement(JsonElement e) {
