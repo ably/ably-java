@@ -1193,12 +1193,8 @@ public class ConnectionManager implements ConnectListener {
     }
 
     private void onChannelMessage(ProtocolMessage message) {
-        if(message.connectionSerial != null) {
-            connection.serial = message.connectionSerial.longValue();
-            if (connection.key != null)
-                connection.recoveryKey = connection.createRecoveryKey();
-        }
         channels.onMessage(message);
+        connection.recoveryKey = connection.createRecoveryKey();
     }
 
     private synchronized void onConnected(ProtocolMessage message) {
@@ -1240,12 +1236,6 @@ public class ConnectionManager implements ConnectListener {
 
         connection.id = message.connectionId;
 
-        if(message.connectionSerial != null) {
-            connection.serial = message.connectionSerial;
-            if (connection.key != null)
-                connection.recoveryKey = connection.createRecoveryKey();
-        }
-
         ConnectionDetails connectionDetails = message.connectionDetails;
         /* Get any parameters from connectionDetails. */
         connection.key = connectionDetails.connectionKey; //RTN16d
@@ -1260,6 +1250,9 @@ public class ConnectionManager implements ConnectListener {
             requestState(transport, new StateIndication(ConnectionState.failed, e.errorInfo));
             return;
         }
+
+        connection.recoveryKey = connection.createRecoveryKey();
+
         /* indicated connected currentState */
         final StateIndication stateIndication = new StateIndication(ConnectionState.connected, error, null, null,
             reattachOnResumeFailure);
@@ -1504,7 +1497,6 @@ public class ConnectionManager implements ConnectListener {
         ConnectParams(ClientOptions options, PlatformAgentProvider platformAgentProvider) {
             super(options, platformAgentProvider);
             this.connectionKey = connection.key;
-            this.connectionSerial = String.valueOf(connection.serial);
             this.port = Defaults.getPort(options);
         }
     }

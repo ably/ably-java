@@ -82,16 +82,6 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
     public String id;
 
     /**
-     * The serial number of the last message to be received on this connection,
-     * used automatically by the library when recovering or resuming a connection.
-     * When recovering a connection explicitly, the recoveryKey is used in the recover
-     * client options as it contains both the key and the last message serial.
-     * <p>
-     * Spec: RTN10
-     */
-    public long serial;
-
-    /**
      * Explicitly calling connect() is unnecessary unless the autoConnect attribute of the {@link io.ably.lib.types.ClientOptions}
      * object is false.
      * Unless already connected or connecting, this method causes the connection to open,
