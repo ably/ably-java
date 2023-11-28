@@ -9,12 +9,7 @@ import java.util.Map;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.transport.ConnectionManager;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ChannelOptions;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.ProtocolMessage;
-import io.ably.lib.types.ReadOnlyMap;
+import io.ably.lib.types.*;
 import io.ably.lib.util.InternalMap;
 import io.ably.lib.util.Log;
 
@@ -70,6 +65,14 @@ public class AblyRealtime extends AblyRest {
                 channels.clear();
             }
         });
+
+        if (options.recover != null && !options.recover.isEmpty()) {
+            RecoveryKeyContext recoveryKeyContext = RecoveryKeyContext.decode(options.recover);
+            if (recoveryKeyContext != null) {
+                setChannelSerialsFromRecoverOption(recoveryKeyContext.getChannelSerials());
+                connection.connectionManager.msgSerial = recoveryKeyContext.getMsgSerial(); //RTN16f
+            }
+        }
 
         if(options.autoConnect) connection.connect();
     }
@@ -274,7 +277,7 @@ public class AblyRealtime extends AblyRest {
         }
     }
 
-    protected void setChannelSerialsFromRecoverOption(HashMap<String, String> serials) {
+    protected void setChannelSerialsFromRecoverOption(Map<String, String> serials) {
         for (Map.Entry<String, String> entry : serials.entrySet()) {
             String channelName = entry.getKey();
             String channelSerial = entry.getValue();
@@ -285,8 +288,8 @@ public class AblyRealtime extends AblyRest {
         }
     }
 
-    protected HashMap<String, String> getChannelSerials() {
-        HashMap<String, String> channelSerials = new HashMap<>();
+    protected Map<String, String> getChannelSerials() {
+        Map<String, String> channelSerials = new HashMap<>();
         for (Channel channel : this.channels.values()) {
             channelSerials.put(channel.name, channel.properties.channelSerial);
         }
