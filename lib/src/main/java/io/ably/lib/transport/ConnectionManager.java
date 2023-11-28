@@ -1196,7 +1196,7 @@ public class ConnectionManager implements ConnectListener {
         if(message.connectionSerial != null) {
             connection.serial = message.connectionSerial.longValue();
             if (connection.key != null)
-                connection.recoveryKey = connection.key + ":" + message.connectionSerial;
+                connection.recoveryKey = connection.createRecoveryKey();
         }
         channels.onMessage(message);
     }
@@ -1243,7 +1243,7 @@ public class ConnectionManager implements ConnectListener {
         if(message.connectionSerial != null) {
             connection.serial = message.connectionSerial;
             if (connection.key != null)
-                connection.recoveryKey = connection.key + ":" + message.connectionSerial;
+                connection.recoveryKey = connection.createRecoveryKey();
         }
 
         ConnectionDetails connectionDetails = message.connectionDetails;
