@@ -13,5 +13,13 @@ public class ChannelProperties {
      */
     public String attachSerial;
 
+    /**
+     * ChannelSerial contains the channelSerial from latest ProtocolMessage of action type
+     * Message/PresenceMessage received on the channel.
+     * <p>
+     * Spec: CP2b, RTL15b
+     */
+    public String channelSerial;
+
     public ChannelProperties() {}
 }

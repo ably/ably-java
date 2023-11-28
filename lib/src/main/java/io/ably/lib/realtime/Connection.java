@@ -49,7 +49,9 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
      * for more information.
      * <p>
      * Spec: RTN16b, RTN16c
+     * @deprecated use createRecoveryKey method instead.
      */
+    @Deprecated
     public String recoveryKey;
 
     /**
