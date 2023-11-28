@@ -71,10 +71,7 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
             return null;
         }
 
-        RecoveryKeyContext recoveryKey = new RecoveryKeyContext(key, serial);
-        recoveryKey.setChannelSerials(this.ably.getChannelSerials());
-
-        return recoveryKey.encode();
+        return new RecoveryKeyContext(key, serial, ably.getChannelSerials()).encode();
     }
 
     /**

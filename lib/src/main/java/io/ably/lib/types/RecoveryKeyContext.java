@@ -13,16 +13,12 @@ public class RecoveryKeyContext {
 
     private final String connectionKey;
     private final long msgSerial;
-    /**
-     * Key - channel name
-     * <p>
-     * Value - channelSerial
-     */
     private final Map<String, String> channelSerials = new HashMap<>();
 
-    public RecoveryKeyContext(String connectionKey, long msgSerial) {
+    public RecoveryKeyContext(String connectionKey, long msgSerial, Map<String, String> channelSerials) {
         this.connectionKey = connectionKey;
         this.msgSerial = msgSerial;
+        this.channelSerials.putAll(channelSerials);
     }
 
     public String getConnectionKey() {
@@ -35,15 +31,6 @@ public class RecoveryKeyContext {
 
     public Map<String, String> getChannelSerials() {
         return channelSerials;
-    }
-
-    public void setChannelSerials(Map<String, String> channelSerials) {
-        this.channelSerials.clear();
-        this.channelSerials.putAll(channelSerials);
-    }
-
-    public void addSerial(String channelName, String channelSerial) {
-        this.channelSerials.put(channelName, channelSerial);
     }
 
     public String encode() {
