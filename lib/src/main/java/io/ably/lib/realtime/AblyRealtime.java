@@ -272,26 +272,25 @@ public class AblyRealtime extends AblyRest {
         private void clear() {
             map.clear();
         }
+    }
 
-        protected void setChannelSerialsFromRecoverOption(HashMap<String, String> serials) {
-            for (Map.Entry<String, String> entry : serials.entrySet()) {
-                String channelName = entry.getKey();
-                String channelSerial = entry.getValue();
-                Channel channel = this.get(channelName);
-                if (channel != null) {
-                    channel.properties.channelSerial = channelSerial;
-                }
+    protected void setChannelSerialsFromRecoverOption(HashMap<String, String> serials) {
+        for (Map.Entry<String, String> entry : serials.entrySet()) {
+            String channelName = entry.getKey();
+            String channelSerial = entry.getValue();
+            Channel channel = this.channels.get(channelName);
+            if (channel != null) {
+                channel.properties.channelSerial = channelSerial;
             }
         }
+    }
 
-        protected HashMap<String, String> getChannelSerials() {
-            HashMap<String, String> channelSerials = new HashMap<>();
-            for (Channel channel : this.values()) {
-                channelSerials.put(channel.name, channel.properties.channelSerial);
-            }
-            return channelSerials;
+    protected HashMap<String, String> getChannelSerials() {
+        HashMap<String, String> channelSerials = new HashMap<>();
+        for (Channel channel : this.channels.values()) {
+            channelSerials.put(channel.name, channel.properties.channelSerial);
         }
-
+        return channelSerials;
     }
 
     /********************
