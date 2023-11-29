@@ -401,7 +401,15 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             Log.v(TAG, String.format(Locale.ROOT, "Server initiated attach for channel %s", name));
             /* emit UPDATE event according to RTL12 */
             emitUpdate(null, resumed);
-        } else {
+        } else if (state == ChannelState.detaching || state == ChannelState.detached) { //RTL5k
+            Log.v(TAG, "setAttached(): channel is in detaching state so no need to attach it!");
+            try {
+                detach();
+            } catch (AblyException e) {
+                Log.e(TAG, e.getMessage(), e);
+            }
+        }
+        else {
             this.attachResume = true;
             setState(ChannelState.attached, message.error, resumed);
             presence.setAttached(message.hasFlag(Flag.has_presence), this.ably.connection.id);
