@@ -327,7 +327,10 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         if(!connectionManager.isActive())
             throw AblyException.fromErrorInfo(connectionManager.getStateErrorInfo());
 
-        /* send detach request */
+        sendDetachMessage(listener);
+    }
+
+    private void sendDetachMessage(CompletionListener listener) throws AblyException {
         ProtocolMessage detachMessage = new ProtocolMessage(Action.detach, this.name);
         try {
             if (listener != null) {
@@ -340,7 +343,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             } else {
                 setState(ChannelState.detaching, null);
             }
-            connectionManager.send(detachMessage, true, null);
+            ably.connection.connectionManager.send(detachMessage, true, null);
         } catch(AblyException e) {
             throw e;
         }
@@ -402,9 +405,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             /* emit UPDATE event according to RTL12 */
             emitUpdate(null, resumed);
         } else if (state == ChannelState.detaching || state == ChannelState.detached) { //RTL5k
-            Log.v(TAG, "setAttached(): channel is in detaching state so no need to attach it!");
+            Log.v(TAG, "setAttached(): channel is in detaching state, as per RTL5k sending detach message!");
             try {
-                detach();
+                sendDetachMessage(null);
             } catch (AblyException e) {
                 Log.e(TAG, e.getMessage(), e);
             }
