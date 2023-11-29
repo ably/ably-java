@@ -1050,7 +1050,7 @@ public class Presence {
          * false if the message is already superseded
          */
         synchronized boolean put(PresenceMessage item) {
-            String key = item.memberKey();
+            String key = memberKey(item);
             /* we've seen this member, so do not remove it at the end of sync */
             if(residualMembers != null)
                 residualMembers.remove(key);
@@ -1145,7 +1145,7 @@ public class Presence {
          * @return
          */
         synchronized boolean remove(PresenceMessage item) {
-            String key = item.memberKey();
+            String key = memberKey(item);
             if (hasNewerItem(key, item))
                 return false;
             PresenceMessage existingItem = members.remove(key);
@@ -1228,13 +1228,36 @@ public class Presence {
         }
 
 
+        /**
+         * Combines clientId and connectionId to ensure that multiple connected clients with an identical clientId are uniquely identifiable.
+         * A string function that returns the combined clientId and connectionId.
+         * <p>
+         * Spec: TP3h
+         * @return A combination of clientId and connectionId.
+         */
+        public String memberKey(PresenceMessage item) {
+            return item.memberKey();
+        }
+
         private boolean syncInProgress;
         private Collection<String> residualMembers;
         private final HashMap<String, PresenceMessage> members = new HashMap<String, PresenceMessage>();
     }
 
+    private class InternalPresenceMap extends PresenceMap {
+        /**
+         * Get the member key for the internal PresenceMessage.
+         * Spec: RTP17h
+         * @return key of the presence message
+         */
+        @Override
+        public String memberKey(PresenceMessage item) {
+            return item.clientId;
+        }
+    }
+
     private final PresenceMap presence = new PresenceMap();
-    private final PresenceMap internalPresence = new PresenceMap();
+    private final PresenceMap internalPresence = new InternalPresenceMap();
 
     /************************************
      * general
