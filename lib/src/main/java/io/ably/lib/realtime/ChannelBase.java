@@ -132,6 +132,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             this.retryCount = 0;
         }
 
+        // RTP5a1
+        if (newState == ChannelState.detached || newState == ChannelState.suspended || newState == ChannelState.failed) {
+            properties.channelSerial = null;
+        }
+
         if(notifyStateChange) {
             /* broadcast state change */
             emit(newState, stateChange);
