@@ -8,8 +8,8 @@ import static org.junit.Assert.assertThat;
 public class DefaultsTest {
 
     @Test
-    public void versions() {
-        assertThat(Defaults.ABLY_VERSION, is("1.0"));
+    public void protocol_version_CSV2() {
+        assertThat(Defaults.ABLY_PROTOCOL_VERSION, is("2"));
     }
 
     @Test
