@@ -1205,6 +1205,10 @@ public class ConnectionManager implements ConnectListener {
 
         boolean isConnectionResumeOrRecoverAttempt = !StringUtils.isNullOrEmpty(connection.key) ||
             !StringUtils.isNullOrEmpty(ably.options.recover);
+        boolean failedResumeOrRecover = !message.connectionId.equals(connection.id) && message.error != null; // RTN15c7, RTN16d
+        if (isConnectionResumeOrRecoverAttempt && failedResumeOrRecover) { // RTN15c7
+            msgSerial = 0;
+        }
         ably.options.recover = null; // RTN16k, explicitly setting null, so it won't be used for subsequent connection requests
 
         connection.reason = error;
