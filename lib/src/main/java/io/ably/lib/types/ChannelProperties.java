@@ -2,6 +2,9 @@ package io.ably.lib.types;
 
 /**
  * Describes the properties of the channel state.
+ * <p>
+ * Spec: CP2
+ * </p>
  */
 public class ChannelProperties {
     /**
