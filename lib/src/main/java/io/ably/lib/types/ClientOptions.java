@@ -147,7 +147,7 @@ public class ClientOptions extends AuthOptions {
      * when the connection is recoverable. The callback is then responsible for confirming whether the connection
      * should be recovered or not. See connection state recovery for further information.
      * <p>
-     * Spec: RTC1c, TO3i
+     * Spec: RTC1c, TO3i, RTN16i
      */
     public String recover;
 

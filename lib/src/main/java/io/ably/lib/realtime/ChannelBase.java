@@ -37,6 +37,7 @@ import io.ably.lib.util.CollectionUtils;
 import io.ably.lib.util.EventEmitter;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.ReconnectionStrategy;
+import io.ably.lib.util.StringUtils;
 
 /**
  * Enables messages to be published and subscribed to.
@@ -129,6 +130,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
         if (newState != ChannelState.attaching && newState != ChannelState.suspended) {
             this.retryCount = 0;
+        }
+
+        // RTP5a1
+        if (newState == ChannelState.detached || newState == ChannelState.suspended || newState == ChannelState.failed) {
+            properties.channelSerial = null;
         }
 
         if(notifyStateChange) {
@@ -248,8 +254,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             }
         }
         if(this.decodeFailureRecoveryInProgress) {
-            attachMessage.channelSerial = this.lastPayloadProtocolMessageChannelSerial;
+            Log.v(TAG, "attach(); message decode recovery in progress.");
         }
+        attachMessage.channelSerial = properties.channelSerial;
         try {
             if (listener != null) {
                 on(new ChannelStateCompletionListener(listener, ChannelState.attached, ChannelState.failed));
@@ -325,7 +332,10 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         if(!connectionManager.isActive())
             throw AblyException.fromErrorInfo(connectionManager.getStateErrorInfo());
 
-        /* send detach request */
+        sendDetachMessage(listener);
+    }
+
+    private void sendDetachMessage(CompletionListener listener) throws AblyException {
         ProtocolMessage detachMessage = new ProtocolMessage(Action.detach, this.name);
         try {
             if (listener != null) {
@@ -338,7 +348,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             } else {
                 setState(ChannelState.detaching, null);
             }
-            connectionManager.send(detachMessage, true, null);
+            ably.connection.connectionManager.send(detachMessage, true, null);
         } catch(AblyException e) {
             throw e;
         }
@@ -399,7 +409,15 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             Log.v(TAG, String.format(Locale.ROOT, "Server initiated attach for channel %s", name));
             /* emit UPDATE event according to RTL12 */
             emitUpdate(null, resumed);
-        } else {
+        } else if (state == ChannelState.detaching || state == ChannelState.detached) { //RTL5k
+            Log.v(TAG, "setAttached(): channel is in detaching state, as per RTL5k sending detach message!");
+            try {
+                sendDetachMessage(null);
+            } catch (AblyException e) {
+                Log.e(TAG, e.getMessage(), e);
+            }
+        }
+        else {
             this.attachResume = true;
             setState(ChannelState.attached, message.error, resumed);
             presence.setAttached(message.hasFlag(Flag.has_presence), this.ably.connection.id);
@@ -850,7 +868,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
 
         lastPayloadMessageId = lastMessage.id;
-        lastPayloadProtocolMessageChannelSerial = protocolMessage.channelSerial;
 
         for (final Message msg : messages) {
             this.listeners.onMessage(msg);
@@ -1264,6 +1281,15 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     }
 
     void onChannelMessage(ProtocolMessage msg) {
+        // RTL15b
+        if (!StringUtils.isNullOrEmpty(msg.channelSerial) && (msg.action == Action.message ||
+            msg.action == Action.presence || msg.action == Action.attached)) {
+            Log.v(TAG, String.format(
+                Locale.ROOT, "Setting channel serial for channelName - %s, previous - %s, current - %s",
+                name, properties.channelSerial, msg.channelSerial));
+            properties.channelSerial = msg.channelSerial;
+        }
+
         switch(msg.action) {
         case attached:
             setAttached(msg);
@@ -1369,7 +1395,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      */
     private Set<ChannelMode> modes;
     private String lastPayloadMessageId;
-    private String lastPayloadProtocolMessageChannelSerial;
     private boolean decodeFailureRecoveryInProgress;
     private final DecodingContext decodingContext;
 }

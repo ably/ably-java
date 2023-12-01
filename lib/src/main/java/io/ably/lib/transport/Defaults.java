@@ -3,28 +3,22 @@ package io.ably.lib.transport;
 import io.ably.lib.BuildConfig;
 import io.ably.lib.types.ClientOptions;
 
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.Locale;
-
 public class Defaults {
-    public static final float ABLY_VERSION_NUMBER   = 1.0f;
-
     /**
      * The level of compatibility with the Ably service that this SDK supports, also referred to as the 'wire protocol version'.
      * This value is presented as a string, as specified in G4a.
      */
-    public static final String ABLY_VERSION         = new DecimalFormat("0.0", new DecimalFormatSymbols(Locale.ENGLISH)).format(ABLY_VERSION_NUMBER);
+    public static final String ABLY_PROTOCOL_VERSION = "2";
 
     public static final String ABLY_AGENT_VERSION   = String.format("%s/%s", "ably-java", BuildConfig.VERSION);
 
-    /* params */
-    public static final String ABLY_VERSION_PARAM   = "v";
-    public static final String ABLY_AGENT_PARAM     = "agent";
+    /* realtime params */
+    public static final String ABLY_PROTOCOL_VERSION_PARAM = "v";
+    public static final String ABLY_AGENT_PARAM = "agent";
 
-    /* Headers */
-    public static final String ABLY_VERSION_HEADER  = "X-Ably-Version";
-    public static final String ABLY_AGENT_HEADER    = "Ably-Agent";
+    /* http headers */
+    public static final String ABLY_PROTOCOL_VERSION_HEADER = "X-Ably-Version";
+    public static final String ABLY_AGENT_HEADER = "Ably-Agent";
 
     /* Hosts */
     public static final String[] HOST_FALLBACKS     = { "A.ably-realtime.com", "B.ably-realtime.com", "C.ably-realtime.com", "D.ably-realtime.com", "E.ably-realtime.com" };

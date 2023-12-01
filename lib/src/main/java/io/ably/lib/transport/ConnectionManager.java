@@ -34,6 +34,7 @@ import io.ably.lib.types.ProtocolSerializer;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
 import io.ably.lib.util.ReconnectionStrategy;
+import io.ably.lib.util.StringUtils;
 
 public class ConnectionManager implements ConnectListener {
     final ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
@@ -1193,18 +1194,22 @@ public class ConnectionManager implements ConnectListener {
     }
 
     private void onChannelMessage(ProtocolMessage message) {
-        if(message.connectionSerial != null) {
-            connection.serial = message.connectionSerial.longValue();
-            if (connection.key != null)
-                connection.recoveryKey = connection.key + ":" + message.connectionSerial;
-        }
         channels.onMessage(message);
+        connection.recoveryKey = connection.createRecoveryKey();
     }
 
     private synchronized void onConnected(ProtocolMessage message) {
         final ErrorInfo error = message.error;
         boolean reattachOnResumeFailure = false; // this will indicate that channel must reattach when connected
         // event is received
+
+        boolean isConnectionResumeOrRecoverAttempt = !StringUtils.isNullOrEmpty(connection.key) ||
+            !StringUtils.isNullOrEmpty(ably.options.recover);
+        boolean failedResumeOrRecover = !message.connectionId.equals(connection.id) && message.error != null; // RTN15c7, RTN16d
+        if (isConnectionResumeOrRecoverAttempt && failedResumeOrRecover) { // RTN15c7
+            msgSerial = 0;
+        }
+        ably.options.recover = null; // RTN16k, explicitly setting null, so it won't be used for subsequent connection requests
 
         connection.reason = error;
         if (connection.id != null) { // there was a previous connection, so this is a resume and RTN15c applies
@@ -1240,12 +1245,6 @@ public class ConnectionManager implements ConnectListener {
 
         connection.id = message.connectionId;
 
-        if(message.connectionSerial != null) {
-            connection.serial = message.connectionSerial;
-            if (connection.key != null)
-                connection.recoveryKey = connection.key + ":" + message.connectionSerial;
-        }
-
         ConnectionDetails connectionDetails = message.connectionDetails;
         /* Get any parameters from connectionDetails. */
         connection.key = connectionDetails.connectionKey; //RTN16d
@@ -1260,6 +1259,9 @@ public class ConnectionManager implements ConnectListener {
             requestState(transport, new StateIndication(ConnectionState.failed, e.errorInfo));
             return;
         }
+
+        connection.recoveryKey = connection.createRecoveryKey();
+
         /* indicated connected currentState */
         final StateIndication stateIndication = new StateIndication(ConnectionState.connected, error, null, null,
             reattachOnResumeFailure);
@@ -1504,7 +1506,6 @@ public class ConnectionManager implements ConnectListener {
         ConnectParams(ClientOptions options, PlatformAgentProvider platformAgentProvider) {
             super(options, platformAgentProvider);
             this.connectionKey = connection.key;
-            this.connectionSerial = String.valueOf(connection.serial);
             this.port = Defaults.getPort(options);
         }
     }
@@ -1905,7 +1906,7 @@ public class ConnectionManager implements ConnectListener {
     private boolean suppressRetry; /* for tests only; modified via reflection */
     private ITransport transport;
     private long suspendTime;
-    private long msgSerial;
+    public long msgSerial;
     private long lastActivity;
     private CMConnectivityListener connectivityListener;
     private long connectionStateTtl = Defaults.connectionStateTtl;

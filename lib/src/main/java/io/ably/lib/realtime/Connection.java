@@ -4,6 +4,7 @@ import io.ably.lib.realtime.ConnectionStateListener.ConnectionStateChange;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.RecoveryKeyContext;
 import io.ably.lib.util.EventEmitter;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
@@ -49,8 +50,29 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
      * for more information.
      * <p>
      * Spec: RTN16b, RTN16c
+     * @deprecated use createRecoveryKey method instead.
      */
+    @Deprecated
     public String recoveryKey;
+
+    /**
+     * Spec: RTN16g
+     *
+     * @return a json string which incorporates the @connectionKey@, the current @msgSerial@,
+     * and a collection of pairs of channel @name@ and current @channelSerial@ for every currently attached channel.
+     */
+    public String createRecoveryKey() {
+        if (key == null || key.isEmpty() || this.state == ConnectionState.closing ||
+            this.state == ConnectionState.closed ||
+            this.state == ConnectionState.failed ||
+            this.state == ConnectionState.suspended
+        ) {
+            //RTN16h
+            return null;
+        }
+
+        return new RecoveryKeyContext(key, connectionManager.msgSerial, ably.getChannelSerials()).encode();
+    }
 
     /**
      * A unique public identifier for this connection, used to identify this member.
@@ -58,16 +80,6 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
      * Spec: RTN8
      */
     public String id;
-
-    /**
-     * The serial number of the last message to be received on this connection,
-     * used automatically by the library when recovering or resuming a connection.
-     * When recovering a connection explicitly, the recoveryKey is used in the recover
-     * client options as it contains both the key and the last message serial.
-     * <p>
-     * Spec: RTN10
-     */
-    public long serial;
 
     /**
      * Explicitly calling connect() is unnecessary unless the autoConnect attribute of the {@link io.ably.lib.types.ClientOptions}

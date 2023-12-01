@@ -1,21 +1,16 @@
 package io.ably.lib.transport;
 
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
-import io.ably.lib.types.Param;
-import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.types.*;
 import io.ably.lib.util.AgentHeaderCreator;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
+import io.ably.lib.util.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public interface ITransport {
 
@@ -39,7 +34,6 @@ public interface ITransport {
         protected String host;
         protected int port;
         protected String connectionKey;
-        protected String connectionSerial;
         protected Mode mode;
         protected boolean heartbeats;
         private final PlatformAgentProvider platformAgentProvider;
@@ -64,24 +58,18 @@ public interface ITransport {
 
         public Param[] getConnectParams(Param[] baseParams) {
             List<Param> paramList = new ArrayList<Param>(Arrays.asList(baseParams));
-            paramList.add(new Param(Defaults.ABLY_VERSION_PARAM, Defaults.ABLY_VERSION));
+            paramList.add(new Param(Defaults.ABLY_PROTOCOL_VERSION_PARAM, Defaults.ABLY_PROTOCOL_VERSION));
             paramList.add(new Param("format", (options.useBinaryProtocol ? "msgpack" : "json")));
             if(!options.echoMessages)
                 paramList.add(new Param("echo", "false"));
-            if(connectionKey != null) {
+            if(!StringUtils.isNullOrEmpty(connectionKey)) {
                 mode = Mode.resume;
                 paramList.add(new Param("resume", connectionKey));
-                if(connectionSerial != null)
-                    paramList.add(new Param("connectionSerial", connectionSerial));
-            } else if(options.recover != null) {
+            } else if(!StringUtils.isNullOrEmpty(options.recover)) { // RTN16k
                 mode = Mode.recover;
-                Pattern recoverSpec = Pattern.compile("^([\\w\\-\\!]+):(\\-?\\d+)$");
-                Matcher match = recoverSpec.matcher(options.recover);
-                if(match.matches()) {
-                    paramList.add(new Param("recover", match.group(1)));
-                    paramList.add(new Param("connectionSerial", match.group(2)));
-                } else {
-                    Log.e(TAG, "Invalid recover string specified");
+                RecoveryKeyContext recoveryKeyContext = RecoveryKeyContext.decode(options.recover);
+                if (recoveryKeyContext != null) {
+                    paramList.add(new Param("recover", recoveryKeyContext.getConnectionKey()));
                 }
             }
             if(options.clientId != null)
