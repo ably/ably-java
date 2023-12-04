@@ -913,6 +913,11 @@ public class Presence {
      ************************************/
 
     void setAttached(boolean hasPresence, String connectionId) {
+        /* Interrupt get() call => by unblocking presence.waitForSync()*/
+        synchronized (presence) {
+            presence.notifyAll();
+        }
+
         /* Start sync, if hasPresence is not set end sync immediately dropping all the current presence members */
         if (hasPresence){
             internalPresence.replaceMembersIfNeeded(connectionId);
