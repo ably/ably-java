@@ -335,7 +335,7 @@ public class Presence {
         broadcastPresence(residualMembers);
     }
 
-    private void updateInnerMessageFields(ProtocolMessage message) {
+    private void updateInnerPresenceMessageFields(ProtocolMessage message) {
         for(int i = 0; i < message.presence.length; i++) {
             PresenceMessage msg = message.presence[i];
             try {
@@ -386,7 +386,7 @@ public class Presence {
     }
 
     void onPresence(ProtocolMessage protocolMessage) {
-        updateInnerMessageFields(protocolMessage);
+        updateInnerPresenceMessageFields(protocolMessage);
         List<PresenceMessage> updatedPresenceMessages = new ArrayList<>();
         for(PresenceMessage presenceMessage : protocolMessage.presence) {
             boolean updateInternalPresence = presenceMessage.connectionId.equals(channel.ably.connection.id);
@@ -396,9 +396,9 @@ public class Presence {
                 case enter:
                 case update:
                 case present:
-                    PresenceMessage shallowClone = (PresenceMessage)presenceMessage.clone();
-                    shallowClone.action = PresenceMessage.Action.present;
-                    memberUpdated = presence.put(shallowClone);
+                    PresenceMessage shallowPresenceCopy = (PresenceMessage)presenceMessage.clone();
+                    shallowPresenceCopy.action = PresenceMessage.Action.present;
+                    memberUpdated = presence.put(shallowPresenceCopy);
                     if(updateInternalPresence)
                         internalPresence.put(presenceMessage);
                     break;
