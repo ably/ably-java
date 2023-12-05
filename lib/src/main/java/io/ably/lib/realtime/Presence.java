@@ -8,12 +8,15 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.AsyncPaginatedResult;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.MessageDecodeException;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.PresenceSerializer;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.StringUtils;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -329,62 +332,95 @@ public class Presence {
             member.id = null;
             member.timestamp = System.currentTimeMillis();
         }
-        broadcastPresence(residualMembers.toArray(new PresenceMessage[residualMembers.size()]));
+        broadcastPresence(residualMembers);
     }
 
-    void setPresence(PresenceMessage[] messages, boolean broadcast, String syncChannelSerial) {
-        Log.v(TAG, "setPresence(); channel = " + channel.name + "; broadcast = " + broadcast + "; syncChannelSerial = " + syncChannelSerial);
+    private void updateInnerMessageFields(ProtocolMessage message) {
+        for(int i = 0; i < message.presence.length; i++) {
+            PresenceMessage msg = message.presence[i];
+            try {
+                msg.decode(channel.options);
+            } catch (MessageDecodeException e) {
+                Log.e(TAG, String.format(Locale.ROOT, "%s on channel %s", e.errorInfo.message, channel.name));
+            }
+            /* populate fields derived from protocol message */
+            if(msg.connectionId == null) msg.connectionId = message.connectionId;
+            if(msg.timestamp == 0) msg.timestamp = message.timestamp;
+            if(msg.id == null) msg.id = message.id + ':' + i;
+        }
+    }
+
+    void onSync(ProtocolMessage protocolMessage) {
         String syncCursor = null;
-        if(syncChannelSerial != null) {
-            int colonPos = syncChannelSerial.indexOf(':');
-            String serial = colonPos >= 0 ? syncChannelSerial.substring(0, colonPos) : syncChannelSerial;
-            /* Discard incomplete sync if serial has changed */
-            if (presence.syncInProgress && currentSyncChannelSerial != null && !currentSyncChannelSerial.equals(serial))
+        String syncChannelSerial = protocolMessage.channelSerial;
+        // RTP18a
+        if(!StringUtils.isNullOrEmpty(syncChannelSerial)) {
+            String[] serials = syncChannelSerial.split(":");
+            String syncSequenceId = serials[0];
+            syncCursor = serials.length > 1 ? serials[1] : "";
+
+            /* If a new sequence identifier is sent from Ably, then the client library
+             * must consider that to be the start of a new sync sequence
+             * and any previous in-flight sync should be discarded. (part of RTP18)*/
+            if (presence.syncInProgress && !StringUtils.isNullOrEmpty(currentSyncChannelSerial)
+                && !currentSyncChannelSerial.equals(syncSequenceId)) {
                 endSync();
-            syncCursor = syncChannelSerial.substring(colonPos);
-            if(syncCursor.length() > 1) {
-                presence.startSync();
-                currentSyncChannelSerial = serial;
-            }
-        }
-        for(PresenceMessage update : messages) {
-            boolean updateInternalPresence = update.connectionId.equals(channel.ably.connection.id);
-            boolean broadcastThisUpdate = broadcast;
-            PresenceMessage originalUpdate = update;
-
-            switch(update.action) {
-            case enter:
-            case update:
-                update = (PresenceMessage)update.clone();
-                update.action = PresenceMessage.Action.present;
-            case present:
-                broadcastThisUpdate &= presence.put(update);
-                if(updateInternalPresence)
-                    internalPresence.put(update);
-                break;
-            case leave:
-                broadcastThisUpdate &= presence.remove(update);
-                if(updateInternalPresence)
-                    internalPresence.remove(update);
-                break;
-            case absent:
             }
 
-            /*
-             * RTP2g: Any incoming presence message that passes the newness check should be emitted on the
-             * Presence object, with an event name set to its original action.
-             */
-            if (broadcastThisUpdate)
-                broadcastPresence(new PresenceMessage[]{originalUpdate});
+            presence.startSync();
+
+            if (!StringUtils.isNullOrEmpty(syncCursor))
+            {
+                currentSyncChannelSerial = syncSequenceId;
+            }
         }
 
-        /* if this is the last message in a sequence of sync updates, end the sync */
-        if(syncChannelSerial == null || syncCursor.length() <= 1) {
+        onPresence(protocolMessage);
+
+        // RTP18b, RTP18c
+        if (StringUtils.isNullOrEmpty(syncChannelSerial) || StringUtils.isNullOrEmpty(syncCursor))
+        {
             endSync();
+            currentSyncChannelSerial = null;
         }
     }
 
-    private void broadcastPresence(PresenceMessage[] messages) {
+    void onPresence(ProtocolMessage protocolMessage) {
+        updateInnerMessageFields(protocolMessage);
+        List<PresenceMessage> updatedPresenceMessages = new ArrayList<>();
+        for(PresenceMessage presenceMessage : protocolMessage.presence) {
+            boolean updateInternalPresence = presenceMessage.connectionId.equals(channel.ably.connection.id);
+            boolean memberUpdated = false;
+
+            switch(presenceMessage.action) {
+                case enter:
+                case update:
+                case present:
+                    PresenceMessage shallowClone = (PresenceMessage)presenceMessage.clone();
+                    shallowClone.action = PresenceMessage.Action.present;
+                    memberUpdated = presence.put(shallowClone);
+                    if(updateInternalPresence)
+                        internalPresence.put(presenceMessage);
+                    break;
+                case leave:
+                    memberUpdated = presence.remove(presenceMessage);
+                    if(updateInternalPresence)
+                        internalPresence.remove(presenceMessage);
+                    break;
+                case absent:
+            }
+            if (memberUpdated) {
+                updatedPresenceMessages.add(presenceMessage);
+            }
+        }
+        /*
+         * RTP2g: Any incoming presence message that passes the newness check should be emitted on the
+         * Presence object, with an event name set to its original action.
+         */
+        broadcastPresence(updatedPresenceMessages);
+    }
+
+    private void broadcastPresence(List<PresenceMessage> messages) {
         for(PresenceMessage message : messages) {
             listeners.onPresenceMessage(message);
 

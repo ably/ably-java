@@ -349,26 +349,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
     }
 
-    public void sync() throws AblyException {
-        Log.v(TAG, "sync(); channel = " + name);
-        /* check preconditions */
-        switch(state) {
-            case initialized:
-            case detaching:
-            case detached:
-                throw AblyException.fromErrorInfo(new ErrorInfo("Unable to sync to channel; not attached", 40000));
-            default:
-        }
-        ConnectionManager connectionManager = ably.connection.connectionManager;
-        if(!connectionManager.isActive())
-            throw AblyException.fromErrorInfo(connectionManager.getStateErrorInfo());
-
-        /* send sync request */
-        ProtocolMessage syncMessage = new ProtocolMessage(Action.sync, this.name);
-        syncMessage.channelSerial = syncChannelSerial;
-        connectionManager.send(syncMessage, true, null);
-    }
-
     /***
      * internal
      *
@@ -888,30 +868,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         });
     }
 
-    private void onPresence(ProtocolMessage message, String syncChannelSerial) {
-        Log.v(TAG, "onPresence(); channel = " + name + "; syncChannelSerial = " + syncChannelSerial);
-        PresenceMessage[] messages = message.presence;
-        for(int i = 0; i < messages.length; i++) {
-            PresenceMessage msg = messages[i];
-            try {
-                msg.decode(options);
-            } catch (MessageDecodeException e) {
-                Log.e(TAG, String.format(Locale.ROOT, "%s on channel %s", e.errorInfo.message, name));
-            }
-            /* populate fields derived from protocol message */
-            if(msg.connectionId == null) msg.connectionId = message.connectionId;
-            if(msg.timestamp == 0) msg.timestamp = message.timestamp;
-            if(msg.id == null) msg.id = message.id + ':' + i;
-        }
-        presence.setPresence(messages, true, syncChannelSerial);
-    }
-
-    private void onSync(ProtocolMessage message) {
-        Log.v(TAG, "onSync(); channel = " + name);
-        if(message.presence != null)
-            onPresence(message, (syncChannelSerial = message.channelSerial));
-    }
-
     private MessageMulticaster listeners = new MessageMulticaster();
     private HashMap<String, MessageMulticaster> eventListeners = new HashMap<String, MessageMulticaster>();
 
@@ -1337,10 +1293,10 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             }
             break;
         case presence:
-            onPresence(msg, null);
+            presence.onPresence(msg);
             break;
         case sync:
-            onSync(msg);
+            presence.onSync(msg);
             break;
         case error:
             setFailed(msg.error);
@@ -1375,7 +1331,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     final AblyRealtime ably;
     final String basePath;
     ChannelOptions options;
-    String syncChannelSerial;
     /**
      * Optional <a href="https://ably.com/docs/realtime/channels/channel-parameters/overview">channel parameters</a>
      * that configure the behavior of the channel.
