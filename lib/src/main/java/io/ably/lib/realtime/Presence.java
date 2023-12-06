@@ -904,7 +904,6 @@ public class Presence {
             internalPresence.replaceMembersIfNeeded(connectionId);
         }
         presence.startSync();
-        syncAsResultOfAttach = true;
         if (!hasPresence) {
             /*
              * RTP19a  If the PresenceMap has existing members when an ATTACHED message is received without a
@@ -1259,9 +1258,6 @@ public class Presence {
 
     /* channel serial if sync is in progress */
     private String currentSyncChannelSerial;
-    /* Sync in progress is a result of attach operation */
-    private boolean syncAsResultOfAttach;
-
     /**
      * Indicates whether the presence set synchronization between Ably and the clients on the channel has been completed.
      * Set to true when the sync is complete.
