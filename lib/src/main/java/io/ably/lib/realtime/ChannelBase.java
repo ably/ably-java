@@ -375,27 +375,30 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
     private void setAttached(ProtocolMessage message) {
         clearAttachTimers();
-        boolean resumed = message.hasFlag(Flag.resumed);
-        Log.v(TAG, "setAttached(); channel = " + name + ", resumed = " + resumed);
         properties.attachSerial = message.channelSerial;
         params = message.params;
         modes = ChannelMode.toSet(message.flags);
-        if(state == ChannelState.attached) {
-            Log.v(TAG, String.format(Locale.ROOT, "Server initiated attach for channel %s", name));
-            /* emit UPDATE event according to RTL12 */
-            emitUpdate(null, resumed);
-        } else if (state == ChannelState.detaching || state == ChannelState.detached) { //RTL5k
+        this.attachResume = true;
+
+        if (state == ChannelState.detaching || state == ChannelState.detached) { //RTL5k
             Log.v(TAG, "setAttached(): channel is in detaching state, as per RTL5k sending detach message!");
             try {
                 sendDetachMessage(null);
             } catch (AblyException e) {
                 Log.e(TAG, e.getMessage(), e);
             }
+            return;
+        }
+        if(state == ChannelState.attached) {
+            Log.v(TAG, String.format(Locale.ROOT, "Server initiated attach for channel %s", name));
+            if (!message.hasFlag(Flag.resumed)) { // RTL12
+                presence.setAttached(message.hasFlag(Flag.has_presence), true);
+                emitUpdate(message.error, false);
+            }
         }
         else {
-            this.attachResume = true;
-            setState(ChannelState.attached, message.error, resumed);
             presence.setAttached(message.hasFlag(Flag.has_presence), true);
+            setState(ChannelState.attached, message.error, message.hasFlag(Flag.resumed));
         }
     }
 
