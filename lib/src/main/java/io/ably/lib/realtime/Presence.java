@@ -893,7 +893,7 @@ public class Presence {
      * attach / detach
      ************************************/
 
-    void setAttached(boolean hasPresence) {
+    void setAttached(boolean hasPresence, boolean enterInternalPresenceMembers) {
         /* Interrupt get() call => by unblocking presence.waitForSync()*/
         synchronized (presence) {
             presence.notifyAll();
@@ -904,6 +904,10 @@ public class Presence {
             endSync();
         }
         sendQueuedMessages(); // RTP5b
+
+        if (enterInternalPresenceMembers) {
+            enterInternalMembers();
+        }
     }
 
     /**
