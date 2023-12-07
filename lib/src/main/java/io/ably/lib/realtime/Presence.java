@@ -893,25 +893,45 @@ public class Presence {
      * attach / detach
      ************************************/
 
-    void setAttached(boolean hasPresence, String connectionId) {
+    void setAttached(boolean hasPresence) {
         /* Interrupt get() call => by unblocking presence.waitForSync()*/
         synchronized (presence) {
             presence.notifyAll();
         }
 
-        /* Start sync, if hasPresence is not set end sync immediately dropping all the current presence members */
-        if (hasPresence){
-            internalPresence.replaceMembersIfNeeded(connectionId);
-        }
         presence.startSync();
-        if (!hasPresence) {
-            /*
-             * RTP19a  If the PresenceMap has existing members when an ATTACHED message is received without a
-             * HAS_PRESENCE flag, the client library should emit a LEAVE event for each existing member ...
-             */
+        if (!hasPresence) { // RTP19a
             endSync();
         }
-        sendQueuedMessages();
+        sendQueuedMessages(); // RTP5b
+    }
+
+    /**
+     * Spec: RTP17g
+     */
+    synchronized void enterInternalMembers() {
+        for (final PresenceMessage item: internalPresence.values()) {
+            try {
+                enterClient(item.clientId, item.data, new CompletionListener() {
+                    @Override
+                    public void onSuccess() {
+                    }
+
+                    @Override
+                    public void onError(ErrorInfo reason) {
+                        String errorString = String.format(Locale.ROOT, "Cannot automatically re-enter %s on channel %s (%s)",
+                            item.clientId, channel.name, reason.message);
+                        Log.e(TAG, errorString);
+                        channel.emitUpdate(new ErrorInfo(errorString, 91004), true);
+                    }
+                });
+            } catch(AblyException e) {
+                String errorString = String.format(Locale.ROOT, "Cannot automatically re-enter %s on channel %s (%s)",
+                    item.clientId, channel.name, e.errorInfo.message);
+                Log.e(TAG, errorString);
+                channel.emitUpdate(new ErrorInfo(errorString, 91004), true);
+            }
+        }
     }
 
     void setDetached(ErrorInfo reason) {
@@ -1197,21 +1217,6 @@ public class Presence {
             if(residualMembers != null)
                 residualMembers.clear();
         }
-
-        /*
-  Old internal members are stuck with old member ids, we need to replace them with new one
-  * */
-        synchronized void replaceMembersIfNeeded(String connectionId) {
-            for (Map.Entry<String, PresenceMessage> entry : members.entrySet()) {
-                final String key = entry.getKey();
-                if (!key.contains(connectionId)) { //connection has changed - replace key
-                    PresenceMessage presenceMessage = internalPresence.members.get(key);
-                    presenceMessage.connectionId = connectionId;
-                    internalPresence.members.put(key, presenceMessage);
-                }
-            }
-        }
-
 
         /**
          * Combines clientId and connectionId to ensure that multiple connected clients with an identical clientId are uniquely identifiable.
