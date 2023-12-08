@@ -405,14 +405,14 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     private void setDetached(ErrorInfo reason) {
         clearAttachTimers();
         Log.v(TAG, "setDetached(); channel = " + name);
-        presence.setDetached(reason);
+        presence.onChannelDetachedOrFailed(reason);
         setState(ChannelState.detached, reason);
     }
 
     private void setFailed(ErrorInfo reason) {
         clearAttachTimers();
         Log.v(TAG, "setFailed(); channel = " + name);
-        presence.setDetached(reason);
+        presence.onChannelDetachedOrFailed(reason);
         this.attachResume = false;
         setState(ChannelState.failed, reason);
     }
@@ -653,7 +653,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         clearAttachTimers();
         if (state == ChannelState.attached || state == ChannelState.attaching) {
             Log.v(TAG, "setSuspended(); channel = " + name);
-            presence.setSuspended(reason);
+            presence.onChannelSuspended(reason);
             setState(ChannelState.suspended, reason, false, notifyStateChange);
         }
     }

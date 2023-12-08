@@ -938,32 +938,25 @@ public class Presence {
         }
     }
 
-    void setDetached(ErrorInfo reason) {
+    // RTP5a
+    void onChannelDetachedOrFailed(ErrorInfo reason) {
         /* Interrupt get() call if needed */
         synchronized (presence) {
             presence.notifyAll();
         }
 
-        /**
-         * (RTP5a) If the channel enters the DETACHED or FAILED state then all queued presence
-         * messages will fail immediately, and the PresenceMap and internal PresenceMap is cleared.
-         * The latter ensures members are not automatically re-entered if the Channel later becomes attached
-         */
-        failQueuedMessages(reason);
         presence.clear();
         internalPresence.clear();
+        failQueuedMessages(reason);
     }
 
-    void setSuspended(ErrorInfo reason) {
+    // RTP5f, RTP16b
+    void onChannelSuspended(ErrorInfo reason) {
         /* Interrupt get() call if needed */
         synchronized (presence) {
             presence.notifyAll();
         }
 
-        /*
-         * (RTP5f) If the channel enters the SUSPENDED state then all queued presence messages will fail
-         * immediately, and the PresenceMap is maintained
-         */
         failQueuedMessages(reason);
     }
 
