@@ -320,14 +320,8 @@ public class Presence {
 
     /* End sync and emit leave messages for residual members */
     private void endSync() {
-        currentSyncChannelSerial = null;
         List<PresenceMessage> residualMembers = presence.endSync();
-        for (PresenceMessage member: residualMembers) {
-            /*
-             * RTP19: ... The PresenceMessage published should contain the original attributes of the presence
-             * member with the action set to LEAVE, PresenceMessage#id set to null, and the timestamp set
-             * to the current time ...
-             */
+        for (PresenceMessage member: residualMembers) {         // RTP19
             member.action = PresenceMessage.Action.leave;
             member.id = null;
             member.timestamp = System.currentTimeMillis();
@@ -893,7 +887,7 @@ public class Presence {
      * attach / detach
      ************************************/
 
-    void setAttached(boolean hasPresence, boolean enterInternalPresenceMembers) {
+    void onAttached(boolean hasPresence, boolean enterInternalPresenceMembers) {
         /* Interrupt get() call => by unblocking presence.waitForSync()*/
         synchronized (presence) {
             presence.notifyAll();
