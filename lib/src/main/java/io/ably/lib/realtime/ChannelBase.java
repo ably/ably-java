@@ -1295,11 +1295,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                 }
             }
             break;
-        case presence:
-            presence.onPresence(msg);
-            break;
         case sync:
             presence.onSync(msg);
+            break;
+        case presence:
+            presence.onPresence(msg);
             break;
         case error:
             setFailed(msg.error);

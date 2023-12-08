@@ -295,6 +295,15 @@ public class AblyRealtime extends AblyRest {
         }
     }
 
+    protected void reattachChannels() {
+        for (Channel channel : this.channels.values()) {
+            if (channel.state == ChannelState.attaching || channel.state == ChannelState.attached || channel.state == ChannelState.suspended) {
+                Log.d(TAG, "reAttach(); channel = " + channel.name);
+                channel.attach(true, null);
+            }
+        }
+    }
+
     protected Map<String, String> getChannelSerials() {
         Map<String, String> channelSerials = new HashMap<>();
         for (Channel channel : this.channels.values()) {
