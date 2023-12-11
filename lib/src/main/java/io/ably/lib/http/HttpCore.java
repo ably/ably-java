@@ -209,7 +209,7 @@ public class HttpCore {
             if(!acceptSet) { conn.setRequestProperty(HttpConstants.Headers.ACCEPT, HttpConstants.ContentTypes.JSON); }
 
             /* pass required headers */
-            conn.setRequestProperty(Defaults.ABLY_VERSION_HEADER, Defaults.ABLY_VERSION);
+            conn.setRequestProperty(Defaults.ABLY_PROTOCOL_VERSION_HEADER, Defaults.ABLY_PROTOCOL_VERSION);
             conn.setRequestProperty(Defaults.ABLY_AGENT_HEADER, AgentHeaderCreator.create(options.agents, platformAgentProvider));
 
             /* prepare request body */

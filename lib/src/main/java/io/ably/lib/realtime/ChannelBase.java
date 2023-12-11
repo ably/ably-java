@@ -132,6 +132,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             this.retryCount = 0;
         }
 
+        // RTP5a1
+        if (newState == ChannelState.detached || newState == ChannelState.suspended || newState == ChannelState.failed) {
+            properties.channelSerial = null;
+        }
+
         if(notifyStateChange) {
             /* broadcast state change */
             emit(newState, stateChange);
@@ -1241,6 +1246,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             ChannelState oldState = state;
             switch(oldState) {
                 case attached:
+                case suspended: //RTL13a
                     /* Unexpected detach, reattach when possible */
                     setDetached((msg.error != null) ? msg.error : REASON_NOT_ATTACHED);
                     Log.v(TAG, String.format(Locale.ROOT, "Server initiated detach for channel %s; attempting reattach", name));
@@ -1262,7 +1268,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                     setDetached((msg.error != null) ? msg.error : REASON_NOT_ATTACHED);
                     break;
                 case detached:
-                case suspended:
                 case failed:
                 default:
                     /* do nothing */
