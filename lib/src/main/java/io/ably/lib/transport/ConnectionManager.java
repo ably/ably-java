@@ -34,7 +34,6 @@ import io.ably.lib.types.ProtocolSerializer;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
 import io.ably.lib.util.ReconnectionStrategy;
-import io.ably.lib.util.StringUtils;
 
 public class ConnectionManager implements ConnectListener {
     final ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
@@ -81,7 +80,7 @@ public class ConnectionManager implements ConnectListener {
         void suspendAll(ErrorInfo error, boolean notifyStateChange);
         Iterable<Channel> values();
 
-        void transferToChannels(List<QueuedMessage> queuedMessages);
+        void transferToChannelQueue(List<QueuedMessage> queuedMessages);
     }
 
     /***********************************
@@ -95,7 +94,6 @@ public class ConnectionManager implements ConnectListener {
         final ErrorInfo reason;
         final String fallback;
         final String currentHost;
-        final boolean reattachOnResumeFailure;
 
         StateIndication(ConnectionState state) {
             this(state, null);
@@ -110,16 +108,6 @@ public class ConnectionManager implements ConnectListener {
             this.reason = reason;
             this.fallback = fallback;
             this.currentHost = currentHost;
-            this.reattachOnResumeFailure = false;
-        }
-
-        StateIndication(ConnectionState state, ErrorInfo reason, String fallback, String currentHost,
-                         boolean reattachOnResumeFailure) {
-            this.state = state;
-            this.reason = reason;
-            this.fallback = fallback;
-            this.currentHost = currentHost;
-            this.reattachOnResumeFailure = reattachOnResumeFailure;
         }
     }
 
@@ -264,7 +252,7 @@ public class ConnectionManager implements ConnectListener {
 
         @Override
         void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, Channel channel) {
-            channel.setConnected(stateIndication.reattachOnResumeFailure);
+            channel.setConnected();
         }
 
         @Override
@@ -1200,42 +1188,29 @@ public class ConnectionManager implements ConnectListener {
 
     private synchronized void onConnected(ProtocolMessage message) {
         final ErrorInfo error = message.error;
-        boolean reattachOnResumeFailure = false; // this will indicate that channel must reattach when connected
-        // event is received
 
-        boolean isConnectionResumeOrRecoverAttempt = !StringUtils.isNullOrEmpty(connection.key) ||
-            !StringUtils.isNullOrEmpty(ably.options.recover);
         ably.options.recover = null; // RTN16k, explicitly setting null, so it won't be used for subsequent connection requests
-
         connection.reason = error;
+
         if (connection.id != null) { // there was a previous connection, so this is a resume and RTN15c applies
             Log.d(TAG, "There was a connection resume");
-            if(message.connectionId.equals(connection.id)) {
-                // resume succeeded
+            if(message.connectionId.equals(connection.id)) { // RTN15c6 - resume success
                 if(message.error == null) {
-                    // RTN15c1: no action required wrt channel state
                     Log.d(TAG, "connection has reconnected and resumed successfully");
                 } else {
-                    // RTN15c2: no action required wrt channel state
                     Log.d(TAG, "connection resume success with non-fatal error: " + error.message);
                 }
-                // Add pending messages to the front of queued messages to be sent later
                 addPendingMessagesToQueuedMessages(false);
-            } else {
-                // RTN15c3: resume failed
-                if (error != null){
+            } else { // RTN15c7, RTN16d - resume failure
+                if (error != null) {
                     Log.d(TAG, "connection resume failed with error: " + error.message);
                 }else { // This shouldn't happen but, putting it here for safety
                     Log.d(TAG, "connection resume failed without error" );
                 }
 
-                //we are going to add pending messages and update pending queue state
                 addPendingMessagesToQueuedMessages(true);
-
-                //We are going to transfer presence messages as they need to be sent when the channel is attached
                 final List<QueuedMessage> queuedPresenceMessages = removeAndGetQueuedPresenceMessages();
-                channels.transferToChannels(queuedPresenceMessages);
-                reattachOnResumeFailure = true;
+                channels.transferToChannelQueue(queuedPresenceMessages);
             }
         }
 
@@ -1259,8 +1234,7 @@ public class ConnectionManager implements ConnectListener {
         connection.recoveryKey = connection.createRecoveryKey();
 
         /* indicated connected currentState */
-        final StateIndication stateIndication = new StateIndication(ConnectionState.connected, error, null, null,
-            reattachOnResumeFailure);
+        final StateIndication stateIndication = new StateIndication(ConnectionState.connected, error, null, null);
         requestState(stateIndication);
     }
 

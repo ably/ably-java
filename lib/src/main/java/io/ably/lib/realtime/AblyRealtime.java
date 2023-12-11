@@ -255,7 +255,7 @@ public class AblyRealtime extends AblyRest {
          * @param queuedMessages Queued messages transferred from ConnectionManager
          */
         @Override
-        public void transferToChannels(List<ConnectionManager.QueuedMessage> queuedMessages) {
+        public void transferToChannelQueue(List<ConnectionManager.QueuedMessage> queuedMessages) {
             final Map<String, List<ConnectionManager.QueuedMessage>> channelQueueMap  = new HashMap<>();
             for (ConnectionManager.QueuedMessage queuedMessage : queuedMessages) {
                 final String channelName = queuedMessage.msg.channel;

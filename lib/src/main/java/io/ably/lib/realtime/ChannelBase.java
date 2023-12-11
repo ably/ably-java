@@ -605,15 +605,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     }
 
     /* State changes provoked by ConnectionManager state changes. */
-    public void setConnected(boolean reattachOnResumeFailure) {
-        if (reattachOnResumeFailure && state.isReattachable()){
+    public void setConnected() {
+        if (state.isReattachable()){
             attach(true,null);
-        } else if (state == ChannelState.suspended) { // RTL3d
-            try {
-                attachWithTimeout(null);
-            } catch (AblyException e) {
-                Log.e(TAG, "setConnected(): Unable to initiate attach; channel = " + name, e);
-            }
         }
     }
 
