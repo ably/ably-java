@@ -243,9 +243,8 @@ public class AblyRealtime extends AblyRest {
 
         @Override
         public void suspendAll(ErrorInfo error, boolean notifyStateChange) {
-            for(Iterator<Map.Entry<String, Channel>> it = map.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, Channel> entry = it.next();
-                entry.getValue().setSuspended(error, notifyStateChange);
+            for (Channel channel : map.values()) {
+                channel.setSuspended(error, notifyStateChange);
             }
         }
 
@@ -265,11 +264,9 @@ public class AblyRealtime extends AblyRest {
                 channelQueueMap.get(channelName).add(queuedMessage);
             }
 
-            for (Map.Entry<String, Channel> channelEntry : map.entrySet()) {
-                Channel channel = channelEntry.getValue();
+            for (Channel channel : map.values()) {
                 if (channel.state.isReattachable()) {
                     Log.d(TAG, "reAttach(); channel = " + channel.name);
-
                     if (channelQueueMap.containsKey(channel.name)){
                         channel.transferQueuedPresenceMessages(channelQueueMap.get(channel.name));
                     }else {
