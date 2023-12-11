@@ -284,16 +284,6 @@ public class AblyRealtime extends AblyRest {
         }
     }
 
-    // RTN19b
-    protected void reattachChannels() {
-        for (Channel channel : this.channels.values()) {
-            if (channel.state == ChannelState.attaching || channel.state == ChannelState.attached || channel.state == ChannelState.suspended) {
-                Log.d(TAG, "reAttach(); channel = " + channel.name);
-                channel.attach(true, null);
-            }
-        }
-    }
-
     protected void setChannelSerialsFromRecoverOption(Map<String, String> serials) {
         for (Map.Entry<String, String> entry : serials.entrySet()) {
             String channelName = entry.getKey();

@@ -130,9 +130,6 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
     public void onConnectionStateChange(ConnectionStateChange stateChange) {
         state = stateChange.current;
         reason = stateChange.reason;
-        if (state == ConnectionState.connected) { // RTN19b
-            ably.reattachChannels();
-        }
         emit(state, stateChange);
     }
 

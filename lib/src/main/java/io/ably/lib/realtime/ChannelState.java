@@ -48,6 +48,7 @@ public enum ChannelState {
         return event;
     }
 
+    // RTN19b
     public boolean isReattachable() {
         return this == ChannelState.attaching || this == ChannelState.attached || this == ChannelState.suspended;
     }
