@@ -1187,10 +1187,8 @@ public class ConnectionManager implements ConnectListener {
     }
 
     private synchronized void onConnected(ProtocolMessage message) {
-        final ErrorInfo error = message.error;
-
         ably.options.recover = null; // RTN16k, explicitly setting null, so it won't be used for subsequent connection requests
-        connection.reason = error;
+        connection.reason = message.error;
 
         if (connection.id != null) { // there was a previous connection, so this is a resume and RTN15c applies
             Log.d(TAG, "There was a connection resume");
@@ -1198,19 +1196,18 @@ public class ConnectionManager implements ConnectListener {
                 if(message.error == null) {
                     Log.d(TAG, "connection has reconnected and resumed successfully");
                 } else {
-                    Log.d(TAG, "connection resume success with non-fatal error: " + error.message);
+                    Log.d(TAG, "connection resume success with non-fatal error: " + message.error.message);
                 }
                 addPendingMessagesToQueuedMessages(false);
             } else { // RTN15c7, RTN16d - resume failure
-                if (error != null) {
-                    Log.d(TAG, "connection resume failed with error: " + error.message);
+                if (message.error != null) {
+                    Log.d(TAG, "connection resume failed with error: " + message.error.message);
                 }else { // This shouldn't happen but, putting it here for safety
                     Log.d(TAG, "connection resume failed without error" );
                 }
 
                 addPendingMessagesToQueuedMessages(true);
-                final List<QueuedMessage> queuedPresenceMessages = removeAndGetQueuedPresenceMessages();
-                channels.transferToChannelQueue(queuedPresenceMessages);
+                channels.transferToChannelQueue(extractConnectionQueuePresenceMessages());
             }
         }
 
@@ -1234,7 +1231,7 @@ public class ConnectionManager implements ConnectListener {
         connection.recoveryKey = connection.createRecoveryKey();
 
         /* indicated connected currentState */
-        final StateIndication stateIndication = new StateIndication(ConnectionState.connected, error, null, null);
+        final StateIndication stateIndication = new StateIndication(ConnectionState.connected, message.error, null, null);
         requestState(stateIndication);
     }
 
@@ -1243,7 +1240,7 @@ public class ConnectionManager implements ConnectListener {
     list and returns them. We can't yet use Java 8's stream and predicates for this purpose as we support below
     Android v24.
     * */
-    private synchronized List<QueuedMessage> removeAndGetQueuedPresenceMessages() {
+    private synchronized List<QueuedMessage> extractConnectionQueuePresenceMessages() {
         final Iterator<QueuedMessage> queuedIterator = queuedMessages.iterator();
         final List<QueuedMessage> queuedPresenceMessages = new ArrayList<>();
         while (queuedIterator.hasNext()){
