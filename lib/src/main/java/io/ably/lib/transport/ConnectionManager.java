@@ -834,6 +834,13 @@ public class ConnectionManager implements ConnectListener {
                 ReconnectionStrategy.getRetryTime(ably.options.disconnectedRetryTimeout, ++disconnectedRetryAttempt);
         }
 
+        // RTN8c, RTN9c
+        if (stateIndication.state == ConnectionState.closing || stateIndication.state == ConnectionState.closed
+        || stateIndication.state == ConnectionState.suspended || stateIndication.state == ConnectionState.failed) {
+            connection.id = null;
+            connection.key = null;
+        }
+
         /* update currentState */
         ConnectionState newConnectionState = validatedStateIndication.state;
         State newState = states.get(newConnectionState);

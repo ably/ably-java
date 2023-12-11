@@ -49,17 +49,19 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
      * See <a href="https://ably.com/docs/realtime/connection#connection-state-recover-options">connection state recover options</a>
      * for more information.
      * <p>
-     * Spec: RTN16b, RTN16c
+     * Spec: RTN16m
      * @deprecated use createRecoveryKey method instead.
      */
     @Deprecated
     public String recoveryKey;
 
     /**
+     * createRecoveryKey is a method that returns a json string which incorporates the @connectionKey@, the
+     * current @msgSerial@, and a collection of pairs of channel @name@ and current @channelSerial@ for every
+     * currently attached channel.
+     * <p>
      * Spec: RTN16g
-     *
-     * @return a json string which incorporates the @connectionKey@, the current @msgSerial@,
-     * and a collection of pairs of channel @name@ and current @channelSerial@ for every currently attached channel.
+     * </p>
      */
     public String createRecoveryKey() {
         if (key == null || key.isEmpty() || this.state == ConnectionState.closing ||
