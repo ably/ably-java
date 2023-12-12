@@ -256,7 +256,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         if(this.decodeFailureRecoveryInProgress) {
             Log.v(TAG, "attach(); message decode recovery in progress.");
         }
-        attachMessage.channelSerial = properties.channelSerial;
+        attachMessage.channelSerial = properties.channelSerial; // RTL4c1
         try {
             if (listener != null) {
                 on(new ChannelStateCompletionListener(listener, ChannelState.attached, ChannelState.failed));
@@ -612,7 +612,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     /* State changes provoked by ConnectionManager state changes. */
     public void setConnected() {
         if (state.isReattachable()){
-            attach(true,null);
+            attach(true,null); // RTN15c6, RTN15c7
         }
     }
 

@@ -1272,7 +1272,7 @@ public class ConnectionManager implements ConnectListener {
             queuedMessages.addAll(0, pendingMessages.queue);
 
             if (resetMessageSerial){  // failed resume, so all new published messages start with msgSerial = 0
-                msgSerial = 0; //msgSerial will increase in sendImpl when messages are sent
+                msgSerial = 0; //msgSerial will increase in sendImpl when messages are sent, RTN15c7
                 pendingMessages.resetStartSerial(0);
             } else if(!pendingMessages.queue.isEmpty()) { // pendingMessages needs to expect next msgSerial to be the earliest previously unacknowledged message
                 msgSerial =  pendingMessages.queue.get(0).msg.msgSerial;

@@ -899,7 +899,7 @@ public class Presence {
         }
         sendQueuedMessages(); // RTP5b
 
-        if (enterInternalPresenceMembers) {
+        if (enterInternalPresenceMembers) { // RTP17f
             enterInternalMembers();
         }
     }
