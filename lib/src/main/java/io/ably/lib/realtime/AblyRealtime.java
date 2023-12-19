@@ -267,11 +267,7 @@ public class AblyRealtime extends AblyRest {
             for (Channel channel : map.values()) {
                 if (channel.state.isReattachable()) {
                     Log.d(TAG, "reAttach(); channel = " + channel.name);
-                    if (channelQueueMap.containsKey(channel.name)){
-                        channel.transferQueuedPresenceMessages(channelQueueMap.get(channel.name));
-                    }else {
-                        channel.transferQueuedPresenceMessages(null);
-                    }
+                    channel.transferQueuedPresenceMessages(channelQueueMap.getOrDefault(channel.name, null));
                 }
             }
         }
