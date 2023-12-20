@@ -1,6 +1,11 @@
 package io.ably.lib.transport;
 
-import io.ably.lib.types.*;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Param;
+import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.types.RecoveryKeyContext;
 import io.ably.lib.util.AgentHeaderCreator;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
