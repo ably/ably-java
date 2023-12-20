@@ -342,15 +342,16 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
         AblyRealtime ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            String recoverConnectionId = "0123456789abcdef-99";
-            opts.recover = recoverConnectionId + ":0";
+            String recoveryKey =
+                "{\"connectionKey\":\"0123456789abcdef-99\",\"msgSerial\":5,\"channelSerials\":{\"channel1\":\"98\",\"channel2\":\"32\",\"channel3\":\"09\"}}";
+            opts.recover = recoveryKey;
             ably = new AblyRealtime(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             ErrorInfo connectedError = connectionWaiter.waitFor(ConnectionState.connected);
             assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
             assertNotNull("Verify error is returned", connectedError);
-            assertEquals("Verify correct error code is given", 80008, connectedError.code);
-            assertFalse("Verify new connection id is assigned", recoverConnectionId.equals(ably.connection.key));
+            assertEquals("Verify correct error code is given", 80018, connectedError.code);
+            assertFalse("Verify new connection id is assigned", "0123456789abcdef-99".equals(ably.connection.key));
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");
