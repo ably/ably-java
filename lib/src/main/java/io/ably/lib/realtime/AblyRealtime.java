@@ -76,7 +76,7 @@ public class AblyRealtime extends AblyRest {
         if (!StringUtils.isNullOrEmpty(options.recover)) {
             RecoveryKeyContext recoveryKeyContext = RecoveryKeyContext.decode(options.recover);
             if (recoveryKeyContext != null) {
-                setChannelSerialsFromRecoverOption(recoveryKeyContext.getChannelSerials());
+                setChannelSerialsFromRecoverOption(recoveryKeyContext.getChannelSerials()); // RTN16j
                 connection.connectionManager.msgSerial = recoveryKeyContext.getMsgSerial(); //RTN16f
             }
         }

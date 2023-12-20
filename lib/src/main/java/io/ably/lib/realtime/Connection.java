@@ -60,7 +60,7 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
      * current @msgSerial@, and a collection of pairs of channel @name@ and current @channelSerial@ for every
      * currently attached channel.
      * <p>
-     * Spec: RTN16g
+     * Spec: RTN16g, RTN16c
      * </p>
      */
     public String createRecoveryKey() {
@@ -69,8 +69,7 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
             this.state == ConnectionState.failed ||
             this.state == ConnectionState.suspended
         ) {
-            //RTN16h
-            return null;
+            return null; // RTN16g2
         }
 
         return new RecoveryKeyContext(key, connectionManager.msgSerial, ably.getChannelSerials()).encode();

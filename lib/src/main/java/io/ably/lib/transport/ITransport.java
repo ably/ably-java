@@ -64,7 +64,7 @@ public interface ITransport {
                 paramList.add(new Param("echo", "false"));
             if(!StringUtils.isNullOrEmpty(connectionKey)) {
                 mode = Mode.resume;
-                paramList.add(new Param("resume", connectionKey));
+                paramList.add(new Param("resume", connectionKey)); // RTN15b1
             } else if(!StringUtils.isNullOrEmpty(options.recover)) { // RTN16k
                 mode = Mode.recover;
                 RecoveryKeyContext recoveryKeyContext = RecoveryKeyContext.decode(options.recover);

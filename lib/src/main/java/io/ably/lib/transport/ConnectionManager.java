@@ -1206,10 +1206,10 @@ public class ConnectionManager implements ConnectListener {
                     Log.d(TAG, "connection resume success with non-fatal error: " + message.error.message);
                 }
                 addPendingMessagesToQueuedMessages(false);
-            } else { // RTN15c7, RTN16d - resume failure
+            } else { // RTN15c7, RTN16d - resume     failure
                 if (message.error != null) {
                     Log.d(TAG, "connection resume failed with error: " + message.error.message);
-                }else { // This shouldn't happen but, putting it here for safety
+                } else { // This shouldn't happen but, putting it here for safety
                     Log.d(TAG, "connection resume failed without error" );
                 }
 
@@ -1262,7 +1262,7 @@ public class ConnectionManager implements ConnectListener {
 
     /**
      * Add all pending queued messages to the front of QueuedMessages for them to be sent later
-     * Spec: RTN19a
+     * Spec: RTN19a, RTN19a1, RTN19a2
      * @param resetMessageSerial whether to reset message serial, this will determine whether to reset message serials
      * on pending queue, for example when a connection resume failed
      */

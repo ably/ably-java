@@ -1238,7 +1238,7 @@ public class Presence {
     }
 
     private final PresenceMap presence = new PresenceMap();
-    private final PresenceMap internalPresence = new InternalPresenceMap();
+    private final PresenceMap internalPresence = new InternalPresenceMap(); // RTP17
 
     /************************************
      * general
