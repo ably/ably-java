@@ -589,6 +589,21 @@ public class Presence {
         updatePresence(new PresenceMessage(PresenceMessage.Action.enter, clientId, data), listener);
     }
 
+    private void enterClientWithId(String id, String clientId, Object data, CompletionListener listener) throws AblyException {
+        if(clientId == null) {
+            String errorMessage = String.format(Locale.ROOT, "Channel %s: unable to enter presence channel (null clientId specified)", channel.name);
+            Log.v(TAG, errorMessage);
+            if(listener != null) {
+                listener.onError(new ErrorInfo(errorMessage, 40000));
+                return;
+            }
+        }
+        PresenceMessage presenceMsg = new PresenceMessage(PresenceMessage.Action.enter, clientId, data);
+        presenceMsg.id = id;
+        Log.v(TAG, "enterClient(); channel = " + channel.name + "; clientId = " + clientId);
+        updatePresence(presenceMsg, listener);
+    }
+
     /**
      * Updates the data payload for a presence member using a given clientId.
      * Enables a single client to update presence on behalf of any number of clients using a single connection.
@@ -887,7 +902,7 @@ public class Presence {
      * attach / detach
      ************************************/
 
-    void onAttached(boolean hasPresence, boolean enterInternalPresenceMembers) {
+    void onAttached(boolean hasPresence) {
         /* Interrupt get() call => by unblocking presence.waitForSync()*/
         synchronized (presence) {
             presence.notifyAll();
@@ -898,10 +913,7 @@ public class Presence {
             endSync();
         }
         sendQueuedMessages(); // RTP5b
-
-        if (enterInternalPresenceMembers) { // RTP17f
-            enterInternalMembers();
-        }
+        enterInternalMembers(); // RTP17f
     }
 
     /**
@@ -910,7 +922,7 @@ public class Presence {
     synchronized void enterInternalMembers() {
         for (final PresenceMessage item: internalPresence.values()) {
             try {
-                enterClient(item.clientId, item.data, new CompletionListener() {
+                enterClientWithId(item.id, item.clientId, item.data, new CompletionListener() {
                     @Override
                     public void onSuccess() {
                     }
