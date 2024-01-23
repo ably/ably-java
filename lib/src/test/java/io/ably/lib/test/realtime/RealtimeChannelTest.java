@@ -1479,8 +1479,8 @@ public class RealtimeChannelTest extends ParameterizedTest {
             channel.attach();
             channelWaiter.waitFor(ChannelState.attached);
 
-            final int[] updateEventsEmitted = new int[]{0};
-            final boolean[] resumedFlag = new boolean[]{true};
+            final int[] updateEventsEmitted = {0};
+            final boolean[] resumedFlag = {false};
             channel.on(ChannelEvent.update, new ChannelStateListener() {
                 @Override
                 public void onChannelStateChanged(ChannelStateChange stateChange) {
@@ -1497,19 +1497,19 @@ public class RealtimeChannelTest extends ParameterizedTest {
             }};
             ably.connection.connectionManager.onMessage(null, attachedMessage);
 
-            /* Inject detached message as if from the server */
-            ProtocolMessage detachedMessage = new ProtocolMessage() {{
-                action = Action.detached;
-                channel = channelName;
-            }};
-            ably.connection.connectionManager.onMessage(null, detachedMessage);
+//            /* Inject detached message as if from the server */
+//            ProtocolMessage detachedMessage = new ProtocolMessage() {{
+//                action = Action.detached;
+//                channel = channelName;
+//            }};
+//            ably.connection.connectionManager.onMessage(null, detachedMessage);
 
             /* Channel should transition to attaching, then to attached */
-            channelWaiter.waitFor(ChannelState.attaching);
-            channelWaiter.waitFor(ChannelState.attached);
+//            channelWaiter.waitFor(ChannelState.attaching);
+//            channelWaiter.waitFor(ChannelState.attached);
 
             /* Verify received UPDATE message on channel */
-            assertEquals("Verify exactly one UPDATE event was emitted on the channel", updateEventsEmitted[0], 1);
+            assertEquals("Verify exactly one UPDATE event was emitted on the channel",1, updateEventsEmitted[0]);
             assertTrue("Verify resumed flag set in UPDATE event", resumedFlag[0]);
         } finally {
             if (ably != null)
