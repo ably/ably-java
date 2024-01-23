@@ -290,7 +290,9 @@ public class AblyRealtime extends AblyRest {
     protected Map<String, String> getChannelSerials() {
         Map<String, String> channelSerials = new HashMap<>();
         for (Channel channel : this.channels.values()) {
-            channelSerials.put(channel.name, channel.properties.channelSerial);
+            if (channel.state == ChannelState.attached) {
+                channelSerials.put(channel.name, channel.properties.channelSerial);
+            }
         }
         return channelSerials;
     }
