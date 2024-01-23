@@ -2,7 +2,6 @@ package io.ably.lib.realtime;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -76,7 +75,7 @@ public class AblyRealtime extends AblyRest {
         if (!StringUtils.isNullOrEmpty(options.recover)) {
             RecoveryKeyContext recoveryKeyContext = RecoveryKeyContext.decode(options.recover);
             if (recoveryKeyContext != null) {
-                setChannelSerialsFromRecoverOption(recoveryKeyContext.getChannelSerials());
+                setChannelSerialsFromRecoverOption(recoveryKeyContext.getChannelSerials()); // RTN16j
                 connection.connectionManager.msgSerial = recoveryKeyContext.getMsgSerial(); //RTN16f
             }
         }
@@ -243,9 +242,8 @@ public class AblyRealtime extends AblyRest {
 
         @Override
         public void suspendAll(ErrorInfo error, boolean notifyStateChange) {
-            for(Iterator<Map.Entry<String, Channel>> it = map.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, Channel> entry = it.next();
-                entry.getValue().setSuspended(error, notifyStateChange);
+            for (Channel channel : map.values()) {
+                channel.setSuspended(error, notifyStateChange);
             }
         }
 
@@ -255,7 +253,7 @@ public class AblyRealtime extends AblyRest {
          * @param queuedMessages Queued messages transferred from ConnectionManager
          */
         @Override
-        public void transferToChannels(List<ConnectionManager.QueuedMessage> queuedMessages) {
+        public void transferToChannelQueue(List<ConnectionManager.QueuedMessage> queuedMessages) {
             final Map<String, List<ConnectionManager.QueuedMessage>> channelQueueMap  = new HashMap<>();
             for (ConnectionManager.QueuedMessage queuedMessage : queuedMessages) {
                 final String channelName = queuedMessage.msg.channel;
@@ -265,16 +263,10 @@ public class AblyRealtime extends AblyRest {
                 channelQueueMap.get(channelName).add(queuedMessage);
             }
 
-            for (Map.Entry<String, Channel> channelEntry : map.entrySet()) {
-                Channel channel = channelEntry.getValue();
+            for (Channel channel : map.values()) {
                 if (channel.state.isReattachable()) {
                     Log.d(TAG, "reAttach(); channel = " + channel.name);
-
-                    if (channelQueueMap.containsKey(channel.name)){
-                        channel.transferQueuedPresenceMessages(channelQueueMap.get(channel.name));
-                    }else {
-                        channel.transferQueuedPresenceMessages(null);
-                    }
+                    channel.transferQueuedPresenceMessages(channelQueueMap.getOrDefault(channel.name, null));
                 }
             }
         }

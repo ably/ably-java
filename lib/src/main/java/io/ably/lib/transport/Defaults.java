@@ -5,8 +5,12 @@ import io.ably.lib.types.ClientOptions;
 
 public class Defaults {
     /**
-     * The level of compatibility with the Ably service that this SDK supports, also referred to as the 'wire protocol version'.
+     * The level of compatibility with the Ably service that this SDK supports.
+     * Also referred to as the 'wire protocol version'.
      * This value is presented as a string, as specified in G4a.
+     * <p>
+     * spec: G4
+     * </p>
      */
     public static final String ABLY_PROTOCOL_VERSION = "2";
 

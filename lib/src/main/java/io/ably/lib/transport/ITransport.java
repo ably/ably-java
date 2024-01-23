@@ -1,6 +1,11 @@
 package io.ably.lib.transport;
 
-import io.ably.lib.types.*;
+import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Param;
+import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.types.RecoveryKeyContext;
 import io.ably.lib.util.AgentHeaderCreator;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
@@ -64,7 +69,7 @@ public interface ITransport {
                 paramList.add(new Param("echo", "false"));
             if(!StringUtils.isNullOrEmpty(connectionKey)) {
                 mode = Mode.resume;
-                paramList.add(new Param("resume", connectionKey));
+                paramList.add(new Param("resume", connectionKey)); // RTN15b1
             } else if(!StringUtils.isNullOrEmpty(options.recover)) { // RTN16k
                 mode = Mode.recover;
                 RecoveryKeyContext recoveryKeyContext = RecoveryKeyContext.decode(options.recover);

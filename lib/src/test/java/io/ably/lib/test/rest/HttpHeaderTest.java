@@ -48,13 +48,10 @@ public class HttpHeaderTest extends ParameterizedTest {
     /**
      * The header Ably-Agent: [lib]/[version]
      * should be included in all REST requests to the Ably endpoint
-     * see {@link io.ably.lib.http.HttpUtils#ABLY_AGENT_VERSION}
+     * see {@link io.ably.lib.transport.Defaults#ABLY_AGENT_PARAM}
      * <p>
      * Spec: RSC7d, G4
      * </p>
-     *
-     * Spec: RSC7a: Must have the header X-Ably-Version: 1.0 (or whatever the
-     * spec version is).
      */
     @Test
     public void header_lib_channel_publish() {
@@ -84,7 +81,7 @@ public class HttpHeaderTest extends ParameterizedTest {
              * from those values.
              */
             Assert.assertNotNull("Expected headers", headers);
-            Assert.assertEquals(headers.get("x-ably-version"), "1.0");
+            Assert.assertEquals(headers.get("x-ably-version"), "2");
             Assert.assertEquals(headers.get("ably-agent"), expectedAblyAgentHeader);
         } catch (AblyException e) {
             e.printStackTrace();
