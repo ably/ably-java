@@ -397,12 +397,12 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         if(state == ChannelState.attached) {
             Log.v(TAG, String.format(Locale.ROOT, "Server initiated attach for channel %s", name));
             if (!message.hasFlag(Flag.resumed)) { // RTL12
-                presence.onAttached(message.hasFlag(Flag.has_presence), true);
+                presence.onAttached(message.hasFlag(Flag.has_presence));
                 emitUpdate(message.error, false);
             }
         }
         else {
-            presence.onAttached(message.hasFlag(Flag.has_presence), true);
+            presence.onAttached(message.hasFlag(Flag.has_presence));
             setState(ChannelState.attached, message.error, message.hasFlag(Flag.resumed));
         }
     }
