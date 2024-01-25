@@ -26,17 +26,14 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
 
+import io.ably.lib.util.StringUtils;
 import org.hamcrest.Matchers;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -1453,6 +1450,60 @@ public class RealtimeChannelTest extends ParameterizedTest {
     }
 
     /*
+     * Establish connection, attach channel, simulate sending attached message
+     * from the server, test correct behaviour
+     *
+     * Tests RTL12
+     */
+    @Test
+    public void channel_server_initiated_attached() throws AblyException {
+        AblyRealtime ably = null;
+        long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
+        final String channelName = "channel_server_initiated_attach_detach";
+
+        try {
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+
+            /* Make test faster */
+            Defaults.realtimeRequestTimeout = 1000;
+            opts.channelRetryTimeout = 1000;
+
+            ably = new AblyRealtime(opts);
+            new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+
+            Channel channel = ably.channels.get(channelName);
+            ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+
+            channel.attach();
+            channelWaiter.waitFor(ChannelState.attached);
+
+            List<ChannelStateListener.ChannelStateChange> updateEventsEmitted = new ArrayList<>();
+            channel.on(new ChannelStateListener() {
+                @Override
+                public void onChannelStateChanged(ChannelStateChange stateChange) {
+                    updateEventsEmitted.add(stateChange);
+                }
+            });
+
+            /* Inject attached message as if received from the server */
+            ProtocolMessage attachedMessage = new ProtocolMessage() {{
+                action = Action.attached;
+                channel = channelName;
+            }};
+
+            ably.connection.connectionManager.onMessage(null, attachedMessage);
+            assertEquals(1, updateEventsEmitted.size());
+            assertEquals(ChannelEvent.update, updateEventsEmitted.get(0).event);
+            assertFalse(updateEventsEmitted.get(0).resumed);
+
+        } finally {
+            if (ably != null)
+                ably.close();
+            Defaults.realtimeRequestTimeout = oldRealtimeTimeout;
+        }
+    }
+
+    /*
      * Establish connection, attach channel, simulate sending attached and detached messages
      * from the server, test correct behaviour
      *
@@ -1472,6 +1523,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             opts.channelRetryTimeout = 1000;
 
             ably = new AblyRealtime(opts);
+            new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
 
             Channel channel = ably.channels.get(channelName);
             ChannelWaiter channelWaiter = new ChannelWaiter(channel);
@@ -1490,12 +1542,12 @@ public class RealtimeChannelTest extends ParameterizedTest {
             });
 
             /* Inject attached message as if received from the server */
-            ProtocolMessage attachedMessage = new ProtocolMessage() {{
-                action = Action.attached;
-                channel = channelName;
-                flags |= Flag.resumed.getMask();
-            }};
-            ably.connection.connectionManager.onMessage(null, attachedMessage);
+//            ProtocolMessage attachedMessage = new ProtocolMessage() {{
+//                action = Action.attached;
+//                channel = channelName;
+//                flags |= Flag.resumed.getMask();
+//            }};
+//            ably.connection.connectionManager.onMessage(null, attachedMessage);
 
 //            /* Inject detached message as if from the server */
 //            ProtocolMessage detachedMessage = new ProtocolMessage() {{

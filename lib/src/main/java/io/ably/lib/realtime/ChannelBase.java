@@ -82,14 +82,12 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      */
     public ChannelProperties properties = new ChannelProperties();
 
-    private int retryCount = 0;
+    private int retryAttempt = 0;
 
     /**
      * @see #markAsReleased()
      */
     private boolean released = false;
-
-
 
     /***
      * internal
@@ -129,7 +127,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
 
         if (newState != ChannelState.attaching && newState != ChannelState.suspended) {
-            this.retryCount = 0;
+            this.retryAttempt = 0;
         }
 
         // RTP5a1
@@ -525,8 +523,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
         reattachTimer = currentReattachTimer;
 
-        this.retryCount++;
-        int retryDelay = ReconnectionStrategy.getRetryTime(ably.options.channelRetryTimeout, retryCount);
+        this.retryAttempt++;
+        int retryDelay = ReconnectionStrategy.getRetryTime(ably.options.channelRetryTimeout, retryAttempt);
 
         final Timer inProgressTimer = currentReattachTimer;
         reattachTimer.schedule(new TimerTask() {
