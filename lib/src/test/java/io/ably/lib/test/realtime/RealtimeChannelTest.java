@@ -37,14 +37,7 @@ import java.util.*;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class RealtimeChannelTest extends ParameterizedTest {
 
@@ -1477,24 +1470,19 @@ public class RealtimeChannelTest extends ParameterizedTest {
             channel.attach();
             channelWaiter.waitFor(ChannelState.attached);
 
-            List<ChannelStateListener.ChannelStateChange> updateEventsEmitted = new ArrayList<>();
-            channel.on(new ChannelStateListener() {
-                @Override
-                public void onChannelStateChanged(ChannelStateChange stateChange) {
-                    updateEventsEmitted.add(stateChange);
-                }
-            });
-
             /* Inject attached message as if received from the server */
             ProtocolMessage attachedMessage = new ProtocolMessage() {{
                 action = Action.attached;
                 channel = channelName;
             }};
-
             ably.connection.connectionManager.onMessage(null, attachedMessage);
-            assertEquals(1, updateEventsEmitted.size());
-            assertEquals(ChannelEvent.update, updateEventsEmitted.get(0).event);
-            assertFalse(updateEventsEmitted.get(0).resumed);
+
+            ChannelStateListener.ChannelStateChange channelUpdateEvent = channelWaiter.waitFor(ChannelEvent.update);
+            assertEquals(ChannelEvent.update, channelUpdateEvent.event);
+            assertEquals(ChannelState.attached, channelUpdateEvent.previous);
+            assertEquals(ChannelState.attached, channelUpdateEvent.current);
+            assertFalse(channelUpdateEvent.resumed);
+            assertNull(channelUpdateEvent.reason);
 
         } finally {
             if (ably != null)
@@ -1504,13 +1492,13 @@ public class RealtimeChannelTest extends ParameterizedTest {
     }
 
     /*
-     * Establish connection, attach channel, simulate sending attached and detached messages
+     * Establish connection, attach channel, simulate sending detached messages
      * from the server, test correct behaviour
      *
-     * Tests RTL12, RTL13a
+     * Tests RTL13a
      */
     @Test
-    public void channel_server_initiated_attached_detached() throws AblyException {
+    public void channel_server_initiated_detached() throws AblyException {
         AblyRealtime ably = null;
         long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
         final String channelName = "channel_server_initiated_attach_detach";
@@ -1531,38 +1519,17 @@ public class RealtimeChannelTest extends ParameterizedTest {
             channel.attach();
             channelWaiter.waitFor(ChannelState.attached);
 
-            final int[] updateEventsEmitted = {0};
-            final boolean[] resumedFlag = {false};
-            channel.on(ChannelEvent.update, new ChannelStateListener() {
-                @Override
-                public void onChannelStateChanged(ChannelStateChange stateChange) {
-                    updateEventsEmitted[0]++;
-                    resumedFlag[0] = stateChange.resumed;
-                }
-            });
-
-            /* Inject attached message as if received from the server */
-//            ProtocolMessage attachedMessage = new ProtocolMessage() {{
-//                action = Action.attached;
-//                channel = channelName;
-//                flags |= Flag.resumed.getMask();
-//            }};
-//            ably.connection.connectionManager.onMessage(null, attachedMessage);
-
-//            /* Inject detached message as if from the server */
-//            ProtocolMessage detachedMessage = new ProtocolMessage() {{
-//                action = Action.detached;
-//                channel = channelName;
-//            }};
-//            ably.connection.connectionManager.onMessage(null, detachedMessage);
+            /* Inject detached message as if from the server */
+            ProtocolMessage detachedMessage = new ProtocolMessage() {{
+                action = Action.detached;
+                channel = channelName;
+            }};
+            ably.connection.connectionManager.onMessage(null, detachedMessage);
 
             /* Channel should transition to attaching, then to attached */
-//            channelWaiter.waitFor(ChannelState.attaching);
-//            channelWaiter.waitFor(ChannelState.attached);
+            channelWaiter.waitFor(ChannelState.attaching);
+            channelWaiter.waitFor(ChannelState.attached);
 
-            /* Verify received UPDATE message on channel */
-            assertEquals("Verify exactly one UPDATE event was emitted on the channel",1, updateEventsEmitted[0]);
-            assertTrue("Verify resumed flag set in UPDATE event", resumedFlag[0]);
         } finally {
             if (ably != null)
                 ably.close();
