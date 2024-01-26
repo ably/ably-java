@@ -418,13 +418,11 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
      */
     @Test
     public void connect_reauth_failure_state_flow_test() {
-
         try {
-            AblyRest ablyRest = null;
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 
-            ablyRest = new AblyRest(opts);
-            final TokenDetails tokenDetails = ablyRest.auth.requestToken(new TokenParams() {{ ttl = 8000L; }}, null);
+            AblyRest ablyRest = new AblyRest(opts);
+            final TokenDetails tokenDetails = ablyRest.auth.requestToken(new TokenParams() {{ ttl = 2000L; }}, null);
             assertNotNull("Expected token value", tokenDetails.token);
 
             final ArrayList<ConnectionState> stateHistory = new ArrayList<>();
@@ -433,31 +431,14 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             optsForRealtime.authCallback = new TokenCallback() {
                 @Override
                 public Object getTokenRequest(TokenParams params) throws AblyException {
-                    // return already expired token
+                    // always return same token
                     return tokenDetails;
                 }
             };
             optsForRealtime.tokenDetails = tokenDetails;
             final AblyRealtime ablyRealtime = new AblyRealtime(optsForRealtime);
 
-            ablyRealtime.connection.on(ConnectionState.connected, new ConnectionStateListener() {
-                @Override
-                public void onConnectionStateChanged(ConnectionStateChange state) {
-                    /* To go quicker into a disconnected state we use a
-                     * smaller value for maxIdleInterval
-                     */
-                    try {
-                        Field field = ablyRealtime.connection.connectionManager.getClass().getDeclaredField("maxIdleInterval");
-                        field.setAccessible(true);
-                        field.setLong(ablyRealtime.connection.connectionManager, 5000L);
-                    } catch (NoSuchFieldException|IllegalAccessException e) {
-                        fail("Unexpected exception in checking connectionStateTtl");
-                    }
-                }
-            });
-
             (new ConnectionWaiter(ablyRealtime.connection)).waitFor(ConnectionState.connected);
-            // TODO: improve by collecting and testing also auth attempts
             final List<ConnectionState> correctHistory = Arrays.asList(
                     ConnectionState.disconnected,
                     ConnectionState.connecting,
@@ -475,7 +456,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
                         if (state.current == ConnectionState.disconnected) {
                             disconnections++;
                             if (disconnections == maxDisconnections) {
-                                assertTrue("Verifying state change history", stateHistory.equals(correctHistory));
+                                assertEquals(correctHistory, stateHistory);
                                 ablyRealtime.close();
                             }
                         }
