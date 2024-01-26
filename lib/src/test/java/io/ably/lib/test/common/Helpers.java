@@ -28,14 +28,8 @@ import io.ably.lib.debug.DebugOptions.RawHttpListener;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
-import io.ably.lib.realtime.Channel;
+import io.ably.lib.realtime.*;
 import io.ably.lib.realtime.Channel.MessageListener;
-import io.ably.lib.realtime.ChannelState;
-import io.ably.lib.realtime.ChannelStateListener;
-import io.ably.lib.realtime.CompletionListener;
-import io.ably.lib.realtime.Connection;
-import io.ably.lib.realtime.ConnectionState;
-import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.realtime.Presence.PresenceListener;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyException;
@@ -586,14 +580,24 @@ public class Helpers {
 
         /**
          * Wait for a given state to be reached.
-         * @param state
          */
         public synchronized ErrorInfo waitFor(ChannelState state) {
             Log.d(TAG, "waitFor(" + state + ")");
             while(channel.state != state)
-                try { wait(); } catch(InterruptedException e) {}
+                try { wait(); } catch(InterruptedException ignored) {}
             Log.d(TAG, "waitFor done: " + channel.state + ", " + channel.reason + ")");
             return channel.reason;
+        }
+
+        /**
+         * Wait for a given ChannelEvent to be reached.
+         */
+        public synchronized ChannelStateChange waitFor(ChannelEvent channelEvent) {
+            Log.d(TAG, "waitFor(" + channelEvent + ")");
+            while(this.channelStateChange.event != channelEvent)
+                try { wait(); } catch(InterruptedException ignored) {}
+            Log.d(TAG, "waitFor done: " + channel.state + ", " + channel.reason + ")");
+            return this.channelStateChange;
         }
 
         /**
@@ -601,13 +605,17 @@ public class Helpers {
          */
         @Override
         public void onChannelStateChanged(ChannelStateListener.ChannelStateChange stateChange) {
-            synchronized(this) { notify(); }
+            synchronized(this) {
+                this.channelStateChange = stateChange;
+                notify();
+            }
         }
 
         /**
          * Internal
          */
-        private Channel channel;
+        private final Channel channel;
+        private ChannelStateChange channelStateChange;
     }
 
     /**
