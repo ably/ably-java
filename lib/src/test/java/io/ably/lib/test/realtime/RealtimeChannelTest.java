@@ -1643,13 +1643,13 @@ public class RealtimeChannelTest extends ParameterizedTest {
              * - previously attached channel does attaching, attached, without visiting suspended;
              * - previously suspended channel does attaching, attached
              */
-            assertEquals("Verify channel was not suspended", suspendedStateReached[0], false);
-            assertEquals("Verify channel was attaching", attachingStateReached[0], true);
-            assertEquals("Verify channel was attached", attachedStateReached[0], true);
+            assertFalse("Verify channel was not suspended", suspendedStateReached[0]);
+            assertTrue("Verify channel was attaching", attachingStateReached[0]);
+            assertTrue("Verify channel was attached", attachedStateReached[0]);
             assertFalse("Verify resumed flag set false in ATTACHED event", resumedFlag[0]);
 
-            assertEquals("Verify channel was attaching", attachingStateReached[1], true);
-            assertEquals("Verify channel was attached", attachedStateReached[1], true);
+            assertTrue("Verify channel was attaching", attachingStateReached[1]);
+            assertTrue("Verify channel was attached", attachedStateReached[1]);
             assertFalse("Verify resumed flag set false in ATTACHED event", resumedFlag[1]);
         } finally {
             if (ably != null)
@@ -1763,13 +1763,13 @@ public class RealtimeChannelTest extends ParameterizedTest {
              * - previously attached channel does attaching, attached, without visiting suspended;
              * - previously suspended channel does attaching, attached
              */
-            assertEquals("Verify channel was not suspended", suspendedStateReached[0], false);
-            assertEquals("Verify channel was attaching", attachingStateReached[0], true);
-            assertEquals("Verify channel was attached", attachedStateReached[0], true);
+            assertFalse("Verify channel was not suspended", suspendedStateReached[0]);
+            assertTrue("Verify channel was attaching", attachingStateReached[0]);
+            assertTrue("Verify channel was attached", attachedStateReached[0]);
             assertFalse("Verify resumed flag set false in ATTACHED event", resumedFlag[0]);
 
-            assertEquals("Verify channel was attaching", attachingStateReached[1], true);
-            assertEquals("Verify channel was attached", attachedStateReached[1], true);
+            assertTrue("Verify channel was attaching", attachingStateReached[1]);
+            assertTrue("Verify channel was attached", attachedStateReached[1]);
             assertFalse("Verify resumed flag set false in ATTACHED event", resumedFlag[1]);
         } finally {
             if (ably != null)
