@@ -258,7 +258,7 @@ public class Helpers {
          */
         public synchronized void waitFor(int count) {
             while(receivedMessages.size() < count)
-                try { wait(); } catch(InterruptedException e) {}
+                try { wait(); } catch(InterruptedException ignored) {}
         }
 
         /**
@@ -269,7 +269,7 @@ public class Helpers {
             long targetTime = System.currentTimeMillis() + time;
             long remaining = time;
             while(receivedMessages.size() < count && remaining > 0) {
-                try { wait(remaining); } catch(InterruptedException e) {}
+                try { wait(remaining); } catch(InterruptedException ignored) {}
                 remaining = targetTime - System.currentTimeMillis();
             }
         }
