@@ -18,6 +18,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -551,14 +552,14 @@ public class Helpers {
          */
         public synchronized ErrorInfo waitFor(ConnectionState state) {
             while(connectionManager.getConnectionState().state != state)
-                try { wait(INTERVAL_POLLING); } catch(InterruptedException e) {}
+                try { wait(INTERVAL_POLLING); } catch(InterruptedException ignored) {}
             return connectionManager.getConnectionState().defaultErrorInfo;
         }
 
         /**
          * Internal
          */
-        private ConnectionManager connectionManager;
+        private final ConnectionManager connectionManager;
     }
 
     /**
@@ -571,7 +572,6 @@ public class Helpers {
 
         /**
          * Public API
-         * @param channel
          */
         public ChannelWaiter(Channel channel) {
             this.channel = channel;
@@ -581,11 +581,13 @@ public class Helpers {
         /**
          * Wait for a given state to be reached.
          */
-        public synchronized ErrorInfo waitFor(ChannelState state) {
-            Log.d(TAG, "waitFor(" + state + ")");
-            while(channel.state != state)
-                try { wait(); } catch(InterruptedException ignored) {}
-            Log.d(TAG, "waitFor done: " + channel.state + ", " + channel.reason + ")");
+        public synchronized ErrorInfo waitFor(ChannelState ... states) {
+            for (ChannelState state : states) {
+                Log.d(TAG, "waitFor(" + state + ")");
+                while(channel.state != state)
+                    try { wait(); } catch(InterruptedException ignored) {}
+                Log.d(TAG, "waitFor done: " + channel.state + ", " + channel.reason + ")");
+            }
             return channel.reason;
         }
 
@@ -594,28 +596,64 @@ public class Helpers {
          */
         public synchronized ChannelStateChange waitFor(ChannelEvent channelEvent) {
             Log.d(TAG, "waitFor(" + channelEvent + ")");
-            while(this.channelStateChange.event != channelEvent)
+            ChannelStateChange lastStateChange = getLastStateChange();
+            while(lastStateChange.event != channelEvent)
                 try { wait(); } catch(InterruptedException ignored) {}
             Log.d(TAG, "waitFor done: " + channel.state + ", " + channel.reason + ")");
-            return this.channelStateChange;
+            return lastStateChange;
         }
 
         /**
          * ChannelStateListener interface
          */
         @Override
-        public void onChannelStateChanged(ChannelStateListener.ChannelStateChange stateChange) {
+        public void onChannelStateChanged(ChannelStateChange stateChange) {
             synchronized(this) {
-                this.channelStateChange = stateChange;
+                recordedStates.add(stateChange);
                 notify();
             }
         }
 
+        private final List<ChannelStateChange> recordedStates = Collections.synchronizedList(new ArrayList<>());
+
+        public List<ChannelState> getRecordedStates() {
+            return recordedStates.stream().map(stateChange -> stateChange.current).collect(Collectors.toList());
+        }
+
+        public boolean hasFinalStates(ChannelState ... states) {
+            List<ChannelState> rstates = getRecordedStates();
+            List<ChannelState> vettedList = rstates.subList(rstates.size() - states.length, rstates.size());
+            return hasStates(vettedList, states);
+        }
+
+        public boolean hasStates(ChannelState ... states) {
+            return hasStates(getRecordedStates(), states);
+        }
+
+        private static boolean hasStates(List<ChannelState> stateList, ChannelState ... states) {
+            boolean foundStates = false;
+            int statesCounter = 0;
+            for (ChannelState recordedState : stateList) {
+                if (states[statesCounter] != recordedState) {
+                    statesCounter = 0;
+                }
+                if (states[statesCounter] == recordedState) {
+                    statesCounter++;
+                }
+                if (statesCounter == states.length) {
+                    foundStates = true;
+                }
+            }
+            return foundStates;
+        }
+
+        public ChannelStateChange getLastStateChange() {
+            return recordedStates.get(recordedStates.size()-1);
+        }
         /**
          * Internal
          */
         private final Channel channel;
-        private ChannelStateChange channelStateChange;
     }
 
     /**
