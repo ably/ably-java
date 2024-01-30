@@ -1717,7 +1717,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                             !receivedMessageStack.get(receivedMessageStack.size()-1).data.equals("Dolor sit!"))
                                 receivedMessageStack.wait();
                 }
-            } catch(InterruptedException e) {}
+            } catch(InterruptedException ignored) {}
 
             /* Validate that,
              *- we received specific actions

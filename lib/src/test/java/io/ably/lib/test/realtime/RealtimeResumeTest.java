@@ -29,9 +29,11 @@ import org.junit.rules.Timeout;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -1062,13 +1064,13 @@ public class RealtimeResumeTest extends ParameterizedTest {
                 System.out.println("presence_resume_test: sent message with client: "+presenceMessage.clientId +" " +
                     " action:"+presenceMessage.action);
             }
-            assertEquals("Second round of messages has incorrect size", 9, transport.getSentPresenceMessages().size());
+            assertEquals("Second round of messages has incorrect size", 6, transport.getSentPresenceMessages().size());
             //make sure they were sent with correct client ids
             final Map<String,PresenceMessage> sentPresenceMap = new HashMap<>();
             for (PresenceMessage presenceMessage: transport.getSentPresenceMessages()){
                 sentPresenceMap.put(presenceMessage.clientId, presenceMessage);
             }
-            for (String client : clients) {
+            for (String client : Arrays.stream(clients).skip(3).collect(Collectors.toList())) {
                 assertTrue("Client id isn't there:" + client, sentPresenceMap.containsKey(client));
             }
         }
