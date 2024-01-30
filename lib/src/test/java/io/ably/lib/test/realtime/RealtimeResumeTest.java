@@ -1006,8 +1006,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
                 message.action == ProtocolMessage.Action.nack);
 
             //enter next 3 clients
-            for (int i = 0; i < 3; i++) {
-                senderChannel.presence.enterClient(clients[i+3],null,presenceCompletion.add());
+            for (int i = 3; i < 6; i++) {
+                senderChannel.presence.enterClient(clients[i],null,presenceCompletion.add());
             }
 
             final String firstConnectionId = ably.connection.id;
@@ -1024,8 +1024,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
             assertEquals("Disconnected state was not reached", ConnectionState.disconnected, ably.connection.state);
 
             //enter last 3 clients while disconnected
-            for (int i = 0; i < 3; i++) {
-                senderChannel.presence.enterClient(clients[i+6],null,presenceCompletion.add());
+            for (int i = 6; i < 9; i++) {
+                senderChannel.presence.enterClient(clients[i],null,presenceCompletion.add());
             }
 
             /* Wait for the connection to go stale, then reconnect */
@@ -1070,8 +1070,10 @@ public class RealtimeResumeTest extends ParameterizedTest {
             for (PresenceMessage presenceMessage: transport.getSentPresenceMessages()){
                 sentPresenceMap.put(presenceMessage.clientId, presenceMessage);
             }
-            for (String client : Arrays.stream(clients).skip(3).collect(Collectors.toList())) {
-                assertTrue("Client id isn't there:" + client, sentPresenceMap.containsKey(client));
+
+            for (int i = 3; i < 9; i++) {
+                assertTrue("Client id isn't there:" + clients[i], sentPresenceMap.containsKey(clients[i]));
+                senderChannel.presence.enterClient(clients[i],null,presenceCompletion.add());
             }
         }
     }
