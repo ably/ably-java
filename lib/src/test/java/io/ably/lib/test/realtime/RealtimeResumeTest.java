@@ -13,6 +13,7 @@ import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.Helpers.MessageWaiter;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.util.MockWebsocketFactory;
+import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
@@ -29,11 +30,9 @@ import org.junit.rules.Timeout;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -60,6 +59,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = new AblyRealtime(opts);
+            ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+            connectionWaiter.waitFor(ConnectionState.connected);
 
             /* create and attach channel */
             final Channel channel = ably.channels.get(channelName);
@@ -68,21 +69,12 @@ public class RealtimeResumeTest extends ParameterizedTest {
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
 
-            /* disconnect the connection, without closing,
-            /* suppressing automatic retries by the connection manager */
-            System.out.println("Simulating dropped transport");
-            try {
-                Method method = ably.connection.connectionManager.getClass().getDeclaredMethod("disconnectAndSuppressRetries");
-                method.setAccessible(true);
-                method.invoke(ably.connection.connectionManager);
-            } catch (NoSuchMethodException|IllegalAccessException| InvocationTargetException e) {
-                fail("Unexpected exception in suppressing retries");
-            }
+            new MutableConnectionManager(ably).disconnectAndSuppressRetries();
+            connectionWaiter.waitFor(ConnectionState.disconnected);
 
             /* reconnect the rx connection */
             ably.connection.connect();
             System.out.println("Waiting for reconnection");
-            ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
             assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
 
@@ -528,14 +520,9 @@ public class RealtimeResumeTest extends ParameterizedTest {
              * of the library, to simulate a dropped transport without
              * causing the connection itself to be disposed */
             System.out.println("*** about to disconnect tx connection");
-            /* suppress automatic retries by the connection manager */
-            try {
-                Method method = ablyTx.connection.connectionManager.getClass().getDeclaredMethod("disconnectAndSuppressRetries");
-                method.setAccessible(true);
-                method.invoke(ablyTx.connection.connectionManager);
-            } catch (NoSuchMethodException|IllegalAccessException|InvocationTargetException e) {
-                fail("Unexpected exception in suppressing retries");
-            }
+
+            new MutableConnectionManager(ablyTx).disconnectAndSuppressRetries();
+            (new ConnectionWaiter(ablyTx.connection)).waitFor(ConnectionState.disconnected);
 
             /* wait */
             try { Thread.sleep(2000L); } catch(InterruptedException ignored) {}
@@ -754,15 +741,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
             final String connectionId = sender.connection.id;
 
-            /* suppress automatic retries by the connection manager and disconnect */
-            try {
-                Method method = sender.connection.connectionManager.getClass().getDeclaredMethod(
-                    "disconnectAndSuppressRetries");
-                method.setAccessible(true);
-                method.invoke(sender.connection.connectionManager);
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                fail("Unexpected exception in suppressing retries");
-            }
+            new MutableConnectionManager(sender).disconnectAndSuppressRetries();
             (new ConnectionWaiter(sender.connection)).waitFor(ConnectionState.disconnected);
 
             sender.connection.connectionManager.requestState(ConnectionState.disconnected);
@@ -828,27 +807,13 @@ public class RealtimeResumeTest extends ParameterizedTest {
         try(AblyRealtime ably = new AblyRealtime(options)) {
             final long newTtl = 1000L;
             final long newIdleInterval = 1000L;
-            /* We want this greater than newTtl + newIdleInterval */
-            final long waitInDisconnectedState = 3000L;
-
-            ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
-                @Override
-                public void onConnectionStateChanged(ConnectionStateChange state) {
-                    try {
-                        Field connectionStateField = ably.connection.connectionManager.getClass().getDeclaredField("connectionStateTtl");
-                        connectionStateField.setAccessible(true);
-                        connectionStateField.setLong(ably.connection.connectionManager, newTtl);
-                        Field maxIdleField = ably.connection.connectionManager.getClass().getDeclaredField("maxIdleInterval");
-                        maxIdleField.setAccessible(true);
-                        maxIdleField.setLong(ably.connection.connectionManager, newIdleInterval);
-                    } catch (NoSuchFieldException | IllegalAccessException e) {
-                        fail("Unexpected exception in checking connectionStateTtl");
-                    }
-                }
-            });
 
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
+
+            MutableConnectionManager connectionManager = new MutableConnectionManager(ably);
+            connectionManager.setField("connectionStateTtl", newTtl);
+            connectionManager.setField("maxIdleInterval", newIdleInterval);
 
             final Channel senderChannel = ably.channels.get(channelName);
             senderChannel.attach();
@@ -887,14 +852,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
             final String firstConnectionId = ably.connection.id;
 
-            /* suppress automatic retries by the connection manager and disconnect */
-            try {
-                Method method = ably.connection.connectionManager.getClass().getDeclaredMethod("disconnectAndSuppressRetries");
-                method.setAccessible(true);
-                method.invoke(ably.connection.connectionManager);
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                fail("Unexpected exception in suppressing retries");
-            }
+            connectionManager.disconnectAndSuppressRetries();
             connectionWaiter.waitFor(ConnectionState.disconnected);
             assertEquals("Disconnected state was not reached", ConnectionState.disconnected, ably.connection.state);
 
@@ -905,6 +863,9 @@ public class RealtimeResumeTest extends ParameterizedTest {
             }
             //now let's unblock the ack nacks and reconnect
             mockWebsocketFactory.blockReceiveProcessing(message -> false);
+
+            /* We want this greater than newTtl + newIdleInterval */
+            final long waitInDisconnectedState = 3000L;
             /* Wait for the connection to go stale, then reconnect */
             try {
                 Thread.sleep(waitInDisconnectedState);
@@ -935,6 +896,37 @@ public class RealtimeResumeTest extends ParameterizedTest {
         }
     }
 
+    static class MutableConnectionManager {
+        ConnectionManager connectionManager;
+
+        public MutableConnectionManager(AblyRealtime ablyRealtime) {
+            this.connectionManager = ablyRealtime.connection.connectionManager;
+        }
+
+        public void setField(String fieldName, long value) {
+            Field connectionStateField = null;
+            try {
+                connectionStateField = ConnectionManager.class.getDeclaredField(fieldName);
+                connectionStateField.setAccessible(true);
+                connectionStateField.setLong(connectionManager, value);
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                fail("Unexpected exception in checking connectionStateTtl");
+            }
+        }
+
+        /**
+         * Suppress automatic retries by the connection manager and disconnect
+         */
+        public void disconnectAndSuppressRetries() {
+            try {
+                Method method = ConnectionManager.class.getDeclaredMethod("disconnectAndSuppressRetries");
+                method.setAccessible(true);
+                method.invoke(connectionManager);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                fail("Unexpected exception in suppressing retries");
+            }
+        }
+    }
 
     /**
      * In case of resume failure verify that presence messages are resent
@@ -950,33 +942,18 @@ public class RealtimeResumeTest extends ParameterizedTest {
         options.logLevel = Log.VERBOSE;
         options.realtimeRequestTimeout = 2000L;
 
-        /* We want this greater than newTtl + newIdleInterval */
-        final long waitInDisconnectedState = 5000L;
         options.transportFactory = mockWebsocketFactory;
         try(AblyRealtime ably = new AblyRealtime(options)) {
-            final long newTtl = 1000L;
-            final long newIdleInterval = 1000L;
-            /* We want this greater than newTtl + newIdleInterval */
-            ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
-                @Override
-                public void onConnectionStateChanged(ConnectionStateChange state) {
-                    try {
-                        Field connectionStateField = ably.connection.connectionManager.getClass().
-                            getDeclaredField("connectionStateTtl");
-                        connectionStateField.setAccessible(true);
-                        connectionStateField.setLong(ably.connection.connectionManager, newTtl);
-                        Field maxIdleField = ably.connection.connectionManager.getClass().
-                            getDeclaredField("maxIdleInterval");
-                        maxIdleField.setAccessible(true);
-                        maxIdleField.setLong(ably.connection.connectionManager, newIdleInterval);
-                    } catch (NoSuchFieldException | IllegalAccessException e) {
-                        fail("Unexpected exception in checking connectionStateTtl");
-                    }
-                }
-            });
 
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
+
+            final long newTtl = 1000L;
+            final long newIdleInterval = 1000L;
+
+            MutableConnectionManager connectionManager = new MutableConnectionManager(ably);
+            connectionManager.setField("connectionStateTtl", newTtl);
+            connectionManager.setField("maxIdleInterval", newIdleInterval);
 
             final Channel senderChannel = ably.channels.get(channelName);
             senderChannel.attach();
@@ -1012,14 +989,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
             final String firstConnectionId = ably.connection.id;
 
-            /* suppress automatic retries by the connection manager and disconnect */
-            try {
-                Method method = ably.connection.connectionManager.getClass().getDeclaredMethod("disconnectAndSuppressRetries");
-                method.setAccessible(true);
-                method.invoke(ably.connection.connectionManager);
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                fail("Unexpected exception in suppressing retries");
-            }
+            connectionManager.disconnectAndSuppressRetries();
             connectionWaiter.waitFor(ConnectionState.disconnected);
             assertEquals("Disconnected state was not reached", ConnectionState.disconnected, ably.connection.state);
 
@@ -1028,6 +998,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
                 senderChannel.presence.enterClient(clients[i],null,presenceCompletion.add());
             }
 
+            /* We want this greater than newTtl + newIdleInterval */
+            final long waitInDisconnectedState = 5000L;
             /* Wait for the connection to go stale, then reconnect */
             try {
                 Thread.sleep(waitInDisconnectedState);

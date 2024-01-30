@@ -1655,7 +1655,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
      * state will have all messages sent once the channel attaches, and all listeners will be called.
      * </p>
      *
-     * @throws AblyException
      */
     @Test
     public void realtime_presence_update_multiple_queued_messages() throws AblyException {
