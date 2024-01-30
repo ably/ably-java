@@ -251,10 +251,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                 attachMessage.setFlags(options.getModeFlags());
             }
         }
-        if(this.decodeFailureRecoveryInProgress) {
-            Log.v(TAG, "attach(); message decode recovery in progress.");
-        }
         attachMessage.channelSerial = properties.channelSerial; // RTL4c1
+        if(this.decodeFailureRecoveryInProgress) { // RTL18c
+            Log.v(TAG, "attach(); message decode recovery in progress, setting last message channelserial");
+            attachMessage.channelSerial = this.lastPayloadProtocolMessageChannelSerial;
+        }
         try {
             if (listener != null) {
                 on(new ChannelStateCompletionListener(listener, ChannelState.attached, ChannelState.failed));
@@ -838,6 +839,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
 
         lastPayloadMessageId = lastMessage.id;
+        lastPayloadProtocolMessageChannelSerial = protocolMessage.channelSerial;
 
         for (final Message msg : messages) {
             this.listeners.onMessage(msg);
@@ -1340,6 +1342,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      */
     private Set<ChannelMode> modes;
     private String lastPayloadMessageId;
+    private String lastPayloadProtocolMessageChannelSerial;
     private boolean decodeFailureRecoveryInProgress;
     private final DecodingContext decodingContext;
 }
