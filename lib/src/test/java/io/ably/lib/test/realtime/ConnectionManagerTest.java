@@ -35,10 +35,7 @@ import org.mockito.Mockito;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -46,6 +43,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -557,23 +555,17 @@ public class ConnectionManagerTest extends ParameterizedTest {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.realtimeRequestTimeout = 2000;
         try(AblyRealtime ably = new AblyRealtime(opts)) {
-            final long newIdleInterval = 500L;
-
-            // When we connect, we set the max idle interval to be very small
-            ably.connection.on(ConnectionEvent.connected, state -> {
-                try {
-                    Field maxIdleField = ably.connection.connectionManager.getClass().getDeclaredField("maxIdleInterval");
-                    maxIdleField.setAccessible(true);
-                    maxIdleField.setLong(ably.connection.connectionManager, newIdleInterval);
-                } catch (NoSuchFieldException | IllegalAccessException e) {
-                    fail("Unexpected exception in checking connectionStateTtl");
-                }
-            });
 
             // The original max idle interval we receive from the server is 15s.
             // We should wait for this, plus a tiny bit extra (as we set the new idle interval to be very low
             // after connecting) to make sure that the connection is disconnected
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+            connectionWaiter.waitFor(ConnectionState.connected);
+
+            // When we connect, we set the max idle interval to be very small
+            Helpers.MutableConnectionManager connectionManager = new Helpers.MutableConnectionManager(ably);
+            connectionManager.setField("maxIdleInterval", 500L);
+
             assertTrue(connectionWaiter.waitFor(ConnectionState.disconnected, 1, 25000));
         }
     }
@@ -587,39 +579,25 @@ public class ConnectionManagerTest extends ParameterizedTest {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.realtimeRequestTimeout = 2000L;
         try(AblyRealtime ably = new AblyRealtime(opts)) {
-            final long newTtl = 1000L;
-            final long newIdleInterval = 1000L;
             /* We want this greater than newTtl + newIdleInterval */
             final long waitInDisconnectedState = 3000L;
-
-            ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
-                @Override
-                public void onConnectionStateChanged(ConnectionStateChange state) {
-                    try {
-                        Field connectionStateField = ably.connection.connectionManager.getClass().getDeclaredField("connectionStateTtl");
-                        connectionStateField.setAccessible(true);
-                        connectionStateField.setLong(ably.connection.connectionManager, newTtl);
-                        Field maxIdleField = ably.connection.connectionManager.getClass().getDeclaredField("maxIdleInterval");
-                        maxIdleField.setAccessible(true);
-                        maxIdleField.setLong(ably.connection.connectionManager, newIdleInterval);
-                    } catch (NoSuchFieldException | IllegalAccessException e) {
-                        fail("Unexpected exception in checking connectionStateTtl");
-                    }
-                }
-            });
 
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
             final String firstConnectionId = ably.connection.id;
 
-            new Helpers.MutableConnectionManager(ably).disconnectAndSuppressRetries();
+            Helpers.MutableConnectionManager connectionManager = new Helpers.MutableConnectionManager(ably);
+            connectionManager.setField("connectionStateTtl", 1000L);
+            connectionManager.setField("maxIdleInterval", 1000L);
+
+            connectionManager.disconnectAndSuppressRetries();
             connectionWaiter.waitFor(ConnectionState.disconnected);
             assertEquals("Disconnected state was not reached", ConnectionState.disconnected, ably.connection.state);
 
             /* Wait for the connection to go stale, then reconnect */
             try {
                 Thread.sleep(waitInDisconnectedState);
-            } catch (InterruptedException e) {
+            } catch (InterruptedException ignored) {
             }
             ably.connection.connect();
             connectionWaiter.waitFor(ConnectionState.connected);
@@ -662,65 +640,42 @@ public class ConnectionManagerTest extends ParameterizedTest {
     public void channels_are_reattached_after_reconnecting_when_statettl_plus_idleinterval_has_passed() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         try(AblyRealtime ably = new AblyRealtime(opts)) {
-            final long newTtl = 1000L;
-            final long newIdleInterval = 1000L;
             /* We want this greater than newTtl + newIdleInterval */
             final long waitInDisconnectedState = 3000L;
-            final List<String> attachedChannelHistory = new ArrayList<String>();
-            final List<String> expectedAttachedChannelHistory = Arrays.asList("attaching", "attached", "attaching", "attached");
-            final List<String> suspendedChannelHistory = new ArrayList<String>();
-            final List<String> expectedSuspendedChannelHistory = Arrays.asList("attaching", "attached");
-            ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
-                @Override
-                public void onConnectionStateChanged(ConnectionStateChange state) {
-                    try {
-                        Field connectionStateField = ably.connection.connectionManager.getClass().getDeclaredField("connectionStateTtl");
-                        connectionStateField.setAccessible(true);
-                        connectionStateField.setLong(ably.connection.connectionManager, newTtl);
-                        Field maxIdleField = ably.connection.connectionManager.getClass().getDeclaredField("maxIdleInterval");
-                        maxIdleField.setAccessible(true);
-                        maxIdleField.setLong(ably.connection.connectionManager, newIdleInterval);
-                    } catch (NoSuchFieldException | IllegalAccessException e) {
-                        fail("Unexpected exception in checking connectionStateTtl");
-                    }
-                }
-            });
+            final ChannelState[] expectedAttachedChannelHistory = new ChannelState[]{
+                ChannelState.attaching, ChannelState.attached, ChannelState.attaching, ChannelState.attached};
 
-            ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+            final ChannelState[] expectedSuspendedChannelHistory =  new ChannelState[]{
+                ChannelState.attaching, ChannelState.attached};
+
+                ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
             final String firstConnectionId = ably.connection.id;
+
+            Helpers.MutableConnectionManager connectionManager = new Helpers.MutableConnectionManager(ably);
+            connectionManager.setField("connectionStateTtl", 1000L);
+            connectionManager.setField("maxIdleInterval", 1000L);
 
             /* Prepare channels */
             final Channel attachedChannel = ably.channels.get("test-reattach-after-ttl" + testParams.name);
             ChannelWaiter attachedChannelWaiter = new Helpers.ChannelWaiter(attachedChannel);
-            attachedChannel.on(new ChannelStateListener() {
-                @Override
-                public void onChannelStateChanged(ChannelStateChange stateChange) {
-                    attachedChannelHistory.add(stateChange.current.name());
-                }
-            });
+
             final Channel suspendedChannel = ably.channels.get("test-reattach-suspended-after-ttl" + testParams.name);
             suspendedChannel.state = ChannelState.suspended;
-            suspendedChannel.on(new ChannelStateListener() {
-                @Override
-                public void onChannelStateChanged(ChannelStateChange stateChange) {
-                    suspendedChannelHistory.add(stateChange.current.name());
-                }
-            });
             ChannelWaiter suspendedChannelWaiter = new Helpers.ChannelWaiter(suspendedChannel);
 
             /* attach first channel and wait for it to be attached */
             attachedChannel.attach();
             attachedChannelWaiter.waitFor(ChannelState.attached);
 
-            new Helpers.MutableConnectionManager(ably).disconnectAndSuppressRetries();
+            connectionManager.disconnectAndSuppressRetries();
             connectionWaiter.waitFor(ConnectionState.disconnected);
             assertEquals("Disconnected state was not reached", ConnectionState.disconnected, ably.connection.state);
 
             /* Wait for the connection to go stale, then reconnect */
             try {
                 Thread.sleep(waitInDisconnectedState);
-            } catch (InterruptedException e) {
+            } catch (InterruptedException ignored) {
             }
             ably.connection.connect();
             connectionWaiter.waitFor(ConnectionState.connected);
@@ -734,15 +689,18 @@ public class ConnectionManagerTest extends ParameterizedTest {
             attachedChannel.once(ChannelEvent.attached, new ChannelStateListener() {
                 @Override
                 public void onChannelStateChanged(ChannelStateChange stateChange) {
-                    assertEquals("Resumed is true and should be false", stateChange.resumed, false);
+                    assertFalse("Resumed is true and should be false", stateChange.resumed);
                 }
             });
 
             /* Wait for both channels to reattach and verify state histories match the expected ones */
             attachedChannelWaiter.waitFor(ChannelState.attached);
             suspendedChannelWaiter.waitFor(ChannelState.attached);
-            assertEquals("Attached channel histories do not match", attachedChannelHistory, expectedAttachedChannelHistory);
-            assertEquals("Suspended channel histories do not match", suspendedChannelHistory, expectedSuspendedChannelHistory);
+            assertTrue("Attached channel histories do not match",
+                attachedChannelWaiter.hasFinalStates(expectedAttachedChannelHistory));
+
+            assertTrue("Suspended channel histories do not match",
+                suspendedChannelWaiter.hasFinalStates(expectedSuspendedChannelHistory));
         }
     }
 

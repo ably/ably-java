@@ -421,7 +421,7 @@ public class Helpers {
                 connectionStateField.setAccessible(true);
                 connectionStateField.setLong(connectionManager, value);
             } catch (NoSuchFieldException | IllegalAccessException e) {
-                fail("Error updating " + fieldName + " error occurred" + e);
+                fail("Failed updating " + fieldName + " with error " + e);
             }
         }
 
@@ -431,7 +431,7 @@ public class Helpers {
                 connectionStateField.setAccessible(true);
                 return connectionStateField.getLong(connectionManager);
             } catch (NoSuchFieldException | IllegalAccessException e) {
-                fail("Error accessing " + fieldName + " error occurred" + e);
+                fail("Failed accessing " + fieldName + " with error " + e);
             }
             return 0;
         }
