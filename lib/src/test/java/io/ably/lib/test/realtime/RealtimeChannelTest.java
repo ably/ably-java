@@ -1582,16 +1582,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             assertEquals(ably.connection.connectionManager.msgSerial, 1);
 
-            /* disconnect, and sabotage the resume */
-            /* suppress automatic retries by the connection manager */
-            try {
-                Method method = ably.connection.connectionManager.getClass().getDeclaredMethod("disconnectAndSuppressRetries");
-                method.setAccessible(true);
-                method.invoke(ably.connection.connectionManager);
-            } catch (NoSuchMethodException|IllegalAccessException|InvocationTargetException e) {
-                fail("Unexpected exception in suppressing retries");
-            }
-
+            new Helpers.MutableConnectionManager(ably).disconnectAndSuppressRetries();
             connectionWaiter.waitFor(ConnectionState.disconnected);
             assertEquals("Verify disconnected state is reached", ConnectionState.disconnected, ably.connection.state);
 
@@ -1666,15 +1657,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             assertEquals(ably.connection.connectionManager.msgSerial, 1);
 
-            /* suppress automatic retries by the connection manager */
-            try {
-                Method method = ably.connection.connectionManager.getClass().getDeclaredMethod("disconnectAndSuppressRetries");
-                method.setAccessible(true);
-                method.invoke(ably.connection.connectionManager);
-            } catch (NoSuchMethodException|IllegalAccessException|InvocationTargetException e) {
-                fail("Unexpected exception in suppressing retries");
-            }
-
+            new Helpers.MutableConnectionManager(ably).disconnectAndSuppressRetries();
             connectionWaiter.waitFor(ConnectionState.disconnected);
             assertEquals("Verify disconnected state is reached", ConnectionState.disconnected, ably.connection.state);
 

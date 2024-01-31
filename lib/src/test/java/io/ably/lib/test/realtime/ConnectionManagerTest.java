@@ -618,14 +618,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
             connectionWaiter.waitFor(ConnectionState.connected);
             final String firstConnectionId = ably.connection.id;
 
-            /* suppress automatic retries by the connection manager and disconnect */
-            try {
-                Method method = ably.connection.connectionManager.getClass().getDeclaredMethod("disconnectAndSuppressRetries");
-                method.setAccessible(true);
-                method.invoke(ably.connection.connectionManager);
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                fail("Unexpected exception in suppressing retries");
-            }
+            new Helpers.MutableConnectionManager(ably).disconnectAndSuppressRetries();
             connectionWaiter.waitFor(ConnectionState.disconnected);
             assertEquals("Disconnected state was not reached", ConnectionState.disconnected, ably.connection.state);
 
@@ -726,14 +719,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
             attachedChannel.attach();
             attachedChannelWaiter.waitFor(ChannelState.attached);
 
-            /* suppress automatic retries by the connection manager and disconnect */
-            try {
-                Method method = ably.connection.connectionManager.getClass().getDeclaredMethod("disconnectAndSuppressRetries");
-                method.setAccessible(true);
-                method.invoke(ably.connection.connectionManager);
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                fail("Unexpected exception in suppressing retries");
-            }
+            new Helpers.MutableConnectionManager(ably).disconnectAndSuppressRetries();
             connectionWaiter.waitFor(ConnectionState.disconnected);
             assertEquals("Disconnected state was not reached", ConnectionState.disconnected, ably.connection.state);
 

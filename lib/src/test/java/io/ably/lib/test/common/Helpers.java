@@ -1,5 +1,8 @@
 package io.ably.lib.test.common;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -29,6 +32,7 @@ import io.ably.lib.debug.DebugOptions.RawHttpListener;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
+import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.Channel.MessageListener;
 import io.ably.lib.realtime.ChannelEvent;
@@ -62,6 +66,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class Helpers {
 
@@ -400,6 +405,38 @@ public class Helpers {
                 if(clientId.equals(message.clientId) && connectionId.equals(message.connectionId) && action == message.action)
                     return message;
             return null;
+        }
+    }
+
+    public static class MutableConnectionManager {
+        ConnectionManager connectionManager;
+
+        public MutableConnectionManager(AblyRealtime ablyRealtime) {
+            this.connectionManager = ablyRealtime.connection.connectionManager;
+        }
+
+        public void setField(String fieldName, long value) {
+            Field connectionStateField = null;
+            try {
+                connectionStateField = ConnectionManager.class.getDeclaredField(fieldName);
+                connectionStateField.setAccessible(true);
+                connectionStateField.setLong(connectionManager, value);
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                fail("Unexpected exception in checking connectionStateTtl");
+            }
+        }
+
+        /**
+         * Suppress automatic retries by the connection manager and disconnect
+         */
+        public void disconnectAndSuppressRetries() {
+            try {
+                Method method = ConnectionManager.class.getDeclaredMethod("disconnectAndSuppressRetries");
+                method.setAccessible(true);
+                method.invoke(connectionManager);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                fail("Unexpected exception in suppressing retries");
+            }
         }
     }
 
