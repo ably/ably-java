@@ -4,9 +4,7 @@ import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
-import io.ably.lib.realtime.ConnectionEvent;
 import io.ably.lib.realtime.ConnectionState;
-import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
@@ -899,7 +897,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
     static class MutableConnectionManager {
         ConnectionManager connectionManager;
 
-        public MutableConnectionManager(AblyRealtime ablyRealtime) {
+        MutableConnectionManager(AblyRealtime ablyRealtime) {
             this.connectionManager = ablyRealtime.connection.connectionManager;
         }
 
@@ -1045,7 +1043,6 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
             for (int i = 3; i < 9; i++) {
                 assertTrue("Client id isn't there:" + clients[i], sentPresenceMap.containsKey(clients[i]));
-                senderChannel.presence.enterClient(clients[i],null,presenceCompletion.add());
             }
         }
     }
