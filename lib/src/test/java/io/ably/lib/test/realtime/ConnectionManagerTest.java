@@ -529,29 +529,23 @@ public class ConnectionManagerTest extends ParameterizedTest {
     @Test
     public void connection_details_has_ttl() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+        opts.autoConnect = false;
         try (AblyRealtime ably = new AblyRealtime(opts)) {
-            final boolean[] callbackWasRun = new boolean[1];
-            ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
-                @Override
-                public void onConnectionStateChanged(ConnectionStateChange state) {
-                    synchronized(callbackWasRun) {
-                        callbackWasRun[0] = true;
-                        try {
-                            Field field = ably.connection.connectionManager.getClass().getDeclaredField("connectionStateTtl");
-                            field.setAccessible(true);
-                            assertEquals("Verify connectionStateTtl has the default value", field.get(ably.connection.connectionManager), 120000L);
-                        } catch (NoSuchFieldException|IllegalAccessException e) {
-                            fail("Unexpected exception in checking connectionStateTtl");
-                        }
-                        callbackWasRun.notify();
-                    }
-                }
-            });
+            Helpers.MutableConnectionManager connectionManager = new Helpers.MutableConnectionManager(ably);
 
-            synchronized (callbackWasRun) {
-                try { callbackWasRun.wait(); } catch(InterruptedException ie) {}
-                assertTrue("Connected callback was not run", callbackWasRun[0]);
-            }
+            // connStateTtl set to default value
+            long connStateTtl = connectionManager.getField("connectionStateTtl");
+            assertEquals(Defaults.connectionStateTtl, connStateTtl);
+
+            connectionManager.setField("connectionStateTtl", 8000L);
+            long oldConnStateTtl = connectionManager.getField("connectionStateTtl");
+            assertEquals(8000L, oldConnStateTtl);
+
+            ably.connect();
+            new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+            long newConnStateTtl = connectionManager.getField("connectionStateTtl");
+            // connStateTtl set by server to 120s
+            assertEquals(120000L, newConnStateTtl);
         }
     }
 

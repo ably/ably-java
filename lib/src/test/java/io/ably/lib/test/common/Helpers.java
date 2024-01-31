@@ -416,14 +416,24 @@ public class Helpers {
         }
 
         public void setField(String fieldName, long value) {
-            Field connectionStateField = null;
             try {
-                connectionStateField = ConnectionManager.class.getDeclaredField(fieldName);
+                Field connectionStateField = ConnectionManager.class.getDeclaredField(fieldName);
                 connectionStateField.setAccessible(true);
                 connectionStateField.setLong(connectionManager, value);
             } catch (NoSuchFieldException | IllegalAccessException e) {
-                fail("Unexpected exception in checking connectionStateTtl");
+                fail("Error updating " + fieldName + " error occurred" + e);
             }
+        }
+
+        public long getField(String fieldName) {
+            try {
+                Field connectionStateField = ConnectionManager.class.getDeclaredField(fieldName);
+                connectionStateField.setAccessible(true);
+                return connectionStateField.getLong(connectionManager);
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                fail("Error accessing " + fieldName + " error occurred" + e);
+            }
+            return 0;
         }
 
         /**
