@@ -4,7 +4,6 @@ import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
-import io.ably.lib.realtime.ConnectionEvent;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.rest.AblyRest;
@@ -147,7 +146,8 @@ public class RealtimeAuthTest extends ParameterizedTest {
      * Spec: RSA4d, RSA4d1
      */
     @Test
-    public void auth_client_fails_authorize_server_forbidden() {
+    public void auth_client_fails() {
+        AblyRealtime ablyRealtime = null;
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
@@ -163,24 +163,12 @@ public class RealtimeAuthTest extends ParameterizedTest {
             opts.authUrl = "https://echo.ably.io/respondwith";
             opts.authParams = new Param[]{ new Param("status", 403)};
 
-            final AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            ablyRealtime = new AblyRealtime(opts);
             ablyRealtime.connection.connect();
 
             /* wait for connected state */
             Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ablyRealtime.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
-
-            /* create listener for ConnectionEvent.failed */
-            ablyRealtime.connection.once(ConnectionEvent.failed, new ConnectionStateListener() {
-                @Override
-                public void onConnectionStateChanged(ConnectionStateChange stateChange) {
-                    /* assert that state changes correctly */
-                    assertEquals(ConnectionState.connected, stateChange.previous);
-                    assertEquals(80019, stateChange.reason.code);
-                    assertEquals(80019, ablyRealtime.connection.reason.code);
-                    assertEquals(403, ablyRealtime.connection.reason.statusCode);
-                }
-            });
 
             try {
                 opts.tokenDetails = null;
@@ -194,11 +182,21 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             /* wait for failed state */
             connectionWaiter.waitFor(ConnectionState.failed);
+            ConnectionStateListener.ConnectionStateChange lastStateChange = connectionWaiter.lastStateChange();
+            assertEquals(ConnectionState.failed, lastStateChange.current);
+            assertEquals(80019, lastStateChange.reason.code);
+            assertEquals(403, lastStateChange.reason.statusCode);
+
             assertEquals("Verify connected state has failed", ConnectionState.failed, ablyRealtime.connection.state);
             assertEquals("Check correct cause error code", 403, ablyRealtime.connection.reason.statusCode);
+            assertEquals(80019, ablyRealtime.connection.reason.code);
+
         } catch (AblyException e) {
             e.printStackTrace();
             fail();
+        } finally {
+            assert ablyRealtime != null;
+            ablyRealtime.close();
         }
     }
 
@@ -350,7 +348,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             assertEquals("Verify connected state is reached", ConnectionState.connected, ablyRealtime.connection.state);
 
             /* check expected clientId */
-            assertEquals("Auth#clientId is expected to be null", null, ablyRealtime.auth.clientId);
+            assertNull("Auth#clientId is expected to be null", ablyRealtime.auth.clientId);
 
             ablyRealtime.close();
         } catch (AblyException e) {
@@ -383,7 +381,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             AblyRealtime ablyRealtime = new AblyRealtime(opts);
 
             /* check expected clientId */
-            assertEquals("Auth#clientId is expected to be null", null, ablyRealtime.auth.clientId);
+            assertNull("Auth#clientId is expected to be null", ablyRealtime.auth.clientId);
 
             /* wait for connected state */
             ablyRealtime.connection.connect();
@@ -688,7 +686,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = "options clientId";
             opts.tokenDetails = tokenDetails;
-            AblyRealtime ablyRealtime = new AblyRealtime(opts);
+            new AblyRealtime(opts);
         } catch (AblyException e) {
             assertEquals("Verify error code indicates clientId mismatch", e.errorInfo.code, 40101);
         }
@@ -773,7 +771,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             /* Get sent message */
             Message messagePublished = protocolListener.sentMessages.get(0).messages[0];
-            assertEquals("Sent message does not contain clientId", messagePublished.clientId, null);
+            assertNull("Sent message does not contain clientId", messagePublished.clientId);
 
             /* wait until message received on transport */
             protocolListener.waitForRecv(1);
@@ -819,7 +817,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             channel.publish(messageToPublish, pubComplete.add());
             pubComplete.waitFor();
             assertTrue("Verify publish callback called on completion", pubComplete.pending.isEmpty());
-            assertTrue("Verify publish callback returns an error", pubComplete.errors.size() == 1);
+            assertEquals("Verify publish callback returns an error", 1, pubComplete.errors.size());
             assertEquals("Verify publish callback error has expected error code", pubComplete.errors.iterator().next().code, 40012);
 
             /* verify no message sent or received on transport */
@@ -838,7 +836,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             /* Get sent message */
             messagePublished = protocolListener.sentMessages.get(0).messages[0];
-            assertEquals("Sent message does not contain clientId", messagePublished.clientId, null);
+            assertNull("Sent message does not contain clientId", messagePublished.clientId);
 
             /* wait until message received on transport */
             protocolListener.waitForRecv(1);
@@ -927,7 +925,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
 
             /* Get sent message */
             messagePublished = protocolListener.sentMessages.get(0).messages[0];
-            assertEquals("Sent message does not contain clientId", messagePublished.clientId, null);
+            assertNull("Sent message does not contain clientId", messagePublished.clientId);
 
             /* wait until message received on transport */
             protocolListener.waitForRecv(1);
@@ -996,7 +994,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
                 ably.connect();
                 try {
                     opts.wait();
-                } catch(InterruptedException ie) {}
+                } catch(InterruptedException ignored) {}
                 ably.auth.renew();
             }
 
@@ -1066,7 +1064,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
                 ably.connect();
                 try {
                     opts.wait();
-                } catch(InterruptedException ie) {}
+                } catch(InterruptedException ignored) {}
 
                 ably.auth.renewAuth((success, tokenDetails1, errorInfo) -> {
                     //Ignore completion handling
@@ -1183,7 +1181,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             assertNotNull("Expected token value", tokenDetails.token);
 
             /* allow to expire */
-            try { Thread.sleep(200L); } catch(InterruptedException ie) {}
+            try { Thread.sleep(200L); } catch(InterruptedException ignored) {}
 
             /* create Ably realtime instance with token and authCallback */
             ClientOptions opts = createOptions();

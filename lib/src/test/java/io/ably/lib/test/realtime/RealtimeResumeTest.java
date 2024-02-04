@@ -583,19 +583,16 @@ public class RealtimeResumeTest extends ParameterizedTest {
             final Channel senderChannel = sender.channels.get(channelName);
             senderChannel.attach();
             (new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
-            assertEquals(
-                "The sender's channel should be attached",
-                senderChannel.state, ChannelState.attached
-            );
+            assertEquals("The sender's channel should be attached",
+                senderChannel.state, ChannelState.attached);
 
             /* create and attach channel to recv on */
             final Channel receiverChannel = receiver.channels.get(channelName);
             receiverChannel.attach();
             (new ChannelWaiter(receiverChannel)).waitFor(ChannelState.attached);
-            assertEquals(
-                "The receiver's channel should be attached",
-                receiverChannel.state, ChannelState.attached
-            );
+            assertEquals("The receiver's channel should be attached",
+                receiverChannel.state, ChannelState.attached);
+
             /* subscribe */
             MessageWaiter messageWaiter =  new MessageWaiter(receiverChannel);
 
@@ -612,10 +609,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
             /* wait for the subscription callback to be called */
             messageWaiter.waitFor(messageCount);
-            assertEquals(
-                "Did not receive the entire first round of messages",
-                messageWaiter.receivedMessages.size(), messageCount
-            );
+            assertEquals("Did not receive the entire first round of messages",
+                messageWaiter.receivedMessages.size(), messageCount);
             messageWaiter.reset();
 
             /* disconnect the sender, without closing;
@@ -641,7 +636,6 @@ public class RealtimeResumeTest extends ParameterizedTest {
             sender.connection.connect();
             (new ConnectionWaiter(sender.connection)).waitFor(ConnectionState.connected);
 
-
             /* wait for the publish callback to be called.*/
             errors = msgComplete2.waitFor();
             assertEquals("Second round of messages (queued) has errors", 0, errors.length);
@@ -655,10 +649,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
                 received.size(), messageCount
             );
             for(int i=0; i<received.size(); i++) {
-                assertEquals(
-                    "Received unexpected queued message",
-                    received.get(i).name, "queued_message_" + i
-                );
+                assertEquals("Received unexpected queued message", received.get(i).name,
+                    "queued_message_" + i);
             }
         } catch (AblyException e) {
             e.printStackTrace();
@@ -694,10 +686,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
             final Channel senderChannel = sender.channels.get(channelName);
             senderChannel.attach();
             (new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
-            assertEquals(
-                "The sender's channel should be attached",
-                senderChannel.state, ChannelState.attached
-            );
+            assertEquals("The sender's channel should be attached",
+                senderChannel.state, ChannelState.attached);
 
             MockWebsocketFactory.MockWebsocketTransport transport = mockWebsocketFactory.getCreatedTransport();
 
@@ -713,7 +703,9 @@ public class RealtimeResumeTest extends ParameterizedTest {
             assertEquals("First completion has errors", 0, errors.length);
 
             //assert that messages sent till now are sent with correct size and serials
-            assertEquals("First round of messages has incorrect size", 3, transport.getPublishedMessages().size());
+            assertEquals("First round of messages has incorrect size", 3,
+                transport.getPublishedMessages().size());
+
             for (int i = 0; i < transport.getPublishedMessages().size(); i++) {
                 ProtocolMessage protocolMessage = transport.getPublishedMessages().get(i);
                 assertEquals("Sent serial incorrect", Long.valueOf(i), protocolMessage.msgSerial);
@@ -724,7 +716,6 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
             //block ack/nack messages to simulate pending message
             //note that this will only block ack/nack messages received by connection manager
-
             mockWebsocketFactory.blockReceiveProcessing(message -> message.action == ProtocolMessage.Action.ack ||
                 message.action == ProtocolMessage.Action.nack);
 

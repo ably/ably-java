@@ -477,7 +477,7 @@ public class Helpers {
             while (currentState() != state) {
                 try {
                     wait();
-                } catch (InterruptedException e) {
+                } catch (InterruptedException ignored) {
                 }
             }
             Log.d(TAG, "waitFor done: state=" + targetStateName + ")");
@@ -493,8 +493,8 @@ public class Helpers {
             Log.d(TAG, "waitFor(state=" + state.getConnectionEvent().name() + ", count=" + count + ")");
 
             while(getStateCount(state) < count)
-                try { wait(); } catch(InterruptedException e) {}
-            Log.d(TAG, "waitFor done: state=" + latestChange.current.getConnectionEvent().name() + ", count=" + getStateCount(state) + ")");
+                try { wait(); } catch(InterruptedException ignored) {}
+            Log.d(TAG, "waitFor done: state=" + lastStateChange().current.getConnectionEvent().name() + ", count=" + getStateCount(state) + ")");
         }
 
         /**
@@ -511,7 +511,7 @@ public class Helpers {
             long remaining = time;
             while(getStateCount(state) < count && remaining > 0) {
                 Log.d(TAG, "waitFor(state=" + state.getConnectionEvent().name() + ", waiting for=" + remaining + ")");
-                try { wait(remaining); } catch(InterruptedException e) {}
+                try { wait(remaining); } catch(InterruptedException ignored) {}
                 remaining = targetTime - System.currentTimeMillis();
             }
             int stateCount = getStateCount(state);
@@ -552,7 +552,7 @@ public class Helpers {
         @Override
         public void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange state) {
             synchronized(this) {
-                latestChange = state;
+                stateChanges.add(state);
                 reason = state.reason;
                 Counter counter = stateCounts.get(state.current); if(counter == null) stateCounts.put(state.current, (counter = new Counter()));
                 counter.incr();
@@ -573,15 +573,23 @@ public class Helpers {
         }
 
         private synchronized ConnectionState currentState() {
-            return latestChange == null ? connection.state : latestChange.current;
+            ConnectionStateChange stateChange = lastStateChange();
+            return stateChange == null ? connection.state : stateChange.current;
+        }
+
+        public synchronized ConnectionStateChange lastStateChange() {
+            if (stateChanges.size() == 0) {
+                return null;
+            }
+            return stateChanges.get(stateChanges.size() -1);
         }
 
         /**
          * Internal
          */
-        private Connection connection;
+        private final Connection connection;
         private ErrorInfo reason;
-        private ConnectionStateChange latestChange;
+        private final List<ConnectionStateChange> stateChanges = new ArrayList<>();
         private Map<ConnectionState, Counter> stateCounts;
         private static final String TAG = ConnectionWaiter.class.getName();
     }
