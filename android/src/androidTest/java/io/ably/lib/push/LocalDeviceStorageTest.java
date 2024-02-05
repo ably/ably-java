@@ -49,7 +49,7 @@ public class LocalDeviceStorageTest {
         }
 
         @Override
-        public void clear(Field[] fields) {
+        public void clear(String[] keys) {
             hashMap = new HashMap<>();
         }
     };
