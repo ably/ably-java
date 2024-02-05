@@ -1,7 +1,5 @@
 package io.ably.lib.push;
 
-import java.lang.reflect.Field;
-
 /**
  * Interface for an entity that supplies key value store
  */

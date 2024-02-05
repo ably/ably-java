@@ -3,7 +3,6 @@ package io.ably.lib.push;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
-import java.lang.reflect.Field;
 
 public class SharedPreferenceStorage implements Storage{
 
