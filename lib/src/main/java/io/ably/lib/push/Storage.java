@@ -38,8 +38,8 @@ public interface Storage {
     int get(String key, int defaultValue);
 
     /**
-     * Removes fields from storage
-     * @param fields array of keys which values should be removed from storage
+     * Removes keys from storage
+     * @param keys array of keys which values should be removed from storage
      */
-    void clear(Field[] fields);
+    void clear(String[] keys);
 }

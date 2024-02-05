@@ -144,7 +144,7 @@ public class LocalDevice extends DeviceDetails {
         this.clientId = null;
         this.clearRegistrationToken();
 
-        storage.clear(SharedPrefKeys.class.getDeclaredFields());
+        storage.clear(SharedPrefKeys.getAllKeys());
     }
 
     boolean isRegistered() {
@@ -170,6 +170,12 @@ public class LocalDevice extends DeviceDetails {
         static final String DEVICE_TOKEN = "ABLY_DEVICE_IDENTITY_TOKEN";
         static final String TOKEN_TYPE = "ABLY_REGISTRATION_TOKEN_TYPE";
         static final String TOKEN = "ABLY_REGISTRATION_TOKEN";
+
+        static String[] getAllKeys() {
+            return new String[]{
+              DEVICE_ID, CLIENT_ID, DEVICE_SECRET, DEVICE_TOKEN, TOKEN_TYPE, TOKEN
+            };
+        }
     }
 
     private static String generateSecret() {

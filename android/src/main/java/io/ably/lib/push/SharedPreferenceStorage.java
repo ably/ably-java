@@ -38,11 +38,11 @@ public class SharedPreferenceStorage implements Storage{
     }
 
     @Override
-    public void clear(Field[] fields) {
+    public void clear(String[] keys) {
         SharedPreferences.Editor editor = activationContext.getPreferences().edit();
-        for (Field f : fields) {
+        for (String key : keys) {
             try {
-                editor.remove((String) f.get(null));
+                editor.remove(key);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
