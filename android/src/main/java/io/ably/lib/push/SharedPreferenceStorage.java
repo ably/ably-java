@@ -3,7 +3,6 @@ package io.ably.lib.push;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
-import java.lang.reflect.Field;
 
 public class SharedPreferenceStorage implements Storage{
 
@@ -38,14 +37,10 @@ public class SharedPreferenceStorage implements Storage{
     }
 
     @Override
-    public void clear(Field[] fields) {
+    public void clear(String[] keys) {
         SharedPreferences.Editor editor = activationContext.getPreferences().edit();
-        for (Field f : fields) {
-            try {
-                editor.remove((String) f.get(null));
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
+        for (String key : keys) {
+            editor.remove(key);
         }
         editor.commit();
     }
