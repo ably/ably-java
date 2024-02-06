@@ -1672,7 +1672,11 @@ public class RealtimeChannelTest extends ParameterizedTest {
             assertTrue(resumeError.message.contains("Invalid connection key"));
             assertSame(resumeError, ably.connection.connectionManager.getStateErrorInfo());
             assertNotEquals("A new connection was created", originalConnectionId, ably.connection.id);
-            assertEquals(ably.connection.connectionManager.msgSerial, 0);
+
+            AblyRealtime finalAbly = ably;
+            Exception conditionError = new Helpers.ConditionalWaiter().
+                wait(() -> finalAbly.connection.connectionManager.msgSerial == 0, 5000);
+            assertNull(conditionError);
 
             attachedChannelWaiter.waitFor(ChannelState.attaching, ChannelState.attached);
             suspendedChannelWaiter.waitFor(ChannelState.attached);

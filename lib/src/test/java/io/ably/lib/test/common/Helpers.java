@@ -19,7 +19,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -188,7 +191,7 @@ public class Helpers {
                     }
 
                      wait();
-                } catch(InterruptedException e) {}
+                } catch(InterruptedException ignored) {}
             success = successCount >= count;
             if (error != null) {
                 assertNotNull(error.message);
@@ -1184,5 +1187,35 @@ public class Helpers {
 
     public interface AblyFunction<Arg, Result> {
         Result apply(Arg arg) throws AblyException;
+    }
+
+    public interface ConditionFn<O> {
+        O call();
+    }
+
+    public static class ConditionalWaiter {
+        public Exception wait(ConditionFn<Boolean> condition, int timeoutInMs) {
+            AtomicBoolean taskTimedOut = new AtomicBoolean();
+            new Timer().schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    taskTimedOut.set(true);
+                }
+            }, timeoutInMs);
+            while (true) {
+                try {
+                    Boolean result = condition.call();
+                    if (result) {
+                        return null;
+                    }
+                    if (taskTimedOut.get()) {
+                        throw new Exception("Timed out after " + timeoutInMs + "ms waiting for condition");
+                    }
+                    Thread.sleep(200);
+                } catch (Exception e) {
+                    return e;
+                }
+            }
+        }
     }
 }
