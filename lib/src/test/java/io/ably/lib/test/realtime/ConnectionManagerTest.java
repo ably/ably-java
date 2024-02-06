@@ -46,6 +46,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -388,7 +389,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
         /* wait for cm thread to exit */
         try {
             Thread.sleep(2000L);
-        } catch(InterruptedException e) {}
+        } catch(InterruptedException ignored) {}
 
         assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
         Thread.State cmThreadState = threadContainer[0].getState();
@@ -462,7 +463,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
 
         connectionWaiter.waitFor(ConnectionState.connected);
         assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
-        assertTrue("Not expecting token auth", ably.auth.getAuthMethod() == AuthMethod.basic);
+        assertSame("Not expecting token auth", ably.auth.getAuthMethod(), AuthMethod.basic);
 
         ably.close();
         connectionWaiter.waitFor(ConnectionState.closed);
@@ -471,7 +472,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
         /* wait for cm thread to exit */
         try {
             Thread.sleep(2000L);
-        } catch(InterruptedException e) {}
+        } catch(InterruptedException ignored) {}
 
         Thread.State cmThreadState = threadContainer[0].getState();
         assertEquals("Verify cm thread has exited", cmThreadState, Thread.State.TERMINATED);
@@ -510,7 +511,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
                     /* wait for cm thread to exit */
                     try {
                         Thread.sleep(2000L);
-                    } catch(InterruptedException e) {}
+                    } catch(InterruptedException ignored) {}
 
                     Thread.State cmThreadState = threadContainer[0].getState();
                     assertEquals("Verify cm thread has exited", cmThreadState, Thread.State.TERMINATED);

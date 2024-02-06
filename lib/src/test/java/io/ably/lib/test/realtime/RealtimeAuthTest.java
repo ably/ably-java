@@ -88,7 +88,7 @@ public class RealtimeAuthTest extends ParameterizedTest {
             assertEquals("Verify connected state is reached", ConnectionState.connected, ablyRealtime.connection.state);
 
             /* check expected clientId */
-            assertEquals("Auth#clientId is expected to be null", null, ablyRealtime.auth.clientId);
+            assertNull("Auth#clientId is expected to be null", ablyRealtime.auth.clientId);
 
             ablyRealtime.close();
         } catch (AblyException e) {

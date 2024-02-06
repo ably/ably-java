@@ -77,7 +77,7 @@ public interface ChannelStateListener {
             for (final ChannelStateListener member : getMembers())
                 try {
                     member.onChannelStateChanged(stateChange);
-                } catch(Throwable t) {}
+                } catch(Throwable ignored) {}
         }
     }
 

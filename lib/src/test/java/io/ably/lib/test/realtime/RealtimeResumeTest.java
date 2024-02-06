@@ -37,8 +37,6 @@ import static org.junit.Assert.fail;
 
 public class RealtimeResumeTest extends ParameterizedTest {
 
-    private static final String TAG = RealtimeResumeTest.class.getName();
-
     @Rule
     public Timeout testTimeout = Timeout.seconds(60);
 
@@ -1014,7 +1012,6 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
         String testName = "resume_rewind_1";
         try {
-
             ClientOptions common_opts = createOptions(testVars.keys[0].keyStr);
             sender = new AblyRealtime(common_opts);
             receiver1 = new AblyRealtime(common_opts);
@@ -1036,21 +1033,22 @@ public class RealtimeResumeTest extends ParameterizedTest {
             };
             receiver2 = new AblyRealtime(receiver2_opts);
 
-            Channel recever1_channel = receiver1.channels.get("[?rewind=1]" + testName);
-            Channel recever2_channel = receiver2.channels.get("[?rewind=1]" + testName);
-            Channel sender_channel = sender.channels.get(testName);
+            Channel receiver1_channel = receiver1.channels.get("[?rewind=1]" + testName);
 
+            Channel receiver2_channel = receiver2.channels.get("[?rewind=1]" + testName);
+
+            Channel sender_channel = sender.channels.get(testName);
             sender_channel.attach();
             (new ChannelWaiter(sender_channel)).waitFor(ChannelState.attached);
             sender_channel.publish("0", testMessage);
 
             /* subscribe 1*/
-            MessageWaiter messageWaiter_1 = new MessageWaiter(recever1_channel);
+            MessageWaiter messageWaiter_1 = new MessageWaiter(receiver1_channel);
             messageWaiter_1.waitFor(1);
             assertEquals("Verify rewound message", testMessage, messageWaiter_1.receivedMessages.get(0).data);
 
             /* subscribe 2*/
-            MessageWaiter messageWaiter_2 = new MessageWaiter(recever2_channel);
+            MessageWaiter messageWaiter_2 = new MessageWaiter(receiver2_channel);
             messageWaiter_2.waitFor(1, 7000);
             assertEquals("Verify no message received on attach_rewind", 0, messageWaiter_2.receivedMessages.size());
 
