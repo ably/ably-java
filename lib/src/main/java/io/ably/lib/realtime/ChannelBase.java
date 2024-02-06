@@ -82,14 +82,12 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      */
     public ChannelProperties properties = new ChannelProperties();
 
-    private int retryCount = 0;
+    private int retryAttempt = 0;
 
     /**
      * @see #markAsReleased()
      */
     private boolean released = false;
-
-
 
     /***
      * internal
@@ -129,7 +127,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
 
         if (newState != ChannelState.attaching && newState != ChannelState.suspended) {
-            this.retryCount = 0;
+            this.retryAttempt = 0;
         }
 
         // RTP5a1
@@ -253,10 +251,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                 attachMessage.setFlags(options.getModeFlags());
             }
         }
-        if(this.decodeFailureRecoveryInProgress) {
-            Log.v(TAG, "attach(); message decode recovery in progress.");
-        }
         attachMessage.channelSerial = properties.channelSerial; // RTL4c1
+        if(this.decodeFailureRecoveryInProgress) { // RTL18c
+            Log.v(TAG, "attach(); message decode recovery in progress, setting last message channelserial");
+            attachMessage.channelSerial = this.lastPayloadProtocolMessageChannelSerial;
+        }
         try {
             if (listener != null) {
                 on(new ChannelStateCompletionListener(listener, ChannelState.attached, ChannelState.failed));
@@ -525,8 +524,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
         reattachTimer = currentReattachTimer;
 
-        this.retryCount++;
-        int retryDelay = ReconnectionStrategy.getRetryTime(ably.options.channelRetryTimeout, retryCount);
+        this.retryAttempt++;
+        int retryDelay = ReconnectionStrategy.getRetryTime(ably.options.channelRetryTimeout, retryAttempt);
 
         final Timer inProgressTimer = currentReattachTimer;
         reattachTimer.schedule(new TimerTask() {
@@ -611,6 +610,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
     /* State changes provoked by ConnectionManager state changes. */
     public void setConnected() {
+        // TODO - seems test is failing because of explicit attach after connect
         if (state.isReattachable()){
             attach(true,null); // RTN15c6, RTN15c7
         }
@@ -839,6 +839,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
 
         lastPayloadMessageId = lastMessage.id;
+        lastPayloadProtocolMessageChannelSerial = protocolMessage.channelSerial;
 
         for (final Message msg : messages) {
             this.listeners.onMessage(msg);
@@ -1341,6 +1342,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      */
     private Set<ChannelMode> modes;
     private String lastPayloadMessageId;
+    private String lastPayloadProtocolMessageChannelSerial;
     private boolean decodeFailureRecoveryInProgress;
     private final DecodingContext decodingContext;
 }

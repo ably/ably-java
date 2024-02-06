@@ -62,7 +62,7 @@ public class RealtimeDeltaDecoderTest extends ParameterizedTest {
                 Message message = messageWaiter.receivedMessages.get(i);
                 int messageIndex = Integer.parseInt(message.name);
                 assertEquals("Verify message order", i, messageIndex);
-                assertEquals("Verify message data", true, testData[messageIndex].equals(message.data));
+                assertEquals("Verify message data", testData[messageIndex], message.data);
             }
         } catch(Exception e) {
             fail(testName + ": Unexpected exception " + e.getMessage());

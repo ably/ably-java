@@ -25,13 +25,10 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
-
 import org.hamcrest.Matchers;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -45,6 +42,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -1453,13 +1452,13 @@ public class RealtimeChannelTest extends ParameterizedTest {
     }
 
     /*
-     * Establish connection, attach channel, simulate sending attached and detached messages
+     * Establish connection, attach channel, simulate sending attached message
      * from the server, test correct behaviour
      *
-     * Tests RTL12, RTL13a
+     * Tests RTL12
      */
     @Test
-    public void channel_server_initiated_attached_detached() throws AblyException {
+    public void channel_server_initiated_attached() throws AblyException {
         AblyRealtime ably = null;
         long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
         final String channelName = "channel_server_initiated_attach_detach";
@@ -1472,6 +1471,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             opts.channelRetryTimeout = 1000;
 
             ably = new AblyRealtime(opts);
+            new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
 
             Channel channel = ably.channels.get(channelName);
             ChannelWaiter channelWaiter = new ChannelWaiter(channel);
@@ -1479,23 +1479,54 @@ public class RealtimeChannelTest extends ParameterizedTest {
             channel.attach();
             channelWaiter.waitFor(ChannelState.attached);
 
-            final int[] updateEventsEmitted = new int[]{0};
-            final boolean[] resumedFlag = new boolean[]{true};
-            channel.on(ChannelEvent.update, new ChannelStateListener() {
-                @Override
-                public void onChannelStateChanged(ChannelStateChange stateChange) {
-                    updateEventsEmitted[0]++;
-                    resumedFlag[0] = stateChange.resumed;
-                }
-            });
-
             /* Inject attached message as if received from the server */
             ProtocolMessage attachedMessage = new ProtocolMessage() {{
                 action = Action.attached;
                 channel = channelName;
-                flags |= Flag.resumed.getMask();
             }};
             ably.connection.connectionManager.onMessage(null, attachedMessage);
+
+            ChannelStateListener.ChannelStateChange channelUpdateEvent = channelWaiter.waitFor(ChannelEvent.update);
+            assertEquals(ChannelEvent.update, channelUpdateEvent.event);
+            assertEquals(ChannelState.attached, channelUpdateEvent.previous);
+            assertEquals(ChannelState.attached, channelUpdateEvent.current);
+            assertFalse(channelUpdateEvent.resumed);
+            assertNull(channelUpdateEvent.reason);
+
+        } finally {
+            if (ably != null)
+                ably.close();
+            Defaults.realtimeRequestTimeout = oldRealtimeTimeout;
+        }
+    }
+
+    /*
+     * Establish connection, attach channel, simulate sending detached messages
+     * from the server, test correct behaviour
+     *
+     * Tests RTL13a
+     */
+    @Test
+    public void channel_server_initiated_detached() throws AblyException {
+        AblyRealtime ably = null;
+        long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
+        final String channelName = "channel_server_initiated_attach_detach";
+
+        try {
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+
+            /* Make test faster */
+            Defaults.realtimeRequestTimeout = 1000;
+            opts.channelRetryTimeout = 1000;
+
+            ably = new AblyRealtime(opts);
+            new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+
+            Channel channel = ably.channels.get(channelName);
+            ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+
+            channel.attach();
+            channelWaiter.waitFor(ChannelState.attached);
 
             /* Inject detached message as if from the server */
             ProtocolMessage detachedMessage = new ProtocolMessage() {{
@@ -1508,9 +1539,6 @@ public class RealtimeChannelTest extends ParameterizedTest {
             channelWaiter.waitFor(ChannelState.attaching);
             channelWaiter.waitFor(ChannelState.attached);
 
-            /* Verify received UPDATE message on channel */
-            assertEquals("Verify exactly one UPDATE event was emitted on the channel", updateEventsEmitted[0], 1);
-            assertTrue("Verify resumed flag set in UPDATE event", resumedFlag[0]);
         } finally {
             if (ably != null)
                 ably.close();
@@ -1522,10 +1550,83 @@ public class RealtimeChannelTest extends ParameterizedTest {
      * Establish connection, attach channel, disconnection and failed resume
      * verify that subsequent attaches are performed, and give rise to update events
      *
-     * Tests RTN15c3
+     * Tests RTN15c6
      */
     @Test
-    public void channel_resume_lost_continuity() throws AblyException {
+    public void channel_valid_resume_reattach_channels() throws AblyException {
+        AblyRealtime ably = null;
+
+        try {
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+            ably = new AblyRealtime(opts);
+            ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+            ably.connect();
+            connectionWaiter.waitFor(ConnectionState.connected);
+            String originalConnectionId = ably.connection.id;
+
+            /* prepare channels */
+            Channel attachedChannel = ably.channels.get("attached_channel");
+            ChannelWaiter attachedChannelWaiter = new ChannelWaiter(attachedChannel);
+            attachedChannel.attach();
+            attachedChannelWaiter.waitFor(ChannelState.attached);
+            attachedChannel.publish("chat", "message");
+
+            Channel suspendedChannel = ably.channels.get("suspended_channel");
+            ChannelWaiter suspendedChannelWaiter = new ChannelWaiter(suspendedChannel);
+            suspendedChannel.attach();
+            suspendedChannelWaiter.waitFor(ChannelState.attached);
+            suspendedChannel.setSuspended(null, true);
+            suspendedChannelWaiter.waitFor(ChannelState.suspended);
+
+            assertEquals(ably.connection.connectionManager.msgSerial, 1);
+
+            new Helpers.MutableConnectionManager(ably).disconnectAndSuppressRetries();
+            connectionWaiter.waitFor(ConnectionState.disconnected);
+            assertEquals("Verify disconnected state is reached", ConnectionState.disconnected, ably.connection.state);
+
+            /* wait for connection to be reestablished */
+            System.out.println("channel_resume_lost_continuity: initiating reconnection (resume)");
+            ably.connection.connect();
+
+            ErrorInfo resumeError = connectionWaiter.waitFor(ConnectionState.connected);
+            assertNull(resumeError);
+            assertNull(ably.connection.connectionManager.getStateErrorInfo());
+            assertEquals("Same connection is used", originalConnectionId, ably.connection.id);
+            assertEquals(ably.connection.connectionManager.msgSerial, 1);
+
+            attachedChannelWaiter.waitFor(ChannelState.attaching, ChannelState.attached);
+            suspendedChannelWaiter.waitFor(ChannelState.attached);
+
+            assertFalse("Verify channel was not suspended",
+                attachedChannelWaiter.hasStates(ChannelState.suspended));
+            assertTrue("Verify channel was attaching and attached",
+                attachedChannelWaiter.hasFinalStates(ChannelState.attaching, ChannelState.attached));
+
+            ChannelStateListener.ChannelStateChange stateChange = attachedChannelWaiter.getLastStateChange();
+            assertEquals(ChannelState.attached, stateChange.current);
+            assertEquals(ChannelState.attaching, stateChange.previous);
+
+            assertTrue("Verify channel was attaching",
+                suspendedChannelWaiter.hasFinalStates(ChannelState.attaching, ChannelState.attached));
+
+            stateChange = suspendedChannelWaiter.getLastStateChange();
+            assertEquals(ChannelState.attached, stateChange.current);
+            assertEquals(ChannelState.attaching, stateChange.previous);
+
+        } finally {
+            if (ably != null)
+                ably.close();
+        }
+    }
+
+    /*
+     * Establish connection, attach channel, disconnection and failed resume
+     * verify that subsequent attaches are performed, and give rise to update events
+     *
+     * Tests RTN15c7
+     */
+    @Test
+    public void channel_invalid_resume_reattach_channels() throws AblyException {
         AblyRealtime ably = null;
         final String attachedChannelName = "channel_resume_lost_continuity_attached";
         final String suspendedChannelName = "channel_resume_lost_continuity_suspended";
@@ -1533,105 +1634,65 @@ public class RealtimeChannelTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = new AblyRealtime(opts);
+            ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+            ably.connect();
+            connectionWaiter.waitFor(ConnectionState.connected);
+            String originalConnectionId = ably.connection.id;
 
             /* prepare channels */
             Channel attachedChannel = ably.channels.get(attachedChannelName);
             ChannelWaiter attachedChannelWaiter = new ChannelWaiter(attachedChannel);
             attachedChannel.attach();
             attachedChannelWaiter.waitFor(ChannelState.attached);
+            attachedChannel.publish("chat", "message");
 
             Channel suspendedChannel = ably.channels.get(suspendedChannelName);
-            suspendedChannel.state = ChannelState.suspended;
             ChannelWaiter suspendedChannelWaiter = new ChannelWaiter(suspendedChannel);
+            suspendedChannel.attach();
+            suspendedChannelWaiter.waitFor(ChannelState.attached);
+            suspendedChannel.setSuspended(null, true);
+            suspendedChannelWaiter.waitFor(ChannelState.suspended);
 
-            final boolean[] suspendedStateReached = new boolean[2];
-            final boolean[] attachingStateReached = new boolean[2];
-            final boolean[] attachedStateReached = new boolean[2];
-            final boolean[] resumedFlag = new boolean[]{true, true};
-            attachedChannel.on(new ChannelStateListener() {
-                @Override
-                public void onChannelStateChanged(ChannelStateChange stateChange) {
-                    switch(stateChange.current) {
-                        case suspended:
-                            suspendedStateReached[0] = true;
-                            break;
-                        case attaching:
-                            attachingStateReached[0] = true;
-                            break;
-                        case attached:
-                            attachedStateReached[0] = true;
-                            resumedFlag[0] = stateChange.resumed;
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            });
-            suspendedChannel.on(new ChannelStateListener() {
-                @Override
-                public void onChannelStateChanged(ChannelStateChange stateChange) {
-                    switch(stateChange.current) {
-                        case attaching:
-                            attachingStateReached[1] = true;
-                            break;
-                        case attached:
-                            attachedStateReached[1] = true;
-                            resumedFlag[1] = stateChange.resumed;
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            });
+            assertEquals(ably.connection.connectionManager.msgSerial, 1);
 
-            /* disconnect, and sabotage the resume */
-            String originalConnectionId = ably.connection.id;
-            ably.connection.key = "_____!ably___test_fake-key____";
-            ably.connection.id = "ably___tes";
-            ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
-
-            /* suppress automatic retries by the connection manager */
-            try {
-                Method method = ably.connection.connectionManager.getClass().getDeclaredMethod("disconnectAndSuppressRetries");
-                method.setAccessible(true);
-                method.invoke(ably.connection.connectionManager);
-            } catch (NoSuchMethodException|IllegalAccessException|InvocationTargetException e) {
-                fail("Unexpected exception in suppressing retries");
-            }
-
+            new Helpers.MutableConnectionManager(ably).disconnectAndSuppressRetries();
             connectionWaiter.waitFor(ConnectionState.disconnected);
             assertEquals("Verify disconnected state is reached", ConnectionState.disconnected, ably.connection.state);
 
-            /* wait */
-            try { Thread.sleep(2000L); } catch(InterruptedException e) {}
+            /* disconnect, and sabotage the resume */
+            ably.connection.key = "_____!ably___test_fake-key____";
 
             /* wait for connection to be reestablished */
             System.out.println("channel_resume_lost_continuity: initiating reconnection (resume)");
             ably.connection.connect();
-            connectionWaiter.waitFor(ConnectionState.connected);
-
             /* verify a new connection was assigned */
-            assertNotEquals("A new connection was created", originalConnectionId, ably.connection.id);
 
-            /* previously suspended channel should transition to attaching, then to attached */
+            ErrorInfo resumeError = connectionWaiter.waitFor(ConnectionState.connected);
+            assertNotNull(resumeError);
+            assertTrue(resumeError.message.contains("Invalid connection key"));
+            assertSame(resumeError, ably.connection.connectionManager.getStateErrorInfo());
+            assertNotEquals("A new connection was created", originalConnectionId, ably.connection.id);
+            assertEquals(ably.connection.connectionManager.msgSerial, 0);
+
+            attachedChannelWaiter.waitFor(ChannelState.attaching, ChannelState.attached);
             suspendedChannelWaiter.waitFor(ChannelState.attached);
 
-            /* previously attached channel should remain attached */
-            attachedChannelWaiter.waitFor(ChannelState.attached);
+            assertFalse("Verify channel was not suspended",
+                attachedChannelWaiter.hasStates(ChannelState.suspended));
+            assertTrue("Verify channel was attaching and attached",
+                attachedChannelWaiter.hasFinalStates(ChannelState.attaching, ChannelState.attached));
 
-            /*
-             * Verify each channel undergoes relevant events:
-             * - previously attached channel does attaching, attached, without visiting suspended;
-             * - previously suspended channel does attaching, attached
-             */
-            assertEquals("Verify channel was not suspended", suspendedStateReached[0], false);
-            assertEquals("Verify channel was attaching", attachingStateReached[0], true);
-            assertEquals("Verify channel was attached", attachedStateReached[0], true);
-            assertFalse("Verify resumed flag set false in ATTACHED event", resumedFlag[0]);
+            ChannelStateListener.ChannelStateChange stateChange = attachedChannelWaiter.getLastStateChange();
+            assertEquals(ChannelState.attached, stateChange.current);
+            assertEquals(ChannelState.attaching, stateChange.previous);
 
-            assertEquals("Verify channel was attaching", attachingStateReached[1], true);
-            assertEquals("Verify channel was attached", attachedStateReached[1], true);
-            assertFalse("Verify resumed flag set false in ATTACHED event", resumedFlag[1]);
+            assertTrue("Verify channel was attaching",
+                suspendedChannelWaiter.hasFinalStates(ChannelState.attaching, ChannelState.attached));
+
+            stateChange = suspendedChannelWaiter.getLastStateChange();
+            assertEquals(ChannelState.attached, stateChange.current);
+            assertEquals(ChannelState.attaching, stateChange.previous);
+
         } finally {
             if (ably != null)
                 ably.close();

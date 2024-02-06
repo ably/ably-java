@@ -1,5 +1,8 @@
 package io.ably.lib.test.common;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -18,6 +21,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -28,8 +32,10 @@ import io.ably.lib.debug.DebugOptions.RawHttpListener;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
+import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.Channel.MessageListener;
+import io.ably.lib.realtime.ChannelEvent;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.ChannelStateListener;
 import io.ably.lib.realtime.CompletionListener;
@@ -60,6 +66,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class Helpers {
 
@@ -263,7 +270,7 @@ public class Helpers {
          */
         public synchronized void waitFor(int count) {
             while(receivedMessages.size() < count)
-                try { wait(); } catch(InterruptedException e) {}
+                try { wait(); } catch(InterruptedException ignored) {}
         }
 
         /**
@@ -274,7 +281,7 @@ public class Helpers {
             long targetTime = System.currentTimeMillis() + time;
             long remaining = time;
             while(receivedMessages.size() < count && remaining > 0) {
-                try { wait(remaining); } catch(InterruptedException e) {}
+                try { wait(remaining); } catch(InterruptedException ignored) {}
                 remaining = targetTime - System.currentTimeMillis();
             }
         }
@@ -401,6 +408,48 @@ public class Helpers {
         }
     }
 
+    public static class MutableConnectionManager {
+        ConnectionManager connectionManager;
+
+        public MutableConnectionManager(AblyRealtime ablyRealtime) {
+            this.connectionManager = ablyRealtime.connection.connectionManager;
+        }
+
+        public void setField(String fieldName, long value) {
+            try {
+                Field connectionStateField = ConnectionManager.class.getDeclaredField(fieldName);
+                connectionStateField.setAccessible(true);
+                connectionStateField.setLong(connectionManager, value);
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                fail("Failed updating " + fieldName + " with error " + e);
+            }
+        }
+
+        public long getField(String fieldName) {
+            try {
+                Field connectionStateField = ConnectionManager.class.getDeclaredField(fieldName);
+                connectionStateField.setAccessible(true);
+                return connectionStateField.getLong(connectionManager);
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                fail("Failed accessing " + fieldName + " with error " + e);
+            }
+            return 0;
+        }
+
+        /**
+         * Suppress automatic retries by the connection manager and disconnect
+         */
+        public void disconnectAndSuppressRetries() {
+            try {
+                Method method = ConnectionManager.class.getDeclaredMethod("disconnectAndSuppressRetries");
+                method.setAccessible(true);
+                method.invoke(connectionManager);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                fail("Unexpected exception in suppressing retries");
+            }
+        }
+    }
+
     /**
      * A class that listens for state change events on a connection.
      * @author paddy
@@ -428,7 +477,7 @@ public class Helpers {
             while (currentState() != state) {
                 try {
                     wait();
-                } catch (InterruptedException e) {
+                } catch (InterruptedException ignored) {
                 }
             }
             Log.d(TAG, "waitFor done: state=" + targetStateName + ")");
@@ -444,8 +493,8 @@ public class Helpers {
             Log.d(TAG, "waitFor(state=" + state.getConnectionEvent().name() + ", count=" + count + ")");
 
             while(getStateCount(state) < count)
-                try { wait(); } catch(InterruptedException e) {}
-            Log.d(TAG, "waitFor done: state=" + latestChange.current.getConnectionEvent().name() + ", count=" + getStateCount(state) + ")");
+                try { wait(); } catch(InterruptedException ignored) {}
+            Log.d(TAG, "waitFor done: state=" + lastStateChange().current.getConnectionEvent().name() + ", count=" + getStateCount(state) + ")");
         }
 
         /**
@@ -462,7 +511,7 @@ public class Helpers {
             long remaining = time;
             while(getStateCount(state) < count && remaining > 0) {
                 Log.d(TAG, "waitFor(state=" + state.getConnectionEvent().name() + ", waiting for=" + remaining + ")");
-                try { wait(remaining); } catch(InterruptedException e) {}
+                try { wait(remaining); } catch(InterruptedException ignored) {}
                 remaining = targetTime - System.currentTimeMillis();
             }
             int stateCount = getStateCount(state);
@@ -503,7 +552,7 @@ public class Helpers {
         @Override
         public void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange state) {
             synchronized(this) {
-                latestChange = state;
+                stateChanges.add(state);
                 reason = state.reason;
                 Counter counter = stateCounts.get(state.current); if(counter == null) stateCounts.put(state.current, (counter = new Counter()));
                 counter.incr();
@@ -524,15 +573,23 @@ public class Helpers {
         }
 
         private synchronized ConnectionState currentState() {
-            return latestChange == null ? connection.state : latestChange.current;
+            ConnectionStateChange stateChange = lastStateChange();
+            return stateChange == null ? connection.state : stateChange.current;
+        }
+
+        public synchronized ConnectionStateChange lastStateChange() {
+            if (stateChanges.size() == 0) {
+                return null;
+            }
+            return stateChanges.get(stateChanges.size() -1);
         }
 
         /**
          * Internal
          */
-        private Connection connection;
+        private final Connection connection;
         private ErrorInfo reason;
-        private ConnectionStateChange latestChange;
+        private final List<ConnectionStateChange> stateChanges = new ArrayList<>();
         private Map<ConnectionState, Counter> stateCounts;
         private static final String TAG = ConnectionWaiter.class.getName();
     }
@@ -557,14 +614,14 @@ public class Helpers {
          */
         public synchronized ErrorInfo waitFor(ConnectionState state) {
             while(connectionManager.getConnectionState().state != state)
-                try { wait(INTERVAL_POLLING); } catch(InterruptedException e) {}
+                try { wait(INTERVAL_POLLING); } catch(InterruptedException ignored) {}
             return connectionManager.getConnectionState().defaultErrorInfo;
         }
 
         /**
          * Internal
          */
-        private ConnectionManager connectionManager;
+        private final ConnectionManager connectionManager;
     }
 
     /**
@@ -577,7 +634,6 @@ public class Helpers {
 
         /**
          * Public API
-         * @param channel
          */
         public ChannelWaiter(Channel channel) {
             this.channel = channel;
@@ -586,28 +642,80 @@ public class Helpers {
 
         /**
          * Wait for a given state to be reached.
-         * @param state
          */
-        public synchronized ErrorInfo waitFor(ChannelState state) {
-            Log.d(TAG, "waitFor(" + state + ")");
-            while(channel.state != state)
-                try { wait(); } catch(InterruptedException e) {}
-            Log.d(TAG, "waitFor done: " + channel.state + ", " + channel.reason + ")");
+        public synchronized ErrorInfo waitFor(ChannelState ... states) {
+            for (ChannelState state : states) {
+                Log.d(TAG, "waitFor(" + state + ")");
+                while(channel.state != state)
+                    try { wait(); } catch(InterruptedException ignored) {}
+                Log.d(TAG, "waitFor done: " + channel.state + ", " + channel.reason + ")");
+            }
             return channel.reason;
+        }
+
+        /**
+         * Wait for a given ChannelEvent to be reached.
+         */
+        public synchronized ChannelStateChange waitFor(ChannelEvent channelEvent) {
+            Log.d(TAG, "waitFor(" + channelEvent + ")");
+            ChannelStateChange lastStateChange = getLastStateChange();
+            while(lastStateChange.event != channelEvent)
+                try { wait(); } catch(InterruptedException ignored) {}
+            Log.d(TAG, "waitFor done: " + channel.state + ", " + channel.reason + ")");
+            return lastStateChange;
         }
 
         /**
          * ChannelStateListener interface
          */
         @Override
-        public void onChannelStateChanged(ChannelStateListener.ChannelStateChange stateChange) {
-            synchronized(this) { notify(); }
+        public void onChannelStateChanged(ChannelStateChange stateChange) {
+            synchronized(this) {
+                recordedStates.add(stateChange);
+                notify();
+            }
         }
 
+        private final List<ChannelStateChange> recordedStates = Collections.synchronizedList(new ArrayList<>());
+
+        public List<ChannelState> getRecordedStates() {
+            return recordedStates.stream().map(stateChange -> stateChange.current).collect(Collectors.toList());
+        }
+
+        public boolean hasFinalStates(ChannelState ... states) {
+            List<ChannelState> rstates = getRecordedStates();
+            List<ChannelState> vettedList = rstates.subList(rstates.size() - states.length, rstates.size());
+            return hasStates(vettedList, states);
+        }
+
+        public boolean hasStates(ChannelState ... states) {
+            return hasStates(getRecordedStates(), states);
+        }
+
+        private static boolean hasStates(List<ChannelState> stateList, ChannelState ... states) {
+            boolean foundStates = false;
+            int statesCounter = 0;
+            for (ChannelState recordedState : stateList) {
+                if (states[statesCounter] != recordedState) {
+                    statesCounter = 0;
+                }
+                if (states[statesCounter] == recordedState) {
+                    statesCounter++;
+                }
+                if (statesCounter == states.length) {
+                    foundStates = true;
+                }
+            }
+            return foundStates;
+        }
+
+        public ChannelStateChange getLastStateChange() {
+            return recordedStates.get(recordedStates.size()-1);
+        }
         /**
          * Internal
          */
-        private Channel channel;
+        private final Channel channel;
     }
 
     /**

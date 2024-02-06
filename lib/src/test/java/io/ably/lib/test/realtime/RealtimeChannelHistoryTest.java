@@ -355,7 +355,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
             /* wait for the history to be persisted */
             try {
                 Thread.sleep(16000);
-            } catch(InterruptedException ie) {}
+            } catch(InterruptedException ignored) {}
 
             /* get the history for this channel */
             PaginatedResult<Message> messages = channel.history(null);
@@ -455,7 +455,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
             /* wait for the history to be persisted */
             try {
                 Thread.sleep(16000);
-            } catch(InterruptedException ie) {}
+            } catch(InterruptedException ignored) {}
 
             /* publish to the channel */
             msgComplete = new CompletionWaiter();
@@ -517,7 +517,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
             /* wait for the history to be persisted */
             try {
                 Thread.sleep(16000);
-            } catch(InterruptedException ie) {}
+            } catch(InterruptedException ignored) {}
 
             /* publish to the channel */
             msgComplete = new CompletionWaiter();
@@ -654,7 +654,6 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
         } catch (AblyException e) {
             e.printStackTrace();
             fail("channelhistory_limit_b: Unexpected exception");
-            return;
         } finally {
             if(ably != null)
                 ably.close();
@@ -720,10 +719,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
             for(int i = 20; i < 40; i++)
                 expectedMessageHistory[i - 20] = messageContents.get("history" + i);
             Assert.assertArrayEquals("Expect messages in forward order", messages.items(), expectedMessageHistory);
-        } catch (AblyException e) {
-            e.printStackTrace();
-            fail("channelhistory_time_f: Unexpected exception");
-        } catch (InterruptedException e) {
+        } catch (AblyException | InterruptedException e) {
             e.printStackTrace();
             fail("channelhistory_time_f: Unexpected exception");
         } finally {
@@ -791,10 +787,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
             for(int i = 20; i < 40; i++)
                 expectedMessageHistory[i - 20] = messageContents.get("history" + (59 - i));
             Assert.assertArrayEquals("Expect messages in backwards order", messages.items(), expectedMessageHistory);
-        } catch (AblyException e) {
-            e.printStackTrace();
-            fail("channelhistory_time_b: Unexpected exception");
-        } catch (InterruptedException e) {
+        } catch (AblyException | InterruptedException e) {
             e.printStackTrace();
             fail("channelhistory_time_b: Unexpected exception");
         } finally {
@@ -1205,7 +1198,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
             /* wait 2 seconds */
             try {
                 Thread.sleep(2000L);
-            } catch(InterruptedException ie) {}
+            } catch(InterruptedException ignored) {}
 
             /* subscribe; this will trigger the attach */
             MessageWaiter messageWaiter =  new MessageWaiter(rxChannel);
