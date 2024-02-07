@@ -1244,6 +1244,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             assertEquals("Verify channel remains in initialized state", pubChannel.state, ChannelState.initialized);
 
             ErrorInfo errorInfo = completionWaiter.waitFor();
+            assertNull(errorInfo);
             assertEquals("Verify channel remains in initialized state", pubChannel.state, ChannelState.initialized);
 
             messageWaiter.waitFor(1);
@@ -1282,7 +1283,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             try {
                 pubChannel.publish("Lorem", "Ipsum!", completionWaiter);
                 fail("failed to raise expected exception");
-            } catch(AblyException e) {
+            } catch(AblyException ignored) {
             }
         } catch(AblyException e) {
             fail("unexpected exception");
@@ -1342,7 +1343,6 @@ public class RealtimeChannelTest extends ParameterizedTest {
      * Spec: RTL7c
      * </p>
      *
-     * @throws AblyException
      */
     @Test
     public void attach_implicit_subscribe_fail() throws AblyException {
@@ -1811,7 +1811,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
                     if (errorDetaching[0] != null)
                         errorDetaching.wait(1000);
                 }
-            } catch (InterruptedException e) {}
+            } catch (InterruptedException ignored) {}
 
             assertNotNull("Verify detach operation failed", errorDetaching[0]);
 
@@ -2014,7 +2014,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
                 /* wait until the listener is called */
                 while(listenerError[0] == null) {
-                    try { listenerError.wait(); } catch(InterruptedException e) {}
+                    try { listenerError.wait(); } catch(InterruptedException ignored) {}
                 }
             }
 
@@ -2107,7 +2107,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         }
     }
 
-    class DetachingProtocolListener implements DebugOptions.RawProtocolListener {
+    static class DetachingProtocolListener implements DebugOptions.RawProtocolListener {
 
         public Channel theChannel;
         boolean messageReceived;

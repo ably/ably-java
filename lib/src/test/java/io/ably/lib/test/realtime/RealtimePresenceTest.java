@@ -338,8 +338,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         } finally {
             if(clientAbly1 != null)
                 clientAbly1.close();
-            if(testChannel != null)
-                testChannel.dispose();
+            testChannel.dispose();
         }
     }
 
@@ -408,8 +407,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         } finally {
             if(clientAbly1 != null)
                 clientAbly1.close();
-            if(testChannel != null)
-                testChannel.dispose();
+            testChannel.dispose();
         }
     }
 
@@ -478,8 +476,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         } finally {
             if(clientAbly1 != null)
                 clientAbly1.close();
-            if(testChannel != null)
-                testChannel.dispose();
+            testChannel.dispose();
         }
     }
 
@@ -548,8 +545,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         } finally {
             if(clientAbly1 != null)
                 clientAbly1.close();
-            if(testChannel != null)
-                testChannel.dispose();
+            testChannel.dispose();
         }
     }
 
