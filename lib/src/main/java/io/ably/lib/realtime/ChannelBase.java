@@ -367,6 +367,12 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
     }
 
+    @Deprecated
+    public void sync() throws AblyException {
+        Log.w(TAG, "sync() method is deprecated since protocol 1.2, current protocol " +
+            Defaults.ABLY_PROTOCOL_VERSION);
+    }
+
     private static void callCompletionListenerError(CompletionListener listener, ErrorInfo err) {
         if(listener != null) {
             try {
