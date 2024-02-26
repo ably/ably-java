@@ -11,10 +11,7 @@
 **Closed issues:**
 
 - LocalDevice reset will cause ClassCastException [\#985](https://github.com/ably/ably-java/issues/985)
-- Implement no-connection-serial \( Add tests \) [\#981](https://github.com/ably/ably-java/issues/981)
-- Implement no-connection-serial - \( remove all references to connection serial \) [\#976](https://github.com/ably/ably-java/issues/976)
-- Implement no-connection-serial - \( update internal presence \) [\#975](https://github.com/ably/ably-java/issues/975)
-- Implement no-connection-serial - \( recovery key \) [\#974](https://github.com/ably/ably-java/issues/974)
+- Implement no-connection-serial [\#981](https://github.com/ably/ably-java/issues/981)
 - DeviceSecret key is required by protocol v2.0 [\#845](https://github.com/ably/ably-java/issues/845)
 
 **Merged pull requests:**
