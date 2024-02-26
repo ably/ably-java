@@ -1,5 +1,30 @@
 # Change Log
 
+## [1.2.34](https://github.com/ably/ably-java/tree/v1.2.34)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.33...v1.2.34)
+
+**Fixed bugs:**
+
+- Should send `DETACH` after receiving `ATTACHED` while in the `DETACHING` or `DETACHED` state \(`RTL5k`\) [\#846](https://github.com/ably/ably-java/issues/846)
+
+**Closed issues:**
+
+- LocalDevice reset will cause ClassCastException [\#985](https://github.com/ably/ably-java/issues/985)
+- Implement no-connection-serial \( Add tests \) [\#981](https://github.com/ably/ably-java/issues/981)
+- Implement no-connection-serial - \( remove all references to connection serial \) [\#976](https://github.com/ably/ably-java/issues/976)
+- Implement no-connection-serial - \( update internal presence \) [\#975](https://github.com/ably/ably-java/issues/975)
+- Implement no-connection-serial - \( recovery key \) [\#974](https://github.com/ably/ably-java/issues/974)
+- DeviceSecret key is required by protocol v2.0 [\#845](https://github.com/ably/ably-java/issues/845)
+
+**Merged pull requests:**
+
+- Fix shared pref storage [\#986](https://github.com/ably/ably-java/pull/986) ([sacOO7](https://github.com/sacOO7))
+- Connection serial tests [\#984](https://github.com/ably/ably-java/pull/984) ([sacOO7](https://github.com/sacOO7))
+- Feature/no connection serial [\#983](https://github.com/ably/ably-java/pull/983) ([sacOO7](https://github.com/sacOO7))
+- no-connection-serial-presence [\#982](https://github.com/ably/ably-java/pull/982) ([sacOO7](https://github.com/sacOO7))
+- Feature/no connection serial recovery key [\#980](https://github.com/ably/ably-java/pull/980) ([sacOO7](https://github.com/sacOO7))
+
 ## [1.2.33](https://github.com/ably/ably-java/tree/v1.2.33)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.32...v1.2.33)
