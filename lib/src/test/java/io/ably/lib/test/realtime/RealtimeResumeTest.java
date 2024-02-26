@@ -4,9 +4,8 @@ import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
-import io.ably.lib.realtime.ConnectionEvent;
 import io.ably.lib.realtime.ConnectionState;
-import io.ably.lib.realtime.ConnectionStateListener;
+import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Helpers.ChannelWaiter;
 import io.ably.lib.test.common.Helpers.CompletionSet;
 import io.ably.lib.test.common.Helpers.ConnectionWaiter;
@@ -26,9 +25,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,8 +36,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class RealtimeResumeTest extends ParameterizedTest {
-
-    private static final String TAG = RealtimeResumeTest.class.getName();
 
     @Rule
     public Timeout testTimeout = Timeout.seconds(60);
@@ -58,6 +52,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably = new AblyRealtime(opts);
+            ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+            connectionWaiter.waitFor(ConnectionState.connected);
 
             /* create and attach channel */
             final Channel channel = ably.channels.get(channelName);
@@ -66,27 +62,18 @@ public class RealtimeResumeTest extends ParameterizedTest {
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
 
-            /* disconnect the connection, without closing,
-            /* suppressing automatic retries by the connection manager */
-            System.out.println("Simulating dropped transport");
-            try {
-                Method method = ably.connection.connectionManager.getClass().getDeclaredMethod("disconnectAndSuppressRetries");
-                method.setAccessible(true);
-                method.invoke(ably.connection.connectionManager);
-            } catch (NoSuchMethodException|IllegalAccessException| InvocationTargetException e) {
-                fail("Unexpected exception in suppressing retries");
-            }
+            new Helpers.MutableConnectionManager(ably).disconnectAndSuppressRetries();
+            connectionWaiter.waitFor(ConnectionState.disconnected);
 
             /* reconnect the rx connection */
             ably.connection.connect();
             System.out.println("Waiting for reconnection");
-            ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
             assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
 
             /* wait */
             System.out.println("Got reconnection; waiting 2s");
-            try { Thread.sleep(2000L); } catch(InterruptedException e) {}
+            try { Thread.sleep(2000L); } catch(InterruptedException ignored) {}
 
             /* Check the channel is still attached. */
             assertEquals("Verify channel still attached", channel.state, ChannelState.attached);
@@ -140,12 +127,12 @@ public class RealtimeResumeTest extends ParameterizedTest {
             CompletionSet msgComplete1 = new CompletionSet();
             for(int i = 0; i < messageCount; i++) {
                 channelTx.publish("test_event", "Test message (resume_simple) " + i, msgComplete1.add());
-                try { Thread.sleep(delay); } catch(InterruptedException e){}
+                try { Thread.sleep(delay); } catch(InterruptedException ignored){}
             }
 
             /* wait for the publish callback to be called */
             ErrorInfo[] errors = msgComplete1.waitFor();
-            assertTrue("Verify success from all message callbacks", errors.length == 0);
+            assertEquals("Verify success from all message callbacks", 0, errors.length);
 
             /* wait for the subscription callback to be called */
             messageWaiter.waitFor(messageCount);
@@ -159,7 +146,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
             ablyRx.connection.connectionManager.requestState(ConnectionState.disconnected);
 
             /* wait */
-            try { Thread.sleep(2000L); } catch(InterruptedException e) {}
+            try { Thread.sleep(2000L); } catch(InterruptedException ignored) {}
 
             /* reconnect the rx connection */
             ablyRx.connection.connect();
@@ -168,12 +155,12 @@ public class RealtimeResumeTest extends ParameterizedTest {
             CompletionSet msgComplete2 = new CompletionSet();
             for(int i = 0; i < messageCount; i++) {
                 channelTx.publish("test_event", "Test message (resume_simple) " + i, msgComplete2.add());
-                try { Thread.sleep(delay); } catch(InterruptedException e){}
+                try { Thread.sleep(delay); } catch(InterruptedException ignored){}
             }
 
             /* wait for the publish callback to be called */
             errors = msgComplete2.waitFor();
-            assertTrue("Verify success from all message callbacks", errors.length == 0);
+            assertEquals("Verify success from all message callbacks", 0, errors.length);
 
             /* wait for the subscription callback to be called */
             messageWaiter.waitFor(messageCount);
@@ -231,12 +218,12 @@ public class RealtimeResumeTest extends ParameterizedTest {
             CompletionSet msgComplete1 = new CompletionSet();
             for(int i = 0; i < messageCount; i++) {
                 channelTx.publish("test_event", "Test message (resume_disconnected) " + i, msgComplete1.add());
-                try { Thread.sleep(delay); } catch(InterruptedException e){}
+                try { Thread.sleep(delay); } catch(InterruptedException ignored){}
             }
 
             /* wait for the publish callback to be called */
             ErrorInfo[] errors = msgComplete1.waitFor();
-            assertTrue("Verify success from all message callbacks", errors.length == 0);
+            assertEquals("Verify success from all message callbacks", 0, errors.length);
 
             /* wait for the subscription callback to be called */
             messageWaiter.waitFor(messageCount);
@@ -250,18 +237,18 @@ public class RealtimeResumeTest extends ParameterizedTest {
             ablyRx.connection.connectionManager.requestState(ConnectionState.disconnected);
 
             /* wait */
-            try { Thread.sleep(2000L); } catch(InterruptedException e) {}
+            try { Thread.sleep(2000L); } catch(InterruptedException ignored) {}
 
             /* publish next messages to the channel */
             CompletionSet msgComplete2 = new CompletionSet();
             for(int i = 0; i < messageCount; i++) {
                 channelTx.publish("test_event", "Test message (resume_disconnected) " + i, msgComplete2.add());
-                try { Thread.sleep(delay); } catch(InterruptedException e){}
+                try { Thread.sleep(delay); } catch(InterruptedException ignored){}
             }
 
             /* wait for the publish callback to be called */
             errors = msgComplete2.waitFor();
-            assertTrue("Verify success from all message callbacks", errors.length == 0);
+            assertEquals("Verify success from all message callbacks", 0, errors.length);
 
             /* reconnect the rx connection, and expect the messages to be delivered */
             ablyRx.connection.connect();
@@ -327,12 +314,12 @@ public class RealtimeResumeTest extends ParameterizedTest {
             for(int i = 0; i < messageCount; i++) {
                 channelTx1.publish("test_event1", "Test message (resume_multiple_channel) " + i, msgComplete1.add());
                 channelTx2.publish("test_event2", "Test message (resume_multiple_channel) " + i, msgComplete1.add());
-                try { Thread.sleep(delay); } catch(InterruptedException e){}
+                try { Thread.sleep(delay); } catch(InterruptedException ignored){}
             }
 
             /* wait for the publish callback to be called */
             ErrorInfo[] errors = msgComplete1.waitFor();
-            assertTrue("Verify success from all message callbacks", errors.length == 0);
+            assertEquals("Verify success from all message callbacks", 0, errors.length);
 
             /* wait for the subscription callback to be called */
             messageWaiter1.waitFor(messageCount);
@@ -349,19 +336,19 @@ public class RealtimeResumeTest extends ParameterizedTest {
             ablyRx.connection.connectionManager.requestState(ConnectionState.disconnected);
 
             /* wait */
-            try { Thread.sleep(2000L); } catch(InterruptedException e) {}
+            try { Thread.sleep(2000L); } catch(InterruptedException ignored) {}
 
             /* publish next messages to the channel */
             CompletionSet msgComplete2 = new CompletionSet();
             for(int i = 0; i < messageCount; i++) {
                 channelTx1.publish("test_event1", "Test message (resume_multiple_channel) " + i, msgComplete2.add());
                 channelTx2.publish("test_event2", "Test message (resume_multiple_channel) " + i, msgComplete2.add());
-                try { Thread.sleep(delay); } catch(InterruptedException e){}
+                try { Thread.sleep(delay); } catch(InterruptedException ignored){}
             }
 
             /* wait for the publish callback to be called */
             errors = msgComplete2.waitFor();
-            assertTrue("Verify success from all message callbacks", errors.length == 0);
+            assertEquals("Verify success from all message callbacks", 0, errors.length);
 
             /* reconnect the rx connection, and expect the messages to be delivered */
             ablyRx.connection.connect();
@@ -420,12 +407,12 @@ public class RealtimeResumeTest extends ParameterizedTest {
             CompletionSet msgComplete1 = new CompletionSet();
             for(int i = 0; i < messageCount; i++) {
                 channelTx.publish("test_event", "Test message (resume_multiple_interval) " + i, msgComplete1.add());
-                try { Thread.sleep(delay); } catch(InterruptedException e){}
+                try { Thread.sleep(delay); } catch(InterruptedException ignored){}
             }
 
             /* wait for the publish callback to be called */
             ErrorInfo[] errors = msgComplete1.waitFor();
-            assertTrue("Verify success from all message callbacks", errors.length == 0);
+            assertEquals("Verify success from all message callbacks", 0, errors.length);
 
             /* wait for the subscription callback to be called */
             messageWaiter.waitFor(messageCount);
@@ -439,18 +426,18 @@ public class RealtimeResumeTest extends ParameterizedTest {
             ablyRx.connection.connectionManager.requestState(ConnectionState.disconnected);
 
             /* wait */
-            try { Thread.sleep(20000L); } catch(InterruptedException e) {}
+            try { Thread.sleep(20000L); } catch(InterruptedException ignored) {}
 
             /* publish next messages to the channel */
             CompletionSet msgComplete2 = new CompletionSet();
             for(int i = 0; i < messageCount; i++) {
                 channelTx.publish("test_event", "Test message (resume_multiple_interval) " + i, msgComplete2.add());
-                try { Thread.sleep(delay); } catch(InterruptedException e){}
+                try { Thread.sleep(delay); } catch(InterruptedException ignored){}
             }
 
             /* wait for the publish callback to be called */
             errors = msgComplete2.waitFor();
-            assertTrue("Verify success from all message callbacks", errors.length == 0);
+            assertEquals("Verify success from all message callbacks", 0, errors.length);
 
             /* reconnect the rx connection, and expect the messages to be delivered */
             ablyRx.connection.connect();
@@ -509,12 +496,12 @@ public class RealtimeResumeTest extends ParameterizedTest {
             CompletionSet msgComplete1 = new CompletionSet();
             for(int i = 0; i < messageCount; i++) {
                 channelTx.publish("test_event", "Test message (resume_simple) " + i, msgComplete1.add());
-                try { Thread.sleep(delay); } catch(InterruptedException e){}
+                try { Thread.sleep(delay); } catch(InterruptedException ignored){}
             }
 
             /* wait for the publish callback to be called */
             ErrorInfo[] errors = msgComplete1.waitFor();
-            assertTrue("Verify success from all message callbacks", errors.length == 0);
+            assertEquals("Verify success from all message callbacks", 0, errors.length);
 
             /* wait for the subscription callback to be called */
             messageWaiter.waitFor(messageCount);
@@ -526,17 +513,12 @@ public class RealtimeResumeTest extends ParameterizedTest {
              * of the library, to simulate a dropped transport without
              * causing the connection itself to be disposed */
             System.out.println("*** about to disconnect tx connection");
-            /* suppress automatic retries by the connection manager */
-            try {
-                Method method = ablyTx.connection.connectionManager.getClass().getDeclaredMethod("disconnectAndSuppressRetries");
-                method.setAccessible(true);
-                method.invoke(ablyTx.connection.connectionManager);
-            } catch (NoSuchMethodException|IllegalAccessException|InvocationTargetException e) {
-                fail("Unexpected exception in suppressing retries");
-            }
+
+            new Helpers.MutableConnectionManager(ablyTx).disconnectAndSuppressRetries();
+            (new ConnectionWaiter(ablyTx.connection)).waitFor(ConnectionState.disconnected);
 
             /* wait */
-            try { Thread.sleep(2000L); } catch(InterruptedException e) {}
+            try { Thread.sleep(2000L); } catch(InterruptedException ignored) {}
 
             /* reconnect the tx connection */
             System.out.println("*** about to reconnect tx connection");
@@ -547,7 +529,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
             CompletionSet msgComplete2 = new CompletionSet();
             for(int i = 0; i < messageCount; i++) {
                 channelTx.publish("test_event", "Test message (resume_simple) " + i, msgComplete2.add());
-                try { Thread.sleep(delay); } catch(InterruptedException e){}
+                try { Thread.sleep(delay); } catch(InterruptedException ignored){}
             }
 
             /* wait for the publish callback to be called. This never finishes if
@@ -556,7 +538,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
             System.out.println("*** published. About to wait for callbacks");
             errors = msgComplete2.waitFor();
             System.out.println("*** done");
-            assertTrue("Verify success from all message callbacks", errors.length == 0);
+            assertEquals("Verify success from all message callbacks", 0, errors.length);
 
             /* wait for the subscription callback to be called */
             messageWaiter.waitFor(messageCount);
@@ -599,19 +581,16 @@ public class RealtimeResumeTest extends ParameterizedTest {
             final Channel senderChannel = sender.channels.get(channelName);
             senderChannel.attach();
             (new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
-            assertEquals(
-                "The sender's channel should be attached",
-                senderChannel.state, ChannelState.attached
-            );
+            assertEquals("The sender's channel should be attached",
+                senderChannel.state, ChannelState.attached);
 
             /* create and attach channel to recv on */
             final Channel receiverChannel = receiver.channels.get(channelName);
             receiverChannel.attach();
             (new ChannelWaiter(receiverChannel)).waitFor(ChannelState.attached);
-            assertEquals(
-                "The receiver's channel should be attached",
-                receiverChannel.state, ChannelState.attached
-            );
+            assertEquals("The receiver's channel should be attached",
+                receiverChannel.state, ChannelState.attached);
+
             /* subscribe */
             MessageWaiter messageWaiter =  new MessageWaiter(receiverChannel);
 
@@ -619,21 +598,17 @@ public class RealtimeResumeTest extends ParameterizedTest {
             CompletionSet msgComplete1 = new CompletionSet();
             for(int i = 0; i < messageCount; i++) {
                 senderChannel.publish("test_event", "Test message (resume_publish_queue) " + i, msgComplete1.add());
-                try { Thread.sleep(delay); } catch(InterruptedException e){}
+                try { Thread.sleep(delay); } catch(InterruptedException ignored){}
             }
 
             /* wait for the publish callback to be called */
             ErrorInfo[] errors = msgComplete1.waitFor();
-            assertTrue(
-                "First round of messages has errors", errors.length == 0
-            );
+            assertEquals("First round of messages has errors", 0, errors.length);
 
             /* wait for the subscription callback to be called */
             messageWaiter.waitFor(messageCount);
-            assertEquals(
-                "Did not receive the entire first round of messages",
-                messageWaiter.receivedMessages.size(), messageCount
-            );
+            assertEquals("Did not receive the entire first round of messages",
+                messageWaiter.receivedMessages.size(), messageCount);
             messageWaiter.reset();
 
             /* disconnect the sender, without closing;
@@ -643,7 +618,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
             sender.connection.connectionManager.requestState(ConnectionState.disconnected);
 
             /* wait */
-            try { Thread.sleep(2000L); } catch(InterruptedException e) {}
+            try { Thread.sleep(2000L); } catch(InterruptedException ignored) {}
 
             /*
              *  publish further messages to the channel, which should be queued
@@ -652,20 +627,16 @@ public class RealtimeResumeTest extends ParameterizedTest {
             CompletionSet msgComplete2 = new CompletionSet();
             for(int i = 0; i < messageCount; i++) {
                 senderChannel.publish("queued_message_" + i, "Test queued message (resume_publish_queue) " + i, msgComplete2.add());
-                try { Thread.sleep(delay); } catch(InterruptedException e){}
+                try { Thread.sleep(delay); } catch(InterruptedException ignored){}
             }
 
             /* reconnect the sender */
             sender.connection.connect();
             (new ConnectionWaiter(sender.connection)).waitFor(ConnectionState.connected);
 
-
             /* wait for the publish callback to be called.*/
             errors = msgComplete2.waitFor();
-            assertTrue(
-                "Second round of messages (queued) has errors",
-                errors.length == 0
-            );
+            assertEquals("Second round of messages (queued) has errors", 0, errors.length);
 
             /* wait for the subscription callback to be called */
             messageWaiter.waitFor(messageCount);
@@ -676,10 +647,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
                 received.size(), messageCount
             );
             for(int i=0; i<received.size(); i++) {
-                assertEquals(
-                    "Received unexpected queued message",
-                    received.get(i).name, "queued_message_" + i
-                );
+                assertEquals("Received unexpected queued message", received.get(i).name,
+                    "queued_message_" + i);
             }
         } catch (AblyException e) {
             e.printStackTrace();
@@ -715,10 +684,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
             final Channel senderChannel = sender.channels.get(channelName);
             senderChannel.attach();
             (new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
-            assertEquals(
-                "The sender's channel should be attached",
-                senderChannel.state, ChannelState.attached
-            );
+            assertEquals("The sender's channel should be attached",
+                senderChannel.state, ChannelState.attached);
 
             MockWebsocketFactory.MockWebsocketTransport transport = mockWebsocketFactory.getCreatedTransport();
 
@@ -731,13 +698,12 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
             /* wait for the publish callback to be called.*/
             ErrorInfo[] errors = senderCompletion.waitFor();
-            assertTrue(
-                "First completion has errors",
-                errors.length == 0
-            );
+            assertEquals("First completion has errors", 0, errors.length);
 
             //assert that messages sent till now are sent with correct size and serials
-            assertEquals("First round of messages has incorrect size", 3, transport.getPublishedMessages().size());
+            assertEquals("First round of messages has incorrect size", 3,
+                transport.getPublishedMessages().size());
+
             for (int i = 0; i < transport.getPublishedMessages().size(); i++) {
                 ProtocolMessage protocolMessage = transport.getPublishedMessages().get(i);
                 assertEquals("Sent serial incorrect", Long.valueOf(i), protocolMessage.msgSerial);
@@ -748,7 +714,6 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
             //block ack/nack messages to simulate pending message
             //note that this will only block ack/nack messages received by connection manager
-
             mockWebsocketFactory.blockReceiveProcessing(message -> message.action == ProtocolMessage.Action.ack ||
                 message.action == ProtocolMessage.Action.nack);
 
@@ -760,15 +725,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
             final String connectionId = sender.connection.id;
 
-            /* suppress automatic retries by the connection manager and disconnect */
-            try {
-                Method method = sender.connection.connectionManager.getClass().getDeclaredMethod(
-                    "disconnectAndSuppressRetries");
-                method.setAccessible(true);
-                method.invoke(sender.connection.connectionManager);
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                fail("Unexpected exception in suppressing retries");
-            }
+            new Helpers.MutableConnectionManager(sender).disconnectAndSuppressRetries();
             (new ConnectionWaiter(sender.connection)).waitFor(ConnectionState.disconnected);
 
             sender.connection.connectionManager.requestState(ConnectionState.disconnected);
@@ -797,10 +754,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
             (new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
             /* wait for the publish callback to be called.*/
             ErrorInfo[] senderErrors = senderCompletion.waitFor();
-            assertTrue(
-                "Second round of send has errors",
-                senderErrors.length == 0
-            );
+            assertEquals("Second round of send has errors", 0, senderErrors.length);
 
             assertEquals("Second round of messages has incorrect size", 6, transport.getPublishedMessages().size());
             //make sure they were sent with correct serials
@@ -837,27 +791,13 @@ public class RealtimeResumeTest extends ParameterizedTest {
         try(AblyRealtime ably = new AblyRealtime(options)) {
             final long newTtl = 1000L;
             final long newIdleInterval = 1000L;
-            /* We want this greater than newTtl + newIdleInterval */
-            final long waitInDisconnectedState = 3000L;
-
-            ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
-                @Override
-                public void onConnectionStateChanged(ConnectionStateChange state) {
-                    try {
-                        Field connectionStateField = ably.connection.connectionManager.getClass().getDeclaredField("connectionStateTtl");
-                        connectionStateField.setAccessible(true);
-                        connectionStateField.setLong(ably.connection.connectionManager, newTtl);
-                        Field maxIdleField = ably.connection.connectionManager.getClass().getDeclaredField("maxIdleInterval");
-                        maxIdleField.setAccessible(true);
-                        maxIdleField.setLong(ably.connection.connectionManager, newIdleInterval);
-                    } catch (NoSuchFieldException | IllegalAccessException e) {
-                        fail("Unexpected exception in checking connectionStateTtl");
-                    }
-                }
-            });
 
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
+
+            Helpers.MutableConnectionManager connectionManager = new Helpers.MutableConnectionManager(ably);
+            connectionManager.setField("connectionStateTtl", newTtl);
+            connectionManager.setField("maxIdleInterval", newIdleInterval);
 
             final Channel senderChannel = ably.channels.get(channelName);
             senderChannel.attach();
@@ -896,14 +836,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
             final String firstConnectionId = ably.connection.id;
 
-            /* suppress automatic retries by the connection manager and disconnect */
-            try {
-                Method method = ably.connection.connectionManager.getClass().getDeclaredMethod("disconnectAndSuppressRetries");
-                method.setAccessible(true);
-                method.invoke(ably.connection.connectionManager);
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                fail("Unexpected exception in suppressing retries");
-            }
+            connectionManager.disconnectAndSuppressRetries();
             connectionWaiter.waitFor(ConnectionState.disconnected);
             assertEquals("Disconnected state was not reached", ConnectionState.disconnected, ably.connection.state);
 
@@ -914,10 +847,13 @@ public class RealtimeResumeTest extends ParameterizedTest {
             }
             //now let's unblock the ack nacks and reconnect
             mockWebsocketFactory.blockReceiveProcessing(message -> false);
+
+            /* We want this greater than newTtl + newIdleInterval */
+            final long waitInDisconnectedState = 3000L;
             /* Wait for the connection to go stale, then reconnect */
             try {
                 Thread.sleep(waitInDisconnectedState);
-            } catch (InterruptedException e) {
+            } catch (InterruptedException ignored) {
             }
             ably.connection.connect();
             connectionWaiter.waitFor(ConnectionState.connected);
@@ -933,10 +869,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
             assertEquals("Connection has the same id", ChannelState.attached, senderChannel.state);
 
             ErrorInfo[] resendErrors = senderCompletion.waitFor();
-            assertTrue(
-                "Second round of messages (queued) has errors",
-                resendErrors.length == 0
-            );
+            assertEquals("Second round of messages (queued) has errors", 0, resendErrors.length);
 
             assertEquals("Second round of messages has incorrect size", 6, transport.getPublishedMessages().size());
             //make sure they were sent with reset serials
@@ -947,7 +880,6 @@ public class RealtimeResumeTest extends ParameterizedTest {
         }
     }
 
-
     /**
      * In case of resume failure verify that presence messages are resent
      * */
@@ -956,44 +888,29 @@ public class RealtimeResumeTest extends ParameterizedTest {
         final String channelName = "sender_channel";
         final MockWebsocketFactory mockWebsocketFactory = new MockWebsocketFactory();
         final DebugOptions options = createOptions(testVars.keys[0].keyStr);
-        final String[] clients = new String[]{"client1","client2","client3",
-            "client4","client5","client6","client7","client8","client9"};
+        final String[] clients = new String[]{"client1", "client2", "client3", "client4", "client5",
+            "client6", "client7", "client8", "client9"};
+
         options.logLevel = Log.VERBOSE;
         options.realtimeRequestTimeout = 2000L;
 
-        /* We want this greater than newTtl + newIdleInterval */
-        final long waitInDisconnectedState = 5000L;
         options.transportFactory = mockWebsocketFactory;
         try(AblyRealtime ably = new AblyRealtime(options)) {
-            final long newTtl = 1000L;
-            final long newIdleInterval = 1000L;
-            /* We want this greater than newTtl + newIdleInterval */
-            ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
-                @Override
-                public void onConnectionStateChanged(ConnectionStateChange state) {
-                    try {
-                        Field connectionStateField = ably.connection.connectionManager.getClass().getDeclaredField("connectionStateTtl");
-                        connectionStateField.setAccessible(true);
-                        connectionStateField.setLong(ably.connection.connectionManager, newTtl);
-                        Field maxIdleField = ably.connection.connectionManager.getClass().getDeclaredField("maxIdleInterval");
-                        maxIdleField.setAccessible(true);
-                        maxIdleField.setLong(ably.connection.connectionManager, newIdleInterval);
-                    } catch (NoSuchFieldException | IllegalAccessException e) {
-                        fail("Unexpected exception in checking connectionStateTtl");
-                    }
-                }
-            });
 
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
 
+            final long newTtl = 1000L;
+            final long newIdleInterval = 1000L;
+
+            Helpers.MutableConnectionManager connectionManager = new Helpers.MutableConnectionManager(ably);
+            connectionManager.setField("connectionStateTtl", newTtl);
+            connectionManager.setField("maxIdleInterval", newIdleInterval);
+
             final Channel senderChannel = ably.channels.get(channelName);
             senderChannel.attach();
             (new ChannelWaiter(senderChannel)).waitFor(ChannelState.attached);
-            assertEquals(
-                "The sender's channel should be attached",
-                senderChannel.state, ChannelState.attached
-            );
+            assertEquals("The sender's channel should be attached", senderChannel.state, ChannelState.attached);
 
             MockWebsocketFactory.MockWebsocketTransport transport = mockWebsocketFactory.getCreatedTransport();
             CompletionSet presenceCompletion = new CompletionSet();
@@ -1018,32 +935,27 @@ public class RealtimeResumeTest extends ParameterizedTest {
                 message.action == ProtocolMessage.Action.nack);
 
             //enter next 3 clients
-            for (int i = 0; i < 3; i++) {
-                senderChannel.presence.enterClient(clients[i+3],null,presenceCompletion.add());
+            for (int i = 3; i < 6; i++) {
+                senderChannel.presence.enterClient(clients[i],null,presenceCompletion.add());
             }
 
             final String firstConnectionId = ably.connection.id;
 
-            /* suppress automatic retries by the connection manager and disconnect */
-            try {
-                Method method = ably.connection.connectionManager.getClass().getDeclaredMethod("disconnectAndSuppressRetries");
-                method.setAccessible(true);
-                method.invoke(ably.connection.connectionManager);
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                fail("Unexpected exception in suppressing retries");
-            }
+            connectionManager.disconnectAndSuppressRetries();
             connectionWaiter.waitFor(ConnectionState.disconnected);
             assertEquals("Disconnected state was not reached", ConnectionState.disconnected, ably.connection.state);
 
             //enter last 3 clients while disconnected
-            for (int i = 0; i < 3; i++) {
-                senderChannel.presence.enterClient(clients[i+6],null,presenceCompletion.add());
+            for (int i = 6; i < 9; i++) {
+                senderChannel.presence.enterClient(clients[i],null,presenceCompletion.add());
             }
 
+            /* We want this greater than newTtl + newIdleInterval */
+            final long waitInDisconnectedState = 5000L;
             /* Wait for the connection to go stale, then reconnect */
             try {
                 Thread.sleep(waitInDisconnectedState);
-            } catch (InterruptedException e) {
+            } catch (InterruptedException ignored) {
             }
 
             //now let's unblock the ack nacks and reconnect
@@ -1070,24 +982,21 @@ public class RealtimeResumeTest extends ParameterizedTest {
             for (ErrorInfo resendError : resendErrors) {
                 System.out.println("presence_resume_test: error "+resendError.message);
             }
-            assertTrue(
-                "Second round of messages (queued) has errors",
-                resendErrors.length == 0
-            );
+            assertEquals("Second round of messages (queued) has errors", 0, resendErrors.length);
 
-            for (PresenceMessage presenceMessage:
-                transport.getSentPresenceMessages()) {
+            for (PresenceMessage presenceMessage: transport.getSentPresenceMessages()) {
                 System.out.println("presence_resume_test: sent message with client: "+presenceMessage.clientId +" " +
                     " action:"+presenceMessage.action);
             }
-            assertEquals("Second round of messages has incorrect size", 9, transport.getSentPresenceMessages().size());
+            assertEquals("Second round of messages has incorrect size", 6, transport.getSentPresenceMessages().size());
             //make sure they were sent with correct client ids
             final Map<String,PresenceMessage> sentPresenceMap = new HashMap<>();
             for (PresenceMessage presenceMessage: transport.getSentPresenceMessages()){
                 sentPresenceMap.put(presenceMessage.clientId, presenceMessage);
             }
-            for (String client : clients) {
-                assertTrue("Client id isn't there:"+client, sentPresenceMap.containsKey(client));
+
+            for (int i = 3; i < 9; i++) {
+                assertTrue("Client id isn't there:" + clients[i], sentPresenceMap.containsKey(clients[i]));
             }
         }
     }
@@ -1103,7 +1012,6 @@ public class RealtimeResumeTest extends ParameterizedTest {
 
         String testName = "resume_rewind_1";
         try {
-
             ClientOptions common_opts = createOptions(testVars.keys[0].keyStr);
             sender = new AblyRealtime(common_opts);
             receiver1 = new AblyRealtime(common_opts);
@@ -1125,21 +1033,22 @@ public class RealtimeResumeTest extends ParameterizedTest {
             };
             receiver2 = new AblyRealtime(receiver2_opts);
 
-            Channel recever1_channel = receiver1.channels.get("[?rewind=1]" + testName);
-            Channel recever2_channel = receiver2.channels.get("[?rewind=1]" + testName);
-            Channel sender_channel = sender.channels.get(testName);
+            Channel receiver1_channel = receiver1.channels.get("[?rewind=1]" + testName);
 
+            Channel receiver2_channel = receiver2.channels.get("[?rewind=1]" + testName);
+
+            Channel sender_channel = sender.channels.get(testName);
             sender_channel.attach();
             (new ChannelWaiter(sender_channel)).waitFor(ChannelState.attached);
             sender_channel.publish("0", testMessage);
 
             /* subscribe 1*/
-            MessageWaiter messageWaiter_1 = new MessageWaiter(recever1_channel);
+            MessageWaiter messageWaiter_1 = new MessageWaiter(receiver1_channel);
             messageWaiter_1.waitFor(1);
             assertEquals("Verify rewound message", testMessage, messageWaiter_1.receivedMessages.get(0).data);
 
             /* subscribe 2*/
-            MessageWaiter messageWaiter_2 = new MessageWaiter(recever2_channel);
+            MessageWaiter messageWaiter_2 = new MessageWaiter(receiver2_channel);
             messageWaiter_2.waitFor(1, 7000);
             assertEquals("Verify no message received on attach_rewind", 0, messageWaiter_2.receivedMessages.size());
 

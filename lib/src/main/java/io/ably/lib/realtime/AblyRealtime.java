@@ -2,7 +2,6 @@ package io.ably.lib.realtime;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -15,8 +14,10 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ReadOnlyMap;
+import io.ably.lib.types.RecoveryKeyContext;
 import io.ably.lib.util.InternalMap;
 import io.ably.lib.util.Log;
+import io.ably.lib.util.StringUtils;
 
 /**
  * A client that extends the functionality of the {@link AblyRest} and provides additional realtime-specific features.
@@ -70,6 +71,14 @@ public class AblyRealtime extends AblyRest {
                 channels.clear();
             }
         });
+
+        if (!StringUtils.isNullOrEmpty(options.recover)) {
+            RecoveryKeyContext recoveryKeyContext = RecoveryKeyContext.decode(options.recover);
+            if (recoveryKeyContext != null) {
+                setChannelSerialsFromRecoverOption(recoveryKeyContext.getChannelSerials()); // RTN16j
+                connection.connectionManager.msgSerial = recoveryKeyContext.getMsgSerial(); //RTN16f
+            }
+        }
 
         if(options.autoConnect) connection.connect();
     }
@@ -233,9 +242,8 @@ public class AblyRealtime extends AblyRest {
 
         @Override
         public void suspendAll(ErrorInfo error, boolean notifyStateChange) {
-            for(Iterator<Map.Entry<String, Channel>> it = map.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, Channel> entry = it.next();
-                entry.getValue().setSuspended(error, notifyStateChange);
+            for (Channel channel : map.values()) {
+                channel.setSuspended(error, notifyStateChange);
             }
         }
 
@@ -245,7 +253,7 @@ public class AblyRealtime extends AblyRest {
          * @param queuedMessages Queued messages transferred from ConnectionManager
          */
         @Override
-        public void transferToChannels(List<ConnectionManager.QueuedMessage> queuedMessages) {
+        public void transferToChannelQueue(List<ConnectionManager.QueuedMessage> queuedMessages) {
             final Map<String, List<ConnectionManager.QueuedMessage>> channelQueueMap  = new HashMap<>();
             for (ConnectionManager.QueuedMessage queuedMessage : queuedMessages) {
                 final String channelName = queuedMessage.msg.channel;
@@ -255,16 +263,10 @@ public class AblyRealtime extends AblyRest {
                 channelQueueMap.get(channelName).add(queuedMessage);
             }
 
-            for (Map.Entry<String, Channel> channelEntry : map.entrySet()) {
-                Channel channel = channelEntry.getValue();
+            for (Channel channel : map.values()) {
                 if (channel.state.isReattachable()) {
                     Log.d(TAG, "reAttach(); channel = " + channel.name);
-
-                    if (channelQueueMap.containsKey(channel.name)){
-                        channel.transferQueuedPresenceMessages(channelQueueMap.get(channel.name));
-                    }else {
-                        channel.transferQueuedPresenceMessages(null);
-                    }
+                    channel.transferQueuedPresenceMessages(channelQueueMap.getOrDefault(channel.name, null));
                 }
             }
         }
@@ -272,6 +274,27 @@ public class AblyRealtime extends AblyRest {
         private void clear() {
             map.clear();
         }
+    }
+
+    protected void setChannelSerialsFromRecoverOption(Map<String, String> serials) {
+        for (Map.Entry<String, String> entry : serials.entrySet()) {
+            String channelName = entry.getKey();
+            String channelSerial = entry.getValue();
+            Channel channel = this.channels.get(channelName);
+            if (channel != null) {
+                channel.properties.channelSerial = channelSerial;
+            }
+        }
+    }
+
+    protected Map<String, String> getChannelSerials() {
+        Map<String, String> channelSerials = new HashMap<>();
+        for (Channel channel : this.channels.values()) {
+            if (channel.state == ChannelState.attached) {
+                channelSerials.put(channel.name, channel.properties.channelSerial);
+            }
+        }
+        return channelSerials;
     }
 
     /********************

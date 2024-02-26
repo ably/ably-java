@@ -80,7 +80,7 @@ public class ConnectionManager implements ConnectListener {
         void suspendAll(ErrorInfo error, boolean notifyStateChange);
         Iterable<Channel> values();
 
-        void transferToChannels(List<QueuedMessage> queuedMessages);
+        void transferToChannelQueue(List<QueuedMessage> queuedMessages);
     }
 
     /***********************************
@@ -94,7 +94,6 @@ public class ConnectionManager implements ConnectListener {
         final ErrorInfo reason;
         final String fallback;
         final String currentHost;
-        final boolean reattachOnResumeFailure;
 
         StateIndication(ConnectionState state) {
             this(state, null);
@@ -109,16 +108,6 @@ public class ConnectionManager implements ConnectListener {
             this.reason = reason;
             this.fallback = fallback;
             this.currentHost = currentHost;
-            this.reattachOnResumeFailure = false;
-        }
-
-        StateIndication(ConnectionState state, ErrorInfo reason, String fallback, String currentHost,
-                         boolean reattachOnResumeFailure) {
-            this.state = state;
-            this.reason = reason;
-            this.fallback = fallback;
-            this.currentHost = currentHost;
-            this.reattachOnResumeFailure = reattachOnResumeFailure;
         }
     }
 
@@ -263,7 +252,7 @@ public class ConnectionManager implements ConnectListener {
 
         @Override
         void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, Channel channel) {
-            channel.setConnected(stateIndication.reattachOnResumeFailure);
+            channel.setConnected();
         }
 
         @Override
@@ -845,6 +834,13 @@ public class ConnectionManager implements ConnectListener {
                 ReconnectionStrategy.getRetryTime(ably.options.disconnectedRetryTimeout, ++disconnectedRetryAttempt);
         }
 
+        // RTN8c, RTN9c
+        if (stateIndication.state == ConnectionState.closing || stateIndication.state == ConnectionState.closed
+        || stateIndication.state == ConnectionState.suspended || stateIndication.state == ConnectionState.failed) {
+            connection.id = null;
+            connection.key = null;
+        }
+
         /* update currentState */
         ConnectionState newConnectionState = validatedStateIndication.state;
         State newState = states.get(newConnectionState);
@@ -1193,58 +1189,36 @@ public class ConnectionManager implements ConnectListener {
     }
 
     private void onChannelMessage(ProtocolMessage message) {
-        if(message.connectionSerial != null) {
-            connection.serial = message.connectionSerial.longValue();
-            if (connection.key != null)
-                connection.recoveryKey = connection.key + ":" + message.connectionSerial;
-        }
         channels.onMessage(message);
+        connection.recoveryKey = connection.createRecoveryKey();
     }
 
     private synchronized void onConnected(ProtocolMessage message) {
-        final ErrorInfo error = message.error;
-        boolean reattachOnResumeFailure = false; // this will indicate that channel must reattach when connected
-        // event is received
+        ably.options.recover = null; // RTN16k, explicitly setting null, so it won't be used for subsequent connection requests
+        connection.reason = message.error;
 
-        connection.reason = error;
         if (connection.id != null) { // there was a previous connection, so this is a resume and RTN15c applies
             Log.d(TAG, "There was a connection resume");
-            if(message.connectionId.equals(connection.id)) {
-                // resume succeeded
+            if(message.connectionId.equals(connection.id)) { // RTN15c6 - resume success
                 if(message.error == null) {
-                    // RTN15c1: no action required wrt channel state
                     Log.d(TAG, "connection has reconnected and resumed successfully");
                 } else {
-                    // RTN15c2: no action required wrt channel state
-                    Log.d(TAG, "connection resume success with non-fatal error: " + error.message);
+                    Log.d(TAG, "connection resume success with non-fatal error: " + message.error.message);
                 }
-                // Add pending messages to the front of queued messages to be sent later
                 addPendingMessagesToQueuedMessages(false);
-            } else {
-                // RTN15c3: resume failed
-                if (error != null){
-                    Log.d(TAG, "connection resume failed with error: " + error.message);
-                }else { // This shouldn't happen but, putting it here for safety
+            } else { // RTN15c7, RTN16d - resume     failure
+                if (message.error != null) {
+                    Log.d(TAG, "connection resume failed with error: " + message.error.message);
+                } else { // This shouldn't happen but, putting it here for safety
                     Log.d(TAG, "connection resume failed without error" );
                 }
 
-                //we are going to add pending messages and update pending queue state
                 addPendingMessagesToQueuedMessages(true);
-
-                //We are going to transfer presence messages as they need to be sent when the channel is attached
-                final List<QueuedMessage> queuedPresenceMessages = removeAndGetQueuedPresenceMessages();
-                channels.transferToChannels(queuedPresenceMessages);
-                reattachOnResumeFailure = true;
+                channels.transferToChannelQueue(extractConnectionQueuePresenceMessages());
             }
         }
 
         connection.id = message.connectionId;
-
-        if(message.connectionSerial != null) {
-            connection.serial = message.connectionSerial;
-            if (connection.key != null)
-                connection.recoveryKey = connection.key + ":" + message.connectionSerial;
-        }
 
         ConnectionDetails connectionDetails = message.connectionDetails;
         /* Get any parameters from connectionDetails. */
@@ -1260,9 +1234,11 @@ public class ConnectionManager implements ConnectListener {
             requestState(transport, new StateIndication(ConnectionState.failed, e.errorInfo));
             return;
         }
+
+        connection.recoveryKey = connection.createRecoveryKey();
+
         /* indicated connected currentState */
-        final StateIndication stateIndication = new StateIndication(ConnectionState.connected, error, null, null,
-            reattachOnResumeFailure);
+        final StateIndication stateIndication = new StateIndication(ConnectionState.connected, message.error, null, null);
         requestState(stateIndication);
     }
 
@@ -1271,7 +1247,7 @@ public class ConnectionManager implements ConnectListener {
     list and returns them. We can't yet use Java 8's stream and predicates for this purpose as we support below
     Android v24.
     * */
-    private synchronized List<QueuedMessage> removeAndGetQueuedPresenceMessages() {
+    private synchronized List<QueuedMessage> extractConnectionQueuePresenceMessages() {
         final Iterator<QueuedMessage> queuedIterator = queuedMessages.iterator();
         final List<QueuedMessage> queuedPresenceMessages = new ArrayList<>();
         while (queuedIterator.hasNext()){
@@ -1286,7 +1262,7 @@ public class ConnectionManager implements ConnectListener {
 
     /**
      * Add all pending queued messages to the front of QueuedMessages for them to be sent later
-     * Spec: RTN19a
+     * Spec: RTN19a, RTN19a1, RTN19a2
      * @param resetMessageSerial whether to reset message serial, this will determine whether to reset message serials
      * on pending queue, for example when a connection resume failed
      */
@@ -1296,7 +1272,7 @@ public class ConnectionManager implements ConnectListener {
             queuedMessages.addAll(0, pendingMessages.queue);
 
             if (resetMessageSerial){  // failed resume, so all new published messages start with msgSerial = 0
-                msgSerial = 0; //msgSerial will increase in sendImpl when messages are sent
+                msgSerial = 0; //msgSerial will increase in sendImpl when messages are sent, RTN15c7
                 pendingMessages.resetStartSerial(0);
             } else if(!pendingMessages.queue.isEmpty()) { // pendingMessages needs to expect next msgSerial to be the earliest previously unacknowledged message
                 msgSerial =  pendingMessages.queue.get(0).msg.msgSerial;
@@ -1504,7 +1480,6 @@ public class ConnectionManager implements ConnectListener {
         ConnectParams(ClientOptions options, PlatformAgentProvider platformAgentProvider) {
             super(options, platformAgentProvider);
             this.connectionKey = connection.key;
-            this.connectionSerial = String.valueOf(connection.serial);
             this.port = Defaults.getPort(options);
         }
     }
@@ -1905,7 +1880,7 @@ public class ConnectionManager implements ConnectListener {
     private boolean suppressRetry; /* for tests only; modified via reflection */
     private ITransport transport;
     private long suspendTime;
-    private long msgSerial;
+    public long msgSerial;
     private long lastActivity;
     private CMConnectivityListener connectivityListener;
     private long connectionStateTtl = Defaults.connectionStateTtl;
