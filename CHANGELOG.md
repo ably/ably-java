@@ -20,10 +20,7 @@
 **Merged pull requests:**
 
 - Fix shared pref storage [\#986](https://github.com/ably/ably-java/pull/986) ([sacOO7](https://github.com/sacOO7))
-- Connection serial tests [\#984](https://github.com/ably/ably-java/pull/984) ([sacOO7](https://github.com/sacOO7))
 - Feature/no connection serial [\#983](https://github.com/ably/ably-java/pull/983) ([sacOO7](https://github.com/sacOO7))
-- no-connection-serial-presence [\#982](https://github.com/ably/ably-java/pull/982) ([sacOO7](https://github.com/sacOO7))
-- Feature/no connection serial recovery key [\#980](https://github.com/ably/ably-java/pull/980) ([sacOO7](https://github.com/sacOO7))
 
 ## [1.2.33](https://github.com/ably/ably-java/tree/v1.2.33)
 
