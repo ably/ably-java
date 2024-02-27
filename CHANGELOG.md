@@ -1,5 +1,24 @@
 # Change Log
 
+## [1.2.34](https://github.com/ably/ably-java/tree/v1.2.34)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.33...v1.2.34)
+
+**Fixed bugs:**
+
+- Should send `DETACH` after receiving `ATTACHED` while in the `DETACHING` or `DETACHED` state \(`RTL5k`\) [\#846](https://github.com/ably/ably-java/issues/846)
+
+**Closed issues:**
+
+- LocalDevice reset will cause ClassCastException [\#985](https://github.com/ably/ably-java/issues/985)
+- Implement no-connection-serial [\#981](https://github.com/ably/ably-java/issues/981)
+- DeviceSecret key is required by protocol v2.0 [\#845](https://github.com/ably/ably-java/issues/845)
+
+**Merged pull requests:**
+
+- Fix shared pref storage [\#986](https://github.com/ably/ably-java/pull/986) ([sacOO7](https://github.com/sacOO7))
+- Feature/no connection serial [\#983](https://github.com/ably/ably-java/pull/983) ([sacOO7](https://github.com/sacOO7))
+
 ## [1.2.33](https://github.com/ably/ably-java/tree/v1.2.33)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.32...v1.2.33)
