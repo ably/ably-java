@@ -3307,7 +3307,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
      * Test Presence.get() filtering and syncToWait flag
      * Tests RTP11b, RTP11c, RTP11d
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void presence_get() throws AblyException, InterruptedException {
         AblyRealtime ably1 = null, ably2 = null;
@@ -3316,8 +3315,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
             final String channelName = "presence_get" + testParams.name;
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably1 = new AblyRealtime(opts);
-            opts.autoConnect = false;
-            ably2 = new AblyRealtime(opts);
 
             Channel channel1 = ably1.channels.get(channelName);
             CompletionWaiter completionWaiter = new CompletionWaiter();
@@ -3325,6 +3322,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
             channel1.presence.enterClient("2", null, completionWaiter);
             completionWaiter.waitFor(2);
 
+            opts.autoConnect = false;
+            ably2 = new AblyRealtime(opts);
             Channel channel2 = ably2.channels.get(channelName);
             PresenceWaiter waiter2 = new PresenceWaiter(channel2);
 
