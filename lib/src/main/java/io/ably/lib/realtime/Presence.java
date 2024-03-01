@@ -27,7 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Enables the presence set to be entered and subscribed to, and the historic presence set to be retrieved for a channel.
