@@ -1,5 +1,17 @@
 # Change Log
 
+## [1.2.35](https://github.com/ably/ably-java/tree/v1.2.35)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.34...v1.2.35)
+
+**Closed issues:**
+
+- Enable and fix tests in RealtimePresenceTest [\#869](https://github.com/ably/ably-java/issues/869)
+
+**Merged pull requests:**
+
+- Fix presence / ignored presence tests [\#989](https://github.com/ably/ably-java/pull/989) ([sacOO7](https://github.com/sacOO7))
+
 ## [1.2.34](https://github.com/ably/ably-java/tree/v1.2.34)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.33...v1.2.34)
