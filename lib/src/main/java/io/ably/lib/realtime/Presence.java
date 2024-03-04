@@ -902,11 +902,6 @@ public class Presence {
      ************************************/
 
     void onAttached(boolean hasPresence) {
-        /* Interrupt get() call => by unblocking presence.waitForSync()*/
-        synchronized (presence) {
-            presence.notifyAll();
-        }
-
         presence.startSync();
         if (!hasPresence) { // RTP19a
             endSync();
