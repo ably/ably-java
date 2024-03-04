@@ -2,6 +2,7 @@ package io.ably.lib.test.realtime;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.experimental.ParallelComputer;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.RunWith;
@@ -44,9 +45,10 @@ public class RealtimeSuite {
     }
 
     public static void main(String[] args) {
-        Result result = JUnitCore.runClasses(RealtimeSuite.class);
+        Result result = JUnitCore.runClasses(ParallelComputer.classes(),
+            RealtimeSuite.class);
         for(Failure failure : result.getFailures()) {
-          System.out.println(failure.toString());
+          System.out.println("Failed :: "+ failure.toString());
         }
     }
 }
