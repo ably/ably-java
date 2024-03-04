@@ -1,6 +1,6 @@
 package io.ably.lib.test.realtime;
 
-import com.googlecode.junittoolbox.ParallelRunner;
+import com.googlecode.junittoolbox.ParallelSuite;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.JUnitCore;
@@ -11,7 +11,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
 import io.ably.lib.test.common.Setup;
 
-@RunWith(ParallelRunner.class)
+@RunWith(ParallelSuite.class)
 @SuiteClasses({
     ConnectionManagerTest.class,
     RealtimeHttpHeaderTest.class,
@@ -44,6 +44,7 @@ public class RealtimeSuite {
     }
 
     public static void main(String[] args) {
+        System.setProperty("maxParallelTestThreads", "4");
         Result result = JUnitCore.runClasses(RealtimeSuite.class);
         for(Failure failure : result.getFailures()) {
           System.out.println("Failed :: "+ failure.toString());
