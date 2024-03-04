@@ -86,7 +86,6 @@ public class RealtimeJWTTest extends ParameterizedTest {
      * Request a JWT with subscribe-only capabilities
      * Verifies that publishing on a channel fails
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void auth_jwt_with_subscribe_only_capability() {
         try {
