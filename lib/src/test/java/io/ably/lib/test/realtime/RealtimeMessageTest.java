@@ -1,11 +1,5 @@
 package io.ably.lib.test.realtime;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,10 +45,17 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 public class RealtimeMessageTest extends ParameterizedTest {
 
     private static final String testMessagesEncodingFile = "ably-common/test-resources/messages-encoding.json";
-    private static Gson gson = new Gson();
+    private static final Gson gson = new Gson();
 
     @Rule
     public Timeout testTimeout = Timeout.seconds(300);
@@ -62,7 +63,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
     /**
      * Connect to the service and attach, subscribe to an event, and publish on that channel
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void single_send() {
         AblyRealtime ably = null;
@@ -107,7 +107,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
      * attach, subscribe to an event, publish on one
      * connection and confirm receipt on the other.
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void single_send_noecho() {
         AblyRealtime txAbly = null;
@@ -166,7 +165,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
      * Get a channel and subscribe without explicitly attaching.
      * Verify that the channel reaches the attached state.
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void subscribe_implicit_attach() {
         AblyRealtime ably = null;
@@ -243,7 +241,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 
                 /* wait for the publish callback to be called */
                 ErrorInfo[] errors = msgComplete.waitFor();
-                assertTrue("Verify success from all message callbacks", errors.length == 0);
+                assertEquals("Verify success from all message callbacks", 0, errors.length);
 
                 /* wait for the subscription callback to be called */
                 messageWaiter.waitFor(messageCount);
@@ -261,13 +259,13 @@ public class RealtimeMessageTest extends ParameterizedTest {
                     channel.publish("test_event", messageData, msgComplete.add());
                     try {
                         Thread.sleep(delay);
-                    } catch(InterruptedException e) {
+                    } catch(InterruptedException ignored) {
                     }
                 }
 
                 /* wait for the publish callback to be called */
                 ErrorInfo[] errors = msgComplete.waitFor();
-                assertTrue("Verify success from all message callbacks", errors.length == 0);
+                assertEquals("Verify success from all message callbacks", 0, errors.length);
 
                 /* wait for the subscription callback to be called */
                 messageWaiter.waitFor(messageCount);
@@ -293,7 +291,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
      * Test right and wrong channel states to publish messages
      * Tests RTL6c
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void publish_channel_state() {
         AblyRealtime ably = null;
@@ -384,7 +381,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
 
             /* wait for the publish callback to be called */
             ErrorInfo[] errors = msgComplete.waitFor();
-            assertTrue("Verify success from all message callbacks", errors.length == 0);
+            assertEquals("Verify success from all message callbacks", 0, errors.length);
 
             /* wait for the subscription callback to be called */
             messageWaiter.waitFor(messageCount);
@@ -399,7 +396,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
         }
     }
 
-    @Ignore("FIXME: fix exception")
     @Test
     public void multiple_send_10_1000_16_string() {
         int messageCount = 10;
@@ -407,7 +403,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
         _multiple_send("multiple_send_10_1000_16_string_" + testParams.name, messageCount, 16, false, delay);
     }
 
-    @Ignore("FIXME: fix exception")
     @Test
     public void multiple_send_10_1000_16_binary() {
         int messageCount = 10;
@@ -415,7 +410,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
         _multiple_send("multiple_send_10_1000_16_binary_" + testParams.name, messageCount, 16, true, delay);
     }
 
-    @Ignore("FIXME: fix exception")
     @Test
     public void multiple_send_10_1000_512_string() {
         int messageCount = 10;
@@ -423,7 +417,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
         _multiple_send("multiple_send_10_1000_512_string_" + testParams.name, messageCount, 512, false, delay);
     }
 
-    @Ignore("FIXME: fix exception")
     @Test
     public void multiple_send_10_1000_512_binary() {
         int messageCount = 10;
@@ -431,7 +424,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
         _multiple_send("multiple_send_10_1000_512_binary_" + testParams.name, messageCount, 512, true, delay);
     }
 
-    @Ignore("FIXME: fix exception")
     @Test
     public void multiple_send_20_200() {
         int messageCount = 20;
@@ -439,7 +431,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
         _multiple_send("multiple_send_20_200_" + testParams.name, messageCount, 256, true, delay);
     }
 
-    @Ignore("FIXME: fix exception")
     @Test
     public void multiple_send_200_50() {
         int messageCount = 200;
@@ -447,7 +438,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
         _multiple_send("multiple_send_binary_200_50_" + testParams.name, messageCount, 256, true, delay);
     }
 
-    @Ignore("FIXME: fix exception")
     @Test
     public void multiple_send_1000_10() {
         int messageCount = 1000;
@@ -522,7 +512,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
         }
     }
 
-    @Ignore("FIXME: fix exception")
     @Test
     public void messages_encoding_fixtures() {
         MessagesEncodingData fixtures;
@@ -587,7 +576,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
         }
     }
 
-    @Ignore("FIXME: fix exception")
     @Test
     public void messages_msgpack_and_json_encoding_is_compatible() {
         MessagesEncodingData fixtures;
@@ -739,8 +727,10 @@ public class RealtimeMessageTest extends ParameterizedTest {
             synchronized(log) {
                 boolean foundErrorMessage = false;
                 for(String logMessage : log) {
-                    if(logMessage.contains("encryption is not set up"))
+                    if (logMessage.contains("encryption is not set up")) {
                         foundErrorMessage = true;
+                        break;
+                    }
                 }
                 assertTrue("Verify logged error messages", foundErrorMessage);
             }
@@ -754,22 +744,27 @@ public class RealtimeMessageTest extends ParameterizedTest {
     }
 
     private void expectDataToMatch(MessagesEncodingDataItem fixtureMessage, Message receivedMessage) {
-        if(fixtureMessage.expectedType.equals("string")) {
-            assertEquals("Verify decoded message data", fixtureMessage.expectedValue.getAsString(), receivedMessage.data);
-        } else if(fixtureMessage.expectedType.equals("jsonObject")) {
-            assertEquals("Verify decoded message data", fixtureMessage.expectedValue.getAsJsonObject(), receivedMessage.data);
-        } else if(fixtureMessage.expectedType.equals("jsonArray")) {
-            assertEquals("Verify decoded message data", fixtureMessage.expectedValue.getAsJsonArray(), receivedMessage.data);
-        } else if(fixtureMessage.expectedType.equals("binary")) {
-            byte[] receivedData = (byte[]) receivedMessage.data;
-            StringBuilder sb = new StringBuilder(receivedData.length * 2);
-            for(byte b : receivedData) {
-                sb.append(String.format("%02x", b & 0xff));
-            }
-            String receivedDataHex = sb.toString();
-            assertEquals("Verify decoded message data", fixtureMessage.expectedHexValue, receivedDataHex);
-        } else {
-            throw new RuntimeException(String.format(Locale.ROOT, "unhandled: %s", fixtureMessage.expectedType));
+        switch (fixtureMessage.expectedType) {
+            case "string":
+                assertEquals("Verify decoded message data", fixtureMessage.expectedValue.getAsString(), receivedMessage.data);
+                break;
+            case "jsonObject":
+                assertEquals("Verify decoded message data", fixtureMessage.expectedValue.getAsJsonObject(), receivedMessage.data);
+                break;
+            case "jsonArray":
+                assertEquals("Verify decoded message data", fixtureMessage.expectedValue.getAsJsonArray(), receivedMessage.data);
+                break;
+            case "binary":
+                byte[] receivedData = (byte[]) receivedMessage.data;
+                StringBuilder sb = new StringBuilder(receivedData.length * 2);
+                for (byte b : receivedData) {
+                    sb.append(String.format("%02x", b & 0xff));
+                }
+                String receivedDataHex = sb.toString();
+                assertEquals("Verify decoded message data", fixtureMessage.expectedHexValue, receivedDataHex);
+                break;
+            default:
+                throw new RuntimeException(String.format(Locale.ROOT, "unhandled: %s", fixtureMessage.expectedType));
         }
     }
 
@@ -804,7 +799,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
             message.encode(null);
             fail("reject_invalid_message_data: Expected AblyException to be thrown.");
         } catch(AblyException e) {
-            assertEquals(null, message.encoding);
+            assertNull(message.encoding);
             assertEquals(data, message.data);
         } catch(Throwable t) {
             fail("reject_invalid_message_data: Unexpected exception");
@@ -873,7 +868,6 @@ public class RealtimeMessageTest extends ParameterizedTest {
      * Refer Spec. TM3
      * @throws AblyException
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void messages_from_encoded_json_array() throws AblyException {
         JsonArray fixtures = null;
