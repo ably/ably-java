@@ -139,7 +139,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
     /**
      * Attach to channel, enter presence channel and await entered event
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void enter_simple() {
         AblyRealtime clientAbly1 = null;
@@ -190,7 +189,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
     /**
      * Enter presence channel without prior attach and await entered event
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void enter_before_attach() {
         AblyRealtime clientAbly1 = null;
@@ -239,7 +237,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
     /**
      * Enter presence channel without prior connect and await entered event
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void enter_before_connect() {
         AblyRealtime clientAbly1 = null;
@@ -285,7 +282,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
      * Enter, then leave, presence channel and await leave event
      * Verify that the item is removed from the presence map (RTP2e)
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void enter_leave_simple() {
         AblyRealtime clientAbly1 = null;
@@ -345,7 +341,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
     /**
      * Enter, then enter again, expecting update event
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void enter_enter_simple() {
         AblyRealtime clientAbly1 = null;
@@ -414,7 +409,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
     /**
      * Enter, then update, expecting update event
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void enter_update_simple() {
         AblyRealtime clientAbly1 = null;
@@ -552,7 +546,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
     /**
      * Update without having first entered, expecting enter event
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void update_noenter() {
         AblyRealtime clientAbly1 = null;
@@ -611,7 +604,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
      * Enter, then leave (with no data) and await leave event,
      * expecting enter data to be in leave event
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void enter_leave_nodata() {
         AblyRealtime clientAbly1 = null;
@@ -667,7 +659,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
     /**
      * Attach to channel, enter presence channel and get presence using realtime get()
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void realtime_get_simple() {
         AblyRealtime clientAbly1 = null;
@@ -722,7 +713,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
     /**
      * Attach to channel, enter+leave presence channel and get presence with realtime get()
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void realtime_get_leave() {
         AblyRealtime clientAbly1 = null;
@@ -781,7 +771,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
      * Attach to channel, enter presence channel, then initiate second
      * connection, seeing existing member in message subsequent to second attach response
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void attach_enter_simple() {
         AblyRealtime clientAbly1 = null;
@@ -858,7 +847,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
      *
      * Test RTP4
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void attach_enter_multiple() {
         AblyRealtime clientAbly1 = null;
@@ -943,7 +931,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
     /**
      * Attach and enter channel on two connections, seeing
      * both members in presence returned by realtime get() */
-    @Ignore("FIXME: fix exception")
     @Test
     public void realtime_enter_multiple() {
         AblyRealtime clientAbly1 = null;
@@ -1014,7 +1001,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
     /**
      * Attach to channel, enter presence channel and get presence using rest get()
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void rest_get_simple() {
         AblyRealtime clientAbly1 = null;
@@ -1067,7 +1053,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
     /**
      * Attach to channel, enter+leave presence channel and get presence with rest get()
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void rest_get_leave() {
         AblyRealtime clientAbly1 = null;
@@ -1125,7 +1110,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
     /**
      * Attach and enter channel on two connections, seeing
      * both members in presence returned by rest get() */
-    @Ignore("FIXME: fix exception")
     @Test
     public void rest_enter_multiple() {
         AblyRealtime clientAbly1 = null;
@@ -1191,7 +1175,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
     /**
      * Attach and enter channel multiple times on a single connection,
      * retrieving members using paginated rest get() */
-    @Ignore("FIXME: fix exception")
     @Test
     public void rest_paginated_get() {
         AblyRealtime clientAbly1 = null;
@@ -1277,7 +1260,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
     /**
      * Attach to channel, enter presence channel, disconnect and await leave event
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void disconnect_leave() {
         AblyRealtime clientAbly1 = null;
@@ -1419,7 +1401,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
      *
      * @throws AblyException
      */
-    @Ignore("FIXME: flaky test")
     @Test
     public void realtime_presence_unsubscribe_single() throws AblyException {
         /* Ably instance that will emit presence events */
@@ -1499,7 +1480,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
      *
      * @throws AblyException
      */
-    @Ignore("FIXME: flaky test")
     @Test
     public void realtime_presence_subscribe_all() throws AblyException {
         /* Ably instance that will emit presence events */
@@ -1575,7 +1555,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
      *
      * @throws AblyException
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void realtime_presence_subscribe_multiple() throws AblyException {
         /* Ably instance that will emit presence events */
@@ -1824,7 +1803,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
      *
      * @throws AblyException
      */
-    @Ignore("FIXME: flaky test")
     @Test
     public void realtime_presence_attach_implicit_subscribe_fail() throws AblyException {
         AblyRealtime ably = null;
@@ -2142,7 +2120,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
      *
      * @throws AblyException
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void realtime_presence_get_throws_when_channel_failed() throws AblyException {
         AblyRealtime ably = null;
@@ -2467,7 +2444,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
      *
      * Tests RTP3
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void reattach_resume_broken_sync() {
         AblyRealtime clientAbly1 = null;
@@ -2850,7 +2826,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
      *
      * Not functional yet
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void presence_without_subscribe_capability() throws AblyException {
         String channelName = "presence_without_subscribe" + testParams.name;
@@ -2914,7 +2889,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
      *
      * Tests RTP13
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void sync_complete() {
         AblyRealtime ably1 = null, ably2 = null;
@@ -2994,7 +2968,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
     /**
      * Enter wrong client (mismatching one set in the token), check exception
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void presence_enter_mismatched_clientid() throws AblyException {
         String channelName = "presence_enter_mismatched_clientid" + testParams.name;
@@ -3236,7 +3209,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
      * Verify presence data is received and encoded/decoded correctly
      * Tests RTP8e, RTP6a
      */
-    @Ignore("FIXME: flaky test")
     @Test
     public void presence_encoding() throws AblyException, InterruptedException {
         AblyRealtime ably1 = null, ably2 = null;
@@ -3307,7 +3279,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
      * Test Presence.get() filtering and syncToWait flag
      * Tests RTP11b, RTP11c, RTP11d
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void presence_get() throws AblyException, InterruptedException {
         AblyRealtime ably1 = null, ably2 = null;
@@ -3316,8 +3287,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
             final String channelName = "presence_get" + testParams.name;
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             ably1 = new AblyRealtime(opts);
-            opts.autoConnect = false;
-            ably2 = new AblyRealtime(opts);
 
             Channel channel1 = ably1.channels.get(channelName);
             CompletionWaiter completionWaiter = new CompletionWaiter();
@@ -3325,6 +3294,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
             channel1.presence.enterClient("2", null, completionWaiter);
             completionWaiter.waitFor(2);
 
+            opts.autoConnect = false;
+            ably2 = new AblyRealtime(opts);
             Channel channel2 = ably2.channels.get(channelName);
             PresenceWaiter waiter2 = new PresenceWaiter(channel2);
 
@@ -3403,7 +3374,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
         assertEquals("Members count with channel presence should be " + presenceMessages.length, presenceMessages.length, 1);
     }
 
-    @Ignore
     @Test
     public void test_consistent_presence_for_members() {
         AblyRealtime clientAbly1 = null;
@@ -3566,7 +3536,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
      * Refer Spec. TP4
      * @throws AblyException
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void messages_from_encoded_json_array() throws AblyException {
         JsonArray fixtures = null;

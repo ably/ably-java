@@ -27,7 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Enables the presence set to be entered and subscribed to, and the historic presence set to be retrieved for a channel.
@@ -903,11 +902,6 @@ public class Presence {
      ************************************/
 
     void onAttached(boolean hasPresence) {
-        /* Interrupt get() call => by unblocking presence.waitForSync()*/
-        synchronized (presence) {
-            presence.notifyAll();
-        }
-
         presence.startSync();
         if (!hasPresence) { // RTP19a
             endSync();
@@ -919,8 +913,8 @@ public class Presence {
     /**
      * Spec: RTP17g
      */
-    synchronized void enterInternalMembers() {
-        for (final PresenceMessage item: internalPresence.values()) {
+    void enterInternalMembers() {
+        for (final PresenceMessage item: internalPresence.members.values()) {
             try {
                 enterClientWithId(item.id, item.clientId, item.data, new CompletionListener() {
                     @Override
@@ -1026,7 +1020,7 @@ public class Presence {
             for (Param param: params) {
                 switch (param.key) {
                     case GET_WAITFORSYNC:
-                        waitForSync = Boolean.valueOf(param.value);
+                        waitForSync = Boolean.parseBoolean(param.value);
                         break;
                     case GET_CLIENTID:
                         clientId = param.value;
@@ -1041,8 +1035,7 @@ public class Presence {
             if (waitForSync)
                 waitForSync();
 
-            for (Map.Entry<String, PresenceMessage> entry: members.entrySet()) {
-                PresenceMessage member = entry.getValue();
+            for (PresenceMessage member: members.values()) {
                 if ((clientId == null || member.clientId.equals(clientId)) &&
                         (connectionId == null || member.connectionId.equals(connectionId)))
                     result.add(member);
@@ -1106,10 +1099,10 @@ public class Presence {
                 return false;
 
             try {
-                long messageSerial = Long.valueOf(itemComponents[1]);
-                long messageIndex = Long.valueOf(itemComponents[2]);
-                long existingMessageSerial = Long.valueOf(existingItemComponents[1]);
-                long existingMessageIndex = Long.valueOf(existingItemComponents[2]);
+                long messageSerial = Long.parseLong(itemComponents[1]);
+                long messageIndex = Long.parseLong(itemComponents[2]);
+                long existingMessageSerial = Long.parseLong(existingItemComponents[1]);
+                long existingMessageIndex = Long.parseLong(existingItemComponents[2]);
 
                 return existingMessageSerial > messageSerial ||
                         (existingMessageSerial == messageSerial && existingMessageIndex >= messageIndex);
@@ -1117,34 +1110,6 @@ public class Presence {
             catch(NumberFormatException e) {
                 return false;
             }
-        }
-
-        /**
-         * Get all members based on the current state (even if sync is in progress)
-         * @return
-         */
-        synchronized Collection<PresenceMessage> values() {
-            try { return values(false); } catch (InterruptedException|AblyException e) { return null; }
-        }
-
-        /**
-         * Get all members, optionally waiting if a sync is in progress.
-         * @param wait
-         * @return
-         * @throws InterruptedException
-         */
-        synchronized Collection<PresenceMessage> values(boolean wait) throws AblyException, InterruptedException {
-            Set<PresenceMessage> result = new HashSet<PresenceMessage>();
-            if(wait)
-                waitForSync();
-            result.addAll(members.values());
-            for(Iterator<PresenceMessage> it = result.iterator(); it.hasNext();) {
-                PresenceMessage entry = it.next();
-                if(entry.action == PresenceMessage.Action.absent) {
-                    it.remove();
-                }
-            }
-            return result;
         }
 
         /**
