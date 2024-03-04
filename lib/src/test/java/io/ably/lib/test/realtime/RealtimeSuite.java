@@ -1,18 +1,17 @@
 package io.ably.lib.test.realtime;
 
+import com.googlecode.junittoolbox.ParallelSuite;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.experimental.ParallelComputer;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.Failure;
-import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
 import io.ably.lib.test.common.Setup;
 
-@RunWith(Suite.class)
+@RunWith(ParallelSuite.class)
 @SuiteClasses({
     ConnectionManagerTest.class,
     RealtimeHttpHeaderTest.class,
@@ -45,8 +44,7 @@ public class RealtimeSuite {
     }
 
     public static void main(String[] args) {
-        Result result = JUnitCore.runClasses(ParallelComputer.classes(),
-            RealtimeSuite.class);
+        Result result = JUnitCore.runClasses(RealtimeSuite.class);
         for(Failure failure : result.getFailures()) {
           System.out.println("Failed :: "+ failure.toString());
         }
