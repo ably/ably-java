@@ -44,7 +44,6 @@ public class RealtimeSuite {
     }
 
     public static void main(String[] args) {
-        System.setProperty("maxParallelTestThreads", "4");
         Result result = JUnitCore.runClasses(RealtimeSuite.class);
         for(Failure failure : result.getFailures()) {
           System.out.println("Failed :: "+ failure.toString());
