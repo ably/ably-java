@@ -1,11 +1,9 @@
 package io.ably.lib.test.realtime;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.google.gson.Gson;
@@ -688,25 +686,23 @@ public class RealtimeMessageTest extends ParameterizedTest {
         ConcurrentLinkedQueue<String> log = new ConcurrentLinkedQueue<>();
 
         try {
-            ClientOptions apiOptions = createOptions(testVars.keys[0].keyStr);
-            apiOptions.logHandler = new Log.LogHandler() {
+            ClientOptions clientOptions = createOptions(testVars.keys[0].keyStr);
+            clientOptions.logHandler = new Log.LogHandler() {
                 @Override
                 public void println(int severity, String tag, String msg, Throwable tr) {
                     log.add(String.format(Locale.US, "%s: %s", tag, msg));
                 }
             };
-            apiOptions.logLevel = Log.INFO;
+            clientOptions.logLevel = Log.INFO;
 
-            AblyRest restPublishClient = new AblyRest(apiOptions);
-            realtimeSubscribeClient = new AblyRealtime(apiOptions);
+            AblyRest restPublishClient = new AblyRest(clientOptions);
+            realtimeSubscribeClient = new AblyRealtime(clientOptions);
 
             final Channel realtimeSubscribeChannelJson = realtimeSubscribeClient.channels.get("test-encoding");
-
+            MessageWaiter messageWaiter = new MessageWaiter(realtimeSubscribeChannelJson);
             realtimeSubscribeChannelJson.attach();
             (new ChannelWaiter(realtimeSubscribeChannelJson)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", realtimeSubscribeChannelJson.state, ChannelState.attached);
-
-            MessageWaiter messageWaiter = new MessageWaiter(realtimeSubscribeChannelJson);
 
             MessagesEncodingDataItem testData = new MessagesEncodingDataItem();
             testData.data = "MDEyMzQ1Njc4OQ==";                    /* Base64("0123456789") */
