@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -683,16 +685,14 @@ public class RealtimeMessageTest extends ParameterizedTest {
     @Test
     public void message_inconsistent_encoding() {
         AblyRealtime realtimeSubscribeClient = null;
-        final ArrayList<String> log = new ArrayList<>();
+        ConcurrentLinkedQueue<String> log = new ConcurrentLinkedQueue<>();
 
         try {
             ClientOptions apiOptions = createOptions(testVars.keys[0].keyStr);
             apiOptions.logHandler = new Log.LogHandler() {
                 @Override
                 public void println(int severity, String tag, String msg, Throwable tr) {
-                    synchronized(log) {
-                        log.add(String.format(Locale.US, "%s: %s", tag, msg));
-                    }
+                    log.add(String.format(Locale.US, "%s: %s", tag, msg));
                 }
             };
             apiOptions.logLevel = Log.INFO;
@@ -724,16 +724,10 @@ public class RealtimeMessageTest extends ParameterizedTest {
             expectDataToMatch(testData, receivedMessage);
             assertEquals("Verify resulting encoding", receivedMessage.encoding, "utf-8/cipher+aes-128-cbc");
 
-            synchronized(log) {
-                boolean foundErrorMessage = false;
-                for(String logMessage : log) {
-                    if (logMessage.contains("encryption is not set up")) {
-                        foundErrorMessage = true;
-                        break;
-                    }
-                }
-                assertTrue("Verify logged error messages", foundErrorMessage);
-            }
+            Exception error = new Helpers.ConditionalWaiter().wait(() ->
+                log.stream().anyMatch(logMessage -> logMessage.contains("encryption is not set up")), 10000);
+            assertNull(error);
+
         } catch(AblyException e) {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");
