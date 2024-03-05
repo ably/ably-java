@@ -1,12 +1,12 @@
 package io.ably.lib.test.common.toolkit;
 
-public class CatThrower<T extends Throwable> {
+public class SneakyThrower<T extends Throwable> {
 
     /**
      * Will throw the given {@link Throwable}.
      */
     public static void sneakyThrow(Throwable t) {
-        new CatThrower<Error>().sneakyThrow2(t);
+        new SneakyThrower<Error>().sneakyThrow2(t);
     }
 
     private void sneakyThrow2(Throwable t) throws T {

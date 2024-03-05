@@ -41,7 +41,7 @@ public class MultiException extends RuntimeException {
                 // Do nothing
             } else if (nested.size() == 1) {
                 Throwable t = nested.get(0);
-                CatThrower.sneakyThrow(t);
+                SneakyThrower.sneakyThrow(t);
             } else {
                 throw this;
             }
