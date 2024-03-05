@@ -1,6 +1,6 @@
 package io.ably.lib.test.realtime;
 
-import com.googlecode.junittoolbox.ParallelSuite;
+import io.ably.lib.test.common.toolkit.AblyTestSuite;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.JUnitCore;
@@ -11,7 +11,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
 import io.ably.lib.test.common.Setup;
 
-@RunWith(ParallelSuite.class)
+@RunWith(AblyTestSuite.class)
 @SuiteClasses({
     ConnectionManagerTest.class,
     RealtimeHttpHeaderTest.class,
