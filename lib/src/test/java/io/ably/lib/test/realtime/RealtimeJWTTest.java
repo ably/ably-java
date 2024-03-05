@@ -25,7 +25,6 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.UnsupportedEncodingException;
@@ -86,7 +85,6 @@ public class RealtimeJWTTest extends ParameterizedTest {
      * Request a JWT with subscribe-only capabilities
      * Verifies that publishing on a channel fails
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void auth_jwt_with_subscribe_only_capability() {
         try {

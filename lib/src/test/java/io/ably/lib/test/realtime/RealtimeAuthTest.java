@@ -700,7 +700,6 @@ public class RealtimeAuthTest extends ParameterizedTest {
      * object that contains an incompatible clientId, the library should ... transition
      *  the connection state to FAILED
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void auth_client_match_token_clientId_fail() {
         try {
@@ -858,7 +857,6 @@ public class RealtimeAuthTest extends ParameterizedTest {
      * are sent with explicit clientId
      * Spec: RTL6g4
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void auth_clientid_publish_explicit_before_identified() {
         AblyRealtime ably = null;

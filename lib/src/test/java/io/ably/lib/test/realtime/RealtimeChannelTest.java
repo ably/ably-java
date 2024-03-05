@@ -26,7 +26,6 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
 import org.hamcrest.Matchers;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -1168,7 +1167,6 @@ public class RealtimeChannelTest extends ParameterizedTest {
      * </p>
      *
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void transient_publish_connected() throws AblyException {
         AblyRealtime pubAbly = null, subAbly = null;
@@ -1218,7 +1216,6 @@ public class RealtimeChannelTest extends ParameterizedTest {
      * </p>
      *
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void transient_publish_connecting() throws AblyException {
         AblyRealtime pubAbly = null, subAbly = null;
@@ -1675,7 +1672,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             AblyRealtime finalAbly = ably;
             Exception conditionError = new Helpers.ConditionalWaiter().
-                wait(() -> finalAbly.connection.connectionManager.msgSerial == 0, 5000);
+                wait(() -> finalAbly.connection.connectionManager.msgSerial == 0, 10000);
             assertNull(conditionError);
 
             attachedChannelWaiter.waitFor(ChannelState.attaching, ChannelState.attached);

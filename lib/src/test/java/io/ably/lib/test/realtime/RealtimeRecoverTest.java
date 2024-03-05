@@ -17,14 +17,12 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class RealtimeRecoverTest extends ParameterizedTest {
@@ -41,7 +39,6 @@ public class RealtimeRecoverTest extends ParameterizedTest {
      * on recover
      * Spec: RTN16a,RTN16b
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void recover_disconnected() {
         AblyRealtime ablyRx = null, ablyTx = null, ablyRxRecover = null;
@@ -72,12 +69,12 @@ public class RealtimeRecoverTest extends ParameterizedTest {
             CompletionSet msgComplete1 = new CompletionSet();
             for(int i = 0; i < messageCount; i++) {
                 channelTx.publish("test_event", "Test message (recover_disconnected) " + i, msgComplete1.add());
-                try { Thread.sleep(delay); } catch(InterruptedException e){}
+                try { Thread.sleep(delay); } catch(InterruptedException ignored){}
             }
 
             /* wait for the publish callback to be called */
             ErrorInfo[] errors = msgComplete1.waitFor();
-            assertTrue("Verify success from all message callbacks", errors.length == 0);
+            assertEquals("Verify success from all message callbacks", 0, errors.length);
 
             /* wait for the subscription callback to be called */
             messageWaiter.waitFor(messageCount);
@@ -87,22 +84,24 @@ public class RealtimeRecoverTest extends ParameterizedTest {
              * NOTE this depends on knowledge of the internal structure
              * of the library, to simulate a dropped transport without
              * causing the connection itself to be disposed */
-            String recoverConnectionKey = ablyRx.connection.recoveryKey;
+            String recoverConnectionKey = ablyRx.connection.createRecoveryKey();
+            assertEquals(ablyRx.connection.recoveryKey, recoverConnectionKey);
+
             ablyRx.connection.connectionManager.requestState(ConnectionState.failed);
 
             /* wait */
-            try { Thread.sleep(2000L); } catch(InterruptedException e) {}
+            try { Thread.sleep(2000L); } catch(InterruptedException ignored) {}
 
             /* publish next messages to the channel */
             CompletionSet msgComplete2 = new CompletionSet();
             for(int i = 0; i < messageCount; i++) {
                 channelTx.publish("test_event", "Test message (recover_disconnected) " + i, msgComplete2.add());
-                try { Thread.sleep(delay); } catch(InterruptedException e){}
+                try { Thread.sleep(delay); } catch(InterruptedException ignored){}
             }
 
             /* wait for the publish callback to be called */
             errors = msgComplete2.waitFor();
-            assertTrue("Verify success from all message callbacks", errors.length == 0);
+            assertEquals("Verify success from all message callbacks", 0, errors.length);
 
             /* establish a new rx connection with recover string, and wait for connection */
             ClientOptions recoverOpts = createOptions(testVars.keys[0].keyStr);
@@ -141,7 +140,6 @@ public class RealtimeRecoverTest extends ParameterizedTest {
      * on recover
      * Spec: RTN16a,RTN16b
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void recover_implicit_connect() {
         AblyRealtime ablyRx = null, ablyTx = null, ablyRxRecover = null;
@@ -172,12 +170,12 @@ public class RealtimeRecoverTest extends ParameterizedTest {
             CompletionSet msgComplete1 = new CompletionSet();
             for(int i = 0; i < messageCount; i++) {
                 channelTx.publish("test_event", "Test message (recover_implicit_connect) " + i, msgComplete1.add());
-                try { Thread.sleep(delay); } catch(InterruptedException e){}
+                try { Thread.sleep(delay); } catch(InterruptedException ignored){}
             }
 
             /* wait for the publish callback to be called */
             ErrorInfo[] errors = msgComplete1.waitFor();
-            assertTrue("Verify success from all message callbacks", errors.length == 0);
+            assertEquals("Verify success from all message callbacks", 0, errors.length);
 
             /* wait for the subscription callback to be called */
             messageWaiter.waitFor(messageCount);
@@ -187,22 +185,23 @@ public class RealtimeRecoverTest extends ParameterizedTest {
              * NOTE this depends on knowledge of the internal structure
              * of the library, to simulate a dropped transport without
              * causing the connection itself to be disposed */
-            String recoverConnectionKey = ablyRx.connection.recoveryKey;
+            String recoverConnectionKey = ablyRx.connection.createRecoveryKey();
+            assertEquals(ablyRx.connection.recoveryKey, recoverConnectionKey);
             ablyRx.connection.connectionManager.requestState(ConnectionState.failed);
 
             /* wait */
-            try { Thread.sleep(2000L); } catch(InterruptedException e) {}
+            try { Thread.sleep(2000L); } catch(InterruptedException ignored) {}
 
             /* publish next messages to the channel */
             CompletionSet msgComplete2 = new CompletionSet();
             for(int i = 0; i < messageCount; i++) {
                 channelTx.publish("test_event", "Test message (recover_implicit_connect) " + i, msgComplete2.add());
-                try { Thread.sleep(delay); } catch(InterruptedException e){}
+                try { Thread.sleep(delay); } catch(InterruptedException ignored){}
             }
 
             /* wait for the publish callback to be called */
             errors = msgComplete2.waitFor();
-            assertTrue("Verify success from all message callbacks", errors.length == 0);
+            assertEquals("Verify success from all message callbacks", 0, errors.length);
 
             /* establish a new rx connection with recover string, and wait for connection */
             ClientOptions recoverOpts = createOptions(testVars.keys[0].keyStr);
@@ -236,7 +235,6 @@ public class RealtimeRecoverTest extends ParameterizedTest {
      * Disconnect+suspend and then reconnect the send connection; verify that
      * each subsequent publish causes a CompletionListener call.
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void recover_verify_publish() {
         AblyRealtime ablyRx = null, ablyTx = null;
@@ -267,12 +265,12 @@ public class RealtimeRecoverTest extends ParameterizedTest {
             CompletionSet msgComplete1 = new CompletionSet();
             for(int i = 0; i < messageCount; i++) {
                 channelTx.publish("test_event", "Test message (resume_simple) " + i, msgComplete1.add());
-                try { Thread.sleep(delay); } catch(InterruptedException e){}
+                try { Thread.sleep(delay); } catch(InterruptedException ignored){}
             }
 
             /* wait for the publish callback to be called */
             ErrorInfo[] errors = msgComplete1.waitFor();
-            assertTrue("Verify success from all message callbacks", errors.length == 0);
+            assertEquals("Verify success from all message callbacks", 0, errors.length);
 
             /* wait for the subscription callback to be called */
             messageWaiter.waitFor(messageCount);
@@ -287,7 +285,7 @@ public class RealtimeRecoverTest extends ParameterizedTest {
             ablyTx.connection.connectionManager.requestState(ConnectionState.suspended);
 
             /* wait */
-            try { Thread.sleep(2000L); } catch(InterruptedException e) {}
+            try { Thread.sleep(2000L); } catch(InterruptedException ignored) {}
 
             /* reconnect the tx connection */
             System.out.println("*** about to reconnect tx connection");
@@ -305,7 +303,7 @@ public class RealtimeRecoverTest extends ParameterizedTest {
             CompletionSet msgComplete2 = new CompletionSet();
             for(int i = 0; i < messageCount; i++) {
                 channelTx.publish("test_event", "Test message (resume_simple) " + i, msgComplete2.add());
-                try { Thread.sleep(delay); } catch(InterruptedException e){}
+                try { Thread.sleep(delay); } catch(InterruptedException ignored){}
             }
 
             /* wait for the publish callback to be called. This never finishes if
@@ -314,7 +312,7 @@ public class RealtimeRecoverTest extends ParameterizedTest {
             System.out.println("*** published. About to wait for callbacks");
             errors = msgComplete2.waitFor();
             System.out.println("*** done");
-            assertTrue("Verify success from all message callbacks", errors.length == 0);
+            assertEquals("Verify success from all message callbacks", 0, errors.length);
 
             /* wait for the subscription callback to be called */
             messageWaiter.waitFor(messageCount);
@@ -365,13 +363,13 @@ public class RealtimeRecoverTest extends ParameterizedTest {
             for (int i=0; i<5; i++) {
                 try {
                     channel.publish("name", "data");
-                } catch (Throwable e) {
+                } catch (Throwable ignored) {
                 }
             }
 
             try {
                 Thread.sleep(1000);
-            } catch (InterruptedException e) {}
+            } catch (InterruptedException ignored) {}
 
             /* Stop exceptions */
             mockTransport.throwOnSend = false;
@@ -379,7 +377,7 @@ public class RealtimeRecoverTest extends ParameterizedTest {
 
             try {
                 Thread.sleep(500);
-            } catch (InterruptedException e) {}
+            } catch (InterruptedException ignored) {}
 
             /* It is hard to predict how many exception would be thrown but it shouldn't be hundreds */
             assertThat("", mockTransport.exceptionsThrown, is(lessThan(10)));

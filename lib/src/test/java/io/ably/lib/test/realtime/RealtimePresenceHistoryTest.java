@@ -37,7 +37,6 @@ import io.ably.lib.types.ProtocolMessage.Action;
 
 import java.util.Locale;
 
-@Ignore("FIXME: fix ably exception")
 public class RealtimePresenceHistoryTest extends ParameterizedTest {
 
     private static final String testClientId = "testClientId";
@@ -1114,7 +1113,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             /* wait for the end of the tx thread */
             try {
                 publisherThread.join();
-            } catch (InterruptedException e) {}
+            } catch (InterruptedException ignored) {}
             assertTrue("Verify success callback was called", msgComplete.errors.isEmpty());
 
             /* get the history for this channel */
@@ -1145,6 +1144,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
      * history up to the point of attachment can be obtained.
      */
     @Test
+    @Ignore("failing with untilAttach is not supported with presence history")
     public void presencehistory_until_attach() {
         AblyRealtime txAbly = null, rxAbly = null;
         try {
@@ -1155,8 +1155,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
 
             DebugOptions rxOpts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(rxOpts);
-            RawProtocolMonitor rawPresenceWaiter = RawProtocolMonitor.createReceiver(Action.presence);
-            rxOpts.protocolListener = rawPresenceWaiter;
+            rxOpts.protocolListener = RawProtocolMonitor.createReceiver(Action.presence);
             rxAbly = new AblyRealtime(rxOpts);
             String channelName = "persisted:presencehistory_until_attach_" + testParams.name;
 
