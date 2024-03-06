@@ -45,11 +45,14 @@ compliance:
         Deltas:
         Rewind:
     Connection:
+      Disconnected Retry Timeout:
       Get Identifier:
       Lifecycle Control:
       Ping:
       Recovery:
       State Events:
+      Retry Timeout:
+      Suspended Retry Timeout:
     Message Echoes:
     Message Queuing:
     Push Notifications:
