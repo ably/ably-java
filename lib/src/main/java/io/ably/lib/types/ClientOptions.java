@@ -11,7 +11,7 @@ import java.util.Map;
 
 /**
  * Passes additional client-specific properties to the {@link io.ably.lib.rest.AblyRest} or the {@link io.ably.lib.realtime.AblyRealtime}.
- *
+ * <p>
  * Extends an {@link AuthOptions} object.
  * <p>
  * Spec: TO3j
@@ -25,6 +25,7 @@ public class ClientOptions extends AuthOptions {
 
     /**
      * Creates a ClientOptions instance used to configure Rest and Realtime clients
+     *
      * @param key the key obtained from the application dashboard.
      * @throws AblyException if the key is not in a valid format
      */
@@ -322,4 +323,70 @@ public class ClientOptions extends AuthOptions {
      * Spec: RSC7d6
      */
     public Map<String, String> agents;
+
+    /**
+     * Internal method
+     *
+     * @return copy of client options
+     */
+    public ClientOptions copy() {
+        ClientOptions copied = new ClientOptions();
+        copied.clientId = clientId;
+        copied.logLevel = logLevel;
+        copied.logHandler = logHandler;
+        copied.tls = tls;
+        copied.restHost = restHost;
+        copied.realtimeHost = realtimeHost;
+        copied.port = port;
+        copied.tlsPort = tlsPort;
+        copied.autoConnect = autoConnect;
+        copied.useBinaryProtocol = useBinaryProtocol;
+        copied.queueMessages = queueMessages;
+        copied.echoMessages = echoMessages;
+        copied.recover = recover;
+        copied.proxy = proxy;
+        copied.environment = environment;
+        copied.idempotentRestPublishing = idempotentRestPublishing;
+        copied.httpOpenTimeout = httpOpenTimeout;
+        copied.httpRequestTimeout = httpRequestTimeout;
+        copied.httpMaxRetryDuration = httpMaxRetryDuration;
+        copied.httpMaxRetryCount = httpMaxRetryCount;
+        copied.realtimeRequestTimeout = realtimeRequestTimeout;
+        copied.disconnectedRetryTimeout = disconnectedRetryTimeout;
+        copied.suspendedRetryTimeout = suspendedRetryTimeout;
+        copied.fallbackHostsUseDefault = fallbackHostsUseDefault;
+        copied.fallbackRetryTimeout = fallbackRetryTimeout;
+        copied.defaultTokenParams = defaultTokenParams;
+        copied.channelRetryTimeout = channelRetryTimeout;
+        copied.asyncHttpThreadpoolSize = asyncHttpThreadpoolSize;
+        copied.pushFullWait = pushFullWait;
+        copied.localStorage = localStorage;
+        copied.addRequestIds = addRequestIds;
+        copied.authCallback = authCallback;
+        copied.authUrl = authUrl;
+        copied.authMethod = authMethod;
+        copied.key = key;
+        copied.token = token;
+        copied.tokenDetails = tokenDetails;
+        copied.authHeaders = authHeaders;
+        copied.authParams = authParams;
+        copied.queryTime = queryTime;
+        copied.useTokenAuth = useTokenAuth;
+        return copied;
+    }
+
+    /**
+     * Internal method
+     * <p>
+     * clears all auth options
+     */
+    public void clearAuthOptions() {
+        key = null;
+        token = null;
+        tokenDetails = null;
+        authHeaders = null;
+        authParams = null;
+        queryTime = false;
+        useTokenAuth = false;
+    }
 }

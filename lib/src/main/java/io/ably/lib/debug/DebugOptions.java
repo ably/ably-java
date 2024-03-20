@@ -31,4 +31,53 @@ public class DebugOptions extends ClientOptions {
     public RawProtocolListener protocolListener;
     public RawHttpListener httpListener;
     public ITransport.Factory transportFactory;
+
+    public DebugOptions copy() {
+        DebugOptions copied = new DebugOptions();
+        copied.protocolListener = protocolListener;
+        copied.httpListener = httpListener;
+        copied.transportFactory = transportFactory;
+        copied.clientId = clientId;
+        copied.logLevel = logLevel;
+        copied.logHandler = logHandler;
+        copied.tls = tls;
+        copied.restHost = restHost;
+        copied.realtimeHost = realtimeHost;
+        copied.port = port;
+        copied.tlsPort = tlsPort;
+        copied.autoConnect = autoConnect;
+        copied.useBinaryProtocol = useBinaryProtocol;
+        copied.queueMessages = queueMessages;
+        copied.echoMessages = echoMessages;
+        copied.recover = recover;
+        copied.proxy = proxy;
+        copied.environment = environment;
+        copied.idempotentRestPublishing = idempotentRestPublishing;
+        copied.httpOpenTimeout = httpOpenTimeout;
+        copied.httpRequestTimeout = httpRequestTimeout;
+        copied.httpMaxRetryDuration = httpMaxRetryDuration;
+        copied.httpMaxRetryCount = httpMaxRetryCount;
+        copied.realtimeRequestTimeout = realtimeRequestTimeout;
+        copied.disconnectedRetryTimeout = disconnectedRetryTimeout;
+        copied.suspendedRetryTimeout = suspendedRetryTimeout;
+        copied.fallbackHostsUseDefault = fallbackHostsUseDefault;
+        copied.fallbackRetryTimeout = fallbackRetryTimeout;
+        copied.defaultTokenParams = defaultTokenParams;
+        copied.channelRetryTimeout = channelRetryTimeout;
+        copied.asyncHttpThreadpoolSize = asyncHttpThreadpoolSize;
+        copied.pushFullWait = pushFullWait;
+        copied.localStorage = localStorage;
+        copied.addRequestIds = addRequestIds;
+        copied.authCallback = authCallback;
+        copied.authUrl = authUrl;
+        copied.authMethod = authMethod;
+        copied.key = key;
+        copied.token = token;
+        copied.tokenDetails = tokenDetails;
+        copied.authHeaders = authHeaders;
+        copied.authParams = authParams;
+        copied.queryTime = queryTime;
+        copied.useTokenAuth = useTokenAuth;
+        return copied;
+    }
 }
