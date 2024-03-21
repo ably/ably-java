@@ -227,8 +227,18 @@ public class ActivationStateMachine {
 
         public ActivationStateMachine.State transition(ActivationStateMachine.Event event) {
             if (event instanceof ActivationStateMachine.CalledDeactivate) {
-                machine.callDeactivatedCallback(null);
-                return this;
+                LocalDevice device = machine.getDevice();
+
+                // RSH3a1c
+                if (device.isRegistered()) {
+                    machine.deregister();
+                    return new ActivationStateMachine.WaitingForDeregistration(machine, this);
+                // RSH3a1d
+                } else {
+                    device.reset();
+                    machine.callDeactivatedCallback(null);
+                    return this;
+                }
             } else if (event instanceof ActivationStateMachine.CalledActivate) {
                 LocalDevice device = machine.getDevice();
 
@@ -388,7 +398,6 @@ public class ActivationStateMachine {
                 machine.callActivatedCallback(null);
                 return this;
             } else if (event instanceof ActivationStateMachine.CalledDeactivate) {
-                LocalDevice device = machine.getDevice();
                 machine.deregister();
                 return new ActivationStateMachine.WaitingForDeregistration(machine, this);
             } else if (event instanceof ActivationStateMachine.GotPushDeviceDetails) {
@@ -742,7 +751,8 @@ public class ActivationStateMachine {
         } else {
             final AblyRest ably;
             try {
-                ably = activationContext.getAbly();
+                // RSH3d2b: use `deviceIdentityToken` to perform request
+                ably = activationContext.getDeviceIdentityTokenBasedAblyClient(device.deviceIdentityToken);
             } catch(AblyException ae) {
                 ErrorInfo reason = ae.errorInfo;
                 Log.e(TAG, "exception registering " + device.id + ": " + reason.toString());
@@ -751,9 +761,11 @@ public class ActivationStateMachine {
             }
             ably.http.request(new Http.Execute<Void>() {
                 @Override
-                public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {
+                public void execute(HttpScheduler http, Callback<Void> callback) {
                     Param[] params = ParamsUtils.enrichParams(new Param[0], ably.options);
-                    http.del("/push/deviceRegistrations/" + device.id, ably.push.pushRequestHeaders(true), params, null, true, callback);
+                    Param[] headers = HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol);
+                    final Param[] deviceIdentityHeaders = device.deviceIdentityHeaders();
+                    http.del("/push/deviceRegistrations/" + device.id, HttpUtils.mergeHeaders(headers, deviceIdentityHeaders), params, null, true, callback);
                 }
             }).async(new Callback<Void>() {
                 @Override
@@ -763,8 +775,14 @@ public class ActivationStateMachine {
                 }
                 @Override
                 public void onError(ErrorInfo reason) {
-                    Log.e(TAG, "error deregistering " + device.id + ": " + reason.toString());
-                    handleEvent(new ActivationStateMachine.DeregistrationFailed(reason));
+                    // RSH3d2c1: ignore unauthorized or invalid credentials errors
+                    if (reason.statusCode == 401 || reason.code == 40005) {
+                        Log.w(TAG, "unauthorized error during deregistration " + device.id + ": " + reason);
+                        handleEvent(new ActivationStateMachine.Deregistered());
+                    } else {
+                        Log.e(TAG, "error deregistering " + device.id + ": " + reason);
+                        handleEvent(new ActivationStateMachine.DeregistrationFailed(reason));
+                    }
                 }
             });
         }

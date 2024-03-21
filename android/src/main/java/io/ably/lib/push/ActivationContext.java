@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
+import androidx.annotation.VisibleForTesting;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.WeakHashMap;
@@ -11,6 +12,7 @@ import java.util.WeakHashMap;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
+import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.RegistrationToken;
 import io.ably.lib.util.Log;
@@ -63,6 +65,7 @@ public class ActivationContext {
             Log.v(TAG, "getAbly(): returning existing Ably instance");
             return ably;
         } else {
+            // TODO it shouldn't create new Ably instance, looks like it was created for test purposes only
             Log.v(TAG, "getAbly(): creating new Ably instance");
         }
 
@@ -73,6 +76,17 @@ public class ActivationContext {
         }
         Log.v(TAG, "getAbly(): returning Ably instance using deviceIdentityToken");
         return (ably = new AblyRest(deviceIdentityToken));
+    }
+
+    /**
+     * @return AblyRest instance with device identity token auth. We use this instance to perform
+     * deregistration calls in push activation flow.
+     */
+    AblyRest getDeviceIdentityTokenBasedAblyClient(String deviceIdentityToken) throws AblyException {
+        ClientOptions clientOptions = ably.options.copy();
+        clientOptions.clearAuthOptions();
+        clientOptions.token = deviceIdentityToken;
+        return new AblyRest(clientOptions);
     }
 
     public boolean setClientId(String clientId, boolean propagateGotPushDeviceDetails) {
@@ -113,6 +127,10 @@ public class ActivationContext {
         getActivationStateMachine().handleEvent(new ActivationStateMachine.GotPushDeviceDetails());
     }
 
+    /**
+     * Should be used in tests only
+     */
+    @VisibleForTesting
     public void reset() {
         Log.v(TAG, "reset()");
 
