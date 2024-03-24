@@ -1607,9 +1607,9 @@ public class ConnectionManager implements ConnectListener {
 
     private void sendImpl(ProtocolMessage message, CompletionListener listener) throws AblyException {
         if(transport == null) {
-            Log.v(TAG, "sendImpl(): Discarding message; transport unavailable");
-            return;
+            throw AblyException.fromErrorInfo(new ErrorInfo("Unable to send message; transport unavailable", 80009, 80009));
         }
+
         if(ProtocolMessage.ackRequired(message)) {
             message.msgSerial = msgSerial++;
             pendingMessages.push(new QueuedMessage(message, listener));
