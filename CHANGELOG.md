@@ -1,5 +1,18 @@
 # Change Log
 
+## [1.2.36](https://github.com/ably/ably-java/tree/v1.2.36)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.35...v1.2.36)
+
+**Closed issues:**
+
+- Push Notification corner cases  [\#993](https://github.com/ably/ably-java/issues/993)
+- Protocol-v2: readd recoveryKey to make this a non-breaking change [\#868](https://github.com/ably/ably-java/issues/868)
+
+**Merged pull requests:**
+
+- \[ECO-4706\] fix: push notifications corner cases [\#994](https://github.com/ably/ably-java/pull/994) ([ttypic](https://github.com/ttypic))
+
 ## [1.2.35](https://github.com/ably/ably-java/tree/v1.2.35)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.34...v1.2.35)
