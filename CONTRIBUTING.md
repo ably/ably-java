@@ -191,7 +191,7 @@ You may wish to make changes to Ably Java or Ably Android, and test it immediate
 - Open the directory printed from the output of that command. Inside that folder, get the `ably-android-x.y.z.aar`, and place it your Android project's `libs/` directory. Create this directory if it doesn't exist.
 - Add an `implementation` dependency on the `.aar`:
 ```groovy
-implementation files('libs/ably-android-1.2.35.aar')
+implementation files('libs/ably-android-1.2.36.aar')
 ```
 - Add the `implementation` (not `testImplementation`) dependencies found in `dependencies.gradle` to your project. This is because the `.aar` does not contain dependencies.
 - Build/run your application.
