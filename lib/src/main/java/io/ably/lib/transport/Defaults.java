@@ -39,7 +39,7 @@ public class Defaults {
     /* TO3l3 */
     public static int TIMEOUT_HTTP_OPEN = 4000;
     /* TO3l4 */
-    public static int TIMEOUT_HTTP_REQUEST = 15000;
+    public static int TIMEOUT_HTTP_REQUEST = 10000;
     /* TO3l6 */
     public static int httpMaxRetryDuration = 15000;
 
