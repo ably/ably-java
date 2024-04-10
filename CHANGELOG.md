@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.2.37](https://github.com/ably/ably-java/tree/v1.2.37)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.36...v1.2.37)
+
+**Fixed bugs:**
+
+- Fix HttpRequest & HttpRetry timeouts [\#310](https://github.com/ably/ably-java/issues/310)
+
 ## [1.2.36](https://github.com/ably/ably-java/tree/v1.2.36)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.35...v1.2.36)
