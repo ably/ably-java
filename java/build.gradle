@@ -1,73 +1,27 @@
 plugins {
-    id 'de.fuerstenau.buildconfig' version '1.1.8'
+    id 'com.github.gmazzo.buildconfig' version '5.3.5'
     id 'checkstyle'
+    id 'java-library'
+    id 'maven-publish'
+    id 'signing'
 }
 
-apply plugin: 'java'
-apply plugin: 'idea'
 apply from: '../common.gradle'
 apply from: 'maven.gradle'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-apply from: '../dependencies.gradle'
-
 buildConfig {
     packageName 'io.ably.lib'
-    clsName 'BuildConfig'
+    className 'BuildConfig'
+    useJavaOutput()
     buildConfigField 'String', 'LIBRARY_NAME', 'java'
 }
 
-sourceSets {
-    main {
-        java {
-            srcDirs = ['src/main/java', '../lib/src/main/java']
-        }
-    }
-    test {
-        java {
-            srcDirs = ['src/test/java', '../lib/src/test/java']
-        }
-    }
-}
 
-// Default jar: add io.ably classes from :lib dependency.
-jar {
-    baseName = 'ably-java'
-    from {
-        configurations.compile.collect { file ->
-            file.directory ? file : zipTree(file)
-        }
-    }
-    includes = ['**/io/ably/**']
-    includeEmptyDirs false
-    exclude 'META-INF/**'
-}
-
-// fullJar: add all classes from dependencies transitively.
-task fullJar(type: Jar) {
-    baseName = 'ably-java'
-    classifier = 'full'
-    from {
-        configurations.compile.collect { file ->
-            file.directory ? file : zipTree(file)
-        }
-    }
-    with jar
-    exclude 'META-INF/**'
-}
-
-assemble.dependsOn fullJar
-assembleRelease.dependsOn checkstyleMain
-
-configurations {
-    fullConfiguration
-    testsConfiguration
-}
-
-artifacts {
-    fullConfiguration fullJar
+dependencies {
+    api project(':lib')
 }
 
 task testRealtimeSuite(type: Test) {

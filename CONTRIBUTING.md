@@ -41,7 +41,7 @@ The Android-specific library AAR is built with:
 
 We use [Checkstyle](https://checkstyle.org/) to enforce code style and spot for transgressions and illogical constructs
 in our Java source files.
-The Gradle build has been configured to run these on `java:assembleRelease`.
+The Gradle build has been configured to run these on `java:check`.
 It does not run for the Android build yet.
 
 You can run just the Checkstyle rules on their own using:
@@ -202,7 +202,6 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 
 1. Create a branch for the release, named like `release/1.2.4` (where `1.2.4` is what you're releasing, being the new version)
 2. Replace all references of the current version number with the new version number (check the [README.md](./README.md) and [common.gradle](./common.gradle)) and commit the changes
-    a. Increment the `versionCode` in the Android project's `build.gradle` by 1
 3. Run [`github_changelog_generator`](https://github.com/github-changelog-generator/github-changelog-generator) to automate the update of the [CHANGELOG](./CHANGELOG.md). This may require some manual intervention, both in terms of how the command is run and how the change log file is modified. Your mileage may vary:
   - The command you will need to run will look something like this: `github_changelog_generator -u ably -p ably-java --since-tag v1.2.3 --output delta.md --token $GITHUB_TOKEN_WITH_REPO_ACCESS`. Generate token [here](https://github.com/settings/tokens/new?description=GitHub%20Changelog%20Generator%20token).
   - Using the command above, `--output delta.md` writes changes made after `--since-tag` to a new file.
@@ -212,8 +211,8 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 5. Make a PR against `main`
 6. Once the PR is approved, merge it into `main`
 7. From the updated `main` branch on your local workstation, assemble and upload:
-    1. Run `./gradlew java:assembleRelease -PpublishTarget=MavenCentral` to build and upload `ably-java` to Nexus staging repository
-    2. Run `./gradlew android:assembleRelease -PpublishTarget=MavenCentral` build and upload `ably-android` to Nexus staging repository
+    1. Run `./gradlew java:publish -PpublishTarget=MavenCentral` to build and upload `ably-java` to Nexus staging repository
+    2. Run `./gradlew android:publish -PpublishTarget=MavenCentral` build and upload `ably-android` to Nexus staging repository
     3. Find the new staging repository using the [Nexus Repository Manager](https://oss.sonatype.org/#stagingRepositories)
     4. Check that it contains `ably-android` and `ably-java` releases
     5. "Close" it - this will take a few minutes during which time it will say (after a refresh of your browser) that "Activity: Operation in Progress"

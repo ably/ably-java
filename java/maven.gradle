@@ -1,123 +1,88 @@
-apply plugin: 'java'
-apply plugin: 'maven'
-apply plugin: 'signing'
-
-final String GROUP_ID = 'io.ably'
-final String ARTIFACT_ID = 'ably-java'
-final String LOCAL_RELEASE_DESTINATION = "${buildDir}/release/${version}"
 final String MAVEN_USER = findProperty('ossrhUsername')
 final String MAVEN_PASSWORD = findProperty('ossrhPassword')
 
 final boolean IS_PUBLISHING_TO_MAVEN_CENTRAL = findProperty('publishTarget') == 'MavenCentral'
+
 if (IS_PUBLISHING_TO_MAVEN_CENTRAL && (MAVEN_USER == null || MAVEN_PASSWORD == null)) {
     throw new GradleException('Either ossrhUsername or ossrhPassword not specified when publishTarget is MavenCentral.')
 }
 
-/*
- * Task which signs and uploads the Java artifacts to Nexus OSSRH.
- */
-uploadArchives {
-    signing {
-        sign configurations.archives
-    }
-    repositories.mavenDeployer {
-        beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
 
-        pom.groupId = GROUP_ID
-        pom.artifactId = ARTIFACT_ID
-        pom.version = version
-
-        pom.project {
-            name 'Ably Java client library SDK'
-            description 'A Java Realtime and REST client library SDK for the Ably platform.'
-            packaging 'jar'
-            inceptionYear '2015'
-            url 'https://www.github.com/ably/ably-java'
-            developers {
-                developer {
-                    id 'ably' // our company org in GitHub: https://github.com/ably
-                    name 'Ably' // UK based company: Ably Real-time Ltd
-                    email 'support@ably.com'
-                    url 'https://ably.com/'
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = 'ably-java'
+            from components.java
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
                 }
             }
-            scm {
-                url 'https://github.com/ably/ably-java'
-                connection 'scm:git:git://github.com/ably/ably-java.git'
-                developerConnection 'scm:git:ssh://github.com/ably/ably-java.git'
-                tag = 'v' + version
-            }
-            organization {
-                name 'Ably' // UK based company: Ably Real-time Ltd
-                url 'https://ably.com/'
-            }
-            issueManagement {
-                system 'Github'
-                url 'https://github.com/ably/ably-java/issues'
-            }
-            licenses {
-                license {
-                    name 'The Apache Software License, Version 2.0'
-                    url 'https://raw.github.com/ably/ably-java/main/LICENSE'
-                    distribution 'repo'
+            pom {
+                name = 'Ably Java client library SDK'
+                description = 'A Java Realtime and REST client library SDK for the Ably platform.'
+                url = 'https://www.github.com/ably/ably-java'
+                packaging = 'jar'
+                inceptionYear = '2015'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'https://raw.github.com/ably/ably-java/main/LICENSE'
+                        distribution = 'repo'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'ably' // our company org in GitHub: https://github.com/ably
+                        name = 'Ably' // UK based company: Ably Real-time Ltd
+                        email = 'support@ably.com'
+                        url = 'https://ably.com/'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/ably/ably-java.git'
+                    developerConnection = 'scm:git:ssh://github.com/ably/ably-java.git'
+                    url = 'https://github.com/ably/ably-java'
+                    tag = 'v' + version
+                }
+                organization {
+                    name = 'Ably' // UK based company: Ably Real-time Ltd
+                    url = 'https://ably.com/'
+                }
+                issueManagement {
+                    system = 'Github'
+                    url = 'https://github.com/ably/ably-java/issues'
                 }
             }
         }
+    }
+    repositories {
+        maven {
+            // change URLs to point to your repos, e.g. http://my.org/repo
+            def releasesRepoUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+            def snapshotsRepoUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
+            def remoteUrl = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
 
-        // Exclude test dependencies
-        pom.whenConfigured { p ->
-            p.dependencies = p.dependencies.findAll {
-                dep -> dep.scope == 'runtime'
-            }
-        }
+            url = IS_PUBLISHING_TO_MAVEN_CENTRAL ? remoteUrl : layout.buildDirectory.dir("release/${version}")
 
-        if (IS_PUBLISHING_TO_MAVEN_CENTRAL) {
-            repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/') {
-                authentication(userName: MAVEN_USER, password: MAVEN_PASSWORD)
+            if (IS_PUBLISHING_TO_MAVEN_CENTRAL) {
+                credentials {
+                    username = MAVEN_USER
+                    password = MAVEN_PASSWORD
+                }
             }
-
-            snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots/') {
-                authentication(userName: MAVEN_USER, password: MAVEN_PASSWORD)
-            }
-        } else {
-            // Export files to local storage
-            repository(url: "file://${LOCAL_RELEASE_DESTINATION}")
         }
     }
 }
 
-task zipRelease(type: Zip) {
-    from LOCAL_RELEASE_DESTINATION
-    destinationDir buildDir
-    archiveName "release-${version}.zip"
-}
-
-task assembleRelease {
-    doLast {
-        if (IS_PUBLISHING_TO_MAVEN_CENTRAL) {
-            logger.quiet('✅ Release uploaded to Sonatype Staging Repository')
-        } else {
-            logger.quiet("✅ Release ${version} can be found at ${LOCAL_RELEASE_DESTINATION}")
-            logger.quiet("✅ Release ${version} zipped can be found ${buildDir}/release-${version}.zip")
-        }
-    }
-    dependsOn(uploadArchives)
-    dependsOn(zipRelease)
-}
-
-task sourcesJar(type: Jar) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    from javadoc.destinationDir
-    javadoc.title = 'Ably documentation'
-    javadoc.options.overview = '../overview.html'
-}
-
-artifacts {
-    archives sourcesJar
-    archives javadocJar
+signing {
+    required { true }
+    sign publishing.publications
 }

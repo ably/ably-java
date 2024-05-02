@@ -1,14 +1,10 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 plugins {
-    id 'io.codearte.nexus-staging' version '0.21.1'
+  id("com.android.library") version "8.2.0" apply false
 }
 
 repositories {
-    google()
-    mavenCentral()
-}
-
-nexusStaging {
-    packageGroup = 'io.ably'
+  google()
+  mavenCentral()
 }
