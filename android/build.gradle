@@ -26,6 +26,8 @@ android {
     compileSdkVersion 30
 
     defaultConfig {
+        // Required when setting minSdkVersion to 20 or lower
+        multiDexEnabled true
         buildConfigField 'String', 'LIBRARY_NAME', '"android"'
         buildConfigField 'String', 'VERSION', "\"$version\""
         minSdkVersion 19
@@ -43,6 +45,8 @@ android {
     }
 
     compileOptions {
+        // Flag to enable support for the new language APIs
+        coreLibraryDesugaringEnabled true
         sourceCompatibility 1.8
         targetCompatibility 1.8
     }
@@ -86,6 +90,7 @@ tasks.withType(com.android.build.gradle.internal.tasks.AndroidTestTask) { task -
 
 apply from: '../dependencies.gradle'
 dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.9'
     implementation 'com.google.firebase:firebase-messaging:22.0.0'
     androidTestImplementation 'com.android.support.test:runner:0.5'
     androidTestImplementation 'com.android.support.test:rules:0.5'
