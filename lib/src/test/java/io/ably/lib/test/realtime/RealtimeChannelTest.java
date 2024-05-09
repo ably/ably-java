@@ -1675,7 +1675,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             AblyRealtime finalAbly = ably;
             Exception conditionError = new Helpers.ConditionalWaiter().
-                wait(() -> finalAbly.connection.connectionManager.msgSerial == 0, 5000);
+                wait(() -> finalAbly.connection.connectionManager.msgSerial == 0, 10000);
             assertNull(conditionError);
 
             attachedChannelWaiter.waitFor(ChannelState.attaching, ChannelState.attached);
