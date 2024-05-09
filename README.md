@@ -20,13 +20,13 @@ Include the library by adding an `implementation` reference to `dependencies` bl
 For [Java](https://mvnrepository.com/artifact/io.ably/ably-java/latest):
 
 ```groovy
-implementation 'io.ably:ably-java:1.2.37'
+implementation 'io.ably:ably-java:1.2.38'
 ```
 
 For [Android](https://mvnrepository.com/artifact/io.ably/ably-android/latest):
 
 ```groovy
-implementation 'io.ably:ably-android:1.2.37'
+implementation 'io.ably:ably-android:1.2.38'
 ```
 
 The library is hosted on [Maven Central](https://mvnrepository.com/repos/central), so you need to ensure that the repository is referenced also; IDEs will typically include this by default:
