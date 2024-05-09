@@ -1,5 +1,22 @@
 # Change Log
 
+## [1.2.38](https://github.com/ably/ably-java/tree/v1.2.38)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.37...v1.2.38)
+
+**Breaking changes:**
+
+- v1.2.34 is incompatible with older Android API versions  [\#1004](https://github.com/ably/ably-java/issues/1004)
+
+**Fixed bugs:**
+
+- REST client not attempting fallback hosts upon `httpOpenTimeout` expiry [\#997](https://github.com/ably/ably-java/issues/997)
+
+**Closed issues:**
+
+- Gracefully shutdown Ably resources [\#917](https://github.com/ably/ably-java/issues/917)
+- Read timed out [\#850](https://github.com/ably/ably-java/issues/850)
+
 ## [1.2.37](https://github.com/ably/ably-java/tree/v1.2.37)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.36...v1.2.37)
