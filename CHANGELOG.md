@@ -1,5 +1,14 @@
 # Change Log
 
+## [1.2.39](https://github.com/ably/ably-java/tree/v1.2.39)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.38...v1.2.39)
+
+**Fixed bugs:**
+
+- onMessage Exception [\#1009](https://github.com/ably/ably-java/issues/1009)
+- NullPointerException When Attempting to read from field 'java.lang.String io.ably.lib.types.ErrorInfo.message' [\#995](https://github.com/ably/ably-java/issues/995)
+
 ## [1.2.38](https://github.com/ably/ably-java/tree/v1.2.38)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.37...v1.2.38)
