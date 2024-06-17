@@ -388,8 +388,9 @@ public class ConnectionManager implements ConnectListener {
         @Override
         void enact(StateIndication stateIndication, ConnectionStateChange change) {
             super.enact(stateIndication, change);
-            boolean closed = closeImpl();
-            if(closed) {
+            boolean shouldAwaitConnection = change.previous == ConnectionState.connecting;
+            boolean closed = closeImpl(shouldAwaitConnection);
+            if (closed) {
                 addAction(new AsynchronousStateChangeAction(ConnectionState.closed));
             }
         }
@@ -1160,7 +1161,13 @@ public class ConnectionManager implements ConnectListener {
                     }
                     break;
                 case connected:
-                    onConnected(message);
+                    if (currentState.state == ConnectionState.closing) {
+                        // Based on RTN12f, if a connected protocol message comes while in the closing state,
+                        // send a close protocol message.
+                        if (!trySendCloseProtocolMessage()) requestState(ConnectionState.closed);
+                    } else {
+                        onConnected(message);
+                    }
                     break;
                 case disconnect:
                 case disconnected:
@@ -1452,6 +1459,12 @@ public class ConnectionManager implements ConnectListener {
             setSuspendTime();
         }
 
+        // Do not fallback for closing
+        if (currentState.state == ConnectionState.closing) {
+            requestState(ConnectionState.closed);
+            return;
+        }
+
         /* if this is a failure of a pending connection attempt, decide whether or not to attempt a fallback host */
         StateIndication fallbackAttempt = checkFallback(reason);
         if(fallbackAttempt != null) {
@@ -1524,27 +1537,38 @@ public class ConnectionManager implements ConnectListener {
 
     /**
      * Close any existing transport
+     * @param shouldAwaitConnection true if `CONNECTING` state, moves immediately to `CLOSING`
      * @return closed if true, otherwise awaiting closed indication
      */
-    private boolean closeImpl() {
-        if(transport == null) {
+    private boolean closeImpl(boolean shouldAwaitConnection) {
+        if (transport == null) {
             return true;
         }
 
+        // Based on RTN12f we need to wait until connected protocol message come
+        if (shouldAwaitConnection) {
+            return false;
+        }
+
+        return !trySendCloseProtocolMessage();
+    }
+
+    /**
+     * @return true if we successfully send `close` protocol message, false otherwise
+     */
+    private boolean trySendCloseProtocolMessage() {
         try {
             Log.v(TAG, "Requesting connection close");
             transport.send(new ProtocolMessage(ProtocolMessage.Action.close));
-            return false;
+            return true;
         } catch (AblyException e) {
             /* we're closing, and the attempt to send the CLOSE message failed;
              * continue, because we're not going to reinstate the transport
              * just to send a CLOSE message */
+            Log.v(TAG, "Closing incomplete transport");
+            clearTransport();
+            return false;
         }
-
-        /* just close the transport */
-        Log.v(TAG, "Closing incomplete transport");
-        clearTransport();
-        return true;
     }
 
     private void clearTransport() {

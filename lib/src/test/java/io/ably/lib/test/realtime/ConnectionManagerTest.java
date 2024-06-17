@@ -397,6 +397,25 @@ public class ConnectionManagerTest extends ParameterizedTest {
     }
 
     /**
+     * (RTN12f) Close while in connecting state
+     */
+    @Test
+    public void connectionmanager_close_while_connecting() throws AblyException {
+        ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+        final AblyRealtime ably = new AblyRealtime(opts);
+        ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+        ConnectionManager connectionManager = ably.connection.connectionManager;
+        ably.close();
+
+        connectionWaiter.waitFor(ConnectionState.closed);
+        assertEquals("Previous state was closing", ConnectionState.closing, connectionWaiter.lastStateChange().previous);
+        assertEquals(1 , connectionWaiter.getCount(ConnectionState.connecting));
+        assertEquals(0 , connectionWaiter.getCount(ConnectionState.connected));
+        assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
+        assertThat("fallback hasn't been invoked", connectionManager.getHost(), is(equalTo(opts.environment + "-realtime.ably.io")));
+    }
+
+    /**
      * Connect, and then perform a close();
      * verify that the closed state is reached, and immediately
      * reconnect; verify that it reconnects successfully
