@@ -1,5 +1,17 @@
 # Change Log
 
+## [1.2.40](https://github.com/ably/ably-java/tree/v1.2.40)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.39...v1.2.40)
+
+**Fixed bugs:**
+
+- Connection remains open when close is sent immediately [\#1012](https://github.com/ably/ably-java/issues/1012)
+
+**Merged pull requests:**
+
+- \[ECO-4820\] fix\(ConnectionManager\): update the connection close implementation to follow RTN12f [\#1013](https://github.com/ably/ably-java/pull/1013) ([ttypic](https://github.com/ttypic))
+
 ## [1.2.39](https://github.com/ably/ably-java/tree/v1.2.39)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.38...v1.2.39)
