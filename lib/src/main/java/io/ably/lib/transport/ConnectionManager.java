@@ -1147,7 +1147,7 @@ public class ConnectionManager implements ConnectListener {
                     break;
                 case error:
                     ErrorInfo reason = message.error;
-                    if(reason == null) {
+                    if (reason == null) {
                         Log.e(TAG, "onMessage(): ERROR message received (no error detail)");
                     } else {
                         Log.e(TAG, "onMessage(): ERROR message received; message = " + reason.message + "; code = " + reason.code);
