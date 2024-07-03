@@ -22,7 +22,6 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -37,6 +36,7 @@ import java.util.Locale;
 import static io.ably.lib.test.common.Helpers.assertTimeoutBetween;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -311,13 +311,13 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
      * Verify that the connection fails when attempting to recover with a
      * malformed connection id
      */
-    @Ignore("FIXME: fix exception")
     @Test
     public void connect_invalid_recover_fail() {
         AblyRealtime ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            opts.recover = "not_a_valid_connection_id:99";
+            opts.recover =
+                "{\"connectionKey\":\"not_a_valid_connection_id:99\",\"msgSerial\":5,\"channelSerials\":{\"channel1\":\"98\",\"channel2\":\"32\",\"channel3\":\"09\"}}";
             ably = new AblyRealtime(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             ErrorInfo fail = connectionWaiter.waitFor(ConnectionState.failed);
@@ -327,7 +327,9 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");
         } finally {
-            ably.close();
+            if (ably != null) {
+                ably.close();
+            }
         }
     }
 
@@ -341,21 +343,21 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
         AblyRealtime ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            String recoveryKey =
-                "{\"connectionKey\":\"0123456789abcdef-99\",\"msgSerial\":5,\"channelSerials\":{\"channel1\":\"98\",\"channel2\":\"32\",\"channel3\":\"09\"}}";
-            opts.recover = recoveryKey;
+            opts.recover = "{\"connectionKey\":\"0123456789abcdef-99\",\"msgSerial\":5,\"channelSerials\":{\"channel1\":\"98\",\"channel2\":\"32\",\"channel3\":\"09\"}}";
             ably = new AblyRealtime(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             ErrorInfo connectedError = connectionWaiter.waitFor(ConnectionState.connected);
             assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
             assertNotNull("Verify error is returned", connectedError);
             assertEquals("Verify correct error code is given", 80018, connectedError.code);
-            assertFalse("Verify new connection id is assigned", "0123456789abcdef-99".equals(ably.connection.key));
+            assertNotEquals("Verify new connection id is assigned", "0123456789abcdef-99", ably.connection.key);
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");
         } finally {
-            ably.close();
+            if (ably != null) {
+                ably.close();
+            }
         }
     }
 

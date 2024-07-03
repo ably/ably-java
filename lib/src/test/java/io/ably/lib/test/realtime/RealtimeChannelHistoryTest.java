@@ -32,10 +32,8 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 
-@Ignore("FIXME: fix exceptions")
 public class RealtimeChannelHistoryTest extends ParameterizedTest {
 
-    private AblyRealtime ably;
     private long timeOffset;
 
     @Rule
@@ -44,7 +42,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
     @Before
     public void setUpBefore() throws Exception {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        ably = new AblyRealtime(opts);
+        AblyRealtime ably = new AblyRealtime(opts);
         long timeFromService = ably.time();
         timeOffset = timeFromService - System.currentTimeMillis();
     }

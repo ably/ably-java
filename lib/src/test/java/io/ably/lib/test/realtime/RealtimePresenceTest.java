@@ -2899,14 +2899,16 @@ public class RealtimePresenceTest extends ParameterizedTest {
             ably2 = new AblyRealtime(opts);
 
             Channel channel1 = ably1.channels.get(channelName);
+            PresenceWaiter presenceWaiter = new PresenceWaiter(Action.enter, channel1);
             channel1.presence.enterClient(testClientId1);
-            new PresenceWaiter(Action.enter, channel1).waitFor(1);
+            presenceWaiter.waitFor(1);
 
             Channel channel2 = ably2.channels.get(channelName);
+            PresenceWaiter presenceWaiter2 = new PresenceWaiter(Action.present, channel2);
             assertFalse("Verify SYNC is not complete yet", channel2.presence.syncComplete);
             channel2.attach();
             /* Wait for the SYNC to complete */
-            new PresenceWaiter(Action.present, channel2).waitFor(1);
+            presenceWaiter2.waitFor(1);
             channel2.presence.get(true);
             /* Initial SYNC should be complete at this point */
             assertTrue("Verify SYNC is complete", channel2.presence.syncComplete);

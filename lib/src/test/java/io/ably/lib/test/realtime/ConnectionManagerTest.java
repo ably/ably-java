@@ -319,57 +319,6 @@ public class ConnectionManagerTest extends ParameterizedTest {
     }
 
     /**
-     * Test that default fallback happens with a non-default host if
-     * fallbackHostsUseDefault is set.
-     */
-    @Ignore("FIXME: fix exception")
-    @Test
-    public void connectionmanager_reconnect_default_fallback() throws AblyException {
-        DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
-        fillInOptions(opts);
-
-        opts.fallbackHostsUseDefault = true;
-
-        final Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, opts);
-        final String primaryHost = hosts.getPrimaryHost();
-
-        MockWebsocketFactory mockTransport = new MockWebsocketFactory();
-        opts.transportFactory = mockTransport;
-
-        /* ensure that all connection attempts ultimately resolve to the primary host */
-        mockTransport.setHostTransform(new MockWebsocketFactory.HostTransform() {
-            @Override
-            public String transformHost(String givenHost) {
-                return primaryHost;
-            }
-        });
-
-        /* set up a filter on a mock transport to fail connections to the primary host */
-        mockTransport.failConnect(new MockWebsocketFactory.HostFilter() {
-            @Override
-            public boolean matches(String hostname) {
-                return hostname.equals(primaryHost);
-            }
-        });
-
-        try (AblyRealtime ably = new AblyRealtime(opts)) {
-            ConnectionManager connectionManager = ably.connection.connectionManager;
-
-            System.out.println("waiting for connected");
-            new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
-            System.out.println("got connected");
-            ably.close();
-
-            /* Verify that,
-             *   - connectionManager is connected
-             *   - connectionManager's last host was a fallback host
-             */
-            assertThat(connectionManager.getConnectionState().state, is(ConnectionState.connected));
-            assertThat(connectionManager.getHost(), is(not(equalTo(opts.realtimeHost))));
-        }
-    }
-
-    /**
      * Connect, and then perform a close() from the calling ConnectionManager context;
      * verify that the closed state is reached, and the connectionmanager thread has exited
      */
