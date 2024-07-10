@@ -172,7 +172,7 @@ public class Setup {
             host = argumentLoader.getTestArgument("ABLY_REST_HOST");
             environment = argumentLoader.getTestArgument("ABLY_ENV");
             if(environment == null) {
-                environment = "sandbox";
+                environment = "lmars-dev";
             }
 
             if(host != null) {
