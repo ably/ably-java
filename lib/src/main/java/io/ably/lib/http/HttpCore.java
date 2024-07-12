@@ -28,6 +28,7 @@ import io.ably.lib.types.ErrorResponse;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProxyOptions;
 import io.ably.lib.util.AgentHeaderCreator;
+import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
 
@@ -211,6 +212,7 @@ public class HttpCore {
             /* pass required headers */
             conn.setRequestProperty(Defaults.ABLY_PROTOCOL_VERSION_HEADER, Defaults.ABLY_PROTOCOL_VERSION); // RSC7a
             conn.setRequestProperty(Defaults.ABLY_AGENT_HEADER, AgentHeaderCreator.create(options.agents, platformAgentProvider));
+            if (options.clientId != null) conn.setRequestProperty(Defaults.ABLY_CLIENT_ID_HEADER, Base64Coder.encodeString(options.clientId));
 
             /* prepare request body */
             byte[] body = null;

@@ -22,6 +22,7 @@ public class Defaults {
 
     /* http headers */
     public static final String ABLY_PROTOCOL_VERSION_HEADER = "X-Ably-Version";
+    public static final String ABLY_CLIENT_ID_HEADER = "X-Ably-ClientId";
     public static final String ABLY_AGENT_HEADER = "Ably-Agent";
 
     /* Hosts */
