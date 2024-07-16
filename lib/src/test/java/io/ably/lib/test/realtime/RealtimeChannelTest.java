@@ -1669,7 +1669,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             ErrorInfo resumeError = connectionWaiter.waitFor(ConnectionState.connected);
             assertNotNull(resumeError);
-            assertTrue(resumeError.message.contains("Invalid connection key"));
+            assertEquals("Verify error code indicates invalid connection key", resumeError.code, 80018);
             assertSame(resumeError, ably.connection.connectionManager.getStateErrorInfo());
             assertNotEquals("A new connection was created", originalConnectionId, ably.connection.id);
 
