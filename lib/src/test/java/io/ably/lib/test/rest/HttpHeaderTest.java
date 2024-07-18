@@ -50,7 +50,7 @@ public class HttpHeaderTest extends ParameterizedTest {
      * should be included in all REST requests to the Ably endpoint
      * see {@link io.ably.lib.transport.Defaults#ABLY_AGENT_PARAM}
      * <p>
-     * Spec: RSC7d, G4
+     * Spec: RSC7d, G4, RSA7e2
      * </p>
      */
     @Test
@@ -83,9 +83,47 @@ public class HttpHeaderTest extends ParameterizedTest {
             Assert.assertNotNull("Expected headers", headers);
             Assert.assertEquals(headers.get("x-ably-version"), "2");
             Assert.assertEquals(headers.get("ably-agent"), expectedAblyAgentHeader);
+            // RSA7e2
+            Assert.assertNull("Shouldn't include 'x-ably-clientid' if `clientId` is not specified", headers.get("x-ably-clientid"));
         } catch (AblyException e) {
             e.printStackTrace();
             Assert.fail("header_lib_channel_publish: Unexpected exception");
+        }
+    }
+
+    /**
+     * The header `X-Ably-ClientId`
+     * should be included in all REST requests to the Ably endpoint
+     * if {@link ClientOptions#clientId} is specified
+     * <p>
+     * Spec: RSA7e2
+     * </p>
+     */
+    @Test
+    public void header_client_id_on_channel_publish() {
+        try {
+            /* Init values for local server */
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+            opts.environment = null;
+            opts.tls = false;
+            opts.port = server.getListeningPort();
+            opts.restHost = "localhost";
+            opts.clientId = "test client";
+            AblyRest ably = new AblyRest(opts);
+
+            /* Publish message */
+            String messageName = "test message";
+            String messageData = String.valueOf(System.currentTimeMillis());
+
+            Channel channel = ably.channels.get("test");
+            channel.publish(messageName, messageData);
+
+            /* Get last headers */
+            Map<String, String> headers = server.getHeaders();
+            Assert.assertEquals(headers.get("x-ably-clientid"), /* Base64Coder.encodeString("test client") */ "dGVzdCBjbGllbnQ=");
+        } catch (AblyException e) {
+            e.printStackTrace();
+            Assert.fail("header_client_id_on_channel_publish: Unexpected exception");
         }
     }
 
