@@ -1121,14 +1121,14 @@ public class Auth {
     private void setTokenDetails(String token) throws AblyException {
         Log.i("TokenAuth.setTokenDetails()", "");
         this.tokenDetails = new TokenDetails(token);
-        this.encodedToken = Base64Coder.encodeString(token).replace("=", "");
+        this.encodedToken = Base64Coder.encodeString(token);
     }
 
     private void setTokenDetails(TokenDetails tokenDetails) throws AblyException {
         Log.i("TokenAuth.setTokenDetails()", "");
         setClientId(tokenDetails.clientId);
         this.tokenDetails = tokenDetails;
-        this.encodedToken = Base64Coder.encodeString(tokenDetails.token).replace("=", "");
+        this.encodedToken = Base64Coder.encodeString(tokenDetails.token);
     }
 
     private void clearTokenDetails() {
