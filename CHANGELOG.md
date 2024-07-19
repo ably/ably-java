@@ -1,5 +1,20 @@
 # Change Log
 
+## [1.2.41](https://github.com/ably/ably-java/tree/v1.2.41)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.40...v1.2.41)
+
+**Closed issues:**
+
+-  For REST clients, all requests should include an `X-Ably-ClientId` header when basic auth is to be used \(RSA7e2\) [\#1015](https://github.com/ably/ably-java/issues/1015)
+
+**Merged pull requests:**
+
+- chore\(Auth\): get rid of unnecessary padding removal for Auth tokens [\#1021](https://github.com/ably/ably-java/pull/1021) ([ttypic](https://github.com/ttypic))
+- feat: add Google SDK console verification [\#1020](https://github.com/ably/ably-java/pull/1020) ([ttypic](https://github.com/ttypic))
+- feat: include `X-Ably-ClientId` for each request \(RSA7e2\) [\#1019](https://github.com/ably/ably-java/pull/1019) ([ttypic](https://github.com/ttypic))
+
+
 ## [1.2.40](https://github.com/ably/ably-java/tree/v1.2.40)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.39...v1.2.40)
