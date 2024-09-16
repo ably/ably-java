@@ -40,6 +40,13 @@ public class ChannelOptions {
      */
     public boolean encrypted;
 
+    /**
+     * Determines whether calling @subscribe@ on a channel or presence object should trigger an implicit attach.
+     * Defaults to @true@.
+     * Spec: RTP6d, RTP6e, TB4
+     */
+    public boolean attachOnSubscribe = true;
+
     public boolean hasModes() {
         return null != modes && 0 != modes.length;
     }
