@@ -308,6 +308,10 @@ public class Presence {
      * @throws AblyException
      */
     private void implicitAttachOnSubscribe(CompletionListener completionListener) throws AblyException {
+        if (!channel.options.attachOnSubscribe) {
+            completionListener.onSuccess();
+            return;
+        }
         if (channel.state == ChannelState.failed) {
             String errorString = String.format(Locale.ROOT, "Channel %s: subscribe in FAILED channel state", channel.name);
             Log.v(TAG, errorString);

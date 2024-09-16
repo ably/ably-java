@@ -704,7 +704,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     public synchronized void subscribe(MessageListener listener) throws AblyException {
         Log.v(TAG, "subscribe(); channel = " + this.name);
         listeners.add(listener);
-        attach();
+        if (options.attachOnSubscribe) {
+            attach();
+        }
     }
 
     /**
@@ -739,7 +741,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     public synchronized void subscribe(String name, MessageListener listener) throws AblyException {
         Log.v(TAG, "subscribe(); channel = " + this.name + "; event = " + name);
         subscribeImpl(name, listener);
-        attach();
+        if (options.attachOnSubscribe) {
+            attach();
+        }
     }
 
     /**
@@ -773,7 +777,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         Log.v(TAG, "subscribe(); channel = " + this.name + "; (multiple events)");
         for(String name : names)
             subscribeImpl(name, listener);
-        attach();
+        if (options.attachOnSubscribe) {
+            attach();
+        }
     }
 
     /**
