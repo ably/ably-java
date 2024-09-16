@@ -691,6 +691,15 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     }
 
     /**
+     * Checks for null channelOptions and checks if options.attachOnSubscribe is true
+     * Defaults to @true@ when channelOptions is null.
+     * Spec: RTP6d, RTP6e, TB4
+     */
+    protected boolean attachOnSubscribeEnabled() {
+        return options == null || options.attachOnSubscribe;
+    }
+
+    /**
      * Registers a listener for messages on this channel.
      * The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
      * <p>
@@ -704,7 +713,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     public synchronized void subscribe(MessageListener listener) throws AblyException {
         Log.v(TAG, "subscribe(); channel = " + this.name);
         listeners.add(listener);
-        if (options.attachOnSubscribe) {
+        if (attachOnSubscribeEnabled()) {
             attach();
         }
     }
@@ -741,7 +750,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     public synchronized void subscribe(String name, MessageListener listener) throws AblyException {
         Log.v(TAG, "subscribe(); channel = " + this.name + "; event = " + name);
         subscribeImpl(name, listener);
-        if (options.attachOnSubscribe) {
+        if (attachOnSubscribeEnabled()) {
             attach();
         }
     }
@@ -777,7 +786,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         Log.v(TAG, "subscribe(); channel = " + this.name + "; (multiple events)");
         for(String name : names)
             subscribeImpl(name, listener);
-        if (options.attachOnSubscribe) {
+        if (attachOnSubscribeEnabled()) {
             attach();
         }
     }
