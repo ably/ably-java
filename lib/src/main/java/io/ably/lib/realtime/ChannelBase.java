@@ -693,7 +693,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     /**
      * Checks for null channelOptions and checks if options.attachOnSubscribe is true
      * Defaults to @true@ when channelOptions is null.
-     * Spec: RTP6d, RTP6e, TB4
+     * Spec: TB4, RTL7g, RTL7gh, RTP6d, RTP6e
      */
     protected boolean attachOnSubscribeEnabled() {
         return options == null || options.attachOnSubscribe;

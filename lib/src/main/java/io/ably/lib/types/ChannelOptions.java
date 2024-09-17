@@ -43,7 +43,7 @@ public class ChannelOptions {
     /**
      * Determines whether calling @subscribe@ on a channel or presence object should trigger an implicit attach.
      * Defaults to @true@.
-     * Spec: RTP6d, RTP6e, TB4
+     * Spec: TB4, RTL7g, RTL7gh, RTP6d, RTP6e
      */
     public boolean attachOnSubscribe = true;
 
