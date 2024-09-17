@@ -309,7 +309,9 @@ public class Presence {
      */
     private void implicitAttachOnSubscribe(CompletionListener completionListener) throws AblyException {
         if (!channel.attachOnSubscribeEnabled()) {
-            completionListener.onSuccess();
+            if (completionListener != null) {
+                completionListener.onSuccess();
+            }
             return;
         }
         if (channel.state == ChannelState.failed) {
