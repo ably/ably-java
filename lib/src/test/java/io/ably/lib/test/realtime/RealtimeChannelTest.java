@@ -414,41 +414,44 @@ public class RealtimeChannelTest extends ParameterizedTest {
             chOpts.attachOnSubscribe = false;
             channel.setOptions(chOpts);
 
-            List<Object> receivedMsg = new ArrayList<>();
+            List<Boolean> receivedMsg = Collections.synchronizedList(new ArrayList<>());
 
             /* Check for all subscriptions without ATTACHING state */
             channel.subscribe(message -> receivedMsg.add(true));
-            assertEquals(channel.state, ChannelState.initialized);
+            assertEquals(ChannelState.initialized, channel.state);
 
             channel.subscribe("test_event", message -> receivedMsg.add(true));
-            assertEquals(channel.state, ChannelState.initialized);
+            assertEquals(ChannelState.initialized, channel.state);
 
             channel.subscribe(new String[]{"test_event1", "test_event2"}, message -> receivedMsg.add(true));
-            assertEquals(channel.state, ChannelState.initialized);
+            assertEquals(ChannelState.initialized, channel.state);
 
             channel.attach();
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
 
             channel.publish("test_event", "hi there");
+            // Expecting two msg: one from the wildcard subscription and one from test_event subscription
             Exception conditionError = new Helpers.ConditionalWaiter().
                 wait(() -> receivedMsg.size() == 2, 5000);
             assertNull(conditionError);
 
             receivedMsg.clear();
             channel.publish("test_event1", "hi there");
+            // Expecting two msg: one from the wildcard subscription and one from test_event1 subscription
             conditionError = new Helpers.ConditionalWaiter().
                 wait(() -> receivedMsg.size() == 2, 5000);
             assertNull(conditionError);
 
             receivedMsg.clear();
             channel.publish("test_event2", "hi there");
+            // Expecting two msg: one from the wildcard subscription and one from test_event2 subscription
             conditionError = new Helpers.ConditionalWaiter().
                 wait(() -> receivedMsg.size() == 2, 5000);
             assertNull(conditionError);
 
         } catch (AblyException e) {
             e.printStackTrace();
-            fail("init0: Unexpected exception instantiating library");
+            fail("subscribe_without_implicit_attach: Unexpected exception");
         } finally {
             if(ably != null)
                 ably.close();

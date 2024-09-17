@@ -41,9 +41,13 @@ public class ChannelOptions {
     public boolean encrypted;
 
     /**
-     * Determines whether calling @subscribe@ on a channel or presence object should trigger an implicit attach.
-     * Defaults to @true@.
-     * Spec: TB4, RTL7g, RTL7gh, RTP6d, RTP6e
+     * <p>
+     * Determines whether calling {@link io.ably.lib.realtime.Channel#subscribe Channel.subscribe} or
+     * {@link io.ably.lib.realtime.Presence#subscribe Presence.subscribe} method
+     * should trigger an implicit attach.
+     * </p>
+     * <p>Defaults to {@code true}.</p>
+     * <p>Spec: TB4, RTL7g, RTL7gh, RTP6d, RTP6e</p>
      */
     public boolean attachOnSubscribe = true;
 

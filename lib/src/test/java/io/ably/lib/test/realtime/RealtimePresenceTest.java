@@ -1646,38 +1646,40 @@ public class RealtimePresenceTest extends ParameterizedTest {
             chOpts.attachOnSubscribe = false;
             channel.setOptions(chOpts);
 
-            List<Object> receivedPresenceMsg = new ArrayList<>();
+            List<Boolean> receivedPresenceMsg = Collections.synchronizedList(new ArrayList<>());
             CompletionWaiter completionWaiter = new CompletionWaiter();
 
             /* Check for all subscriptions without ATTACHING state */
             channel.presence.subscribe(m -> receivedPresenceMsg.add(true), completionWaiter);
-            assertEquals(completionWaiter.successCount, 1);
-            assertEquals(channel.state, ChannelState.initialized);
+            assertEquals(1, completionWaiter.successCount);
+            assertEquals(ChannelState.initialized, channel.state);
 
             channel.presence.subscribe(Action.enter, m -> receivedPresenceMsg.add(true), completionWaiter);
-            assertEquals(completionWaiter.successCount, 2);
-            assertEquals(channel.state, ChannelState.initialized);
+            assertEquals(2, completionWaiter.successCount);
+            assertEquals(ChannelState.initialized, channel.state);
 
             channel.presence.subscribe(EnumSet.of(Action.enter, Action.leave),m -> receivedPresenceMsg.add(true));
-            assertEquals(channel.state, ChannelState.initialized);
+            assertEquals(ChannelState.initialized, channel.state);
 
             channel.attach();
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
 
             channel.presence.enter("enter client1", null);
+            // Expecting 3 msg: one from the wildcard subscription and two from specific event subscription
             Exception conditionError = new Helpers.ConditionalWaiter().
                 wait(() -> receivedPresenceMsg.size() == 3, 5000);
             assertNull(conditionError);
 
             receivedPresenceMsg.clear();
             channel.presence.leave(null);
+            // Expecting 2 msg: one from the wildcard subscription and one from specific event subscription
             conditionError = new Helpers.ConditionalWaiter().
                 wait(() -> receivedPresenceMsg.size() == 2, 5000);
             assertNull(conditionError);
 
         } catch (AblyException e) {
             e.printStackTrace();
-            fail("init0: Unexpected exception instantiating library");
+            fail("presence_subscribe_without_implicit_attach: Unexpected exception");
         } finally {
             if(ably != null)
                 ably.close();

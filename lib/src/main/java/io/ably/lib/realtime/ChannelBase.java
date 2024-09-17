@@ -691,9 +691,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     }
 
     /**
-     * Checks for null channelOptions and checks if options.attachOnSubscribe is true
-     * Defaults to @true@ when channelOptions is null.
-     * Spec: TB4, RTL7g, RTL7gh, RTP6d, RTP6e
+     * <p>
+     * Checks if {@link io.ably.lib.types.ChannelOptions#attachOnSubscribe} is true.
+     * </p>
+     * Defaults to {@code true} when {@link io.ably.lib.realtime.ChannelBase#options} is null.
+     * <p>Spec: TB4, RTL7g, RTL7gh, RTP6d, RTP6e</p>
      */
     protected boolean attachOnSubscribeEnabled() {
         return options == null || options.attachOnSubscribe;
