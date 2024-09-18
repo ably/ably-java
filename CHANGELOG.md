@@ -1,5 +1,19 @@
 # Change Log
 
+## [1.2.42](https://github.com/ably/ably-java/tree/v1.2.42)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.41...v1.2.42)
+
+**Implemented enhancements:**
+
+-  Implement the `attachOnSubscribe` channel option \(TB4\) [\#1027](https://github.com/ably/ably-java/issues/1027)
+
+**Merged pull requests:**
+
+- Fix implicit attach on subscribe [\#1028](https://github.com/ably/ably-java/pull/1028) ([sacOO7](https://github.com/sacOO7))
+- ci: enable workflow\_dispatch [\#1025](https://github.com/ably/ably-java/pull/1025) ([owenpearson](https://github.com/owenpearson))
+- tests: Assert connection error code rather than message [\#1023](https://github.com/ably/ably-java/pull/1023) ([lmars](https://github.com/lmars))
+
 ## [1.2.41](https://github.com/ably/ably-java/tree/v1.2.41)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.40...v1.2.41)
