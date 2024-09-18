@@ -1626,6 +1626,68 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
     /**
      * <p>
+     * Validates a client can subscribe to presence without implicit channel attach
+     * Refer Spec TB4, RTP6d, RTP6e
+     * </p>
+     * @throws AblyException
+     */
+    @Test
+    public void presence_subscribe_without_implicit_attach() {
+        String ablyChannel = "subscribe_" + testParams.name;
+        AblyRealtime ably = null;
+        try {
+            ClientOptions option1 = createOptions(testVars.keys[0].keyStr);
+            option1.clientId = "client1";
+            ably = new AblyRealtime(option1);
+
+            /* create a channel and set attachOnSubscribe to false */
+            final Channel channel = ably.channels.get(ablyChannel);
+            ChannelOptions chOpts = new ChannelOptions();
+            chOpts.attachOnSubscribe = false;
+            channel.setOptions(chOpts);
+
+            List<Boolean> receivedPresenceMsg = Collections.synchronizedList(new ArrayList<>());
+            CompletionWaiter completionWaiter = new CompletionWaiter();
+
+            /* Check for all subscriptions without ATTACHING state */
+            channel.presence.subscribe(m -> receivedPresenceMsg.add(true), completionWaiter);
+            assertEquals(1, completionWaiter.successCount);
+            assertEquals(ChannelState.initialized, channel.state);
+
+            channel.presence.subscribe(Action.enter, m -> receivedPresenceMsg.add(true), completionWaiter);
+            assertEquals(2, completionWaiter.successCount);
+            assertEquals(ChannelState.initialized, channel.state);
+
+            channel.presence.subscribe(EnumSet.of(Action.enter, Action.leave),m -> receivedPresenceMsg.add(true));
+            assertEquals(ChannelState.initialized, channel.state);
+
+            channel.attach();
+            (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+
+            channel.presence.enter("enter client1", null);
+            // Expecting 3 msg: one from the wildcard subscription and two from specific event subscription
+            Exception conditionError = new Helpers.ConditionalWaiter().
+                wait(() -> receivedPresenceMsg.size() == 3, 5000);
+            assertNull(conditionError);
+
+            receivedPresenceMsg.clear();
+            channel.presence.leave(null);
+            // Expecting 2 msg: one from the wildcard subscription and one from specific event subscription
+            conditionError = new Helpers.ConditionalWaiter().
+                wait(() -> receivedPresenceMsg.size() == 2, 5000);
+            assertNull(conditionError);
+
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail("presence_subscribe_without_implicit_attach: Unexpected exception");
+        } finally {
+            if(ably != null)
+                ably.close();
+        }
+    }
+
+    /**
+     * <p>
      * Validates a client sending multiple presence updates when the channel is in the attaching
      * state will have all messages sent once the channel attaches, and all listeners will be called.
      * </p>

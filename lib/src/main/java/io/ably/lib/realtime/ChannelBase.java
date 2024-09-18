@@ -691,6 +691,17 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     }
 
     /**
+     * <p>
+     * Checks if {@link io.ably.lib.types.ChannelOptions#attachOnSubscribe} is true.
+     * </p>
+     * Defaults to {@code true} when {@link io.ably.lib.realtime.ChannelBase#options} is null.
+     * <p>Spec: TB4, RTL7g, RTL7gh, RTP6d, RTP6e</p>
+     */
+    protected boolean attachOnSubscribeEnabled() {
+        return options == null || options.attachOnSubscribe;
+    }
+
+    /**
      * Registers a listener for messages on this channel.
      * The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
      * <p>
@@ -704,7 +715,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     public synchronized void subscribe(MessageListener listener) throws AblyException {
         Log.v(TAG, "subscribe(); channel = " + this.name);
         listeners.add(listener);
-        attach();
+        if (attachOnSubscribeEnabled()) {
+            attach();
+        }
     }
 
     /**
@@ -739,7 +752,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     public synchronized void subscribe(String name, MessageListener listener) throws AblyException {
         Log.v(TAG, "subscribe(); channel = " + this.name + "; event = " + name);
         subscribeImpl(name, listener);
-        attach();
+        if (attachOnSubscribeEnabled()) {
+            attach();
+        }
     }
 
     /**
@@ -773,7 +788,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         Log.v(TAG, "subscribe(); channel = " + this.name + "; (multiple events)");
         for(String name : names)
             subscribeImpl(name, listener);
-        attach();
+        if (attachOnSubscribeEnabled()) {
+            attach();
+        }
     }
 
     /**

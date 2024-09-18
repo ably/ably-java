@@ -395,6 +395,71 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
     /**
      * <p>
+     * Validates a client can subscribe to messages without implicit channel attach
+     * Refer Spec TB4, RTL7g, RTL7gh
+     * </p>
+     * @throws AblyException
+     */
+    @Test
+    public void subscribe_without_implicit_attach() {
+        String channelName = "subscribe_" + testParams.name;
+        AblyRealtime ably = null;
+        try {
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+            ably = new AblyRealtime(opts);
+
+            /* create a channel and set attachOnSubscribe to false */
+            final Channel channel = ably.channels.get(channelName);
+            ChannelOptions chOpts = new ChannelOptions();
+            chOpts.attachOnSubscribe = false;
+            channel.setOptions(chOpts);
+
+            List<Boolean> receivedMsg = Collections.synchronizedList(new ArrayList<>());
+
+            /* Check for all subscriptions without ATTACHING state */
+            channel.subscribe(message -> receivedMsg.add(true));
+            assertEquals(ChannelState.initialized, channel.state);
+
+            channel.subscribe("test_event", message -> receivedMsg.add(true));
+            assertEquals(ChannelState.initialized, channel.state);
+
+            channel.subscribe(new String[]{"test_event1", "test_event2"}, message -> receivedMsg.add(true));
+            assertEquals(ChannelState.initialized, channel.state);
+
+            channel.attach();
+            (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+
+            channel.publish("test_event", "hi there");
+            // Expecting two msg: one from the wildcard subscription and one from test_event subscription
+            Exception conditionError = new Helpers.ConditionalWaiter().
+                wait(() -> receivedMsg.size() == 2, 5000);
+            assertNull(conditionError);
+
+            receivedMsg.clear();
+            channel.publish("test_event1", "hi there");
+            // Expecting two msg: one from the wildcard subscription and one from test_event1 subscription
+            conditionError = new Helpers.ConditionalWaiter().
+                wait(() -> receivedMsg.size() == 2, 5000);
+            assertNull(conditionError);
+
+            receivedMsg.clear();
+            channel.publish("test_event2", "hi there");
+            // Expecting two msg: one from the wildcard subscription and one from test_event2 subscription
+            conditionError = new Helpers.ConditionalWaiter().
+                wait(() -> receivedMsg.size() == 2, 5000);
+            assertNull(conditionError);
+
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail("subscribe_without_implicit_attach: Unexpected exception");
+        } finally {
+            if(ably != null)
+                ably.close();
+        }
+    }
+
+    /**
+     * <p>
      * Verifies that unsubscribe call with no argument removes all listeners,
      * and any of the previously subscribed listeners doesn't receive any message
      * after that.
