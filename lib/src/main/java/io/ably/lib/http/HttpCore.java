@@ -2,7 +2,12 @@ package io.ably.lib.http;
 
 import com.google.gson.JsonParseException;
 import io.ably.lib.debug.DebugOptions;
-import io.ably.lib.debug.DebugOptions.RawHttpListener;
+import io.ably.lib.network.HttpEngine;
+import io.ably.lib.network.HttpEngineConfig;
+import io.ably.lib.network.HttpEngineFactory;
+import io.ably.lib.network.HttpRequest;
+import io.ably.lib.network.HttpBody;
+import io.ably.lib.network.HttpResponse;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.transport.Hosts;
@@ -14,17 +19,13 @@ import io.ably.lib.types.Param;
 import io.ably.lib.types.ProxyOptions;
 import io.ably.lib.util.AgentHeaderCreator;
 import io.ably.lib.util.Base64Coder;
+import io.ably.lib.util.ClientOptionsUtils;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
@@ -62,10 +63,9 @@ public class HttpCore {
     final ClientOptions options;
     final Hosts hosts;
     private final Auth auth;
-    private final ProxyOptions proxyOptions;
     private final PlatformAgentProvider platformAgentProvider;
     private HttpAuth proxyAuth;
-    private Proxy proxy = Proxy.NO_PROXY;
+    private final HttpEngine engine;
 
     /*************************
      *     Public API
@@ -78,8 +78,7 @@ public class HttpCore {
         this.scheme = options.tls ? "https://" : "http://";
         this.port = Defaults.getPort(options);
         this.hosts = new Hosts(options.restHost, Defaults.HOST_REST, options);
-
-        this.proxyOptions = options.proxy;
+        ProxyOptions proxyOptions = options.proxy;
         if (proxyOptions != null) {
             String proxyHost = proxyOptions.host;
             if (proxyHost == null) {
@@ -89,7 +88,6 @@ public class HttpCore {
             if (proxyPort == 0) {
                 throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy port", 40000, 400));
             }
-            this.proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
             String proxyUser = proxyOptions.username;
             if (proxyUser != null) {
                 String proxyPassword = proxyOptions.password;
@@ -99,6 +97,9 @@ public class HttpCore {
                 proxyAuth = new HttpAuth(proxyUser, proxyPassword, proxyOptions.prefAuthType);
             }
         }
+        HttpEngineFactory engineFactory = HttpEngineFactory.getFirstAvailable();
+        Log.v(TAG, String.format("Using %s HTTP Engine", engineFactory.getEngineType().name()));
+        this.engine = engineFactory.create(new HttpEngineConfig(ClientOptionsUtils.covertToProxyConfig(options)));
     }
 
     /**
@@ -119,7 +120,7 @@ public class HttpCore {
         }
         while (true) {
             try {
-                return httpExecute(url, getProxy(url), method, headers, requestBody, true, responseHandler);
+                return httpExecute(url, method, headers, requestBody, true, responseHandler);
             } catch (AuthRequiredException are) {
                 if (are.authChallenge != null && requireAblyAuth) {
                     if (are.expired && renewPending) {
@@ -177,7 +178,6 @@ public class HttpCore {
      * Make a synchronous HTTP request specified by URL and proxy
      *
      * @param url
-     * @param proxy
      * @param method
      * @param headers
      * @param requestBody
@@ -186,25 +186,14 @@ public class HttpCore {
      * @return
      * @throws AblyException
      */
-    public <T> T httpExecute(URL url, Proxy proxy, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler<T> responseHandler) throws AblyException {
-        HttpURLConnection conn = null;
-        try {
-            conn = (HttpURLConnection) url.openConnection(proxy);
-            boolean withProxyCredentials = (proxy != Proxy.NO_PROXY) && (proxyAuth != null);
-            return httpExecute(conn, method, headers, requestBody, withCredentials, withProxyCredentials, responseHandler);
-        } catch (IOException ioe) {
-            throw AblyException.fromThrowable(ioe);
-        } finally {
-            if (conn != null) {
-                conn.disconnect();
-            }
-        }
+    public <T> T httpExecute(URL url, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler<T> responseHandler) throws AblyException {
+        boolean withProxyCredentials = engine.isUsingProxy() && (proxyAuth != null);
+        return httpExecute(url, method, headers, requestBody, withCredentials, withProxyCredentials, responseHandler);
     }
 
     /**
      * Make a synchronous HTTP request with a given HttpURLConnection
      *
-     * @param conn
      * @param method
      * @param headers
      * @param requestBody
@@ -213,111 +202,120 @@ public class HttpCore {
      * @return
      * @throws AblyException
      */
-    <T> T httpExecute(HttpURLConnection conn, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, boolean withProxyCredentials, ResponseHandler<T> responseHandler) throws AblyException {
-        Response response;
-        boolean credentialsIncluded = false;
-        RawHttpListener rawHttpListener = null;
-        String id = null;
-        try {
-            /* prepare connection */
-            conn.setRequestMethod(method);
-            conn.setConnectTimeout(options.httpOpenTimeout);
-            conn.setReadTimeout(options.httpRequestTimeout);
-            conn.setDoInput(true);
+     <T> T httpExecute(URL url, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, boolean withProxyCredentials, ResponseHandler<T> responseHandler) throws AblyException {
+        HttpRequest.HttpRequestBuilder requestBuilder = HttpRequest.builder();
+        /* prepare connection */
+        requestBuilder
+            .url(url)
+            .method(method)
+            .httpOpenTimeout(options.httpOpenTimeout)
+            .httpReadTimeout(options.httpRequestTimeout)
+            .body(requestBody != null ? new HttpBody(requestBody.getContentType(), requestBody.getEncoded()) : null);
 
-            String authHeader = Param.getFirst(headers, HttpConstants.Headers.AUTHORIZATION);
-            if (authHeader == null && auth != null) {
-                authHeader = auth.getAuthorizationHeader();
-            }
-            if (withCredentials && authHeader != null) {
-                conn.setRequestProperty(HttpConstants.Headers.AUTHORIZATION, authHeader);
-                credentialsIncluded = true;
-            }
-            if (withProxyCredentials && proxyAuth.hasChallenge()) {
-                byte[] encodedRequestBody = (requestBody != null) ? requestBody.getEncoded() : null;
-                String proxyAuthorizationHeader = proxyAuth.getAuthorizationHeader(method, conn.getURL().getPath(), encodedRequestBody);
-                conn.setRequestProperty(HttpConstants.Headers.PROXY_AUTHORIZATION, proxyAuthorizationHeader);
-            }
-            boolean acceptSet = false;
-            if (headers != null) {
-                for (Param header : headers) {
-                    conn.setRequestProperty(header.key, header.value);
-                    if (header.key.equals(HttpConstants.Headers.ACCEPT)) {
-                        acceptSet = true;
-                    }
-                }
-            }
-            if (!acceptSet) {
-                conn.setRequestProperty(HttpConstants.Headers.ACCEPT, HttpConstants.ContentTypes.JSON);
-            }
+        Map<String, String> requestHeaders = collectRequestHeaders(url, method, headers, requestBody, withCredentials, withProxyCredentials);
+        boolean credentialsIncluded = requestHeaders.containsKey(HttpConstants.Headers.AUTHORIZATION);
+        String authHeader = requestHeaders.get(HttpConstants.Headers.AUTHORIZATION);
 
-            /* pass required headers */
-            conn.setRequestProperty(Defaults.ABLY_PROTOCOL_VERSION_HEADER, Defaults.ABLY_PROTOCOL_VERSION); // RSC7a
-            conn.setRequestProperty(Defaults.ABLY_AGENT_HEADER, AgentHeaderCreator.create(options.agents, platformAgentProvider));
-            if (options.clientId != null)
-                conn.setRequestProperty(Defaults.ABLY_CLIENT_ID_HEADER, Base64Coder.encodeString(options.clientId));
+        requestBuilder.headers(requestHeaders);
+        HttpRequest request = requestBuilder.build();
 
-            /* prepare request body */
-            byte[] body = null;
+        // Check the logging level to avoid performance hit associated with building the message
+        if (Log.level <= Log.VERBOSE && request.getBody() != null && request.getBody().getContent() != null)
+            Log.v(TAG, System.lineSeparator() + new String(request.getBody().getContent()));
+
+        /* log raw request details */
+        Map<String, List<String>> requestProperties = request.getHeaders();
+        // Check the logging level to avoid performance hit associated with building the message
+        if (Log.level <= Log.VERBOSE) {
+            Log.v(TAG, "HTTP request: " + url + " " + method);
+            if (credentialsIncluded)
+                Log.v(TAG, "  " + HttpConstants.Headers.AUTHORIZATION + ": " + authHeader);
+
+            for (Map.Entry<String, List<String>> entry : requestProperties.entrySet())
+                for (String val : entry.getValue())
+                    Log.v(TAG, "  " + entry.getKey() + ": " + val);
+
             if (requestBody != null) {
-                body = prepareRequestBody(requestBody, conn);
-                // Check the logging level to avoid performance hit associated with building the message
-                if (Log.level <= Log.VERBOSE)
-                    Log.v(TAG, System.lineSeparator() + new String(body));
+                Log.v(TAG, "  " + HttpConstants.Headers.CONTENT_TYPE + ": " + requestBody.getContentType());
+                Log.v(TAG, "  " + HttpConstants.Headers.CONTENT_LENGTH + ": " + (requestBody.getEncoded() != null ? requestBody.getEncoded().length : 0));
             }
-
-            /* log raw request details */
-            Map<String, List<String>> requestProperties = conn.getRequestProperties();
-            // Check the logging level to avoid performance hit associated with building the message
-            if (Log.level <= Log.VERBOSE) {
-                Log.v(TAG, "HTTP request: " + conn.getURL() + " " + method);
-                if (credentialsIncluded)
-                    Log.v(TAG, "  " + HttpConstants.Headers.AUTHORIZATION + ": " + authHeader);
-                for (Map.Entry<String, List<String>> entry : requestProperties.entrySet())
-                    for (String val : entry.getValue())
-                        Log.v(TAG, "  " + entry.getKey() + ": " + val);
-            }
-
-            if (options instanceof DebugOptions) {
-                rawHttpListener = ((DebugOptions) options).httpListener;
-                if (rawHttpListener != null) {
-                    id = String.valueOf(Math.random()).substring(2);
-                    response = rawHttpListener.onRawHttpRequest(id, conn, method, (credentialsIncluded ? authHeader : null), requestProperties, requestBody);
-                    if (response != null) {
-                        return handleResponse(conn, credentialsIncluded, response, responseHandler);
-                    }
-                }
-            }
-
-            /* send request body */
-            if (requestBody != null) {
-                writeRequestBody(body, conn);
-            }
-            response = readResponse(conn);
-            if (rawHttpListener != null) {
-                rawHttpListener.onRawHttpResponse(id, method, response);
-            }
-        } catch (IOException ioe) {
-            if (rawHttpListener != null) {
-                rawHttpListener.onRawHttpException(id, method, ioe);
-            }
-            throw AblyException.fromThrowable(ioe);
         }
 
-        return handleResponse(conn, credentialsIncluded, response, responseHandler);
+        DebugOptions.RawHttpListener rawHttpListener = null;
+        String id = null;
+
+        if (options instanceof DebugOptions) {
+            rawHttpListener = ((DebugOptions) options).httpListener;
+            if (rawHttpListener != null) {
+                id = String.valueOf(Math.random()).substring(2);
+                Response response = rawHttpListener.onRawHttpRequest(id, request, (credentialsIncluded ? authHeader : null), requestProperties, requestBody);
+                if (response != null) {
+                    return handleResponse(credentialsIncluded, response, responseHandler);
+                }
+            }
+        }
+
+        Response response = executeRequest(request);
+
+        if (rawHttpListener != null) {
+            rawHttpListener.onRawHttpResponse(id, method, response);
+        }
+
+        return handleResponse(credentialsIncluded, response, responseHandler);
+    }
+
+    private Map<String, String> collectRequestHeaders(URL url, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, boolean withProxyCredentials) throws AblyException {
+        Map<String, String> requestHeaders = new HashMap<>();
+
+        String authHeader = Param.getFirst(headers, HttpConstants.Headers.AUTHORIZATION);
+        if (authHeader == null && auth != null) {
+            authHeader = auth.getAuthorizationHeader();
+        }
+
+        if (withCredentials && authHeader != null) {
+            requestHeaders.put(HttpConstants.Headers.AUTHORIZATION, authHeader);
+        }
+
+        if (withProxyCredentials && proxyAuth.hasChallenge()) {
+            byte[] encodedRequestBody = (requestBody != null) ? requestBody.getEncoded() : null;
+            String proxyAuthorizationHeader = proxyAuth.getAuthorizationHeader(method, url.getPath(), encodedRequestBody);
+            requestHeaders.put(HttpConstants.Headers.PROXY_AUTHORIZATION, proxyAuthorizationHeader);
+        }
+
+        boolean acceptSet = false;
+
+        if (headers != null) {
+            for (Param header : headers) {
+                requestHeaders.put(header.key, header.value);
+                if (header.key.equals(HttpConstants.Headers.ACCEPT)) {
+                    acceptSet = true;
+                }
+            }
+        }
+
+        if (!acceptSet) {
+            requestHeaders.put(HttpConstants.Headers.ACCEPT, HttpConstants.ContentTypes.JSON);
+        }
+
+        /* pass required headers */
+        requestHeaders.put(Defaults.ABLY_PROTOCOL_VERSION_HEADER, Defaults.ABLY_PROTOCOL_VERSION); // RSC7a
+        requestHeaders.put(Defaults.ABLY_AGENT_HEADER, AgentHeaderCreator.create(options.agents, platformAgentProvider));
+        if (options.clientId != null)
+            requestHeaders.put(Defaults.ABLY_CLIENT_ID_HEADER, Base64Coder.encodeString(options.clientId));
+
+        return requestHeaders;
     }
 
     /**
      * Handle HTTP response
      *
-     * @param conn
      * @param credentialsIncluded
      * @param response
      * @param responseHandler
      * @return
      * @throws AblyException
      */
-    private <T> T handleResponse(HttpURLConnection conn, boolean credentialsIncluded, Response response, ResponseHandler<T> responseHandler) throws AblyException {
+    private <T> T handleResponse(boolean credentialsIncluded, Response response, ResponseHandler<T> responseHandler) throws AblyException {
         if (response.statusCode == 0) {
             return null;
         }
@@ -358,8 +356,8 @@ public class HttpCore {
 
         /* handle error details in header */
         if (error == null) {
-            String errorCodeHeader = conn.getHeaderField("X-Ably-ErrorCode");
-            String errorMessageHeader = conn.getHeaderField("X-Ably-ErrorMessage");
+            String errorCodeHeader = response.getHeaderFields("X-Ably-ErrorCode").get(0);
+            String errorMessageHeader = response.getHeaderFields("X-Ably-ErrorMessage").get(0);
             if (errorCodeHeader != null) {
                 try {
                     error = new ErrorInfo(errorMessageHeader, response.statusCode, Integer.parseInt(errorCodeHeader));
@@ -389,18 +387,19 @@ public class HttpCore {
                 }
             }
         }
+
         /* handle proxy-authenticate */
         if (response.statusCode == 407) {
             List<String> proxyAuthHeaders = response.getHeaderFields(HttpConstants.Headers.PROXY_AUTHENTICATE);
-            if (proxyAuthHeaders != null && proxyAuthHeaders.size() > 0) {
+            if (proxyAuthHeaders != null && !proxyAuthHeaders.isEmpty()) {
                 AuthRequiredException exception = new AuthRequiredException(null, error);
                 exception.proxyAuthChallenge = HttpAuth.sortAuthenticateHeaders(proxyAuthHeaders);
                 throw exception;
             }
         }
+
         if (error == null) {
             error = ErrorInfo.fromResponseStatus(response.statusLine, response.statusCode);
-        } else {
         }
         Log.e(TAG, "Error response from server: err = " + error);
         if (responseHandler != null) {
@@ -410,43 +409,18 @@ public class HttpCore {
     }
 
     /**
-     * Emit the request body for an HTTP request
-     *
-     * @param requestBody
-     * @param conn
-     * @return body
-     * @throws IOException
-     */
-    private byte[] prepareRequestBody(RequestBody requestBody, HttpURLConnection conn) throws IOException {
-        conn.setDoOutput(true);
-        byte[] body = requestBody.getEncoded();
-        int length = body.length;
-        conn.setFixedLengthStreamingMode(length);
-        conn.setRequestProperty(HttpConstants.Headers.CONTENT_TYPE, requestBody.getContentType());
-        conn.setRequestProperty(HttpConstants.Headers.CONTENT_LENGTH, Integer.toString(length));
-        return body;
-    }
-
-    private void writeRequestBody(byte[] body, HttpURLConnection conn) throws IOException {
-        OutputStream os = conn.getOutputStream();
-        os.write(body);
-    }
-
-    /**
      * Read the response for an HTTP request
-     *
-     * @param connection
-     * @return
-     * @throws IOException
      */
-    private Response readResponse(HttpURLConnection connection) throws IOException {
+    private Response executeRequest(HttpRequest request) {
+        HttpResponse rawResponse = engine.call(request).execute();
+
         Response response = new Response();
-        response.statusCode = connection.getResponseCode();
-        response.statusLine = connection.getResponseMessage();
+        response.statusCode = rawResponse.getCode();
+        response.statusLine = rawResponse.getMessage();
 
         /* Store all header field names in lower-case to eliminate case insensitivity */
         Log.v(TAG, "HTTP response:");
-        Map<String, List<String>> caseSensitiveHeaders = connection.getHeaderFields();
+        Map<String, List<String>> caseSensitiveHeaders = rawResponse.getHeaders();
         response.headers = new HashMap<>(caseSensitiveHeaders.size(), 1f);
 
         for (Map.Entry<String, List<String>> entry : caseSensitiveHeaders.entrySet()) {
@@ -459,82 +433,18 @@ public class HttpCore {
             }
         }
 
-        if (response.statusCode == HttpURLConnection.HTTP_NO_CONTENT) {
+        if (response.statusCode == HttpURLConnection.HTTP_NO_CONTENT || rawResponse.getBody() == null) {
             return response;
         }
 
-        response.contentType = connection.getContentType();
-        response.contentLength = connection.getContentLength();
+        response.contentType = rawResponse.getBody().getContentType();
+        response.body = rawResponse.getBody().getContent();
+        response.contentLength = response.body == null ? 0 : response.body.length;
 
-        InputStream is = null;
-        try {
-            is = connection.getInputStream();
-        } catch (Throwable e) {
-        }
-        if (is == null)
-            is = connection.getErrorStream();
-
-        try {
-            response.body = readInputStream(is, response.contentLength);
+        if (Log.level <= Log.VERBOSE && response.body != null)
             Log.v(TAG, System.lineSeparator() + new String(response.body));
-        } catch (NullPointerException e) {
-            /* nothing to read */
-        } finally {
-            if (is != null) {
-                try {
-                    is.close();
-                } catch (IOException e) {
-                }
-            }
-        }
 
         return response;
-    }
-
-    private byte[] readInputStream(InputStream inputStream, int bytes) throws IOException {
-        /* If there is nothing to read */
-        if (inputStream == null) {
-            throw new NullPointerException("inputStream == null");
-        }
-
-        int bytesRead = 0;
-
-        if (bytes == -1) {
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            byte[] buffer = new byte[4 * 1024];
-            while ((bytesRead = inputStream.read(buffer)) > -1) {
-                outputStream.write(buffer, 0, bytesRead);
-            }
-
-            return outputStream.toByteArray();
-        } else {
-            int idx = 0;
-            byte[] output = new byte[bytes];
-            while ((bytesRead = inputStream.read(output, idx, bytes - idx)) > -1) {
-                idx += bytesRead;
-            }
-
-            return output;
-        }
-    }
-
-    Proxy getProxy(URL url) {
-        String host = url.getHost();
-        return getProxy(host);
-    }
-
-    private Proxy getProxy(String host) {
-        if (proxyOptions != null) {
-            String[] nonProxyHosts = proxyOptions.nonProxyHosts;
-            if (nonProxyHosts != null) {
-                for (String nonProxyHostPattern : nonProxyHosts) {
-                    if (host.matches(nonProxyHostPattern)) {
-                        return null;
-                    }
-                }
-            }
-        }
-        return proxy;
     }
 
     /**

@@ -1,10 +1,10 @@
 package io.ably.lib.debug;
 
-import java.net.HttpURLConnection;
 import java.util.List;
 import java.util.Map;
 
 import io.ably.lib.http.HttpCore;
+import io.ably.lib.network.HttpRequest;
 import io.ably.lib.transport.ITransport;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
@@ -19,7 +19,7 @@ public class DebugOptions extends ClientOptions {
     }
 
     public interface RawHttpListener {
-        HttpCore.Response onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody);
+        HttpCore.Response onRawHttpRequest(String id, HttpRequest request, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody);
         void onRawHttpResponse(String id, String method, HttpCore.Response response);
         void onRawHttpException(String id, String method, Throwable t);
     }
