@@ -1,6 +1,5 @@
 package io.ably.lib.http;
 
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
@@ -9,6 +8,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import io.ably.lib.network.HttpCall;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
@@ -331,15 +331,15 @@ public class HttpScheduler implements AutoCloseable {
             }
         }
         protected synchronized boolean disposeConnection() {
-            boolean hasConnection = conn != null;
+            boolean hasConnection = httpCall != null;
             if(hasConnection) {
-                conn.disconnect();
-                conn = null;
+                httpCall.cancel();
+                httpCall = null;
             }
             return hasConnection;
         }
 
-        protected HttpURLConnection conn;
+        protected HttpCall httpCall;
         protected T result;
         protected ErrorInfo err;
 

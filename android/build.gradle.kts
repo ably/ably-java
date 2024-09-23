@@ -52,6 +52,8 @@ dependencies {
     api(libs.gson)
     implementation(libs.bundles.common)
     testImplementation(libs.bundles.tests)
+    implementation(project(":network-client-core"))
+    runtimeOnly(project(":network-client-default"))
     implementation(libs.firebase.messaging)
     androidTestImplementation(libs.bundles.instrumental.android)
 }

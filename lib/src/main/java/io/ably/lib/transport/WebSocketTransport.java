@@ -1,24 +1,21 @@
 package io.ably.lib.transport;
 
 import io.ably.lib.http.HttpUtils;
+import io.ably.lib.network.WebSocketClient;
+import io.ably.lib.network.WebSocketEngine;
+import io.ably.lib.network.WebSocketEngineConfig;
+import io.ably.lib.network.WebSocketEngineFactory;
+import io.ably.lib.network.WebSocketListener;
+import io.ably.lib.network.NotConnectedException;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolSerializer;
+import io.ably.lib.util.ClientOptionsUtils;
 import io.ably.lib.util.Log;
-import org.java_websocket.WebSocket;
-import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.exceptions.WebsocketNotConnectedException;
-import org.java_websocket.framing.CloseFrame;
-import org.java_websocket.framing.Framedata;
-import org.java_websocket.handshake.ServerHandshake;
 
-import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLParameters;
-import javax.net.ssl.SSLSession;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -50,7 +47,7 @@ public class WebSocketTransport implements ITransport {
     private final boolean channelBinaryMode;
     private String wsUri;
     private ConnectListener connectListener;
-    private WsClient wsConnection;
+    private WebSocketClient webSocketClient;
     /******************
      * protected constructor
      ******************/
@@ -81,15 +78,26 @@ public class WebSocketTransport implements ITransport {
 
             Log.d(TAG, "connect(); wsUri = " + wsUri);
             synchronized (this) {
-                wsConnection = new WsClient(URI.create(wsUri), this::receive);
+                WebSocketEngineFactory engineFactory = WebSocketEngineFactory.getFirstAvailable();
+                Log.v(TAG, String.format("Using %s WebSocket Engine", engineFactory.getEngineType().name()));
+
+                WebSocketEngineConfig.WebSocketEngineConfigBuilder configBuilder = WebSocketEngineConfig.builder();
+                configBuilder
+                    .tls(isTls)
+                    .host(params.host)
+                    .proxy(ClientOptionsUtils.convertToProxyConfig(params.getClientOptions()));
+
                 if (isTls) {
                     SSLContext sslContext = SSLContext.getInstance("TLS");
                     sslContext.init(null, null, null);
                     SafeSSLSocketFactory factory = new SafeSSLSocketFactory(sslContext.getSocketFactory());
-                    wsConnection.setSocketFactory(factory);
+                    configBuilder.sslSocketFactory(factory);
                 }
+
+                WebSocketEngine engine = engineFactory.create(configBuilder.build());
+                webSocketClient = engine.create(wsUri, new WebSocketHandler(this::receive));
             }
-            wsConnection.connect();
+            webSocketClient.connect();
         } catch (AblyException e) {
             Log.e(TAG, "Unexpected exception attempting connection; wsUri = " + wsUri, e);
             connectListener.onTransportUnavailable(this, e.errorInfo);
@@ -103,9 +111,9 @@ public class WebSocketTransport implements ITransport {
     public void close() {
         Log.d(TAG, "close()");
         synchronized (this) {
-            if (wsConnection != null) {
-                wsConnection.close();
-                wsConnection = null;
+            if (webSocketClient != null) {
+                webSocketClient.close();
+                webSocketClient = null;
             }
         }
     }
@@ -127,14 +135,14 @@ public class WebSocketTransport implements ITransport {
                     ProtocolMessage decodedMsg = ProtocolSerializer.readMsgpack(encodedMsg);
                     Log.v(TAG, "send(): " + decodedMsg.action + ": " + new String(ProtocolSerializer.writeJSON(decodedMsg)));
                 }
-                wsConnection.send(encodedMsg);
+                webSocketClient.send(encodedMsg);
             } else {
                 // Check the logging level to avoid performance hit associated with building the message
                 if (Log.level <= Log.VERBOSE)
                     Log.v(TAG, "send(): " + new String(ProtocolSerializer.writeJSON(msg)));
-                wsConnection.send(ProtocolSerializer.writeJSON(msg));
+                webSocketClient.send(ProtocolSerializer.writeJSON(msg));
             }
-        } catch (WebsocketNotConnectedException e) {
+        } catch (NotConnectedException e) {
             if (connectListener != null) {
                 connectListener.onTransportUnavailable(this, AblyException.fromThrowable(e).errorInfo);
             } else
@@ -180,7 +188,7 @@ public class WebSocketTransport implements ITransport {
      * WebSocketHandler methods
      **************************/
 
-    class WsClient extends WebSocketClient {
+    class WebSocketHandler implements WebSocketListener {
         private final WebSocketReceiver receiver;
         /***************************
          * WsClient private members
@@ -189,38 +197,16 @@ public class WebSocketTransport implements ITransport {
         private Timer timer = new Timer();
         private TimerTask activityTimerTask = null;
         private long lastActivityTime;
-        private boolean shouldExplicitlyVerifyHostname = true;
 
-        WsClient(URI serverUri, WebSocketReceiver receiver) {
-            super(serverUri);
+        WebSocketHandler(WebSocketReceiver receiver) {
             this.receiver = receiver;
         }
 
         @Override
-        public void onOpen(ServerHandshake handshakedata) {
+        public void onOpen() {
             Log.d(TAG, "onOpen()");
-            if (params.options.tls && shouldExplicitlyVerifyHostname && !isHostnameVerified(params.host)) {
-                close();
-            } else {
-                connectListener.onTransportAvailable(WebSocketTransport.this);
-                flagActivity();
-            }
-        }
-
-        /**
-         * Added because we had to override the onSetSSLParameters() that usually performs this verification.
-         * When the minSdkVersion will be updated to 24 we should remove this method and its usages.
-         * https://github.com/TooTallNate/Java-WebSocket/wiki/No-such-method-error-setEndpointIdentificationAlgorithm#workaround
-         */
-        private boolean isHostnameVerified(String hostname) {
-            final SSLSession session = getSSLSession();
-            if (HttpsURLConnection.getDefaultHostnameVerifier().verify(hostname, session)) {
-                Log.v(TAG, "Successfully verified hostname");
-                return true;
-            } else {
-                Log.e(TAG, "Hostname verification failed, expected " + hostname + ", found " + session.getPeerHost());
-                return false;
-            }
+            connectListener.onTransportAvailable(WebSocketTransport.this);
+            flagActivity();
         }
 
         @Override
@@ -253,16 +239,14 @@ public class WebSocketTransport implements ITransport {
 
         /* This allows us to detect a websocket ping, so we don't need Ably pings. */
         @Override
-        public void onWebsocketPing(WebSocket conn, Framedata f) {
+        public void onWebsocketPing() {
             Log.d(TAG, "onWebsocketPing()");
-            /* Call superclass to ensure the pong is sent. */
-            super.onWebsocketPing(conn, f);
             flagActivity();
         }
 
         @Override
-        public void onClose(final int wsCode, final String wsReason, final boolean remote) {
-            Log.d(TAG, "onClose(): wsCode = " + wsCode + "; wsReason = " + wsReason + "; remote = " + remote);
+        public void onClose(final int wsCode, final String wsReason) {
+            Log.d(TAG, "onClose(): wsCode = " + wsCode + "; wsReason = " + wsReason + "; remote = " + false);
 
             ErrorInfo reason;
             switch (wsCode) {
@@ -301,23 +285,14 @@ public class WebSocketTransport implements ITransport {
         }
 
         @Override
-        public void onError(final Exception e) {
-            Log.e(TAG, "Connection error ", e);
-            connectListener.onTransportUnavailable(WebSocketTransport.this, new ErrorInfo(e.getMessage(), 503, 80000));
+        public void onError(Throwable throwable) {
+            Log.e(TAG, "Connection error ", throwable);
+            connectListener.onTransportUnavailable(WebSocketTransport.this, new ErrorInfo(throwable.getMessage(), 503, 80000));
         }
 
         @Override
-        protected void onSetSSLParameters(SSLParameters sslParameters) {
-            try {
-                super.onSetSSLParameters(sslParameters);
-                shouldExplicitlyVerifyHostname = false;
-            } catch (NoSuchMethodError exception) {
-                // This error will be thrown on Android below level 24.
-                // When the minSdkVersion will be updated to 24 we should remove this overridden method.
-                // https://github.com/TooTallNate/Java-WebSocket/wiki/No-such-method-error-setEndpointIdentificationAlgorithm#workaround
-                Log.w(TAG, "Error when trying to set SSL parameters, most likely due to an old Java API version", exception);
-                shouldExplicitlyVerifyHostname = true;
-            }
+        public void onOldJavaVersionDetected(Throwable throwable) {
+            Log.w(TAG, "Error when trying to set SSL parameters, most likely due to an old Java API version", throwable);
         }
 
         private synchronized void dispose() {
@@ -391,7 +366,7 @@ public class WebSocketTransport implements ITransport {
             // If we have no time remaining, then close the connection
             if (timeRemaining <= 0) {
                 Log.e(TAG, "No activity for " + getActivityTimeout() + "ms, closing connection");
-                closeConnection(CloseFrame.ABNORMAL_CLOSE, "timed out");
+                webSocketClient.cancel(ABNORMAL_CLOSE, "timed out");
                 return;
             }
 
