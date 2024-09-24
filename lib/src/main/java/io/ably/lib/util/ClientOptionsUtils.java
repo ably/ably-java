@@ -4,7 +4,7 @@ import io.ably.lib.network.ProxyAuthType;
 import io.ably.lib.network.ProxyConfig;
 import io.ably.lib.types.ClientOptions;
 
-import java.util.List;
+import java.util.Arrays;
 
 public class ClientOptionsUtils {
 
@@ -17,8 +17,11 @@ public class ClientOptionsUtils {
             .host(clientOptions.proxy.host)
             .port(clientOptions.proxy.port)
             .username(clientOptions.proxy.username)
-            .password(clientOptions.proxy.password)
-            .nonProxyHosts(List.of(clientOptions.proxy.nonProxyHosts));
+            .password(clientOptions.proxy.password);
+
+        if (clientOptions.proxy.nonProxyHosts != null) {
+            builder.nonProxyHosts(Arrays.asList(clientOptions.proxy.nonProxyHosts));
+        }
 
         switch (clientOptions.proxy.prefAuthType) {
             case BASIC:

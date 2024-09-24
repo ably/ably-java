@@ -2,11 +2,12 @@ package io.ably.lib.http;
 
 import com.google.gson.JsonParseException;
 import io.ably.lib.debug.DebugOptions;
+import io.ably.lib.network.HttpBody;
+import io.ably.lib.network.FailedConnectionException;
 import io.ably.lib.network.HttpEngine;
 import io.ably.lib.network.HttpEngineConfig;
 import io.ably.lib.network.HttpEngineFactory;
 import io.ably.lib.network.HttpRequest;
-import io.ably.lib.network.HttpBody;
 import io.ably.lib.network.HttpResponse;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.transport.Defaults;
@@ -64,8 +65,8 @@ public class HttpCore {
     final Hosts hosts;
     private final Auth auth;
     private final PlatformAgentProvider platformAgentProvider;
-    private HttpAuth proxyAuth;
     private final HttpEngine engine;
+    private HttpAuth proxyAuth;
 
     /*************************
      *     Public API
@@ -202,7 +203,7 @@ public class HttpCore {
      * @return
      * @throws AblyException
      */
-     <T> T httpExecute(URL url, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, boolean withProxyCredentials, ResponseHandler<T> responseHandler) throws AblyException {
+    <T> T httpExecute(URL url, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, boolean withProxyCredentials, ResponseHandler<T> responseHandler) throws AblyException {
         HttpRequest.HttpRequestBuilder requestBuilder = HttpRequest.builder();
         /* prepare connection */
         requestBuilder
@@ -255,7 +256,14 @@ public class HttpCore {
             }
         }
 
-        Response response = executeRequest(request);
+
+        Response response;
+
+        try {
+            response = executeRequest(request);
+        } catch (FailedConnectionException exception) {
+            throw AblyException.fromThrowable(exception);
+        }
 
         if (rawHttpListener != null) {
             rawHttpListener.onRawHttpResponse(id, method, response);
@@ -356,8 +364,8 @@ public class HttpCore {
 
         /* handle error details in header */
         if (error == null) {
-            String errorCodeHeader = response.getHeaderFields("X-Ably-ErrorCode").get(0);
-            String errorMessageHeader = response.getHeaderFields("X-Ably-ErrorMessage").get(0);
+            String errorCodeHeader = response.getHeaderField("X-Ably-ErrorCode");
+            String errorMessageHeader = response.getHeaderField("X-Ably-ErrorMessage");
             if (errorCodeHeader != null) {
                 try {
                     error = new ErrorInfo(errorMessageHeader, response.statusCode, Integer.parseInt(errorCodeHeader));
@@ -501,6 +509,19 @@ public class HttpCore {
             }
 
             return headers.get(name.toLowerCase(Locale.ROOT));
+        }
+
+        public String getHeaderField(String name) {
+            if (headers == null) {
+                return null;
+            }
+
+            List<String> values = headers.get(name.toLowerCase(Locale.ROOT));
+            if (values == null || values.isEmpty()) {
+                return null;
+            }
+
+            return values.get(0);
         }
     }
 

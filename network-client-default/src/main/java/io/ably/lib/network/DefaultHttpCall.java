@@ -4,18 +4,19 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
+import java.net.NoRouteToHostException;
 import java.net.Proxy;
+import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 class DefaultHttpCall implements HttpCall {
-    public static final String CONTENT_LENGTH = "Content-Length";
-    public static final String CONTENT_TYPE = "Content-Type";
-
     private final Proxy proxy;
     private final HttpRequest request;
     private HttpURLConnection connection;
@@ -39,7 +40,9 @@ class DefaultHttpCall implements HttpCall {
             for (Map.Entry<String, List<String>> entry : request.getHeaders().entrySet()) {
                 String headerName = entry.getKey();
                 List<String> values = entry.getValue();
-                values.forEach(headerValue -> connection.setRequestProperty(headerName, headerValue));
+                for (String headerValue : values) {
+                    connection.setRequestProperty(headerName, headerValue);
+                }
             }
 
             /* prepare request body */
@@ -49,8 +52,10 @@ class DefaultHttpCall implements HttpCall {
             }
 
             return readResponse();
+        } catch (ConnectException | SocketTimeoutException | UnknownHostException | NoRouteToHostException fce) {
+            throw new FailedConnectionException(fce);
         } catch (IOException ioe) {
-            throw new HttpConnectionException(ioe);
+            throw new RuntimeException(ioe);
         } finally {
             cancel();
         }
@@ -71,8 +76,6 @@ class DefaultHttpCall implements HttpCall {
         byte[] body = requestBody.getContent();
         int length = body.length;
         connection.setFixedLengthStreamingMode(length);
-        connection.setRequestProperty(CONTENT_TYPE, requestBody.getContentType());
-        connection.setRequestProperty(CONTENT_LENGTH, Integer.toString(length));
         return body;
     }
 

@@ -1,5 +1,6 @@
 package io.ably.lib.types;
 
+import io.ably.lib.network.FailedConnectionException;
 import java.net.ConnectException;
 import java.net.NoRouteToHostException;
 import java.net.SocketTimeoutException;
@@ -50,6 +51,8 @@ public class AblyException extends Exception {
             return (AblyException)t;
         if(t instanceof ConnectException || t instanceof SocketTimeoutException || t instanceof UnknownHostException || t instanceof NoRouteToHostException)
             return new HostFailedException(t, ErrorInfo.fromThrowable(t));
+        if (t instanceof FailedConnectionException)
+            return new HostFailedException(t.getCause(), ErrorInfo.fromThrowable(t.getCause()));
 
         return new AblyException(t, ErrorInfo.fromThrowable(t));
     }

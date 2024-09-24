@@ -3,6 +3,7 @@ package io.ably.lib.network;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 import lombok.Setter;
 
 import java.net.URL;
@@ -15,12 +16,27 @@ import java.util.Map;
 @Setter(AccessLevel.NONE)
 @AllArgsConstructor
 public class HttpRequest {
+
+    public static final String CONTENT_LENGTH = "Content-Length";
+    public static final String CONTENT_TYPE = "Content-Type";
+
     private final URL url;
     private final String method;
     private final int httpOpenTimeout;
     private final int httpReadTimeout;
     private final HttpBody body;
+    @Getter(AccessLevel.NONE)
     private final Map<String, List<String>> headers;
+
+    public Map<String, List<String>> getHeaders() {
+        Map<String, List<String>> headersCopy = new HashMap<>(headers);
+        if (body != null) {
+            int length = body.getContent() == null ? 0 : body.getContent().length;
+            headersCopy.put(CONTENT_TYPE, Collections.singletonList(body.getContentType()));
+            headersCopy.put(CONTENT_LENGTH, Collections.singletonList(Integer.toString(length)));
+        }
+        return headersCopy;
+    }
 
     public static HttpRequestBuilder builder() {
         return new HttpRequestBuilder();

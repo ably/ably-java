@@ -8,7 +8,7 @@ android {
         minSdk = 19
         compileSdk = 30
         buildConfigField("String", "LIBRARY_NAME", "\"android\"")
-        buildConfigField("String", "VERSION", "\"${property("VERSION")}\"")
+        buildConfigField("String", "VERSION", "\"${property("VERSION_NAME")}\"")
         testInstrumentationRunner = "android.support.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments["class"] = "io.ably.lib.test.android.AndroidPushTest"
         testInstrumentationRunnerArguments["timeout_msec"] = "300000"
@@ -49,6 +49,8 @@ dependencies {
     api(libs.gson)
     implementation(libs.bundles.common)
     testImplementation(libs.bundles.tests)
+    implementation(project(":network-client-core"))
+    runtimeOnly(project(":network-client-default"))
     implementation("com.google.firebase:firebase-messaging:22.0.0")
     androidTestImplementation("com.android.support.test:runner:0.5")
     androidTestImplementation("com.android.support.test:rules:0.5")

@@ -14,6 +14,8 @@ java {
 dependencies {
     api(libs.gson)
     implementation(libs.bundles.common)
+    implementation(project(":network-client-core"))
+    runtimeOnly(project(":network-client-default"))
     testImplementation(libs.bundles.tests)
 }
 
@@ -21,7 +23,7 @@ buildConfig {
     useJavaOutput()
     packageName = "io.ably.lib"
     buildConfigField("String", "LIBRARY_NAME", "\"java\"")
-    buildConfigField("String", "VERSION", "\"$version\"")
+    buildConfigField("String", "VERSION", "\"${property("VERSION_NAME")}\"")
 }
 
 sourceSets {
