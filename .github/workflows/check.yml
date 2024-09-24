@@ -12,4 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: ./gradlew checkstyleMain checkstyleTest checkWithCodenarc runUnitTests
+      - name: Set up the JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - run: ./gradlew checkWithCodenarc checkstyleMain checkstyleTest runUnitTests
