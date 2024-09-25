@@ -17,4 +17,9 @@ public class DefaultWebSocketEngine implements WebSocketEngine {
         }
         return client;
     }
+
+    @Override
+    public boolean isSupportPingListener() {
+        return true;
+    }
 }

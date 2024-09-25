@@ -17,6 +17,7 @@ dexmaker = "1.4"
 android-retrostreams = "1.7.4"
 maven-publish = "0.29.0"
 lombok = "8.10"
+okhttp = "4.12.0"
 
 [libraries]
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
@@ -38,6 +39,7 @@ dexmaker = { group = "com.crittercism.dexmaker", name = "dexmaker", version.ref 
 dexmaker-dx = { group = "com.crittercism.dexmaker", name = "dexmaker-dx", version.ref = "dexmaker" }
 dexmaker-mockito = { group = "com.crittercism.dexmaker", name = "dexmaker-mockito", version.ref = "dexmaker" }
 android-retrostreams = { group = "net.sourceforge.streamsupport", name = "android-retrostreams", version.ref = "android-retrostreams" }
+okhttp = { group ="com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 
 [bundles]
 common = ["msgpack", "vcdiff-core"]

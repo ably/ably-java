@@ -1,6 +1,7 @@
 plugins {
     `java-library`
     alias(libs.plugins.lombok)
+    alias(libs.plugins.maven.publish)
 }
 
 java {
