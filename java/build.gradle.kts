@@ -2,8 +2,8 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 plugins {
     id("com.github.gmazzo.buildconfig") version "5.4.0"
-    id("checkstyle")
-    id("java-library")
+    checkstyle
+    `java-library`
 }
 
 java {
@@ -37,6 +37,10 @@ sourceSets {
             srcDirs("src/test/java", "../lib/src/test/java")
         }
     }
+}
+
+tasks.checkstyleMain.configure {
+    exclude("io/ably/lib/BuildConfig.java")
 }
 
 tasks.register<Test>("testRealtimeSuite") {

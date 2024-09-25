@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "io.ably"
+    namespace = "io.ably.lib"
     defaultConfig {
         minSdk = 19
         compileSdk = 30
