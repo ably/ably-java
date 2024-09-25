@@ -51,13 +51,8 @@ dependencies {
     testImplementation(libs.bundles.tests)
     implementation(project(":network-client-core"))
     runtimeOnly(project(":network-client-default"))
-    implementation("com.google.firebase:firebase-messaging:22.0.0")
-    androidTestImplementation("com.android.support.test:runner:0.5")
-    androidTestImplementation("com.android.support.test:rules:0.5")
-    androidTestImplementation("com.crittercism.dexmaker:dexmaker:1.4")
-    androidTestImplementation("com.crittercism.dexmaker:dexmaker-dx:1.4")
-    androidTestImplementation("com.crittercism.dexmaker:dexmaker-mockito:1.4")
-    androidTestImplementation("net.sourceforge.streamsupport:android-retrostreams:1.7.4")
+    implementation(libs.firebase.messaging)
+    androidTestImplementation(libs.bundles.instrumental.android)
 }
 
 configurations {

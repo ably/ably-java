@@ -10,6 +10,11 @@ nanohttpd = "2.3.0"
 mockito = "1.10.19"
 concurrentunit = "0.4.2"
 slf4j = "1.7.30"
+build-config = "5.4.0"
+firebase-messaging = "22.0.0"
+android-test = "0.5"
+dexmaker = "1.4"
+android-retrostreams = "1.7.4"
 
 [libraries]
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
@@ -24,10 +29,19 @@ nanohttpd-websocket = { group = "org.nanohttpd", name = "nanohttpd-websocket", v
 mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockito" }
 concurrentunit = { group = "net.jodah", name = "concurrentunit", version.ref = "concurrentunit" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
+firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging", version.ref = "firebase-messaging" }
+android-test-runner = { group = "com.android.support.test", name = "runner", version.ref = "android-test" }
+android-test-rules = { group = "com.android.support.test", name = "rules", version.ref = "android-test" }
+dexmaker = { group = "com.crittercism.dexmaker", name = "dexmaker", version.ref = "dexmaker" }
+dexmaker-dx = { group = "com.crittercism.dexmaker", name = "dexmaker-dx", version.ref = "dexmaker" }
+dexmaker-mockito = { group = "com.crittercism.dexmaker", name = "dexmaker-mockito", version.ref = "dexmaker" }
+android-retrostreams = { group = "net.sourceforge.streamsupport", name = "android-retrostreams", version.ref = "android-retrostreams" }
 
 [bundles]
 common = ["msgpack", "java-websocket", "vcdiff-core"]
 tests = ["junit","hamcrest-all", "nanohttpd", "nanohttpd-nanolets", "nanohttpd-websocket", "mockito-core", "concurrentunit", "slf4j-simple"]
+instrumental-android = ["android-test-runner", "android-test-rules", "dexmaker", "dexmaker-dx", "dexmaker-mockito", "android-retrostreams"]
 
 [plugins]
 android-library = { id = "com.android.library", version.ref = "agp" }
+build-config = { id = "com.github.gmazzo.buildconfig", version.ref = "build-config" }

@@ -1,7 +1,7 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 plugins {
-    id("com.github.gmazzo.buildconfig") version "5.4.0"
+    alias(libs.plugins.build.config)
     checkstyle
     `java-library`
 }
