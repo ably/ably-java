@@ -20,7 +20,11 @@ dependencies {
     api(libs.gson)
     implementation(libs.bundles.common)
     implementation(project(":network-client-core"))
-    runtimeOnly(project(":network-client-default"))
+    if (findProperty("okhttp") == null) {
+        runtimeOnly(project(":network-client-default"))
+    } else {
+        runtimeOnly(project(":network-client-okhttp"))
+    }
     testImplementation(libs.bundles.tests)
 }
 
