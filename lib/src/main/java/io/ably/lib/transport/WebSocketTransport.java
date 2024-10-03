@@ -61,7 +61,7 @@ public class WebSocketTransport implements ITransport {
         this.connectionManager = connectionManager;
         this.channelBinaryMode = params.options.useBinaryProtocol;
         this.webSocketEngine = createWebSocketEngine(params);
-        params.heartbeats = !this.webSocketEngine.isSupportPingListener();
+        params.heartbeats = !this.webSocketEngine.isPingListenerSupported();
 
     }
 

@@ -26,7 +26,7 @@ public class OkHttpWebSocketEngine implements WebSocketEngine {
     }
 
     @Override
-    public boolean isSupportPingListener() {
+    public boolean isPingListenerSupported() {
         return false;
     }
 }
