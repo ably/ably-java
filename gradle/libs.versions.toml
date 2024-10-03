@@ -18,6 +18,7 @@ android-retrostreams = "1.7.4"
 maven-publish = "0.29.0"
 lombok = "8.10"
 okhttp = "4.12.0"
+test-retry = "1.6.0"
 
 [libraries]
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
@@ -51,3 +52,4 @@ android-library = { id = "com.android.library", version.ref = "agp" }
 build-config = { id = "com.github.gmazzo.buildconfig", version.ref = "build-config" }
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }
 lombok = { id = "io.freefair.lombok", version.ref = "lombok" }
+test-retry = { id = "org.gradle.test-retry", version.ref = "test-retry" }

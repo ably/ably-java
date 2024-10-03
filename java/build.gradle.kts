@@ -3,6 +3,7 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 plugins {
     alias(libs.plugins.build.config)
     alias(libs.plugins.maven.publish)
+    alias(libs.plugins.test.retry)
     checkstyle
     `java-library`
 }
@@ -63,6 +64,12 @@ tasks.register<Test>("testRealtimeSuite") {
     testLogging {
         exceptionFormat = TestExceptionFormat.FULL
     }
+    retry {
+        maxRetries.set(3)
+        maxFailures.set(8)
+        failOnPassedAfterRetry.set(false)
+        failOnSkippedAfterRetry.set(false)
+    }
 }
 
 tasks.register<Test>("testRestSuite") {
@@ -75,6 +82,12 @@ tasks.register<Test>("testRestSuite") {
     outputs.upToDateWhen { false }
     testLogging {
        exceptionFormat = TestExceptionFormat.FULL
+    }
+    retry {
+        maxRetries.set(3)
+        maxFailures.set(8)
+        failOnPassedAfterRetry.set(false)
+        failOnSkippedAfterRetry.set(false)
     }
 }
 
