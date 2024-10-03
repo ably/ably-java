@@ -155,6 +155,7 @@ public class MockWebsocketFactory implements ITransport.Factory {
             super(transformedTransportParams, connectionManager);
             this.givenTransportParams = givenTransportParams;
             this.transformedTransportParams = transformedTransportParams;
+            turnOffActivityCheckIfPingListenerIsNotSupported();
         }
 
         public List<ProtocolMessage> getSentMessages() {

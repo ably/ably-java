@@ -52,6 +52,7 @@ public class WebSocketTransport implements ITransport {
     private ConnectListener connectListener;
     private WebSocketClient webSocketClient;
     private final WebSocketEngine webSocketEngine;
+    private boolean activityCheckTurnedOff = false;
 
     /******************
      * protected constructor
@@ -171,6 +172,16 @@ public class WebSocketTransport implements ITransport {
 
     protected void preProcessReceivedMessage(ProtocolMessage message) {
         //Gives the chance to child classes to do message pre-processing
+    }
+
+    /**
+     * Visible For Testing
+     * </p>
+     * We need to turn off activity check for some tests (e.g. io.ably.lib.test.realtime.RealtimeConnectFailTest.disconnect_retry_channel_timeout_jitter_after_consistent_detach[binary_protocol])
+     * Those tests expects that activity checks are passing, but protocol messages are not coming
+     */
+    protected void turnOffActivityCheckIfPingListenerIsNotSupported() {
+        if (!webSocketEngine.isPingListenerSupported()) activityCheckTurnedOff = true;
     }
 
     public String toString() {
@@ -319,7 +330,7 @@ public class WebSocketTransport implements ITransport {
         private synchronized void flagActivity() {
             lastActivityTime = System.currentTimeMillis();
             connectionManager.setLastActivity(lastActivityTime);
-            if (activityTimerTask == null && connectionManager.maxIdleInterval != 0) {
+            if (activityTimerTask == null && connectionManager.maxIdleInterval != 0 && !activityCheckTurnedOff) {
                 /* No timer currently running because previously there was no
                  * maxIdleInterval configured, but now there is a
                  * maxIdleInterval configured.  Call checkActivity so a timer
