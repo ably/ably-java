@@ -7,7 +7,7 @@ android {
     namespace = "io.ably.lib"
     defaultConfig {
         minSdk = 19
-        compileSdk = 30
+        compileSdk = 34
         buildConfigField("String", "LIBRARY_NAME", "\"android\"")
         buildConfigField("String", "VERSION", "\"${property("VERSION_NAME")}\"")
         testInstrumentationRunner = "android.support.test.runner.AndroidJUnitRunner"
@@ -35,7 +35,7 @@ android {
         abortOnError = false
     }
 
-    testOptions.targetSdk = 30
+    testOptions.targetSdk = 34
 
     sourceSets {
         getByName("main") {

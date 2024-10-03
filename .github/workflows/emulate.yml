@@ -35,7 +35,8 @@ jobs:
           api-level: ${{ matrix.android-api-level }}
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: ./gradlew :android:connectedAndroidTest
+          # Print emulator logs if tests fail
+          script: ./gradlew :android:connectedAndroidTest || (adb logcat -d System.out:I && exit 1)
 
       - uses: actions/upload-artifact@v3
         if: always()

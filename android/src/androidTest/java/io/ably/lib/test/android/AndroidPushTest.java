@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
 import android.preference.PreferenceManager;
+import android.support.test.filters.SdkSuppress;
 import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -41,6 +42,7 @@ import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Channel;
 import io.ably.lib.rest.DeviceDetails;
+import io.ably.lib.test.RetryTestRule;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.Helpers.AsyncWaiter;
 import io.ably.lib.test.common.Helpers.CompletionWaiter;
@@ -60,6 +62,7 @@ import java9.util.stream.StreamSupport;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -80,11 +83,13 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
 @RunWith(AndroidJUnit4.class)
 public class AndroidPushTest {
     private static final int TIMEOUT_SECONDS = 30;
+
+    @Rule
+    public RetryTestRule retryRule = new RetryTestRule(2);
 
     private class TestActivation {
         private Helpers.RawHttpTracker httpTracker;
@@ -975,8 +980,8 @@ public class AndroidPushTest {
 
     // RSH3d3
     @Test
+    @SdkSuppress(minSdkVersion = 21)
     public void WaitingForNewPushDeviceDetails_on_GotPushDeviceDetails() throws Exception {
-        assumeTrue("Can only run on API Level 21 or newer because HttpURLConnection does not support PATCH", Build.VERSION.SDK_INT >= 21);
         new UpdateRegistrationTest() {
             @Override
             protected void setUpMachineState(TestCase testCase) throws AblyException {
@@ -1435,6 +1440,7 @@ public class AndroidPushTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = 21)
     public void Realtime_push_interface() throws Exception {
         AblyRealtime realtime = new AblyRealtime(new ClientOptions() {{
             autoConnect = false;
