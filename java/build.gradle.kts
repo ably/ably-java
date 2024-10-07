@@ -19,6 +19,8 @@ tasks.withType<Jar> {
 dependencies {
     api(libs.gson)
     implementation(libs.bundles.common)
+    implementation(project(":network-client-core"))
+    runtimeOnly(project(":network-client-default"))
     testImplementation(libs.bundles.tests)
 }
 

@@ -3,7 +3,6 @@ package io.ably.lib.test.common;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +34,7 @@ import io.ably.lib.debug.DebugOptions.RawHttpListener;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
+import io.ably.lib.network.HttpRequest;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.Channel.MessageListener;
@@ -972,7 +972,6 @@ public class Helpers {
     public static class RawHttpRequest {
         public String id;
         public URL url;
-        public HttpURLConnection conn;
         public String method;
         public String authHeader;
         public Map<String, List<String>> requestHeaders;
@@ -988,7 +987,7 @@ public class Helpers {
         private AsyncWaiter<RawHttpRequest> requestWaiter = null;
 
         @Override
-        public HttpCore.Response onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders,
+        public HttpCore.Response onRawHttpRequest(String id, HttpRequest request, String authHeader, Map<String, List<String>> requestHeaders,
                                                   HttpCore.RequestBody requestBody) {
 
             /* duplicating if necessary, ensure lower-case versions of header names are present */
@@ -1001,9 +1000,8 @@ public class Helpers {
             }
             RawHttpRequest req = new RawHttpRequest();
             req.id = id;
-            req.url = conn.getURL();
-            req.conn = conn;
-            req.method = method;
+            req.url = request.getUrl();
+            req.method = request.getMethod();
             req.authHeader = authHeader;
             req.requestHeaders = normalisedHeaders;
             req.requestBody = requestBody;
@@ -1076,7 +1074,7 @@ public class Helpers {
             String result = null;
             RawHttpRequest req = get(id);
             if(req != null) {
-                String query = req.conn.getURL().getQuery();
+                String query = req.url.getQuery();
                 if(query != null && !query.isEmpty()) {
                     result = HttpUtils.decodeParams(query).get(param).value;
                 }

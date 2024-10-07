@@ -35,6 +35,34 @@ The Android-specific library AAR is built with:
 
 (The `ANDROID_HOME` environment variable must be set appropriately.)
 
+## Adding a New Network Engine Implementation
+
+Currently, `ably-java` supports two different engines for network operations (HTTP calls and WebSocket connections):
+
+- **Default Engine**: Utilizes the built-in `HttpUrlConnection` for HTTP calls and the TooTallNate/Java-WebSocket library for WebSocket connections.
+- **OkHttp Engine**: Utilizes the OkHttp library for both HTTP and WebSocket connections.
+
+These engines are designed to be swappable. By default, the library comes with the default engine, but you can easily replace it with the OkHttp engine:
+
+```kotlin
+implementation("io.ably:ably-java:$ABLY_VERSION") {
+    exclude(group = "io.ably", module = "network-client-default")
+}
+runtimeOnly("io.ably:network-client-okhttp:$ABLY_VERSION")
+```
+
+### How to Add a New Network Engine
+
+To add a new network engine, follow these steps:
+
+1. **Implement the interfaces**:
+  - Implement the `HttpEngineFactory` and `WebSocketEngineFactory` interfaces for your custom engine.
+
+2. **Register the engine**:
+  - Modify the `getFirstAvailable()` methods in these interfaces to include your new implementation.
+
+Once done, your custom network engine will be available for use within `ably-java`.
+
 ### Code Standard
 
 #### Checkstyle

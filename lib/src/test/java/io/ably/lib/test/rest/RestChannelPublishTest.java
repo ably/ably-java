@@ -2,6 +2,7 @@ package io.ably.lib.test.rest;
 
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.http.HttpCore;
+import io.ably.lib.network.HttpRequest;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Channel;
@@ -19,7 +20,6 @@ import io.ably.lib.types.Param;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -135,10 +135,10 @@ public class RestChannelPublishTest extends ParameterizedTest {
             opts.useBinaryProtocol = true;
             opts.httpListener = new DebugOptions.RawHttpListener() {
                 @Override
-                public HttpCore.Response onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
+                public HttpCore.Response onRawHttpRequest(String id, HttpRequest request, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
                     /* verify request body contains the supplied ids */
                     try {
-                        if(method.equalsIgnoreCase("POST")) {
+                        if(request.getMethod().equalsIgnoreCase("POST")) {
                             Message[] requestedMessages = MessageSerializer.readMsgpack(requestBody.getEncoded());
                             assertEquals(requestedMessages[0].id, messageWithId.id);
                         }
@@ -196,10 +196,10 @@ public class RestChannelPublishTest extends ParameterizedTest {
             opts.useBinaryProtocol = true;
             opts.httpListener = new DebugOptions.RawHttpListener() {
                 @Override
-                public HttpCore.Response onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
+                public HttpCore.Response onRawHttpRequest(String id, HttpRequest request, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
                     /* verify request body contains the supplied ids */
                     try {
-                        if(method.equalsIgnoreCase("POST")) {
+                        if(request.getMethod().equalsIgnoreCase("POST")) {
                             Message[] requestedMessages = MessageSerializer.readMsgpack(requestBody.getEncoded());
                             assertEquals(requestedMessages[0].id, messageWithId0.id);
                             assertEquals(requestedMessages[1].id, messageWithId1.id);
@@ -254,10 +254,10 @@ public class RestChannelPublishTest extends ParameterizedTest {
         }
 
         @Override
-        public HttpCore.Response onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
+        public HttpCore.Response onRawHttpRequest(String id, HttpRequest request, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
             /* verify request body contains the supplied ids */
             try {
-                if(method.equalsIgnoreCase("POST")) {
+                if(request.getMethod().equalsIgnoreCase("POST")) {
                     ++postRequestCount;
                     Message[] requestedMessages = MessageSerializer.readMsgpack(requestBody.getEncoded());
                     if(expectedId != null) {
@@ -343,10 +343,10 @@ public class RestChannelPublishTest extends ParameterizedTest {
             opts.useBinaryProtocol = true;
             opts.httpListener = new DebugOptions.RawHttpListener() {
                 @Override
-                public HttpCore.Response onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
+                public HttpCore.Response onRawHttpRequest(String id, HttpRequest request, String authHeader, Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
                     /* verify request body contains the library-generated ids */
                     try {
-                        if(method.equalsIgnoreCase("POST")) {
+                        if(request.getMethod().equalsIgnoreCase("POST")) {
                             Message[] requestedMessages = MessageSerializer.readMsgpack(requestBody.getEncoded());
                             assertTrue(requestedMessages[0].id.endsWith(":0"));
                             assertTrue(requestedMessages[1].id.endsWith(":1"));

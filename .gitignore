@@ -8,3 +8,5 @@ bin/
 .project
 
 local.properties
+
+lombok.config

@@ -16,6 +16,7 @@ android-test = "0.5"
 dexmaker = "1.4"
 android-retrostreams = "1.7.4"
 maven-publish = "0.29.0"
+lombok = "8.10"
 
 [libraries]
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
@@ -39,7 +40,7 @@ dexmaker-mockito = { group = "com.crittercism.dexmaker", name = "dexmaker-mockit
 android-retrostreams = { group = "net.sourceforge.streamsupport", name = "android-retrostreams", version.ref = "android-retrostreams" }
 
 [bundles]
-common = ["msgpack", "java-websocket", "vcdiff-core"]
+common = ["msgpack", "vcdiff-core"]
 tests = ["junit","hamcrest-all", "nanohttpd", "nanohttpd-nanolets", "nanohttpd-websocket", "mockito-core", "concurrentunit", "slf4j-simple"]
 instrumental-android = ["android-test-runner", "android-test-rules", "dexmaker", "dexmaker-dx", "dexmaker-mockito", "android-retrostreams"]
 
@@ -47,3 +48,4 @@ instrumental-android = ["android-test-runner", "android-test-rules", "dexmaker",
 android-library = { id = "com.android.library", version.ref = "agp" }
 build-config = { id = "com.github.gmazzo.buildconfig", version.ref = "build-config" }
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }
+lombok = { id = "io.freefair.lombok", version.ref = "lombok" }

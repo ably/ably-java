@@ -36,7 +36,6 @@ import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.Proxy;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -137,12 +136,12 @@ public class HttpTest {
             List<String> urlArgumentStack;
 
             @Override
-            public <T> T httpExecute(URL url, Proxy proxy, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler<T> responseHandler) throws AblyException {
+            public <T> T httpExecute(URL url, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler<T> responseHandler) throws AblyException {
                 // Store a copy of given argument
                 urlArgumentStack.add(url.getHost());
 
                 // Execute the original method without changing behavior
-                return super.httpExecute(url, proxy, method, headers, requestBody, withCredentials, responseHandler);
+                return super.httpExecute(url, method, headers, requestBody, withCredentials, responseHandler);
             }
 
             public HttpCore setUrlArgumentStack(List<String> urlArgumentStack) {
@@ -273,7 +272,6 @@ public class HttpTest {
                 .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
                 .httpExecute(
                         url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid fallback url */
-                        any(Proxy.class), /* Ignore */
                         anyString(), /* Ignore */
                         aryEq(new Param[0]), /* Ignore */
                         any(HttpCore.RequestBody.class), /* Ignore */
@@ -316,7 +314,6 @@ public class HttpTest {
         verify(httpCore, times(3))
                 .httpExecute( /* Just validating call counter. Ignore following parameters */
                         any(URL.class), /* Ignore */
-                        any(Proxy.class), /* Ignore */
                         anyString(), /* Ignore */
                         aryEq(new Param[0]), /* Ignore */
                         any(HttpCore.RequestBody.class), /* Ignore */
@@ -362,7 +359,6 @@ public class HttpTest {
                 .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
                 .httpExecute(
                         url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid fallback url */
-                        any(Proxy.class), /* Ignore */
                         anyString(), /* Ignore */
                         aryEq(new Param[0]), /* Ignore */
                         any(HttpCore.RequestBody.class), /* Ignore */
@@ -414,7 +410,6 @@ public class HttpTest {
         verify(httpCore, times(2))
                 .httpExecute( /* Just validating call counter. Ignore following parameters */
                         any(URL.class), /* Ignore */
-                        any(Proxy.class), /* Ignore */
                         anyString(), /* Ignore */
                         aryEq(new Param[0]), /* Ignore */
                         any(HttpCore.RequestBody.class), /* Ignore */
@@ -458,7 +453,6 @@ public class HttpTest {
                 .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
                 .httpExecute(
                         url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid fallback url */
-                        any(Proxy.class), /* Ignore */
                         anyString(), /* Ignore */
                         aryEq(new Param[0]), /* Ignore */
                         any(HttpCore.RequestBody.class), /* Ignore */
@@ -488,7 +482,6 @@ public class HttpTest {
         verify(httpCore, times(1))
                 .httpExecute( /* Just validating call counter. Ignore following parameters */
                         any(URL.class), /* Ignore */
-                        any(Proxy.class), /* Ignore */
                         anyString(), /* Ignore */
                         aryEq(new Param[0]), /* Ignore */
                         any(HttpCore.RequestBody.class), /* Ignore */
@@ -536,7 +529,6 @@ public class HttpTest {
                 .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
                 .httpExecute(
                         url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid fallback url */
-                        any(Proxy.class), /* Ignore */
                         anyString(), /* Ignore */
                         aryEq(new Param[0]), /* Ignore */
                         any(HttpCore.RequestBody.class), /* Ignore */
@@ -559,7 +551,6 @@ public class HttpTest {
         verify(httpCore, times(expectedCallCount))
                 .httpExecute( /* Just validating call counter. Ignore following parameters */
                         any(URL.class), /* Ignore */
-                        any(Proxy.class), /* Ignore */
                         anyString(), /* Ignore */
                         aryEq(new Param[0]), /* Ignore */
                         any(HttpCore.RequestBody.class), /* Ignore */
@@ -664,7 +655,6 @@ public class HttpTest {
                 .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
                 .httpExecute(
                         url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
                         anyString(), /* Ignore */
                         aryEq(new Param[0]), /* Ignore */
                         any(HttpCore.RequestBody.class), /* Ignore */
@@ -691,7 +681,6 @@ public class HttpTest {
         verify(httpCore, times(1))
                 .httpExecute( /* Just validating call counter. Ignore following parameters */
                         url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
                         anyString(), /* Ignore */
                         aryEq(new Param[0]), /* Ignore */
                         any(HttpCore.RequestBody.class), /* Ignore */
@@ -733,7 +722,6 @@ public class HttpTest {
                 .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
                 .httpExecute(
                         url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
                         anyString(), /* Ignore */
                         aryEq(new Param[0]), /* Ignore */
                         any(HttpCore.RequestBody.class), /* Ignore */
@@ -762,7 +750,6 @@ public class HttpTest {
         verify(httpCore, times(2))
                 .httpExecute( /* Just validating call counter. Ignore following parameters */
                         url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
                         anyString(), /* Ignore */
                         aryEq(new Param[0]), /* Ignore */
                         any(HttpCore.RequestBody.class), /* Ignore */
@@ -804,7 +791,6 @@ public class HttpTest {
                 .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
                 .httpExecute(
                         url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
                         anyString(), /* Ignore */
                         aryEq(new Param[0]), /* Ignore */
                         any(HttpCore.RequestBody.class), /* Ignore */
@@ -841,7 +827,6 @@ public class HttpTest {
         verify(httpCore, times(3))
                 .httpExecute( /* Just validating call counter. Ignore following parameters */
                         url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
                         anyString(), /* Ignore */
                         aryEq(new Param[0]), /* Ignore */
                         any(HttpCore.RequestBody.class), /* Ignore */
@@ -883,7 +868,6 @@ public class HttpTest {
                 .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
                 .httpExecute(
                         url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
                         anyString(), /* Ignore */
                         aryEq(new Param[0]), /* Ignore */
                         any(HttpCore.RequestBody.class), /* Ignore */
@@ -915,7 +899,6 @@ public class HttpTest {
                 .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
                 .httpExecute(
                         url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
                         anyString(), /* Ignore */
                         aryEq(new Param[0]), /* Ignore */
                         any(HttpCore.RequestBody.class), /* Ignore */
@@ -970,7 +953,6 @@ public class HttpTest {
                 .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
                 .httpExecute(
                         url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
                         anyString(), /* Ignore */
                         aryEq(new Param[0]), /* Ignore */
                         any(HttpCore.RequestBody.class), /* Ignore */
@@ -1007,7 +989,6 @@ public class HttpTest {
                 .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
                 .httpExecute(
                         url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
                         anyString(), /* Ignore */
                         aryEq(new Param[0]), /* Ignore */
                         any(HttpCore.RequestBody.class), /* Ignore */
@@ -1061,7 +1042,6 @@ public class HttpTest {
                 .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
                 .httpExecute(
                         url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
                         anyString(), /* Ignore */
                         aryEq(new Param[0]), /* Ignore */
                         any(HttpCore.RequestBody.class), /* Ignore */
@@ -1092,7 +1072,6 @@ public class HttpTest {
                 .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
                 .httpExecute(
                         url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
                         anyString(), /* Ignore */
                         aryEq(new Param[0]), /* Ignore */
                         any(HttpCore.RequestBody.class), /* Ignore */
@@ -1145,7 +1124,6 @@ public class HttpTest {
                 .when(httpCore) /* when following method is executed on {@code HttpCore} instance */
                 .httpExecute(
                         url.capture(), /* capture url arguments passed down httpExecute to assert fallback behavior executed with valid rest host */
-                        any(Proxy.class), /* Ignore */
                         anyString(), /* Ignore */
                         aryEq(new Param[0]), /* Ignore */
                         any(HttpCore.RequestBody.class), /* Ignore */

@@ -5,6 +5,7 @@ import fi.iki.elonen.router.RouterNanoHTTPD;
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.http.HttpConstants;
 import io.ably.lib.http.HttpCore;
+import io.ably.lib.network.HttpRequest;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.rest.Auth.AuthMethod;
@@ -33,7 +34,6 @@ import org.junit.rules.Timeout;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
@@ -1378,7 +1378,7 @@ public class RestAuthTest extends ParameterizedTest {
             DebugOptions options = new DebugOptions(testVars.keys[0].keyStr) {{
                 this.httpListener = new RawHttpListener() {
                     @Override
-                    public HttpCore.Response onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader,
+                    public HttpCore.Response onRawHttpRequest(String id, HttpRequest request, String authHeader,
                                                               Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
                         try {
                             if(testParams.useBinaryProtocol) {
@@ -1443,7 +1443,7 @@ public class RestAuthTest extends ParameterizedTest {
             DebugOptions options = new DebugOptions(testVars.keys[0].keyStr) {{
                 this.httpListener = new RawHttpListener() {
                     @Override
-                    public HttpCore.Response onRawHttpRequest(String id, HttpURLConnection conn, String method, String authHeader,
+                    public HttpCore.Response onRawHttpRequest(String id, HttpRequest request, String authHeader,
                                                               Map<String, List<String>> requestHeaders, HttpCore.RequestBody requestBody) {
                         try {
                             if(testParams.useBinaryProtocol) {
