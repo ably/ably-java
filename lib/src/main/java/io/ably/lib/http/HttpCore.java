@@ -1,21 +1,6 @@
 package io.ably.lib.http;
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.lang.reflect.Field;
-import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
 import com.google.gson.JsonParseException;
-
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.debug.DebugOptions.RawHttpListener;
 import io.ably.lib.rest.Auth;
@@ -32,10 +17,55 @@ import io.ably.lib.util.Base64Coder;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.reflect.Field;
+import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
 /**
  * HttpCore performs authenticated HTTP synchronously. Internal; use Http or HttpScheduler instead.
  */
 public class HttpCore {
+
+    private static final String TAG = HttpCore.class.getName();
+
+    /*************************
+     *     Private state
+     *************************/
+
+    static {
+        /* if on Android, check version */
+        Field androidVersionField = null;
+        int androidVersion = 0;
+        try {
+            androidVersionField = Class.forName("android.os.Build$VERSION").getField("SDK_INT");
+            androidVersion = androidVersionField.getInt(androidVersionField);
+        } catch (Exception e) {
+        }
+        if (androidVersionField != null && androidVersion < 8) {
+            /* HTTP connection reuse which was buggy pre-froyo */
+            System.setProperty("httpCore.keepAlive", "false");
+        }
+    }
+
+    public final String scheme;
+    public final int port;
+    final ClientOptions options;
+    final Hosts hosts;
+    private final Auth auth;
+    private final ProxyOptions proxyOptions;
+    private final PlatformAgentProvider platformAgentProvider;
+    private HttpAuth proxyAuth;
+    private Proxy proxy = Proxy.NO_PROXY;
 
     /*************************
      *     Public API
@@ -50,16 +80,22 @@ public class HttpCore {
         this.hosts = new Hosts(options.restHost, Defaults.HOST_REST, options);
 
         this.proxyOptions = options.proxy;
-        if(proxyOptions != null) {
+        if (proxyOptions != null) {
             String proxyHost = proxyOptions.host;
-            if(proxyHost == null) { throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy host", 40000, 400)); }
+            if (proxyHost == null) {
+                throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy host", 40000, 400));
+            }
             int proxyPort = proxyOptions.port;
-            if(proxyPort == 0) { throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy port", 40000, 400)); }
+            if (proxyPort == 0) {
+                throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy port", 40000, 400));
+            }
             this.proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
             String proxyUser = proxyOptions.username;
-            if(proxyUser != null) {
+            if (proxyUser != null) {
                 String proxyPassword = proxyOptions.password;
-                if(proxyPassword == null) { throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy password", 40000, 400)); }
+                if (proxyPassword == null) {
+                    throw AblyException.fromErrorInfo(new ErrorInfo("Unable to configure proxy without proxy password", 40000, 400));
+                }
                 proxyAuth = new HttpAuth(proxyUser, proxyPassword, proxyOptions.prefAuthType);
             }
         }
@@ -67,6 +103,7 @@ public class HttpCore {
 
     /**
      * Make a synchronous HTTP request specified by URL and proxy, retrying if necessary on WWW-Authenticate
+     *
      * @param url
      * @param method
      * @param headers
@@ -77,21 +114,21 @@ public class HttpCore {
      */
     public <T> T httpExecuteWithRetry(URL url, String method, Param[] headers, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean requireAblyAuth) throws AblyException {
         boolean renewPending = true, proxyAuthPending = true;
-        if(requireAblyAuth) {
+        if (requireAblyAuth) {
             authorize(false);
         }
-        while(true) {
+        while (true) {
             try {
                 return httpExecute(url, getProxy(url), method, headers, requestBody, true, responseHandler);
-            } catch(AuthRequiredException are) {
-                if(are.authChallenge != null && requireAblyAuth) {
-                    if(are.expired && renewPending) {
+            } catch (AuthRequiredException are) {
+                if (are.authChallenge != null && requireAblyAuth) {
+                    if (are.expired && renewPending) {
                         authorize(true);
                         renewPending = false;
                         continue;
                     }
                 }
-                if(are.proxyAuthChallenge != null && proxyAuthPending && proxyAuth != null) {
+                if (are.proxyAuthChallenge != null && proxyAuthPending && proxyAuth != null) {
                     proxyAuth.processAuthenticateHeaders(are.proxyAuthChallenge);
                     proxyAuthPending = false;
                     continue;
@@ -102,22 +139,21 @@ public class HttpCore {
     }
 
     /**
+     * Gets host for this HTTP client
+     *
+     * @return
+     */
+    public String getPreferredHost() {
+        return hosts.getPreferredHost();
+    }
+
+    /**
      * Sets host for this HTTP client
      *
      * @param host URL string
      */
     public void setPreferredHost(String host) {
         hosts.setPreferredHost(host, false);
-    }
-
-    /**
-     * Gets host for this HTTP client
-     *
-     * @return
-
-     */
-    public String getPreferredHost() {
-        return hosts.getPreferredHost();
     }
 
     /**
@@ -139,6 +175,7 @@ public class HttpCore {
 
     /**
      * Make a synchronous HTTP request specified by URL and proxy
+     *
      * @param url
      * @param proxy
      * @param method
@@ -152,13 +189,13 @@ public class HttpCore {
     public <T> T httpExecute(URL url, Proxy proxy, String method, Param[] headers, RequestBody requestBody, boolean withCredentials, ResponseHandler<T> responseHandler) throws AblyException {
         HttpURLConnection conn = null;
         try {
-            conn = (HttpURLConnection)url.openConnection(proxy);
+            conn = (HttpURLConnection) url.openConnection(proxy);
             boolean withProxyCredentials = (proxy != Proxy.NO_PROXY) && (proxyAuth != null);
             return httpExecute(conn, method, headers, requestBody, withCredentials, withProxyCredentials, responseHandler);
-        } catch(IOException ioe) {
+        } catch (IOException ioe) {
             throw AblyException.fromThrowable(ioe);
         } finally {
-            if(conn != null) {
+            if (conn != null) {
                 conn.disconnect();
             }
         }
@@ -166,6 +203,7 @@ public class HttpCore {
 
     /**
      * Make a synchronous HTTP request with a given HttpURLConnection
+     *
      * @param conn
      * @param method
      * @param headers
@@ -191,32 +229,37 @@ public class HttpCore {
             if (authHeader == null && auth != null) {
                 authHeader = auth.getAuthorizationHeader();
             }
-            if(withCredentials && authHeader != null) {
+            if (withCredentials && authHeader != null) {
                 conn.setRequestProperty(HttpConstants.Headers.AUTHORIZATION, authHeader);
                 credentialsIncluded = true;
             }
-            if(withProxyCredentials && proxyAuth.hasChallenge()) {
+            if (withProxyCredentials && proxyAuth.hasChallenge()) {
                 byte[] encodedRequestBody = (requestBody != null) ? requestBody.getEncoded() : null;
                 String proxyAuthorizationHeader = proxyAuth.getAuthorizationHeader(method, conn.getURL().getPath(), encodedRequestBody);
                 conn.setRequestProperty(HttpConstants.Headers.PROXY_AUTHORIZATION, proxyAuthorizationHeader);
             }
             boolean acceptSet = false;
-            if(headers != null) {
-                for(Param header: headers) {
+            if (headers != null) {
+                for (Param header : headers) {
                     conn.setRequestProperty(header.key, header.value);
-                    if(header.key.equals(HttpConstants.Headers.ACCEPT)) { acceptSet = true; }
+                    if (header.key.equals(HttpConstants.Headers.ACCEPT)) {
+                        acceptSet = true;
+                    }
                 }
             }
-            if(!acceptSet) { conn.setRequestProperty(HttpConstants.Headers.ACCEPT, HttpConstants.ContentTypes.JSON); }
+            if (!acceptSet) {
+                conn.setRequestProperty(HttpConstants.Headers.ACCEPT, HttpConstants.ContentTypes.JSON);
+            }
 
             /* pass required headers */
             conn.setRequestProperty(Defaults.ABLY_PROTOCOL_VERSION_HEADER, Defaults.ABLY_PROTOCOL_VERSION); // RSC7a
             conn.setRequestProperty(Defaults.ABLY_AGENT_HEADER, AgentHeaderCreator.create(options.agents, platformAgentProvider));
-            if (options.clientId != null) conn.setRequestProperty(Defaults.ABLY_CLIENT_ID_HEADER, Base64Coder.encodeString(options.clientId));
+            if (options.clientId != null)
+                conn.setRequestProperty(Defaults.ABLY_CLIENT_ID_HEADER, Base64Coder.encodeString(options.clientId));
 
             /* prepare request body */
             byte[] body = null;
-            if(requestBody != null) {
+            if (requestBody != null) {
                 body = prepareRequestBody(requestBody, conn);
                 // Check the logging level to avoid performance hit associated with building the message
                 if (Log.level <= Log.VERBOSE)
@@ -235,9 +278,9 @@ public class HttpCore {
                         Log.v(TAG, "  " + entry.getKey() + ": " + val);
             }
 
-            if(options instanceof DebugOptions) {
-                rawHttpListener = ((DebugOptions)options).httpListener;
-                if(rawHttpListener != null) {
+            if (options instanceof DebugOptions) {
+                rawHttpListener = ((DebugOptions) options).httpListener;
+                if (rawHttpListener != null) {
                     id = String.valueOf(Math.random()).substring(2);
                     response = rawHttpListener.onRawHttpRequest(id, conn, method, (credentialsIncluded ? authHeader : null), requestProperties, requestBody);
                     if (response != null) {
@@ -247,15 +290,15 @@ public class HttpCore {
             }
 
             /* send request body */
-            if(requestBody != null) {
+            if (requestBody != null) {
                 writeRequestBody(body, conn);
             }
             response = readResponse(conn);
-            if(rawHttpListener != null) {
+            if (rawHttpListener != null) {
                 rawHttpListener.onRawHttpResponse(id, method, response);
             }
-        } catch(IOException ioe) {
-            if(rawHttpListener != null) {
+        } catch (IOException ioe) {
+            if (rawHttpListener != null) {
                 rawHttpListener.onRawHttpException(id, method, ioe);
             }
             throw AblyException.fromThrowable(ioe);
@@ -266,6 +309,7 @@ public class HttpCore {
 
     /**
      * Handle HTTP response
+     *
      * @param conn
      * @param credentialsIncluded
      * @param response
@@ -278,19 +322,19 @@ public class HttpCore {
             return null;
         }
 
-        if (response.statusCode >=500 && response.statusCode <= 504) {
+        if (response.statusCode >= 500 && response.statusCode <= 504) {
             ErrorInfo error = ErrorInfo.fromResponseStatus(response.statusLine, response.statusCode);
             throw AblyException.fromErrorInfo(error);
         }
 
-        if(response.statusCode >= 200 && response.statusCode < 300) {
+        if (response.statusCode >= 200 && response.statusCode < 300) {
             return (responseHandler != null) ? responseHandler.handleResponse(response, null) : null;
         }
 
         /* get any in-body error details */
         ErrorInfo error = null;
-        if(response.body != null && response.body.length > 0) {
-            if(response.contentType != null && response.contentType.contains("msgpack")) {
+        if (response.body != null && response.body.length > 0) {
+            if (response.contentType != null && response.contentType.contains("msgpack")) {
                 try {
                     error = ErrorInfo.fromMsgpackBody(response.body);
                 } catch (IOException e) {
@@ -302,10 +346,10 @@ public class HttpCore {
                 String bodyText = new String(response.body);
                 try {
                     ErrorResponse errorResponse = ErrorResponse.fromJSON(bodyText);
-                    if(errorResponse != null) {
+                    if (errorResponse != null) {
                         error = errorResponse.error;
                     }
-                } catch(JsonParseException jse) {
+                } catch (JsonParseException jse) {
                     /* error pages aren't necessarily going to satisfy our Accept criteria ... */
                     System.err.println("Error message in unexpected format: " + bodyText);
                 }
@@ -313,50 +357,53 @@ public class HttpCore {
         }
 
         /* handle error details in header */
-        if(error == null) {
+        if (error == null) {
             String errorCodeHeader = conn.getHeaderField("X-Ably-ErrorCode");
             String errorMessageHeader = conn.getHeaderField("X-Ably-ErrorMessage");
-            if(errorCodeHeader != null) {
+            if (errorCodeHeader != null) {
                 try {
                     error = new ErrorInfo(errorMessageHeader, response.statusCode, Integer.parseInt(errorCodeHeader));
-                } catch(NumberFormatException e) {}
+                } catch (NumberFormatException e) {
+                }
             }
         }
 
         /* handle www-authenticate */
-        if(response.statusCode == 401) {
+        if (response.statusCode == 401) {
             boolean stale = (error != null && error.code == 40140);
             List<String> wwwAuthHeaders = response.getHeaderFields(HttpConstants.Headers.WWW_AUTHENTICATE);
-            if(wwwAuthHeaders != null && wwwAuthHeaders.size() > 0) {
+            if (wwwAuthHeaders != null && wwwAuthHeaders.size() > 0) {
                 Map<HttpAuth.Type, String> headersByType = HttpAuth.sortAuthenticateHeaders(wwwAuthHeaders);
                 String tokenHeader = headersByType.get(HttpAuth.Type.X_ABLY_TOKEN);
-                if(tokenHeader != null) { stale |= (tokenHeader.indexOf("stale") > -1); }
+                if (tokenHeader != null) {
+                    stale |= (tokenHeader.indexOf("stale") > -1);
+                }
                 AuthRequiredException exception = new AuthRequiredException(null, error);
                 exception.authChallenge = headersByType;
-                if(stale) {
+                if (stale) {
                     exception.expired = true;
                     throw exception;
                 }
-                if(!credentialsIncluded) {
+                if (!credentialsIncluded) {
                     throw exception;
                 }
             }
         }
         /* handle proxy-authenticate */
-        if(response.statusCode == 407) {
+        if (response.statusCode == 407) {
             List<String> proxyAuthHeaders = response.getHeaderFields(HttpConstants.Headers.PROXY_AUTHENTICATE);
-            if(proxyAuthHeaders != null && proxyAuthHeaders.size() > 0) {
+            if (proxyAuthHeaders != null && proxyAuthHeaders.size() > 0) {
                 AuthRequiredException exception = new AuthRequiredException(null, error);
                 exception.proxyAuthChallenge = HttpAuth.sortAuthenticateHeaders(proxyAuthHeaders);
                 throw exception;
             }
         }
-        if(error == null) {
+        if (error == null) {
             error = ErrorInfo.fromResponseStatus(response.statusLine, response.statusCode);
         } else {
         }
-        Log.e(TAG, "Error response from server: err = " + error.toString());
-        if(responseHandler != null) {
+        Log.e(TAG, "Error response from server: err = " + error);
+        if (responseHandler != null) {
             return responseHandler.handleResponse(response, error);
         }
         throw AblyException.fromErrorInfo(error);
@@ -364,6 +411,7 @@ public class HttpCore {
 
     /**
      * Emit the request body for an HTTP request
+     *
      * @param requestBody
      * @param conn
      * @return body
@@ -386,6 +434,7 @@ public class HttpCore {
 
     /**
      * Read the response for an HTTP request
+     *
      * @param connection
      * @return
      * @throws IOException
@@ -410,7 +459,7 @@ public class HttpCore {
             }
         }
 
-        if(response.statusCode == HttpURLConnection.HTTP_NO_CONTENT) {
+        if (response.statusCode == HttpURLConnection.HTTP_NO_CONTENT) {
             return response;
         }
 
@@ -420,7 +469,8 @@ public class HttpCore {
         InputStream is = null;
         try {
             is = connection.getInputStream();
-        } catch (Throwable e) {}
+        } catch (Throwable e) {
+        }
         if (is == null)
             is = connection.getErrorStream();
 
@@ -433,7 +483,8 @@ public class HttpCore {
             if (is != null) {
                 try {
                     is.close();
-                } catch (IOException e) {}
+                } catch (IOException e) {
+                }
             }
         }
 
@@ -451,16 +502,15 @@ public class HttpCore {
         if (bytes == -1) {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             byte[] buffer = new byte[4 * 1024];
-            while((bytesRead = inputStream.read(buffer)) > -1) {
+            while ((bytesRead = inputStream.read(buffer)) > -1) {
                 outputStream.write(buffer, 0, bytesRead);
             }
 
             return outputStream.toByteArray();
-        }
-        else {
+        } else {
             int idx = 0;
             byte[] output = new byte[bytes];
-            while((bytesRead = inputStream.read(output,  idx, bytes - idx)) > -1) {
+            while ((bytesRead = inputStream.read(output, idx, bytes - idx)) > -1) {
                 idx += bytesRead;
             }
 
@@ -474,11 +524,11 @@ public class HttpCore {
     }
 
     private Proxy getProxy(String host) {
-        if(proxyOptions != null) {
+        if (proxyOptions != null) {
             String[] nonProxyHosts = proxyOptions.nonProxyHosts;
-            if(nonProxyHosts != null) {
-                for(String nonProxyHostPattern : nonProxyHosts) {
-                    if(host.matches(nonProxyHostPattern)) {
+            if (nonProxyHosts != null) {
+                for (String nonProxyHostPattern : nonProxyHosts) {
+                    if (host.matches(nonProxyHostPattern)) {
                         return null;
                     }
                 }
@@ -487,47 +537,18 @@ public class HttpCore {
         return proxy;
     }
 
-    /*************************
-     *     Private state
-     *************************/
-
-    static {
-        /* if on Android, check version */
-        Field androidVersionField = null;
-        int androidVersion = 0;
-        try {
-            androidVersionField = Class.forName("android.os.Build$VERSION").getField("SDK_INT");
-            androidVersion = androidVersionField.getInt(androidVersionField);
-        } catch (Exception e) {}
-        if(androidVersionField != null && androidVersion < 8) {
-            /* HTTP connection reuse which was buggy pre-froyo */
-            System.setProperty("httpCore.keepAlive", "false");
-        }
-    }
-
-    public final String scheme;
-    public final int port;
-    final ClientOptions options;
-    final Hosts hosts;
-
-    private final Auth auth;
-    private final ProxyOptions proxyOptions;
-    private HttpAuth proxyAuth;
-    private Proxy proxy = Proxy.NO_PROXY;
-    private final PlatformAgentProvider platformAgentProvider;
-
-    private static final String TAG = HttpCore.class.getName();
-
     /**
      * Interface for an entity that supplies an httpCore request body
      */
     public interface RequestBody {
         byte[] getEncoded();
+
         String getContentType();
     }
 
     /**
      * Interface for an entity that performs type-specific processing on an httpCore response body
+     *
      * @param <T>
      */
     public interface BodyHandler<T> {
@@ -536,6 +557,7 @@ public class HttpCore {
 
     /**
      * Interface for an entity that performs type-specific processing on an httpCore response
+     *
      * @param <T>
      */
     public interface ResponseHandler<T> {
@@ -548,7 +570,7 @@ public class HttpCore {
     public static class Response {
         public int statusCode;
         public String statusLine;
-        public Map<String,List<String>> headers;
+        public Map<String, List<String>> headers;
         public String contentType;
         public int contentLength;
         public byte[] body;
@@ -559,13 +581,12 @@ public class HttpCore {
          * If called on a connection that sets the same header multiple times
          * with possibly different values, only the last value is returned.
          *
-         *
-         * @param   name   the name of a header field.
-         * @return  the value of the named header field, or {@code null}
-         *          if there is no such field in the header.
+         * @param name the name of a header field.
+         * @return the value of the named header field, or {@code null}
+         * if there is no such field in the header.
          */
         public List<String> getHeaderFields(String name) {
-            if(headers == null) {
+            if (headers == null) {
                 return null;
             }
 
@@ -578,11 +599,12 @@ public class HttpCore {
      */
     public static class AuthRequiredException extends AblyException {
         private static final long serialVersionUID = 1L;
-        public AuthRequiredException(Throwable throwable, ErrorInfo reason) {
-            super(throwable, reason);
-        }
         public boolean expired;
         public Map<HttpAuth.Type, String> authChallenge;
         public Map<HttpAuth.Type, String> proxyAuthChallenge;
+
+        public AuthRequiredException(Throwable throwable, ErrorInfo reason) {
+            super(throwable, reason);
+        }
     }
 }
