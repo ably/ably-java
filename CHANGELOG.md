@@ -1,5 +1,19 @@
 # Change Log
 
+## [1.2.43](https://github.com/ably/ably-java/tree/v1.2.43)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.42...v1.2.43)
+
+**Implemented enhancements:**
+
+- Expand proxy support: Authenticated Proxy and Websockets \(`HTTP CONNECT` tunnel\) [\#120](https://github.com/ably/ably-java/issues/120)
+
+**Merged pull requests:**
+
+- feat: introduced retry rules for flaky android push tests [\#1036](https://github.com/ably/ably-java/pull/1036) ([ttypic](https://github.com/ttypic))
+- feat: OkHttp implementation for making HTTP calls and WebSocket connections [\#1035](https://github.com/ably/ably-java/pull/1035) ([ttypic](https://github.com/ttypic))
+- chore: update gradle wrapper [\#1034](https://github.com/ably/ably-java/pull/1034) ([ttypic](https://github.com/ttypic))
+
 ## [1.2.42](https://github.com/ably/ably-java/tree/v1.2.42)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.41...v1.2.42)
