@@ -500,6 +500,67 @@ realtime.setAndroidContext(context);
 realtime.push.activate();
 ```
 
+## Using Ably SDK Under a Proxy
+
+When working in environments where outbound internet access is restricted, such as behind a corporate proxy, the Ably SDK allows you to configure a proxy server for HTTP and WebSocket connections.
+
+### Add the Required Dependency
+
+You need to use **OkHttp** library for making HTTP calls and WebSocket connections in the Ably SDK to get proxy support both for your Rest and Realtime clients.
+
+Add the following dependency to your `build.gradle` file:
+
+```groovy
+dependencies {
+    runtimeOnly("io.ably:network-client-okhttp:1.2.43")
+}
+```
+
+### Configure Proxy Settings
+
+After adding the required OkHttp dependency, you need to configure the proxy settings for your Ably client. This can be done by setting the proxy options in the `ClientOptions` object when you instantiate the Ably SDK.
+
+Here’s an example of how to configure and use a proxy:
+
+#### Java Example
+
+```java
+import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.rest.AblyRest;
+import io.ably.lib.transport.Defaults;
+import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ProxyOptions;
+import io.ably.lib.http.HttpAuth;
+
+public class AblyWithProxy {
+    public static void main(String[] args) throws Exception {
+        // Configure Ably Client options
+        ClientOptions options = new ClientOptions();
+        
+        // Setup proxy settings
+        ProxyOptions proxy = new ProxyOptions();
+        proxy.host = "your-proxy-host";  // Replace with your proxy host
+        proxy.port = 8080;               // Replace with your proxy port
+        
+        // Optional: If the proxy requires authentication
+        proxy.username = "your-username";  // Replace with proxy username
+        proxy.password = "your-password";  // Replace with proxy password
+        proxy.prefAuthType = HttpAuth.Type.BASIC;  // Choose your preferred authentication type (e.g., BASIC or DIGEST)
+
+        // Attach the proxy settings to the client options
+        options.proxy = proxy;
+
+        // Create an instance of Ably using the configured options
+        AblyRest ably = new AblyRest(options);
+
+        // Alternatively, for real-time connections
+        AblyRealtime ablyRealtime = new AblyRealtime(options);
+
+        // Use the Ably client as usual
+    }
+}
+```
+
 ## Resources
 
 Visit https://www.ably.com/docs for a complete API reference and more examples.

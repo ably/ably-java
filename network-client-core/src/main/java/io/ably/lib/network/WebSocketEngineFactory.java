@@ -19,7 +19,7 @@ public interface WebSocketEngineFactory {
 
     static WebSocketEngineFactory tryGetOkWebSocketFactory() {
         try {
-            Class<?> okWebSocketFactoryClass = Class.forName("io.ably.lib.network.OkWebSocketEngineFactory");
+            Class<?> okWebSocketFactoryClass = Class.forName("io.ably.lib.network.OkHttpWebSocketEngineFactory");
             return (WebSocketEngineFactory) okWebSocketFactoryClass.getDeclaredConstructor().newInstance();
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException |
                  InvocationTargetException e) {

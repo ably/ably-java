@@ -1,12 +1,13 @@
 package io.ably.lib.transport;
 
 import io.ably.lib.http.HttpUtils;
+import io.ably.lib.network.EngineType;
+import io.ably.lib.network.NotConnectedException;
 import io.ably.lib.network.WebSocketClient;
 import io.ably.lib.network.WebSocketEngine;
 import io.ably.lib.network.WebSocketEngineConfig;
 import io.ably.lib.network.WebSocketEngineFactory;
 import io.ably.lib.network.WebSocketListener;
-import io.ably.lib.network.NotConnectedException;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Param;
@@ -17,6 +18,8 @@ import io.ably.lib.util.Log;
 
 import javax.net.ssl.SSLContext;
 import java.nio.ByteBuffer;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -48,16 +51,43 @@ public class WebSocketTransport implements ITransport {
     private String wsUri;
     private ConnectListener connectListener;
     private WebSocketClient webSocketClient;
+    private final WebSocketEngine webSocketEngine;
+    private boolean activityCheckTurnedOff = false;
+
     /******************
      * protected constructor
      ******************/
-
     protected WebSocketTransport(TransportParams params, ConnectionManager connectionManager) {
         this.params = params;
         this.connectionManager = connectionManager;
         this.channelBinaryMode = params.options.useBinaryProtocol;
-        /* We do not require Ably heartbeats, as we can use WebSocket pings instead. */
-        params.heartbeats = false;
+        this.webSocketEngine = createWebSocketEngine(params);
+        params.heartbeats = !this.webSocketEngine.isPingListenerSupported();
+
+    }
+
+    private static WebSocketEngine createWebSocketEngine(TransportParams params) {
+        WebSocketEngineFactory engineFactory = WebSocketEngineFactory.getFirstAvailable();
+        Log.v(TAG, String.format("Using %s WebSocket Engine", engineFactory.getEngineType().name()));
+        WebSocketEngineConfig.WebSocketEngineConfigBuilder configBuilder = WebSocketEngineConfig.builder();
+        configBuilder
+            .tls(params.options.tls)
+            .host(params.host)
+            .proxy(ClientOptionsUtils.convertToProxyConfig(params.getClientOptions()));
+
+        // OkHttp supports modern TLS algorithms by default
+        if (params.options.tls && engineFactory.getEngineType() != EngineType.OKHTTP) {
+            try {
+                SSLContext sslContext = SSLContext.getInstance("TLS");
+                sslContext.init(null, null, null);
+                SafeSSLSocketFactory factory = new SafeSSLSocketFactory(sslContext.getSocketFactory());
+                configBuilder.sslSocketFactory(factory);
+            } catch (NoSuchAlgorithmException | KeyManagementException e) {
+                throw new IllegalStateException("Can't get safe tls algorithms", e);
+            }
+        }
+
+        return engineFactory.create(configBuilder.build());
     }
 
     /******************
@@ -78,24 +108,7 @@ public class WebSocketTransport implements ITransport {
 
             Log.d(TAG, "connect(); wsUri = " + wsUri);
             synchronized (this) {
-                WebSocketEngineFactory engineFactory = WebSocketEngineFactory.getFirstAvailable();
-                Log.v(TAG, String.format("Using %s WebSocket Engine", engineFactory.getEngineType().name()));
-
-                WebSocketEngineConfig.WebSocketEngineConfigBuilder configBuilder = WebSocketEngineConfig.builder();
-                configBuilder
-                    .tls(isTls)
-                    .host(params.host)
-                    .proxy(ClientOptionsUtils.convertToProxyConfig(params.getClientOptions()));
-
-                if (isTls) {
-                    SSLContext sslContext = SSLContext.getInstance("TLS");
-                    sslContext.init(null, null, null);
-                    SafeSSLSocketFactory factory = new SafeSSLSocketFactory(sslContext.getSocketFactory());
-                    configBuilder.sslSocketFactory(factory);
-                }
-
-                WebSocketEngine engine = engineFactory.create(configBuilder.build());
-                webSocketClient = engine.create(wsUri, new WebSocketHandler(this::receive));
+                webSocketClient = this.webSocketEngine.create(wsUri, new WebSocketHandler(this::receive));
             }
             webSocketClient.connect();
         } catch (AblyException e) {
@@ -159,6 +172,16 @@ public class WebSocketTransport implements ITransport {
 
     protected void preProcessReceivedMessage(ProtocolMessage message) {
         //Gives the chance to child classes to do message pre-processing
+    }
+
+    /**
+     * Visible For Testing
+     * </p>
+     * We need to turn off activity check for some tests (e.g. io.ably.lib.test.realtime.RealtimeConnectFailTest.disconnect_retry_channel_timeout_jitter_after_consistent_detach[binary_protocol])
+     * Those tests expects that activity checks are passing, but protocol messages are not coming
+     */
+    protected void turnOffActivityCheckIfPingListenerIsNotSupported() {
+        if (!webSocketEngine.isPingListenerSupported()) activityCheckTurnedOff = true;
     }
 
     public String toString() {
@@ -307,7 +330,7 @@ public class WebSocketTransport implements ITransport {
         private synchronized void flagActivity() {
             lastActivityTime = System.currentTimeMillis();
             connectionManager.setLastActivity(lastActivityTime);
-            if (activityTimerTask == null && connectionManager.maxIdleInterval != 0) {
+            if (activityTimerTask == null && connectionManager.maxIdleInterval != 0 && !activityCheckTurnedOff) {
                 /* No timer currently running because previously there was no
                  * maxIdleInterval configured, but now there is a
                  * maxIdleInterval configured.  Call checkActivity so a timer

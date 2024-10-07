@@ -49,3 +49,32 @@ jobs:
         with:
           name: java-build-reports-realtime
           path: java/build/reports/
+  check-rest-okhttp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+
+      - name: Set up the JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - run: ./gradlew :java:testRestSuite -Pokhttp
+
+  check-realtime-okhttp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+
+      - name: Set up the JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - run: ./gradlew :java:testRealtimeSuite -Pokhttp

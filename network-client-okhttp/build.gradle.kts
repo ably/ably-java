@@ -11,5 +11,5 @@ java {
 
 dependencies {
     implementation(project(":network-client-core"))
-    implementation(libs.java.websocket)
+    implementation(libs.okhttp)
 }
