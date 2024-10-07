@@ -2,10 +2,13 @@ package io.ably.lib.network;
 
 import java.lang.reflect.InvocationTargetException;
 
+/**
+ * The <code>HttpEngineFactory</code> is a utility class that produces a common HTTP Engine API
+ * for different implementations. Currently, it supports:
+ * - HttpURLConnection ({@link  EngineType#DEFAULT})
+ * - OkHttp ({@link  EngineType#OKHTTP})
+ */
 public interface HttpEngineFactory {
-
-    HttpEngine create(HttpEngineConfig config);
-    EngineType getEngineType();
 
     static HttpEngineFactory getFirstAvailable() {
         HttpEngineFactory okHttpFactory = tryGetOkHttpFactory();
@@ -19,7 +22,8 @@ public interface HttpEngineFactory {
         try {
             Class<?> okHttpFactoryClass = Class.forName("io.ably.lib.network.OkHttpEngineFactory");
             return (HttpEngineFactory) okHttpFactoryClass.getDeclaredConstructor().newInstance();
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException |
+                 InvocationTargetException e) {
             return null;
         }
     }
@@ -28,8 +32,13 @@ public interface HttpEngineFactory {
         try {
             Class<?> defaultFactoryClass = Class.forName("io.ably.lib.network.DefaultHttpEngineFactory");
             return (HttpEngineFactory) defaultFactoryClass.getDeclaredConstructor().newInstance();
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException |
+                 InvocationTargetException e) {
             return null;
         }
     }
+
+    HttpEngine create(HttpEngineConfig config);
+
+    EngineType getEngineType();
 }
