@@ -396,7 +396,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
     /**
      * <p>
      * Validates a client can subscribe to messages without implicit channel attach
-     * Refer Spec TB4, RTL7g, RTL7gh
+     * Refer Spec TB4, RTL7g, RTL7h
      * </p>
      * @throws AblyException
      */
