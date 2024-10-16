@@ -296,27 +296,26 @@ public class Presence {
         eventListeners.clear();
     }
 
-
-    /***
-     * internal
-     *
-     */
-
     /**
-     * Implicitly attach channel on subscribe. Throw exception if channel is in failed state
-     * @param completionListener
-     * @throws AblyException
+     * Implicitly attach channel on subscribe. Throw exception if channel is in failed state.
+     * @param completionListener Registers listener, gets called when ATTACH operation is a success.
+     * @throws AblyException Throws exception when channel is in failed state.
      */
     private void implicitAttachOnSubscribe(CompletionListener completionListener) throws AblyException {
+        // RTP6e
         if (!channel.attachOnSubscribeEnabled()) {
             if (completionListener != null) {
-                completionListener.onSuccess();
+                String errorString = String.format(Locale.ROOT,
+                    "Channel %s: attachOnSubscribe=false doesn't expect attach completion callback", channel.name);
+                Log.e(TAG, errorString);
+                ErrorInfo errorInfo = new ErrorInfo(errorString, 400,40000);
+                throw AblyException.fromErrorInfo(errorInfo);
             }
             return;
         }
         if (channel.state == ChannelState.failed) {
             String errorString = String.format(Locale.ROOT, "Channel %s: subscribe in FAILED channel state", channel.name);
-            Log.v(TAG, errorString);
+            Log.e(TAG, errorString);
             ErrorInfo errorInfo = new ErrorInfo(errorString, 90001);
             throw AblyException.fromErrorInfo(errorInfo);
         }

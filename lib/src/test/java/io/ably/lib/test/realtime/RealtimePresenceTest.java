@@ -1,5 +1,6 @@
 package io.ably.lib.test.realtime;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.emptyCollectionOf;
 import static org.hamcrest.Matchers.equalTo;
@@ -1647,15 +1648,12 @@ public class RealtimePresenceTest extends ParameterizedTest {
             channel.setOptions(chOpts);
 
             List<Boolean> receivedPresenceMsg = Collections.synchronizedList(new ArrayList<>());
-            CompletionWaiter completionWaiter = new CompletionWaiter();
 
             /* Check for all subscriptions without ATTACHING state */
-            channel.presence.subscribe(m -> receivedPresenceMsg.add(true), completionWaiter);
-            assertEquals(1, completionWaiter.successCount);
+            channel.presence.subscribe(m -> receivedPresenceMsg.add(true));
             assertEquals(ChannelState.initialized, channel.state);
 
-            channel.presence.subscribe(Action.enter, m -> receivedPresenceMsg.add(true), completionWaiter);
-            assertEquals(2, completionWaiter.successCount);
+            channel.presence.subscribe(Action.enter, m -> receivedPresenceMsg.add(true));
             assertEquals(ChannelState.initialized, channel.state);
 
             channel.presence.subscribe(EnumSet.of(Action.enter, Action.leave),m -> receivedPresenceMsg.add(true));
@@ -1676,6 +1674,48 @@ public class RealtimePresenceTest extends ParameterizedTest {
             conditionError = new Helpers.ConditionalWaiter().
                 wait(() -> receivedPresenceMsg.size() == 2, 5000);
             assertNull(conditionError);
+
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail("presence_subscribe_without_implicit_attach: Unexpected exception");
+        } finally {
+            if(ably != null)
+                ably.close();
+        }
+    }
+
+    /**
+     * <p>
+     * Validates a client can subscribe to presence without implicit channel attach
+     * Refer Spec TB4, RTP6d, RTP6e
+     * </p>
+     * @throws AblyException
+     */
+    @Test
+    public void presence_subscribe_without_implicit_attach_and_completion_listener_throws_exception() {
+        String ablyChannel = "subscribe_" + testParams.name;
+        AblyRealtime ably = null;
+        try {
+            ClientOptions option1 = createOptions(testVars.keys[0].keyStr);
+            option1.clientId = "client1";
+            ably = new AblyRealtime(option1);
+
+            /* create a channel and set attachOnSubscribe to false */
+            final Channel channel = ably.channels.get(ablyChannel);
+            ChannelOptions chOpts = new ChannelOptions();
+            chOpts.attachOnSubscribe = false;
+            channel.setOptions(chOpts);
+
+            // When completionWaiter passed with attachOnSubscribe=false, throws exception.
+            CompletionWaiter completionWaiter = new CompletionWaiter();
+            try {
+                channel.presence.subscribe(m -> {}, completionWaiter);
+            } catch (AblyException e) {
+                assertEquals(400, e.errorInfo.statusCode);
+                assertEquals(40000, e.errorInfo.code);
+                assertThat(e.errorInfo.message, containsString("attachOnSubscribe=false doesn't expect attach completion callback"));
+            }
+            assertEquals(ChannelState.initialized, channel.state);
 
         } catch (AblyException e) {
             e.printStackTrace();
