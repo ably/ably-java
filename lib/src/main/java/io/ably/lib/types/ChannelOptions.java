@@ -47,7 +47,7 @@ public class ChannelOptions {
      * should trigger an implicit attach.
      * </p>
      * <p>Defaults to {@code true}.</p>
-     * <p>Spec: TB4, RTL7g, RTL7gh, RTP6d, RTP6e</p>
+     * <p>Spec: TB4, RTL7g, RTL7h, RTP6d, RTP6e</p>
      */
     public boolean attachOnSubscribe = true;
 
