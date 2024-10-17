@@ -305,7 +305,7 @@ public class Presence {
         // RTP6e
         if (!channel.attachOnSubscribeEnabled()) {
             if (completionListener != null) {
-                String errorString = String.format(Locale.ROOT,
+                String errorString = String.format(
                     "Channel %s: attachOnSubscribe=false doesn't expect attach completion callback", channel.name);
                 Log.e(TAG, errorString);
                 ErrorInfo errorInfo = new ErrorInfo(errorString, 400,40000);

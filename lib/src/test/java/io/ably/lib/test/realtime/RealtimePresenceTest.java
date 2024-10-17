@@ -1692,14 +1692,11 @@ public class RealtimePresenceTest extends ParameterizedTest {
      * @throws AblyException
      */
     @Test
-    public void presence_subscribe_without_implicit_attach_and_completion_listener_throws_exception() {
+    public void presence_subscribe_without_implicit_attach_and_completion_listener_throws_exception() throws AblyException {
         String ablyChannel = "subscribe_" + testParams.name;
-        AblyRealtime ably = null;
-        try {
-            ClientOptions option1 = createOptions(testVars.keys[0].keyStr);
-            option1.clientId = "client1";
-            ably = new AblyRealtime(option1);
-
+        ClientOptions option1 = createOptions(testVars.keys[0].keyStr);
+        option1.clientId = "client1";
+        try (AblyRealtime ably = new AblyRealtime(option1)) {
             /* create a channel and set attachOnSubscribe to false */
             final Channel channel = ably.channels.get(ablyChannel);
             ChannelOptions chOpts = new ChannelOptions();
@@ -1720,9 +1717,6 @@ public class RealtimePresenceTest extends ParameterizedTest {
         } catch (AblyException e) {
             e.printStackTrace();
             fail("presence_subscribe_without_implicit_attach: Unexpected exception");
-        } finally {
-            if(ably != null)
-                ably.close();
         }
     }
 
