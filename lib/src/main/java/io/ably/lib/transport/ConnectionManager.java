@@ -72,6 +72,14 @@ public class ConnectionManager implements ConnectListener {
     static ErrorInfo REASON_TOO_BIG = new ErrorInfo("Connection closed; message too large", 400, 40000);
 
     /**
+     * When connection manager entering terminal state {@code currentState.terminal == true} it should clean up
+     * {@link #handlerThread} and invoke {@link #stopConnectivityListener}.
+     * <p>
+     * If this flag is true that means that current state is terminal but cleaning up still in progress
+     */
+    private boolean cleaningUpAfterEnteringTerminalState = false;
+
+    /**
      * Methods on the channels map owned by the {@link AblyRealtime} instance
      * which the {@link ConnectionManager} needs access to.
      */
@@ -696,6 +704,8 @@ public class ConnectionManager implements ConnectListener {
                             /* indicate that this thread is committed to die */
                             handlerThread = null;
                             stopConnectivityListener();
+                            cleaningUpAfterEnteringTerminalState = false;
+                            ConnectionManager.this.notifyAll();
                             return;
                         }
 
@@ -790,7 +800,13 @@ public class ConnectionManager implements ConnectListener {
     public synchronized void connect() {
         /* connect() is the only action that will bring the ConnectionManager out of a terminal currentState */
         if(currentState.terminal || currentState.state == ConnectionState.initialized) {
-            startup();
+            try {
+                startup();
+            } catch(InterruptedException e) {
+                Thread.currentThread().interrupt();
+                Log.e(TAG, "Failed to start up connection", e);
+                return;
+            }
         }
         requestState(ConnectionState.connecting);
     }
@@ -853,6 +869,7 @@ public class ConnectionManager implements ConnectListener {
         Log.v(TAG, "setState(): setting " + newState.state + "; reason " + reason);
         ConnectionStateChange change = new ConnectionStateChange(currentState.state, newConnectionState, newState.timeout, reason);
         currentState = newState;
+        cleaningUpAfterEnteringTerminalState = currentState.terminal;
         stateError = reason;
 
         return change;
@@ -1338,10 +1355,17 @@ public class ConnectionManager implements ConnectListener {
      * ConnectionManager lifecycle
      ******************************/
 
-    private synchronized void startup() {
-        if(handlerThread == null) {
+    private synchronized void startup() throws InterruptedException {
+        while (cleaningUpAfterEnteringTerminalState) {
+            Log.v(TAG, "Waiting for termination action to clean up handler thread");
+            wait();
+        }
+
+        if (handlerThread == null) {
             (handlerThread = new Thread(new ActionHandler())).start();
             startConnectivityListener();
+        } else {
+            Log.v(TAG, "`connect()` has been called twice on uninitialized or terminal state");
         }
     }
 
