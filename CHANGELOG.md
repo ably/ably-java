@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.2.44](https://github.com/ably/ably-java/tree/v1.2.44)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.43...v1.2.44)
+
+**Fixed bugs:**
+
+- Race condition when calling`AblyRealtime#connect()` on terminated state [\#1041](https://github.com/ably/ably-java/issues/1041)
+
 ## [1.2.43](https://github.com/ably/ably-java/tree/v1.2.43)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.42...v1.2.43)
