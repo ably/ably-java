@@ -221,7 +221,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         if(!forceReattach) {
             /* check preconditions */
             switch(state) {
-                case attaching:
+                case attaching: //RTL4h
                     if(listener != null) {
                         on(new ChannelStateCompletionListener(listener, ChannelState.attached, ChannelState.failed));
                     }
@@ -229,9 +229,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                 case detaching: //RTL4h
                     pendingAttachRequest = new AttachRequest(forceReattach,listener);
                     return;
-                case attached:
+                case attached: //RTL4a
                     callCompletionListenerSuccess(listener);
                     return;
+                case failed: //RTL4g
+                    this.reason = null;
                 default:
             }
         }
@@ -312,18 +314,27 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         Log.v(TAG, "detach(); channel = " + name);
         /* check preconditions */
         switch(state) {
-            case initialized:
+            case initialized: // RTL5a
             case detached: {
                 callCompletionListenerSuccess(listener);
                 return;
             }
-            case detaching:
+            case detaching: //RTL5i
                 if (listener != null) {
                     on(new ChannelStateCompletionListener(listener, ChannelState.detached, ChannelState.failed));
                 }
                 return;
             case attaching: //RTL5i
                 pendingDetachRequest = new DetachRequest(listener);
+                return;
+            case failed: //RTL5b
+                ErrorInfo error = this.reason != null ?
+                    this.reason : new ErrorInfo("Channel state is failed", 90000);
+                callCompletionListenerError(listener, error);
+                return;
+            case suspended: //RTL5j
+                setState(ChannelState.detached, null);
+                callCompletionListenerSuccess(listener);
                 return;
             default:
         }
