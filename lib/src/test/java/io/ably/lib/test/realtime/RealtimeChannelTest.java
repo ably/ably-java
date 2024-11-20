@@ -930,11 +930,64 @@ public class RealtimeChannelTest extends ParameterizedTest {
             Helpers.CompletionWaiter waiter = new Helpers.CompletionWaiter();
             channel.attach(waiter);
             new ChannelWaiter(channel).waitFor(ChannelState.attached);
-            assertEquals("Verify failed state reached", channel.state, ChannelState.attached);
+            assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
 
             /* Verify onSuccess callback gets called */
             waiter.waitFor();
             assertThat(waiter.success, is(true));
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail("init0: Unexpected exception instantiating library");
+        } finally {
+            if(ably != null)
+                ably.close();
+        }
+    }
+
+    @Test
+    public void attach_success_callback_for_channel_in_failed_state() {
+        AblyRealtime ably = null;
+        try {
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+            ably = new AblyRealtime(opts);
+
+            /* wait until connected */
+            (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+
+            /* create a channel and attach */
+            final Channel channel = ably.channels.get("attach_success");
+            ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+            channel.attach();
+            channelWaiter.waitFor(ChannelState.attached);
+
+            // Simulate connection failure
+            ably.connection.connectionManager.requestState(
+                new ConnectionManager.StateIndication(
+                    ConnectionState.failed,
+                    new ErrorInfo("Simulated connection failure", 40000)
+                )
+            );
+
+            // Wait for the channel to reach the failed state
+            channelWaiter.waitFor(ChannelState.failed);
+
+            assertNotNull(channel.reason);
+            assertEquals("Simulated connection failure", channel.reason.message);
+
+            ably.connect();
+
+            Helpers.CompletionWaiter attachListener = new Helpers.CompletionWaiter();
+            channel.attach(attachListener);
+
+            channelWaiter.waitFor(ChannelState.attaching);
+            assertNull(channel.reason);
+            channelWaiter.waitFor(ChannelState.attached);
+
+            assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
+
+            /* Verify onSuccess callback gets called */
+            attachListener.waitFor();
+            assertTrue(attachListener.success);
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");
@@ -1006,6 +1059,84 @@ public class RealtimeChannelTest extends ParameterizedTest {
             /* Verify onSuccess callback gets called */
             waiter.waitFor();
             assertThat(waiter.success, is(true));
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail("init0: Unexpected exception instantiating library");
+        } finally {
+            if(ably != null)
+                ably.close();
+        }
+    }
+
+    @Test
+    public void detach_success_callback_on_suspended_state() {
+        AblyRealtime ably = null;
+        try {
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+            ably = new AblyRealtime(opts);
+
+            /* wait until connected */
+            (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+
+            /* create a channel and attach */
+            final Channel channel = ably.channels.get("detach_success");
+            ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+            channel.attach();
+            channelWaiter.waitFor(ChannelState.attached);
+
+            ably.connection.connectionManager.requestState(ConnectionState.suspended);
+
+            channelWaiter.waitFor(ChannelState.suspended);
+            assertEquals("Verify suspended state reached", ChannelState.suspended, channel.state);
+
+            /* detach */
+            Helpers.CompletionWaiter detachWaiter = new Helpers.CompletionWaiter();
+            channel.detach(detachWaiter);
+
+            /* Verify onSuccess callback gets called */
+            detachWaiter.waitFor();
+            assertTrue(detachWaiter.success);
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail("init0: Unexpected exception instantiating library");
+        } finally {
+            if(ably != null)
+                ably.close();
+        }
+    }
+
+    @Test
+    public void detach_failure_callback_on_failed_state() {
+        AblyRealtime ably = null;
+        try {
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+            ably = new AblyRealtime(opts);
+
+            /* wait until connected */
+            (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+
+            /* create a channel and attach */
+            final Channel channel = ably.channels.get("detach_failure");
+            ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+            channel.attach();
+            channelWaiter.waitFor(ChannelState.attached);
+
+            // Simulate connection failure
+            ably.connection.connectionManager.requestState(ConnectionState.failed);
+
+            channelWaiter.waitFor(ChannelState.failed);
+            assertEquals("Verify failed state reached", ChannelState.failed, channel.state);
+
+            /* detach */
+            Helpers.CompletionWaiter detachWaiter = new Helpers.CompletionWaiter();
+            channel.detach(detachWaiter);
+
+            /* Verify onSuccess callback gets called */
+            detachWaiter.waitFor();
+            assertFalse(detachWaiter.success);
+            assertNotNull(detachWaiter.error);
+            assertEquals("Channel state is failed", detachWaiter.error.message);
+            assertEquals(90000, detachWaiter.error.code);
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");
