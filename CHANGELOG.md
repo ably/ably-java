@@ -1,5 +1,18 @@
 # Change Log
 
+## [1.2.45](https://github.com/ably/ably-java/tree/v1.2.45)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.44...v1.2.45)
+
+**Closed issues:**
+
+- [RTL5] Incomplete spec implementation for channel DETACH/ATTACH [\#1045](https://github.com/ably/ably-java/issues/1045)
+- [RTL7h] Throw exception for optional callback [\#1040](https://github.com/ably/ably-java/issues/1040)
+
+**Merged pull requests:**
+
+- [ECO-5117] Fix channel ATTACH/DETACH state checks [\#1046](https://github.com/ably/ably-java/pull/1046) ([sacOO7](https://github.com/sacOO7))
+
 ## [1.2.44](https://github.com/ably/ably-java/tree/v1.2.44)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.43...v1.2.44)
