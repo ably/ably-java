@@ -278,6 +278,20 @@ public class BaseMessage implements Cloneable {
         return element.getAsLong();
     }
 
+    /**
+     * Read an optional numerical value.
+     * @return The value, or null if the key was not present in the map.
+     * @throws ClassCastException if an element exists for that key and that element is not a {@link JsonPrimitive}
+     * or is not a valid int value.
+     */
+    protected Integer readInt(final JsonObject map, final String key) {
+        final JsonElement element = map.get(key);
+        if (null == element || element instanceof JsonNull) {
+            return null;
+        }
+        return element.getAsInt();
+    }
+
     /* Msgpack processing */
     boolean readField(MessageUnpacker unpacker, String fieldName, MessageFormat fieldType) throws IOException {
         boolean result = true;
