@@ -1,5 +1,20 @@
 # Change Log
 
+## [1.2.46](https://github.com/ably/ably-java/tree/v1.2.46)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.45...v1.2.46)
+
+**Implemented enhancements:**
+
+- New experimental `Message` fields (`action`, `serial`, `createdAt`) have been added. 
+  **Note:** These fields are not stable and are introduced to support the [Chat SDK](https://github.com/ably/ably-chat-kotlin). 
+  Use with caution, as they may change in future releases.
+
+**Merged pull requests:**
+
+- \[ECO-5139\] feat: add `action` and `serial` fields [\#1048](https://github.com/ably/ably-java/pull/1048) ([ttypic](https://github.com/ttypic))
+
+
 ## [1.2.45](https://github.com/ably/ably-java/tree/v1.2.45)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.44...v1.2.45)
