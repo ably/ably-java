@@ -19,8 +19,11 @@
 		},
 		{
 			"capability": "{\"persisted:text_protocol:channel0\":[\"publish\",\"subscribe\",\"history\"],\"persisted:text_protocol:channel1\":[\"publish\",\"subscribe\",\"history\"],\"persisted:binary_protocol:channel0\":[\"publish\",\"subscribe\",\"history\"],\"persisted:binary_protocol:channel1\":[\"publish\",\"subscribe\",\"history\"],\"persisted:*\":[\"subscribe\",\"history\"]}"
-		}
-	],
+		},
+    {
+      "capability": "{ \"[*]*\":[\"*\"] }"
+    }
+  ],
 	"namespaces": [
 		{
 			"id": "persisted",

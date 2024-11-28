@@ -46,9 +46,41 @@ public class Message extends BaseMessage {
      */
     public String connectionKey;
 
+    /**
+     * (TM2k) serial string – an opaque string that uniquely identifies the message. If a message received from Ably
+     * (whether over realtime or REST, eg history) with an action of MESSAGE_CREATE does not contain a serial,
+     * the SDK must set it equal to its version.
+     */
+    public String serial;
+
+    /**
+     * (TM2p) version string – an opaque string that uniquely identifies the message, and is different for different versions.
+     * If a message received from Ably over a realtime transport does not contain a version,
+     * the SDK must set it to <channelSerial>:<padded_index> from the channelSerial field of the enclosing ProtocolMessage,
+     * and padded_index is the index of the message inside the messages array of the ProtocolMessage,
+     * left-padded with 0s to three digits (for example, the second entry might be foo:001)
+     */
+    public String version;
+
+    /**
+     * (TM2j) action enum
+     */
+    public MessageAction action;
+
+    /**
+     * (TM2o) createdAt time in milliseconds since epoch. If a message received from Ably
+     * (whether over realtime or REST, eg history) with an action of MESSAGE_CREATE does not contain a createdAt,
+     * the SDK must set it equal to the TM2f timestamp.
+     */
+    public Long createdAt;
+
     private static final String NAME = "name";
     private static final String EXTRAS = "extras";
     private static final String CONNECTION_KEY = "connectionKey";
+    private static final String SERIAL = "serial";
+    private static final String VERSION = "version";
+    private static final String ACTION = "action";
+    private static final String CREATED_AT = "createdAt";
 
     /**
      * Default constructor
@@ -128,6 +160,10 @@ public class Message extends BaseMessage {
         int fieldCount = super.countFields();
         if(name != null) ++fieldCount;
         if(extras != null) ++fieldCount;
+        if(serial != null) ++fieldCount;
+        if(version != null) ++fieldCount;
+        if(action != null) ++fieldCount;
+        if(createdAt != null) ++fieldCount;
         packer.packMapHeader(fieldCount);
         super.writeFields(packer);
         if(name != null) {
@@ -137,6 +173,22 @@ public class Message extends BaseMessage {
         if(extras != null) {
             packer.packString(EXTRAS);
             extras.write(packer);
+        }
+        if(serial != null) {
+            packer.packString(SERIAL);
+            packer.packString(serial);
+        }
+        if(version != null) {
+            packer.packString(VERSION);
+            packer.packString(version);
+        }
+        if(action != null) {
+            packer.packString(ACTION);
+            packer.packInt(action.ordinal());
+        }
+        if(createdAt != null) {
+            packer.packString(CREATED_AT);
+            packer.packLong(createdAt);
         }
     }
 
@@ -157,6 +209,14 @@ public class Message extends BaseMessage {
                 name = unpacker.unpackString();
             } else if (fieldName.equals(EXTRAS)) {
                 extras = MessageExtras.read(unpacker);
+            } else if (fieldName.equals(SERIAL)) {
+                serial = unpacker.unpackString();
+            } else if (fieldName.equals(VERSION)) {
+                version = unpacker.unpackString();
+            } else if (fieldName.equals(ACTION)) {
+                action = MessageAction.tryFindByOrdinal(unpacker.unpackInt());
+            } else if (fieldName.equals(CREATED_AT)) {
+                createdAt = unpacker.unpackLong();
             } else {
                 Log.v(TAG, "Unexpected field: " + fieldName);
                 unpacker.skipValue();
@@ -313,6 +373,12 @@ public class Message extends BaseMessage {
             }
             extras = MessageExtras.read((JsonObject) extrasElement);
         }
+
+        serial = readString(map, SERIAL);
+        version = readString(map, VERSION);
+        Integer actionOrdinal = readInt(map, ACTION);
+        action = actionOrdinal == null ? null : MessageAction.tryFindByOrdinal(actionOrdinal);
+        createdAt = readLong(map, CREATED_AT);
     }
 
     public static class Serializer implements JsonSerializer<Message>, JsonDeserializer<Message> {
@@ -327,6 +393,18 @@ public class Message extends BaseMessage {
             }
             if (message.connectionKey != null) {
                 json.addProperty(CONNECTION_KEY, message.connectionKey);
+            }
+            if (message.serial != null) {
+                json.addProperty(SERIAL, message.serial);
+            }
+            if (message.version != null) {
+                json.addProperty(VERSION, message.version);
+            }
+            if (message.action != null) {
+                json.addProperty(ACTION, message.action.ordinal());
+            }
+            if (message.createdAt != null) {
+                json.addProperty(CREATED_AT, message.createdAt);
             }
             return json;
         }

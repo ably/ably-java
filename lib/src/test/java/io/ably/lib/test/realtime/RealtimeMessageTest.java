@@ -3,6 +3,8 @@ package io.ably.lib.test.realtime;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -17,7 +19,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import io.ably.lib.types.MessageAction;
 import io.ably.lib.types.MessageExtras;
+import io.ably.lib.types.Param;
 import io.ably.lib.util.Serialisation;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -968,6 +972,42 @@ public class RealtimeMessageTest extends ParameterizedTest {
             if(ably != null) {
                 ably.close();
             }
+        }
+    }
+
+    /**
+     * Check that important chat SDK fields are populated (serial, action, createdAt)
+     */
+    @Test
+    public void should_have_serial_action_createdAt() throws AblyException {
+        ClientOptions opts = createOptions(testVars.keys[7].keyStr);
+        opts.clientId = "chat";
+        try (AblyRealtime realtime = new AblyRealtime(opts)) {
+            final Channel channel = realtime.channels.get("foo::$chat::$chatMessages");
+            CompletionWaiter msgComplete = new CompletionWaiter();
+            channel.subscribe(message -> {
+                assertNotNull(message.serial);
+                assertNotNull(message.version);
+                assertNotNull(message.createdAt);
+                assertEquals(MessageAction.MESSAGE_CREATE, message.action);
+                assertEquals("chat.message", message.name);
+                assertEquals("hello world!", ((JsonObject)message.data).get("text").getAsString());
+                msgComplete.onSuccess();
+            });
+
+            /* publish to the channel */
+            JsonObject chatMessage = new JsonObject();
+            chatMessage.addProperty("text", "hello world!");
+            realtime.request(
+                "POST",
+                "/chat/v2/rooms/foo/messages",
+                new Param[] { new Param("v", 3) },
+                HttpUtils.requestBodyFromGson(chatMessage, opts.useBinaryProtocol),
+                null
+            );
+
+            // wait until we get message on the channel
+            assertNull(msgComplete.waitFor(1, 10_000));
         }
     }
 }
