@@ -75,7 +75,8 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
     public void connect_fail_authorized_error() throws AblyException {
         AblyRealtime ably = null;
         try {
-            ClientOptions opts = createOptions(testVars.appId + ".invalid_key_id:invalid_key_value");
+            String keyId = testVars.keys[0].keyName.split("\\.")[1];
+            ClientOptions opts = createOptions(testVars.appId + "." + keyId + ":invalid_key_value");
             ably = new AblyRealtime(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
