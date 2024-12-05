@@ -1684,9 +1684,14 @@ public class ConnectionManager implements ConnectListener {
 
     private void sendQueuedMessages() {
         synchronized(this) {
-            while(queuedMessages.size() > 0) {
+            while(!queuedMessages.isEmpty()) {
                 try {
-                    sendImpl(queuedMessages.get(0));
+                    QueuedMessage message = queuedMessages.get(0);
+                    // Do not send attach message from queued messages to prevent duplication
+                    // (we always send attach on connect event)
+                    if (message.msg.action != ProtocolMessage.Action.attach) {
+                        sendImpl(message);
+                    }
                 } catch (AblyException e) {
                     Log.e(TAG, "sendQueuedMessages(): Unexpected error sending queued messages", e);
                 } finally {

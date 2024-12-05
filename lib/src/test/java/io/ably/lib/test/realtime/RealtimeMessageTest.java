@@ -13,12 +13,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.MessageAction;
 import io.ably.lib.types.MessageExtras;
 import io.ably.lib.types.Param;
@@ -995,6 +997,10 @@ public class RealtimeMessageTest extends ParameterizedTest {
                 msgComplete.onSuccess();
             });
 
+            CompletionWaiter attachListener = new CompletionWaiter();
+            channel.attach(attachListener);
+            assertNull(attachListener.waitFor(1, 10_000));
+
             /* publish to the channel */
             JsonObject chatMessage = new JsonObject();
             chatMessage.addProperty("text", "hello world!");
@@ -1010,4 +1016,44 @@ public class RealtimeMessageTest extends ParameterizedTest {
             assertNull(msgComplete.waitFor(1, 10_000));
         }
     }
+
+    @Test
+    public void should_not_duplicate_messages() throws Exception {
+        ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+        String testChannelName = "my-channel" + System.currentTimeMillis();
+        try (AblyRest rest = new AblyRest(opts)) {
+            final io.ably.lib.rest.Channel channel = rest.channels.get(testChannelName);
+
+            Message[] messages = new Message[] {
+                new Message("name", "message 1"),
+                new Message("name", "message 2"),
+                new Message("name", "message 3"),
+            };
+
+            channel.publish(messages);
+        }
+
+        try (AblyRealtime realtime = new AblyRealtime(opts)) {
+            final ChannelOptions options = new ChannelOptions();
+            options.params = new HashMap<>();
+            options.params.put("rewind", "10");
+            final Channel channel = realtime.channels.get(testChannelName, options);
+            final CompletionWaiter completionWaiter = new CompletionWaiter();
+            final AtomicInteger counter = new AtomicInteger();
+
+            channel.subscribe(message -> {
+                int value = counter.incrementAndGet();
+                if (value == 3) completionWaiter.onSuccess();
+            });
+
+            completionWaiter.waitFor();
+
+            assertEquals("Should be exactly 3 messages", 3, counter.get());
+
+            Thread.sleep(1500);
+
+            assertEquals("Should be exactly 3 messages even after 1.5 sec wait", 3, counter.get());
+        }
+    }
+
 }
