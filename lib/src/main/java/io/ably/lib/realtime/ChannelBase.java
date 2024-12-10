@@ -243,6 +243,16 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             throw AblyException.fromErrorInfo(connectionManager.getStateErrorInfo());
         }
 
+        // (RTL4i)
+        if (connectionManager.getConnectionState().state == ConnectionState.connecting
+            || connectionManager.getConnectionState().state == ConnectionState.disconnected) {
+            if (listener != null) {
+                on(new ChannelStateCompletionListener(listener, ChannelState.attached, ChannelState.failed));
+            }
+            setState(ChannelState.attaching, null);
+            return;
+        }
+
         /* send attach request and pending state */
         Log.v(TAG, "attach(); channel = " + name + "; sending ATTACH request");
         ProtocolMessage attachMessage = new ProtocolMessage(Action.attach, this.name);
