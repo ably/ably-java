@@ -8,15 +8,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Ensure the workflow is being run for a published release
-      - name: Validate Release
-        run: |
-          if [ -z "${{ github.event.release.tag_name }}" ]; then
-            echo "This workflow must be run in the context of a published release.";
-            exit 1;
-          fi
-          echo "Running workflow for release: ${{ github.event.release.tag_name }}";
-
       - name: Checkout code
         uses: actions/checkout@v4
 
