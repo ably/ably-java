@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.2.47](https://github.com/ably/ably-java/tree/v1.2.47)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.46...v1.2.47)
+
+**Fixed bugs:**
+
+- Java SDK - Duplicate messages on rewind after 1.2.34 [\#1050](https://github.com/ably/ably-java/issues/1050)
+
 ## [1.2.46](https://github.com/ably/ably-java/tree/v1.2.46)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.45...v1.2.46)

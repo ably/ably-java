@@ -1,0 +1,39 @@
+name: Manual Release to Maven Central
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-on-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Ensure the workflow is being run for a published release
+      - name: Validate Release
+        run: |
+          if [ -z "${{ github.event.release.tag_name }}" ]; then
+            echo "This workflow must be run in the context of a published release.";
+            exit 1;
+          fi
+          echo "Running workflow for release: ${{ github.event.release.tag_name }}";
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Publish and release to Maven Central
+        run: ./gradlew publishAndReleaseToMavenCentral
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_IN_MEMORY_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
