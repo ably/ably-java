@@ -26,6 +26,7 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
 import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -1698,15 +1699,15 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
     /*
      * Establish connection, attach channel, simulate sending detached messages
-     * from the server, test correct behaviour
+     * from the server for channel in attached state.
      *
      * Tests RTL13a
      */
     @Test
-    public void channel_server_initiated_detached() throws AblyException {
+    public void server_initiated_detach_for_attached_channel() throws AblyException {
         AblyRealtime ably = null;
         long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
-        final String channelName = "channel_server_initiated_attach_detach";
+        final String channelName = "channel_server_initiated_detach_for_attached_channel";
 
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -1734,6 +1735,70 @@ public class RealtimeChannelTest extends ParameterizedTest {
             /* Channel should transition to attaching, then to attached */
             channelWaiter.waitFor(ChannelState.attaching);
             channelWaiter.waitFor(ChannelState.attached);
+
+            List<ChannelState> channelStates = channelWaiter.getRecordedStates();
+            Assert.assertEquals(4, channelStates.size());
+            Assert.assertEquals(ChannelState.attaching, channelStates.get(0));
+            Assert.assertEquals(ChannelState.attached, channelStates.get(1));
+            Assert.assertEquals(ChannelState.attaching, channelStates.get(2));
+            Assert.assertEquals(ChannelState.attached, channelStates.get(3));
+
+        } finally {
+            if (ably != null)
+                ably.close();
+            Defaults.realtimeRequestTimeout = oldRealtimeTimeout;
+        }
+    }
+
+    /*
+     * Establish connection, attach channel, simulate sending detached messages
+     * from the server for channel in suspended state.
+     *
+     * Tests RTL13a
+     */
+    @Test
+    public void server_initiated_detach_for_suspended_channel() throws AblyException {
+        AblyRealtime ably = null;
+        long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
+        final String channelName = "channel_server_initiated_detach_for_suspended_channel";
+
+        try {
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+
+            /* Make test faster */
+            Defaults.realtimeRequestTimeout = 1000;
+            opts.channelRetryTimeout = 1000;
+
+            ably = new AblyRealtime(opts);
+            new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+
+            Channel channel = ably.channels.get(channelName);
+            ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+
+            channel.attach();
+            channelWaiter.waitFor(ChannelState.attached);
+
+            channel.setSuspended(new ErrorInfo("Set state to suspended", 400), true);
+            channelWaiter.waitFor(ChannelState.suspended);
+
+            /* Inject detached message as if from the server */
+            ProtocolMessage detachedMessage = new ProtocolMessage() {{
+                action = Action.detached;
+                channel = channelName;
+            }};
+            ably.connection.connectionManager.onMessage(null, detachedMessage);
+
+            /* Channel should transition to attaching, then to attached */
+            channelWaiter.waitFor(ChannelState.attaching);
+            channelWaiter.waitFor(ChannelState.attached);
+
+            List<ChannelState> channelStates = channelWaiter.getRecordedStates();
+            Assert.assertEquals(5, channelStates.size());
+            Assert.assertEquals(ChannelState.attaching, channelStates.get(0));
+            Assert.assertEquals(ChannelState.attached, channelStates.get(1));
+            Assert.assertEquals(ChannelState.suspended, channelStates.get(2));
+            Assert.assertEquals(ChannelState.attaching, channelStates.get(3));
+            Assert.assertEquals(ChannelState.attached, channelStates.get(4));
 
         } finally {
             if (ably != null)
