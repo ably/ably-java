@@ -945,6 +945,9 @@ public class RealtimeChannelTest extends ParameterizedTest {
         }
     }
 
+    /**
+     * Spec: RTL4g
+     */
     @Test
     public void attach_success_callback_for_channel_in_failed_state() {
         AblyRealtime ably = null;
@@ -1037,6 +1040,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
     /**
      * When client detaches from a channel successfully after initialized state,
      * verify attach {@code CompletionListener#onSuccess()} gets called.
+     * Spec: RTL5a
      */
     @Test
     public void detach_success_callback_initialized() {
@@ -1069,6 +1073,9 @@ public class RealtimeChannelTest extends ParameterizedTest {
         }
     }
 
+    /**
+     * Spec: RTL5j
+     */
     @Test
     public void detach_success_callback_on_suspended_state() {
         AblyRealtime ably = null;
@@ -1106,6 +1113,9 @@ public class RealtimeChannelTest extends ParameterizedTest {
         }
     }
 
+    /**
+     * Spec: RTL5b
+     */
     @Test
     public void detach_failure_callback_on_failed_state() {
         AblyRealtime ably = null;
@@ -1138,6 +1148,79 @@ public class RealtimeChannelTest extends ParameterizedTest {
             assertNotNull(detachWaiter.error);
             assertEquals("Channel state is failed", detachWaiter.error.message);
             assertEquals(90000, detachWaiter.error.code);
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail("init0: Unexpected exception instantiating library");
+        } finally {
+            if(ably != null)
+                ably.close();
+        }
+    }
+
+    /**
+     * When connection is in failed or suspended, set error in callback
+     * Spec: RTL5g
+     */
+    @Test
+    public void detach_fail_callback_for_connection_invalid_state() {
+        AblyRealtime ably = null;
+        try {
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+            ably = new AblyRealtime(opts);
+            ConnectionWaiter connWaiter = new ConnectionWaiter(ably.connection);
+
+            /* wait until connected */
+            connWaiter.waitFor(ConnectionState.connected);
+
+            /* create a channel and attach */
+            final Channel channel = ably.channels.get("detach_failure");
+            ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+            channel.attach();
+            channelWaiter.waitFor(ChannelState.attached);
+
+            // Simulate connection closing from outside
+            ably.connection.connectionManager.requestState(new ConnectionManager.StateIndication(
+                ConnectionState.closing,
+                new ErrorInfo("Connection is closing", 80001)
+            ));
+            /* wait until connection closing */
+            connWaiter.waitFor(ConnectionState.closing);
+
+            // channel state is ATTACHED despite closing connection state
+            assertEquals(ChannelState.attached, channel.state);
+
+            /* detach */
+            Helpers.CompletionWaiter detachWaiter1 = new Helpers.CompletionWaiter();
+            channel.detach(detachWaiter1);
+
+            /* Verify onSuccess callback gets called */
+            detachWaiter1.waitFor();
+            assertFalse(detachWaiter1.success);
+            assertNotNull(detachWaiter1.error);
+            assertEquals("Connection is closing", detachWaiter1.error.message);
+            assertEquals(80001, detachWaiter1.error.code);
+
+            // Simulate connection failure
+            ably.connection.connectionManager.requestState(ConnectionState.failed);
+            /* wait until connection failed */
+            connWaiter.waitFor(ConnectionState.failed);
+
+            // Mock channel state to ATTACHED despite failed connection state
+            channelWaiter.waitFor(ChannelState.failed);
+            channel.state = ChannelState.attached;
+            assertEquals(ChannelState.attached, channel.state);
+
+            /* detach */
+            Helpers.CompletionWaiter detachWaiter2 = new Helpers.CompletionWaiter();
+            channel.detach(detachWaiter2);
+
+            /* Verify onSuccess callback gets called */
+            detachWaiter2.waitFor();
+            assertFalse(detachWaiter2.success);
+            assertNotNull(detachWaiter2.error);
+            assertEquals("Connection failed", detachWaiter2.error.message);
+            assertEquals(80000, detachWaiter2.error.code);
+
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");
@@ -1184,6 +1267,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
     /**
      * When client detaches from a channel successfully after detaching state,
      * verify attach {@code CompletionListener#onSuccess()} gets called.
+     * Spec: RTL5i
      */
     @Test
     public void detach_success_callback_detaching() throws AblyException {

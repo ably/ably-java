@@ -350,8 +350,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             default:
         }
         ConnectionManager connectionManager = ably.connection.connectionManager;
-        if(!connectionManager.isActive())
+        if(!connectionManager.isActive()) { // RTL5g
             throw AblyException.fromErrorInfo(connectionManager.getStateErrorInfo());
+        }
 
         sendDetachMessage(listener);
     }
@@ -609,6 +610,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             detachImpl(completionListener);
         } catch (AblyException e) {
             attachTimer = null;
+            callCompletionListenerError(listener, e.errorInfo); // RTL5g
         }
 
         if(attachTimer == null) {
