@@ -244,8 +244,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
 
         // (RTL4i)
-        if (connectionManager.getConnectionState().state == ConnectionState.connecting
-            || connectionManager.getConnectionState().state == ConnectionState.disconnected) {
+        ConnectionState connState = connectionManager.getConnectionState().state;
+        if (connState == ConnectionState.connecting || connState == ConnectionState.disconnected) {
             if (listener != null) {
                 on(new ChannelStateCompletionListener(listener, ChannelState.attached, ChannelState.failed));
             }
@@ -350,8 +350,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             default:
         }
         ConnectionManager connectionManager = ably.connection.connectionManager;
-        if(!connectionManager.isActive())
+        if(!connectionManager.isActive()) { // RTL5g
             throw AblyException.fromErrorInfo(connectionManager.getStateErrorInfo());
+        }
 
         sendDetachMessage(listener);
     }
@@ -609,6 +610,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             detachImpl(completionListener);
         } catch (AblyException e) {
             attachTimer = null;
+            callCompletionListenerError(listener, e.errorInfo); // RTL5g
         }
 
         if(attachTimer == null) {
@@ -1296,18 +1298,12 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         case detached:
             ChannelState oldState = state;
             switch(oldState) {
+                // RTL13a
                 case attached:
-                case suspended: //RTL13a
-                    /* Unexpected detach, reattach when possible */
-                    setDetached((msg.error != null) ? msg.error : REASON_NOT_ATTACHED);
+                case suspended:
+                    /* Unexpected detach, reattach immediately as per RTL13a */
                     Log.v(TAG, String.format(Locale.ROOT, "Server initiated detach for channel %s; attempting reattach", name));
-                    try {
-                        attachWithTimeout(null);
-                    } catch (AblyException e) {
-                    /* Send message error */
-                        Log.e(TAG, "Attempting reattach threw exception", e);
-                        setDetached(e.errorInfo);
-                    }
+                    attachWithTimeout(true, null);
                     break;
                 case attaching:
                     /* RTL13b says we need to be suspended, but continue to retry */
