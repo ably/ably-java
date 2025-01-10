@@ -1813,11 +1813,16 @@ public class RealtimeChannelTest extends ParameterizedTest {
             ProtocolMessage detachedMessage = new ProtocolMessage() {{
                 action = Action.detached;
                 channel = channelName;
+                error = new ErrorInfo("Simulated detach", 40000);
             }};
             ably.connection.connectionManager.onMessage(null, detachedMessage);
 
             /* Channel should transition to attaching, then to attached */
-            channelWaiter.waitFor(ChannelState.attaching);
+            ErrorInfo detachErr = channelWaiter.waitFor(ChannelState.attaching);
+            Assert.assertNotNull(detachErr);
+            Assert.assertEquals(40000, detachErr.code);
+            Assert.assertEquals("Simulated detach", detachErr.message);
+
             channelWaiter.waitFor(ChannelState.attached);
 
             List<ChannelState> channelStates = channelWaiter.getRecordedStates();
@@ -1869,11 +1874,16 @@ public class RealtimeChannelTest extends ParameterizedTest {
             ProtocolMessage detachedMessage = new ProtocolMessage() {{
                 action = Action.detached;
                 channel = channelName;
+                error = new ErrorInfo("Simulated detach", 40000);
             }};
             ably.connection.connectionManager.onMessage(null, detachedMessage);
 
             /* Channel should transition to attaching, then to attached */
-            channelWaiter.waitFor(ChannelState.attaching);
+            ErrorInfo detachError = channelWaiter.waitFor(ChannelState.attaching);
+            Assert.assertNotNull(detachError);
+            Assert.assertEquals(40000, detachError.code);
+            Assert.assertEquals("Simulated detach", detachError.message);
+
             channelWaiter.waitFor(ChannelState.attached);
 
             List<ChannelState> channelStates = channelWaiter.getRecordedStates();
