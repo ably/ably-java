@@ -26,6 +26,7 @@ import io.ably.lib.types.Message;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
 import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -944,6 +945,9 @@ public class RealtimeChannelTest extends ParameterizedTest {
         }
     }
 
+    /**
+     * Spec: RTL4g
+     */
     @Test
     public void attach_success_callback_for_channel_in_failed_state() {
         AblyRealtime ably = null;
@@ -1036,6 +1040,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
     /**
      * When client detaches from a channel successfully after initialized state,
      * verify attach {@code CompletionListener#onSuccess()} gets called.
+     * Spec: RTL5a
      */
     @Test
     public void detach_success_callback_initialized() {
@@ -1068,6 +1073,9 @@ public class RealtimeChannelTest extends ParameterizedTest {
         }
     }
 
+    /**
+     * Spec: RTL5j
+     */
     @Test
     public void detach_success_callback_on_suspended_state() {
         AblyRealtime ably = null;
@@ -1105,6 +1113,9 @@ public class RealtimeChannelTest extends ParameterizedTest {
         }
     }
 
+    /**
+     * Spec: RTL5b
+     */
     @Test
     public void detach_failure_callback_on_failed_state() {
         AblyRealtime ably = null;
@@ -1137,6 +1148,79 @@ public class RealtimeChannelTest extends ParameterizedTest {
             assertNotNull(detachWaiter.error);
             assertEquals("Channel state is failed", detachWaiter.error.message);
             assertEquals(90000, detachWaiter.error.code);
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail("init0: Unexpected exception instantiating library");
+        } finally {
+            if(ably != null)
+                ably.close();
+        }
+    }
+
+    /**
+     * When connection is in failed or suspended, set error in callback
+     * Spec: RTL5g
+     */
+    @Test
+    public void detach_fail_callback_for_connection_invalid_state() {
+        AblyRealtime ably = null;
+        try {
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+            ably = new AblyRealtime(opts);
+            ConnectionWaiter connWaiter = new ConnectionWaiter(ably.connection);
+
+            /* wait until connected */
+            connWaiter.waitFor(ConnectionState.connected);
+
+            /* create a channel and attach */
+            final Channel channel = ably.channels.get("detach_failure");
+            ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+            channel.attach();
+            channelWaiter.waitFor(ChannelState.attached);
+
+            // Simulate connection closing from outside
+            ably.connection.connectionManager.requestState(new ConnectionManager.StateIndication(
+                ConnectionState.closing,
+                new ErrorInfo("Connection is closing", 80001)
+            ));
+            /* wait until connection closing */
+            connWaiter.waitFor(ConnectionState.closing);
+
+            // channel state is ATTACHED despite closing connection state
+            assertEquals(ChannelState.attached, channel.state);
+
+            /* detach */
+            Helpers.CompletionWaiter detachWaiter1 = new Helpers.CompletionWaiter();
+            channel.detach(detachWaiter1);
+
+            /* Verify onSuccess callback gets called */
+            detachWaiter1.waitFor();
+            assertFalse(detachWaiter1.success);
+            assertNotNull(detachWaiter1.error);
+            assertEquals("Connection is closing", detachWaiter1.error.message);
+            assertEquals(80001, detachWaiter1.error.code);
+
+            // Simulate connection failure
+            ably.connection.connectionManager.requestState(ConnectionState.failed);
+            /* wait until connection failed */
+            connWaiter.waitFor(ConnectionState.failed);
+
+            // Mock channel state to ATTACHED despite failed connection state
+            channelWaiter.waitFor(ChannelState.failed);
+            channel.state = ChannelState.attached;
+            assertEquals(ChannelState.attached, channel.state);
+
+            /* detach */
+            Helpers.CompletionWaiter detachWaiter2 = new Helpers.CompletionWaiter();
+            channel.detach(detachWaiter2);
+
+            /* Verify onSuccess callback gets called */
+            detachWaiter2.waitFor();
+            assertFalse(detachWaiter2.success);
+            assertNotNull(detachWaiter2.error);
+            assertEquals("Connection failed", detachWaiter2.error.message);
+            assertEquals(80000, detachWaiter2.error.code);
+
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");
@@ -1183,6 +1267,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
     /**
      * When client detaches from a channel successfully after detaching state,
      * verify attach {@code CompletionListener#onSuccess()} gets called.
+     * Spec: RTL5i
      */
     @Test
     public void detach_success_callback_detaching() throws AblyException {
@@ -1698,15 +1783,15 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
     /*
      * Establish connection, attach channel, simulate sending detached messages
-     * from the server, test correct behaviour
+     * from the server for channel in attached state.
      *
      * Tests RTL13a
      */
     @Test
-    public void channel_server_initiated_detached() throws AblyException {
+    public void server_initiated_detach_for_attached_channel() throws AblyException {
         AblyRealtime ably = null;
         long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
-        final String channelName = "channel_server_initiated_attach_detach";
+        final String channelName = "channel_server_initiated_detach_for_attached_channel";
 
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -1728,12 +1813,86 @@ public class RealtimeChannelTest extends ParameterizedTest {
             ProtocolMessage detachedMessage = new ProtocolMessage() {{
                 action = Action.detached;
                 channel = channelName;
+                error = new ErrorInfo("Simulated detach", 40000);
             }};
             ably.connection.connectionManager.onMessage(null, detachedMessage);
 
             /* Channel should transition to attaching, then to attached */
-            channelWaiter.waitFor(ChannelState.attaching);
+            ErrorInfo detachErr = channelWaiter.waitFor(ChannelState.attaching);
+            Assert.assertNotNull(detachErr);
+            Assert.assertEquals(40000, detachErr.code);
+            Assert.assertEquals("Simulated detach", detachErr.message);
+
             channelWaiter.waitFor(ChannelState.attached);
+
+            List<ChannelState> channelStates = channelWaiter.getRecordedStates();
+            Assert.assertEquals(4, channelStates.size());
+            Assert.assertEquals(ChannelState.attaching, channelStates.get(0));
+            Assert.assertEquals(ChannelState.attached, channelStates.get(1));
+            Assert.assertEquals(ChannelState.attaching, channelStates.get(2));
+            Assert.assertEquals(ChannelState.attached, channelStates.get(3));
+
+        } finally {
+            if (ably != null)
+                ably.close();
+            Defaults.realtimeRequestTimeout = oldRealtimeTimeout;
+        }
+    }
+
+    /*
+     * Establish connection, attach channel, simulate sending detached messages
+     * from the server for channel in suspended state.
+     *
+     * Tests RTL13a
+     */
+    @Test
+    public void server_initiated_detach_for_suspended_channel() throws AblyException {
+        AblyRealtime ably = null;
+        long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
+        final String channelName = "channel_server_initiated_detach_for_suspended_channel";
+
+        try {
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+
+            /* Make test faster */
+            Defaults.realtimeRequestTimeout = 1000;
+            opts.channelRetryTimeout = 1000;
+
+            ably = new AblyRealtime(opts);
+            new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+
+            Channel channel = ably.channels.get(channelName);
+            ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+
+            channel.attach();
+            channelWaiter.waitFor(ChannelState.attached);
+
+            channel.setSuspended(new ErrorInfo("Set state to suspended", 400), true);
+            channelWaiter.waitFor(ChannelState.suspended);
+
+            /* Inject detached message as if from the server */
+            ProtocolMessage detachedMessage = new ProtocolMessage() {{
+                action = Action.detached;
+                channel = channelName;
+                error = new ErrorInfo("Simulated detach", 40000);
+            }};
+            ably.connection.connectionManager.onMessage(null, detachedMessage);
+
+            /* Channel should transition to attaching, then to attached */
+            ErrorInfo detachError = channelWaiter.waitFor(ChannelState.attaching);
+            Assert.assertNotNull(detachError);
+            Assert.assertEquals(40000, detachError.code);
+            Assert.assertEquals("Simulated detach", detachError.message);
+
+            channelWaiter.waitFor(ChannelState.attached);
+
+            List<ChannelState> channelStates = channelWaiter.getRecordedStates();
+            Assert.assertEquals(5, channelStates.size());
+            Assert.assertEquals(ChannelState.attaching, channelStates.get(0));
+            Assert.assertEquals(ChannelState.attached, channelStates.get(1));
+            Assert.assertEquals(ChannelState.suspended, channelStates.get(2));
+            Assert.assertEquals(ChannelState.attaching, channelStates.get(3));
+            Assert.assertEquals(ChannelState.attached, channelStates.get(4));
 
         } finally {
             if (ably != null)

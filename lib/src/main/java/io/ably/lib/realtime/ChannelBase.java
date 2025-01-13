@@ -194,7 +194,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
     void attach(boolean forceReattach, CompletionListener listener) {
         clearAttachTimers();
-        attachWithTimeout(forceReattach, listener);
+        attachWithTimeout(forceReattach, listener, null);
     }
 
     /**
@@ -217,7 +217,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
     private boolean attachResume;
 
-    private void attachImpl(final boolean forceReattach, final CompletionListener listener) throws AblyException {
+    private void attachImpl(final boolean forceReattach, final CompletionListener listener, ErrorInfo reattachmentReason) throws AblyException {
         Log.v(TAG, "attach(); channel = " + name);
         if(!forceReattach) {
             /* check preconditions */
@@ -244,12 +244,12 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
 
         // (RTL4i)
-        if (connectionManager.getConnectionState().state == ConnectionState.connecting
-            || connectionManager.getConnectionState().state == ConnectionState.disconnected) {
+        ConnectionState connState = connectionManager.getConnectionState().state;
+        if (connState == ConnectionState.connecting || connState == ConnectionState.disconnected) {
             if (listener != null) {
                 on(new ChannelStateCompletionListener(listener, ChannelState.attached, ChannelState.failed));
             }
-            setState(ChannelState.attaching, null);
+            setState(ChannelState.attaching, reattachmentReason);
             return;
         }
 
@@ -277,7 +277,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                 attachMessage.setFlag(Flag.attach_resume);
             }
 
-            setState(ChannelState.attaching, null);
+            setState(ChannelState.attaching, reattachmentReason);
             connectionManager.send(attachMessage, true, null);
         } catch(AblyException e) {
             throw e;
@@ -350,8 +350,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             default:
         }
         ConnectionManager connectionManager = ably.connection.connectionManager;
-        if(!connectionManager.isActive())
+        if(!connectionManager.isActive()) { // RTL5g
             throw AblyException.fromErrorInfo(connectionManager.getStateErrorInfo());
+        }
 
         sendDetachMessage(listener);
     }
@@ -469,14 +470,14 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     }
 
     private void attachWithTimeout(final CompletionListener listener) throws AblyException {
-        this.attachWithTimeout(false, listener);
+        this.attachWithTimeout(false, listener, null);
     }
 
     /**
      * Attach channel, if not attached within timeout set state to suspended and
      * set up timer to reattach it later
      */
-    synchronized private void attachWithTimeout(final boolean forceReattach, final CompletionListener listener) {
+    synchronized private void attachWithTimeout(final boolean forceReattach, final CompletionListener listener, ErrorInfo reattachmentReason) {
         checkChannelIsNotReleased();
         Timer currentAttachTimer;
         try {
@@ -501,7 +502,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                     clearAttachTimers();
                     callCompletionListenerError(listener, reason);
                 }
-            });
+            }, reattachmentReason);
         } catch(AblyException e) {
             attachTimer = null;
             callCompletionListenerError(listener, e.errorInfo);
@@ -609,6 +610,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             detachImpl(completionListener);
         } catch (AblyException e) {
             attachTimer = null;
+            callCompletionListenerError(listener, e.errorInfo); // RTL5g
         }
 
         if(attachTimer == null) {
@@ -1296,18 +1298,12 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         case detached:
             ChannelState oldState = state;
             switch(oldState) {
+                // RTL13a
                 case attached:
-                case suspended: //RTL13a
-                    /* Unexpected detach, reattach when possible */
-                    setDetached((msg.error != null) ? msg.error : REASON_NOT_ATTACHED);
+                case suspended:
+                    /* Unexpected detach, reattach immediately as per RTL13a */
                     Log.v(TAG, String.format(Locale.ROOT, "Server initiated detach for channel %s; attempting reattach", name));
-                    try {
-                        attachWithTimeout(null);
-                    } catch (AblyException e) {
-                    /* Send message error */
-                        Log.e(TAG, "Attempting reattach threw exception", e);
-                        setDetached(e.errorInfo);
-                    }
+                    attachWithTimeout(true, null, msg.error);
                     break;
                 case attaching:
                     /* RTL13b says we need to be suspended, but continue to retry */
