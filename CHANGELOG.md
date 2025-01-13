@@ -1,5 +1,19 @@
 # Change Log
 
+## [1.2.48](https://github.com/ably/ably-java/tree/v1.2.48)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.47...v1.2.48)
+
+**Closed issues:**
+
+- Flaky realtime tests for RealtimeChannelTest [\#1055](https://github.com/ably/ably-java/issues/1055)
+- \[RTL13\] Handle server sent `DETACHED` event [\#1051](https://github.com/ably/ably-java/issues/1051)
+
+**Merged pull requests:**
+
+- \[ECO-5188\] MessageAction enum changes [\#1056](https://github.com/ably/ably-java/pull/1056) ([SimonWoolf](https://github.com/SimonWoolf))
+
+
 ## [1.2.47](https://github.com/ably/ably-java/tree/v1.2.47)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.46...v1.2.47)
