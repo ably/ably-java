@@ -65,7 +65,7 @@ public class MessageTest {
         assertEquals("test-key", serializedObject.get("connectionKey").getAsString());
         assertEquals("test-data", serializedObject.get("data").getAsString());
         assertEquals("test-name", serializedObject.get("name").getAsString());
-        assertEquals(1, serializedObject.get("action").getAsInt());
+        assertEquals(0, serializedObject.get("action").getAsInt());
         assertEquals("01826232498871-001@abcdefghij:001", serializedObject.get("serial").getAsString());
     }
 
@@ -76,7 +76,7 @@ public class MessageTest {
        jsonObject.addProperty("clientId", "test-client-id");
        jsonObject.addProperty("data", "test-data");
        jsonObject.addProperty("name", "test-name");
-       jsonObject.addProperty("action", 1);
+       jsonObject.addProperty("action", 0);
        jsonObject.addProperty("serial", "01826232498871-001@abcdefghij:001");
 
         // When
