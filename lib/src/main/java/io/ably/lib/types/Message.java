@@ -3,6 +3,9 @@ package io.ably.lib.types;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonDeserializationContext;
@@ -74,6 +77,94 @@ public class Message extends BaseMessage {
      */
     public Long createdAt;
 
+    /**
+     * (TM2l) ref string – an opaque string that uniquely identifies some referenced message.
+     */
+    public String refSerial;
+
+    /**
+     * (TM2m) refType string – an opaque string that identifies the type of this reference.
+     */
+    public String refType;
+
+    /**
+     * (TM2n) operation object – data object that may contain the `optional` attributes.
+     */
+    public Operation operation;
+
+    public static class Operation {
+        public String clientId;
+        public String description;
+        public Map<String, String> metadata;
+
+        void write(MessagePacker packer) throws IOException {
+            packer.packMapHeader(3);
+            if(clientId != null) {
+                packer.packString("clientId");
+                packer.packString(clientId);
+            }
+            if(description != null) {
+                packer.packString("description");
+                packer.packString(description);
+            }
+            if(metadata != null) {
+                packer.packString("metadata");
+                packer.packMapHeader(metadata.size());
+                for(Map.Entry<String, String> entry : metadata.entrySet()) {
+                    packer.packString(entry.getKey());
+                    packer.packString(entry.getValue());
+                }
+            }
+        }
+
+        protected static Operation read(final MessageUnpacker unpacker) throws IOException {
+            Operation operation = new Operation();
+            int fieldCount = unpacker.unpackMapHeader();
+            for (int i = 0; i < fieldCount; i++) {
+                String fieldName = unpacker.unpackString().intern();
+                switch (fieldName) {
+                    case "clientId":
+                        operation.clientId = unpacker.unpackString();
+                        break;
+                    case "description":
+                        operation.description = unpacker.unpackString();
+                        break;
+                    case "metadata":
+                        int mapSize = unpacker.unpackMapHeader();
+                        operation.metadata = new HashMap<>(mapSize);
+                        for (int j = 0; j < mapSize; j++) {
+                            String key = unpacker.unpackString();
+                            String value = unpacker.unpackString();
+                            operation.metadata.put(key, value);
+                        }
+                        break;
+                    default:
+                        unpacker.skipValue();
+                        break;
+                }
+            }
+            return operation;
+        }
+
+        protected static Operation read(final JsonObject jsonObject) throws MessageDecodeException {
+            Operation operation = new Operation();
+            if (jsonObject.has("clientId")) {
+                operation.clientId = jsonObject.get("clientId").getAsString();
+            }
+            if (jsonObject.has("description")) {
+                operation.description = jsonObject.get("description").getAsString();
+            }
+            if (jsonObject.has("metadata")) {
+                JsonObject metadataObject = jsonObject.getAsJsonObject("metadata");
+                operation.metadata = new HashMap<>();
+                for (Map.Entry<String, JsonElement> entry : metadataObject.entrySet()) {
+                    operation.metadata.put(entry.getKey(), entry.getValue().getAsString());
+                }
+            }
+            return operation;
+        }
+    }
+
     private static final String NAME = "name";
     private static final String EXTRAS = "extras";
     private static final String CONNECTION_KEY = "connectionKey";
@@ -81,6 +172,9 @@ public class Message extends BaseMessage {
     private static final String VERSION = "version";
     private static final String ACTION = "action";
     private static final String CREATED_AT = "createdAt";
+    private static final String REF_SERIAL = "refSerial";
+    private static final String REF_TYPE = "refType";
+    private static final String OPERATION = "operation";
 
     /**
      * Default constructor
@@ -160,10 +254,15 @@ public class Message extends BaseMessage {
         int fieldCount = super.countFields();
         if(name != null) ++fieldCount;
         if(extras != null) ++fieldCount;
+        if(connectionKey != null) ++fieldCount;
         if(serial != null) ++fieldCount;
         if(version != null) ++fieldCount;
         if(action != null) ++fieldCount;
         if(createdAt != null) ++fieldCount;
+        if(refSerial != null) ++fieldCount;
+        if(refType != null) ++fieldCount;
+        if(operation != null) ++fieldCount;
+
         packer.packMapHeader(fieldCount);
         super.writeFields(packer);
         if(name != null) {
@@ -173,6 +272,10 @@ public class Message extends BaseMessage {
         if(extras != null) {
             packer.packString(EXTRAS);
             extras.write(packer);
+        }
+        if(connectionKey != null) {
+            packer.packString(CONNECTION_KEY);
+            packer.packString(connectionKey);
         }
         if(serial != null) {
             packer.packString(SERIAL);
@@ -189,6 +292,18 @@ public class Message extends BaseMessage {
         if(createdAt != null) {
             packer.packString(CREATED_AT);
             packer.packLong(createdAt);
+        }
+        if(refSerial != null) {
+            packer.packString(REF_SERIAL);
+            packer.packString(refSerial);
+        }
+        if(refType != null) {
+            packer.packString(REF_TYPE);
+            packer.packString(refType);
+        }
+        if(operation != null) {
+            packer.packString(OPERATION);
+            operation.write(packer);
         }
     }
 
@@ -209,6 +324,8 @@ public class Message extends BaseMessage {
                 name = unpacker.unpackString();
             } else if (fieldName.equals(EXTRAS)) {
                 extras = MessageExtras.read(unpacker);
+            } else if (fieldName.equals(CONNECTION_KEY)) {
+                connectionKey = unpacker.unpackString();
             } else if (fieldName.equals(SERIAL)) {
                 serial = unpacker.unpackString();
             } else if (fieldName.equals(VERSION)) {
@@ -217,7 +334,14 @@ public class Message extends BaseMessage {
                 action = MessageAction.tryFindByOrdinal(unpacker.unpackInt());
             } else if (fieldName.equals(CREATED_AT)) {
                 createdAt = unpacker.unpackLong();
-            } else {
+            }  else if (fieldName.equals(REF_SERIAL)) {
+                refSerial = unpacker.unpackString();
+            } else if (fieldName.equals(REF_TYPE)) {
+                refType = unpacker.unpackString();
+            } else if (fieldName.equals(OPERATION)) {
+                operation = Operation.read(unpacker);
+            }
+            else {
                 Log.v(TAG, "Unexpected field: " + fieldName);
                 unpacker.skipValue();
             }
@@ -373,12 +497,23 @@ public class Message extends BaseMessage {
             }
             extras = MessageExtras.read((JsonObject) extrasElement);
         }
+        connectionKey = readString(map, CONNECTION_KEY);
 
         serial = readString(map, SERIAL);
         version = readString(map, VERSION);
         Integer actionOrdinal = readInt(map, ACTION);
         action = actionOrdinal == null ? null : MessageAction.tryFindByOrdinal(actionOrdinal);
         createdAt = readLong(map, CREATED_AT);
+        refSerial = readString(map, REF_SERIAL);
+        refType = readString(map, REF_TYPE);
+
+        final JsonElement operationElement = map.get(OPERATION);
+        if (null != operationElement) {
+            if (!(operationElement instanceof JsonObject)) {
+                throw MessageDecodeException.fromDescription("Message operation is of type \"" + operationElement.getClass() + "\" when expected a JSON object.");
+            }
+            operation = Operation.read((JsonObject) operationElement);
+        }
     }
 
     public static class Serializer implements JsonSerializer<Message>, JsonDeserializer<Message> {
@@ -405,6 +540,15 @@ public class Message extends BaseMessage {
             }
             if (message.createdAt != null) {
                 json.addProperty(CREATED_AT, message.createdAt);
+            }
+            if (message.refSerial != null) {
+                json.addProperty(REF_SERIAL, message.refSerial);
+            }
+            if (message.refType != null) {
+                json.addProperty(REF_TYPE, message.refType);
+            }
+            if (message.operation != null) {
+                json.add(OPERATION, Serialisation.gson.toJsonTree(message.operation));
             }
             return json;
         }
