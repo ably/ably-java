@@ -2,6 +2,7 @@ package io.ably.lib.chat;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.rest.AblyRest;
@@ -39,19 +40,19 @@ public class ChatRoom {
 
     public static class SendMessageParams {
         public String text;
-        public Map<String, Object> metadata;
+        public JsonObject metadata;
         public Map<String, String> headers;
     }
 
     public static class UpdateMessageParams {
         public SendMessageParams message;
         public String description;
-        public Map<String, Object> metadata;
+        public JsonObject metadata;
     }
 
     public static class DeleteMessageParams {
         public String description;
-        public Map<String, Object> metadata;
+        public JsonObject metadata;
     }
 
     protected Optional<JsonElement> makeAuthorizedRequest(String url, String method, JsonElement body) throws AblyException {

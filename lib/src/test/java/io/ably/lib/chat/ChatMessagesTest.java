@@ -13,11 +13,14 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ChatMessagesTest extends ParameterizedTest {
     /**
-     * Connect to the service and attach, then subscribe and unsubscribe
+     * Test that a message sent via rest API is sent to a messages channel.
+     * It should be received by the client that is subscribed to the messages channel.
      */
     @Test
     public void test_room_message_is_published() {
@@ -42,6 +45,15 @@ public class ChatMessagesTest extends ParameterizedTest {
             // send message to room
             ChatRoom.SendMessageParams params = new ChatRoom.SendMessageParams();
             params.text = "hello there";
+            params.metadata = new JsonObject();
+            JsonObject foo = new JsonObject();
+            foo.addProperty("bar", 1);
+            params.metadata.add("foo", foo);
+            Map<String, String> headers = new HashMap<>();
+            headers.put("header1", "value1");
+            headers.put("baz", "qux");
+            params.headers = headers;
+
             JsonObject sendMessageResult = (JsonObject) room.sendMessage(params);
             // check sendMessageResult has 2 fields and are not null
             Assert.assertEquals(2, sendMessageResult.entrySet().size());
@@ -63,8 +75,21 @@ public class ChatMessagesTest extends ParameterizedTest {
             JsonObject data = (JsonObject) message.data;
             // has two fields "text" and "metadata"
             Assert.assertEquals(2, data.entrySet().size());
+            // Assert for received text
             Assert.assertEquals("hello there", data.get("text").getAsString());
-            Assert.assertTrue(data.get("metadata").isJsonObject());
+            // Assert on received metadata
+            JsonObject metadata = data.getAsJsonObject("metadata");
+            Assert.assertTrue(metadata.has("foo"));
+            Assert.assertTrue(metadata.get("foo").isJsonObject());
+            Assert.assertEquals(1, metadata.getAsJsonObject("foo").get("bar").getAsInt());
+
+            // Assert sent headers as a part of message.extras.headers
+            JsonObject extrasJson = message.extras.asJsonObject();
+            Assert.assertTrue(extrasJson.has("headers"));
+            JsonObject headersJson = extrasJson.getAsJsonObject("headers");
+            Assert.assertEquals(2, headersJson.entrySet().size());
+            Assert.assertEquals("value1", headersJson.get("header1").getAsString());
+            Assert.assertEquals("qux", headersJson.get("baz").getAsString());
 
             Assert.assertEquals(resultCreatedAt, String.valueOf(message.timestamp));
 
