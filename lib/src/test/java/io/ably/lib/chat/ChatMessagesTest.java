@@ -316,4 +316,208 @@ public class ChatMessagesTest extends ParameterizedTest {
             if (ablyClient2 != null) ablyClient2.close();
         }
     }
+
+    /**
+     * Test that message is created, updated and then deleted serially
+     */
+    @Test
+    public void test_room_message_create_update_delete() {
+        String roomId = "1234";
+        String channelName = roomId + "::$chat::$chatMessages";
+        AblyRealtime ablyClient1 = null;
+        AblyRealtime ablyClient2 = null;
+        try {
+            ClientOptions opts1 = createOptions(testVars.keys[7].keyStr);
+            opts1.clientId = "clientId1";
+            ablyClient1 = new AblyRealtime(opts1);
+
+            ClientOptions opts2 = createOptions(testVars.keys[7].keyStr);
+            opts2.clientId = "clientId2";
+            ablyClient2 = new AblyRealtime(opts2);
+
+            ChatRoom room = new ChatRoom(roomId, ablyClient1);
+
+            // Create a channel and attach with client1
+            final Channel channel1 = ablyClient1.channels.get(channelName);
+            channel1.attach();
+            (new Helpers.ChannelWaiter(channel1)).waitFor(ChannelState.attached);
+
+            // Subscribe to messages with client2
+            final Channel channel2 = ablyClient2.channels.get(channelName);
+            channel2.attach();
+            (new Helpers.ChannelWaiter(channel2)).waitFor(ChannelState.attached);
+
+            List<Message> receivedMsg = new ArrayList<>();
+            channel2.subscribe(receivedMsg::add);
+
+            // Send message to room
+            ChatRoom.SendMessageParams sendParams = new ChatRoom.SendMessageParams();
+            sendParams.text = "hello there";
+
+            JsonObject sendMessageResult = (JsonObject) room.sendMessage(sendParams);
+            String originalSerial = sendMessageResult.get("serial").getAsString();
+            String originalCreatedAt = sendMessageResult.get("createdAt").getAsString();
+
+            // Wait for the message to be received
+            Exception err = new Helpers.ConditionalWaiter().wait(() -> !receivedMsg.isEmpty(), 10_000);
+            Assert.assertNull(err);
+
+            // Update the message
+            ChatRoom.UpdateMessageParams updateParams = new ChatRoom.UpdateMessageParams();
+            updateParams.message = new ChatRoom.SendMessageParams();
+            updateParams.message.text = "updated text";
+
+            JsonObject updateMessageResult = (JsonObject) room.updateMessage(originalSerial, updateParams);
+            String updateResultVersion = updateMessageResult.get("version").getAsString();
+            String updateResultTimestamp = updateMessageResult.get("timestamp").getAsString();
+
+            // Wait for the updated message to be received
+            err = new Helpers.ConditionalWaiter().wait(() -> receivedMsg.size() == 2, 10_000);
+            Assert.assertNull(err);
+
+            // Delete the message
+            ChatRoom.DeleteMessageParams deleteParams = new ChatRoom.DeleteMessageParams();
+            deleteParams.description = "message deleted by clientId1";
+
+            JsonObject deleteMessageResult = (JsonObject) room.deleteMessage(originalSerial, deleteParams);
+            String deleteResultVersion = deleteMessageResult.get("version").getAsString();
+            String deleteResultTimestamp = deleteMessageResult.get("timestamp").getAsString();
+
+            // Wait for the deleted message to be received
+            err = new Helpers.ConditionalWaiter().wait(() -> receivedMsg.size() == 3, 10_000);
+            Assert.assertNull(err);
+
+            // Verify the created message
+            Message createdMessage = receivedMsg.get(0);
+            Assert.assertEquals(MessageAction.MESSAGE_CREATE, createdMessage.action);
+            Assert.assertFalse("Message ID should not be empty", createdMessage.id.isEmpty());
+            Assert.assertEquals("chat.message", createdMessage.name);
+            Assert.assertEquals("clientId1", createdMessage.clientId);
+            JsonObject createdData = (JsonObject) createdMessage.data;
+            Assert.assertEquals("hello there", createdData.get("text").getAsString());
+
+            // Verify the updated message
+            Message updatedMessage = receivedMsg.get(1);
+            Assert.assertEquals(MessageAction.MESSAGE_UPDATE, updatedMessage.action);
+            Assert.assertFalse("Message ID should not be empty", updatedMessage.id.isEmpty());
+            Assert.assertEquals("chat.message", updatedMessage.name);
+            Assert.assertEquals("clientId1", updatedMessage.clientId);
+            JsonObject updatedData = (JsonObject) updatedMessage.data;
+            Assert.assertEquals("updated text", updatedData.get("text").getAsString());
+
+            Assert.assertEquals(updateResultVersion, updatedMessage.version);
+            Assert.assertEquals(updateResultTimestamp, String.valueOf(updatedMessage.timestamp));
+
+            // Verify the deleted message
+            Message deletedMessage = receivedMsg.get(2);
+            Assert.assertEquals(MessageAction.MESSAGE_DELETE, deletedMessage.action);
+            Assert.assertFalse("Message ID should not be empty", deletedMessage.id.isEmpty());
+            Assert.assertEquals("chat.message", deletedMessage.name);
+            Assert.assertEquals("clientId1", deletedMessage.clientId);
+
+            Assert.assertEquals(deleteResultVersion, deletedMessage.version);
+            Assert.assertEquals(deleteResultTimestamp, String.valueOf(deletedMessage.timestamp));
+
+            // Check original serials
+            Assert.assertEquals(originalSerial, createdMessage.serial);
+            Assert.assertEquals(originalSerial, updatedMessage.serial);
+            Assert.assertEquals(originalSerial, deletedMessage.serial);
+
+            // Check original message createdAt
+            Assert.assertEquals(originalCreatedAt, createdMessage.createdAt.toString());
+            Assert.assertEquals(originalCreatedAt, updatedMessage.createdAt.toString());
+            Assert.assertEquals(originalCreatedAt, deletedMessage.createdAt.toString());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.fail("Unexpected exception instantiating library");
+        } finally {
+            if (ablyClient1 != null) ablyClient1.close();
+            if (ablyClient2 != null) ablyClient2.close();
+        }
+    }
+
+    /**
+     * Test that update/delete operations are allowed on a deleted message.
+     */
+    @Test
+    public void test_operations_allowed_on_deleted_message() {
+        String roomId = "1234";
+        String channelName = roomId + "::$chat::$chatMessages";
+        AblyRealtime ablyClient1 = null;
+        AblyRealtime ablyClient2 = null;
+        try {
+            ClientOptions opts1 = createOptions(testVars.keys[7].keyStr);
+            opts1.clientId = "clientId1";
+            ablyClient1 = new AblyRealtime(opts1);
+
+            ClientOptions opts2 = createOptions(testVars.keys[7].keyStr);
+            opts2.clientId = "clientId2";
+            ablyClient2 = new AblyRealtime(opts2);
+
+            ChatRoom room = new ChatRoom(roomId, ablyClient1);
+
+            // Create a channel and attach with client1
+            final Channel channel1 = ablyClient1.channels.get(channelName);
+            channel1.attach();
+            (new Helpers.ChannelWaiter(channel1)).waitFor(ChannelState.attached);
+
+            // Subscribe to messages with client2
+            final Channel channel2 = ablyClient2.channels.get(channelName);
+            channel2.attach();
+            (new Helpers.ChannelWaiter(channel2)).waitFor(ChannelState.attached);
+
+            List<Message> receivedMsg = new ArrayList<>();
+            channel2.subscribe(receivedMsg::add);
+
+            // Send message to room
+            ChatRoom.SendMessageParams sendParams = new ChatRoom.SendMessageParams();
+            sendParams.text = "hello there";
+
+            JsonObject sendMessageResult = (JsonObject) room.sendMessage(sendParams);
+            String originalSerial = sendMessageResult.get("serial").getAsString();
+
+            // Wait for the message to be received
+            Exception err = new Helpers.ConditionalWaiter().wait(() -> !receivedMsg.isEmpty(), 10_000);
+            Assert.assertNull(err);
+
+            // Delete the message
+            ChatRoom.DeleteMessageParams deleteParams = new ChatRoom.DeleteMessageParams();
+            deleteParams.description = "message deleted by clientId1";
+
+            room.deleteMessage(originalSerial, deleteParams);
+
+            // Wait for the deleted message to be received
+            err = new Helpers.ConditionalWaiter().wait(() -> receivedMsg.size() == 2, 10_000);
+            Assert.assertNull(err);
+
+            // Attempt to update the deleted message
+            ChatRoom.UpdateMessageParams updateParams = new ChatRoom.UpdateMessageParams();
+            updateParams.message = new ChatRoom.SendMessageParams();
+            updateParams.message.text = "updated text";
+            room.updateMessage(originalSerial, updateParams);
+
+            // wait for updated message to be received
+            err = new Helpers.ConditionalWaiter().wait(() -> receivedMsg.size() == 3, 10_000);
+            Assert.assertNull(err);
+
+            // Attempt to delete the already deleted message
+            room.deleteMessage(originalSerial, deleteParams);
+            // wait for delete message received
+            err = new Helpers.ConditionalWaiter().wait(() -> receivedMsg.size() == 4, 10_000);
+            Assert.assertNull(err);
+
+            Assert.assertEquals(4, receivedMsg.size());
+            for (Message msg : receivedMsg) {
+                Assert.assertEquals("Serial should match original serial", originalSerial, msg.serial);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.fail("Unexpected exception instantiating library");
+        } finally {
+            if (ablyClient1 != null) ablyClient1.close();
+            if (ablyClient2 != null) ablyClient2.close();
+        }
+    }
 }
