@@ -3,6 +3,7 @@ package io.ably.lib.types;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 import com.google.gson.JsonArray;
@@ -19,7 +20,6 @@ import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 
 import io.ably.lib.util.Log;
-
 
 /**
  * Contains an individual message that is sent to, or received from, Ably.
@@ -95,7 +95,7 @@ public class Message extends BaseMessage {
     public static class Operation {
         public String clientId;
         public String description;
-        public JsonObject metadata;
+        public Map<String, String> metadata;
 
         void write(MessagePacker packer) throws IOException {
             packer.packMapHeader(3);
@@ -110,9 +110,9 @@ public class Message extends BaseMessage {
             if(metadata != null) {
                 packer.packString("metadata");
                 packer.packMapHeader(metadata.size());
-                for(Map.Entry<String, JsonElement> entry : metadata.entrySet()) {
+                for(Map.Entry<String, String> entry : metadata.entrySet()) {
                     packer.packString(entry.getKey());
-                    Serialisation.gsonToMsgpack(entry.getValue(), packer);
+                    packer.packString(entry.getValue());
                 }
             }
         }
@@ -131,11 +131,11 @@ public class Message extends BaseMessage {
                         break;
                     case "metadata":
                         int mapSize = unpacker.unpackMapHeader();
-                        operation.metadata = new JsonObject();
+                        operation.metadata = new HashMap<>(mapSize);
                         for (int j = 0; j < mapSize; j++) {
                             String key = unpacker.unpackString();
-                            JsonElement value = Serialisation.msgpackToGson(unpacker.unpackValue());
-                            operation.metadata.add(key, value);
+                            String value = unpacker.unpackString();
+                            operation.metadata.put(key, value);
                         }
                         break;
                     default:
@@ -155,7 +155,11 @@ public class Message extends BaseMessage {
                 operation.description = jsonObject.get("description").getAsString();
             }
             if (jsonObject.has("metadata")) {
-                operation.metadata = jsonObject.getAsJsonObject("metadata");
+                JsonObject metadataObject = jsonObject.getAsJsonObject("metadata");
+                operation.metadata = new HashMap<>();
+                for (Map.Entry<String, JsonElement> entry : metadataObject.entrySet()) {
+                    operation.metadata.put(entry.getKey(), entry.getValue().getAsString());
+                }
             }
             return operation;
         }

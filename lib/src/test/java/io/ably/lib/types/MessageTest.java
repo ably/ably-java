@@ -12,6 +12,7 @@ import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 
 import java.io.ByteArrayOutputStream;
+import java.util.HashMap;
 
 public class MessageTest {
 
@@ -77,12 +78,12 @@ public class MessageTest {
     @Test
     public void deserialize_message_with_serial() throws Exception {
         // Given
-       JsonObject jsonObject = new JsonObject();
-       jsonObject.addProperty("clientId", "test-client-id");
-       jsonObject.addProperty("data", "test-data");
-       jsonObject.addProperty("name", "test-name");
-       jsonObject.addProperty("action", 0);
-       jsonObject.addProperty("serial", "01826232498871-001@abcdefghij:001");
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("clientId", "test-client-id");
+        jsonObject.addProperty("data", "test-data");
+        jsonObject.addProperty("name", "test-name");
+        jsonObject.addProperty("action", 0);
+        jsonObject.addProperty("serial", "01826232498871-001@abcdefghij:001");
 
         // When
         Message message = Message.fromEncoded(jsonObject, new ChannelOptions());
@@ -106,9 +107,9 @@ public class MessageTest {
         Message.Operation operation = new Message.Operation();
         operation.clientId = "operation-client-id";
         operation.description = "operation-description";
-        operation.metadata = new JsonObject();
-        operation.metadata.addProperty("key1", "value1");
-        operation.metadata.addProperty("key2", "value2");
+        operation.metadata = new HashMap<>();
+        operation.metadata.put("key1", "value1");
+        operation.metadata.put("key2", "value2");
         message.operation = operation;
 
         // When
@@ -161,8 +162,8 @@ public class MessageTest {
         assertEquals("test-key", message.connectionKey);
         assertEquals("operation-client-id", message.operation.clientId);
         assertEquals("operation-description", message.operation.description);
-        assertEquals("value1", message.operation.metadata.get("key1").getAsString());
-        assertEquals("value2", message.operation.metadata.get("key2").getAsString());
+        assertEquals("value1", message.operation.metadata.get("key1"));
+        assertEquals("value2", message.operation.metadata.get("key2"));
     }
 
     @Test
@@ -199,9 +200,9 @@ public class MessageTest {
         Message.Operation operation = new Message.Operation();
         operation.clientId = "operation-client-id";
         operation.description = "operation-description";
-        operation.metadata = new JsonObject();
-        operation.metadata.addProperty("key1", "value1");
-        operation.metadata.addProperty("key2", "value2");
+        operation.metadata = new HashMap<>();
+        operation.metadata.put("key1", "value1");
+        operation.metadata.put("key2", "value2");
         message.operation = operation;
 
         // When Encode to MessagePack
@@ -226,7 +227,7 @@ public class MessageTest {
         assertEquals("01826232498871-001@abcdefghij:001", unpacked.serial);
         assertEquals("operation-client-id", unpacked.operation.clientId);
         assertEquals("operation-description", unpacked.operation.description);
-        assertEquals("value1", unpacked.operation.metadata.get("key1").getAsString());
-        assertEquals("value2", unpacked.operation.metadata.get("key2").getAsString());
+        assertEquals("value1", unpacked.operation.metadata.get("key1"));
+        assertEquals("value2", unpacked.operation.metadata.get("key2"));
     }
 }

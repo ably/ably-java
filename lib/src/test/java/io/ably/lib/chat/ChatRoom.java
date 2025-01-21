@@ -47,12 +47,12 @@ public class ChatRoom {
     public static class UpdateMessageParams {
         public SendMessageParams message;
         public String description;
-        public JsonObject metadata;
+        public Map<String, String> metadata;
     }
 
     public static class DeleteMessageParams {
         public String description;
-        public JsonObject metadata;
+        public Map<String, String> metadata;
     }
 
     protected Optional<JsonElement> makeAuthorizedRequest(String url, String method, JsonElement body) throws AblyException {
