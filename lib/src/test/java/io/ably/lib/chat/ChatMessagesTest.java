@@ -168,8 +168,11 @@ public class ChatMessagesTest extends ParameterizedTest {
             // Update description
             updateParams.description = "message updated by clientId1";
 
-            // TODO - Update external metadata, this will be populated in operation field
-            // updateParams.metadata = params.metadata;
+            // Update metadata, add few random fields
+            Map<String, String> operationMetadata = new HashMap<>();
+            operationMetadata.put("foo", "bar");
+            operationMetadata.put("naruto", "hero");
+            updateParams.metadata = operationMetadata;
 
             JsonObject updateMessageResult = (JsonObject) room.updateMessage(originalSerial, updateParams);
             String updateResultVersion = updateMessageResult.get("version").getAsString();
@@ -197,12 +200,18 @@ public class ChatMessagesTest extends ParameterizedTest {
             Assert.assertEquals(1, metadata.getAsJsonObject("foo").get("bar").getAsInt());
 
             Assert.assertEquals(originalSerial, updatedMessage.serial);
-            Assert.assertEquals(updateResultVersion, updatedMessage.version);
-
             Assert.assertEquals(originalCreatedAt, updatedMessage.createdAt.toString());
+
+            Assert.assertEquals(updateResultVersion, updatedMessage.version);
             Assert.assertEquals(updateResultTimestamp, String.valueOf(updatedMessage.timestamp));
 
-            // TODO - Add assertion for operation field
+            // updatedMessage contains `operation` with fields as clientId, description, metadata, assert for these fields
+            Message.Operation operation = updatedMessage.operation;
+            Assert.assertEquals("clientId1", operation.clientId);
+            Assert.assertEquals("message updated by clientId1", operation.description);
+            Assert.assertEquals(2, operation.metadata.size());
+            Assert.assertEquals("bar", operation.metadata.get("foo"));
+            Assert.assertEquals("hero", operation.metadata.get("naruto"));
 
         } catch (Exception e) {
             e.printStackTrace();
