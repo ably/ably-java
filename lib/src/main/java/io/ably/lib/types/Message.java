@@ -98,19 +98,25 @@ public class Message extends BaseMessage {
         public Map<String, String> metadata;
 
         void write(MessagePacker packer) throws IOException {
-            packer.packMapHeader(3);
-            if(clientId != null) {
+            int fieldCount = 0;
+            if (clientId != null) fieldCount++;
+            if (description != null) fieldCount++;
+            if (metadata != null) fieldCount++;
+
+            packer.packMapHeader(fieldCount);
+
+            if (clientId != null) {
                 packer.packString("clientId");
                 packer.packString(clientId);
             }
-            if(description != null) {
+            if (description != null) {
                 packer.packString("description");
                 packer.packString(description);
             }
-            if(metadata != null) {
+            if (metadata != null) {
                 packer.packString("metadata");
                 packer.packMapHeader(metadata.size());
-                for(Map.Entry<String, String> entry : metadata.entrySet()) {
+                for (Map.Entry<String, String> entry : metadata.entrySet()) {
                     packer.packString(entry.getKey());
                     packer.packString(entry.getValue());
                 }

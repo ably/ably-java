@@ -7,6 +7,7 @@ import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.HttpPaginatedResponse;
 import io.ably.lib.types.Param;
 
@@ -17,6 +18,7 @@ import java.util.Optional;
 public class ChatRoom {
     private final AblyRest ablyRest;
     private final String roomId;
+    private final Gson gson = new Gson();
 
     protected ChatRoom(String roomId, AblyRest ablyRest) {
         this.roomId = roomId;
@@ -24,18 +26,18 @@ public class ChatRoom {
     }
 
     public JsonElement sendMessage(SendMessageParams params) throws Exception {
-        return makeAuthorizedRequest("/chat/v2/rooms/" + roomId + "/messages", "POST", new Gson().toJsonTree(params))
-            .orElseThrow(() -> new Exception("Failed to send message"));
+        return makeAuthorizedRequest("/chat/v2/rooms/" + roomId + "/messages", "POST", gson.toJsonTree(params))
+            .orElseThrow(() -> AblyException.fromErrorInfo(new ErrorInfo("Failed to send message", 500)));
     }
 
     public JsonElement updateMessage(String serial, UpdateMessageParams params) throws Exception {
-        return makeAuthorizedRequest("/chat/v2/rooms/" + roomId + "/messages/" + serial, "PUT", new Gson().toJsonTree(params))
-            .orElseThrow(() -> new Exception("Failed to update message"));
+        return makeAuthorizedRequest("/chat/v2/rooms/" + roomId + "/messages/" + serial, "PUT", gson.toJsonTree(params))
+            .orElseThrow(() -> AblyException.fromErrorInfo(new ErrorInfo("Failed to update message", 500)));
     }
 
     public JsonElement deleteMessage(String serial, DeleteMessageParams params) throws Exception {
-        return makeAuthorizedRequest("/chat/v2/rooms/" + roomId + "/messages/" + serial + "/delete", "POST", new Gson().toJsonTree(params))
-            .orElseThrow(() -> new Exception("Failed to delete message"));
+        return makeAuthorizedRequest("/chat/v2/rooms/" + roomId + "/messages/" + serial + "/delete", "POST", gson.toJsonTree(params))
+            .orElseThrow(() -> AblyException.fromErrorInfo(new ErrorInfo("Failed to delete message", 500)));
     }
 
     public static class SendMessageParams {
