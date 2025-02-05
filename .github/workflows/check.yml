@@ -17,4 +17,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
       - run: ./gradlew checkWithCodenarc checkstyleMain checkstyleTest runUnitTests
