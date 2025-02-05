@@ -440,7 +440,7 @@ public class HttpScheduler implements AutoCloseable {
         return request;
     }
 
-    private final CloseableExecutor executor;
+    protected final CloseableExecutor executor;
     private final HttpCore httpCore;
 
     protected static final String TAG = HttpScheduler.class.getName();

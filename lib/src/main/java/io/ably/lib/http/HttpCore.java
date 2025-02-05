@@ -68,6 +68,8 @@ public class HttpCore {
     private final HttpEngine engine;
     private HttpAuth proxyAuth;
 
+    private Map<String, String> wrapperSDKAgents;
+
     /*************************
      *     Public API
      *************************/
@@ -101,6 +103,18 @@ public class HttpCore {
         HttpEngineFactory engineFactory = HttpEngineFactory.getFirstAvailable();
         Log.v(TAG, String.format("Using %s HTTP Engine", engineFactory.getEngineType().name()));
         this.engine = engineFactory.create(new HttpEngineConfig(ClientOptionsUtils.convertToProxyConfig(options)));
+    }
+
+    private HttpCore(HttpCore underlyingHttpCore, Map<String, String> wrapperSDKAgents) {
+        this.options = underlyingHttpCore.options;
+        this.auth = underlyingHttpCore.auth;
+        this.platformAgentProvider = underlyingHttpCore.platformAgentProvider;
+        this.scheme = underlyingHttpCore.scheme;
+        this.port = underlyingHttpCore.port;
+        this.hosts = underlyingHttpCore.hosts;
+        this.proxyAuth = underlyingHttpCore.proxyAuth;
+        this.engine = underlyingHttpCore.engine;
+        this.wrapperSDKAgents = wrapperSDKAgents;
     }
 
     /**
@@ -307,7 +321,9 @@ public class HttpCore {
 
         /* pass required headers */
         requestHeaders.put(Defaults.ABLY_PROTOCOL_VERSION_HEADER, Defaults.ABLY_PROTOCOL_VERSION); // RSC7a
-        requestHeaders.put(Defaults.ABLY_AGENT_HEADER, AgentHeaderCreator.create(options.agents, platformAgentProvider));
+        Map<String, String> additionalAgents = new HashMap<>(options.agents);
+        additionalAgents.putAll(wrapperSDKAgents);
+        requestHeaders.put(Defaults.ABLY_AGENT_HEADER, AgentHeaderCreator.create(additionalAgents, platformAgentProvider));
         if (options.clientId != null)
             requestHeaders.put(Defaults.ABLY_CLIENT_ID_HEADER, Base64Coder.encodeString(options.clientId));
 
@@ -453,6 +469,15 @@ public class HttpCore {
             Log.v(TAG, System.lineSeparator() + new String(response.body));
 
         return response;
+    }
+
+    /**
+     * [Internal Method]
+     * <p>
+     * We use this method to implement proxy Realtime / Rest clients that add additional agents to the underlying client.
+     */
+    public HttpCore injectWrapperSdkAgents(Map<String, String> wrapperSDKAgents) {
+        return new HttpCore(this, wrapperSDKAgents);
     }
 
     /**

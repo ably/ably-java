@@ -1,6 +1,7 @@
 package io.ably.lib.realtime;
 
 import io.ably.lib.http.BasePaginatedQuery;
+import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.transport.ConnectionManager;
@@ -794,7 +795,11 @@ public class Presence {
      * @throws AblyException
      */
     public PaginatedResult<PresenceMessage> history(Param[] params) throws AblyException {
-        return historyImpl(params).sync();
+        return history(channel.ably.http, params);
+    }
+
+    PaginatedResult<PresenceMessage> history(Http http, Param[] params) throws AblyException {
+        return historyImpl(http, params).sync();
     }
 
     /**
@@ -821,10 +826,14 @@ public class Presence {
      * @throws AblyException
      */
     public void historyAsync(Param[] params, Callback<AsyncPaginatedResult<PresenceMessage>> callback) {
-        historyImpl(params).async(callback);
+        historyImpl(channel.ably.http, params).async(callback);
     }
 
-    private BasePaginatedQuery.ResultRequest<PresenceMessage> historyImpl(Param[] params) {
+    void historyAsync(Http http, Param[] params, Callback<AsyncPaginatedResult<PresenceMessage>> callback) {
+        historyImpl(http, params).async(callback);
+    }
+
+    private BasePaginatedQuery.ResultRequest<PresenceMessage> historyImpl(Http http, Param[] params) {
         try {
             params = Channel.replacePlaceholderParams(channel, params);
         } catch (AblyException e) {
@@ -833,7 +842,7 @@ public class Presence {
 
         AblyRealtime ably = channel.ably;
         HttpCore.BodyHandler<PresenceMessage> bodyHandler = PresenceSerializer.getPresenceResponseHandler(channel.options);
-        return new BasePaginatedQuery<PresenceMessage>(ably.http, channel.basePath + "/presence/history", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
+        return new BasePaginatedQuery<PresenceMessage>(http, channel.basePath + "/presence/history", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
     }
 
     /**

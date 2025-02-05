@@ -21,6 +21,15 @@ public class Http implements AutoCloseable {
         asyncHttp.close();
     }
 
+    /**
+     * [Internal Method]
+     * <p>
+     * We use this method to implement proxy Realtime / Rest clients that add additional data to the underlying client.
+     */
+    public Http exchangeHttpCore(HttpCore httpCore) {
+        return new Http(asyncHttp.exchangeHttpCore(httpCore), new SyncHttpScheduler(httpCore));
+    }
+
     public class Request<Result> {
         private final Execute<Result> execute;
 
