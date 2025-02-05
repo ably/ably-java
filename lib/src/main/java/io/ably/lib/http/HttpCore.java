@@ -10,6 +10,7 @@ import io.ably.lib.network.HttpEngineFactory;
 import io.ably.lib.network.HttpRequest;
 import io.ably.lib.network.HttpResponse;
 import io.ably.lib.rest.Auth;
+import io.ably.lib.rest.DerivedClientOptions;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.transport.Hosts;
 import io.ably.lib.types.AblyException;
@@ -68,6 +69,8 @@ public class HttpCore {
     private final HttpEngine engine;
     private HttpAuth proxyAuth;
 
+    private DerivedClientOptions derivedOptions;
+
     /*************************
      *     Public API
      *************************/
@@ -101,6 +104,18 @@ public class HttpCore {
         HttpEngineFactory engineFactory = HttpEngineFactory.getFirstAvailable();
         Log.v(TAG, String.format("Using %s HTTP Engine", engineFactory.getEngineType().name()));
         this.engine = engineFactory.create(new HttpEngineConfig(ClientOptionsUtils.convertToProxyConfig(options)));
+    }
+
+    private HttpCore(HttpCore underlyingHttpCore, DerivedClientOptions derivedOptions) {
+        this.options = underlyingHttpCore.options;
+        this.auth = underlyingHttpCore.auth;
+        this.platformAgentProvider = underlyingHttpCore.platformAgentProvider;
+        this.scheme = underlyingHttpCore.scheme;
+        this.port = underlyingHttpCore.port;
+        this.hosts = underlyingHttpCore.hosts;
+        this.proxyAuth = underlyingHttpCore.proxyAuth;
+        this.engine = underlyingHttpCore.engine;
+        this.derivedOptions = derivedOptions;
     }
 
     /**
@@ -307,7 +322,7 @@ public class HttpCore {
 
         /* pass required headers */
         requestHeaders.put(Defaults.ABLY_PROTOCOL_VERSION_HEADER, Defaults.ABLY_PROTOCOL_VERSION); // RSC7a
-        requestHeaders.put(Defaults.ABLY_AGENT_HEADER, AgentHeaderCreator.create(options.agents, platformAgentProvider));
+        requestHeaders.put(Defaults.ABLY_AGENT_HEADER, AgentHeaderCreator.create(options.agents, platformAgentProvider, derivedOptions));
         if (options.clientId != null)
             requestHeaders.put(Defaults.ABLY_CLIENT_ID_HEADER, Base64Coder.encodeString(options.clientId));
 
@@ -453,6 +468,15 @@ public class HttpCore {
             Log.v(TAG, System.lineSeparator() + new String(response.body));
 
         return response;
+    }
+
+    /**
+     * [Internal Method]
+     * <p>
+     * We use this method to implement proxy Realtime / Rest clients that add additional data to the underlying client.
+     */
+    public HttpCore applyDerivedOptions(DerivedClientOptions derivedOptions) {
+        return new HttpCore(this, derivedOptions);
     }
 
     /**

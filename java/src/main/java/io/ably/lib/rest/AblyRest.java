@@ -32,4 +32,20 @@ public class AblyRest extends AblyBase {
     public AblyRest(ClientOptions options) throws AblyException {
         super(options, new JavaPlatformAgentProvider());
     }
+
+    /**
+     * Constructor implementation to be able to have proxy based on this class
+     */
+    protected AblyRest(AblyRest underlyingClient, DerivedClientOptions derivedOptions) {
+        super(underlyingClient, derivedOptions);
+    }
+
+    /**
+     * [Internal Method]
+     * <p/>
+     * We use this method to implement proxy Realtime / Rest clients that add additional data to the underlying client.
+     */
+    public AblyRest createDerivedClient(DerivedClientOptions derivedOptions) {
+        return new AblyRest(this, derivedOptions);
+    }
 }

@@ -7,6 +7,7 @@ import java.util.Map;
 
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
+import io.ably.lib.rest.DerivedClientOptions;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
@@ -84,6 +85,15 @@ public class AblyRealtime extends AblyRest {
     }
 
     /**
+     * Package-private constructor implementation to be able to have proxy based on this class
+     */
+    AblyRealtime(AblyRealtime underlyingClient, DerivedClientOptions derivedOptions) {
+        super(underlyingClient, derivedOptions);
+        this.channels = underlyingClient.channels;
+        this.connection = underlyingClient.connection;
+    }
+
+    /**
      * Calls {@link Connection#connect} and causes the connection to open,
      * entering the connecting state. Explicitly calling connect() is unnecessary
      * unless the {@link ClientOptions#autoConnect} property is disabled.
@@ -116,6 +126,15 @@ public class AblyRealtime extends AblyRest {
         }
 
         connection.close();
+    }
+
+    /**
+     * [Internal Method]
+     * <p/>
+     * We use this method to implement proxy Realtime / Rest clients that add additional data to the underlying client.
+     */
+    public AblyRealtime createDerivedClient(DerivedClientOptions derivedOptions) {
+        return new AblyRealtime(this, derivedOptions);
     }
 
     /**

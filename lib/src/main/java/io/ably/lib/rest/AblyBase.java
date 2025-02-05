@@ -115,6 +115,20 @@ public abstract class AblyBase implements AutoCloseable {
     }
 
     /**
+     * We use empty constructor to be able to create proxy implementation of Realtime and Rest client
+     */
+    protected AblyBase(AblyBase underlyingClient, DerivedClientOptions derivedOptions) {
+        this.options = underlyingClient.options;
+        this.auth = underlyingClient.auth;
+        this.httpCore = underlyingClient.httpCore.applyDerivedOptions(derivedOptions);
+        this.http = underlyingClient.http.exchangeHttpCore(this.httpCore);
+        this.platform = underlyingClient.platform;
+        this.push = underlyingClient.push;
+        this.channels = underlyingClient.channels;
+        this.platformAgentProvider = underlyingClient.platformAgentProvider;
+    }
+
+    /**
      * Causes the connection to close, entering the [{@link io.ably.lib.realtime.ConnectionState#closing} state.
      * Once closed, the library does not attempt to re-establish the connection without an explicit call to
      * {@link Connection#connect()}.

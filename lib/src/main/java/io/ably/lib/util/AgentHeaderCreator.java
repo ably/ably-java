@@ -1,5 +1,6 @@
 package io.ably.lib.util;
 
+import io.ably.lib.rest.DerivedClientOptions;
 import io.ably.lib.transport.Defaults;
 
 import java.util.Map;
@@ -15,7 +16,7 @@ public class AgentHeaderCreator {
      */
     public static final String AGENT_DIVIDER = "/";
 
-    public static String create(Map<String, String> additionalAgents, PlatformAgentProvider platformAgentProvider) {
+    public static String create(Map<String, String> additionalAgents, PlatformAgentProvider platformAgentProvider, DerivedClientOptions derivedOptions) {
         StringBuilder agentStringBuilder = new StringBuilder();
         agentStringBuilder.append(Defaults.ABLY_AGENT_VERSION);
         if (additionalAgents != null && !additionalAgents.isEmpty()) {
@@ -27,7 +28,21 @@ public class AgentHeaderCreator {
             agentStringBuilder.append(AGENT_ENTRY_SEPARATOR);
             agentStringBuilder.append(platformAgent);
         }
+
+        if (derivedOptions != null) {
+            derivedOptions.getAgents().entrySet().forEach(entry -> {
+                agentStringBuilder.append(AGENT_ENTRY_SEPARATOR);
+                agentStringBuilder.append(entry.getKey());
+                agentStringBuilder.append(AGENT_DIVIDER);
+                agentStringBuilder.append(entry.getValue());
+            });
+        }
+
         return agentStringBuilder.toString();
+    }
+
+    public static String create(Map<String, String> additionalAgents, PlatformAgentProvider platformAgentProvider) {
+        return create(additionalAgents, platformAgentProvider, null);
     }
 
     private static String getAdditionalAgentEntries(Map<String, String> additionalAgents) {

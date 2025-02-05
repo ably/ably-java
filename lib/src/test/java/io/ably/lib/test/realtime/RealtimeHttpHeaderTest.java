@@ -2,6 +2,7 @@ package io.ably.lib.test.realtime;
 
 import fi.iki.elonen.NanoHTTPD;
 import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.rest.DerivedClientOptions;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
@@ -17,6 +18,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 
 /**
  * Test for correct version headers passed to websocket
@@ -155,8 +157,66 @@ public class RealtimeHttpHeaderTest extends ParameterizedTest {
         }
     }
 
+    /**
+     * Verify that correct version is used for realtime HTTP request
+     */
+    @Test
+    public void realtime_derived_client_headers_test() throws InterruptedException, AblyException {
+        AblyRealtime realtime;
+        /* Init values for local server */
+        String key = testVars.keys[0].keyStr;
+        ClientOptions opts = new ClientOptions(key);
+        opts.port = port;
+        opts.realtimeHost = "localhost";
+        opts.restHost = "localhost";
+        opts.tls = false;
+        opts.useBinaryProtocol = testParams.useBinaryProtocol;
+        opts.autoConnect = false;
+
+        server.resetRequestParameters();
+
+        realtime = new AblyRealtime(opts);
+
+        server.resetRequestHeaders();
+        DerivedClientOptions derivedOptions = DerivedClientOptions.builder().addAgent("chat-android", "0.1.2").build();
+        AblyRealtime derivedRealtime = realtime.createDerivedClient(derivedOptions);
+        try { derivedRealtime.time(); } catch (Exception e) {}
+        Map<String, String> requestHeaders = tryGetServerRequestHeaders();
+
+        assertEquals("Verify correct lib version",
+            "ably-java/1.2.48 jre/" + System.getProperty("java.version") + " chat-android/0.1.2",
+            requestHeaders.get("ably-agent")
+        );
+
+        try { realtime.time(); } catch (Exception e) {}
+
+        requestHeaders = tryGetServerRequestHeaders();
+
+        assertEquals("Verify correct lib version",
+            "ably-java/1.2.48 jre/" + System.getProperty("java.version"),
+            requestHeaders.get("ably-agent")
+        );
+
+        assertSame(realtime.connection, derivedRealtime.connection);
+        assertSame(realtime.channels, derivedRealtime.channels);
+    }
+
+    private Map<String, String> tryGetServerRequestHeaders() throws InterruptedException {
+        Map<String, String> requestHeaders = null;
+
+        for (int i = 0; requestHeaders == null && i < 10; i++) {
+            Thread.sleep(100);
+            requestHeaders = server.getRequestHeaders();
+        }
+
+        assertNotNull("Verify connection attempt", requestHeaders);
+
+        return requestHeaders;
+    }
+
     private static class SessionHandlerNanoHTTPD extends NanoHTTPD {
         Map<String, List<String>> requestParameters;
+        Map<String, String> requestHeaders;
 
         SessionHandlerNanoHTTPD(int port) {
             super(port);
@@ -166,6 +226,8 @@ public class RealtimeHttpHeaderTest extends ParameterizedTest {
         public Response serve(IHTTPSession session) {
             if (requestParameters == null)
                 requestParameters = decodeParameters(session.getQueryParameterString());
+            if (requestHeaders == null)
+                requestHeaders = session.getHeaders();
 
             return newFixedLengthResponse("Ignored response");
         }
@@ -174,8 +236,16 @@ public class RealtimeHttpHeaderTest extends ParameterizedTest {
             requestParameters = null;
         }
 
+        void resetRequestHeaders() {
+            requestHeaders = null;
+        }
+
         Map<String, List<String>> getRequestParameters() {
             return requestParameters;
+        }
+
+        Map<String, String> getRequestHeaders() {
+            return requestHeaders;
         }
     }
 

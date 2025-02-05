@@ -37,6 +37,13 @@ public class AblyRest extends AblyBase {
     }
 
     /**
+     * Constructor implementation to be able to have proxy based on this class
+     */
+    protected AblyRest(AblyRest underlyingClient, DerivedClientOptions derivedOptions) {
+        super(underlyingClient, derivedOptions);
+    }
+
+    /**
      * Retrieves a {@link LocalDevice} object that represents the current state of the device as a target for push notifications.
      * <p>
      * Spec: RSH8
@@ -54,6 +61,15 @@ public class AblyRest extends AblyBase {
         Log.v(TAG, "setAndroidContext(): context=" + context);
         this.platform.setAndroidContext(context);
         this.push.tryRequestRegistrationToken();
+    }
+
+    /**
+     * [Internal Method]
+     * <p/>
+     * We use this method to implement proxy Realtime / Rest clients that add additional data to the underlying client.
+     */
+    public AblyRest createDerivedClient(DerivedClientOptions derivedOptions) {
+        return new AblyRest(this, derivedOptions);
     }
 
     /**
