@@ -1,5 +1,18 @@
 # Change Log
 
+## [1.2.49](https://github.com/ably/ably-java/tree/v1.2.49)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.48...v1.2.49)
+
+**Closed issues:**
+
+- Support message edits and deletes  [\#1058](https://github.com/ably/ably-java/issues/1058)
+
+**Merged pull requests:**
+
+- chore: upgrade github actions versions [\#1061](https://github.com/ably/ably-java/pull/1061) ([ttypic](https://github.com/ttypic))
+- [ECO-5193] Support message edits and deletes [\#1059](https://github.com/ably/ably-java/pull/1059) ([sacOO7](https://github.com/sacOO7))
+
 ## [1.2.48](https://github.com/ably/ably-java/tree/v1.2.48)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.47...v1.2.48)
