@@ -31,7 +31,7 @@ interface RealtimeChannel : Channel {
    *
    * Spec: RTL4e
    */
-  val reason: ErrorInfo
+  val reason: ErrorInfo?
 
   /**
    * A [ChannelProperties] object.
