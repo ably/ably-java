@@ -856,10 +856,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             if(msg.connectionId == null) msg.connectionId = protocolMessage.connectionId;
             if(msg.timestamp == 0) msg.timestamp = protocolMessage.timestamp;
             if(msg.id == null) msg.id = protocolMessage.id + ':' + i;
-            // (TM2p)
-            if(msg.version == null) msg.version = String.format("%s:%03d", protocolMessage.channelSerial, i);
             // (TM2k)
-            if(msg.serial == null && msg.action == MessageAction.MESSAGE_CREATE) msg.serial = msg.version;
+            if(msg.serial == null && msg.version != null && msg.action == MessageAction.MESSAGE_CREATE) msg.serial = msg.version;
             // (TM2o)
             if(msg.createdAt == null && msg.action == MessageAction.MESSAGE_CREATE) msg.createdAt = msg.timestamp;
 
