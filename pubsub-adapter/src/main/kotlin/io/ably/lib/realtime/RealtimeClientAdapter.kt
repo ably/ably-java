@@ -1,9 +1,7 @@
 package io.ably.lib.realtime
 
 import com.ably.http.HttpMethod
-import com.ably.pubsub.Channels
-import com.ably.pubsub.RealtimeChannel
-import com.ably.pubsub.RealtimeClient
+import com.ably.pubsub.*
 import com.ably.query.OrderBy
 import com.ably.query.TimeUnit
 import io.ably.lib.buildStatsParams
@@ -17,7 +15,7 @@ import io.ably.lib.types.*
  */
 fun RealtimeClient(javaClient: AblyRealtime): RealtimeClient = RealtimeClientAdapter(javaClient)
 
-internal class RealtimeClientAdapter(private val javaClient: AblyRealtime) : RealtimeClient {
+internal class RealtimeClientAdapter(private val javaClient: AblyRealtime) : RealtimeClient, SdkWrapperCompatible<RealtimeClient> {
   override val channels: Channels<out RealtimeChannel>
     get() = RealtimeChannelsAdapter(javaClient.channels)
   override val connection: Connection
@@ -68,4 +66,11 @@ internal class RealtimeClientAdapter(private val javaClient: AblyRealtime) : Rea
   ) = javaClient.requestAsync(method.toString(), path, params.toTypedArray(), body, headers.toTypedArray(), callback)
 
   override fun close() = javaClient.close()
+
+  override fun createWrapperSdkProxy(options: WrapperSdkProxyOptions): RealtimeClient {
+    val httpCoreWithAgents = javaClient.httpCore.injectDynamicAgents(options.agents)
+    val httpModule = javaClient.http.exchangeHttpCore(httpCoreWithAgents)
+    val javaClientWithInjectedAgents = javaClient.createShallowCopy(httpCoreWithAgents, httpModule)
+    return WrapperRealtimeClient(javaClientWithInjectedAgents, httpModule, options.agents)
+  }
 }
