@@ -58,10 +58,7 @@ public class Message extends BaseMessage {
 
     /**
      * (TM2p) version string – an opaque string that uniquely identifies the message, and is different for different versions.
-     * If a message received from Ably over a realtime transport does not contain a version,
-     * the SDK must set it to <channelSerial>:<padded_index> from the channelSerial field of the enclosing ProtocolMessage,
-     * and padded_index is the index of the message inside the messages array of the ProtocolMessage,
-     * left-padded with 0s to three digits (for example, the second entry might be foo:001)
+     * (May not be populated depending on app & channel namespace settings)
      */
     public String version;
 
