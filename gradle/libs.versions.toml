@@ -20,6 +20,8 @@ lombok = "8.10"
 okhttp = "4.12.0"
 test-retry = "1.6.0"
 kotlin = "2.1.10"
+coroutine = "1.9.0"
+turbine = "1.2.0"
 
 [libraries]
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
@@ -41,11 +43,14 @@ dexmaker = { group = "com.crittercism.dexmaker", name = "dexmaker", version.ref 
 dexmaker-dx = { group = "com.crittercism.dexmaker", name = "dexmaker-dx", version.ref = "dexmaker" }
 dexmaker-mockito = { group = "com.crittercism.dexmaker", name = "dexmaker-mockito", version.ref = "dexmaker" }
 android-retrostreams = { group = "net.sourceforge.streamsupport", name = "android-retrostreams", version.ref = "android-retrostreams" }
-okhttp = { group ="com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+coroutine-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutine" }
+coroutine-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutine" }
+turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 
 [bundles]
 common = ["msgpack", "vcdiff-core"]
-tests = ["junit","hamcrest-all", "nanohttpd", "nanohttpd-nanolets", "nanohttpd-websocket", "mockito-core", "concurrentunit", "slf4j-simple"]
+tests = ["junit", "hamcrest-all", "nanohttpd", "nanohttpd-nanolets", "nanohttpd-websocket", "mockito-core", "concurrentunit", "slf4j-simple"]
 instrumental-android = ["android-test-runner", "android-test-rules", "dexmaker", "dexmaker-dx", "dexmaker-mockito", "android-retrostreams"]
 
 [plugins]

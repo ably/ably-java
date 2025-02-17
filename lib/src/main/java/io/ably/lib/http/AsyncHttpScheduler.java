@@ -16,9 +16,22 @@ public class AsyncHttpScheduler extends HttpScheduler {
         super(httpCore, new CloseableThreadPoolExecutor(options));
     }
 
+    private AsyncHttpScheduler(HttpCore httpCore, CloseableExecutor executor) {
+        super(httpCore, executor);
+    }
+
     private static final long KEEP_ALIVE_TIME = 2000L;
 
     protected static final String TAG = AsyncHttpScheduler.class.getName();
+
+    /**
+     * [Internal Method]
+     * <p>
+     * We use this method to implement proxy Realtime / Rest clients that add additional data to the underlying client.
+     */
+    public AsyncHttpScheduler exchangeHttpCore(HttpCore httpCore) {
+        return new AsyncHttpScheduler(httpCore, this.executor);
+    }
 
     private static class CloseableThreadPoolExecutor implements CloseableExecutor {
         private final ThreadPoolExecutor executor;

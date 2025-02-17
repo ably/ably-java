@@ -27,6 +27,7 @@ public class AgentHeaderCreator {
             agentStringBuilder.append(AGENT_ENTRY_SEPARATOR);
             agentStringBuilder.append(platformAgent);
         }
+
         return agentStringBuilder.toString();
     }
 

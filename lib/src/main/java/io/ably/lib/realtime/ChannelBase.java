@@ -10,6 +10,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import io.ably.lib.http.BasePaginatedQuery;
+import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.transport.ConnectionManager;
@@ -1148,7 +1149,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * @throws AblyException
      */
     public PaginatedResult<Message> history(Param[] params) throws AblyException {
-        return historyImpl(params).sync();
+        return historyImpl(ably.http, params).sync();
+    }
+
+    PaginatedResult<Message> history(Http http, Param[] params) throws AblyException {
+        return historyImpl(http, params).sync();
     }
 
     /**
@@ -1177,10 +1182,14 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * @throws AblyException
      */
     public void historyAsync(Param[] params, Callback<AsyncPaginatedResult<Message>> callback) {
-        historyImpl(params).async(callback);
+        historyAsync(ably.http, params, callback);
     }
 
-    private BasePaginatedQuery.ResultRequest<Message> historyImpl(Param[] params) {
+    void historyAsync(Http http, Param[] params, Callback<AsyncPaginatedResult<Message>> callback) {
+        historyImpl(http, params).async(callback);
+    }
+
+    private BasePaginatedQuery.ResultRequest<Message> historyImpl(Http http, Param[] params) {
         try {
             params = replacePlaceholderParams((Channel) this, params);
         } catch (AblyException e) {
@@ -1188,7 +1197,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
 
         HttpCore.BodyHandler<Message> bodyHandler = MessageSerializer.getMessageResponseHandler(options);
-        return new BasePaginatedQuery<Message>(ably.http, basePath + "/history", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
+        return new BasePaginatedQuery<Message>(http, basePath + "/history", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, bodyHandler).get();
     }
 
     /************************************
