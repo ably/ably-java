@@ -5,8 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.ably.lib.http.Http;
-import io.ably.lib.http.HttpCore;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.transport.ConnectionManager;
@@ -86,16 +84,6 @@ public class AblyRealtime extends AblyRest {
     }
 
     /**
-     * Constructor implementation to be able to have shallow copy of the client,
-     * allowing us to modify certain fields while implementing a proxy for the Realtime/Rest SDK wrapper
-     */
-    AblyRealtime(AblyRealtime underlyingClient, HttpCore httpCore, Http http) {
-        super(underlyingClient, httpCore, http);
-        this.channels = underlyingClient.channels;
-        this.connection = underlyingClient.connection;
-    }
-
-    /**
      * Calls {@link Connection#connect} and causes the connection to open,
      * entering the connecting state. Explicitly calling connect() is unnecessary
      * unless the {@link ClientOptions#autoConnect} property is disabled.
@@ -128,16 +116,6 @@ public class AblyRealtime extends AblyRest {
         }
 
         connection.close();
-    }
-
-    /**
-     * [Internal Method]
-     * <p/>
-     * We use this method to create a shallow copy of the client, allowing us to modify certain fields
-     * while implementing a proxy for the Realtime/Rest SDK wrapper
-     */
-    public AblyRealtime createShallowCopy(HttpCore httpCore, Http http) {
-        return new AblyRealtime(this, httpCore, http);
     }
 
     /**

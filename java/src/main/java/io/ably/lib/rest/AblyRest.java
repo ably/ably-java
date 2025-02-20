@@ -1,7 +1,5 @@
 package io.ably.lib.rest;
 
-import io.ably.lib.http.Http;
-import io.ably.lib.http.HttpCore;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.util.JavaPlatformAgentProvider;
@@ -33,23 +31,5 @@ public class AblyRest extends AblyBase {
      */
     public AblyRest(ClientOptions options) throws AblyException {
         super(options, new JavaPlatformAgentProvider());
-    }
-
-    /**
-     * Constructor implementation to be able to have shallow copy of the client,
-     * allowing us to modify certain fields while implementing a proxy for the Realtime/Rest SDK wrapper
-     */
-    protected AblyRest(AblyRest underlyingClient, HttpCore httpCore, Http http) {
-        super(underlyingClient, httpCore, http);
-    }
-
-    /**
-     * [Internal Method]
-     * <p/>
-     * We use this method to create a shallow copy of the client, allowing us to modify certain fields
-     * while implementing a proxy for the Realtime/Rest SDK wrapper
-     */
-    public AblyRest createShallowCopy(HttpCore httpCore, Http http) {
-        return new AblyRest(this, httpCore, http);
     }
 }

@@ -70,7 +70,6 @@ internal class RealtimeClientAdapter(private val javaClient: AblyRealtime) : Rea
   override fun createWrapperSdkProxy(options: WrapperSdkProxyOptions): RealtimeClient {
     val httpCoreWithAgents = javaClient.httpCore.injectDynamicAgents(options.agents)
     val httpModule = javaClient.http.exchangeHttpCore(httpCoreWithAgents)
-    val javaClientWithInjectedAgents = javaClient.createShallowCopy(httpCoreWithAgents, httpModule)
-    return WrapperRealtimeClient(javaClientWithInjectedAgents, httpModule, options.agents)
+    return WrapperRealtimeClient(javaClient, this, httpModule, options.agents)
   }
 }

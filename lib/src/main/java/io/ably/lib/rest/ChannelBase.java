@@ -149,7 +149,7 @@ public class ChannelBase {
      * @throws AblyException
      */
     public PaginatedResult<Message> history(Param[] params) throws AblyException {
-        return historyImpl(ably.http, params).sync();
+        return history(ably.http, params);
     }
 
     PaginatedResult<Message> history(Http http, Param[] params) throws AblyException {

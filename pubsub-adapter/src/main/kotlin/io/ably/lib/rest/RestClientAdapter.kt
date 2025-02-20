@@ -67,7 +67,6 @@ internal class RestClientAdapter(private val javaClient: AblyRest) : RestClient,
   override fun createWrapperSdkProxy(options: WrapperSdkProxyOptions): RestClient {
     val httpCoreWithAgents = javaClient.httpCore.injectDynamicAgents(options.agents)
     val httpModule = javaClient.http.exchangeHttpCore(httpCoreWithAgents)
-    val javaClientWithInjectedAgents = javaClient.createShallowCopy(httpCoreWithAgents, httpModule)
-    return WrapperRestClient(javaClientWithInjectedAgents, httpModule)
+    return WrapperRestClient(javaClient, this, httpModule, options.agents)
   }
 }
