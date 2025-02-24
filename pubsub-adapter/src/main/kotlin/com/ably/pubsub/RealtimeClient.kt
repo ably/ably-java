@@ -1,5 +1,7 @@
 package com.ably.pubsub
 
+import com.ably.annotations.InternalAPI
+import io.ably.lib.realtime.AblyRealtime
 import io.ably.lib.realtime.Connection
 
 /**
@@ -21,4 +23,10 @@ interface RealtimeClient : Client {
    * Collection of [RealtimeChannel] instances currently managed by Realtime client
    */
   override val channels: Channels<out RealtimeChannel>
+
+  /**
+   * This property will be removed once public API for new version of ably-java is stable
+   */
+  @InternalAPI
+  val javaClient: AblyRealtime
 }

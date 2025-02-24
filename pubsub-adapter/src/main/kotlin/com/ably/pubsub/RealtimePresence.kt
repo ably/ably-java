@@ -1,11 +1,9 @@
 package com.ably.pubsub
 
 import com.ably.Subscription
-import io.ably.lib.realtime.Channel
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.realtime.CompletionListener
 import io.ably.lib.realtime.Presence.PresenceListener
-import io.ably.lib.types.AblyException
 import io.ably.lib.types.PresenceMessage
 import java.util.*
 

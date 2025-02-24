@@ -1,6 +1,7 @@
 package com.ably.pubsub
 
 import com.ably.Subscription
+import com.ably.annotations.InternalAPI
 import io.ably.lib.realtime.ChannelBase.MessageListener
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.realtime.CompletionListener
@@ -144,4 +145,10 @@ interface RealtimeChannel : Channel {
    * @param options A {@link ChannelOptions} object.
    */
   fun setOptions(options: ChannelOptions)
+
+  /**
+   * This property will be removed once public API for new version of ably-java is stable
+   */
+  @InternalAPI
+  val javaChannel: io.ably.lib.realtime.Channel
 }
