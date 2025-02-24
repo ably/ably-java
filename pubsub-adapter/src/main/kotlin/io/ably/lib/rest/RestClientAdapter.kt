@@ -1,9 +1,7 @@
 package io.ably.lib.rest
 
 import com.ably.http.HttpMethod
-import com.ably.pubsub.Channels
-import com.ably.pubsub.RestChannel
-import com.ably.pubsub.RestClient
+import com.ably.pubsub.*
 import com.ably.query.OrderBy
 import com.ably.query.TimeUnit
 import io.ably.lib.buildStatsParams
@@ -16,7 +14,7 @@ import io.ably.lib.types.*
  */
 fun RestClient(javaClient: AblyRest): RestClient = RestClientAdapter(javaClient)
 
-internal class RestClientAdapter(private val javaClient: AblyRest) : RestClient {
+internal class RestClientAdapter(private val javaClient: AblyRest) : RestClient, SdkWrapperCompatible<RestClient> {
   override val channels: Channels<out RestChannel>
     get() = RestChannelsAdapter(javaClient.channels)
   override val auth: Auth
@@ -65,4 +63,10 @@ internal class RestClientAdapter(private val javaClient: AblyRest) : RestClient 
   ) = javaClient.requestAsync(method.toString(), path, params.toTypedArray(), body, headers.toTypedArray(), callback)
 
   override fun close() = javaClient.close()
+
+  override fun createWrapperSdkProxy(options: WrapperSdkProxyOptions): RestClient {
+    val httpCoreWithAgents = javaClient.httpCore.injectDynamicAgents(options.agents)
+    val httpModule = javaClient.http.exchangeHttpCore(httpCoreWithAgents)
+    return WrapperRestClient(javaClient, this, httpModule, options.agents)
+  }
 }

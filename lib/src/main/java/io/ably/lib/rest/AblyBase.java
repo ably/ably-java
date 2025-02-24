@@ -179,7 +179,11 @@ public abstract class AblyBase implements AutoCloseable {
      * @throws AblyException
      */
     public long time() throws AblyException {
-        return timeImpl().sync().longValue();
+        return time(http);
+    }
+
+    long time(Http http) throws AblyException {
+        return timeImpl(http).sync();
     }
 
     /**
@@ -196,10 +200,14 @@ public abstract class AblyBase implements AutoCloseable {
      * This callback is invoked on a background thread
      */
     public void timeAsync(Callback<Long> callback) {
-        timeImpl().async(callback);
+        timeAsync(http, callback);
     }
 
-    private Http.Request<Long> timeImpl() {
+    void timeAsync(Http http, Callback<Long> callback) {
+        timeImpl(http).async(callback);
+    }
+
+    private Http.Request<Long> timeImpl(Http http) {
         final Param[] params = this.options.addRequestIds ? Param.array(Crypto.generateRandomRequestId()) : null; // RSC7c
         return http.request(new Http.Execute<Long>() {
             @Override
@@ -237,7 +245,11 @@ public abstract class AblyBase implements AutoCloseable {
      * @throws AblyException
      */
     public PaginatedResult<Stats> stats(Param[] params) throws AblyException {
-        return new PaginatedQuery<Stats>(http, "/stats", HttpUtils.defaultAcceptHeaders(false), params, StatsReader.statsResponseHandler).get();
+        return stats(http, params);
+    }
+
+    PaginatedResult<Stats> stats(Http http, Param[] params) throws AblyException {
+        return new PaginatedQuery<>(http, "/stats", HttpUtils.defaultAcceptHeaders(false), params, StatsReader.statsResponseHandler).get();
     }
 
     /**
@@ -261,6 +273,10 @@ public abstract class AblyBase implements AutoCloseable {
      * This callback is invoked on a background thread
      */
     public void statsAsync(Param[] params, Callback<AsyncPaginatedResult<Stats>> callback)  {
+        statsAsync(http, params, callback);
+    }
+
+    void statsAsync(Http http, Param[] params, Callback<AsyncPaginatedResult<Stats>> callback)  {
         (new AsyncPaginatedQuery<Stats>(http, "/stats", HttpUtils.defaultAcceptHeaders(false), params, StatsReader.statsResponseHandler)).get(callback);
     }
 
@@ -284,6 +300,10 @@ public abstract class AblyBase implements AutoCloseable {
      * @throws AblyException if it was not possible to complete the request, or an error response was received
      */
     public HttpPaginatedResponse request(String method, String path, Param[] params, HttpCore.RequestBody body, Param[] headers) throws AblyException {
+        return request(http, method, path, params, body, headers);
+    }
+
+    HttpPaginatedResponse request(Http http, String method, String path, Param[] params, HttpCore.RequestBody body, Param[] headers) throws AblyException {
         headers = HttpUtils.mergeHeaders(HttpUtils.defaultAcceptHeaders(false), headers);
         return new HttpPaginatedQuery(http, method, path, headers, params, body).exec();
     }
@@ -311,6 +331,10 @@ public abstract class AblyBase implements AutoCloseable {
      * This callback is invoked on a background thread
      */
     public void requestAsync(String method, String path, Param[] params, HttpCore.RequestBody body, Param[] headers, final AsyncHttpPaginatedResponse.Callback callback)  {
+        requestAsync(http, method, path, params, body, headers, callback);
+    }
+
+    void requestAsync(Http http, String method, String path, Param[] params, HttpCore.RequestBody body, Param[] headers, final AsyncHttpPaginatedResponse.Callback callback)  {
         headers = HttpUtils.mergeHeaders(HttpUtils.defaultAcceptHeaders(false), headers);
         (new AsyncHttpPaginatedQuery(http, method, path, headers, params, body)).exec(callback);
     }
