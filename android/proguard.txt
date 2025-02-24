@@ -5,3 +5,4 @@
 -keep class com.google.gson.** {*;}
 -dontwarn org.msgpack.core.buffer.**
 -dontwarn org.slf4j.**
+-dontwarn lombok.**
