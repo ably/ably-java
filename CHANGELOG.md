@@ -1,5 +1,17 @@
 # Change Log
 
+## [1.2.50](https://github.com/ably/ably-java/tree/v1.2.50)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.49...v1.2.50)
+
+**Closed issues:**
+
+- Warning on Android Proguard [\#1067](https://github.com/ably/ably-java/issues/1067)
+
+**Implemented enhancements:**
+
+- Added internal Kotlin Wrapper for the SDK 
+
 ## [1.2.49](https://github.com/ably/ably-java/tree/v1.2.49)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.48...v1.2.49)
