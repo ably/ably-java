@@ -1,5 +1,6 @@
 package io.ably.lib.realtime
 
+import com.ably.annotations.InternalAPI
 import com.ably.http.HttpMethod
 import com.ably.pubsub.*
 import com.ably.query.OrderBy
@@ -15,7 +16,8 @@ import io.ably.lib.types.*
  */
 fun RealtimeClient(javaClient: AblyRealtime): RealtimeClient = RealtimeClientAdapter(javaClient)
 
-internal class RealtimeClientAdapter(private val javaClient: AblyRealtime) : RealtimeClient, SdkWrapperCompatible<RealtimeClient> {
+@OptIn(InternalAPI::class)
+internal class RealtimeClientAdapter(override val javaClient: AblyRealtime) : RealtimeClient, SdkWrapperCompatible<RealtimeClient> {
   override val channels: Channels<out RealtimeChannel>
     get() = RealtimeChannelsAdapter(javaClient.channels)
   override val connection: Connection

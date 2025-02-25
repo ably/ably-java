@@ -1,13 +1,16 @@
 package io.ably.lib.realtime
 
 import com.ably.Subscription
+import com.ably.annotations.InternalAPI
 import com.ably.pubsub.RealtimeChannel
 import com.ably.pubsub.RealtimePresence
 import com.ably.query.OrderBy
 import io.ably.lib.buildHistoryParams
 import io.ably.lib.types.*
 
-internal class RealtimeChannelAdapter(private val javaChannel: Channel) : RealtimeChannel {
+
+@OptIn(InternalAPI::class)
+internal class RealtimeChannelAdapter(override val javaChannel: Channel) : RealtimeChannel {
   override val name: String
     get() = javaChannel.name
   override val presence: RealtimePresence

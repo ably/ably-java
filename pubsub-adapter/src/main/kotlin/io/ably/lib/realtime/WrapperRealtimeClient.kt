@@ -1,5 +1,6 @@
 package io.ably.lib.realtime
 
+import com.ably.annotations.InternalAPI
 import com.ably.http.HttpMethod
 import com.ably.pubsub.*
 import com.ably.query.OrderBy
@@ -11,8 +12,9 @@ import io.ably.lib.http.HttpCore
 import io.ably.lib.rest.*
 import io.ably.lib.types.*
 
+@OptIn(InternalAPI::class)
 internal class WrapperRealtimeClient(
-  private val javaClient: AblyRealtime,
+  override val javaClient: AblyRealtime,
   private val adapter: RealtimeClientAdapter,
   private val httpModule: Http,
   private val agents: Map<String, String>,
@@ -93,7 +95,8 @@ internal class WrapperRealtimeChannels(
     WrapperRealtimeChannel(javaChannels.get(name, options.injectAgents(agents)), httpModule)
 }
 
-internal class WrapperRealtimeChannel(private val javaChannel: Channel, private val httpModule: Http) :
+@OptIn(InternalAPI::class)
+internal class WrapperRealtimeChannel(override val javaChannel: Channel, private val httpModule: Http) :
   RealtimeChannel by RealtimeChannelAdapter(javaChannel) {
 
   override val presence: RealtimePresence
