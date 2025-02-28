@@ -1,6 +1,6 @@
 package com.ably.http
 
-enum class HttpMethod(private val method: String) {
+public enum class HttpMethod(private val method: String) {
   Get("GET"),
   Post("POST"),
   Put("PUT"),
@@ -8,5 +8,5 @@ enum class HttpMethod(private val method: String) {
   Patch("PATCH"),
   ;
 
-  override fun toString() = method
+  override fun toString(): String = method
 }

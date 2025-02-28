@@ -3,7 +3,7 @@ package com.ably.pubsub
 import io.ably.lib.realtime.CompletionListener
 import io.ably.lib.types.Message
 
-interface RestChannel : Channel {
+public interface RestChannel : Channel {
 
   /**
    * Presence set for a channel.
@@ -16,7 +16,7 @@ interface RestChannel : Channel {
    * @param name the event name
    * @param data the message payload; see [io.ably.types.Data] for details of supported data types.
    */
-  fun publish(name: String? = null, data: Any? = null)
+  public fun publish(name: String? = null, data: Any? = null)
 
   /**
    * Publish list of messages on this channel. When there are
@@ -26,19 +26,19 @@ interface RestChannel : Channel {
    *
    * @param messages list of messages to publish.
    */
-  fun publish(messages: List<Message>)
+  public fun publish(messages: List<Message>)
 
   /**
    * Publish a message on this channel asynchronously
    *
    * @see [publish]
    */
-  fun publishAsync(name: String? = null, data: Any? = null, listener: CompletionListener)
+  public fun publishAsync(name: String? = null, data: Any? = null, listener: CompletionListener)
 
   /**
    * Publish list of messages on this channel asynchronously
    *
    * @see [publish]
    */
-  fun publishAsync(messages: List<Message>, listener: CompletionListener)
+  public fun publishAsync(messages: List<Message>, listener: CompletionListener)
 }

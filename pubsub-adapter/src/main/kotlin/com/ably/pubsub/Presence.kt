@@ -6,7 +6,7 @@ import io.ably.lib.types.*
 /**
  * Enables get historic presence set for a channel.
  */
-interface Presence {
+public interface Presence {
 
   /**
    * Retrieves a [PaginatedResult] object, containing an array of historical [PresenceMessage] objects for the channel.
@@ -23,7 +23,7 @@ interface Presence {
    *
    * @return A [PaginatedResult] object containing an array of [PresenceMessage] objects.
    */
-  fun history(
+  public fun history(
     start: Long? = null,
     end: Long? = null,
     limit: Int = 100,
@@ -45,7 +45,7 @@ interface Presence {
    * @param callback  A Callback returning [AsyncPaginatedResult] object containing an array of [PresenceMessage] objects.
    * Note: This callback is invoked on a background thread.
    */
-  fun historyAsync(
+  public fun historyAsync(
     callback: Callback<AsyncPaginatedResult<PresenceMessage>>,
     start: Long? = null,
     end: Long? = null,

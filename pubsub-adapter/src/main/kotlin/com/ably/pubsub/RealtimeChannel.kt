@@ -14,7 +14,7 @@ import io.ably.lib.types.Message
 /**
  * An interface representing a Realtime Channel.
  */
-interface RealtimeChannel : Channel {
+public interface RealtimeChannel : Channel {
   /**
    * Presence set for a channel.
    */
@@ -25,21 +25,21 @@ interface RealtimeChannel : Channel {
    *
    * Spec: RTL2b
    */
-  val state: ChannelState
+  public val state: ChannelState
 
   /**
    * An [ErrorInfo] object describing the last error which occurred on the channel, if any.
    *
    * Spec: RTL4e
    */
-  val reason: ErrorInfo?
+  public val reason: ErrorInfo?
 
   /**
    * A [ChannelProperties] object.
    *
    * Spec: CP1, RTL15
    */
-  val properties: ChannelProperties
+  public val properties: ChannelProperties
 
   /**
    * Attach to this channel ensuring the channel is created in the Ably system and all messages published
@@ -51,7 +51,7 @@ interface RealtimeChannel : Channel {
    *
    * Spec: RTL4d
    */
-  fun attach(listener: CompletionListener? = null)
+  public fun attach(listener: CompletionListener? = null)
 
   /**
    * Detach from this channel.
@@ -61,7 +61,7 @@ interface RealtimeChannel : Channel {
    *
    * Spec: RTL5e
    */
-  fun detach(listener: CompletionListener? = null)
+  public fun detach(listener: CompletionListener? = null)
 
   /**
    * Registers a listener for messages on this channel.
@@ -72,7 +72,7 @@ interface RealtimeChannel : Channel {
    * @param listener A listener may optionally be passed in to this call to be notified of success or failure
    * of the channel [RealtimeChannel.attach] operation. This listener is invoked on a background thread.
    */
-  fun subscribe(listener: MessageListener): Subscription
+  public fun subscribe(listener: MessageListener): Subscription
 
   /**
    * Registers a listener for messages with a given event name on this channel.
@@ -84,7 +84,7 @@ interface RealtimeChannel : Channel {
    * @param listener A listener may optionally be passed in to this call to be notified of success or failure
    * of the channel [RealtimeChannel.attach] operation. This listener is invoked on a background thread.
    */
-  fun subscribe(eventName: String, listener: MessageListener): Subscription
+  public fun subscribe(eventName: String, listener: MessageListener): Subscription
 
   /**
    * Registers a listener for messages on this channel for multiple event name values.
@@ -96,7 +96,7 @@ interface RealtimeChannel : Channel {
    * @param listener A listener may optionally be passed in to this call to be notified of success or failure
    * of the channel [RealtimeChannel.attach] operation. This listener is invoked on a background thread.
    */
-  fun subscribe(eventNames: List<String>, listener: MessageListener): Subscription
+  public fun subscribe(eventNames: List<String>, listener: MessageListener): Subscription
 
   /**
    * Publishes a single message to the channel with the given event name and payload.
@@ -111,7 +111,7 @@ interface RealtimeChannel : Channel {
    * @param listener A listener may optionally be passed in to this call to be notified of success or failure of the operation.
    * This listener is invoked on a background thread.
    */
-  fun publish(name: String? = null, data: Any? = null, listener: CompletionListener? = null)
+  public fun publish(name: String? = null, data: Any? = null, listener: CompletionListener? = null)
 
   /**
    * Publishes a message to the channel.
@@ -123,7 +123,7 @@ interface RealtimeChannel : Channel {
    * @param listener A listener may optionally be passed in to this call to be notified of success or failure of the operation.
    * This listener is invoked on a background thread.
    */
-  fun publish(message: Message, listener: CompletionListener? = null)
+  public fun publish(message: Message, listener: CompletionListener? = null)
 
   /**
    * Publishes an array of messages to the channel.
@@ -135,7 +135,7 @@ interface RealtimeChannel : Channel {
    * @param listener A listener may optionally be passed in to this call to be notified of success or failure of the operation.
    * This listener is invoked on a background thread.
    */
-  fun publish(messages: List<Message>, listener: CompletionListener? = null)
+  public fun publish(messages: List<Message>, listener: CompletionListener? = null)
 
   /**
    * Sets the [ChannelOptions] for the channel.
@@ -144,11 +144,11 @@ interface RealtimeChannel : Channel {
    *
    * @param options A {@link ChannelOptions} object.
    */
-  fun setOptions(options: ChannelOptions)
+  public fun setOptions(options: ChannelOptions)
 
   /**
    * This property will be removed once public API for new version of ably-java is stable
    */
   @InternalAPI
-  val javaChannel: io.ably.lib.realtime.Channel
+  public val javaChannel: io.ably.lib.realtime.Channel
 }

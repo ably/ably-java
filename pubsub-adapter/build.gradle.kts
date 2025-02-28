@@ -4,6 +4,10 @@ plugins {
     alias(libs.plugins.maven.publish)
 }
 
+kotlin {
+    explicitApi()
+}
+
 dependencies {
     compileOnly(project(":java"))
     testImplementation(kotlin("test"))

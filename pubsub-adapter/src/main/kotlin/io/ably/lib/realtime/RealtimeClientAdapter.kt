@@ -14,7 +14,7 @@ import io.ably.lib.types.*
 /**
  * Wrapper for Realtime client
  */
-fun RealtimeClient(javaClient: AblyRealtime): RealtimeClient = RealtimeClientAdapter(javaClient)
+public fun RealtimeClient(javaClient: AblyRealtime): RealtimeClient = RealtimeClientAdapter(javaClient)
 
 @OptIn(InternalAPI::class)
 internal class RealtimeClientAdapter(override val javaClient: AblyRealtime) : RealtimeClient, SdkWrapperCompatible<RealtimeClient> {

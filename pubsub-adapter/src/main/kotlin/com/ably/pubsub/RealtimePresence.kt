@@ -11,7 +11,7 @@ import java.util.*
 /**
  * Presence for a Realtime channel
  */
-interface RealtimePresence : Presence {
+public interface RealtimePresence : Presence {
 
   /**
    * Retrieves the current members present on the channel and the metadata for each member,
@@ -30,7 +30,7 @@ interface RealtimePresence : Presence {
    * @param connectionId (RTP11c3) - Filters the array of returned presence members by a specific connection using its ID.
    * @return A list of [PresenceMessage] objects.
    */
-  fun get(clientId: String? = null, connectionId: String? = null, waitForSync: Boolean = true): List<PresenceMessage>
+  public fun get(clientId: String? = null, connectionId: String? = null, waitForSync: Boolean = true): List<PresenceMessage>
 
   /**
    * Registers a listener that is called each time a [PresenceMessage] matching a given [PresenceMessage.Action],
@@ -42,7 +42,7 @@ interface RealtimePresence : Presence {
    * @param listener An event listener function.
    * The listener is invoked on a background thread.
    */
-  fun subscribe(listener: PresenceListener): Subscription
+  public fun subscribe(listener: PresenceListener): Subscription
 
   /**
    * Registers a listener that is called each time a [PresenceMessage] matching a given [PresenceMessage.Action],
@@ -55,7 +55,7 @@ interface RealtimePresence : Presence {
    * @param listener An event listener function.
    * The listener is invoked on a background thread.
    */
-  fun subscribe(action: PresenceMessage.Action, listener: PresenceListener): Subscription
+  public fun subscribe(action: PresenceMessage.Action, listener: PresenceListener): Subscription
 
   /**
    * Registers a listener that is called each time a [PresenceMessage] matching a given [PresenceMessage.Action],
@@ -68,7 +68,7 @@ interface RealtimePresence : Presence {
    * @param listener An event listener function.
    * The listener is invoked on a background thread.
    */
-  fun subscribe(actions: EnumSet<PresenceMessage.Action>, listener: PresenceListener): Subscription
+  public fun subscribe(actions: EnumSet<PresenceMessage.Action>, listener: PresenceListener): Subscription
 
   /**
    * Enters the presence set for the channel, optionally passing a data payload.
@@ -81,7 +81,7 @@ interface RealtimePresence : Presence {
    * @param listener A callback to notify of the success or failure of the operation.
    * This listener is invoked on a background thread.
    */
-  fun enter(data: Any? = null, listener: CompletionListener? = null)
+  public fun enter(data: Any? = null, listener: CompletionListener? = null)
 
   /**
    * Updates the data payload for a presence member.
@@ -94,7 +94,7 @@ interface RealtimePresence : Presence {
    * @param listener A callback to notify of the success or failure of the operation.
    * This listener is invoked on a background thread.
    */
-  fun update(data: Any? = null, listener: CompletionListener? = null)
+  public fun update(data: Any? = null, listener: CompletionListener? = null)
 
   /**
    * Leaves the presence set for the channel.
@@ -106,7 +106,7 @@ interface RealtimePresence : Presence {
    * @param listener a listener to notify of the success or failure of the operation.
    * This listener is invoked on a background thread.
    */
-  fun leave(data: Any? = null, listener: CompletionListener? = null)
+  public fun leave(data: Any? = null, listener: CompletionListener? = null)
 
   /**
    * Enters the presence set of the channel for a given clientId.
@@ -120,7 +120,7 @@ interface RealtimePresence : Presence {
    * @param listener A callback to notify of the success or failure of the operation.
    * This listener is invoked on a background thread.
    */
-  fun enterClient(clientId: String, data: Any? = null, listener: CompletionListener? = null)
+  public fun enterClient(clientId: String, data: Any? = null, listener: CompletionListener? = null)
 
   /**
    * Updates the data payload for a presence member using a given clientId.
@@ -135,7 +135,7 @@ interface RealtimePresence : Presence {
    * @param listener A callback to notify of the success or failure of the operation.
    * This listener is invoked on a background thread.
    */
-  fun updateClient(clientId: String, data: Any? = null, listener: CompletionListener? = null)
+  public fun updateClient(clientId: String, data: Any? = null, listener: CompletionListener? = null)
 
   /**
    * Leaves the presence set of the channel for a given clientId.
@@ -149,5 +149,5 @@ interface RealtimePresence : Presence {
    * @param listener A callback to notify of the success or failure of the operation.
    * This listener is invoked on a background thread.
    */
-  fun leaveClient(clientId: String?, data: Any? = null, listener: CompletionListener? = null)
+  public fun leaveClient(clientId: String?, data: Any? = null, listener: CompletionListener? = null)
 }

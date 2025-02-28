@@ -13,7 +13,7 @@ import io.ably.lib.types.*
  *
  * @see <a href="https://ably.com/docs/realtime/channels">Ably Channels Documentation</a>
  */
-interface Channel {
+public interface Channel {
 
   /**
    * The channel name.
@@ -25,7 +25,7 @@ interface Channel {
    *
    * @see <a href="https://ably.com/docs/realtime/channels#channel-naming">Channel Naming Rules</a>
    */
-  val name: String
+  public val name: String
 
   /**
    * A [Presence] object.
@@ -41,7 +41,7 @@ interface Channel {
    *
    * Spec: RTL9
    */
-  val presence: Presence
+  public val presence: Presence
 
   /**
    * Obtain recent history for this channel using the REST API.
@@ -57,7 +57,7 @@ interface Channel {
    *
    * @return Paginated result of Messages for this Channel.
    */
-  fun history(
+  public fun history(
     start: Long? = null,
     end: Long? = null,
     limit: Int = 100,
@@ -76,7 +76,7 @@ interface Channel {
    * @param callback  A Callback returning [AsyncPaginatedResult] object containing an array of [Message] objects.
    * Note: This callback is invoked on a background thread.
    */
-  fun historyAsync(
+  public fun historyAsync(
     callback: Callback<AsyncPaginatedResult<Message>>,
     start: Long? = null,
     end: Long? = null,

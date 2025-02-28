@@ -3,7 +3,7 @@ package com.ably.query
 /**
  * Represents direction to query messages in.
  */
-enum class OrderBy(val direction: String) {
+public enum class OrderBy(public val direction: String) {
 
   /**
    * The response will include messages from the end of the time window to the start.
