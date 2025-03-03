@@ -285,6 +285,12 @@ public class HttpCore {
             response = executeRequest(request);
         } catch (FailedConnectionException exception) {
             throw AblyException.fromThrowable(exception);
+        } catch (Exception e) {
+            if (e.getCause() instanceof IOException) {
+                throw AblyException.fromThrowable(e.getCause());
+            } else {
+                throw AblyException.fromThrowable(e);
+            }
         }
 
         if (rawHttpListener != null) {
