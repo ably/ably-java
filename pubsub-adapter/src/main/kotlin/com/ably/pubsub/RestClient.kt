@@ -1,6 +1,6 @@
 package com.ably.pubsub
 
-interface RestClient : Client {
+public interface RestClient : Client {
 
   /**
    * Collection of [RestChannel] instances currently managed by the client

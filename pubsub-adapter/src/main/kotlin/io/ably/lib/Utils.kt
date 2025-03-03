@@ -4,7 +4,7 @@ import com.ably.query.OrderBy
 import com.ably.query.TimeUnit
 import io.ably.lib.types.Param
 
-fun buildStatsParams(
+internal fun buildStatsParams(
   start: Long?,
   end: Long?,
   limit: Int,
@@ -15,7 +15,7 @@ fun buildStatsParams(
   add(Param("unit", unit.toString()))
 }
 
-fun buildHistoryParams(
+internal fun buildHistoryParams(
   start: Long?,
   end: Long?,
   limit: Int,
@@ -27,7 +27,7 @@ fun buildHistoryParams(
   add(Param("direction", orderBy.direction))
 }
 
-fun buildRestPresenceParams(
+internal fun buildRestPresenceParams(
   limit: Int,
   clientId: String?,
   connectionId: String?,

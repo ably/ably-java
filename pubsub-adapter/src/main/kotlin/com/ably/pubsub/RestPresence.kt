@@ -2,7 +2,7 @@ package com.ably.pubsub
 
 import io.ably.lib.types.*
 
-interface RestPresence : Presence {
+public interface RestPresence : Presence {
 
   /**
    * Retrieves the current members present on the channel and the metadata for each member,
@@ -16,7 +16,7 @@ interface RestPresence : Presence {
    *  @param connectionId (RSP3a3) - Filters the list of returned presence members by a specific connection using its ID.
    *  @return A [PaginatedResult] object containing an array of [PresenceMessage] objects.
    */
-  fun get(limit: Int = 100, clientId: String? = null, connectionId: String? = null): PaginatedResult<PresenceMessage>
+  public fun get(limit: Int = 100, clientId: String? = null, connectionId: String? = null): PaginatedResult<PresenceMessage>
 
   /**
    * Asynchronously retrieves the current members present on the channel and the metadata for each member,
@@ -31,6 +31,6 @@ interface RestPresence : Presence {
    * @param callback A Callback returning [AsyncPaginatedResult] object containing an array of [PresenceMessage] objects.
    * This callback is invoked on a background thread.
    */
-  fun getAsync(callback: Callback<AsyncPaginatedResult<PresenceMessage>>, limit: Int = 100, clientId: String? = null, connectionId: String? = null)
+  public fun getAsync(callback: Callback<AsyncPaginatedResult<PresenceMessage>>, limit: Int = 100, clientId: String? = null, connectionId: String? = null)
 
 }

@@ -5,12 +5,12 @@ package com.ably.query
  * values supported are minute, hour, day or month; if omitted the unit defaults
  * to the REST API default (minute)
  */
-enum class TimeUnit(private val unit: String) {
+public enum class TimeUnit(private val unit: String) {
   Minute("minute"),
   Hour("hour"),
   Day("day"),
   Month("month"),
   ;
 
-  override fun toString() = unit
+  override fun toString(): String = unit
 }

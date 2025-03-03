@@ -12,7 +12,7 @@ import io.ably.lib.types.*
 /**
  * Wrapper for Rest client
  */
-fun RestClient(javaClient: AblyRest): RestClient = RestClientAdapter(javaClient)
+public fun RestClient(javaClient: AblyRest): RestClient = RestClientAdapter(javaClient)
 
 internal class RestClientAdapter(private val javaClient: AblyRest) : RestClient, SdkWrapperCompatible<RestClient> {
   override val channels: Channels<out RestChannel>

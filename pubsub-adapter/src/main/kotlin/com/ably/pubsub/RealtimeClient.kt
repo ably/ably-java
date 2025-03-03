@@ -10,14 +10,14 @@ import io.ably.lib.realtime.Connection
  * This class implements {@link AutoCloseable} so you can use it in
  * try-with-resources constructs and have the JDK close it for you.
  */
-interface RealtimeClient : Client {
+public interface RealtimeClient : Client {
 
   /**
    * The {@link Connection} object for this instance.
    * <p>
    * Spec: RTC2
    */
-  val connection: Connection
+  public val connection: Connection
 
   /**
    * Collection of [RealtimeChannel] instances currently managed by Realtime client
@@ -28,5 +28,5 @@ interface RealtimeClient : Client {
    * This property will be removed once public API for new version of ably-java is stable
    */
   @InternalAPI
-  val javaClient: AblyRealtime
+  public val javaClient: AblyRealtime
 }

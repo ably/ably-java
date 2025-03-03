@@ -14,33 +14,33 @@ import io.ably.lib.types.*
  * This class implements {@link AutoCloseable} so you can use it in
  * try-with-resources constructs and have the JDK close it for you.
  */
-interface Client : AutoCloseable {
+public interface Client : AutoCloseable {
 
   /**
    * An [Auth] object.
    *
    * Spec: RSC5
    */
-  val auth: Auth
+  public val auth: Auth
 
   /**
    * A [Channels] object.
    *
    * Spec: RTC3, RTS1
    */
-  val channels: Channels<out Channel>
+  public val channels: Channels<out Channel>
 
   /**
    * Client options
    */
-  val options: ClientOptions
+  public val options: ClientOptions
 
   /**
    * An [Push] object.
    *
    * Spec: RSH7
    */
-  val push: Push
+  public val push: Push
 
   /**
    * Retrieves the time from the Ably service as milliseconds
@@ -53,7 +53,7 @@ interface Client : AutoCloseable {
    * Spec: RSC16
    * @return The time as milliseconds since the Unix epoch.
    */
-  fun time(): Long
+  public fun time(): Long
 
   /**
    * Asynchronously retrieves the time from the Ably service as milliseconds
@@ -68,7 +68,7 @@ interface Client : AutoCloseable {
    * @param callback Listener with the time as milliseconds since the Unix epoch.
    * This callback is invoked on a background thread
    */
-  fun timeAsync(callback: Callback<Long>)
+  public fun timeAsync(callback: Callback<Long>)
 
   /**
    * Queries the REST /stats API and retrieves your application's usage statistics.
@@ -83,7 +83,7 @@ interface Client : AutoCloseable {
    * @return A [PaginatedResult] object containing an array of [Stats] objects.
    * @throws AblyException
    */
-  fun stats(
+  public fun stats(
     start: Long? = null,
     end: Long? = null,
     limit: Int = 100,
@@ -105,7 +105,7 @@ interface Client : AutoCloseable {
    * @param callback Listener which returns a [AsyncPaginatedResult] object containing an array of [Stats] objects.
    * This callback is invoked on a background thread
    */
-  fun statsAsync(
+  public fun statsAsync(
     callback: Callback<AsyncPaginatedResult<Stats>>,
     start: Long? = null,
     end: Long? = null,
@@ -133,7 +133,7 @@ interface Client : AutoCloseable {
    * @param headers Additional HTTP headers to include in the request.
    * @return An [HttpPaginatedResponse] object returned by the HTTP request, containing an empty or JSON-encodable object.
    */
-  fun request(
+  public fun request(
     path: String,
     method: HttpMethod = HttpMethod.Get,
     params: List<Param> = emptyList(),
@@ -163,7 +163,7 @@ interface Client : AutoCloseable {
    * containing an empty or JSON-encodable object.
    * This callback is invoked on a background thread
    */
-  fun requestAsync(
+  public fun requestAsync(
     path: String,
     callback: AsyncHttpPaginatedResponse.Callback,
     method: HttpMethod = HttpMethod.Get,
