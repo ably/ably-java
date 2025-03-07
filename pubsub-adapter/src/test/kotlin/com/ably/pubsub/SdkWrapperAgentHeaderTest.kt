@@ -2,16 +2,13 @@ package com.ably.pubsub
 
 import app.cash.turbine.test
 import com.ably.EmbeddedServer
+import com.ably.createAblyRest
+import com.ably.createAblyRealtime
 import com.ably.json
-import com.ably.pubsub.SdkWrapperAgentHeaderTest.Companion.PORT
 import com.ably.waitFor
-import fi.iki.elonen.NanoHTTPD
 import io.ably.lib.BuildConfig
-import io.ably.lib.realtime.AblyRealtime
 import io.ably.lib.realtime.RealtimeClient
-import io.ably.lib.rest.AblyRest
 import io.ably.lib.rest.RestClient
-import io.ably.lib.types.ClientOptions
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -150,8 +147,8 @@ class SdkWrapperAgentHeaderTest {
 
   companion object {
 
-    const val PORT = 27332
-    lateinit var server: EmbeddedServer
+    private const val PORT = 27332
+    private lateinit var server: EmbeddedServer
 
     @JvmStatic
     @BeforeAll
@@ -162,7 +159,7 @@ class SdkWrapperAgentHeaderTest {
           else -> json("[]")
         }
       }
-      server.start(NanoHTTPD.SOCKET_READ_TIMEOUT, true)
+      server.start()
       waitFor { server.wasStarted() }
     }
 
@@ -171,31 +168,9 @@ class SdkWrapperAgentHeaderTest {
     fun tearDown() {
       server.stop()
     }
+
+    private fun createRealtimeClient(): RealtimeClient = RealtimeClient(createAblyRealtime(PORT))
+
+    private fun createRestClient(): RestClient = RestClient(createAblyRest(PORT))
   }
-}
-
-private fun createRealtimeClient(): RealtimeClient {
-  val options = ClientOptions("xxxxx:yyyyyyy").apply {
-    port = PORT
-    useBinaryProtocol = false
-    realtimeHost = "localhost"
-    restHost = "localhost"
-    tls = false
-    autoConnect = false
-  }
-
-  return RealtimeClient(AblyRealtime(options))
-}
-
-private fun createRestClient(): RestClient {
-  val options = ClientOptions("xxxxx:yyyyyyy").apply {
-    port = PORT
-    useBinaryProtocol = false
-    realtimeHost = "localhost"
-    restHost = "localhost"
-    tls = false
-    autoConnect = false
-  }
-
-  return RestClient(AblyRest(options))
 }
