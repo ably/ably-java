@@ -64,14 +64,6 @@ public class AblyRealtime extends AblyRest {
         this.channels = channels;
         connection = new Connection(this, channels, platformAgentProvider);
 
-        /* remove all channels when the connection is closed, to avoid stalled state */
-        connection.on(ConnectionEvent.closed, new ConnectionStateListener() {
-            @Override
-            public void onConnectionStateChanged(ConnectionStateListener.ConnectionStateChange state) {
-                channels.clear();
-            }
-        });
-
         if (!StringUtils.isNullOrEmpty(options.recover)) {
             RecoveryKeyContext recoveryKeyContext = RecoveryKeyContext.decode(options.recover);
             if (recoveryKeyContext != null) {

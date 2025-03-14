@@ -681,6 +681,16 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
     }
 
+    /**
+     * Internal
+     * <p>
+     * (RTN11d) Resets channels back to initialized and clears error reason
+     */
+    public synchronized void setReinitialized() {
+        clearAttachTimers();
+        setState(ChannelState.initialized, null);
+    }
+
     @Override
     protected void apply(ChannelStateListener listener, ChannelEvent event, Object... args) {
         try {
