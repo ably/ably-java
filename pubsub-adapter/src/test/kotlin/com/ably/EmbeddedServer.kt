@@ -15,11 +15,13 @@ data class Request(
 data class Response(
   val mimeType: String,
   val data: ByteArray,
+  val headers: Map<String, String> = emptyMap(),
 )
 
-fun json(json: String): Response = Response(
+fun json(json: String, headers: Map<String, String> = emptyMap()): Response = Response(
   mimeType = "application/json",
   data = json.toByteArray(),
+  headers = headers,
 )
 
 fun interface RequestHandler {
@@ -44,6 +46,10 @@ class EmbeddedServer(port: Int, private val requestHandler: RequestHandler? = nu
     val response = requestHandler?.handle(request)
     return response?.toNanoHttp() ?: newFixedLengthResponse("<!DOCTYPE html><title>404</title>")
   }
+
+  override fun start() {
+    start(SOCKET_READ_TIMEOUT, true)
+  }
 }
 
 private fun Response.toNanoHttp(): NanoHTTPD.Response = NanoHTTPD.newFixedLengthResponse(
@@ -51,4 +57,6 @@ private fun Response.toNanoHttp(): NanoHTTPD.Response = NanoHTTPD.newFixedLength
   mimeType,
   ByteArrayInputStream(data),
   data.size.toLong(),
-)
+).apply {
+  headers.forEach { (key, value) -> addHeader(key, value) }
+}

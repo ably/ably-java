@@ -187,18 +187,12 @@ public class HttpUtils {
         return builder.toString();
     }
 
-    private static void appendParams(StringBuilder uri, Param[] params) {
-        if(params != null && params.length > 0) {
-            uri.append('?').append(params[0].key).append('=').append(params[0].value);
-            for(int i = 1; i < params.length; i++) {
-                uri.append('&').append(params[i].key).append('=').append(params[i].value);
-            }
-        }
-    }
-
     static URL buildURL(String scheme, String host, int port, String path, Param[] params) {
-        StringBuilder builder = new StringBuilder(scheme).append(host).append(':').append(port).append(path);
-        appendParams(builder, params);
+        StringBuilder builder = new StringBuilder(scheme)
+            .append(host)
+            .append(':')
+            .append(port)
+            .append(HttpUtils.encodeParams(path, params));
 
         URL result = null;
         try {
@@ -208,12 +202,9 @@ public class HttpUtils {
     }
 
     static URL buildURL(String uri, Param[] params) {
-        StringBuilder builder = new StringBuilder(uri);
-        appendParams(builder, params);
-
         URL result = null;
         try {
-            result = new URL(builder.toString());
+            result = new URL(HttpUtils.encodeParams(uri, params));
         } catch (MalformedURLException e) {}
         return result;
     }
