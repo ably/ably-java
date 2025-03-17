@@ -232,7 +232,25 @@ public class ConnectionManager implements ConnectListener {
         @Override
         void enact(StateIndication stateIndication, ConnectionStateChange change) {
             super.enact(stateIndication, change);
+
+            if (hasConnectBeenInvokeOnClosedOrFailedState(change)) {
+                cleanMsgSerialAndErrorReason();
+            }
+
             connectImpl(stateIndication);
+        }
+
+        @Override
+        void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, Channel channel) {
+            // (RTN11b)
+            if (change.previous == ConnectionState.closing) {
+                channel.setConnectionClosed(REASON_CLOSED);
+            }
+
+            // (RTN11d)
+            if (hasConnectBeenInvokeOnClosedOrFailedState(change)) {
+                channel.setReinitialized();
+            }
         }
     }
 
@@ -1557,6 +1575,20 @@ public class ConnectionManager implements ConnectListener {
         if(protocolListener != null) {
             protocolListener.onRawConnectRequested(transport.getURL());
         }
+    }
+
+    /**
+     * (RTN11d)
+     */
+    private void cleanMsgSerialAndErrorReason() {
+        this.msgSerial = 0;
+        this.connection.reason = null;
+    }
+
+    private boolean hasConnectBeenInvokeOnClosedOrFailedState(ConnectionStateChange change) {
+        return change.previous == ConnectionState.failed
+            || change.previous == ConnectionState.closed
+            || change.previous == ConnectionState.closing;
     }
 
     /**

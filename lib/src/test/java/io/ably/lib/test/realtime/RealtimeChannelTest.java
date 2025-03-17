@@ -979,6 +979,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             assertEquals("Simulated connection failure", channel.reason.message);
 
             ably.connect();
+            new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
 
             Helpers.CompletionWaiter attachListener = new Helpers.CompletionWaiter();
             channel.attach(attachListener);
@@ -2459,6 +2460,101 @@ public class RealtimeChannelTest extends ParameterizedTest {
             if (ably != null)
                 ably.close();
             Defaults.realtimeRequestTimeout = oldRealtimeTimeout;
+        }
+    }
+
+    /*
+     * Spec: RTN11d
+     * Checks that all channels become if the state is CLOSED transitions all the channels to
+     * INITIALIZED and unsets:
+     *  - RealtimeChannel.errorReason
+     *  - Connection.errorReason
+     *  - msgSerial
+     */
+    @Test
+    public void connect_on_closed_client_should_reinitialize_channels() throws AblyException {
+        ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+        try (AblyRealtime ably = new AblyRealtime(opts)) {
+
+            /* wait until connected */
+            new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+            assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+            /* create a channel and attach */
+            final Channel channel = ably.channels.get("channel");
+            channel.attach();
+            new ChannelWaiter(channel).waitFor(ChannelState.attached);
+            assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+            /* push a message to increase msgSerial */
+            channel.publish("test", "test");
+            assertEquals(1, ably.connection.connectionManager.msgSerial);
+
+            ably.close();
+            new ChannelWaiter(channel).waitFor(ChannelState.detached);
+            assertEquals(ConnectionState.closed, ably.connection.state);
+            assertEquals(1, ably.connection.connectionManager.msgSerial);
+
+            ably.connect();
+
+            new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+            assertEquals(ChannelState.initialized, channel.state);
+
+            assertNull(channel.reason);
+            assertNull(ably.connection.reason);
+            assertEquals(ChannelState.initialized, channel.state);
+            assertEquals(0, ably.connection.connectionManager.msgSerial);
+        }
+    }
+
+    /*
+     * Spec: RTN11b
+     * Checks that all channels become if the state is CLOSING transitions all the channels to
+     * INITIALIZED and unsets:
+     *  - RealtimeChannel.errorReason
+     *  - Connection.errorReason
+     *  - msgSerial
+     */
+    @Test
+    public void connect_on_closing_client_should_reinitialize_channels() throws AblyException {
+        ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+        try (AblyRealtime ably = new AblyRealtime(opts)) {
+
+            /* wait until connected */
+            (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
+            assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+            /* create a channel and attach */
+            final Channel channel = ably.channels.get("channel");
+            channel.attach();
+            new ChannelWaiter(channel).waitFor(ChannelState.attached);
+            assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+            /* push a message to increase msgSerial */
+            channel.publish("test", "test");
+            assertEquals(1, ably.connection.connectionManager.msgSerial);
+
+            List<ChannelState> observedChannelStates = new ArrayList<>();
+            channel.on(stateChange -> observedChannelStates.add(stateChange.current));
+
+            List<ConnectionState> observedConnectionStates = new ArrayList<>();
+            ably.connection.on(stateChange -> observedConnectionStates.add(stateChange.current));
+
+            ably.close();
+            ably.connect();
+
+            new ConnectionWaiter(ably.connection).waitFor(ConnectionState.closing);
+            new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+
+            assertEquals(List.of(ConnectionState.closing, ConnectionState.connecting, ConnectionState.connected), observedConnectionStates);
+            assertEquals(ChannelState.initialized, channel.state);
+            
+            channel.attach();
+            new ChannelWaiter(channel).waitFor(ChannelState.attached);
+
+            assertNull(channel.reason);
+            assertEquals(0, ably.connection.connectionManager.msgSerial);
+            assertEquals(List.of(ChannelState.detached, ChannelState.initialized, ChannelState.attaching, ChannelState.attached), observedChannelStates);
         }
     }
 
