@@ -1,5 +1,14 @@
 # Change Log
 
+## [1.2.51](https://github.com/ably/ably-java/tree/v1.2.51)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.50...v1.2.51)
+
+**Implemented enhancements:**
+
+- Made query params URL-encoded in the request API by default [\#1075](https://github.com/ably/ably-java/issues/1075)
+- Implemented RTN11d spec point [\#1074](https://github.com/ably/ably-java/issues/1074)
+
 ## [1.2.50](https://github.com/ably/ably-java/tree/v1.2.50)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.49...v1.2.50)
