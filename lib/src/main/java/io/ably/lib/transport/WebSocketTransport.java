@@ -381,8 +381,7 @@ public class WebSocketTransport implements ITransport {
             }
         }
 
-        private synchronized void onActivityTimerExpiry() {
-            activityTimerTask = null;
+        private void onActivityTimerExpiry() {
             long timeSinceLastActivity = System.currentTimeMillis() - lastActivityTime;
             long timeRemaining = getActivityTimeout() - timeSinceLastActivity;
 
@@ -393,9 +392,12 @@ public class WebSocketTransport implements ITransport {
                 return;
             }
 
-            // Otherwise, we've had some activity, restart the timer for the next timeout
-            Log.v(TAG, "onActivityTimerExpiry: ok");
-            startActivityTimer(timeRemaining + 100);
+            synchronized (this) {
+                activityTimerTask = null;
+                // Otherwise, we've had some activity, restart the timer for the next timeout
+                Log.v(TAG, "onActivityTimerExpiry: ok");
+                startActivityTimer(timeRemaining + 100);
+            }
         }
 
         private long getActivityTimeout() {
