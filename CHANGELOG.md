@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.2.52](https://github.com/ably/ably-java/tree/v1.2.52)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.51...v1.2.52)
+
+**Closed issues:**
+
+- `Java-WebSocket` holds lock while invoking listeners, it may cause deadlock [\#1079](https://github.com/ably/ably-java/issues/1079)
+
 ## [1.2.51](https://github.com/ably/ably-java/tree/v1.2.51)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.50...v1.2.51)
