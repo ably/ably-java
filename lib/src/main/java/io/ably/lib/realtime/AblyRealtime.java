@@ -1,10 +1,14 @@
 package io.ably.lib.realtime;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.ably.lib.network.HttpEngineFactory;
+import io.ably.lib.objects.LiveObjects;
+import io.ably.lib.objects.LiveObjectsPlugin;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.transport.ConnectionManager;
@@ -41,6 +45,13 @@ public class AblyRealtime extends AblyRest {
     public final Channels channels;
 
     /**
+     * A nullable reference to the LiveObjects plugin.
+     * <p>
+     * This field is initialized only if the LiveObjects plugin is present in the classpath.
+     */
+    private final LiveObjectsPlugin liveObjectsPlugin;
+
+    /**
      * Constructs a Realtime client object using an Ably API key or token string.
      * <p>
      * Spec: RSC1
@@ -71,6 +82,8 @@ public class AblyRealtime extends AblyRest {
                 connection.connectionManager.msgSerial = recoveryKeyContext.getMsgSerial(); //RTN16f
             }
         }
+
+        liveObjectsPlugin = tryInitializeLiveObjectsPlugin();
 
         if(options.autoConnect) connection.connect();
     }
@@ -168,6 +181,16 @@ public class AblyRealtime extends AblyRest {
         void release(String channelName);
     }
 
+    private LiveObjectsPlugin tryInitializeLiveObjectsPlugin() {
+        try {
+            Class<?> liveObjectsImplementation = Class.forName("io.ably.lib.objects.DefaultLiveObjectsPlugin");
+            return (LiveObjectsPlugin) liveObjectsImplementation.getDeclaredConstructor().newInstance();
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException |
+                 InvocationTargetException e) {
+            return null;
+        }
+    }
+
     private class InternalChannels extends InternalMap<String, Channel> implements Channels, ConnectionManager.Channels {
         /**
          * Get the named channel; if it does not already exist,
@@ -187,7 +210,7 @@ public class AblyRealtime extends AblyRest {
             // We're not using computeIfAbsent because that requires Java 1.8.
             // Hence there's the slight inefficiency of creating newChannel when it may not be
             // needed because there is an existingChannel.
-            final Channel newChannel = new Channel(AblyRealtime.this, channelName, channelOptions);
+            final Channel newChannel = new Channel(AblyRealtime.this, channelName, channelOptions, liveObjectsPlugin);
             final Channel existingChannel = map.putIfAbsent(channelName, newChannel);
 
             if (existingChannel != null) {
