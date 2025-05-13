@@ -13,6 +13,8 @@ import io.ably.lib.http.BasePaginatedQuery;
 import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
+import io.ably.lib.objects.LiveObjects;
+import io.ably.lib.objects.LiveObjectsPlugin;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ConnectionManager.QueuedMessage;
 import io.ably.lib.transport.Defaults;
@@ -90,6 +92,17 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * @see #markAsReleased()
      */
     private boolean released = false;
+
+    private final LiveObjectsPlugin liveObjectsPlugin;
+
+    public LiveObjects getObjects() throws AblyException {
+        if (liveObjectsPlugin == null) {
+            throw AblyException.fromErrorInfo(
+                new ErrorInfo("LiveObjects plugin hasn't been installed, add runtimeOnly('io.ably:live-objects:<ably-version>') to your dependency tree", 400, 40000)
+            );
+        }
+        return liveObjectsPlugin.getInstance(name);
+    }
 
     /***
      * internal
@@ -1285,7 +1298,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
     }
 
-    ChannelBase(AblyRealtime ably, String name, ChannelOptions options) throws AblyException {
+    ChannelBase(AblyRealtime ably, String name, ChannelOptions options, LiveObjectsPlugin liveObjectsPlugin) throws AblyException {
         Log.v(TAG, "RealtimeChannel(); channel = " + name);
         this.ably = ably;
         this.name = name;
@@ -1295,6 +1308,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         this.attachResume = false;
         state = ChannelState.initialized;
         this.decodingContext = new DecodingContext();
+        this.liveObjectsPlugin = liveObjectsPlugin;
     }
 
     void onChannelMessage(ProtocolMessage msg) {
