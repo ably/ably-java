@@ -1,6 +1,6 @@
 package io.ably.lib.objects
 
-import io.ably.lib.objects.batch.BatchContext
+import io.ably.lib.objects.batch.BatchContextBuilder
 import io.ably.lib.types.Callback
 
 internal class DefaultLiveObjects(private val channelName: String): LiveObjects {
@@ -8,23 +8,19 @@ internal class DefaultLiveObjects(private val channelName: String): LiveObjects 
     TODO("Not yet implemented")
   }
 
-  override fun batch(batchContextCallback: Callback<BatchContext>?) {
+  override fun batch(batchContextCallback: BatchContextBuilder) {
     TODO("Not yet implemented")
   }
 
-  override fun createMap(liveMap: LiveMap?): LiveMap {
+  override fun createMap(liveMap: LiveMap): LiveMap {
     TODO("Not yet implemented")
   }
 
-  override fun createMap(liveCounter: LiveCounter?): LiveMap {
+  override fun createMap(liveCounter: LiveCounter): LiveMap {
     TODO("Not yet implemented")
   }
 
-  override fun createMap(map: MutableMap<String, Any>?): LiveMap {
-    TODO("Not yet implemented")
-  }
-
-  override fun createCounter(initialValue: Long?): LiveCounter {
+  override fun createMap(map: MutableMap<String, Any>): LiveMap {
     TODO("Not yet implemented")
   }
 
@@ -32,19 +28,27 @@ internal class DefaultLiveObjects(private val channelName: String): LiveObjects 
     TODO("Not yet implemented")
   }
 
-  override fun createMapAsync(liveMap: LiveMap?, callback: Callback<LiveMap>?) {
+  override fun batchAsync(batchContextCallback: BatchContextBuilder, callback: Callback<Void>) {
     TODO("Not yet implemented")
   }
 
-  override fun createMapAsync(liveCounter: LiveCounter?, callback: Callback<LiveMap>?) {
+  override fun createMapAsync(liveMap: LiveMap, callback: Callback<LiveMap>) {
     TODO("Not yet implemented")
   }
 
-  override fun createMapAsync(map: MutableMap<String, Any>?, callback: Callback<LiveMap>?) {
+  override fun createMapAsync(liveCounter: LiveCounter, callback: Callback<LiveMap>) {
     TODO("Not yet implemented")
   }
 
-  override fun createCounterAsync(initialValue: Long?, callback: Callback<LiveCounter>?) {
+  override fun createMapAsync(map: MutableMap<String, Any>, callback: Callback<LiveMap>) {
+    TODO("Not yet implemented")
+  }
+
+  override fun createCounterAsync(initialValue: Long, callback: Callback<LiveCounter>) {
+    TODO("Not yet implemented")
+  }
+
+  override fun createCounter(initialValue: Long): LiveCounter {
     TODO("Not yet implemented")
   }
 }

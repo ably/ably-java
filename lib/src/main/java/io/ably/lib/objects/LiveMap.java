@@ -1,6 +1,10 @@
 package io.ably.lib.objects;
 
 import io.ably.lib.types.Callback;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.Map;
 
@@ -16,13 +20,16 @@ public interface LiveMap {
      * @param keyName the key whose associated value is to be returned.
      * @return the value associated with the specified key, or null if the key does not exist.
      */
-    Object get(String keyName);
+    @Nullable
+    Object get(@NotNull String keyName);
 
     /**
      * Retrieves all entries (key-value pairs) in the map.
      *
      * @return an iterable collection of all entries in the map.
      */
+    @NotNull
+    @Unmodifiable
     Iterable<Map.Entry<String, Object>> entries();
 
     /**
@@ -30,6 +37,8 @@ public interface LiveMap {
      *
      * @return an iterable collection of all keys in the map.
      */
+    @NotNull
+    @Unmodifiable
     Iterable<String> keys();
 
     /**
@@ -37,6 +46,8 @@ public interface LiveMap {
      *
      * @return an iterable collection of all values in the map.
      */
+    @NotNull
+    @Unmodifiable
     Iterable<Object> values();
 
     /**
@@ -45,21 +56,22 @@ public interface LiveMap {
      * @param keyName the key to be set.
      * @param value the value to be associated with the key.
      */
-    void set(String keyName, Object value);
+    void set(@NotNull String keyName, @NotNull Object value);
 
     /**
      * Removes the specified key and its associated value from the map.
      *
      * @param keyName the key to be removed.
-     * @param value the value associated with the key to be removed.
      */
-    void remove(String keyName, Object value);
+    void remove(@NotNull String keyName);
 
     /**
      * Retrieves the number of entries in the map.
      *
      * @return the size of the map.
      */
+    @Contract(pure = true) // Indicates this method does not modify the state of the object.
+    @NotNull
     Long size();
 
     /**
@@ -69,14 +81,13 @@ public interface LiveMap {
      * @param value the value to be associated with the key.
      * @param callback the callback to handle the result or any errors.
      */
-    void setAsync(String keyName, Object value, Callback<Void> callback);
+    void setAsync(@NotNull String keyName, @NotNull Object value, @NotNull Callback<Void> callback);
 
     /**
      * Asynchronously removes the specified key and its associated value from the map.
      *
-     * @param keyName the key to be removed.
-     * @param value the value associated with the key to be removed.
+     * @param keyName  the key to be removed.
      * @param callback the callback to handle the result or any errors.
      */
-    void removeAsync(String keyName, Object value, Callback<Void> callback);
+    void removeAsync(@NotNull String keyName, @NotNull Callback<Void> callback);
 }

@@ -1,5 +1,6 @@
 package io.ably.lib.objects.batch;
 
+import org.jetbrains.annotations.NotNull;
 
 /**
  * The BatchContext interface represents the context for batch operations
@@ -13,5 +14,6 @@ public interface BatchContext {
      *
      * @return the root LiveMap instance.
      */
+    @NotNull
     BatchContextLiveMap getRoot();
 }

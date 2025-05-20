@@ -185,6 +185,7 @@ public class AblyRealtime extends AblyRest {
             return (LiveObjectsPlugin) liveObjectsImplementation.getDeclaredConstructor().newInstance();
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException |
                  InvocationTargetException e) {
+            Log.w(TAG, "LiveObjects plugin not found in classpath. LiveObjects functionality will not be available.", e);
             return null;
         }
     }

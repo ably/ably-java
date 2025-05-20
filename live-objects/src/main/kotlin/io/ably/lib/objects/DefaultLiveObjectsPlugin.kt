@@ -1,14 +1,16 @@
 package io.ably.lib.objects
 
+import java.util.concurrent.ConcurrentHashMap
+
 public class DefaultLiveObjectsPlugin : LiveObjectsPlugin {
 
-  private val cache = mutableMapOf<String, LiveObjects>()
+  private val liveObjects = ConcurrentHashMap<String, LiveObjects>()
 
   override fun getInstance(channelName: String): LiveObjects {
-    return cache.getOrPut(channelName) { DefaultLiveObjects(channelName) }
+    return liveObjects.getOrPut(channelName) { DefaultLiveObjects(channelName) }
   }
 
   override fun dispose(channelName: String) {
-    cache.remove(channelName)
+    liveObjects.remove(channelName)
   }
 }
