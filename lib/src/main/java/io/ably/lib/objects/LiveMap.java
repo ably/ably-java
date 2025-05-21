@@ -16,6 +16,12 @@ public interface LiveMap {
 
     /**
      * Retrieves the value associated with the specified key.
+     * If this map object is tombstoned (deleted), `undefined` is returned.
+     * If no entry is associated with the specified key, `undefined` is returned.
+     * If map entry is tombstoned (deleted), `undefined` is returned.
+     * If the value associated with the provided key is an objectId string of another LiveObject, a reference to that LiveObject
+     * is returned, provided it exists in the local pool and is not tombstoned. Otherwise, `undefined` is returned.
+     * If the value is not an objectId, then that value is returned.
      *
      * @param keyName the key whose associated value is to be returned.
      * @return the value associated with the specified key, or null if the key does not exist.
@@ -52,6 +58,10 @@ public interface LiveMap {
 
     /**
      * Sets the specified key to the given value in the map.
+     * Send a MAP_SET operation to the realtime system to set a key on this LiveMap object to a specified value.
+     * This does not modify the underlying data of this LiveMap object. Instead, the change will be applied when
+     * the published MAP_SET operation is echoed back to the client and applied to the object following the regular
+     * operation application procedure.
      *
      * @param keyName the key to be set.
      * @param value the value to be associated with the key.
@@ -60,6 +70,10 @@ public interface LiveMap {
 
     /**
      * Removes the specified key and its associated value from the map.
+     * Send a MAP_REMOVE operation to the realtime system to tombstone a key on this LiveMap object.
+     * This does not modify the underlying data of this LiveMap object. Instead, the change will be applied when
+     * the published MAP_REMOVE operation is echoed back to the client and applied to the object following the regular
+     * operation application procedure.
      *
      * @param keyName the key to be removed.
      */
@@ -76,6 +90,10 @@ public interface LiveMap {
 
     /**
      * Asynchronously sets the specified key to the given value in the map.
+     * Send a MAP_SET operation to the realtime system to set a key on this LiveMap object to a specified value.
+     * This does not modify the underlying data of this LiveMap object. Instead, the change will be applied when
+     * the published MAP_SET operation is echoed back to the client and applied to the object following the regular
+     * operation application procedure.
      *
      * @param keyName the key to be set.
      * @param value the value to be associated with the key.
@@ -85,6 +103,10 @@ public interface LiveMap {
 
     /**
      * Asynchronously removes the specified key and its associated value from the map.
+     * Send a MAP_REMOVE operation to the realtime system to tombstone a key on this LiveMap object.
+     * This does not modify the underlying data of this LiveMap object. Instead, the change will be applied when
+     * the published MAP_REMOVE operation is echoed back to the client and applied to the object following the regular
+     * operation application procedure.
      *
      * @param keyName  the key to be removed.
      * @param callback the callback to handle the result or any errors.
