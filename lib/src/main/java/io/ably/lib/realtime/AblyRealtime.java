@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import io.ably.lib.objects.LiveObjectsPlugin;
+import io.ably.lib.plugins.PluginConnectionAdapter;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.transport.ConnectionManager;
@@ -71,7 +72,10 @@ public class AblyRealtime extends AblyRest {
         super(options);
         final InternalChannels channels = new InternalChannels();
         this.channels = channels;
-        connection = new Connection(this, channels, platformAgentProvider);
+
+        liveObjectsPlugin = tryInitializeLiveObjectsPlugin();
+
+        connection = new Connection(this, channels, platformAgentProvider, liveObjectsPlugin);
 
         if (!StringUtils.isNullOrEmpty(options.recover)) {
             RecoveryKeyContext recoveryKeyContext = RecoveryKeyContext.decode(options.recover);
@@ -80,8 +84,6 @@ public class AblyRealtime extends AblyRest {
                 connection.connectionManager.msgSerial = recoveryKeyContext.getMsgSerial(); //RTN16f
             }
         }
-
-        liveObjectsPlugin = tryInitializeLiveObjectsPlugin();
 
         if(options.autoConnect) connection.connect();
     }
@@ -119,6 +121,9 @@ public class AblyRealtime extends AblyRest {
         }
 
         connection.close();
+        if (liveObjectsPlugin != null) {
+            liveObjectsPlugin.dispose();
+        }
     }
 
     /**
@@ -182,7 +187,9 @@ public class AblyRealtime extends AblyRest {
     private LiveObjectsPlugin tryInitializeLiveObjectsPlugin() {
         try {
             Class<?> liveObjectsImplementation = Class.forName("io.ably.lib.objects.DefaultLiveObjectsPlugin");
-            return (LiveObjectsPlugin) liveObjectsImplementation.getDeclaredConstructor().newInstance();
+            return (LiveObjectsPlugin) liveObjectsImplementation
+                .getDeclaredConstructor(PluginConnectionAdapter.class)
+                .newInstance(this.connection.connectionManager);
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException |
                  InvocationTargetException e) {
             Log.w(TAG, "LiveObjects plugin not found in classpath. LiveObjects functionality will not be available.", e);

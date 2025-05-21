@@ -10,6 +10,9 @@ repositories {
 dependencies {
     implementation(project(":java"))
     testImplementation(kotlin("test"))
+    implementation(libs.coroutine.core)
+
+    testImplementation(libs.coroutine.test)
 }
 
 tasks.test {
