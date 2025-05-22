@@ -51,6 +51,7 @@ android {
 dependencies {
     api(libs.gson)
     implementation(libs.bundles.common)
+    compileOnly(libs.jetbrains)
     testImplementation(libs.bundles.tests)
     implementation(project(":network-client-core"))
     runtimeOnly(project(":network-client-default"))

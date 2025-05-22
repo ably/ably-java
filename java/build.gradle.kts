@@ -20,6 +20,7 @@ tasks.withType<Jar> {
 dependencies {
     api(libs.gson)
     implementation(libs.bundles.common)
+    compileOnly(libs.jetbrains)
     implementation(project(":network-client-core"))
     if (findProperty("okhttp") == null) {
         runtimeOnly(project(":network-client-default"))

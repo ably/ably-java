@@ -137,7 +137,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
             Connection connection = Mockito.mock(Connection.class);
             final ConnectionManager.Channels channels = Mockito.mock(ConnectionManager.Channels.class);
 
-            ConnectionManager connectionManager = new ConnectionManager(ably, connection, channels, new EmptyPlatformAgentProvider()) {
+            ConnectionManager connectionManager = new ConnectionManager(ably, connection, channels, new EmptyPlatformAgentProvider(), null) {
                 @Override
                 protected boolean checkConnectivity() {
                     return false;

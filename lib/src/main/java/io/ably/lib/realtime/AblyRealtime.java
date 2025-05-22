@@ -1,10 +1,13 @@
 package io.ably.lib.realtime;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.ably.lib.objects.LiveObjectsPlugin;
+import io.ably.lib.plugins.PluginConnectionAdapter;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.transport.ConnectionManager;
@@ -41,6 +44,13 @@ public class AblyRealtime extends AblyRest {
     public final Channels channels;
 
     /**
+     * A nullable reference to the LiveObjects plugin.
+     * <p>
+     * This field is initialized only if the LiveObjects plugin is present in the classpath.
+     */
+    private final LiveObjectsPlugin liveObjectsPlugin;
+
+    /**
      * Constructs a Realtime client object using an Ably API key or token string.
      * <p>
      * Spec: RSC1
@@ -62,7 +72,10 @@ public class AblyRealtime extends AblyRest {
         super(options);
         final InternalChannels channels = new InternalChannels();
         this.channels = channels;
-        connection = new Connection(this, channels, platformAgentProvider);
+
+        liveObjectsPlugin = tryInitializeLiveObjectsPlugin();
+
+        connection = new Connection(this, channels, platformAgentProvider, liveObjectsPlugin);
 
         if (!StringUtils.isNullOrEmpty(options.recover)) {
             RecoveryKeyContext recoveryKeyContext = RecoveryKeyContext.decode(options.recover);
@@ -108,6 +121,9 @@ public class AblyRealtime extends AblyRest {
         }
 
         connection.close();
+        if (liveObjectsPlugin != null) {
+            liveObjectsPlugin.dispose();
+        }
     }
 
     /**
@@ -168,6 +184,19 @@ public class AblyRealtime extends AblyRest {
         void release(String channelName);
     }
 
+    private LiveObjectsPlugin tryInitializeLiveObjectsPlugin() {
+        try {
+            Class<?> liveObjectsImplementation = Class.forName("io.ably.lib.objects.DefaultLiveObjectsPlugin");
+            return (LiveObjectsPlugin) liveObjectsImplementation
+                .getDeclaredConstructor(PluginConnectionAdapter.class)
+                .newInstance(this.connection.connectionManager);
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException |
+                 InvocationTargetException e) {
+            Log.i(TAG, "LiveObjects plugin not found in classpath. LiveObjects functionality will not be available.", e);
+            return null;
+        }
+    }
+
     private class InternalChannels extends InternalMap<String, Channel> implements Channels, ConnectionManager.Channels {
         /**
          * Get the named channel; if it does not already exist,
@@ -187,7 +216,7 @@ public class AblyRealtime extends AblyRest {
             // We're not using computeIfAbsent because that requires Java 1.8.
             // Hence there's the slight inefficiency of creating newChannel when it may not be
             // needed because there is an existingChannel.
-            final Channel newChannel = new Channel(AblyRealtime.this, channelName, channelOptions);
+            final Channel newChannel = new Channel(AblyRealtime.this, channelName, channelOptions, liveObjectsPlugin);
             final Channel existingChannel = map.putIfAbsent(channelName, newChannel);
 
             if (existingChannel != null) {
@@ -213,6 +242,9 @@ public class AblyRealtime extends AblyRest {
                 } catch (AblyException e) {
                     Log.e(TAG, "Unexpected exception detaching channel; channelName = " + channelName, e);
                 }
+            }
+            if (liveObjectsPlugin != null) {
+                liveObjectsPlugin.dispose(channelName);
             }
         }
 

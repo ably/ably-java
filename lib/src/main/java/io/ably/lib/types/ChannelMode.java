@@ -24,7 +24,27 @@ public enum ChannelMode {
     /**
      * The client can receive presence messages.
      */
-    presence_subscribe(Flag.presence_subscribe);
+    presence_subscribe(Flag.presence_subscribe),
+
+    /**
+     * The client can publish object messages.
+     */
+    object_publish(Flag.object_publish),
+
+    /**
+     * The client can subscribe to object messages.
+     */
+    object_subscribe(Flag.object_subscribe),
+
+    /**
+     * The client can publish annotation messages.
+     */
+    annotation_publish(Flag.annotation_publish),
+
+    /**
+     * The client can subscribe to annotation messages.
+     */
+    annotation_subscribe(Flag.annotation_subscribe);
 
     private final int mask;
 

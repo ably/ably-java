@@ -45,7 +45,11 @@ public class ProtocolMessage {
         presence,
         message,
         sync,
-        auth;
+        auth,
+        activate,
+        object,
+        object_sync,
+        annotation;
 
         public int getValue() { return ordinal(); }
         public static Action findByValue(int value) { return values()[value]; }
@@ -57,12 +61,19 @@ public class ProtocolMessage {
         has_backlog(1),
         resumed(2),
         attach_resume(5),
-
+        /* Has object flag */
+        has_objects(7),
         /* Channel mode flags */
         presence(16),
         publish(17),
         subscribe(18),
-        presence_subscribe(19);
+        presence_subscribe(19),
+        /* Annotation flags */
+        annotation_publish(21),
+        annotation_subscribe(22),
+        /* Object flags */
+        object_subscribe(24),
+        object_publish(25);
 
         private final int mask;
 
