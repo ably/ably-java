@@ -1,6 +1,8 @@
 package io.ably.lib.objects;
 
 import io.ably.lib.types.Callback;
+import org.jetbrains.annotations.Blocking;
+import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -66,6 +68,7 @@ public interface LiveMap {
      * @param keyName the key to be set.
      * @param value the value to be associated with the key.
      */
+    @Blocking
     void set(@NotNull String keyName, @NotNull Object value);
 
     /**
@@ -77,6 +80,7 @@ public interface LiveMap {
      *
      * @param keyName the key to be removed.
      */
+    @Blocking
     void remove(@NotNull String keyName);
 
     /**
@@ -99,6 +103,7 @@ public interface LiveMap {
      * @param value the value to be associated with the key.
      * @param callback the callback to handle the result or any errors.
      */
+    @NonBlocking
     void setAsync(@NotNull String keyName, @NotNull Object value, @NotNull Callback<Void> callback);
 
     /**
@@ -111,5 +116,6 @@ public interface LiveMap {
      * @param keyName  the key to be removed.
      * @param callback the callback to handle the result or any errors.
      */
+    @NonBlocking
     void removeAsync(@NotNull String keyName, @NotNull Callback<Void> callback);
 }

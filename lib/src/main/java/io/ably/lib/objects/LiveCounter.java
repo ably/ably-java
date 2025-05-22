@@ -1,6 +1,8 @@
 package io.ably.lib.objects;
 
 import io.ably.lib.types.Callback;
+import org.jetbrains.annotations.Blocking;
+import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Contract;
 
@@ -18,6 +20,7 @@ public interface LiveCounter {
      * the published COUNTER_INC operation is echoed back to the client and applied to the object following the regular
      * operation application procedure.
      */
+    @Blocking
     void increment();
 
     /**
@@ -29,12 +32,14 @@ public interface LiveCounter {
      *
      * @param callback the callback to be invoked upon completion of the operation.
      */
+    @NonBlocking
     void incrementAsync(@NotNull Callback<Void> callback);
 
     /**
      * Decrements the value of the counter by 1.
      * An alias for calling {@link LiveCounter#increment()} with a negative amount.
      */
+    @Blocking
     void decrement();
 
     /**
@@ -43,6 +48,7 @@ public interface LiveCounter {
      *
      * @param callback the callback to be invoked upon completion of the operation.
      */
+    @NonBlocking
     void decrementAsync(@NotNull Callback<Void> callback);
 
     /**

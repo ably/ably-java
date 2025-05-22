@@ -98,7 +98,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     public LiveObjects getObjects() throws AblyException {
         if (liveObjectsPlugin == null) {
             throw AblyException.fromErrorInfo(
-                new ErrorInfo("LiveObjects plugin hasn't been installed, add runtimeOnly('io.ably:live-objects:<ably-version>') to your dependency tree", 400, 40000)
+                new ErrorInfo("LiveObjects plugin hasn't been installed, " +
+                    "add runtimeOnly('io.ably:live-objects:<ably-version>') to your dependency tree", 400, 40019)
             );
         }
         return liveObjectsPlugin.getInstance(name);

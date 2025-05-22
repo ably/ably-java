@@ -18,6 +18,7 @@ public interface LiveObjectsPlugin extends PluginInstance {
      * @param channelName the name of the channel for which the LiveObjects instance is to be retrieved.
      * @return the LiveObjects instance associated with the specified channel name.
      */
+    @NotNull
     LiveObjects getInstance(@NotNull String channelName);
 
     /**

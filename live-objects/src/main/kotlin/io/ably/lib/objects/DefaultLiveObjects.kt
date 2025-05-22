@@ -1,14 +1,9 @@
 package io.ably.lib.objects
 
-import io.ably.lib.objects.batch.BatchContextBuilder
 import io.ably.lib.types.Callback
 
 internal class DefaultLiveObjects(private val channelName: String): LiveObjects {
   override fun getRoot(): LiveMap {
-    TODO("Not yet implemented")
-  }
-
-  override fun batch(batchContextCallback: BatchContextBuilder) {
     TODO("Not yet implemented")
   }
 
@@ -25,10 +20,6 @@ internal class DefaultLiveObjects(private val channelName: String): LiveObjects 
   }
 
   override fun getRootAsync(callback: Callback<LiveMap>) {
-    TODO("Not yet implemented")
-  }
-
-  override fun batchAsync(batchContextCallback: BatchContextBuilder, callback: Callback<Void>) {
     TODO("Not yet implemented")
   }
 

@@ -1,7 +1,8 @@
 package io.ably.lib.objects;
 
-import io.ably.lib.objects.batch.BatchContextBuilder;
 import io.ably.lib.types.Callback;
+import org.jetbrains.annotations.Blocking;
+import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.NotNull;
 
 
@@ -25,17 +26,9 @@ public interface LiveObjects {
      *
      * @return the root LiveMap instance.
      */
+    @Blocking
     @NotNull
     LiveMap getRoot();
-
-    /**
-     * Initiates a batch operation and provides a BatchContext through a callback.
-     * Provides access to the synchronous write API for Objects that can be used to batch multiple operations
-     * together in a single channel message.
-     *
-     * @param batchContextCallback the builder to configure the batch operation.
-     */
-    void batch(@NotNull BatchContextBuilder batchContextCallback);
 
     /**
      * Creates a new LiveMap based on an existing LiveMap.
@@ -47,6 +40,7 @@ public interface LiveObjects {
      * @param liveMap the existing LiveMap to base the new LiveMap on.
      * @return the newly created LiveMap instance.
      */
+    @Blocking
     @NotNull
     LiveMap createMap(@NotNull LiveMap liveMap);
 
@@ -60,6 +54,7 @@ public interface LiveObjects {
      * @param liveCounter the LiveCounter to base the new LiveMap on.
      * @return the newly created LiveMap instance.
      */
+    @Blocking
     @NotNull
     LiveMap createMap(@NotNull LiveCounter liveCounter);
 
@@ -73,6 +68,7 @@ public interface LiveObjects {
      * @param map the Java Map to base the new LiveMap on.
      * @return the newly created LiveMap instance.
      */
+    @Blocking
     @NotNull
     LiveMap createMap(@NotNull Map<String, Object> map);
 
@@ -86,6 +82,7 @@ public interface LiveObjects {
      * @param initialValue the initial value of the LiveCounter.
      * @return the newly created LiveCounter instance.
      */
+    @Blocking
     @NotNull
     LiveCounter createCounter(@NotNull Long initialValue);
 
@@ -97,17 +94,8 @@ public interface LiveObjects {
      *
      * @param callback the callback to handle the result or error.
      */
+    @NonBlocking
     void getRootAsync(@NotNull Callback<@NotNull LiveMap> callback);
-
-    /**
-     * Initiates a batch operation asynchronously.
-     * Provides access to the synchronous write API for Objects that can be used to batch multiple operations
-     * together in a single channel message.
-     *
-     * @param batchContextCallback the builder to configure the batch operation.
-     * @param callback the Callback to handle the completion or error of the batch operation.
-     */
-    void batchAsync(@NotNull BatchContextBuilder batchContextCallback, @NotNull Callback<Void> callback);
 
     /**
      * Asynchronously creates a new LiveMap based on an existing LiveMap.
@@ -119,6 +107,7 @@ public interface LiveObjects {
      * @param liveMap the existing LiveMap to base the new LiveMap on.
      * @param callback the callback to handle the result or error.
      */
+    @NonBlocking
     void createMapAsync(@NotNull LiveMap liveMap, @NotNull Callback<@NotNull LiveMap> callback);
 
     /**
@@ -131,6 +120,7 @@ public interface LiveObjects {
      * @param liveCounter the LiveCounter to base the new LiveMap on.
      * @param callback the callback to handle the result or error.
      */
+    @NonBlocking
     void createMapAsync(@NotNull LiveCounter liveCounter, @NotNull Callback<@NotNull LiveMap> callback);
 
     /**
@@ -143,6 +133,7 @@ public interface LiveObjects {
      * @param map the Java Map to base the new LiveMap on.
      * @param callback the callback to handle the result or error.
      */
+    @NonBlocking
     void createMapAsync(@NotNull Map<String, Object> map, @NotNull Callback<@NotNull LiveMap> callback);
 
     /**
@@ -155,5 +146,6 @@ public interface LiveObjects {
      * @param initialValue the initial value of the LiveCounter.
      * @param callback the callback to handle the result or error.
      */
+    @NonBlocking
     void createCounterAsync(@NotNull Long initialValue, @NotNull Callback<@NotNull LiveCounter> callback);
 }
