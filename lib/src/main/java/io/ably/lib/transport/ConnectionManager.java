@@ -15,7 +15,6 @@ import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
 import io.ably.lib.http.HttpHelpers;
 import io.ably.lib.objects.LiveObjectsPlugin;
-import io.ably.lib.plugins.PluginConnectionAdapter;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.CompletionListener;
@@ -37,7 +36,7 @@ import io.ably.lib.util.Log;
 import io.ably.lib.util.PlatformAgentProvider;
 import io.ably.lib.util.ReconnectionStrategy;
 
-public class ConnectionManager implements ConnectListener, PluginConnectionAdapter {
+public class ConnectionManager implements ConnectListener {
     final ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
 
     /**************************************************************
@@ -1685,11 +1684,6 @@ public class ConnectionManager implements ConnectListener, PluginConnectionAdapt
             this.msg = msg;
             this.listener = listener;
         }
-    }
-
-    @Override
-    public void send(ProtocolMessage msg, CompletionListener listener) throws AblyException {
-        this.send(msg, true, listener);
     }
 
     public void send(ProtocolMessage msg, boolean queueEvents, CompletionListener listener) throws AblyException {
