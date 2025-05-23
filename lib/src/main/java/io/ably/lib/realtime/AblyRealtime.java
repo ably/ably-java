@@ -6,8 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.ably.lib.objects.LiveObjectsAdapter;
 import io.ably.lib.objects.LiveObjectsPlugin;
-import io.ably.lib.plugins.PluginConnectionAdapter;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.transport.ConnectionManager;
@@ -187,9 +187,10 @@ public class AblyRealtime extends AblyRest {
     private LiveObjectsPlugin tryInitializeLiveObjectsPlugin() {
         try {
             Class<?> liveObjectsImplementation = Class.forName("io.ably.lib.objects.DefaultLiveObjectsPlugin");
+            LiveObjectsAdapter adapter = new LiveObjectsAdapter.Adapter(this);
             return (LiveObjectsPlugin) liveObjectsImplementation
-                .getDeclaredConstructor(PluginConnectionAdapter.class)
-                .newInstance(this.connection.connectionManager);
+                .getDeclaredConstructor(LiveObjectsAdapter.class)
+                .newInstance(adapter);
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException |
                  InvocationTargetException e) {
             Log.i(TAG, "LiveObjects plugin not found in classpath. LiveObjects functionality will not be available.", e);
