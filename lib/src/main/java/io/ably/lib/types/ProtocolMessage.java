@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Map;
 
+import org.jetbrains.annotations.Nullable;
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
@@ -17,6 +18,8 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
 import io.ably.lib.util.Log;
+
+import static io.ably.lib.objects.Helpers.liveObjectsSerializer;
 
 /**
  * A message sent and received over the Realtime protocol.
@@ -116,6 +119,11 @@ public class ProtocolMessage {
     public ConnectionDetails connectionDetails;
     public AuthDetails auth;
     public Map<String, String> params;
+    /**
+     * This will be null if we skipped decoding this property due to user not requesting Objects functionality
+     */
+    @Nullable
+    public Object[] state;
 
     public boolean hasFlag(final Flag flag) {
         return (flags & flag.getMask()) == flag.getMask();
@@ -139,6 +147,7 @@ public class ProtocolMessage {
         if(flags != 0) ++fieldCount;
         if(params != null) ++fieldCount;
         if(channelSerial != null) ++fieldCount;
+        if(state != null) ++fieldCount;
         packer.packMapHeader(fieldCount);
         packer.packString("action");
         packer.packInt(action.getValue());
@@ -173,6 +182,14 @@ public class ProtocolMessage {
         if(channelSerial != null) {
             packer.packString("channelSerial");
             packer.packString(channelSerial);
+        }
+        if(state != null) {
+            if (liveObjectsSerializer != null) {
+                packer.packString("state");
+                liveObjectsSerializer.writeMsgpackArray(state, packer);
+            } else {
+                Log.w(TAG, "Skipping 'state' field serialization because LiveObjectsSerializer is not set");
+            }
         }
     }
 
@@ -232,6 +249,14 @@ public class ProtocolMessage {
                     break;
                 case "params":
                     params = MessageSerializer.readStringMap(unpacker);
+                    break;
+                case "state":
+                    if (liveObjectsSerializer != null) {
+                        state = liveObjectsSerializer.readMsgpackArray(unpacker);
+                    } else {
+                        Log.w(TAG, "Skipping 'state' field deserialization because LiveObjectsSerializer is not set");
+                        unpacker.skipValue();
+                    }
                     break;
                 default:
                     Log.v(TAG, "Unexpected field: " + fieldName);
