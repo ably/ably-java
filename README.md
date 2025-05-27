@@ -95,7 +95,7 @@ public class AblyWithProxy {
 }
 ```
 
-</details>
+</details>  
 
 ## Support, feedback and troubleshooting
 
@@ -105,6 +105,9 @@ You can also view the [community reported Github issues](https://github.com/ably
 
 To see what has changed in recent versions of Bundler, see the [CHANGELOG](CHANGELOG.md).
 
-## Contributing
 
-For guidance on how to contribute to this project, see [CONTRIBUTING.md](CONTRIBUTING.md).
+## Contribute
+
+Read the [CONTRIBUTING.md](./CONTRIBUTING.md) guidelines to contribute to Ably.
+
+---
