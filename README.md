@@ -19,6 +19,24 @@ Everything you need to get started with Ably:
 
 ---
 
+## Supported platforms
+
+Ably aims to support a wide range of platforms. If you experience any compatibility issues, open an issue in the repository or contact [Ably support](https://ably.com/support).
+
+The following platforms are supported:
+
+| Platform | Support |
+|----------|---------|
+| Java | >=8 (JRE 1.8 or later) |
+| Kotlin | >= 2.1.10 |
+| Android | >=4.4 (API level 19) |
+| [Proxy environments](#proxy-support) | Supported via `network-client-okhttp` module |
+
+> [!IMPORTANT]
+> SDK versions < 1.2.35 will be [deprecated](https://ably.com/docs/platform/deprecate/protocol-v1) from November 1, 2025.
+
+---
+
 ## Installation
 
 Include the library by adding an `implementation` reference to `dependencies` block in your [Gradle](https://gradle.org/) build script.
