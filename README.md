@@ -1,3 +1,7 @@
+![Ably Pub/Sub Java Header](images/javaSDK-github.png)
+[![version: 0.3.0](https://img.shields.io/badge/version-0.3.0-2ea44f)](https://github.com/ably/ably-java/releases/tag/v0.3.0)
+[![License](https://badgen.net/github/license/ably/ably-java)](https://github.com/ably/ably-java/blob/main/LICENSE)
+
 # Ably Pub/Sub Java SDK
 
 Build any realtime experience using Ably’s Pub/Sub Java SDK. Supported on all popular platforms and frameworks, including Kotlin and Android.
@@ -117,3 +121,7 @@ Read the [CONTRIBUTING.md](./CONTRIBUTING.md) guidelines to contribute to Ably.
 The [CHANGELOG.md](/ably/ably-js/blob/main/CHANGELOG.md) contains details of the latest releases for this SDK. You can also view all Ably releases on [changelog.ably.com](https://changelog.ably.com).
 
 ---
+
+## Support, Feedback, and Troubleshooting
+
+For help or technical support, visit Ably's [support page](https://ably.com/support) or [GitHub Issues](https://github.com/ably/ably-java/issues) for community-reported bugs and discussions.
