@@ -99,16 +99,9 @@ public class AblyWithProxy {
 }
 ```
 
-</details>  
+</details>
 
-## Support, feedback and troubleshooting
-
-Please visit http://support.ably.io/ for access to our knowledgebase and to ask for any assistance.
-
-You can also view the [community reported Github issues](https://github.com/ably/ably-java/issues).
-
-To see what has changed in recent versions of Bundler, see the [CHANGELOG](CHANGELOG.md).
-
+---
 
 ## Contribute
 
