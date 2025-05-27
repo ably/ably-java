@@ -7,7 +7,15 @@ Ably Pub/Sub provides flexible APIs that deliver features such as pub-sub messag
 Find out more:
 
 * [Ably Pub/Sub docs](https://ably.com/docs/basics)
-* [Ably Pub/Sub Examples](https://ably.com/examples?product=pubsub)
+* [Ably Pub/Sub examples](https://ably.com/examples?product=pubsub)
+
+---
+
+## Getting started
+
+Everything you need to get started with Ably:
+
+- [Quickstart in Pub/Sub using Java](https://ably.com/docs/getting-started/quickstart?lang=java)
 
 ---
 
