@@ -22,3 +22,10 @@ internal suspend fun LiveObjectsAdapter.sendAsync(message: ProtocolMessage) {
   }
   deferred.await()
 }
+
+internal enum class MessageFormat(private val value: String) {
+  MSGPACK("msgpack"),
+  JSON("json");
+
+  override fun toString(): String = value
+}

@@ -18,11 +18,11 @@ public interface LiveMap {
 
     /**
      * Retrieves the value associated with the specified key.
-     * If this map object is tombstoned (deleted), `undefined` is returned.
-     * If no entry is associated with the specified key, `undefined` is returned.
-     * If map entry is tombstoned (deleted), `undefined` is returned.
+     * If this map object is tombstoned (deleted), null is returned.
+     * If no entry is associated with the specified key, null is returned.
+     * If map entry is tombstoned (deleted), null is returned.
      * If the value associated with the provided key is an objectId string of another LiveObject, a reference to that LiveObject
-     * is returned, provided it exists in the local pool and is not tombstoned. Otherwise, `undefined` is returned.
+     * is returned, provided it exists in the local pool and is not tombstoned. Otherwise, null is returned.
      * If the value is not an objectId, then that value is returned.
      *
      * @param keyName the key whose associated value is to be returned.

@@ -30,6 +30,7 @@ public interface LiveObjectsAdapter extends PluginConnectionAdapter {
 
         @Override
         public void send(ProtocolMessage msg, CompletionListener listener) throws AblyException {
+            // Always queue LiveObjects messages to ensure reliable state synchronization and proper acknowledgment
             ably.connection.connectionManager.send(msg, true, listener);
         }
     }
