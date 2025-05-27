@@ -97,22 +97,6 @@ public class AblyWithProxy {
 
 </details>
 
-## Resources
-
-Visit https://www.ably.com/docs for a complete API reference and more examples.
-
-### Example projects:
-
-- [Ably Asset Tracking SDKs for Android](https://github.com/ably/ably-asset-tracking-android/blob/main/README.md#useful-resources)
-- [Chat app using Spring Boot + Auth0 + Ably](https://github.com/ably-labs/spring-boot-auth0)
-- [Spring + Ably Pub/Sub Demo with a Collaborative TODO list](https://github.com/ably-labs/ably-spring-pubsub)
-
-## Requirements
-
-For Java, JRE 8 or later is required. Note that the [Java Unlimited JCE extensions](https://www.oracle.com/uk/java/technologies/javase-jce8-downloads.html) must be installed in the Java runtime environment.
-
-For Android, 4.4 KitKat (API level 19) or later is required.
-
 ## Support, feedback and troubleshooting
 
 Please visit http://support.ably.io/ for access to our knowledgebase and to ask for any assistance.
