@@ -1,17 +1,15 @@
-# [Ably](https://www.ably.io)
+# Ably Pub/Sub Java SDK
 
-[![.github/workflows/check.yml](https://github.com/ably/ably-java/actions/workflows/check.yml/badge.svg)](https://github.com/ably/ably-java/actions/workflows/check.yml)
-[![.github/workflows/integration-test.yml](https://github.com/ably/ably-java/actions/workflows/integration-test.yml/badge.svg)](https://github.com/ably/ably-java/actions/workflows/integration-test.yml)
-[![.github/workflows/emulate.yml](https://github.com/ably/ably-java/actions/workflows/emulate.yml/badge.svg)](https://github.com/ably/ably-java/actions/workflows/emulate.yml)
-[![.github/workflows/javadoc.yml](https://github.com/ably/ably-java/actions/workflows/javadoc.yml/badge.svg)](https://github.com/ably/ably-java/actions/workflows/javadoc.yml)
-[![Features](https://github.com/ably/ably-java/actions/workflows/features.yml/badge.svg)](https://github.com/ably/ably-java/actions/workflows/features.yml)
+Build any realtime experience using Ably’s Pub/Sub Java SDK. Supported on all popular platforms and frameworks, including Kotlin and Android.
 
-_[Ably](https://ably.com) is the platform that powers synchronized digital experiences in realtime. Whether attending an event in a virtual venue, receiving realtime financial information, or monitoring live car performance data – consumers simply expect realtime digital experiences as standard. Ably provides a suite of APIs to build, extend, and deliver powerful digital experiences in realtime for more than 250 million devices across 80 countries each month. Organizations like Bloomberg, HubSpot, Verizon, and Hopin depend on Ably’s platform to offload the growing complexity of business-critical realtime data synchronization at global scale. For more information, see the [Ably documentation](https://ably.com/documentation)._
+Ably Pub/Sub provides flexible APIs that deliver features such as pub-sub messaging, message history, presence, and push notifications. Utilizing Ably’s realtime messaging platform, applications benefit from its highly performant, reliable, and scalable infrastructure.
 
-## Overview
+Find out more:
 
-A Java Realtime and REST client library.
-This library currently targets the [Ably client library features spec](https://www.ably.com/docs/client-lib-development-guide/features/) Version 1.2.
+* [Ably Pub/Sub docs](https://ably.com/docs/basics)
+* [Ably Pub/Sub Examples](https://ably.com/examples?product=pubsub)
+
+---
 
 ## Installation
 
