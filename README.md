@@ -37,13 +37,14 @@ The following platforms are supported:
 
 ---
 
-## Using Ably SDK Under a Proxy
+## Proxy support
 
-When working in environments where outbound internet access is restricted, such as behind a corporate proxy, the Ably SDK allows you to configure a proxy server for HTTP and WebSocket connections.
+You can add proxy support to the Ably Java SDK by configuring `ProxyOptions` in your client setup, enabling connectivity through corporate firewalls and secured networks.
 
-### Add the Required Dependency
+<details>
+<summary>Proxy support setup details.</summary>
 
-You need to use **OkHttp** library for making HTTP calls and WebSocket connections in the Ably SDK to get proxy support both for your Rest and Realtime clients.
+To enable proxy support for both REST and Realtime clients in the Ably SDK, use the OkHttp library to handle HTTP requests and WebSocket connections.
 
 Add the following dependency to your `build.gradle` file:
 
@@ -53,13 +54,9 @@ dependencies {
 }
 ```
 
-### Configure Proxy Settings
+After adding the OkHttp dependency, enable proxy support by specifying proxy settings in the ClientOptions when initializing your Ably client.
 
-After adding the required OkHttp dependency, you need to configure the proxy settings for your Ably client. This can be done by setting the proxy options in the `ClientOptions` object when you instantiate the Ably SDK.
-
-Here’s an example of how to configure and use a proxy:
-
-#### Java Example
+The following example sets up a proxy using the Pub/Sub Java SDK:
 
 ```java
 import io.ably.lib.realtime.AblyRealtime;
@@ -97,6 +94,8 @@ public class AblyWithProxy {
     }
 }
 ```
+
+</details>
 
 ## Resources
 
