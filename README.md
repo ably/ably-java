@@ -37,10 +37,6 @@ The following platforms are supported:
 
 ---
 
-## Runtime Requirements
-
-The library requires that the runtime environment is able to establish a safe TLS connection (TLS v1.2 or v1.3). It will fail to connect with a `SecurityException` if this level of security is not available.
-
 ## Usage
 
 Please refer to the [documentation](https://www.ably.com/docs) for a full API reference.
