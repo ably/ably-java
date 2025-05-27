@@ -111,3 +111,9 @@ To see what has changed in recent versions of Bundler, see the [CHANGELOG](CHANG
 Read the [CONTRIBUTING.md](./CONTRIBUTING.md) guidelines to contribute to Ably.
 
 ---
+
+## Releases
+
+The [CHANGELOG.md](/ably/ably-js/blob/main/CHANGELOG.md) contains details of the latest releases for this SDK. You can also view all Ably releases on [changelog.ably.com](https://changelog.ably.com).
+
+---
