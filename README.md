@@ -37,32 +37,6 @@ The following platforms are supported:
 
 ---
 
-## Installation
-
-Include the library by adding an `implementation` reference to `dependencies` block in your [Gradle](https://gradle.org/) build script.
-
-For [Java](https://mvnrepository.com/artifact/io.ably/ably-java/latest):
-
-```groovy
-implementation 'io.ably:ably-java:1.2.53'
-```
-
-For [Android](https://mvnrepository.com/artifact/io.ably/ably-android/latest):
-
-```groovy
-implementation 'io.ably:ably-android:1.2.53'
-```
-
-The library is hosted on [Maven Central](https://mvnrepository.com/repos/central), so you need to ensure that the repository is referenced also; IDEs will typically include this by default:
-
-```groovy
-repositories {
-	mavenCentral()
-}
-```
-
-We only support installation via Maven / Gradle from the Maven Central repository. If you want to use a standalone fat JAR (i.e. containing all dependencies), it can be generated via a Gradle task (see [building](#building) below), creating a "Java" (JRE) library variant only. There is no standalone / self-contained AAR build option. Checkout [requirements](#requirements).
-
 ## Runtime Requirements
 
 The library requires that the runtime environment is able to establish a safe TLS connection (TLS v1.2 or v1.3). It will fail to connect with a `SecurityException` if this level of security is not available.
