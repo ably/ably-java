@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.ably.lib.objects.Adapter;
 import io.ably.lib.objects.LiveObjectsAdapter;
 import io.ably.lib.objects.LiveObjectsPlugin;
 import io.ably.lib.rest.AblyRest;
@@ -187,7 +188,7 @@ public class AblyRealtime extends AblyRest {
     private LiveObjectsPlugin tryInitializeLiveObjectsPlugin() {
         try {
             Class<?> liveObjectsImplementation = Class.forName("io.ably.lib.objects.DefaultLiveObjectsPlugin");
-            LiveObjectsAdapter adapter = new LiveObjectsAdapter.Adapter(this);
+            LiveObjectsAdapter adapter = new Adapter(this);
             return (LiveObjectsPlugin) liveObjectsImplementation
                 .getDeclaredConstructor(LiveObjectsAdapter.class)
                 .newInstance(adapter);

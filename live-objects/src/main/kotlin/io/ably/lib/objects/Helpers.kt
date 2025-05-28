@@ -23,9 +23,21 @@ internal suspend fun LiveObjectsAdapter.sendAsync(message: ProtocolMessage) {
   deferred.await()
 }
 
-internal enum class MessageFormat(private val value: String) {
-  MSGPACK("msgpack"),
-  JSON("json");
+internal enum class ProtocolMessageFormat(private val value: String) {
+  Msgpack("msgpack"),
+  Json("json");
 
   override fun toString(): String = value
+}
+
+internal class Binary(val data: ByteArray?) {
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (other !is Binary) return false
+    return data?.contentEquals(other.data) == true
+  }
+
+  override fun hashCode(): Int {
+    return data?.contentHashCode() ?: 0
+  }
 }
