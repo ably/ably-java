@@ -9,6 +9,7 @@ repositories {
 
 dependencies {
     implementation(project(":java"))
+    implementation(libs.bundles.common)
     testImplementation(kotlin("test"))
     implementation(libs.coroutine.core)
 

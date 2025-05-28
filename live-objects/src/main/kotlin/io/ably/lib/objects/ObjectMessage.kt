@@ -1,5 +1,6 @@
 package io.ably.lib.objects
 
+import org.msgpack.core.MessageUnpacker
 import java.nio.ByteBuffer
 
 /**
@@ -195,7 +196,7 @@ internal data class ObjectOperation(
   /** The initial value encoding defines how the initialValue should be interpreted.
    * Spec: OOP3i
    */
-  val initialValueEncoding: MessageFormat? = null
+  val initialValueEncoding: ProtocolMessageFormat? = null
 )
 
 /**
