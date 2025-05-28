@@ -7,12 +7,12 @@ import java.nio.ByteBuffer
  * Spec: OOP2
  */
 internal enum class ObjectOperationAction(val code: Int) {
-  MAP_CREATE(0),
-  MAP_SET(1),
-  MAP_REMOVE(2),
-  COUNTER_CREATE(3),
-  COUNTER_INC(4),
-  OBJECT_DELETE(5);
+  MapCreate(0),
+  MapSet(1),
+  MapRemove(2),
+  CounterCreate(3),
+  CounterInc(4),
+  ObjectDelete(5);
 }
 
 /**
@@ -301,7 +301,7 @@ internal data class ObjectMessage(
    * the `ProtocolMessage` encapsulating it is `OBJECT_SYNC`.
    * Spec: OM2g
    */
-  val `object`: ObjectState? = null,
+  val objectState: ObjectState? = null,
 
   /**
    * An opaque string that uniquely identifies this object message.
