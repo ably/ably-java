@@ -8,6 +8,8 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.platform.Platform;
 import io.ably.lib.types.AblyException;
@@ -27,12 +29,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Map;
 import java.util.Set;
 
 public class Serialisation {
+    public static final String TAG = Serialisation.class.getName();
     public static final JsonParser gsonParser;
     public static final GsonBuilder gsonBuilder;
     public static final Gson gson;
@@ -48,6 +52,7 @@ public class Serialisation {
         gsonBuilder.registerTypeAdapter(PresenceMessage.class, new PresenceMessage.Serializer());
         gsonBuilder.registerTypeAdapter(PresenceMessage.Action.class, new PresenceMessage.ActionSerializer());
         gsonBuilder.registerTypeAdapter(ProtocolMessage.Action.class, new ProtocolMessage.ActionSerializer());
+        gsonBuilder.registerTypeAdapter(BinaryJsonPrimitive.class, new BinaryJsonPrimitive.Serializer());
         gson = gsonBuilder.create();
 
         msgpackPackerConfig = Platform.name.equals("android") ?
@@ -193,8 +198,22 @@ public class Serialisation {
             gsonToMsgpack((JsonNull)json, packer);
         } else if (json.isJsonPrimitive()) {
             gsonToMsgpack((JsonPrimitive)json, packer);
-        } else {
+        } else if (json instanceof BinaryJsonPrimitive) {
+            gsonToMsgpack((BinaryJsonPrimitive)json, packer);
+        }
+        else {
+            Log.e(TAG, "Unsupported JsonElement type: " + json.getClass().getName());
             throw new RuntimeException("unreachable");
+        }
+    }
+
+    public static void gsonToMsgpack(BinaryJsonPrimitive json, MessagePacker packer) {
+        try {
+            byte[] binaryData = json.value;
+            packer.packBinaryHeader(binaryData.length);
+            packer.writePayload(binaryData);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -204,7 +223,10 @@ public class Serialisation {
             for (JsonElement elem : array) {
                 gsonToMsgpack(elem, packer);
             }
-        } catch(IOException e) {}
+        } catch(IOException e) {
+            // Handle IOException, possibly log it or rethrow as a runtime exception
+            Log.e(TAG, "Error packing JsonArray to MsgPack", e);
+        }
     }
 
     private static void gsonToMsgpack(JsonObject object, MessagePacker packer) {
@@ -215,13 +237,17 @@ public class Serialisation {
                 packer.packString(entry.getKey());
                 gsonToMsgpack(entry.getValue(), packer);
             }
-        } catch(IOException e) {}
+        } catch(IOException e) {
+            Log.e(TAG, "Error packing JsonObject to MsgPack", e);
+        }
     }
 
     private static void gsonToMsgpack(JsonNull n, MessagePacker packer) {
         try {
             packer.packNil();
-        } catch(IOException e) {}
+        } catch(IOException e) {
+            Log.e(TAG, "Error packing JsonNull to MsgPack", e);
+        }
     }
 
     private static void gsonToMsgpack(JsonPrimitive primitive, MessagePacker packer) {
@@ -248,7 +274,9 @@ public class Serialisation {
             } else {
                 packer.packString(primitive.getAsString());
             }
-        } catch(IOException e) {}
+        } catch(Exception e) {
+            Log.e(TAG, "Error packing JsonPrimitive to MsgPack", e);
+        }
     }
 
     public static JsonElement msgpackToGson(Value value) {
@@ -284,6 +312,26 @@ public class Serialisation {
                 return null;
             default:
                 return null;
+        }
+    }
+
+    public static class BinaryJsonPrimitive extends JsonElement {
+        private final byte[] value;
+
+        public BinaryJsonPrimitive(byte[] value) {
+            this.value = value;
+        }
+
+        @Override
+        public JsonElement deepCopy() {
+            return null;
+        }
+
+        public static class Serializer implements JsonSerializer<BinaryJsonPrimitive> {
+            @Override
+            public JsonElement serialize(BinaryJsonPrimitive src, Type typeOfSrc, JsonSerializationContext context) {
+                return new JsonPrimitive(Base64Coder.encodeToString(src.value));
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 package io.ably.lib.objects
 
+import com.google.gson.JsonArray
 import io.ably.lib.types.Callback
 import io.ably.lib.types.ProtocolMessage
 import io.ably.lib.util.Log
@@ -55,6 +56,19 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
         adapter.setChannelSerial(channelName, msg.channelSerial)
       }
     }
+    val objectMessages = msg.state?.map { it.toObjectMessage() } ?: emptyList()
+    Log.v(tag, "Received ${objectMessages.size} object messages for channelName: $channelName")
+    objectMessages.forEach { Log.v(tag, "Object message: $it") }
+  }
+
+  suspend fun send(message: ObjectMessage) {
+    Log.v(tag, "Sending message for channelName: $channelName, message: $message")
+    val protocolMsg = ProtocolMessage().apply {
+      state = JsonArray().apply {
+        add(message.toJsonObject())
+      }
+    }
+    adapter.sendAsync(protocolMsg)
   }
 
   fun dispose() {

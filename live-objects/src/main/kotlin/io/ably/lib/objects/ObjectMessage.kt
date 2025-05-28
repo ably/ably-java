@@ -1,7 +1,5 @@
 package io.ably.lib.objects
 
-import java.nio.ByteBuffer
-
 /**
  * An enum class representing the different actions that can be performed on an object.
  * Spec: OOP2
@@ -190,12 +188,12 @@ internal data class ObjectOperation(
    * the initialValue, nonce, and initialValueEncoding will be removed.
    * Spec: OOP3h
    */
-  val initialValue: ByteBuffer? = null,
+  val initialValue: Binary? = null,
 
   /** The initial value encoding defines how the initialValue should be interpreted.
    * Spec: OOP3i
    */
-  val initialValueEncoding: MessageFormat? = null
+  val initialValueEncoding: ProtocolMessageFormat? = null
 )
 
 /**
