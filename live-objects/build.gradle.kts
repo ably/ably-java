@@ -12,7 +12,11 @@ dependencies {
     testImplementation(kotlin("test"))
     implementation(libs.coroutine.core)
 
+    testImplementation(libs.junit)
+    testImplementation(libs.mockk)
     testImplementation(libs.coroutine.test)
+    testImplementation(libs.nanohttpd)
+    testImplementation(libs.turbine)
 }
 
 tasks.test {
