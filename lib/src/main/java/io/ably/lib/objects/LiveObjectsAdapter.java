@@ -1,17 +1,11 @@
-package io.ably.lib.plugins;
+package io.ably.lib.objects;
 
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ProtocolMessage;
+import org.jetbrains.annotations.NotNull;
 
-/**
- * The PluginConnectionAdapter interface defines a contract for managing real-time communication
- * between plugins and the Ably Realtime system. Implementations of this interface are responsible
- * for sending protocol messages to their intended recipients, optionally queuing events, and
- * notifying listeners of the operation's outcome.
- */
-public interface PluginConnectionAdapter {
-
+public interface LiveObjectsAdapter {
     /**
      * Sends a protocol message to its intended recipient.
      * This method transmits a protocol message, allowing for queuing events if necessary,
@@ -22,4 +16,12 @@ public interface PluginConnectionAdapter {
      * @throws AblyException if an error occurs during the send operation.
      */
     void send(ProtocolMessage msg, CompletionListener listener) throws AblyException;
+
+    /**
+     * Sets the channel serial for a specific channel.
+     * @param channelName the name of the channel for which to set the serial
+     * @param channelSerial the serial to set for the channel
+     */
+    void setChannelSerial(@NotNull String channelName, @NotNull String channelSerial);
 }
+
