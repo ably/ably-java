@@ -55,6 +55,7 @@ jetbrains = { group = "org.jetbrains", name = "annotations", version.ref = "jetb
 [bundles]
 common = ["msgpack", "vcdiff-core"]
 tests = ["junit", "hamcrest-all", "nanohttpd", "nanohttpd-nanolets", "nanohttpd-websocket", "mockito-core", "concurrentunit", "slf4j-simple"]
+kotlin-tests = ["junit", "mockk", "coroutine-test", "nanohttpd", "turbine"]
 instrumental-android = ["android-test-runner", "android-test-rules", "dexmaker", "dexmaker-dx", "dexmaker-mockito", "android-retrostreams"]
 
 [plugins]
