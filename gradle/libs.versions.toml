@@ -23,6 +23,7 @@ kotlin = "2.1.10"
 coroutine = "1.9.0"
 mockk = "1.13.13"
 turbine = "1.2.0"
+ktor = "3.0.1"
 jetbrains-annoations = "26.0.2"
 
 [libraries]
@@ -50,12 +51,14 @@ coroutine-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-c
 coroutine-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutine" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 jetbrains = { group = "org.jetbrains", name = "annotations", version.ref = "jetbrains-annoations" }
 
 [bundles]
 common = ["msgpack", "vcdiff-core"]
 tests = ["junit", "hamcrest-all", "nanohttpd", "nanohttpd-nanolets", "nanohttpd-websocket", "mockito-core", "concurrentunit", "slf4j-simple"]
-kotlin-tests = ["junit", "mockk", "coroutine-test", "nanohttpd", "turbine"]
+kotlin-tests = ["junit", "mockk", "coroutine-test", "nanohttpd", "turbine", "ktor-client-cio", "ktor-client-core"]
 instrumental-android = ["android-test-runner", "android-test-rules", "dexmaker", "dexmaker-dx", "dexmaker-mockito", "android-retrostreams"]
 
 [plugins]

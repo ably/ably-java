@@ -3,7 +3,6 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 plugins {
     `java-library`
     alias(libs.plugins.kotlin.jvm)
-    alias(libs.plugins.test.retry)
 }
 
 repositories {
@@ -41,8 +40,8 @@ tasks.register<Test>("runLiveObjectUnitTests") {
 tasks.register<Test>("runLiveObjectIntegrationTests") {
     filter {
         includeTestsMatching("io.ably.lib.objects.integration.*")
+        exclude("**/IntegrationTest.class") // Exclude the base integration test class
     }
-    // TODO - check if we need retry mechanism for integration tests in the future
 }
 
 kotlin {
