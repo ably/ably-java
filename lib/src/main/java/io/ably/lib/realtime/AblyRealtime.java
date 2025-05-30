@@ -48,7 +48,7 @@ public class AblyRealtime extends AblyRest {
      * <p>
      * This field is initialized only if the LiveObjects plugin is present in the classpath.
      */
-    private final LiveObjectsPlugin liveObjectsPlugin;
+    public final LiveObjectsPlugin liveObjectsPlugin;
 
     /**
      * Constructs a Realtime client object using an Ably API key or token string.
@@ -73,9 +73,7 @@ public class AblyRealtime extends AblyRest {
         final InternalChannels channels = new InternalChannels();
         this.channels = channels;
 
-        liveObjectsPlugin = tryInitializeLiveObjectsPlugin();
-
-        connection = new Connection(this, channels, platformAgentProvider, liveObjectsPlugin);
+        connection = new Connection(this, channels, platformAgentProvider);
 
         if (!StringUtils.isNullOrEmpty(options.recover)) {
             RecoveryKeyContext recoveryKeyContext = RecoveryKeyContext.decode(options.recover);
@@ -84,6 +82,8 @@ public class AblyRealtime extends AblyRest {
                 connection.connectionManager.msgSerial = recoveryKeyContext.getMsgSerial(); //RTN16f
             }
         }
+
+        liveObjectsPlugin = tryInitializeLiveObjectsPlugin();
 
         if(options.autoConnect) connection.connect();
     }
