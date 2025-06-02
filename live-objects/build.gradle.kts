@@ -34,6 +34,7 @@ tasks.withType<Test>().configureEach {
 tasks.register<Test>("runLiveObjectUnitTests") {
     filter {
         includeTestsMatching("io.ably.lib.objects.unit.*")
+        exclude("**/UnitTest.class")
     }
 }
 

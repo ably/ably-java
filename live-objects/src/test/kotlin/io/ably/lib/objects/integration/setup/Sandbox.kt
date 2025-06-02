@@ -45,7 +45,7 @@ class Sandbox private constructor(val appId: String, val apiKey: String) {
           return JsonParser.parseString(fileContent).asJsonObject.get("post_apps")
       }
 
-      suspend fun createInstance(): Sandbox {
+      internal suspend fun createInstance(): Sandbox {
             val response: HttpResponse = client.post("https://sandbox.realtime.ably-nonprod.net/apps") {
                 contentType(ContentType.Application.Json)
                 setBody(loadAppCreationJson().toString())

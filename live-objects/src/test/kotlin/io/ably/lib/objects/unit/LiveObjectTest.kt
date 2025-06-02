@@ -1,14 +1,15 @@
 package io.ably.lib.objects.unit
 
-import org.junit.Assert.assertTrue
+import io.ably.lib.objects.unit.setup.UnitTest
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import kotlin.test.assertNotNull
 
-class LiveObjectTest {
-
+class LiveObjectTest : UnitTest() {
   @Test
-  fun testLiveObjectCreationUnitTest() {
-    // This is a placeholder for the actual test implementation.
-    // You would typically create instances of LiveObjects and perform assertions here.
-    assertTrue(true)
+  fun testChannelObjectGetterTest() = runTest {
+    val channel = getMockRealtimeChannel("test-channel")
+    val objects = channel.objects
+    assertNotNull(objects)
   }
 }

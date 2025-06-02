@@ -2,7 +2,6 @@ package io.ably.lib.objects.integration.setup
 
 import io.ably.lib.realtime.AblyRealtime
 import io.ably.lib.realtime.Channel
-import io.ably.lib.types.ClientOptions
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.AfterClass
@@ -34,7 +33,7 @@ open class IntegrationTest {
    * @return The attached realtime channel.
    * @throws Exception If the channel fails to attach or the client fails to connect.
    */
-  suspend fun getRealtimeChannel(channelName: String, clientId: String = "client1"): Channel {
+  internal suspend fun getRealtimeChannel(channelName: String, clientId: String = "client1"): Channel {
     val client = realtimeClients.getOrPut(clientId) {
       sandbox.createRealtimeClient {
         this.clientId = clientId
@@ -51,7 +50,7 @@ open class IntegrationTest {
    * Generates a unique channel name for testing purposes.
    * This is mainly to avoid channel name/state/history collisions across tests in same file.
    */
-  fun generateChannelName(): String {
+  internal fun generateChannelName(): String {
     return "test-channel-${UUID.randomUUID()}"
   }
 
