@@ -45,13 +45,13 @@ private fun Class<*>.findField(name: String): Field {
     return result.getOrNull() as Field
 }
 
-suspend fun <T>Any.invokePrivateSuspendMethod(methodName: String, vararg args: Any?) = suspendCancellableCoroutine<T> { cont ->
-    val suspendMethod = javaClass.declaredMethods.find { it.name == methodName }
-    suspendMethod?.let {
-        it.isAccessible = true
-        it.invoke(this, *args, cont)
-    }
+suspend fun <T> Any.invokePrivateSuspendMethod(methodName: String, vararg args: Any?): T = suspendCancellableCoroutine { cont ->
+  val suspendMethod = javaClass.declaredMethods.find { it.name == methodName }
+    ?: error("Method '$methodName' not found")
+  suspendMethod.isAccessible = true
+  suspendMethod.invoke(this, *args, cont)
 }
+
 
 fun <T> Any.invokePrivateMethod(methodName: String, vararg args: Any?): T {
     val method = javaClass.declaredMethods.find { it.name == methodName }

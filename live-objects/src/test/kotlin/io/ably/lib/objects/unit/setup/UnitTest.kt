@@ -1,6 +1,5 @@
 package io.ably.lib.objects.unit.setup
 
-import io.ably.lib.objects.integration.setup.ensureAttached
 import io.ably.lib.realtime.AblyRealtime
 import io.ably.lib.realtime.Channel
 import io.ably.lib.realtime.ChannelState
