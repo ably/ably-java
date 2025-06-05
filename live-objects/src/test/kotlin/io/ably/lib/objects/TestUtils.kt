@@ -53,8 +53,8 @@ suspend fun <T> Any.invokePrivateSuspendMethod(methodName: String, vararg args: 
 }
 
 fun <T> Any.invokePrivateMethod(methodName: String, vararg args: Any?): T {
-  val method = javaClass.declaredMethods.find { it.name == methodName }
-  method?.isAccessible = true
+  val method = javaClass.declaredMethods.find { it.name == methodName } ?: error("Method '$methodName' not found")
+  method.isAccessible = true
   @Suppress("UNCHECKED_CAST")
-  return method?.invoke(this, *args) as T
+  return method.invoke(this, *args) as T
 }
