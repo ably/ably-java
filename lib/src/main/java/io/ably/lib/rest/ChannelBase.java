@@ -39,6 +39,13 @@ public class ChannelBase {
     public final Presence presence;
 
     /**
+     * Represents the annotations associated with a channel message.
+     * This field provides functionality for managing annotations.
+     */
+    public final RestAnnotations annotations;
+
+
+    /**
      * Publish a message on this channel using the REST API.
      * Since the REST API is stateless, this request is made independently
      * of any other request on this or any other channel.
@@ -315,6 +322,7 @@ public class ChannelBase {
         this.options = options;
         this.basePath = "/channels/" + HttpUtils.encodeURIComponent(name);
         this.presence = new Presence();
+        this.annotations = new RestAnnotations(name, ably.http, ably.options, options);
     }
 
     private final AblyBase ably;
