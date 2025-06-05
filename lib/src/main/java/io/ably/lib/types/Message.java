@@ -543,6 +543,29 @@ public class Message extends BaseMessage {
         }
     }
 
+    /**
+     * Calculates the size of the message.
+     * Spec: TM6
+     */
+    protected int size() {
+        // Spec: TM6a - Sum of sizes of name, data, clientId, and extras
+        int nameSize = name != null ? name.length() : 0; // Spec: TM6e
+        int dataSize = 0;
+
+        if (data != null) {
+            if (data instanceof byte[]) {
+                dataSize = ((byte[]) data).length; // Spec: TM6c
+            } else {
+                dataSize = Serialisation.gson.toJson(data).length(); // Spec: TM6b
+            }
+        }
+
+        int clientIdSize = clientId != null ? clientId.length() : 0; // Spec: TM6e
+        int extrasSize = extras != null ? Serialisation.gson.toJson(extras).length() : 0; // Spec: TM6d
+
+        return nameSize + dataSize + clientIdSize + extrasSize;
+    }
+
     public static class Serializer implements JsonSerializer<Message>, JsonDeserializer<Message> {
         @Override
         public JsonElement serialize(Message message, Type typeOfMessage, JsonSerializationContext ctx) {

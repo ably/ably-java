@@ -41,3 +41,7 @@ internal class Binary(val data: ByteArray?) {
     return data?.contentHashCode() ?: 0
   }
 }
+
+internal fun Binary.size(): Int {
+  return data?.size ?: 0
+}
