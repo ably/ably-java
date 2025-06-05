@@ -1,26 +1,27 @@
 package io.ably.lib.objects
 
 import io.ably.lib.realtime.CompletionListener
+import io.ably.lib.types.AblyException
 import io.ably.lib.types.ErrorInfo
 import io.ably.lib.types.ProtocolMessage
-import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
-internal suspend fun LiveObjectsAdapter.sendAsync(message: ProtocolMessage) {
-  val deferred = CompletableDeferred<Unit>()
+internal suspend fun LiveObjectsAdapter.sendAsync(message: ProtocolMessage) = suspendCancellableCoroutine { continuation ->
   try {
     this.send(message, object : CompletionListener {
       override fun onSuccess() {
-        deferred.complete(Unit)
+        continuation.resume(Unit)
       }
 
       override fun onError(reason: ErrorInfo) {
-        deferred.completeExceptionally(Exception(reason.message))
+        continuation.resumeWithException(AblyException.fromErrorInfo(reason))
       }
     })
   } catch (e: Exception) {
-    deferred.completeExceptionally(e)
+    continuation.resumeWithException(e)
   }
-  deferred.await()
 }
 
 internal enum class ProtocolMessageFormat(private val value: String) {
