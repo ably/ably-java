@@ -89,6 +89,14 @@ public class Message extends BaseMessage {
      */
     public Operation operation;
 
+    /**
+     * (TM2q) A summary of all the annotations that have been made to the message, whose keys are the `type` fields
+     * from any annotations that it includes. Will always be populated for a message with action {@code MESSAGE_SUMMARY},
+     * and may be populated for any other type (in particular a message retrieved from
+     * REST history will have its latest summary included).
+     */
+    public Summary summary;
+
     public static class Operation {
         public String clientId;
         public String description;
@@ -178,6 +186,7 @@ public class Message extends BaseMessage {
     private static final String REF_SERIAL = "refSerial";
     private static final String REF_TYPE = "refType";
     private static final String OPERATION = "operation";
+    private static final String SUMMARY = "summary";
 
     /**
      * Default constructor
@@ -265,6 +274,7 @@ public class Message extends BaseMessage {
         if(refSerial != null) ++fieldCount;
         if(refType != null) ++fieldCount;
         if(operation != null) ++fieldCount;
+        if(summary != null) ++fieldCount;
 
         packer.packMapHeader(fieldCount);
         super.writeFields(packer);
@@ -308,6 +318,10 @@ public class Message extends BaseMessage {
             packer.packString(OPERATION);
             operation.write(packer);
         }
+        if(summary != null) {
+            packer.packString(SUMMARY);
+            summary.write(packer);
+        }
     }
 
     Message readMsgpack(MessageUnpacker unpacker) throws IOException {
@@ -343,6 +357,8 @@ public class Message extends BaseMessage {
                 refType = unpacker.unpackString();
             } else if (fieldName.equals(OPERATION)) {
                 operation = Operation.read(unpacker);
+            } else if (fieldName.equals(SUMMARY)) {
+                summary = Summary.read(unpacker);
             }
             else {
                 Log.v(TAG, "Unexpected field: " + fieldName);
@@ -512,10 +528,18 @@ public class Message extends BaseMessage {
 
         final JsonElement operationElement = map.get(OPERATION);
         if (null != operationElement) {
-            if (!(operationElement instanceof JsonObject)) {
+            if (!operationElement.isJsonObject()) {
                 throw MessageDecodeException.fromDescription("Message operation is of type \"" + operationElement.getClass() + "\" when expected a JSON object.");
             }
-            operation = Operation.read((JsonObject) operationElement);
+            operation = Operation.read(operationElement.getAsJsonObject());
+        }
+
+        final JsonElement summaryElement = map.get(SUMMARY);
+        if (summaryElement != null) {
+            if (!summaryElement.isJsonObject()) {
+                throw MessageDecodeException.fromDescription("Message summary is of type \"" + summaryElement.getClass() + "\" when expected a JSON object.");
+            }
+            summary = Summary.read(summaryElement.getAsJsonObject());
         }
     }
 
@@ -552,6 +576,9 @@ public class Message extends BaseMessage {
             }
             if (message.operation != null) {
                 json.add(OPERATION, Serialisation.gson.toJsonTree(message.operation));
+            }
+            if (message.summary != null) {
+                json.add(SUMMARY, message.summary.toJsonTree());
             }
             return json;
         }

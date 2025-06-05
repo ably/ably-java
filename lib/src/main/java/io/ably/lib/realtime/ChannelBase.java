@@ -13,6 +13,7 @@ import io.ably.lib.http.BasePaginatedQuery;
 import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
+import io.ably.lib.rest.RestAnnotation;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ConnectionManager.QueuedMessage;
 import io.ably.lib.transport.Defaults;
@@ -90,6 +91,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * @see #markAsReleased()
      */
     private boolean released = false;
+
+    public final RealtimeAnnotation annotations;
 
     /***
      * internal
@@ -1295,6 +1298,10 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         this.attachResume = false;
         state = ChannelState.initialized;
         this.decodingContext = new DecodingContext();
+        this.annotations = new RealtimeAnnotation(
+            this,
+            new RestAnnotation(name, ably.http, ably.options, options)
+        );
     }
 
     void onChannelMessage(ProtocolMessage msg) {
@@ -1361,6 +1368,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         case error:
             setFailed(msg.error);
             break;
+        case annotation:
+            annotations.onAnnotation(msg);
+            break;
         default:
             Log.e(TAG, "onChannelMessage(): Unexpected message action (" + msg.action + ")");
         }
@@ -1385,6 +1395,17 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
     public void once(ChannelState state, ChannelStateListener listener) {
         super.once(state.getChannelEvent(), listener);
+    }
+
+    /**
+     * (Internal) Sends a protocol message and provides a callback for completion.
+     *
+     * @param protocolMessage the protocol message to be sent
+     * @param listener the listener to be notified upon completion of the message delivery
+     */
+    public void sendProtocolMessage(ProtocolMessage protocolMessage, CompletionListener listener) throws AblyException {
+        ConnectionManager connectionManager = ably.connection.connectionManager;
+        connectionManager.send(protocolMessage, ably.options.queueMessages, listener);
     }
 
     private static final String TAG = Channel.class.getName();

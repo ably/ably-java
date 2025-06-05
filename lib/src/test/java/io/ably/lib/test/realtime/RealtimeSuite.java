@@ -1,5 +1,6 @@
 package io.ably.lib.test.realtime;
 
+import io.ably.lib.realtime.RealtimeAnnotation;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.JUnitCore;
@@ -15,6 +16,7 @@ import io.ably.lib.test.common.Setup;
 @SuiteClasses({
     ConnectionManagerTest.class,
     RealtimeHttpHeaderTest.class,
+    RealtimeAnnotation.class,
     RealtimeAuthTest.class,
     RealtimeJWTTest.class,
     RealtimeReauthTest.class,
