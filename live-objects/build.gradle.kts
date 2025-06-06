@@ -25,10 +25,6 @@ tasks.withType<Test>().configureEach {
     jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")
     beforeTest(closureOf<TestDescriptor> { logger.lifecycle("-> $this") })
     outputs.upToDateWhen { false }
-    // Skip tests for the "release" build type so we don't run tests twice
-    if (name.lowercase().contains("release")) {
-        enabled = false
-    }
 }
 
 tasks.register<Test>("runLiveObjectUnitTests") {
@@ -40,7 +36,8 @@ tasks.register<Test>("runLiveObjectUnitTests") {
 tasks.register<Test>("runLiveObjectIntegrationTests") {
     filter {
         includeTestsMatching("io.ably.lib.objects.integration.*")
-        exclude("**/IntegrationTest.class") // Exclude the base integration test class
+        // Exclude the base integration test class
+        excludeTestsMatching("io.ably.lib.objects.integration.setup.IntegrationTest")
     }
 }
 

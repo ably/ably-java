@@ -11,16 +11,13 @@ import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpRequestTimeoutException
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
+import io.ktor.client.request.*
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.CompletableDeferred
-import java.nio.file.Files
-import java.nio.file.Paths
 
 private val client = HttpClient(CIO) {
   install(HttpRequestRetry) {
@@ -39,11 +36,12 @@ private val client = HttpClient(CIO) {
 
 class Sandbox private constructor(val appId: String, val apiKey: String) {
   companion object {
-    private fun loadAppCreationJson(): JsonElement {
-      val filePath = Paths.get("../lib/src/test/resources/ably-common/test-resources/test-app-setup.json")
-      val fileContent = Files.readString(filePath)
-      return JsonParser.parseString(fileContent).asJsonObject.get("post_apps")
-    }
+    private suspend fun loadAppCreationJson(): JsonElement =
+      JsonParser.parseString(
+        client.get("https://raw.githubusercontent.com/ably/ably-common/refs/heads/main/test-resources/test-app-setup.json") {
+          contentType(ContentType.Application.Json)
+        }.bodyAsText(),
+      ).asJsonObject.get("post_apps")
 
     internal suspend fun createInstance(): Sandbox {
       val response: HttpResponse = client.post("https://sandbox.realtime.ably-nonprod.net/apps") {

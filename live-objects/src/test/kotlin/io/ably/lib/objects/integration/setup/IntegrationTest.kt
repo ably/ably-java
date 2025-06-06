@@ -2,6 +2,8 @@ package io.ably.lib.objects.integration.setup
 
 import io.ably.lib.realtime.AblyRealtime
 import io.ably.lib.realtime.Channel
+import io.ably.lib.types.ChannelMode
+import io.ably.lib.types.ChannelOptions
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.AfterClass
@@ -40,7 +42,10 @@ abstract class IntegrationTest {
         useBinaryProtocol = testParams == "msgpack_protocol"
       }. apply { ensureConnected() }
     }
-    return client.channels.get(channelName).apply {
+    val channelOpts = ChannelOptions().apply {
+      modes = arrayOf(ChannelMode.object_publish, ChannelMode.object_subscribe)
+    }
+    return client.channels.get(channelName, channelOpts).apply {
       attach()
       ensureAttached()
     }
