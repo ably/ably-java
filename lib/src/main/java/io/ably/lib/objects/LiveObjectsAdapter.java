@@ -15,7 +15,7 @@ public interface LiveObjectsAdapter {
      * @param listener a listener to be notified of the success or failure of the send operation.
      * @throws AblyException if an error occurs during the send operation.
      */
-    void send(ProtocolMessage msg, CompletionListener listener) throws AblyException;
+    void send(@NotNull ProtocolMessage msg, @NotNull CompletionListener listener) throws AblyException;
 
     /**
      * Sets the channel serial for a specific channel.
