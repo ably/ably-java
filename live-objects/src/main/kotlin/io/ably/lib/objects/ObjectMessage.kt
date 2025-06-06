@@ -1,5 +1,7 @@
 package io.ably.lib.objects
 
+import com.google.gson.Gson
+
 /**
  * An enum class representing the different actions that can be performed on an object.
  * Spec: OOP2
@@ -72,7 +74,7 @@ internal data class CounterOp(
    * The data value that should be added to the counter
    * Spec: COP2a
    */
-  val amount: Double
+  val amount: Double? = null
 )
 
 /**
@@ -313,3 +315,106 @@ internal data class ObjectMessage(
    */
   val siteCode: String? = null
 )
+
+/**
+ * Calculates the size of an ObjectMessage in bytes.
+ * Spec: OM3
+ */
+internal fun ObjectMessage.size(): Int {
+  val clientIdSize = clientId?.length ?: 0 // Spec: OM3a
+  val operationSize = operation?.size() ?: 0 // Spec: OM3b, OOP4
+  val objectStateSize = objectState?.size() ?: 0 // Spec: OM3c, OST3
+  val extrasSize = extras?.let { Gson().toJson(it).length } ?: 0 // Spec: OM3d
+
+  return clientIdSize + operationSize + objectStateSize + extrasSize
+}
+
+/**
+ * Calculates the size of an ObjectOperation in bytes.
+ * Spec: OOP4
+ */
+private fun ObjectOperation.size(): Int {
+  val mapOpSize = mapOp?.size() ?: 0 // Spec: OOP4b, MOP3
+  val counterOpSize = counterOp?.size() ?: 0 // Spec: OOP4c, COP3
+  val mapSize = map?.size() ?: 0 // Spec: OOP4d, MAP4
+  val counterSize = counter?.size() ?: 0 // Spec: OOP4e, CNT3
+
+  return mapOpSize + counterOpSize + mapSize + counterSize
+}
+
+/**
+ * Calculates the size of an ObjectState in bytes.
+ * Spec: OST3
+ */
+private fun ObjectState.size(): Int {
+  val mapSize = map?.size() ?: 0 // Spec: OST3b, MAP4
+  val counterSize = counter?.size() ?: 0 // Spec: OST3c, CNT3
+  val createOpSize = createOp?.size() ?: 0 // Spec: OST3d, OOP4
+
+  return mapSize + counterSize + createOpSize
+}
+
+/**
+ * Calculates the size of an ObjectMap in bytes.
+ * Spec: MOP3
+ */
+private fun MapOp.size(): Int {
+  val keySize = key.length // Spec: MOP3a - Size of the key
+  val dataSize = data?.size() ?: 0 // Size of the data, calculated per "OD3"
+  return keySize + dataSize
+}
+
+/**
+ * Calculates the size of a CounterOp in bytes.
+ * Spec: COP3
+ */
+private fun CounterOp.size(): Int {
+  // Size is 8 if amount is a number, 0 if amount is null or omitted
+  return if (amount != null) 8 else 0 // Spec: COP3a, COP3b
+}
+
+/**
+ * Calculates the size of an ObjectMap in bytes.
+ * Spec: MAP4
+ */
+private fun ObjectMap.size(): Int {
+  // Calculate the size of all map entries in the map property
+  val entriesSize = entries?.entries?.sumOf {
+    it.key.length + it.value.size() // // Spec: MAP4a1, MAP4a2
+  } ?: 0
+
+  return entriesSize
+}
+
+/**
+ * Calculates the size of an ObjectCounter in bytes.
+ * Spec: CNT3
+ */
+private fun ObjectCounter.size(): Int {
+  // Size is 8 if count is a number, 0 if count is null or omitted
+  return if (count != null) 8 else 0
+}
+
+/**
+ * Calculates the size of a MapEntry in bytes.
+ * Spec: ME3
+ */
+private fun MapEntry.size(): Int {
+  // The size is equal to the size of the data property, calculated per "OD3"
+  return data?.size() ?: 0
+}
+
+/**
+ * Calculates the size of an ObjectData in bytes.
+ * Spec: OD3
+ */
+private fun ObjectData.size(): Int {
+  return when (value) {
+    is Binary -> value.size() // Spec: OD3b
+    is Number -> 8 // Spec: OD3c
+    is Boolean -> 1 // Spec: OD3d
+    is String -> value.length // TODO: no spec
+    null -> 0 // Spec: OD3e
+    else -> 0
+  }
+}
