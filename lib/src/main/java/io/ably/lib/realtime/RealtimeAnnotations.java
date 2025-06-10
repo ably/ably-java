@@ -7,6 +7,7 @@ import io.ably.lib.types.AnnotationAction;
 import io.ably.lib.types.AsyncPaginatedResult;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Message;
 import io.ably.lib.types.MessageDecodeException;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
@@ -56,35 +57,17 @@ public class RealtimeAnnotations {
      */
     public void publish(String messageSerial, Annotation annotation, CompletionListener listener) throws AblyException {
         Log.v(TAG, String.format("publish(MsgSerial, Annotation); channel = %s", channel.name));
-
-        // (RSAN1, RSAN1a3)
-        if (annotation.type == null) {
-            throw AblyException.fromErrorInfo(new ErrorInfo("Annotation type must be specified", 400, 40000));
-        }
-
-        // (RSAN1, RSAN1c1)
-        annotation.messageSerial = messageSerial;
+        validateMessageSerial(messageSerial);
         // (RSAN1, RSAN1c2)
-        if (annotation.action == null) {
-            annotation.action = AnnotationAction.ANNOTATION_CREATE;
-        }
+        annotation.action = AnnotationAction.ANNOTATION_CREATE;
+        sendAnnotation(messageSerial, annotation, listener);
+    }
 
-        try {
-            // (RSAN1, RSAN1c3)
-            annotation.encode(channel.options);
-        } catch (MessageDecodeException e) {
-            throw AblyException.fromThrowable(e);
-        }
-
-        Log.v(TAG, String.format("RealtimeAnnotations.publish(): channelName = %s, sending annotation with messageSerial = %s, type = %s",
-            channel.name, messageSerial, annotation.type));
-
-        ProtocolMessage protocolMessage = new ProtocolMessage();
-        protocolMessage.action = ProtocolMessage.Action.annotation;
-        protocolMessage.channel = channel.name;
-        protocolMessage.annotations = new Annotation[]{annotation};
-
-        channel.sendProtocolMessage(protocolMessage, listener);
+    /**
+     * See {@link #publish(String, Annotation, CompletionListener)}
+     */
+    public void publish(Message message, Annotation annotation, CompletionListener listener) throws AblyException {
+        publish(message.serial, annotation, listener);
     }
 
     /**
@@ -95,11 +78,45 @@ public class RealtimeAnnotations {
      * the public API may change in future releases.
      *
      * @param messageSerial the unique serial identifier for the message to be annotated
-     * @param annotation the annotation object associated with the message
+     * @param annotation    the annotation object associated with the message
      * @throws AblyException if an error occurs during validation, encoding, or sending the annotation
      */
     public void publish(String messageSerial, Annotation annotation) throws AblyException {
         publish(messageSerial, annotation, null);
+    }
+
+    /**
+     * See {@link #publish(String, Annotation)}
+     */
+    public void publish(Message message, Annotation annotation) throws AblyException {
+        publish(message.serial, annotation);
+    }
+
+    private void sendAnnotation(String messageSerial, Annotation annotation, CompletionListener listener) throws AblyException {
+        // (RSAN1, RSAN1a3)
+        if (annotation.type == null) {
+            throw AblyException.fromErrorInfo(new ErrorInfo("Annotation type must be specified", 400, 40000));
+        }
+
+        // (RSAN1, RSAN1c1)
+        annotation.messageSerial = messageSerial;
+
+        try {
+            // (RSAN1, RSAN1c3)
+            annotation.encode(channel.options);
+        } catch (MessageDecodeException e) {
+            throw AblyException.fromThrowable(e);
+        }
+
+        Log.v(TAG, String.format("RealtimeAnnotations.sendAnnotation(): channelName = %s, sending annotation with messageSerial = %s, type = %s, action = %s",
+            channel.name, messageSerial, annotation.type, annotation.action.name()));
+
+        ProtocolMessage protocolMessage = new ProtocolMessage();
+        protocolMessage.action = ProtocolMessage.Action.annotation;
+        protocolMessage.channel = channel.name;
+        protocolMessage.annotations = new Annotation[]{annotation};
+
+        channel.sendProtocolMessage(protocolMessage, listener);
     }
 
     /**
@@ -111,18 +128,32 @@ public class RealtimeAnnotations {
      * the public API may change in future releases.
      *
      * @param messageSerial the unique serial identifier for the message being annotated
-     * @param annotation the annotation object to be deleted
-     * @param listener the completion listener to handle success or failure during the deletion process
+     * @param annotation    the annotation object to be deleted
+     * @param listener      the completion listener to handle success or failure during the deletion process
      * @throws AblyException if an error occurs during the deletion or publishing process
      */
     public void delete(String messageSerial, Annotation annotation, CompletionListener listener) throws AblyException {
         Log.v(TAG, String.format("delete(MsgSerial, Annotation); channel = %s", channel.name));
         annotation.action = AnnotationAction.ANNOTATION_DELETE;
-        publish(messageSerial, annotation, listener);
+        sendAnnotation(messageSerial, annotation, listener);
+    }
+
+    /**
+     * See {@link #delete(String, Annotation, CompletionListener)}
+     */
+    public void delete(Message message, Annotation annotation, CompletionListener listener) throws AblyException {
+        delete(message.serial, annotation, listener);
     }
 
     public void delete(String messageSerial, Annotation annotation) throws AblyException {
         delete(messageSerial, annotation, null);
+    }
+
+    /**
+     * See {@link #delete(String, Annotation)}
+     */
+    public void delete(Message message, Annotation annotation) throws AblyException {
+        delete(message.serial, annotation);
     }
 
     /**
@@ -141,6 +172,13 @@ public class RealtimeAnnotations {
     }
 
     /**
+     * See {@link #get(String, Param[])}
+     */
+    public PaginatedResult<Annotation> get(Message message, Param[] params) throws AblyException {
+        return get(message.serial, params);
+    }
+
+    /**
      * Retrieves a paginated list of annotations associated with the specified message serial.
      * <p>
      * Note: This is an experimental API. While the underlying functionality is stable,
@@ -155,6 +193,13 @@ public class RealtimeAnnotations {
     }
 
     /**
+     * See {@link #get(String)}
+     */
+    public PaginatedResult<Annotation> get(Message message) throws AblyException {
+        return get(message.serial);
+    }
+
+    /**
      * Asynchronously retrieves a paginated list of annotations associated with the specified message serial.
      * <p>
      * Note: This is an experimental API. While the underlying functionality is stable,
@@ -164,8 +209,15 @@ public class RealtimeAnnotations {
      * @param params        an array of query parameters for filtering or modifying the request.
      * @param callback      a callback to handle the result asynchronously, providing an {@link AsyncPaginatedResult} containing the matching annotations.
      */
-    public void getAsync(String messageSerial, Param[] params, Callback<AsyncPaginatedResult<Annotation>> callback) {
+    public void getAsync(String messageSerial, Param[] params, Callback<AsyncPaginatedResult<Annotation>> callback) throws AblyException {
         restAnnotations.getAsync(messageSerial, params, callback);
+    }
+
+    /**
+     * See {@link #getAsync(String, Param[], Callback)}
+     */
+    public void getAsync(Message message, Param[] params, Callback<AsyncPaginatedResult<Annotation>> callback) throws AblyException {
+        getAsync(message.serial, params, callback);
     }
 
     /**
@@ -177,8 +229,15 @@ public class RealtimeAnnotations {
      * @param messageSerial the unique serial identifier for the message being annotated.
      * @param callback      a callback to handle the result asynchronously, providing an {@link AsyncPaginatedResult} containing the matching annotations.
      */
-    public void getAsync(String messageSerial, Callback<AsyncPaginatedResult<Annotation>> callback) {
+    public void getAsync(String messageSerial, Callback<AsyncPaginatedResult<Annotation>> callback) throws AblyException {
         restAnnotations.getAsync(messageSerial, null, callback);
+    }
+
+    /**
+     * See {@link #getAsync(String, Callback)}
+     */
+    public void getAsync(Message message, Callback<AsyncPaginatedResult<Annotation>> callback) throws AblyException {
+        getAsync(message.serial, callback);
     }
 
     /**
@@ -274,6 +333,12 @@ public class RealtimeAnnotations {
             annotations.add(annotation);
         }
         broadcastAnnotation(annotations);
+    }
+
+    private void validateMessageSerial(String messageSerial) throws AblyException {
+        if (messageSerial == null) throw AblyException.fromErrorInfo(
+            new ErrorInfo("Message serial can not be empty", 400, 40003)
+        );
     }
 
     private void broadcastAnnotation(List<Annotation> annotations) {

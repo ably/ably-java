@@ -13,6 +13,7 @@ import io.ably.lib.types.Callback;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Message;
 import io.ably.lib.types.MessageDecodeException;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
@@ -59,7 +60,15 @@ public class RestAnnotations {
      * @throws AblyException if an error occurs during the retrieval process.
      */
     public PaginatedResult<Annotation> get(String messageSerial, Param[] params) throws AblyException {
+        validateMessageSerial(messageSerial);
         return getImpl(messageSerial, params).sync();
+    }
+
+    /**
+     * @see #get(String, Param[])
+     */
+    public PaginatedResult<Annotation> get(Message message, Param[] params) throws AblyException {
+        return get(message.serial, params);
     }
 
     /**
@@ -72,8 +81,16 @@ public class RestAnnotations {
      * @param params an array of query parameters for filtering or modifying the request.
      * @param callback a callback to handle the result asynchronously, providing an {@link AsyncPaginatedResult} containing the matching annotations.
      */
-    public void getAsync(String messageSerial, Param[] params, Callback<AsyncPaginatedResult<Annotation>> callback) {
+    public void getAsync(String messageSerial, Param[] params, Callback<AsyncPaginatedResult<Annotation>> callback) throws AblyException {
+        validateMessageSerial(messageSerial);
         getImpl(messageSerial, params).async(callback);
+    }
+
+    /**
+     * @see #getAsync(String, Param[], Callback)
+     */
+    public void getAsync(Message message, Param[] params, Callback<AsyncPaginatedResult<Annotation>> callback) throws AblyException {
+        getAsync(message.serial, params, callback);
     }
 
     /**
@@ -91,6 +108,13 @@ public class RestAnnotations {
     }
 
     /**
+     * @see #get(String)
+     */
+    public PaginatedResult<Annotation> get(Message message) throws AblyException {
+        return get(message.serial);
+    }
+
+    /**
      * Asynchronously retrieves a paginated list of annotations associated with the specified message serial.
      * <p>
      * Note: This is an experimental API. While the underlying functionality is stable,
@@ -99,8 +123,16 @@ public class RestAnnotations {
      * @param messageSerial the unique serial identifier for the message being annotated.
      * @param callback a callback to handle the result asynchronously, providing an {@link AsyncPaginatedResult} containing the matching annotations.
      */
-    public void getAsync(String messageSerial, Callback<AsyncPaginatedResult<Annotation>> callback) {
+    public void getAsync(String messageSerial, Callback<AsyncPaginatedResult<Annotation>> callback) throws AblyException {
+        validateMessageSerial(messageSerial);
         getImpl(messageSerial, null).async(callback);
+    }
+
+    /**
+     * @see #getAsync(String, Callback)
+     */
+    public void getAsync(Message message, Callback<AsyncPaginatedResult<Annotation>> callback) throws AblyException {
+        getAsync(message.serial, callback);
     }
 
     /**
@@ -115,7 +147,15 @@ public class RestAnnotations {
      * @throws AblyException if an error occurs during the publishing process.
      */
     public void publish(String messageSerial, Annotation annotation) throws AblyException {
+        validateMessageSerial(messageSerial);
         publishImpl(messageSerial, annotation).sync();
+    }
+
+    /**
+     * @see #publish(String, Annotation)
+     */
+    public void publish(Message message, Annotation annotation) throws AblyException {
+        publish(message.serial, annotation);
     }
 
     /**
@@ -131,7 +171,15 @@ public class RestAnnotations {
      *                 completion indication or error information.
      */
     public void publishAsync(String messageSerial, Annotation annotation, Callback<Void> callback) throws AblyException {
+        validateMessageSerial(messageSerial);
         publishImpl(messageSerial, annotation).async(callback);
+    }
+
+    /**
+     * @see #publishAsync(String, Annotation, Callback)
+     */
+    public void publishAsync(Message message, Annotation annotation, Callback<Void> callback) throws AblyException {
+        publishAsync(message.serial, annotation, callback);
     }
 
     /**
@@ -145,8 +193,15 @@ public class RestAnnotations {
      * @throws AblyException if an error occurs during the deletion process.
      */
     public void delete(String messageSerial, Annotation annotation) throws AblyException {
-        annotation.action = AnnotationAction.ANNOTATION_DELETE;
-        publish(messageSerial, annotation);
+        validateMessageSerial(messageSerial);
+        deleteImpl(messageSerial, annotation).sync();
+    }
+
+    /**
+     * @see #delete(String, Annotation)
+     */
+    public void delete(Message message, Annotation annotation) throws AblyException {
+        delete(message.serial, annotation);
     }
 
     /**
@@ -161,17 +216,41 @@ public class RestAnnotations {
      *                 indication or error information.
      */
     public void deleteAsync(String messageSerial, Annotation annotation, Callback<Void> callback) throws AblyException {
-        annotation.action = AnnotationAction.ANNOTATION_DELETE;
-        publishAsync(messageSerial, annotation, callback);
+        validateMessageSerial(messageSerial);
+        deleteImpl(messageSerial, annotation).async(callback);
+    }
+
+    /**
+     * @see #deleteAsync(String, Annotation, Callback)
+     */
+    public void deleteAsync(Message message, Annotation annotation, Callback<Void> callback) throws AblyException {
+        deleteAsync(message.serial, annotation, callback);
+    }
+
+    private void validateMessageSerial(String messageSerial) throws AblyException {
+        if (messageSerial == null) throw AblyException.fromErrorInfo(
+            new ErrorInfo("Message serial can not be empty", 400, 40003)
+        );
     }
 
     private String getBasePath(String messageSerial) {
         return "/channels/" + HttpUtils.encodeURIComponent(channelName) + "/messages/" + HttpUtils.encodeURIComponent(messageSerial) + "/annotations";
     }
 
-    private Http.Request<Void> publishImpl(String messageSerial, Annotation annotation) throws AblyException {
-        Log.v(TAG, "publishImpl(): annotation=" + annotation);
+    private Http.Request<Void> deleteImpl(String messageSerial, Annotation annotation) throws AblyException {
+        Log.v(TAG, "delete(): annotation=" + annotation);
+        annotation.action = AnnotationAction.ANNOTATION_DELETE;
+        return sendAnnotationImpl(messageSerial, annotation);
+    }
 
+    private Http.Request<Void> publishImpl(String messageSerial, Annotation annotation) throws AblyException {
+        Log.v(TAG, "publish(): annotation=" + annotation);
+        // (RSAN1c2)
+        annotation.action = AnnotationAction.ANNOTATION_CREATE;
+        return sendAnnotationImpl(messageSerial, annotation);
+    }
+
+    private Http.Request<Void> sendAnnotationImpl(String messageSerial, Annotation annotation) throws AblyException {
         // (RSAN1a3)
         if (annotation.type == null) {
             throw AblyException.fromErrorInfo(new ErrorInfo("Annotation type must be specified", 400, 40000));
@@ -179,10 +258,6 @@ public class RestAnnotations {
 
         // (RSAN1c1)
         annotation.messageSerial = messageSerial;
-        // (RSAN1c2)
-        if (annotation.action == null) {
-            annotation.action = AnnotationAction.ANNOTATION_CREATE;
-        }
 
         try {
             // (RSAN1c3)

@@ -35,18 +35,18 @@ public class Summary {
      * (TM2q1) The sdk MUST be able to cope with structures and aggregation types that have it does not yet know about
      * or have explicit support for, hence the loose (JsonObject) type.
      */
-    private final JsonObject summaryJsonRepresentation;
+    private final Map<String, JsonObject> typeToSummaryJson;
 
-    public Summary(JsonObject summaryJsonRepresentation) {
-        this.summaryJsonRepresentation = summaryJsonRepresentation;
+    public Summary(Map<String, JsonObject> typeToSummaryJson) {
+        this.typeToSummaryJson = typeToSummaryJson;
     }
 
     public static Map<String, SummaryClientIdList> asSummaryDistinctV1(JsonObject jsonObject) {
         Map<String, SummaryClientIdList> summary = new HashMap<>();
-        jsonObject.entrySet().forEach(entry -> {
+        for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
             String key = entry.getKey();
             summary.put(key, asSummaryFlagV1(entry.getValue().getAsJsonObject()));
-        });
+        }
         return summary;
     }
 
@@ -56,13 +56,16 @@ public class Summary {
 
     public static Map<String, SummaryClientIdCounts> asSummaryMultipleV1(JsonObject jsonObject) {
         Map<String, SummaryClientIdCounts> summary = new HashMap<>();
-        jsonObject.entrySet().forEach(entry -> {
+        for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
             String key = entry.getKey();
             JsonObject value = entry.getValue().getAsJsonObject();
             int total = value.get("total").getAsInt();
-            Map<String, Integer> clientIds = Serialisation.gson.fromJson(value.get("clientIds"), Map.class);
+            Map<String, Integer> clientIds = new HashMap<>();
+            for (Map.Entry<String, JsonElement> clientEntry: value.get("clientIds").getAsJsonObject().entrySet()) {
+                clientIds.put(clientEntry.getKey(), clientEntry.getValue().getAsInt());
+            }
             summary.put(key, new SummaryClientIdCounts(total, clientIds));
-        });
+        }
         return summary;
     }
 
@@ -79,66 +82,60 @@ public class Summary {
 
     static Summary read(MessageUnpacker unpacker) {
         try {
-            return new Summary(Serialisation.msgpackToGson(unpacker.unpackValue()).getAsJsonObject());
+            return read(Serialisation.msgpackToGson(unpacker.unpackValue()));
         } catch (Exception e) {
             Log.e(TAG, "Failed to read summary from MessagePack", e);
             return null;
         }
     }
 
-    static Summary read(JsonObject jsonObject) {
-        return new Summary(jsonObject);
+    static Summary read(JsonElement json) {
+        if (!json.isJsonObject()) {
+            throw new JsonParseException("Expected an object but got \"" + json.getClass() + "\".");
+        }
+        Map<String, JsonObject> typeToSummaryJson = new HashMap<>();
+        for (Map.Entry<String, JsonElement> entry : json.getAsJsonObject().entrySet()) {
+            if (!entry.getValue().isJsonObject()) {
+                throw new JsonParseException("Expected an object but got \"" + json.getClass() + "\".");
+            }
+            typeToSummaryJson.put(entry.getKey(), entry.getValue().getAsJsonObject());
+        }
+        return new Summary(typeToSummaryJson);
+    }
+
+    /**
+     * Retrieves the JSON representation associated with a specified annotation type.
+     *
+     * @param annotationType the type of annotation to retrieve its JSON representation
+     * @return a JsonObject containing the JSON representation of the specified annotation type,
+     *         or null if no representation exists for the given type
+     */
+    public JsonObject get(String annotationType) {
+        return typeToSummaryJson.get(annotationType);
     }
 
     void write(MessagePacker packer) {
-        Serialisation.gsonToMsgpack(summaryJsonRepresentation, packer);
+        Serialisation.gsonToMsgpack(toJsonTree(), packer);
     }
 
     JsonElement toJsonTree() {
         return Serialisation.gson.toJsonTree(this);
     }
 
-    public static class SummaryClientIdList {
-        private final int total; // TM7c1a
-        private final List<String> clientIds; // TM7c1b
-
-        public SummaryClientIdList(int total, List<String> clientIds) {
-            this.total = total;
-            this.clientIds = clientIds;
-        }
-    }
-
-    public static class SummaryClientIdCounts {
-        private final int total; // TM7d1a
-        private final Map<String, Integer> clientIds; // TM7d1b
-
-        public SummaryClientIdCounts(int total, Map<String, Integer> clientIds) {
-            this.total = total;
-            this.clientIds = clientIds;
-        }
-    }
-
-    public static class SummaryTotal {
-        private final int total; // TM7e1a
-
-        SummaryTotal(int total) {
-            this.total = total;
-        }
-    }
-
     public static class Serializer implements JsonSerializer<Summary>, JsonDeserializer<Summary> {
 
         @Override
         public JsonElement serialize(Summary summary, Type typeOfMessage, JsonSerializationContext ctx) {
-            return summary.summaryJsonRepresentation;
+            JsonObject json = new JsonObject();
+            for (Map.Entry<String, JsonObject> entry : summary.typeToSummaryJson.entrySet()) {
+                json.add(entry.getKey(), entry.getValue());
+            }
+            return json;
         }
 
         @Override
         public Summary deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-            if (!json.isJsonObject()) {
-                throw new JsonParseException("Expected an object but got \"" + json.getClass() + "\".");
-            }
-            return new Summary(json.getAsJsonObject());
+            return read(json);
         }
 
     }

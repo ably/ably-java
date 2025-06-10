@@ -9,18 +9,16 @@ import static org.junit.Assert.assertThat;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 
+import io.ably.lib.test.util.AblyCommonsReader;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import io.ably.lib.test.common.Setup;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.Message;
-import io.ably.lib.util.Base64Coder;
-import io.ably.lib.util.Crypto;
 import io.ably.lib.util.Crypto.CipherParams;
 
 @Ignore("FIXME: Initialization is failing")
@@ -62,8 +60,8 @@ public class CryptoMessageTest {
         }
 
         private CryptoTestData loadTestData() throws IOException {
-            return (CryptoTestData)Setup.loadJson(
-                "ably-common/test-resources/" + fileName + ".json",
+            return (CryptoTestData) AblyCommonsReader.read(
+                "test-resources/" + fileName + ".json",
                 CryptoTestData.class);
         }
     }
