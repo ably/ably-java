@@ -25,7 +25,7 @@ public class Adapter implements LiveObjectsAdapter {
     }
 
     @Override
-    public void send(ProtocolMessage msg, CompletionListener listener) throws AblyException {
+    public void send(@NotNull ProtocolMessage msg, @NotNull CompletionListener listener) throws AblyException {
         // Always queue LiveObjects messages to ensure reliable state synchronization and proper acknowledgment
         ably.connection.connectionManager.send(msg, true, listener);
     }

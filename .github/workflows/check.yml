@@ -19,4 +19,4 @@ jobs:
           distribution: 'temurin'
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
-      - run: ./gradlew checkWithCodenarc checkstyleMain checkstyleTest runUnitTests
+      - run: ./gradlew checkWithCodenarc checkstyleMain checkstyleTest runUnitTests runLiveObjectUnitTests

@@ -1,7 +1,6 @@
 package io.ably.lib.objects
 
 import io.ably.lib.realtime.CompletionListener
-import io.ably.lib.types.AblyException
 import io.ably.lib.types.ErrorInfo
 import io.ably.lib.types.ProtocolMessage
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -16,7 +15,7 @@ internal suspend fun LiveObjectsAdapter.sendAsync(message: ProtocolMessage) = su
       }
 
       override fun onError(reason: ErrorInfo) {
-        continuation.resumeWithException(AblyException.fromErrorInfo(reason))
+        continuation.resumeWithException(ablyException(reason))
       }
     })
   } catch (e: Exception) {
