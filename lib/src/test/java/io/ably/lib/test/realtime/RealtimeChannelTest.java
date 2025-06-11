@@ -2586,4 +2586,53 @@ public class RealtimeChannelTest extends ParameterizedTest {
             }
         }
     };
+
+    /**
+     * Test that calling attach() before connection is established 
+     * doesn't result in duplicate ATTACH messages being sent
+     * when the connection becomes connected.
+     */
+    @Test
+    public void attach_before_connect_no_duplicate_attach() {
+        String channelName = "attach_before_connect_no_duplicate_" + testParams.name;
+        AblyRealtime ably = null;
+        try {
+            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+            
+            // Create a monitor to count ATTACH messages
+            Helpers.RawProtocolMonitor attachMonitor = Helpers.RawProtocolMonitor.createSender(ProtocolMessage.Action.attach);
+            opts.protocolListener = attachMonitor;
+            
+            ably = new AblyRealtime(opts);
+
+            /* create a channel and attach before connection is established */
+            final Channel channel = ably.channels.get(channelName);
+            
+            // Call attach() before connected - this should just set channel to attaching state
+            channel.attach();
+            
+            // Wait for channel to actually become attached
+            (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+            assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+            
+            // Give some time for any additional messages to be sent
+            Thread.sleep(500);
+            
+            // Verify only one ATTACH message was sent
+            assertEquals("Should send exactly one ATTACH message", 1, attachMonitor.receivedMessages.size());
+            
+            ProtocolMessage attachMessage = attachMonitor.receivedMessages.get(0);
+            assertEquals("Message should be ATTACH", ProtocolMessage.Action.attach, attachMessage.action);
+            assertEquals("Channel name should match", channelName, attachMessage.channel);
+
+        } catch (AblyException e) {
+            e.printStackTrace();
+            fail("Unexpected exception: " + e.getMessage());
+        } catch (InterruptedException e) {
+            fail("Interrupted while waiting: " + e.getMessage());
+        } finally {
+            if(ably != null)
+                ably.close();
+        }
+    }
 }

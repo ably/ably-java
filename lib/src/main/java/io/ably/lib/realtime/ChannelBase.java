@@ -654,8 +654,10 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
     /* State changes provoked by ConnectionManager state changes. */
     public void setConnected() {
-        // TODO - seems test is failing because of explicit attach after connect
-        if (state.isReattachable()){
+        // RTN15c6: Re-attach channels in ATTACHED state
+        // RTN15c7: Re-attach channels in SUSPENDED state  
+        // Channels in ATTACHING state should continue their existing attach process
+        if (state == ChannelState.attached || state == ChannelState.suspended) {
             attach(true,null); // RTN15c6, RTN15c7
         }
     }
