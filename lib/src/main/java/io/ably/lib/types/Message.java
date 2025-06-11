@@ -549,7 +549,7 @@ public class Message extends BaseMessage {
      */
     protected int size() {
         // Spec: TM6a - Sum of sizes of name, data, clientId, and extras
-        int nameSize = name != null ? name.length() : 0; // Spec: TM6e
+        int nameSize = name != null ? name.length() : 0; // Spec: TM6a
         int dataSize = 0;
 
         if (data != null) {
@@ -560,7 +560,7 @@ public class Message extends BaseMessage {
             }
         }
 
-        int clientIdSize = clientId != null ? clientId.length() : 0; // Spec: TM6e
+        int clientIdSize = clientId != null ? clientId.length() : 0; // Spec: TM6f
         int extrasSize = extras != null ? Serialisation.gson.toJson(extras).length() : 0; // Spec: TM6d
 
         return nameSize + dataSize + clientIdSize + extrasSize;
