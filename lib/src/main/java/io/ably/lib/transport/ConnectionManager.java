@@ -1286,6 +1286,7 @@ public class ConnectionManager implements ConnectListener {
         connection.key = connectionDetails.connectionKey; //RTN16d
         maxIdleInterval = connectionDetails.maxIdleInterval;
         connectionStateTtl = connectionDetails.connectionStateTtl;
+        maxMessageSize = connectionDetails.maxMessageSize;
 
         /* set the clientId resolved from token, if any */
         String clientId = connectionDetails.clientId;
@@ -1981,6 +1982,7 @@ public class ConnectionManager implements ConnectListener {
     private long lastActivity;
     private CMConnectivityListener connectivityListener;
     private long connectionStateTtl = Defaults.connectionStateTtl;
+    public long maxMessageSize = Defaults.maxMessageSize;
     long maxIdleInterval = Defaults.maxIdleInterval;
     private int disconnectedRetryAttempt = 0;
 

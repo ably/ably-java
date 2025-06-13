@@ -23,6 +23,15 @@ internal suspend fun LiveObjectsAdapter.sendAsync(message: ProtocolMessage) = su
   }
 }
 
+internal fun LiveObjectsAdapter.ensureMessageSizeWithinLimit(objectMessages: Array<ObjectMessage>) {
+  val maximumAllowedSize = maxMessageSizeLimit()
+  val objectsTotalMessageSize = objectMessages.sumOf { it.size() }
+  if (objectsTotalMessageSize > maximumAllowedSize) {
+    throw ablyException("ObjectMessage size $objectsTotalMessageSize exceeds maximum allowed size of $maximumAllowedSize bytes",
+      ErrorCode.MaxMessageSizeExceeded)
+  }
+}
+
 internal enum class ProtocolMessageFormat(private val value: String) {
   Msgpack("msgpack"),
   Json("json");
@@ -40,4 +49,8 @@ internal class Binary(val data: ByteArray?) {
   override fun hashCode(): Int {
     return data?.contentHashCode() ?: 0
   }
+}
+
+internal fun Binary.size(): Int {
+  return data?.size ?: 0
 }

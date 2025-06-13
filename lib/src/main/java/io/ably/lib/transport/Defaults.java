@@ -52,6 +52,8 @@ public class Defaults {
     public static long fallbackRetryTimeout = 10*60*1000L;
     /* CD2h (but no default in the spec) */
     public static long maxIdleInterval = 20000L;
+    // 64kB, as per CD2c
+    public static long maxMessageSize = 65536L;
     /* DF1a */
     public static long connectionStateTtl = 120000L;
 

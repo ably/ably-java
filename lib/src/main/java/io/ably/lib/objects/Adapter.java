@@ -29,4 +29,9 @@ public class Adapter implements LiveObjectsAdapter {
         // Always queue LiveObjects messages to ensure reliable state synchronization and proper acknowledgment
         ably.connection.connectionManager.send(msg, true, listener);
     }
+
+    @Override
+    public long maxMessageSizeLimit() {
+        return ably.connection.connectionManager.maxMessageSize;
+    }
 }
