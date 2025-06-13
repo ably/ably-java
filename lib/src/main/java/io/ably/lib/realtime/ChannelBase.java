@@ -15,6 +15,7 @@ import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.objects.LiveObjects;
 import io.ably.lib.objects.LiveObjectsPlugin;
+import io.ably.lib.rest.RestAnnotations;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ConnectionManager.QueuedMessage;
 import io.ably.lib.transport.Defaults;
@@ -104,6 +105,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
         return liveObjectsPlugin.getInstance(name);
     }
+
+    public final RealtimeAnnotations annotations;
 
     /***
      * internal
@@ -887,7 +890,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             if(msg.createdAt == null && msg.action == MessageAction.MESSAGE_CREATE) msg.createdAt = msg.timestamp;
 
             try {
-                msg.decode(options, decodingContext);
+                if (msg.data != null) msg.decode(options, decodingContext);
             } catch (MessageDecodeException e) {
                 if (e.errorInfo.code == 40018) {
                     Log.e(TAG, String.format(Locale.ROOT, "Delta message decode failure - %s. Message id = %s, channel = %s", e.errorInfo.message, msg.id, name));
@@ -1310,6 +1313,10 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         state = ChannelState.initialized;
         this.decodingContext = new DecodingContext();
         this.liveObjectsPlugin = liveObjectsPlugin;
+        this.annotations = new RealtimeAnnotations(
+            this,
+            new RestAnnotations(name, ably.http, ably.options, options)
+        );
     }
 
     void onChannelMessage(ProtocolMessage msg) {
@@ -1376,6 +1383,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         case error:
             setFailed(msg.error);
             break;
+        case annotation:
+            annotations.onAnnotation(msg);
+            break;
         default:
             Log.e(TAG, "onChannelMessage(): Unexpected message action (" + msg.action + ")");
         }
@@ -1400,6 +1410,17 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
     public void once(ChannelState state, ChannelStateListener listener) {
         super.once(state.getChannelEvent(), listener);
+    }
+
+    /**
+     * (Internal) Sends a protocol message and provides a callback for completion.
+     *
+     * @param protocolMessage the protocol message to be sent
+     * @param listener the listener to be notified upon completion of the message delivery
+     */
+    public void sendProtocolMessage(ProtocolMessage protocolMessage, CompletionListener listener) throws AblyException {
+        ConnectionManager connectionManager = ably.connection.connectionManager;
+        connectionManager.send(protocolMessage, ably.options.queueMessages, listener);
     }
 
     private static final String TAG = Channel.class.getName();

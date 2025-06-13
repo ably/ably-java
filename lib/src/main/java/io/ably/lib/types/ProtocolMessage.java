@@ -28,28 +28,28 @@ import io.ably.lib.util.Log;
  */
 public class ProtocolMessage {
     public enum Action {
-        heartbeat,
-        ack,
-        nack,
-        connect,
-        connected,
-        disconnect,
-        disconnected,
-        close,
-        closed,
-        error,
-        attach,
-        attached,
-        detach,
-        detached,
-        presence,
-        message,
-        sync,
-        auth,
-        activate,
-        object,
-        object_sync,
-        annotation;
+        heartbeat, // 0
+        ack, // 1
+        nack, // 2
+        connect, // 3
+        connected, // 4
+        disconnect, // 5
+        disconnected, // 6
+        close, // 7
+        closed, // 8
+        error, // 9
+        attach, // 10
+        attached, // 11
+        detach, // 12
+        detached, // 13
+        presence, // 14
+        message, // 15
+        sync, // 16
+        auth, // 17
+        activate, // 18
+        object, // 19
+        object_sync, // 20
+        annotation; // 21
 
         public int getValue() { return ordinal(); }
         public static Action findByValue(int value) { return values()[value]; }
@@ -68,12 +68,14 @@ public class ProtocolMessage {
         publish(17),
         subscribe(18),
         presence_subscribe(19),
+        // 20 reserved (TR3v)
         /* Annotation flags */
-        annotation_publish(21),
-        annotation_subscribe(22),
+        annotation_publish(21), // (TR3w)
+        annotation_subscribe(22), // (TR3x)
+        // 23 reserved (TR3v)
         /* Object flags */
-        object_subscribe(24),
-        object_publish(25);
+        object_subscribe(24), // (TR3y)
+        object_publish(25); // (TR3z)
 
         private final int mask;
 
@@ -86,8 +88,12 @@ public class ProtocolMessage {
         }
     }
 
+    /**
+     * (RTN7a)
+     */
     public static boolean ackRequired(ProtocolMessage msg) {
-        return (msg.action == Action.message || msg.action == Action.presence);
+        return (msg.action == Action.message || msg.action == Action.presence
+            || msg.action == Action.object || msg.action == Action.annotation);
     }
 
     public ProtocolMessage() {}
@@ -116,6 +122,7 @@ public class ProtocolMessage {
     public ConnectionDetails connectionDetails;
     public AuthDetails auth;
     public Map<String, String> params;
+    public Annotation[] annotations;
 
     public boolean hasFlag(final Flag flag) {
         return (flags & flag.getMask()) == flag.getMask();
@@ -139,6 +146,7 @@ public class ProtocolMessage {
         if(flags != 0) ++fieldCount;
         if(params != null) ++fieldCount;
         if(channelSerial != null) ++fieldCount;
+        if(annotations != null) ++fieldCount;
         packer.packMapHeader(fieldCount);
         packer.packString("action");
         packer.packInt(action.getValue());
@@ -173,6 +181,10 @@ public class ProtocolMessage {
         if(channelSerial != null) {
             packer.packString("channelSerial");
             packer.packString(channelSerial);
+        }
+        if(annotations != null) {
+            packer.packString("annotations");
+            AnnotationSerializer.writeMsgpackArray(annotations, packer);
         }
     }
 
@@ -232,6 +244,9 @@ public class ProtocolMessage {
                     break;
                 case "params":
                     params = MessageSerializer.readStringMap(unpacker);
+                    break;
+                case "annotations":
+                    annotations = AnnotationSerializer.readMsgpackArray(unpacker);
                     break;
                 default:
                     Log.v(TAG, "Unexpected field: " + fieldName);

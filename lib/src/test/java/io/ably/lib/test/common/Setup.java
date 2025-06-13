@@ -68,6 +68,7 @@ public class Setup {
         public boolean persisted;
         public boolean pushEnabled;
         public int status;
+        public boolean mutableMessages;
     }
 
     public static class Connection {

@@ -8,7 +8,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -20,6 +19,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import io.ably.lib.test.util.AblyCommonsReader;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.MessageAction;
 import io.ably.lib.types.MessageExtras;
@@ -47,7 +47,6 @@ import io.ably.lib.test.common.Helpers.ConnectionWaiter;
 import io.ably.lib.test.common.Helpers.MessageWaiter;
 import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.ParameterizedTest;
-import io.ably.lib.test.common.Setup;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Callback;
@@ -59,7 +58,7 @@ import io.ably.lib.util.Log;
 
 public class RealtimeMessageTest extends ParameterizedTest {
 
-    private static final String testMessagesEncodingFile = "ably-common/test-resources/messages-encoding.json";
+    private static final String testMessagesEncodingFile = "test-resources/messages-encoding.json";
     private static Gson gson = new Gson();
 
     @Rule
@@ -532,13 +531,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
     @Test
     public void messages_encoding_fixtures() {
         MessagesEncodingData fixtures;
-        try {
-            fixtures = (MessagesEncodingData) Setup.loadJson(testMessagesEncodingFile, MessagesEncodingData.class);
-        } catch(IOException e) {
-            fail();
-            return;
-        }
-
+        fixtures = AblyCommonsReader.read(testMessagesEncodingFile, MessagesEncodingData.class);
         AblyRealtime ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
@@ -597,12 +590,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
     @Test
     public void messages_msgpack_and_json_encoding_is_compatible() {
         MessagesEncodingData fixtures;
-        try {
-            fixtures = (MessagesEncodingData) Setup.loadJson(testMessagesEncodingFile, MessagesEncodingData.class);
-        } catch(IOException e) {
-            fail();
-            return;
-        }
+        fixtures = AblyCommonsReader.read(testMessagesEncodingFile, MessagesEncodingData.class);
 
         // Publish each data type through raw JSON POST and retrieve through MsgPack and JSON.
 
@@ -884,15 +872,10 @@ public class RealtimeMessageTest extends ParameterizedTest {
     public void messages_from_encoded_json_array() throws AblyException {
         JsonArray fixtures = null;
         MessagesData testMessages = null;
-        try {
-            testMessages = (MessagesData) Setup.loadJson(testMessagesEncodingFile, MessagesData.class);
-            JsonObject jsonObject = (JsonObject) Setup.loadJson(testMessagesEncodingFile, JsonObject.class);
-            //We use this as-is for decoding purposes.
-            fixtures = jsonObject.getAsJsonArray("messages");
-        } catch(IOException e) {
-            fail();
-            return;
-        }
+        testMessages = AblyCommonsReader.read(testMessagesEncodingFile, MessagesData.class);
+        JsonObject jsonObject = AblyCommonsReader.read(testMessagesEncodingFile, JsonObject.class);
+        //We use this as-is for decoding purposes.
+        fixtures = jsonObject.getAsJsonArray("messages");
 
         Message[] decodedMessages = Message.fromEncodedArray(fixtures, null);
         for(int index = 0; index < decodedMessages.length; index++) {

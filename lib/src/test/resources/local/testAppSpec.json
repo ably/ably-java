@@ -32,7 +32,11 @@
 		{
 			"id": "pushenabled",
 			"pushEnabled": true
-		}
+		},
+    {
+      "id": "mutable",
+      "mutableMessages": true
+    }
 	],
 	"channels": [
 		{

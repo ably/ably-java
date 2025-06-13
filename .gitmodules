@@ -1,3 +1,0 @@
-[submodule "lib/src/test/resources/ably-common"]
-	path = lib/src/test/resources/ably-common
-	url = https://github.com/ably/ably-common.git

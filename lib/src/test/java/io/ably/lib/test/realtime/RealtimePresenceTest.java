@@ -17,7 +17,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,7 +40,7 @@ import io.ably.lib.realtime.ConnectionEvent;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.realtime.ConnectionStateListener;
 import io.ably.lib.realtime.Presence;
-import io.ably.lib.test.common.Setup;
+import io.ably.lib.test.util.AblyCommonsReader;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Capability;
 import io.ably.lib.types.ChannelOptions;
@@ -74,7 +73,7 @@ import io.ably.lib.types.PresenceMessage.Action;
 
 public class RealtimePresenceTest extends ParameterizedTest {
 
-    private static final String testMessagesEncodingFile = "ably-common/test-resources/presence-messages-encoding.json";
+    private static final String testMessagesEncodingFile = "test-resources/presence-messages-encoding.json";
     private static final String testClientId1 = "testClientId1";
     private static final String testClientId2 = "testClientId2";
     private Auth.TokenDetails token1;
@@ -3636,15 +3635,11 @@ public class RealtimePresenceTest extends ParameterizedTest {
     public void messages_from_encoded_json_array() throws AblyException {
         JsonArray fixtures = null;
         MessagesData testMessages = null;
-        try {
-            testMessages = (MessagesData) Setup.loadJson(testMessagesEncodingFile, MessagesData.class);
-            JsonObject jsonObject = (JsonObject) Setup.loadJson(testMessagesEncodingFile, JsonObject.class);
-            //We use this as-is for decoding purposes.
-            fixtures = jsonObject.getAsJsonArray("messages");
-        } catch(IOException e) {
-            fail();
-            return;
-        }
+        testMessages = AblyCommonsReader.read(testMessagesEncodingFile, MessagesData.class);
+        JsonObject jsonObject = AblyCommonsReader.readAsJsonObject(testMessagesEncodingFile);
+        //We use this as-is for decoding purposes.
+        fixtures = jsonObject.getAsJsonArray("messages");
+
         PresenceMessage[] decodedMessages = PresenceMessage.fromEncodedArray(fixtures, null);
         for(int index = 0; index < decodedMessages.length; index++) {
             PresenceMessage testInputMsg = testMessages.messages[index];
