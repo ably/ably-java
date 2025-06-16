@@ -30,6 +30,6 @@ public interface LiveObjectsAdapter {
      *
      * @return the maximum message size limit in bytes.
      */
-    long maxMessageSizeLimit();
+    int maxMessageSizeLimit();
 }
 

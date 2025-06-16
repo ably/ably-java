@@ -1,5 +1,8 @@
 package io.ably.lib.objects
 
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+
 /**
  * An enum class representing the different actions that can be performed on an object.
  * Spec: OOP2
@@ -46,20 +49,27 @@ internal data class ObjectData(
 )
 
 /**
- * Represents a value that can be a String, Number, Boolean or Binary.
+ * Represents a value that can be a String, Number, Boolean, Binary, JsonObject or JsonArray.
  * Performs a type check on initialization.
  * Spec: OD2c
  */
 internal data class ObjectValue(
   /**
-   * The concrete value of the object. Can be a String, Number, Boolean or Binary.
+   * The concrete value of the object. Can be a String, Number, Boolean, Binary, JsonObject or JsonArray.
    * Spec: OD2c
    */
   val value: Any,
 ) {
   init {
-    require(value is String || value is Number || value is Boolean || value is Binary) {
-      "value must be String, Number, Boolean or Binary"
+    require(
+      value is String ||
+        value is Number ||
+        value is Boolean ||
+        value is Binary ||
+        value is JsonObject ||
+        value is JsonArray
+    ) {
+      "value must be String, Number, Boolean, Binary, JsonObject or JsonArray"
     }
   }
 }
@@ -337,7 +347,7 @@ internal data class ObjectMessage(
  * Calculates the size of an ObjectMessage in bytes.
  * Spec: OM3
  */
-internal fun ObjectMessage.size(): Long {
+internal fun ObjectMessage.size(): Int {
   val clientIdSize = clientId?.length ?: 0 // Spec: OM3f
   val operationSize = operation?.size() ?: 0 // Spec: OM3b, OOP4
   val objectStateSize = objectState?.size() ?: 0 // Spec: OM3c, OST3
@@ -350,7 +360,7 @@ internal fun ObjectMessage.size(): Long {
  * Calculates the size of an ObjectOperation in bytes.
  * Spec: OOP4
  */
-private fun ObjectOperation.size(): Long {
+private fun ObjectOperation.size(): Int {
   val mapOpSize = mapOp?.size() ?: 0 // Spec: OOP4b, OMO3
   val counterOpSize = counterOp?.size() ?: 0 // Spec: OOP4c, OCO3
   val mapSize = map?.size() ?: 0 // Spec: OOP4d, OMP4
@@ -363,7 +373,7 @@ private fun ObjectOperation.size(): Long {
  * Calculates the size of an ObjectState in bytes.
  * Spec: OST3
  */
-private fun ObjectState.size(): Long {
+private fun ObjectState.size(): Int {
   val mapSize = map?.size() ?: 0 // Spec: OST3b, OMP4
   val counterSize = counter?.size() ?: 0 // Spec: OST3c, OCN3
   val createOpSize = createOp?.size() ?: 0 // Spec: OST3d, OOP4
@@ -375,7 +385,7 @@ private fun ObjectState.size(): Long {
  * Calculates the size of an ObjectMapOp in bytes.
  * Spec: OMO3
  */
-private fun ObjectMapOp.size(): Long {
+private fun ObjectMapOp.size(): Int {
   val keySize = key.length // Spec: OMO3d - Size of the key
   val dataSize = data?.size() ?: 0 // Spec: OMO3b - Size of the data, calculated per "OD3"
   return keySize + dataSize
@@ -385,7 +395,7 @@ private fun ObjectMapOp.size(): Long {
  * Calculates the size of a CounterOp in bytes.
  * Spec: OCO3
  */
-private fun ObjectCounterOp.size(): Long {
+private fun ObjectCounterOp.size(): Int {
   // Size is 8 if amount is a number, 0 if amount is null or omitted
   return if (amount != null) 8 else 0 // Spec: OCO3a, OCO3b
 }
@@ -394,7 +404,7 @@ private fun ObjectCounterOp.size(): Long {
  * Calculates the size of an ObjectMap in bytes.
  * Spec: OMP4
  */
-private fun ObjectMap.size(): Long {
+private fun ObjectMap.size(): Int {
   // Calculate the size of all map entries in the map property
   val entriesSize = entries?.entries?.sumOf {
     it.key.length + it.value.size() // // Spec: OMP4a1, OMP4a2
@@ -407,7 +417,7 @@ private fun ObjectMap.size(): Long {
  * Calculates the size of an ObjectCounter in bytes.
  * Spec: OCN3
  */
-private fun ObjectCounter.size(): Long {
+private fun ObjectCounter.size(): Int {
   // Size is 8 if count is a number, 0 if count is null or omitted
   return if (count != null) 8 else 0
 }
@@ -416,7 +426,7 @@ private fun ObjectCounter.size(): Long {
  * Calculates the size of a MapEntry in bytes.
  * Spec: OME3
  */
-private fun ObjectMapEntry.size(): Long {
+private fun ObjectMapEntry.size(): Int {
   // The size is equal to the size of the data property, calculated per "OD3"
   return data?.size() ?: 0
 }
@@ -425,7 +435,7 @@ private fun ObjectMapEntry.size(): Long {
  * Calculates the size of an ObjectData in bytes.
  * Spec: OD3
  */
-private fun ObjectData.size(): Long {
+private fun ObjectData.size(): Int {
   return value?.size() ?: 0 // Spec: OD3f
 }
 
@@ -433,12 +443,13 @@ private fun ObjectData.size(): Long {
  * Calculates the size of an ObjectValue in bytes.
  * Spec: OD3*
  */
-private fun ObjectValue.size(): Long {
+private fun ObjectValue.size(): Int {
   return when (value) {
     is Boolean -> 1 // Spec: OD3b
-    is Binary -> value.size().toLong() // Spec: OD3c
+    is Binary -> value.size() // Spec: OD3c
     is Number -> 8 // Spec: OD3d
-    is String -> value.byteSize.toLong() // Spec: OD3e
+    is String -> value.byteSize // Spec: OD3e
+    is JsonObject, is JsonArray -> value.toString().byteSize // Spec: OD3e
     else -> 0  // Spec: OD3f
   }
 }

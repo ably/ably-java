@@ -31,7 +31,7 @@ public class Adapter implements LiveObjectsAdapter {
     }
 
     @Override
-    public long maxMessageSizeLimit() {
+    public int maxMessageSizeLimit() {
         return ably.connection.connectionManager.maxMessageSize;
     }
 }

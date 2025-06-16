@@ -1982,7 +1982,7 @@ public class ConnectionManager implements ConnectListener {
     private long lastActivity;
     private CMConnectivityListener connectivityListener;
     private long connectionStateTtl = Defaults.connectionStateTtl;
-    public long maxMessageSize = Defaults.maxMessageSize;
+    public int maxMessageSize = Defaults.maxMessageSize;
     long maxIdleInterval = Defaults.maxIdleInterval;
     private int disconnectedRetryAttempt = 0;
 

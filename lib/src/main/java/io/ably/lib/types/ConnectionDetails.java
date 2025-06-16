@@ -42,7 +42,7 @@ public class ConnectionDetails {
      * <p>
      * Spec: CD2c
      */
-    public Long maxMessageSize;
+    public int maxMessageSize;
     /**
      * The maximum allowable number of requests per second from a client or Ably.
      * In the case of a realtime connection, this restriction applies to the number of messages sent,
@@ -97,7 +97,7 @@ public class ConnectionDetails {
                     serverId = unpacker.unpackString();
                     break;
                 case "maxMessageSize":
-                    maxMessageSize = unpacker.unpackLong();
+                    maxMessageSize = unpacker.unpackInt();
                     break;
                 case "maxInboundRate":
                     maxInboundRate = unpacker.unpackLong();
