@@ -1,3 +1,8 @@
+![Ably Pub/Sub Java Header](images/javaSDK-github.png)
+
+![version: 0.3.0](https://img.shields.io/badge/version-0.3.0-2ea44f)
+![License](https://badgen.net/github/license/ably/ably-java)
+
 # Ably Pub/Sub Java SDK
 
 Build any realtime experience using Ably’s Pub/Sub Java SDK. Supported on all popular platforms and frameworks, including Kotlin and Android.
