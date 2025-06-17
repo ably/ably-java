@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":java"))
     implementation(libs.bundles.common)
     implementation(libs.coroutine.core)
+    implementation(libs.jackson.msgpack)
 
     testImplementation(kotlin("test"))
     testImplementation(libs.bundles.kotlin.tests)

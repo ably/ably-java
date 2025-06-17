@@ -3,6 +3,9 @@ package io.ably.lib.objects
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.google.gson.annotations.SerializedName
+
 /**
  * An enum class representing the different actions that can be performed on an object.
  * Spec: OOP2
@@ -328,6 +331,8 @@ internal data class ObjectMessage(
    * the `ProtocolMessage` encapsulating it is `OBJECT_SYNC`.
    * Spec: OM2g
    */
+  @SerializedName("object")
+  @JsonProperty("object")
   val objectState: ObjectState? = null,
 
   /**
