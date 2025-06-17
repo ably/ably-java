@@ -32,10 +32,9 @@ The following platforms are supported:
 
 | Platform | Support |
 |----------|---------|
-| Java | >=8 (JRE 1.8 or later) |
-| Kotlin | >= 2.1.10 |
+| Java     | >= 1.8 (JRE 8 or later) |
+| Kotlin   | All versions (>= 0.0.1 supported), but we recommend >= 1.8 for best compatibilit. |
 | Android | >=4.4 (API level 19) |
-| [Proxy environments](#proxy-support) | Supported via `network-client-okhttp` module |
 
 > [!IMPORTANT]
 > SDK versions < 1.2.35 will be [deprecated](https://ably.com/docs/platform/deprecate/protocol-v1) from November 1, 2025.
