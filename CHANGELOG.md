@@ -1,5 +1,15 @@
 # Change Log
 
+## [1.2.53](https://github.com/ably/ably-java/tree/v1.2.53)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.52...v1.2.53)
+
+**Implemented enhancements:**
+
+- Adds `ANNOTATION_PUBLISH` and `ANNOTATION_SUBSCRIBE` channel modes
+- Adds support for message annotations via `channel.annotations` 
+- The message action `meta.occupancy` is now renamed to `meta`. Similarly, `MessageActions.META_OCCUPANCY` is now `MessageActions.META`
+
 ## [1.2.52](https://github.com/ably/ably-java/tree/v1.2.52)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.51...v1.2.52)
