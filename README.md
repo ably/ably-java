@@ -1,4 +1,5 @@
 ![Ably Pub/Sub Java Header](images/javaSDK-github.png)
+
 [![version: 0.3.0](https://img.shields.io/badge/version-0.3.0-2ea44f)](https://github.com/ably/ably-java/releases/tag/v0.3.0)
 [![License](https://badgen.net/github/license/ably/ably-java)](https://github.com/ably/ably-java/blob/main/LICENSE)
 
