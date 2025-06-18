@@ -2,12 +2,17 @@
 
 package io.ably.lib.objects
 
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializerProvider
 import com.google.gson.*
 import org.msgpack.core.MessagePack
 import org.msgpack.core.MessagePacker
 import org.msgpack.core.MessageUnpacker
 import org.msgpack.jackson.dataformat.MessagePackFactory
+import java.lang.reflect.Type
+import java.util.*
 
 // Gson instance for JSON serialization/deserialization
 internal val gson: Gson = GsonBuilder().create()
@@ -84,5 +89,100 @@ internal class DefaultLiveObjectSerializer : LiveObjectSerializer {
       jsonArray.add(objectMessage.toJsonObject())
     }
     return jsonArray
+  }
+}
+
+internal class ObjectDataJsonSerializer : JsonSerializer<ObjectData>, JsonDeserializer<ObjectData> {
+  override fun serialize(src: ObjectData?, typeOfSrc: Type?, context: JsonSerializationContext?): JsonElement {
+    val obj = JsonObject()
+    src?.objectId?.let { obj.addProperty("objectId", it) }
+
+    src?.value?.let { value ->
+      when (val v = value.value) {
+        is Boolean -> obj.addProperty("boolean", v)
+        is String -> obj.addProperty("string", v)
+        is Number -> obj.addProperty("number", v)
+        is Binary -> obj.addProperty("bytes", Base64.getEncoder().encodeToString(v.data))
+        // Spec: OD4c5
+        is JsonObject, is JsonArray -> {
+          obj.addProperty("string", v.toString())
+          obj.addProperty("encoding", "json")
+        }
+      }
+    }
+    return obj
+  }
+
+  override fun deserialize(json: JsonElement?, typeOfT: Type?, context: JsonDeserializationContext?): ObjectData {
+    val obj = if (json?.isJsonObject == true) json.asJsonObject else throw JsonParseException("Expected JsonObject")
+    val objectId = if (obj.has("objectId")) obj.get("objectId").asString else null
+    val encoding = if (obj.has("encoding")) obj.get("encoding").asString else null
+    val value = when {
+      obj.has("boolean") -> ObjectValue(obj.get("boolean").asBoolean)
+      // Spec: OD5b3
+      obj.has("string") && encoding == "json" -> {
+        val jsonStr = obj.get("string").asString
+        val parsed = JsonParser.parseString(jsonStr)
+        ObjectValue(
+          when {
+            parsed.isJsonObject -> parsed.asJsonObject
+            parsed.isJsonArray -> parsed.asJsonArray
+            else -> throw JsonParseException("Invalid JSON string for encoding=json")
+          }
+        )
+      }
+      obj.has("string") -> ObjectValue(obj.get("string").asString)
+      obj.has("number") -> ObjectValue(obj.get("number").asNumber)
+      obj.has("bytes") -> ObjectValue(Binary(Base64.getDecoder().decode(obj.get("bytes").asString)))
+      else -> throw JsonParseException("ObjectData must have one of the fields: boolean, string, number, or bytes")
+    }
+    return ObjectData(objectId, value)
+  }
+}
+
+internal class ObjectDataMsgpackSerializer : com.fasterxml.jackson.databind.JsonSerializer<ObjectData>() {
+  override fun serialize(value: ObjectData?, gen: JsonGenerator, serializers: SerializerProvider) {
+    gen.writeStartObject()
+    value?.objectId?.let { gen.writeStringField("objectId", it) }
+    value?.value?.let { v ->
+      when (val data = v.value) {
+        is Boolean -> gen.writeBooleanField("boolean", data)
+        is String -> gen.writeStringField("string", data)
+        is Number -> gen.writeNumberField("number", data.toDouble())
+        is Binary -> gen.writeBinaryField("bytes", data.data)
+        is JsonObject, is JsonArray -> {
+          gen.writeStringField("string", data.toString())
+          gen.writeStringField("encoding", "json")
+        }
+      }
+    }
+    gen.writeEndObject()
+  }
+}
+
+internal class ObjectDataMsgpackDeserializer : com.fasterxml.jackson.databind.JsonDeserializer<ObjectData>() {
+  override fun deserialize(p: com.fasterxml.jackson.core.JsonParser, ctxt: DeserializationContext): ObjectData {
+    val node = p.codec.readTree<com.fasterxml.jackson.databind.JsonNode>(p)
+    val objectId = node.get("objectId")?.asText()
+    val encoding = node.get("encoding")?.asText()
+    val value = when {
+      node.has("boolean") -> ObjectValue(node.get("boolean").asBoolean())
+      node.has("string") && encoding == "json" -> {
+        val jsonStr = node.get("string").asText()
+        val parsed = JsonParser.parseString(jsonStr)
+        ObjectValue(
+          when {
+            parsed.isJsonObject -> parsed.asJsonObject
+            parsed.isJsonArray -> parsed.asJsonArray
+            else -> throw IllegalArgumentException("Invalid JSON string for encoding=json")
+          }
+        )
+      }
+      node.has("string") -> ObjectValue(node.get("string").asText())
+      node.has("number") -> ObjectValue(node.get("number").numberValue())
+      node.has("bytes") -> ObjectValue(Binary(node.get("bytes").binaryValue()))
+      else -> throw IllegalArgumentException("ObjectData must have one of the fields: boolean, string, number, or bytes")
+    }
+    return ObjectData(objectId, value)
   }
 }

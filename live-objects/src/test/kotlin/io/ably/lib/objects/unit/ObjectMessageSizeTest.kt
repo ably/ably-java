@@ -45,7 +45,6 @@ class ObjectMessageSizeTest {
           key = "mapKey", // Size: 6 bytes (UTF-8 byte length)
           data = ObjectData(
             objectId = "ref_obj", // Not counted in data size
-            encoding = "utf-8", // Not counted in data size
             value = ObjectValue("sample") // Size: 6 bytes (UTF-8 byte length)
           ) // Total ObjectData size: 6 bytes
         ), // Total ObjectMapOp size: 6 + 6 = 12 bytes
@@ -80,8 +79,7 @@ class ObjectMessageSizeTest {
         ), // Total ObjectCounter size: 8 bytes
 
         nonce = "nonce123", // Not counted in operation size
-        initialValue = Binary("initial".toByteArray()), // Not counted in operation size
-        initialValueEncoding = ProtocolMessageFormat.Json // Not counted in operation size
+        initialValue = "some-value", // Not counted in operation size
       ), // Total ObjectOperation size: 12 + 8 + 26 + 8 = 54 bytes
 
       objectState = ObjectState(

@@ -4,6 +4,9 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
 
 /**
@@ -31,18 +34,15 @@ internal enum class MapSemantics(val code: Int) {
  * An ObjectData represents a value in an object on a channel.
  * Spec: OD1
  */
+@JsonAdapter(ObjectDataJsonSerializer::class)
+@JsonSerialize(using = ObjectDataMsgpackSerializer::class)
+@JsonDeserialize(using = ObjectDataMsgpackDeserializer::class)
 internal data class ObjectData(
   /**
    * A reference to another object, used to support composable object structures.
    * Spec: OD2a
    */
   val objectId: String? = null,
-
-  /**
-   * Can be set by the client to indicate that value in `string` or `bytes` field have an encoding.
-   * Spec: OD2b
-   */
-  val encoding: String? = null,
 
   /**
    * String, number, boolean or binary - a concrete value of the object
@@ -214,18 +214,13 @@ internal data class ObjectOperation(
   val nonce: String? = null,
 
   /**
-   * The initial value bytes for the object. These bytes should be used along with the nonce
-   * and timestamp to create the object ID. Frontdoor will use this to verify the object ID.
-   * After verification the bytes will be decoded into the Map or Counter objects and
-   * the initialValue, nonce, and initialValueEncoding will be removed.
+   * The initial value for the object, encoded as a JSON string.
+   * This value should be used along with the nonce and timestamp to create the object ID.
+   * Frontdoor will use this to verify the object ID. After verification, the value will be
+   * decoded into the Map or Counter objects and the initialValue, nonce, and initialValueEncoding will be removed.
    * Spec: OOP3h
    */
-  val initialValue: Binary? = null,
-
-  /** The initial value encoding defines how the initialValue should be interpreted.
-   * Spec: OOP3i
-   */
-  val initialValueEncoding: ProtocolMessageFormat? = null
+  val initialValue: String? = null,
 )
 
 /**
