@@ -23,5 +23,13 @@ public interface LiveObjectsAdapter {
      * @param channelSerial the serial to set for the channel
      */
     void setChannelSerial(@NotNull String channelName, @NotNull String channelSerial);
+
+    /**
+     * Retrieves the maximum message size allowed for the messages.
+     * This method returns the maximum size in bytes that a message can have.
+     *
+     * @return the maximum message size limit in bytes.
+     */
+    int maxMessageSizeLimit();
 }
 

@@ -33,3 +33,11 @@ private fun createAblyException(
 internal fun clientError(errorMessage: String) = ablyException(errorMessage, ErrorCode.BadRequest, HttpStatusCode.BadRequest)
 
 internal fun serverError(errorMessage: String) = ablyException(errorMessage, ErrorCode.InternalError, HttpStatusCode.InternalServerError)
+
+/**
+ * Calculates the byte size of a string.
+ * For non-ASCII, the byte size can be 2–4x the character count. For ASCII, there is no difference.
+ * e.g. "Hello" has a byte size of 5, while "你" has a byte size of 3 and "😊" has a byte size of 4.
+ */
+internal val String.byteSize: Int
+  get() = this.toByteArray(Charsets.UTF_8).size

@@ -1,5 +1,8 @@
 package io.ably.lib.objects
 
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+
 /**
  * An enum class representing the different actions that can be performed on an object.
  * Spec: OOP2
@@ -15,7 +18,7 @@ internal enum class ObjectOperationAction(val code: Int) {
 
 /**
  * An enum class representing the conflict-resolution semantics used by a Map object.
- * Spec: MAP2
+ * Spec: OMP2
  */
 internal enum class MapSemantics(val code: Int) {
   LWW(0);
@@ -42,47 +45,73 @@ internal data class ObjectData(
    * String, number, boolean or binary - a concrete value of the object
    * Spec: OD2c
    */
-  val value: Any? = null,
+  val value: ObjectValue? = null,
 )
 
 /**
- * A MapOp describes an operation to be applied to a Map object.
- * Spec: MOP1
+ * Represents a value that can be a String, Number, Boolean, Binary, JsonObject or JsonArray.
+ * Performs a type check on initialization.
+ * Spec: OD2c
  */
-internal data class MapOp(
+internal data class ObjectValue(
+  /**
+   * The concrete value of the object. Can be a String, Number, Boolean, Binary, JsonObject or JsonArray.
+   * Spec: OD2c
+   */
+  val value: Any,
+) {
+  init {
+    require(
+      value is String ||
+        value is Number ||
+        value is Boolean ||
+        value is Binary ||
+        value is JsonObject ||
+        value is JsonArray
+    ) {
+      "value must be String, Number, Boolean, Binary, JsonObject or JsonArray"
+    }
+  }
+}
+
+/**
+ * A MapOp describes an operation to be applied to a Map object.
+ * Spec: OMO1
+ */
+internal data class ObjectMapOp(
   /**
    * The key of the map entry to which the operation should be applied.
-   * Spec: MOP2a
+   * Spec: OMO2a
    */
   val key: String,
 
   /**
    * The data that the map entry should contain if the operation is a MAP_SET operation.
-   * Spec: MOP2b
+   * Spec: OMO2b
    */
   val data: ObjectData? = null
 )
 
 /**
  * A CounterOp describes an operation to be applied to a Counter object.
- * Spec: COP1
+ * Spec: OCO1
  */
-internal data class CounterOp(
+internal data class ObjectCounterOp(
   /**
    * The data value that should be added to the counter
-   * Spec: COP2a
+   * Spec: OCO2a
    */
-  val amount: Double
+  val amount: Double? = null
 )
 
 /**
  * A MapEntry represents the value at a given key in a Map object.
  * Spec: ME1
  */
-internal data class MapEntry(
+internal data class ObjectMapEntry(
   /**
    * Indicates whether the map entry has been removed.
-   * Spec: ME2a
+   * Spec: OME2a
    */
   val tombstone: Boolean? = null,
 
@@ -90,43 +119,43 @@ internal data class MapEntry(
    * The serial value of the last operation that was applied to the map entry.
    * It is optional in a MAP_CREATE operation and might be missing, in which case the client should use a nullish value for it
    * and treat it as the "earliest possible" serial for comparison purposes.
-   * Spec: ME2b
+   * Spec: OME2b
    */
   val timeserial: String? = null,
 
   /**
    * The data that represents the value of the map entry.
-   * Spec: ME2c
+   * Spec: OME2c
    */
   val data: ObjectData? = null
 )
 
 /**
  * An ObjectMap object represents a map of key-value pairs.
- * Spec: MAP1
+ * Spec: OMP1
  */
 internal data class ObjectMap(
   /**
    * The conflict-resolution semantics used by the map object.
-   * Spec: MAP3a
+   * Spec: OMP3a
    */
   val semantics: MapSemantics? = null,
 
   /**
    * The map entries, indexed by key.
-   * Spec: MAP3b
+   * Spec: OMP3b
    */
-  val entries: Map<String, MapEntry>? = null
+  val entries: Map<String, ObjectMapEntry>? = null
 )
 
 /**
  * An ObjectCounter object represents an incrementable and decrementable value
- * Spec: CNT1
+ * Spec: OCN1
  */
 internal data class ObjectCounter(
   /**
    * The value of the counter
-   * Spec: CNT2a
+   * Spec: OCN2a
    */
   val count: Double? = null
 )
@@ -152,13 +181,13 @@ internal data class ObjectOperation(
    * The payload for the operation if it is an operation on a Map object type.
    * Spec: OOP3c
    */
-  val mapOp: MapOp? = null,
+  val mapOp: ObjectMapOp? = null,
 
   /**
    * The payload for the operation if it is an operation on a Counter object type.
    * Spec: OOP3d
    */
-  val counterOp: CounterOp? = null,
+  val counterOp: ObjectCounterOp? = null,
 
   /**
    * The payload for the operation if the operation is MAP_CREATE.
@@ -313,3 +342,114 @@ internal data class ObjectMessage(
    */
   val siteCode: String? = null
 )
+
+/**
+ * Calculates the size of an ObjectMessage in bytes.
+ * Spec: OM3
+ */
+internal fun ObjectMessage.size(): Int {
+  val clientIdSize = clientId?.length ?: 0 // Spec: OM3f
+  val operationSize = operation?.size() ?: 0 // Spec: OM3b, OOP4
+  val objectStateSize = objectState?.size() ?: 0 // Spec: OM3c, OST3
+  val extrasSize = extras?.let { gson.toJson(it).length } ?: 0 // Spec: OM3d
+
+  return clientIdSize + operationSize + objectStateSize + extrasSize
+}
+
+/**
+ * Calculates the size of an ObjectOperation in bytes.
+ * Spec: OOP4
+ */
+private fun ObjectOperation.size(): Int {
+  val mapOpSize = mapOp?.size() ?: 0 // Spec: OOP4b, OMO3
+  val counterOpSize = counterOp?.size() ?: 0 // Spec: OOP4c, OCO3
+  val mapSize = map?.size() ?: 0 // Spec: OOP4d, OMP4
+  val counterSize = counter?.size() ?: 0 // Spec: OOP4e, OCN3
+
+  return mapOpSize + counterOpSize + mapSize + counterSize
+}
+
+/**
+ * Calculates the size of an ObjectState in bytes.
+ * Spec: OST3
+ */
+private fun ObjectState.size(): Int {
+  val mapSize = map?.size() ?: 0 // Spec: OST3b, OMP4
+  val counterSize = counter?.size() ?: 0 // Spec: OST3c, OCN3
+  val createOpSize = createOp?.size() ?: 0 // Spec: OST3d, OOP4
+
+  return mapSize + counterSize + createOpSize
+}
+
+/**
+ * Calculates the size of an ObjectMapOp in bytes.
+ * Spec: OMO3
+ */
+private fun ObjectMapOp.size(): Int {
+  val keySize = key.length // Spec: OMO3d - Size of the key
+  val dataSize = data?.size() ?: 0 // Spec: OMO3b - Size of the data, calculated per "OD3"
+  return keySize + dataSize
+}
+
+/**
+ * Calculates the size of a CounterOp in bytes.
+ * Spec: OCO3
+ */
+private fun ObjectCounterOp.size(): Int {
+  // Size is 8 if amount is a number, 0 if amount is null or omitted
+  return if (amount != null) 8 else 0 // Spec: OCO3a, OCO3b
+}
+
+/**
+ * Calculates the size of an ObjectMap in bytes.
+ * Spec: OMP4
+ */
+private fun ObjectMap.size(): Int {
+  // Calculate the size of all map entries in the map property
+  val entriesSize = entries?.entries?.sumOf {
+    it.key.length + it.value.size() // // Spec: OMP4a1, OMP4a2
+  } ?: 0
+
+  return entriesSize
+}
+
+/**
+ * Calculates the size of an ObjectCounter in bytes.
+ * Spec: OCN3
+ */
+private fun ObjectCounter.size(): Int {
+  // Size is 8 if count is a number, 0 if count is null or omitted
+  return if (count != null) 8 else 0
+}
+
+/**
+ * Calculates the size of a MapEntry in bytes.
+ * Spec: OME3
+ */
+private fun ObjectMapEntry.size(): Int {
+  // The size is equal to the size of the data property, calculated per "OD3"
+  return data?.size() ?: 0
+}
+
+/**
+ * Calculates the size of an ObjectData in bytes.
+ * Spec: OD3
+ */
+private fun ObjectData.size(): Int {
+  return value?.size() ?: 0 // Spec: OD3f
+}
+
+/**
+ * Calculates the size of an ObjectValue in bytes.
+ * Spec: OD3*
+ */
+private fun ObjectValue.size(): Int {
+  return when (value) {
+    is Boolean -> 1 // Spec: OD3b
+    is Binary -> value.size() // Spec: OD3c
+    is Number -> 8 // Spec: OD3d
+    is String -> value.byteSize // Spec: OD3e
+    is JsonObject, is JsonArray -> value.toString().byteSize // Spec: OD3e
+    else -> 0  // Spec: OD3f
+  }
+}
