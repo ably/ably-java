@@ -11,12 +11,14 @@ import io.ably.lib.objects.ensureMessageSizeWithinLimit
 import io.ably.lib.objects.size
 import io.ably.lib.transport.Defaults
 import io.ably.lib.types.AblyException
+import io.ktor.utils.io.core.*
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.text.toByteArray
 
 class ObjectMessageSizeTest {
 
@@ -79,7 +81,7 @@ class ObjectMessageSizeTest {
         ), // Total ObjectCounter size: 8 bytes
 
         nonce = "nonce123", // Not counted in operation size
-        initialValue = "some-value", // Not counted in operation size
+        initialValue = Binary("some-value".toByteArray()), // Not counted in operation size
       ), // Total ObjectOperation size: 12 + 8 + 26 + 8 = 54 bytes
 
       objectState = ObjectState(

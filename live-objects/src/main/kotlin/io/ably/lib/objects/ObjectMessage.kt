@@ -214,13 +214,22 @@ internal data class ObjectOperation(
   val nonce: String? = null,
 
   /**
-   * The initial value for the object, encoded as a JSON string.
-   * This value should be used along with the nonce and timestamp to create the object ID.
-   * Frontdoor will use this to verify the object ID. After verification, the value will be
-   * decoded into the Map or Counter objects and the initialValue, nonce, and initialValueEncoding will be removed.
+   * The initial value bytes for the object. These bytes should be used along with the nonce
+   * and timestamp to create the object ID. Frontdoor will use this to verify the object ID.
+   * After verification the bytes will be decoded into the Map or Counter objects and
+   * the initialValue, nonce, and initialValueEncoding will be removed.
    * Spec: OOP3h
    */
-  val initialValue: String? = null,
+  @JsonAdapter(InitialValueJsonSerializer::class)
+  @JsonSerialize(using = InitialValueMsgpackSerializer::class)
+  @JsonDeserialize(using = InitialValueMsgpackDeserializer::class)
+  val initialValue: Binary? = null,
+
+  /** The initial value encoding defines how the initialValue should be interpreted.
+   * Spec: OOP3i
+   */
+  @Deprecated("Will be removed in the future, initialValue will be json string")
+  val initialValueEncoding: ProtocolMessageFormat? = null
 )
 
 /**
