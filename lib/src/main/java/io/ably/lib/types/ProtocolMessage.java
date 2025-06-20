@@ -4,6 +4,11 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Map;
 
+import com.google.gson.annotations.JsonAdapter;
+import io.ably.lib.objects.LiveObjectSerializer;
+import io.ably.lib.objects.LiveObjectsHelper;
+import io.ably.lib.objects.LiveObjectsJsonSerializer;
+import org.jetbrains.annotations.Nullable;
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
@@ -123,6 +128,14 @@ public class ProtocolMessage {
     public AuthDetails auth;
     public Map<String, String> params;
     public Annotation[] annotations;
+    /**
+     * This will be null if we skipped decoding this property due to user not requesting Objects functionality
+     * JsonAdapter annotation supports java version (1.8) mentioned in build.gradle
+     * This is targeted and specific to the state field, so won't affect other fields
+     */
+    @Nullable
+    @JsonAdapter(LiveObjectsJsonSerializer.class)
+    public Object[] state;
 
     public boolean hasFlag(final Flag flag) {
         return (flags & flag.getMask()) == flag.getMask();
@@ -147,6 +160,7 @@ public class ProtocolMessage {
         if(params != null) ++fieldCount;
         if(channelSerial != null) ++fieldCount;
         if(annotations != null) ++fieldCount;
+        if(state != null) ++fieldCount;
         packer.packMapHeader(fieldCount);
         packer.packString("action");
         packer.packInt(action.getValue());
@@ -185,6 +199,15 @@ public class ProtocolMessage {
         if(annotations != null) {
             packer.packString("annotations");
             AnnotationSerializer.writeMsgpackArray(annotations, packer);
+        }
+        if(state != null) {
+            LiveObjectSerializer liveObjectsSerializer = LiveObjectsHelper.getLiveObjectSerializer();
+            if (liveObjectsSerializer != null) {
+                packer.packString("state");
+                liveObjectsSerializer.writeMsgpackArray(state, packer);
+            } else {
+                Log.w(TAG, "Skipping 'state' field msgpack serialization because LiveObjectsSerializer not found");
+            }
         }
     }
 
@@ -247,6 +270,15 @@ public class ProtocolMessage {
                     break;
                 case "annotations":
                     annotations = AnnotationSerializer.readMsgpackArray(unpacker);
+                    break;
+                case "state":
+                    LiveObjectSerializer liveObjectsSerializer = LiveObjectsHelper.getLiveObjectSerializer();
+                    if (liveObjectsSerializer != null) {
+                        state = liveObjectsSerializer.readMsgpackArray(unpacker);
+                    } else {
+                        Log.w(TAG, "Skipping 'state' field msgpack deserialization because LiveObjectsSerializer not found");
+                        unpacker.skipValue();
+                    }
                     break;
                 default:
                     Log.v(TAG, "Unexpected field: " + fieldName);

@@ -11,12 +11,14 @@ import io.ably.lib.objects.ensureMessageSizeWithinLimit
 import io.ably.lib.objects.size
 import io.ably.lib.transport.Defaults
 import io.ably.lib.types.AblyException
+import io.ktor.utils.io.core.*
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.text.toByteArray
 
 class ObjectMessageSizeTest {
 
@@ -45,7 +47,6 @@ class ObjectMessageSizeTest {
           key = "mapKey", // Size: 6 bytes (UTF-8 byte length)
           data = ObjectData(
             objectId = "ref_obj", // Not counted in data size
-            encoding = "utf-8", // Not counted in data size
             value = ObjectValue("sample") // Size: 6 bytes (UTF-8 byte length)
           ) // Total ObjectData size: 6 bytes
         ), // Total ObjectMapOp size: 6 + 6 = 12 bytes
@@ -80,8 +81,7 @@ class ObjectMessageSizeTest {
         ), // Total ObjectCounter size: 8 bytes
 
         nonce = "nonce123", // Not counted in operation size
-        initialValue = Binary("initial".toByteArray()), // Not counted in operation size
-        initialValueEncoding = ProtocolMessageFormat.Json // Not counted in operation size
+        initialValue = Binary("some-value".toByteArray()), // Not counted in operation size
       ), // Total ObjectOperation size: 12 + 8 + 26 + 8 = 54 bytes
 
       objectState = ObjectState(
