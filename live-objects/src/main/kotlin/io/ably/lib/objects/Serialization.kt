@@ -87,11 +87,11 @@ internal class DefaultLiveObjectSerializer : LiveObjectSerializer {
 }
 
 internal class ObjectDataJsonSerializer : JsonSerializer<ObjectData>, JsonDeserializer<ObjectData> {
-  override fun serialize(src: ObjectData?, typeOfSrc: Type?, context: JsonSerializationContext?): JsonElement {
+  override fun serialize(src: ObjectData, typeOfSrc: Type?, context: JsonSerializationContext?): JsonElement {
     val obj = JsonObject()
-    src?.objectId?.let { obj.addProperty("objectId", it) }
+    src.objectId?.let { obj.addProperty("objectId", it) }
 
-    src?.value?.let { value ->
+    src.value?.let { value ->
       when (val v = value.value) {
         is Boolean -> obj.addProperty("boolean", v)
         is String -> obj.addProperty("string", v)
@@ -107,8 +107,8 @@ internal class ObjectDataJsonSerializer : JsonSerializer<ObjectData>, JsonDeseri
     return obj
   }
 
-  override fun deserialize(json: JsonElement?, typeOfT: Type?, context: JsonDeserializationContext?): ObjectData {
-    val obj = if (json?.isJsonObject == true) json.asJsonObject else throw JsonParseException("Expected JsonObject")
+  override fun deserialize(json: JsonElement, typeOfT: Type?, context: JsonDeserializationContext?): ObjectData {
+    val obj = if (json.isJsonObject) json.asJsonObject else throw JsonParseException("Expected JsonObject")
     val objectId = if (obj.has("objectId")) obj.get("objectId").asString else null
     val encoding = if (obj.has("encoding")) obj.get("encoding").asString else null
     val value = when {
@@ -135,10 +135,10 @@ internal class ObjectDataJsonSerializer : JsonSerializer<ObjectData>, JsonDeseri
 }
 
 internal class ObjectDataMsgpackSerializer : com.fasterxml.jackson.databind.JsonSerializer<ObjectData>() {
-  override fun serialize(value: ObjectData?, gen: JsonGenerator, serializers: SerializerProvider) {
+  override fun serialize(value: ObjectData, gen: JsonGenerator, serializers: SerializerProvider) {
     gen.writeStartObject()
-    value?.objectId?.let { gen.writeStringField("objectId", it) }
-    value?.value?.let { v ->
+    value.objectId?.let { gen.writeStringField("objectId", it) }
+    value.value?.let { v ->
       when (val data = v.value) {
         is Boolean -> gen.writeBooleanField("boolean", data)
         is String -> gen.writeStringField("string", data)
@@ -192,8 +192,8 @@ internal class InitialValueJsonSerializer : JsonSerializer<Binary>, JsonDeserial
 }
 
 internal class InitialValueMsgpackSerializer : com.fasterxml.jackson.databind.JsonSerializer<Binary>() {
-  override fun serialize(value: Binary?, gen: JsonGenerator, serializers: SerializerProvider) {
-    gen.writeBinary(value?.data)
+  override fun serialize(value: Binary, gen: JsonGenerator, serializers: SerializerProvider) {
+    gen.writeBinary(value.data)
   }
 }
 
