@@ -1,5 +1,6 @@
 package io.ably.lib.objects.unit
 
+import com.google.gson.JsonObject
 import io.ably.lib.objects.*
 import io.ably.lib.objects.ObjectData
 import io.ably.lib.objects.ObjectMapOp
@@ -11,7 +12,6 @@ import io.ably.lib.objects.ensureMessageSizeWithinLimit
 import io.ably.lib.objects.size
 import io.ably.lib.transport.Defaults
 import io.ably.lib.types.AblyException
-import io.ktor.utils.io.core.*
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -34,10 +34,10 @@ class ObjectMessageSizeTest {
       timestamp = 1699123456789L, // Not counted in size calculation
       clientId = "test-client", // Size: 11 bytes (UTF-8 byte length)
       connectionId = "conn_98765", // Not counted in size calculation
-      extras = mapOf( // Size: JSON serialization byte length
-        "meta" to "data", // JSON: {"meta":"data","count":42}
-        "count" to 42
-      ), // Total extras size: 26 bytes (verified by gson.toJson().length)
+      extras = JsonObject().apply { // Size: JSON serialization byte length
+        addProperty("meta", "data") // JSON: {"meta":"data","count":42}
+        addProperty("count", 42)
+      }, // Total extras size: 26 bytes (verified by gson.toJson().length)
       operation = ObjectOperation(
         action = ObjectOperationAction.MapCreate,
         objectId = "obj_54321", // Not counted in operation size

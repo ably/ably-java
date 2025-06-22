@@ -8,6 +8,14 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
+import io.ably.lib.objects.serialization.*
+import io.ably.lib.objects.serialization.InitialValueJsonSerializer
+import io.ably.lib.objects.serialization.InitialValueMsgpackDeserializer
+import io.ably.lib.objects.serialization.InitialValueMsgpackSerializer
+import io.ably.lib.objects.serialization.ObjectDataJsonSerializer
+import io.ably.lib.objects.serialization.ObjectDataMsgpackDeserializer
+import io.ably.lib.objects.serialization.ObjectDataMsgpackSerializer
+import io.ably.lib.objects.serialization.gson
 
 /**
  * An enum class representing the different actions that can be performed on an object.
@@ -319,7 +327,9 @@ internal data class ObjectMessage(
    * or validation of the @extras@ field itself, but should treat it opaquely, encoding it and passing it to realtime unaltered
    * Spec: OM2d
    */
-  val extras: Any? = null,
+  @JsonSerialize(using = JsonObjectMsgpackSerializer::class)
+  @JsonDeserialize(using = JsonObjectMsgpackDeserializer::class)
+  val extras: JsonObject? = null,
 
   /**
    * Describes an operation to be applied to an object.
