@@ -101,6 +101,30 @@ class ObjectMessageSerializationTest {
   }
 
   @Test
+  fun testSerializeEnumsIntoOrdinalValues() = runTest {
+    val objectMessage = dummyObjectMessageWithStringData()
+    val protocolMessage = ProtocolMessage()
+    protocolMessage.action = ProtocolMessage.Action.`object`
+    protocolMessage.state = arrayOf(objectMessage)
+
+    fun assertSerializedObjectMessage(serializedProtoMsg: String) {
+      val deserializedProtoMsg = Gson().fromJson(serializedProtoMsg, JsonElement::class.java).asJsonObject
+      val serializedObjectMessage = deserializedProtoMsg.get("state").asJsonArray[0].asJsonObject
+      val operation = serializedObjectMessage.get("operation").asJsonObject
+      assertTrue(operation.has("action"))
+      assertEquals(0, operation.get("action").asInt) // Check if action is serialized as code
+    }
+
+    // Serialize using Gson
+    val serializedProtoMsg = ProtocolSerializer.writeJSON(protocolMessage).toString(Charsets.UTF_8)
+    assertSerializedObjectMessage(serializedProtoMsg)
+    // Serialize using MsgPack
+    val serializedMsgpackBytes = ProtocolSerializer.writeMsgpack(protocolMessage)
+    val serializedJsonStringFromMsgpackBytes = Serialisation.msgpackToGson(serializedMsgpackBytes).toString()
+    assertSerializedObjectMessage(serializedJsonStringFromMsgpackBytes)
+  }
+
+  @Test
   fun testHandleNullsInObjectMessageDeserialization() = runTest {
     val protocolMessage = ProtocolMessage()
     protocolMessage.id = "id"

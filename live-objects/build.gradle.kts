@@ -13,9 +13,6 @@ dependencies {
     implementation(project(":java"))
     implementation(libs.bundles.common)
     implementation(libs.coroutine.core)
-    implementation(libs.jackson.msgpack)
-    implementation(libs.jackson.parameter.names) // Add this
-
 
     testImplementation(kotlin("test"))
     testImplementation(libs.bundles.kotlin.tests)
@@ -47,12 +44,4 @@ tasks.register<Test>("runLiveObjectIntegrationTests") {
 
 kotlin {
     explicitApi()
-
-    /**
-     * Enables Jackson to map JSON property names to constructor parameters without use of @JsonProperty.
-     * Adds metadata params to bytecode class. Approach is completely binary-compatible with consumers of the library.
-     */
-    compilerOptions {
-        javaParameters = true
-    }
 }

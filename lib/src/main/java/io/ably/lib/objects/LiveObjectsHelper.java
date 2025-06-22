@@ -27,7 +27,7 @@ public class LiveObjectsHelper {
     public static LiveObjectSerializer getLiveObjectSerializer() {
         if (liveObjectSerializer == null) {
             try {
-                Class<?> serializerClass = Class.forName("io.ably.lib.objects.DefaultLiveObjectSerializer");
+                Class<?> serializerClass = Class.forName("io.ably.lib.objects.serialization.DefaultLiveObjectSerializer");
                 liveObjectSerializer = (LiveObjectSerializer) serializerClass.getDeclaredConstructor().newInstance();
             } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException |
                      InvocationTargetException e) {
