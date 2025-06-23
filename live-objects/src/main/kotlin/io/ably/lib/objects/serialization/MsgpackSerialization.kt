@@ -91,6 +91,11 @@ internal fun ObjectMessage.writeMsgpack(packer: MessagePacker) {
  * Read an ObjectMessage from MessageUnpacker
  */
 internal fun readObjectMessage(unpacker: MessageUnpacker): ObjectMessage {
+  if (unpacker.nextFormat == MessageFormat.NIL) {
+    unpacker.unpackNil()
+    return ObjectMessage() // default/empty message
+  }
+
   val fieldCount = unpacker.unpackMapHeader()
 
   var id: String? = null
@@ -105,7 +110,7 @@ internal fun readObjectMessage(unpacker: MessageUnpacker): ObjectMessage {
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
-    val fieldFormat = unpacker.getNextFormat()
+    val fieldFormat = unpacker.nextFormat
 
     if (fieldFormat == MessageFormat.NIL) {
       unpacker.unpackNil()
@@ -207,7 +212,7 @@ private fun ObjectOperation.writeMsgpack(packer: MessagePacker) {
 private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
   val fieldCount = unpacker.unpackMapHeader()
 
-  var action: ObjectOperationAction = ObjectOperationAction.MapCreate // Default value
+  var action: ObjectOperationAction? = null
   var objectId: String = ""
   var mapOp: ObjectMapOp? = null
   var counterOp: ObjectCounterOp? = null
@@ -219,7 +224,7 @@ private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
-    val fieldFormat = unpacker.getNextFormat()
+    val fieldFormat = unpacker.nextFormat
 
     if (fieldFormat == MessageFormat.NIL) {
       unpacker.unpackNil()
@@ -227,8 +232,11 @@ private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
     }
 
     when (fieldName) {
-      "action" -> action = ObjectOperationAction.entries.find { it.code == unpacker.unpackInt() }
-        ?: throw IllegalArgumentException("Unknown ObjectOperationAction code")
+      "action" -> {
+        val actionCode = unpacker.unpackInt()
+        action = ObjectOperationAction.entries.find { it.code == actionCode }
+          ?: throw IllegalArgumentException("Unknown ObjectOperationAction code: $actionCode")
+      }
       "objectId" -> objectId = unpacker.unpackString()
       "mapOp" -> mapOp = readObjectMapOp(unpacker)
       "counterOp" -> counterOp = readObjectCounterOp(unpacker)
@@ -244,6 +252,10 @@ private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
       "initialValueEncoding" -> initialValueEncoding = ProtocolMessageFormat.valueOf(unpacker.unpackString())
       else -> unpacker.skipValue()
     }
+  }
+
+  if (action == null) {
+    throw IllegalArgumentException("Missing required 'action' field in ObjectOperation")
   }
 
   return ObjectOperation(
@@ -315,7 +327,7 @@ private fun readObjectState(unpacker: MessageUnpacker): ObjectState {
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
-    val fieldFormat = unpacker.getNextFormat()
+    val fieldFormat = unpacker.nextFormat
 
     if (fieldFormat == MessageFormat.NIL) {
       unpacker.unpackNil()
@@ -382,7 +394,7 @@ private fun readObjectMapOp(unpacker: MessageUnpacker): ObjectMapOp {
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
-    val fieldFormat = unpacker.getNextFormat()
+    val fieldFormat = unpacker.nextFormat
 
     if (fieldFormat == MessageFormat.NIL) {
       unpacker.unpackNil()
@@ -425,7 +437,7 @@ private fun readObjectCounterOp(unpacker: MessageUnpacker): ObjectCounterOp {
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
-    val fieldFormat = unpacker.getNextFormat()
+    val fieldFormat = unpacker.nextFormat
 
     if (fieldFormat == MessageFormat.NIL) {
       unpacker.unpackNil()
@@ -478,7 +490,7 @@ private fun readObjectMap(unpacker: MessageUnpacker): ObjectMap {
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
-    val fieldFormat = unpacker.getNextFormat()
+    val fieldFormat = unpacker.nextFormat
 
     if (fieldFormat == MessageFormat.NIL) {
       unpacker.unpackNil()
@@ -486,8 +498,11 @@ private fun readObjectMap(unpacker: MessageUnpacker): ObjectMap {
     }
 
     when (fieldName) {
-      "semantics" -> semantics = MapSemantics.entries.find { it.code == unpacker.unpackInt() }
-        ?: throw IllegalArgumentException("Unknown MapSemantics code")
+      "semantics" -> {
+        val semanticsCode = unpacker.unpackInt()
+        semantics = MapSemantics.entries.find { it.code == semanticsCode }
+          ?: throw IllegalArgumentException("Unknown MapSemantics code: $semanticsCode")
+      }
       "entries" -> {
         val mapSize = unpacker.unpackMapHeader()
         val tempMap = mutableMapOf<String, ObjectMapEntry>()
@@ -531,7 +546,7 @@ private fun readObjectCounter(unpacker: MessageUnpacker): ObjectCounter {
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
-    val fieldFormat = unpacker.getNextFormat()
+    val fieldFormat = unpacker.nextFormat
 
     if (fieldFormat == MessageFormat.NIL) {
       unpacker.unpackNil()
@@ -587,7 +602,7 @@ private fun readObjectMapEntry(unpacker: MessageUnpacker): ObjectMapEntry {
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
-    val fieldFormat = unpacker.getNextFormat()
+    val fieldFormat = unpacker.nextFormat
 
     if (fieldFormat == MessageFormat.NIL) {
       unpacker.unpackNil()
@@ -667,7 +682,7 @@ private fun readObjectData(unpacker: MessageUnpacker): ObjectData {
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
-    val fieldFormat = unpacker.getNextFormat()
+    val fieldFormat = unpacker.nextFormat
 
     if (fieldFormat == MessageFormat.NIL) {
       unpacker.unpackNil()

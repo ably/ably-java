@@ -22,7 +22,7 @@ internal class DefaultLiveObjectSerializer : LiveObjectSerializer {
     return Array(objectMessagesCount) { readObjectMessage(unpacker) }
   }
 
-  override fun writeMsgpackArray(objects: Array<out Any>?, packer: MessagePacker) {
+  override fun writeMsgpackArray(objects: Array<out Any>, packer: MessagePacker) {
     val objectMessages: Array<ObjectMessage> = objects as Array<ObjectMessage>
     packer.packArrayHeader(objectMessages.size)
     objectMessages.forEach { it.writeMsgpack(packer) }
@@ -35,7 +35,7 @@ internal class DefaultLiveObjectSerializer : LiveObjectSerializer {
     }.toTypedArray()
   }
 
-  override fun asJsonArray(objects: Array<out Any>?): JsonArray {
+  override fun asJsonArray(objects: Array<out Any>): JsonArray {
     val objectMessages: Array<ObjectMessage> = objects as Array<ObjectMessage>
     val jsonArray = JsonArray()
     for (objectMessage in objectMessages) {

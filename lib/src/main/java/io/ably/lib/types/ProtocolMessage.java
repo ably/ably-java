@@ -160,7 +160,7 @@ public class ProtocolMessage {
         if(params != null) ++fieldCount;
         if(channelSerial != null) ++fieldCount;
         if(annotations != null) ++fieldCount;
-        if(state != null) ++fieldCount;
+        if(state != null && LiveObjectsHelper.getLiveObjectSerializer() != null) ++fieldCount;
         packer.packMapHeader(fieldCount);
         packer.packString("action");
         packer.packInt(action.getValue());

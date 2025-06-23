@@ -142,6 +142,7 @@ internal fun dummyObjectMessageWithJsonObjectData(): ObjectMessage {
   val jsonObjectMap = dummyObjectMap.copy(entries = mapOf("dummy-key" to jsonObjectMapEntry))
   val jsonObjectMapOp = dummyObjectMapOp.copy(data = dummyJsonObjectValue)
   val jsonObjectOperation = dummyObjectOperation.copy(
+    action = ObjectOperationAction.MapSet,
     mapOp = jsonObjectMapOp,
     map = jsonObjectMap
   )
@@ -160,6 +161,7 @@ internal fun dummyObjectMessageWithJsonArrayData(): ObjectMessage {
   val jsonArrayMap = dummyObjectMap.copy(entries = mapOf("dummy-key" to jsonArrayMapEntry))
   val jsonArrayMapOp = dummyObjectMapOp.copy(data = dummyJsonArrayValue)
   val jsonArrayOperation = dummyObjectOperation.copy(
+    action = ObjectOperationAction.MapSet,
     mapOp = jsonArrayMapOp,
     map = jsonArrayMap
   )
