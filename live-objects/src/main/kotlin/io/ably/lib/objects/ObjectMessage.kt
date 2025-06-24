@@ -3,6 +3,12 @@ package io.ably.lib.objects
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 
+import com.google.gson.annotations.JsonAdapter
+import com.google.gson.annotations.SerializedName
+import io.ably.lib.objects.serialization.InitialValueJsonSerializer
+import io.ably.lib.objects.serialization.ObjectDataJsonSerializer
+import io.ably.lib.objects.serialization.gson
+
 /**
  * An enum class representing the different actions that can be performed on an object.
  * Spec: OOP2
@@ -28,18 +34,13 @@ internal enum class MapSemantics(val code: Int) {
  * An ObjectData represents a value in an object on a channel.
  * Spec: OD1
  */
+@JsonAdapter(ObjectDataJsonSerializer::class)
 internal data class ObjectData(
   /**
    * A reference to another object, used to support composable object structures.
    * Spec: OD2a
    */
   val objectId: String? = null,
-
-  /**
-   * Can be set by the client to indicate that value in `string` or `bytes` field have an encoding.
-   * Spec: OD2b
-   */
-  val encoding: String? = null,
 
   /**
    * String, number, boolean or binary - a concrete value of the object
@@ -217,11 +218,13 @@ internal data class ObjectOperation(
    * the initialValue, nonce, and initialValueEncoding will be removed.
    * Spec: OOP3h
    */
+  @JsonAdapter(InitialValueJsonSerializer::class)
   val initialValue: Binary? = null,
 
   /** The initial value encoding defines how the initialValue should be interpreted.
    * Spec: OOP3i
    */
+  @Deprecated("Will be removed in the future, initialValue will be json string")
   val initialValueEncoding: ProtocolMessageFormat? = null
 )
 
@@ -312,7 +315,7 @@ internal data class ObjectMessage(
    * or validation of the @extras@ field itself, but should treat it opaquely, encoding it and passing it to realtime unaltered
    * Spec: OM2d
    */
-  val extras: Any? = null,
+  val extras: JsonObject? = null,
 
   /**
    * Describes an operation to be applied to an object.
@@ -328,6 +331,7 @@ internal data class ObjectMessage(
    * the `ProtocolMessage` encapsulating it is `OBJECT_SYNC`.
    * Spec: OM2g
    */
+  @SerializedName("object")
   val objectState: ObjectState? = null,
 
   /**

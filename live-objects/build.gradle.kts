@@ -11,6 +11,7 @@ repositories {
 
 dependencies {
     implementation(project(":java"))
+    implementation(libs.bundles.common)
     implementation(libs.coroutine.core)
 
     testImplementation(kotlin("test"))

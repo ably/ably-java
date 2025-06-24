@@ -39,18 +39,18 @@ internal enum class ProtocolMessageFormat(private val value: String) {
   override fun toString(): String = value
 }
 
-internal class Binary(val data: ByteArray?) {
+internal class Binary(val data: ByteArray) {
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
     if (other !is Binary) return false
-    return data?.contentEquals(other.data) == true
+    return data.contentEquals(other.data)
   }
 
   override fun hashCode(): Int {
-    return data?.contentHashCode() ?: 0
+    return data.contentHashCode()
   }
 }
 
 internal fun Binary.size(): Int {
-  return data?.size ?: 0
+  return data.size
 }
