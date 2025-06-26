@@ -3,6 +3,7 @@ package io.ably.lib.objects
 import io.ably.lib.types.Callback
 import io.ably.lib.types.ProtocolMessage
 import io.ably.lib.util.Log
+import java.util.*
 
 internal class DefaultLiveObjects(private val channelName: String, private val adapter: LiveObjectsAdapter): LiveObjects {
   private val tag = DefaultLiveObjects::class.simpleName
@@ -47,13 +48,21 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
     TODO("Not yet implemented")
   }
 
-  fun handle(msg: ProtocolMessage) {
+  fun handle(protocolMessage: ProtocolMessage) {
     // RTL15b
-    msg.channelSerial?.let {
-      if (msg.action === ProtocolMessage.Action.`object`) {
-        Log.v(tag, "Setting channel serial for channelName: $channelName, value: ${msg.channelSerial}")
-        adapter.setChannelSerial(channelName, msg.channelSerial)
+    protocolMessage.channelSerial?.let {
+      if (protocolMessage.action === ProtocolMessage.Action.`object`) {
+        Log.v(tag, "Setting channel serial for channelName: $channelName, value: ${protocolMessage.channelSerial}")
+        adapter.setChannelSerial(channelName, protocolMessage.channelSerial)
       }
+    }
+    // Populate missing fields from parent
+    val objects = protocolMessage.state.filterIsInstance<ObjectMessage>().mapIndexed { index, stateItem ->
+      stateItem.copy(
+        connectionId = stateItem.connectionId ?: protocolMessage.connectionId,
+        timestamp = stateItem.timestamp ?: protocolMessage.timestamp,
+        id = stateItem.id ?: (protocolMessage.id + ':' + index)
+      )
     }
   }
 
