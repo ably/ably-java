@@ -1,13 +1,11 @@
 package io.ably.lib.realtime;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.ably.lib.objects.Adapter;
-import io.ably.lib.objects.LiveObjectsAdapter;
+import io.ably.lib.objects.LiveObjectsHelper;
 import io.ably.lib.objects.LiveObjectsPlugin;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
@@ -74,7 +72,7 @@ public class AblyRealtime extends AblyRest {
         final InternalChannels channels = new InternalChannels();
         this.channels = channels;
 
-        liveObjectsPlugin = tryInitializeLiveObjectsPlugin();
+        liveObjectsPlugin = LiveObjectsHelper.tryInitializeLiveObjectsPlugin(this);
 
         connection = new Connection(this, channels, platformAgentProvider, liveObjectsPlugin);
 
@@ -183,20 +181,6 @@ public class AblyRealtime extends AblyRest {
          * @param channelName The channel name.
          */
         void release(String channelName);
-    }
-
-    private LiveObjectsPlugin tryInitializeLiveObjectsPlugin() {
-        try {
-            Class<?> liveObjectsImplementation = Class.forName("io.ably.lib.objects.DefaultLiveObjectsPlugin");
-            LiveObjectsAdapter adapter = new Adapter(this);
-            return (LiveObjectsPlugin) liveObjectsImplementation
-                .getDeclaredConstructor(LiveObjectsAdapter.class)
-                .newInstance(adapter);
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException |
-                 InvocationTargetException e) {
-            Log.i(TAG, "LiveObjects plugin not found in classpath. LiveObjects functionality will not be available.", e);
-            return null;
-        }
     }
 
     private class InternalChannels extends InternalMap<String, Channel> implements Channels, ConnectionManager.Channels {
