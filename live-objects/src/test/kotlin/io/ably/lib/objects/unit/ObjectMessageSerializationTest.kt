@@ -52,7 +52,7 @@ class ObjectMessageSerializationTest {
     protocolMessage.action = ProtocolMessage.Action.`object`
     protocolMessage.state = objectMessages
 
-    // Serialize the ProtocolMessage containing ObjectMessages to MsgPack format
+    // Serialize the ProtocolMessage containing ObjectMessages to Json format
     val serializedProtoMsg = ProtocolSerializer.writeJSON(protocolMessage).toString(Charsets.UTF_8)
     assertNotNull(serializedProtoMsg)
 

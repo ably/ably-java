@@ -27,14 +27,16 @@ public class LiveObjectsHelper {
     public static LiveObjectSerializer getLiveObjectSerializer() {
         if (liveObjectSerializer == null) {
             synchronized (LiveObjectsHelper.class) {
-                try {
-                    Class<?> serializerClass = Class.forName("io.ably.lib.objects.serialization.DefaultLiveObjectSerializer");
-                    liveObjectSerializer = (LiveObjectSerializer) serializerClass.getDeclaredConstructor().newInstance();
-                } catch (ClassNotFoundException | InstantiationException | IllegalAccessException |
-                         NoSuchMethodException |
-                         InvocationTargetException e) {
-                    Log.e(TAG, "Failed to init LiveObjectSerializer, LiveObjects plugin not included in the classpath", e);
-                    return null;
+                if (liveObjectSerializer == null) { // Double-Checked Locking (DCL)
+                    try {
+                        Class<?> serializerClass = Class.forName("io.ably.lib.objects.serialization.DefaultLiveObjectSerializer");
+                        liveObjectSerializer = (LiveObjectSerializer) serializerClass.getDeclaredConstructor().newInstance();
+                    } catch (ClassNotFoundException | InstantiationException | IllegalAccessException |
+                             NoSuchMethodException |
+                             InvocationTargetException e) {
+                        Log.e(TAG, "Failed to init LiveObjectSerializer, LiveObjects plugin not included in the classpath", e);
+                        return null;
+                    }
                 }
             }
         }

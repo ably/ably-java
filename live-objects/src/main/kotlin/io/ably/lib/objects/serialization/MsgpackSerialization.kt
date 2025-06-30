@@ -149,8 +149,9 @@ internal fun readObjectMessage(unpacker: MessageUnpacker): ObjectMessage {
  */
 private fun ObjectOperation.writeMsgpack(packer: MessagePacker) {
   var fieldCount = 1 // action is always required
+  require(objectId.isNotEmpty()) { "objectId must be non-empty per LiveObjects protocol" }
+  fieldCount++
 
-  if (objectId.isNotEmpty()) fieldCount++
   if (mapOp != null) fieldCount++
   if (counterOp != null) fieldCount++
   if (map != null) fieldCount++
@@ -164,10 +165,9 @@ private fun ObjectOperation.writeMsgpack(packer: MessagePacker) {
   packer.packString("action")
   packer.packInt(action.code)
 
-  if (objectId.isNotEmpty()) {
-    packer.packString("objectId")
-    packer.packString(objectId)
-  }
+  // Always include objectId as per LiveObjects protocol
+  packer.packString("objectId")
+  packer.packString(objectId)
 
   if (mapOp != null) {
     packer.packString("mapOp")
