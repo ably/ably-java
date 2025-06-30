@@ -14,7 +14,7 @@ public class ProtocolSerializer {
     /****************************************
      *            Msgpack decode
      ****************************************/
-    
+
     public static ProtocolMessage readMsgpack(byte[] packed) throws AblyException {
         try {
             MessageUnpacker unpacker = Serialisation.msgpackUnpackerConfig.newUnpacker(packed);
@@ -27,22 +27,23 @@ public class ProtocolSerializer {
     /****************************************
      *            Msgpack encode
      ****************************************/
-    
-    public static byte[] writeMsgpack(ProtocolMessage message) {
+
+    public static byte[] writeMsgpack(ProtocolMessage message) throws AblyException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         MessagePacker packer = Serialisation.msgpackPackerConfig.newPacker(out);
         try {
             message.writeMsgpack(packer);
-    
             packer.flush();
             return out.toByteArray();
-        } catch(IOException e) { return null; }
+        } catch (IOException ioe) {
+            throw AblyException.fromThrowable(ioe);
+        }
     }
 
     /****************************************
      *              JSON decode
      ****************************************/
-    
+
     public static ProtocolMessage fromJSON(String packed) throws AblyException {
         return Serialisation.gson.fromJson(packed, ProtocolMessage.class);
     }
@@ -50,7 +51,7 @@ public class ProtocolSerializer {
     /****************************************
      *              JSON encode
      ****************************************/
-    
+
     public static byte[] writeJSON(ProtocolMessage message) throws AblyException {
         return Serialisation.gson.toJson(message).getBytes(Charset.forName("UTF-8"));
     }

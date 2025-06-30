@@ -1,5 +1,6 @@
 package io.ably.lib.objects.unit
 
+import com.google.gson.JsonObject
 import io.ably.lib.objects.*
 import io.ably.lib.objects.ObjectData
 import io.ably.lib.objects.ObjectMapOp
@@ -17,6 +18,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.text.toByteArray
 
 class ObjectMessageSizeTest {
 
@@ -32,10 +34,10 @@ class ObjectMessageSizeTest {
       timestamp = 1699123456789L, // Not counted in size calculation
       clientId = "test-client", // Size: 11 bytes (UTF-8 byte length)
       connectionId = "conn_98765", // Not counted in size calculation
-      extras = mapOf( // Size: JSON serialization byte length
-        "meta" to "data", // JSON: {"meta":"data","count":42}
-        "count" to 42
-      ), // Total extras size: 26 bytes (verified by gson.toJson().length)
+      extras = JsonObject().apply { // Size: JSON serialization byte length
+        addProperty("meta", "data") // JSON: {"meta":"data","count":42}
+        addProperty("count", 42)
+      }, // Total extras size: 26 bytes (verified by gson.toJson().length)
       operation = ObjectOperation(
         action = ObjectOperationAction.MapCreate,
         objectId = "obj_54321", // Not counted in operation size
@@ -45,7 +47,6 @@ class ObjectMessageSizeTest {
           key = "mapKey", // Size: 6 bytes (UTF-8 byte length)
           data = ObjectData(
             objectId = "ref_obj", // Not counted in data size
-            encoding = "utf-8", // Not counted in data size
             value = ObjectValue("sample") // Size: 6 bytes (UTF-8 byte length)
           ) // Total ObjectData size: 6 bytes
         ), // Total ObjectMapOp size: 6 + 6 = 12 bytes
@@ -80,7 +81,7 @@ class ObjectMessageSizeTest {
         ), // Total ObjectCounter size: 8 bytes
 
         nonce = "nonce123", // Not counted in operation size
-        initialValue = Binary("initial".toByteArray()), // Not counted in operation size
+        initialValue = Binary("some-value".toByteArray()), // Not counted in operation size
         initialValueEncoding = ProtocolMessageFormat.Json // Not counted in operation size
       ), // Total ObjectOperation size: 12 + 8 + 26 + 8 = 54 bytes
 
