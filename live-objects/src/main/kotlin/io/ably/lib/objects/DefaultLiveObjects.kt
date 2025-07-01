@@ -3,6 +3,7 @@ package io.ably.lib.objects
 import io.ably.lib.types.Callback
 import io.ably.lib.types.ProtocolMessage
 import io.ably.lib.util.Log
+import java.util.*
 
 internal class DefaultLiveObjects(private val channelName: String, private val adapter: LiveObjectsAdapter): LiveObjects {
   private val tag = DefaultLiveObjects::class.simpleName
@@ -47,14 +48,37 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
     TODO("Not yet implemented")
   }
 
-  fun handle(msg: ProtocolMessage) {
+  /**
+   * Handles a ProtocolMessage containing proto action as `object` or `object_sync`.
+   */
+  fun handle(protocolMessage: ProtocolMessage) {
     // RTL15b
-    msg.channelSerial?.let {
-      if (msg.action === ProtocolMessage.Action.`object`) {
-        Log.v(tag, "Setting channel serial for channelName: $channelName, value: ${msg.channelSerial}")
-        adapter.setChannelSerial(channelName, msg.channelSerial)
-      }
+    if (protocolMessage.action === ProtocolMessage.Action.`object`) {
+      setChannelSerial(protocolMessage.channelSerial)
     }
+
+    if (protocolMessage.state == null || protocolMessage.state.isEmpty()) {
+      Log.w(tag, "Received ProtocolMessage with null or empty object state, ignoring")
+      return
+    }
+
+    // OM2 - Populate missing fields from parent
+    val objects = protocolMessage.state.filterIsInstance<ObjectMessage>().mapIndexed { index, objMsg ->
+      objMsg.copy(
+        connectionId = objMsg.connectionId ?: protocolMessage.connectionId, // OM2c
+        timestamp = objMsg.timestamp ?: protocolMessage.timestamp, // OM2e
+        id = objMsg.id ?: (protocolMessage.id + ':' + index) // OM2a
+      )
+    }
+  }
+
+  private fun setChannelSerial(channelSerial: String?) {
+    if (channelSerial.isNullOrEmpty()) {
+      Log.w(tag, "setChannelSerial called with null or empty value, ignoring")
+      return
+    }
+    Log.v(tag, "Setting channel serial for channelName: $channelName, value: $channelSerial")
+    adapter.setChannelSerial(channelName, channelSerial)
   }
 
   fun dispose() {
