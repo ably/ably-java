@@ -283,16 +283,11 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
       }
 
       val objectOperation: ObjectOperation = objectMessage.operation
-
-      // we can receive an op for an object id we don't have yet in the pool. instead of buffering such operations,
-      // we can create a zero-value object for the provided object id and apply the operation to that zero-value object.
-      // this also means that all objects are capable of applying the corresponding *_CREATE ops on themselves,
-      // since they need to be able to eventually initialize themselves from that *_CREATE op.
-      // so to simplify operations handling, we always try to create a zero-value object in the pool first,
-      // and then we can always apply the operation on the existing object in the pool.
-      createZeroValueObjectIfNotExists(objectOperation.objectId)
-      val obj = objectsPool[objectOperation.objectId]
-      obj?.applyOperation(objectOperation, objectMessage)
+      // RTO6a - get or create the zero value object in the pool
+      val obj = objectsPool.getOrPut(objectOperation.objectId) {
+        createZeroValueObject(objectOperation.objectId)
+      }
+      obj.applyOperation(objectOperation, objectMessage)
     }
   }
 
@@ -315,86 +310,30 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
   }
 
   /**
-   * Creates a zero-value object if it doesn't exist in the pool.
-   * Similar to JavaScript createZeroValueObjectIfNotExists method.
+   * Creates a zero-value object.
    *
    * @spec RTO6 - Creates zero-value objects based on object type
    */
-  private fun createZeroValueObjectIfNotExists(objectId: String) {
-    if (objectsPool.containsKey(objectId)) {
-      return // RTO6a
+  private fun createZeroValueObject(objectId: String): LiveObject {
+    val objId = ObjectId.fromString(objectId) // RTO6b
+    val zeroValueObject = when (objId.type) {
+      ObjectType.Map -> LiveMap.zeroValue(objectId, adapter) // RTO6b2
+      ObjectType.Counter -> LiveCounter.zeroValue(objectId, adapter) // RTO6b3
     }
-
-    val parsedObjectId = parseObjectId(objectId) // RTO6b
-    val zeroValueObject = when (parsedObjectId.type) {
-      "map" -> createZeroValueMap(objectId) // RTO6b2
-      "counter" -> createZeroValueCounter(objectId) // RTO6b3
-      else -> throw IllegalArgumentException("Unknown object type: ${parsedObjectId.type}")
-    }
-
-    objectsPool[objectId] = zeroValueObject
-  }
-
-  /**
-   * Parses object ID to extract type and other information.
-   * Similar to JavaScript ObjectId.fromString method.
-   *
-   * @spec RTO6b1 - Object ID format: <type>:<hash>@<timestamp>
-   */
-  private fun parseObjectId(objectId: String): ParsedObjectId {
-    val parts = objectId.split(":")
-    if (parts.size != 2) {
-      throw IllegalArgumentException("Invalid object id string: $objectId")
-    }
-
-    val type = parts[0]
-    if (type !in listOf("map", "counter")) {
-      throw IllegalArgumentException("Invalid object type in object id: $objectId")
-    }
-
-    val rest = parts[1]
-    val restParts = rest.split("@")
-    if (restParts.size != 2) {
-      throw IllegalArgumentException("Invalid object id string: $objectId")
-    }
-
-    val hash = restParts[0]
-    val msTimestamp = restParts[1].toLongOrNull()
-    if (msTimestamp == null) {
-      throw IllegalArgumentException("Invalid object id string: $objectId")
-    }
-
-    return ParsedObjectId(type, hash, msTimestamp)
-  }
-
-  /**
-   * Creates a zero-value map object.
-   *
-   * @spec RTLM4 - Returns LiveMap with empty map data
-   */
-  private fun createZeroValueMap(objectId: String): LiveObject {
-    return LiveMapImpl(objectId, adapter)
-  }
-
-  /**
-   * Creates a zero-value counter object.
-   *
-   * @spec RTLC4 - Returns LiveCounter with 0 value
-   */
-  private fun createZeroValueCounter(objectId: String): LiveObject {
-    return LiveCounterImpl(objectId, adapter)
+    return zeroValueObject
   }
 
   /**
    * Creates an object from object state.
    *
    * @spec RTO5c1b - Creates objects from object state based on type
+   * TODO - Need to update the implementation
    */
   private fun createObjectFromState(objectState: ObjectState): LiveObject {
     return when {
-      objectState.counter != null -> LiveCounterImpl(objectState.objectId, adapter) // RTO5c1b1a
-      objectState.map != null -> LiveMapImpl(objectState.objectId, adapter, objectState.map.semantics ?: MapSemantics.LWW) // RTO5c1b1b
-      else -> throw IllegalArgumentException("Object state must contain either counter or map data") // RTO5c1b1c
+      objectState.counter != null -> LiveCounter(objectState.objectId, adapter) // RTO5c1b1a
+      objectState.map != null -> LiveMap(objectState.objectId, adapter) // RTO5c1b1b
+      else -> throw serverError("Object state must contain either counter or map data") // RTO5c1b1c
     }
   }
 
@@ -440,38 +379,4 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
     syncObjectsDataPool.clear()
     bufferedObjectOperations.clear()
   }
-
-  /**
-   * Data class to hold parsed object ID information.
-   */
-  private data class ParsedObjectId(
-    val type: String,
-    val hash: String,
-    val msTimestamp: Long
-  )
-}
-
-/**
- * Interface for live objects that can be stored in the objects pool.
- * This is a placeholder interface that will be implemented by LiveMap and LiveCounter.
- *
- * @spec RTO3 - Base interface for all live objects in the pool
- */
-internal interface LiveObject {
-  /**
-   * @spec RTLM6 - Overrides object data with state from sync
-   * @spec RTLC6 - Overrides counter data with state from sync
-   */
-  fun overrideWithObjectState(objectState: ObjectState): Any
-
-  /**
-   * @spec RTLM7 - Applies operations to LiveMap
-   * @spec RTLC7 - Applies operations to LiveCounter
-   */
-  fun applyOperation(operation: ObjectOperation, message: ObjectMessage)
-
-  /**
-   * Notifies subscribers of object updates
-   */
-  fun notifyUpdated(update: Any)
 }
