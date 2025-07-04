@@ -304,7 +304,7 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
         continue
       }
 
-      val objectState = objectMessage.objectState!!
+      val objectState: ObjectState = objectMessage.objectState
       syncObjectsDataPool[objectState.objectId] = objectState
     }
   }

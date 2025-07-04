@@ -6,8 +6,7 @@ import io.ably.lib.util.Log
  * Implementation of LiveObject for LiveCounter.
  * Similar to JavaScript LiveCounter class.
  *
- * @spec RTLC1 - LiveCounter implementation
- * @spec RTLC2 - LiveCounter extends LiveObject
+ * @spec RTLC1/RTLC2 - LiveCounter implementation extends LiveObject
  */
 internal class LiveCounter(
   objectId: String,
@@ -23,7 +22,7 @@ internal class LiveCounter(
   /**
    * @spec RTLC6 - Overrides counter data with state from sync
    */
-  override fun overrideWithObjectState(objectState: ObjectState): Any {
+  override fun overrideWithObjectState(objectState: ObjectState): Map<String, Long> {
     if (objectState.objectId != objectId) {
       throw objectError("Invalid object state: object state objectId=${objectState.objectId}; LiveCounter objectId=$objectId")
     }
@@ -93,7 +92,7 @@ internal class LiveCounter(
     notifyUpdated(update)
   }
 
-  override fun clearData(): Any {
+  override fun clearData(): Map<String, Long> {
     val previousData = data
     data = 0
     return mapOf("amount" to -previousData)
@@ -102,7 +101,7 @@ internal class LiveCounter(
   /**
    * @spec RTLC6d - Merges initial data from create operation
    */
-  private fun applyCounterCreate(operation: ObjectOperation): Any {
+  private fun applyCounterCreate(operation: ObjectOperation): Map<String, Long> {
     if (createOperationIsMerged) {
       Log.v(
         tag,
@@ -117,7 +116,7 @@ internal class LiveCounter(
   /**
    * @spec RTLC8 - Applies counter increment operation
    */
-  private fun applyCounterInc(counterOp: ObjectCounterOp): Any {
+  private fun applyCounterInc(counterOp: ObjectCounterOp): Map<String, Long> {
     val amount = counterOp.amount?.toLong() ?: 0
     data += amount
     return mapOf("amount" to amount)
@@ -126,7 +125,7 @@ internal class LiveCounter(
   /**
    * @spec RTLC6d - Merges initial data from create operation
    */
-  private fun mergeInitialDataFromCreateOperation(operation: ObjectOperation): Any {
+  private fun mergeInitialDataFromCreateOperation(operation: ObjectOperation): Map<String, Long> {
     // if a counter object is missing for the COUNTER_CREATE op, the initial value is implicitly 0 in this case.
     // note that it is intentional to SUM the incoming count from the create op.
     // if we got here, it means that current counter instance is missing the initial value in its data reference,

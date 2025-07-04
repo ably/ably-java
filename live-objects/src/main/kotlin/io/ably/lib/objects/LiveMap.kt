@@ -6,8 +6,7 @@ import io.ably.lib.util.Log
  * Implementation of LiveObject for LiveMap.
  * Similar to JavaScript LiveMap class.
  *
- * @spec RTLM1 - LiveMap implementation
- * @spec RTLM2 - LiveMap extends LiveObject
+ * @spec RTLM1/RTLM2 - LiveMap implementation extends LiveObject
  */
 internal class LiveMap(
   objectId: String,
@@ -20,19 +19,19 @@ internal class LiveMap(
   /**
    * @spec RTLM3 - Map data structure storing entries
    */
-  private data class MapEntry(
+  private data class LiveMapEntry(
     var tombstone: Boolean = false,
     var tombstonedAt: Long? = null,
     var timeserial: String? = null,
     var data: ObjectData? = null
   )
 
-  private val data = mutableMapOf<String, MapEntry>()
+  private val data = mutableMapOf<String, LiveMapEntry>()
 
   /**
    * @spec RTLM6 - Overrides object data with state from sync
    */
-  override fun overrideWithObjectState(objectState: ObjectState): Any {
+  override fun overrideWithObjectState(objectState: ObjectState): Map<String, String> {
     if (objectState.objectId != objectId) {
       throw objectError("Invalid object state: object state objectId=${objectState.objectId}; LiveMap objectId=$objectId")
     }
@@ -62,8 +61,8 @@ internal class LiveMap(
       createOperationIsMerged = false // RTLM6b
       data.clear()
 
-      objectState.map?.entries?.forEach { (key, entry) ->
-        data[key] = MapEntry(
+      objectState.map.entries?.forEach { (key, entry) ->
+        data[key] = LiveMapEntry(
           tombstone = entry.tombstone ?: false,
           tombstonedAt = if (entry.tombstone == true) System.currentTimeMillis() else null,
           timeserial = entry.timeserial,
@@ -119,7 +118,7 @@ internal class LiveMap(
     notifyUpdated(update)
   }
 
-  override fun clearData(): Any {
+  override fun clearData(): Map<String, String> {
     val previousData = data.toMap()
     data.clear()
     return calculateUpdateFromDataDiff(previousData, emptyMap())
@@ -128,13 +127,13 @@ internal class LiveMap(
   /**
    * @spec RTLM6d - Merges initial data from create operation
    */
-  private fun applyMapCreate(operation: ObjectOperation): Any {
+  private fun applyMapCreate(operation: ObjectOperation): Map<String, String> {
     if (createOperationIsMerged) {
       Log.v(
         tag,
         "Skipping applying MAP_CREATE op on a map instance as it was already applied before; objectId=$objectId"
       )
-      return mapOf<String, String>()
+      return mapOf()
     }
 
     if (semantics != operation.map?.semantics) {
@@ -149,7 +148,7 @@ internal class LiveMap(
   /**
    * @spec RTLM7 - Applies MAP_SET operation to LiveMap
    */
-  private fun applyMapSet(mapOp: ObjectMapOp, opSerial: String?): Any {
+  private fun applyMapSet(mapOp: ObjectMapOp, opSerial: String?): Map<String, String> {
     val existingEntry = data[mapOp.key]
 
     // RTLM7a
@@ -159,7 +158,7 @@ internal class LiveMap(
         tag,
         "Skipping update for key=\"${mapOp.key}\": op serial $opSerial <= entry serial ${existingEntry.timeserial}; objectId=$objectId"
       )
-      return mapOf<String, String>()
+      return mapOf()
     }
 
     if (existingEntry != null) {
@@ -170,7 +169,7 @@ internal class LiveMap(
       existingEntry.data = mapOp.data // RTLM7a2a
     } else {
       // RTLM7b, RTLM7b1
-      data[mapOp.key] = MapEntry(
+      data[mapOp.key] = LiveMapEntry(
         tombstone = false, // RTLM7b2
         timeserial = opSerial,
         data = mapOp.data
@@ -183,7 +182,7 @@ internal class LiveMap(
   /**
    * @spec RTLM8 - Applies MAP_REMOVE operation to LiveMap
    */
-  private fun applyMapRemove(mapOp: ObjectMapOp, opSerial: String?): Any {
+  private fun applyMapRemove(mapOp: ObjectMapOp, opSerial: String?): Map<String, String> {
     val existingEntry = data[mapOp.key]
 
     // RTLM8a
@@ -193,7 +192,7 @@ internal class LiveMap(
         tag,
         "Skipping remove for key=\"${mapOp.key}\": op serial $opSerial <= entry serial ${existingEntry.timeserial}; objectId=$objectId"
       )
-      return mapOf<String, String>()
+      return mapOf()
     }
 
     if (existingEntry != null) {
@@ -204,7 +203,7 @@ internal class LiveMap(
       existingEntry.data = null // RTLM8a2a
     } else {
       // RTLM8b, RTLM8b1
-      data[mapOp.key] = MapEntry(
+      data[mapOp.key] = LiveMapEntry(
         tombstone = true, // RTLM8b2
         tombstonedAt = System.currentTimeMillis(),
         timeserial = opSerial
@@ -215,38 +214,29 @@ internal class LiveMap(
   }
 
   /**
+   * For Lww CRDT semantics (the only supported LiveMap semantic) an operation
+   * Should only be applied if incoming serial is strictly greater than existing entry's serial.
    * @spec RTLM9 - Serial comparison logic for map operations
    */
-  private fun canApplyMapOperation(mapEntrySerial: String?, opSerial: String?): Boolean {
-    // for Lww CRDT semantics (the only supported LiveMap semantic) an operation
-    // should only be applied if its serial is strictly greater ("after") than an entry's serial.
-
-    if (mapEntrySerial.isNullOrEmpty() && opSerial.isNullOrEmpty()) {
-      // RTLM9b - if both serials are nullish or empty strings, we treat them as the "earliest possible" serials,
-      // in which case they are "equal", so the operation should not be applied
+  private fun canApplyMapOperation(existingMapEntrySerial: String?, opSerial: String?): Boolean {
+    if (existingMapEntrySerial.isNullOrEmpty() && opSerial.isNullOrEmpty()) { // RTLM9b
       return false
     }
-
-    if (mapEntrySerial.isNullOrEmpty()) {
-      // RTLM9d - any operation serial is greater than non-existing entry serial
+    if (existingMapEntrySerial.isNullOrEmpty()) { // RTLM9d - If true, means opSerial is not empty based on previous checks
       return true
     }
-
-    if (opSerial.isNullOrEmpty()) {
-      // RTLM9c - non-existing operation serial is lower than any entry serial
+    if (opSerial.isNullOrEmpty()) { // RTLM9c - Check reached here means existingMapEntrySerial is not empty
       return false
     }
-
-    // RTLM9e - if both serials exist, compare them lexicographically
-    return opSerial > mapEntrySerial
+    return opSerial > existingMapEntrySerial // RTLM9e - both are not empty
   }
 
   /**
    * @spec RTLM6d - Merges initial data from create operation
    */
-  private fun mergeInitialDataFromCreateOperation(operation: ObjectOperation): Any {
+  private fun mergeInitialDataFromCreateOperation(operation: ObjectOperation): Map<String, String> {
     if (operation.map?.entries.isNullOrEmpty()) { // no map entries in MAP_CREATE op
-      return mapOf<String, String>()
+      return mapOf()
     }
 
     val aggregatedUpdate = mutableMapOf<String, String>()
@@ -275,7 +265,7 @@ internal class LiveMap(
     return aggregatedUpdate
   }
 
-  private fun calculateUpdateFromDataDiff(prevData: Map<String, MapEntry>, newData: Map<String, MapEntry>): Map<String, String> {
+  private fun calculateUpdateFromDataDiff(prevData: Map<String, LiveMapEntry>, newData: Map<String, LiveMapEntry>): Map<String, String> {
     val update = mutableMapOf<String, String>()
 
     // Check for removed entries
