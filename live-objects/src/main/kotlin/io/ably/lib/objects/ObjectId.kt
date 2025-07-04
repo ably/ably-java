@@ -27,7 +27,7 @@ internal class ObjectId private constructor(
       }
 
       // Parse format: type:hash@msTimestamp
-      val parts = objectId.split(':', limit = 2)
+      val parts = objectId.split(':')
       if (parts.size != 2) {
         throw objectError("Invalid object id: $objectId")
       }
@@ -41,12 +41,17 @@ internal class ObjectId private constructor(
         else -> throw objectError("Invalid object type in object id: $objectId")
       }
 
-      val hashAndTimestamp = rest.split('@', limit = 2)
+      val hashAndTimestamp = rest.split('@')
       if (hashAndTimestamp.size != 2) {
         throw objectError("Invalid object id: $objectId")
       }
 
       val hash = hashAndTimestamp[0]
+
+      if (hash.isEmpty()) {
+        throw objectError("Invalid object id: $objectId")
+      }
+
       val msTimestampStr = hashAndTimestamp[1]
 
       val msTimestamp = try {
