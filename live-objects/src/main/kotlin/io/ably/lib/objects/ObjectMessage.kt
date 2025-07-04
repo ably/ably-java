@@ -117,8 +117,8 @@ internal data class ObjectMapEntry(
   val tombstone: Boolean? = null,
 
   /**
-   * The serial value of the last operation that was applied to the map entry.
-   * It is optional in a MAP_CREATE operation and might be missing, in which case the client should use a nullish value for it
+   * The serial value of the latest operation that was applied to the map entry.
+   * It is optional in a MAP_CREATE operation and might be missing, in which case the client should use a null value for it
    * and treat it as the "earliest possible" serial for comparison purposes.
    * Spec: OME2b
    */
@@ -180,12 +180,14 @@ internal data class ObjectOperation(
 
   /**
    * The payload for the operation if it is an operation on a Map object type.
+   * i.e. MAP_SET, MAP_REMOVE.
    * Spec: OOP3c
    */
   val mapOp: ObjectMapOp? = null,
 
   /**
    * The payload for the operation if it is an operation on a Counter object type.
+   * i.e. COUNTER_INC.
    * Spec: OOP3d
    */
   val counterOp: ObjectCounterOp? = null,
