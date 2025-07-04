@@ -40,7 +40,12 @@ internal abstract class BaseLiveObject(
    * @spec RTLM9 - Serial comparison logic for LiveMap operations
    * @spec RTLC9 - Serial comparison logic for LiveCounter operations
    */
-  protected fun canApplyOperation(opSerial: String?, opSiteCode: String?): Boolean {
+  protected fun canApplyOperation(opSiteCode: String?, opSerial: String?): Boolean {
+    if (isTombstoned) {
+      // this object is tombstoned so the operation cannot be applied
+      return false
+    }
+
     if (opSerial.isNullOrEmpty()) {
       throw objectError("Invalid serial: $opSerial")
     }
@@ -50,6 +55,13 @@ internal abstract class BaseLiveObject(
 
     val siteSerial = siteTimeserials[opSiteCode]
     return siteSerial == null || opSerial > siteSerial
+  }
+
+  /**
+   * Updates the time serial for a given site code.
+   */
+  protected fun updateTimeSerial(opSiteCode: String, opSerial: String) {
+    siteTimeserials[opSiteCode] = opSerial
   }
 
   /**

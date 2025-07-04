@@ -68,12 +68,7 @@ internal class LiveCounter(
     val opSerial = message.serial
     val opSiteCode = message.siteCode
 
-    if (opSerial.isNullOrEmpty() || opSiteCode.isNullOrEmpty()) {
-      Log.w(tag, "Operation missing serial or siteCode, skipping: ${operation.action}")
-      return
-    }
-
-    if (!canApplyOperation(opSerial, opSiteCode)) {
+    if (!canApplyOperation(opSiteCode, opSerial)) {
       Log.v(
         tag,
         "Skipping ${operation.action} op: op serial $opSerial <= site serial ${siteTimeserials[opSiteCode]}; objectId=$objectId"
@@ -83,12 +78,7 @@ internal class LiveCounter(
 
     // should update stored site serial immediately. doesn't matter if we successfully apply the op,
     // as it's important to mark that the op was processed by the object
-    siteTimeserials[opSiteCode] = opSerial
-
-    if (isTombstoned) {
-      // this object is tombstoned so the operation cannot be applied
-      return
-    }
+    updateTimeSerial(opSiteCode!!, opSerial!!)
 
     val update = when (operation.action) {
       ObjectOperationAction.CounterCreate -> applyCounterCreate(operation)

@@ -93,12 +93,7 @@ internal class LiveMap(
     val opSerial = message.serial
     val opSiteCode = message.siteCode
 
-    if (opSerial.isNullOrEmpty() || opSiteCode.isNullOrEmpty()) {
-      Log.w(tag, "Operation missing serial or siteCode, skipping: ${operation.action}")
-      return
-    }
-
-    if (!canApplyOperation(opSerial, opSiteCode)) {
+    if (!canApplyOperation(opSiteCode, opSerial)) {
       Log.v(
         tag,
         "Skipping ${operation.action} op: op serial $opSerial <= site serial ${siteTimeserials[opSiteCode]}; objectId=$objectId"
@@ -108,12 +103,7 @@ internal class LiveMap(
 
     // should update stored site serial immediately. doesn't matter if we successfully apply the op,
     // as it's important to mark that the op was processed by the object
-    siteTimeserials[opSiteCode] = opSerial
-
-    if (isTombstoned) {
-      // this object is tombstoned so the operation cannot be applied
-      return
-    }
+    updateTimeSerial(opSiteCode!!, opSerial!!)
 
     val update = when (operation.action) {
       ObjectOperationAction.MapCreate -> applyMapCreate(operation)
@@ -255,7 +245,7 @@ internal class LiveMap(
    * @spec RTLM6d - Merges initial data from create operation
    */
   private fun mergeInitialDataFromCreateOperation(operation: ObjectOperation): Any {
-    if (operation.map?.entries.isNullOrEmpty()) {
+    if (operation.map?.entries.isNullOrEmpty()) { // no map entries in MAP_CREATE op
       return mapOf<String, String>()
     }
 
@@ -264,7 +254,7 @@ internal class LiveMap(
     // RTLM6d1
     // in order to apply MAP_CREATE op for an existing map, we should merge their underlying entries keys.
     // we can do this by iterating over entries from MAP_CREATE op and apply changes on per-key basis as if we had MAP_SET, MAP_REMOVE operations.
-    operation.map!!.entries!!.forEach { (key, entry) ->
+    operation.map?.entries?.forEach { (key, entry) ->
       // for a MAP_CREATE operation we must use the serial value available on an entry, instead of a serial on a message
       val opSerial = entry.timeserial
       val update = if (entry.tombstone == true) {
