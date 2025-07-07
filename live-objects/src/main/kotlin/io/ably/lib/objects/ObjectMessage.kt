@@ -213,8 +213,8 @@ internal data class ObjectOperation(
   /**
    * The initial value json string for the object. This value should be used along with the nonce
    * and timestamp to create the object ID. Frontdoor will use this to verify the object ID.
-   * After verification the bytes will be decoded into the Map or Counter objects and
-   * the initialValue, nonce, and initialValueEncoding will be removed.
+   * After verification the json string will be decoded into the Map or Counter objects and
+   * the initialValue and nonce will be removed.
    * Spec: OOP3h
    */
   val initialValue: String? = null,
