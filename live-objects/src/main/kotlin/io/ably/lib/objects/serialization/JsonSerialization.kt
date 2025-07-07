@@ -87,13 +87,3 @@ internal class ObjectDataJsonSerializer : JsonSerializer<ObjectData>, JsonDeseri
     return ObjectData(objectId, value)
   }
 }
-
-internal class InitialValueJsonSerializer : JsonSerializer<Binary>, JsonDeserializer<Binary> {
-  override fun serialize(src: Binary, typeOfSrc: Type?, context: JsonSerializationContext?): JsonElement {
-    return JsonPrimitive(Base64.getEncoder().encodeToString(src.data))
-  }
-
-  override fun deserialize(json: JsonElement, typeOfT: Type?, context: JsonDeserializationContext?): Binary {
-    return Binary(Base64.getDecoder().decode(json.asString))
-  }
-}
