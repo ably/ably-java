@@ -1,5 +1,8 @@
 package io.ably.lib.objects
 
+import io.ably.lib.objects.type.*
+import io.ably.lib.objects.type.BaseLiveObject
+import io.ably.lib.objects.type.DefaultLiveCounter
 import io.ably.lib.types.Callback
 import io.ably.lib.types.ProtocolMessage
 import io.ably.lib.util.Log
@@ -19,7 +22,6 @@ import java.util.concurrent.ConcurrentHashMap
 internal class DefaultLiveObjects(private val channelName: String, private val adapter: LiveObjectsAdapter): LiveObjects {
   private val tag = "DefaultLiveObjects"
 
-  // State management similar to JavaScript implementation
   /**
    * @spec RTO2 - Objects state enum matching JavaScript ObjectsState
    */
@@ -30,10 +32,12 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
   }
 
   private var state = ObjectsState.INITIALIZED
+
   /**
    * @spec RTO3 - Objects pool storing all live objects by object ID
    */
-  private val objectsPool = ConcurrentHashMap<String, LiveObject>()
+  private val objectsPool = ObjectsPool(adapter)
+
   /**
    * @spec RTO5 - Sync objects data pool for collecting sync messages
    */
@@ -126,7 +130,6 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
 
   /**
    * Handles object messages (non-sync messages).
-   * Similar to JavaScript handleObjectMessages method.
    *
    * @spec RTO5 - Buffers messages if not synced, applies immediately if synced
    */
@@ -144,7 +147,6 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
 
   /**
    * Handles object sync messages.
-   * Similar to JavaScript handleObjectSyncMessages method.
    *
    * @spec RTO5 - Parses sync channel serial and manages sync sequences
    */
@@ -169,7 +171,6 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
 
   /**
    * Parses sync channel serial to extract syncId and syncCursor.
-   * Similar to JavaScript _parseSyncChannelSerial method.
    *
    * @spec RTO5 - Sync channel serial parsing logic
    */
@@ -191,7 +192,6 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
 
   /**
    * Starts a new sync sequence.
-   * Similar to JavaScript _startNewSync method.
    *
    * @spec RTO5 - Sync sequence initialization
    */
@@ -208,7 +208,6 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
 
   /**
    * Ends the current sync sequence.
-   * Similar to JavaScript _endSync method.
    *
    * @spec RTO5c - Applies sync data and buffered operations
    */
@@ -229,7 +228,6 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
 
   /**
    * Applies sync data to objects pool.
-   * Similar to JavaScript _applySync method.
    *
    * @spec RTO5c - Processes sync data and updates objects pool
    */
@@ -239,12 +237,12 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
     }
 
     val receivedObjectIds = mutableSetOf<String>()
-    val existingObjectUpdates = mutableListOf<Pair<LiveObject, Any>>()
+    val existingObjectUpdates = mutableListOf<Pair<BaseLiveObject, Any>>()
 
     // RTO5c1
     for ((objectId, objectState) in syncObjectsDataPool) {
       receivedObjectIds.add(objectId)
-      val existingObject = objectsPool[objectId]
+      val existingObject = objectsPool.get(objectId)
 
       // RTO5c1a
       if (existingObject != null) {
@@ -255,13 +253,12 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
         // RTO5c1b
         // Create new object
         val newObject = createObjectFromState(objectState) // RTO5c1b1
-        objectsPool[objectId] = newObject
+        objectsPool.set(objectId, newObject)
       }
     }
 
     // RTO5c2 - need to remove LiveObject instances from the ObjectsPool for which objectIds were not received during the sync sequence
-    val objectIdsToRemove = objectsPool.keys.filter { !receivedObjectIds.contains(it) }
-    objectIdsToRemove.forEach { objectsPool.remove(it) }
+    objectsPool.deleteExtraObjectIds(receivedObjectIds.toList())
 
     // call subscription callbacks for all updated existing objects
     existingObjectUpdates.forEach { (obj, update) ->
@@ -271,7 +268,6 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
 
   /**
    * Applies object messages to objects.
-   * Similar to JavaScript _applyObjectMessages method.
    *
    * @spec RTO6 - Creates zero-value objects if they don't exist
    */
@@ -284,16 +280,13 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
 
       val objectOperation: ObjectOperation = objectMessage.operation
       // RTO6a - get or create the zero value object in the pool
-      val obj = objectsPool.getOrPut(objectOperation.objectId) {
-        createZeroValueObject(objectOperation.objectId)
-      }
+      val obj = objectsPool.createZeroValueObjectIfNotExists(objectOperation.objectId)
       obj.applyOperation(objectOperation, objectMessage)
     }
   }
 
   /**
    * Applies sync messages to sync data pool.
-   * Similar to JavaScript applyObjectSyncMessages method.
    *
    * @spec RTO5b - Collects object states during sync sequence
    */
@@ -310,36 +303,21 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
   }
 
   /**
-   * Creates a zero-value object.
-   *
-   * @spec RTO6 - Creates zero-value objects based on object type
-   */
-  private fun createZeroValueObject(objectId: String): LiveObject {
-    val objId = ObjectId.fromString(objectId) // RTO6b
-    val zeroValueObject = when (objId.type) {
-      ObjectType.Map -> LiveMap.zeroValue(objectId, adapter) // RTO6b2
-      ObjectType.Counter -> LiveCounter.zeroValue(objectId, adapter) // RTO6b3
-    }
-    return zeroValueObject
-  }
-
-  /**
    * Creates an object from object state.
    *
-   * @spec RTO5c1b - Creates objects from object state based on type
+     * @spec RTO5c1b - Creates objects from object state based on type
    * TODO - Need to update the implementation
    */
-  private fun createObjectFromState(objectState: ObjectState): LiveObject {
+  private fun createObjectFromState(objectState: ObjectState): BaseLiveObject {
     return when {
-      objectState.counter != null -> LiveCounter(objectState.objectId, adapter) // RTO5c1b1a
-      objectState.map != null -> LiveMap(objectState.objectId, adapter) // RTO5c1b1b
+      objectState.counter != null -> DefaultLiveCounter(objectState.objectId, objectsPool) // RTO5c1b1a
+      objectState.map != null -> DefaultLiveMap(objectState.objectId, objectsPool) // RTO5c1b1b
       else -> throw serverError("Object state must contain either counter or map data") // RTO5c1b1c
     }
   }
 
   /**
    * Changes the state and emits events.
-   * Similar to JavaScript _stateChange method.
    *
    * @spec RTO2 - Emits state change events for syncing and synced states
    */
@@ -375,7 +353,7 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
   fun dispose() {
     // Dispose of any resources associated with this LiveObjects instance
     // For example, close any open connections or clean up references
-    objectsPool.clear()
+    objectsPool.dispose()
     syncObjectsDataPool.clear()
     bufferedObjectOperations.clear()
   }

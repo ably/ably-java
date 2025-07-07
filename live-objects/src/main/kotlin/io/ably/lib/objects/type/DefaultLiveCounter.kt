@@ -1,17 +1,29 @@
-package io.ably.lib.objects
+package io.ably.lib.objects.type
 
+import io.ably.lib.objects.*
+import io.ably.lib.objects.ErrorCode
+import io.ably.lib.objects.HttpStatusCode
+import io.ably.lib.objects.ObjectCounterOp
+import io.ably.lib.objects.ObjectMessage
+import io.ably.lib.objects.ObjectOperation
+import io.ably.lib.objects.ObjectOperationAction
+import io.ably.lib.objects.ObjectState
+import io.ably.lib.objects.ObjectsPool
+import io.ably.lib.objects.ablyException
+import io.ably.lib.objects.objectError
+import io.ably.lib.types.AblyException
+import io.ably.lib.types.Callback
 import io.ably.lib.util.Log
 
 /**
  * Implementation of LiveObject for LiveCounter.
- * Similar to JavaScript LiveCounter class.
  *
  * @spec RTLC1/RTLC2 - LiveCounter implementation extends LiveObject
  */
-internal class LiveCounter(
+internal class DefaultLiveCounter(
   objectId: String,
-  adapter: LiveObjectsAdapter
-) : BaseLiveObject(objectId, adapter) {
+  objectsPool: ObjectsPool
+) : BaseLiveObject(objectId, objectsPool), LiveCounter {
 
   override val tag = "LiveCounter"
   /**
@@ -55,6 +67,12 @@ internal class LiveCounter(
     return mapOf("amount" to (data - previousData))
   }
 
+  private fun payloadError(op: ObjectOperation) : AblyException {
+    return ablyException("No payload found for ${op.action} op for LiveCounter objectId=${objectId}",
+      ErrorCode.InvalidObject, HttpStatusCode.InternalServerError
+    )
+  }
+
   /**
    * @spec RTLC7 - Applies operations to LiveCounter
    */
@@ -74,19 +92,26 @@ internal class LiveCounter(
       )
       return
     }
-
     // should update stored site serial immediately. doesn't matter if we successfully apply the op,
     // as it's important to mark that the op was processed by the object
     updateTimeSerial(opSiteCode!!, opSerial!!)
 
+    if (isTombstoned) {
+      // this object is tombstoned so the operation cannot be applied
+      return;
+    }
+
     val update = when (operation.action) {
       ObjectOperationAction.CounterCreate -> applyCounterCreate(operation)
-      ObjectOperationAction.CounterInc -> applyCounterInc(operation.counterOp!!)
-      ObjectOperationAction.ObjectDelete -> applyObjectDelete()
-      else -> {
-        Log.w(tag, "Invalid ${operation.action} op for LiveCounter objectId=$objectId")
-        return
+      ObjectOperationAction.CounterInc -> {
+        if (operation.counterOp != null) {
+          applyCounterInc(operation.counterOp)
+        } else {
+          throw payloadError(operation)
+        }
       }
+      ObjectOperationAction.ObjectDelete -> applyObjectDelete()
+      else -> throw objectError("Invalid ${operation.action} op for LiveCounter objectId=${objectId}")
     }
 
     notifyUpdated(update)
@@ -107,7 +132,7 @@ internal class LiveCounter(
         tag,
         "Skipping applying COUNTER_CREATE op on a counter instance as it was already applied before; objectId=$objectId"
       )
-      return mapOf<String, Long>()
+      return mapOf()
     }
 
     return mergeInitialDataFromCreateOperation(operation)
@@ -136,13 +161,42 @@ internal class LiveCounter(
     return mapOf("amount" to count)
   }
 
+  /**
+   * Called during garbage collection intervals.
+   * Nothing to GC for a counter object.
+   */
+  override fun onGCInterval() {
+    // Nothing to GC for a counter object
+    return
+  }
+
+  override fun increment() {
+    TODO("Not yet implemented")
+  }
+
+  override fun incrementAsync(callback: Callback<Void>) {
+    TODO("Not yet implemented")
+  }
+
+  override fun decrement() {
+    TODO("Not yet implemented")
+  }
+
+  override fun decrementAsync(callback: Callback<Void>) {
+    TODO("Not yet implemented")
+  }
+
+  override fun value(): Long {
+    TODO("Not yet implemented")
+  }
+
   companion object {
     /**
      * Creates a zero-value counter object.
      * @spec RTLC4 - Returns LiveCounter with 0 value
      */
-    internal fun zeroValue(objectId: String, adapter: LiveObjectsAdapter): LiveCounter {
-      return LiveCounter(objectId, adapter)
+    internal fun zeroValue(objectId: String, objectsPool: ObjectsPool): DefaultLiveCounter {
+      return DefaultLiveCounter(objectId, objectsPool)
     }
   }
 }

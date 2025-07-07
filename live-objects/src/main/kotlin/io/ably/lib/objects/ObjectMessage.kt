@@ -459,3 +459,7 @@ private fun ObjectValue.size(): Int {
     else -> 0  // Spec: OD3f
   }
 }
+
+internal fun ObjectData?.isInvalid(): Boolean {
+  return this?.objectId.isNullOrEmpty() && this?.value == null
+}
