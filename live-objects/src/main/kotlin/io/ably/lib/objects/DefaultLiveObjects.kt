@@ -43,7 +43,6 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
    */
   private val syncObjectsDataPool = ConcurrentHashMap<String, ObjectState>()
   private var currentSyncId: String? = null
-  private var currentSyncCursor: String? = null
   /**
    * @spec RTO5 - Buffered object operations during sync
    */
@@ -107,7 +106,7 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
     }
 
     if (protocolMessage.state == null || protocolMessage.state.isEmpty()) {
-      Log.w(tag, "Received ProtocolMessage with null or empty object state, ignoring")
+      Log.w(tag, "Received ProtocolMessage with null or empty objects, ignoring")
       return
     }
 
@@ -155,14 +154,14 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
     val newSyncSequence = currentSyncId != syncId
     if (newSyncSequence) {
       // RTO5a2 - new sync sequence started
-      startNewSync(syncId, syncCursor) // RTO5a2a
+      startNewSync(syncId) // RTO5a2a
     }
 
     // RTO5a3 - continue current sync sequence
     applyObjectSyncMessages(objectMessages) // RTO5b
 
     // RTO5a4 - if this is the last (or only) message in a sequence of sync updates, end the sync
-    if (syncCursor == null) {
+    if (syncChannelSerial.isNullOrEmpty() || syncCursor.isNullOrEmpty()) {
       // defer the state change event until the next tick if this was a new sync sequence
       // to allow any event listeners to process the start of the new sequence event that was emitted earlier during this event loop.
       endSync(newSyncSequence)
@@ -195,14 +194,13 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
    *
    * @spec RTO5 - Sync sequence initialization
    */
-  private fun startNewSync(syncId: String?, syncCursor: String?) {
-    Log.v(tag, "Starting new sync sequence: syncId=$syncId, syncCursor=$syncCursor")
+  private fun startNewSync(syncId: String?) {
+    Log.v(tag, "Starting new sync sequence: syncId=$syncId")
 
     // need to discard all buffered object operation messages on new sync start
     bufferedObjectOperations.clear()
     syncObjectsDataPool.clear()
     currentSyncId = syncId
-    currentSyncCursor = syncCursor
     stateChange(ObjectsState.SYNCING, false)
   }
 
@@ -213,16 +211,14 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
    */
   private fun endSync(deferStateEvent: Boolean) {
     Log.v(tag, "Ending sync sequence")
-
     applySync()
     // should apply buffered object operations after we applied the sync.
-    // can use regular object messages application logic
+    // can use regular non-sync object.operation logic
     applyObjectMessages(bufferedObjectOperations)
 
     bufferedObjectOperations.clear()
     syncObjectsDataPool.clear() // RTO5c4
     currentSyncId = null // RTO5c3
-    currentSyncCursor = null // RTO5c3
     stateChange(ObjectsState.SYNCED, deferStateEvent)
   }
 
@@ -249,16 +245,15 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
         // Update existing object
         val update = existingObject.overrideWithObjectState(objectState) // RTO5c1a1
         existingObjectUpdates.add(Pair(existingObject, update))
-      } else {
-        // RTO5c1b
-        // Create new object
-        val newObject = createObjectFromState(objectState) // RTO5c1b1
+      } else { // RTO5c1b
+        // RTO5c1b1 - Create new object and add it to the pool
+        val newObject = createObjectFromState(objectState) //
         objectsPool.set(objectId, newObject)
       }
     }
 
     // RTO5c2 - need to remove LiveObject instances from the ObjectsPool for which objectIds were not received during the sync sequence
-    objectsPool.deleteExtraObjectIds(receivedObjectIds.toList())
+    objectsPool.deleteExtraObjectIds(receivedObjectIds)
 
     // call subscription callbacks for all updated existing objects
     existingObjectUpdates.forEach { (obj, update) ->
@@ -298,21 +293,27 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
       }
 
       val objectState: ObjectState = objectMessage.objectState
-      syncObjectsDataPool[objectState.objectId] = objectState
+      if (objectState.counter != null || objectState.map != null) {
+        syncObjectsDataPool[objectState.objectId] = objectState
+      } else {
+        // RTO5c1b1c - object state must contain either counter or map data
+        Log.w(tag, "Object state received without counter or map data, skipping message: ${objectMessage.id}")
+      }
     }
   }
 
   /**
    * Creates an object from object state.
    *
-     * @spec RTO5c1b - Creates objects from object state based on type
-   * TODO - Need to update the implementation
+   * @spec RTO5c1b - Creates objects from object state based on type
    */
   private fun createObjectFromState(objectState: ObjectState): BaseLiveObject {
     return when {
-      objectState.counter != null -> DefaultLiveCounter(objectState.objectId, objectsPool) // RTO5c1b1a
-      objectState.map != null -> DefaultLiveMap(objectState.objectId, objectsPool) // RTO5c1b1b
-      else -> throw serverError("Object state must contain either counter or map data") // RTO5c1b1c
+      objectState.counter != null -> DefaultLiveCounter.zeroValue(objectState.objectId, objectsPool) // RTO5c1b1a
+      objectState.map != null -> DefaultLiveMap.zeroValue(objectState.objectId, objectsPool) // RTO5c1b1b
+      else -> throw clientError("Object state must contain either counter or map data") // RTO5c1b1c
+    }.apply {
+      overrideWithObjectState(objectState)
     }
   }
 

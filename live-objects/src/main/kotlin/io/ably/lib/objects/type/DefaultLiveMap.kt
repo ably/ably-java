@@ -67,7 +67,7 @@ internal class DefaultLiveMap(
 
     if (isTombstoned) {
       // this object is tombstoned. this is a terminal state which can't be overridden. skip the rest of object state message processing
-      return mapOf<String, String>()
+      return mapOf()
     }
 
     val previousData = data.toMap()

@@ -70,11 +70,10 @@ internal class ObjectsPool(
   /**
    * Deletes objects from the pool for which object ids are not found in the provided array of ids.
    */
-  fun deleteExtraObjectIds(objectIds: List<String>) {
-    val poolObjectIds = pool.keys.toList()
-    val extraObjectIds = poolObjectIds.filter { !objectIds.contains(it) }
-
-    extraObjectIds.forEach { remove(it) }
+  fun deleteExtraObjectIds(objectIds: MutableSet<String>) {
+    pool.keys.toList()
+      .filter { it !in objectIds }
+      .forEach { remove(it) }
   }
 
   /**

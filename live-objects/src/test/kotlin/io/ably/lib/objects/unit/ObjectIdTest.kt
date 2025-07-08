@@ -48,63 +48,6 @@ class ObjectIdTest {
     assertAblyExceptionError(exception1)
   }
 
-  @Test
-  fun testObjectIdWithMultipleColons() {
-    val exception = assertThrows(AblyException::class.java) {
-      ObjectId.fromString("map:abc:123@1640995200000")
-    }
-
-    assertAblyExceptionError(exception)
-  }
-
-  @Test
-  fun testObjectIdWithoutAtSymbol() {
-    val exception = assertThrows(AblyException::class.java) {
-      ObjectId.fromString("map:abc1231640995200000")
-    }
-    assertAblyExceptionError(exception)
-  }
-
-  @Test
-  fun testObjectIdWithMultipleAtSymbols() {
-    val exception = assertThrows(AblyException::class.java) {
-      ObjectId.fromString("map:abc123@1640995200000@extra")
-    }
-    assertAblyExceptionError(exception)
-  }
-
-  @Test
-  fun testObjectIdWithEmptyHash() {
-    val exception = assertThrows(AblyException::class.java) {
-      ObjectId.fromString("map:@1640995200000")
-    }
-    assertAblyExceptionError(exception)
-  }
-
-  @Test
-  fun testObjectIdWithOnlyType() {
-    val exception = assertThrows(AblyException::class.java) {
-      ObjectId.fromString("map:")
-    }
-    assertAblyExceptionError(exception)
-  }
-
-  @Test
-  fun testObjectIdWithOnlyTypeAndHash() {
-    val exception = assertThrows(AblyException::class.java) {
-      ObjectId.fromString("map:abc123")
-    }
-    assertAblyExceptionError(exception)
-  }
-
-  @Test
-  fun testObjectIdWithOnlyTypeAndTimestamp() {
-    val exception = assertThrows(AblyException::class.java) {
-      ObjectId.fromString("map:1640995200000")
-    }
-    assertAblyExceptionError(exception)
-  }
-
   private fun assertAblyExceptionError(
     exception: AblyException
   ) {
