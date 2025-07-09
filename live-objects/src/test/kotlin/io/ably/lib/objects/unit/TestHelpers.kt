@@ -1,5 +1,8 @@
 package io.ably.lib.objects.unit
 
+import io.ably.lib.objects.invokePrivateMethod
+import io.ably.lib.objects.type.DefaultLiveMap
+import io.ably.lib.objects.type.DefaultLiveMap.LiveMapEntry
 import io.ably.lib.realtime.AblyRealtime
 import io.ably.lib.realtime.Channel
 import io.ably.lib.realtime.ChannelState
@@ -34,4 +37,8 @@ internal fun getMockRealtimeChannel(
     }.apply {
       state = ChannelState.attached
     }
+}
+
+internal fun DefaultLiveMap.calculateDiff(prevData: Map<String, LiveMapEntry>, newData: Map<String, LiveMapEntry>): Map<String, String> {
+    return this.invokePrivateMethod("calculateUpdateFromDataDiff",prevData, newData)
 }

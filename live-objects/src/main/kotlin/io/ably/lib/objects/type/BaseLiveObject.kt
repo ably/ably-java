@@ -1,5 +1,6 @@
 package io.ably.lib.objects.type
 
+import io.ably.lib.objects.LiveObjectsAdapter
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState
@@ -15,7 +16,7 @@ import io.ably.lib.util.Log
  */
 internal abstract class BaseLiveObject(
   protected val objectId: String,
-  protected val objectsPool: ObjectsPool
+  protected val adapter: LiveObjectsAdapter
 ) {
 
   protected open val tag = "BaseLiveObject"

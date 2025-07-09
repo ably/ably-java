@@ -126,8 +126,8 @@ internal class ObjectsPool(
 
     val parsedObjectId = ObjectId.fromString(objectId) // RTO6b
     val zeroValueObject = when (parsedObjectId.type) {
-      ObjectType.Map -> DefaultLiveMap.zeroValue(objectId, this) // RTO6b2
-      ObjectType.Counter -> DefaultLiveCounter.zeroValue(objectId, this) // RTO6b3
+      ObjectType.Map -> DefaultLiveMap.zeroValue(objectId, adapter, this) // RTO6b2
+      ObjectType.Counter -> DefaultLiveCounter.zeroValue(objectId, adapter) // RTO6b3
     }
 
     set(objectId, zeroValueObject)
@@ -140,7 +140,7 @@ internal class ObjectsPool(
    * @spec RTO3b - Creates root LiveMap object
    */
   private fun createInitialPool() {
-    val root = DefaultLiveMap.zeroValue(ROOT_OBJECT_ID, this)
+    val root = DefaultLiveMap.zeroValue(ROOT_OBJECT_ID, adapter, this)
     pool[ROOT_OBJECT_ID] = root
   }
 

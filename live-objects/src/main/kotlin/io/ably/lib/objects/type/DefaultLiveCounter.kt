@@ -22,8 +22,8 @@ import io.ably.lib.util.Log
  */
 internal class DefaultLiveCounter(
   objectId: String,
-  objectsPool: ObjectsPool
-) : BaseLiveObject(objectId, objectsPool), LiveCounter {
+  adapter: LiveObjectsAdapter,
+) : BaseLiveObject(objectId, adapter), LiveCounter {
 
   override val tag = "LiveCounter"
   /**
@@ -46,7 +46,7 @@ internal class DefaultLiveCounter(
 
     if (isTombstoned) {
       // this object is tombstoned. this is a terminal state which can't be overridden. skip the rest of object state message processing
-      return mapOf("amount" to 0L)
+      return mapOf()
     }
 
     val previousData = data
@@ -195,8 +195,8 @@ internal class DefaultLiveCounter(
      * Creates a zero-value counter object.
      * @spec RTLC4 - Returns LiveCounter with 0 value
      */
-    internal fun zeroValue(objectId: String, objectsPool: ObjectsPool): DefaultLiveCounter {
-      return DefaultLiveCounter(objectId, objectsPool)
+    internal fun zeroValue(objectId: String, adapter: LiveObjectsAdapter): DefaultLiveCounter {
+      return DefaultLiveCounter(objectId, adapter)
     }
   }
 }

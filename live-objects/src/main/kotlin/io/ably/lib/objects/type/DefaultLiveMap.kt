@@ -25,16 +25,17 @@ import io.ably.lib.util.Log
  */
 internal class DefaultLiveMap(
   objectId: String,
-  objectsPool: ObjectsPool,
+  adapter: LiveObjectsAdapter,
+  private val objectsPool: ObjectsPool,
   private val semantics: MapSemantics = MapSemantics.LWW
-) : BaseLiveObject(objectId, objectsPool), LiveMap {
+) : BaseLiveObject(objectId, adapter), LiveMap {
 
   override val tag = "LiveMap"
 
   /**
    * @spec RTLM3 - Map data structure storing entries
    */
-  private data class LiveMapEntry(
+  internal data class LiveMapEntry(
     var tombstone: Boolean = false,
     var tombstonedAt: Long? = null,
     var timeserial: String? = null,
@@ -322,30 +323,47 @@ internal class DefaultLiveMap(
     val update = mutableMapOf<String, String>()
 
     // Check for removed entries
-    for ((key, entry) in prevData) {
-      if (!entry.tombstone && !newData.containsKey(key)) {
+    for ((key, prevEntry) in prevData) {
+      if (!prevEntry.tombstone && !newData.containsKey(key)) {
         update[key] = "removed"
       }
     }
 
     // Check for added/updated entries
-    for ((key, entry) in newData) {
+    for ((key, newEntry) in newData) {
       if (!prevData.containsKey(key)) {
-        if (!entry.tombstone) {
+        // if property does not exist in current map, but new data has it as non-tombstoned property - got updated
+        if (!newEntry.tombstone) {
           update[key] = "updated"
         }
-      } else {
-        val prevEntry = prevData[key]!!
-        if (prevEntry.tombstone && !entry.tombstone) {
-          update[key] = "updated"
-        } else if (!prevEntry.tombstone && entry.tombstone) {
-          update[key] = "removed"
-        } else if (!prevEntry.tombstone && !entry.tombstone) {
-          // Compare values
-          if (prevEntry.data != entry.data) {
-            update[key] = "updated"
-          }
-        }
+        // otherwise, if new data has this prop tombstoned - do nothing, as property didn't exist anyway
+        continue
+      }
+
+      // properties that exist both in current and new map data need to have their values compared to decide on update type
+      val prevEntry = prevData[key]!!
+
+      // compare tombstones first
+      if (prevEntry.tombstone && !newEntry.tombstone) {
+        // prev prop is tombstoned, but new is not. it means prop was updated to a meaningful value
+        update[key] = "updated"
+        continue
+      }
+      if (!prevEntry.tombstone && newEntry.tombstone) {
+        // prev prop is not tombstoned, but new is. it means prop was removed
+        update[key] = "removed"
+        continue
+      }
+      if (prevEntry.tombstone && newEntry.tombstone) {
+        // props are tombstoned - treat as noop, as there is no data to compare
+        continue
+      }
+
+      // both props exist and are not tombstoned, need to compare values to see if it was changed
+      val valueChanged = prevEntry.data != newEntry.data
+      if (valueChanged) {
+        update[key] = "updated"
+        continue
       }
     }
 
@@ -412,8 +430,8 @@ internal class DefaultLiveMap(
      * Creates a zero-value map object.
      * @spec RTLM4 - Returns LiveMap with empty map data
      */
-    internal fun zeroValue(objectId: String, objectsPool: ObjectsPool): DefaultLiveMap {
-      return DefaultLiveMap(objectId, objectsPool)
+    internal fun zeroValue(objectId: String, adapter: LiveObjectsAdapter, objectsPool: ObjectsPool): DefaultLiveMap {
+      return DefaultLiveMap(objectId, adapter, objectsPool)
     }
   }
 }

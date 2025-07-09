@@ -309,8 +309,8 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
    */
   private fun createObjectFromState(objectState: ObjectState): BaseLiveObject {
     return when {
-      objectState.counter != null -> DefaultLiveCounter.zeroValue(objectState.objectId, objectsPool) // RTO5c1b1a
-      objectState.map != null -> DefaultLiveMap.zeroValue(objectState.objectId, objectsPool) // RTO5c1b1b
+      objectState.counter != null -> DefaultLiveCounter.zeroValue(objectState.objectId, adapter) // RTO5c1b1a
+      objectState.map != null -> DefaultLiveMap.zeroValue(objectState.objectId, adapter, objectsPool) // RTO5c1b1b
       else -> throw clientError("Object state must contain either counter or map data") // RTO5c1b1c
     }.apply {
       overrideWithObjectState(objectState)
