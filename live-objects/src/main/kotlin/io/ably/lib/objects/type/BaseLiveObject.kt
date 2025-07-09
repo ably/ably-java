@@ -12,10 +12,10 @@ import io.ably.lib.util.Log
  * Base implementation of LiveObject interface.
  * Provides common functionality for all live objects.
  *
- * @spec RTLM1/RTLC1 - Base class for LiveMap/LiveCounter objects
+ * @spec RTLO1/RTLO2 - Base class for LiveMap/LiveCounter objects
  */
 internal abstract class BaseLiveObject(
-  protected val objectId: String,
+  protected val objectId: String, // // RTLO3a
   protected val adapter: LiveObjectsAdapter
 ) {
 
@@ -23,15 +23,12 @@ internal abstract class BaseLiveObject(
   internal var isTombstoned = false
   internal var tombstonedAt: Long? = null
 
-  /**
-   * @spec RTLM6/RTLC6 - Map of serials keyed by site code for LiveMap/LiveCounter
-   */
-  protected val siteTimeserials = mutableMapOf<String, String>()
+  protected val siteTimeserials = mutableMapOf<String, String>() // RTLO3b
 
   /**
-   * @spec RTLM6/RTLC6 - Flag to track if create operation has been merged for LiveMap/LiveCounter
+   * @spec RTLO3 - Flag to track if create operation has been merged for LiveMap/LiveCounter
    */
-  protected var createOperationIsMerged = false
+  protected var createOperationIsMerged = false // RTLO3c
 
   fun notifyUpdated(update: Any) {
     // TODO: Implement event emission for updates
@@ -41,17 +38,17 @@ internal abstract class BaseLiveObject(
   /**
    * Checks if an operation can be applied based on serial comparison.
    *
-   * @spec RTLM9/RTLC9 - Serial comparison logic for LiveMap/LiveCounter operations
+   * @spec RTLO4a - Serial comparison logic for LiveMap/LiveCounter operations
    */
   protected fun canApplyOperation(siteCode: String?, serial: String?): Boolean {
     if (serial.isNullOrEmpty()) {
-      throw objectError("Invalid serial: $serial")
+      throw objectError("Invalid serial: $serial") // RTLO4a3
     }
     if (siteCode.isNullOrEmpty()) {
-      throw objectError("Invalid site code: $siteCode")
+      throw objectError("Invalid site code: $siteCode") // RTLO4a3
     }
-    val existingSiteSerial = siteTimeserials[siteCode]
-    return existingSiteSerial == null || serial > existingSiteSerial
+    val existingSiteSerial = siteTimeserials[siteCode] // RTLO4a4
+    return existingSiteSerial == null || serial > existingSiteSerial // RTLO4a5, RTLO4a6
   }
 
   /**

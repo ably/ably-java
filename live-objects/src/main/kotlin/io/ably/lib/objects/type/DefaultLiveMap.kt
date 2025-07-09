@@ -28,7 +28,7 @@ internal class DefaultLiveMap(
   adapter: LiveObjectsAdapter,
   private val objectsPool: ObjectsPool,
   private val semantics: MapSemantics = MapSemantics.LWW
-) : BaseLiveObject(objectId, adapter), LiveMap {
+) : LiveMap, BaseLiveObject(objectId, adapter) {
 
   override val tag = "LiveMap"
 
@@ -105,7 +105,7 @@ internal class DefaultLiveMap(
   }
 
   /**
-   * @spec RTLM7 - Applies operations to LiveMap
+   * @spec RTLM15 - Applies operations to LiveMap
    */
   override fun applyOperation(operation: ObjectOperation, message: ObjectMessage) {
     if (operation.objectId != objectId) {
@@ -118,6 +118,7 @@ internal class DefaultLiveMap(
     val opSiteCode = message.siteCode
 
     if (!canApplyOperation(opSiteCode, opSerial)) {
+      // RTLM15b
       Log.v(
         tag,
         "Skipping ${operation.action} op: op serial $opSerial <= site serial ${siteTimeserials[opSiteCode]}; objectId=$objectId"
@@ -126,7 +127,7 @@ internal class DefaultLiveMap(
     }
     // should update stored site serial immediately. doesn't matter if we successfully apply the op,
     // as it's important to mark that the op was processed by the object
-    updateTimeSerial(opSiteCode!!, opSerial!!)
+    updateTimeSerial(opSiteCode!!, opSerial!!) // RTLM15c
 
     if (isTombstoned) {
       // this object is tombstoned so the operation cannot be applied
@@ -134,23 +135,23 @@ internal class DefaultLiveMap(
     }
 
     val update = when (operation.action) {
-      ObjectOperationAction.MapCreate -> applyMapCreate(operation)
+      ObjectOperationAction.MapCreate -> applyMapCreate(operation) // RTLM15d1
       ObjectOperationAction.MapSet -> {
         if (operation.mapOp != null) {
-          applyMapSet(operation.mapOp, opSerial)
+          applyMapSet(operation.mapOp, opSerial) // RTLM15d2
         } else {
           throw payloadError(operation)
         }
       }
       ObjectOperationAction.MapRemove -> {
         if (operation.mapOp != null) {
-          applyMapRemove(operation.mapOp, opSerial)
+          applyMapRemove(operation.mapOp, opSerial) // RTLM15d3
         } else {
           throw payloadError(operation)
         }
       }
       ObjectOperationAction.ObjectDelete -> applyObjectDelete()
-      else -> throw objectError("Invalid ${operation.action} op for LiveMap objectId=$objectId")
+      else -> throw objectError("Invalid ${operation.action} op for LiveMap objectId=$objectId") // RTLM15d4
     }
 
     notifyUpdated(update)
@@ -163,10 +164,14 @@ internal class DefaultLiveMap(
   }
 
   /**
-   * @spec RTLM6d - Merges initial data from create operation
+   * @spec RTLM16 - Applies map create operation
    */
   private fun applyMapCreate(operation: ObjectOperation): Map<String, String> {
     if (createOperationIsMerged) {
+      // RTLM16b
+      // There can't be two different create operation for the same object id, because the object id
+      // fully encodes that operation. This means we can safely ignore any new incoming create operations
+      // if we already merged it once.
       Log.v(
         tag,
         "Skipping applying MAP_CREATE op on a map instance as it was already applied before; objectId=$objectId"
@@ -175,18 +180,22 @@ internal class DefaultLiveMap(
     }
 
     if (semantics != operation.map?.semantics) {
+      // RTLM16c
       throw objectError(
         "Cannot apply MAP_CREATE op on LiveMap objectId=$objectId; map's semantics=$semantics, but op expected ${operation.map?.semantics}",
       )
     }
 
-    return mergeInitialDataFromCreateOperation(operation)
+    return mergeInitialDataFromCreateOperation(operation) // RTLM16d
   }
 
   /**
    * @spec RTLM7 - Applies MAP_SET operation to LiveMap
    */
-  private fun applyMapSet(mapOp: ObjectMapOp, opSerial: String?): Map<String, String> {
+  private fun applyMapSet(
+    mapOp: ObjectMapOp, // RTLM7d1
+    opSerial: String?, // RTLM7d2
+  ): Map<String, String> {
     val existingEntry = data[mapOp.key]
 
     // RTLM7a
@@ -209,7 +218,7 @@ internal class DefaultLiveMap(
       // but it is possible that we don't have the corresponding object in the pool yet (for example, we haven't seen the *_CREATE op for it).
       // we don't want to return undefined from this map's .get() method even if we don't have the object,
       // so instead we create a zero-value object for that object id if it not exists.
-      objectsPool.createZeroValueObjectIfNotExists(it)
+      objectsPool.createZeroValueObjectIfNotExists(it) // RTLM7c1
     }
 
     if (existingEntry != null) {
@@ -233,7 +242,10 @@ internal class DefaultLiveMap(
   /**
    * @spec RTLM8 - Applies MAP_REMOVE operation to LiveMap
    */
-  private fun applyMapRemove(mapOp: ObjectMapOp, opSerial: String?): Map<String, String> {
+  private fun applyMapRemove(
+    mapOp: ObjectMapOp, // RTLM8c1
+    opSerial: String?, // RTLM8c2
+  ): Map<String, String> {
     val existingEntry = data[mapOp.key]
 
     // RTLM8a
@@ -283,7 +295,7 @@ internal class DefaultLiveMap(
   }
 
   /**
-   * @spec RTLM6d - Merges initial data from create operation
+   * @spec RTLM17 - Merges initial data from create operation
    */
   private fun mergeInitialDataFromCreateOperation(operation: ObjectOperation): Map<String, String> {
     if (operation.map?.entries.isNullOrEmpty()) { // no map entries in MAP_CREATE op
@@ -292,17 +304,17 @@ internal class DefaultLiveMap(
 
     val aggregatedUpdate = mutableMapOf<String, String>()
 
-    // RTLM6d1
+    // RTLM17a
     // in order to apply MAP_CREATE op for an existing map, we should merge their underlying entries keys.
     // we can do this by iterating over entries from MAP_CREATE op and apply changes on per-key basis as if we had MAP_SET, MAP_REMOVE operations.
     operation.map?.entries?.forEach { (key, entry) ->
       // for a MAP_CREATE operation we must use the serial value available on an entry, instead of a serial on a message
       val opTimeserial = entry.timeserial
       val update = if (entry.tombstone == true) {
-        // RTLM6d1b - entry in MAP_CREATE op is removed, try to apply MAP_REMOVE op
+        // RTLM17a2 - entry in MAP_CREATE op is removed, try to apply MAP_REMOVE op
         applyMapRemove(ObjectMapOp(key), opTimeserial)
       } else {
-        // RTLM6d1a - entry in MAP_CREATE op is not removed, try to set it via MAP_SET op
+        // RTLM17a1 - entry in MAP_CREATE op is not removed, try to set it via MAP_SET op
         applyMapSet(ObjectMapOp(key, entry.data), opTimeserial)
       }
 
@@ -314,7 +326,7 @@ internal class DefaultLiveMap(
       aggregatedUpdate.putAll(update)
     }
 
-    createOperationIsMerged = true // RTLM6d2
+    createOperationIsMerged = true // RTLM17b
 
     return aggregatedUpdate
   }

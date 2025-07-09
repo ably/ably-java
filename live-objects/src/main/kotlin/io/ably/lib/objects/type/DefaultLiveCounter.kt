@@ -8,7 +8,6 @@ import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectOperationAction
 import io.ably.lib.objects.ObjectState
-import io.ably.lib.objects.ObjectsPool
 import io.ably.lib.objects.ablyException
 import io.ably.lib.objects.objectError
 import io.ably.lib.types.AblyException
@@ -23,7 +22,7 @@ import io.ably.lib.util.Log
 internal class DefaultLiveCounter(
   objectId: String,
   adapter: LiveObjectsAdapter,
-) : BaseLiveObject(objectId, adapter), LiveCounter {
+) : LiveCounter, BaseLiveObject(objectId, adapter) {
 
   override val tag = "LiveCounter"
   /**
@@ -86,6 +85,7 @@ internal class DefaultLiveCounter(
     val opSiteCode = message.siteCode
 
     if (!canApplyOperation(opSiteCode, opSerial)) {
+      // RTLC7b
       Log.v(
         tag,
         "Skipping ${operation.action} op: op serial $opSerial <= site serial ${siteTimeserials[opSiteCode]}; objectId=$objectId"
@@ -94,7 +94,7 @@ internal class DefaultLiveCounter(
     }
     // should update stored site serial immediately. doesn't matter if we successfully apply the op,
     // as it's important to mark that the op was processed by the object
-    updateTimeSerial(opSiteCode!!, opSerial!!)
+    updateTimeSerial(opSiteCode!!, opSerial!!) // RTLC7c
 
     if (isTombstoned) {
       // this object is tombstoned so the operation cannot be applied
@@ -102,16 +102,16 @@ internal class DefaultLiveCounter(
     }
 
     val update = when (operation.action) {
-      ObjectOperationAction.CounterCreate -> applyCounterCreate(operation)
+      ObjectOperationAction.CounterCreate -> applyCounterCreate(operation) // RTLC7d1
       ObjectOperationAction.CounterInc -> {
         if (operation.counterOp != null) {
-          applyCounterInc(operation.counterOp)
+          applyCounterInc(operation.counterOp) // RTLC7d2
         } else {
           throw payloadError(operation)
         }
       }
       ObjectOperationAction.ObjectDelete -> applyObjectDelete()
-      else -> throw objectError("Invalid ${operation.action} op for LiveCounter objectId=${objectId}")
+      else -> throw objectError("Invalid ${operation.action} op for LiveCounter objectId=${objectId}") // RTLC7d3
     }
 
     notifyUpdated(update)
@@ -124,10 +124,14 @@ internal class DefaultLiveCounter(
   }
 
   /**
-   * @spec RTLC6d - Merges initial data from create operation
+   * @spec RTLC8 - Applies counter create operation
    */
   private fun applyCounterCreate(operation: ObjectOperation): Map<String, Long> {
     if (createOperationIsMerged) {
+      // RTLC8b
+      // There can't be two different create operation for the same object id, because the object id
+      // fully encodes that operation. This means we can safely ignore any new incoming create operations
+      // if we already merged it once.
       Log.v(
         tag,
         "Skipping applying COUNTER_CREATE op on a counter instance as it was already applied before; objectId=$objectId"
@@ -135,20 +139,20 @@ internal class DefaultLiveCounter(
       return mapOf()
     }
 
-    return mergeInitialDataFromCreateOperation(operation)
+    return mergeInitialDataFromCreateOperation(operation) // RTLC8c
   }
 
   /**
-   * @spec RTLC8 - Applies counter increment operation
+   * @spec RTLC9 - Applies counter increment operation
    */
   private fun applyCounterInc(counterOp: ObjectCounterOp): Map<String, Long> {
     val amount = counterOp.amount?.toLong() ?: 0
-    data += amount
+    data += amount // RTLC9b
     return mapOf("amount" to amount)
   }
 
   /**
-   * @spec RTLC6d - Merges initial data from create operation
+   * @spec RTLC10 - Merges initial data from create operation
    */
   private fun mergeInitialDataFromCreateOperation(operation: ObjectOperation): Map<String, Long> {
     // if a counter object is missing for the COUNTER_CREATE op, the initial value is implicitly 0 in this case.
@@ -156,8 +160,8 @@ internal class DefaultLiveCounter(
     // if we got here, it means that current counter instance is missing the initial value in its data reference,
     // which we're going to add now.
     val count = operation.counter?.count?.toLong() ?: 0
-    data += count // RTLC6d1
-    createOperationIsMerged = true // RTLC6d2
+    data += count // RTLC10a
+    createOperationIsMerged = true // RTLC10b
     return mapOf("amount" to count)
   }
 
@@ -186,8 +190,12 @@ internal class DefaultLiveCounter(
     TODO("Not yet implemented")
   }
 
+  /**
+   * @spec RTLC5 - Returns the current counter value
+   */
   override fun value(): Long {
-    TODO("Not yet implemented")
+    // RTLC5a, RTLC5b - Configuration validation would be done here
+    return data // RTLC5c
   }
 
   companion object {

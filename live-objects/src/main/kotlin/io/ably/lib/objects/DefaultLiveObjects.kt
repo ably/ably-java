@@ -44,9 +44,9 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
   private val syncObjectsDataPool = ConcurrentHashMap<String, ObjectState>()
   private var currentSyncId: String? = null
   /**
-   * @spec RTO5 - Buffered object operations during sync
+   * @spec RTO7 - Buffered object operations during sync
    */
-  private val bufferedObjectOperations = mutableListOf<ObjectMessage>()
+  private val bufferedObjectOperations = mutableListOf<ObjectMessage>() // RTO7a
 
   /**
    * @spec RTO1 - Returns the root LiveMap object with proper validation and sync waiting
@@ -130,18 +130,21 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
   /**
    * Handles object messages (non-sync messages).
    *
-   * @spec RTO5 - Buffers messages if not synced, applies immediately if synced
+   * @spec RTO8 - Buffers messages if not synced, applies immediately if synced
    */
   private fun handleObjectMessages(objectMessages: List<ObjectMessage>) {
     if (state != ObjectsState.SYNCED) {
-      // Buffer messages if not synced yet
+      // RTO7 - The client receives object messages in realtime over the channel concurrently with the sync sequence.
+      // Some of the incoming object messages may have already been applied to the objects described in
+      // the sync sequence, but others may not; therefore we must buffer these messages so that we can apply
+      // them to the objects once the sync is complete.
       Log.v(tag, "Buffering ${objectMessages.size} object messages, state: $state")
-      bufferedObjectOperations.addAll(objectMessages)
+      bufferedObjectOperations.addAll(objectMessages) // RTO8a
       return
     }
 
     // Apply messages immediately if synced
-    applyObjectMessages(objectMessages)
+    applyObjectMessages(objectMessages) // RTO8b
   }
 
   /**
@@ -154,7 +157,7 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
     val newSyncSequence = currentSyncId != syncId
     if (newSyncSequence) {
       // RTO5a2 - new sync sequence started
-      startNewSync(syncId) // RTO5a2a
+      startNewSync(syncId)
     }
 
     // RTO5a3 - continue current sync sequence
@@ -198,8 +201,8 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
     Log.v(tag, "Starting new sync sequence: syncId=$syncId")
 
     // need to discard all buffered object operation messages on new sync start
-    bufferedObjectOperations.clear()
-    syncObjectsDataPool.clear()
+    bufferedObjectOperations.clear() // RTO5a2b
+    syncObjectsDataPool.clear() // RTO5a2a
     currentSyncId = syncId
     stateChange(ObjectsState.SYNCING, false)
   }
@@ -214,9 +217,9 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
     applySync()
     // should apply buffered object operations after we applied the sync.
     // can use regular non-sync object.operation logic
-    applyObjectMessages(bufferedObjectOperations)
+    applyObjectMessages(bufferedObjectOperations) // RTO5c6
 
-    bufferedObjectOperations.clear()
+    bufferedObjectOperations.clear() // RTO5c5
     syncObjectsDataPool.clear() // RTO5c4
     currentSyncId = null // RTO5c3
     stateChange(ObjectsState.SYNCED, deferStateEvent)
@@ -264,19 +267,26 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
   /**
    * Applies object messages to objects.
    *
-   * @spec RTO6 - Creates zero-value objects if they don't exist
+   * @spec RTO9 - Creates zero-value objects if they don't exist
    */
   private fun applyObjectMessages(objectMessages: List<ObjectMessage>) {
+    // RTO9a
     for (objectMessage in objectMessages) {
       if (objectMessage.operation == null) {
+        // RTO9a1
         Log.w(tag, "Object message received without operation field, skipping message: ${objectMessage.id}")
         continue
       }
 
-      val objectOperation: ObjectOperation = objectMessage.operation
-      // RTO6a - get or create the zero value object in the pool
-      val obj = objectsPool.createZeroValueObjectIfNotExists(objectOperation.objectId)
-      obj.applyOperation(objectOperation, objectMessage)
+      val objectOperation: ObjectOperation = objectMessage.operation // RTO9a2
+      // RTO9a2a - we can receive an op for an object id we don't have yet in the pool. instead of buffering such operations,
+      // we can create a zero-value object for the provided object id and apply the operation to that zero-value object.
+      // this also means that all objects are capable of applying the corresponding *_CREATE ops on themselves,
+      // since they need to be able to eventually initialize themselves from that *_CREATE op.
+      // so to simplify operations handling, we always try to create a zero-value object in the pool first,
+      // and then we can always apply the operation on the existing object in the pool.
+      val obj = objectsPool.createZeroValueObjectIfNotExists(objectOperation.objectId) // RTO9a2a1
+      obj.applyOperation(objectOperation, objectMessage) // RTO9a2a2, RTO9a2a3
     }
   }
 
