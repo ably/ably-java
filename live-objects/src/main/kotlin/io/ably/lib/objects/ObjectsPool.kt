@@ -1,8 +1,8 @@
 package io.ably.lib.objects
 
 import io.ably.lib.objects.type.BaseLiveObject
-import io.ably.lib.objects.type.DefaultLiveCounter
-import io.ably.lib.objects.type.DefaultLiveMap
+import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
+import io.ably.lib.objects.type.livemap.DefaultLiveMap
 import io.ably.lib.util.Log
 import kotlinx.coroutines.*
 import java.util.concurrent.ConcurrentHashMap
@@ -71,9 +71,7 @@ internal class ObjectsPool(
    * Deletes objects from the pool for which object ids are not found in the provided array of ids.
    */
   fun deleteExtraObjectIds(objectIds: MutableSet<String>) {
-    pool.keys.toList()
-      .filter { it !in objectIds }
-      .forEach { remove(it) }
+    pool.entries.removeIf { (key, _) -> key !in objectIds }
   }
 
   /**
@@ -104,7 +102,7 @@ internal class ObjectsPool(
   /**
    * Clears the data stored for all objects in the pool.
    */
-  fun clearObjectsData(emitUpdateEvents: Boolean) {
+  private fun clearObjectsData(emitUpdateEvents: Boolean) {
     for (obj in pool.values) {
       val update = obj.clearData()
       if (emitUpdateEvents) {
@@ -118,7 +116,7 @@ internal class ObjectsPool(
    *
    * @spec RTO6 - Creates zero-value objects when needed
    */
-  fun createZeroValueObjectIfNotExists(objectId: String): BaseLiveObject {
+  internal fun createZeroValueObjectIfNotExists(objectId: String): BaseLiveObject {
     val existingObject = get(objectId)
     if (existingObject != null) {
       return existingObject // RTO6a
@@ -148,23 +146,13 @@ internal class ObjectsPool(
    * Garbage collection interval handler.
    */
   private fun onGCInterval() {
-    val toDelete = mutableListOf<String>()
-
-    for ((objectId, obj) in pool.entries) {
-      // Tombstoned objects should be removed from the pool if they have been tombstoned for longer than grace period.
-      // By removing them from the local pool, Objects plugin no longer keeps a reference to those objects, allowing JVM's
-      // Garbage Collection to eventually free the memory for those objects, provided the user no longer references them either.
-      if (obj.isTombstoned &&
-          obj.tombstonedAt != null &&
-          System.currentTimeMillis() - obj.tombstonedAt!! >= ObjectsPoolDefaults.GC_GRACE_PERIOD_MS) {
-        toDelete.add(objectId)
-        continue
+    pool.entries.removeIf { (_, obj) ->
+      if (obj.isEligibleForGc()) { true } // Remove from pool
+      else {
+        obj.onGCInterval()
+        false  // Keep in pool
       }
-
-      obj.onGCInterval()
     }
-
-    toDelete.forEach { pool.remove(it) }
   }
 
   /**

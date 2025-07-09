@@ -1,8 +1,8 @@
 package io.ably.lib.objects
 
-import io.ably.lib.objects.type.*
 import io.ably.lib.objects.type.BaseLiveObject
-import io.ably.lib.objects.type.DefaultLiveCounter
+import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
+import io.ably.lib.objects.type.livemap.DefaultLiveMap
 import io.ably.lib.types.Callback
 import io.ably.lib.types.ProtocolMessage
 import io.ably.lib.util.Log
@@ -246,7 +246,7 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
       // RTO5c1a
       if (existingObject != null) {
         // Update existing object
-        val update = existingObject.overrideWithObjectState(objectState) // RTO5c1a1
+        val update = existingObject.applyObjectState(objectState) // RTO5c1a1
         existingObjectUpdates.add(Pair(existingObject, update))
       } else { // RTO5c1b
         // RTO5c1b1 - Create new object and add it to the pool
@@ -323,7 +323,7 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
       objectState.map != null -> DefaultLiveMap.zeroValue(objectState.objectId, adapter, objectsPool) // RTO5c1b1b
       else -> throw clientError("Object state must contain either counter or map data") // RTO5c1b1c
     }.apply {
-      overrideWithObjectState(objectState)
+      applyObjectState(objectState)
     }
   }
 

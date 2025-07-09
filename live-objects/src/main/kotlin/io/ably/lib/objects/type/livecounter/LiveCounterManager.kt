@@ -1,61 +1,44 @@
-package io.ably.lib.objects.type
+package io.ably.lib.objects.type.livecounter
 
 import io.ably.lib.objects.*
-import io.ably.lib.objects.ErrorCode
-import io.ably.lib.objects.HttpStatusCode
-import io.ably.lib.objects.ObjectCounterOp
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectOperationAction
 import io.ably.lib.objects.ObjectState
-import io.ably.lib.objects.ablyException
 import io.ably.lib.objects.objectError
-import io.ably.lib.types.AblyException
-import io.ably.lib.types.Callback
 import io.ably.lib.util.Log
 
-/**
- * Implementation of LiveObject for LiveCounter.
- *
- * @spec RTLC1/RTLC2 - LiveCounter implementation extends LiveObject
- */
-internal class DefaultLiveCounter(
-  objectId: String,
-  adapter: LiveObjectsAdapter,
-) : LiveCounter, BaseLiveObject(objectId, adapter) {
+internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter) {
+  private val objectId = liveCounter.objectId
 
-  override val tag = "LiveCounter"
-  /**
-   * @spec RTLC3 - Counter data value
-   */
-  private var data: Long = 0
+  private val tag = "LiveCounterManager"
 
   /**
    * @spec RTLC6 - Overrides counter data with state from sync
    */
-  override fun overrideWithObjectState(objectState: ObjectState): Map<String, Long> {
+  internal fun applyObjectState(objectState: ObjectState): Map<String, Long> {
     if (objectState.objectId != objectId) {
       throw objectError("Invalid object state: object state objectId=${objectState.objectId}; LiveCounter objectId=$objectId")
     }
 
     // object's site serials are still updated even if it is tombstoned, so always use the site serials received from the operation.
     // should default to empty map if site serials do not exist on the object state, so that any future operation may be applied to this object.
-    siteTimeserials.clear()
-    siteTimeserials.putAll(objectState.siteTimeserials) // RTLC6a
+    liveCounter.siteTimeserials.clear()
+    liveCounter.siteTimeserials.putAll(objectState.siteTimeserials) // RTLC6a
 
-    if (isTombstoned) {
+    if (liveCounter.isTombstoned) {
       // this object is tombstoned. this is a terminal state which can't be overridden. skip the rest of object state message processing
       return mapOf()
     }
 
-    val previousData = data
+    val previousData = liveCounter.data
 
     if (objectState.tombstone) {
-      tombstone()
+      liveCounter.tombstone()
     } else {
       // override data for this object with data from the object state
-      createOperationIsMerged = false // RTLC6b
-      data = objectState.counter?.count?.toLong() ?: 0 // RTLC6c
+      liveCounter.createOperationIsMerged = false // RTLC6b
+      liveCounter.data = objectState.counter?.count?.toLong() ?: 0 // RTLC6c
 
       // RTLC6d
       objectState.createOp?.let { createOp ->
@@ -63,19 +46,13 @@ internal class DefaultLiveCounter(
       }
     }
 
-    return mapOf("amount" to (data - previousData))
-  }
-
-  private fun payloadError(op: ObjectOperation) : AblyException {
-    return ablyException("No payload found for ${op.action} op for LiveCounter objectId=${objectId}",
-      ErrorCode.InvalidObject, HttpStatusCode.InternalServerError
-    )
+    return mapOf("amount" to (liveCounter.data - previousData))
   }
 
   /**
    * @spec RTLC7 - Applies operations to LiveCounter
    */
-  override fun applyOperation(operation: ObjectOperation, message: ObjectMessage) {
+  internal fun applyOperation(operation: ObjectOperation, message: ObjectMessage) {
     if (operation.objectId != objectId) {
       throw objectError(
         "Cannot apply object operation with objectId=${operation.objectId}, to this LiveCounter with objectId=$objectId",)
@@ -84,19 +61,20 @@ internal class DefaultLiveCounter(
     val opSerial = message.serial
     val opSiteCode = message.siteCode
 
-    if (!canApplyOperation(opSiteCode, opSerial)) {
+    if (!liveCounter.canApplyOperation(opSiteCode, opSerial)) {
       // RTLC7b
       Log.v(
         tag,
-        "Skipping ${operation.action} op: op serial $opSerial <= site serial ${siteTimeserials[opSiteCode]}; objectId=$objectId"
+        "Skipping ${operation.action} op: op serial $opSerial <= site serial ${liveCounter.siteTimeserials[opSiteCode]}; " +
+          "objectId=$objectId"
       )
       return
     }
     // should update stored site serial immediately. doesn't matter if we successfully apply the op,
     // as it's important to mark that the op was processed by the object
-    updateTimeSerial(opSiteCode!!, opSerial!!) // RTLC7c
+    liveCounter.siteTimeserials[opSiteCode!!] = opSerial!! // RTLC7c
 
-    if (isTombstoned) {
+    if (liveCounter.isTombstoned) {
       // this object is tombstoned so the operation cannot be applied
       return;
     }
@@ -107,27 +85,21 @@ internal class DefaultLiveCounter(
         if (operation.counterOp != null) {
           applyCounterInc(operation.counterOp) // RTLC7d2
         } else {
-          throw payloadError(operation)
+          throw objectError("No payload found for ${operation.action} op for LiveCounter objectId=${objectId}")
         }
       }
-      ObjectOperationAction.ObjectDelete -> applyObjectDelete()
+      ObjectOperationAction.ObjectDelete -> liveCounter.tombstone()
       else -> throw objectError("Invalid ${operation.action} op for LiveCounter objectId=${objectId}") // RTLC7d3
     }
 
-    notifyUpdated(update)
-  }
-
-  override fun clearData(): Map<String, Long> {
-    val previousData = data
-    data = 0
-    return mapOf("amount" to -previousData)
+    liveCounter.notifyUpdated(update)
   }
 
   /**
    * @spec RTLC8 - Applies counter create operation
    */
   private fun applyCounterCreate(operation: ObjectOperation): Map<String, Long> {
-    if (createOperationIsMerged) {
+    if (liveCounter.createOperationIsMerged) {
       // RTLC8b
       // There can't be two different create operation for the same object id, because the object id
       // fully encodes that operation. This means we can safely ignore any new incoming create operations
@@ -147,7 +119,7 @@ internal class DefaultLiveCounter(
    */
   private fun applyCounterInc(counterOp: ObjectCounterOp): Map<String, Long> {
     val amount = counterOp.amount?.toLong() ?: 0
-    data += amount // RTLC9b
+    liveCounter.data += amount // RTLC9b
     return mapOf("amount" to amount)
   }
 
@@ -160,51 +132,8 @@ internal class DefaultLiveCounter(
     // if we got here, it means that current counter instance is missing the initial value in its data reference,
     // which we're going to add now.
     val count = operation.counter?.count?.toLong() ?: 0
-    data += count // RTLC10a
-    createOperationIsMerged = true // RTLC10b
+    liveCounter.data += count // RTLC10a
+    liveCounter.createOperationIsMerged = true // RTLC10b
     return mapOf("amount" to count)
-  }
-
-  /**
-   * Called during garbage collection intervals.
-   * Nothing to GC for a counter object.
-   */
-  override fun onGCInterval() {
-    // Nothing to GC for a counter object
-    return
-  }
-
-  override fun increment() {
-    TODO("Not yet implemented")
-  }
-
-  override fun incrementAsync(callback: Callback<Void>) {
-    TODO("Not yet implemented")
-  }
-
-  override fun decrement() {
-    TODO("Not yet implemented")
-  }
-
-  override fun decrementAsync(callback: Callback<Void>) {
-    TODO("Not yet implemented")
-  }
-
-  /**
-   * @spec RTLC5 - Returns the current counter value
-   */
-  override fun value(): Long {
-    // RTLC5a, RTLC5b - Configuration validation would be done here
-    return data // RTLC5c
-  }
-
-  companion object {
-    /**
-     * Creates a zero-value counter object.
-     * @spec RTLC4 - Returns LiveCounter with 0 value
-     */
-    internal fun zeroValue(objectId: String, adapter: LiveObjectsAdapter): DefaultLiveCounter {
-      return DefaultLiveCounter(objectId, adapter)
-    }
   }
 }

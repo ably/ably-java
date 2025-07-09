@@ -1,88 +1,57 @@
-package io.ably.lib.objects.type
+package io.ably.lib.objects.type.livemap
 
-import io.ably.lib.objects.*
-import io.ably.lib.objects.ErrorCode
-import io.ably.lib.objects.HttpStatusCode
-import io.ably.lib.objects.ObjectsPool
-import io.ably.lib.objects.ObjectsPoolDefaults
-import io.ably.lib.objects.ablyException
-import io.ably.lib.objects.objectError
-import io.ably.lib.objects.MapSemantics
-import io.ably.lib.objects.ObjectData
 import io.ably.lib.objects.ObjectMapOp
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectOperationAction
 import io.ably.lib.objects.ObjectState
-import io.ably.lib.types.AblyException
-import io.ably.lib.types.Callback
+import io.ably.lib.objects.isInvalid
+import io.ably.lib.objects.objectError
 import io.ably.lib.util.Log
 
-/**
- * Implementation of LiveObject for LiveMap.
- *
- * @spec RTLM1/RTLM2 - LiveMap implementation extends LiveObject
- */
-internal class DefaultLiveMap(
-  objectId: String,
-  adapter: LiveObjectsAdapter,
-  private val objectsPool: ObjectsPool,
-  private val semantics: MapSemantics = MapSemantics.LWW
-) : LiveMap, BaseLiveObject(objectId, adapter) {
+internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
+  private val objectId = liveMap.objectId
 
-  override val tag = "LiveMap"
-
-  /**
-   * @spec RTLM3 - Map data structure storing entries
-   */
-  internal data class LiveMapEntry(
-    var tombstone: Boolean = false,
-    var tombstonedAt: Long? = null,
-    var timeserial: String? = null,
-    var data: ObjectData? = null
-  )
-
-  /**
-   * Map of key to LiveMapEntry
-   */
-  private val data = mutableMapOf<String, LiveMapEntry>()
+  private val tag = "LiveMapManager"
 
   /**
    * @spec RTLM6 - Overrides object data with state from sync
    */
-  override fun overrideWithObjectState(objectState: ObjectState): Map<String, String> {
+  internal fun overrideWithObjectState(objectState: ObjectState): Map<String, String> {
     if (objectState.objectId != objectId) {
-      throw objectError("Invalid object state: object state objectId=${objectState.objectId}; LiveMap objectId=$objectId")
+      throw objectError("Invalid object state: object state objectId=${objectState.objectId}; " +
+        "LiveMap objectId=${objectId}")
     }
 
-    if (objectState.map?.semantics != semantics) {
+    if (objectState.map?.semantics != liveMap.semantics) {
       throw objectError(
-        "Invalid object state: object state map semantics=${objectState.map?.semantics}; LiveMap semantics=$semantics",
+        "Invalid object state: object state map semantics=${objectState.map?.semantics}; " +
+          "LiveMap semantics=${liveMap.semantics}",
       )
     }
 
     // object's site serials are still updated even if it is tombstoned, so always use the site serials received from the op.
     // should default to empty map if site serials do not exist on the object state, so that any future operation may be applied to this object.
-    siteTimeserials.clear()
-    siteTimeserials.putAll(objectState.siteTimeserials) // RTLM6a
+    liveMap.siteTimeserials.clear()
+    liveMap.siteTimeserials.putAll(objectState.siteTimeserials) // RTLM6a
 
-    if (isTombstoned) {
+    if (liveMap.isTombstoned) {
       // this object is tombstoned. this is a terminal state which can't be overridden. skip the rest of object state message processing
       return mapOf()
     }
 
-    val previousData = data.toMap()
+    val previousData = liveMap.data.toMap()
 
     if (objectState.tombstone) {
-      tombstone()
+      liveMap.tombstone()
     } else {
       // override data for this object with data from the object state
-      createOperationIsMerged = false // RTLM6b
-      data.clear()
+      liveMap.createOperationIsMerged = false // RTLM6b
+      liveMap.data.clear()
 
       objectState.map.entries?.forEach { (key, entry) ->
-        data[key] = LiveMapEntry(
-          tombstone = entry.tombstone ?: false,
+        liveMap.data[key] = LiveMapEntry(
+          isTombstoned = entry.tombstone ?: false,
           tombstonedAt = if (entry.tombstone == true) System.currentTimeMillis() else null,
           timeserial = entry.timeserial,
           data = entry.data
@@ -95,41 +64,37 @@ internal class DefaultLiveMap(
       }
     }
 
-    return calculateUpdateFromDataDiff(previousData, data.toMap())
-  }
-
-  private fun payloadError(op: ObjectOperation) : AblyException {
-    return ablyException("No payload found for ${op.action} op for LiveMap objectId=${this.objectId}",
-      ErrorCode.InvalidObject, HttpStatusCode.InternalServerError
-    )
+    return calculateUpdateFromDataDiff(previousData, liveMap.data.toMap())
   }
 
   /**
    * @spec RTLM15 - Applies operations to LiveMap
    */
-  override fun applyOperation(operation: ObjectOperation, message: ObjectMessage) {
+  internal fun applyOperation(operation: ObjectOperation, message: ObjectMessage) {
     if (operation.objectId != objectId) {
       throw objectError(
-        "Cannot apply object operation with objectId=${operation.objectId}, to this LiveMap with objectId=$objectId",
+        "Cannot apply object operation with objectId=${operation.objectId}, to this LiveMap with " +
+          "objectId=${objectId}",
       )
     }
 
     val opSerial = message.serial
     val opSiteCode = message.siteCode
 
-    if (!canApplyOperation(opSiteCode, opSerial)) {
+    if (!liveMap.canApplyOperation(opSiteCode, opSerial)) {
       // RTLM15b
       Log.v(
         tag,
-        "Skipping ${operation.action} op: op serial $opSerial <= site serial ${siteTimeserials[opSiteCode]}; objectId=$objectId"
+        "Skipping ${operation.action} op: op serial $opSerial <= site serial ${liveMap.siteTimeserials[opSiteCode]};" +
+          " objectId=${objectId}"
       )
       return
     }
     // should update stored site serial immediately. doesn't matter if we successfully apply the op,
     // as it's important to mark that the op was processed by the object
-    updateTimeSerial(opSiteCode!!, opSerial!!) // RTLM15c
+    liveMap.siteTimeserials[opSiteCode!!] = opSerial!! // RTLM15c
 
-    if (isTombstoned) {
+    if (liveMap.isTombstoned) {
       // this object is tombstoned so the operation cannot be applied
       return;
     }
@@ -140,49 +105,43 @@ internal class DefaultLiveMap(
         if (operation.mapOp != null) {
           applyMapSet(operation.mapOp, opSerial) // RTLM15d2
         } else {
-          throw payloadError(operation)
+          throw objectError("No payload found for ${operation.action} op for LiveMap objectId=${objectId}")
         }
       }
       ObjectOperationAction.MapRemove -> {
         if (operation.mapOp != null) {
           applyMapRemove(operation.mapOp, opSerial) // RTLM15d3
         } else {
-          throw payloadError(operation)
+          throw objectError("No payload found for ${operation.action} op for LiveMap objectId=${objectId}")
         }
       }
-      ObjectOperationAction.ObjectDelete -> applyObjectDelete()
-      else -> throw objectError("Invalid ${operation.action} op for LiveMap objectId=$objectId") // RTLM15d4
+      ObjectOperationAction.ObjectDelete -> liveMap.tombstone()
+      else -> throw objectError("Invalid ${operation.action} op for LiveMap objectId=${objectId}") // RTLM15d4
     }
 
-    notifyUpdated(update)
-  }
-
-  override fun clearData(): Map<String, String> {
-    val previousData = data.toMap()
-    data.clear()
-    return calculateUpdateFromDataDiff(previousData, emptyMap())
+    liveMap.notifyUpdated(update)
   }
 
   /**
    * @spec RTLM16 - Applies map create operation
    */
   private fun applyMapCreate(operation: ObjectOperation): Map<String, String> {
-    if (createOperationIsMerged) {
+    if (liveMap.createOperationIsMerged) {
       // RTLM16b
       // There can't be two different create operation for the same object id, because the object id
       // fully encodes that operation. This means we can safely ignore any new incoming create operations
       // if we already merged it once.
       Log.v(
         tag,
-        "Skipping applying MAP_CREATE op on a map instance as it was already applied before; objectId=$objectId"
+        "Skipping applying MAP_CREATE op on a map instance as it was already applied before; objectId=${objectId}"
       )
       return mapOf()
     }
 
-    if (semantics != operation.map?.semantics) {
+    if (liveMap.semantics != operation.map?.semantics) {
       // RTLM16c
       throw objectError(
-        "Cannot apply MAP_CREATE op on LiveMap objectId=$objectId; map's semantics=$semantics, but op expected ${operation.map?.semantics}",
+        "Cannot apply MAP_CREATE op on LiveMap objectId=${objectId}; map's semantics=${liveMap.semantics}, but op expected ${operation.map?.semantics}",
       )
     }
 
@@ -196,14 +155,14 @@ internal class DefaultLiveMap(
     mapOp: ObjectMapOp, // RTLM7d1
     opSerial: String?, // RTLM7d2
   ): Map<String, String> {
-    val existingEntry = data[mapOp.key]
+    val existingEntry = liveMap.data[mapOp.key]
 
     // RTLM7a
     if (existingEntry != null && !canApplyMapOperation(existingEntry.timeserial, opSerial)) {
       // RTLM7a1 - the operation's serial <= the entry's serial, ignore the operation
-      Log.v(
-        tag,
-        "Skipping update for key=\"${mapOp.key}\": op serial $opSerial <= entry serial ${existingEntry.timeserial}; objectId=$objectId"
+      Log.v(tag,
+        "Skipping update for key=\"${mapOp.key}\": op serial $opSerial <= entry serial ${existingEntry.timeserial};" +
+          " objectId=${objectId}"
       )
       return mapOf()
     }
@@ -218,19 +177,19 @@ internal class DefaultLiveMap(
       // but it is possible that we don't have the corresponding object in the pool yet (for example, we haven't seen the *_CREATE op for it).
       // we don't want to return undefined from this map's .get() method even if we don't have the object,
       // so instead we create a zero-value object for that object id if it not exists.
-      objectsPool.createZeroValueObjectIfNotExists(it) // RTLM7c1
+      liveMap.objectsPool.createZeroValueObjectIfNotExists(it) // RTLM7c1
     }
 
     if (existingEntry != null) {
       // RTLM7a2
-      existingEntry.tombstone = false // RTLM7a2c
+      existingEntry.isTombstoned = false // RTLM7a2c
       existingEntry.tombstonedAt = null
       existingEntry.timeserial = opSerial // RTLM7a2b
       existingEntry.data = mapOp.data // RTLM7a2a
     } else {
       // RTLM7b, RTLM7b1
-      data[mapOp.key] = LiveMapEntry(
-        tombstone = false, // RTLM7b2
+      liveMap.data[mapOp.key] = LiveMapEntry(
+        isTombstoned = false, // RTLM7b2
         timeserial = opSerial,
         data = mapOp.data
       )
@@ -246,28 +205,29 @@ internal class DefaultLiveMap(
     mapOp: ObjectMapOp, // RTLM8c1
     opSerial: String?, // RTLM8c2
   ): Map<String, String> {
-    val existingEntry = data[mapOp.key]
+    val existingEntry = liveMap.data[mapOp.key]
 
     // RTLM8a
     if (existingEntry != null && !canApplyMapOperation(existingEntry.timeserial, opSerial)) {
       // RTLM8a1 - the operation's serial <= the entry's serial, ignore the operation
       Log.v(
         tag,
-        "Skipping remove for key=\"${mapOp.key}\": op serial $opSerial <= entry serial ${existingEntry.timeserial}; objectId=$objectId"
+        "Skipping remove for key=\"${mapOp.key}\": op serial $opSerial <= entry serial ${existingEntry.timeserial}; " +
+          "objectId=${objectId}"
       )
       return mapOf()
     }
 
     if (existingEntry != null) {
       // RTLM8a2
-      existingEntry.tombstone = true // RTLM8a2c
+      existingEntry.isTombstoned = true // RTLM8a2c
       existingEntry.tombstonedAt = System.currentTimeMillis()
       existingEntry.timeserial = opSerial // RTLM8a2b
       existingEntry.data = null // RTLM8a2a
     } else {
       // RTLM8b, RTLM8b1
-      data[mapOp.key] = LiveMapEntry(
-        tombstone = true, // RTLM8b2
+      liveMap.data[mapOp.key] = LiveMapEntry(
+        isTombstoned = true, // RTLM8b2
         tombstonedAt = System.currentTimeMillis(),
         timeserial = opSerial
       )
@@ -326,17 +286,17 @@ internal class DefaultLiveMap(
       aggregatedUpdate.putAll(update)
     }
 
-    createOperationIsMerged = true // RTLM17b
+    liveMap.createOperationIsMerged = true // RTLM17b
 
     return aggregatedUpdate
   }
 
-  private fun calculateUpdateFromDataDiff(prevData: Map<String, LiveMapEntry>, newData: Map<String, LiveMapEntry>): Map<String, String> {
+  internal fun calculateUpdateFromDataDiff(prevData: Map<String, LiveMapEntry>, newData: Map<String, LiveMapEntry>): Map<String, String> {
     val update = mutableMapOf<String, String>()
 
     // Check for removed entries
     for ((key, prevEntry) in prevData) {
-      if (!prevEntry.tombstone && !newData.containsKey(key)) {
+      if (!prevEntry.isTombstoned && !newData.containsKey(key)) {
         update[key] = "removed"
       }
     }
@@ -345,7 +305,7 @@ internal class DefaultLiveMap(
     for ((key, newEntry) in newData) {
       if (!prevData.containsKey(key)) {
         // if property does not exist in current map, but new data has it as non-tombstoned property - got updated
-        if (!newEntry.tombstone) {
+        if (!newEntry.isTombstoned) {
           update[key] = "updated"
         }
         // otherwise, if new data has this prop tombstoned - do nothing, as property didn't exist anyway
@@ -356,17 +316,17 @@ internal class DefaultLiveMap(
       val prevEntry = prevData[key]!!
 
       // compare tombstones first
-      if (prevEntry.tombstone && !newEntry.tombstone) {
+      if (prevEntry.isTombstoned && !newEntry.isTombstoned) {
         // prev prop is tombstoned, but new is not. it means prop was updated to a meaningful value
         update[key] = "updated"
         continue
       }
-      if (!prevEntry.tombstone && newEntry.tombstone) {
+      if (!prevEntry.isTombstoned && newEntry.isTombstoned) {
         // prev prop is not tombstoned, but new is. it means prop was removed
         update[key] = "removed"
         continue
       }
-      if (prevEntry.tombstone && newEntry.tombstone) {
+      if (prevEntry.isTombstoned && newEntry.isTombstoned) {
         // props are tombstoned - treat as noop, as there is no data to compare
         continue
       }
@@ -380,70 +340,5 @@ internal class DefaultLiveMap(
     }
 
     return update
-  }
-
-  /**
-   * Called during garbage collection intervals.
-   * Removes tombstoned entries that have exceeded the GC grace period.
-   */
-  override fun onGCInterval() {
-    val keysToDelete = mutableListOf<String>()
-
-    for ((key, entry) in data.entries) {
-      if (entry.tombstone &&
-          entry.tombstonedAt != null &&
-          System.currentTimeMillis() - entry.tombstonedAt!! >= ObjectsPoolDefaults.GC_GRACE_PERIOD_MS
-      ) {
-        keysToDelete.add(key)
-      }
-    }
-
-    keysToDelete.forEach { data.remove(it) }
-  }
-
-  override fun get(keyName: String): Any? {
-    TODO("Not yet implemented")
-  }
-
-  override fun entries(): MutableIterable<MutableMap.MutableEntry<String, Any>> {
-    TODO("Not yet implemented")
-  }
-
-  override fun keys(): MutableIterable<String> {
-    TODO("Not yet implemented")
-  }
-
-  override fun values(): MutableIterable<Any> {
-    TODO("Not yet implemented")
-  }
-
-  override fun set(keyName: String, value: Any) {
-    TODO("Not yet implemented")
-  }
-
-  override fun remove(keyName: String) {
-    TODO("Not yet implemented")
-  }
-
-  override fun size(): Long {
-    TODO("Not yet implemented")
-  }
-
-  override fun setAsync(keyName: String, value: Any, callback: Callback<Void>) {
-    TODO("Not yet implemented")
-  }
-
-  override fun removeAsync(keyName: String, callback: Callback<Void>) {
-    TODO("Not yet implemented")
-  }
-
-  companion object {
-    /**
-     * Creates a zero-value map object.
-     * @spec RTLM4 - Returns LiveMap with empty map data
-     */
-    internal fun zeroValue(objectId: String, adapter: LiveObjectsAdapter, objectsPool: ObjectsPool): DefaultLiveMap {
-      return DefaultLiveMap(objectId, adapter, objectsPool)
-    }
   }
 }
