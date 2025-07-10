@@ -70,7 +70,7 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
    *
    * @spec RTO5 - Sync sequence initialization
    */
-  private fun startNewSync(syncId: String?) {
+  internal fun startNewSync(syncId: String?) {
     Log.v(tag, "Starting new sync sequence: syncId=$syncId")
 
     // need to discard all buffered object operation messages on new sync start
@@ -85,7 +85,7 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
    *
    * @spec RTO5c - Applies sync data and buffered operations
    */
-  private fun endSync(deferStateEvent: Boolean) {
+  internal fun endSync(deferStateEvent: Boolean) {
     Log.v(tag, "Ending sync sequence")
     applySync()
     // should apply buffered object operations after we applied the sync.
@@ -96,6 +96,22 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
     syncObjectsDataPool.clear() // RTO5c4
     currentSyncId = null // RTO5c3
     liveObjects.stateChange(ObjectsState.SYNCED, deferStateEvent)
+  }
+
+  /**
+   * Clears the sync objects data pool.
+   * Used by DefaultLiveObjects.handleStateChange.
+   */
+  internal fun clearSyncObjectsDataPool() {
+    syncObjectsDataPool.clear()
+  }
+
+  /**
+   * Clears the buffered object operations.
+   * Used by DefaultLiveObjects.handleStateChange.
+   */
+  internal fun clearBufferedObjectOperations() {
+    bufferedObjectOperations.clear()
   }
 
   /**

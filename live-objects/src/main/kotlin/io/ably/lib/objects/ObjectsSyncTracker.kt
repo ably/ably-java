@@ -5,14 +5,13 @@ package io.ably.lib.objects
  */
 internal class ObjectsSyncTracker(syncChannelSerial: String?) {
   internal val syncId: String?
-  private val syncCursor: String?
-  private val hasEnded: Boolean
+  internal val syncCursor: String?
+  private val syncSerial: String? = syncChannelSerial
 
   init {
     val parsed = parseSyncChannelSerial(syncChannelSerial)
     syncId = parsed.first
     syncCursor = parsed.second
-    hasEnded = syncChannelSerial.isNullOrEmpty() || syncCursor.isNullOrEmpty()
   }
 
   /**
@@ -20,18 +19,22 @@ internal class ObjectsSyncTracker(syncChannelSerial: String?) {
    *
    * @param prevSyncId The previously stored sync ID
    * @return true if a new sync sequence has started, false otherwise
+   *
+   * Spec: RTO5a5, RTO5a2
    */
   internal fun hasSyncStarted(prevSyncId: String?): Boolean {
-    return prevSyncId != syncId
+    return syncSerial.isNullOrEmpty() || prevSyncId != syncId
   }
 
   /**
    * Checks if the current sync sequence has ended.
    *
    * @return true if the sync sequence has ended, false otherwise
+   *
+   * Spec: RTO5a5, RTO5a4
    */
   internal fun hasSyncEnded(): Boolean {
-    return hasEnded
+    return syncSerial.isNullOrEmpty() || syncCursor.isNullOrEmpty()
   }
 
   companion object {

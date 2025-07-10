@@ -63,21 +63,21 @@ internal class ObjectsPool(
   /**
    * Gets a live object from the pool by object ID.
    */
-  fun get(objectId: String): BaseLiveObject? {
+  internal fun get(objectId: String): BaseLiveObject? {
     return pool[objectId]
   }
 
   /**
    * Deletes objects from the pool for which object ids are not found in the provided array of ids.
    */
-  fun deleteExtraObjectIds(objectIds: MutableSet<String>) {
+  internal fun deleteExtraObjectIds(objectIds: MutableSet<String>) {
     pool.entries.removeIf { (key, _) -> key !in objectIds }
   }
 
   /**
    * Sets a live object in the pool.
    */
-  fun set(objectId: String, liveObject: BaseLiveObject) {
+  internal fun set(objectId: String, liveObject: BaseLiveObject) {
     pool[objectId] = liveObject
   }
 
@@ -85,12 +85,12 @@ internal class ObjectsPool(
    * Removes all objects but root from the pool and clears the data for root.
    * Does not create a new root object, so the reference to the root object remains the same.
    */
-  fun resetToInitialPool(emitUpdateEvents: Boolean) {
+  internal fun resetToInitialPool(emitUpdateEvents: Boolean) {
     // Clear the pool first and keep the root object
     val root = pool[ROOT_OBJECT_ID]
     if (root != null) {
       pool.clear()
-      pool[ROOT_OBJECT_ID] = root
+      set(ROOT_OBJECT_ID, root)
 
       // Clear the data, this will only clear the root object
       clearObjectsData(emitUpdateEvents)
@@ -178,33 +178,6 @@ internal class ObjectsPool(
   fun dispose() {
     gcJob?.cancel()
     gcScope.cancel()
-    clear()
+    pool.clear()
   }
-
-  /**
-   * Gets all object IDs in the pool.
-   * Useful for debugging and testing.
-   */
-  fun getObjectIds(): Set<String> = pool.keys.toSet()
-
-  /**
-   * Gets the size of the pool.
-   * Useful for debugging and testing.
-   */
-  fun size(): Int = pool.size
-
-  /**
-   * Checks if the pool contains an object with the given ID.
-   */
-  fun contains(objectId: String): Boolean = pool.containsKey(objectId)
-
-  /**
-   * Removes an object from the pool.
-   */
-  fun remove(objectId: String): BaseLiveObject? = pool.remove(objectId)
-
-  /**
-   * Clears all objects from the pool.
-   */
-  fun clear() = pool.clear()
 }

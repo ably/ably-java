@@ -1,5 +1,6 @@
 package io.ably.lib.objects;
 
+import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.types.ProtocolMessage;
 import org.jetbrains.annotations.NotNull;
 
@@ -29,6 +30,17 @@ public interface LiveObjectsPlugin {
      * @param message the protocol message to handle.
      */
     void handle(@NotNull ProtocolMessage message);
+
+    /**
+     * Handles state changes for a specific channel.
+     * This method is invoked whenever a channel's state changes, allowing the implementation
+     * to update the LiveObjects instances accordingly based on the new state and presence of objects.
+     *
+     * @param channelName the name of the channel whose state has changed.
+     * @param state the new state of the channel.
+     * @param hasObjects flag indicates whether the channel has any associated live objects.
+     */
+    void handleStateChange(@NotNull String channelName, @NotNull ChannelState state, boolean hasObjects);
 
     /**
      * Disposes of the LiveObjects instance associated with the specified channel name.
