@@ -4,7 +4,6 @@ import io.ably.lib.objects.type.BaseLiveObject
 import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
 import io.ably.lib.objects.type.livemap.DefaultLiveMap
 import io.ably.lib.util.Log
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * @spec RTO5 - Processes OBJECT and OBJECT_SYNC messages during sync sequences
@@ -15,7 +14,7 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
   /**
    * @spec RTO5 - Sync objects data pool for collecting sync messages
    */
-  private val syncObjectsDataPool = ConcurrentHashMap<String, ObjectState>()
+  private val syncObjectsDataPool = mutableMapOf<String, ObjectState>()
   private var currentSyncId: String? = null
   /**
    * @spec RTO7 - Buffered object operations during sync

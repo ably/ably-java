@@ -3,6 +3,9 @@ package io.ably.lib.objects
 import io.ably.lib.types.Callback
 import io.ably.lib.types.ProtocolMessage
 import io.ably.lib.util.Log
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
+import kotlinx.coroutines.flow.MutableSharedFlow
 
 /**
  * @spec RTO2 - enum representing objects state
@@ -30,6 +33,22 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
    * @spec RTO4 - Used for handling object messages and object sync messages
    */
   private val objectsManager = ObjectsManager(this)
+
+  /**
+   *  Coroutine scope for running sequential operations on a single thread, used to avoid concurrency issues.
+   */
+  private val sequentialScope =
+    CoroutineScope(Dispatchers.Default.limitedParallelism(1) + CoroutineName(channelName) + SupervisorJob())
+
+  /**
+   * Event bus for handling incoming object messages sequentially.
+   */
+  private val objectsEventBus = MutableSharedFlow<ProtocolMessage>(extraBufferCapacity = UNLIMITED)
+  private val incomingObjectsHandler: Job
+
+  init {
+    incomingObjectsHandler = initializeHandlerForIncomingObjectMessages()
+  }
 
   /**
    * @spec RTO1 - Returns the root LiveMap object with proper validation and sync waiting
@@ -76,10 +95,7 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
 
   /**
    * Handles a ProtocolMessage containing proto action as `object` or `object_sync`.
-   *
-   * @spec RTL1 - Processes incoming object messages and object sync messages
-   * @spec RTL15b - Sets channel serial for OBJECT messages
-   * @spec OM2 - Populates missing fields from parent protocol message
+   *  @spec RTL1 - Processes incoming object messages and object sync messages
    */
   fun handle(protocolMessage: ProtocolMessage) {
     // RTL15b - Set channel serial for OBJECT messages
@@ -90,20 +106,38 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
       return
     }
 
-    // OM2 - Populate missing fields from parent
-    val objects = protocolMessage.state.filterIsInstance<ObjectMessage>()
-      .mapIndexed { index, objMsg ->
-        objMsg.copy(
-          connectionId = objMsg.connectionId ?: protocolMessage.connectionId, // OM2c
-          timestamp = objMsg.timestamp ?: protocolMessage.timestamp, // OM2e
-          id = objMsg.id ?: (protocolMessage.id + ':' + index) // OM2a
-      )
-    }
+    objectsEventBus.tryEmit(protocolMessage)
+  }
 
-    when (protocolMessage.action) {
-        ProtocolMessage.Action.`object` -> objectsManager.handleObjectMessages(objects)
-        ProtocolMessage.Action.object_sync -> objectsManager.handleObjectSyncMessages(objects, protocolMessage.channelSerial)
-        else -> Log.w(tag, "Ignoring protocol message with unhandled action: ${protocolMessage.action}")
+  /**
+   * Initializes the handler for incoming object messages and object sync messages.
+   * Processes the messages sequentially to ensure thread safety and correct order of operations.
+   *
+   * @spec OM2 - Populates missing fields from parent protocol message
+   */
+  private fun initializeHandlerForIncomingObjectMessages(): Job {
+     return sequentialScope.launch {
+      objectsEventBus.collect { protocolMessage ->
+        // OM2 - Populate missing fields from parent
+        val objects = protocolMessage.state.filterIsInstance<ObjectMessage>()
+          .mapIndexed { index, objMsg ->
+            objMsg.copy(
+              connectionId = objMsg.connectionId ?: protocolMessage.connectionId, // OM2c
+              timestamp = objMsg.timestamp ?: protocolMessage.timestamp, // OM2e
+              id = objMsg.id ?: (protocolMessage.id + ':' + index) // OM2a
+            )
+          }
+
+        when (protocolMessage.action) {
+          ProtocolMessage.Action.`object` -> objectsManager.handleObjectMessages(objects)
+          ProtocolMessage.Action.object_sync -> objectsManager.handleObjectSyncMessages(
+            objects,
+            protocolMessage.channelSerial
+          )
+
+          else -> Log.w(tag, "Ignoring protocol message with unhandled action: ${protocolMessage.action}")
+        }
+      }
     }
   }
 
@@ -125,6 +159,7 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
 
   // Dispose of any resources associated with this LiveObjects instance
   fun dispose() {
+    incomingObjectsHandler.cancel() // objectsEventBus automatically garbage collected when collector is cancelled
     objectsPool.dispose()
     objectsManager.dispose()
   }

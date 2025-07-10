@@ -6,7 +6,6 @@ import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
 import io.ably.lib.objects.type.livemap.DefaultLiveMap
 import io.ably.lib.util.Log
 import kotlinx.coroutines.*
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Constants for ObjectsPool configuration
@@ -41,7 +40,7 @@ internal class ObjectsPool(
    * @spec RTO3a - Pool storing all live objects by object ID
    * Note: This is the same as objectsPool property in DefaultLiveObjects.kt
    */
-  private val pool = ConcurrentHashMap<String, BaseLiveObject>()
+  private val pool = mutableMapOf<String, BaseLiveObject>()
 
   /**
    * Coroutine scope for garbage collection
