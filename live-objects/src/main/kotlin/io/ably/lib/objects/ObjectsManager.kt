@@ -22,7 +22,6 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
    */
   private val bufferedObjectOperations = mutableListOf<ObjectMessage>() // RTO7a
 
-
   /**
    * Handles object messages (non-sync messages).
    *
@@ -49,42 +48,20 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
    * @spec RTO5 - Parses sync channel serial and manages sync sequences
    */
   internal fun handleObjectSyncMessages(objectMessages: List<ObjectMessage>, syncChannelSerial: String?) {
-    val (syncId, syncCursor) = parseSyncChannelSerial(syncChannelSerial) // RTO5a
-    val newSyncSequence = currentSyncId != syncId
-    if (newSyncSequence) {
+    val syncTracker = ObjectsSyncTracker(syncChannelSerial)
+    if (syncTracker.hasSyncStarted(currentSyncId)) {
       // RTO5a2 - new sync sequence started
-      startNewSync(syncId)
+      startNewSync(syncTracker.syncId)
     }
 
     // RTO5a3 - continue current sync sequence
     applyObjectSyncMessages(objectMessages) // RTO5b
 
     // RTO5a4 - if this is the last (or only) message in a sequence of sync updates, end the sync
-    if (syncChannelSerial.isNullOrEmpty() || syncCursor.isNullOrEmpty()) {
+    if (syncTracker.hasSyncEnded()) {
       // defer the state change event until the next tick if this was a new sync sequence
       // to allow any event listeners to process the start of the new sequence event that was emitted earlier during this event loop.
-      endSync(newSyncSequence)
-    }
-  }
-
-  /**
-   * Parses sync channel serial to extract syncId and syncCursor.
-   *
-   * @spec RTO5 - Sync channel serial parsing logic
-   */
-  private fun parseSyncChannelSerial(syncChannelSerial: String?): Pair<String?, String?> {
-    if (syncChannelSerial.isNullOrEmpty()) {
-      return Pair(null, null)
-    }
-
-    // RTO5a1 - syncChannelSerial is a two-part identifier: <sequence id>:<cursor value>
-    val match = Regex("^([\\w-]+):(.*)$").find(syncChannelSerial)
-    return if (match != null) {
-      val syncId = match.groupValues[1]
-      val syncCursor = match.groupValues[2]
-      Pair(syncId, syncCursor)
-    } else {
-      Pair(null, null)
+      endSync(true)
     }
   }
 

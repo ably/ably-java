@@ -45,12 +45,8 @@ internal class DefaultLiveCounter(
     TODO("Not yet implemented")
   }
 
-  /**
-   * @spec RTLC5 - Returns the current counter value
-   */
   override fun value(): Long {
-    // RTLC5a, RTLC5b - Configuration validation would be done here
-    return data // RTLC5c
+    TODO("Not yet implemented")
   }
 
   override fun applyObjectState(objectState: ObjectState): Map<String, Long> {
