@@ -10,7 +10,7 @@ import io.ably.lib.util.Log
  * @spec RTO6 - Creates zero-value objects when needed
  */
 internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
-  private val tag = "LiveObjectsManager"
+  private val tag = "ObjectsManager"
   /**
    * @spec RTO5 - Sync objects data pool for collecting sync messages
    */
@@ -48,7 +48,8 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
    */
   internal fun handleObjectSyncMessages(objectMessages: List<ObjectMessage>, syncChannelSerial: String?) {
     val syncTracker = ObjectsSyncTracker(syncChannelSerial)
-    if (syncTracker.hasSyncStarted(currentSyncId)) {
+    val isNewSync = syncTracker.hasSyncStarted(currentSyncId)
+    if (isNewSync) {
       // RTO5a2 - new sync sequence started
       startNewSync(syncTracker.syncId)
     }
@@ -60,7 +61,7 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
     if (syncTracker.hasSyncEnded()) {
       // defer the state change event until the next tick if this was a new sync sequence
       // to allow any event listeners to process the start of the new sequence event that was emitted earlier during this event loop.
-      endSync(true)
+      endSync(isNewSync)
     }
   }
 
