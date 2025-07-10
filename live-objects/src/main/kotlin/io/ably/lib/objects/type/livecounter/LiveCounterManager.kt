@@ -1,7 +1,6 @@
 package io.ably.lib.objects.type.livecounter
 
 import io.ably.lib.objects.*
-import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectOperationAction
 import io.ably.lib.objects.ObjectState
@@ -16,21 +15,7 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter) {
   /**
    * @spec RTLC6 - Overrides counter data with state from sync
    */
-  internal fun applyObjectState(objectState: ObjectState): Map<String, Long> {
-    if (objectState.objectId != objectId) {
-      throw objectError("Invalid object state: object state objectId=${objectState.objectId}; LiveCounter objectId=$objectId")
-    }
-
-    // object's site serials are still updated even if it is tombstoned, so always use the site serials received from the operation.
-    // should default to empty map if site serials do not exist on the object state, so that any future operation may be applied to this object.
-    liveCounter.siteTimeserials.clear()
-    liveCounter.siteTimeserials.putAll(objectState.siteTimeserials) // RTLC6a
-
-    if (liveCounter.isTombstoned) {
-      // this object is tombstoned. this is a terminal state which can't be overridden. skip the rest of object state message processing
-      return mapOf()
-    }
-
+  internal fun applyState(objectState: ObjectState): Map<String, Long> {
     val previousData = liveCounter.data
 
     if (objectState.tombstone) {
@@ -52,33 +37,7 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter) {
   /**
    * @spec RTLC7 - Applies operations to LiveCounter
    */
-  internal fun applyOperation(operation: ObjectOperation, message: ObjectMessage) {
-    if (operation.objectId != objectId) {
-      throw objectError(
-        "Cannot apply object operation with objectId=${operation.objectId}, to this LiveCounter with objectId=$objectId",)
-    }
-
-    val opSerial = message.serial
-    val opSiteCode = message.siteCode
-
-    if (!liveCounter.canApplyOperation(opSiteCode, opSerial)) {
-      // RTLC7b
-      Log.v(
-        tag,
-        "Skipping ${operation.action} op: op serial $opSerial <= site serial ${liveCounter.siteTimeserials[opSiteCode]}; " +
-          "objectId=$objectId"
-      )
-      return
-    }
-    // should update stored site serial immediately. doesn't matter if we successfully apply the op,
-    // as it's important to mark that the op was processed by the object
-    liveCounter.siteTimeserials[opSiteCode!!] = opSerial!! // RTLC7c
-
-    if (liveCounter.isTombstoned) {
-      // this object is tombstoned so the operation cannot be applied
-      return;
-    }
-
+  internal fun applyOperation(operation: ObjectOperation) {
     val update = when (operation.action) {
       ObjectOperationAction.CounterCreate -> applyCounterCreate(operation) // RTLC7d1
       ObjectOperationAction.CounterInc -> {

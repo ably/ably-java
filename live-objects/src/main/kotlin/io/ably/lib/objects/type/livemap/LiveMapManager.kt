@@ -1,7 +1,6 @@
 package io.ably.lib.objects.type.livemap
 
 import io.ably.lib.objects.ObjectMapOp
-import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectOperationAction
 import io.ably.lib.objects.ObjectState
@@ -17,29 +16,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
   /**
    * @spec RTLM6 - Overrides object data with state from sync
    */
-  internal fun overrideWithObjectState(objectState: ObjectState): Map<String, String> {
-    if (objectState.objectId != objectId) {
-      throw objectError("Invalid object state: object state objectId=${objectState.objectId}; " +
-        "LiveMap objectId=${objectId}")
-    }
-
-    if (objectState.map?.semantics != liveMap.semantics) {
-      throw objectError(
-        "Invalid object state: object state map semantics=${objectState.map?.semantics}; " +
-          "LiveMap semantics=${liveMap.semantics}",
-      )
-    }
-
-    // object's site serials are still updated even if it is tombstoned, so always use the site serials received from the op.
-    // should default to empty map if site serials do not exist on the object state, so that any future operation may be applied to this object.
-    liveMap.siteTimeserials.clear()
-    liveMap.siteTimeserials.putAll(objectState.siteTimeserials) // RTLM6a
-
-    if (liveMap.isTombstoned) {
-      // this object is tombstoned. this is a terminal state which can't be overridden. skip the rest of object state message processing
-      return mapOf()
-    }
-
+  internal fun applyState(objectState: ObjectState): Map<String, String> {
     val previousData = liveMap.data.toMap()
 
     if (objectState.tombstone) {
@@ -49,7 +26,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
       liveMap.createOperationIsMerged = false // RTLM6b
       liveMap.data.clear()
 
-      objectState.map.entries?.forEach { (key, entry) ->
+      objectState.map?.entries?.forEach { (key, entry) ->
         liveMap.data[key] = LiveMapEntry(
           isTombstoned = entry.tombstone ?: false,
           tombstonedAt = if (entry.tombstone == true) System.currentTimeMillis() else null,
@@ -70,47 +47,19 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
   /**
    * @spec RTLM15 - Applies operations to LiveMap
    */
-  internal fun applyOperation(operation: ObjectOperation, message: ObjectMessage) {
-    if (operation.objectId != objectId) {
-      throw objectError(
-        "Cannot apply object operation with objectId=${operation.objectId}, to this LiveMap with " +
-          "objectId=${objectId}",
-      )
-    }
-
-    val opSerial = message.serial
-    val opSiteCode = message.siteCode
-
-    if (!liveMap.canApplyOperation(opSiteCode, opSerial)) {
-      // RTLM15b
-      Log.v(
-        tag,
-        "Skipping ${operation.action} op: op serial $opSerial <= site serial ${liveMap.siteTimeserials[opSiteCode]};" +
-          " objectId=${objectId}"
-      )
-      return
-    }
-    // should update stored site serial immediately. doesn't matter if we successfully apply the op,
-    // as it's important to mark that the op was processed by the object
-    liveMap.siteTimeserials[opSiteCode!!] = opSerial!! // RTLM15c
-
-    if (liveMap.isTombstoned) {
-      // this object is tombstoned so the operation cannot be applied
-      return;
-    }
-
+  internal fun applyOperation(operation: ObjectOperation, messageTimeserial: String?) {
     val update = when (operation.action) {
       ObjectOperationAction.MapCreate -> applyMapCreate(operation) // RTLM15d1
       ObjectOperationAction.MapSet -> {
         if (operation.mapOp != null) {
-          applyMapSet(operation.mapOp, opSerial) // RTLM15d2
+          applyMapSet(operation.mapOp, messageTimeserial) // RTLM15d2
         } else {
           throw objectError("No payload found for ${operation.action} op for LiveMap objectId=${objectId}")
         }
       }
       ObjectOperationAction.MapRemove -> {
         if (operation.mapOp != null) {
-          applyMapRemove(operation.mapOp, opSerial) // RTLM15d3
+          applyMapRemove(operation.mapOp, messageTimeserial) // RTLM15d3
         } else {
           throw objectError("No payload found for ${operation.action} op for LiveMap objectId=${objectId}")
         }
@@ -153,15 +102,15 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
    */
   private fun applyMapSet(
     mapOp: ObjectMapOp, // RTLM7d1
-    opSerial: String?, // RTLM7d2
+    timeSerial: String?, // RTLM7d2
   ): Map<String, String> {
     val existingEntry = liveMap.data[mapOp.key]
 
     // RTLM7a
-    if (existingEntry != null && !canApplyMapOperation(existingEntry.timeserial, opSerial)) {
+    if (existingEntry != null && !canApplyMapOperation(existingEntry.timeserial, timeSerial)) {
       // RTLM7a1 - the operation's serial <= the entry's serial, ignore the operation
       Log.v(tag,
-        "Skipping update for key=\"${mapOp.key}\": op serial $opSerial <= entry serial ${existingEntry.timeserial};" +
+        "Skipping update for key=\"${mapOp.key}\": op serial $timeSerial <= entry serial ${existingEntry.timeserial};" +
           " objectId=${objectId}"
       )
       return mapOf()
@@ -184,13 +133,13 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
       // RTLM7a2
       existingEntry.isTombstoned = false // RTLM7a2c
       existingEntry.tombstonedAt = null
-      existingEntry.timeserial = opSerial // RTLM7a2b
+      existingEntry.timeserial = timeSerial // RTLM7a2b
       existingEntry.data = mapOp.data // RTLM7a2a
     } else {
       // RTLM7b, RTLM7b1
       liveMap.data[mapOp.key] = LiveMapEntry(
         isTombstoned = false, // RTLM7b2
-        timeserial = opSerial,
+        timeserial = timeSerial,
         data = mapOp.data
       )
     }
@@ -203,16 +152,16 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
    */
   private fun applyMapRemove(
     mapOp: ObjectMapOp, // RTLM8c1
-    opSerial: String?, // RTLM8c2
+    timeSerial: String?, // RTLM8c2
   ): Map<String, String> {
     val existingEntry = liveMap.data[mapOp.key]
 
     // RTLM8a
-    if (existingEntry != null && !canApplyMapOperation(existingEntry.timeserial, opSerial)) {
+    if (existingEntry != null && !canApplyMapOperation(existingEntry.timeserial, timeSerial)) {
       // RTLM8a1 - the operation's serial <= the entry's serial, ignore the operation
       Log.v(
         tag,
-        "Skipping remove for key=\"${mapOp.key}\": op serial $opSerial <= entry serial ${existingEntry.timeserial}; " +
+        "Skipping remove for key=\"${mapOp.key}\": op serial $timeSerial <= entry serial ${existingEntry.timeserial}; " +
           "objectId=${objectId}"
       )
       return mapOf()
@@ -222,14 +171,14 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
       // RTLM8a2
       existingEntry.isTombstoned = true // RTLM8a2c
       existingEntry.tombstonedAt = System.currentTimeMillis()
-      existingEntry.timeserial = opSerial // RTLM8a2b
+      existingEntry.timeserial = timeSerial // RTLM8a2b
       existingEntry.data = null // RTLM8a2a
     } else {
       // RTLM8b, RTLM8b1
       liveMap.data[mapOp.key] = LiveMapEntry(
         isTombstoned = true, // RTLM8b2
         tombstonedAt = System.currentTimeMillis(),
-        timeserial = opSerial
+        timeserial = timeSerial
       )
     }
 
@@ -241,17 +190,17 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
    * Should only be applied if incoming serial is strictly greater than existing entry's serial.
    * @spec RTLM9 - Serial comparison logic for map operations
    */
-  private fun canApplyMapOperation(existingMapEntrySerial: String?, opSerial: String?): Boolean {
-    if (existingMapEntrySerial.isNullOrEmpty() && opSerial.isNullOrEmpty()) { // RTLM9b
+  private fun canApplyMapOperation(existingMapEntrySerial: String?, timeSerial: String?): Boolean {
+    if (existingMapEntrySerial.isNullOrEmpty() && timeSerial.isNullOrEmpty()) { // RTLM9b
       return false
     }
-    if (existingMapEntrySerial.isNullOrEmpty()) { // RTLM9d - If true, means opSerial is not empty based on previous checks
+    if (existingMapEntrySerial.isNullOrEmpty()) { // RTLM9d - If true, means timeSerial is not empty based on previous checks
       return true
     }
-    if (opSerial.isNullOrEmpty()) { // RTLM9c - Check reached here means existingMapEntrySerial is not empty
+    if (timeSerial.isNullOrEmpty()) { // RTLM9c - Check reached here means existingMapEntrySerial is not empty
       return false
     }
-    return opSerial > existingMapEntrySerial // RTLM9e - both are not empty
+    return timeSerial > existingMapEntrySerial // RTLM9e - both are not empty
   }
 
   /**

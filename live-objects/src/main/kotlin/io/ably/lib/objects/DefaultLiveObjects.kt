@@ -246,11 +246,12 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
       // RTO5c1a
       if (existingObject != null) {
         // Update existing object
-        val update = existingObject.applyObjectState(objectState) // RTO5c1a1
+        val update = existingObject.applyObjectSync(objectState) // RTO5c1a1
         existingObjectUpdates.add(Pair(existingObject, update))
       } else { // RTO5c1b
-        // RTO5c1b1 - Create new object and add it to the pool
-        val newObject = createObjectFromState(objectState) //
+        // RTO5c1b1, RTO5c1b1a, RTO5c1b1b - Create new object and add it to the pool
+        val newObject = createObjectFromState(objectState)
+        newObject.applyObjectSync(objectState)
         objectsPool.set(objectId, newObject)
       }
     }
@@ -286,7 +287,7 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
       // so to simplify operations handling, we always try to create a zero-value object in the pool first,
       // and then we can always apply the operation on the existing object in the pool.
       val obj = objectsPool.createZeroValueObjectIfNotExists(objectOperation.objectId) // RTO9a2a1
-      obj.applyOperation(objectOperation, objectMessage) // RTO9a2a2, RTO9a2a3
+      obj.applyObject(objectMessage) // RTO9a2a2, RTO9a2a3
     }
   }
 
@@ -322,8 +323,6 @@ internal class DefaultLiveObjects(private val channelName: String, private val a
       objectState.counter != null -> DefaultLiveCounter.zeroValue(objectState.objectId, adapter) // RTO5c1b1a
       objectState.map != null -> DefaultLiveMap.zeroValue(objectState.objectId, adapter, objectsPool) // RTO5c1b1b
       else -> throw clientError("Object state must contain either counter or map data") // RTO5c1b1c
-    }.apply {
-      applyObjectState(objectState)
     }
   }
 

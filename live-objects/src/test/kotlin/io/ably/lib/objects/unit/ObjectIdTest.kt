@@ -1,7 +1,7 @@
 package io.ably.lib.objects.unit
 
 import io.ably.lib.objects.ObjectId
-import io.ably.lib.objects.ObjectType
+import io.ably.lib.objects.type.ObjectType
 import io.ably.lib.types.AblyException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows

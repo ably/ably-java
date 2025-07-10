@@ -1,6 +1,7 @@
 package io.ably.lib.objects
 
 import io.ably.lib.objects.type.BaseLiveObject
+import io.ably.lib.objects.type.ObjectType
 import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
 import io.ably.lib.objects.type.livemap.DefaultLiveMap
 import io.ably.lib.util.Log

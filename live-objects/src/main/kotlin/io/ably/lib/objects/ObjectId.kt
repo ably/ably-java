@@ -1,9 +1,6 @@
 package io.ably.lib.objects
 
-internal enum class ObjectType(val value: String) {
-  Map("map"),
-  Counter("counter")
-}
+import io.ably.lib.objects.type.ObjectType
 
 internal class ObjectId private constructor(
   internal val type: ObjectType,

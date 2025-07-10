@@ -9,6 +9,7 @@ import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.type.BaseLiveObject
+import io.ably.lib.objects.type.ObjectType
 import io.ably.lib.types.Callback
 
 /**
@@ -39,7 +40,7 @@ internal class DefaultLiveMap(
   adapter: LiveObjectsAdapter,
   internal val objectsPool: ObjectsPool,
   internal val semantics: MapSemantics = MapSemantics.LWW
-) : LiveMap, BaseLiveObject(objectId, adapter) {
+) : LiveMap, BaseLiveObject(objectId, ObjectType.Map, adapter) {
 
   override val tag = "LiveMap"
   /**
@@ -90,11 +91,11 @@ internal class DefaultLiveMap(
   }
 
   override fun applyObjectState(objectState: ObjectState): Map<String, String> {
-    return liveMapManager.overrideWithObjectState(objectState)
+    return liveMapManager.applyState(objectState)
   }
 
-  override fun applyOperation(operation: ObjectOperation, message: ObjectMessage) {
-    liveMapManager.applyOperation(operation, message)
+  override fun applyObjectOperation(operation: ObjectOperation, message: ObjectMessage) {
+    liveMapManager.applyOperation(operation, message.serial)
   }
 
   override fun clearData(): Map<String, String> {

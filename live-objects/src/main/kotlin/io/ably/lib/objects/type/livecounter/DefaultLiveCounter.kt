@@ -1,10 +1,10 @@
 package io.ably.lib.objects.type.livecounter
 
 import io.ably.lib.objects.*
-import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.type.BaseLiveObject
+import io.ably.lib.objects.type.ObjectType
 import io.ably.lib.types.Callback
 
 /**
@@ -15,7 +15,7 @@ import io.ably.lib.types.Callback
 internal class DefaultLiveCounter(
   objectId: String,
   adapter: LiveObjectsAdapter,
-) : LiveCounter, BaseLiveObject(objectId, adapter) {
+) : LiveCounter, BaseLiveObject(objectId, ObjectType.Counter, adapter) {
 
   override val tag = "LiveCounter"
 
@@ -54,11 +54,11 @@ internal class DefaultLiveCounter(
   }
 
   override fun applyObjectState(objectState: ObjectState): Map<String, Long> {
-    return liveCounterManager.applyObjectState(objectState)
+    return liveCounterManager.applyState(objectState)
   }
 
-  override fun applyOperation(operation: ObjectOperation, message: ObjectMessage) {
-    liveCounterManager.applyOperation(operation, message)
+  override fun applyObjectOperation(operation: ObjectOperation, message: ObjectMessage) {
+    liveCounterManager.applyOperation(operation)
   }
 
   override fun clearData(): Map<String, Long> {
