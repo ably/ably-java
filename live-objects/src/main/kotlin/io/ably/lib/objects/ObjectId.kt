@@ -18,8 +18,8 @@ internal class ObjectId private constructor(
     /**
      * Creates ObjectId instance from hashed object id string.
      */
-    fun fromString(objectId: String?): ObjectId {
-      if (objectId.isNullOrEmpty()) {
+    fun fromString(objectId: String): ObjectId {
+      if (objectId.isEmpty()) {
         throw objectError("Invalid object id: $objectId")
       }
 
@@ -29,8 +29,7 @@ internal class ObjectId private constructor(
         throw objectError("Invalid object id: $objectId")
       }
 
-      val typeStr = parts[0]
-      val rest = parts[1]
+      val (typeStr, rest) = parts
 
       val type = when (typeStr) {
         "map" -> ObjectType.Map

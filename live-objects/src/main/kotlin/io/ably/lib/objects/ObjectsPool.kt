@@ -38,7 +38,6 @@ internal class ObjectsPool(
 
   /**
    * @spec RTO3a - Pool storing all live objects by object ID
-   * Note: This is the same as objectsPool property in DefaultLiveObjects.kt
    */
   private val pool = mutableMapOf<String, BaseLiveObject>()
 
@@ -88,25 +87,17 @@ internal class ObjectsPool(
    * Does not create a new root object, so the reference to the root object remains the same.
    */
   internal fun resetToInitialPool(emitUpdateEvents: Boolean) {
-    // Clear the pool first and keep the root object
-    val root = pool[ROOT_OBJECT_ID]
-    if (root != null) {
-      pool.clear()
-      set(ROOT_OBJECT_ID, root)
-
-      // this will only clear the remaining root object and emit update events
-      clearObjectsData(emitUpdateEvents)
-    } else {
-      Log.w(tag, "Root object not found in pool during reset")
-    }
+    pool.entries.removeIf { (key, _) -> key != ROOT_OBJECT_ID } // only keep the root object
+    clearObjectsData(emitUpdateEvents) // clear the root object and emit update events
   }
 
 
   /**
    * Deletes objects from the pool for which object ids are not found in the provided array of ids.
+   * Spec: RTO5c2
    */
   internal fun deleteExtraObjectIds(objectIds: MutableSet<String>) {
-    pool.entries.removeIf { (key, _) -> key !in objectIds }
+    pool.entries.removeIf { (key, _) -> key !in objectIds && key != ROOT_OBJECT_ID } // RTO5c2a - Keep root object
   }
 
   /**
@@ -115,9 +106,7 @@ internal class ObjectsPool(
   private fun clearObjectsData(emitUpdateEvents: Boolean) {
     for (obj in pool.values) {
       val update = obj.clearData()
-      if (emitUpdateEvents) {
-        obj.notifyUpdated(update)
-      }
+      if (emitUpdateEvents) obj.notifyUpdated(update)
     }
   }
 
@@ -133,13 +122,12 @@ internal class ObjectsPool(
     }
 
     val parsedObjectId = ObjectId.fromString(objectId) // RTO6b
-    val zeroValueObject = when (parsedObjectId.type) {
+    return when (parsedObjectId.type) {
       ObjectType.Map -> DefaultLiveMap.zeroValue(objectId, adapter, this) // RTO6b2
       ObjectType.Counter -> DefaultLiveCounter.zeroValue(objectId, adapter) // RTO6b3
+    }.apply {
+      set(objectId, this) // RTO6b4 - Add the zero-value object to the pool
     }
-
-    set(objectId, zeroValueObject)
-    return zeroValueObject
   }
 
   /**

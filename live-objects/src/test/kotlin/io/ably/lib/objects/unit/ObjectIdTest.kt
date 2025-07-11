@@ -37,11 +37,7 @@ class ObjectIdTest {
   }
 
   @Test
-  fun testNullOrEmptyObjectId() {
-    val exception = assertThrows(AblyException::class.java) {
-      ObjectId.fromString(null)
-    }
-    assertAblyExceptionError(exception)
+  fun testEmptyObjectId() {
     val exception1 = assertThrows(AblyException::class.java) {
       ObjectId.fromString("")
     }
