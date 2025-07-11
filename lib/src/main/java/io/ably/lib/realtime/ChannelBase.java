@@ -145,6 +145,15 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             this.reason = stateChange.reason;
         }
 
+        // cover states other than attached, ChannelState.attached already covered in setAttached
+        if (liveObjectsPlugin != null && newState!= ChannelState.attached) {
+            try {
+                liveObjectsPlugin.handleStateChange(name, newState, false);
+            } catch (Throwable t) {
+                Log.e(TAG, "Unexpected exception in LiveObjectsPlugin.handle", t);
+            }
+        }
+
         if (newState != ChannelState.attaching && newState != ChannelState.suspended) {
             this.retryAttempt = 0;
         }
@@ -438,6 +447,13 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
                 Log.e(TAG, e.getMessage(), e);
             }
             return;
+        }
+        if (liveObjectsPlugin != null) {
+            try {
+                liveObjectsPlugin.handleStateChange(name, ChannelState.attached, message.hasFlag(Flag.has_objects));
+            } catch (Throwable t) {
+                Log.e(TAG, "Unexpected exception in LiveObjectsPlugin.handle", t);
+            }
         }
         if(state == ChannelState.attached) {
             Log.v(TAG, String.format(Locale.ROOT, "Server initiated attach for channel %s", name));

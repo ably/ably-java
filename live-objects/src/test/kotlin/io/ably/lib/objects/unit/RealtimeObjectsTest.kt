@@ -4,7 +4,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertNotNull
 
-class LiveObjectTest {
+class RealtimeObjectsTest {
   @Test
   fun testChannelObjectGetterTest() = runTest {
     val channel = getMockRealtimeChannel("test-channel")

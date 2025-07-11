@@ -32,6 +32,13 @@ internal fun LiveObjectsAdapter.ensureMessageSizeWithinLimit(objectMessages: Arr
   }
 }
 
+internal fun LiveObjectsAdapter.setChannelSerial(channelName: String, protocolMessage: ProtocolMessage) {
+  if (protocolMessage.action != ProtocolMessage.Action.`object`) return
+  val channelSerial = protocolMessage.channelSerial
+  if (channelSerial.isNullOrEmpty()) return
+  setChannelSerial(channelName, channelSerial)
+}
+
 internal enum class ProtocolMessageFormat(private val value: String) {
   Msgpack("msgpack"),
   Json("json");
