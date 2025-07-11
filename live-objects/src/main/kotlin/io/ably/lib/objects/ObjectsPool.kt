@@ -55,9 +55,18 @@ internal class ObjectsPool(
   init {
     // Initialize pool with root object
     createInitialPool()
-
     // Start garbage collection coroutine
     startGCJob()
+  }
+
+  /**
+   * Creates the initial pool with root object.
+   *
+   * @spec RTO3b - Creates root LiveMap object
+   */
+  private fun createInitialPool() {
+    val root = DefaultLiveMap.zeroValue(ROOT_OBJECT_ID, adapter, this)
+    pool[ROOT_OBJECT_ID] = root
   }
 
   /**
@@ -65,13 +74,6 @@ internal class ObjectsPool(
    */
   internal fun get(objectId: String): BaseLiveObject? {
     return pool[objectId]
-  }
-
-  /**
-   * Deletes objects from the pool for which object ids are not found in the provided array of ids.
-   */
-  internal fun deleteExtraObjectIds(objectIds: MutableSet<String>) {
-    pool.entries.removeIf { (key, _) -> key !in objectIds }
   }
 
   /**
@@ -92,11 +94,19 @@ internal class ObjectsPool(
       pool.clear()
       set(ROOT_OBJECT_ID, root)
 
-      // Clear the data, this will only clear the root object
+      // this will only clear the remaining root object and emit update events
       clearObjectsData(emitUpdateEvents)
     } else {
       Log.w(tag, "Root object not found in pool during reset")
     }
+  }
+
+
+  /**
+   * Deletes objects from the pool for which object ids are not found in the provided array of ids.
+   */
+  internal fun deleteExtraObjectIds(objectIds: MutableSet<String>) {
+    pool.entries.removeIf { (key, _) -> key !in objectIds }
   }
 
   /**
@@ -130,16 +140,6 @@ internal class ObjectsPool(
 
     set(objectId, zeroValueObject)
     return zeroValueObject
-  }
-
-  /**
-   * Creates the initial pool with root object.
-   *
-   * @spec RTO3b - Creates root LiveMap object
-   */
-  private fun createInitialPool() {
-    val root = DefaultLiveMap.zeroValue(ROOT_OBJECT_ID, adapter, this)
-    pool[ROOT_OBJECT_ID] = root
   }
 
   /**

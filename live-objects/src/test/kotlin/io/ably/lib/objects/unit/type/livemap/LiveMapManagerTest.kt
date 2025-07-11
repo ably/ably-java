@@ -1,4 +1,4 @@
-package io.ably.lib.objects.unit
+package io.ably.lib.objects.unit.type.livemap
 
 import io.ably.lib.objects.*
 import io.ably.lib.objects.type.livemap.LiveMapEntry

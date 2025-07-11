@@ -1,5 +1,9 @@
 package io.ably.lib.objects.unit
 
+import io.ably.lib.objects.*
+import io.ably.lib.objects.DefaultLiveObjects
+import io.ably.lib.objects.ObjectsManager
+import io.ably.lib.objects.type.BaseLiveObject
 import io.ably.lib.realtime.AblyRealtime
 import io.ably.lib.realtime.Channel
 import io.ably.lib.realtime.ChannelState
@@ -34,4 +38,47 @@ internal fun getMockRealtimeChannel(
     }.apply {
       state = ChannelState.attached
     }
+}
+
+internal fun getMockLiveObjectsAdapter(): LiveObjectsAdapter {
+  return mockk<LiveObjectsAdapter>(relaxed = true)
+}
+
+internal fun ObjectsPool.size(): Int {
+  val pool = this.getPrivateField<Map<String, BaseLiveObject>>("pool")
+  return pool.size
+}
+
+internal val ObjectsManager.SyncObjectsDataPool: Map<String, ObjectState>
+  get() = this.getPrivateField("syncObjectsDataPool")
+
+internal val ObjectsManager.BufferedObjectOperations: List<ObjectMessage>
+  get() = this.getPrivateField("bufferedObjectOperations")
+
+internal var DefaultLiveObjects.ObjectsManager: ObjectsManager
+  get() = this.getPrivateField("objectsManager")
+  set(value) = this.setPrivateField("objectsManager", value)
+
+internal var DefaultLiveObjects.ObjectsPool: ObjectsPool
+  get() = this.objectsPool
+  set(value) = this.setPrivateField("objectsPool", value)
+
+internal fun getDefaultLiveObjectsWithMockedDeps(
+  channelName: String = "testChannelName",
+  relaxed: Boolean = false
+): DefaultLiveObjects {
+  val defaultLiveObjects = DefaultLiveObjects(channelName, getMockLiveObjectsAdapter())
+  // mock objectsPool to allow verification of method calls
+  if (relaxed) {
+    defaultLiveObjects.ObjectsPool = mockk(relaxed = true)
+  } else {
+    defaultLiveObjects.ObjectsPool = spyk(defaultLiveObjects.objectsPool, recordPrivateCalls = true)
+  }
+  // mock objectsManager to allow verification of method calls
+  if (relaxed) {
+    defaultLiveObjects.ObjectsManager = mockk(relaxed = true)
+  } else {
+    defaultLiveObjects.ObjectsManager = spyk(defaultLiveObjects.ObjectsManager, recordPrivateCalls = true)
+  }
+  return defaultLiveObjects
 }
