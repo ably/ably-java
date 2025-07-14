@@ -52,6 +52,7 @@ class DefaultLiveObjectsTest {
     val rootObject = defaultLiveObjects.objectsPool.get(ROOT_OBJECT_ID) as DefaultLiveMap
     rootObject.data["key1"] = LiveMapEntry(data = ObjectData("testValue1"))
     defaultLiveObjects.objectsPool.set("dummyObjectId", DefaultLiveCounter("dummyObjectId", mockk(relaxed = true)))
+    assertEquals(2, defaultLiveObjects.objectsPool.size(), "RTO4b - Should have 2 objects before state change")
 
     // RTO4b - If the HAS_OBJECTS flag is 0, the sync sequence must be considered complete immediately
     defaultLiveObjects.handleStateChange(ChannelState.attached, false)
