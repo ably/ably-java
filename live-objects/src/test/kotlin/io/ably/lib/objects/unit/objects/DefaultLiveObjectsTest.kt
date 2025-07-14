@@ -51,7 +51,7 @@ class DefaultLiveObjectsTest {
     // Set up some objects in objectPool that should be cleared
     val rootObject = defaultLiveObjects.objectsPool.get(ROOT_OBJECT_ID) as DefaultLiveMap
     rootObject.data["key1"] = LiveMapEntry(data = ObjectData("testValue1"))
-    defaultLiveObjects.objectsPool.set("dummyObjectId", DefaultLiveCounter("dummyObjectId", mockk(relaxed = true)))
+    defaultLiveObjects.objectsPool.set("counter:testObject@1", DefaultLiveCounter("counter:testObject@1", mockk(relaxed = true)))
     assertEquals(2, defaultLiveObjects.objectsPool.size(), "RTO4b - Should have 2 objects before state change")
 
     // RTO4b - If the HAS_OBJECTS flag is 0, the sync sequence must be considered complete immediately
@@ -102,7 +102,7 @@ class DefaultLiveObjectsTest {
       connectionId = "testConnectionId",
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
-        objectId = "testObjectId",
+        objectId = "counter:testObject@1",
         counterOp = ObjectCounterOp(amount = 5.0)
       ),
       serial = "serial1",
@@ -130,7 +130,7 @@ class DefaultLiveObjectsTest {
       timestamp = 1234567890L,
       connectionId = "testSyncConnectionId",
       objectState = ObjectState(
-        objectId = "testObjectId",
+        objectId = "map:testObject@1",
         tombstone = false,
         siteTimeserials = mapOf("site1" to "syncSerial1"),
       ),

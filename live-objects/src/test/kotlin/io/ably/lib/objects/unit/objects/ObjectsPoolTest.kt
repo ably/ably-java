@@ -32,13 +32,13 @@ class ObjectsPoolTest {
     assertEquals(1, objectsPool.size(), "RTO3 - Should only contain the root object initially")
 
     // RTO3a - ObjectsPool is a Dict, a map of LiveObjects keyed by objectId string
-    val testLiveMap = DefaultLiveMap("testObjectId", mockk(relaxed = true), objectsPool)
-    objectsPool.set("testObjectId", testLiveMap)
-    val testLiveCounter = DefaultLiveCounter("testCounterId", mockk(relaxed = true))
-    objectsPool.set("testCounterId", testLiveCounter)
+    val testLiveMap = DefaultLiveMap("map:testObject@1", mockk(relaxed = true), objectsPool)
+    objectsPool.set("map:testObject@1", testLiveMap)
+    val testLiveCounter = DefaultLiveCounter("counter:testObject@1", mockk(relaxed = true))
+    objectsPool.set("counter:testObject@1", testLiveCounter)
     // Assert that the objects are stored in the pool
-    assertEquals(testLiveMap, objectsPool.get("testObjectId"))
-    assertEquals(testLiveCounter, objectsPool.get("testCounterId"))
+    assertEquals(testLiveMap, objectsPool.get("map:testObject@1"))
+    assertEquals(testLiveCounter, objectsPool.get("counter:testObject@1"))
     assertEquals(3, objectsPool.size(), "RTO3 - Should have 3 objects in pool (root + testLiveMap + testLiveCounter)")
   }
 
@@ -88,11 +88,11 @@ class ObjectsPoolTest {
     assertEquals(2, rootMap.data.size, "RTO3 - Root map should have initial data")
 
     // Add some objects
-    objectsPool.set("testObjectId", DefaultLiveCounter("testObjectId", mockk(relaxed = true)))
+    objectsPool.set("counter:testObject@1", DefaultLiveCounter("counter:testObject@1", mockk(relaxed = true)))
     assertEquals(2, objectsPool.size()) // root + testObject
-    objectsPool.set("anotherObjectId", DefaultLiveCounter("anotherObjectId", mockk(relaxed = true)))
+    objectsPool.set("counter:testObject@2", DefaultLiveCounter("counter:testObject@2", mockk(relaxed = true)))
     assertEquals(3, objectsPool.size()) // root + testObject + anotherObject
-    objectsPool.set("testMapId", DefaultLiveMap("testMapId", mockk(relaxed = true), objectsPool))
+    objectsPool.set("map:testObject@1", DefaultLiveMap("map:testObject@1", mockk(relaxed = true), objectsPool))
     assertEquals(4, objectsPool.size()) // root + testObject + anotherObject + testMap
 
     // Reset to initial pool
@@ -111,13 +111,13 @@ class ObjectsPoolTest {
     val objectsPool = defaultLiveObjects.objectsPool
 
     // Add some objects
-    objectsPool.set("object1", DefaultLiveCounter("object1", mockk(relaxed = true)))
-    objectsPool.set("object2", DefaultLiveCounter("object2", mockk(relaxed = true)))
-    objectsPool.set("object3", DefaultLiveCounter("object3", mockk(relaxed = true)))
+    objectsPool.set("counter:testObject@1", DefaultLiveCounter("counter:testObject@1", mockk(relaxed = true)))
+    objectsPool.set("counter:testObject@2", DefaultLiveCounter("counter:testObject@2", mockk(relaxed = true)))
+    objectsPool.set("counter:testObject@3", DefaultLiveCounter("counter:testObject@3", mockk(relaxed = true)))
     assertEquals(4, objectsPool.size()) // root + 3 objects
 
     // Delete extra object IDs (keep only object1 and object2)
-    val receivedObjectIds = mutableSetOf("object1", "object2")
+    val receivedObjectIds = mutableSetOf("counter:testObject@1", "counter:testObject@2")
     objectsPool.deleteExtraObjectIds(receivedObjectIds)
 
     // Should only contain root, object1, and object2
@@ -125,8 +125,8 @@ class ObjectsPoolTest {
     // RTO5c2a - Should keep the root object
     assertNotNull(objectsPool.get(ROOT_OBJECT_ID))
     // RTO5c2 - Should delete object3 and keep object1 and object2
-    assertNotNull(objectsPool.get("object1"))
-    assertNotNull(objectsPool.get("object2"))
-    assertNull(objectsPool.get("object3")) // Should be deleted
+    assertNotNull(objectsPool.get("counter:testObject@1"))
+    assertNotNull(objectsPool.get("counter:testObject@2"))
+    assertNull(objectsPool.get("counter:testObject@3")) // Should be deleted
   }
 }
