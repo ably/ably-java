@@ -12,7 +12,7 @@ import io.ably.lib.types.Callback
  *
  * @spec RTLC1/RTLC2 - LiveCounter implementation extends LiveObject
  */
-internal class DefaultLiveCounter(
+internal class DefaultLiveCounter private constructor(
   objectId: String,
   adapter: LiveObjectsAdapter,
 ) : LiveCounter, BaseLiveObject(objectId, ObjectType.Counter, adapter) {

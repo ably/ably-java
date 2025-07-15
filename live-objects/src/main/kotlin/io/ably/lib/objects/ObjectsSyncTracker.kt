@@ -4,9 +4,9 @@ package io.ably.lib.objects
  * @spec RTO5 - SyncTracker class for tracking objects sync status
  */
 internal class ObjectsSyncTracker(syncChannelSerial: String?) {
+  private val syncSerial: String? = syncChannelSerial
   internal val syncId: String?
   internal val syncCursor: String?
-  private val syncSerial: String? = syncChannelSerial
 
   init {
     val parsed = parseSyncChannelSerial(syncChannelSerial)

@@ -29,7 +29,7 @@ internal abstract class BaseLiveObject(
 
   protected open val tag = "BaseLiveObject"
 
-  private val siteTimeserials = mutableMapOf<String, String>() // RTLO3b
+  internal val siteTimeserials = mutableMapOf<String, String>() // RTLO3b
 
   internal var createOperationIsMerged = false // RTLO3c
 
@@ -111,7 +111,7 @@ internal abstract class BaseLiveObject(
    *
    * @spec RTLO4a - Serial comparison logic for LiveMap/LiveCounter operations
    */
-  private fun canApplyOperation(siteCode: String?, timeSerial: String?): Boolean {
+  internal fun canApplyOperation(siteCode: String?, timeSerial: String?): Boolean {
     if (timeSerial.isNullOrEmpty()) {
       throw objectError("Invalid serial: $timeSerial") // RTLO4a3
     }

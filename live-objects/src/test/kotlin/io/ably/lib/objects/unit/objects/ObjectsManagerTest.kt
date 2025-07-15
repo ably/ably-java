@@ -163,8 +163,10 @@ class ObjectsManagerTest {
   }
 
   @Test
-  fun `(RTO7) ObjectsManager should buffer operations during sync, apply them after synced`() {
+  fun `(RTO7) ObjectsManager should buffer operations when not in sync, apply them after synced`() {
     val defaultLiveObjects = getDefaultLiveObjectsWithMockedDeps()
+    assertEquals(ObjectsState.INITIALIZED, defaultLiveObjects.state, "Initial state should be INITIALIZED")
+
     val objectsManager = defaultLiveObjects.ObjectsManager
     assertEquals(0, objectsManager.BufferedObjectOperations.size, "RTO7a1 - Initial buffer should be empty")
 

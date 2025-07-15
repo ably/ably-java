@@ -45,17 +45,13 @@ internal class ObjectsPool(
    * Coroutine scope for garbage collection
    */
   private val gcScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-
-  /**
-   * Job for the garbage collection coroutine
-   */
-  private var gcJob: Job? = null
+  private var gcJob: Job // Job for the garbage collection coroutine
 
   init {
     // Initialize pool with root object
     createInitialPool()
     // Start garbage collection coroutine
-    startGCJob()
+    gcJob = startGCJob()
   }
 
   /**
@@ -146,8 +142,8 @@ internal class ObjectsPool(
   /**
    * Starts the garbage collection coroutine.
    */
-  private fun startGCJob() {
-    gcJob = gcScope.launch {
+  private fun startGCJob() : Job {
+    return gcScope.launch {
       while (isActive) {
         try {
           onGCInterval()
@@ -164,7 +160,7 @@ internal class ObjectsPool(
    * Should be called when the pool is no longer needed.
    */
   fun dispose() {
-    gcJob?.cancel()
+    gcJob.cancel()
     gcScope.cancel()
     pool.clear()
   }

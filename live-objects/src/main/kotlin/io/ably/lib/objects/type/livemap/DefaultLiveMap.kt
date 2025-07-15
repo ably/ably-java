@@ -35,7 +35,7 @@ private fun LiveMapEntry.isEligibleForGc(): Boolean {
  *
  * @spec RTLM1/RTLM2 - LiveMap implementation extends LiveObject
  */
-internal class DefaultLiveMap(
+internal class DefaultLiveMap private constructor(
   objectId: String,
   adapter: LiveObjectsAdapter,
   internal val objectsPool: ObjectsPool,
