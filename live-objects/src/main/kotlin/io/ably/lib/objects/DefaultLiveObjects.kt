@@ -9,15 +9,6 @@ import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.flow.MutableSharedFlow
 
 /**
- * @spec RTO2 - enum representing objects state
- */
-internal enum class ObjectsState {
-  INITIALIZED,
-  SYNCING,
-  SYNCED
-}
-
-/**
  * Default implementation of LiveObjects interface.
  * Provides the core functionality for managing live objects on a channel.
  */
@@ -99,7 +90,7 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
   private suspend fun getRootAsync(): LiveMap {
     return sequentialScope.async {
       adapter.throwIfInvalidAccessApiConfiguration(channelName)
-      // TODO - wait for state in synced state
+      objectsManager.ensureSynced()
       objectsPool.get(ROOT_OBJECT_ID) as LiveMap
     }.await()
   }
@@ -184,22 +175,6 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
         }
       }
     }
-  }
-
-  /**
-   * Changes the state and emits events.
-   *
-   * @spec RTO2 - Emits state change events for syncing and synced states
-   */
-  internal fun stateChange(newState: ObjectsState, deferEvent: Boolean) {
-    if (state == newState) {
-      return
-    }
-
-    state = newState
-    Log.v(tag, "Objects state changed to: $newState")
-
-    // TODO: Emit state change events
   }
 
   // Dispose of any resources associated with this LiveObjects instance

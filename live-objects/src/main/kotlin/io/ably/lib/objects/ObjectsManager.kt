@@ -4,6 +4,7 @@ import io.ably.lib.objects.type.BaseLiveObject
 import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
 import io.ably.lib.objects.type.livemap.DefaultLiveMap
 import io.ably.lib.util.Log
+import kotlinx.coroutines.*
 
 /**
  * @spec RTO5 - Processes OBJECT and OBJECT_SYNC messages during sync sequences
@@ -20,6 +21,13 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
    * @spec RTO7 - Buffered object operations during sync
    */
   private val bufferedObjectOperations = mutableListOf<ObjectMessage>() // RTO7a
+
+  // composition over inheritance, used to handle object state changes internally
+  private val internalObjectStateEmitter = ObjectsStateEmitter()
+  // related to RTC10, should have a separate EventEmitter for users of the library
+  private val publicObjectStateEmitter = ObjectsStateEmitter()
+  // Coroutine scope for running sequential operations on a single thread, used to avoid concurrency issues.
+  private val emitterScope = CoroutineScope(Dispatchers.Default.limitedParallelism(1) + SupervisorJob())
 
   /**
    * Handles object messages (non-sync messages).
@@ -77,7 +85,7 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
     bufferedObjectOperations.clear() // RTO5a2b
     syncObjectsDataPool.clear() // RTO5a2a
     currentSyncId = syncId
-    liveObjects.stateChange(ObjectsState.SYNCING, false)
+    stateChange(ObjectsState.SYNCING, false)
   }
 
   /**
@@ -95,7 +103,7 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
     bufferedObjectOperations.clear() // RTO5c5
     syncObjectsDataPool.clear() // RTO5c4
     currentSyncId = null // RTO5c3
-    liveObjects.stateChange(ObjectsState.SYNCED, deferStateEvent)
+    stateChange(ObjectsState.SYNCED, deferStateEvent)
   }
 
   /**
@@ -215,8 +223,48 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
     }
   }
 
+  /**
+   * Suspends the current coroutine until objects are synchronized.
+   * Returns immediately if state is already SYNCED, otherwise waits for the SYNCED event.
+   */
+  internal suspend fun ensureSynced() {
+    if (liveObjects.state != ObjectsState.SYNCED) {
+      val deferred = CompletableDeferred<Unit>()
+      internalObjectStateEmitter.once(ObjectsEvent.SYNCED) {
+        Log.v(tag, "Objects state changed to SYNCED, resuming ensureSynced")
+        deferred.complete(Unit)
+      }
+      deferred.await()
+    }
+  }
+
+  /**
+   * Changes the state and emits events.
+   *
+   * @spec RTO2 - Emits state change events for syncing and synced states
+   */
+  private fun stateChange(newState: ObjectsState, deferEvent: Boolean) {
+    if (liveObjects.state == newState) {
+      return
+    }
+
+    liveObjects.state = newState
+    Log.v(tag, "Objects state changed to: $newState")
+
+    val event = objectsStateToEventMap[newState]
+    event?.let {
+      // Use of deferEvent not needed, since emit method is synchronized amongst different threads
+      // emitterScope makes sure, next launch can only start when previous launch finishes processing of all events
+      emitterScope.launch {
+        internalObjectStateEmitter.emit(it)
+        publicObjectStateEmitter.emit(it)
+      }
+    }
+  }
+
   internal fun dispose() {
     syncObjectsDataPool.clear()
     bufferedObjectOperations.clear()
+    emitterScope.cancel("ObjectsManager disposed")
   }
 }
