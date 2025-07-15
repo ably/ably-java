@@ -9,19 +9,19 @@ import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.ObjectValue
 
-internal val dummyObjectDataStringValue = ObjectData(objectId = "object-id", ObjectValue("dummy string"))
+internal val dummyObjectDataStringValue = ObjectData(objectId = "object-id", ObjectValue.String("dummy string"))
 
-internal val dummyBinaryObjectValue = ObjectData(objectId = "object-id", ObjectValue(Binary(byteArrayOf(1, 2, 3))))
+internal val dummyBinaryObjectValue = ObjectData(objectId = "object-id", ObjectValue.Binary(Binary(byteArrayOf(1, 2, 3))))
 
-internal val dummyNumberObjectValue = ObjectData(objectId = "object-id", ObjectValue(42.0))
+internal val dummyNumberObjectValue = ObjectData(objectId = "object-id", ObjectValue.Number(42.0))
 
-internal val dummyBooleanObjectValue = ObjectData(objectId = "object-id", ObjectValue(true))
+internal val dummyBooleanObjectValue = ObjectData(objectId = "object-id", ObjectValue.Boolean(true))
 
 val dummyJsonObject = JsonObject().apply { addProperty("foo", "bar") }
-internal val dummyJsonObjectValue = ObjectData(objectId = "object-id", ObjectValue(dummyJsonObject))
+internal val dummyJsonObjectValue = ObjectData(objectId = "object-id", ObjectValue.JsonObject(dummyJsonObject))
 
 val dummyJsonArray = JsonArray().apply { add(1); add(2); add(3) }
-internal val dummyJsonArrayValue = ObjectData(objectId = "object-id", ObjectValue(dummyJsonArray))
+internal val dummyJsonArrayValue = ObjectData(objectId = "object-id", ObjectValue.JsonArray(dummyJsonArray))
 
 internal val dummyObjectMapEntry = ObjectMapEntry(
   tombstone = false,
