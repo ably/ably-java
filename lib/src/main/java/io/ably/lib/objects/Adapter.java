@@ -1,8 +1,11 @@
 package io.ably.lib.objects;
 
 import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ChannelMode;
+import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
 import org.jetbrains.annotations.NotNull;
@@ -33,5 +36,33 @@ public class Adapter implements LiveObjectsAdapter {
     @Override
     public int maxMessageSizeLimit() {
         return ably.connection.connectionManager.maxMessageSize;
+    }
+
+    @Override
+    public ChannelMode[] getChannelModes(@NotNull String channelName) {
+        if (ably.channels.containsKey(channelName)) {
+            // RTO2a - channel.modes is only populated on channel attachment, so use it only if it is set
+            ChannelMode[] modes = ably.channels.get(channelName).getModes();
+            if (modes != null) {
+                return modes;
+            }
+            // RTO2b - otherwise as a best effort use user provided channel options
+            ChannelOptions options = ably.channels.get(channelName).getOptions();
+            if (options != null && options.hasModes()) {
+                return options.modes;
+            }
+            return null;
+        }
+        Log.e(TAG, "getChannelMode(): channel not found: " + channelName);
+        return null;
+    }
+
+    @Override
+    public ChannelState getChannelState(@NotNull String channelName) {
+        if (ably.channels.containsKey(channelName)) {
+            return ably.channels.get(channelName).state;
+        }
+        Log.e(TAG, "getChannelState(): channel not found: " + channelName);
+        return null;
     }
 }

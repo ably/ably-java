@@ -1,7 +1,9 @@
 package io.ably.lib.objects
 
 import io.ably.lib.types.AblyException
+import io.ably.lib.types.Callback
 import io.ably.lib.types.ErrorInfo
+import kotlinx.coroutines.*
 
 internal fun ablyException(
   errorMessage: String,
@@ -44,3 +46,26 @@ internal fun objectError(errorMessage: String, cause: Throwable? = null): AblyEx
  */
 internal val String.byteSize: Int
   get() = this.toByteArray(Charsets.UTF_8).size
+
+/**
+ * Executes a suspend function within a coroutine and handles the result via a callback.
+ *
+ * This utility bridges between coroutine-based implementation code and callback-based APIs.
+ * It launches a coroutine in the current scope to execute the provided suspend block,
+ * then routes the result or any error to the appropriate callback method.
+ *
+ * @param T The type of result expected from the operation
+ * @param callback The callback to invoke with the operation result or error
+ * @param block The suspend function to execute that returns a value of type T
+ */
+internal fun <T> CoroutineScope.with(callback: Callback<T>, block: suspend () -> T) {
+  launch {
+    try {
+      val result = block()
+      callback.onSuccess(result)
+    } catch (throwable: Throwable) {
+      val exception = throwable as? AblyException
+      callback.onError(exception?.errorInfo)
+    }
+  }
+}

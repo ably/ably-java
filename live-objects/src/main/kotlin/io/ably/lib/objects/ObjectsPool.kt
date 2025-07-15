@@ -48,20 +48,10 @@ internal class ObjectsPool(
   private var gcJob: Job // Job for the garbage collection coroutine
 
   init {
-    // Initialize pool with root object
-    createInitialPool()
+    // RTO3b - Initialize pool with root object
+    pool[ROOT_OBJECT_ID] = DefaultLiveMap.zeroValue(ROOT_OBJECT_ID, adapter, this)
     // Start garbage collection coroutine
     gcJob = startGCJob()
-  }
-
-  /**
-   * Creates the initial pool with root object.
-   *
-   * @spec RTO3b - Creates root LiveMap object
-   */
-  private fun createInitialPool() {
-    val root = DefaultLiveMap.zeroValue(ROOT_OBJECT_ID, adapter, this)
-    pool[ROOT_OBJECT_ID] = root
   }
 
   /**

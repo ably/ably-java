@@ -42,6 +42,11 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
     CoroutineScope(Dispatchers.Default.limitedParallelism(1) + CoroutineName(channelName) + SupervisorJob())
 
   /**
+   * Coroutine scope for handling callbacks asynchronously.
+   */
+  private val callbackScope = CoroutineScope(Dispatchers.Default + CoroutineName("LiveObjectsCallback-$channelName"))
+
+  /**
    * Event bus for handling incoming object messages sequentially.
    */
   private val objectsEventBus = MutableSharedFlow<ProtocolMessage>(extraBufferCapacity = UNLIMITED)
@@ -51,11 +56,12 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
     incomingObjectsHandler = initializeHandlerForIncomingObjectMessages()
   }
 
-  /**
-   * @spec RTO1 - Returns the root LiveMap object with proper validation and sync waiting
-   */
   override fun getRoot(): LiveMap {
-    TODO("Not yet implemented")
+    return runBlocking { getRootAsync() }
+  }
+
+  override fun getRootAsync(callback: Callback<LiveMap>) {
+    callbackScope.with(callback) { getRootAsync() }
   }
 
   override fun createMap(liveMap: LiveMap): LiveMap {
@@ -67,10 +73,6 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
   }
 
   override fun createMap(map: MutableMap<String, Any>): LiveMap {
-    TODO("Not yet implemented")
-  }
-
-  override fun getRootAsync(callback: Callback<LiveMap>) {
     TODO("Not yet implemented")
   }
 
@@ -92,6 +94,14 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
 
   override fun createCounter(initialValue: Long): LiveCounter {
     TODO("Not yet implemented")
+  }
+
+  private suspend fun getRootAsync(): LiveMap {
+    return sequentialScope.async {
+      adapter.throwIfInvalidAccessApiConfiguration(channelName)
+      // TODO - wait for state in synced state
+      objectsPool.get(ROOT_OBJECT_ID) as LiveMap
+    }.await()
   }
 
   /**
