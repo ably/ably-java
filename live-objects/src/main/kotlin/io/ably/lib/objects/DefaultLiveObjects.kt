@@ -1,7 +1,7 @@
 package io.ably.lib.objects
 
+import io.ably.lib.objects.state.ObjectsStateChange
 import io.ably.lib.objects.state.ObjectsStateEvent
-import io.ably.lib.objects.state.ObjectsStateListener
 import io.ably.lib.objects.state.ObjectsStateSubscription
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.types.Callback
@@ -90,25 +90,17 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
     TODO("Not yet implemented")
   }
 
-  override fun on(event: ObjectsStateEvent, listener: ObjectsStateListener): ObjectsStateSubscription {
-    objectsManager.publicObjectStateEmitter.on(event, listener)
-    return ObjectsStateSubscription {
-      objectsManager.publicObjectStateEmitter.off(event, listener)
-    }
-  }
+  override fun on(event: ObjectsStateEvent, listener: ObjectsStateChange.Listener): ObjectsStateSubscription =
+    objectsManager.on(event, listener)
 
-  override fun off(listener: ObjectsStateListener) {
-    objectsManager.publicObjectStateEmitter.off(listener)
-  }
+  override fun off(listener: ObjectsStateChange.Listener) = objectsManager.off(listener)
 
-  override fun offAll() {
-    objectsManager.publicObjectStateEmitter.off()
-  }
+  override fun offAll() = objectsManager.offAll()
 
   private suspend fun getRootAsync(): LiveMap {
     return sequentialScope.async {
       adapter.throwIfInvalidAccessApiConfiguration(channelName)
-      objectsManager.ensureSynced()
+      objectsManager.ensureSynced(state)
       objectsPool.get(ROOT_OBJECT_ID) as LiveMap
     }.await()
   }
