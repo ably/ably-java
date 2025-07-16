@@ -1,5 +1,7 @@
 package io.ably.lib.objects
 
+import io.ably.lib.objects.state.ObjectsStateEvent
+import io.ably.lib.objects.state.ObjectsStateListener
 import io.ably.lib.util.EventEmitter
 
 /**
@@ -11,23 +13,14 @@ internal enum class ObjectsState {
   SYNCED
 }
 
-public enum class ObjectsEvent {
-  SYNCING,
-  SYNCED
-}
-
 internal val objectsStateToEventMap = mapOf(
   ObjectsState.INITIALIZED to null,
-  ObjectsState.SYNCING to ObjectsEvent.SYNCING,
-  ObjectsState.SYNCED to ObjectsEvent.SYNCED
+  ObjectsState.SYNCING to ObjectsStateEvent.SYNCING,
+  ObjectsState.SYNCED to ObjectsStateEvent.SYNCED
 )
 
-public fun interface ObjectsStateListener {
-  public fun onStateChanged(state: ObjectsEvent)
-}
-
-internal class ObjectsStateEmitter : EventEmitter<ObjectsEvent, ObjectsStateListener>() {
-  override fun apply(listener: ObjectsStateListener?, event: ObjectsEvent?, vararg args: Any?) {
+internal class ObjectsStateEmitter : EventEmitter<ObjectsStateEvent, ObjectsStateListener>() {
+  override fun apply(listener: ObjectsStateListener?, event: ObjectsStateEvent?, vararg args: Any?) {
     listener?.onStateChanged(event!!)
   }
 }

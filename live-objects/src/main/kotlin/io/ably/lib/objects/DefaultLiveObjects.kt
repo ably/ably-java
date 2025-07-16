@@ -1,5 +1,8 @@
 package io.ably.lib.objects
 
+import io.ably.lib.objects.state.ObjectsStateEvent
+import io.ably.lib.objects.state.ObjectsStateListener
+import io.ably.lib.objects.state.ObjectsStateSubscription
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.types.Callback
 import io.ably.lib.types.ProtocolMessage
@@ -52,7 +55,7 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
   }
 
   override fun getRootAsync(callback: Callback<LiveMap>) {
-    callbackScope.with(callback) { getRootAsync() }
+    callbackScope.launchWithCallback(callback) { getRootAsync() }
   }
 
   override fun createMap(liveMap: LiveMap): LiveMap {
@@ -85,6 +88,21 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
 
   override fun createCounter(initialValue: Long): LiveCounter {
     TODO("Not yet implemented")
+  }
+
+  override fun on(event: ObjectsStateEvent, listener: ObjectsStateListener): ObjectsStateSubscription {
+    objectsManager.publicObjectStateEmitter.on(event, listener)
+    return ObjectsStateSubscription {
+      objectsManager.publicObjectStateEmitter.off(event, listener)
+    }
+  }
+
+  override fun off(listener: ObjectsStateListener) {
+    objectsManager.publicObjectStateEmitter.off(listener)
+  }
+
+  override fun offAll() {
+    objectsManager.publicObjectStateEmitter.off()
   }
 
   private suspend fun getRootAsync(): LiveMap {

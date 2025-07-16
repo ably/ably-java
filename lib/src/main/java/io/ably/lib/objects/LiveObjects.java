@@ -1,5 +1,8 @@
 package io.ably.lib.objects;
 
+import io.ably.lib.objects.state.ObjectsStateEvent;
+import io.ably.lib.objects.state.ObjectsStateListener;
+import io.ably.lib.objects.state.ObjectsStateSubscription;
 import io.ably.lib.types.Callback;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NonBlocking;
@@ -148,4 +151,38 @@ public interface LiveObjects {
      */
     @NonBlocking
     void createCounterAsync(@NotNull Long initialValue, @NotNull Callback<@NotNull LiveCounter> callback);
+
+    /**
+     * Subscribes to a specific Live Objects synchronization state event.
+     *
+     * <p>This method registers the provided listener to be notified when the specified
+     * synchronization state event occurs. The returned subscription can be used to
+     * unsubscribe later when the notifications are no longer needed.
+     *
+     * @param event the synchronization state event to subscribe to (SYNCING or SYNCED)
+     * @param listener the listener that will be called when the event occurs
+     * @return a subscription object that can be used to unsubscribe from the event
+     */
+    @NonBlocking
+    ObjectsStateSubscription on(@NotNull ObjectsStateEvent event, @NotNull ObjectsStateListener listener);
+
+    /**
+     * Unsubscribes the specified listener from all synchronization state events.
+     *
+     * <p>After calling this method, the provided listener will no longer receive
+     * any synchronization state event notifications.
+     *
+     * @param listener the listener to unregister from all events
+     */
+    @NonBlocking
+    void off(@NotNull ObjectsStateListener listener);
+
+    /**
+     * Unsubscribes all listeners from all synchronization state events.
+     *
+     * <p>After calling this method, no listeners will receive any synchronization
+     * state event notifications until new listeners are registered.
+     */
+    @NonBlocking
+    void offAll();
 }

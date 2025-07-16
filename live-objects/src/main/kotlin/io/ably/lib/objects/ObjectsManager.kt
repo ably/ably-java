@@ -1,5 +1,6 @@
 package io.ably.lib.objects
 
+import io.ably.lib.objects.state.ObjectsStateEvent
 import io.ably.lib.objects.type.BaseLiveObject
 import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
 import io.ably.lib.objects.type.livemap.DefaultLiveMap
@@ -25,7 +26,7 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
   // composition over inheritance, used to handle object state changes internally
   private val internalObjectStateEmitter = ObjectsStateEmitter()
   // related to RTC10, should have a separate EventEmitter for users of the library
-  private val publicObjectStateEmitter = ObjectsStateEmitter()
+  internal val publicObjectStateEmitter = ObjectsStateEmitter()
   // Coroutine scope for running sequential operations on a single thread, used to avoid concurrency issues.
   private val emitterScope = CoroutineScope(Dispatchers.Default.limitedParallelism(1) + SupervisorJob())
 
@@ -230,7 +231,7 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
   internal suspend fun ensureSynced() {
     if (liveObjects.state != ObjectsState.SYNCED) {
       val deferred = CompletableDeferred<Unit>()
-      internalObjectStateEmitter.once(ObjectsEvent.SYNCED) {
+      internalObjectStateEmitter.once(ObjectsStateEvent.SYNCED) {
         Log.v(tag, "Objects state changed to SYNCED, resuming ensureSynced")
         deferred.complete(Unit)
       }
@@ -253,8 +254,8 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
 
     val event = objectsStateToEventMap[newState]
     event?.let {
-      // Use of deferEvent not needed, since emit method is synchronized amongst different threads
-      // emitterScope makes sure, next launch can only start when previous launch finishes processing of all events
+      // Use of deferEvent not needed since emitterScope makes sure next launch can only start when previous launch
+      // finishes processing of all events. Also, emit method is synchronized amongst different threads
       emitterScope.launch {
         internalObjectStateEmitter.emit(it)
         publicObjectStateEmitter.emit(it)

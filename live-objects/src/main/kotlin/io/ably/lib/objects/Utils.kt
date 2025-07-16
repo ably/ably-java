@@ -58,7 +58,7 @@ internal val String.byteSize: Int
  * @param callback The callback to invoke with the operation result or error
  * @param block The suspend function to execute that returns a value of type T
  */
-internal fun <T> CoroutineScope.with(callback: Callback<T>, block: suspend () -> T) {
+internal fun <T> CoroutineScope.launchWithCallback(callback: Callback<T>, block: suspend () -> T) {
   launch {
     try {
       val result = block()
