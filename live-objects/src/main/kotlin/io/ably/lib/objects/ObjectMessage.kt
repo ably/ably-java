@@ -102,7 +102,7 @@ internal data class ObjectCounterOp(
    * The data value that should be added to the counter
    * Spec: OCO2a
    */
-  val amount: Double? = null
+  val amount: Long? = null
 )
 
 /**
@@ -158,7 +158,7 @@ internal data class ObjectCounter(
    * The value of the counter
    * Spec: OCN2a
    */
-  val count: Double? = null
+  val count: Long? = null
 )
 
 /**

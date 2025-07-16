@@ -4,6 +4,10 @@ import io.ably.lib.objects.*
 import io.ably.lib.objects.DefaultLiveObjects
 import io.ably.lib.objects.ObjectsManager
 import io.ably.lib.objects.type.BaseLiveObject
+import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
+import io.ably.lib.objects.type.livecounter.LiveCounterManager
+import io.ably.lib.objects.type.livemap.DefaultLiveMap
+import io.ably.lib.objects.type.livemap.LiveMapManager
 import io.ably.lib.realtime.AblyRealtime
 import io.ably.lib.realtime.Channel
 import io.ably.lib.realtime.ChannelState
@@ -44,11 +48,20 @@ internal fun getMockLiveObjectsAdapter(): LiveObjectsAdapter {
   return mockk<LiveObjectsAdapter>(relaxed = true)
 }
 
+internal fun getMockObjectsPool(): ObjectsPool {
+  return mockk<ObjectsPool>(relaxed = true)
+}
+
 internal fun ObjectsPool.size(): Int {
   val pool = this.getPrivateField<Map<String, BaseLiveObject>>("pool")
   return pool.size
 }
 
+/**
+ * ======================================
+ * START - DefaultLiveObjects dep mocks
+ * ======================================
+ */
 internal val ObjectsManager.SyncObjectsDataPool: Map<String, ObjectState>
   get() = this.getPrivateField("syncObjectsDataPool")
 
@@ -82,3 +95,62 @@ internal fun getDefaultLiveObjectsWithMockedDeps(
   }
   return defaultLiveObjects
 }
+/**
+ * ======================================
+ * END - DefaultLiveObjects dep mocks
+ * ======================================
+ */
+
+/**
+ * ======================================
+ * START - DefaultLiveCounter dep mocks
+ * ======================================
+ */
+internal var DefaultLiveCounter.LiveCounterManager: LiveCounterManager
+  get() = this.getPrivateField("liveCounterManager")
+  set(value) = this.setPrivateField("liveCounterManager", value)
+
+internal fun getDefaultLiveCounterWithMockedDeps(
+  objectId: String = "counter:testCounter@1",
+  relaxed: Boolean = false
+): DefaultLiveCounter {
+  val defaultLiveCounter = DefaultLiveCounter.zeroValue(objectId, getMockLiveObjectsAdapter())
+  if (relaxed) {
+    defaultLiveCounter.LiveCounterManager = mockk(relaxed = true)
+  } else {
+    defaultLiveCounter.LiveCounterManager = spyk(defaultLiveCounter.LiveCounterManager, recordPrivateCalls = true)
+  }
+  return defaultLiveCounter
+}
+/**
+ * ======================================
+ * END - DefaultLiveCounter dep mocks
+ * ======================================
+ */
+
+/**
+ * ======================================
+ * START - DefaultLiveMap dep mocks
+ * ======================================
+ */
+internal var DefaultLiveMap.LiveMapManager: LiveMapManager
+  get() = this.getPrivateField("liveMapManager")
+  set(value) = this.setPrivateField("liveMapManager", value)
+
+internal fun getDefaultLiveMapWithMockedDeps(
+  objectId: String = "map:testMap@1",
+  relaxed: Boolean = false
+): DefaultLiveMap {
+  val defaultLiveMap = DefaultLiveMap.zeroValue(objectId, getMockLiveObjectsAdapter(), getMockObjectsPool())
+  if (relaxed) {
+    defaultLiveMap.LiveMapManager = mockk(relaxed = true)
+  } else {
+    defaultLiveMap.LiveMapManager = spyk(defaultLiveMap.LiveMapManager, recordPrivateCalls = true)
+  }
+  return defaultLiveMap
+}
+/**
+ * ======================================
+ * END - DefaultLiveMap dep mocks
+ * ======================================
+ */

@@ -44,7 +44,7 @@ class ObjectsManagerTest {
         objectId = "counter:testObject@2", // Does not exist in pool
         tombstone = false,
         siteTimeserials = mapOf("site1" to "syncSerial1"),
-        counter = ObjectCounter(count = 20.0)
+        counter = ObjectCounter(count = 20)
       )
     )
     val objectMessage3 = ObjectMessage(
@@ -183,7 +183,7 @@ class ObjectsManagerTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterCreate,
         objectId = "counter:testObject@1",
-        counterOp = ObjectCounterOp(amount = 5.30)
+        counterOp = ObjectCounterOp(amount = 5)
       ),
       serial = "serial1",
       siteCode = "site1"

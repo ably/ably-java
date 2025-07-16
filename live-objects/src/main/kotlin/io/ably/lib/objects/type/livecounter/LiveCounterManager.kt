@@ -23,7 +23,7 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter) {
     } else {
       // override data for this object with data from the object state
       liveCounter.createOperationIsMerged = false // RTLC6b
-      liveCounter.data = objectState.counter?.count?.toLong() ?: 0 // RTLC6c
+      liveCounter.data = objectState.counter?.count ?: 0 // RTLC6c
 
       // RTLC6d
       objectState.createOp?.let { createOp ->
@@ -77,7 +77,7 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter) {
    * @spec RTLC9 - Applies counter increment operation
    */
   private fun applyCounterInc(counterOp: ObjectCounterOp): Map<String, Long> {
-    val amount = counterOp.amount?.toLong() ?: 0
+    val amount = counterOp.amount ?: 0
     liveCounter.data += amount // RTLC9b
     return mapOf("amount" to amount)
   }
@@ -90,7 +90,7 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter) {
     // note that it is intentional to SUM the incoming count from the create op.
     // if we got here, it means that current counter instance is missing the initial value in its data reference,
     // which we're going to add now.
-    val count = operation.counter?.count?.toLong() ?: 0
+    val count = operation.counter?.count ?: 0
     liveCounter.data += count // RTLC10a
     liveCounter.createOperationIsMerged = true // RTLC10b
     return mapOf("amount" to count)
