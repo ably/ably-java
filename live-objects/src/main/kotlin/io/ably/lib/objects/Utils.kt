@@ -3,6 +3,7 @@ package io.ably.lib.objects
 import io.ably.lib.types.AblyException
 import io.ably.lib.types.Callback
 import io.ably.lib.types.ErrorInfo
+import io.ably.lib.util.Log
 import kotlinx.coroutines.*
 
 internal fun ablyException(
@@ -62,7 +63,9 @@ internal fun <T> CoroutineScope.launchWithCallback(callback: Callback<T>, block:
   launch {
     try {
       val result = block()
-      callback.onSuccess(result)
+      try { callback.onSuccess(result) } catch (t: Throwable) {
+        Log.e("asyncCallback", "Error occurred while executing callback's onSuccess handler", t)
+      } // catch and don't rethrow error from callback
     } catch (throwable: Throwable) {
       val exception = throwable as? AblyException
       callback.onError(exception?.errorInfo)

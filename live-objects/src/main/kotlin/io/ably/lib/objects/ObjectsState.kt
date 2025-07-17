@@ -2,7 +2,6 @@ package io.ably.lib.objects
 
 import io.ably.lib.objects.state.ObjectsStateChange
 import io.ably.lib.objects.state.ObjectsStateEvent
-import io.ably.lib.objects.state.ObjectsStateSubscription
 import io.ably.lib.util.EventEmitter
 import io.ably.lib.util.Log
 import kotlinx.coroutines.*
@@ -66,9 +65,9 @@ internal abstract class ObjectsStateCoordinator : ObjectsStateChange, HandlesObj
 
   private val emitterScope = CoroutineScope(Dispatchers.Default.limitedParallelism(1) + SupervisorJob())
 
-  override fun on(event: ObjectsStateEvent, listener: ObjectsStateChange.Listener): ObjectsStateSubscription {
+  override fun on(event: ObjectsStateEvent, listener: ObjectsStateChange.Listener): ObjectsSubscription {
     externalObjectStateEmitter.on(event, listener)
-    return ObjectsStateSubscription {
+    return ObjectsSubscription {
       externalObjectStateEmitter.off(event, listener)
     }
   }
@@ -105,7 +104,12 @@ internal abstract class ObjectsStateCoordinator : ObjectsStateChange, HandlesObj
 }
 
 private class ObjectsStateEmitter : EventEmitter<ObjectsStateEvent, ObjectsStateChange.Listener>() {
+  private val tag = "ObjectsStateEmitter"
   override fun apply(listener: ObjectsStateChange.Listener?, event: ObjectsStateEvent?, vararg args: Any?) {
-    listener?.onStateChanged(event!!)
+    try {
+      listener?.onStateChanged(event!!)
+    } catch (t: Throwable) {
+      Log.e(tag, "Error occurred while executing listener callback for event: $event", t)
+    }
   }
 }

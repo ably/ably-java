@@ -2,7 +2,6 @@ package io.ably.lib.objects
 
 import io.ably.lib.objects.state.ObjectsStateChange
 import io.ably.lib.objects.state.ObjectsStateEvent
-import io.ably.lib.objects.state.ObjectsStateSubscription
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.types.Callback
 import io.ably.lib.types.ProtocolMessage
@@ -38,7 +37,8 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
   /**
    * Coroutine scope for handling callbacks asynchronously.
    */
-  private val callbackScope = CoroutineScope(Dispatchers.Default + CoroutineName("LiveObjectsCallback-$channelName"))
+  private val callbackScope =
+    CoroutineScope(Dispatchers.Default + CoroutineName("LiveObjectsCallback-$channelName") + SupervisorJob())
 
   /**
    * Event bus for handling incoming object messages sequentially.
@@ -90,7 +90,7 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
     TODO("Not yet implemented")
   }
 
-  override fun on(event: ObjectsStateEvent, listener: ObjectsStateChange.Listener): ObjectsStateSubscription =
+  override fun on(event: ObjectsStateEvent, listener: ObjectsStateChange.Listener): ObjectsSubscription =
     objectsManager.on(event, listener)
 
   override fun off(listener: ObjectsStateChange.Listener) = objectsManager.off(listener)
