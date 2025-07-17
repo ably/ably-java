@@ -1,6 +1,5 @@
 ![Ably Pub/Sub Java Header](images/javaSDK-github.png)
-
-[![version: 0.3.0](https://img.shields.io/badge/version-0.3.0-2ea44f)](https://github.com/ably/ably-java/releases/tag/v0.3.0)
+[![Latest Version](https://img.shields.io/maven-central/v/io.ably/ably-java)](https://central.sonatype.com/artifact/io.ably/ably-java)
 [![License](https://badgen.net/github/license/ably/ably-java)](https://github.com/ably/ably-java/blob/main/LICENSE)
 
 # Ably Pub/Sub Java SDK
@@ -11,8 +10,8 @@ Ably Pub/Sub provides flexible APIs that deliver features such as pub-sub messag
 
 Find out more:
 
-* [Ably Pub/Sub docs](https://ably.com/docs/basics)
-* [Ably Pub/Sub examples](https://ably.com/examples?product=pubsub)
+* [Ably Pub/Sub docs.](https://ably.com/docs/basics)
+* [Ably Pub/Sub examples.](https://ably.com/examples?product=pubsub)
 
 ---
 
@@ -21,6 +20,7 @@ Find out more:
 Everything you need to get started with Ably:
 
 - [Quickstart in Pub/Sub using Java](https://ably.com/docs/getting-started/quickstart?lang=java)
+* [SDK Setup for Java.](https://ably.com/docs/getting-started/setup?lang=java)
 
 ---
 
@@ -33,13 +33,76 @@ The following platforms are supported:
 | Platform | Support |
 |----------|---------|
 | Java     | >= 1.8 (JRE 8 or later) |
-| Kotlin   | All versions (>= 0.0.1 supported), but we recommend >= 1.8 for best compatibilit. |
+| Kotlin   | All versions (>= 1.0 supported), but we recommend >= 1.8 for best compatibility. |
 | Android | >=4.4 (API level 19) |
 
 > [!IMPORTANT]
 > SDK versions < 1.2.35 will be [deprecated](https://ably.com/docs/platform/deprecate/protocol-v1) from November 1, 2025.
 
 ---
+
+## Installation
+
+The Java SDK is available as a [Maven dependency](https://mvnrepository.com/artifact/io.ably/ably-java). To get started with your project, install the package:
+
+### Install for Maven:
+
+```xml
+<dependency>
+    <groupId>io.ably</groupId>
+    <artifactId>ably-java</artifactId>
+    <version>1.2.22</version>
+</dependency>
+```
+
+### Install for Gradle:
+
+```gradle
+implementation 'io.ably:ably-java:1.2.22'
+implementation 'org.slf4j:slf4j-simple:2.0.7'
+```
+
+Run the following to instantiate a client:
+
+```java
+import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.types.ClientOptions;
+
+ClientOptions options = new ClientOptions(apiKey);
+AblyRealtime realtime = new AblyRealtime(options);
+```
+
+---
+
+## Usage
+
+The following code connects to Ably's realtime messaging service, subscribes to a channel to receive messages, and publishes a test message to that same channel.
+
+
+```java
+// Initialize Ably Realtime client
+ClientOptions options = new ClientOptions("your-ably-api-key");
+options.clientId = "me";
+AblyRealtime realtimeClient = new AblyRealtime(options);
+
+// Wait for connection to be established
+realtimeClient.connection.on(ConnectionEvent.connected, connectionStateChange -> {
+    System.out.println("Connected to Ably");
+    
+    // Get a reference to the 'test-channel' channel
+    Channel channel = realtimeClient.channels.get("test-channel");
+    
+    // Subscribe to all messages published to this channel
+    channel.subscribe(message -> {
+        System.out.println("Received message: " + message.data);
+    });
+    
+    // Publish a test message to the channel
+    channel.publish("test-event", "hello world");
+});
+```
+---
+
 
 ## Proxy support
 
@@ -111,10 +174,10 @@ Read the [CONTRIBUTING.md](./CONTRIBUTING.md) guidelines to contribute to Ably.
 
 ## Releases
 
-The [CHANGELOG.md](/ably/ably-js/blob/main/CHANGELOG.md) contains details of the latest releases for this SDK. You can also view all Ably releases on [changelog.ably.com](https://changelog.ably.com).
+The [CHANGELOG.md](/ably/ably-java/blob/main/CHANGELOG.md) contains details of the latest releases for this SDK. You can also view all Ably releases on [changelog.ably.com](https://changelog.ably.com).
 
 ---
 
-## Support, Feedback, and Troubleshooting
+## Support, feedback, and troubleshooting
 
 For help or technical support, visit Ably's [support page](https://ably.com/support) or [GitHub Issues](https://github.com/ably/ably-java/issues) for community-reported bugs and discussions.
