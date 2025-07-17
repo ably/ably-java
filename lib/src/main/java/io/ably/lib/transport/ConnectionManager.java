@@ -1285,6 +1285,8 @@ public class ConnectionManager implements ConnectListener {
                 addPendingMessagesToQueuedMessages(true);
                 channels.transferToChannelQueue(extractConnectionQueuePresenceMessages());
             }
+        } else {
+            msgSerial = 0;
         }
 
         connection.id = message.connectionId;
