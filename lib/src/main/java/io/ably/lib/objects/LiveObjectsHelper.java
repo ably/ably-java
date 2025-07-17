@@ -34,7 +34,7 @@ public class LiveObjectsHelper {
                     } catch (ClassNotFoundException | InstantiationException | IllegalAccessException |
                              NoSuchMethodException |
                              InvocationTargetException e) {
-                        Log.e(TAG, "Failed to init LiveObjectSerializer, LiveObjects plugin not included in the classpath", e);
+                        Log.w(TAG, "Failed to init LiveObjectSerializer, LiveObjects plugin not included in the classpath", e);
                         return null;
                     }
                 }
