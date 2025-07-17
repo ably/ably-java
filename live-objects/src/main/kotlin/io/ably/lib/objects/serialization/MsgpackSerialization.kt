@@ -236,8 +236,9 @@ private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
     when (fieldName) {
       "action" -> {
         val actionCode = unpacker.unpackInt()
-        action = ObjectOperationAction.entries.find { it.code == actionCode }
-          ?: throw objectError("Unknown ObjectOperationAction code: $actionCode")
+        action = ObjectOperationAction.entries.firstOrNull { it.code == actionCode }
+          ?: ObjectOperationAction.entries.firstOrNull { it.code == -1 }
+          ?: throw objectError("Unknown ObjectOperationAction code: $actionCode and no Unknown fallback found")
       }
       "objectId" -> objectId = unpacker.unpackString()
       "mapOp" -> mapOp = readObjectMapOp(unpacker)
@@ -502,8 +503,9 @@ private fun readObjectMap(unpacker: MessageUnpacker): ObjectMap {
     when (fieldName) {
       "semantics" -> {
         val semanticsCode = unpacker.unpackInt()
-        semantics = MapSemantics.entries.find { it.code == semanticsCode }
-          ?: throw objectError("Unknown MapSemantics code: $semanticsCode")
+        semantics = MapSemantics.entries.firstOrNull { it.code == semanticsCode }
+          ?: MapSemantics.entries.firstOrNull { it.code == -1 }
+          ?: throw objectError("Unknown MapSemantics code: $semanticsCode and no UNKNOWN fallback found")
       }
       "entries" -> {
         val mapSize = unpacker.unpackMapHeader()

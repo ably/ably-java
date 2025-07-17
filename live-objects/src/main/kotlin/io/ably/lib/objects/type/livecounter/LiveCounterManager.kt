@@ -95,4 +95,18 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter) {
     liveCounter.createOperationIsMerged = true // RTLC10b
     return mapOf("amount" to count)
   }
+
+  internal fun validate(state: ObjectState) {
+    liveCounter.validateObjectId(state.objectId)
+    state.createOp?.let { createOp ->
+      liveCounter.validateObjectId(createOp.objectId)
+      validateCounterCreateAction(createOp.action)
+    }
+  }
+
+  private fun validateCounterCreateAction(action: ObjectOperationAction) {
+    if (action != ObjectOperationAction.CounterCreate) {
+      throw objectError("Invalid create operation action $action for LiveCounter objectId=${objectId}")
+    }
+  }
 }

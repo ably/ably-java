@@ -90,6 +90,8 @@ internal class DefaultLiveMap private constructor(
     TODO("Not yet implemented")
   }
 
+  override fun validate(state: ObjectState) = liveMapManager.validate(state)
+
   override fun applyObjectState(objectState: ObjectState): Map<String, String> {
     return liveMapManager.applyState(objectState)
   }

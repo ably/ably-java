@@ -1,22 +1,11 @@
 package io.ably.lib.objects.unit.type.livecounter
 
 import io.ably.lib.objects.*
-import io.ably.lib.objects.ObjectCounterOp
-import io.ably.lib.objects.ObjectMessage
-import io.ably.lib.objects.ObjectOperation
-import io.ably.lib.objects.ObjectOperationAction
-import io.ably.lib.objects.ObjectState
-import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
-import io.ably.lib.objects.type.ObjectType
 import io.ably.lib.objects.unit.LiveCounterManager
 import io.ably.lib.objects.unit.getDefaultLiveCounterWithMockedDeps
-import io.mockk.mockk
-import io.mockk.spyk
-import io.mockk.verify
+import io.ably.lib.types.AblyException
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 class DefaultLiveCounterManagerTest {
 
@@ -44,7 +33,7 @@ class DefaultLiveCounterManagerTest {
 
 
   @Test
-  fun `(RTLC6, RTLC6d) DefaultLiveCounter should merge initial data from create operation`() {
+  fun `(RTLC6, RTLC6d) DefaultLiveCounter should merge create operation in state from sync`() {
     val liveCounter = getDefaultLiveCounterWithMockedDeps()
     val liveCounterManager = liveCounter.LiveCounterManager
 
@@ -73,4 +62,195 @@ class DefaultLiveCounterManagerTest {
   }
 
 
+  @Test
+  fun `(RTLC7, RTLC7d3) LiveCounterManager should throw error for unsupported action`() {
+    val liveCounter = getDefaultLiveCounterWithMockedDeps()
+    val liveCounterManager = liveCounter.LiveCounterManager
+
+    val operation = ObjectOperation(
+      action = ObjectOperationAction.MapCreate, // Unsupported action for counter
+      objectId = "testCounterId",
+      map = ObjectMap(semantics = MapSemantics.LWW, entries = emptyMap())
+    )
+
+    // RTLC7d3 - Should throw error for unsupported action
+    val exception = assertFailsWith<AblyException> {
+      liveCounterManager.applyOperation(operation)
+    }
+
+    val errorInfo = exception.errorInfo
+    assertNotNull(errorInfo)
+    assertEquals(92000, errorInfo?.code) // InvalidObject error code
+    assertEquals(500, errorInfo?.statusCode) // InternalServerError status code
+  }
+
+  @Test
+  fun `(RTLC7, RTLC7d1, RTLC8) LiveCounterManager should apply counter create operation`() {
+    val liveCounter = getDefaultLiveCounterWithMockedDeps()
+    val liveCounterManager = liveCounter.LiveCounterManager
+
+    val operation = ObjectOperation(
+      action = ObjectOperationAction.CounterCreate,
+      objectId = "testCounterId",
+      counter = ObjectCounter(count = 20)
+    )
+
+    // RTLC7d1 - Apply counter create operation
+     liveCounterManager.applyOperation(operation)
+
+    assertEquals(20L, liveCounter.data) // Should be set to counter count
+    assertTrue(liveCounter.createOperationIsMerged) // Should be marked as merged
+  }
+
+  @Test
+  fun `(RTLC8, RTLC8b) LiveCounterManager should skip counter create operation if already merged`() {
+    val liveCounter = getDefaultLiveCounterWithMockedDeps()
+    val liveCounterManager = liveCounter.LiveCounterManager
+
+    liveCounter.data = 4L // Start with 4
+
+    // Set create operation as already merged
+    liveCounter.createOperationIsMerged = true
+
+    val operation = ObjectOperation(
+      action = ObjectOperationAction.CounterCreate,
+      objectId = "testCounterId",
+      counter = ObjectCounter(count = 20)
+    )
+
+    // RTLC8b - Should skip if already merged
+    liveCounterManager.applyOperation(operation)
+
+    assertEquals(4L, liveCounter.data) // Should not change (still 0)
+    assertTrue(liveCounter.createOperationIsMerged) // Should remain merged
+  }
+
+  @Test
+  fun `(RTLC8, RTLC8c) LiveCounterManager should apply counter create operation if not merged`() {
+    val liveCounter = getDefaultLiveCounterWithMockedDeps()
+    val liveCounterManager = liveCounter.LiveCounterManager
+    // Set initial data
+    liveCounter.data = 10L // Start with 10
+
+    // Set create operation as not merged
+    liveCounter.createOperationIsMerged = false
+
+    val operation = ObjectOperation(
+      action = ObjectOperationAction.CounterCreate,
+      objectId = "testCounterId",
+      counter = ObjectCounter(count = 20)
+    )
+
+    // RTLC8c - Should apply if not merged
+    liveCounterManager.applyOperation(operation)
+    assertTrue(liveCounter.createOperationIsMerged) // Should be marked as merged
+
+    assertEquals(30L, liveCounter.data) // Should be set to counter count
+    assertTrue(liveCounter.createOperationIsMerged) // RTLC10b - Should be marked as merged
+  }
+
+  @Test
+  fun `(RTLC8, RTLC10, RTLC10a) LiveCounterManager should handle null count in create operation`() {
+    val liveCounter = getDefaultLiveCounterWithMockedDeps()
+    val liveCounterManager = liveCounter.LiveCounterManager
+
+    // Set initial data
+    liveCounter.data = 10L
+
+    val operation = ObjectOperation(
+      action = ObjectOperationAction.CounterCreate,
+      objectId = "testCounterId",
+      counter = null // No count specified
+    )
+
+    // RTLC10a - Should default to 0
+    // RTLC10b - Mark as merged
+    liveCounterManager.applyOperation(operation)
+
+    assertEquals(10L, liveCounter.data) // No change (null defaults to 0)
+    assertTrue(liveCounter.createOperationIsMerged) // RTLC10b
+  }
+
+  @Test
+  fun `(RTLC7, RTLC7d2, RTLC9) LiveCounterManager should apply counter increment operation`() {
+    val liveCounter = getDefaultLiveCounterWithMockedDeps()
+    val liveCounterManager = liveCounter.LiveCounterManager
+
+    // Set initial data
+    liveCounter.data = 10L
+
+    val operation = ObjectOperation(
+      action = ObjectOperationAction.CounterInc,
+      objectId = "testCounterId",
+      counterOp = ObjectCounterOp(amount = 5)
+    )
+
+    // RTLC7d2 - Apply counter increment operation
+    liveCounterManager.applyOperation(operation)
+
+    assertEquals(15L, liveCounter.data) // RTLC9b - 10 + 5
+  }
+
+  @Test
+  fun `(RTLC7, RTLC7d2) LiveCounterManager should throw error for missing payload for counter increment operation`() {
+    val liveCounter = getDefaultLiveCounterWithMockedDeps()
+    val liveCounterManager = liveCounter.LiveCounterManager
+
+    val operation = ObjectOperation(
+      action = ObjectOperationAction.CounterInc,
+      objectId = "testCounterId",
+      counterOp = null // Missing payload
+    )
+
+    // RTLC7d2 - Should throw error for missing payload
+    val exception = assertFailsWith<AblyException> {
+      liveCounterManager.applyOperation(operation)
+    }
+
+    val errorInfo = exception.errorInfo
+    assertNotNull(errorInfo)
+    assertEquals(92000, errorInfo?.code) // InvalidObject error code
+    assertEquals(500, errorInfo?.statusCode) // InternalServerError status code
+  }
+
+
+  @Test
+  fun `(RTLC9, RTLC9b) LiveCounterManager should apply counter increment operation correctly`() {
+    val liveCounter = getDefaultLiveCounterWithMockedDeps()
+    val liveCounterManager = liveCounter.LiveCounterManager
+
+    // Set initial data
+    liveCounter.data = 10L
+
+    val counterOp = ObjectCounterOp(amount = 7)
+
+    // RTLC9b - Apply counter increment
+    liveCounterManager.applyOperation(ObjectOperation(
+      action = ObjectOperationAction.CounterInc,
+      objectId = "testCounterId",
+      counterOp = counterOp
+    ))
+
+    assertEquals(17L, liveCounter.data) // 10 + 7
+  }
+
+  @Test
+  fun `(RTLC9, RTLC9b) LiveCounterManager should handle null amount in counter increment`() {
+    val liveCounter = getDefaultLiveCounterWithMockedDeps()
+    val liveCounterManager = liveCounter.LiveCounterManager
+
+    // Set initial data
+    liveCounter.data = 10L
+
+    val counterOp = ObjectCounterOp(amount = null) // Null amount
+
+    // RTLC9b - Apply counter increment with null amount
+    liveCounterManager.applyOperation(ObjectOperation(
+      action = ObjectOperationAction.CounterInc,
+      objectId = "testCounterId",
+      counterOp = counterOp
+    ))
+
+    assertEquals(10L, liveCounter.data) // Should not change (null defaults to 0)
+  }
 }

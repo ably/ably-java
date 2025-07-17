@@ -49,6 +49,8 @@ internal class DefaultLiveCounter private constructor(
     TODO("Not yet implemented")
   }
 
+  override fun validate(state: ObjectState) = liveCounterManager.validate(state)
+
   override fun applyObjectState(objectState: ObjectState): Map<String, Long> {
     return liveCounterManager.applyState(objectState)
   }

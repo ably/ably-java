@@ -19,7 +19,8 @@ internal enum class ObjectOperationAction(val code: Int) {
   MapRemove(2),
   CounterCreate(3),
   CounterInc(4),
-  ObjectDelete(5);
+  ObjectDelete(5),
+  Unknown(-1); // code for unknown value during deserialization
 }
 
 /**
@@ -27,7 +28,8 @@ internal enum class ObjectOperationAction(val code: Int) {
  * Spec: OMP2
  */
 internal enum class MapSemantics(val code: Int) {
-  LWW(0);
+  LWW(0),
+  Unknown(-1); // code for unknown value during deserialization
 }
 
 /**
