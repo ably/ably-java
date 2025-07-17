@@ -1,9 +1,12 @@
 package io.ably.lib.objects;
 
+import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.types.AblyException;
+import io.ably.lib.types.ChannelMode;
 import io.ably.lib.types.ProtocolMessage;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public interface LiveObjectsAdapter {
     /**
@@ -31,5 +34,24 @@ public interface LiveObjectsAdapter {
      * @return the maximum message size limit in bytes.
      */
     int maxMessageSizeLimit();
+
+    /**
+     * Retrieves the channel modes for a specific channel.
+     * This method returns the modes that are set for the specified channel.
+     *
+     * @param channelName the name of the channel for which to retrieve the modes
+     * @return the array of channel modes for the specified channel, or null if the channel is not found
+     * Spec: RTO2a, RTO2b
+     */
+    @Nullable ChannelMode[] getChannelModes(@NotNull String channelName);
+
+    /**
+     * Retrieves the current state of a specific channel.
+     * This method returns the state of the specified channel, which indicates its connection status.
+     *
+     * @param channelName the name of the channel for which to retrieve the state
+     * @return the current state of the specified channel, or null if the channel is not found
+     */
+    @Nullable ChannelState getChannelState(@NotNull String channelName);
 }
 
