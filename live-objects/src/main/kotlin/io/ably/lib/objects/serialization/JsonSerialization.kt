@@ -36,7 +36,8 @@ internal class EnumCodeTypeAdapter<T : Enum<T>>(
 
   override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): T {
     val code = json.asInt
-    return enumValues.first { getCode(it) == code }
+    return enumValues.firstOrNull { getCode(it) == code } ?: enumValues.firstOrNull { getCode(it) == -1 } 
+      ?: throw JsonParseException("Unknown enum code: $code and no Unknown fallback found")
   }
 }
 

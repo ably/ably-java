@@ -4,7 +4,9 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import io.ably.lib.objects.*
 import io.ably.lib.objects.Binary
+import io.ably.lib.objects.ErrorCode
 import io.ably.lib.objects.MapSemantics
 import io.ably.lib.objects.ObjectCounter
 import io.ably.lib.objects.ObjectCounterOp
@@ -234,8 +236,9 @@ private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
     when (fieldName) {
       "action" -> {
         val actionCode = unpacker.unpackInt()
-        action = ObjectOperationAction.entries.find { it.code == actionCode }
-          ?: throw IllegalArgumentException("Unknown ObjectOperationAction code: $actionCode")
+        action = ObjectOperationAction.entries.firstOrNull { it.code == actionCode }
+          ?: ObjectOperationAction.entries.firstOrNull { it.code == -1 }
+          ?: throw objectError("Unknown ObjectOperationAction code: $actionCode and no Unknown fallback found")
       }
       "objectId" -> objectId = unpacker.unpackString()
       "mapOp" -> mapOp = readObjectMapOp(unpacker)
@@ -255,7 +258,7 @@ private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
   }
 
   if (action == null) {
-    throw IllegalArgumentException("Missing required 'action' field in ObjectOperation")
+    throw objectError("Missing required 'action' field in ObjectOperation")
   }
 
   return ObjectOperation(
@@ -423,7 +426,7 @@ private fun ObjectCounterOp.writeMsgpack(packer: MessagePacker) {
 
   if (amount != null) {
     packer.packString("amount")
-    packer.packDouble(amount)
+    packer.packLong(amount)
   }
 }
 
@@ -433,7 +436,7 @@ private fun ObjectCounterOp.writeMsgpack(packer: MessagePacker) {
 private fun readObjectCounterOp(unpacker: MessageUnpacker): ObjectCounterOp {
   val fieldCount = unpacker.unpackMapHeader()
 
-  var amount: Double? = null
+  var amount: Long? = null
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
@@ -445,7 +448,7 @@ private fun readObjectCounterOp(unpacker: MessageUnpacker): ObjectCounterOp {
     }
 
     when (fieldName) {
-      "amount" -> amount = unpacker.unpackDouble()
+      "amount" -> amount = unpacker.unpackLong()
       else -> unpacker.skipValue()
     }
   }
@@ -500,8 +503,9 @@ private fun readObjectMap(unpacker: MessageUnpacker): ObjectMap {
     when (fieldName) {
       "semantics" -> {
         val semanticsCode = unpacker.unpackInt()
-        semantics = MapSemantics.entries.find { it.code == semanticsCode }
-          ?: throw IllegalArgumentException("Unknown MapSemantics code: $semanticsCode")
+        semantics = MapSemantics.entries.firstOrNull { it.code == semanticsCode }
+          ?: MapSemantics.entries.firstOrNull { it.code == -1 }
+          ?: throw objectError("Unknown MapSemantics code: $semanticsCode and no UNKNOWN fallback found")
       }
       "entries" -> {
         val mapSize = unpacker.unpackMapHeader()
@@ -532,7 +536,7 @@ private fun ObjectCounter.writeMsgpack(packer: MessagePacker) {
 
   if (count != null) {
     packer.packString("count")
-    packer.packDouble(count)
+    packer.packLong(count)
   }
 }
 
@@ -542,7 +546,7 @@ private fun ObjectCounter.writeMsgpack(packer: MessagePacker) {
 private fun readObjectCounter(unpacker: MessageUnpacker): ObjectCounter {
   val fieldCount = unpacker.unpackMapHeader()
 
-  var count: Double? = null
+  var count: Long? = null
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
@@ -554,7 +558,7 @@ private fun readObjectCounter(unpacker: MessageUnpacker): ObjectCounter {
     }
 
     when (fieldName) {
-      "count" -> count = unpacker.unpackDouble()
+      "count" -> count = unpacker.unpackLong()
       else -> unpacker.skipValue()
     }
   }
@@ -712,7 +716,8 @@ private fun readObjectData(unpacker: MessageUnpacker): ObjectData {
       when {
         parsed.isJsonObject -> parsed.asJsonObject
         parsed.isJsonArray -> parsed.asJsonArray
-        else -> throw IllegalArgumentException("Invalid JSON string for encoding=json")
+        else ->
+          throw ablyException("Invalid JSON string for encoding=json", ErrorCode.MapValueDataTypeUnsupported, HttpStatusCode.InternalServerError)
       }
     )
   } else if (stringValue != null) {
