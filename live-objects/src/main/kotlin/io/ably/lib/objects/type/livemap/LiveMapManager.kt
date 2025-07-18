@@ -130,11 +130,13 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
     }
 
     if (existingEntry != null) {
-      // RTLM7a2
-      existingEntry.isTombstoned = false // RTLM7a2c
-      existingEntry.tombstonedAt = null
-      existingEntry.timeserial = timeSerial // RTLM7a2b
-      existingEntry.data = mapOp.data // RTLM7a2a
+      // RTLM7a2 - Replace existing entry with new one instead of mutating
+      liveMap.data[mapOp.key] = LiveMapEntry(
+        isTombstoned = false, // RTLM7a2c
+        tombstonedAt = null,
+        timeserial = timeSerial, // RTLM7a2b
+        data = mapOp.data // RTLM7a2a
+      )
     } else {
       // RTLM7b, RTLM7b1
       liveMap.data[mapOp.key] = LiveMapEntry(
@@ -168,11 +170,13 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
     }
 
     if (existingEntry != null) {
-      // RTLM8a2
-      existingEntry.isTombstoned = true // RTLM8a2c
-      existingEntry.tombstonedAt = System.currentTimeMillis()
-      existingEntry.timeserial = timeSerial // RTLM8a2b
-      existingEntry.data = null // RTLM8a2a
+      // RTLM8a2 - Replace existing entry with new one instead of mutating
+      liveMap.data[mapOp.key] = LiveMapEntry(
+        isTombstoned = true, // RTLM8a2c
+        tombstonedAt = System.currentTimeMillis(),
+        timeserial = timeSerial, // RTLM8a2b
+        data = null // RTLM8a2a
+      )
     } else {
       // RTLM8b, RTLM8b1
       liveMap.data[mapOp.key] = LiveMapEntry(

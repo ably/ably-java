@@ -32,7 +32,9 @@ internal abstract class BaseLiveObject(
 
   internal var createOperationIsMerged = false // RTLO3c
 
-  internal var isTombstoned = false
+  @Volatile
+  internal var isTombstoned = false // Accessed from public API for LiveMap/LiveCounter
+
   private var tombstonedAt: Long? = null
 
   /**
@@ -46,7 +48,7 @@ internal abstract class BaseLiveObject(
       throw objectError("Invalid object state: object state objectId=${objectState.objectId}; $objectType objectId=$objectId")
     }
 
-    if (objectType == ObjectType.Map && objectState.map?.semantics != MapSemantics.LWW){
+    if (objectType == ObjectType.Map && objectState.map?.semantics != MapSemantics.LWW) {
         throw objectError(
           "Invalid object state: object state map semantics=${objectState.map?.semantics}; " +
             "$objectType semantics=${MapSemantics.LWW}")

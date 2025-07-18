@@ -8,10 +8,10 @@ import io.ably.lib.objects.ObjectsPoolDefaults
  * @spec RTLM3 - Map data structure storing entries
  */
 internal data class LiveMapEntry(
-  var isTombstoned: Boolean = false,
-  var tombstonedAt: Long? = null,
-  var timeserial: String? = null,
-  var data: ObjectData? = null
+  val isTombstoned: Boolean = false,
+  val tombstonedAt: Long? = null,
+  val timeserial: String? = null,
+  val data: ObjectData? = null
 )
 
 /**
