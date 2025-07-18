@@ -51,14 +51,14 @@ The Java SDK is available as a [Maven dependency](https://mvnrepository.com/arti
 <dependency>
     <groupId>io.ably</groupId>
     <artifactId>ably-java</artifactId>
-    <version>1.2.22</version>
+    <version>1.2.54</version>
 </dependency>
 ```
 
 ### Install for Gradle:
 
 ```gradle
-implementation 'io.ably:ably-java:1.2.22'
+implementation 'io.ably:ably-java:1.2.54'
 implementation 'org.slf4j:slf4j-simple:2.0.7'
 ```
 
@@ -117,7 +117,7 @@ Add the following dependency to your `build.gradle` file:
 
 ```groovy
 dependencies {
-    runtimeOnly("io.ably:network-client-okhttp:1.2.53")
+    runtimeOnly("io.ably:network-client-okhttp:1.2.54")
 }
 ```
 
