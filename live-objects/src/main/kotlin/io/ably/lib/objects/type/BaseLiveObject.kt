@@ -24,7 +24,6 @@ internal enum class ObjectType(val value: String) {
 internal abstract class BaseLiveObject(
   internal val objectId: String, // // RTLO3a
   private val objectType: ObjectType,
-  private val adapter: LiveObjectsAdapter
 ) {
 
   protected open val tag = "BaseLiveObject"
@@ -33,7 +32,7 @@ internal abstract class BaseLiveObject(
 
   internal var createOperationIsMerged = false // RTLO3c
 
-  private var isTombstoned = false
+  internal var isTombstoned = false
   private var tombstonedAt: Long? = null
 
   /**

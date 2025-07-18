@@ -15,12 +15,12 @@ import java.util.concurrent.CancellationException
  * Default implementation of LiveObjects interface.
  * Provides the core functionality for managing live objects on a channel.
  */
-internal class DefaultLiveObjects(private val channelName: String, internal val adapter: LiveObjectsAdapter): LiveObjects {
+internal class DefaultLiveObjects(internal val channelName: String, internal val adapter: LiveObjectsAdapter): LiveObjects {
   private val tag = "DefaultLiveObjects"
   /**
    * @spec RTO3 - Objects pool storing all live objects by object ID
    */
-  internal val objectsPool = ObjectsPool(adapter)
+  internal val objectsPool = ObjectsPool(this)
 
   internal var state = ObjectsState.INITIALIZED
 

@@ -14,8 +14,8 @@ import io.ably.lib.types.Callback
  */
 internal class DefaultLiveCounter private constructor(
   objectId: String,
-  adapter: LiveObjectsAdapter,
-) : LiveCounter, BaseLiveObject(objectId, ObjectType.Counter, adapter) {
+  private val liveObjects: DefaultLiveObjects,
+) : LiveCounter, BaseLiveObject(objectId, ObjectType.Counter) {
 
   override val tag = "LiveCounter"
 
@@ -71,8 +71,8 @@ internal class DefaultLiveCounter private constructor(
      * Creates a zero-value counter object.
      * @spec RTLC4 - Returns LiveCounter with 0 value
      */
-    internal fun zeroValue(objectId: String, adapter: LiveObjectsAdapter): DefaultLiveCounter {
-      return DefaultLiveCounter(objectId, adapter)
+    internal fun zeroValue(objectId: String, liveObjects: DefaultLiveObjects): DefaultLiveCounter {
+      return DefaultLiveCounter(objectId, liveObjects)
     }
   }
 }

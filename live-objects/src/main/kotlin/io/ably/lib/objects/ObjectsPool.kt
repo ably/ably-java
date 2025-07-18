@@ -32,7 +32,7 @@ internal const val ROOT_OBJECT_ID = "root"
  * @spec RTO3 - Maintains an objects pool for all live objects on the channel
  */
 internal class ObjectsPool(
-  private val adapter: LiveObjectsAdapter
+  private val liveObjects: DefaultLiveObjects
 ) {
   private val tag = "ObjectsPool"
 
@@ -49,7 +49,7 @@ internal class ObjectsPool(
 
   init {
     // RTO3b - Initialize pool with root object
-    pool[ROOT_OBJECT_ID] = DefaultLiveMap.zeroValue(ROOT_OBJECT_ID, adapter, this)
+    pool[ROOT_OBJECT_ID] = DefaultLiveMap.zeroValue(ROOT_OBJECT_ID, liveObjects)
     // Start garbage collection coroutine
     gcJob = startGCJob()
   }
@@ -109,8 +109,8 @@ internal class ObjectsPool(
 
     val parsedObjectId = ObjectId.fromString(objectId) // RTO6b
     return when (parsedObjectId.type) {
-      ObjectType.Map -> DefaultLiveMap.zeroValue(objectId, adapter, this) // RTO6b2
-      ObjectType.Counter -> DefaultLiveCounter.zeroValue(objectId, adapter) // RTO6b3
+      ObjectType.Map -> DefaultLiveMap.zeroValue(objectId, liveObjects) // RTO6b2
+      ObjectType.Counter -> DefaultLiveCounter.zeroValue(objectId, liveObjects) // RTO6b3
     }.apply {
       set(objectId, this) // RTO6b4 - Add the zero-value object to the pool
     }

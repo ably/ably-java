@@ -1,34 +1,16 @@
 package io.ably.lib.objects.type.livemap
 
 import io.ably.lib.objects.*
-import io.ably.lib.objects.ObjectsPool
-import io.ably.lib.objects.ObjectsPoolDefaults
 import io.ably.lib.objects.MapSemantics
-import io.ably.lib.objects.ObjectData
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.type.BaseLiveObject
 import io.ably.lib.objects.type.ObjectType
 import io.ably.lib.types.Callback
+import java.util.AbstractMap
+import java.util.concurrent.ConcurrentHashMap
 
-/**
- * @spec RTLM3 - Map data structure storing entries
- */
-internal data class LiveMapEntry(
-  var isTombstoned: Boolean = false,
-  var tombstonedAt: Long? = null,
-  var timeserial: String? = null,
-  var data: ObjectData? = null
-)
-
-/**
- * Extension function to check if a LiveMapEntry is expired and ready for garbage collection
- */
-private fun LiveMapEntry.isEligibleForGc(): Boolean {
-  val currentTime = System.currentTimeMillis()
-  return isTombstoned && tombstonedAt?.let { currentTime - it >= ObjectsPoolDefaults.GC_GRACE_PERIOD_MS } == true
-}
 
 /**
  * Implementation of LiveObject for LiveMap.
@@ -37,37 +19,70 @@ private fun LiveMapEntry.isEligibleForGc(): Boolean {
  */
 internal class DefaultLiveMap private constructor(
   objectId: String,
-  adapter: LiveObjectsAdapter,
-  internal val objectsPool: ObjectsPool,
+  objects: DefaultLiveObjects,
   internal val semantics: MapSemantics = MapSemantics.LWW
-) : LiveMap, BaseLiveObject(objectId, ObjectType.Map, adapter) {
+) : LiveMap, BaseLiveObject(objectId, ObjectType.Map) {
 
   override val tag = "LiveMap"
   /**
    * Map of key to LiveMapEntry
    */
-  internal val data = mutableMapOf<String, LiveMapEntry>()
+  internal val data = ConcurrentHashMap<String, LiveMapEntry>()
 
   /**
    * LiveMapManager instance for managing LiveMap operations
    */
   private val liveMapManager = LiveMapManager(this)
 
+  private val adapter = objects.adapter
+  internal val objectsPool = objects.objectsPool
+  private val channelName = objects.channelName
 
   override fun get(keyName: String): Any? {
-    TODO("Not yet implemented")
+    adapter.throwIfInvalidAccessApiConfiguration(channelName)
+    if (isTombstoned) {
+      return null
+    }
+    data[keyName]?.let { liveMapEntry ->
+      return liveMapEntry.getResolvedValue(objectsPool)
+    }
+    return null // RTLM5d1
   }
 
-  override fun entries(): MutableIterable<MutableMap.MutableEntry<String, Any>> {
-    TODO("Not yet implemented")
+  override fun entries(): Iterable<Map.Entry<String, Any>> {
+    adapter.throwIfInvalidAccessApiConfiguration(channelName)
+
+    return sequence<Map.Entry<String, Any>> {
+      for ((key, entry) in data.entries) {
+        val value = entry.getResolvedValue(objectsPool)
+        value?.let {
+          yield(AbstractMap.SimpleImmutableEntry(key, it))
+        }
+      }
+    }.asIterable()
   }
 
-  override fun keys(): MutableIterable<String> {
-    TODO("Not yet implemented")
+  override fun keys(): Iterable<String> {
+    val iterableEntries = entries()
+    return sequence {
+      for (entry in iterableEntries) {
+        yield(entry.key)
+      }
+    }.asIterable()
   }
 
-  override fun values(): MutableIterable<Any> {
-    TODO("Not yet implemented")
+  override fun values(): Iterable<Any> {
+    val iterableEntries = entries()
+    return sequence {
+      for (entry in iterableEntries) {
+        yield(entry.value)
+      }
+    }.asIterable()
+  }
+
+  override fun size(): Long {
+    adapter.throwIfInvalidAccessApiConfiguration(channelName)
+    return data.values.count { !it.isEntryOrRefTombstoned(objectsPool) }.toLong() // RTLM10d
   }
 
   override fun set(keyName: String, value: Any) {
@@ -75,10 +90,6 @@ internal class DefaultLiveMap private constructor(
   }
 
   override fun remove(keyName: String) {
-    TODO("Not yet implemented")
-  }
-
-  override fun size(): Long {
     TODO("Not yet implemented")
   }
 
@@ -112,8 +123,8 @@ internal class DefaultLiveMap private constructor(
      * Creates a zero-value map object.
      * @spec RTLM4 - Returns LiveMap with empty map data
      */
-    internal fun zeroValue(objectId: String, adapter: LiveObjectsAdapter, objectsPool: ObjectsPool): DefaultLiveMap {
-      return DefaultLiveMap(objectId, adapter, objectsPool)
+    internal fun zeroValue(objectId: String, objects: DefaultLiveObjects): DefaultLiveMap {
+      return DefaultLiveMap(objectId, objects)
     }
   }
 }
