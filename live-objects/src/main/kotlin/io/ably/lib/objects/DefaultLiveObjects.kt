@@ -129,14 +129,18 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
             )
           }
 
-        when (protocolMessage.action) {
-          ProtocolMessage.Action.`object` -> objectsManager.handleObjectMessages(objects)
-          ProtocolMessage.Action.object_sync -> objectsManager.handleObjectSyncMessages(
-            objects,
-            protocolMessage.channelSerial
-          )
-
-          else -> Log.w(tag, "Ignoring protocol message with unhandled action: ${protocolMessage.action}")
+        try {
+          when (protocolMessage.action) {
+            ProtocolMessage.Action.`object` -> objectsManager.handleObjectMessages(objects)
+            ProtocolMessage.Action.object_sync -> objectsManager.handleObjectSyncMessages(
+              objects,
+              protocolMessage.channelSerial
+            )
+            else -> Log.w(tag, "Ignoring protocol message with unhandled action: ${protocolMessage.action}")
+          }
+        } catch (exception: Exception) {
+          // Skip current message if an error occurs, don't rethrow to avoid crashing the collector
+          Log.e(tag, "Error handling objects message with protocolMsg id ${protocolMessage.id}", exception)
         }
       }
     }
