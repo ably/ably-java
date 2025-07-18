@@ -49,26 +49,26 @@ internal val String.byteSize: Int
   get() = this.toByteArray(Charsets.UTF_8).size
 
 /**
- * Executes a suspend function within a coroutine and handles the result via a callback.
- *
- * This utility bridges between coroutine-based implementation code and callback-based APIs.
- * It launches a coroutine in the current scope to execute the provided suspend block,
- * then routes the result or any error to the appropriate callback method.
- *
- * @param T The type of result expected from the operation
- * @param callback The callback to invoke with the operation result or error
- * @param block The suspend function to execute that returns a value of type T
+ * A global coroutine scope for executing callbacks asynchronously.
+ * Provides safe execution of suspend functions with results delivered via callbacks,
+ * with proper error handling for both the execution and callback invocation.
  */
-internal fun <T> CoroutineScope.launchWithCallback(callback: Callback<T>, block: suspend () -> T) {
-  launch {
-    try {
-      val result = block()
-      try { callback.onSuccess(result) } catch (t: Throwable) {
-        Log.e("asyncCallback", "Error occurred while executing callback's onSuccess handler", t)
-      } // catch and don't rethrow error from callback
-    } catch (throwable: Throwable) {
-      val exception = throwable as? AblyException
-      callback.onError(exception?.errorInfo)
+internal object GlobalCallbackScope {
+  private const val TAG = "GlobalCallbackScope"
+  private val scope =
+    CoroutineScope(Dispatchers.Default + CoroutineName("LiveObjects-GlobalCallbackScope") + SupervisorJob())
+
+  internal fun <T> launchWithCallback(callback: Callback<T>, block: suspend () -> T) {
+    scope.launch {
+      try {
+        val result = block()
+        try { callback.onSuccess(result) } catch (t: Throwable) {
+          Log.e(TAG, "Error occurred while executing callback's onSuccess handler", t)
+        } // catch and don't rethrow error from callback
+      } catch (throwable: Throwable) {
+        val exception = throwable as? AblyException
+        callback.onError(exception?.errorInfo)
+      }
     }
   }
 }

@@ -9,6 +9,7 @@ import io.ably.lib.util.Log
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.flow.MutableSharedFlow
+import java.util.concurrent.CancellationException
 
 /**
  * Default implementation of LiveObjects interface.
@@ -35,12 +36,6 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
     CoroutineScope(Dispatchers.Default.limitedParallelism(1) + CoroutineName(channelName) + SupervisorJob())
 
   /**
-   * Coroutine scope for handling callbacks asynchronously.
-   */
-  private val callbackScope =
-    CoroutineScope(Dispatchers.Default + CoroutineName("LiveObjectsCallback-$channelName") + SupervisorJob())
-
-  /**
    * Event bus for handling incoming object messages sequentially.
    */
   private val objectsEventBus = MutableSharedFlow<ProtocolMessage>(extraBufferCapacity = UNLIMITED)
@@ -50,12 +45,10 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
     incomingObjectsHandler = initializeHandlerForIncomingObjectMessages()
   }
 
-  override fun getRoot(): LiveMap {
-    return runBlocking { getRootAsync() }
-  }
+  override fun getRoot(): LiveMap = runBlocking { getRootAsync() }
 
   override fun getRootAsync(callback: Callback<LiveMap>) {
-    callbackScope.launchWithCallback(callback) { getRootAsync() }
+    GlobalCallbackScope.launchWithCallback(callback) { getRootAsync() }
   }
 
   override fun createMap(liveMap: LiveMap): LiveMap {
@@ -97,12 +90,10 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
 
   override fun offAll() = objectsManager.offAll()
 
-  private suspend fun getRootAsync(): LiveMap {
-    return sequentialScope.async {
-      adapter.throwIfInvalidAccessApiConfiguration(channelName)
-      objectsManager.ensureSynced(state)
-      objectsPool.get(ROOT_OBJECT_ID) as LiveMap
-    }.await()
+  private suspend fun getRootAsync(): LiveMap = withContext(sequentialScope.coroutineContext) {
+    adapter.throwIfInvalidAccessApiConfiguration(channelName)
+    objectsManager.ensureSynced(state)
+    objectsPool.get(ROOT_OBJECT_ID) as LiveMap
   }
 
   /**
@@ -188,9 +179,12 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
   }
 
   // Dispose of any resources associated with this LiveObjects instance
-  fun dispose() {
-    incomingObjectsHandler.cancel() // objectsEventBus automatically garbage collected when collector is cancelled
+  fun dispose(reason: String) {
+    val cancellationError = CancellationException("Objects disposed for channel $channelName, reason: $reason")
+    incomingObjectsHandler.cancel(cancellationError) // objectsEventBus automatically garbage collected when collector is cancelled
     objectsPool.dispose()
     objectsManager.dispose()
+    // Don't cancel sequentialScope (needed in public methods), just cancel ongoing coroutines
+    sequentialScope.coroutineContext.cancelChildren(cancellationError)
   }
 }

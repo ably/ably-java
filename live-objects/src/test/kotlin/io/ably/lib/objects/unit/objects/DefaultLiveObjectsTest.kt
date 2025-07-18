@@ -57,6 +57,9 @@ class DefaultLiveObjectsTest {
     // RTO4b - If the HAS_OBJECTS flag is 0, the sync sequence must be considered complete immediately
     defaultLiveObjects.handleStateChange(ChannelState.attached, false)
 
+    // Verify expected outcomes
+    assertWaiter { defaultLiveObjects.state == ObjectsState.SYNCED } // RTO4b4
+
     verify(exactly = 1) {
       defaultLiveObjects.objectsPool.resetToInitialPool(true)
     }
@@ -64,8 +67,6 @@ class DefaultLiveObjectsTest {
       defaultLiveObjects.ObjectsManager.endSync(any<Boolean>())
     }
 
-    // Verify expected outcomes
-    assertWaiter { defaultLiveObjects.state == ObjectsState.SYNCED } // RTO4b4
     assertEquals(0, defaultLiveObjects.ObjectsManager.SyncObjectsDataPool.size) // RTO4b3
     assertEquals(0, defaultLiveObjects.ObjectsManager.BufferedObjectOperations.size) // RTO4b5
     assertEquals(1, defaultLiveObjects.objectsPool.size()) // RTO4b1 - Only root remains
