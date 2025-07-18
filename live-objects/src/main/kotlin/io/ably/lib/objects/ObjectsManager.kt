@@ -9,7 +9,7 @@ import io.ably.lib.util.Log
  * @spec RTO5 - Processes OBJECT and OBJECT_SYNC messages during sync sequences
  * @spec RTO6 - Creates zero-value objects when needed
  */
-internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
+internal class ObjectsManager(private val liveObjects: DefaultLiveObjects): ObjectsStateCoordinator() {
   private val tag = "ObjectsManager"
   /**
    * @spec RTO5 - Sync objects data pool for collecting sync messages
@@ -77,7 +77,7 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
     bufferedObjectOperations.clear() // RTO5a2b
     syncObjectsDataPool.clear() // RTO5a2a
     currentSyncId = syncId
-    liveObjects.stateChange(ObjectsState.SYNCING, false)
+    stateChange(ObjectsState.SYNCING, false)
   }
 
   /**
@@ -95,7 +95,7 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
     bufferedObjectOperations.clear() // RTO5c5
     syncObjectsDataPool.clear() // RTO5c4
     currentSyncId = null // RTO5c3
-    liveObjects.stateChange(ObjectsState.SYNCED, deferStateEvent)
+    stateChange(ObjectsState.SYNCED, deferStateEvent)
   }
 
   /**
@@ -209,14 +209,31 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
    */
   private fun createObjectFromState(objectState: ObjectState): BaseLiveObject {
     return when {
-      objectState.counter != null -> DefaultLiveCounter.zeroValue(objectState.objectId, liveObjects.adapter) // RTO5c1b1a
-      objectState.map != null -> DefaultLiveMap.zeroValue(objectState.objectId, liveObjects.adapter, liveObjects.objectsPool) // RTO5c1b1b
+      objectState.counter != null -> DefaultLiveCounter.zeroValue(objectState.objectId, liveObjects) // RTO5c1b1a
+      objectState.map != null -> DefaultLiveMap.zeroValue(objectState.objectId, liveObjects) // RTO5c1b1b
       else -> throw clientError("Object state must contain either counter or map data") // RTO5c1b1c
     }
+  }
+
+  /**
+   * Changes the state and emits events.
+   *
+   * @spec RTO2 - Emits state change events for syncing and synced states
+   */
+  private fun stateChange(newState: ObjectsState, deferEvent: Boolean) {
+    if (liveObjects.state == newState) {
+      return
+    }
+    Log.v(tag, "Objects state changed to: $newState from ${liveObjects.state}")
+    liveObjects.state = newState
+
+    // deferEvent not needed since objectsStateChanged processes events in a sequential coroutine scope
+    objectsStateChanged(newState)
   }
 
   internal fun dispose() {
     syncObjectsDataPool.clear()
     bufferedObjectOperations.clear()
+    disposeObjectsStateListeners()
   }
 }

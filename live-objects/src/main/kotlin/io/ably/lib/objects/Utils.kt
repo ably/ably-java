@@ -1,7 +1,10 @@
 package io.ably.lib.objects
 
 import io.ably.lib.types.AblyException
+import io.ably.lib.types.Callback
 import io.ably.lib.types.ErrorInfo
+import io.ably.lib.util.Log
+import kotlinx.coroutines.*
 
 internal fun ablyException(
   errorMessage: String,
@@ -44,3 +47,28 @@ internal fun objectError(errorMessage: String, cause: Throwable? = null): AblyEx
  */
 internal val String.byteSize: Int
   get() = this.toByteArray(Charsets.UTF_8).size
+
+/**
+ * A global coroutine scope for executing callbacks asynchronously.
+ * Provides safe execution of suspend functions with results delivered via callbacks,
+ * with proper error handling for both the execution and callback invocation.
+ */
+internal object GlobalCallbackScope {
+  private const val TAG = "GlobalCallbackScope"
+  private val scope =
+    CoroutineScope(Dispatchers.Default + CoroutineName("LiveObjects-GlobalCallbackScope") + SupervisorJob())
+
+  internal fun <T> launchWithCallback(callback: Callback<T>, block: suspend () -> T) {
+    scope.launch {
+      try {
+        val result = block()
+        try { callback.onSuccess(result) } catch (t: Throwable) {
+          Log.e(TAG, "Error occurred while executing callback's onSuccess handler", t)
+        } // catch and don't rethrow error from callback
+      } catch (throwable: Throwable) {
+        val exception = throwable as? AblyException
+        callback.onError(exception?.errorInfo)
+      }
+    }
+  }
+}

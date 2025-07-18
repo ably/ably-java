@@ -4,6 +4,7 @@ import io.ably.lib.objects.*
 import io.ably.lib.objects.type.BaseLiveObject
 import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
 import io.ably.lib.objects.type.livemap.DefaultLiveMap
+import io.ably.lib.objects.unit.getDefaultLiveObjectsWithMockedDeps
 import io.mockk.mockk
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -12,6 +13,8 @@ import kotlin.test.assertTrue
 import kotlin.test.assertFailsWith
 
 class BaseLiveObjectTest {
+
+  private val defaultLiveObjects = getDefaultLiveObjectsWithMockedDeps()
 
   @Test
   fun `(RTLO1, RTLO2) BaseLiveObject should be abstract base class for LiveMap and LiveCounter`() {
@@ -28,8 +31,8 @@ class BaseLiveObjectTest {
 
   @Test
   fun `(RTLO3) BaseLiveObject should have required properties`() {
-    val liveMap: BaseLiveObject = DefaultLiveMap.zeroValue("map:testObject@1", mockk(), mockk())
-    val liveCounter: BaseLiveObject = DefaultLiveCounter.zeroValue("counter:testObject@1", mockk())
+    val liveMap: BaseLiveObject = DefaultLiveMap.zeroValue("map:testObject@1", defaultLiveObjects)
+    val liveCounter: BaseLiveObject = DefaultLiveCounter.zeroValue("counter:testObject@1", defaultLiveObjects)
     // RTLO3a - check that objectId is set correctly
     assertEquals("map:testObject@1", liveMap.objectId)
     assertEquals("counter:testObject@1", liveCounter.objectId)
@@ -66,7 +69,7 @@ class BaseLiveObjectTest {
 
   @Test
   fun `(RTLO4a3) canApplyOperation should throw error for null or empty incoming siteSerial`() {
-    val liveMap: BaseLiveObject = DefaultLiveMap.zeroValue("map:testObject@1", mockk(), mockk())
+    val liveMap: BaseLiveObject = DefaultLiveMap.zeroValue("map:testObject@1", defaultLiveObjects)
 
     // Test null serial
     assertFailsWith<Exception>("Should throw error for null serial") {
@@ -91,7 +94,7 @@ class BaseLiveObjectTest {
 
   @Test
   fun `(RTLO4a4, RTLO4a5) canApplyOperation should return true when existing siteSerial is null or empty`() {
-    val liveMap: BaseLiveObject = DefaultLiveMap.zeroValue("map:testObject@1", mockk(), mockk())
+    val liveMap: BaseLiveObject = DefaultLiveMap.zeroValue("map:testObject@1", defaultLiveObjects)
     assertTrue(liveMap.siteTimeserials.isEmpty(), "Initial siteTimeserials should be empty")
 
     // RTLO4a4 - Get siteSerial from siteTimeserials map
@@ -107,7 +110,7 @@ class BaseLiveObjectTest {
 
   @Test
   fun `(RTLO4a6) canApplyOperation should return true when message siteSerial is greater than existing siteSerial`() {
-    val liveMap: BaseLiveObject = DefaultLiveMap.zeroValue("map:testObject@1", mockk(), mockk())
+    val liveMap: BaseLiveObject = DefaultLiveMap.zeroValue("map:testObject@1", defaultLiveObjects)
 
     // Set existing siteSerial
     liveMap.siteTimeserials["site1"] = "serial1"
@@ -125,7 +128,7 @@ class BaseLiveObjectTest {
 
   @Test
   fun `(RTLO4a6) canApplyOperation should return false when message siteSerial is less than or equal to siteSerial`() {
-    val liveMap: BaseLiveObject = DefaultLiveMap.zeroValue("map:testObject@1", mockk(), mockk())
+    val liveMap: BaseLiveObject = DefaultLiveMap.zeroValue("map:testObject@1", defaultLiveObjects)
 
     // Set existing siteSerial
     liveMap.siteTimeserials["site1"] = "serial2"

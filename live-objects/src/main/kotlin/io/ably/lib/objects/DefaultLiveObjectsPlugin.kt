@@ -22,13 +22,13 @@ public class DefaultLiveObjectsPlugin(private val adapter: LiveObjectsAdapter) :
   }
 
   override fun dispose(channelName: String) {
-    liveObjects[channelName]?.dispose()
+    liveObjects[channelName]?.dispose("Channel has ben released using channels.release()")
     liveObjects.remove(channelName)
   }
 
   override fun dispose() {
     liveObjects.values.forEach {
-      it.dispose()
+      it.dispose("AblyClient has been closed using client.close()")
     }
     liveObjects.clear()
   }

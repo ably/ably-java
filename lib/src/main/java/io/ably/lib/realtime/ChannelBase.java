@@ -1289,6 +1289,10 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         return modes.toArray(new ChannelMode[modes.size()]);
     }
 
+    public ChannelOptions getOptions() {
+        return options;
+    }
+
     /************************************
      * internal general
      * @throws AblyException
