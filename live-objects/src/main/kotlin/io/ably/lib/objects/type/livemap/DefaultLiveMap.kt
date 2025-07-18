@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 internal class DefaultLiveMap private constructor(
   objectId: String,
-  objects: DefaultLiveObjects,
+  liveObjects: DefaultLiveObjects,
   internal val semantics: MapSemantics = MapSemantics.LWW
 ) : LiveMap, BaseLiveObject(objectId, ObjectType.Map) {
 
@@ -34,12 +34,12 @@ internal class DefaultLiveMap private constructor(
    */
   private val liveMapManager = LiveMapManager(this)
 
-  private val adapter = objects.adapter
-  internal val objectsPool = objects.objectsPool
-  private val channelName = objects.channelName
+  private val channelName = liveObjects.channelName
+  private val adapter = liveObjects.adapter
+  internal val objectsPool = liveObjects.objectsPool
 
   override fun get(keyName: String): Any? {
-    adapter.throwIfInvalidAccessApiConfiguration(channelName)
+    adapter.throwIfInvalidAccessApiConfiguration(channelName) // RTLM5b, RTLM5c
     if (isTombstoned) {
       return null
     }
@@ -50,11 +50,11 @@ internal class DefaultLiveMap private constructor(
   }
 
   override fun entries(): Iterable<Map.Entry<String, Any>> {
-    adapter.throwIfInvalidAccessApiConfiguration(channelName)
+    adapter.throwIfInvalidAccessApiConfiguration(channelName) // RTLM11b, RTLM11c
 
     return sequence<Map.Entry<String, Any>> {
       for ((key, entry) in data.entries) {
-        val value = entry.getResolvedValue(objectsPool)
+        val value = entry.getResolvedValue(objectsPool) // RTLM11d, RTLM11d2
         value?.let {
           yield(AbstractMap.SimpleImmutableEntry(key, it))
         }
@@ -66,7 +66,7 @@ internal class DefaultLiveMap private constructor(
     val iterableEntries = entries()
     return sequence {
       for (entry in iterableEntries) {
-        yield(entry.key)
+        yield(entry.key) // RTLM12b
       }
     }.asIterable()
   }
@@ -75,7 +75,7 @@ internal class DefaultLiveMap private constructor(
     val iterableEntries = entries()
     return sequence {
       for (entry in iterableEntries) {
-        yield(entry.value)
+        yield(entry.value) // RTLM13b
       }
     }.asIterable()
   }

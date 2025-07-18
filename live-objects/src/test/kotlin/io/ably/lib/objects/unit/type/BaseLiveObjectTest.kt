@@ -148,7 +148,7 @@ class BaseLiveObjectTest {
 
   @Test
   fun `(RTLO4a) canApplyOperation should work with different site codes`() {
-    val liveMap: BaseLiveObject = DefaultLiveCounter.zeroValue("map:testObject@1", mockk())
+    val liveMap: BaseLiveObject = DefaultLiveCounter.zeroValue("map:testObject@1", defaultLiveObjects)
 
     // Set serials for different sites
     liveMap.siteTimeserials["site1"] = "serial1"

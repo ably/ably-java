@@ -6,6 +6,7 @@ import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.type.BaseLiveObject
 import io.ably.lib.objects.type.ObjectType
 import io.ably.lib.types.Callback
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Implementation of LiveObject for LiveCounter.
@@ -14,7 +15,7 @@ import io.ably.lib.types.Callback
  */
 internal class DefaultLiveCounter private constructor(
   objectId: String,
-  private val liveObjects: DefaultLiveObjects,
+  liveObjects: DefaultLiveObjects,
 ) : LiveCounter, BaseLiveObject(objectId, ObjectType.Counter) {
 
   override val tag = "LiveCounter"
@@ -22,12 +23,15 @@ internal class DefaultLiveCounter private constructor(
   /**
    * Counter data value
    */
-  internal var data: Long = 0 // RTLC3
+  internal var data = AtomicLong(0)// RTLC3
 
   /**
    * liveCounterManager instance for managing LiveMap operations
    */
   private val liveCounterManager = LiveCounterManager(this)
+
+  private val channelName = liveObjects.channelName
+  private val adapter = liveObjects.adapter
 
   override fun increment() {
     TODO("Not yet implemented")
@@ -46,7 +50,8 @@ internal class DefaultLiveCounter private constructor(
   }
 
   override fun value(): Long {
-    TODO("Not yet implemented")
+    adapter.throwIfInvalidAccessApiConfiguration(channelName)
+    return data.get()
   }
 
   override fun applyObjectState(objectState: ObjectState): Map<String, Long> {
@@ -58,7 +63,7 @@ internal class DefaultLiveCounter private constructor(
   }
 
   override fun clearData(): Map<String, Long> {
-    return mapOf("amount" to data).apply { data = 0 }
+    return mapOf("amount" to data.get()).apply { data.set(0) }
   }
 
   override fun onGCInterval() {

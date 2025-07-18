@@ -65,7 +65,7 @@ class ObjectsPoolTest {
     assertNotNull(counter, "Should create a counter object")
     assertTrue(counter is DefaultLiveCounter, "RTO6b3 - Should create a LiveCounter for counter type")
     assertEquals(counterId, counter.objectId)
-    assertEquals(0L, counter.data, "RTO6b3 - Should create a zero-value counter")
+    assertEquals(0L, counter.data.get(), "RTO6b3 - Should create a zero-value counter")
     assertEquals(3, objectsPool.size(), "RTO6 - root + map + counter should be in pool after creation")
 
     // RTO6a - If object exists in pool, do not create a new one

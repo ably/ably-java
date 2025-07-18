@@ -16,14 +16,14 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter) {
    * @spec RTLC6 - Overrides counter data with state from sync
    */
   internal fun applyState(objectState: ObjectState): Map<String, Long> {
-    val previousData = liveCounter.data
+    val previousData = liveCounter.data.get()
 
     if (objectState.tombstone) {
       liveCounter.tombstone()
     } else {
       // override data for this object with data from the object state
       liveCounter.createOperationIsMerged = false // RTLC6b
-      liveCounter.data = objectState.counter?.count?.toLong() ?: 0 // RTLC6c
+      liveCounter.data.set(objectState.counter?.count?.toLong() ?: 0) // RTLC6c
 
       // RTLC6d
       objectState.createOp?.let { createOp ->
@@ -31,7 +31,7 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter) {
       }
     }
 
-    return mapOf("amount" to (liveCounter.data - previousData))
+    return mapOf("amount" to (liveCounter.data.get() - previousData))
   }
 
   /**
@@ -78,7 +78,8 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter) {
    */
   private fun applyCounterInc(counterOp: ObjectCounterOp): Map<String, Long> {
     val amount = counterOp.amount?.toLong() ?: 0
-    liveCounter.data += amount // RTLC9b
+    val previousValue = liveCounter.data.get()
+    liveCounter.data.set(previousValue + amount) // RTLC9b
     return mapOf("amount" to amount)
   }
 
@@ -91,7 +92,8 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter) {
     // if we got here, it means that current counter instance is missing the initial value in its data reference,
     // which we're going to add now.
     val count = operation.counter?.count?.toLong() ?: 0
-    liveCounter.data += count // RTLC10a
+    val previousValue = liveCounter.data.get()
+    liveCounter.data.set(previousValue + count) // RTLC10a
     liveCounter.createOperationIsMerged = true // RTLC10b
     return mapOf("amount" to count)
   }
