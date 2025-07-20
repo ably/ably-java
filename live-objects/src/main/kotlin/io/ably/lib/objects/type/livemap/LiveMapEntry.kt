@@ -37,12 +37,10 @@ internal fun LiveMapEntry.isEntryOrRefTombstoned(objectsPool: ObjectsPool): Bool
  * a reference to another LiveObject from the pool if it stores an objectId.
  */
 internal fun LiveMapEntry.getResolvedValue(objectsPool: ObjectsPool): Any? {
-  if (isTombstoned) {
-    return null // RTLM5d2a
-  }
-  data?.value?.let { primitiveValue ->
-    return primitiveValue // RTLM5d2b, RTLM5d2c, RTLM5d2d, RTLM5d2e
-  }
+  if (isTombstoned) { return null } // RTLM5d2a
+
+  data?.value?.let { return it.value } // RTLM5d2b, RTLM5d2c, RTLM5d2d, RTLM5d2e
+
   data?.objectId?.let { refId -> // RTLM5d2f -has an objectId reference
     objectsPool.get(refId)?.let { refObject ->
       if (refObject.isTombstoned) {

@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicLong
  */
 internal class DefaultLiveCounter private constructor(
   objectId: String,
-  liveObjects: DefaultLiveObjects,
+  private val liveObjects: DefaultLiveObjects,
 ) : LiveCounter, BaseLiveObject(objectId, ObjectType.Counter) {
 
   override val tag = "LiveCounter"
@@ -31,7 +31,7 @@ internal class DefaultLiveCounter private constructor(
   private val liveCounterManager = LiveCounterManager(this)
 
   private val channelName = liveObjects.channelName
-  private val adapter = liveObjects.adapter
+  private val adapter: LiveObjectsAdapter get() = liveObjects.adapter
 
   override fun increment() {
     TODO("Not yet implemented")

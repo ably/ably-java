@@ -1333,6 +1333,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         state = ChannelState.initialized;
         this.decodingContext = new DecodingContext();
         this.liveObjectsPlugin = liveObjectsPlugin;
+        if (liveObjectsPlugin != null) {
+            liveObjectsPlugin.getInstance(name); // Make objects instance ready to process sync messages
+        }
         this.annotations = new RealtimeAnnotations(
             this,
             new RestAnnotations(name, ably.http, ably.options, options)

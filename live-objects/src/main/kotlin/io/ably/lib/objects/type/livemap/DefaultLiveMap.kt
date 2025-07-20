@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 internal class DefaultLiveMap private constructor(
   objectId: String,
-  liveObjects: DefaultLiveObjects,
+  private val liveObjects: DefaultLiveObjects,
   internal val semantics: MapSemantics = MapSemantics.LWW
 ) : LiveMap, BaseLiveObject(objectId, ObjectType.Map) {
 
@@ -35,8 +35,8 @@ internal class DefaultLiveMap private constructor(
   private val liveMapManager = LiveMapManager(this)
 
   private val channelName = liveObjects.channelName
-  private val adapter = liveObjects.adapter
-  internal val objectsPool = liveObjects.objectsPool
+  private val adapter: LiveObjectsAdapter get() = liveObjects.adapter
+  internal val objectsPool: ObjectsPool get() = liveObjects.objectsPool
 
   override fun get(keyName: String): Any? {
     adapter.throwIfInvalidAccessApiConfiguration(channelName) // RTLM5b, RTLM5c

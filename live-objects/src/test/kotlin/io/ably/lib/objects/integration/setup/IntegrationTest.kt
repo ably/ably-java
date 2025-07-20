@@ -1,5 +1,6 @@
 package io.ably.lib.objects.integration.setup
 
+import io.ably.lib.objects.integration.helpers.RestObjects
 import io.ably.lib.realtime.AblyRealtime
 import io.ably.lib.realtime.Channel
 import io.ably.lib.types.ChannelMode
@@ -73,6 +74,7 @@ abstract class IntegrationTest {
 
   companion object {
     private lateinit var sandbox: Sandbox
+    internal lateinit var restObjects: RestObjects
 
     @JvmStatic
     @Parameterized.Parameters(name = "{0}")
@@ -86,6 +88,7 @@ abstract class IntegrationTest {
     fun setUpBeforeClass() {
       runBlocking {
         sandbox = Sandbox.createInstance()
+        restObjects = sandbox.createRestObjects()
       }
     }
 

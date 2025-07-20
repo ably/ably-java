@@ -82,7 +82,12 @@ internal class ObjectDataJsonSerializer : JsonSerializer<ObjectData>, JsonDeseri
       obj.has("string") -> ObjectValue(obj.get("string").asString)
       obj.has("number") -> ObjectValue(obj.get("number").asDouble)
       obj.has("bytes") -> ObjectValue(Binary(Base64.getDecoder().decode(obj.get("bytes").asString)))
-      else -> throw JsonParseException("ObjectData must have one of the fields: boolean, string, number, or bytes")
+      else -> {
+        if (objectId != null)
+          null
+        else
+          throw JsonParseException("Since objectId is not present, at least one of the value fields must be present")
+      }
     }
     return ObjectData(objectId, value)
   }
