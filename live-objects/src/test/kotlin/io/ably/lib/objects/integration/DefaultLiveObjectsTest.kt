@@ -2,16 +2,18 @@ package io.ably.lib.objects.integration
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.ably.lib.objects.*
 import io.ably.lib.objects.Binary
-import io.ably.lib.objects.LiveCounter
-import io.ably.lib.objects.LiveMap
-import io.ably.lib.objects.integration.helpers.initializeRootMap
+import io.ably.lib.objects.integration.helpers.State
+import io.ably.lib.objects.integration.helpers.fixtures.initializeRootMap
 import io.ably.lib.objects.integration.setup.IntegrationTest
 import io.ably.lib.objects.size
+import io.ably.lib.objects.state.ObjectsStateEvent
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.text.toByteArray
 
 class DefaultLiveObjectsTest : IntegrationTest() {
@@ -24,6 +26,37 @@ class DefaultLiveObjectsTest : IntegrationTest() {
     assertNotNull(objects)
   }
 
+  @Test
+  fun testObjectsSyncEvents() = runTest {
+    val channelName = generateChannelName()
+    // Initialize the root map on the channel with initial data
+    restObjects.initializeRootMap(channelName)
+
+    val channel = getRealtimeChannel(channelName, autoAttach = false)
+    val objects = channel.objects
+    assertNotNull(objects)
+
+    assertEquals(ObjectsState.INITIALIZED, objects.State, "Initial state should be INITIALIZED")
+
+    val syncStates = mutableListOf<ObjectsStateEvent>()
+    objects.on(ObjectsStateEvent.SYNCING) {
+      syncStates.add(it)
+    }
+    objects.on(ObjectsStateEvent.SYNCED) {
+      syncStates.add(it)
+    }
+
+    channel.attach()
+
+    assertWaiter { syncStates.size == 2 } // Wait for both SYNCING and SYNCED events
+
+    assertEquals(ObjectsStateEvent.SYNCING, syncStates[0], "First event should be SYNCING")
+    assertEquals(ObjectsStateEvent.SYNCED, syncStates[1], "Second event should be SYNCED")
+
+    val rootMap = objects.root
+    assertEquals(6, rootMap.size(), "Root map should have 6 entries after sync")
+  }
+
   /**
    * This will test objects sync process when the root map is initialized before channel attach.
    * This includes checking the initial values of counters, maps, and other data types.
@@ -31,15 +64,11 @@ class DefaultLiveObjectsTest : IntegrationTest() {
   @Test
   fun testObjectsSync() = runTest {
     val channelName = generateChannelName()
-
     // Initialize the root map on the channel with initial data
     restObjects.initializeRootMap(channelName)
 
     val channel = getRealtimeChannel(channelName)
-    val objects = channel.objects
-    assertNotNull(objects)
-
-    val rootMap = objects.root
+    val rootMap = channel.objects.root
     assertNotNull(rootMap)
 
     // Assert Counter Objects
@@ -121,5 +150,38 @@ class DefaultLiveObjectsTest : IntegrationTest() {
     val mapRefCounter = mapRefValue.get("counterKey") as LiveCounter
     assertNotNull(mapRefCounter)
     assertEquals(20L, mapRefCounter.value()) // Should point to the same counter with value 20
+  }
+
+  /**
+   * Spec: RTLO4e - Tests the removal of objects from the root map.
+   * Server runs periodic garbage collection (GC) to remove orphaned objects and will send
+   * OBJECT_DELETE events for objects that are no longer referenced.
+   * `OBJECT_DELETE` event is not covered in the test and we only check if map entries are removed
+   */
+  @Test
+  fun testObjectRemovalFromRoot() = runTest {
+    val channelName = generateChannelName()
+    // Initialize the root map on the channel with initial data
+    restObjects.initializeRootMap(channelName)
+
+    val channel = getRealtimeChannel(channelName)
+    val rootMap = channel.objects.root
+    assertEquals(6L, rootMap.size()) // Should have 6 entries initially
+
+    // Remove the "referencedCounter" from the root map
+    assertNotNull(rootMap.get("referencedCounter")) // Access to ensure it exists before removal
+
+    restObjects.removeMapValue(channelName, "root", "referencedCounter")
+
+    assertWaiter { rootMap.size() == 5L } // Wait for the removal to complete
+    assertNull(rootMap.get("referencedCounter")) // Should be null after removal
+
+    // Remove the "referencedMap" from the root map
+    assertNotNull(rootMap.get("referencedMap")) // Access to ensure it exists before removal
+
+    restObjects.removeMapValue(channelName, "root", "referencedMap")
+
+    assertWaiter { rootMap.size() == 4L } // Wait for the removal to complete
+    assertNull(rootMap.get("referencedMap")) // Should be null after removal
   }
 }

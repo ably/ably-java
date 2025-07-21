@@ -1,4 +1,4 @@
-package io.ably.lib.objects.integration.helpers
+package io.ably.lib.objects.integration.helpers.fixtures
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject

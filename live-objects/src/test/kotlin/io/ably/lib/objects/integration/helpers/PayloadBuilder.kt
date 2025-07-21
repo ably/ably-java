@@ -17,7 +17,6 @@ internal object PayloadBuilder {
     ObjectOperationAction.MapRemove to "MAP_REMOVE",
     ObjectOperationAction.CounterCreate to "COUNTER_CREATE",
     ObjectOperationAction.CounterInc to "COUNTER_INC",
-    ObjectOperationAction.ObjectDelete to "OBJECT_DELETE"
   )
 
   /**
