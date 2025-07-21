@@ -126,13 +126,10 @@ internal object PayloadBuilder {
     val opBody = JsonObject().apply {
       addProperty("operation", ACTION_STRINGS[ObjectOperationAction.CounterInc])
       addProperty("objectId", objectId)
+      add("data", JsonObject().apply {
+        addProperty("number", number)
+      })
     }
-
-    val dataObj = JsonObject().apply {
-      addProperty("number", number)
-    }
-    opBody.add("data", dataObj)
-
     return opBody
   }
 }
