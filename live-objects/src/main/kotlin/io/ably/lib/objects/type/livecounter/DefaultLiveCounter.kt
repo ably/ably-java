@@ -5,6 +5,7 @@ import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.type.BaseLiveObject
 import io.ably.lib.objects.type.ObjectType
+import io.ably.lib.objects.type.counter.LiveCounter
 import io.ably.lib.types.Callback
 import java.util.concurrent.atomic.AtomicLong
 

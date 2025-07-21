@@ -9,6 +9,8 @@ import io.ably.lib.objects.integration.helpers.fixtures.initializeRootMap
 import io.ably.lib.objects.integration.setup.IntegrationTest
 import io.ably.lib.objects.size
 import io.ably.lib.objects.state.ObjectsStateEvent
+import io.ably.lib.objects.type.counter.LiveCounter
+import io.ably.lib.objects.type.map.LiveMap
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals

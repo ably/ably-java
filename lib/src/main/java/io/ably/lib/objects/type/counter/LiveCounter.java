@@ -1,4 +1,4 @@
-package io.ably.lib.objects;
+package io.ably.lib.objects.type.counter;
 
 import io.ably.lib.types.Callback;
 import org.jetbrains.annotations.Blocking;

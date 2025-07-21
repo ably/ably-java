@@ -2,6 +2,8 @@ package io.ably.lib.objects
 
 import io.ably.lib.objects.state.ObjectsStateChange
 import io.ably.lib.objects.state.ObjectsStateEvent
+import io.ably.lib.objects.type.counter.LiveCounter
+import io.ably.lib.objects.type.map.LiveMap
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.types.Callback
 import io.ably.lib.types.ProtocolMessage
@@ -167,7 +169,7 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
             objectsManager.clearBufferedObjectOperations() // RTO4b5
             // defer the state change event until the next tick if we started a new sequence just now due to being in initialized state.
             // this allows any event listeners to process the start of the new sequence event that was emitted earlier during this event loop.
-            objectsManager.endSync(fromInitializedState) // RTO4b4
+            objectsManager.endSync(fromInitializedState) // RTO4b4, RTO4b2a
           }
         }
 

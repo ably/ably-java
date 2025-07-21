@@ -7,6 +7,7 @@ import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.type.BaseLiveObject
 import io.ably.lib.objects.type.ObjectType
+import io.ably.lib.objects.type.map.LiveMap
 import io.ably.lib.types.Callback
 import java.util.AbstractMap
 import java.util.concurrent.ConcurrentHashMap

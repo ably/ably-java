@@ -51,7 +51,7 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter) {
       else -> throw objectError("Invalid ${operation.action} op for LiveCounter objectId=${objectId}") // RTLC7d3
     }
 
-    liveCounter.notifyUpdated(update)
+    liveCounter.notifyUpdated(update) // RTLC7d1a, RTLC7d2a
   }
 
   /**

@@ -68,7 +68,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
       else -> throw objectError("Invalid ${operation.action} op for LiveMap objectId=${objectId}") // RTLM15d4
     }
 
-    liveMap.notifyUpdated(update)
+    liveMap.notifyUpdated(update) // RTLM15d1a, RTLM15d2a, RTLM15d3a
   }
 
   /**

@@ -1,7 +1,7 @@
 package io.ably.lib.objects.integration
 
-import io.ably.lib.objects.LiveCounter
-import io.ably.lib.objects.LiveMap
+import io.ably.lib.objects.type.counter.LiveCounter
+import io.ably.lib.objects.type.map.LiveMap
 import io.ably.lib.objects.assertWaiter
 import io.ably.lib.objects.integration.helpers.fixtures.createUserMapWithCountersObject
 import io.ably.lib.objects.integration.setup.IntegrationTest

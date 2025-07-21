@@ -125,6 +125,7 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects): Obje
     }
 
     val receivedObjectIds = mutableSetOf<String>()
+    // RTO5c1a2 - List to collect updates for existing objects
     val existingObjectUpdates = mutableListOf<Pair<BaseLiveObject, Any>>()
 
     // RTO5c1
@@ -148,7 +149,7 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects): Obje
     // RTO5c2 - need to remove LiveObject instances from the ObjectsPool for which objectIds were not received during the sync sequence
     liveObjects.objectsPool.deleteExtraObjectIds(receivedObjectIds)
 
-    // call subscription callbacks for all updated existing objects
+    // RTO5c7 - call subscription callbacks for all updated existing objects
     existingObjectUpdates.forEach { (obj, update) ->
       obj.notifyUpdated(update)
     }
