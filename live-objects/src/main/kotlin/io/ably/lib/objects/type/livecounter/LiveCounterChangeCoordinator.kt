@@ -8,13 +8,19 @@ import io.ably.lib.util.Log
 
 internal val noOpCounterUpdate = LiveCounterUpdate()
 
+/**
+ * Interface for handling live counter changes by notifying subscribers of updates.
+ * Implementations typically propagate updates through event emission to registered listeners.
+ */
 internal interface HandlesLiveCounterChange {
+  /**
+   * Notifies all registered listeners about a counter update by propagating the change through the event system.
+   * This method is called when counter data changes and triggers the emission of update events to subscribers.
+   */
   fun notify(update: LiveCounterUpdate)
 }
 
 internal abstract class LiveCounterChangeCoordinator: LiveCounterChange, HandlesLiveCounterChange {
-  private val tag = "DefaultLiveCounterChangeCoordinator"
-
   private val counterChangeEmitter = LiveCounterChangeEmitter()
 
   override fun subscribe(listener: LiveCounterChange.Listener): ObjectsSubscription {

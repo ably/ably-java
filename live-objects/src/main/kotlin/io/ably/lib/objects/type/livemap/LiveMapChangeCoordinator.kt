@@ -8,13 +8,19 @@ import io.ably.lib.util.Log
 
 internal val noOpMapUpdate = LiveMapUpdate()
 
+/**
+ * Interface for handling live map changes by notifying subscribers of updates.
+ * Implementations typically propagate updates through event emission to registered listeners.
+ */
 internal interface HandlesLiveMapChange {
+  /**
+   * Notifies all registered listeners about a map update by propagating the change through the event system.
+   * This method is called when map data changes and triggers the emission of update events to subscribers.
+   */
   fun notify(update: LiveMapUpdate)
 }
 
 internal abstract class LiveMapChangeCoordinator: LiveMapChange, HandlesLiveMapChange {
-  private val tag = "DefaultLiveMapChangeCoordinator"
-
   private val mapChangeEmitter = LiveMapChangeEmitter()
 
   override fun subscribe(listener: LiveMapChange.Listener): ObjectsSubscription {
