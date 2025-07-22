@@ -4,9 +4,14 @@ import io.ably.lib.objects.*
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.type.BaseLiveObject
+import io.ably.lib.objects.type.LiveObjectUpdate
 import io.ably.lib.objects.type.ObjectType
 import io.ably.lib.objects.type.counter.LiveCounter
+import io.ably.lib.objects.type.counter.LiveCounterChange
+import io.ably.lib.objects.type.counter.LiveCounterUpdate
+import io.ably.lib.objects.type.noOp
 import io.ably.lib.types.Callback
+import io.ably.lib.util.Log
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -50,12 +55,20 @@ internal class DefaultLiveCounter private constructor(
     TODO("Not yet implemented")
   }
 
+  override fun subscribe(listener: LiveCounterChange.Listener): ObjectsSubscription {
+    return liveCounterManager.subscribe(listener)
+  }
+
+  override fun unsubscribe(listener: LiveCounterChange.Listener) = liveCounterManager.unsubscribe(listener)
+
+  override fun unsubscribeAll() = liveCounterManager.unsubscribeAll()
+
   override fun value(): Long {
     adapter.throwIfInvalidAccessApiConfiguration(channelName)
     return data.get()
   }
 
-  override fun applyObjectState(objectState: ObjectState): Map<String, Long> {
+  override fun applyObjectState(objectState: ObjectState): LiveCounterUpdate {
     return liveCounterManager.applyState(objectState)
   }
 
@@ -63,8 +76,16 @@ internal class DefaultLiveCounter private constructor(
     liveCounterManager.applyOperation(operation)
   }
 
-  override fun clearData(): Map<String, Long> {
-    return mapOf("amount" to data.get()).apply { data.set(0) }
+  override fun clearData(): LiveCounterUpdate {
+    return LiveCounterUpdate(data.get()).apply { data.set(0) }
+  }
+
+  override fun notifyUpdated(update: LiveObjectUpdate) {
+    if (update.noOp) {
+      return
+    }
+    Log.v(tag, "Object $objectId updated: $update")
+    liveCounterManager.notify(update as LiveCounterUpdate)
   }
 
   override fun onGCInterval() {

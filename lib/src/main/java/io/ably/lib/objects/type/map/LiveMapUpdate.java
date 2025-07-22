@@ -1,5 +1,6 @@
 package io.ably.lib.objects.type.map;
 
+import io.ably.lib.objects.type.LiveObjectUpdate;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
@@ -7,17 +8,18 @@ import java.util.Map;
 /**
  * Spec: RTLM18, RTLM18a
  */
-public class LiveMapUpdate {
+public class LiveMapUpdate extends LiveObjectUpdate {
 
-    @NotNull
-    private final Map<String, Change> update;
+    public LiveMapUpdate() {
+        super(null);
+    }
 
     /**
      * Constructor for LiveMapUpdate
      * @param update The map of updates
      */
     public LiveMapUpdate(@NotNull Map<String, Change> update) {
-        this.update = update;
+        super(update);
     }
 
     /**
@@ -26,7 +28,7 @@ public class LiveMapUpdate {
      */
     @NotNull
     public Map<String, Change> getUpdate() {
-        return update;
+        return (Map<String, Change>) update;
     }
 
     /**

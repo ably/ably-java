@@ -3,6 +3,7 @@ package io.ably.lib.objects.unit.type.livemap
 import io.ably.lib.objects.*
 import io.ably.lib.objects.type.livemap.LiveMapEntry
 import io.ably.lib.objects.type.livemap.LiveMapManager
+import io.ably.lib.objects.type.map.LiveMapUpdate
 import io.mockk.mockk
 import org.junit.Test
 import org.junit.Assert.*
@@ -17,7 +18,7 @@ class LiveMapManagerTest {
     val prevData1 = mapOf<String, LiveMapEntry>()
     val newData1 = mapOf<String, LiveMapEntry>()
     val result1 = livemapManager.calculateUpdateFromDataDiff(prevData1, newData1)
-    assertEquals("Should return empty map for no changes", emptyMap<String, String>(), result1)
+    assertEquals("Should return empty map for no changes", emptyMap<String, LiveMapUpdate.Change>(), result1.update)
 
     // Test case 2: Entry added
     val prevData2 = mapOf<String, LiveMapEntry>()
@@ -29,7 +30,7 @@ class LiveMapManagerTest {
       )
     )
     val result2 = livemapManager.calculateUpdateFromDataDiff(prevData2, newData2)
-    assertEquals("Should detect added entry", mapOf("key1" to "updated"), result2)
+    assertEquals("Should detect added entry", mapOf("key1" to LiveMapUpdate.Change.UPDATED), result2.update)
 
     // Test case 3: Entry removed
     val prevData3 = mapOf(
@@ -41,7 +42,7 @@ class LiveMapManagerTest {
     )
     val newData3 = mapOf<String, LiveMapEntry>()
     val result3 = livemapManager.calculateUpdateFromDataDiff(prevData3, newData3)
-    assertEquals("Should detect removed entry", mapOf("key1" to "removed"), result3)
+    assertEquals("Should detect removed entry", mapOf("key1" to LiveMapUpdate.Change.REMOVED), result3.update)
 
     // Test case 4: Entry updated
     val prevData4 = mapOf(
@@ -59,7 +60,7 @@ class LiveMapManagerTest {
       )
     )
     val result4 = livemapManager.calculateUpdateFromDataDiff(prevData4, newData4)
-    assertEquals("Should detect updated entry", mapOf("key1" to "updated"), result4)
+    assertEquals("Should detect updated entry", mapOf("key1" to LiveMapUpdate.Change.UPDATED), result4.update)
 
     // Test case 5: Entry tombstoned
     val prevData5 = mapOf(
@@ -77,7 +78,7 @@ class LiveMapManagerTest {
       )
     )
     val result5 = livemapManager.calculateUpdateFromDataDiff(prevData5, newData5)
-    assertEquals("Should detect tombstoned entry", mapOf("key1" to "removed"), result5)
+    assertEquals("Should detect tombstoned entry", mapOf("key1" to LiveMapUpdate.Change.REMOVED), result5.update)
 
     // Test case 6: Entry untombstoned
     val prevData6 = mapOf(
@@ -95,7 +96,7 @@ class LiveMapManagerTest {
       )
     )
     val result6 = livemapManager.calculateUpdateFromDataDiff(prevData6, newData6)
-    assertEquals("Should detect untombstoned entry", mapOf("key1" to "updated"), result6)
+    assertEquals("Should detect untombstoned entry", mapOf("key1" to LiveMapUpdate.Change.UPDATED), result6.update)
 
     // Test case 7: Both entries tombstoned (noop)
     val prevData7 = mapOf(
@@ -113,7 +114,7 @@ class LiveMapManagerTest {
       )
     )
     val result7 = livemapManager.calculateUpdateFromDataDiff(prevData7, newData7)
-    assertEquals("Should not detect change for both tombstoned entries", emptyMap<String, String>(), result7)
+    assertEquals("Should not detect change for both tombstoned entries", emptyMap<String, LiveMapUpdate.Change>(), result7.update)
 
     // Test case 8: New tombstoned entry (noop)
     val prevData8 = mapOf<String, LiveMapEntry>()
@@ -125,7 +126,7 @@ class LiveMapManagerTest {
       )
     )
     val result8 = livemapManager.calculateUpdateFromDataDiff(prevData8, newData8)
-    assertEquals("Should not detect change for new tombstoned entry", emptyMap<String, String>(), result8)
+    assertEquals("Should not detect change for new tombstoned entry", emptyMap<String, LiveMapUpdate.Change>(), result8.update)
 
     // Test case 9: Multiple changes
     val prevData9 = mapOf(
@@ -154,11 +155,11 @@ class LiveMapManagerTest {
     )
     val result9 = livemapManager.calculateUpdateFromDataDiff(prevData9, newData9)
     val expected9 = mapOf(
-      "key1" to "updated",
-      "key2" to "removed",
-      "key3" to "updated"
+      "key1" to LiveMapUpdate.Change.UPDATED,
+      "key2" to LiveMapUpdate.Change.REMOVED,
+      "key3" to LiveMapUpdate.Change.UPDATED
     )
-    assertEquals("Should detect multiple changes correctly", expected9, result9)
+    assertEquals("Should detect multiple changes correctly", expected9, result9.update)
 
     // Test case 10: ObjectId references
     val prevData10 = mapOf(
@@ -176,7 +177,7 @@ class LiveMapManagerTest {
       )
     )
     val result10 = livemapManager.calculateUpdateFromDataDiff(prevData10, newData10)
-    assertEquals("Should detect objectId change", mapOf("key1" to "updated"), result10)
+    assertEquals("Should detect objectId change", mapOf("key1" to LiveMapUpdate.Change.UPDATED), result10.update)
 
     // Test case 11: Same data, no change
     val prevData11 = mapOf(
@@ -194,6 +195,6 @@ class LiveMapManagerTest {
       )
     )
     val result11 = livemapManager.calculateUpdateFromDataDiff(prevData11, newData11)
-    assertEquals("Should not detect change for same data", emptyMap<String, String>(), result11)
+    assertEquals("Should not detect change for same data", emptyMap<String, LiveMapUpdate.Change>(), result11.update)
   }
 }

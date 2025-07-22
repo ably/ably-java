@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Contract;
  * It allows incrementing, decrementing, and retrieving the current value of the counter,
  * both synchronously and asynchronously.
  */
-public interface LiveCounter {
+public interface LiveCounter extends LiveCounterChange {
 
     /**
      * Increments the value of the counter by 1.
