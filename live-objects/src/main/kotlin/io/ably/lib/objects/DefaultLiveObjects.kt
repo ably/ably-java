@@ -172,6 +172,12 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
             objectsManager.endSync(fromInitializedState) // RTO4b4
           }
         }
+        ChannelState.detached,
+        ChannelState.failed -> {
+          // do not emit data update events as the actual current state of Objects data is unknown when we're in these channel states
+          objectsPool.clearObjectsData(false)
+          objectsManager.clearSyncObjectsDataPool()
+        }
 
         else -> {
           // No action needed for other states
