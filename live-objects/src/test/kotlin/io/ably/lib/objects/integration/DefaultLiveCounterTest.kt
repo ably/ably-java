@@ -3,12 +3,15 @@ package io.ably.lib.objects.integration
 import io.ably.lib.objects.type.counter.LiveCounter
 import io.ably.lib.objects.type.map.LiveMap
 import io.ably.lib.objects.assertWaiter
+import io.ably.lib.objects.integration.helpers.ObjectId
+import io.ably.lib.objects.integration.helpers.fixtures.createUserEngagementMatrixMap
 import io.ably.lib.objects.integration.helpers.fixtures.createUserMapWithCountersObject
 import io.ably.lib.objects.integration.setup.IntegrationTest
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class DefaultLiveCounterTest: IntegrationTest() {
   /**
@@ -201,5 +204,74 @@ class DefaultLiveCounterTest: IntegrationTest() {
     val finalCounterCheck = rootMap.get("testCounter") as LiveCounter
     assertNotNull(finalCounterCheck, "Counter should still be accessible from root map")
     assertEquals(30.0, finalCounterCheck.value(), "Final counter value should be 30 when accessed from root map")
+  }
+
+  @Test
+  fun testLiveCounterChangesUsingSubscription() = runTest {
+    val channelName = generateChannelName()
+    val userEngagementMapId = restObjects.createUserEngagementMatrixMap(channelName)
+    restObjects.setMapRef(channelName, "root", "userMatrix", userEngagementMapId)
+
+    val channel = getRealtimeChannel(channelName)
+    val rootMap = channel.objects.root
+
+    val userEngagementMap = rootMap.get("userMatrix") as LiveMap
+    assertEquals(4L, userEngagementMap.size(), "User engagement map should contain 4 top-level entries")
+
+    val totalReactions = userEngagementMap.get("totalReactions") as LiveCounter
+    assertEquals(189.0, totalReactions.value(), "Total reactions counter should have initial value of 189")
+
+    // Subscribe to changes on the totalReactions counter
+    val counterUpdates = mutableListOf<Double>()
+    val totalReactionsSubscription = totalReactions.subscribe { update ->
+      counterUpdates.add(update.update.amount)
+    }
+
+    // Step 1: Increment the totalReactions counter by 10 (189 + 10 = 199)
+    restObjects.incrementCounter(channelName, totalReactions.ObjectId, 10.0)
+
+    // Wait for the update to be received
+    assertWaiter { counterUpdates.isNotEmpty() }
+
+    // Verify the increment update was received
+    assertEquals(1, counterUpdates.size, "Should receive one update for increment")
+    assertEquals(10.0, counterUpdates.first(), "Update should contain increment amount of 10")
+    assertEquals(199.0, totalReactions.value(), "Counter should be incremented to 199")
+
+    // Step 2: Decrement the totalReactions counter by 5 (199 - 5 = 194)
+    counterUpdates.clear()
+    restObjects.decrementCounter(channelName, totalReactions.ObjectId, 5.0)
+
+    // Wait for the second update
+    assertWaiter { counterUpdates.isNotEmpty() }
+
+    // Verify the decrement update was received
+    assertEquals(1, counterUpdates.size, "Should receive one update for decrement")
+    assertEquals(-5.0, counterUpdates.first(), "Update should contain decrement amount of -5")
+    assertEquals(194.0, totalReactions.value(), "Counter should be decremented to 194")
+
+    // Step 3: Increment the totalReactions counter by 15 (194 + 15 = 209)
+    counterUpdates.clear()
+    restObjects.incrementCounter(channelName, totalReactions.ObjectId, 15.0)
+
+    // Wait for the third update
+    assertWaiter { counterUpdates.isNotEmpty() }
+
+    // Verify the third increment update was received
+    assertEquals(1, counterUpdates.size, "Should receive one update for third increment")
+    assertEquals(15.0, counterUpdates.first(), "Update should contain increment amount of 15")
+    assertEquals(209.0, totalReactions.value(), "Counter should be incremented to 209")
+
+    // Clean up subscription
+    counterUpdates.clear()
+    totalReactionsSubscription.unsubscribe()
+
+    // No updates should be received after unsubscribing
+    restObjects.incrementCounter(channelName, totalReactions.ObjectId, 20.0)
+
+    // Wait for a moment to ensure no updates are received
+    assertWaiter { totalReactions.value() == 229.0 }
+
+    assertTrue(counterUpdates.isEmpty(), "No updates should be received after unsubscribing")
   }
 }

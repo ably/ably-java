@@ -134,17 +134,9 @@ internal fun RestObjects.createUserMapObject(channelName: String): String {
   )
 
   // Create a user profile map with mixed data types and references
-  val userProfileMapObjectId = createMap(
-    channelName,
-    data = mapOf(
-      "userId" to ObjectData(value = ObjectValue("user123")),
-      "name" to ObjectData(value = ObjectValue("John Doe")),
-      "email" to ObjectData(value = ObjectValue("john@example.com")),
-      "isActive" to ObjectData(value = ObjectValue(true)),
-      "metrics" to DataFixtures.mapRef(metricsMapObjectId),
-      "preferences" to DataFixtures.mapRef(preferencesMapObjectId)
-    )
-  )
+  val userProfileMapObjectId = createUserProfileMapObject(channelName)
+  setMapRef(channelName, userProfileMapObjectId, "metrics", metricsMapObjectId)
+  setMapRef(channelName, userProfileMapObjectId, "preferences", preferencesMapObjectId)
 
   // Set up the main test map structure with references to all created objects
   setMapRef(channelName, testMapObjectId, "userProfile", userProfileMapObjectId)
@@ -154,4 +146,39 @@ internal fun RestObjects.createUserMapObject(channelName: String): String {
   setMapRef(channelName, testMapObjectId, "metricsMap", metricsMapObjectId)
 
   return testMapObjectId
+}
+
+/**
+ * Creates a user profile map object with basic user information for testing.
+ *
+ * This method creates a simple user profile map containing essential user data fields
+ * that are commonly used in user management systems. The map contains primitive data types
+ * representing basic user information.
+ *
+ * **Object Structure:**
+ * ```
+ * userProfileMap (Map)
+ * ├── "userId" → "user123"
+ * ├── "name" → "John Doe"
+ * ├── "email" → "john@example.com"
+ * └── "isActive" → true
+ * ```
+ *
+ * This structure provides a foundation for testing map operations on user profile data,
+ * including field updates, additions, and removals. The map contains a mix of string,
+ * boolean, and numeric data types to test various primitive value handling.
+ *
+ * @param channelName The channel where the user profile map will be created
+ * @return The object ID of the created user profile map
+ */
+internal fun RestObjects.createUserProfileMapObject(channelName: String): String {
+   return createMap(
+    channelName,
+    data = mapOf(
+      "userId" to ObjectData(value = ObjectValue("user123")),
+      "name" to ObjectData(value = ObjectValue("John Doe")),
+      "email" to ObjectData(value = ObjectValue("john@example.com")),
+      "isActive" to ObjectData(value = ObjectValue(true)),
+    )
+  )
 }

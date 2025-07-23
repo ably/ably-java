@@ -56,10 +56,10 @@ class LiveMapManagerTest {
 
     // Assert on update field - should show changes from old to new state
     val expectedUpdate = mapOf(
-      "key1" to "updated", // key1 was updated from "oldValue" to "newValue1"
-      "key2" to "updated"  // key2 was added
+      "key1" to LiveMapUpdate.Change.UPDATED, // key1 was updated from "oldValue" to "newValue1"
+      "key2" to LiveMapUpdate.Change.UPDATED  // key2 was added
     )
-    assertEquals(expectedUpdate, update)
+    assertEquals(expectedUpdate, update.update)
   }
 
   @Test
@@ -90,8 +90,8 @@ class LiveMapManagerTest {
     assertEquals(0, liveMap.data.size) // RTLM6c - should be empty map
 
     // Assert on update field - should show that key1 was removed
-    val expectedUpdate = mapOf("key1" to "removed")
-    assertEquals(expectedUpdate, update)
+    val expectedUpdate = mapOf("key1" to LiveMapUpdate.Change.REMOVED)
+    assertEquals(expectedUpdate, update.update)
   }
 
   @Test
@@ -119,8 +119,8 @@ class LiveMapManagerTest {
     assertEquals(0, liveMap.data.size) // RTLM6c - should be empty map when map is null
 
     // Assert on update field - should show that key1 was removed
-    val expectedUpdate = mapOf("key1" to "removed")
-    assertEquals(expectedUpdate, update)
+    val expectedUpdate = mapOf("key1" to LiveMapUpdate.Change.REMOVED)
+    assertEquals(expectedUpdate, update.update)
   }
 
   @Test
@@ -178,10 +178,10 @@ class LiveMapManagerTest {
 
     // Assert on update field - should show changes from create operation
     val expectedUpdate = mapOf(
-      "key1" to "updated", // key1 was updated from "existingValue" to "stateValue"
-      "key2" to "updated"  // key2 was added from create operation
+      "key1" to LiveMapUpdate.Change.UPDATED, // key1 was updated from "existingValue" to "stateValue"
+      "key2" to LiveMapUpdate.Change.UPDATED  // key2 was added from create operation
     )
-    assertEquals(expectedUpdate, update)
+    assertEquals(expectedUpdate, update.update)
   }
 
 
