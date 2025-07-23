@@ -169,6 +169,11 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
       }
 
       val objectOperation: ObjectOperation = objectMessage.operation // RTO9a2
+      if (objectOperation.action == ObjectOperationAction.Unknown) {
+        // RTO9a2b - object operation action is unknown, skip the message
+        Log.w(tag, "Object operation action is unknown, skipping message: ${objectMessage.id}")
+        continue
+      }
       // RTO9a2a - we can receive an op for an object id we don't have yet in the pool. instead of buffering such operations,
       // we can create a zero-value object for the provided object id and apply the operation to that zero-value object.
       // this also means that all objects are capable of applying the corresponding *_CREATE ops on themselves,
