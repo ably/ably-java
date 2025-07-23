@@ -5,7 +5,6 @@ import com.google.gson.JsonObject
 
 import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
-import io.ably.lib.objects.serialization.InitialValueJsonSerializer
 import io.ably.lib.objects.serialization.ObjectDataJsonSerializer
 import io.ably.lib.objects.serialization.gson
 
@@ -19,7 +18,8 @@ internal enum class ObjectOperationAction(val code: Int) {
   MapRemove(2),
   CounterCreate(3),
   CounterInc(4),
-  ObjectDelete(5);
+  ObjectDelete(5),
+  Unknown(-1); // code for unknown value during deserialization
 }
 
 /**
@@ -27,7 +27,8 @@ internal enum class ObjectOperationAction(val code: Int) {
  * Spec: OMP2
  */
 internal enum class MapSemantics(val code: Int) {
-  LWW(0);
+  LWW(0),
+  Unknown(-1); // code for unknown value during deserialization
 }
 
 /**
@@ -214,20 +215,13 @@ internal data class ObjectOperation(
   val nonce: String? = null,
 
   /**
-   * The initial value bytes for the object. These bytes should be used along with the nonce
+   * The initial value json string for the object. This value should be used along with the nonce
    * and timestamp to create the object ID. Frontdoor will use this to verify the object ID.
-   * After verification the bytes will be decoded into the Map or Counter objects and
-   * the initialValue, nonce, and initialValueEncoding will be removed.
+   * After verification the json string will be decoded into the Map or Counter objects and
+   * the initialValue and nonce will be removed.
    * Spec: OOP3h
    */
-  @JsonAdapter(InitialValueJsonSerializer::class)
-  val initialValue: Binary? = null,
-
-  /** The initial value encoding defines how the initialValue should be interpreted.
-   * Spec: OOP3i
-   */
-  @Deprecated("Will be removed in the future, initialValue will be json string")
-  val initialValueEncoding: ProtocolMessageFormat? = null
+  val initialValue: String? = null,
 )
 
 /**

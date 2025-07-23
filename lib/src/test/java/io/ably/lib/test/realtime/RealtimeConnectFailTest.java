@@ -139,6 +139,24 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
         }
     }
 
+    @Test
+    public void connect_after_suspend_should_clean_msg_serial() throws AblyException {
+        ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+        opts.disconnectedRetryTimeout = Integer.MAX_VALUE;
+        opts.suspendedRetryTimeout = Integer.MAX_VALUE;
+        try (AblyRealtime ably = new AblyRealtime(opts)) {
+            ConnectionWaiter waiter = new ConnectionWaiter(ably.connection);
+            waiter.waitFor(ConnectionState.connecting);
+            ably.connection.connectionManager.requestState(ConnectionState.suspended);
+            waiter.waitFor(ConnectionState.suspended);
+            ably.connection.connectionManager.msgSerial = 100;
+            assertEquals("Verify suspended state reached", ConnectionState.suspended, ably.connection.state);
+            ably.connect();
+            waiter.waitFor(ConnectionState.connected);
+            assertEquals(0, ably.connection.connectionManager.msgSerial);
+        }
+    }
+
     /**
      * Verify that the connection in the disconnected state (after attempts to
      * connect to a non-existent ws host) allows an immediate explicit connect

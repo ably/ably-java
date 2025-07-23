@@ -1,528 +1,129 @@
-# [Ably](https://www.ably.io)
+![Ably Pub/Sub Java Header](images/javaSDK-github.png)
+[![Latest Version](https://img.shields.io/maven-central/v/io.ably/ably-java)](https://central.sonatype.com/artifact/io.ably/ably-java)
+[![License](https://badgen.net/github/license/ably/ably-java)](https://github.com/ably/ably-java/blob/main/LICENSE)
 
-[![.github/workflows/check.yml](https://github.com/ably/ably-java/actions/workflows/check.yml/badge.svg)](https://github.com/ably/ably-java/actions/workflows/check.yml)
-[![.github/workflows/integration-test.yml](https://github.com/ably/ably-java/actions/workflows/integration-test.yml/badge.svg)](https://github.com/ably/ably-java/actions/workflows/integration-test.yml)
-[![.github/workflows/emulate.yml](https://github.com/ably/ably-java/actions/workflows/emulate.yml/badge.svg)](https://github.com/ably/ably-java/actions/workflows/emulate.yml)
-[![.github/workflows/javadoc.yml](https://github.com/ably/ably-java/actions/workflows/javadoc.yml/badge.svg)](https://github.com/ably/ably-java/actions/workflows/javadoc.yml)
-[![Features](https://github.com/ably/ably-java/actions/workflows/features.yml/badge.svg)](https://github.com/ably/ably-java/actions/workflows/features.yml)
+# Ably Pub/Sub Java SDK
 
-_[Ably](https://ably.com) is the platform that powers synchronized digital experiences in realtime. Whether attending an event in a virtual venue, receiving realtime financial information, or monitoring live car performance data – consumers simply expect realtime digital experiences as standard. Ably provides a suite of APIs to build, extend, and deliver powerful digital experiences in realtime for more than 250 million devices across 80 countries each month. Organizations like Bloomberg, HubSpot, Verizon, and Hopin depend on Ably’s platform to offload the growing complexity of business-critical realtime data synchronization at global scale. For more information, see the [Ably documentation](https://ably.com/documentation)._
+Build any realtime experience using Ably’s Pub/Sub Java SDK. Supported on all popular platforms and frameworks, including Kotlin and Android.
 
-## Overview
+Ably Pub/Sub provides flexible APIs that deliver features such as pub-sub messaging, message history, presence, and push notifications. Utilizing Ably’s realtime messaging platform, applications benefit from its highly performant, reliable, and scalable infrastructure.
 
-A Java Realtime and REST client library.
-This library currently targets the [Ably client library features spec](https://www.ably.com/docs/client-lib-development-guide/features/) Version 1.2.
+Find out more:
+
+* [Ably Pub/Sub docs.](https://ably.com/docs/basics)
+* [Ably Pub/Sub examples.](https://ably.com/examples?product=pubsub)
+
+---
+
+## Getting started
+
+Everything you need to get started with Ably:
+
+- [Quickstart in Pub/Sub using Java](https://ably.com/docs/getting-started/quickstart?lang=java)
+* [SDK Setup for Java.](https://ably.com/docs/getting-started/setup?lang=java)
+
+---
+
+## Supported platforms
+
+Ably aims to support a wide range of platforms. If you experience any compatibility issues, open an issue in the repository or contact [Ably support](https://ably.com/support).
+
+The following platforms are supported:
+
+| Platform | Support |
+|----------|---------|
+| Java     | >= 1.8 (JRE 8 or later) |
+| Kotlin   | All versions (>= 1.0 supported), but we recommend >= 1.8 for best compatibility. |
+| Android | >=4.4 (API level 19) |
+
+> [!IMPORTANT]
+> SDK versions < 1.2.35 will be [deprecated](https://ably.com/docs/platform/deprecate/protocol-v1) from November 1, 2025.
+
+---
 
 ## Installation
 
-Include the library by adding an `implementation` reference to `dependencies` block in your [Gradle](https://gradle.org/) build script.
+The Java SDK is available as a [Maven dependency](https://mvnrepository.com/artifact/io.ably/ably-java). To get started with your project, install the package:
 
-For [Java](https://mvnrepository.com/artifact/io.ably/ably-java/latest):
+### Install for Maven:
 
-```groovy
-implementation 'io.ably:ably-java:1.2.53'
+```xml
+<dependency>
+    <groupId>io.ably</groupId>
+    <artifactId>ably-java</artifactId>
+    <version>1.2.54</version>
+</dependency>
 ```
 
-For [Android](https://mvnrepository.com/artifact/io.ably/ably-android/latest):
+### Install for Gradle:
 
-```groovy
-implementation 'io.ably:ably-android:1.2.53'
+```gradle
+implementation 'io.ably:ably-java:1.2.54'
+implementation 'org.slf4j:slf4j-simple:2.0.7'
 ```
 
-The library is hosted on [Maven Central](https://mvnrepository.com/repos/central), so you need to ensure that the repository is referenced also; IDEs will typically include this by default:
+Run the following to instantiate a client:
 
-```groovy
-repositories {
-	mavenCentral()
-}
+```java
+import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.types.ClientOptions;
+
+ClientOptions options = new ClientOptions(apiKey);
+AblyRealtime realtime = new AblyRealtime(options);
 ```
 
-We only support installation via Maven / Gradle from the Maven Central repository. If you want to use a standalone fat JAR (i.e. containing all dependencies), it can be generated via a Gradle task (see [building](#building) below), creating a "Java" (JRE) library variant only. There is no standalone / self-contained AAR build option. Checkout [requirements](#requirements).
-
-## Runtime Requirements
-
-The library requires that the runtime environment is able to establish a safe TLS connection (TLS v1.2 or v1.3). It will fail to connect with a `SecurityException` if this level of security is not available.
+---
 
 ## Usage
 
-Please refer to the [documentation](https://www.ably.com/docs) for a full API reference.
+The following code connects to Ably's realtime messaging service, subscribes to a channel to receive messages, and publishes a test message to that same channel.
 
-### Using the Realtime API
-
-The examples below assume a client has been created as follows:
 
 ```java
-AblyRealtime ably = new AblyRealtime("xxxxx");
-```
+// Initialize Ably Realtime client
+ClientOptions options = new ClientOptions("your-ably-api-key");
+options.clientId = "me";
+AblyRealtime realtimeClient = new AblyRealtime(options);
 
-#### Connection
-
-AblyRealtime will attempt to connect automatically once new instance is created. Also, it offers API for listening connection state changes.
-
-```java
-ably.connection.on(new ConnectionStateListener() {
-	@Override
-	public void onConnectionStateChanged(ConnectionStateChange state) {
-		System.out.println("New state is " + state.current.name());
-		switch (state.current) {
-			case connected: {
-				// Successful connection
-				break;
-			}
-			case failed: {
-				// Failed connection
-				break;
-			}
-		}
-	}
-});
-```
-
-#### Subscribing to a channel
-
-Given:
-
-```java
-Channel channel = ably.channels.get("test");
-```
-
-Subscribe to all events:
-
-```java
-channel.subscribe(new MessageListener() {
-	@Override
-	public void onMessage(Message message) {
-		System.out.println("Received `" + message.name + "` message with data: " + message.data);
-	}
-});
-```
-
-or subscribe to certain events:
-
-```java
-String[] events = new String[] {"event1", "event2"};
-channel.subscribe(events, new MessageListener() {
-	@Override
-	public void onMessage(Message message) {
-		System.out.println("Received `" + message.name + "` message with data: " + message.data);
-	}
-});
-```
-
-#### Subscribing to a channel in delta mode
-
-Subscribing to a channel in delta mode enables [delta compression](https://www.ably.com/docs/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
-
-Request a Vcdiff formatted delta stream using channel options when you get the channel:
-
-```java
-Map<String, String> params = new HashMap<>();
-params.put("delta", "vcdiff");
-ChannelOptions options = new ChannelOptions();
-options.params = params;
-Channel channel = ably.channels.get("test", options);
-```
-
-Beyond specifying channel options, the rest is transparent and requires no further changes to your application. The `message.data` instances that are delivered to your `MessageListener` continue to contain the values that were originally published.
-
-If you would like to inspect the `Message` instances in order to identify whether the `data` they present was rendered from a delta message from Ably then you can see if `extras.getDelta().getFormat()` equals `"vcdiff"`.
-
-#### Publishing to a channel
-
-Data published to a channel (apart from strings or bytearrays) has to be instances of JsonElement to be encoded properly.
-
-```java
-// Publishing message of type String
-channel.publish("greeting", "Hello World!", new CompletionListener() {
-	@Override
-	public void onSuccess() {
-		System.out.println("Message successfully sent");
-	}
-
-	@Override
-	public void onError(ErrorInfo reason) {
-		System.err.println("Unable to publish message; err = " + reason.message);
-	}
-});
-
-// Publishing message of type JsonElement
-JsonObject jsonElement = new JsonObject();
-
-Map<String, String> inputMap = new HashMap<String, String>();
-inputMap.put("name", "Joe");
-inputMap.put("surename", "Doe");
-
-for (Map.Entry<String, String> entry : inputMap.entrySet()) {
-    jsonElement.addProperty(entry.getKey(), entry.getValue());
-}
-
-channel.publish("greeting", message, new CompletionListener() {
-	@Override
-	public void onSuccess() {
-		System.out.println("Message successfully sent");
-	}
-
-	@Override
-	public void onError(ErrorInfo reason) {
-		System.err.println("Unable to publish message; err = " + reason.message);
-	}
-});
-```
-
-#### Querying the history
-
-```java
-PaginatedResult<Message> result = channel.history(null);
-
-System.out.println(result.items().length + " messages received in first page");
-while(result.hasNext()) {
-	result = result.getNext();
-	System.out.println(result.items().length + " messages received in next page");
-}
-```
-
-#### Presence on a channel
-
-```java
-channel.presence.enter("john.doe", new CompletionListener() {
-	@Override
-	public void onSuccess() {
-		// Successfully entered to the channel
-	}
-
-	@Override
-	public void onError(ErrorInfo reason) {
-		// Failed to enter channel
-	}
-});
-```
-
-#### Querying the presence history
-
-```java
-PaginatedResult<PresenceMessage> result = channel.presence.history(null);
-
-System.out.println(result.items().length + " messages received in first page");
-while(result.hasNext()) {
-	result = result.getNext();
-	System.out.println(result.items().length + " messages received in next page");
-}
-```
-
-#### Channel state
-
-`Channel` extends `EventEmitter` that emits channel state changes, and listening those events is possible with `ChannelStateListener`
-
-```java
-ChannelStateListener listener = new ChannelStateListener() {
-	@Override
-  public void onChannelStateChanged(ChannelStateChange stateChange) {
-    System.out.println("Channel state changed to " + stateChange.current.name());
-    if (stateChange.reason != null)
-        System.out.println("Channel state error" + stateChange.reason.message);
-  }
-};
-```
-
-You can register using
-
-```java
-channel.on(listener);
-```
-
-and after you are done listening channel state events, you can unregister using
-```java
-channel.off(listener);
-```
-
-If you are interested with specific events, it is possible with providing extra `ChannelState` value.
-
-```java
-channel.on(ChannelState.attached, listener);
-```
-
-#### Use of authCallback
-
-Callback that provides either tokens (`TokenDetails`), or signed token requests (`TokenRequest`), in response to a request with given token params.
-
-```java
-ClientOptions options = new ClientOptions();
+// Wait for connection to be established
+realtimeClient.connection.on(ConnectionEvent.connected, connectionStateChange -> {
+    System.out.println("Connected to Ably");
     
-options.authCallback = new Auth.TokenCallback() {
-    @Override
-    public Object getTokenRequest(Auth.TokenParams params) {
-        System.out.println("Token Params: " + params);
-        // TODO: process params
-        return null; // TODO: return TokenDetails or TokenRequest or JWT string
-    }
-};
-
-AblyRealtime ablyRealtime = new AblyRealtime(options);
-```
-
-### Using the REST API
-
-The examples below assume a client and/or channel has been created as follows:
-
-```java
-AblyRest ably = new AblyRest("xxxxx");
-Channel channel = ably.channels.get("test");
-```
-
-#### Publishing a message to a channel
-
-Given the message below
-
-```java
-Message message = new Message("myEvent", "Hello");
-```
-
-Sharing synchronously,
-
-```java
-channel.publish(message);
-```
-
-Sharing asynchronously,
-
-```java
-channel.publishAsync(message, new CompletionListener() {
-  @Override
-	public void onSuccess() {
-	   System.out.println("Message successfully received by Ably server.");
-	}
-
-	@Override
-	public void onError(ErrorInfo reason) {
-		System.err.println("Unable to publish message to Ably server; err = " + reason.message);
-	}
+    // Get a reference to the 'test-channel' channel
+    Channel channel = realtimeClient.channels.get("test-channel");
+    
+    // Subscribe to all messages published to this channel
+    channel.subscribe(message -> {
+        System.out.println("Received message: " + message.data);
+    });
+    
+    // Publish a test message to the channel
+    channel.publish("test-event", "hello world");
 });
 ```
+---
 
-#### Querying the history
 
-```java
-PaginatedResult<Message> result = channel.history(null);
+## Proxy support
 
-System.out.println(result.items().length + " messages received in first page");
-while(result.hasNext()) {
-	result = result.getNext();
-	System.out.println(result.items().length + " messages received in next page");
-}
-```
+You can add proxy support to the Ably Java SDK by configuring `ProxyOptions` in your client setup, enabling connectivity through corporate firewalls and secured networks.
 
-#### Presence on a channel
+<details>
+<summary>Proxy support setup details.</summary>
 
-```java
-PaginatedResult<PresenceMessage> result = channel.presence.get(null);
-
-System.out.println(result.items().length + " messages received in first page");
-while(result.hasNext()) {
-	result = result.getNext();
-	System.out.println(result.items().length + " messages received in next page");
-}
-```
-
-#### Querying the presence history
-
-```java
-PaginatedResult<PresenceMessage> result = channel.presence.history(null);
-
-System.out.println(result.items().length + " messages received in first page");
-while(result.hasNext()) {
-	result = result.getNext();
-	System.out.println(result.items().length + " messages received in next page");
-}
-```
-
-#### Generate a Token and Token Request
-
-```java
-TokenDetails tokenDetails = ably.auth.requestToken(null, null);
-System.out.println("Success; token = " + tokenRequest);
-```
-
-#### Fetching your application's stats
-
-```java
-PaginatedResult<Stats> stats = ably.stats(null);
-
-System.out.println(result.items().length + " messages received in first page");
-while(result.hasNext()) {
-	result = result.getNext();
-	System.out.println(result.items().length + " messages received in next page");
-}
-```
-
-#### Fetching the Ably service time
-
-```java
-long serviceTime = ably.time();
-```
-
-#### Logging
-
-You can get log output from the library by modifying the log level:
-
-```java
-import io.ably.lib.util.Log;
-
-ClientOptions opts = new ClientOptions(key);
-opts.logLevel = Log.VERBOSE;
-AblyRest ably = new AblyRest(opts);
-...
-```
-
-By default, log output will go to `System.out` for the java library, and logcat for Android.
-
-You can redirect the log output to a logger of your own by specifying a custom log handler:
-
-```java
-import io.ably.lib.util.Log.LogHandler;
-
-ClientOptions opts = new ClientOptions(key);
-opts.logHandler = new LogHandler() {
-	public void println(int severity, String tag, String msg, Throwable tr) {
-		/* handle log output here ... */
-	}
-};
-AblyRest ably = new AblyRest(opts);
-...
-```
-
-Note that any logger you specify in this way has global scope - it will set as a static of the library
-and will apply to all Ably library instances. If you need to release your custom logger so that it can be
-garbage-collected, you need to clear that static reference:
-
-```java
-import io.ably.lib.util.Log;
-
-Log.setHandler(null);
-```
-
-#### Threads
-
-AblyRealtime will invoke all callbacks on background thread. 
-If you are using Ably in Android application you must switch to main thread to update UI. 
-
-```java
-channel.presence.enter("john.doe", new CompletionListener() {
-    @Override
-    public void onSuccess() {
-        //If you are in Activity
-        runOnUiThread(new Runnable() {
-        @Override
-        public void run() {
-                //Update your UI here
-            }
-        });
-        
-        //If you are in Fragment or other class
-        Handler handler = new Handler(Looper.getMainLooper());
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                //Update your UI here
-            }
-        });
-    }
-});
-```
-
-### Using the Push API
-
-#### Delivering push notifications
-
-See [documentation](https://www.ably.com/docs/general/push/publish)  for detail.
-
-Ably provides two models for delivering push notifications to devices.
-
-To publish a message to a channel including a push payload:
-
-```java
-Message message = new Message("example", "realtime data");
-message.extras = io.ably.lib.util.JsonUtils.object()
-    .add("push", io.ably.lib.util.JsonUtils.object()
-        .add("notification", io.ably.lib.util.JsonUtils.object()
-            .add("title", "Hello from Ably!")
-            .add("body", "Example push notification from Ably."))
-        .add("data", io.ably.lib.util.JsonUtils.object()
-            .add("foo", "bar")
-            .add("baz", "qux")));
-
-rest.channels.get("pushenabled:foo").publishAsync(message, new CompletionListener() {
-    @Override
-    public void onSuccess() {}
-
-    @Override
-    public void onError(ErrorInfo errorInfo) {
-        // Handle error.
-    }
-});
-```
-
-To publish a push payload directly to a registered device:
-
-```java
-Param[] recipient = new Param[]{new Param("deviceId", "xxxxxxxxxxx");
-
-JsonObject payload = io.ably.lib.util.JsonUtils.object()
-        .add("notification", io.ably.lib.util.JsonUtils.object()
-            .add("title", "Hello from Ably!")
-            .add("body", "Example push notification from Ably."))
-        .add("data", io.ably.lib.util.JsonUtils.object()
-            .add("foo", "bar")
-            .add("baz", "qux")));
-
-rest.push.admin.publishAsync(recipient, payload, , new CompletionListener() {
-	 @Override
-	 public void onSuccess() {}
- 
-	 @Override
-	 public void onError(ErrorInfo errorInfo) {
-		 // Handle error.
-	 }
- });
-```
-
-#### Activating a device and receiving notifications (Android only)
-
-See https://www.ably.com/docs/general/push/activate-subscribe for detail.
-In order to enable an app as a recipient of Ably push messages:
-
-- register your app with Firebase Cloud Messaging (FCM) and configure the FCM credentials in the app dashboard;
-- Implement a service extending [`FirebaseMessagingService`](https://firebase.google.com/docs/reference/android/com/google/firebase/messaging/FirebaseMessagingService) and ensure it is declared in your `AndroidManifest.xml`, as per [Firebase's guide: Edit your app manifest](https://firebase.google.com/docs/cloud-messaging/android/client#manifest);
-  - Override [`onNewToken`](https://firebase.google.com/docs/reference/android/com/google/firebase/messaging/FirebaseMessagingService#public-void-onnewtoken-string-token), and provide Ably with the registration token: `ActivationContext.getActivationContext(this).onNewRegistrationToken(RegistrationToken.Type.FCM, token);`. This method will be called whenever a new token is provided by Android.
-- Activate the device for push notifications:
-
-```java
-realtime.setAndroidContext(context);
-realtime.push.activate();
-```
-
-## Using Ably SDK Under a Proxy
-
-When working in environments where outbound internet access is restricted, such as behind a corporate proxy, the Ably SDK allows you to configure a proxy server for HTTP and WebSocket connections.
-
-### Add the Required Dependency
-
-You need to use **OkHttp** library for making HTTP calls and WebSocket connections in the Ably SDK to get proxy support both for your Rest and Realtime clients.
+To enable proxy support for both REST and Realtime clients in the Ably SDK, use the OkHttp library to handle HTTP requests and WebSocket connections.
 
 Add the following dependency to your `build.gradle` file:
 
 ```groovy
 dependencies {
-    runtimeOnly("io.ably:network-client-okhttp:1.2.53")
+    runtimeOnly("io.ably:network-client-okhttp:1.2.54")
 }
 ```
 
-### Configure Proxy Settings
+After adding the OkHttp dependency, enable proxy support by specifying proxy settings in the ClientOptions when initializing your Ably client.
 
-After adding the required OkHttp dependency, you need to configure the proxy settings for your Ably client. This can be done by setting the proxy options in the `ClientOptions` object when you instantiate the Ably SDK.
-
-Here’s an example of how to configure and use a proxy:
-
-#### Java Example
+The following example sets up a proxy using the Pub/Sub Java SDK:
 
 ```java
 import io.ably.lib.realtime.AblyRealtime;
@@ -561,30 +162,22 @@ public class AblyWithProxy {
 }
 ```
 
-## Resources
+</details>
 
-Visit https://www.ably.com/docs for a complete API reference and more examples.
+---
 
-### Example projects:
+## Contribute
 
-- [Ably Asset Tracking SDKs for Android](https://github.com/ably/ably-asset-tracking-android/blob/main/README.md#useful-resources)
-- [Chat app using Spring Boot + Auth0 + Ably](https://github.com/ably-labs/spring-boot-auth0)
-- [Spring + Ably Pub/Sub Demo with a Collaborative TODO list](https://github.com/ably-labs/ably-spring-pubsub)
+Read the [CONTRIBUTING.md](./CONTRIBUTING.md) guidelines to contribute to Ably.
 
-## Requirements
+---
 
-For Java, JRE 8 or later is required. Note that the [Java Unlimited JCE extensions](https://www.oracle.com/uk/java/technologies/javase-jce8-downloads.html) must be installed in the Java runtime environment.
+## Releases
 
-For Android, 4.4 KitKat (API level 19) or later is required.
+The [CHANGELOG.md](/ably/ably-java/blob/main/CHANGELOG.md) contains details of the latest releases for this SDK. You can also view all Ably releases on [changelog.ably.com](https://changelog.ably.com).
 
-## Support, feedback and troubleshooting
+---
 
-Please visit http://support.ably.io/ for access to our knowledgebase and to ask for any assistance.
+## Support, feedback, and troubleshooting
 
-You can also view the [community reported Github issues](https://github.com/ably/ably-java/issues).
-
-To see what has changed in recent versions of Bundler, see the [CHANGELOG](CHANGELOG.md).
-
-## Contributing
-
-For guidance on how to contribute to this project, see [CONTRIBUTING.md](CONTRIBUTING.md).
+For help or technical support, visit Ably's [support page](https://ably.com/support) or [GitHub Issues](https://github.com/ably/ably-java/issues) for community-reported bugs and discussions.

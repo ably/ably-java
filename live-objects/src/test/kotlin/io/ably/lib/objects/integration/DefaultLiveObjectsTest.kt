@@ -75,17 +75,17 @@ class DefaultLiveObjectsTest : IntegrationTest() {
     // Test emptyCounter - should have initial value of 0
     val emptyCounter = rootMap.get("emptyCounter") as LiveCounter
     assertNotNull(emptyCounter)
-    assertEquals(0L, emptyCounter.value())
+    assertEquals(0.0, emptyCounter.value())
 
     // Test initialValueCounter - should have initial value of 10
     val initialValueCounter = rootMap.get("initialValueCounter") as LiveCounter
     assertNotNull(initialValueCounter)
-    assertEquals(10L, initialValueCounter.value())
+    assertEquals(10.0, initialValueCounter.value())
 
     // Test referencedCounter - should have initial value of 20
     val referencedCounter = rootMap.get("referencedCounter") as LiveCounter
     assertNotNull(referencedCounter)
-    assertEquals(20L, referencedCounter.value())
+    assertEquals(20.0, referencedCounter.value())
 
     // Assert Map Objects
     // Test emptyMap - should be an empty map
@@ -99,7 +99,7 @@ class DefaultLiveObjectsTest : IntegrationTest() {
     assertEquals(1L, referencedMap.size())
     val referencedMapCounter = referencedMap.get("counterKey") as LiveCounter
     assertNotNull(referencedMapCounter)
-    assertEquals(20L, referencedMapCounter.value()) // Should point to the same counter with value 20
+    assertEquals(20.0, referencedMapCounter.value()) // Should point to the same counter with value 20
 
     // Test valuesMap - should contain all primitive data types and one map reference
     val valuesMap = rootMap.get("valuesMap") as LiveMap
@@ -149,7 +149,7 @@ class DefaultLiveObjectsTest : IntegrationTest() {
     assertEquals(1L, mapRefValue.size())
     val mapRefCounter = mapRefValue.get("counterKey") as LiveCounter
     assertNotNull(mapRefCounter)
-    assertEquals(20L, mapRefCounter.value()) // Should point to the same counter with value 20
+    assertEquals(20.0, mapRefCounter.value()) // Should point to the same counter with value 20
   }
 
   /**

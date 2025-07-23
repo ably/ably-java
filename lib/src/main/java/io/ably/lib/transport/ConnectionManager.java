@@ -17,6 +17,7 @@ import io.ably.lib.http.HttpHelpers;
 import io.ably.lib.objects.LiveObjectsPlugin;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
+import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.realtime.Connection;
 import io.ably.lib.realtime.ConnectionState;
@@ -79,6 +80,19 @@ public class ConnectionManager implements ConnectListener {
      * If this flag is true that means that current state is terminal but cleaning up still in progress
      */
     private boolean cleaningUpAfterEnteringTerminalState = false;
+
+    /**
+     * Indicates whether a close request has been initiated for the connection.
+     * <p>
+     * This variable is set to true when a close request is made, typically to
+     * signal that the connection should transition into a closing state.
+     * It helps manage the connection lifecycle, ensuring that no further
+     * operations for this connection are attempted once closure is requested.
+     * <p>
+     * Default value is false, indicating the connection remains active unless
+     * explicitly requested to close.
+     */
+    private volatile boolean closeRequested = false;
 
     /**
      * A nullable reference to the LiveObjects plugin.
@@ -246,19 +260,6 @@ public class ConnectionManager implements ConnectListener {
             }
 
             connectImpl(stateIndication);
-        }
-
-        @Override
-        void enactForChannel(StateIndication stateIndication, ConnectionStateChange change, Channel channel) {
-            // (RTN11b)
-            if (change.previous == ConnectionState.closing) {
-                channel.setConnectionClosed(REASON_CLOSED);
-            }
-
-            // (RTN11d)
-            if (hasConnectBeenInvokeOnClosedOrFailedState(change)) {
-                channel.setReinitialized();
-            }
         }
     }
 
@@ -835,10 +836,16 @@ public class ConnectionManager implements ConnectListener {
                 return;
             }
         }
+        if (closeRequested || currentState.terminal) {
+            // (RTN11d)
+            reinitializeChannelsAfterReconnect();
+            closeRequested = false;
+        }
         requestState(ConnectionState.connecting);
     }
 
     public void close() {
+        closeRequested = true;
         requestState(ConnectionState.closing);
     }
 
@@ -895,6 +902,7 @@ public class ConnectionManager implements ConnectListener {
         }
         Log.v(TAG, "setState(): setting " + newState.state + "; reason " + reason);
         ConnectionStateChange change = new ConnectionStateChange(currentState.state, newConnectionState, newState.timeout, reason);
+
         currentState = newState;
         cleaningUpAfterEnteringTerminalState = currentState.terminal;
         stateError = reason;
@@ -1277,6 +1285,8 @@ public class ConnectionManager implements ConnectListener {
                 addPendingMessagesToQueuedMessages(true);
                 channels.transferToChannelQueue(extractConnectionQueuePresenceMessages());
             }
+        } else {
+            msgSerial = 0;
         }
 
         connection.id = message.connectionId;
@@ -1591,6 +1601,7 @@ public class ConnectionManager implements ConnectListener {
         if (oldTransport != null) {
             oldTransport.close();
         }
+
         transport.connect(this);
         if(protocolListener != null) {
             protocolListener.onRawConnectRequested(transport.getURL());
@@ -1603,6 +1614,21 @@ public class ConnectionManager implements ConnectListener {
     private void cleanMsgSerialAndErrorReason() {
         this.msgSerial = 0;
         this.connection.reason = null;
+    }
+
+    /**
+     * (RTN11d)
+     */
+    private void reinitializeChannelsAfterReconnect() {
+        for (final Channel channel : channels.values()) {
+            // (RTN11b)
+            if (channel.state == ChannelState.attached || channel.state == ChannelState.attaching) {
+                channel.setConnectionClosed(REASON_CLOSED);
+            }
+
+            // (RTN11d)
+            channel.setReinitialized();
+        }
     }
 
     private boolean hasConnectBeenInvokeOnClosedOrFailedState(ConnectionStateChange change) {

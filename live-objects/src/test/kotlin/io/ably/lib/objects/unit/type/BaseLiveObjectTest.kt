@@ -5,7 +5,6 @@ import io.ably.lib.objects.type.BaseLiveObject
 import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
 import io.ably.lib.objects.type.livemap.DefaultLiveMap
 import io.ably.lib.objects.unit.getDefaultLiveObjectsWithMockedDeps
-import io.mockk.mockk
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -46,7 +45,7 @@ class BaseLiveObjectTest {
     assertFalse(liveCounter.createOperationIsMerged, "Create operation should not be merged by default")
   }
 
-    @Test
+  @Test
   fun `(RTLO4a1, RTLO4a2) canApplyOperation should accept ObjectMessage params and return boolean`() {
     // RTLO4a1a - Assert parameter types and return type based on method signature using reflection
     val method = BaseLiveObject::class.java.findMethod("canApplyOperation")

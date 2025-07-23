@@ -183,7 +183,7 @@ class ObjectsManagerTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterCreate,
         objectId = "counter:testObject@1",
-        counterOp = ObjectCounterOp(amount = 5.30)
+        counterOp = ObjectCounterOp(amount = 5.0)
       ),
       serial = "serial1",
       siteCode = "site1"
