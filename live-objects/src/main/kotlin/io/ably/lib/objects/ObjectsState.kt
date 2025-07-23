@@ -63,8 +63,6 @@ internal abstract class ObjectsStateCoordinator : ObjectsStateChange, HandlesObj
   // related to RTC10, should have a separate EventEmitter for users of the library
   private val externalObjectStateEmitter = ObjectsStateEmitter()
 
-  private val emitterScope = CoroutineScope(Dispatchers.Default.limitedParallelism(1) + SupervisorJob())
-
   override fun on(event: ObjectsStateEvent, listener: ObjectsStateChange.Listener): ObjectsSubscription {
     externalObjectStateEmitter.on(event, listener)
     return ObjectsSubscription {
@@ -78,11 +76,8 @@ internal abstract class ObjectsStateCoordinator : ObjectsStateChange, HandlesObj
 
   override fun objectsStateChanged(newState: ObjectsState) {
     objectsStateToEventMap[newState]?.let { objectsStateEvent ->
-      // emitterScope makes sure next launch can only start when previous launch finishes
-      emitterScope.launch {
-        internalObjectStateEmitter.emit(objectsStateEvent)
-        externalObjectStateEmitter.emit(objectsStateEvent)
-      }
+      internalObjectStateEmitter.emit(objectsStateEvent)
+      externalObjectStateEmitter.emit(objectsStateEvent)
     }
   }
 
@@ -97,10 +92,7 @@ internal abstract class ObjectsStateCoordinator : ObjectsStateChange, HandlesObj
     }
   }
 
-  override fun disposeObjectsStateListeners() {
-    offAll()
-    emitterScope.cancel("ObjectsManager disposed")
-  }
+  override fun disposeObjectsStateListeners() = offAll()
 }
 
 private class ObjectsStateEmitter : EventEmitter<ObjectsStateEvent, ObjectsStateChange.Listener>() {
