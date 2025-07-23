@@ -2548,13 +2548,33 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             assertEquals(List.of(ConnectionState.closing, ConnectionState.connecting, ConnectionState.connected), observedConnectionStates);
             assertEquals(ChannelState.initialized, channel.state);
-            
+
             channel.attach();
             new ChannelWaiter(channel).waitFor(ChannelState.attached);
 
             assertNull(channel.reason);
             assertEquals(0, ably.connection.connectionManager.msgSerial);
             assertEquals(List.of(ChannelState.detached, ChannelState.initialized, ChannelState.attaching, ChannelState.attached), observedChannelStates);
+        }
+    }
+
+    /**
+     * This test ensures that when the connection is manually triggered, the channel can successfully
+     * transition to the attached state without interference or rewriting of its immediate attach action.
+     */
+    @Test
+    public void connect_should_not_rewrite_immediate_attach() throws AblyException {
+        ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+        try (AblyRealtime ably = new AblyRealtime(opts)) {
+            ably.close();
+            new ConnectionWaiter(ably.connection).waitFor(ConnectionState.closed);
+            assertEquals("Verify closed state reached", ConnectionState.closed, ably.connection.state);
+            /* create a channel connect and attach */
+            final Channel channel = ably.channels.get("channel");
+            ably.connect();
+            channel.attach();
+            new ChannelWaiter(channel).waitFor(ChannelState.attached);
+            assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
         }
     }
 

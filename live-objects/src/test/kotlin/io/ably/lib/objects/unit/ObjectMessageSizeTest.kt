@@ -81,8 +81,7 @@ class ObjectMessageSizeTest {
         ), // Total ObjectCounter size: 8 bytes
 
         nonce = "nonce123", // Not counted in operation size
-        initialValue = Binary("some-value".toByteArray()), // Not counted in operation size
-        initialValueEncoding = ProtocolMessageFormat.Json // Not counted in operation size
+        initialValue = "some-value", // Not counted in operation size
       ), // Total ObjectOperation size: 12 + 8 + 26 + 8 = 54 bytes
 
       objectState = ObjectState(

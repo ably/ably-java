@@ -39,13 +39,6 @@ internal fun LiveObjectsAdapter.setChannelSerial(channelName: String, protocolMe
   setChannelSerial(channelName, channelSerial)
 }
 
-internal enum class ProtocolMessageFormat(private val value: String) {
-  Msgpack("msgpack"),
-  Json("json");
-
-  override fun toString(): String = value
-}
-
 internal class Binary(val data: ByteArray) {
   override fun equals(other: Any?): Boolean {
     if (this === other) return true

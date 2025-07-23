@@ -55,7 +55,7 @@ internal val dummyObjectOperation = ObjectOperation(
   map = dummyObjectMap,
   counter = dummyObjectCounter,
   nonce = "dummy-nonce",
-  initialValue = Binary("{\"foo\":\"bar\"}".toByteArray())
+  initialValue = "{\"foo\":\"bar\"}"
 )
 
 internal val dummyObjectState = ObjectState(
