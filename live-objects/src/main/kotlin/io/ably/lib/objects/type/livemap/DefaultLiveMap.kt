@@ -40,7 +40,7 @@ internal class DefaultLiveMap private constructor(
   adapter: LiveObjectsAdapter,
   internal val objectsPool: ObjectsPool,
   internal val semantics: MapSemantics = MapSemantics.LWW
-) : LiveMap, BaseLiveObject(objectId, ObjectType.Map, adapter) {
+) : LiveMap, BaseLiveObject(objectId, ObjectType.Map) {
 
   override val tag = "LiveMap"
   /**

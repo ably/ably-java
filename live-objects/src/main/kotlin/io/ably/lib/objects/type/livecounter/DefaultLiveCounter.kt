@@ -15,7 +15,7 @@ import io.ably.lib.types.Callback
 internal class DefaultLiveCounter private constructor(
   objectId: String,
   adapter: LiveObjectsAdapter,
-) : LiveCounter, BaseLiveObject(objectId, ObjectType.Counter, adapter) {
+) : LiveCounter, BaseLiveObject(objectId, ObjectType.Counter) {
 
   override val tag = "LiveCounter"
 
