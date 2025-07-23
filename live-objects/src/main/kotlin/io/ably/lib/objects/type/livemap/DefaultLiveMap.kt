@@ -14,8 +14,8 @@ import io.ably.lib.objects.type.map.LiveMapUpdate
 import io.ably.lib.objects.type.noOp
 import io.ably.lib.types.Callback
 import io.ably.lib.util.Log
-import java.util.AbstractMap
 import java.util.concurrent.ConcurrentHashMap
+import java.util.AbstractMap
 
 
 /**
@@ -30,8 +30,9 @@ internal class DefaultLiveMap private constructor(
 ) : LiveMap, BaseLiveObject(objectId, ObjectType.Map) {
 
   override val tag = "LiveMap"
+
   /**
-   * Map of key to LiveMapEntry
+   * ConcurrentHashMap for thread-safe access from public APIs in LiveMap and LiveMapManager.
    */
   internal val data = ConcurrentHashMap<String, LiveMapEntry>()
 
@@ -106,6 +107,8 @@ internal class DefaultLiveMap private constructor(
   override fun removeAsync(keyName: String, callback: Callback<Void>) {
     TODO("Not yet implemented")
   }
+
+  override fun validate(state: ObjectState) = liveMapManager.validate(state)
 
   override fun subscribe(listener: LiveMapChange.Listener): ObjectsSubscription {
     return liveMapManager.subscribe(listener)

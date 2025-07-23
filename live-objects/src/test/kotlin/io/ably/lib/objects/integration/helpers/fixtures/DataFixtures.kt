@@ -21,17 +21,17 @@ internal object DataFixtures {
   /** Test fixture for empty binary data (zero-length byte array) */
   internal val emptyBytesData = ObjectData(value = ObjectValue(Binary(ByteArray(0))))
 
-  /** Test fixture for maximum safe integer value (Long.MAX_VALUE) */
-  internal val maxSafeNumberData = ObjectData(value = ObjectValue(99999999))
+  /** Test fixture for maximum safe number value */
+  internal val maxSafeNumberData = ObjectData(value = ObjectValue(99999999.0))
 
-  /** Test fixture for minimum safe integer value (Long.MIN_VALUE) */
-  internal val negativeMaxSafeNumberData = ObjectData(value = ObjectValue(-99999999))
+  /** Test fixture for minimum safe number value */
+  internal val negativeMaxSafeNumberData = ObjectData(value = ObjectValue(-99999999.0))
 
-  /** Test fixture for positive integer value (1) */
-  internal val numberData = ObjectData(value = ObjectValue(1))
+  /** Test fixture for positive number value (1) */
+  internal val numberData = ObjectData(value = ObjectValue(1.0))
 
-  /** Test fixture for zero integer value */
-  internal val zeroData = ObjectData(value = ObjectValue(0))
+  /** Test fixture for zero number value */
+  internal val zeroData = ObjectData(value = ObjectValue(0.0))
 
   /** Test fixture for boolean true value */
   internal val trueData = ObjectData(value = ObjectValue(true))

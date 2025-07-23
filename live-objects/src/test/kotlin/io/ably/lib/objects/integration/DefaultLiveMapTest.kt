@@ -37,12 +37,12 @@ class DefaultLiveMapTest: IntegrationTest() {
     // Test loginCounter - should have initial value of 5
     val loginCounter = userMap.get("loginCounter") as LiveCounter
     assertNotNull(loginCounter, "Login counter should exist")
-    assertEquals(5L, loginCounter.value(), "Login counter should have initial value of 5")
+    assertEquals(5.0, loginCounter.value(), "Login counter should have initial value of 5")
 
     // Test sessionCounter - should have initial value of 0
     val sessionCounter = userMap.get("sessionCounter") as LiveCounter
     assertNotNull(sessionCounter, "Session counter should exist")
-    assertEquals(0L, sessionCounter.value(), "Session counter should have initial value of 0")
+    assertEquals(0.0, sessionCounter.value(), "Session counter should have initial value of 0")
 
     // Assert User Profile Map
     val userProfile = userMap.get("userProfile") as LiveMap
@@ -74,11 +74,11 @@ class DefaultLiveMapTest: IntegrationTest() {
     // Test counter references within metrics map
     val totalLoginsCounter = metrics.get("totalLogins") as LiveCounter
     assertNotNull(totalLoginsCounter, "Total logins counter should exist")
-    assertEquals(5L, totalLoginsCounter.value(), "Total logins should reference login counter with value 5")
+    assertEquals(5.0, totalLoginsCounter.value(), "Total logins should reference login counter with value 5")
 
     val activeSessionsCounter = metrics.get("activeSessions") as LiveCounter
     assertNotNull(activeSessionsCounter, "Active sessions counter should exist")
-    assertEquals(0L, activeSessionsCounter.value(), "Active sessions should reference session counter with value 0")
+    assertEquals(0.0, activeSessionsCounter.value(), "Active sessions should reference session counter with value 0")
 
     // Assert direct references to maps from top-level user map
     val preferencesMapRef = userMap.get("preferencesMap") as LiveMap

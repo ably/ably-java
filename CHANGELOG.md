@@ -1,5 +1,16 @@
 # Change Log
 
+## [1.2.54](https://github.com/ably/ably-java/tree/v1.2.54)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.53...v1.2.54)
+
+This release includes minor improvements and bug fixes.
+
+**Implemented enhancements:**
+
+- Prevents NPE in the connectivity check  [\#1111](https://github.com/ably/ably-java/issues/1111)
+- Fixes async connection state transition side effects  [\#1119](https://github.com/ably/ably-java/issues/1119)
+
 ## [1.2.53](https://github.com/ably/ably-java/tree/v1.2.53)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.52...v1.2.53)

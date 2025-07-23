@@ -19,7 +19,6 @@ import io.ably.lib.objects.unit.getDefaultLiveObjectsWithMockedDeps
 import io.ably.lib.objects.unit.size
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.types.ProtocolMessage
-import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
@@ -34,6 +33,9 @@ class DefaultLiveObjectsTest {
 
     // RTO4a - If the HAS_OBJECTS flag is 1, the server will shortly perform an OBJECT_SYNC sequence
     defaultLiveObjects.handleStateChange(ChannelState.attached, true)
+
+    assertWaiter { defaultLiveObjects.state == ObjectsState.SYNCING }
+
     // It is expected that the client will start a new sync sequence
     verify(exactly = 1) {
       defaultLiveObjects.ObjectsManager.startNewSync(null)
@@ -41,7 +43,6 @@ class DefaultLiveObjectsTest {
     verify(exactly = 0) {
       defaultLiveObjects.ObjectsManager.endSync(any<Boolean>())
     }
-    assertWaiter { defaultLiveObjects.state == ObjectsState.SYNCING }
   }
 
   @Test

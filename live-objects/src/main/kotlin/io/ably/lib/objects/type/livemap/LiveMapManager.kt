@@ -1,5 +1,6 @@
 package io.ably.lib.objects.type.livemap
 
+import io.ably.lib.objects.MapSemantics
 import io.ably.lib.objects.ObjectMapOp
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectOperationAction
@@ -90,12 +91,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
       return noOpMapUpdate
     }
 
-    if (liveMap.semantics != operation.map?.semantics) {
-      // RTLM16c
-      throw objectError(
-        "Cannot apply MAP_CREATE op on LiveMap objectId=${objectId}; map's semantics=${liveMap.semantics}, but op expected ${operation.map?.semantics}",
-      )
-    }
+    validateMapSemantics(operation.map?.semantics) // RTLM16c
 
     return mergeInitialDataFromCreateOperation(operation) // RTLM16d
   }
@@ -301,5 +297,29 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
     }
 
     return LiveMapUpdate(update)
+  }
+
+  internal fun validate(state: ObjectState) {
+    liveMap.validateObjectId(state.objectId)
+    validateMapSemantics(state.map?.semantics)
+    state.createOp?.let { createOp ->
+      liveMap.validateObjectId(createOp.objectId)
+      validateMapCreateAction(createOp.action)
+      validateMapSemantics(createOp.map?.semantics)
+    }
+  }
+
+  private fun validateMapCreateAction(action: ObjectOperationAction) {
+    if (action != ObjectOperationAction.MapCreate) {
+      throw objectError("Invalid create operation action $action for LiveMap objectId=${objectId}")
+    }
+  }
+
+  private fun validateMapSemantics(semantics: MapSemantics?) {
+    if (semantics != liveMap.semantics) {
+      throw objectError(
+        "Invalid object: incoming object map semantics=$semantics; current map semantics=${MapSemantics.LWW}"
+      )
+    }
   }
 }

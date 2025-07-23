@@ -19,7 +19,6 @@ import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectOperationAction
 import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.ObjectValue
-import io.ably.lib.objects.ProtocolMessageFormat
 import io.ably.lib.util.Serialisation
 import org.msgpack.core.MessageFormat
 import org.msgpack.core.MessagePacker
@@ -160,7 +159,6 @@ private fun ObjectOperation.writeMsgpack(packer: MessagePacker) {
   if (counter != null) fieldCount++
   if (nonce != null) fieldCount++
   if (initialValue != null) fieldCount++
-  if (initialValueEncoding != null) fieldCount++
 
   packer.packMapHeader(fieldCount)
 
@@ -198,13 +196,7 @@ private fun ObjectOperation.writeMsgpack(packer: MessagePacker) {
 
   if (initialValue != null) {
     packer.packString("initialValue")
-    packer.packBinaryHeader(initialValue.data.size)
-    packer.writePayload(initialValue.data)
-  }
-
-  if (initialValueEncoding != null) {
-    packer.packString("initialValueEncoding")
-    packer.packString(initialValueEncoding.name)
+    packer.packString(initialValue)
   }
 }
 
@@ -221,8 +213,7 @@ private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
   var map: ObjectMap? = null
   var counter: ObjectCounter? = null
   var nonce: String? = null
-  var initialValue: Binary? = null
-  var initialValueEncoding: ProtocolMessageFormat? = null
+  var initialValue: String? = null
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
@@ -236,8 +227,9 @@ private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
     when (fieldName) {
       "action" -> {
         val actionCode = unpacker.unpackInt()
-        action = ObjectOperationAction.entries.find { it.code == actionCode }
-          ?: throw objectError("Unknown ObjectOperationAction code: $actionCode")
+        action = ObjectOperationAction.entries.firstOrNull { it.code == actionCode }
+          ?: ObjectOperationAction.entries.firstOrNull { it.code == -1 }
+          ?: throw objectError("Unknown ObjectOperationAction code: $actionCode and no Unknown fallback found")
       }
       "objectId" -> objectId = unpacker.unpackString()
       "mapOp" -> mapOp = readObjectMapOp(unpacker)
@@ -245,13 +237,7 @@ private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
       "map" -> map = readObjectMap(unpacker)
       "counter" -> counter = readObjectCounter(unpacker)
       "nonce" -> nonce = unpacker.unpackString()
-      "initialValue" -> {
-        val size = unpacker.unpackBinaryHeader()
-        val bytes = ByteArray(size)
-        unpacker.readPayload(bytes)
-        initialValue = Binary(bytes)
-      }
-      "initialValueEncoding" -> initialValueEncoding = ProtocolMessageFormat.valueOf(unpacker.unpackString())
+      "initialValue" -> initialValue = unpacker.unpackString()
       else -> unpacker.skipValue()
     }
   }
@@ -269,7 +255,6 @@ private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
     counter = counter,
     nonce = nonce,
     initialValue = initialValue,
-    initialValueEncoding = initialValueEncoding
   )
 }
 
@@ -502,8 +487,9 @@ private fun readObjectMap(unpacker: MessageUnpacker): ObjectMap {
     when (fieldName) {
       "semantics" -> {
         val semanticsCode = unpacker.unpackInt()
-        semantics = MapSemantics.entries.find { it.code == semanticsCode }
-          ?: throw objectError("Unknown MapSemantics code: $semanticsCode")
+        semantics = MapSemantics.entries.firstOrNull { it.code == semanticsCode }
+          ?: MapSemantics.entries.firstOrNull { it.code == -1 }
+          ?: throw objectError("Unknown MapSemantics code: $semanticsCode and no UNKNOWN fallback found")
       }
       "entries" -> {
         val mapSize = unpacker.unpackMapHeader()

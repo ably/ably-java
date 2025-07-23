@@ -44,10 +44,10 @@ internal fun RestObjects.initializeRootMap(channelName: String) {
   val emptyCounterObjectId = createCounter(channelName)
   setMapRef(channelName, "root", "emptyCounter", emptyCounterObjectId)
 
-  val initialValueCounterObjectId = createCounter(channelName, 10)
+  val initialValueCounterObjectId = createCounter(channelName, 10.0)
   setMapRef(channelName, "root", "initialValueCounter", initialValueCounterObjectId)
 
-  val referencedCounterObjectId = createCounter(channelName, 20)
+  val referencedCounterObjectId = createCounter(channelName, 20.0)
   setMapRef(channelName, "root", "referencedCounter", referencedCounterObjectId)
 
   // Create maps
@@ -108,8 +108,8 @@ internal fun RestObjects.createUserMapObject(channelName: String): String {
   val testMapObjectId = createMap(channelName)
 
   // Create counter objects for testing numeric operations
-  val loginCounterObjectId = createCounter(channelName, 5)
-  val sessionCounterObjectId = createCounter(channelName, 0)
+  val loginCounterObjectId = createCounter(channelName, 5.0)
+  val sessionCounterObjectId = createCounter(channelName, 0.0)
 
   // Create a preferences map with various data types
   val preferencesMapObjectId = createMap(

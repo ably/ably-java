@@ -1,6 +1,5 @@
 package io.ably.lib.objects.type
 
-import io.ably.lib.objects.*
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState
@@ -48,16 +47,7 @@ internal abstract class BaseLiveObject(
    * @spec RTLM6/RTLC6 - Overrides ObjectMessage with object data state from sync to LiveMap/LiveCounter
    */
   internal fun applyObjectSync(objectState: ObjectState): LiveObjectUpdate {
-    if (objectState.objectId != objectId) {
-      throw objectError("Invalid object state: object state objectId=${objectState.objectId}; $objectType objectId=$objectId")
-    }
-
-    if (objectType == ObjectType.Map && objectState.map?.semantics != MapSemantics.LWW) {
-        throw objectError(
-          "Invalid object state: object state map semantics=${objectState.map?.semantics}; " +
-            "$objectType semantics=${MapSemantics.LWW}")
-    }
-
+    validate(objectState)
     // object's site serials are still updated even if it is tombstoned, so always use the site serials received from the operation.
     // should default to empty map if site serials do not exist on the object state, so that any future operation may be applied to this object.
     siteTimeserials.clear()
@@ -80,21 +70,18 @@ internal abstract class BaseLiveObject(
    * @spec RTLM15/RTLC7 - Applies ObjectMessage with object data operations to LiveMap/LiveCounter
    */
   internal fun applyObject(objectMessage: ObjectMessage) {
-    val objectOperation = objectMessage.operation
-    if (objectOperation?.objectId != objectId) {
-      throw objectError(
-        "Cannot apply object operation with objectId=${objectOperation?.objectId}, to $objectType objectId=$objectId",)
-    }
+    validateObjectId(objectMessage.operation?.objectId)
 
     val msgTimeSerial = objectMessage.serial
     val msgSiteCode = objectMessage.siteCode
+    val objectOperation = objectMessage.operation as ObjectOperation
 
     if (!canApplyOperation(msgSiteCode, msgTimeSerial)) {
       // RTLC7b, RTLM15b
       Log.v(
         tag,
         "Skipping ${objectOperation.action} op: op serial $msgTimeSerial <= site serial ${siteTimeserials[msgSiteCode]}; " +
-                "objectId=$objectId"
+          "objectId=$objectId"
       )
       return
     }
@@ -125,6 +112,12 @@ internal abstract class BaseLiveObject(
     return existingSiteSerial == null || timeSerial > existingSiteSerial // RTLO4a5, RTLO4a6
   }
 
+  internal fun validateObjectId(objectId: String?) {
+    if (this.objectId != objectId) {
+      throw objectError("Invalid object: incoming objectId=${objectId}; $objectType objectId=$objectId")
+    }
+  }
+
   /**
    * Marks the object as tombstoned.
    */
@@ -143,6 +136,12 @@ internal abstract class BaseLiveObject(
     val currentTime = System.currentTimeMillis()
     return isTombstoned && tombstonedAt?.let { currentTime - it >= ObjectsPoolDefaults.GC_GRACE_PERIOD_MS } == true
   }
+
+  /**
+   * Validates that the provided object state is compatible with this live object.
+   * Checks object ID, type-specific validations, and any included create operations.
+   */
+  abstract fun validate(state: ObjectState)
 
   /**
    * Applies an object state received during synchronization to this live object.

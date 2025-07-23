@@ -38,6 +38,7 @@ internal class ObjectsPool(
   private val tag = "ObjectsPool"
 
   /**
+   * ConcurrentHashMap for thread-safe access from public APIs in LiveMap and LiveCounter.
    * @spec RTO3a - Pool storing all live objects by object ID
    */
   private val pool = ConcurrentHashMap<String, BaseLiveObject>()
@@ -90,7 +91,7 @@ internal class ObjectsPool(
   /**
    * Clears the data stored for all objects in the pool.
    */
-  private fun clearObjectsData(emitUpdateEvents: Boolean) {
+  internal fun clearObjectsData(emitUpdateEvents: Boolean) {
     for (obj in pool.values) {
       val update = obj.clearData()
       if (emitUpdateEvents) obj.notifyUpdated(update)

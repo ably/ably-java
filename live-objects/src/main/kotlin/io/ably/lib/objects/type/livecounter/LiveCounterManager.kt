@@ -25,7 +25,7 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter): 
     } else {
       // override data for this object with data from the object state
       liveCounter.createOperationIsMerged = false // RTLC6b
-      liveCounter.data.set(objectState.counter?.count?.toLong() ?: 0) // RTLC6c
+      liveCounter.data.set(objectState.counter?.count ?: 0.0) // RTLC6c
 
       // RTLC6d
       objectState.createOp?.let { createOp ->
@@ -79,7 +79,7 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter): 
    * @spec RTLC9 - Applies counter increment operation
    */
   private fun applyCounterInc(counterOp: ObjectCounterOp): LiveCounterUpdate {
-    val amount = counterOp.amount?.toLong() ?: 0
+    val amount = counterOp.amount ?: 0.0
     val previousValue = liveCounter.data.get()
     liveCounter.data.set(previousValue + amount) // RTLC9b
     return LiveCounterUpdate(amount)
@@ -93,10 +93,24 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter): 
     // note that it is intentional to SUM the incoming count from the create op.
     // if we got here, it means that current counter instance is missing the initial value in its data reference,
     // which we're going to add now.
-    val count = operation.counter?.count?.toLong() ?: 0
+    val count = operation.counter?.count ?: 0.0
     val previousValue = liveCounter.data.get()
     liveCounter.data.set(previousValue + count) // RTLC10a
     liveCounter.createOperationIsMerged = true // RTLC10b
     return LiveCounterUpdate(count)
+  }
+
+  internal fun validate(state: ObjectState) {
+    liveCounter.validateObjectId(state.objectId)
+    state.createOp?.let { createOp ->
+      liveCounter.validateObjectId(createOp.objectId)
+      validateCounterCreateAction(createOp.action)
+    }
+  }
+
+  private fun validateCounterCreateAction(action: ObjectOperationAction) {
+    if (action != ObjectOperationAction.CounterCreate) {
+      throw objectError("Invalid create operation action $action for LiveCounter objectId=${objectId}")
+    }
   }
 }

@@ -1,6 +1,5 @@
 package io.ably.lib.http;
 
-import java.io.IOException;
 import java.net.URL;
 
 import io.ably.lib.types.AblyException;
@@ -42,7 +41,11 @@ public class HttpHelpers {
      * @throws AblyException
      */
     public static String getUrlString(HttpCore httpCore, String url) throws AblyException {
-        return new String(getUrl(httpCore, url));
+        byte[] bytes = getUrl(httpCore, url);
+        if (bytes == null) {
+            throw AblyException.fromErrorInfo(new ErrorInfo("Empty response body", 500, 50000));
+        }
+        return new String(bytes);
     }
 
     /**
@@ -62,8 +65,8 @@ public class HttpHelpers {
                     }
                     return response.body;
                 }});
-        } catch(IOException ioe) {
-            throw AblyException.fromThrowable(ioe);
+        } catch (Exception e) {
+            throw AblyException.fromThrowable(e);
         }
     }
 

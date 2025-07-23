@@ -18,7 +18,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.text.toByteArray
 
 class ObjectMessageSizeTest {
 
@@ -53,7 +52,7 @@ class ObjectMessageSizeTest {
 
         // CounterOp contributes to operation size
         counterOp = ObjectCounterOp(
-          amount = 10.5 // Size: 8 bytes (number is always 8 bytes)
+          amount = 10.0 // Size: 8 bytes (number is always 8 bytes)
         ), // Total ObjectCounterOp size: 8 bytes
 
         // Map contributes to operation size (for MAP_CREATE operations)
@@ -81,8 +80,7 @@ class ObjectMessageSizeTest {
         ), // Total ObjectCounter size: 8 bytes
 
         nonce = "nonce123", // Not counted in operation size
-        initialValue = Binary("some-value".toByteArray()), // Not counted in operation size
-        initialValueEncoding = ProtocolMessageFormat.Json // Not counted in operation size
+        initialValue = "some-value", // Not counted in operation size
       ), // Total ObjectOperation size: 12 + 8 + 26 + 8 = 54 bytes
 
       objectState = ObjectState(

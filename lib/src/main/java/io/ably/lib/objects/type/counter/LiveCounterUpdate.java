@@ -24,7 +24,7 @@ public class LiveCounterUpdate extends LiveObjectUpdate {
      *
      * @param amount the amount by which the counter changed (positive = increment, negative = decrement)
      */
-    public LiveCounterUpdate(@NotNull Long amount) {
+    public LiveCounterUpdate(@NotNull Double amount) {
         super(new Update(amount));
     }
 
@@ -57,15 +57,14 @@ public class LiveCounterUpdate extends LiveObjectUpdate {
      * @spec RTLC11b, RTLC11b1 - Counter update data structure
      */
     public static class Update {
-        @NotNull
-        private final Long amount;
+        private final @NotNull Double amount;
 
         /**
          * Creates an Update with the specified amount.
          *
          * @param amount the counter change amount (positive = increment, negative = decrement)
          */
-        public Update(@NotNull Long amount) {
+        public Update(@NotNull Double amount) {
             this.amount = amount;
         }
 
@@ -74,7 +73,7 @@ public class LiveCounterUpdate extends LiveObjectUpdate {
          *
          * @return the change amount (positive for increments, negative for decrements)
          */
-        public @NotNull Long getAmount() {
+        public @NotNull Double getAmount() {
             return amount;
         }
     }

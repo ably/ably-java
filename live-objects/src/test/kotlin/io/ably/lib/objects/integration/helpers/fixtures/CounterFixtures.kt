@@ -34,21 +34,21 @@ internal fun RestObjects.createUserMapWithCountersObject(channelName: String): S
   val testMapObjectId = createMap(channelName)
 
   // Create various user-context relevant counters
-  val profileViewsCounterObjectId = createCounter(channelName, 127)
-  val postLikesCounterObjectId = createCounter(channelName, 45)
-  val commentCountCounterObjectId = createCounter(channelName, 23)
-  val followingCountCounterObjectId = createCounter(channelName, 89)
-  val followersCountCounterObjectId = createCounter(channelName, 156)
-  val loginStreakCounterObjectId = createCounter(channelName, 7)
+  val profileViewsCounterObjectId = createCounter(channelName, 127.0)
+  val postLikesCounterObjectId = createCounter(channelName, 45.0)
+  val commentCountCounterObjectId = createCounter(channelName, 23.0)
+  val followingCountCounterObjectId = createCounter(channelName, 89.0)
+  val followersCountCounterObjectId = createCounter(channelName, 156.0)
+  val loginStreakCounterObjectId = createCounter(channelName, 7.0)
 
   // Create engagement metrics nested map with counters
   val engagementMetricsMapObjectId = createMap(
     channelName,
     data = mapOf(
-      "totalShares" to DataFixtures.mapRef(createCounter(channelName, 34)),
-      "totalBookmarks" to DataFixtures.mapRef(createCounter(channelName, 67)),
-      "totalReactions" to DataFixtures.mapRef(createCounter(channelName, 189)),
-      "dailyActiveStreak" to DataFixtures.mapRef(createCounter(channelName, 12))
+      "totalShares" to DataFixtures.mapRef(createCounter(channelName, 34.0)),
+      "totalBookmarks" to DataFixtures.mapRef(createCounter(channelName, 67.0)),
+      "totalReactions" to DataFixtures.mapRef(createCounter(channelName, 189.0)),
+      "dailyActiveStreak" to DataFixtures.mapRef(createCounter(channelName, 12.0))
     )
   )
 

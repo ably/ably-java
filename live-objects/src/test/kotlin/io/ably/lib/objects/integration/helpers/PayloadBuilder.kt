@@ -97,7 +97,7 @@ internal object PayloadBuilder {
    */
   internal fun counterCreateRestOp(
     objectId: String? = null,
-    number: Long? = null,
+    number: Double? = null,
     nonce: String? = null,
   ): JsonObject {
     val opBody = JsonObject().apply {
@@ -122,7 +122,7 @@ internal object PayloadBuilder {
   /**
    * Creates a COUNTER_INC operation payload for REST API.
    */
-  internal fun counterIncRestOp(objectId: String, number: Long): JsonObject {
+  internal fun counterIncRestOp(objectId: String, number: Double): JsonObject {
     val opBody = JsonObject().apply {
       addProperty("operation", ACTION_STRINGS[ObjectOperationAction.CounterInc])
       addProperty("objectId", objectId)

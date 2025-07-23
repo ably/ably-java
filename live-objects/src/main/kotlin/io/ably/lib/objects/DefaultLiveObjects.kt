@@ -121,7 +121,7 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
    * @spec OM2 - Populates missing fields from parent protocol message
    */
   private fun initializeHandlerForIncomingObjectMessages(): Job {
-     return sequentialScope.launch {
+    return sequentialScope.launch {
       objectsEventBus.collect { protocolMessage ->
         // OM2 - Populate missing fields from parent
         val objects = protocolMessage.state.filterIsInstance<ObjectMessage>()
@@ -133,14 +133,18 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
             )
           }
 
-        when (protocolMessage.action) {
-          ProtocolMessage.Action.`object` -> objectsManager.handleObjectMessages(objects)
-          ProtocolMessage.Action.object_sync -> objectsManager.handleObjectSyncMessages(
-            objects,
-            protocolMessage.channelSerial
-          )
-
-          else -> Log.w(tag, "Ignoring protocol message with unhandled action: ${protocolMessage.action}")
+        try {
+          when (protocolMessage.action) {
+            ProtocolMessage.Action.`object` -> objectsManager.handleObjectMessages(objects)
+            ProtocolMessage.Action.object_sync -> objectsManager.handleObjectSyncMessages(
+              objects,
+              protocolMessage.channelSerial
+            )
+            else -> Log.w(tag, "Ignoring protocol message with unhandled action: ${protocolMessage.action}")
+          }
+        } catch (exception: Exception) {
+          // Skip current message if an error occurs, don't rethrow to avoid crashing the collector
+          Log.e(tag, "Error handling objects message with protocolMsg id ${protocolMessage.id}", exception)
         }
       }
     }
@@ -171,6 +175,12 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
             // this allows any event listeners to process the start of the new sequence event that was emitted earlier during this event loop.
             objectsManager.endSync(fromInitializedState) // RTO4b4, RTO4b2a
           }
+        }
+        ChannelState.detached,
+        ChannelState.failed -> {
+          // do not emit data update events as the actual current state of Objects data is unknown when we're in these channel states
+          objectsPool.clearObjectsData(false)
+          objectsManager.clearSyncObjectsDataPool()
         }
 
         else -> {

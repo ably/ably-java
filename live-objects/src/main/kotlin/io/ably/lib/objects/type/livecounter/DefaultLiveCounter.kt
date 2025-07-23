@@ -11,8 +11,8 @@ import io.ably.lib.objects.type.counter.LiveCounterChange
 import io.ably.lib.objects.type.counter.LiveCounterUpdate
 import io.ably.lib.objects.type.noOp
 import io.ably.lib.types.Callback
+import java.util.concurrent.atomic.AtomicReference
 import io.ably.lib.util.Log
-import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Implementation of LiveObject for LiveCounter.
@@ -27,9 +27,10 @@ internal class DefaultLiveCounter private constructor(
   override val tag = "LiveCounter"
 
   /**
-   * Counter data value
+   * Thread-safe reference to hold the counter data value.
+   * Accessed from public API for LiveCounter and updated by LiveCounterManager.
    */
-  internal var data = AtomicLong(0)// RTLC3
+  internal val data = AtomicReference<Double>(0.0) // RTLC3
 
   /**
    * liveCounterManager instance for managing LiveMap operations
@@ -55,6 +56,11 @@ internal class DefaultLiveCounter private constructor(
     TODO("Not yet implemented")
   }
 
+  override fun value(): Double {
+    adapter.throwIfInvalidAccessApiConfiguration(channelName)
+    return data.get()
+  }
+
   override fun subscribe(listener: LiveCounterChange.Listener): ObjectsSubscription {
     return liveCounterManager.subscribe(listener)
   }
@@ -63,10 +69,7 @@ internal class DefaultLiveCounter private constructor(
 
   override fun unsubscribeAll() = liveCounterManager.unsubscribeAll()
 
-  override fun value(): Long {
-    adapter.throwIfInvalidAccessApiConfiguration(channelName)
-    return data.get()
-  }
+  override fun validate(state: ObjectState) = liveCounterManager.validate(state)
 
   override fun applyObjectState(objectState: ObjectState): LiveCounterUpdate {
     return liveCounterManager.applyState(objectState)
@@ -77,7 +80,7 @@ internal class DefaultLiveCounter private constructor(
   }
 
   override fun clearData(): LiveCounterUpdate {
-    return LiveCounterUpdate(data.get()).apply { data.set(0) }
+    return LiveCounterUpdate(data.get()).apply { data.set(0.0) }
   }
 
   override fun notifyUpdated(update: LiveObjectUpdate) {

@@ -54,7 +54,7 @@ internal class RestObjects(options: ClientOptions) {
    * Creates a new counter object with an optional initial value (defaults to 0).
    * @return The object ID of the created counter
    */
-  internal fun createCounter(channelName: String, initialValue: Long? = null): String {
+  internal fun createCounter(channelName: String, initialValue: Double? = null): String {
     val counterCreateOp = PayloadBuilder.counterCreateRestOp(number = initialValue)
     return operationRequest(channelName, counterCreateOp).objectId
       ?: throw Exception("Failed to create counter: no objectId returned")
@@ -63,7 +63,7 @@ internal class RestObjects(options: ClientOptions) {
   /**
    * Increments an existing counter by the specified amount.
    */
-  internal fun incrementCounter(channelName: String, counterObjectId: String, incrementBy: Long) {
+  internal fun incrementCounter(channelName: String, counterObjectId: String, incrementBy: Double) {
     val counterIncrementOp = PayloadBuilder.counterIncRestOp(counterObjectId, incrementBy)
     operationRequest(channelName, counterIncrementOp)
   }
@@ -71,7 +71,7 @@ internal class RestObjects(options: ClientOptions) {
   /**
    * Decrements an existing counter by the specified amount.
    */
-  internal fun decrementCounter(channelName: String, counterObjectId: String, decrementBy: Long) {
+  internal fun decrementCounter(channelName: String, counterObjectId: String, decrementBy: Double) {
     val counterDecrementOp = PayloadBuilder.counterIncRestOp(counterObjectId, -decrementBy)
     operationRequest(channelName, counterDecrementOp)
   }
