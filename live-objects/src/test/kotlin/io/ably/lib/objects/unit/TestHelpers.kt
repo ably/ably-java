@@ -114,7 +114,7 @@ internal fun getDefaultLiveCounterWithMockedDeps(
   objectId: String = "counter:testCounter@1",
   relaxed: Boolean = false
 ): DefaultLiveCounter {
-  val defaultLiveCounter = DefaultLiveCounter.zeroValue(objectId, getMockLiveObjectsAdapter())
+  val defaultLiveCounter = DefaultLiveCounter.zeroValue(objectId, getDefaultLiveObjectsWithMockedDeps())
   if (relaxed) {
     defaultLiveCounter.LiveCounterManager = mockk(relaxed = true)
   } else {
@@ -141,7 +141,7 @@ internal fun getDefaultLiveMapWithMockedDeps(
   objectId: String = "map:testMap@1",
   relaxed: Boolean = false
 ): DefaultLiveMap {
-  val defaultLiveMap = DefaultLiveMap.zeroValue(objectId, getMockLiveObjectsAdapter(), getMockObjectsPool())
+  val defaultLiveMap = DefaultLiveMap.zeroValue(objectId, getDefaultLiveObjectsWithMockedDeps())
   if (relaxed) {
     defaultLiveMap.LiveMapManager = mockk(relaxed = true)
   } else {

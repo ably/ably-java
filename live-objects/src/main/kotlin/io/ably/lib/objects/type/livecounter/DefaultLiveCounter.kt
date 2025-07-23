@@ -6,6 +6,7 @@ import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.type.BaseLiveObject
 import io.ably.lib.objects.type.ObjectType
 import io.ably.lib.types.Callback
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Implementation of LiveObject for LiveCounter.
@@ -14,20 +15,24 @@ import io.ably.lib.types.Callback
  */
 internal class DefaultLiveCounter private constructor(
   objectId: String,
-  adapter: LiveObjectsAdapter,
+  private val liveObjects: DefaultLiveObjects,
 ) : LiveCounter, BaseLiveObject(objectId, ObjectType.Counter) {
 
   override val tag = "LiveCounter"
 
   /**
-   * Counter data value
+   * Thread-safe reference to hold the counter data value.
+   * Accessed from public API for LiveCounter and updated by LiveCounterManager.
    */
-  internal var data: Double = 0.0 // RTLC3
+  internal val data = AtomicReference<Double>(0.0) // RTLC3
 
   /**
    * liveCounterManager instance for managing LiveMap operations
    */
   private val liveCounterManager = LiveCounterManager(this)
+
+  private val channelName = liveObjects.channelName
+  private val adapter: LiveObjectsAdapter get() = liveObjects.adapter
 
   override fun increment() {
     TODO("Not yet implemented")
@@ -60,7 +65,7 @@ internal class DefaultLiveCounter private constructor(
   }
 
   override fun clearData(): Map<String, Double> {
-    return mapOf("amount" to data).apply { data = 0.0 }
+    return mapOf("amount" to data.get()).apply { data.set(0.0) }
   }
 
   override fun onGCInterval() {
@@ -73,8 +78,8 @@ internal class DefaultLiveCounter private constructor(
      * Creates a zero-value counter object.
      * @spec RTLC4 - Returns LiveCounter with 0 value
      */
-    internal fun zeroValue(objectId: String, adapter: LiveObjectsAdapter): DefaultLiveCounter {
-      return DefaultLiveCounter(objectId, adapter)
+    internal fun zeroValue(objectId: String, liveObjects: DefaultLiveObjects): DefaultLiveCounter {
+      return DefaultLiveCounter(objectId, liveObjects)
     }
   }
 }

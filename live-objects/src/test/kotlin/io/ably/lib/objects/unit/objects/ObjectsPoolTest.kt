@@ -32,7 +32,7 @@ class ObjectsPoolTest {
     assertEquals(1, objectsPool.size(), "RTO3 - Should only contain the root object initially")
 
     // RTO3a - ObjectsPool is a Dict, a map of LiveObjects keyed by objectId string
-    val testLiveMap = DefaultLiveMap.zeroValue("map:testObject@1", mockk(relaxed = true), objectsPool)
+    val testLiveMap = DefaultLiveMap.zeroValue("map:testObject@1", mockk(relaxed = true))
     objectsPool.set("map:testObject@1", testLiveMap)
     val testLiveCounter = DefaultLiveCounter.zeroValue("counter:testObject@1", mockk(relaxed = true))
     objectsPool.set("counter:testObject@1", testLiveCounter)
@@ -65,7 +65,7 @@ class ObjectsPoolTest {
     assertNotNull(counter, "Should create a counter object")
     assertTrue(counter is DefaultLiveCounter, "RTO6b3 - Should create a LiveCounter for counter type")
     assertEquals(counterId, counter.objectId)
-    assertEquals(0.0, counter.data, "RTO6b3 - Should create a zero-value counter")
+    assertEquals(0.0, counter.data.get(), "RTO6b3 - Should create a zero-value counter")
     assertEquals(3, objectsPool.size(), "RTO6 - root + map + counter should be in pool after creation")
 
     // RTO6a - If object exists in pool, do not create a new one
@@ -92,7 +92,7 @@ class ObjectsPoolTest {
     assertEquals(2, objectsPool.size()) // root + testObject
     objectsPool.set("counter:testObject@2", DefaultLiveCounter.zeroValue("counter:testObject@2", mockk(relaxed = true)))
     assertEquals(3, objectsPool.size()) // root + testObject + anotherObject
-    objectsPool.set("map:testObject@1", DefaultLiveMap.zeroValue("map:testObject@1", mockk(relaxed = true), objectsPool))
+    objectsPool.set("map:testObject@1", DefaultLiveMap.zeroValue("map:testObject@1", mockk(relaxed = true)))
     assertEquals(4, objectsPool.size()) // root + testObject + anotherObject + testMap
 
     // Reset to initial pool

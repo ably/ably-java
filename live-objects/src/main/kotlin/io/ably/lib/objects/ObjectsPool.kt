@@ -6,6 +6,7 @@ import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
 import io.ably.lib.objects.type.livemap.DefaultLiveMap
 import io.ably.lib.util.Log
 import kotlinx.coroutines.*
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Constants for ObjectsPool configuration
@@ -32,14 +33,15 @@ internal const val ROOT_OBJECT_ID = "root"
  * @spec RTO3 - Maintains an objects pool for all live objects on the channel
  */
 internal class ObjectsPool(
-  private val adapter: LiveObjectsAdapter
+  private val liveObjects: DefaultLiveObjects
 ) {
   private val tag = "ObjectsPool"
 
   /**
+   * ConcurrentHashMap for thread-safe access from public APIs in LiveMap and LiveCounter.
    * @spec RTO3a - Pool storing all live objects by object ID
    */
-  private val pool = mutableMapOf<String, BaseLiveObject>()
+  private val pool = ConcurrentHashMap<String, BaseLiveObject>()
 
   /**
    * Coroutine scope for garbage collection
@@ -48,20 +50,10 @@ internal class ObjectsPool(
   private var gcJob: Job // Job for the garbage collection coroutine
 
   init {
-    // Initialize pool with root object
-    createInitialPool()
+    // RTO3b - Initialize pool with root object
+    pool[ROOT_OBJECT_ID] = DefaultLiveMap.zeroValue(ROOT_OBJECT_ID, liveObjects)
     // Start garbage collection coroutine
     gcJob = startGCJob()
-  }
-
-  /**
-   * Creates the initial pool with root object.
-   *
-   * @spec RTO3b - Creates root LiveMap object
-   */
-  private fun createInitialPool() {
-    val root = DefaultLiveMap.zeroValue(ROOT_OBJECT_ID, adapter, this)
-    pool[ROOT_OBJECT_ID] = root
   }
 
   /**
@@ -119,8 +111,8 @@ internal class ObjectsPool(
 
     val parsedObjectId = ObjectId.fromString(objectId) // RTO6b
     return when (parsedObjectId.type) {
-      ObjectType.Map -> DefaultLiveMap.zeroValue(objectId, adapter, this) // RTO6b2
-      ObjectType.Counter -> DefaultLiveCounter.zeroValue(objectId, adapter) // RTO6b3
+      ObjectType.Map -> DefaultLiveMap.zeroValue(objectId, liveObjects) // RTO6b2
+      ObjectType.Counter -> DefaultLiveCounter.zeroValue(objectId, liveObjects) // RTO6b3
     }.apply {
       set(objectId, this) // RTO6b4 - Add the zero-value object to the pool
     }

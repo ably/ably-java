@@ -213,13 +213,13 @@ class ObjectsManagerTest {
   private fun mockZeroValuedObjects() {
     mockkObject(DefaultLiveMap.Companion)
     every {
-      DefaultLiveMap.zeroValue(any<String>(), any<LiveObjectsAdapter>(), any<ObjectsPool>())
+      DefaultLiveMap.zeroValue(any<String>(), any<DefaultLiveObjects>())
     } answers {
       mockk<DefaultLiveMap>(relaxed = true)
     }
     mockkObject(DefaultLiveCounter.Companion)
     every {
-      DefaultLiveCounter.zeroValue(any<String>(), any<LiveObjectsAdapter>())
+      DefaultLiveCounter.zeroValue(any<String>(), any<DefaultLiveObjects>())
     } answers {
       mockk<DefaultLiveCounter>(relaxed = true)
     }

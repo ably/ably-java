@@ -21,12 +21,12 @@ internal enum class ObjectsState {
  * Default implementation of LiveObjects interface.
  * Provides the core functionality for managing live objects on a channel.
  */
-internal class DefaultLiveObjects(private val channelName: String, internal val adapter: LiveObjectsAdapter): LiveObjects {
+internal class DefaultLiveObjects(internal val channelName: String, internal val adapter: LiveObjectsAdapter): LiveObjects {
   private val tag = "DefaultLiveObjects"
   /**
    * @spec RTO3 - Objects pool storing all live objects by object ID
    */
-  internal val objectsPool = ObjectsPool(adapter)
+  internal val objectsPool = ObjectsPool(this)
 
   internal var state = ObjectsState.INITIALIZED
 
@@ -203,9 +203,12 @@ internal class DefaultLiveObjects(private val channelName: String, internal val 
   }
 
   // Dispose of any resources associated with this LiveObjects instance
-  fun dispose() {
-    incomingObjectsHandler.cancel() // objectsEventBus automatically garbage collected when collector is cancelled
+  fun dispose(reason: String) {
+    val cancellationError = CancellationException("Objects disposed for channel $channelName, reason: $reason")
+    incomingObjectsHandler.cancel(cancellationError) // objectsEventBus automatically garbage collected when collector is cancelled
     objectsPool.dispose()
     objectsManager.dispose()
+    // Don't cancel sequentialScope (needed in public methods), just cancel ongoing coroutines
+    sequentialScope.coroutineContext.cancelChildren(cancellationError)
   }
 }

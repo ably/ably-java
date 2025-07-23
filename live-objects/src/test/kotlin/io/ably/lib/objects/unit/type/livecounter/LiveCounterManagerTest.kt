@@ -15,7 +15,7 @@ class DefaultLiveCounterManagerTest {
     val liveCounterManager = liveCounter.LiveCounterManager
 
     // Set initial data
-    liveCounter.data = 10.0
+    liveCounter.data.set(10.0)
 
     val objectState = ObjectState(
       objectId = "testCounterId",
@@ -27,7 +27,7 @@ class DefaultLiveCounterManagerTest {
     val update = liveCounterManager.applyState(objectState)
 
     assertFalse(liveCounter.createOperationIsMerged) // RTLC6b
-    assertEquals(25.0, liveCounter.data) // RTLC6c
+    assertEquals(25.0, liveCounter.data.get()) // RTLC6c
     assertEquals(15.0, update["amount"]) // Difference between old and new data
   }
 
@@ -38,7 +38,7 @@ class DefaultLiveCounterManagerTest {
     val liveCounterManager = liveCounter.LiveCounterManager
 
     // Set initial data
-    liveCounter.data = 5.0
+    liveCounter.data.set(5.0)
 
     val createOp = ObjectOperation(
       action = ObjectOperationAction.CounterCreate,
@@ -57,7 +57,7 @@ class DefaultLiveCounterManagerTest {
     // RTLC6d - Merge initial data from create operation
     val update = liveCounterManager.applyState(objectState)
 
-    assertEquals(25.0, liveCounter.data) // 15 from state + 10 from create op
+    assertEquals(25.0, liveCounter.data.get()) // 15 from state + 10 from create op
     assertEquals(20.0, update["amount"]) // Total change
   }
 
@@ -98,7 +98,7 @@ class DefaultLiveCounterManagerTest {
     // RTLC7d1 - Apply counter create operation
      liveCounterManager.applyOperation(operation)
 
-    assertEquals(20.0, liveCounter.data) // Should be set to counter count
+    assertEquals(20.0, liveCounter.data.get()) // Should be set to counter count
     assertTrue(liveCounter.createOperationIsMerged) // Should be marked as merged
   }
 
@@ -107,7 +107,7 @@ class DefaultLiveCounterManagerTest {
     val liveCounter = getDefaultLiveCounterWithMockedDeps()
     val liveCounterManager = liveCounter.LiveCounterManager
 
-    liveCounter.data = 4.0 // Start with 4
+    liveCounter.data.set(4.0) // Start with 4
 
     // Set create operation as already merged
     liveCounter.createOperationIsMerged = true
@@ -121,7 +121,7 @@ class DefaultLiveCounterManagerTest {
     // RTLC8b - Should skip if already merged
     liveCounterManager.applyOperation(operation)
 
-    assertEquals(4.0, liveCounter.data) // Should not change (still 0)
+    assertEquals(4.0, liveCounter.data.get()) // Should not change (still 0)
     assertTrue(liveCounter.createOperationIsMerged) // Should remain merged
   }
 
@@ -130,7 +130,7 @@ class DefaultLiveCounterManagerTest {
     val liveCounter = getDefaultLiveCounterWithMockedDeps()
     val liveCounterManager = liveCounter.LiveCounterManager
     // Set initial data
-    liveCounter.data = 10.0 // Start with 10
+    liveCounter.data.set(10.0) // Start with 10
 
     // Set create operation as not merged
     liveCounter.createOperationIsMerged = false
@@ -145,7 +145,7 @@ class DefaultLiveCounterManagerTest {
     liveCounterManager.applyOperation(operation)
     assertTrue(liveCounter.createOperationIsMerged) // Should be marked as merged
 
-    assertEquals(30.0, liveCounter.data) // Should be set to counter count
+    assertEquals(30.0, liveCounter.data.get()) // Should be set to counter count
     assertTrue(liveCounter.createOperationIsMerged) // RTLC10b - Should be marked as merged
   }
 
@@ -155,7 +155,7 @@ class DefaultLiveCounterManagerTest {
     val liveCounterManager = liveCounter.LiveCounterManager
 
     // Set initial data
-    liveCounter.data = 10.0
+    liveCounter.data.set(10.0)
 
     val operation = ObjectOperation(
       action = ObjectOperationAction.CounterCreate,
@@ -167,7 +167,7 @@ class DefaultLiveCounterManagerTest {
     // RTLC10b - Mark as merged
     liveCounterManager.applyOperation(operation)
 
-    assertEquals(10.0, liveCounter.data) // No change (null defaults to 0)
+    assertEquals(10.0, liveCounter.data.get()) // No change (null defaults to 0)
     assertTrue(liveCounter.createOperationIsMerged) // RTLC10b
   }
 
@@ -177,7 +177,7 @@ class DefaultLiveCounterManagerTest {
     val liveCounterManager = liveCounter.LiveCounterManager
 
     // Set initial data
-    liveCounter.data = 10.0
+    liveCounter.data.set(10.0)
 
     val operation = ObjectOperation(
       action = ObjectOperationAction.CounterInc,
@@ -188,7 +188,7 @@ class DefaultLiveCounterManagerTest {
     // RTLC7d2 - Apply counter increment operation
     liveCounterManager.applyOperation(operation)
 
-    assertEquals(15.0, liveCounter.data) // RTLC9b - 10 + 5
+    assertEquals(15.0, liveCounter.data.get()) // RTLC9b - 10 + 5
   }
 
   @Test
@@ -209,8 +209,8 @@ class DefaultLiveCounterManagerTest {
 
     val errorInfo = exception.errorInfo
     assertNotNull(errorInfo)
-    assertEquals(92000, errorInfo?.code) // InvalidObject error code
-    assertEquals(500, errorInfo?.statusCode) // InternalServerError status code
+    assertEquals(92000, errorInfo.code) // InvalidObject error code
+    assertEquals(500, errorInfo.statusCode) // InternalServerError status code
   }
 
 
@@ -220,7 +220,7 @@ class DefaultLiveCounterManagerTest {
     val liveCounterManager = liveCounter.LiveCounterManager
 
     // Set initial data
-    liveCounter.data = 10.0
+    liveCounter.data.set(10.0)
 
     val counterOp = ObjectCounterOp(amount = 7.0)
 
@@ -231,7 +231,7 @@ class DefaultLiveCounterManagerTest {
       counterOp = counterOp
     ))
 
-    assertEquals(17.0, liveCounter.data) // 10 + 7
+    assertEquals(17.0, liveCounter.data.get()) // 10 + 7
   }
 
   @Test
@@ -240,7 +240,7 @@ class DefaultLiveCounterManagerTest {
     val liveCounterManager = liveCounter.LiveCounterManager
 
     // Set initial data
-    liveCounter.data = 10.0
+    liveCounter.data.set(10.0)
 
     val counterOp = ObjectCounterOp(amount = null) // Null amount
 
@@ -251,6 +251,6 @@ class DefaultLiveCounterManagerTest {
       counterOp = counterOp
     ))
 
-    assertEquals(10.0, liveCounter.data) // Should not change (null defaults to 0)
+    assertEquals(10.0, liveCounter.data.get()) // Should not change (null defaults to 0)
   }
 }

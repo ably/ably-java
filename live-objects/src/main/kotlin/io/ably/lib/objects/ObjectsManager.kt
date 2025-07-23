@@ -214,8 +214,8 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects) {
    */
   private fun createObjectFromState(objectState: ObjectState): BaseLiveObject {
     return when {
-      objectState.counter != null -> DefaultLiveCounter.zeroValue(objectState.objectId, liveObjects.adapter) // RTO5c1b1a
-      objectState.map != null -> DefaultLiveMap.zeroValue(objectState.objectId, liveObjects.adapter, liveObjects.objectsPool) // RTO5c1b1b
+      objectState.counter != null -> DefaultLiveCounter.zeroValue(objectState.objectId, liveObjects) // RTO5c1b1a
+      objectState.map != null -> DefaultLiveMap.zeroValue(objectState.objectId, liveObjects) // RTO5c1b1b
       else -> throw clientError("Object state must contain either counter or map data") // RTO5c1b1c
     }
   }
