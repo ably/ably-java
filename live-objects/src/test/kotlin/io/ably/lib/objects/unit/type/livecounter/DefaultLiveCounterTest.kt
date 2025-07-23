@@ -37,7 +37,7 @@ class DefaultLiveCounterTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.CounterCreate,
       objectId = "counter:testCounter@2", // Different objectId
-      counter = ObjectCounter(count = 20)
+      counter = ObjectCounter(count = 20.0)
     )
 
     val message = ObjectMessage(
@@ -69,7 +69,7 @@ class DefaultLiveCounterTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.CounterCreate,
       objectId = "counter:testCounter@1", // Matching objectId
-      counter = ObjectCounter(count = 20)
+      counter = ObjectCounter(count = 20.0)
     )
 
     val message = ObjectMessage(
@@ -96,7 +96,7 @@ class DefaultLiveCounterTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.CounterCreate,
       objectId = "counter:testCounter@1", // Matching objectId
-      counter = ObjectCounter(count = 20)
+      counter = ObjectCounter(count = 20.0)
     )
 
     val message = ObjectMessage(

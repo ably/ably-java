@@ -426,7 +426,7 @@ private fun ObjectCounterOp.writeMsgpack(packer: MessagePacker) {
 
   if (amount != null) {
     packer.packString("amount")
-    packer.packLong(amount)
+    packer.packDouble(amount)
   }
 }
 
@@ -436,7 +436,7 @@ private fun ObjectCounterOp.writeMsgpack(packer: MessagePacker) {
 private fun readObjectCounterOp(unpacker: MessageUnpacker): ObjectCounterOp {
   val fieldCount = unpacker.unpackMapHeader()
 
-  var amount: Long? = null
+  var amount: Double? = null
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
@@ -448,7 +448,7 @@ private fun readObjectCounterOp(unpacker: MessageUnpacker): ObjectCounterOp {
     }
 
     when (fieldName) {
-      "amount" -> amount = unpacker.unpackLong()
+      "amount" -> amount = unpacker.unpackDouble()
       else -> unpacker.skipValue()
     }
   }
@@ -536,7 +536,7 @@ private fun ObjectCounter.writeMsgpack(packer: MessagePacker) {
 
   if (count != null) {
     packer.packString("count")
-    packer.packLong(count)
+    packer.packDouble(count)
   }
 }
 
@@ -546,7 +546,7 @@ private fun ObjectCounter.writeMsgpack(packer: MessagePacker) {
 private fun readObjectCounter(unpacker: MessageUnpacker): ObjectCounter {
   val fieldCount = unpacker.unpackMapHeader()
 
-  var count: Long? = null
+  var count: Double? = null
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
@@ -558,7 +558,7 @@ private fun readObjectCounter(unpacker: MessageUnpacker): ObjectCounter {
     }
 
     when (fieldName) {
-      "count" -> count = unpacker.unpackLong()
+      "count" -> count = unpacker.unpackDouble()
       else -> unpacker.skipValue()
     }
   }

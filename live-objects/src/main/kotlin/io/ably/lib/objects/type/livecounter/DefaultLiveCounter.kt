@@ -22,7 +22,7 @@ internal class DefaultLiveCounter private constructor(
   /**
    * Counter data value
    */
-  internal var data: Long = 0 // RTLC3
+  internal var data: Double = 0.0 // RTLC3
 
   /**
    * liveCounterManager instance for managing LiveMap operations
@@ -45,13 +45,13 @@ internal class DefaultLiveCounter private constructor(
     TODO("Not yet implemented")
   }
 
-  override fun value(): Long {
+  override fun value(): Double {
     TODO("Not yet implemented")
   }
 
   override fun validate(state: ObjectState) = liveCounterManager.validate(state)
 
-  override fun applyObjectState(objectState: ObjectState): Map<String, Long> {
+  override fun applyObjectState(objectState: ObjectState): Map<String, Double> {
     return liveCounterManager.applyState(objectState)
   }
 
@@ -59,8 +59,8 @@ internal class DefaultLiveCounter private constructor(
     liveCounterManager.applyOperation(operation)
   }
 
-  override fun clearData(): Map<String, Long> {
-    return mapOf("amount" to data).apply { data = 0 }
+  override fun clearData(): Map<String, Double> {
+    return mapOf("amount" to data).apply { data = 0.0 }
   }
 
   override fun onGCInterval() {

@@ -58,5 +58,5 @@ public interface LiveCounter {
      */
     @NotNull
     @Contract(pure = true) // Indicates this method does not modify the state of the object.
-    Long value();
+    Double value();
 }

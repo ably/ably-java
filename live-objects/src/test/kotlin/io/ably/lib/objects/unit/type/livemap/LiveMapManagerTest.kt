@@ -279,7 +279,7 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.CounterCreate, // Unsupported action for map
       objectId = "map:testMap@1",
-      counter = ObjectCounter(count = 20)
+      counter = ObjectCounter(count = 20.0)
     )
 
     // RTLM15d4 - Should throw error for unsupported action

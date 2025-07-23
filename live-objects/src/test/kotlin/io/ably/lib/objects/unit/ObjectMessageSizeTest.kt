@@ -53,7 +53,7 @@ class ObjectMessageSizeTest {
 
         // CounterOp contributes to operation size
         counterOp = ObjectCounterOp(
-          amount = 10 // Size: 8 bytes (number is always 8 bytes)
+          amount = 10.0 // Size: 8 bytes (number is always 8 bytes)
         ), // Total ObjectCounterOp size: 8 bytes
 
         // Map contributes to operation size (for MAP_CREATE operations)
@@ -77,7 +77,7 @@ class ObjectMessageSizeTest {
 
         // Counter contributes to operation size (for COUNTER_CREATE operations)
         counter = ObjectCounter(
-          count = 100 // Size: 8 bytes (number is always 8 bytes)
+          count = 100.0 // Size: 8 bytes (number is always 8 bytes)
         ), // Total ObjectCounter size: 8 bytes
 
         nonce = "nonce123", // Not counted in operation size
@@ -115,7 +115,7 @@ class ObjectMessageSizeTest {
 
         // counter contributes to state size
         counter = ObjectCounter(
-          count = 50 // Size: 8 bytes
+          count = 50.0 // Size: 8 bytes
         ) // Total ObjectCounter size: 8 bytes
       ), // Total ObjectState size: 20 + 18 + 8 = 46 bytes
 

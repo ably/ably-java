@@ -35,7 +35,7 @@ internal val dummyObjectMap = ObjectMap(
 )
 
 internal val dummyObjectCounter = ObjectCounter(
-  count = 123
+  count = 123.0
 )
 
 internal val dummyObjectMapOp = ObjectMapOp(
@@ -44,7 +44,7 @@ internal val dummyObjectMapOp = ObjectMapOp(
 )
 
 internal val dummyObjectCounterOp = ObjectCounterOp(
-  amount = 10
+  amount = 10.0
 )
 
 internal val dummyObjectOperation = ObjectOperation(

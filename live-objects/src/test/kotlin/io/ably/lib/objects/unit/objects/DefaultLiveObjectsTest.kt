@@ -106,7 +106,7 @@ class DefaultLiveObjectsTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = "counter:testObject@1",
-        counterOp = ObjectCounterOp(amount = 5)
+        counterOp = ObjectCounterOp(amount = 5.0)
       ),
       serial = "serial1",
       siteCode = "site1"
