@@ -3,6 +3,7 @@ package io.ably.lib.objects
 import io.ably.lib.objects.state.ObjectsStateChange
 import io.ably.lib.objects.state.ObjectsStateEvent
 import io.ably.lib.realtime.ChannelState
+import io.ably.lib.types.AblyException
 import io.ably.lib.types.Callback
 import io.ably.lib.types.ProtocolMessage
 import io.ably.lib.util.Log
@@ -189,12 +190,12 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
   }
 
   // Dispose of any resources associated with this LiveObjects instance
-  fun dispose(reason: String) {
-    val cancellationError = CancellationException("Objects disposed for channel $channelName, reason: $reason")
-    incomingObjectsHandler.cancel(cancellationError) // objectsEventBus automatically garbage collected when collector is cancelled
+  fun dispose(cause: AblyException) {
+    val disposeReason = CancellationException().apply { initCause(cause) }
+    incomingObjectsHandler.cancel(disposeReason) // objectsEventBus automatically garbage collected when collector is cancelled
     objectsPool.dispose()
     objectsManager.dispose()
-    // Don't cancel sequentialScope (needed in public methods), just cancel ongoing coroutines
-    sequentialScope.coroutineContext.cancelChildren(cancellationError)
+    // Don't cancel sequentialScope (needed in getRoot method), just cancel ongoing coroutines
+    sequentialScope.coroutineContext.cancelChildren(disposeReason)
   }
 }
