@@ -18,7 +18,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.text.toByteArray
 
 class ObjectMessageSizeTest {
 

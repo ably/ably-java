@@ -5,6 +5,7 @@ import io.ably.lib.objects.ObjectData
 import io.ably.lib.objects.ObjectValue
 import io.ably.lib.rest.AblyRest
 import io.ably.lib.http.HttpUtils
+import io.ably.lib.objects.integration.helpers.fixtures.DataFixtures
 import io.ably.lib.types.ClientOptions
 
 /**
@@ -37,8 +38,7 @@ internal class RestObjects(options: ClientOptions) {
    * Sets an object reference at the specified key in an existing map.
    */
   internal fun setMapRef(channelName: String, mapObjectId: String, key: String, refMapObjectId: String) {
-    val data = ObjectData(objectId = refMapObjectId)
-    val mapCreateOp = PayloadBuilder.mapSetRestOp(mapObjectId, key, data)
+    val mapCreateOp = PayloadBuilder.mapSetRestOp(mapObjectId, key, DataFixtures.mapRef(refMapObjectId))
     operationRequest(channelName, mapCreateOp)
   }
 
