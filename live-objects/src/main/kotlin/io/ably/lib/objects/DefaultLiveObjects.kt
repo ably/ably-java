@@ -22,7 +22,7 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
    */
   internal val objectsPool = ObjectsPool(this)
 
-  internal var state = ObjectsState.INITIALIZED
+  internal var state = ObjectsState.Initialized
 
   /**
    * @spec RTO4 - Used for handling object messages and object sync messages
@@ -155,7 +155,7 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
           Log.v(tag, "Objects.onAttached() channel=$channelName, hasObjects=$hasObjects")
 
           // RTO4a
-          val fromInitializedState = this@DefaultLiveObjects.state == ObjectsState.INITIALIZED
+          val fromInitializedState = this@DefaultLiveObjects.state == ObjectsState.Initialized
           if (hasObjects || fromInitializedState) {
             // should always start a new sync sequence if we're in the initialized state, no matter the HAS_OBJECTS flag value.
             // this guarantees we emit both "syncing" -> "synced" events in that order.

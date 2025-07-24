@@ -10,9 +10,9 @@ import kotlinx.coroutines.*
  * @spec RTO2 - enum representing objects state
  */
 internal enum class ObjectsState {
-  INITIALIZED,
-  SYNCING,
-  SYNCED
+  Initialized,
+  Syncing,
+  Synced
 }
 
 /**
@@ -21,9 +21,9 @@ internal enum class ObjectsState {
  * INITIALIZED maps to null (no event), while SYNCING and SYNCED map to their respective events.
  */
 private val objectsStateToEventMap = mapOf(
-  ObjectsState.INITIALIZED to null,
-  ObjectsState.SYNCING to ObjectsStateEvent.SYNCING,
-  ObjectsState.SYNCED to ObjectsStateEvent.SYNCED
+  ObjectsState.Initialized to null,
+  ObjectsState.Syncing to ObjectsStateEvent.SYNCING,
+  ObjectsState.Synced to ObjectsStateEvent.SYNCED
 )
 
 /**
@@ -82,7 +82,7 @@ internal abstract class ObjectsStateCoordinator : ObjectsStateChange, HandlesObj
   }
 
   override suspend fun ensureSynced(currentState: ObjectsState) {
-    if (currentState != ObjectsState.SYNCED) {
+    if (currentState != ObjectsState.Synced) {
       val deferred = CompletableDeferred<Unit>()
       internalObjectStateEmitter.once(ObjectsStateEvent.SYNCED) {
         Log.v(tag, "Objects state changed to SYNCED, resuming ensureSynced")
