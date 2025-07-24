@@ -111,6 +111,7 @@ internal class DefaultLiveMap private constructor(
   override fun validate(state: ObjectState) = liveMapManager.validate(state)
 
   override fun subscribe(listener: LiveMapChange.Listener): ObjectsSubscription {
+    adapter.throwIfInvalidAccessApiConfiguration(channelName)
     return liveMapManager.subscribe(listener)
   }
 

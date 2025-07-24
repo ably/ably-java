@@ -14,7 +14,8 @@ public interface LiveMapChange {
     /**
      * Subscribes to real-time updates on this LiveMap object.
      * Multiple listeners can be subscribed to the same object independently.
-     * 
+     * Spec: RTLO4b
+     *
      * @param listener the listener to be notified of map updates
      * @return an ObjectsSubscription for managing this specific listener
      */
@@ -24,7 +25,8 @@ public interface LiveMapChange {
     /**
      * Unsubscribes a specific listener from receiving updates.
      * Has no effect if the listener is not currently subscribed.
-     * 
+     * Spec: RTLO4c
+     *
      * @param listener the listener to be unsubscribed
      */
     @NonBlocking
@@ -33,18 +35,20 @@ public interface LiveMapChange {
     /**
      * Unsubscribes all listeners from receiving updates.
      * No notifications will be delivered until new listeners are subscribed.
+     * Spec: RTLO4d
      */
     @NonBlocking
     void unsubscribeAll();
 
     /**
      * Listener interface for receiving LiveMap updates.
+     * Spec: RTLO4b3
      */
     interface Listener {
         /**
          * Called when the LiveMap has been updated.
          * Should execute quickly as it's called from the real-time processing thread.
-         * 
+         *
          * @param update details about which keys were modified and how
          */
         void onUpdated(@NotNull LiveMapUpdate update);

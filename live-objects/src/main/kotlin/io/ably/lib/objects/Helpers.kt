@@ -41,6 +41,7 @@ internal fun LiveObjectsAdapter.setChannelSerial(channelName: String, protocolMe
   setChannelSerial(channelName, channelSerial)
 }
 
+// Spec: RTLO4b1, RTLO4b2
 internal fun LiveObjectsAdapter.throwIfInvalidAccessApiConfiguration(channelName: String) {
   throwIfMissingChannelMode(channelName, ChannelMode.object_subscribe)
   throwIfInChannelState(channelName, arrayOf(ChannelState.detached, ChannelState.failed))

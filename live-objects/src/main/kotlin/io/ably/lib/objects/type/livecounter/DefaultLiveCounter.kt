@@ -62,6 +62,7 @@ internal class DefaultLiveCounter private constructor(
   }
 
   override fun subscribe(listener: LiveCounterChange.Listener): ObjectsSubscription {
+    adapter.throwIfInvalidAccessApiConfiguration(channelName)
     return liveCounterManager.subscribe(listener)
   }
 

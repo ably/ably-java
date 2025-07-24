@@ -14,6 +14,7 @@ internal enum class ObjectType(val value: String) {
   Counter("counter")
 }
 
+// Spec: RTLO4b4b
 internal val LiveObjectUpdate.noOp get() = this.update == null
 
 /**
@@ -183,6 +184,7 @@ internal abstract class BaseLiveObject(
   /**
    * Notifies subscribers about changes made to this live object. Propagates updates through the
    * appropriate manager after converting the generic update map to type-specific update objects.
+   * Spec: RTLO4b4c
    */
   abstract fun notifyUpdated(update: LiveObjectUpdate)
 
