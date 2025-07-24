@@ -124,7 +124,7 @@ internal class DefaultLiveMap private constructor(
   }
 
   override fun applyObjectOperation(operation: ObjectOperation, message: ObjectMessage) {
-    liveMapManager.applyOperation(operation, message.serial)
+    liveMapManager.applyOperation(operation, message.serial, message.serialTimestamp)
   }
 
   override fun clearData(): LiveMapUpdate {
