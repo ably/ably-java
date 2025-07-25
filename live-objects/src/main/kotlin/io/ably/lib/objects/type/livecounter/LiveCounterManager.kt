@@ -17,11 +17,11 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter): 
   /**
    * @spec RTLC6 - Overrides counter data with state from sync
    */
-  internal fun applyState(objectState: ObjectState): LiveCounterUpdate {
+  internal fun applyState(objectState: ObjectState, serialTimestamp: Long?): LiveCounterUpdate {
     val previousData = liveCounter.data.get()
 
     if (objectState.tombstone) {
-      liveCounter.tombstone()
+      liveCounter.tombstone(serialTimestamp)
     } else {
       // override data for this object with data from the object state
       liveCounter.createOperationIsMerged = false // RTLC6b
@@ -39,7 +39,7 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter): 
   /**
    * @spec RTLC7 - Applies operations to LiveCounter
    */
-  internal fun applyOperation(operation: ObjectOperation) {
+  internal fun applyOperation(operation: ObjectOperation, serialTimestamp: Long?) {
     val update = when (operation.action) {
       ObjectOperationAction.CounterCreate -> applyCounterCreate(operation) // RTLC7d1
       ObjectOperationAction.CounterInc -> {
@@ -49,7 +49,7 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter): 
           throw objectError("No payload found for ${operation.action} op for LiveCounter objectId=${objectId}")
         }
       }
-      ObjectOperationAction.ObjectDelete -> liveCounter.tombstone()
+      ObjectOperationAction.ObjectDelete -> liveCounter.tombstone(serialTimestamp)
       else -> throw objectError("Invalid ${operation.action} op for LiveCounter objectId=${objectId}") // RTLC7d3
     }
 

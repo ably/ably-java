@@ -126,6 +126,12 @@ internal data class ObjectMapEntry(
   val timeserial: String? = null,
 
   /**
+   * A timestamp from the [timeserial] field. Only present if [tombstone] is `true`
+   * Spec: OME2d
+   */
+  val serialTimestamp: Long? = null,
+
+  /**
    * The data that represents the value of the map entry.
    * Spec: OME2c
    */
@@ -335,6 +341,12 @@ internal data class ObjectMessage(
    * Spec: OM2h
    */
   val serial: String? = null,
+
+  /**
+   * A timestamp from the [serial] field.
+   * Spec: OM2j
+   */
+  val serialTimestamp: Long? = null,
 
   /**
    * An opaque string used as a key to update the map of serial values on an object.

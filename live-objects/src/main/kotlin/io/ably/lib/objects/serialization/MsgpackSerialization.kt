@@ -38,6 +38,7 @@ internal fun ObjectMessage.writeMsgpack(packer: MessagePacker) {
   if (operation != null) fieldCount++
   if (objectState != null) fieldCount++
   if (serial != null) fieldCount++
+  if (serialTimestamp != null) fieldCount++
   if (siteCode != null) fieldCount++
 
   packer.packMapHeader(fieldCount)
@@ -82,6 +83,11 @@ internal fun ObjectMessage.writeMsgpack(packer: MessagePacker) {
     packer.packString(serial)
   }
 
+  if (serialTimestamp != null) {
+    packer.packString("serialTimestamp")
+    packer.packLong(serialTimestamp)
+  }
+
   if (siteCode != null) {
     packer.packString("siteCode")
     packer.packString(siteCode)
@@ -107,6 +113,7 @@ internal fun readObjectMessage(unpacker: MessageUnpacker): ObjectMessage {
   var operation: ObjectOperation? = null
   var objectState: ObjectState? = null
   var serial: String? = null
+  var serialTimestamp: Long? = null
   var siteCode: String? = null
 
   for (i in 0 until fieldCount) {
@@ -127,6 +134,7 @@ internal fun readObjectMessage(unpacker: MessageUnpacker): ObjectMessage {
       "operation" -> operation = readObjectOperation(unpacker)
       "object" -> objectState = readObjectState(unpacker)
       "serial" -> serial = unpacker.unpackString()
+      "serialTimestamp" -> serialTimestamp = unpacker.unpackLong()
       "siteCode" -> siteCode = unpacker.unpackString()
       else -> unpacker.skipValue()
     }
@@ -141,6 +149,7 @@ internal fun readObjectMessage(unpacker: MessageUnpacker): ObjectMessage {
     operation = operation,
     objectState = objectState,
     serial = serial,
+    serialTimestamp = serialTimestamp,
     siteCode = siteCode
   )
 }
@@ -558,6 +567,7 @@ private fun ObjectMapEntry.writeMsgpack(packer: MessagePacker) {
 
   if (tombstone != null) fieldCount++
   if (timeserial != null) fieldCount++
+  if (serialTimestamp != null) fieldCount++
   if (data != null) fieldCount++
 
   packer.packMapHeader(fieldCount)
@@ -570,6 +580,11 @@ private fun ObjectMapEntry.writeMsgpack(packer: MessagePacker) {
   if (timeserial != null) {
     packer.packString("timeserial")
     packer.packString(timeserial)
+  }
+
+  if (serialTimestamp != null) {
+    packer.packString("serialTimestamp")
+    packer.packLong(serialTimestamp)
   }
 
   if (data != null) {
@@ -586,6 +601,7 @@ private fun readObjectMapEntry(unpacker: MessageUnpacker): ObjectMapEntry {
 
   var tombstone: Boolean? = null
   var timeserial: String? = null
+  var serialTimestamp: Long? = null
   var data: ObjectData? = null
 
   for (i in 0 until fieldCount) {
@@ -600,12 +616,13 @@ private fun readObjectMapEntry(unpacker: MessageUnpacker): ObjectMapEntry {
     when (fieldName) {
       "tombstone" -> tombstone = unpacker.unpackBoolean()
       "timeserial" -> timeserial = unpacker.unpackString()
+      "serialTimestamp" -> serialTimestamp = unpacker.unpackLong()
       "data" -> data = readObjectData(unpacker)
       else -> unpacker.skipValue()
     }
   }
 
-  return ObjectMapEntry(tombstone = tombstone, timeserial = timeserial, data = data)
+  return ObjectMapEntry(tombstone = tombstone, timeserial = timeserial, serialTimestamp = serialTimestamp, data = data)
 }
 
 /**

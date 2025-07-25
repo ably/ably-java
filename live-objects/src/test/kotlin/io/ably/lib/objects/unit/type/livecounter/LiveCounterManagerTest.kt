@@ -2,6 +2,7 @@ package io.ably.lib.objects.unit.type.livecounter
 
 import io.ably.lib.objects.*
 import io.ably.lib.objects.unit.LiveCounterManager
+import io.ably.lib.objects.unit.TombstonedAt
 import io.ably.lib.objects.unit.getDefaultLiveCounterWithMockedDeps
 import io.ably.lib.types.AblyException
 import org.junit.Test
@@ -24,7 +25,7 @@ class DefaultLiveCounterManagerTest {
       tombstone = false,
     )
 
-    val update = liveCounterManager.applyState(objectState)
+    val update = liveCounterManager.applyState(objectState, null)
 
     assertFalse(liveCounter.createOperationIsMerged) // RTLC6b
     assertEquals(25.0, liveCounter.data.get()) // RTLC6c
@@ -55,7 +56,7 @@ class DefaultLiveCounterManagerTest {
     )
 
     // RTLC6d - Merge initial data from create operation
-    val update = liveCounterManager.applyState(objectState)
+    val update = liveCounterManager.applyState(objectState, null)
 
     assertEquals(25.0, liveCounter.data.get()) // 15 from state + 10 from create op
     assertEquals(20.0, update.update.amount) // Total change
@@ -75,7 +76,7 @@ class DefaultLiveCounterManagerTest {
 
     // RTLC7d3 - Should throw error for unsupported action
     val exception = assertFailsWith<AblyException> {
-      liveCounterManager.applyOperation(operation)
+      liveCounterManager.applyOperation(operation, null)
     }
 
     val errorInfo = exception.errorInfo
@@ -96,7 +97,7 @@ class DefaultLiveCounterManagerTest {
     )
 
     // RTLC7d1 - Apply counter create operation
-     liveCounterManager.applyOperation(operation)
+     liveCounterManager.applyOperation(operation, null)
 
     assertEquals(20.0, liveCounter.data.get()) // Should be set to counter count
     assertTrue(liveCounter.createOperationIsMerged) // Should be marked as merged
@@ -119,7 +120,7 @@ class DefaultLiveCounterManagerTest {
     )
 
     // RTLC8b - Should skip if already merged
-    liveCounterManager.applyOperation(operation)
+    liveCounterManager.applyOperation(operation, null)
 
     assertEquals(4.0, liveCounter.data.get()) // Should not change (still 0)
     assertTrue(liveCounter.createOperationIsMerged) // Should remain merged
@@ -142,7 +143,7 @@ class DefaultLiveCounterManagerTest {
     )
 
     // RTLC8c - Should apply if not merged
-    liveCounterManager.applyOperation(operation)
+    liveCounterManager.applyOperation(operation, null)
     assertTrue(liveCounter.createOperationIsMerged) // Should be marked as merged
 
     assertEquals(30.0, liveCounter.data.get()) // Should be set to counter count
@@ -165,7 +166,7 @@ class DefaultLiveCounterManagerTest {
 
     // RTLC10a - Should default to 0
     // RTLC10b - Mark as merged
-    liveCounterManager.applyOperation(operation)
+    liveCounterManager.applyOperation(operation, null)
 
     assertEquals(10.0, liveCounter.data.get()) // No change (null defaults to 0)
     assertTrue(liveCounter.createOperationIsMerged) // RTLC10b
@@ -186,7 +187,7 @@ class DefaultLiveCounterManagerTest {
     )
 
     // RTLC7d2 - Apply counter increment operation
-    liveCounterManager.applyOperation(operation)
+    liveCounterManager.applyOperation(operation, null)
 
     assertEquals(15.0, liveCounter.data.get()) // RTLC9b - 10 + 5
   }
@@ -204,7 +205,7 @@ class DefaultLiveCounterManagerTest {
 
     // RTLC7d2 - Should throw error for missing payload
     val exception = assertFailsWith<AblyException> {
-      liveCounterManager.applyOperation(operation)
+      liveCounterManager.applyOperation(operation, null)
     }
 
     val errorInfo = exception.errorInfo
@@ -229,7 +230,7 @@ class DefaultLiveCounterManagerTest {
       action = ObjectOperationAction.CounterInc,
       objectId = "testCounterId",
       counterOp = counterOp
-    ))
+    ), null)
 
     assertEquals(17.0, liveCounter.data.get()) // 10 + 7
   }
@@ -249,8 +250,63 @@ class DefaultLiveCounterManagerTest {
       action = ObjectOperationAction.CounterInc,
       objectId = "testCounterId",
       counterOp = counterOp
-    ))
+    ), null)
 
     assertEquals(10.0, liveCounter.data.get()) // Should not change (null defaults to 0)
+  }
+
+  @Test
+  fun `(RTLC6, OM2j) DefaultLiveCounter should handle tombstone with serialTimestamp in state`() {
+    val liveCounter = getDefaultLiveCounterWithMockedDeps()
+    val liveCounterManager = liveCounter.LiveCounterManager
+
+    // Set initial data
+    liveCounter.data.set(10.0)
+
+    val expectedTimestamp = 1234567890L
+    val objectState = ObjectState(
+      objectId = "testCounterId",
+      counter = null, // Null counter for tombstone
+      siteTimeserials = mapOf("site1" to "serial1"),
+      tombstone = true, // Object is tombstoned
+    )
+
+    val update = liveCounterManager.applyState(objectState, expectedTimestamp)
+
+    assertTrue(liveCounter.isTombstoned) // Should be tombstoned
+    assertEquals(expectedTimestamp, liveCounter.TombstonedAt) // Should use provided timestamp
+    assertEquals(0.0, liveCounter.data.get()) // Should be reset after tombstone
+
+    // Assert on update field - should show the change
+    assertEquals(-10.0, update.update.amount) // Difference from 10.0 to 0.0
+  }
+
+  @Test
+  fun `(RTLC6, OM2j) DefaultLiveCounter should handle tombstone without serialTimestamp in state`() {
+    val liveCounter = getDefaultLiveCounterWithMockedDeps()
+    val liveCounterManager = liveCounter.LiveCounterManager
+
+    // Set initial data
+    liveCounter.data.set(10.0)
+
+    val objectState = ObjectState(
+      objectId = "testCounterId",
+      counter = null, // Null counter for tombstone
+      siteTimeserials = mapOf("site1" to "serial1"),
+      tombstone = true, // Object is tombstoned
+    )
+
+    val beforeOperation = System.currentTimeMillis()
+    val update = liveCounterManager.applyState(objectState, null)
+    val afterOperation = System.currentTimeMillis()
+
+    assertTrue(liveCounter.isTombstoned) // Should be tombstoned
+    assertNotNull(liveCounter.TombstonedAt) // Should have timestamp
+    assertTrue(liveCounter.TombstonedAt!! >= beforeOperation) // Should be after operation start
+    assertTrue(liveCounter.TombstonedAt!! <= afterOperation) // Should be before operation end
+    assertEquals(0.0, liveCounter.data.get()) // Should be reset after tombstone
+
+    // Assert on update field - should show the change
+    assertEquals(-10.0, update.update.amount) // Difference from 10.0 to 0.0
   }
 }

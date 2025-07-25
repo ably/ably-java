@@ -30,7 +30,15 @@ class DefaultLiveMapTest {
         semantics = MapSemantics.LWW,
       )
     )
-    liveMap.applyObjectSync(objectState)
+    
+    val objectMessage = ObjectMessage(
+      id = "testId",
+      objectState = objectState,
+      serial = "serial1",
+      siteCode = "site1"
+    )
+    
+    liveMap.applyObjectSync(objectMessage)
     assertEquals(mapOf("site3" to "serial3", "site4" to "serial4"), liveMap.siteTimeserials) // RTLM6a
   }
 

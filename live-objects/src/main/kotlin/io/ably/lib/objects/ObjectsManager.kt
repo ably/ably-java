@@ -15,7 +15,7 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects): Obje
   /**
    * @spec RTO5 - Sync objects data pool for collecting sync messages
    */
-  private val syncObjectsDataPool = mutableMapOf<String, ObjectState>()
+  private val syncObjectsDataPool = mutableMapOf<String, ObjectMessage>()
   private var currentSyncId: String? = null
   /**
    * @spec RTO7 - Buffered object operations during sync
@@ -130,19 +130,20 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects): Obje
     val existingObjectUpdates = mutableListOf<Pair<BaseLiveObject, LiveObjectUpdate>>()
 
     // RTO5c1
-    for ((objectId, objectState) in syncObjectsDataPool) {
+    for ((objectId, objectMessage) in syncObjectsDataPool) {
+      val objectState = objectMessage.objectState as ObjectState // we have non-null objectState here due to RTO5b
       receivedObjectIds.add(objectId)
       val existingObject = liveObjects.objectsPool.get(objectId)
 
       // RTO5c1a
       if (existingObject != null) {
         // Update existing object
-        val update = existingObject.applyObjectSync(objectState) // RTO5c1a1
+        val update = existingObject.applyObjectSync(objectMessage) // RTO5c1a1
         existingObjectUpdates.add(Pair(existingObject, update))
       } else { // RTO5c1b
         // RTO5c1b1, RTO5c1b1a, RTO5c1b1b - Create new object and add it to the pool
         val newObject = createObjectFromState(objectState)
-        newObject.applyObjectSync(objectState)
+        newObject.applyObjectSync(objectMessage)
         liveObjects.objectsPool.set(objectId, newObject)
       }
     }
@@ -201,7 +202,7 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects): Obje
 
       val objectState: ObjectState = objectMessage.objectState
       if (objectState.counter != null || objectState.map != null) {
-        syncObjectsDataPool[objectState.objectId] = objectState
+        syncObjectsDataPool[objectState.objectId] = objectMessage
       } else {
         // RTO5c1b1c - object state must contain either counter or map data
         Log.w(tag, "Object state received without counter or map data, skipping message: ${objectMessage.id}")
