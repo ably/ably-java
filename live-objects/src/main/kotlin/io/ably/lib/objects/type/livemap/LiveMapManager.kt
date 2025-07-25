@@ -20,11 +20,11 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
   /**
    * @spec RTLM6 - Overrides object data with state from sync
    */
-  internal fun applyState(objectState: ObjectState): LiveMapUpdate {
+  internal fun applyState(objectState: ObjectState, serialTimestamp: Long?): LiveMapUpdate {
     val previousData = liveMap.data.toMap()
 
     if (objectState.tombstone) {
-      liveMap.tombstone()
+      liveMap.tombstone(serialTimestamp)
     } else {
       // override data for this object with data from the object state
       liveMap.createOperationIsMerged = false // RTLM6b
@@ -68,7 +68,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
           throw objectError("No payload found for ${operation.action} op for LiveMap objectId=${objectId}")
         }
       }
-      ObjectOperationAction.ObjectDelete -> liveMap.tombstone()
+      ObjectOperationAction.ObjectDelete -> liveMap.tombstone(serialTimestamp)
       else -> throw objectError("Invalid ${operation.action} op for LiveMap objectId=${objectId}") // RTLM15d4
     }
 

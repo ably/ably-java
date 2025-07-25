@@ -72,12 +72,12 @@ internal class DefaultLiveCounter private constructor(
 
   override fun validate(state: ObjectState) = liveCounterManager.validate(state)
 
-  override fun applyObjectState(objectState: ObjectState): LiveCounterUpdate {
-    return liveCounterManager.applyState(objectState)
+  override fun applyObjectState(objectState: ObjectState, message: ObjectMessage): LiveCounterUpdate {
+    return liveCounterManager.applyState(objectState, message.serialTimestamp)
   }
 
   override fun applyObjectOperation(operation: ObjectOperation, message: ObjectMessage) {
-    liveCounterManager.applyOperation(operation)
+    liveCounterManager.applyOperation(operation, message.serialTimestamp)
   }
 
   override fun clearData(): LiveCounterUpdate {

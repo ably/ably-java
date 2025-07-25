@@ -80,17 +80,17 @@ class ObjectsManagerTest {
     val testObject1 = objectsPool.get("map:testObject@1")
     assertNotNull(testObject1, "map:testObject@1 should exist in pool after sync")
     verify(exactly = 1) {
-      testObject1.applyObjectSync(any<ObjectState>())
+      testObject1.applyObjectSync(any<ObjectMessage>())
     }
     val testObject2 = objectsPool.get("counter:testObject@2")
     assertNotNull(testObject2, "counter:testObject@2 should exist in pool after sync")
     verify(exactly = 1) {
-      testObject2.applyObjectSync(any<ObjectState>())
+      testObject2.applyObjectSync(any<ObjectMessage>())
     }
     val testObject3 = objectsPool.get("map:testObject@3")
     assertNotNull(testObject3, "map:testObject@3 should exist in pool after sync")
     verify(exactly = 1) {
-      testObject3.applyObjectSync(any<ObjectState>())
+      testObject3.applyObjectSync(any<ObjectMessage>())
     }
   }
 

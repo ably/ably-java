@@ -119,8 +119,8 @@ internal class DefaultLiveMap private constructor(
 
   override fun unsubscribeAll() = liveMapManager.unsubscribeAll()
 
-  override fun applyObjectState(objectState: ObjectState): LiveMapUpdate {
-    return liveMapManager.applyState(objectState)
+  override fun applyObjectState(objectState: ObjectState, message: ObjectMessage): LiveMapUpdate {
+    return liveMapManager.applyState(objectState, message.serialTimestamp)
   }
 
   override fun applyObjectOperation(operation: ObjectOperation, message: ObjectMessage) {

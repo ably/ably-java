@@ -5,6 +5,7 @@ import io.ably.lib.objects.type.livemap.LiveMapEntry
 import io.ably.lib.objects.type.livemap.LiveMapManager
 import io.ably.lib.objects.type.map.LiveMapUpdate
 import io.ably.lib.objects.unit.LiveMapManager
+import io.ably.lib.objects.unit.TombstonedAt
 import io.ably.lib.objects.unit.getDefaultLiveMapWithMockedDeps
 import io.ably.lib.types.AblyException
 import io.mockk.mockk
@@ -47,7 +48,7 @@ class LiveMapManagerTest {
       tombstone = false,
     )
 
-    val update = liveMapManager.applyState(objectState)
+    val update = liveMapManager.applyState(objectState, null)
 
     assertFalse(liveMap.createOperationIsMerged) // RTLM6b
     assertEquals(2, liveMap.data.size) // RTLM6c
@@ -84,7 +85,7 @@ class LiveMapManagerTest {
       tombstone = false,
     )
 
-    val update = liveMapManager.applyState(objectState)
+    val update = liveMapManager.applyState(objectState, null)
 
     assertFalse(liveMap.createOperationIsMerged) // RTLM6b
     assertEquals(0, liveMap.data.size) // RTLM6c - should be empty map
@@ -113,7 +114,7 @@ class LiveMapManagerTest {
       tombstone = false,
     )
 
-    val update = liveMapManager.applyState(objectState)
+    val update = liveMapManager.applyState(objectState, null)
 
     assertFalse(liveMap.createOperationIsMerged) // RTLM6b
     assertEquals(0, liveMap.data.size) // RTLM6c - should be empty map when map is null
@@ -170,7 +171,7 @@ class LiveMapManagerTest {
     )
 
     // RTLM6d - Merge initial data from create operation
-    val update = liveMapManager.applyState(objectState)
+    val update = liveMapManager.applyState(objectState, null)
 
     assertEquals(2, liveMap.data.size) // Should have both state and create op entries
     assertEquals("stateValue", liveMap.data["key1"]?.data?.value?.value) // State value takes precedence
@@ -185,7 +186,7 @@ class LiveMapManagerTest {
   }
 
   @Test
-  fun `(RTLM6, RTLM6c) DefaultLiveMap should handle tombstoned entries with serialTimestamp in state`() {
+  fun `(RTLM6, RTLM6c, OME2d) DefaultLiveMap should handle tombstoned entries with serialTimestamp in state`() {
     val liveMap = getDefaultLiveMapWithMockedDeps()
     val liveMapManager = liveMap.LiveMapManager
 
@@ -218,7 +219,7 @@ class LiveMapManagerTest {
       tombstone = false,
     )
 
-    val update = liveMapManager.applyState(objectState)
+    val update = liveMapManager.applyState(objectState, null)
 
     assertFalse(liveMap.createOperationIsMerged) // RTLM6b
     assertEquals(2, liveMap.data.size) // RTLM6c
@@ -235,7 +236,7 @@ class LiveMapManagerTest {
   }
 
   @Test
-  fun `(RTLM6, RTLM6c) DefaultLiveMap should handle tombstoned entries without serialTimestamp in state`() {
+  fun `(RTLM6, RTLM6c, OME2d) DefaultLiveMap should handle tombstoned entries without serialTimestamp in state`() {
     val liveMap = getDefaultLiveMapWithMockedDeps()
     val liveMapManager = liveMap.LiveMapManager
 
@@ -268,7 +269,7 @@ class LiveMapManagerTest {
     )
 
     val beforeOperation = System.currentTimeMillis()
-    val update = liveMapManager.applyState(objectState)
+    val update = liveMapManager.applyState(objectState, null)
     val afterOperation = System.currentTimeMillis()
 
     assertFalse(liveMap.createOperationIsMerged) // RTLM6b
@@ -321,7 +322,7 @@ class LiveMapManagerTest {
   }
 
   @Test
-  fun `(RTLM16, RTLM16d, RTLM17) LiveMapManager should merge initial data from create operation with tombstoned entries`() {
+  fun `(RTLM16, RTLM16d, RTLM17, OME2d) LiveMapManager should merge initial data from create operation with tombstoned entries`() {
     val liveMap = getDefaultLiveMapWithMockedDeps()
     val liveMapManager = liveMap.LiveMapManager
 
@@ -427,7 +428,7 @@ class LiveMapManagerTest {
   }
 
   @Test
-  fun `(RTLM8, RTLM8c3) LiveMapManager should use current time when no timestamp provided for map remove operation`() {
+  fun `(RTLM8, RTLM8c3, OME2d) LiveMapManager should use current time when no timestamp provided for map remove operation`() {
     val liveMap = getDefaultLiveMapWithMockedDeps()
     val liveMapManager = liveMap.LiveMapManager
 
@@ -1001,5 +1002,70 @@ class LiveMapManagerTest {
     )
     val result11 = livemapManager.calculateUpdateFromDataDiff(prevData11, newData11)
     assertEquals("Should not detect change for same data", emptyMap<String, LiveMapUpdate.Change>(), result11.update)
+  }
+
+  @Test
+  fun `(RTLM6, OM2j) DefaultLiveMap should handle tombstone with serialTimestamp in state`() {
+    val liveMap = getDefaultLiveMapWithMockedDeps()
+    val liveMapManager = liveMap.LiveMapManager
+
+    // Set initial data
+    liveMap.data["key1"] = LiveMapEntry(
+      isTombstoned = false,
+      timeserial = "1",
+      data = ObjectData(value = ObjectValue("oldValue"))
+    )
+
+    val expectedTimestamp = 1234567890L
+    val objectState = ObjectState(
+      objectId = "map:testMap@1",
+      map = null, // Null map for tombstone
+      siteTimeserials = mapOf("site1" to "serial1"),
+      tombstone = true, // Object is tombstoned
+    )
+
+    val update = liveMapManager.applyState(objectState, expectedTimestamp)
+
+    assertTrue(liveMap.isTombstoned) // Should be tombstoned
+    assertEquals(expectedTimestamp, liveMap.TombstonedAt) // Should use provided timestamp
+    assertEquals(0, liveMap.data.size) // Should be empty after tombstone
+
+    // Assert on update field - should show that key1 was removed
+    val expectedUpdate = mapOf("key1" to LiveMapUpdate.Change.REMOVED)
+    assertEquals(expectedUpdate, update.update)
+  }
+
+  @Test
+  fun `(RTLM6, OM2j) DefaultLiveMap should handle tombstone without serialTimestamp in state`() {
+    val liveMap = getDefaultLiveMapWithMockedDeps()
+    val liveMapManager = liveMap.LiveMapManager
+
+    // Set initial data
+    liveMap.data["key1"] = LiveMapEntry(
+      isTombstoned = false,
+      timeserial = "1",
+      data = ObjectData(value = ObjectValue("oldValue"))
+    )
+
+    val objectState = ObjectState(
+      objectId = "map:testMap@1",
+      map = null, // Null map for tombstone
+      siteTimeserials = mapOf("site1" to "serial1"),
+      tombstone = true, // Object is tombstoned
+    )
+
+    val beforeOperation = System.currentTimeMillis()
+    val update = liveMapManager.applyState(objectState, null)
+    val afterOperation = System.currentTimeMillis()
+
+    assertTrue(liveMap.isTombstoned) // Should be tombstoned
+    assertNotNull(liveMap.TombstonedAt) // Should have timestamp
+    assertTrue(liveMap.TombstonedAt!! >= beforeOperation) // Should be after operation start
+    assertTrue(liveMap.TombstonedAt!! <= afterOperation) // Should be before operation end
+    assertEquals(0, liveMap.data.size) // Should be empty after tombstone
+
+    // Assert on update field - should show that key1 was removed
+    val expectedUpdate = mapOf("key1" to LiveMapUpdate.Change.REMOVED)
+    assertEquals(expectedUpdate, update.update)
   }
 }
