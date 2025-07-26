@@ -4,7 +4,9 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import io.ably.lib.objects.*
 import io.ably.lib.objects.Binary
+import io.ably.lib.objects.ErrorCode
 import io.ably.lib.objects.MapSemantics
 import io.ably.lib.objects.ObjectCounter
 import io.ably.lib.objects.ObjectCounterOp
@@ -225,8 +227,9 @@ private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
     when (fieldName) {
       "action" -> {
         val actionCode = unpacker.unpackInt()
-        action = ObjectOperationAction.entries.find { it.code == actionCode }
-          ?: throw IllegalArgumentException("Unknown ObjectOperationAction code: $actionCode")
+        action = ObjectOperationAction.entries.firstOrNull { it.code == actionCode }
+          ?: ObjectOperationAction.entries.firstOrNull { it.code == -1 }
+          ?: throw objectError("Unknown ObjectOperationAction code: $actionCode and no Unknown fallback found")
       }
       "objectId" -> objectId = unpacker.unpackString()
       "mapOp" -> mapOp = readObjectMapOp(unpacker)
@@ -240,7 +243,7 @@ private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
   }
 
   if (action == null) {
-    throw IllegalArgumentException("Missing required 'action' field in ObjectOperation")
+    throw objectError("Missing required 'action' field in ObjectOperation")
   }
 
   return ObjectOperation(
@@ -484,8 +487,9 @@ private fun readObjectMap(unpacker: MessageUnpacker): ObjectMap {
     when (fieldName) {
       "semantics" -> {
         val semanticsCode = unpacker.unpackInt()
-        semantics = MapSemantics.entries.find { it.code == semanticsCode }
-          ?: throw IllegalArgumentException("Unknown MapSemantics code: $semanticsCode")
+        semantics = MapSemantics.entries.firstOrNull { it.code == semanticsCode }
+          ?: MapSemantics.entries.firstOrNull { it.code == -1 }
+          ?: throw objectError("Unknown MapSemantics code: $semanticsCode and no UNKNOWN fallback found")
       }
       "entries" -> {
         val mapSize = unpacker.unpackMapHeader()
@@ -696,7 +700,8 @@ private fun readObjectData(unpacker: MessageUnpacker): ObjectData {
       when {
         parsed.isJsonObject -> parsed.asJsonObject
         parsed.isJsonArray -> parsed.asJsonArray
-        else -> throw IllegalArgumentException("Invalid JSON string for encoding=json")
+        else ->
+          throw ablyException("Invalid JSON string for encoding=json", ErrorCode.MapValueDataTypeUnsupported, HttpStatusCode.InternalServerError)
       }
     )
   } else if (stringValue != null) {

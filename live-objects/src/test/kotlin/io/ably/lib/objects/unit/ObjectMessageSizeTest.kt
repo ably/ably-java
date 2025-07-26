@@ -53,7 +53,7 @@ class ObjectMessageSizeTest {
 
         // CounterOp contributes to operation size
         counterOp = ObjectCounterOp(
-          amount = 10.5 // Size: 8 bytes (number is always 8 bytes)
+          amount = 10.0 // Size: 8 bytes (number is always 8 bytes)
         ), // Total ObjectCounterOp size: 8 bytes
 
         // Map contributes to operation size (for MAP_CREATE operations)

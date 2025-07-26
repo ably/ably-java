@@ -6,6 +6,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import java.lang.reflect.Method
 
 suspend fun assertWaiter(timeoutInMs: Long = 10_000, block: suspend () -> Boolean) {
   withContext(Dispatchers.Default) {
@@ -57,4 +58,8 @@ fun <T> Any.invokePrivateMethod(methodName: String, vararg args: Any?): T {
   method.isAccessible = true
   @Suppress("UNCHECKED_CAST")
   return method.invoke(this, *args) as T
+}
+
+fun Class<*>.findMethod(methodName: String): Method {
+  return methods.find { it.name.contains(methodName) } ?: error("Method '$methodName' not found")
 }

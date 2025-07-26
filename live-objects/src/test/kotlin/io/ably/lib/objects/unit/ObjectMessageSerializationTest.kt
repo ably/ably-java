@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
+import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.unit.fixtures.*
 import io.ably.lib.types.ProtocolMessage
 import io.ably.lib.types.ProtocolMessage.ActionSerializer
@@ -42,7 +43,7 @@ class ObjectMessageSerializationTest {
     assertNotNull(deserializedProtoMsg)
 
     deserializedProtoMsg.state.zip(objectMessages).forEach { (actual, expected) ->
-      assertEquals(expected, actual as? io.ably.lib.objects.ObjectMessage)
+      assertEquals(expected, actual as? ObjectMessage)
     }
   }
 
@@ -61,7 +62,7 @@ class ObjectMessageSerializationTest {
     assertNotNull(deserializedProtoMsg)
 
     deserializedProtoMsg.state.zip(objectMessages).forEach { (actual, expected) ->
-      assertEquals(expected, (actual as? io.ably.lib.objects.ObjectMessage))
+      assertEquals(expected, (actual as? ObjectMessage))
     }
   }
 
@@ -170,11 +171,11 @@ class ObjectMessageSerializationTest {
 
     // Check if gson deserialization works correctly
     deserializedProtoMsg = ProtocolSerializer.fromJSON(protoMsgJsonObject.toString())
-    assertEquals(objectMessageWithNullFields, deserializedProtoMsg.state[0] as? io.ably.lib.objects.ObjectMessage)
+    assertEquals(objectMessageWithNullFields, deserializedProtoMsg.state[0] as? ObjectMessage)
 
     // Check if msgpack deserialization works correctly
     serializedMsgpackBytes = Serialisation.gsonToMsgpack(protoMsgJsonObject)
     deserializedProtoMsg = ProtocolSerializer.readMsgpack(serializedMsgpackBytes)
-    assertEquals(objectMessageWithNullFields, deserializedProtoMsg.state[0] as? io.ably.lib.objects.ObjectMessage)
+    assertEquals(objectMessageWithNullFields, deserializedProtoMsg.state[0] as? ObjectMessage)
   }
 }
