@@ -17,7 +17,7 @@ class ObjectsManagerTest {
   @Test
   fun `(RTO5) ObjectsManager should handle object sync messages`() {
     val defaultLiveObjects = getDefaultLiveObjectsWithMockedDeps()
-    assertEquals(ObjectsState.INITIALIZED, defaultLiveObjects.state, "Initial state should be INITIALIZED")
+    assertEquals(ObjectsState.Initialized, defaultLiveObjects.state, "Initial state should be INITIALIZED")
 
     val objectsManager = defaultLiveObjects.ObjectsManager
 
@@ -72,7 +72,7 @@ class ObjectsManagerTest {
     assertEquals("counter:testObject@2", newlyCreatedObjects[0].objectId)
     assertEquals("map:testObject@3", newlyCreatedObjects[1].objectId)
 
-    assertEquals(ObjectsState.SYNCED, defaultLiveObjects.state, "State should be SYNCED after sync sequence")
+    assertEquals(ObjectsState.Synced, defaultLiveObjects.state, "State should be SYNCED after sync sequence")
     // After sync `counter:testObject@4` will be removed from pool
     assertNull(objectsPool.get("counter:testObject@4"))
     assertEquals(4, objectsPool.size(), "Objects pool should contain 4 objects after sync including root")
@@ -97,7 +97,7 @@ class ObjectsManagerTest {
   @Test
   fun `(RTO8) ObjectsManager should apply object operation when state is synced`() {
     val defaultLiveObjects = getDefaultLiveObjectsWithMockedDeps()
-    defaultLiveObjects.state = ObjectsState.SYNCED // Ensure we're in SYNCED state
+    defaultLiveObjects.state = ObjectsState.Synced // Ensure we're in SYNCED state
 
     val objectsManager = defaultLiveObjects.ObjectsManager
 
@@ -165,7 +165,7 @@ class ObjectsManagerTest {
   @Test
   fun `(RTO7) ObjectsManager should buffer operations when not in sync, apply them after synced`() {
     val defaultLiveObjects = getDefaultLiveObjectsWithMockedDeps()
-    assertEquals(ObjectsState.INITIALIZED, defaultLiveObjects.state, "Initial state should be INITIALIZED")
+    assertEquals(ObjectsState.Initialized, defaultLiveObjects.state, "Initial state should be INITIALIZED")
 
     val objectsManager = defaultLiveObjects.ObjectsManager
     assertEquals(0, objectsManager.BufferedObjectOperations.size, "RTO7a1 - Initial buffer should be empty")
@@ -176,7 +176,7 @@ class ObjectsManagerTest {
     mockZeroValuedObjects()
 
     // Set state to SYNCING
-    defaultLiveObjects.state = ObjectsState.SYNCING
+    defaultLiveObjects.state = ObjectsState.Syncing
 
     val objectMessage = ObjectMessage(
       id = "testId",

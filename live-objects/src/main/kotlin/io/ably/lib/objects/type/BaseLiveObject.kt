@@ -1,6 +1,5 @@
 package io.ably.lib.objects.type
 
-import io.ably.lib.objects.*
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState

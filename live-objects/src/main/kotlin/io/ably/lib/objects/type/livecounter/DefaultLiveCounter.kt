@@ -51,7 +51,8 @@ internal class DefaultLiveCounter private constructor(
   }
 
   override fun value(): Double {
-    TODO("Not yet implemented")
+    adapter.throwIfInvalidAccessApiConfiguration(channelName)
+    return data.get()
   }
 
   override fun validate(state: ObjectState) = liveCounterManager.validate(state)

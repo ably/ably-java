@@ -1,5 +1,6 @@
 package io.ably.lib.objects;
 
+import io.ably.lib.objects.state.ObjectsStateChange;
 import io.ably.lib.types.Callback;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NonBlocking;
@@ -16,7 +17,7 @@ import java.util.Map;
  * <p>Implementations of this interface must be thread-safe as they may be accessed
  * from multiple threads concurrently.
  */
-public interface LiveObjects {
+public interface LiveObjects extends ObjectsStateChange {
 
     /**
      * Retrieves the root LiveMap object.

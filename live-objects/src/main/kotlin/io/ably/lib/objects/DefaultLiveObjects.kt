@@ -1,21 +1,16 @@
 package io.ably.lib.objects
 
+import io.ably.lib.objects.state.ObjectsStateChange
+import io.ably.lib.objects.state.ObjectsStateEvent
 import io.ably.lib.realtime.ChannelState
+import io.ably.lib.types.AblyException
 import io.ably.lib.types.Callback
 import io.ably.lib.types.ProtocolMessage
 import io.ably.lib.util.Log
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.flow.MutableSharedFlow
-
-/**
- * @spec RTO2 - enum representing objects state
- */
-internal enum class ObjectsState {
-  INITIALIZED,
-  SYNCING,
-  SYNCED
-}
+import java.util.concurrent.CancellationException
 
 /**
  * Default implementation of LiveObjects interface.
@@ -28,7 +23,7 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
    */
   internal val objectsPool = ObjectsPool(this)
 
-  internal var state = ObjectsState.INITIALIZED
+  internal var state = ObjectsState.Initialized
 
   /**
    * @spec RTO4 - Used for handling object messages and object sync messages
@@ -51,11 +46,10 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
     incomingObjectsHandler = initializeHandlerForIncomingObjectMessages()
   }
 
-  /**
-   * @spec RTO1 - Returns the root LiveMap object with proper validation and sync waiting
-   */
-  override fun getRoot(): LiveMap {
-    TODO("Not yet implemented")
+  override fun getRoot(): LiveMap = runBlocking { getRootAsync() }
+
+  override fun getRootAsync(callback: Callback<LiveMap>) {
+    GlobalCallbackScope.launchWithCallback(callback) { getRootAsync() }
   }
 
   override fun createMap(liveMap: LiveMap): LiveMap {
@@ -67,10 +61,6 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
   }
 
   override fun createMap(map: MutableMap<String, Any>): LiveMap {
-    TODO("Not yet implemented")
-  }
-
-  override fun getRootAsync(callback: Callback<LiveMap>) {
     TODO("Not yet implemented")
   }
 
@@ -92,6 +82,19 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
 
   override fun createCounter(initialValue: Long): LiveCounter {
     TODO("Not yet implemented")
+  }
+
+  override fun on(event: ObjectsStateEvent, listener: ObjectsStateChange.Listener): ObjectsSubscription =
+    objectsManager.on(event, listener)
+
+  override fun off(listener: ObjectsStateChange.Listener) = objectsManager.off(listener)
+
+  override fun offAll() = objectsManager.offAll()
+
+  private suspend fun getRootAsync(): LiveMap = withContext(sequentialScope.coroutineContext) {
+    adapter.throwIfInvalidAccessApiConfiguration(channelName)
+    objectsManager.ensureSynced(state)
+    objectsPool.get(ROOT_OBJECT_ID) as LiveMap
   }
 
   /**
@@ -153,7 +156,7 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
           Log.v(tag, "Objects.onAttached() channel=$channelName, hasObjects=$hasObjects")
 
           // RTO4a
-          val fromInitializedState = this@DefaultLiveObjects.state == ObjectsState.INITIALIZED
+          val fromInitializedState = this@DefaultLiveObjects.state == ObjectsState.Initialized
           if (hasObjects || fromInitializedState) {
             // should always start a new sync sequence if we're in the initialized state, no matter the HAS_OBJECTS flag value.
             // this guarantees we emit both "syncing" -> "synced" events in that order.
@@ -186,29 +189,13 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
     }
   }
 
-  /**
-   * Changes the state and emits events.
-   *
-   * @spec RTO2 - Emits state change events for syncing and synced states
-   */
-  internal fun stateChange(newState: ObjectsState, deferEvent: Boolean) {
-    if (state == newState) {
-      return
-    }
-
-    state = newState
-    Log.v(tag, "Objects state changed to: $newState")
-
-    // TODO: Emit state change events
-  }
-
   // Dispose of any resources associated with this LiveObjects instance
-  fun dispose(reason: String) {
-    val cancellationError = CancellationException("Objects disposed for channel $channelName, reason: $reason")
-    incomingObjectsHandler.cancel(cancellationError) // objectsEventBus automatically garbage collected when collector is cancelled
+  fun dispose(cause: AblyException) {
+    val disposeReason = CancellationException().apply { initCause(cause) }
+    incomingObjectsHandler.cancel(disposeReason) // objectsEventBus automatically garbage collected when collector is cancelled
     objectsPool.dispose()
     objectsManager.dispose()
-    // Don't cancel sequentialScope (needed in public methods), just cancel ongoing coroutines
-    sequentialScope.coroutineContext.cancelChildren(cancellationError)
+    // Don't cancel sequentialScope (needed in getRoot method), just cancel ongoing coroutines
+    sequentialScope.coroutineContext.cancelChildren(disposeReason)
   }
 }
