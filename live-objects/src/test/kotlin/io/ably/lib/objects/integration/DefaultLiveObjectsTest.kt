@@ -38,7 +38,7 @@ class DefaultLiveObjectsTest : IntegrationTest() {
     val objects = channel.objects
     assertNotNull(objects)
 
-    assertEquals(ObjectsState.INITIALIZED, objects.State, "Initial state should be INITIALIZED")
+    assertEquals(ObjectsState.Initialized, objects.State, "Initial state should be INITIALIZED")
 
     val syncStates = mutableListOf<ObjectsStateEvent>()
     objects.on(ObjectsStateEvent.SYNCING) {
