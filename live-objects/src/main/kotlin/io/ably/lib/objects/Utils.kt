@@ -54,7 +54,7 @@ internal val String.byteSize: Int
  * Provides safe execution of suspend functions with results delivered via callbacks.
  * Supports proper error handling and cancellation during LiveObjects disposal.
  */
-internal class ObjectsCallbackScope(channelName: String) {
+internal class ObjectsAsyncScope(channelName: String) {
   private val tag = "ObjectsCallbackScope-$channelName"
 
   private val scope =
