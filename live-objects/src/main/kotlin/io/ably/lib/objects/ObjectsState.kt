@@ -10,9 +10,9 @@ import kotlinx.coroutines.*
  * @spec RTO2 - enum representing objects state
  */
 internal enum class ObjectsState {
-  INITIALIZED,
-  SYNCING,
-  SYNCED
+  Initialized,
+  Syncing,
+  Synced
 }
 
 /**
@@ -21,9 +21,9 @@ internal enum class ObjectsState {
  * INITIALIZED maps to null (no event), while SYNCING and SYNCED map to their respective events.
  */
 private val objectsStateToEventMap = mapOf(
-  ObjectsState.INITIALIZED to null,
-  ObjectsState.SYNCING to ObjectsStateEvent.SYNCING,
-  ObjectsState.SYNCED to ObjectsStateEvent.SYNCED
+  ObjectsState.Initialized to null,
+  ObjectsState.Syncing to ObjectsStateEvent.SYNCING,
+  ObjectsState.Synced to ObjectsStateEvent.SYNCED
 )
 
 /**
@@ -63,8 +63,6 @@ internal abstract class ObjectsStateCoordinator : ObjectsStateChange, HandlesObj
   // related to RTC10, should have a separate EventEmitter for users of the library
   private val externalObjectStateEmitter = ObjectsStateEmitter()
 
-  private val emitterScope = CoroutineScope(Dispatchers.Default.limitedParallelism(1) + SupervisorJob())
-
   override fun on(event: ObjectsStateEvent, listener: ObjectsStateChange.Listener): ObjectsSubscription {
     externalObjectStateEmitter.on(event, listener)
     return ObjectsSubscription {
@@ -78,16 +76,13 @@ internal abstract class ObjectsStateCoordinator : ObjectsStateChange, HandlesObj
 
   override fun objectsStateChanged(newState: ObjectsState) {
     objectsStateToEventMap[newState]?.let { objectsStateEvent ->
-      // emitterScope makes sure next launch can only start when previous launch finishes
-      emitterScope.launch {
-        internalObjectStateEmitter.emit(objectsStateEvent)
-        externalObjectStateEmitter.emit(objectsStateEvent)
-      }
+      internalObjectStateEmitter.emit(objectsStateEvent)
+      externalObjectStateEmitter.emit(objectsStateEvent)
     }
   }
 
   override suspend fun ensureSynced(currentState: ObjectsState) {
-    if (currentState != ObjectsState.SYNCED) {
+    if (currentState != ObjectsState.Synced) {
       val deferred = CompletableDeferred<Unit>()
       internalObjectStateEmitter.once(ObjectsStateEvent.SYNCED) {
         Log.v(tag, "Objects state changed to SYNCED, resuming ensureSynced")
@@ -97,10 +92,7 @@ internal abstract class ObjectsStateCoordinator : ObjectsStateChange, HandlesObj
     }
   }
 
-  override fun disposeObjectsStateListeners() {
-    offAll()
-    emitterScope.cancel("ObjectsManager disposed")
-  }
+  override fun disposeObjectsStateListeners() = offAll()
 }
 
 private class ObjectsStateEmitter : EventEmitter<ObjectsStateEvent, ObjectsStateChange.Listener>() {

@@ -28,7 +28,7 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects): Obje
    * @spec RTO8 - Buffers messages if not synced, applies immediately if synced
    */
   internal fun handleObjectMessages(objectMessages: List<ObjectMessage>) {
-    if (liveObjects.state != ObjectsState.SYNCED) {
+    if (liveObjects.state != ObjectsState.Synced) {
       // RTO7 - The client receives object messages in realtime over the channel concurrently with the sync sequence.
       // Some of the incoming object messages may have already been applied to the objects described in
       // the sync sequence, but others may not; therefore we must buffer these messages so that we can apply
@@ -78,7 +78,7 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects): Obje
     bufferedObjectOperations.clear() // RTO5a2b
     syncObjectsDataPool.clear() // RTO5a2a
     currentSyncId = syncId
-    stateChange(ObjectsState.SYNCING, false)
+    stateChange(ObjectsState.Syncing, false)
   }
 
   /**
@@ -96,7 +96,7 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects): Obje
     bufferedObjectOperations.clear() // RTO5c5
     syncObjectsDataPool.clear() // RTO5c4
     currentSyncId = null // RTO5c3
-    stateChange(ObjectsState.SYNCED, deferStateEvent)
+    stateChange(ObjectsState.Synced, deferStateEvent)
   }
 
   /**
