@@ -7,9 +7,12 @@ import io.ably.lib.objects.ObjectOperationAction
 import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.isInvalid
 import io.ably.lib.objects.objectError
+import io.ably.lib.objects.type.map.LiveMapUpdate
+import io.ably.lib.objects.type.noOp
 import io.ably.lib.util.Log
 
-internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
+internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChangeCoordinator() {
+
   private val objectId = liveMap.objectId
 
   private val tag = "LiveMapManager"
@@ -17,7 +20,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
   /**
    * @spec RTLM6 - Overrides object data with state from sync
    */
-  internal fun applyState(objectState: ObjectState): Map<String, String> {
+  internal fun applyState(objectState: ObjectState): LiveMapUpdate {
     val previousData = liveMap.data.toMap()
 
     if (objectState.tombstone) {
@@ -69,13 +72,13 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
       else -> throw objectError("Invalid ${operation.action} op for LiveMap objectId=${objectId}") // RTLM15d4
     }
 
-    liveMap.notifyUpdated(update)
+    liveMap.notifyUpdated(update) // RTLM15d1a, RTLM15d2a, RTLM15d3a
   }
 
   /**
    * @spec RTLM16 - Applies map create operation
    */
-  private fun applyMapCreate(operation: ObjectOperation): Map<String, String> {
+  private fun applyMapCreate(operation: ObjectOperation): LiveMapUpdate {
     if (liveMap.createOperationIsMerged) {
       // RTLM16b
       // There can't be two different create operation for the same object id, because the object id
@@ -85,7 +88,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
         tag,
         "Skipping applying MAP_CREATE op on a map instance as it was already applied before; objectId=${objectId}"
       )
-      return mapOf()
+      return noOpMapUpdate
     }
 
     validateMapSemantics(operation.map?.semantics) // RTLM16c
@@ -99,7 +102,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
   private fun applyMapSet(
     mapOp: ObjectMapOp, // RTLM7d1
     timeSerial: String?, // RTLM7d2
-  ): Map<String, String> {
+  ): LiveMapUpdate {
     val existingEntry = liveMap.data[mapOp.key]
 
     // RTLM7a
@@ -109,7 +112,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
         "Skipping update for key=\"${mapOp.key}\": op serial $timeSerial <= entry serial ${existingEntry.timeserial};" +
           " objectId=${objectId}"
       )
-      return mapOf()
+      return noOpMapUpdate
     }
 
     if (mapOp.data.isInvalid()) {
@@ -142,7 +145,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
       )
     }
 
-    return mapOf(mapOp.key to "updated")
+    return LiveMapUpdate(mapOf(mapOp.key to LiveMapUpdate.Change.UPDATED))
   }
 
   /**
@@ -151,7 +154,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
   private fun applyMapRemove(
     mapOp: ObjectMapOp, // RTLM8c1
     timeSerial: String?, // RTLM8c2
-  ): Map<String, String> {
+  ): LiveMapUpdate {
     val existingEntry = liveMap.data[mapOp.key]
 
     // RTLM8a
@@ -162,7 +165,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
         "Skipping remove for key=\"${mapOp.key}\": op serial $timeSerial <= entry serial ${existingEntry.timeserial}; " +
           "objectId=${objectId}"
       )
-      return mapOf()
+      return noOpMapUpdate
     }
 
     if (existingEntry != null) {
@@ -182,7 +185,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
       )
     }
 
-    return mapOf(mapOp.key to "removed")
+    return LiveMapUpdate(mapOf(mapOp.key to LiveMapUpdate.Change.REMOVED))
   }
 
   /**
@@ -206,12 +209,12 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
   /**
    * @spec RTLM17 - Merges initial data from create operation
    */
-  private fun mergeInitialDataFromCreateOperation(operation: ObjectOperation): Map<String, String> {
+  private fun mergeInitialDataFromCreateOperation(operation: ObjectOperation): LiveMapUpdate {
     if (operation.map?.entries.isNullOrEmpty()) { // no map entries in MAP_CREATE op
-      return mapOf()
+      return noOpMapUpdate
     }
 
-    val aggregatedUpdate = mutableMapOf<String, String>()
+    val aggregatedUpdate = mutableListOf<LiveMapUpdate>()
 
     // RTLM17a
     // in order to apply MAP_CREATE op for an existing map, we should merge their underlying entries keys.
@@ -228,25 +231,30 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
       }
 
       // skip noop updates
-      if (update.isEmpty()) {
+      if (update.noOp) {
         return@forEach
       }
 
-      aggregatedUpdate.putAll(update)
+      aggregatedUpdate.add(update)
     }
 
     liveMap.createOperationIsMerged = true // RTLM17b
 
-    return aggregatedUpdate
+    return LiveMapUpdate(
+      aggregatedUpdate.map { it.update }.fold(emptyMap()) { acc, map -> acc + map }
+    )
   }
 
-  internal fun calculateUpdateFromDataDiff(prevData: Map<String, LiveMapEntry>, newData: Map<String, LiveMapEntry>): Map<String, String> {
-    val update = mutableMapOf<String, String>()
+  internal fun calculateUpdateFromDataDiff(
+    prevData: Map<String, LiveMapEntry>,
+    newData: Map<String, LiveMapEntry>
+  ): LiveMapUpdate {
+    val update = mutableMapOf<String, LiveMapUpdate.Change>()
 
     // Check for removed entries
     for ((key, prevEntry) in prevData) {
       if (!prevEntry.isTombstoned && !newData.containsKey(key)) {
-        update[key] = "removed"
+        update[key] = LiveMapUpdate.Change.REMOVED
       }
     }
 
@@ -255,7 +263,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
       if (!prevData.containsKey(key)) {
         // if property does not exist in current map, but new data has it as non-tombstoned property - got updated
         if (!newEntry.isTombstoned) {
-          update[key] = "updated"
+          update[key] = LiveMapUpdate.Change.UPDATED
         }
         // otherwise, if new data has this prop tombstoned - do nothing, as property didn't exist anyway
         continue
@@ -267,12 +275,12 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
       // compare tombstones first
       if (prevEntry.isTombstoned && !newEntry.isTombstoned) {
         // prev prop is tombstoned, but new is not. it means prop was updated to a meaningful value
-        update[key] = "updated"
+        update[key] = LiveMapUpdate.Change.UPDATED
         continue
       }
       if (!prevEntry.isTombstoned && newEntry.isTombstoned) {
         // prev prop is not tombstoned, but new is. it means prop was removed
-        update[key] = "removed"
+        update[key] = LiveMapUpdate.Change.REMOVED
         continue
       }
       if (prevEntry.isTombstoned && newEntry.isTombstoned) {
@@ -283,12 +291,12 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap) {
       // both props exist and are not tombstoned, need to compare values to see if it was changed
       val valueChanged = prevEntry.data != newEntry.data
       if (valueChanged) {
-        update[key] = "updated"
+        update[key] = LiveMapUpdate.Change.UPDATED
         continue
       }
     }
 
-    return update
+    return LiveMapUpdate(update)
   }
 
   internal fun validate(state: ObjectState) {
