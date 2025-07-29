@@ -3,20 +3,17 @@ package io.ably.lib.objects.integration.setup
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import io.ably.lib.objects.ablyException
+import io.ably.lib.objects.integration.helpers.RestObjects
 import io.ably.lib.realtime.*
 import io.ably.lib.types.ClientOptions
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
-import io.ktor.client.network.sockets.ConnectTimeoutException
-import io.ktor.client.network.sockets.SocketTimeoutException
-import io.ktor.client.plugins.HttpRequestRetry
-import io.ktor.client.plugins.HttpRequestTimeoutException
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.network.sockets.*
+import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
-import io.ktor.http.contentType
-import io.ktor.http.isSuccess
+import io.ktor.http.*
 import kotlinx.coroutines.CompletableDeferred
 
 private val client = HttpClient(CIO) {
@@ -67,6 +64,15 @@ internal fun Sandbox.createRealtimeClient(options: ClientOptions.() -> Unit): Ab
     environment = "sandbox"
   }
   return AblyRealtime(clientOptions)
+}
+
+internal fun Sandbox.createRestObjects(): RestObjects {
+  val options = ClientOptions().apply {
+    key = apiKey
+    environment = "sandbox"
+    useBinaryProtocol = false
+  }
+  return RestObjects(options)
 }
 
 internal suspend fun AblyRealtime.ensureConnected() {
