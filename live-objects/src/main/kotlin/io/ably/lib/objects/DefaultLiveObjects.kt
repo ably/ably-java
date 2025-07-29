@@ -37,6 +37,11 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
     CoroutineScope(Dispatchers.Default.limitedParallelism(1) + CoroutineName(channelName) + SupervisorJob())
 
   /**
+   * Provides a channel-specific scope for safely executing asynchronous operations with callbacks.
+   */
+  private val callbackScope = ObjectsCallbackScope(channelName)
+
+  /**
    * Event bus for handling incoming object messages sequentially.
    */
   private val objectsEventBus = MutableSharedFlow<ProtocolMessage>(extraBufferCapacity = UNLIMITED)
@@ -48,10 +53,6 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
 
   override fun getRoot(): LiveMap = runBlocking { getRootAsync() }
 
-  override fun getRootAsync(callback: Callback<LiveMap>) {
-    GlobalCallbackScope.launchWithCallback(callback) { getRootAsync() }
-  }
-
   override fun createMap(liveMap: LiveMap): LiveMap {
     TODO("Not yet implemented")
   }
@@ -62,6 +63,10 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
 
   override fun createMap(map: MutableMap<String, Any>): LiveMap {
     TODO("Not yet implemented")
+  }
+
+  override fun getRootAsync(callback: Callback<LiveMap>) {
+    callbackScope.launchWithCallback(callback) { getRootAsync() }
   }
 
   override fun createMapAsync(liveMap: LiveMap, callback: Callback<LiveMap>) {
@@ -197,5 +202,6 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
     objectsManager.dispose()
     // Don't cancel sequentialScope (needed in getRoot method), just cancel ongoing coroutines
     sequentialScope.coroutineContext.cancelChildren(disposeReason)
+    callbackScope.cancel(disposeReason) // cancel all ongoing callbacks
   }
 }
