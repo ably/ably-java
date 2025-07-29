@@ -1,5 +1,7 @@
 package io.ably.lib.objects
 
+import io.ably.lib.objects.type.BaseLiveObject
+import io.ably.lib.objects.type.map.LiveMapValue
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.realtime.CompletionListener
 import io.ably.lib.types.ChannelMode

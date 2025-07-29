@@ -1,7 +1,5 @@
 package io.ably.lib.objects.integration
 
-import io.ably.lib.objects.type.counter.LiveCounter
-import io.ably.lib.objects.type.map.LiveMap
 import io.ably.lib.objects.assertWaiter
 import io.ably.lib.objects.integration.helpers.ObjectId
 import io.ably.lib.objects.integration.helpers.fixtures.createUserEngagementMatrixMap
@@ -29,64 +27,64 @@ class DefaultLiveCounterTest: IntegrationTest() {
     val rootMap = channel.objects.root
 
     // Get the user map object from the root map
-    val userMap = rootMap.get("user") as LiveMap
+    val userMap = rootMap.get("user")?.asLiveMap
     assertNotNull(userMap, "User map should be synchronized")
     assertEquals(7L, userMap.size(), "User map should contain 7 top-level entries")
 
     // Assert direct counter objects at the top level of the user map
     // Test profileViews counter - should have initial value of 127
-    val profileViewsCounter = userMap.get("profileViews") as LiveCounter
+    val profileViewsCounter = userMap.get("profileViews")?.asLiveCounter
     assertNotNull(profileViewsCounter, "Profile views counter should exist")
     assertEquals(127.0, profileViewsCounter.value(), "Profile views counter should have initial value of 127")
 
     // Test postLikes counter - should have initial value of 45
-    val postLikesCounter = userMap.get("postLikes") as LiveCounter
+    val postLikesCounter = userMap.get("postLikes")?.asLiveCounter
     assertNotNull(postLikesCounter, "Post likes counter should exist")
     assertEquals(45.0, postLikesCounter.value(), "Post likes counter should have initial value of 45")
 
     // Test commentCount counter - should have initial value of 23
-    val commentCountCounter = userMap.get("commentCount") as LiveCounter
+    val commentCountCounter = userMap.get("commentCount")?.asLiveCounter
     assertNotNull(commentCountCounter, "Comment count counter should exist")
     assertEquals(23.0, commentCountCounter.value(), "Comment count counter should have initial value of 23")
 
     // Test followingCount counter - should have initial value of 89
-    val followingCountCounter = userMap.get("followingCount") as LiveCounter
+    val followingCountCounter = userMap.get("followingCount")?.asLiveCounter
     assertNotNull(followingCountCounter, "Following count counter should exist")
     assertEquals(89.0, followingCountCounter.value(), "Following count counter should have initial value of 89")
 
     // Test followersCount counter - should have initial value of 156
-    val followersCountCounter = userMap.get("followersCount") as LiveCounter
+    val followersCountCounter = userMap.get("followersCount")?.asLiveCounter
     assertNotNull(followersCountCounter, "Followers count counter should exist")
     assertEquals(156.0, followersCountCounter.value(), "Followers count counter should have initial value of 156")
 
     // Test loginStreak counter - should have initial value of 7
-    val loginStreakCounter = userMap.get("loginStreak") as LiveCounter
+    val loginStreakCounter = userMap.get("loginStreak")?.asLiveCounter
     assertNotNull(loginStreakCounter, "Login streak counter should exist")
     assertEquals(7.0, loginStreakCounter.value(), "Login streak counter should have initial value of 7")
 
     // Assert the nested engagement metrics map
-    val engagementMetrics = userMap.get("engagementMetrics") as LiveMap
+    val engagementMetrics = userMap.get("engagementMetrics")?.asLiveMap
     assertNotNull(engagementMetrics, "Engagement metrics map should exist")
     assertEquals(4L, engagementMetrics.size(), "Engagement metrics map should contain 4 counter entries")
 
     // Assert counter objects within the engagement metrics map
     // Test totalShares counter - should have initial value of 34
-    val totalSharesCounter = engagementMetrics.get("totalShares") as LiveCounter
+    val totalSharesCounter = engagementMetrics.get("totalShares")?.asLiveCounter
     assertNotNull(totalSharesCounter, "Total shares counter should exist")
     assertEquals(34.0, totalSharesCounter.value(), "Total shares counter should have initial value of 34")
 
     // Test totalBookmarks counter - should have initial value of 67
-    val totalBookmarksCounter = engagementMetrics.get("totalBookmarks") as LiveCounter
+    val totalBookmarksCounter = engagementMetrics.get("totalBookmarks")?.asLiveCounter
     assertNotNull(totalBookmarksCounter, "Total bookmarks counter should exist")
     assertEquals(67.0, totalBookmarksCounter.value(), "Total bookmarks counter should have initial value of 67")
 
     // Test totalReactions counter - should have initial value of 189
-    val totalReactionsCounter = engagementMetrics.get("totalReactions") as LiveCounter
+    val totalReactionsCounter = engagementMetrics.get("totalReactions")?.asLiveCounter
     assertNotNull(totalReactionsCounter, "Total reactions counter should exist")
     assertEquals(189.0, totalReactionsCounter.value(), "Total reactions counter should have initial value of 189")
 
     // Test dailyActiveStreak counter - should have initial value of 12
-    val dailyActiveStreakCounter = engagementMetrics.get("dailyActiveStreak") as LiveCounter
+    val dailyActiveStreakCounter = engagementMetrics.get("dailyActiveStreak")?.asLiveCounter
     assertNotNull(dailyActiveStreakCounter, "Daily active streak counter should exist")
     assertEquals(12.0, dailyActiveStreakCounter.value(), "Daily active streak counter should have initial value of 12")
 
@@ -130,7 +128,7 @@ class DefaultLiveCounterTest: IntegrationTest() {
     assertWaiter { rootMap.get("testCounter") != null }
 
     // Assert initial state after creation
-    val testCounter = rootMap.get("testCounter") as LiveCounter
+    val testCounter = rootMap.get("testCounter")?.asLiveCounter
     assertNotNull(testCounter, "Test counter should be created and accessible")
     assertEquals(10.0, testCounter.value(), "Counter should have initial value of 10")
 
@@ -201,7 +199,7 @@ class DefaultLiveCounterTest: IntegrationTest() {
     assertNotNull(testCounter, "Counter should still be accessible at the end")
 
     // Verify we can still access it from the root map
-    val finalCounterCheck = rootMap.get("testCounter") as LiveCounter
+    val finalCounterCheck = rootMap.get("testCounter")?.asLiveCounter
     assertNotNull(finalCounterCheck, "Counter should still be accessible from root map")
     assertEquals(30.0, finalCounterCheck.value(), "Final counter value should be 30 when accessed from root map")
   }
@@ -215,11 +213,11 @@ class DefaultLiveCounterTest: IntegrationTest() {
     val channel = getRealtimeChannel(channelName)
     val rootMap = channel.objects.root
 
-    val userEngagementMap = rootMap.get("userMatrix") as LiveMap
-    assertEquals(4L, userEngagementMap.size(), "User engagement map should contain 4 top-level entries")
+    val userEngagementMap = rootMap.get("userMatrix")?.asLiveMap
+    assertEquals(4L, userEngagementMap!!.size(), "User engagement map should contain 4 top-level entries")
 
-    val totalReactions = userEngagementMap.get("totalReactions") as LiveCounter
-    assertEquals(189.0, totalReactions.value(), "Total reactions counter should have initial value of 189")
+    val totalReactions = userEngagementMap.get("totalReactions")?.asLiveCounter
+    assertEquals(189.0, totalReactions!!.value(), "Total reactions counter should have initial value of 189")
 
     // Subscribe to changes on the totalReactions counter
     val counterUpdates = mutableListOf<Double>()

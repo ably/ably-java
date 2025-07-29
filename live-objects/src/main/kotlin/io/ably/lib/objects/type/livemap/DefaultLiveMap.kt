@@ -11,6 +11,7 @@ import io.ably.lib.objects.type.ObjectType
 import io.ably.lib.objects.type.map.LiveMap
 import io.ably.lib.objects.type.map.LiveMapChange
 import io.ably.lib.objects.type.map.LiveMapUpdate
+import io.ably.lib.objects.type.map.LiveMapValue
 import io.ably.lib.objects.type.noOp
 import io.ably.lib.types.Callback
 import io.ably.lib.util.Log
@@ -45,7 +46,7 @@ internal class DefaultLiveMap private constructor(
   private val adapter: LiveObjectsAdapter get() = liveObjects.adapter
   internal val objectsPool: ObjectsPool get() = liveObjects.objectsPool
 
-  override fun get(keyName: String): Any? {
+  override fun get(keyName: String): LiveMapValue? {
     adapter.throwIfInvalidAccessApiConfiguration(channelName) // RTLM5b, RTLM5c
     if (isTombstoned) {
       return null
@@ -56,10 +57,10 @@ internal class DefaultLiveMap private constructor(
     return null // RTLM5d1
   }
 
-  override fun entries(): Iterable<Map.Entry<String, Any>> {
+  override fun entries(): Iterable<Map.Entry<String, LiveMapValue>> {
     adapter.throwIfInvalidAccessApiConfiguration(channelName) // RTLM11b, RTLM11c
 
-    return sequence<Map.Entry<String, Any>> {
+    return sequence<Map.Entry<String, LiveMapValue>> {
       for ((key, entry) in data.entries) {
         val value = entry.getResolvedValue(objectsPool) // RTLM11d, RTLM11d2
         value?.let {
@@ -78,7 +79,7 @@ internal class DefaultLiveMap private constructor(
     }.asIterable()
   }
 
-  override fun values(): Iterable<Any> {
+  override fun values(): Iterable<LiveMapValue> {
     val iterableEntries = entries()
     return sequence {
       for (entry in iterableEntries) {
@@ -92,7 +93,7 @@ internal class DefaultLiveMap private constructor(
     return data.values.count { !it.isEntryOrRefTombstoned(objectsPool) }.toLong() // RTLM10d
   }
 
-  override fun set(keyName: String, value: Any) {
+  override fun set(keyName: String, value: LiveMapValue) {
     TODO("Not yet implemented")
   }
 
