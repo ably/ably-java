@@ -1,7 +1,5 @@
 package io.ably.lib.objects
 
-import io.ably.lib.objects.type.BaseLiveObject
-import io.ably.lib.objects.type.map.LiveMapValue
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.realtime.CompletionListener
 import io.ably.lib.types.ChannelMode
@@ -49,6 +47,12 @@ internal fun LiveObjectsAdapter.throwIfInvalidAccessApiConfiguration(channelName
   throwIfInChannelState(channelName, arrayOf(ChannelState.detached, ChannelState.failed))
 }
 
+internal fun LiveObjectsAdapter.throwIfInvalidWriteApiConfiguration(channelName: String) {
+  throwIfEchoMessagesDisabled()
+  throwIfMissingChannelMode(channelName, ChannelMode.object_publish)
+  throwIfInChannelState(channelName, arrayOf(ChannelState.detached, ChannelState.failed, ChannelState.suspended))
+}
+
 // Spec: RTO2
 internal fun LiveObjectsAdapter.throwIfMissingChannelMode(channelName: String, channelMode: ChannelMode) {
   val channelModes = getChannelModes(channelName)
@@ -63,6 +67,12 @@ internal fun LiveObjectsAdapter.throwIfInChannelState(channelName: String, chann
   if (currentState == null || channelStates.contains(currentState)) {
     throw ablyException("Channel is in invalid state: $currentState", ErrorCode.ChannelStateError)
   }
+}
+
+internal fun LiveObjectsAdapter.throwIfEchoMessagesDisabled() {
+   if (!clientOptions.echoMessages) {
+     throw clientError("\"echoMessages\" client option must be enabled for this operation")
+   }
 }
 
 internal class Binary(val data: ByteArray) {

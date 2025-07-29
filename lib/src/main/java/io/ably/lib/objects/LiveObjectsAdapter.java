@@ -4,6 +4,7 @@ import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelMode;
+import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ProtocolMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -53,5 +54,14 @@ public interface LiveObjectsAdapter {
      * @return the current state of the specified channel, or null if the channel is not found
      */
     @Nullable ChannelState getChannelState(@NotNull String channelName);
+
+    /**
+     * Retrieves the client options configured for the Ably client.
+     * Used to access client configuration parameters such as echoMessages setting
+     * that affect the behavior of LiveObjects operations.
+     *
+     * @return the client options containing configuration parameters
+     */
+    @NotNull ClientOptions getClientOptions();
 }
 

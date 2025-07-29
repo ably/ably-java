@@ -3,10 +3,7 @@ package io.ably.lib.objects;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.CompletionListener;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ChannelMode;
-import io.ably.lib.types.ChannelOptions;
-import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.types.*;
 import io.ably.lib.util.Log;
 import org.jetbrains.annotations.NotNull;
 
@@ -64,5 +61,10 @@ public class Adapter implements LiveObjectsAdapter {
         }
         Log.e(TAG, "getChannelState(): channel not found: " + channelName);
         return null;
+    }
+
+    @Override
+    public @NotNull ClientOptions getClientOptions() {
+        return ably.options;
     }
 }
