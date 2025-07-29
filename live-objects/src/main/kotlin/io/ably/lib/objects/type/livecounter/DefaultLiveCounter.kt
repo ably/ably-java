@@ -40,19 +40,19 @@ internal class DefaultLiveCounter private constructor(
   private val channelName = liveObjects.channelName
   private val adapter: LiveObjectsAdapter get() = liveObjects.adapter
 
-  override fun increment() {
+  override fun increment(amount: Number) {
     TODO("Not yet implemented")
   }
 
-  override fun incrementAsync(callback: Callback<Void>) {
+  override fun decrement(amount: Number) {
     TODO("Not yet implemented")
   }
 
-  override fun decrement() {
+  override fun incrementAsync(amount: Number, callback: Callback<Void>) {
     TODO("Not yet implemented")
   }
 
-  override fun decrementAsync(callback: Callback<Void>) {
+  override fun decrementAsync(amount: Number, callback: Callback<Void>) {
     TODO("Not yet implemented")
   }
 
