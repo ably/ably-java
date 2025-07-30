@@ -30,7 +30,7 @@ public interface LiveMap extends LiveMapChange {
      * @return the value associated with the specified key, or null if the key does not exist.
      */
     @Nullable
-    Object get(@NotNull String keyName);
+    LiveMapValue get(@NotNull String keyName);
 
     /**
      * Retrieves all entries (key-value pairs) in the map.
@@ -40,7 +40,7 @@ public interface LiveMap extends LiveMapChange {
      */
     @NotNull
     @Unmodifiable
-    Iterable<Map.Entry<String, Object>> entries();
+    Iterable<Map.Entry<String, LiveMapValue>> entries();
 
     /**
      * Retrieves all keys in the map.
@@ -60,7 +60,7 @@ public interface LiveMap extends LiveMapChange {
      */
     @NotNull
     @Unmodifiable
-    Iterable<Object> values();
+    Iterable<LiveMapValue> values();
 
     /**
      * Sets the specified key to the given value in the map.
@@ -68,12 +68,13 @@ public interface LiveMap extends LiveMapChange {
      * This does not modify the underlying data of this LiveMap object. Instead, the change will be applied when
      * the published MAP_SET operation is echoed back to the client and applied to the object following the regular
      * operation application procedure.
+     * Spec: RTLM20
      *
      * @param keyName the key to be set.
      * @param value the value to be associated with the key.
      */
     @Blocking
-    void set(@NotNull String keyName, @NotNull Object value);
+    void set(@NotNull String keyName, @NotNull LiveMapValue value);
 
     /**
      * Removes the specified key and its associated value from the map.
@@ -81,6 +82,7 @@ public interface LiveMap extends LiveMapChange {
      * This does not modify the underlying data of this LiveMap object. Instead, the change will be applied when
      * the published MAP_REMOVE operation is echoed back to the client and applied to the object following the regular
      * operation application procedure.
+     * Spec: RTLM21
      *
      * @param keyName the key to be removed.
      */
@@ -103,13 +105,14 @@ public interface LiveMap extends LiveMapChange {
      * This does not modify the underlying data of this LiveMap object. Instead, the change will be applied when
      * the published MAP_SET operation is echoed back to the client and applied to the object following the regular
      * operation application procedure.
+     * Spec: RTLM20
      *
      * @param keyName the key to be set.
      * @param value the value to be associated with the key.
      * @param callback the callback to handle the result or any errors.
      */
     @NonBlocking
-    void setAsync(@NotNull String keyName, @NotNull Object value, @NotNull ObjectsCallback<Void> callback);
+    void setAsync(@NotNull String keyName, @NotNull LiveMapValue value, @NotNull ObjectsCallback<Void> callback);
 
     /**
      * Asynchronously removes the specified key and its associated value from the map.
@@ -117,6 +120,7 @@ public interface LiveMap extends LiveMapChange {
      * This does not modify the underlying data of this LiveMap object. Instead, the change will be applied when
      * the published MAP_REMOVE operation is echoed back to the client and applied to the object following the regular
      * operation application procedure.
+     * Spec: RTLM21
      *
      * @param keyName  the key to be removed.
      * @param callback the callback to handle the result or any errors.

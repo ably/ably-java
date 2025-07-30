@@ -14,47 +14,57 @@ import org.jetbrains.annotations.Contract;
 public interface LiveCounter extends LiveCounterChange {
 
     /**
-     * Increments the value of the counter by 1.
+     * Increments the value of the counter by the specified amount.
      * Send a COUNTER_INC operation to the realtime system to increment a value on this LiveCounter object.
      * This does not modify the underlying data of this LiveCounter object. Instead, the change will be applied when
      * the published COUNTER_INC operation is echoed back to the client and applied to the object following the regular
      * operation application procedure.
+     * Spec: RTLC12
+     *
+     * @param amount the amount by which to increment the counter
      */
     @Blocking
-    void increment();
+    void increment(@NotNull Number amount);
 
     /**
-     * Increments the value of the counter by 1 asynchronously.
+     * Decrements the value of the counter by the specified amount.
+     * An alias for calling {@link LiveCounter#increment(Number)} with a negative amount.
+     * Spec: RTLC13
+     *
+     * @param amount the amount by which to decrement the counter
+     */
+    @Blocking
+    void decrement(@NotNull Number amount);
+
+    /**
+     * Increments the value of the counter by the specified amount asynchronously.
      * Send a COUNTER_INC operation to the realtime system to increment a value on this LiveCounter object.
      * This does not modify the underlying data of this LiveCounter object. Instead, the change will be applied when
      * the published COUNTER_INC operation is echoed back to the client and applied to the object following the regular
      * operation application procedure.
+     * Spec: RTLC12
      *
+     * @param amount the amount by which to increment the counter
      * @param callback the callback to be invoked upon completion of the operation.
      */
     @NonBlocking
-    void incrementAsync(@NotNull ObjectsCallback<Void> callback);
+    void incrementAsync(@NotNull Number amount, @NotNull ObjectsCallback<Void> callback);
 
     /**
-     * Decrements the value of the counter by 1.
-     * An alias for calling {@link LiveCounter#increment()} with a negative amount.
-     */
-    @Blocking
-    void decrement();
-
-    /**
-     * Decrements the value of the counter by 1 asynchronously.
-     * An alias for calling {@link LiveCounter#increment()} with a negative amount.
+     * Decrements the value of the counter by the specified amount asynchronously.
+     * An alias for calling {@link LiveCounter#incrementAsync(Number, ObjectsCallback)} with a negative amount.
+     * Spec: RTLC13
      *
+     * @param amount the amount by which to decrement the counter
      * @param callback the callback to be invoked upon completion of the operation.
      */
     @NonBlocking
-    void decrementAsync(@NotNull ObjectsCallback<Void> callback);
+    void decrementAsync(@NotNull Number amount, @NotNull ObjectsCallback<Void> callback);
 
     /**
      * Retrieves the current value of the counter.
      *
-     * @return the current value of the counter as a Long.
+     * @return the current value of the counter as a Double.
      */
     @NotNull
     @Contract(pure = true) // Indicates this method does not modify the state of the object.
