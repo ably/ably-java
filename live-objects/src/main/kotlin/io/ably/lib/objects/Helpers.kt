@@ -9,6 +9,9 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
+/**
+ * Spec: RTO15g
+ */
 internal suspend fun LiveObjectsAdapter.sendAsync(message: ProtocolMessage) = suspendCancellableCoroutine { continuation ->
   try {
     this.send(message, object : CompletionListener {
@@ -25,11 +28,14 @@ internal suspend fun LiveObjectsAdapter.sendAsync(message: ProtocolMessage) = su
   }
 }
 
+/**
+ * Spec: RTO15d
+ */
 internal fun LiveObjectsAdapter.ensureMessageSizeWithinLimit(objectMessages: Array<ObjectMessage>) {
   val maximumAllowedSize = maxMessageSizeLimit()
   val objectsTotalMessageSize = objectMessages.sumOf { it.size() }
   if (objectsTotalMessageSize > maximumAllowedSize) {
-    throw ablyException("ObjectMessage size $objectsTotalMessageSize exceeds maximum allowed size of $maximumAllowedSize bytes",
+    throw ablyException("ObjectMessages size $objectsTotalMessageSize exceeds maximum allowed size of $maximumAllowedSize bytes",
       ErrorCode.MaxMessageSizeExceeded)
   }
 }
@@ -51,6 +57,13 @@ internal fun LiveObjectsAdapter.throwIfInvalidWriteApiConfiguration(channelName:
   throwIfEchoMessagesDisabled()
   throwIfMissingChannelMode(channelName, ChannelMode.object_publish)
   throwIfInChannelState(channelName, arrayOf(ChannelState.detached, ChannelState.failed, ChannelState.suspended))
+}
+
+internal fun LiveObjectsAdapter.throwIfUnpublishableState(channelName: String) {
+  if (!connectionManager.isActive) {
+    throw ablyException(connectionManager.stateErrorInfo)
+  }
+  throwIfInChannelState(channelName, arrayOf(ChannelState.failed, ChannelState.suspended))
 }
 
 // Spec: RTO2

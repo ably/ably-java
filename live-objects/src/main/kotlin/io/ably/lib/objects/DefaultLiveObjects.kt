@@ -107,6 +107,20 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
   }
 
   /**
+   * Spec: RTO15
+   */
+  internal suspend fun publish(objectMessages: Array<ObjectMessage>) {
+    // RTO15b, RTL6c - Ensure that the channel is in a valid state for publishing
+    adapter.throwIfUnpublishableState(channelName)
+    adapter.ensureMessageSizeWithinLimit(objectMessages)
+    // RTO15e - Must construct the ProtocolMessage as per RTO15e1, RTO15e2, RTO15e3
+    val protocolMessage = ProtocolMessage(ProtocolMessage.Action.`object`, channelName)
+    protocolMessage.state = objectMessages
+    // RTO15f, RTO15g - Send the ProtocolMessage using the adapter and capture success/failure
+    adapter.sendAsync(protocolMessage)
+  }
+
+  /**
    * Handles a ProtocolMessage containing proto action as `object` or `object_sync`.
    * @spec RTL1 - Processes incoming object messages and object sync messages
    */

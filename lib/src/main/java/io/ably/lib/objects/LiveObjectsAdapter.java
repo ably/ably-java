@@ -2,6 +2,7 @@ package io.ably.lib.objects;
 
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.CompletionListener;
+import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelMode;
 import io.ably.lib.types.ClientOptions;
@@ -63,5 +64,14 @@ public interface LiveObjectsAdapter {
      * @return the client options containing configuration parameters
      */
     @NotNull ClientOptions getClientOptions();
+
+    /**
+     * Retrieves the connection manager for handling connection state and operations.
+     * Used to check connection status, obtain error information, and manage
+     * message transmission across the Ably connection.
+     *
+     * @return the connection manager instance
+     */
+    @NotNull ConnectionManager getConnectionManager();
 }
 
