@@ -18,7 +18,6 @@ import io.ably.lib.util.Log
 import java.util.concurrent.ConcurrentHashMap
 import java.util.AbstractMap
 
-
 /**
  * Implementation of LiveObject for LiveMap.
  *
@@ -152,6 +151,23 @@ internal class DefaultLiveMap private constructor(
      */
     internal fun zeroValue(objectId: String, objects: DefaultLiveObjects): DefaultLiveMap {
       return DefaultLiveMap(objectId, objects)
+    }
+
+    /**
+     * Creates an ObjectMap from map entries.
+     */
+    internal fun initialValue(entries: MutableMap<String, LiveMapValue>): MapCreatePayload {
+      return MapCreatePayload(
+        map = ObjectMap(
+          semantics = MapSemantics.LWW,
+          entries = entries.mapValues { (_, value) ->
+            ObjectMapEntry(
+              tombstone = false,
+              data = fromLiveMapValue(value)
+            )
+          }
+        )
+      )
     }
   }
 }

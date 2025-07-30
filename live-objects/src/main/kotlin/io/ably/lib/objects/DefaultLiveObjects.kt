@@ -1,8 +1,12 @@
 package io.ably.lib.objects
 
+import io.ably.lib.objects.serialization.gson
 import io.ably.lib.objects.state.ObjectsStateChange
 import io.ably.lib.objects.state.ObjectsStateEvent
+import io.ably.lib.objects.type.ObjectType
 import io.ably.lib.objects.type.counter.LiveCounter
+import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
+import io.ably.lib.objects.type.livemap.DefaultLiveMap
 import io.ably.lib.objects.type.map.LiveMap
 import io.ably.lib.objects.type.map.LiveMapValue
 import io.ably.lib.realtime.ChannelState
@@ -57,40 +61,28 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
 
   override fun getRoot(): LiveMap = runBlocking { getRootAsync() }
 
-  override fun createMap(): LiveMap {
-     return createMap(mutableMapOf())
-  }
+  override fun createMap(): LiveMap = createMap(mutableMapOf())
 
-  override fun createMap(entries: MutableMap<String, LiveMapValue>): LiveMap {
-    TODO("Not yet implemented")
-  }
+  override fun createMap(entries: MutableMap<String, LiveMapValue>): LiveMap = runBlocking { createMapAsync(entries) }
 
-  override fun createCounter(): LiveCounter {
-    return createCounter(0)
-  }
+  override fun createCounter(): LiveCounter = createCounter(0)
 
-  override fun createCounter(initialValue: Number): LiveCounter {
-    TODO("Not yet implemented")
-  }
+  override fun createCounter(initialValue: Number): LiveCounter = runBlocking { createCounterAsync(initialValue) }
 
   override fun getRootAsync(callback: Callback<LiveMap>) {
     asyncScope.launchWithCallback(callback) { getRootAsync() }
   }
 
-  override fun createMapAsync(callback: Callback<LiveMap>) {
-    TODO("Not yet implemented")
-  }
+  override fun createMapAsync(callback: Callback<LiveMap>) = createMapAsync(mutableMapOf(), callback)
 
   override fun createMapAsync(entries: MutableMap<String, LiveMapValue>, callback: Callback<LiveMap>) {
-    TODO("Not yet implemented")
+    asyncScope.launchWithCallback(callback) { createMapAsync(entries) }
   }
 
-  override fun createCounterAsync(callback: Callback<LiveCounter>) {
-    TODO("Not yet implemented")
-  }
+  override fun createCounterAsync(callback: Callback<LiveCounter>) = createCounterAsync(0, callback)
 
   override fun createCounterAsync(initialValue: Number, callback: Callback<LiveCounter>) {
-    TODO("Not yet implemented")
+    asyncScope.launchWithCallback(callback) { createCounterAsync(initialValue) }
   }
 
   override fun on(event: ObjectsStateEvent, listener: ObjectsStateChange.Listener): ObjectsSubscription =
@@ -104,6 +96,81 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
     adapter.throwIfInvalidAccessApiConfiguration(channelName)
     objectsManager.ensureSynced(state)
     objectsPool.get(ROOT_OBJECT_ID) as LiveMap
+  }
+
+  private suspend fun createMapAsync(entries: MutableMap<String, LiveMapValue>): LiveMap {
+    adapter.throwIfInvalidWriteApiConfiguration(channelName)
+
+    // Create initial value operation
+    val initialMapValue = DefaultLiveMap.initialValue(entries)
+
+    // Create initial value JSON string
+    val initialValueJSONString = gson.toJson(initialMapValue)
+
+    // Create object ID from initial value
+    val (objectId, nonce) = getObjectIdStringWithNonce(ObjectType.Map, initialValueJSONString)
+
+    // Create ObjectMessage with the operation
+    val msg = ObjectMessage(
+      operation = ObjectOperation(
+        action = ObjectOperationAction.MapCreate,
+        objectId = objectId,
+        map = initialMapValue.map,
+        nonce = nonce,
+        initialValue = initialValueJSONString,
+      )
+    )
+
+    // Publish the message
+    publish(arrayOf(msg))
+
+    // Check if object already exists in pool, otherwise create a zero-value object using the sequential scope
+    return objectsPool.get(objectId) as? LiveMap ?: withContext(sequentialScope.coroutineContext) {
+      objectsPool.createZeroValueObjectIfNotExists(objectId) as LiveMap
+    }
+  }
+
+  private suspend fun createCounterAsync(initialValue: Number): LiveCounter {
+    adapter.throwIfInvalidWriteApiConfiguration(channelName)
+
+    // Validate input parameter
+    if (initialValue.toDouble().isNaN() || initialValue.toDouble().isInfinite()) {
+      throw objectError("Counter value should be a valid number")
+    }
+
+    val initialCounterValue = DefaultLiveCounter.initialValue(initialValue)
+    // Create initial value operation
+    val initialValueJSONString = gson.toJson(initialCounterValue)
+
+    // Create object ID from initial value
+    val (objectId, nonce) = getObjectIdStringWithNonce(ObjectType.Counter, initialValueJSONString)
+
+    // Create ObjectMessage with the operation
+    val msg = ObjectMessage(
+      operation = ObjectOperation(
+        action = ObjectOperationAction.CounterCreate,
+        objectId = objectId,
+        counter = initialCounterValue.counter,
+        nonce = nonce,
+        initialValue = initialValueJSONString
+      )
+    )
+
+    // Publish the message
+    publish(arrayOf(msg))
+
+    // Check if object already exists in pool, otherwise create a zero-value object using the sequential scope
+    return objectsPool.get(objectId) as? LiveCounter ?: withContext(sequentialScope.coroutineContext) {
+      objectsPool.createZeroValueObjectIfNotExists(objectId) as LiveCounter
+    }
+  }
+
+  private suspend fun getObjectIdStringWithNonce(objectType: ObjectType, initialValue: String): Pair<String, String> {
+    val nonce = generateNonce()
+    val msTimestamp = withContext(Dispatchers.IO) {
+      adapter.getServerTime()
+    }
+    return Pair(ObjectId.fromInitialValue(objectType, initialValue, nonce, msTimestamp).toString(), nonce)
   }
 
   /**

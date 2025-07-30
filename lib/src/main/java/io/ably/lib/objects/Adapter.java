@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 public class Adapter implements LiveObjectsAdapter {
     private final AblyRealtime ably;
     private static final String TAG = LiveObjectsAdapter.class.getName();
+    private volatile Long serverTimeOffset = null;
 
     public Adapter(@NotNull AblyRealtime ably) {
         this.ably = ably;
@@ -76,5 +77,19 @@ public class Adapter implements LiveObjectsAdapter {
     @Override
     public @NotNull ConnectionManager getConnectionManager() {
         return ably.connection.connectionManager;
+    }
+
+    @Override
+    public long getServerTime() throws AblyException {
+        if (serverTimeOffset == null) {
+            synchronized (this) {
+                if (serverTimeOffset == null) { // Double-checked locking to ensure thread safety
+                    long serverTime = ably.time();
+                    serverTimeOffset = serverTime - System.currentTimeMillis();
+                    return serverTime;
+                }
+            }
+        }
+        return System.currentTimeMillis() + serverTimeOffset;
     }
 }

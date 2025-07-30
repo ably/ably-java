@@ -205,6 +205,26 @@ class DefaultLiveCounterTest: IntegrationTest() {
   }
 
   @Test
+  fun testLiveCounterOperationsUsingRealtime() = runTest {
+    val channelName = generateChannelName()
+    val channel = getRealtimeChannel(channelName)
+    val objects = channel.objects
+    val rootMap = channel.objects.root
+
+    // Step 1: Create a new counter with initial value of 10
+    val testCounterObjectId = objects.createCounter( 10.0)
+    restObjects.setMapRef(channelName, "root", "testCounter", testCounterObjectId.ObjectId)
+
+    // Wait for updated testCounter to be available in the root map
+    assertWaiter { rootMap.get("testCounter") != null }
+
+    // Assert initial state after creation
+    val testCounter = rootMap.get("testCounter")?.asLiveCounter
+    assertNotNull(testCounter, "Test counter should be created and accessible")
+    assertEquals(10.0, testCounter.value(), "Counter should have initial value of 10")
+  }
+
+  @Test
   fun testLiveCounterChangesUsingSubscription() = runTest {
     val channelName = generateChannelName()
     val userEngagementMapId = restObjects.createUserEngagementMatrixMap(channelName)

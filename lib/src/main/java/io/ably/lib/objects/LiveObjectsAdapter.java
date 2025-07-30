@@ -7,6 +7,7 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelMode;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ProtocolMessage;
+import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -73,5 +74,14 @@ public interface LiveObjectsAdapter {
      * @return the connection manager instance
      */
     @NotNull ConnectionManager getConnectionManager();
+
+    /**
+     * Retrieves the current time in milliseconds from the Ably server.
+     * On first call, queries the server time and caches the offset from local time.
+     * Subsequent calls return the local time adjusted by this offset.
+     * Spec: RTO16
+     */
+    @Blocking
+    long getServerTime() throws AblyException;
 }
 

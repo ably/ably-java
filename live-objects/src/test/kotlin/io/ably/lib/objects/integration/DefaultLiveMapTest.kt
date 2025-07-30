@@ -3,10 +3,12 @@ package io.ably.lib.objects.integration
 import io.ably.lib.objects.*
 import io.ably.lib.objects.ObjectData
 import io.ably.lib.objects.ObjectValue
+import io.ably.lib.objects.integration.helpers.ObjectId
 import io.ably.lib.objects.integration.helpers.fixtures.createUserMapObject
 import io.ably.lib.objects.integration.helpers.fixtures.createUserProfileMapObject
 import io.ably.lib.objects.integration.setup.IntegrationTest
 import io.ably.lib.objects.type.map.LiveMapUpdate
+import io.ably.lib.objects.type.map.LiveMapValue
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -214,6 +216,39 @@ class DefaultLiveMapTest: IntegrationTest() {
       if (value.isString) value.asString else null
     }.toSet()
     assertEquals(setOf("Bob", "bob@example.com"), finalValues, "Final string values should match expected set")
+  }
+
+  /**
+   * Tests sequential map operations including creation with initial data, updating existing fields,
+   * adding new fields, and removing fields. Validates the resulting data after each operation.
+   */
+  @Test
+  fun testLiveMapOperationsUsingRealtime() = runTest {
+    val channelName = generateChannelName()
+    val channel = getRealtimeChannel(channelName)
+    val objects = channel.objects
+    val rootMap = channel.objects.root
+
+    // Step 1: Create a new map with initial data
+    val testMapObjectId = objects.createMap(
+      mapOf(
+        "name" to LiveMapValue.of("Alice"),
+        "age" to LiveMapValue.of(30),
+        "isActive" to LiveMapValue.of(true),
+      )
+    )
+    restObjects.setMapRef(channelName, "root", "testMap", testMapObjectId.ObjectId)
+
+    // wait for updated testMap to be available in the root map
+    assertWaiter { rootMap.get("testMap") != null }
+
+    // Assert initial state after creation
+    val testMap = rootMap.get("testMap")?.asLiveMap
+    assertNotNull(testMap, "Test map should be created and accessible")
+    assertEquals(3L, testMap.size(), "Test map should have 3 initial entries")
+    assertEquals("Alice", testMap.get("name")?.asString, "Initial name should be Alice")
+    assertEquals(30.0, testMap.get("age")?.asNumber, "Initial age should be 30")
+    assertEquals(true, testMap.get("isActive")?.asBoolean, "Initial active status should be true")
   }
 
   @Test

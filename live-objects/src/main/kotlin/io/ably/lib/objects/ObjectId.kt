@@ -1,6 +1,9 @@
 package io.ably.lib.objects
 
 import io.ably.lib.objects.type.ObjectType
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
+import java.util.Base64
 
 internal class ObjectId private constructor(
   internal val type: ObjectType,
@@ -15,10 +18,19 @@ internal class ObjectId private constructor(
   }
 
   companion object {
+
+    internal fun fromInitialValue(objectType: ObjectType, initialValue: String, nonce: String, msTimeStamp: Long): ObjectId {
+      val valueForHash = "$initialValue:$nonce".toByteArray(StandardCharsets.UTF_8)
+      val hashBytes = MessageDigest.getInstance("SHA-256").digest(valueForHash)
+      val urlSafeHash = Base64.getUrlEncoder().withoutPadding().encodeToString(hashBytes)
+
+      return ObjectId(objectType, urlSafeHash, msTimeStamp)
+    }
+
     /**
      * Creates ObjectId instance from hashed object id string.
      */
-    fun fromString(objectId: String): ObjectId {
+    internal fun fromString(objectId: String): ObjectId {
       if (objectId.isEmpty()) {
         throw objectError("Invalid object id: $objectId")
       }

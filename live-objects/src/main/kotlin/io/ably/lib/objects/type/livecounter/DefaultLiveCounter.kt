@@ -105,5 +105,14 @@ internal class DefaultLiveCounter private constructor(
     internal fun zeroValue(objectId: String, liveObjects: DefaultLiveObjects): DefaultLiveCounter {
       return DefaultLiveCounter(objectId, liveObjects)
     }
+
+    /**
+     * Creates initial value operation for counter creation.
+     */
+    internal fun initialValue(count: Number): CounterCreatePayload {
+      return CounterCreatePayload(
+        counter = ObjectCounter(count = count.toDouble())
+      )
+    }
   }
 }
