@@ -13,6 +13,7 @@ import io.ably.lib.objects.type.noOp
 import io.ably.lib.types.Callback
 import java.util.concurrent.atomic.AtomicReference
 import io.ably.lib.util.Log
+import kotlinx.coroutines.runBlocking
 
 /**
  * Implementation of LiveObject for LiveCounter.
@@ -39,21 +40,18 @@ internal class DefaultLiveCounter private constructor(
 
   private val channelName = liveObjects.channelName
   private val adapter: LiveObjectsAdapter get() = liveObjects.adapter
+  private val asyncScope get() = liveObjects.asyncScope
 
-  override fun increment(amount: Number) {
-    TODO("Not yet implemented")
-  }
+  override fun increment(amount: Number) = runBlocking { incrementAsync(amount.toDouble()) }
 
-  override fun decrement(amount: Number) {
-    TODO("Not yet implemented")
-  }
+  override fun decrement(amount: Number) = runBlocking { incrementAsync(-amount.toDouble()) }
 
   override fun incrementAsync(amount: Number, callback: Callback<Void>) {
-    TODO("Not yet implemented")
+    asyncScope.launchWithVoidCallback(callback) { incrementAsync(amount.toDouble()) }
   }
 
   override fun decrementAsync(amount: Number, callback: Callback<Void>) {
-    TODO("Not yet implemented")
+    asyncScope.launchWithVoidCallback(callback) { incrementAsync(-amount.toDouble()) }
   }
 
   override fun value(): Double {
@@ -71,6 +69,28 @@ internal class DefaultLiveCounter private constructor(
   override fun unsubscribeAll() = liveCounterManager.unsubscribeAll()
 
   override fun validate(state: ObjectState) = liveCounterManager.validate(state)
+
+  private suspend fun incrementAsync(amount: Double) {
+    // Validate write API configuration
+    adapter.throwIfInvalidWriteApiConfiguration(channelName)
+
+    // Validate input parameter
+    if (amount.isNaN() || amount.isInfinite()) {
+      throw objectError("Counter value increment should be a valid number")
+    }
+
+    // Create ObjectMessage with the COUNTER_INC operation
+    val msg = ObjectMessage(
+      operation = ObjectOperation(
+        action = ObjectOperationAction.CounterInc,
+        objectId = objectId,
+        counterOp = ObjectCounterOp(amount = amount)
+      )
+    )
+
+    // Publish the message
+    liveObjects.publish(arrayOf(msg))
+  }
 
   override fun applyObjectState(objectState: ObjectState, message: ObjectMessage): LiveCounterUpdate {
     return liveCounterManager.applyState(objectState, message.serialTimestamp)

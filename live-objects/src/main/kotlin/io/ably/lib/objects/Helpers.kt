@@ -1,7 +1,5 @@
 package io.ably.lib.objects
 
-import io.ably.lib.objects.type.BaseLiveObject
-import io.ably.lib.objects.type.map.LiveMapValue
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.realtime.CompletionListener
 import io.ably.lib.types.ChannelMode
@@ -113,10 +111,3 @@ internal data class CounterCreatePayload(
 internal data class MapCreatePayload(
   val map: ObjectMap
 )
-
-internal fun fromLiveMapValue(value: LiveMapValue) : ObjectData {
-  return when {
-    value.isLiveMap || value.isLiveCounter -> ObjectData(objectId = (value.value as BaseLiveObject).objectId)
-    else -> ObjectData(value = ObjectValue(value.value))
-  }
-}

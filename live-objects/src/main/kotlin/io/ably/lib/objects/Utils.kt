@@ -75,6 +75,20 @@ internal class ObjectsAsyncScope(channelName: String) {
     }
   }
 
+  internal fun launchWithVoidCallback(callback: Callback<Void>, block: suspend () -> Unit) {
+    scope.launch {
+      try {
+        block()
+        try { callback.onSuccess(null) } catch (t: Throwable) {
+          Log.e(tag, "Error occurred while executing callback's onSuccess handler", t)
+        } // catch and don't rethrow error from callback
+      } catch (throwable: Throwable) {
+        val exception = throwable as? AblyException
+        callback.onError(exception?.errorInfo)
+      }
+    }
+  }
+
   internal fun cancel(cause: CancellationException) {
     scope.coroutineContext.cancelChildren(cause)
   }

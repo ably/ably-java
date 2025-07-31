@@ -53,7 +53,7 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
   /**
    * Provides a channel-specific scope for safely executing asynchronous operations with callbacks.
    */
-  private val asyncScope = ObjectsAsyncScope(channelName)
+  internal val asyncScope = ObjectsAsyncScope(channelName)
 
   init {
     incomingObjectsHandler = initializeHandlerForIncomingObjectMessages()

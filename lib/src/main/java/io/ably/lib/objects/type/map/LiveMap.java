@@ -112,7 +112,7 @@ public interface LiveMap extends LiveMapChange {
      * @param callback the callback to handle the result or any errors.
      */
     @NonBlocking
-    void setAsync(@NotNull String keyName, @NotNull Object value, @NotNull Callback<Void> callback);
+    void setAsync(@NotNull String keyName, @NotNull LiveMapValue value, @NotNull Callback<Void> callback);
 
     /**
      * Asynchronously removes the specified key and its associated value from the map.

@@ -5,6 +5,7 @@ import io.ably.lib.objects.integration.helpers.ObjectId
 import io.ably.lib.objects.integration.helpers.fixtures.createUserEngagementMatrixMap
 import io.ably.lib.objects.integration.helpers.fixtures.createUserMapWithCountersObject
 import io.ably.lib.objects.integration.setup.IntegrationTest
+import io.ably.lib.objects.type.map.LiveMapValue
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -212,8 +213,8 @@ class DefaultLiveCounterTest: IntegrationTest() {
     val rootMap = channel.objects.root
 
     // Step 1: Create a new counter with initial value of 10
-    val testCounterObjectId = objects.createCounter( 10.0)
-    restObjects.setMapRef(channelName, "root", "testCounter", testCounterObjectId.ObjectId)
+    val testCounterObject = objects.createCounter( 10.0)
+    rootMap.set("testCounter", LiveMapValue.of(testCounterObject))
 
     // Wait for updated testCounter to be available in the root map
     assertWaiter { rootMap.get("testCounter") != null }
@@ -222,6 +223,77 @@ class DefaultLiveCounterTest: IntegrationTest() {
     val testCounter = rootMap.get("testCounter")?.asLiveCounter
     assertNotNull(testCounter, "Test counter should be created and accessible")
     assertEquals(10.0, testCounter.value(), "Counter should have initial value of 10")
+
+    // Step 2: Increment counter by 5 (10 + 5 = 15)
+    testCounter.increment(5.0)
+    // Wait for the counter to be updated
+    assertWaiter { testCounter.value() == 15.0 }
+
+    // Assert after first increment
+    assertEquals(15.0, testCounter.value(), "Counter should be incremented to 15")
+
+    // Step 3: Increment counter by 3 (15 + 3 = 18)
+    testCounter.increment(3.0)
+    // Wait for the counter to be updated
+    assertWaiter { testCounter.value() == 18.0 }
+
+    // Assert after second increment
+    assertEquals(18.0, testCounter.value(), "Counter should be incremented to 18")
+
+    // Step 4: Increment counter by a larger amount: 12 (18 + 12 = 30)
+    testCounter.increment(12.0)
+    // Wait for the counter to be updated
+    assertWaiter { testCounter.value() == 30.0 }
+
+    // Assert after third increment
+    assertEquals(30.0, testCounter.value(), "Counter should be incremented to 30")
+
+    // Step 5: Decrement counter by 7 (30 - 7 = 23)
+    testCounter.decrement(7.0)
+    // Wait for the counter to be updated
+    assertWaiter { testCounter.value() == 23.0 }
+
+    // Assert after first decrement
+    assertEquals(23.0, testCounter.value(), "Counter should be decremented to 23")
+
+    // Step 6: Decrement counter by 4 (23 - 4 = 19)
+    testCounter.decrement(4.0)
+    // Wait for the counter to be updated
+    assertWaiter { testCounter.value() == 19.0 }
+
+    // Assert after second decrement
+    assertEquals(19.0, testCounter.value(), "Counter should be decremented to 19")
+
+    // Step 7: Increment counter by 1 (19 + 1 = 20)
+    testCounter.increment(1.0)
+    // Wait for the counter to be updated
+    assertWaiter { testCounter.value() == 20.0 }
+
+    // Assert after final increment
+    assertEquals(20.0, testCounter.value(), "Counter should be incremented to 20")
+
+    // Step 8: Decrement counter by a larger amount: 15 (20 - 15 = 5)
+    testCounter.decrement(15.0)
+    // Wait for the counter to be updated
+    assertWaiter { testCounter.value() == 5.0 }
+
+    // Assert after large decrement
+    assertEquals(5.0, testCounter.value(), "Counter should be decremented to 5")
+
+    // Final verification - test final increment to ensure counter still works
+    testCounter.increment(25.0)
+    assertWaiter { testCounter.value() == 30.0 }
+
+    // Assert final state
+    assertEquals(30.0, testCounter.value(), "Counter should have final value of 30")
+
+    // Verify the counter object is still accessible and functioning
+    assertNotNull(testCounter, "Counter should still be accessible at the end")
+
+    // Verify we can still access it from the root map
+    val finalCounterCheck = rootMap.get("testCounter")?.asLiveCounter
+    assertNotNull(finalCounterCheck, "Counter should still be accessible from root map")
+    assertEquals(30.0, finalCounterCheck.value(), "Final counter value should be 30 when accessed from root map")
   }
 
   @Test

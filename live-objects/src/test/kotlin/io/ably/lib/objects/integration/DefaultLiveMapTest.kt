@@ -3,7 +3,6 @@ package io.ably.lib.objects.integration
 import io.ably.lib.objects.*
 import io.ably.lib.objects.ObjectData
 import io.ably.lib.objects.ObjectValue
-import io.ably.lib.objects.integration.helpers.ObjectId
 import io.ably.lib.objects.integration.helpers.fixtures.createUserMapObject
 import io.ably.lib.objects.integration.helpers.fixtures.createUserProfileMapObject
 import io.ably.lib.objects.integration.setup.IntegrationTest
@@ -230,14 +229,14 @@ class DefaultLiveMapTest: IntegrationTest() {
     val rootMap = channel.objects.root
 
     // Step 1: Create a new map with initial data
-    val testMapObjectId = objects.createMap(
+    val testMapObject = objects.createMap(
       mapOf(
         "name" to LiveMapValue.of("Alice"),
         "age" to LiveMapValue.of(30),
         "isActive" to LiveMapValue.of(true),
       )
     )
-    restObjects.setMapRef(channelName, "root", "testMap", testMapObjectId.ObjectId)
+    rootMap.set("testMap", LiveMapValue.of(testMapObject))
 
     // wait for updated testMap to be available in the root map
     assertWaiter { rootMap.get("testMap") != null }
@@ -249,6 +248,92 @@ class DefaultLiveMapTest: IntegrationTest() {
     assertEquals("Alice", testMap.get("name")?.asString, "Initial name should be Alice")
     assertEquals(30.0, testMap.get("age")?.asNumber, "Initial age should be 30")
     assertEquals(true, testMap.get("isActive")?.asBoolean, "Initial active status should be true")
+
+    // Step 2: Update an existing field (name from "Alice" to "Bob")
+    testMap.set("name", LiveMapValue.of("Bob"))
+    // Wait for the map to be updated
+    assertWaiter { testMap.get("name")?.asString == "Bob" }
+
+    // Assert after updating existing field
+    assertEquals(3L, testMap.size(), "Map size should remain the same after update")
+    assertEquals("Bob", testMap.get("name")?.asString, "Name should be updated to Bob")
+    assertEquals(30.0, testMap.get("age")?.asNumber, "Age should remain unchanged")
+    assertEquals(true, testMap.get("isActive")?.asBoolean, "Active status should remain unchanged")
+
+    // Step 3: Add a new field (email)
+    testMap.set("email", LiveMapValue.of("bob@example.com"))
+    // Wait for the map to be updated
+    assertWaiter { testMap.get("email")?.asString == "bob@example.com" }
+
+    // Assert after adding new field
+    assertEquals(4L, testMap.size(), "Map size should increase after adding new field")
+    assertEquals("Bob", testMap.get("name")?.asString, "Name should remain Bob")
+    assertEquals(30.0, testMap.get("age")?.asNumber, "Age should remain unchanged")
+    assertEquals(true, testMap.get("isActive")?.asBoolean, "Active status should remain unchanged")
+    assertEquals("bob@example.com", testMap.get("email")?.asString, "Email should be added successfully")
+
+    // Step 4: Add another new field with different data type (score as number)
+    testMap.set("score", LiveMapValue.of(85))
+    // Wait for the map to be updated
+    assertWaiter { testMap.get("score")?.asNumber == 85.0 }
+
+    // Assert after adding second new field
+    assertEquals(5L, testMap.size(), "Map size should increase to 5 after adding score")
+    assertEquals("Bob", testMap.get("name")?.asString, "Name should remain Bob")
+    assertEquals(30.0, testMap.get("age")?.asNumber, "Age should remain unchanged")
+    assertEquals(true, testMap.get("isActive")?.asBoolean, "Active status should remain unchanged")
+    assertEquals("bob@example.com", testMap.get("email")?.asString, "Email should remain unchanged")
+    assertEquals(85.0, testMap.get("score")?.asNumber, "Score should be added as numeric value")
+
+    // Step 5: Update the boolean field
+    testMap.set("isActive", LiveMapValue.of(false))
+    // Wait for the map to be updated
+    assertWaiter { testMap.get("isActive")?.asBoolean == false }
+
+    // Assert after updating boolean field
+    assertEquals(5L, testMap.size(), "Map size should remain 5 after boolean update")
+    assertEquals("Bob", testMap.get("name")?.asString, "Name should remain Bob")
+    assertEquals(30.0, testMap.get("age")?.asNumber, "Age should remain unchanged")
+    assertEquals(false, testMap.get("isActive")?.asBoolean, "Active status should be updated to false")
+    assertEquals("bob@example.com", testMap.get("email")?.asString, "Email should remain unchanged")
+    assertEquals(85.0, testMap.get("score")?.asNumber, "Score should remain unchanged")
+
+    // Step 6: Remove a field (age)
+    testMap.remove("age")
+    // Wait for the map to be updated
+    assertWaiter { testMap.get("age") == null }
+
+    // Assert after removing field
+    assertEquals(4L, testMap.size(), "Map size should decrease to 4 after removing age")
+    assertEquals("Bob", testMap.get("name")?.asString, "Name should remain Bob")
+    assertNull(testMap.get("age"), "Age should be removed and return null")
+    assertEquals(false, testMap.get("isActive")?.asBoolean, "Active status should remain false")
+    assertEquals("bob@example.com", testMap.get("email")?.asString, "Email should remain unchanged")
+    assertEquals(85.0, testMap.get("score")?.asNumber, "Score should remain unchanged")
+
+    // Step 7: Remove another field (score)
+    testMap.remove("score")
+    // Wait for the map to be updated
+    assertWaiter { testMap.get("score") == null }
+
+    // Assert final state after second removal
+    assertEquals(3L, testMap.size(), "Map size should decrease to 3 after removing score")
+    assertEquals("Bob", testMap.get("name")?.asString, "Name should remain Bob")
+    assertEquals(false, testMap.get("isActive")?.asBoolean, "Active status should remain false")
+    assertEquals("bob@example.com", testMap.get("email")?.asString, "Email should remain unchanged")
+    assertNull(testMap.get("score"), "Score should be removed and return null")
+    assertNull(testMap.get("age"), "Age should remain null")
+
+    // Final verification - ensure all expected keys exist and unwanted keys don't
+    assertEquals(3, testMap.size(), "Final map should have exactly 3 entries")
+
+    val finalKeys = testMap.keys().toSet()
+    assertEquals(setOf("name", "isActive", "email"), finalKeys, "Final keys should match expected set")
+
+    val finalValues = testMap.values().mapNotNull { value ->
+      if (value.isString) value.asString else null
+    }.toSet()
+    assertEquals(setOf("Bob", "bob@example.com"), finalValues, "Final string values should match expected set")
   }
 
   @Test
