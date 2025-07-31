@@ -24,7 +24,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "1",
-      data = ObjectData(value = ObjectValue("oldValue"))
+      data = ObjectData(value = ObjectValue.String("oldValue"))
     )
 
     val objectState = ObjectState(
@@ -33,11 +33,11 @@ class LiveMapManagerTest {
         semantics = MapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectMapEntry(
-            data = ObjectData(value = ObjectValue("newValue1")),
+            data = ObjectData(value = ObjectValue.String("newValue1")),
             timeserial = "serial1"
           ),
           "key2" to ObjectMapEntry(
-            data = ObjectData(value = ObjectValue("value2")),
+            data = ObjectData(value = ObjectValue.String("value2")),
             timeserial = "serial2"
           )
         )
@@ -70,7 +70,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "1",
-      data = ObjectData(value = ObjectValue("oldValue"))
+      data = ObjectData(value = ObjectValue.String("oldValue"))
     )
 
     val objectState = ObjectState(
@@ -102,7 +102,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "1",
-      data = ObjectData(value = ObjectValue("oldValue"))
+      data = ObjectData(value = ObjectValue.String("oldValue"))
     )
 
     val objectState = ObjectState(
@@ -131,7 +131,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "1",
-      data = ObjectData(value = ObjectValue("existingValue"))
+      data = ObjectData(value = ObjectValue.String("existingValue"))
     )
 
     val createOp = ObjectOperation(
@@ -141,11 +141,11 @@ class LiveMapManagerTest {
         semantics = MapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectMapEntry(
-            data = ObjectData(value = ObjectValue("createValue")),
+            data = ObjectData(value = ObjectValue.String("createValue")),
             timeserial = "serial1"
           ),
           "key2" to ObjectMapEntry(
-            data = ObjectData(value = ObjectValue("newValue")),
+            data = ObjectData(value = ObjectValue.String("newValue")),
             timeserial = "serial2"
           )
         )
@@ -158,7 +158,7 @@ class LiveMapManagerTest {
         semantics = MapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectMapEntry(
-            data = ObjectData(value = ObjectValue("stateValue")),
+            data = ObjectData(value = ObjectValue.String("stateValue")),
             timeserial = "serial3"
           )
         )
@@ -196,11 +196,11 @@ class LiveMapManagerTest {
         semantics = MapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectMapEntry(
-            data = ObjectData(value = ObjectValue("value1")),
+            data = ObjectData(value = ObjectValue.String("value1")),
             timeserial = "serial1"
           ),
           "key2" to ObjectMapEntry(
-            data = ObjectData(value = ObjectValue("value2")),
+            data = ObjectData(value = ObjectValue.String("value2")),
             timeserial = "serial2"
           )
         )
@@ -225,7 +225,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "serial1",
-      data = ObjectData(value = ObjectValue("oldValue"))
+      data = ObjectData(value = ObjectValue.String("oldValue"))
     )
 
     val operation = ObjectOperation(
@@ -233,7 +233,7 @@ class LiveMapManagerTest {
       objectId = "map:testMap@1",
       mapOp = ObjectMapOp(
         key = "key1",
-        data = ObjectData(value = ObjectValue("newValue"))
+        data = ObjectData(value = ObjectValue.String("newValue"))
       )
     )
 
@@ -254,7 +254,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "serial1",
-      data = ObjectData(value = ObjectValue("value1"))
+      data = ObjectData(value = ObjectValue.String("value1"))
     )
 
     val operation = ObjectOperation(
@@ -308,7 +308,7 @@ class LiveMapManagerTest {
         semantics = MapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectMapEntry(
-            data = ObjectData(value = ObjectValue("value1")),
+            data = ObjectData(value = ObjectValue.String("value1")),
             timeserial = "serial1"
           )
         )
@@ -333,7 +333,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "serial1",
-      data = ObjectData(value = ObjectValue("existingValue"))
+      data = ObjectData(value = ObjectValue.String("existingValue"))
     )
 
     val operation = ObjectOperation(
@@ -343,11 +343,11 @@ class LiveMapManagerTest {
         semantics = MapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectMapEntry(
-            data = ObjectData(value = ObjectValue("createValue")),
+            data = ObjectData(value = ObjectValue.String("createValue")),
             timeserial = "serial2"
           ),
           "key2" to ObjectMapEntry(
-            data = ObjectData(value = ObjectValue("newValue")),
+            data = ObjectData(value = ObjectValue.String("newValue")),
             timeserial = "serial3"
           ),
           "key3" to ObjectMapEntry(
@@ -379,7 +379,7 @@ class LiveMapManagerTest {
       objectId = "map:testMap@1",
       mapOp = ObjectMapOp(
         key = "newKey",
-        data = ObjectData(value = ObjectValue("newValue"))
+        data = ObjectData(value = ObjectValue.String("newValue"))
       )
     )
 
@@ -401,7 +401,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "serial2", // Higher than "serial1"
-      data = ObjectData(value = ObjectValue("existingValue"))
+      data = ObjectData(value = ObjectValue.String("existingValue"))
     )
 
     val operation = ObjectOperation(
@@ -409,7 +409,7 @@ class LiveMapManagerTest {
       objectId = "map:testMap@1",
       mapOp = ObjectMapOp(
         key = "key1",
-        data = ObjectData(value = ObjectValue("newValue"))
+        data = ObjectData(value = ObjectValue.String("newValue"))
       )
     )
 
@@ -449,7 +449,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "serial2", // Higher than "serial1"
-      data = ObjectData(value = ObjectValue("existingValue"))
+      data = ObjectData(value = ObjectValue.String("existingValue"))
     )
 
     val operation = ObjectOperation(
@@ -475,7 +475,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = null,
-      data = ObjectData(value = ObjectValue("existingValue"))
+      data = ObjectData(value = ObjectValue.String("existingValue"))
     )
 
     val operation = ObjectOperation(
@@ -483,7 +483,7 @@ class LiveMapManagerTest {
       objectId = "map:testMap@1",
       mapOp = ObjectMapOp(
         key = "key1",
-        data = ObjectData(value = ObjectValue("newValue"))
+        data = ObjectData(value = ObjectValue.String("newValue"))
       )
     )
 
@@ -502,7 +502,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = null,
-      data = ObjectData(value = ObjectValue("existingValue"))
+      data = ObjectData(value = ObjectValue.String("existingValue"))
     )
 
     val operation = ObjectOperation(
@@ -510,7 +510,7 @@ class LiveMapManagerTest {
       objectId = "map:testMap@1",
       mapOp = ObjectMapOp(
         key = "key1",
-        data = ObjectData(value = ObjectValue("newValue"))
+        data = ObjectData(value = ObjectValue.String("newValue"))
       )
     )
 
@@ -530,7 +530,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "serial1",
-      data = ObjectData(value = ObjectValue("existingValue"))
+      data = ObjectData(value = ObjectValue.String("existingValue"))
     )
 
     val operation = ObjectOperation(
@@ -538,7 +538,7 @@ class LiveMapManagerTest {
       objectId = "map:testMap@1",
       mapOp = ObjectMapOp(
         key = "key1",
-        data = ObjectData(value = ObjectValue("newValue"))
+        data = ObjectData(value = ObjectValue.String("newValue"))
       )
     )
 
@@ -558,7 +558,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "serial1",
-      data = ObjectData(value = ObjectValue("existingValue"))
+      data = ObjectData(value = ObjectValue.String("existingValue"))
     )
 
     val operation = ObjectOperation(
@@ -566,7 +566,7 @@ class LiveMapManagerTest {
       objectId = "map:testMap@1",
       mapOp = ObjectMapOp(
         key = "key1",
-        data = ObjectData(value = ObjectValue("newValue"))
+        data = ObjectData(value = ObjectValue.String("newValue"))
       )
     )
 
@@ -586,7 +586,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "serial2",
-      data = ObjectData(value = ObjectValue("existingValue"))
+      data = ObjectData(value = ObjectValue.String("existingValue"))
     )
 
     val operation = ObjectOperation(
@@ -594,7 +594,7 @@ class LiveMapManagerTest {
       objectId = "map:testMap@1",
       mapOp = ObjectMapOp(
         key = "key1",
-        data = ObjectData(value = ObjectValue("newValue"))
+        data = ObjectData(value = ObjectValue.String("newValue"))
       )
     )
 
@@ -645,7 +645,7 @@ class LiveMapManagerTest {
       "key1" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "1",
-        data = ObjectData(value = ObjectValue("value1"))
+        data = ObjectData(value = ObjectValue.String("value1"))
       )
     )
     val result2 = livemapManager.calculateUpdateFromDataDiff(prevData2, newData2)
@@ -656,7 +656,7 @@ class LiveMapManagerTest {
       "key1" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "1",
-        data = ObjectData(value = ObjectValue("value1"))
+        data = ObjectData(value = ObjectValue.String("value1"))
       )
     )
     val newData3 = mapOf<String, LiveMapEntry>()
@@ -668,14 +668,14 @@ class LiveMapManagerTest {
       "key1" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "1",
-        data = ObjectData(value = ObjectValue("value1"))
+        data = ObjectData(value = ObjectValue.String("value1"))
       )
     )
     val newData4 = mapOf(
       "key1" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "2",
-        data = ObjectData(value = ObjectValue("value2"))
+        data = ObjectData(value = ObjectValue.String("value2"))
       )
     )
     val result4 = livemapManager.calculateUpdateFromDataDiff(prevData4, newData4)
@@ -686,7 +686,7 @@ class LiveMapManagerTest {
       "key1" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "1",
-        data = ObjectData(value = ObjectValue("value1"))
+        data = ObjectData(value = ObjectValue.String("value1"))
       )
     )
     val newData5 = mapOf(
@@ -711,7 +711,7 @@ class LiveMapManagerTest {
       "key1" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "2",
-        data = ObjectData(value = ObjectValue("value1"))
+        data = ObjectData(value = ObjectValue.String("value1"))
       )
     )
     val result6 = livemapManager.calculateUpdateFromDataDiff(prevData6, newData6)
@@ -729,7 +729,7 @@ class LiveMapManagerTest {
       "key1" to LiveMapEntry(
         isTombstoned = true,
         timeserial = "2",
-        data = ObjectData(value = ObjectValue("value1"))
+        data = ObjectData(value = ObjectValue.String("value1"))
       )
     )
     val result7 = livemapManager.calculateUpdateFromDataDiff(prevData7, newData7)
@@ -752,24 +752,24 @@ class LiveMapManagerTest {
       "key1" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "1",
-        data = ObjectData(value = ObjectValue("value1"))
+        data = ObjectData(value = ObjectValue.String("value1"))
       ),
       "key2" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "1",
-        data = ObjectData(value = ObjectValue("value2"))
+        data = ObjectData(value = ObjectValue.String("value2"))
       )
     )
     val newData9 = mapOf(
       "key1" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "2",
-        data = ObjectData(value = ObjectValue("value1_updated"))
+        data = ObjectData(value = ObjectValue.String("value1_updated"))
       ),
       "key3" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "1",
-        data = ObjectData(value = ObjectValue("value3"))
+        data = ObjectData(value = ObjectValue.String("value3"))
       )
     )
     val result9 = livemapManager.calculateUpdateFromDataDiff(prevData9, newData9)
@@ -803,14 +803,14 @@ class LiveMapManagerTest {
       "key1" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "1",
-        data = ObjectData(value = ObjectValue("value1"))
+        data = ObjectData(value = ObjectValue.String("value1"))
       )
     )
     val newData11 = mapOf(
       "key1" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "2",
-        data = ObjectData(value = ObjectValue("value1"))
+        data = ObjectData(value = ObjectValue.String("value1"))
       )
     )
     val result11 = livemapManager.calculateUpdateFromDataDiff(prevData11, newData11)
