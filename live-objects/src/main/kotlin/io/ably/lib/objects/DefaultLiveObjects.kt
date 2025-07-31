@@ -171,9 +171,7 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
 
   private suspend fun getObjectIdStringWithNonce(objectType: ObjectType, initialValue: String): Pair<String, String> {
     val nonce = generateNonce()
-    val msTimestamp = withContext(Dispatchers.IO) {
-      adapter.getServerTime()
-    }
+    val msTimestamp = ServerTime.getCurrentTime(adapter) // RTO16 - Get server time for nonce generation
     return Pair(ObjectId.fromInitialValue(objectType, initialValue, nonce, msTimestamp).toString(), nonce)
   }
 

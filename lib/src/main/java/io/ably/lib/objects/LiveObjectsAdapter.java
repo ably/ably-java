@@ -77,11 +77,9 @@ public interface LiveObjectsAdapter {
 
     /**
      * Retrieves the current time in milliseconds from the Ably server.
-     * On first call, queries the server time and caches the offset from local time.
-     * Subsequent calls return the local time adjusted by this offset.
      * Spec: RTO16
      */
     @Blocking
-    long getServerTime() throws AblyException;
+    long getTime() throws AblyException;
 }
 
