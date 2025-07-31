@@ -4,6 +4,7 @@ import io.ably.lib.types.AblyException
 import io.ably.lib.types.ErrorInfo
 import io.ably.lib.util.Log
 import kotlinx.coroutines.*
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.CancellationException
 
 internal fun ablyException(
@@ -40,13 +41,18 @@ internal fun serverError(errorMessage: String) = ablyException(errorMessage, Err
 internal fun objectError(errorMessage: String, cause: Throwable? = null): AblyException {
   return ablyException(errorMessage, ErrorCode.InvalidObject, HttpStatusCode.InternalServerError, cause)
 }
+
+internal fun invalidInputError(errorMessage: String, cause: Throwable? = null): AblyException {
+  return ablyException(errorMessage, ErrorCode.InvalidInputParams, HttpStatusCode.InternalServerError, cause)
+}
+
 /**
  * Calculates the byte size of a string.
  * For non-ASCII, the byte size can be 2–4x the character count. For ASCII, there is no difference.
  * e.g. "Hello" has a byte size of 5, while "你" has a byte size of 3 and "😊" has a byte size of 4.
  */
 internal val String.byteSize: Int
-  get() = this.toByteArray(Charsets.UTF_8).size
+  get() = this.toByteArray(StandardCharsets.UTF_8).size
 
 /**
  * A channel-specific coroutine scope for executing callbacks asynchronously in the LiveObjects system.
@@ -100,4 +106,12 @@ internal class ObjectsAsyncScope(channelName: String) {
   internal fun cancel(cause: CancellationException) {
     scope.coroutineContext.cancelChildren(cause)
   }
+}
+
+/**
+ * Generates a random nonce string for object creation.
+ */
+internal fun generateNonce(): String {
+  val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" // avoid calculation using range
+  return (1..16).map { chars.random() }.joinToString("")
 }
