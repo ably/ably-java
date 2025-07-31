@@ -52,4 +52,24 @@ class ObjectIdTest {
     assertEquals(92_000, exception.errorInfo?.code)
     assertEquals(500, exception.errorInfo?.statusCode)
   }
+
+  @Test
+  fun testFromInitialValue() {
+    val objectType = ObjectType.Map
+    val initialValue = "test-value"
+    val nonce = "test-nonce"
+    val msTimestamp = 1640995200000L
+
+    val objectId = ObjectId.fromInitialValue(objectType, initialValue, nonce, msTimestamp)
+    // Verify the string format follows the expected pattern: type:hash@timestamp
+    val objectIdString = objectId.toString()
+    assertTrue(objectIdString.startsWith("map:"))
+    assertTrue(objectIdString.contains("@"))
+    assertTrue(objectIdString.endsWith(msTimestamp.toString()))
+
+    val expectedHash = "GSjv-adTaJPL8-382qF3JuIyE4TCc6QKIIqb577pz00"
+    // Verify the hash value matches expected
+    val hashPart = objectIdString.substring(4, objectIdString.indexOf("@"))
+    assertEquals(expectedHash, hashPart)
+  }
 }

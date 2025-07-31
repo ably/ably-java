@@ -9,6 +9,9 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
+/**
+ * Spec: RTO15g
+ */
 internal suspend fun LiveObjectsAdapter.sendAsync(message: ProtocolMessage) = suspendCancellableCoroutine { continuation ->
   try {
     this.send(message, object : CompletionListener {
@@ -25,11 +28,14 @@ internal suspend fun LiveObjectsAdapter.sendAsync(message: ProtocolMessage) = su
   }
 }
 
+/**
+ * Spec: RTO15d
+ */
 internal fun LiveObjectsAdapter.ensureMessageSizeWithinLimit(objectMessages: Array<ObjectMessage>) {
   val maximumAllowedSize = maxMessageSizeLimit()
   val objectsTotalMessageSize = objectMessages.sumOf { it.size() }
   if (objectsTotalMessageSize > maximumAllowedSize) {
-    throw ablyException("ObjectMessage size $objectsTotalMessageSize exceeds maximum allowed size of $maximumAllowedSize bytes",
+    throw ablyException("ObjectMessages size $objectsTotalMessageSize exceeds maximum allowed size of $maximumAllowedSize bytes",
       ErrorCode.MaxMessageSizeExceeded)
   }
 }
@@ -45,6 +51,19 @@ internal fun LiveObjectsAdapter.setChannelSerial(channelName: String, protocolMe
 internal fun LiveObjectsAdapter.throwIfInvalidAccessApiConfiguration(channelName: String) {
   throwIfMissingChannelMode(channelName, ChannelMode.object_subscribe)
   throwIfInChannelState(channelName, arrayOf(ChannelState.detached, ChannelState.failed))
+}
+
+internal fun LiveObjectsAdapter.throwIfInvalidWriteApiConfiguration(channelName: String) {
+  throwIfEchoMessagesDisabled()
+  throwIfMissingChannelMode(channelName, ChannelMode.object_publish)
+  throwIfInChannelState(channelName, arrayOf(ChannelState.detached, ChannelState.failed, ChannelState.suspended))
+}
+
+internal fun LiveObjectsAdapter.throwIfUnpublishableState(channelName: String) {
+  if (!connectionManager.isActive) {
+    throw ablyException(connectionManager.stateErrorInfo)
+  }
+  throwIfInChannelState(channelName, arrayOf(ChannelState.failed, ChannelState.suspended))
 }
 
 // Spec: RTO2
@@ -63,6 +82,12 @@ internal fun LiveObjectsAdapter.throwIfInChannelState(channelName: String, chann
   }
 }
 
+internal fun LiveObjectsAdapter.throwIfEchoMessagesDisabled() {
+   if (!clientOptions.echoMessages) {
+     throw clientError("\"echoMessages\" client option must be enabled for this operation")
+   }
+}
+
 internal class Binary(val data: ByteArray) {
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
@@ -78,3 +103,11 @@ internal class Binary(val data: ByteArray) {
 internal fun Binary.size(): Int {
   return data.size
 }
+
+internal data class CounterCreatePayload(
+  val counter: ObjectCounter
+)
+
+internal data class MapCreatePayload(
+  val map: ObjectMap
+)

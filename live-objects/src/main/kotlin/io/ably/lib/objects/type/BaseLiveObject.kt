@@ -27,7 +27,7 @@ internal val LiveObjectUpdate.noOp get() = this.update == null
  */
 internal abstract class BaseLiveObject(
   internal val objectId: String, // // RTLO3a
-  private val objectType: ObjectType,
+  internal val objectType: ObjectType,
 ) {
 
   protected open val tag = "BaseLiveObject"

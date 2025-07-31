@@ -168,7 +168,7 @@ class ObjectMessageSizeTest {
     }
     // Assert on error code and message
     assertEquals(40009, exception.errorInfo.code)
-    val expectedMessage = "ObjectMessage size 66560 exceeds maximum allowed size of 65536 bytes"
+    val expectedMessage = "ObjectMessages size 66560 exceeds maximum allowed size of 65536 bytes"
     assertEquals(expectedMessage, exception.errorInfo.message)
   }
 }

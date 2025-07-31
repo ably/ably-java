@@ -5,6 +5,7 @@ import io.ably.lib.types.Callback
 import io.ably.lib.types.ErrorInfo
 import io.ably.lib.util.Log
 import kotlinx.coroutines.*
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.CancellationException
 
 internal fun ablyException(
@@ -47,7 +48,7 @@ internal fun objectError(errorMessage: String, cause: Throwable? = null): AblyEx
  * e.g. "Hello" has a byte size of 5, while "你" has a byte size of 3 and "😊" has a byte size of 4.
  */
 internal val String.byteSize: Int
-  get() = this.toByteArray(Charsets.UTF_8).size
+  get() = this.toByteArray(StandardCharsets.UTF_8).size
 
 /**
  * A channel-specific coroutine scope for executing callbacks asynchronously in the LiveObjects system.
@@ -74,7 +75,29 @@ internal class ObjectsAsyncScope(channelName: String) {
     }
   }
 
+  internal fun launchWithVoidCallback(callback: Callback<Void>, block: suspend () -> Unit) {
+    scope.launch {
+      try {
+        block()
+        try { callback.onSuccess(null) } catch (t: Throwable) {
+          Log.e(tag, "Error occurred while executing callback's onSuccess handler", t)
+        } // catch and don't rethrow error from callback
+      } catch (throwable: Throwable) {
+        val exception = throwable as? AblyException
+        callback.onError(exception?.errorInfo)
+      }
+    }
+  }
+
   internal fun cancel(cause: CancellationException) {
     scope.coroutineContext.cancelChildren(cause)
   }
+}
+
+/**
+ * Generates a random nonce string for object creation.
+ */
+internal fun generateNonce(): String {
+  val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" // avoid calculation using range
+  return (1..16).map { chars.random() }.joinToString("")
 }
