@@ -98,6 +98,6 @@ internal class ObjectsAsyncScope(channelName: String) {
  * Generates a random nonce string for object creation.
  */
 internal fun generateNonce(): String {
-  val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+  val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" // avoid calculation using range
   return (1..16).map { chars.random() }.joinToString("")
 }

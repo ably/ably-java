@@ -101,6 +101,10 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
   private suspend fun createMapAsync(entries: MutableMap<String, LiveMapValue>): LiveMap {
     adapter.throwIfInvalidWriteApiConfiguration(channelName)
 
+    if (entries.keys.any { it.isEmpty() }) {
+      throw objectError("Map keys should not be empty")
+    }
+
     // Create initial value operation
     val initialMapValue = DefaultLiveMap.initialValue(entries)
 
