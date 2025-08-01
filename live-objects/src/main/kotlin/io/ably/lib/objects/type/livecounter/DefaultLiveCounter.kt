@@ -12,6 +12,7 @@ import io.ably.lib.objects.type.counter.LiveCounterUpdate
 import io.ably.lib.objects.type.noOp
 import java.util.concurrent.atomic.AtomicReference
 import io.ably.lib.util.Log
+import kotlinx.coroutines.runBlocking
 
 /**
  * Implementation of LiveObject for LiveCounter.
@@ -38,21 +39,18 @@ internal class DefaultLiveCounter private constructor(
 
   private val channelName = liveObjects.channelName
   private val adapter: LiveObjectsAdapter get() = liveObjects.adapter
+  private val asyncScope get() = liveObjects.asyncScope
 
-  override fun increment() {
-    TODO("Not yet implemented")
+  override fun increment(amount: Number) = runBlocking { incrementAsync(amount.toDouble()) }
+
+  override fun decrement(amount: Number) = runBlocking { incrementAsync(-amount.toDouble()) }
+
+  override fun incrementAsync(amount: Number, callback: ObjectsCallback<Void>) {
+    asyncScope.launchWithVoidCallback(callback) { incrementAsync(amount.toDouble()) }
   }
 
-  override fun incrementAsync(callback: ObjectsCallback<Void>) {
-    TODO("Not yet implemented")
-  }
-
-  override fun decrement() {
-    TODO("Not yet implemented")
-  }
-
-  override fun decrementAsync(callback: ObjectsCallback<Void>) {
-    TODO("Not yet implemented")
+  override fun decrementAsync(amount: Number, callback: ObjectsCallback<Void>) {
+    asyncScope.launchWithVoidCallback(callback) { incrementAsync(-amount.toDouble()) }
   }
 
   override fun value(): Double {
@@ -70,6 +68,28 @@ internal class DefaultLiveCounter private constructor(
   override fun unsubscribeAll() = liveCounterManager.unsubscribeAll()
 
   override fun validate(state: ObjectState) = liveCounterManager.validate(state)
+
+  private suspend fun incrementAsync(amount: Double) {
+    // RTLC12b, RTLC12c, RTLC12d - Validate write API configuration
+    adapter.throwIfInvalidWriteApiConfiguration(channelName)
+
+    // RTLC12e1 - Validate input parameter
+    if (amount.isNaN() || amount.isInfinite()) {
+      throw invalidInputError("Counter value increment should be a valid number")
+    }
+
+    // RTLC12e2, RTLC12e3, RTLC12e4 - Create ObjectMessage with the COUNTER_INC operation
+    val msg = ObjectMessage(
+      operation = ObjectOperation(
+        action = ObjectOperationAction.CounterInc,
+        objectId = objectId,
+        counterOp = ObjectCounterOp(amount = amount)
+      )
+    )
+
+    // RTLC12f - Publish the message
+    liveObjects.publish(arrayOf(msg))
+  }
 
   override fun applyObjectState(objectState: ObjectState, message: ObjectMessage): LiveCounterUpdate {
     return liveCounterManager.applyState(objectState, message.serialTimestamp)
@@ -103,6 +123,16 @@ internal class DefaultLiveCounter private constructor(
      */
     internal fun zeroValue(objectId: String, liveObjects: DefaultLiveObjects): DefaultLiveCounter {
       return DefaultLiveCounter(objectId, liveObjects)
+    }
+
+    /**
+     * Creates initial value operation for counter creation.
+     * Spec: RTO12f2
+     */
+    internal fun initialValue(count: Number): CounterCreatePayload {
+      return CounterCreatePayload(
+        counter = ObjectCounter(count = count.toDouble())
+      )
     }
   }
 }
