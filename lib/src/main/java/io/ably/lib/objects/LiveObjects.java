@@ -1,6 +1,8 @@
 package io.ably.lib.objects;
 
 import io.ably.lib.objects.state.ObjectsStateChange;
+import io.ably.lib.objects.type.counter.LiveCounter;
+import io.ably.lib.objects.type.map.LiveMap;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.NotNull;

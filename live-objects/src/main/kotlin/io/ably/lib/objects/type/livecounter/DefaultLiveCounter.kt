@@ -4,8 +4,14 @@ import io.ably.lib.objects.*
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.type.BaseLiveObject
+import io.ably.lib.objects.type.LiveObjectUpdate
 import io.ably.lib.objects.type.ObjectType
+import io.ably.lib.objects.type.counter.LiveCounter
+import io.ably.lib.objects.type.counter.LiveCounterChange
+import io.ably.lib.objects.type.counter.LiveCounterUpdate
+import io.ably.lib.objects.type.noOp
 import java.util.concurrent.atomic.AtomicReference
+import io.ably.lib.util.Log
 
 /**
  * Implementation of LiveObject for LiveCounter.
@@ -54,9 +60,18 @@ internal class DefaultLiveCounter private constructor(
     return data.get()
   }
 
+  override fun subscribe(listener: LiveCounterChange.Listener): ObjectsSubscription {
+    adapter.throwIfInvalidAccessApiConfiguration(channelName)
+    return liveCounterManager.subscribe(listener)
+  }
+
+  override fun unsubscribe(listener: LiveCounterChange.Listener) = liveCounterManager.unsubscribe(listener)
+
+  override fun unsubscribeAll() = liveCounterManager.unsubscribeAll()
+
   override fun validate(state: ObjectState) = liveCounterManager.validate(state)
 
-  override fun applyObjectState(objectState: ObjectState): Map<String, Double> {
+  override fun applyObjectState(objectState: ObjectState): LiveCounterUpdate {
     return liveCounterManager.applyState(objectState)
   }
 
@@ -64,8 +79,16 @@ internal class DefaultLiveCounter private constructor(
     liveCounterManager.applyOperation(operation)
   }
 
-  override fun clearData(): Map<String, Double> {
-    return mapOf("amount" to data.get()).apply { data.set(0.0) }
+  override fun clearData(): LiveCounterUpdate {
+    return LiveCounterUpdate(data.get()).apply { data.set(0.0) }
+  }
+
+  override fun notifyUpdated(update: LiveObjectUpdate) {
+    if (update.noOp) {
+      return
+    }
+    Log.v(tag, "Object $objectId updated: $update")
+    liveCounterManager.notify(update as LiveCounterUpdate)
   }
 
   override fun onGCInterval() {

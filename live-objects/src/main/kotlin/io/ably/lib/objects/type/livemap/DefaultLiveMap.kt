@@ -6,7 +6,13 @@ import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.type.BaseLiveObject
+import io.ably.lib.objects.type.LiveObjectUpdate
 import io.ably.lib.objects.type.ObjectType
+import io.ably.lib.objects.type.map.LiveMap
+import io.ably.lib.objects.type.map.LiveMapChange
+import io.ably.lib.objects.type.map.LiveMapUpdate
+import io.ably.lib.objects.type.noOp
+import io.ably.lib.util.Log
 import java.util.concurrent.ConcurrentHashMap
 import java.util.AbstractMap
 
@@ -103,7 +109,16 @@ internal class DefaultLiveMap private constructor(
 
   override fun validate(state: ObjectState) = liveMapManager.validate(state)
 
-  override fun applyObjectState(objectState: ObjectState): Map<String, String> {
+  override fun subscribe(listener: LiveMapChange.Listener): ObjectsSubscription {
+    adapter.throwIfInvalidAccessApiConfiguration(channelName)
+    return liveMapManager.subscribe(listener)
+  }
+
+  override fun unsubscribe(listener: LiveMapChange.Listener) = liveMapManager.unsubscribe(listener)
+
+  override fun unsubscribeAll() = liveMapManager.unsubscribeAll()
+
+  override fun applyObjectState(objectState: ObjectState): LiveMapUpdate {
     return liveMapManager.applyState(objectState)
   }
 
@@ -111,9 +126,17 @@ internal class DefaultLiveMap private constructor(
     liveMapManager.applyOperation(operation, message.serial)
   }
 
-  override fun clearData(): Map<String, String> {
+  override fun clearData(): LiveMapUpdate {
     return liveMapManager.calculateUpdateFromDataDiff(data.toMap(), emptyMap())
       .apply { data.clear() }
+  }
+
+  override fun notifyUpdated(update: LiveObjectUpdate) {
+    if (update.noOp) {
+      return
+    }
+    Log.v(tag, "Object $objectId updated: $update")
+    liveMapManager.notify(update as LiveMapUpdate)
   }
 
   override fun onGCInterval() {

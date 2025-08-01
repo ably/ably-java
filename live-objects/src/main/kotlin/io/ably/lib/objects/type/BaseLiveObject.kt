@@ -5,12 +5,17 @@ import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.ObjectsPoolDefaults
 import io.ably.lib.objects.objectError
+import io.ably.lib.objects.type.livecounter.noOpCounterUpdate
+import io.ably.lib.objects.type.livemap.noOpMapUpdate
 import io.ably.lib.util.Log
 
 internal enum class ObjectType(val value: String) {
   Map("map"),
   Counter("counter")
 }
+
+// Spec: RTLO4b4b
+internal val LiveObjectUpdate.noOp get() = this.update == null
 
 /**
  * Base implementation of LiveObject interface.
@@ -42,7 +47,7 @@ internal abstract class BaseLiveObject(
    *
    * @spec RTLM6/RTLC6 - Overrides ObjectMessage with object data state from sync to LiveMap/LiveCounter
    */
-  internal fun applyObjectSync(objectState: ObjectState): Map<String, Any> {
+  internal fun applyObjectSync(objectState: ObjectState): LiveObjectUpdate {
     validate(objectState)
     // object's site serials are still updated even if it is tombstoned, so always use the site serials received from the operation.
     // should default to empty map if site serials do not exist on the object state, so that any future operation may be applied to this object.
@@ -51,7 +56,10 @@ internal abstract class BaseLiveObject(
 
     if (isTombstoned) {
       // this object is tombstoned. this is a terminal state which can't be overridden. skip the rest of object state message processing
-      return mapOf()
+      if (objectType == ObjectType.Map) {
+        return noOpMapUpdate
+      }
+      return noOpCounterUpdate
     }
     return applyObjectState(objectState) // RTLM6, RTLC6
   }
@@ -74,7 +82,7 @@ internal abstract class BaseLiveObject(
       Log.v(
         tag,
         "Skipping ${objectOperation.action} op: op serial $msgTimeSerial <= site serial ${siteTimeserials[msgSiteCode]}; " +
-                "objectId=$objectId"
+          "objectId=$objectId"
       )
       return
     }
@@ -87,11 +95,6 @@ internal abstract class BaseLiveObject(
       return;
     }
     applyObjectOperation(objectOperation, objectMessage) // RTLC7d
-  }
-
-  internal fun notifyUpdated(update: Any) {
-    // TODO: Implement event emission for updates
-    Log.v(tag, "Object $objectId updated: $update")
   }
 
   /**
@@ -119,7 +122,7 @@ internal abstract class BaseLiveObject(
   /**
    * Marks the object as tombstoned.
    */
-  internal fun tombstone(): Any {
+  internal fun tombstone(): LiveObjectUpdate {
     isTombstoned = true
     tombstonedAt = System.currentTimeMillis()
     val update = clearData()
@@ -150,7 +153,7 @@ internal abstract class BaseLiveObject(
    * @return A map describing the changes made to the object's data
    *
    */
-  abstract fun applyObjectState(objectState: ObjectState): Map<String, Any>
+  abstract fun applyObjectState(objectState: ObjectState): LiveObjectUpdate
 
   /**
    * Applies an operation to this live object.
@@ -176,7 +179,14 @@ internal abstract class BaseLiveObject(
    *
    * @return A map representing the diff of changes made
    */
-  abstract fun clearData(): Map<String, Any>
+  abstract fun clearData(): LiveObjectUpdate
+
+  /**
+   * Notifies subscribers about changes made to this live object. Propagates updates through the
+   * appropriate manager after converting the generic update map to type-specific update objects.
+   * Spec: RTLO4b4c
+   */
+  abstract fun notifyUpdated(update: LiveObjectUpdate)
 
   /**
    * Called during garbage collection intervals to clean up expired entries.

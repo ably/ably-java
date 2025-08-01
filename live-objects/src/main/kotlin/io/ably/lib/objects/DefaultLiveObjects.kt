@@ -2,6 +2,8 @@ package io.ably.lib.objects
 
 import io.ably.lib.objects.state.ObjectsStateChange
 import io.ably.lib.objects.state.ObjectsStateEvent
+import io.ably.lib.objects.type.counter.LiveCounter
+import io.ably.lib.objects.type.map.LiveMap
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.types.AblyException
 import io.ably.lib.types.ProtocolMessage
@@ -125,7 +127,7 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
    * @spec OM2 - Populates missing fields from parent protocol message
    */
   private fun initializeHandlerForIncomingObjectMessages(): Job {
-     return sequentialScope.launch {
+    return sequentialScope.launch {
       objectsEventBus.collect { protocolMessage ->
         // OM2 - Populate missing fields from parent
         val objects = protocolMessage.state.filterIsInstance<ObjectMessage>()
