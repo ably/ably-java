@@ -113,9 +113,9 @@ class DefaultLiveMapTest: IntegrationTest() {
     val testMapObjectId = restObjects.createMap(
       channelName,
       data = mapOf(
-        "name" to ObjectData(value = ObjectValue("Alice")),
-        "age" to ObjectData(value = ObjectValue(30)),
-        "isActive" to ObjectData(value = ObjectValue(true))
+        "name" to ObjectData(value = ObjectValue.String("Alice")),
+        "age" to ObjectData(value = ObjectValue.Number(30)),
+        "isActive" to ObjectData(value = ObjectValue.Boolean(true))
       )
     )
     restObjects.setMapRef(channelName, "root", "testMap", testMapObjectId)
@@ -132,7 +132,7 @@ class DefaultLiveMapTest: IntegrationTest() {
     assertEquals(true, testMap.get("isActive"), "Initial active status should be true")
 
     // Step 2: Update an existing field (name from "Alice" to "Bob")
-    restObjects.setMapValue(channelName, testMapObjectId, "name", ObjectValue("Bob"))
+    restObjects.setMapValue(channelName, testMapObjectId, "name", ObjectValue.String("Bob"))
     // Wait for the map to be updated
     assertWaiter { testMap.get("name") == "Bob" }
 
@@ -143,7 +143,7 @@ class DefaultLiveMapTest: IntegrationTest() {
     assertEquals(true, testMap.get("isActive"), "Active status should remain unchanged")
 
     // Step 3: Add a new field (email)
-    restObjects.setMapValue(channelName, testMapObjectId, "email", ObjectValue("bob@example.com"))
+    restObjects.setMapValue(channelName, testMapObjectId, "email", ObjectValue.String("bob@example.com"))
     // Wait for the map to be updated
     assertWaiter { testMap.get("email") == "bob@example.com" }
 
@@ -155,7 +155,7 @@ class DefaultLiveMapTest: IntegrationTest() {
     assertEquals("bob@example.com", testMap.get("email"), "Email should be added successfully")
 
     // Step 4: Add another new field with different data type (score as number)
-    restObjects.setMapValue(channelName, testMapObjectId, "score", ObjectValue(85))
+    restObjects.setMapValue(channelName, testMapObjectId, "score", ObjectValue.Number(85))
     // Wait for the map to be updated
     assertWaiter { testMap.get("score") == 85.0 }
 
@@ -168,7 +168,7 @@ class DefaultLiveMapTest: IntegrationTest() {
     assertEquals(85.0, testMap.get("score"), "Score should be added as numeric value")
 
     // Step 5: Update the boolean field
-    restObjects.setMapValue(channelName, testMapObjectId, "isActive", ObjectValue(false))
+    restObjects.setMapValue(channelName, testMapObjectId, "isActive", ObjectValue.Boolean(false))
     // Wait for the map to be updated
     assertWaiter { testMap.get("isActive") == false }
 
@@ -241,7 +241,7 @@ class DefaultLiveMapTest: IntegrationTest() {
     val userProfileSubscription = userProfile.subscribe { update -> userProfileUpdates.add(update) }
 
     // Step 1: Update an existing field in the user profile map (change the name)
-    restObjects.setMapValue(channelName, userProfileObjectId, "name", ObjectValue("Bob Smith"))
+    restObjects.setMapValue(channelName, userProfileObjectId, "name", ObjectValue.String("Bob Smith"))
 
     // Wait for the update to be received
     assertWaiter { userProfileUpdates.isNotEmpty() }
@@ -258,7 +258,7 @@ class DefaultLiveMapTest: IntegrationTest() {
 
     // Step 2: Update another field in the user profile map (change the email)
     userProfileUpdates.clear()
-    restObjects.setMapValue(channelName, userProfileObjectId, "email", ObjectValue("bob@example.com"))
+    restObjects.setMapValue(channelName, userProfileObjectId, "email", ObjectValue.String("bob@example.com"))
 
     // Wait for the second update
     assertWaiter { userProfileUpdates.isNotEmpty() }
@@ -298,7 +298,7 @@ class DefaultLiveMapTest: IntegrationTest() {
     userProfileUpdates.clear()
     userProfileSubscription.unsubscribe()
     // No updates should be received after unsubscribing
-    restObjects.setMapValue(channelName, userProfileObjectId, "country", ObjectValue("uk"))
+    restObjects.setMapValue(channelName, userProfileObjectId, "country", ObjectValue.String("uk"))
 
     // Wait for a moment to ensure no updates are received
     assertWaiter { userProfile.size() == 4L }

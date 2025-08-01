@@ -10,7 +10,6 @@ import io.ably.lib.objects.type.counter.LiveCounter
 import io.ably.lib.objects.type.counter.LiveCounterChange
 import io.ably.lib.objects.type.counter.LiveCounterUpdate
 import io.ably.lib.objects.type.noOp
-import io.ably.lib.types.Callback
 import java.util.concurrent.atomic.AtomicReference
 import io.ably.lib.util.Log
 
@@ -44,7 +43,7 @@ internal class DefaultLiveCounter private constructor(
     TODO("Not yet implemented")
   }
 
-  override fun incrementAsync(callback: Callback<Void>) {
+  override fun incrementAsync(callback: ObjectsCallback<Void>) {
     TODO("Not yet implemented")
   }
 
@@ -52,7 +51,7 @@ internal class DefaultLiveCounter private constructor(
     TODO("Not yet implemented")
   }
 
-  override fun decrementAsync(callback: Callback<Void>) {
+  override fun decrementAsync(callback: ObjectsCallback<Void>) {
     TODO("Not yet implemented")
   }
 
