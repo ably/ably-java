@@ -1,6 +1,6 @@
 package io.ably.lib.objects;
 
-import io.ably.lib.types.Callback;
+import io.ably.lib.objects.state.ObjectsStateChange;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.NotNull;
@@ -16,7 +16,7 @@ import java.util.Map;
  * <p>Implementations of this interface must be thread-safe as they may be accessed
  * from multiple threads concurrently.
  */
-public interface LiveObjects {
+public interface LiveObjects extends ObjectsStateChange {
 
     /**
      * Retrieves the root LiveMap object.
@@ -95,7 +95,7 @@ public interface LiveObjects {
      * @param callback the callback to handle the result or error.
      */
     @NonBlocking
-    void getRootAsync(@NotNull Callback<@NotNull LiveMap> callback);
+    void getRootAsync(@NotNull ObjectsCallback<@NotNull LiveMap> callback);
 
     /**
      * Asynchronously creates a new LiveMap based on an existing LiveMap.
@@ -108,7 +108,7 @@ public interface LiveObjects {
      * @param callback the callback to handle the result or error.
      */
     @NonBlocking
-    void createMapAsync(@NotNull LiveMap liveMap, @NotNull Callback<@NotNull LiveMap> callback);
+    void createMapAsync(@NotNull LiveMap liveMap, @NotNull ObjectsCallback<@NotNull LiveMap> callback);
 
     /**
      * Asynchronously creates a new LiveMap based on a LiveCounter.
@@ -121,7 +121,7 @@ public interface LiveObjects {
      * @param callback the callback to handle the result or error.
      */
     @NonBlocking
-    void createMapAsync(@NotNull LiveCounter liveCounter, @NotNull Callback<@NotNull LiveMap> callback);
+    void createMapAsync(@NotNull LiveCounter liveCounter, @NotNull ObjectsCallback<@NotNull LiveMap> callback);
 
     /**
      * Asynchronously creates a new LiveMap based on a standard Java Map.
@@ -134,7 +134,7 @@ public interface LiveObjects {
      * @param callback the callback to handle the result or error.
      */
     @NonBlocking
-    void createMapAsync(@NotNull Map<String, Object> map, @NotNull Callback<@NotNull LiveMap> callback);
+    void createMapAsync(@NotNull Map<String, Object> map, @NotNull ObjectsCallback<@NotNull LiveMap> callback);
 
     /**
      * Asynchronously creates a new LiveCounter with an initial value.
@@ -147,5 +147,5 @@ public interface LiveObjects {
      * @param callback the callback to handle the result or error.
      */
     @NonBlocking
-    void createCounterAsync(@NotNull Long initialValue, @NotNull Callback<@NotNull LiveCounter> callback);
+    void createCounterAsync(@NotNull Long initialValue, @NotNull ObjectsCallback<@NotNull LiveCounter> callback);
 }

@@ -2,6 +2,9 @@ package io.ably.lib.objects
 
 import io.ably.lib.types.AblyException
 import io.ably.lib.types.ErrorInfo
+import io.ably.lib.util.Log
+import kotlinx.coroutines.*
+import java.util.concurrent.CancellationException
 
 internal fun ablyException(
   errorMessage: String,
@@ -44,3 +47,57 @@ internal fun objectError(errorMessage: String, cause: Throwable? = null): AblyEx
  */
 internal val String.byteSize: Int
   get() = this.toByteArray(Charsets.UTF_8).size
+
+/**
+ * A channel-specific coroutine scope for executing callbacks asynchronously in the LiveObjects system.
+ * Provides safe execution of suspend functions with results delivered via callbacks.
+ * Supports proper error handling and cancellation during LiveObjects disposal.
+ */
+internal class ObjectsAsyncScope(channelName: String) {
+  private val tag = "ObjectsCallbackScope-$channelName"
+
+  private val scope =
+    CoroutineScope(Dispatchers.Default + CoroutineName(tag) + SupervisorJob())
+
+  internal fun <T> launchWithCallback(callback: ObjectsCallback<T>, block: suspend () -> T) {
+    scope.launch {
+      try {
+        val result = block()
+        try { callback.onSuccess(result) } catch (t: Throwable) {
+          Log.e(tag, "Error occurred while executing callback's onSuccess handler", t)
+        } // catch and don't rethrow error from callback
+      } catch (throwable: Throwable) {
+        when (throwable) {
+          is AblyException -> { callback.onError(throwable) }
+          else -> {
+            val ex = ablyException("Error executing operation", ErrorCode.BadRequest, cause = throwable)
+            callback.onError(ex)
+          }
+        }
+      }
+    }
+  }
+
+  internal fun launchWithVoidCallback(callback: ObjectsCallback<Void>, block: suspend () -> Unit) {
+    scope.launch {
+      try {
+        block()
+        try { callback.onSuccess(null) } catch (t: Throwable) {
+          Log.e(tag, "Error occurred while executing callback's onSuccess handler", t)
+        } // catch and don't rethrow error from callback
+      } catch (throwable: Throwable) {
+        when (throwable) {
+          is AblyException -> { callback.onError(throwable) }
+          else -> {
+            val ex = ablyException("Error executing operation", ErrorCode.BadRequest, cause = throwable)
+            callback.onError(ex)
+          }
+        }
+      }
+    }
+  }
+
+  internal fun cancel(cause: CancellationException) {
+    scope.coroutineContext.cancelChildren(cause)
+  }
+}

@@ -46,6 +46,7 @@ public interface LiveObjectsPlugin {
      * Disposes of the LiveObjects instance associated with the specified channel name.
      * This method removes the LiveObjects instance for the given channel, releasing any
      * resources associated with it.
+     * This is invoked when ablyRealtimeClient.channels.release(channelName) is called
      *
      * @param channelName the name of the channel whose LiveObjects instance is to be removed.
      */
@@ -53,6 +54,7 @@ public interface LiveObjectsPlugin {
 
     /**
      * Disposes of the plugin instance and all underlying resources.
+     * This is invoked when ablyRealtimeClient.close() is called
      */
     void dispose();
 }

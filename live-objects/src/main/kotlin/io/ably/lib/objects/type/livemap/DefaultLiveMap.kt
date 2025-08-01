@@ -7,8 +7,9 @@ import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.type.BaseLiveObject
 import io.ably.lib.objects.type.ObjectType
-import io.ably.lib.types.Callback
 import java.util.concurrent.ConcurrentHashMap
+import java.util.AbstractMap
+
 
 /**
  * Implementation of LiveObject for LiveMap.
@@ -38,19 +39,50 @@ internal class DefaultLiveMap private constructor(
   internal val objectsPool: ObjectsPool get() = liveObjects.objectsPool
 
   override fun get(keyName: String): Any? {
-    TODO("Not yet implemented")
+    adapter.throwIfInvalidAccessApiConfiguration(channelName) // RTLM5b, RTLM5c
+    if (isTombstoned) {
+      return null
+    }
+    data[keyName]?.let { liveMapEntry ->
+      return liveMapEntry.getResolvedValue(objectsPool)
+    }
+    return null // RTLM5d1
   }
 
-  override fun entries(): MutableIterable<MutableMap.MutableEntry<String, Any>> {
-    TODO("Not yet implemented")
+  override fun entries(): Iterable<Map.Entry<String, Any>> {
+    adapter.throwIfInvalidAccessApiConfiguration(channelName) // RTLM11b, RTLM11c
+
+    return sequence<Map.Entry<String, Any>> {
+      for ((key, entry) in data.entries) {
+        val value = entry.getResolvedValue(objectsPool) // RTLM11d, RTLM11d2
+        value?.let {
+          yield(AbstractMap.SimpleImmutableEntry(key, it))
+        }
+      }
+    }.asIterable()
   }
 
-  override fun keys(): MutableIterable<String> {
-    TODO("Not yet implemented")
+  override fun keys(): Iterable<String> {
+    val iterableEntries = entries()
+    return sequence {
+      for (entry in iterableEntries) {
+        yield(entry.key) // RTLM12b
+      }
+    }.asIterable()
   }
 
-  override fun values(): MutableIterable<Any> {
-    TODO("Not yet implemented")
+  override fun values(): Iterable<Any> {
+    val iterableEntries = entries()
+    return sequence {
+      for (entry in iterableEntries) {
+        yield(entry.value) // RTLM13b
+      }
+    }.asIterable()
+  }
+
+  override fun size(): Long {
+    adapter.throwIfInvalidAccessApiConfiguration(channelName)
+    return data.values.count { !it.isEntryOrRefTombstoned(objectsPool) }.toLong() // RTLM10d
   }
 
   override fun set(keyName: String, value: Any) {
@@ -61,15 +93,11 @@ internal class DefaultLiveMap private constructor(
     TODO("Not yet implemented")
   }
 
-  override fun size(): Long {
+  override fun setAsync(keyName: String, value: Any, callback: ObjectsCallback<Void>) {
     TODO("Not yet implemented")
   }
 
-  override fun setAsync(keyName: String, value: Any, callback: Callback<Void>) {
-    TODO("Not yet implemented")
-  }
-
-  override fun removeAsync(keyName: String, callback: Callback<Void>) {
+  override fun removeAsync(keyName: String, callback: ObjectsCallback<Void>) {
     TODO("Not yet implemented")
   }
 

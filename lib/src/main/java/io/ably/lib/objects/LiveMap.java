@@ -1,6 +1,5 @@
 package io.ably.lib.objects;
 
-import io.ably.lib.types.Callback;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.Contract;
@@ -24,6 +23,7 @@ public interface LiveMap {
      * If the value associated with the provided key is an objectId string of another LiveObject, a reference to that LiveObject
      * is returned, provided it exists in the local pool and is not tombstoned. Otherwise, null is returned.
      * If the value is not an objectId, then that value is returned.
+     * Spec: RTLM5, RTLM5a
      *
      * @param keyName the key whose associated value is to be returned.
      * @return the value associated with the specified key, or null if the key does not exist.
@@ -33,6 +33,7 @@ public interface LiveMap {
 
     /**
      * Retrieves all entries (key-value pairs) in the map.
+     * Spec: RTLM11, RTLM11a
      *
      * @return an iterable collection of all entries in the map.
      */
@@ -42,6 +43,7 @@ public interface LiveMap {
 
     /**
      * Retrieves all keys in the map.
+     * Spec: RTLM12, RTLM12a
      *
      * @return an iterable collection of all keys in the map.
      */
@@ -51,6 +53,7 @@ public interface LiveMap {
 
     /**
      * Retrieves all values in the map.
+     * Spec: RTLM13, RTLM13a
      *
      * @return an iterable collection of all values in the map.
      */
@@ -85,6 +88,7 @@ public interface LiveMap {
 
     /**
      * Retrieves the number of entries in the map.
+     * Spec: RTLM10, RTLM10a
      *
      * @return the size of the map.
      */
@@ -104,7 +108,7 @@ public interface LiveMap {
      * @param callback the callback to handle the result or any errors.
      */
     @NonBlocking
-    void setAsync(@NotNull String keyName, @NotNull Object value, @NotNull Callback<Void> callback);
+    void setAsync(@NotNull String keyName, @NotNull Object value, @NotNull ObjectsCallback<Void> callback);
 
     /**
      * Asynchronously removes the specified key and its associated value from the map.
@@ -117,5 +121,5 @@ public interface LiveMap {
      * @param callback the callback to handle the result or any errors.
      */
     @NonBlocking
-    void removeAsync(@NotNull String keyName, @NotNull Callback<Void> callback);
+    void removeAsync(@NotNull String keyName, @NotNull ObjectsCallback<Void> callback);
 }

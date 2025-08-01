@@ -1,6 +1,8 @@
 package io.ably.lib.objects
 
+import io.ably.lib.realtime.ChannelState
 import io.ably.lib.realtime.CompletionListener
+import io.ably.lib.types.ChannelMode
 import io.ably.lib.types.ErrorInfo
 import io.ably.lib.types.ProtocolMessage
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -37,6 +39,27 @@ internal fun LiveObjectsAdapter.setChannelSerial(channelName: String, protocolMe
   val channelSerial = protocolMessage.channelSerial
   if (channelSerial.isNullOrEmpty()) return
   setChannelSerial(channelName, channelSerial)
+}
+
+internal fun LiveObjectsAdapter.throwIfInvalidAccessApiConfiguration(channelName: String) {
+  throwIfMissingChannelMode(channelName, ChannelMode.object_subscribe)
+  throwIfInChannelState(channelName, arrayOf(ChannelState.detached, ChannelState.failed))
+}
+
+// Spec: RTO2
+internal fun LiveObjectsAdapter.throwIfMissingChannelMode(channelName: String, channelMode: ChannelMode) {
+  val channelModes = getChannelModes(channelName)
+  if (channelModes == null || !channelModes.contains(channelMode)) {
+    // Spec: RTO2a2, RTO2b2
+    throw ablyException("\"${channelMode.name}\" channel mode must be set for this operation", ErrorCode.ChannelModeRequired)
+  }
+}
+
+internal fun LiveObjectsAdapter.throwIfInChannelState(channelName: String, channelStates: Array<ChannelState>) {
+  val currentState = getChannelState(channelName)
+  if (currentState == null || channelStates.contains(currentState)) {
+    throw ablyException("Channel is in invalid state: $currentState", ErrorCode.ChannelStateError)
+  }
 }
 
 internal class Binary(val data: ByteArray) {

@@ -5,7 +5,6 @@ import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.type.BaseLiveObject
 import io.ably.lib.objects.type.ObjectType
-import io.ably.lib.types.Callback
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -38,7 +37,7 @@ internal class DefaultLiveCounter private constructor(
     TODO("Not yet implemented")
   }
 
-  override fun incrementAsync(callback: Callback<Void>) {
+  override fun incrementAsync(callback: ObjectsCallback<Void>) {
     TODO("Not yet implemented")
   }
 
@@ -46,12 +45,13 @@ internal class DefaultLiveCounter private constructor(
     TODO("Not yet implemented")
   }
 
-  override fun decrementAsync(callback: Callback<Void>) {
+  override fun decrementAsync(callback: ObjectsCallback<Void>) {
     TODO("Not yet implemented")
   }
 
   override fun value(): Double {
-    TODO("Not yet implemented")
+    adapter.throwIfInvalidAccessApiConfiguration(channelName)
+    return data.get()
   }
 
   override fun validate(state: ObjectState) = liveCounterManager.validate(state)

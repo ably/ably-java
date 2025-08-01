@@ -34,7 +34,7 @@ class DefaultLiveObjectsTest {
     // RTO4a - If the HAS_OBJECTS flag is 1, the server will shortly perform an OBJECT_SYNC sequence
     defaultLiveObjects.handleStateChange(ChannelState.attached, true)
 
-    assertWaiter { defaultLiveObjects.state == ObjectsState.SYNCING }
+    assertWaiter { defaultLiveObjects.state == ObjectsState.Syncing }
 
     // It is expected that the client will start a new sync sequence
     verify(exactly = 1) {
@@ -59,7 +59,7 @@ class DefaultLiveObjectsTest {
     defaultLiveObjects.handleStateChange(ChannelState.attached, false)
 
     // Verify expected outcomes
-    assertWaiter { defaultLiveObjects.state == ObjectsState.SYNCED } // RTO4b4
+    assertWaiter { defaultLiveObjects.state == ObjectsState.Synced } // RTO4b4
 
     verify(exactly = 1) {
       defaultLiveObjects.objectsPool.resetToInitialPool(true)
@@ -80,7 +80,7 @@ class DefaultLiveObjectsTest {
     val defaultLiveObjects = getDefaultLiveObjectsWithMockedDeps()
 
     // Ensure we're in INITIALIZED state
-    defaultLiveObjects.state = ObjectsState.INITIALIZED
+    defaultLiveObjects.state = ObjectsState.Initialized
 
     // RTO4a - Should start sync even with HAS_OBJECTS flag false when in INITIALIZED state
     defaultLiveObjects.handleStateChange(ChannelState.attached, false)
