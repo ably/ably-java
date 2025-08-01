@@ -194,7 +194,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "1",
-      data = ObjectData(value = ObjectValue("oldValue"))
+      data = ObjectData(value = ObjectValue.String("oldValue"))
     )
 
     val expectedTimestamp = 1234567890L
@@ -204,13 +204,13 @@ class LiveMapManagerTest {
         semantics = MapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectMapEntry(
-            data = ObjectData(value = ObjectValue("newValue")),
+            data = ObjectData(value = ObjectValue.String("newValue")),
             timeserial = "serial1",
             tombstone = true,
             serialTimestamp = expectedTimestamp
           ),
           "key2" to ObjectMapEntry(
-            data = ObjectData(value = ObjectValue("value2")),
+            data = ObjectData(value = ObjectValue.String("value2")),
             timeserial = "serial2"
           )
         )
@@ -244,7 +244,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "1",
-      data = ObjectData(value = ObjectValue("oldValue"))
+      data = ObjectData(value = ObjectValue.String("oldValue"))
     )
 
     val objectState = ObjectState(
@@ -253,13 +253,13 @@ class LiveMapManagerTest {
         semantics = MapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectMapEntry(
-            data = ObjectData(value = ObjectValue("newValue")),
+            data = ObjectData(value = ObjectValue.String("newValue")),
             timeserial = "serial1",
             tombstone = true,
             serialTimestamp = null // No timestamp provided
           ),
           "key2" to ObjectMapEntry(
-            data = ObjectData(value = ObjectValue("value2")),
+            data = ObjectData(value = ObjectValue.String("value2")),
             timeserial = "serial2"
           )
         )
@@ -330,7 +330,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "serial1",
-      data = ObjectData(value = ObjectValue("existingValue"))
+      data = ObjectData(value = ObjectValue.String("existingValue"))
     )
 
     val expectedTimestamp = 1234567890L
@@ -341,13 +341,13 @@ class LiveMapManagerTest {
         semantics = MapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectMapEntry(
-            data = ObjectData(value = ObjectValue("createValue")),
+            data = ObjectData(value = ObjectValue.String("createValue")),
             timeserial = "serial2",
             tombstone = true,
             serialTimestamp = expectedTimestamp
           ),
           "key2" to ObjectMapEntry(
-            data = ObjectData(value = ObjectValue("newValue")),
+            data = ObjectData(value = ObjectValue.String("newValue")),
             timeserial = "serial3"
           ),
           "key3" to ObjectMapEntry(
@@ -436,7 +436,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "serial1",
-      data = ObjectData(value = ObjectValue("value1"))
+      data = ObjectData(value = ObjectValue.String("value1"))
     )
 
     val operation = ObjectOperation(
@@ -1013,7 +1013,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "1",
-      data = ObjectData(value = ObjectValue("oldValue"))
+      data = ObjectData(value = ObjectValue.String("oldValue"))
     )
 
     val expectedTimestamp = 1234567890L
@@ -1044,7 +1044,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "1",
-      data = ObjectData(value = ObjectValue("oldValue"))
+      data = ObjectData(value = ObjectValue.String("oldValue"))
     )
 
     val objectState = ObjectState(
