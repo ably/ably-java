@@ -190,7 +190,7 @@ class DefaultLiveObjectsTest : IntegrationTest() {
     assertWaiter { rootMap.size() == 5L } // Wait for the removal to complete
     assertNull(rootMap.get("referencedCounter")) // Should be null after removal
     assertEquals(1, counterUpdates.size) // Should have received one update for deletion
-    assertEquals(20.0, counterUpdates[0]) // The update should indicate the counter was removed
+    assertEquals(-20.0, counterUpdates[0]) // The update should indicate counter was removed with value 20
 
     // Remove the "referencedMap" from the root map
     val referencedMap = rootMap.get("referencedMap") as LiveMap
@@ -212,5 +212,28 @@ class DefaultLiveObjectsTest : IntegrationTest() {
     assertEquals(1, updatedMap.size) // Should have one change
     assertEquals("counterKey", updatedMap.keys.first()) // The change should be for the "counterKey"
     assertEquals(LiveMapUpdate.Change.REMOVED, updatedMap.values.first()) // Should indicate removal
+
+    // Remove the "valuesMap" from the root map
+    val valuesMap = rootMap.get("valuesMap") as LiveMap
+    assertNotNull(valuesMap)
+    // Subscribe to map updates to verify removal
+    val valuesMapUpdates = mutableListOf<Map<String, LiveMapUpdate.Change>>()
+    valuesMap.subscribe { event ->
+      valuesMapUpdates.add(event.update)
+    }
+
+    // Simulate the deletion of the valuesMap object
+    channel.objects.simulateObjectDelete(valuesMap as DefaultLiveMap)
+
+    assertWaiter { rootMap.size() == 3L } // Wait for the removal to complete
+    assertNull(rootMap.get("valuesMap")) // Should be null after removal
+    assertEquals(1, valuesMapUpdates.size) // Should have received one update for deletion
+
+    val updatedValuesMap = valuesMapUpdates.first()
+    assertEquals(13, updatedValuesMap.size) // Should have 13 changes (one for each entry in valuesMap)
+    // Verify that all entries in valuesMap were marked as REMOVED
+    updatedValuesMap.values.forEach { change ->
+      assertEquals(LiveMapUpdate.Change.REMOVED, change)
+    }
   }
 }

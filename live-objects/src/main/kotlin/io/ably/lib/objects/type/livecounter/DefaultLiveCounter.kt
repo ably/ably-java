@@ -80,7 +80,7 @@ internal class DefaultLiveCounter private constructor(
   }
 
   override fun clearData(): LiveCounterUpdate {
-    return LiveCounterUpdate(data.get()).apply { data.set(0.0) }
+    return liveCounterManager.calculateUpdateFromDataDiff(data.get(), 0.0).apply { data.set(0.0) }
   }
 
   override fun notifyUpdated(update: LiveObjectUpdate) {
