@@ -42,7 +42,8 @@ private class LiveMapChangeEmitter : EventEmitter<LiveMapUpdate, LiveMapChange.L
 
   override fun apply(listener: LiveMapChange.Listener?, event: LiveMapUpdate?, vararg args: Any?) {
     try {
-      listener?.onUpdated(event!!)
+      event?.let { listener?.onUpdated(it) }
+        ?: Log.w(tag, "Null event passed to listener callback")
     } catch (t: Throwable) {
       Log.e(tag, "Error occurred while executing listener callback for event: $event", t)
     }

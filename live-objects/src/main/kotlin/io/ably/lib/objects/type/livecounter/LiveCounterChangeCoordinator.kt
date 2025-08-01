@@ -42,7 +42,8 @@ private class LiveCounterChangeEmitter : EventEmitter<LiveCounterUpdate, LiveCou
 
   override fun apply(listener: LiveCounterChange.Listener?, event: LiveCounterUpdate?, vararg args: Any?) {
     try {
-      listener?.onUpdated(event!!)
+      event?.let { listener?.onUpdated(it) }
+        ?: Log.w(tag, "Null event passed to listener callback")
     } catch (t: Throwable) {
       Log.e(tag, "Error occurred while executing listener callback for event: $event", t)
     }
