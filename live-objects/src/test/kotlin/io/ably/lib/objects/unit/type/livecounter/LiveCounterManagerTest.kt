@@ -28,7 +28,7 @@ class DefaultLiveCounterManagerTest {
 
     assertFalse(liveCounter.createOperationIsMerged) // RTLC6b
     assertEquals(25.0, liveCounter.data.get()) // RTLC6c
-    assertEquals(15.0, update["amount"]) // Difference between old and new data
+    assertEquals(15.0, update.update.amount) // Difference between old and new data
   }
 
 
@@ -58,7 +58,7 @@ class DefaultLiveCounterManagerTest {
     val update = liveCounterManager.applyState(objectState)
 
     assertEquals(25.0, liveCounter.data.get()) // 15 from state + 10 from create op
-    assertEquals(20.0, update["amount"]) // Total change
+    assertEquals(20.0, update.update.amount) // Total change
   }
 
 
