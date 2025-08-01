@@ -47,7 +47,8 @@ internal abstract class BaseLiveObject(
    *
    * @spec RTLM6/RTLC6 - Overrides ObjectMessage with object data state from sync to LiveMap/LiveCounter
    */
-  internal fun applyObjectSync(objectState: ObjectState): LiveObjectUpdate {
+  internal fun applyObjectSync(objectMessage: ObjectMessage): LiveObjectUpdate {
+    val objectState = objectMessage.objectState as ObjectState // we have non-null objectState here due to RTO5b
     validate(objectState)
     // object's site serials are still updated even if it is tombstoned, so always use the site serials received from the operation.
     // should default to empty map if site serials do not exist on the object state, so that any future operation may be applied to this object.
@@ -61,7 +62,7 @@ internal abstract class BaseLiveObject(
       }
       return noOpCounterUpdate
     }
-    return applyObjectState(objectState) // RTLM6, RTLC6
+    return applyObjectState(objectState, objectMessage) // RTLM6, RTLC6
   }
 
   /**
@@ -122,11 +123,14 @@ internal abstract class BaseLiveObject(
   /**
    * Marks the object as tombstoned.
    */
-  internal fun tombstone(): LiveObjectUpdate {
+  internal fun tombstone(serialTimestamp: Long?): LiveObjectUpdate {
+    if (serialTimestamp == null) {
+      Log.w(tag, "Tombstoning object $objectId without serial timestamp, using local timestamp instead")
+    }
     isTombstoned = true
-    tombstonedAt = System.currentTimeMillis()
+    tombstonedAt = serialTimestamp?: System.currentTimeMillis()
     val update = clearData()
-    // TODO: Emit lifecycle events
+    // TODO: Emit BaseLiveObject lifecycle events
     return update
   }
 
@@ -153,7 +157,7 @@ internal abstract class BaseLiveObject(
    * @return A map describing the changes made to the object's data
    *
    */
-  abstract fun applyObjectState(objectState: ObjectState): LiveObjectUpdate
+  abstract fun applyObjectState(objectState: ObjectState, message: ObjectMessage): LiveObjectUpdate
 
   /**
    * Applies an operation to this live object.

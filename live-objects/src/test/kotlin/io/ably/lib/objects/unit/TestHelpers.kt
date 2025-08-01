@@ -57,6 +57,9 @@ internal fun ObjectsPool.size(): Int {
   return pool.size
 }
 
+internal val BaseLiveObject.TombstonedAt: Long?
+  get() = this.getPrivateField("tombstonedAt")
+
 /**
  * ======================================
  * START - DefaultLiveObjects dep mocks
