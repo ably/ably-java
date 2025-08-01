@@ -7,7 +7,6 @@ import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.type.BaseLiveObject
 import io.ably.lib.objects.type.ObjectType
-import io.ably.lib.types.Callback
 import java.util.concurrent.ConcurrentHashMap
 import java.util.AbstractMap
 
@@ -94,11 +93,11 @@ internal class DefaultLiveMap private constructor(
     TODO("Not yet implemented")
   }
 
-  override fun setAsync(keyName: String, value: Any, callback: Callback<Void>) {
+  override fun setAsync(keyName: String, value: Any, callback: ObjectsCallback<Void>) {
     TODO("Not yet implemented")
   }
 
-  override fun removeAsync(keyName: String, callback: Callback<Void>) {
+  override fun removeAsync(keyName: String, callback: ObjectsCallback<Void>) {
     TODO("Not yet implemented")
   }
 
