@@ -1,6 +1,5 @@
 package io.ably.lib.objects
 
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 
 import com.google.gson.annotations.JsonAdapter
@@ -18,7 +17,8 @@ internal enum class ObjectOperationAction(val code: Int) {
   MapRemove(2),
   CounterCreate(3),
   CounterInc(4),
-  ObjectDelete(5);
+  ObjectDelete(5),
+  Unknown(-1); // code for unknown value during deserialization
 }
 
 /**
@@ -26,7 +26,8 @@ internal enum class ObjectOperationAction(val code: Int) {
  * Spec: OMP2
  */
 internal enum class MapSemantics(val code: Int) {
-  LWW(0);
+  LWW(0),
+  Unknown(-1); // code for unknown value during deserialization
 }
 
 /**
@@ -50,28 +51,18 @@ internal data class ObjectData(
 
 /**
  * Represents a value that can be a String, Number, Boolean, Binary, JsonObject or JsonArray.
- * Performs a type check on initialization.
+ * Provides compile-time type safety through sealed class pattern.
  * Spec: OD2c
  */
-internal data class ObjectValue(
-  /**
-   * The concrete value of the object. Can be a String, Number, Boolean, Binary, JsonObject or JsonArray.
-   * Spec: OD2c
-   */
-  val value: Any,
-) {
-  init {
-    require(
-      value is String ||
-        value is Number ||
-        value is Boolean ||
-        value is Binary ||
-        value is JsonObject ||
-        value is JsonArray
-    ) {
-      "value must be String, Number, Boolean, Binary, JsonObject or JsonArray"
-    }
-  }
+internal sealed class ObjectValue {
+  abstract val value: Any
+
+  data class String(override val value: kotlin.String) : ObjectValue()
+  data class Number(override val value: kotlin.Number) : ObjectValue()
+  data class Boolean(override val value: kotlin.Boolean) : ObjectValue()
+  data class Binary(override val value: io.ably.lib.objects.Binary) : ObjectValue()
+  data class JsonObject(override val value: com.google.gson.JsonObject) : ObjectValue()
+  data class JsonArray(override val value: com.google.gson.JsonArray) : ObjectValue()
 }
 
 /**
@@ -116,8 +107,8 @@ internal data class ObjectMapEntry(
   val tombstone: Boolean? = null,
 
   /**
-   * The serial value of the last operation that was applied to the map entry.
-   * It is optional in a MAP_CREATE operation and might be missing, in which case the client should use a nullish value for it
+   * The serial value of the latest operation that was applied to the map entry.
+   * It is optional in a MAP_CREATE operation and might be missing, in which case the client should use a null value for it
    * and treat it as the "earliest possible" serial for comparison purposes.
    * Spec: OME2b
    */
@@ -179,12 +170,14 @@ internal data class ObjectOperation(
 
   /**
    * The payload for the operation if it is an operation on a Map object type.
+   * i.e. MAP_SET, MAP_REMOVE.
    * Spec: OOP3c
    */
   val mapOp: ObjectMapOp? = null,
 
   /**
    * The payload for the operation if it is an operation on a Counter object type.
+   * i.e. COUNTER_INC.
    * Spec: OOP3d
    */
   val counterOp: ObjectCounterOp? = null,
@@ -440,12 +433,15 @@ private fun ObjectData.size(): Int {
  * Spec: OD3*
  */
 private fun ObjectValue.size(): Int {
-  return when (value) {
-    is Boolean -> 1 // Spec: OD3b
-    is Binary -> value.size() // Spec: OD3c
-    is Number -> 8 // Spec: OD3d
-    is String -> value.byteSize // Spec: OD3e
-    is JsonObject, is JsonArray -> value.toString().byteSize // Spec: OD3e
-    else -> 0  // Spec: OD3f
+  return when (this) {
+    is ObjectValue.Boolean -> 1 // Spec: OD3b
+    is ObjectValue.Binary -> value.size() // Spec: OD3c
+    is ObjectValue.Number -> 8 // Spec: OD3d
+    is ObjectValue.String -> value.byteSize // Spec: OD3e
+    is ObjectValue.JsonObject, is ObjectValue.JsonArray -> value.toString().byteSize // Spec: OD3e
   }
+}
+
+internal fun ObjectData?.isInvalid(): Boolean {
+  return this?.objectId.isNullOrEmpty() && this?.value == null
 }

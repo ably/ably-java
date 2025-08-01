@@ -1,10 +1,11 @@
 package io.ably.lib.objects.serialization
 
 import com.google.gson.JsonArray
-import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import io.ably.lib.objects.*
 import io.ably.lib.objects.Binary
+import io.ably.lib.objects.ErrorCode
 import io.ably.lib.objects.MapSemantics
 import io.ably.lib.objects.ObjectCounter
 import io.ably.lib.objects.ObjectCounterOp
@@ -225,8 +226,9 @@ private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
     when (fieldName) {
       "action" -> {
         val actionCode = unpacker.unpackInt()
-        action = ObjectOperationAction.entries.find { it.code == actionCode }
-          ?: throw IllegalArgumentException("Unknown ObjectOperationAction code: $actionCode")
+        action = ObjectOperationAction.entries.firstOrNull { it.code == actionCode }
+          ?: ObjectOperationAction.entries.firstOrNull { it.code == -1 }
+          ?: throw objectError("Unknown ObjectOperationAction code: $actionCode and no Unknown fallback found")
       }
       "objectId" -> objectId = unpacker.unpackString()
       "mapOp" -> mapOp = readObjectMapOp(unpacker)
@@ -240,7 +242,7 @@ private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
   }
 
   if (action == null) {
-    throw IllegalArgumentException("Missing required 'action' field in ObjectOperation")
+    throw objectError("Missing required 'action' field in ObjectOperation")
   }
 
   return ObjectOperation(
@@ -484,8 +486,9 @@ private fun readObjectMap(unpacker: MessageUnpacker): ObjectMap {
     when (fieldName) {
       "semantics" -> {
         val semanticsCode = unpacker.unpackInt()
-        semantics = MapSemantics.entries.find { it.code == semanticsCode }
-          ?: throw IllegalArgumentException("Unknown MapSemantics code: $semanticsCode")
+        semantics = MapSemantics.entries.firstOrNull { it.code == semanticsCode }
+          ?: MapSemantics.entries.firstOrNull { it.code == -1 }
+          ?: throw objectError("Unknown MapSemantics code: $semanticsCode and no UNKNOWN fallback found")
       }
       "entries" -> {
         val mapSize = unpacker.unpackMapHeader()
@@ -613,9 +616,6 @@ private fun ObjectData.writeMsgpack(packer: MessagePacker) {
   if (objectId != null) fieldCount++
   value?.let {
     fieldCount++
-    if (it.value is JsonElement) {
-      fieldCount += 1 // For extra "encoding" field
-    }
   }
 
   packer.packMapHeader(fieldCount)
@@ -625,30 +625,32 @@ private fun ObjectData.writeMsgpack(packer: MessagePacker) {
     packer.packString(objectId)
   }
 
-  if (value != null) {
-    when (val v = value.value) {
-      is Boolean -> {
+  value?.let { v ->
+    when (v) {
+      is ObjectValue.Boolean -> {
         packer.packString("boolean")
-        packer.packBoolean(v)
+        packer.packBoolean(v.value)
       }
-      is String -> {
+      is ObjectValue.String -> {
         packer.packString("string")
-        packer.packString(v)
+        packer.packString(v.value)
       }
-      is Number -> {
+      is ObjectValue.Number -> {
         packer.packString("number")
-        packer.packDouble(v.toDouble())
+        packer.packDouble(v.value.toDouble())
       }
-      is Binary -> {
+      is ObjectValue.Binary -> {
         packer.packString("bytes")
-        packer.packBinaryHeader(v.data.size)
-        packer.writePayload(v.data)
+        packer.packBinaryHeader(v.value.data.size)
+        packer.writePayload(v.value.data)
       }
-      is JsonObject, is JsonArray -> {
-        packer.packString("string")
-        packer.packString(v.toString())
-        packer.packString("encoding")
+      is ObjectValue.JsonObject -> {
         packer.packString("json")
+        packer.packString(v.value.toString())
+      }
+      is ObjectValue.JsonArray -> {
+        packer.packString("json")
+        packer.packString(v.value.toString())
       }
     }
   }
@@ -661,8 +663,6 @@ private fun readObjectData(unpacker: MessageUnpacker): ObjectData {
   val fieldCount = unpacker.unpackMapHeader()
   var objectId: String? = null
   var value: ObjectValue? = null
-  var encoding: String? = null
-  var stringValue: String? = null
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
@@ -675,32 +675,27 @@ private fun readObjectData(unpacker: MessageUnpacker): ObjectData {
 
     when (fieldName) {
       "objectId" -> objectId = unpacker.unpackString()
-      "boolean" -> value = ObjectValue(unpacker.unpackBoolean())
-      "string" -> stringValue = unpacker.unpackString()
-      "number" -> value = ObjectValue(unpacker.unpackDouble())
+      "boolean" -> value = ObjectValue.Boolean(unpacker.unpackBoolean())
+      "string" -> value = ObjectValue.String(unpacker.unpackString())
+      "number" -> value = ObjectValue.Number(unpacker.unpackDouble())
       "bytes" -> {
         val size = unpacker.unpackBinaryHeader()
         val bytes = ByteArray(size)
         unpacker.readPayload(bytes)
-        value = ObjectValue(Binary(bytes))
+        value = ObjectValue.Binary(Binary(bytes))
       }
-      "encoding" -> encoding = unpacker.unpackString()
+      "json" -> {
+        val jsonString = unpacker.unpackString()
+        val parsed = JsonParser.parseString(jsonString)
+        value = when {
+          parsed.isJsonObject -> ObjectValue.JsonObject(parsed.asJsonObject)
+          parsed.isJsonArray -> ObjectValue.JsonArray(parsed.asJsonArray)
+          else ->
+            throw ablyException("Invalid JSON string for json field", ErrorCode.MapValueDataTypeUnsupported, HttpStatusCode.InternalServerError)
+        }
+      }
       else -> unpacker.skipValue()
     }
-  }
-
-  // Handle string with encoding if needed
-  if (stringValue != null && encoding == "json") {
-    val parsed = JsonParser.parseString(stringValue)
-    value = ObjectValue(
-      when {
-        parsed.isJsonObject -> parsed.asJsonObject
-        parsed.isJsonArray -> parsed.asJsonArray
-        else -> throw IllegalArgumentException("Invalid JSON string for encoding=json")
-      }
-    )
-  } else if (stringValue != null) {
-    value = ObjectValue(stringValue)
   }
 
   return ObjectData(objectId = objectId, value = value)
