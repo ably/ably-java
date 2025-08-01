@@ -46,13 +46,13 @@ internal class ObjectDataJsonSerializer : JsonSerializer<ObjectData>, JsonDeseri
     val obj = JsonObject()
     src.objectId?.let { obj.addProperty("objectId", it) }
 
-    src.value?.let { value ->
-      when (val v = value.value) {
-        is Boolean -> obj.addProperty("boolean", v)
-        is String -> obj.addProperty("string", v)
-        is Number -> obj.addProperty("number", v.toDouble())
-        is Binary -> obj.addProperty("bytes", Base64.getEncoder().encodeToString(v.data))
-        is JsonObject, is JsonArray -> obj.addProperty("json", v.toString()) // Spec: OD4c5
+    src.value?.let { v ->
+      when (v) {
+        is ObjectValue.Boolean -> obj.addProperty("boolean", v.value)
+        is ObjectValue.String -> obj.addProperty("string", v.value)
+        is ObjectValue.Number -> obj.addProperty("number", v.value.toDouble())
+        is ObjectValue.Binary -> obj.addProperty("bytes", Base64.getEncoder().encodeToString(v.value.data))
+        is ObjectValue.JsonObject, is ObjectValue.JsonArray -> obj.addProperty("json", v.value.toString()) // Spec: OD4c5
       }
     }
     return obj
@@ -62,11 +62,18 @@ internal class ObjectDataJsonSerializer : JsonSerializer<ObjectData>, JsonDeseri
     val obj = if (json.isJsonObject) json.asJsonObject else throw JsonParseException("Expected JsonObject")
     val objectId = if (obj.has("objectId")) obj.get("objectId").asString else null
     val value = when {
-      obj.has("boolean") -> ObjectValue(obj.get("boolean").asBoolean)
-      obj.has("string") -> ObjectValue(obj.get("string").asString)
-      obj.has("number") -> ObjectValue(obj.get("number").asDouble)
-      obj.has("bytes") -> ObjectValue(Binary(Base64.getDecoder().decode(obj.get("bytes").asString)))
-      obj.has("json") -> ObjectValue(JsonParser.parseString(obj.get("json").asString))
+      obj.has("boolean") -> ObjectValue.Boolean(obj.get("boolean").asBoolean)
+      obj.has("string") -> ObjectValue.String(obj.get("string").asString)
+      obj.has("number") -> ObjectValue.Number(obj.get("number").asDouble)
+      obj.has("bytes") -> ObjectValue.Binary(Binary(Base64.getDecoder().decode(obj.get("bytes").asString)))
+      obj.has("json") -> {
+        val jsonElement = JsonParser.parseString(obj.get("json").asString)
+        when {
+          jsonElement.isJsonObject -> ObjectValue.JsonObject(jsonElement.asJsonObject)
+          jsonElement.isJsonArray -> ObjectValue.JsonArray(jsonElement.asJsonArray)
+          else -> throw JsonParseException("Invalid JSON structure")
+        }
+      }
       else -> {
         if (objectId != null)
           null

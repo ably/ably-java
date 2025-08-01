@@ -6,7 +6,6 @@ import io.ably.lib.objects.type.counter.LiveCounter
 import io.ably.lib.objects.type.map.LiveMap
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.types.AblyException
-import io.ably.lib.types.Callback
 import io.ably.lib.types.ProtocolMessage
 import io.ably.lib.util.Log
 import kotlinx.coroutines.*
@@ -68,23 +67,23 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
     TODO("Not yet implemented")
   }
 
-  override fun getRootAsync(callback: Callback<LiveMap>) {
+  override fun getRootAsync(callback: ObjectsCallback<LiveMap>) {
     asyncScope.launchWithCallback(callback) { getRootAsync() }
   }
 
-  override fun createMapAsync(liveMap: LiveMap, callback: Callback<LiveMap>) {
+  override fun createMapAsync(liveMap: LiveMap, callback: ObjectsCallback<LiveMap>) {
     TODO("Not yet implemented")
   }
 
-  override fun createMapAsync(liveCounter: LiveCounter, callback: Callback<LiveMap>) {
+  override fun createMapAsync(liveCounter: LiveCounter, callback: ObjectsCallback<LiveMap>) {
     TODO("Not yet implemented")
   }
 
-  override fun createMapAsync(map: MutableMap<String, Any>, callback: Callback<LiveMap>) {
+  override fun createMapAsync(map: MutableMap<String, Any>, callback: ObjectsCallback<LiveMap>) {
     TODO("Not yet implemented")
   }
 
-  override fun createCounterAsync(initialValue: Long, callback: Callback<LiveCounter>) {
+  override fun createCounterAsync(initialValue: Long, callback: ObjectsCallback<LiveCounter>) {
     TODO("Not yet implemented")
   }
 
