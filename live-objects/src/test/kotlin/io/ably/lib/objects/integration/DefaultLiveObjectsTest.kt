@@ -1,19 +1,13 @@
 package io.ably.lib.objects.integration
 
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import io.ably.lib.objects.*
-import io.ably.lib.objects.Binary
 import io.ably.lib.objects.integration.helpers.State
 import io.ably.lib.objects.integration.helpers.fixtures.initializeRootMap
 import io.ably.lib.objects.integration.helpers.simulateObjectDelete
 import io.ably.lib.objects.integration.setup.IntegrationTest
-import io.ably.lib.objects.size
 import io.ably.lib.objects.state.ObjectsStateEvent
-import io.ably.lib.objects.type.counter.LiveCounter
 import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
 import io.ably.lib.objects.type.livemap.DefaultLiveMap
-import io.ably.lib.objects.type.map.LiveMap
 import io.ably.lib.objects.type.map.LiveMapUpdate
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
@@ -79,70 +73,70 @@ class DefaultLiveObjectsTest : IntegrationTest() {
 
     // Assert Counter Objects
     // Test emptyCounter - should have initial value of 0
-    val emptyCounter = rootMap.get("emptyCounter") as LiveCounter
+    val emptyCounter = rootMap.get("emptyCounter")?.asLiveCounter
     assertNotNull(emptyCounter)
     assertEquals(0.0, emptyCounter.value())
 
     // Test initialValueCounter - should have initial value of 10
-    val initialValueCounter = rootMap.get("initialValueCounter") as LiveCounter
+    val initialValueCounter = rootMap.get("initialValueCounter")?.asLiveCounter
     assertNotNull(initialValueCounter)
     assertEquals(10.0, initialValueCounter.value())
 
     // Test referencedCounter - should have initial value of 20
-    val referencedCounter = rootMap.get("referencedCounter") as LiveCounter
+    val referencedCounter = rootMap.get("referencedCounter")?.asLiveCounter
     assertNotNull(referencedCounter)
     assertEquals(20.0, referencedCounter.value())
 
     // Assert Map Objects
     // Test emptyMap - should be an empty map
-    val emptyMap = rootMap.get("emptyMap") as LiveMap
+    val emptyMap = rootMap.get("emptyMap")?.asLiveMap
     assertNotNull(emptyMap)
     assertEquals(0L, emptyMap.size())
 
     // Test referencedMap - should contain one key "counterKey" pointing to referencedCounter
-    val referencedMap = rootMap.get("referencedMap") as LiveMap
+    val referencedMap = rootMap.get("referencedMap")?.asLiveMap
     assertNotNull(referencedMap)
     assertEquals(1L, referencedMap.size())
-    val referencedMapCounter = referencedMap.get("counterKey") as LiveCounter
+    val referencedMapCounter = referencedMap.get("counterKey")?.asLiveCounter
     assertNotNull(referencedMapCounter)
     assertEquals(20.0, referencedMapCounter.value()) // Should point to the same counter with value 20
 
     // Test valuesMap - should contain all primitive data types and one map reference
-    val valuesMap = rootMap.get("valuesMap") as LiveMap
+    val valuesMap = rootMap.get("valuesMap")?.asLiveMap
     assertNotNull(valuesMap)
     assertEquals(13L, valuesMap.size()) // Should have 13 entries
 
     // Assert string values
-    assertEquals("stringValue", valuesMap.get("string"))
-    assertEquals("", valuesMap.get("emptyString"))
+    assertEquals("stringValue", valuesMap.get("string")?.asString)
+    assertEquals("", valuesMap.get("emptyString")?.asString)
 
     // Assert binary values
-    val bytesValue = valuesMap.get("bytes") as Binary
+    val bytesValue = valuesMap.get("bytes")?.asBinary
     assertNotNull(bytesValue)
-    val expectedBinary = Binary("eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9".toByteArray())
-    assertEquals(expectedBinary, bytesValue) // Should contain encoded JSON data
+    val expectedBinary = "eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9".toByteArray()
+    assertEquals(expectedBinary.contentEquals(bytesValue), true) // Should contain encoded JSON data
 
-    val emptyBytesValue = valuesMap.get("emptyBytes") as Binary
+    val emptyBytesValue = valuesMap.get("emptyBytes")?.asBinary
     assertNotNull(emptyBytesValue)
-    assertEquals(0, emptyBytesValue.size()) // Should be empty byte array
+    assertEquals(0, emptyBytesValue.size) // Should be empty byte array
 
     // Assert numeric values
-    assertEquals(99999999.0, valuesMap.get("maxSafeNumber"))
-    assertEquals(-99999999.0, valuesMap.get("negativeMaxSafeNumber"))
-    assertEquals(1.0, valuesMap.get("number"))
-    assertEquals(0.0, valuesMap.get("zero"))
+    assertEquals(99999999.0, valuesMap.get("maxSafeNumber")?.asNumber)
+    assertEquals(-99999999.0, valuesMap.get("negativeMaxSafeNumber")?.asNumber)
+    assertEquals(1.0, valuesMap.get("number")?.asNumber)
+    assertEquals(0.0, valuesMap.get("zero")?.asNumber)
 
     // Assert boolean values
-    assertEquals(true, valuesMap.get("true"))
-    assertEquals(false, valuesMap.get("false"))
+    assertEquals(true, valuesMap.get("true")?.asBoolean)
+    assertEquals(false, valuesMap.get("false")?.asBoolean)
 
     // Assert JSON object value - should contain {"foo": "bar"}
-    val jsonObjectValue = valuesMap.get("object") as JsonObject
+    val jsonObjectValue = valuesMap.get("object")?.asJsonObject
     assertNotNull(jsonObjectValue)
     assertEquals("bar", jsonObjectValue.get("foo").asString)
 
     // Assert JSON array value - should contain ["foo", "bar", "baz"]
-    val jsonArrayValue = valuesMap.get("array") as JsonArray
+    val jsonArrayValue = valuesMap.get("array")?.asJsonArray
     assertNotNull(jsonArrayValue)
     assertEquals(3, jsonArrayValue.size())
     assertEquals("foo", jsonArrayValue[0].asString)
@@ -150,10 +144,10 @@ class DefaultLiveObjectsTest : IntegrationTest() {
     assertEquals("baz", jsonArrayValue[2].asString)
 
     // Assert map reference - should point to the same referencedMap
-    val mapRefValue = valuesMap.get("mapRef") as LiveMap
+    val mapRefValue = valuesMap.get("mapRef")?.asLiveMap
     assertNotNull(mapRefValue)
     assertEquals(1L, mapRefValue.size())
-    val mapRefCounter = mapRefValue.get("counterKey") as LiveCounter
+    val mapRefCounter = mapRefValue.get("counterKey")?.asLiveCounter
     assertNotNull(mapRefCounter)
     assertEquals(20.0, mapRefCounter.value()) // Should point to the same counter with value 20
   }
@@ -176,7 +170,7 @@ class DefaultLiveObjectsTest : IntegrationTest() {
     assertEquals(6L, rootMap.size()) // Should have 6 entries initially
 
     // Remove the "referencedCounter" from the root map
-    val refCounter = rootMap.get("referencedCounter") as LiveCounter
+    val refCounter = rootMap.get("referencedCounter")?.asLiveCounter
     assertNotNull(refCounter)
     // Subscribe to counter updates to verify removal
     val counterUpdates = mutableListOf<Double>()
@@ -193,7 +187,7 @@ class DefaultLiveObjectsTest : IntegrationTest() {
     assertEquals(-20.0, counterUpdates[0]) // The update should indicate counter was removed with value 20
 
     // Remove the "referencedMap" from the root map
-    val referencedMap = rootMap.get("referencedMap") as LiveMap
+    val referencedMap = rootMap.get("referencedMap")?.asLiveMap
     assertNotNull(referencedMap)
     // Subscribe to map updates to verify removal
     val mapUpdates = mutableListOf<Map<String, LiveMapUpdate.Change>>()
@@ -214,7 +208,7 @@ class DefaultLiveObjectsTest : IntegrationTest() {
     assertEquals(LiveMapUpdate.Change.REMOVED, updatedMap.values.first()) // Should indicate removal
 
     // Remove the "valuesMap" from the root map
-    val valuesMap = rootMap.get("valuesMap") as LiveMap
+    val valuesMap = rootMap.get("valuesMap")?.asLiveMap
     assertNotNull(valuesMap)
     // Subscribe to map updates to verify removal
     val valuesMapUpdates = mutableListOf<Map<String, LiveMapUpdate.Change>>()
