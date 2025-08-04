@@ -41,6 +41,11 @@ internal fun serverError(errorMessage: String) = ablyException(errorMessage, Err
 internal fun objectError(errorMessage: String, cause: Throwable? = null): AblyException {
   return ablyException(errorMessage, ErrorCode.InvalidObject, HttpStatusCode.InternalServerError, cause)
 }
+
+internal fun invalidInputError(errorMessage: String, cause: Throwable? = null): AblyException {
+  return ablyException(errorMessage, ErrorCode.InvalidInputParams, HttpStatusCode.InternalServerError, cause)
+}
+
 /**
  * Calculates the byte size of a string.
  * For non-ASCII, the byte size can be 2–4x the character count. For ASCII, there is no difference.

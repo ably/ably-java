@@ -7,11 +7,18 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlin.concurrent.Volatile
 
+/**
+ * ServerTime is a utility object that provides the current server time
+ * Spec: RTO16
+ */
 internal object ServerTime {
   @Volatile
   private var serverTimeOffset: Long? = null
   private val mutex = Mutex()
 
+  /**
+   * Spec: RTO16a
+   */
   @Throws(AblyException::class)
   internal suspend fun getCurrentTime(adapter: LiveObjectsAdapter): Long {
     if (serverTimeOffset == null) {

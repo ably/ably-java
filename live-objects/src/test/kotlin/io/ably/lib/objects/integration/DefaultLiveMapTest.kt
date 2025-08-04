@@ -211,10 +211,8 @@ class DefaultLiveMapTest: IntegrationTest() {
     val finalKeys = testMap.keys().toSet()
     assertEquals(setOf("name", "isActive", "email"), finalKeys, "Final keys should match expected set")
 
-    val finalValues = testMap.values().mapNotNull { value ->
-      if (value.isString) value.asString else null
-    }.toSet()
-    assertEquals(setOf("Bob", "bob@example.com"), finalValues, "Final string values should match expected set")
+    val finalValues = testMap.values().map { it.value }.toSet()
+    assertEquals(setOf("Bob", false, "bob@example.com"), finalValues, "Final string values should match expected set")
   }
 
   /**
@@ -330,10 +328,8 @@ class DefaultLiveMapTest: IntegrationTest() {
     val finalKeys = testMap.keys().toSet()
     assertEquals(setOf("name", "isActive", "email"), finalKeys, "Final keys should match expected set")
 
-    val finalValues = testMap.values().mapNotNull { value ->
-      if (value.isString) value.asString else null
-    }.toSet()
-    assertEquals(setOf("Bob", "bob@example.com"), finalValues, "Final string values should match expected set")
+    val finalValues = testMap.values().map { it.value }.toSet()
+    assertEquals(setOf("Bob", false, "bob@example.com"), finalValues, "Final string values should match expected set")
   }
 
   @Test

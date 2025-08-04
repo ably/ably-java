@@ -70,15 +70,15 @@ internal class DefaultLiveCounter private constructor(
   override fun validate(state: ObjectState) = liveCounterManager.validate(state)
 
   private suspend fun incrementAsync(amount: Double) {
-    // Validate write API configuration
+    // RTLC12b, RTLC12c, RTLC12d - Validate write API configuration
     adapter.throwIfInvalidWriteApiConfiguration(channelName)
 
-    // Validate input parameter
+    // RTLC12e1 - Validate input parameter
     if (amount.isNaN() || amount.isInfinite()) {
-      throw objectError("Counter value increment should be a valid number")
+      throw invalidInputError("Counter value increment should be a valid number")
     }
 
-    // Create ObjectMessage with the COUNTER_INC operation
+    // RTLC12e2, RTLC12e3, RTLC12e4 - Create ObjectMessage with the COUNTER_INC operation
     val msg = ObjectMessage(
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
@@ -87,7 +87,7 @@ internal class DefaultLiveCounter private constructor(
       )
     )
 
-    // Publish the message
+    // RTLC12f - Publish the message
     liveObjects.publish(arrayOf(msg))
   }
 
@@ -127,6 +127,7 @@ internal class DefaultLiveCounter private constructor(
 
     /**
      * Creates initial value operation for counter creation.
+     * Spec: RTO12f2
      */
     internal fun initialValue(count: Number): CounterCreatePayload {
       return CounterCreatePayload(

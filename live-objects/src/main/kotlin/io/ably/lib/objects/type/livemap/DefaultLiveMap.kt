@@ -117,15 +117,15 @@ internal class DefaultLiveMap private constructor(
   override fun unsubscribeAll() = liveMapManager.unsubscribeAll()
 
   private suspend fun setAsync(keyName: String, value: LiveMapValue) {
-    // Validate write API configuration
+    // RTLM20b, RTLM20c, RTLM20d - Validate write API configuration
     adapter.throwIfInvalidWriteApiConfiguration(channelName)
 
     // Validate input parameters
     if (keyName.isEmpty()) {
-      throw objectError("Map key should not be empty")
+      throw invalidInputError("Map key should not be empty")
     }
 
-    // Create ObjectMessage with the MAP_SET operation
+    // RTLM20e - Create ObjectMessage with the MAP_SET operation
     val msg = ObjectMessage(
       operation = ObjectOperation(
         action = ObjectOperationAction.MapSet,
@@ -137,20 +137,20 @@ internal class DefaultLiveMap private constructor(
       )
     )
 
-    // Publish the message
+    // RTLM20f - Publish the message
     liveObjects.publish(arrayOf(msg))
   }
 
   private suspend fun removeAsync(keyName: String) {
-    // Validate write API configuration
+    // RTLM21b, RTLM21cm RTLM21d - Validate write API configuration
     adapter.throwIfInvalidWriteApiConfiguration(channelName)
 
     // Validate input parameter
     if (keyName.isEmpty()) {
-      throw objectError("Map key should not be empty")
+      throw invalidInputError("Map key should not be empty")
     }
 
-    // Create ObjectMessage with the MAP_REMOVE operation
+    // RTLM21e - Create ObjectMessage with the MAP_REMOVE operation
     val msg = ObjectMessage(
       operation = ObjectOperation(
         action = ObjectOperationAction.MapRemove,
@@ -159,7 +159,7 @@ internal class DefaultLiveMap private constructor(
       )
     )
 
-    // Publish the message
+    // RTLM21f - Publish the message
     liveObjects.publish(arrayOf(msg))
   }
 
@@ -199,6 +199,7 @@ internal class DefaultLiveMap private constructor(
 
     /**
      * Creates an ObjectMap from map entries.
+     * Spec: RTO11f4
      */
     internal fun initialValue(entries: MutableMap<String, LiveMapValue>): MapCreatePayload {
       return MapCreatePayload(
@@ -214,6 +215,9 @@ internal class DefaultLiveMap private constructor(
       )
     }
 
+    /**
+     * Spec: RTLM20e5
+     */
     private fun fromLiveMapValue(value: LiveMapValue): ObjectData {
       return when {
         value.isLiveMap || value.isLiveCounter -> {

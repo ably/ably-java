@@ -98,19 +98,19 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
   }
 
   private suspend fun createMapAsync(entries: MutableMap<String, LiveMapValue>): LiveMap {
-    adapter.throwIfInvalidWriteApiConfiguration(channelName)
+    adapter.throwIfInvalidWriteApiConfiguration(channelName) // RTO11c, RTO11d, RTO11e
 
-    if (entries.keys.any { it.isEmpty() }) {
-      throw objectError("Map keys should not be empty")
+    if (entries.keys.any { it.isEmpty() }) { // RTO11f2
+      throw invalidInputError("Map keys should not be empty")
     }
 
-    // Create initial value operation
+    // RTO11f4 - Create initial value operation
     val initialMapValue = DefaultLiveMap.initialValue(entries)
 
-    // Create initial value JSON string
+    // RTO11f5 - Create initial value JSON string
     val initialValueJSONString = gson.toJson(initialMapValue)
 
-    // Create object ID from initial value
+    // RTO11f8 - Create object ID from initial value
     val (objectId, nonce) = getObjectIdStringWithNonce(ObjectType.Map, initialValueJSONString)
 
     // Create ObjectMessage with the operation
@@ -124,28 +124,29 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
       )
     )
 
-    // Publish the message
+    // RTO11g - Publish the message
     publish(arrayOf(msg))
 
-    // Check if object already exists in pool, otherwise create a zero-value object using the sequential scope
+    // RTO11h - Check if object already exists in pool, otherwise create a zero-value object using the sequential scope
     return objectsPool.get(objectId) as? LiveMap ?: withContext(sequentialScope.coroutineContext) {
       objectsPool.createZeroValueObjectIfNotExists(objectId) as LiveMap
     }
   }
 
   private suspend fun createCounterAsync(initialValue: Number): LiveCounter {
-    adapter.throwIfInvalidWriteApiConfiguration(channelName)
+    adapter.throwIfInvalidWriteApiConfiguration(channelName) // RTO12c, RTO12d, RTO12e
 
     // Validate input parameter
     if (initialValue.toDouble().isNaN() || initialValue.toDouble().isInfinite()) {
-      throw objectError("Counter value should be a valid number")
+      throw invalidInputError("Counter value should be a valid number")
     }
 
+    // RTO12f2
     val initialCounterValue = DefaultLiveCounter.initialValue(initialValue)
-    // Create initial value operation
+    // RTO12f3 - Create initial value operation
     val initialValueJSONString = gson.toJson(initialCounterValue)
 
-    // Create object ID from initial value
+    // RTO12f6- Create object ID from initial value
     val (objectId, nonce) = getObjectIdStringWithNonce(ObjectType.Counter, initialValueJSONString)
 
     // Create ObjectMessage with the operation
@@ -159,15 +160,18 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
       )
     )
 
-    // Publish the message
+    // RTO12g - Publish the message
     publish(arrayOf(msg))
 
-    // Check if object already exists in pool, otherwise create a zero-value object using the sequential scope
+    // RTO12h - Check if object already exists in pool, otherwise create a zero-value object using the sequential scope
     return objectsPool.get(objectId) as? LiveCounter ?: withContext(sequentialScope.coroutineContext) {
       objectsPool.createZeroValueObjectIfNotExists(objectId) as LiveCounter
     }
   }
 
+  /**
+   * Spec: RTO11f8, RTO12f6
+   */
   private suspend fun getObjectIdStringWithNonce(objectType: ObjectType, initialValue: String): Pair<String, String> {
     val nonce = generateNonce()
     val msTimestamp = ServerTime.getCurrentTime(adapter) // RTO16 - Get server time for nonce generation
