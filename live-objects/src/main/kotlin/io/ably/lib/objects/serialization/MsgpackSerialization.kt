@@ -1,6 +1,5 @@
 package io.ably.lib.objects.serialization
 
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import io.ably.lib.objects.*
@@ -642,28 +641,32 @@ private fun ObjectData.writeMsgpack(packer: MessagePacker) {
     packer.packString(objectId)
   }
 
-  if (value != null) {
-    when (val v = value.value) {
-      is Boolean -> {
+  value?.let { v ->
+    when (v) {
+      is ObjectValue.Boolean -> {
         packer.packString("boolean")
-        packer.packBoolean(v)
+        packer.packBoolean(v.value)
       }
-      is String -> {
+      is ObjectValue.String -> {
         packer.packString("string")
-        packer.packString(v)
+        packer.packString(v.value)
       }
-      is Number -> {
+      is ObjectValue.Number -> {
         packer.packString("number")
-        packer.packDouble(v.toDouble())
+        packer.packDouble(v.value.toDouble())
       }
-      is Binary -> {
+      is ObjectValue.Binary -> {
         packer.packString("bytes")
-        packer.packBinaryHeader(v.data.size)
-        packer.writePayload(v.data)
+        packer.packBinaryHeader(v.value.data.size)
+        packer.writePayload(v.value.data)
       }
-      is JsonObject, is JsonArray -> {
+      is ObjectValue.JsonObject -> {
         packer.packString("json")
-        packer.packString(v.toString())
+        packer.packString(v.value.toString())
+      }
+      is ObjectValue.JsonArray -> {
+        packer.packString("json")
+        packer.packString(v.value.toString())
       }
     }
   }
@@ -688,26 +691,24 @@ private fun readObjectData(unpacker: MessageUnpacker): ObjectData {
 
     when (fieldName) {
       "objectId" -> objectId = unpacker.unpackString()
-      "boolean" -> value = ObjectValue(unpacker.unpackBoolean())
-      "string" -> value = ObjectValue(unpacker.unpackString())
-      "number" -> value = ObjectValue(unpacker.unpackDouble())
+      "boolean" -> value = ObjectValue.Boolean(unpacker.unpackBoolean())
+      "string" -> value = ObjectValue.String(unpacker.unpackString())
+      "number" -> value = ObjectValue.Number(unpacker.unpackDouble())
       "bytes" -> {
         val size = unpacker.unpackBinaryHeader()
         val bytes = ByteArray(size)
         unpacker.readPayload(bytes)
-        value = ObjectValue(Binary(bytes))
+        value = ObjectValue.Binary(Binary(bytes))
       }
       "json" -> {
         val jsonString = unpacker.unpackString()
         val parsed = JsonParser.parseString(jsonString)
-        value = ObjectValue(
-          when {
-            parsed.isJsonObject -> parsed.asJsonObject
-            parsed.isJsonArray -> parsed.asJsonArray
-            else ->
-              throw ablyException("Invalid JSON string for json field", ErrorCode.MapValueDataTypeUnsupported, HttpStatusCode.InternalServerError)
-          }
-        )
+        value = when {
+          parsed.isJsonObject -> ObjectValue.JsonObject(parsed.asJsonObject)
+          parsed.isJsonArray -> ObjectValue.JsonArray(parsed.asJsonArray)
+          else ->
+            throw ablyException("Invalid JSON string for json field", ErrorCode.MapValueDataTypeUnsupported, HttpStatusCode.InternalServerError)
+        }
       }
       else -> unpacker.skipValue()
     }

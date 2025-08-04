@@ -22,7 +22,7 @@ public class DefaultLiveObjectsPlugin(private val adapter: LiveObjectsAdapter) :
   }
 
   override fun dispose(channelName: String) {
-    liveObjects[channelName]?.dispose(clientError("Channel has ben released using channels.release()"))
+    liveObjects[channelName]?.dispose(clientError("Channel has been released using channels.release()"))
     liveObjects.remove(channelName)
   }
 

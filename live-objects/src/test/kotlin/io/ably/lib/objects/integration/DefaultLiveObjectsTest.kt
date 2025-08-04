@@ -3,8 +3,12 @@ package io.ably.lib.objects.integration
 import io.ably.lib.objects.*
 import io.ably.lib.objects.integration.helpers.State
 import io.ably.lib.objects.integration.helpers.fixtures.initializeRootMap
+import io.ably.lib.objects.integration.helpers.simulateObjectDelete
 import io.ably.lib.objects.integration.setup.IntegrationTest
 import io.ably.lib.objects.state.ObjectsStateEvent
+import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
+import io.ably.lib.objects.type.livemap.DefaultLiveMap
+import io.ably.lib.objects.type.map.LiveMapUpdate
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -149,13 +153,14 @@ class DefaultLiveObjectsTest : IntegrationTest() {
   }
 
   /**
-   * Spec: RTLO4e - Tests the removal of objects from the root map.
    * Server runs periodic garbage collection (GC) to remove orphaned objects and will send
    * OBJECT_DELETE events for objects that are no longer referenced.
-   * `OBJECT_DELETE` event is not covered in the test and we only check if map entries are removed
+   * So, we simulate the deletion of an object by sending an object delete ProtocolMessage.
+   * This does not actually delete the object from the server, only simulates the deletion locally.
+   * Spec: RTLO4e
    */
   @Test
-  fun testObjectRemovalFromRoot() = runTest {
+  fun testObjectDelete() = runTest {
     val channelName = generateChannelName()
     // Initialize the root map on the channel with initial data
     restObjects.initializeRootMap(channelName)
@@ -165,19 +170,64 @@ class DefaultLiveObjectsTest : IntegrationTest() {
     assertEquals(6L, rootMap.size()) // Should have 6 entries initially
 
     // Remove the "referencedCounter" from the root map
-    assertNotNull(rootMap.get("referencedCounter")) // Access to ensure it exists before removal
+    val refCounter = rootMap.get("referencedCounter")?.asLiveCounter
+    assertNotNull(refCounter)
+    // Subscribe to counter updates to verify removal
+    val counterUpdates = mutableListOf<Double>()
+    refCounter.subscribe { event ->
+      counterUpdates.add(event.update.amount)
+    }
 
-    restObjects.removeMapValue(channelName, "root", "referencedCounter")
+    // Simulate the deletion of the referencedCounter object
+    channel.objects.simulateObjectDelete(refCounter as DefaultLiveCounter)
 
     assertWaiter { rootMap.size() == 5L } // Wait for the removal to complete
     assertNull(rootMap.get("referencedCounter")) // Should be null after removal
+    assertEquals(1, counterUpdates.size) // Should have received one update for deletion
+    assertEquals(-20.0, counterUpdates[0]) // The update should indicate counter was removed with value 20
 
     // Remove the "referencedMap" from the root map
-    assertNotNull(rootMap.get("referencedMap")) // Access to ensure it exists before removal
+    val referencedMap = rootMap.get("referencedMap")?.asLiveMap
+    assertNotNull(referencedMap)
+    // Subscribe to map updates to verify removal
+    val mapUpdates = mutableListOf<Map<String, LiveMapUpdate.Change>>()
+    referencedMap.subscribe { event ->
+      mapUpdates.add(event.update)
+    }
 
-    restObjects.removeMapValue(channelName, "root", "referencedMap")
+    // Simulate the deletion of the referencedMap object
+    channel.objects.simulateObjectDelete(referencedMap as DefaultLiveMap)
 
     assertWaiter { rootMap.size() == 4L } // Wait for the removal to complete
     assertNull(rootMap.get("referencedMap")) // Should be null after removal
+    assertEquals(1, mapUpdates.size) // Should have received one update for deletion
+
+    val updatedMap = mapUpdates.first()
+    assertEquals(1, updatedMap.size) // Should have one change
+    assertEquals("counterKey", updatedMap.keys.first()) // The change should be for the "counterKey"
+    assertEquals(LiveMapUpdate.Change.REMOVED, updatedMap.values.first()) // Should indicate removal
+
+    // Remove the "valuesMap" from the root map
+    val valuesMap = rootMap.get("valuesMap")?.asLiveMap
+    assertNotNull(valuesMap)
+    // Subscribe to map updates to verify removal
+    val valuesMapUpdates = mutableListOf<Map<String, LiveMapUpdate.Change>>()
+    valuesMap.subscribe { event ->
+      valuesMapUpdates.add(event.update)
+    }
+
+    // Simulate the deletion of the valuesMap object
+    channel.objects.simulateObjectDelete(valuesMap as DefaultLiveMap)
+
+    assertWaiter { rootMap.size() == 3L } // Wait for the removal to complete
+    assertNull(rootMap.get("valuesMap")) // Should be null after removal
+    assertEquals(1, valuesMapUpdates.size) // Should have received one update for deletion
+
+    val updatedValuesMap = valuesMapUpdates.first()
+    assertEquals(13, updatedValuesMap.size) // Should have 13 changes (one for each entry in valuesMap)
+    // Verify that all entries in valuesMap were marked as REMOVED
+    updatedValuesMap.values.forEach { change ->
+      assertEquals(LiveMapUpdate.Change.REMOVED, change)
+    }
   }
 }

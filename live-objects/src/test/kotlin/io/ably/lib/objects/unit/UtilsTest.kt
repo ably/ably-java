@@ -3,7 +3,6 @@ package io.ably.lib.objects.unit
 import io.ably.lib.objects.*
 import io.ably.lib.objects.assertWaiter
 import io.ably.lib.types.AblyException
-import io.ably.lib.types.Callback
 import io.ably.lib.types.ErrorInfo
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.*
@@ -98,13 +97,13 @@ class UtilsTest {
     var callbackExecuted = false
     var resultReceived: String? = null
 
-    val callback = object : Callback<String> {
+    val callback = object : ObjectsCallback<String> {
       override fun onSuccess(result: String) {
         callbackExecuted = true
         resultReceived = result
       }
 
-      override fun onError(errorInfo: ErrorInfo?) {
+      override fun onError(exception: AblyException) {
         fail("Should not call onError for successful execution")
       }
     }
@@ -124,15 +123,15 @@ class UtilsTest {
   @Test
   fun testObjectsAsyncScopeLaunchWithCallbackError() = runTest {
     val asyncScope = ObjectsAsyncScope("test-channel")
-    var errorReceived: ErrorInfo? = null
+    var errorReceived: AblyException? = null
 
-    val callback = object : Callback<String> {
+    val callback = object : ObjectsCallback<String> {
       override fun onSuccess(result: String) {
         fail("Should not call onSuccess for error case")
       }
 
-      override fun onError(errorInfo: ErrorInfo?) {
-        errorReceived = errorInfo
+      override fun onError(exception: AblyException) {
+        errorReceived = exception
       }
     }
 
@@ -145,8 +144,8 @@ class UtilsTest {
     assertWaiter { errorReceived != null }
 
     assertNotNull("Error should be received", errorReceived)
-    assertEquals("Test error", errorReceived?.message)
-    assertEquals(400, errorReceived?.statusCode)
+    assertEquals("Test error", errorReceived?.errorInfo?.message)
+    assertEquals(400, errorReceived?.errorInfo?.statusCode)
   }
 
   @Test
@@ -154,12 +153,12 @@ class UtilsTest {
     val asyncScope = ObjectsAsyncScope("test-channel")
     var callbackExecuted = false
 
-    val callback = object : Callback<Void> {
+    val callback = object : ObjectsCallback<Void> {
       override fun onSuccess(result: Void?) {
         callbackExecuted = true
       }
 
-      override fun onError(errorInfo: ErrorInfo?) {
+      override fun onError(exception: AblyException) {
         fail("Should not call onError for successful execution")
       }
     }
@@ -177,15 +176,15 @@ class UtilsTest {
   @Test
   fun testObjectsAsyncScopeLaunchWithVoidCallbackError() = runTest {
     val asyncScope = ObjectsAsyncScope("test-channel")
-    var errorReceived: ErrorInfo? = null
+    var errorReceived: AblyException? = null
 
-    val callback = object : Callback<Void> {
+    val callback = object : ObjectsCallback<Void> {
       override fun onSuccess(result: Void?) {
         fail("Should not call onSuccess for error case")
       }
 
-      override fun onError(errorInfo: ErrorInfo?) {
-        errorReceived = errorInfo
+      override fun onError(exception: AblyException) {
+        errorReceived = exception
       }
     }
 
@@ -198,8 +197,8 @@ class UtilsTest {
     assertWaiter { errorReceived != null }
 
     assertNotNull("Error should be received", errorReceived)
-    assertEquals("Test error", errorReceived?.message)
-    assertEquals(500, errorReceived?.statusCode)
+    assertEquals("Test error", errorReceived?.errorInfo?.message)
+    assertEquals(500, errorReceived?.errorInfo?.statusCode)
   }
 
   @Test
@@ -208,13 +207,13 @@ class UtilsTest {
     var callback1Called = false
     var callback2Called = false
 
-    val callback1 = object : Callback<String> {
+    val callback1 = object : ObjectsCallback<String> {
       override fun onSuccess(result: String) {
         callback1Called = true
         throw RuntimeException("Callback exception")
       }
 
-      override fun onError(errorInfo: ErrorInfo?) {
+      override fun onError(exception: AblyException) {
         fail("Should not call onError when onSuccess throws")
       }
     }
@@ -223,12 +222,12 @@ class UtilsTest {
     // Wait for callback to be called
     assertWaiter { callback1Called }
 
-    val callback2 = object : Callback<String> {
+    val callback2 = object : ObjectsCallback<String> {
       override fun onSuccess(result: String) {
         callback2Called = true
       }
 
-      override fun onError(errorInfo: ErrorInfo?) {
+      override fun onError(exception: AblyException) {
         fail("Should not call onError when onSuccess throws")
       }
     }
@@ -243,18 +242,18 @@ class UtilsTest {
     val asyncScope = ObjectsAsyncScope("test-channel")
     var errorReceived = false
 
-    val callback = object : Callback<String> {
+    val callback = object : ObjectsCallback<String> {
       override fun onSuccess(result: String) {
         fail("Should not call onSuccess")
       }
 
-      override fun onError(errorInfo: ErrorInfo?) {
+      override fun onError(exception: AblyException) {
         errorReceived = true
       }
     }
 
     asyncScope.launchWithCallback(callback) {
-      delay(100) // Long delay
+      delay(1000) // Long delay
       "test result"
     }
 
@@ -269,16 +268,16 @@ class UtilsTest {
   fun testObjectsAsyncScopeNonAblyException() = runTest {
     val asyncScope = ObjectsAsyncScope("test-channel")
     var errorReceived = false
-    var error: ErrorInfo? = null
+    var error: AblyException? = null
 
-    val callback = object : Callback<String> {
+    val callback = object : ObjectsCallback<String> {
       override fun onSuccess(result: String) {
         fail("Should not call onSuccess for error case")
       }
 
-      override fun onError(errorInfo: ErrorInfo?) {
+      override fun onError(exception: AblyException) {
         errorReceived = true
-        error = errorInfo
+        error = exception
       }
     }
 
@@ -290,7 +289,13 @@ class UtilsTest {
     // Wait for error to be received
     assertWaiter { errorReceived }
 
-    // Non-Ably exceptions should result in null errorInfo
-    assertNull("Non-Ably exceptions should result in null errorInfo", error)
+    // Non-Ably exceptions should be wrapped in AblyException
+    assertNotNull("Non-Ably exceptions should be wrapped in AblyException", error)
+    assertEquals("Error executing operation", error?.errorInfo?.message)
+    assertEquals(ErrorCode.BadRequest.code, error?.errorInfo?.code)
+    assertEquals(HttpStatusCode.BadRequest.code, error?.errorInfo?.statusCode)
+
+    assertTrue(error?.cause is RuntimeException)
+    assertEquals("Non-Ably exception", error?.cause?.message)
   }
 }

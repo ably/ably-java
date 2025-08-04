@@ -11,7 +11,6 @@ import io.ably.lib.objects.type.map.LiveMap
 import io.ably.lib.objects.type.map.LiveMapValue
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.types.AblyException
-import io.ably.lib.types.Callback
 import io.ably.lib.types.ProtocolMessage
 import io.ably.lib.util.Log
 import kotlinx.coroutines.*
@@ -69,19 +68,19 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
 
   override fun createCounter(initialValue: Number): LiveCounter = runBlocking { createCounterAsync(initialValue) }
 
-  override fun getRootAsync(callback: Callback<LiveMap>) {
+  override fun getRootAsync(callback: ObjectsCallback<LiveMap>) {
     asyncScope.launchWithCallback(callback) { getRootAsync() }
   }
 
-  override fun createMapAsync(callback: Callback<LiveMap>) = createMapAsync(mutableMapOf(), callback)
+  override fun createMapAsync(callback: ObjectsCallback<LiveMap>) = createMapAsync(mutableMapOf(), callback)
 
-  override fun createMapAsync(entries: MutableMap<String, LiveMapValue>, callback: Callback<LiveMap>) {
+  override fun createMapAsync(entries: MutableMap<String, LiveMapValue>, callback: ObjectsCallback<LiveMap>) {
     asyncScope.launchWithCallback(callback) { createMapAsync(entries) }
   }
 
-  override fun createCounterAsync(callback: Callback<LiveCounter>) = createCounterAsync(0, callback)
+  override fun createCounterAsync(callback: ObjectsCallback<LiveCounter>) = createCounterAsync(0, callback)
 
-  override fun createCounterAsync(initialValue: Number, callback: Callback<LiveCounter>) {
+  override fun createCounterAsync(initialValue: Number, callback: ObjectsCallback<LiveCounter>) {
     asyncScope.launchWithCallback(callback) { createCounterAsync(initialValue) }
   }
 

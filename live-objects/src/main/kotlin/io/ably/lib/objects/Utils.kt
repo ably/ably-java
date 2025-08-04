@@ -1,7 +1,6 @@
 package io.ably.lib.objects
 
 import io.ably.lib.types.AblyException
-import io.ably.lib.types.Callback
 import io.ably.lib.types.ErrorInfo
 import io.ably.lib.util.Log
 import kotlinx.coroutines.*
@@ -61,7 +60,7 @@ internal class ObjectsAsyncScope(channelName: String) {
   private val scope =
     CoroutineScope(Dispatchers.Default + CoroutineName(tag) + SupervisorJob())
 
-  internal fun <T> launchWithCallback(callback: Callback<T>, block: suspend () -> T) {
+  internal fun <T> launchWithCallback(callback: ObjectsCallback<T>, block: suspend () -> T) {
     scope.launch {
       try {
         val result = block()
@@ -69,13 +68,18 @@ internal class ObjectsAsyncScope(channelName: String) {
           Log.e(tag, "Error occurred while executing callback's onSuccess handler", t)
         } // catch and don't rethrow error from callback
       } catch (throwable: Throwable) {
-        val exception = throwable as? AblyException
-        callback.onError(exception?.errorInfo)
+        when (throwable) {
+          is AblyException -> { callback.onError(throwable) }
+          else -> {
+            val ex = ablyException("Error executing operation", ErrorCode.BadRequest, cause = throwable)
+            callback.onError(ex)
+          }
+        }
       }
     }
   }
 
-  internal fun launchWithVoidCallback(callback: Callback<Void>, block: suspend () -> Unit) {
+  internal fun launchWithVoidCallback(callback: ObjectsCallback<Void>, block: suspend () -> Unit) {
     scope.launch {
       try {
         block()
@@ -83,8 +87,13 @@ internal class ObjectsAsyncScope(channelName: String) {
           Log.e(tag, "Error occurred while executing callback's onSuccess handler", t)
         } // catch and don't rethrow error from callback
       } catch (throwable: Throwable) {
-        val exception = throwable as? AblyException
-        callback.onError(exception?.errorInfo)
+        when (throwable) {
+          is AblyException -> { callback.onError(throwable) }
+          else -> {
+            val ex = ablyException("Error executing operation", ErrorCode.BadRequest, cause = throwable)
+            callback.onError(ex)
+          }
+        }
       }
     }
   }

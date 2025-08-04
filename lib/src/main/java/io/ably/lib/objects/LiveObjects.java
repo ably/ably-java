@@ -112,7 +112,7 @@ public interface LiveObjects extends ObjectsStateChange {
      * @param callback the callback to handle the result or error.
      */
     @NonBlocking
-    void getRootAsync(@NotNull Callback<@NotNull LiveMap> callback);
+    void getRootAsync(@NotNull ObjectsCallback<@NotNull LiveMap> callback);
 
     /**
      * Asynchronously creates a new empty LiveMap with no entries.
@@ -124,7 +124,7 @@ public interface LiveObjects extends ObjectsStateChange {
      * @param callback the callback to handle the result or error.
      */
     @NonBlocking
-    void createMapAsync(@NotNull Callback<@NotNull LiveMap> callback);
+    void createMapAsync(@NotNull ObjectsCallback<@NotNull LiveMap> callback);
 
     /**
      * Asynchronously creates a new LiveMap with type-safe entries that can be Boolean, Binary, Number, String, JsonArray, JsonObject, LiveCounter, or LiveMap.
@@ -138,7 +138,7 @@ public interface LiveObjects extends ObjectsStateChange {
      * @param callback the callback to handle the result or error.
      */
     @NonBlocking
-    void createMapAsync(@NotNull Map<String, LiveMapValue> entries, @NotNull Callback<@NotNull LiveMap> callback);
+    void createMapAsync(@NotNull Map<String, LiveMapValue> entries, @NotNull ObjectsCallback<@NotNull LiveMap> callback);
 
     /**
      * Asynchronously creates a new LiveCounter with an initial value of 0.
@@ -150,7 +150,7 @@ public interface LiveObjects extends ObjectsStateChange {
      * @param callback the callback to handle the result or error.
      */
     @NonBlocking
-    void createCounterAsync(@NotNull Callback<@NotNull LiveCounter> callback);
+    void createCounterAsync(@NotNull ObjectsCallback<@NotNull LiveCounter> callback);
 
     /**
      * Asynchronously creates a new LiveCounter with an initial value.
@@ -163,5 +163,5 @@ public interface LiveObjects extends ObjectsStateChange {
      * @param callback the callback to handle the result or error.
      */
     @NonBlocking
-    void createCounterAsync(@NotNull Number initialValue, @NotNull Callback<@NotNull LiveCounter> callback);
+    void createCounterAsync(@NotNull Number initialValue, @NotNull ObjectsCallback<@NotNull LiveCounter> callback);
 }

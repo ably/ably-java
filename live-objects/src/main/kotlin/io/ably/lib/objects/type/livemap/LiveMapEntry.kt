@@ -1,9 +1,6 @@
 package io.ably.lib.objects.type.livemap
 
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import io.ably.lib.objects.*
-import io.ably.lib.objects.Binary
 import io.ably.lib.objects.ObjectData
 import io.ably.lib.objects.ObjectsPool
 import io.ably.lib.objects.ObjectsPoolDefaults
@@ -70,14 +67,13 @@ internal fun LiveMapEntry.isEligibleForGc(): Boolean {
 }
 
 private fun fromObjectValue(objValue: ObjectValue): LiveMapValue {
-  return when (val value = objValue.value) {
-    is String -> LiveMapValue.of(value)
-    is Number -> LiveMapValue.of(value)
-    is Boolean -> LiveMapValue.of(value)
-    is Binary -> LiveMapValue.of(value.data)
-    is JsonObject -> LiveMapValue.of(value)
-    is JsonArray -> LiveMapValue.of(value)
-    else -> throw IllegalArgumentException("Unsupported value type: ${value::class.java}")
+  return when (objValue) {
+    is ObjectValue.String -> LiveMapValue.of(objValue.value)
+    is ObjectValue.Number -> LiveMapValue.of(objValue.value)
+    is ObjectValue.Boolean -> LiveMapValue.of(objValue.value)
+    is ObjectValue.Binary -> LiveMapValue.of(objValue.value.data)
+    is ObjectValue.JsonObject -> LiveMapValue.of(objValue.value)
+    is ObjectValue.JsonArray -> LiveMapValue.of(objValue.value)
   }
 }
 

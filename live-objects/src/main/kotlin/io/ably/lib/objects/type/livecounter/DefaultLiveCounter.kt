@@ -10,7 +10,6 @@ import io.ably.lib.objects.type.counter.LiveCounter
 import io.ably.lib.objects.type.counter.LiveCounterChange
 import io.ably.lib.objects.type.counter.LiveCounterUpdate
 import io.ably.lib.objects.type.noOp
-import io.ably.lib.types.Callback
 import java.util.concurrent.atomic.AtomicReference
 import io.ably.lib.util.Log
 import kotlinx.coroutines.runBlocking
@@ -46,11 +45,11 @@ internal class DefaultLiveCounter private constructor(
 
   override fun decrement(amount: Number) = runBlocking { incrementAsync(-amount.toDouble()) }
 
-  override fun incrementAsync(amount: Number, callback: Callback<Void>) {
+  override fun incrementAsync(amount: Number, callback: ObjectsCallback<Void>) {
     asyncScope.launchWithVoidCallback(callback) { incrementAsync(amount.toDouble()) }
   }
 
-  override fun decrementAsync(amount: Number, callback: Callback<Void>) {
+  override fun decrementAsync(amount: Number, callback: ObjectsCallback<Void>) {
     asyncScope.launchWithVoidCallback(callback) { incrementAsync(-amount.toDouble()) }
   }
 
@@ -101,7 +100,7 @@ internal class DefaultLiveCounter private constructor(
   }
 
   override fun clearData(): LiveCounterUpdate {
-    return LiveCounterUpdate(data.get()).apply { data.set(0.0) }
+    return liveCounterManager.calculateUpdateFromDataDiff(data.get(), 0.0).apply { data.set(0.0) }
   }
 
   override fun notifyUpdated(update: LiveObjectUpdate) {

@@ -33,7 +33,7 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter): 
       }
     }
 
-    return LiveCounterUpdate(liveCounter.data.get() - previousData)
+    return calculateUpdateFromDataDiff(previousData, liveCounter.data.get())
   }
 
   /**
@@ -83,6 +83,10 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter): 
     val previousValue = liveCounter.data.get()
     liveCounter.data.set(previousValue + amount) // RTLC9b
     return LiveCounterUpdate(amount)
+  }
+
+  internal fun calculateUpdateFromDataDiff(prevData: Double, newData: Double): LiveCounterUpdate {
+    return LiveCounterUpdate(newData - prevData)
   }
 
   /**

@@ -46,7 +46,7 @@ class ObjectMessageSizeTest {
           key = "mapKey", // Size: 6 bytes (UTF-8 byte length)
           data = ObjectData(
             objectId = "ref_obj", // Not counted in data size
-            value = ObjectValue("sample") // Size: 6 bytes (UTF-8 byte length)
+            value = ObjectValue.String("sample") // Size: 6 bytes (UTF-8 byte length)
           ) // Total ObjectData size: 6 bytes
         ), // Total ObjectMapOp size: 6 + 6 = 12 bytes
 
@@ -63,12 +63,12 @@ class ObjectMessageSizeTest {
               tombstone = false, // Not counted in entry size
               timeserial = "ts_123", // Not counted in entry size
               data = ObjectData(
-                value = ObjectValue("value1") // Size: 6 bytes
+                value = ObjectValue.String("value1") // Size: 6 bytes
               ) // ObjectMapEntry size: 6 bytes
             ), // Total for this entry: 6 (key) + 6 (entry) = 12 bytes
             "entry2" to ObjectMapEntry( // Key size: 6 bytes
               data = ObjectData(
-                value = ObjectValue(42) // Size: 8 bytes (number)
+                value = ObjectValue.Number(42) // Size: 8 bytes (number)
               ) // ObjectMapEntry size: 8 bytes
             ) // Total for this entry: 6 (key) + 8 (entry) = 14 bytes
           ) // Total entries size: 12 + 14 = 26 bytes
@@ -95,7 +95,7 @@ class ObjectMessageSizeTest {
           mapOp = ObjectMapOp(
             key = "createKey", // Size: 9 bytes
             data = ObjectData(
-              value = ObjectValue("createValue") // Size: 11 bytes
+              value = ObjectValue.String("createValue") // Size: 11 bytes
             ) // ObjectData size: 11 bytes
           ) // ObjectMapOp size: 9 + 11 = 20 bytes
         ), // Total createOp size: 20 bytes
@@ -105,7 +105,7 @@ class ObjectMessageSizeTest {
           entries = mapOf(
             "stateKey" to ObjectMapEntry( // Key size: 8 bytes
               data = ObjectData(
-                value = ObjectValue("stateValue") // Size: 10 bytes
+                value = ObjectValue.String("stateValue") // Size: 10 bytes
               ) // ObjectMapEntry size: 10 bytes
             ) // Total: 8 + 10 = 18 bytes
           )
@@ -138,7 +138,7 @@ class ObjectMessageSizeTest {
         mapOp = ObjectMapOp(
           key = "",
           data = ObjectData(
-            value = ObjectValue("你😊") // 你 -> 3 bytes, 😊 -> 4 bytes
+            value = ObjectValue.String("你😊") // 你 -> 3 bytes, 😊 -> 4 bytes
           ),
         ),
       )

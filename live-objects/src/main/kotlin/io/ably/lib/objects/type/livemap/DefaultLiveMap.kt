@@ -13,7 +13,6 @@ import io.ably.lib.objects.type.map.LiveMapChange
 import io.ably.lib.objects.type.map.LiveMapUpdate
 import io.ably.lib.objects.type.map.LiveMapValue
 import io.ably.lib.objects.type.noOp
-import io.ably.lib.types.Callback
 import io.ably.lib.util.Log
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.ConcurrentHashMap
@@ -98,11 +97,11 @@ internal class DefaultLiveMap private constructor(
 
   override fun remove(keyName: String) = runBlocking { removeAsync(keyName) }
 
-  override fun setAsync(keyName: String, value: LiveMapValue, callback: Callback<Void>) {
+  override fun setAsync(keyName: String, value: LiveMapValue, callback: ObjectsCallback<Void>) {
     asyncScope.launchWithVoidCallback(callback) { setAsync(keyName, value) }
   }
 
-  override fun removeAsync(keyName: String, callback: Callback<Void>) {
+  override fun removeAsync(keyName: String, callback: ObjectsCallback<Void>) {
     asyncScope.launchWithVoidCallback(callback) { removeAsync(keyName) }
   }
 
@@ -215,10 +214,32 @@ internal class DefaultLiveMap private constructor(
       )
     }
 
-    private fun fromLiveMapValue(value: LiveMapValue) : ObjectData {
+    private fun fromLiveMapValue(value: LiveMapValue): ObjectData {
       return when {
-        value.isLiveMap || value.isLiveCounter -> ObjectData(objectId = (value.value as BaseLiveObject).objectId)
-        else -> ObjectData(value = ObjectValue(value.value))
+        value.isLiveMap || value.isLiveCounter -> {
+          ObjectData(objectId = (value.value as BaseLiveObject).objectId)
+        }
+        value.isBoolean -> {
+          ObjectData(value = ObjectValue.Boolean(value.asBoolean))
+        }
+        value.isBinary -> {
+          ObjectData(value = ObjectValue.Binary(Binary(value.asBinary)))
+        }
+        value.isNumber -> {
+          ObjectData(value = ObjectValue.Number(value.asNumber))
+        }
+        value.isString -> {
+          ObjectData(value = ObjectValue.String(value.asString))
+        }
+        value.isJsonObject -> {
+          ObjectData(value = ObjectValue.JsonObject(value.asJsonObject))
+        }
+        value.isJsonArray -> {
+          ObjectData(value = ObjectValue.JsonArray(value.asJsonArray))
+        }
+        else -> {
+          throw IllegalArgumentException("Unsupported value type")
+        }
       }
     }
   }
