@@ -33,7 +33,7 @@ internal class DefaultLiveCounter private constructor(
   internal val data = AtomicReference<Double>(0.0) // RTLC3
 
   /**
-   * liveCounterManager instance for managing LiveMap operations
+   * liveCounterManager instance for managing LiveCounter operations
    */
   private val liveCounterManager = LiveCounterManager(this)
 

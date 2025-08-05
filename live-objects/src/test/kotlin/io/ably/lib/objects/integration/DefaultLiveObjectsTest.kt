@@ -14,6 +14,7 @@ import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.text.toByteArray
 
 class DefaultLiveObjectsTest : IntegrationTest() {
@@ -114,7 +115,7 @@ class DefaultLiveObjectsTest : IntegrationTest() {
     val bytesValue = valuesMap.get("bytes")?.asBinary
     assertNotNull(bytesValue)
     val expectedBinary = "eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9".toByteArray()
-    assertEquals(expectedBinary.contentEquals(bytesValue), true) // Should contain encoded JSON data
+    assertTrue(expectedBinary.contentEquals(bytesValue)) // Should contain encoded JSON data
 
     val emptyBytesValue = valuesMap.get("emptyBytes")?.asBinary
     assertNotNull(emptyBytesValue)

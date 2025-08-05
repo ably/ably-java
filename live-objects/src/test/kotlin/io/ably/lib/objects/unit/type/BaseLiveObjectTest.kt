@@ -142,12 +142,12 @@ class BaseLiveObjectTest {
 
     // RTLO4a6 - Return false when message serial is less (lexicographically)
     assertTrue(liveMap.canApplyOperation("site1", "serialA"),
-      "Should return false when message serial 'serialA' < siteSerial 'serial2'")
+      "Should return true when message serial 'serialA' > siteSerial 'serial2'")
   }
 
   @Test
   fun `(RTLO4a) canApplyOperation should work with different site codes`() {
-    val liveMap: BaseLiveObject = DefaultLiveCounter.zeroValue("map:testObject@1", defaultLiveObjects)
+    val liveMap: BaseLiveObject = DefaultLiveCounter.zeroValue("counter:testObject@1", defaultLiveObjects)
 
     // Set serials for different sites
     liveMap.siteTimeserials["site1"] = "serial1"

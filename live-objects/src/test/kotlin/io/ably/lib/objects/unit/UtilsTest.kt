@@ -13,6 +13,24 @@ import java.util.concurrent.CancellationException
 class UtilsTest {
 
   @Test
+  fun testGenerateNonce() {
+    // Test basic functionality
+    val nonce1 = generateNonce()
+    val nonce2 = generateNonce()
+
+    assertEquals(16, nonce1.length)
+    assertEquals(16, nonce2.length)
+    assertNotEquals(nonce1, nonce2) // Should be random
+
+    // Test character set
+    val validChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+    val nonce = generateNonce()
+    nonce.forEach { char ->
+      assertTrue("Nonce should only contain valid characters", validChars.contains(char))
+    }
+  }
+
+  @Test
   fun testStringByteSize() {
     // Test ASCII strings
     assertEquals(5, "Hello".byteSize)
