@@ -30,7 +30,14 @@ subprojects {
 configure(subprojects) {
     pluginManager.withPlugin("com.vanniktech.maven.publish") {
         extensions.configure<MavenPublishBaseExtension> {
-            signAllPublications()
+            // Check if we're running a local publish task
+            val isLocalPublish = gradle.startParameter.taskNames.any {
+                it.contains("publishToMavenLocal") || it.contains("ToMavenLocal")
+            }
+
+            if (!isLocalPublish) {
+                signAllPublications()
+            }
         }
     }
 }
