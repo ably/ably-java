@@ -47,19 +47,25 @@ implementation("io.ably:ably-java:$ABLY_VERSION") {
 runtimeOnly("io.ably:network-client-okhttp:$ABLY_VERSION")
 ```
 
-### Publishing to local Maven repository for Development and Testing
+### Publishing to local Maven repository for development and testing
 To publish the library to your local Maven repository, you can use the following command:
 
-```bash
-./gradlew publishToMavenLocal
-```
-To use the locally published library in your project, you can add the following dependency in your `build.gradle` file:
+    ./gradlew publishToMavenLocal
 
-```groovy
+
+Alternatively, to publish only the specific (LiveObjects) module:
+
+    ./gradlew :live-objects:publishToMavenLocal
+
+
+- To use the locally published library in your project, you can add the following dependency in your `build.gradle` file:
+
+```
 repositories {
     mavenLocal()
 }
 ```
+- Note - Place `mavenLocal()` before `mavenCentral()` for resolution precedence.
 
 ### How to Add a New Network Engine
 
