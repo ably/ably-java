@@ -36,7 +36,8 @@ internal class EnumCodeTypeAdapter<T : Enum<T>>(
 
   override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): T {
     val code = json.asInt
-    return enumValues.first { getCode(it) == code }
+    return enumValues.firstOrNull { getCode(it) == code } ?: enumValues.firstOrNull { getCode(it) == -1 }
+      ?: throw JsonParseException("Unknown enum code: $code and no Unknown fallback found")
   }
 }
 
@@ -45,17 +46,13 @@ internal class ObjectDataJsonSerializer : JsonSerializer<ObjectData>, JsonDeseri
     val obj = JsonObject()
     src.objectId?.let { obj.addProperty("objectId", it) }
 
-    src.value?.let { value ->
-      when (val v = value.value) {
-        is Boolean -> obj.addProperty("boolean", v)
-        is String -> obj.addProperty("string", v)
-        is Number -> obj.addProperty("number", v.toDouble())
-        is Binary -> obj.addProperty("bytes", Base64.getEncoder().encodeToString(v.data))
-        // Spec: OD4c5
-        is JsonObject, is JsonArray -> {
-          obj.addProperty("string", v.toString())
-          obj.addProperty("encoding", "json")
-        }
+    src.value?.let { v ->
+      when (v) {
+        is ObjectValue.Boolean -> obj.addProperty("boolean", v.value)
+        is ObjectValue.String -> obj.addProperty("string", v.value)
+        is ObjectValue.Number -> obj.addProperty("number", v.value.toDouble())
+        is ObjectValue.Binary -> obj.addProperty("bytes", Base64.getEncoder().encodeToString(v.value.data))
+        is ObjectValue.JsonObject, is ObjectValue.JsonArray -> obj.addProperty("json", v.value.toString()) // Spec: OD4c5
       }
     }
     return obj
@@ -64,25 +61,25 @@ internal class ObjectDataJsonSerializer : JsonSerializer<ObjectData>, JsonDeseri
   override fun deserialize(json: JsonElement, typeOfT: Type?, context: JsonDeserializationContext?): ObjectData {
     val obj = if (json.isJsonObject) json.asJsonObject else throw JsonParseException("Expected JsonObject")
     val objectId = if (obj.has("objectId")) obj.get("objectId").asString else null
-    val encoding = if (obj.has("encoding")) obj.get("encoding").asString else null
     val value = when {
-      obj.has("boolean") -> ObjectValue(obj.get("boolean").asBoolean)
-      // Spec: OD5b3
-      obj.has("string") && encoding == "json" -> {
-        val jsonStr = obj.get("string").asString
-        val parsed = JsonParser.parseString(jsonStr)
-        ObjectValue(
-          when {
-            parsed.isJsonObject -> parsed.asJsonObject
-            parsed.isJsonArray -> parsed.asJsonArray
-            else -> throw JsonParseException("Invalid JSON string for encoding=json")
-          }
-        )
+      obj.has("boolean") -> ObjectValue.Boolean(obj.get("boolean").asBoolean)
+      obj.has("string") -> ObjectValue.String(obj.get("string").asString)
+      obj.has("number") -> ObjectValue.Number(obj.get("number").asDouble)
+      obj.has("bytes") -> ObjectValue.Binary(Binary(Base64.getDecoder().decode(obj.get("bytes").asString)))
+      obj.has("json") -> {
+        val jsonElement = JsonParser.parseString(obj.get("json").asString)
+        when {
+          jsonElement.isJsonObject -> ObjectValue.JsonObject(jsonElement.asJsonObject)
+          jsonElement.isJsonArray -> ObjectValue.JsonArray(jsonElement.asJsonArray)
+          else -> throw JsonParseException("Invalid JSON structure")
+        }
       }
-      obj.has("string") -> ObjectValue(obj.get("string").asString)
-      obj.has("number") -> ObjectValue(obj.get("number").asDouble)
-      obj.has("bytes") -> ObjectValue(Binary(Base64.getDecoder().decode(obj.get("bytes").asString)))
-      else -> throw JsonParseException("ObjectData must have one of the fields: boolean, string, number, or bytes")
+      else -> {
+        if (objectId != null)
+          null
+        else
+          throw JsonParseException("Since objectId is not present, at least one of the value fields must be present")
+      }
     }
     return ObjectData(objectId, value)
   }

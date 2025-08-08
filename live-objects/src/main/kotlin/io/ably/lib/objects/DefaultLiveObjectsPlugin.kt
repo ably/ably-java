@@ -1,5 +1,6 @@
 package io.ably.lib.objects
 
+import io.ably.lib.realtime.ChannelState
 import io.ably.lib.types.ProtocolMessage
 import java.util.concurrent.ConcurrentHashMap
 
@@ -16,14 +17,18 @@ public class DefaultLiveObjectsPlugin(private val adapter: LiveObjectsAdapter) :
     liveObjects[channelName]?.handle(msg)
   }
 
+  override fun handleStateChange(channelName: String, state: ChannelState, hasObjects: Boolean) {
+    liveObjects[channelName]?.handleStateChange(state, hasObjects)
+  }
+
   override fun dispose(channelName: String) {
-    liveObjects[channelName]?.dispose()
+    liveObjects[channelName]?.dispose("Channel has ben released using channels.release()")
     liveObjects.remove(channelName)
   }
 
   override fun dispose() {
     liveObjects.values.forEach {
-      it.dispose()
+      it.dispose("AblyClient has been closed using client.close()")
     }
     liveObjects.clear()
   }
