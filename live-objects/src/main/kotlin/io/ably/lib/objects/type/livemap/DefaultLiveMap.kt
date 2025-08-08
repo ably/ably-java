@@ -11,11 +11,12 @@ import io.ably.lib.objects.type.ObjectType
 import io.ably.lib.objects.type.map.LiveMap
 import io.ably.lib.objects.type.map.LiveMapChange
 import io.ably.lib.objects.type.map.LiveMapUpdate
+import io.ably.lib.objects.type.map.LiveMapValue
 import io.ably.lib.objects.type.noOp
 import io.ably.lib.util.Log
+import kotlinx.coroutines.runBlocking
 import java.util.concurrent.ConcurrentHashMap
 import java.util.AbstractMap
-
 
 /**
  * Implementation of LiveObject for LiveMap.
@@ -43,8 +44,9 @@ internal class DefaultLiveMap private constructor(
   private val channelName = liveObjects.channelName
   private val adapter: LiveObjectsAdapter get() = liveObjects.adapter
   internal val objectsPool: ObjectsPool get() = liveObjects.objectsPool
+  private val asyncScope get() = liveObjects.asyncScope
 
-  override fun get(keyName: String): Any? {
+  override fun get(keyName: String): LiveMapValue? {
     adapter.throwIfInvalidAccessApiConfiguration(channelName) // RTLM5b, RTLM5c
     if (isTombstoned) {
       return null
@@ -55,10 +57,10 @@ internal class DefaultLiveMap private constructor(
     return null // RTLM5d1
   }
 
-  override fun entries(): Iterable<Map.Entry<String, Any>> {
+  override fun entries(): Iterable<Map.Entry<String, LiveMapValue>> {
     adapter.throwIfInvalidAccessApiConfiguration(channelName) // RTLM11b, RTLM11c
 
-    return sequence<Map.Entry<String, Any>> {
+    return sequence<Map.Entry<String, LiveMapValue>> {
       for ((key, entry) in data.entries) {
         val value = entry.getResolvedValue(objectsPool) // RTLM11d, RTLM11d2
         value?.let {
@@ -77,7 +79,7 @@ internal class DefaultLiveMap private constructor(
     }.asIterable()
   }
 
-  override fun values(): Iterable<Any> {
+  override fun values(): Iterable<LiveMapValue> {
     val iterableEntries = entries()
     return sequence {
       for (entry in iterableEntries) {
@@ -91,20 +93,16 @@ internal class DefaultLiveMap private constructor(
     return data.values.count { !it.isEntryOrRefTombstoned(objectsPool) }.toLong() // RTLM10d
   }
 
-  override fun set(keyName: String, value: Any) {
-    TODO("Not yet implemented")
-  }
+  override fun set(keyName: String, value: LiveMapValue) = runBlocking { setAsync(keyName, value) }
 
-  override fun remove(keyName: String) {
-    TODO("Not yet implemented")
-  }
+  override fun remove(keyName: String) = runBlocking { removeAsync(keyName) }
 
-  override fun setAsync(keyName: String, value: Any, callback: ObjectsCallback<Void>) {
-    TODO("Not yet implemented")
+  override fun setAsync(keyName: String, value: LiveMapValue, callback: ObjectsCallback<Void>) {
+    asyncScope.launchWithVoidCallback(callback) { setAsync(keyName, value) }
   }
 
   override fun removeAsync(keyName: String, callback: ObjectsCallback<Void>) {
-    TODO("Not yet implemented")
+    asyncScope.launchWithVoidCallback(callback) { removeAsync(keyName) }
   }
 
   override fun validate(state: ObjectState) = liveMapManager.validate(state)
@@ -117,6 +115,53 @@ internal class DefaultLiveMap private constructor(
   override fun unsubscribe(listener: LiveMapChange.Listener) = liveMapManager.unsubscribe(listener)
 
   override fun unsubscribeAll() = liveMapManager.unsubscribeAll()
+
+  private suspend fun setAsync(keyName: String, value: LiveMapValue) {
+    // RTLM20b, RTLM20c, RTLM20d - Validate write API configuration
+    adapter.throwIfInvalidWriteApiConfiguration(channelName)
+
+    // Validate input parameters
+    if (keyName.isEmpty()) {
+      throw invalidInputError("Map key should not be empty")
+    }
+
+    // RTLM20e - Create ObjectMessage with the MAP_SET operation
+    val msg = ObjectMessage(
+      operation = ObjectOperation(
+        action = ObjectOperationAction.MapSet,
+        objectId = objectId,
+        mapOp = ObjectMapOp(
+          key = keyName,
+          data = fromLiveMapValue(value)
+        )
+      )
+    )
+
+    // RTLM20f - Publish the message
+    liveObjects.publish(arrayOf(msg))
+  }
+
+  private suspend fun removeAsync(keyName: String) {
+    // RTLM21b, RTLM21cm RTLM21d - Validate write API configuration
+    adapter.throwIfInvalidWriteApiConfiguration(channelName)
+
+    // Validate input parameter
+    if (keyName.isEmpty()) {
+      throw invalidInputError("Map key should not be empty")
+    }
+
+    // RTLM21e - Create ObjectMessage with the MAP_REMOVE operation
+    val msg = ObjectMessage(
+      operation = ObjectOperation(
+        action = ObjectOperationAction.MapRemove,
+        objectId = objectId,
+        mapOp = ObjectMapOp(key = keyName)
+      )
+    )
+
+    // RTLM21f - Publish the message
+    liveObjects.publish(arrayOf(msg))
+  }
 
   override fun applyObjectState(objectState: ObjectState, message: ObjectMessage): LiveMapUpdate {
     return liveMapManager.applyState(objectState, message.serialTimestamp)
@@ -150,6 +195,56 @@ internal class DefaultLiveMap private constructor(
      */
     internal fun zeroValue(objectId: String, objects: DefaultLiveObjects): DefaultLiveMap {
       return DefaultLiveMap(objectId, objects)
+    }
+
+    /**
+     * Creates an ObjectMap from map entries.
+     * Spec: RTO11f4
+     */
+    internal fun initialValue(entries: MutableMap<String, LiveMapValue>): MapCreatePayload {
+      return MapCreatePayload(
+        map = ObjectMap(
+          semantics = MapSemantics.LWW,
+          entries = entries.mapValues { (_, value) ->
+            ObjectMapEntry(
+              tombstone = false,
+              data = fromLiveMapValue(value)
+            )
+          }
+        )
+      )
+    }
+
+    /**
+     * Spec: RTLM20e5
+     */
+    private fun fromLiveMapValue(value: LiveMapValue): ObjectData {
+      return when {
+        value.isLiveMap || value.isLiveCounter -> {
+          ObjectData(objectId = (value.value as BaseLiveObject).objectId)
+        }
+        value.isBoolean -> {
+          ObjectData(value = ObjectValue.Boolean(value.asBoolean))
+        }
+        value.isBinary -> {
+          ObjectData(value = ObjectValue.Binary(Binary(value.asBinary)))
+        }
+        value.isNumber -> {
+          ObjectData(value = ObjectValue.Number(value.asNumber))
+        }
+        value.isString -> {
+          ObjectData(value = ObjectValue.String(value.asString))
+        }
+        value.isJsonObject -> {
+          ObjectData(value = ObjectValue.JsonObject(value.asJsonObject))
+        }
+        value.isJsonArray -> {
+          ObjectData(value = ObjectValue.JsonArray(value.asJsonArray))
+        }
+        else -> {
+          throw IllegalArgumentException("Unsupported value type")
+        }
+      }
     }
   }
 }

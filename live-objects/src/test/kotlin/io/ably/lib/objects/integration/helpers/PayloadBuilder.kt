@@ -3,8 +3,8 @@ package io.ably.lib.objects.integration.helpers
 import com.google.gson.JsonObject
 import io.ably.lib.objects.ObjectData
 import io.ably.lib.objects.ObjectOperationAction
+import io.ably.lib.objects.generateNonce
 import io.ably.lib.objects.serialization.gson
-import java.util.*
 
 internal object PayloadBuilder {
   /**
@@ -18,11 +18,6 @@ internal object PayloadBuilder {
     ObjectOperationAction.CounterCreate to "COUNTER_CREATE",
     ObjectOperationAction.CounterInc to "COUNTER_INC",
   )
-
-  /**
-   * Generates a random nonce string for object creation operations.
-   */
-  private fun nonce(): String = UUID.randomUUID().toString().replace("-", "")
 
   /**
    * Creates a MAP_CREATE operation payload for REST API.
@@ -46,7 +41,7 @@ internal object PayloadBuilder {
 
     if (objectId != null) {
       opBody.addProperty("objectId", objectId)
-      opBody.addProperty("nonce", nonce ?: nonce())
+      opBody.addProperty("nonce", nonce ?: generateNonce())
     }
 
     return opBody
@@ -113,7 +108,7 @@ internal object PayloadBuilder {
 
     if (objectId != null) {
       opBody.addProperty("objectId", objectId)
-      opBody.addProperty("nonce", nonce ?: nonce())
+      opBody.addProperty("nonce", nonce ?: generateNonce())
     }
 
     return opBody

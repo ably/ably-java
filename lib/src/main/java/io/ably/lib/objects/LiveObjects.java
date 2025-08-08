@@ -3,10 +3,10 @@ package io.ably.lib.objects;
 import io.ably.lib.objects.state.ObjectsStateChange;
 import io.ably.lib.objects.type.counter.LiveCounter;
 import io.ably.lib.objects.type.map.LiveMap;
+import io.ably.lib.objects.type.map.LiveMapValue;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.NotNull;
-
 
 import java.util.Map;
 
@@ -33,46 +33,60 @@ public interface LiveObjects extends ObjectsStateChange {
     LiveMap getRoot();
 
     /**
-     * Creates a new LiveMap based on an existing LiveMap.
+     * Creates a new empty LiveMap with no entries.
      * Send a MAP_CREATE operation to the realtime system to create a new map object in the pool.
      * Once the ACK message is received, the method returns the object from the local pool if it got created due to
      * the echoed MAP_CREATE operation, or if it wasn't received yet, the method creates a new object locally
-     * using the provided data and returns it.
+     * and returns it.
      *
-     * @param liveMap the existing LiveMap to base the new LiveMap on.
-     * @return the newly created LiveMap instance.
+     * @return the newly created empty LiveMap instance.
      */
     @Blocking
     @NotNull
-    LiveMap createMap(@NotNull LiveMap liveMap);
+    LiveMap createMap();
 
     /**
-     * Creates a new LiveMap based on a LiveCounter.
+     * Creates a new LiveMap with type-safe entries that can be Boolean, Binary, Number, String, JsonArray, JsonObject, LiveCounter, or LiveMap.
+     * Implements spec RTO11 : createMap(Dict<String, Boolean | Binary | Number | String | JsonArray | JsonObject | LiveCounter | LiveMap> entries?)
      * Send a MAP_CREATE operation to the realtime system to create a new map object in the pool.
      * Once the ACK message is received, the method returns the object from the local pool if it got created due to
      * the echoed MAP_CREATE operation, or if it wasn't received yet, the method creates a new object locally
      * using the provided data and returns it.
      *
-     * @param liveCounter the LiveCounter to base the new LiveMap on.
+     * <h3>Example:</h3>
+     * <pre>{@code
+     * Map<String, LiveMapValue> entries = Map.of(
+     *     "string", LiveMapValue.of("Hello"),
+     *     "number", LiveMapValue.of(42),
+     *     "boolean", LiveMapValue.of(true),
+     *     "binary", LiveMapValue.of(new byte[]{1, 2, 3}),
+     *     "array", LiveMapValue.of(new JsonArray()),
+     *     "object", LiveMapValue.of(new JsonObject()),
+     *     "counter", LiveMapValue.of(liveObjects.createCounter()),
+     *     "nested", LiveMapValue.of(liveObjects.createMap())
+     * );
+     * LiveMap map = liveObjects.createMap(entries);
+     * }</pre>
+     *
+     * @param entries the type-safe map entries with values that can be Boolean, Binary, Number, String, JsonArray, JsonObject, LiveCounter, or LiveMap.
      * @return the newly created LiveMap instance.
      */
     @Blocking
     @NotNull
-    LiveMap createMap(@NotNull LiveCounter liveCounter);
+    LiveMap createMap(@NotNull Map<String, LiveMapValue> entries);
 
     /**
-     * Creates a new LiveMap based on a standard Java Map.
-     * Send a MAP_CREATE operation to the realtime system to create a new map object in the pool.
+     * Creates a new LiveCounter with an initial value of 0.
+     * Send a COUNTER_CREATE operation to the realtime system to create a new counter object in the pool.
      * Once the ACK message is received, the method returns the object from the local pool if it got created due to
-     * the echoed MAP_CREATE operation, or if it wasn't received yet, the method creates a new object locally
+     * the echoed COUNTER_CREATE operation, or if it wasn't received yet, the method creates a new object locally
      * using the provided data and returns it.
      *
-     * @param map the Java Map to base the new LiveMap on.
-     * @return the newly created LiveMap instance.
+     * @return the newly created LiveCounter instance with initial value of 0.
      */
     @Blocking
     @NotNull
-    LiveMap createMap(@NotNull Map<String, Object> map);
+    LiveCounter createCounter();
 
     /**
      * Creates a new LiveCounter with an initial value.
@@ -86,7 +100,7 @@ public interface LiveObjects extends ObjectsStateChange {
      */
     @Blocking
     @NotNull
-    LiveCounter createCounter(@NotNull Long initialValue);
+    LiveCounter createCounter(@NotNull Number initialValue);
 
     /**
      * Asynchronously retrieves the root LiveMap object.
@@ -100,43 +114,42 @@ public interface LiveObjects extends ObjectsStateChange {
     void getRootAsync(@NotNull ObjectsCallback<@NotNull LiveMap> callback);
 
     /**
-     * Asynchronously creates a new LiveMap based on an existing LiveMap.
+     * Asynchronously creates a new empty LiveMap with no entries.
      * Send a MAP_CREATE operation to the realtime system to create a new map object in the pool.
      * Once the ACK message is received, the method returns the object from the local pool if it got created due to
      * the echoed MAP_CREATE operation, or if it wasn't received yet, the method creates a new object locally
-     * using the provided data and returns it.
+     * and returns it.
      *
-     * @param liveMap the existing LiveMap to base the new LiveMap on.
      * @param callback the callback to handle the result or error.
      */
     @NonBlocking
-    void createMapAsync(@NotNull LiveMap liveMap, @NotNull ObjectsCallback<@NotNull LiveMap> callback);
+    void createMapAsync(@NotNull ObjectsCallback<@NotNull LiveMap> callback);
 
     /**
-     * Asynchronously creates a new LiveMap based on a LiveCounter.
+     * Asynchronously creates a new LiveMap with type-safe entries that can be Boolean, Binary, Number, String, JsonArray, JsonObject, LiveCounter, or LiveMap.
+     * This method implements the spec RTO11 signature: createMap(Dict<String, Boolean | Binary | Number | String | JsonArray | JsonObject | LiveCounter | LiveMap> entries?)
      * Send a MAP_CREATE operation to the realtime system to create a new map object in the pool.
      * Once the ACK message is received, the method returns the object from the local pool if it got created due to
      * the echoed MAP_CREATE operation, or if it wasn't received yet, the method creates a new object locally
      * using the provided data and returns it.
      *
-     * @param liveCounter the LiveCounter to base the new LiveMap on.
+     * @param entries the type-safe map entries with values that can be Boolean, Binary, Number, String, JsonArray, JsonObject, LiveCounter, or LiveMap.
      * @param callback the callback to handle the result or error.
      */
     @NonBlocking
-    void createMapAsync(@NotNull LiveCounter liveCounter, @NotNull ObjectsCallback<@NotNull LiveMap> callback);
+    void createMapAsync(@NotNull Map<String, LiveMapValue> entries, @NotNull ObjectsCallback<@NotNull LiveMap> callback);
 
     /**
-     * Asynchronously creates a new LiveMap based on a standard Java Map.
-     * Send a MAP_CREATE operation to the realtime system to create a new map object in the pool.
+     * Asynchronously creates a new LiveCounter with an initial value of 0.
+     * Send a COUNTER_CREATE operation to the realtime system to create a new counter object in the pool.
      * Once the ACK message is received, the method returns the object from the local pool if it got created due to
-     * the echoed MAP_CREATE operation, or if it wasn't received yet, the method creates a new object locally
+     * the echoed COUNTER_CREATE operation, or if it wasn't received yet, the method creates a new object locally
      * using the provided data and returns it.
      *
-     * @param map the Java Map to base the new LiveMap on.
      * @param callback the callback to handle the result or error.
      */
     @NonBlocking
-    void createMapAsync(@NotNull Map<String, Object> map, @NotNull ObjectsCallback<@NotNull LiveMap> callback);
+    void createCounterAsync(@NotNull ObjectsCallback<@NotNull LiveCounter> callback);
 
     /**
      * Asynchronously creates a new LiveCounter with an initial value.
@@ -149,5 +162,5 @@ public interface LiveObjects extends ObjectsStateChange {
      * @param callback the callback to handle the result or error.
      */
     @NonBlocking
-    void createCounterAsync(@NotNull Long initialValue, @NotNull ObjectsCallback<@NotNull LiveCounter> callback);
+    void createCounterAsync(@NotNull Number initialValue, @NotNull ObjectsCallback<@NotNull LiveCounter> callback);
 }
