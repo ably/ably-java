@@ -22,7 +22,7 @@ abstract class IntegrationTest {
 
   @JvmField
   @Rule
-  val timeout: Timeout = Timeout.seconds(10)
+  val timeout: Timeout = Timeout.seconds(15)
 
   private val realtimeClients = mutableMapOf<String, AblyRealtime>()
 

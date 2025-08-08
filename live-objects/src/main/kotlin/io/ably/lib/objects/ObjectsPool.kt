@@ -76,7 +76,7 @@ internal class ObjectsPool(
    */
   internal fun resetToInitialPool(emitUpdateEvents: Boolean) {
     pool.entries.removeIf { (key, _) -> key != ROOT_OBJECT_ID } // only keep the root object
-    clearObjectsData(emitUpdateEvents) // clear the root object and emit update events
+    clearObjectsData(emitUpdateEvents) // RTO4b2a - clear the root object and emit update events
   }
 
 

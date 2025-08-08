@@ -1,6 +1,7 @@
 package io.ably.lib.objects
 
 import io.ably.lib.objects.type.BaseLiveObject
+import io.ably.lib.objects.type.LiveObjectUpdate
 import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
 import io.ably.lib.objects.type.livemap.DefaultLiveMap
 import io.ably.lib.util.Log
@@ -125,7 +126,8 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects): Obje
     }
 
     val receivedObjectIds = mutableSetOf<String>()
-    val existingObjectUpdates = mutableListOf<Pair<BaseLiveObject, Any>>()
+    // RTO5c1a2 - List to collect updates for existing objects
+    val existingObjectUpdates = mutableListOf<Pair<BaseLiveObject, LiveObjectUpdate>>()
 
     // RTO5c1
     for ((objectId, objectState) in syncObjectsDataPool) {
@@ -148,7 +150,7 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects): Obje
     // RTO5c2 - need to remove LiveObject instances from the ObjectsPool for which objectIds were not received during the sync sequence
     liveObjects.objectsPool.deleteExtraObjectIds(receivedObjectIds)
 
-    // call subscription callbacks for all updated existing objects
+    // RTO5c7 - call subscription callbacks for all updated existing objects
     existingObjectUpdates.forEach { (obj, update) ->
       obj.notifyUpdated(update)
     }

@@ -42,15 +42,7 @@ internal fun RestObjects.createUserMapWithCountersObject(channelName: String): S
   val loginStreakCounterObjectId = createCounter(channelName, 7.0)
 
   // Create engagement metrics nested map with counters
-  val engagementMetricsMapObjectId = createMap(
-    channelName,
-    data = mapOf(
-      "totalShares" to DataFixtures.mapRef(createCounter(channelName, 34.0)),
-      "totalBookmarks" to DataFixtures.mapRef(createCounter(channelName, 67.0)),
-      "totalReactions" to DataFixtures.mapRef(createCounter(channelName, 189.0)),
-      "dailyActiveStreak" to DataFixtures.mapRef(createCounter(channelName, 12.0))
-    )
-  )
+  val engagementMetricsMapObjectId = createUserEngagementMatrixMap(channelName)
 
   // Set up the main test map structure with references to all created counters
   setMapRef(channelName, testMapObjectId, "profileViews", profileViewsCounterObjectId)
@@ -62,4 +54,35 @@ internal fun RestObjects.createUserMapWithCountersObject(channelName: String): S
   setMapRef(channelName, testMapObjectId, "engagementMetrics", engagementMetricsMapObjectId)
 
   return testMapObjectId
+}
+
+/**
+ * Creates a user engagement matrix map object with counter references for testing.
+ *
+ * This method creates a simple engagement metrics map containing counter objects
+ * that track various user engagement metrics. The map contains references to
+ * counter objects representing different types of user interactions and activities.
+ *
+ * **Object Structure:**
+ * ```
+ * userEngagementMatrixMap (Map)
+ * ├── "totalShares" → Counter(value=34)
+ * ├── "totalBookmarks" → Counter(value=67)
+ * ├── "totalReactions" → Counter(value=189)
+ * └── "dailyActiveStreak" → Counter(value=12)
+ * ```
+ *
+ * @param channelName The channel where the user engagement matrix map will be created
+ * @return The object ID of the created user engagement matrix map
+ */
+internal fun RestObjects.createUserEngagementMatrixMap(channelName: String): String {
+  return createMap(
+    channelName,
+    data = mapOf(
+      "totalShares" to DataFixtures.mapRef(createCounter(channelName, 34.0)),
+      "totalBookmarks" to DataFixtures.mapRef(createCounter(channelName, 67.0)),
+      "totalReactions" to DataFixtures.mapRef(createCounter(channelName, 189.0)),
+      "dailyActiveStreak" to DataFixtures.mapRef(createCounter(channelName, 12.0))
+    )
+  )
 }

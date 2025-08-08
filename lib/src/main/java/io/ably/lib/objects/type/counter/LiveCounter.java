@@ -1,5 +1,6 @@
-package io.ably.lib.objects;
+package io.ably.lib.objects.type.counter;
 
+import io.ably.lib.objects.ObjectsCallback;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.NotNull;
@@ -10,7 +11,7 @@ import org.jetbrains.annotations.Contract;
  * It allows incrementing, decrementing, and retrieving the current value of the counter,
  * both synchronously and asynchronously.
  */
-public interface LiveCounter {
+public interface LiveCounter extends LiveCounterChange {
 
     /**
      * Increments the value of the counter by 1.

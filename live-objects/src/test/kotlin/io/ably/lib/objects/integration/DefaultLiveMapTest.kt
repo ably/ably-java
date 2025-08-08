@@ -4,12 +4,17 @@ import io.ably.lib.objects.*
 import io.ably.lib.objects.ObjectData
 import io.ably.lib.objects.ObjectValue
 import io.ably.lib.objects.integration.helpers.fixtures.createUserMapObject
+import io.ably.lib.objects.integration.helpers.fixtures.createUserProfileMapObject
 import io.ably.lib.objects.integration.setup.IntegrationTest
+import io.ably.lib.objects.type.counter.LiveCounter
+import io.ably.lib.objects.type.map.LiveMap
+import io.ably.lib.objects.type.map.LiveMapUpdate
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class DefaultLiveMapTest: IntegrationTest() {
   /**
@@ -209,5 +214,95 @@ class DefaultLiveMapTest: IntegrationTest() {
 
     val finalValues = testMap.values().toSet()
     assertEquals(setOf("Bob", false, "bob@example.com"), finalValues, "Final values should match expected set")
+  }
+
+  @Test
+  fun testLiveMapChangesUsingSubscription() = runTest {
+    val channelName = generateChannelName()
+    val userProfileObjectId = restObjects.createUserProfileMapObject(channelName)
+    restObjects.setMapRef(channelName, "root", "userProfile", userProfileObjectId)
+
+    val channel = getRealtimeChannel(channelName)
+    val rootMap = channel.objects.root
+
+    // Get the user profile map object from the root map
+    val userProfile = rootMap.get("userProfile") as LiveMap
+    assertNotNull(userProfile, "User profile should be synchronized")
+    assertEquals(4L, userProfile.size(), "User profile should contain 4 entries")
+
+    // Verify initial values
+    assertEquals("user123", userProfile.get("userId"), "Initial userId should be user123")
+    assertEquals("John Doe", userProfile.get("name"), "Initial name should be John Doe")
+    assertEquals("john@example.com", userProfile.get("email"), "Initial email should be john@example.com")
+    assertEquals(true, userProfile.get("isActive"), "Initial isActive should be true")
+
+    // Subscribe to changes in the user profile map
+    val userProfileUpdates = mutableListOf<LiveMapUpdate>()
+    val userProfileSubscription = userProfile.subscribe { update -> userProfileUpdates.add(update) }
+
+    // Step 1: Update an existing field in the user profile map (change the name)
+    restObjects.setMapValue(channelName, userProfileObjectId, "name", ObjectValue.String("Bob Smith"))
+
+    // Wait for the update to be received
+    assertWaiter { userProfileUpdates.isNotEmpty() }
+
+    // Verify the update was received
+    assertEquals(1, userProfileUpdates.size, "Should receive one update")
+    val firstUpdateMap = userProfileUpdates.first().update
+    assertEquals(1, firstUpdateMap.size, "Should have one key change")
+    assertTrue(firstUpdateMap.containsKey("name"), "Update should contain name key")
+    assertEquals(LiveMapUpdate.Change.UPDATED, firstUpdateMap["name"], "name should be marked as UPDATED")
+
+    // Verify the value was actually updated
+    assertEquals("Bob Smith", userProfile.get("name"), "Name should be updated to Bob Smith")
+
+    // Step 2: Update another field in the user profile map (change the email)
+    userProfileUpdates.clear()
+    restObjects.setMapValue(channelName, userProfileObjectId, "email", ObjectValue.String("bob@example.com"))
+
+    // Wait for the second update
+    assertWaiter { userProfileUpdates.isNotEmpty() }
+
+    // Verify the second update
+    assertEquals(1, userProfileUpdates.size, "Should receive one update for the second change")
+    val secondUpdateMap = userProfileUpdates.first().update
+    assertEquals(1, secondUpdateMap.size, "Should have one key change")
+    assertTrue(secondUpdateMap.containsKey("email"), "Update should contain email key")
+    assertEquals(LiveMapUpdate.Change.UPDATED, secondUpdateMap["email"], "email should be marked as UPDATED")
+
+    // Verify the value was actually updated
+    assertEquals("bob@example.com", userProfile.get("email"), "Email should be updated to bob@example.com")
+
+    // Step 3: Remove an existing field from the user profile map (remove isActive)
+    userProfileUpdates.clear()
+    restObjects.removeMapValue(channelName, userProfileObjectId, "isActive")
+
+    // Wait for the removal update
+    assertWaiter { userProfileUpdates.isNotEmpty() }
+
+    // Verify the removal update
+    assertEquals(1, userProfileUpdates.size, "Should receive one update for removal")
+    val removalUpdateMap = userProfileUpdates.first().update
+    assertEquals(1, removalUpdateMap.size, "Should have one key change")
+    assertTrue(removalUpdateMap.containsKey("isActive"), "Update should contain isActive key")
+    assertEquals(LiveMapUpdate.Change.REMOVED, removalUpdateMap["isActive"], "isActive should be marked as REMOVED")
+
+    // Verify final state of the user profile map
+    assertEquals(3L, userProfile.size(), "User profile should have 3 entries after removing isActive")
+    assertEquals("user123", userProfile.get("userId"), "userId should remain unchanged")
+    assertEquals("Bob Smith", userProfile.get("name"), "name should remain updated")
+    assertEquals("bob@example.com", userProfile.get("email"), "email should remain updated")
+    assertNull(userProfile.get("isActive"), "isActive should be removed")
+
+    // Clean up subscription
+    userProfileUpdates.clear()
+    userProfileSubscription.unsubscribe()
+    // No updates should be received after unsubscribing
+    restObjects.setMapValue(channelName, userProfileObjectId, "country", ObjectValue.String("uk"))
+
+    // Wait for a moment to ensure no updates are received
+    assertWaiter { userProfile.size() == 4L }
+
+    assertTrue(userProfileUpdates.isEmpty(), "No updates should be received after unsubscribing")
   }
 }
