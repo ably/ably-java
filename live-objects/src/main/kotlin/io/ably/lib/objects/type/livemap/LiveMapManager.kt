@@ -20,11 +20,11 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
   /**
    * @spec RTLM6 - Overrides object data with state from sync
    */
-  internal fun applyState(objectState: ObjectState): LiveMapUpdate {
+  internal fun applyState(objectState: ObjectState, serialTimestamp: Long?): LiveMapUpdate {
     val previousData = liveMap.data.toMap()
 
     if (objectState.tombstone) {
-      liveMap.tombstone()
+      liveMap.tombstone(serialTimestamp)
     } else {
       // override data for this object with data from the object state
       liveMap.createOperationIsMerged = false // RTLM6b
@@ -33,7 +33,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
       objectState.map?.entries?.forEach { (key, entry) ->
         liveMap.data[key] = LiveMapEntry(
           isTombstoned = entry.tombstone ?: false,
-          tombstonedAt = if (entry.tombstone == true) System.currentTimeMillis() else null,
+          tombstonedAt = if (entry.tombstone == true) entry.serialTimestamp ?: System.currentTimeMillis() else null,
           timeserial = entry.timeserial,
           data = entry.data
         )
@@ -51,24 +51,24 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
   /**
    * @spec RTLM15 - Applies operations to LiveMap
    */
-  internal fun applyOperation(operation: ObjectOperation, messageTimeserial: String?) {
+  internal fun applyOperation(operation: ObjectOperation, serial: String?, serialTimestamp: Long?) {
     val update = when (operation.action) {
       ObjectOperationAction.MapCreate -> applyMapCreate(operation) // RTLM15d1
       ObjectOperationAction.MapSet -> {
         if (operation.mapOp != null) {
-          applyMapSet(operation.mapOp, messageTimeserial) // RTLM15d2
+          applyMapSet(operation.mapOp, serial) // RTLM15d2
         } else {
           throw objectError("No payload found for ${operation.action} op for LiveMap objectId=${objectId}")
         }
       }
       ObjectOperationAction.MapRemove -> {
         if (operation.mapOp != null) {
-          applyMapRemove(operation.mapOp, messageTimeserial) // RTLM15d3
+          applyMapRemove(operation.mapOp, serial, serialTimestamp) // RTLM15d3
         } else {
           throw objectError("No payload found for ${operation.action} op for LiveMap objectId=${objectId}")
         }
       }
-      ObjectOperationAction.ObjectDelete -> liveMap.tombstone()
+      ObjectOperationAction.ObjectDelete -> liveMap.tombstone(serialTimestamp)
       else -> throw objectError("Invalid ${operation.action} op for LiveMap objectId=${objectId}") // RTLM15d4
     }
 
@@ -132,7 +132,6 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
       // RTLM7a2 - Replace existing entry with new one instead of mutating
       liveMap.data[mapOp.key] = LiveMapEntry(
         isTombstoned = false, // RTLM7a2c
-        tombstonedAt = null,
         timeserial = timeSerial, // RTLM7a2b
         data = mapOp.data // RTLM7a2a
       )
@@ -154,6 +153,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
   private fun applyMapRemove(
     mapOp: ObjectMapOp, // RTLM8c1
     timeSerial: String?, // RTLM8c2
+    timeStamp: Long?, // RTLM8c3
   ): LiveMapUpdate {
     val existingEntry = liveMap.data[mapOp.key]
 
@@ -168,11 +168,20 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
       return noOpMapUpdate
     }
 
+    val tombstonedAt = if (timeStamp != null) timeStamp else {
+      Log.w(
+        tag,
+        "No timestamp provided for MAP_REMOVE op on key=\"${mapOp.key}\"; using current time as tombstone time; " +
+          "objectId=${objectId}"
+      )
+      System.currentTimeMillis()
+    }
+
     if (existingEntry != null) {
       // RTLM8a2 - Replace existing entry with new one instead of mutating
       liveMap.data[mapOp.key] = LiveMapEntry(
         isTombstoned = true, // RTLM8a2c
-        tombstonedAt = System.currentTimeMillis(),
+        tombstonedAt = tombstonedAt,
         timeserial = timeSerial, // RTLM8a2b
         data = null // RTLM8a2a
       )
@@ -180,7 +189,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
       // RTLM8b, RTLM8b1
       liveMap.data[mapOp.key] = LiveMapEntry(
         isTombstoned = true, // RTLM8b2
-        tombstonedAt = System.currentTimeMillis(),
+        tombstonedAt = tombstonedAt,
         timeserial = timeSerial
       )
     }
@@ -224,7 +233,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
       val opTimeserial = entry.timeserial
       val update = if (entry.tombstone == true) {
         // RTLM17a2 - entry in MAP_CREATE op is removed, try to apply MAP_REMOVE op
-        applyMapRemove(ObjectMapOp(key), opTimeserial)
+        applyMapRemove(ObjectMapOp(key), opTimeserial, entry.serialTimestamp)
       } else {
         // RTLM17a1 - entry in MAP_CREATE op is not removed, try to set it via MAP_SET op
         applyMapSet(ObjectMapOp(key, entry.data), opTimeserial)

@@ -26,7 +26,15 @@ class DefaultLiveCounterTest {
       siteTimeserials = mapOf("site3" to "serial3", "site4" to "serial4"),
       tombstone = false,
     )
-    liveCounter.applyObjectSync(objectState)
+    
+    val objectMessage = ObjectMessage(
+      id = "testId",
+      objectState = objectState,
+      serial = "serial1",
+      siteCode = "site1"
+    )
+    
+    liveCounter.applyObjectSync(objectMessage)
     assertEquals(mapOf("site3" to "serial3", "site4" to "serial4"), liveCounter.siteTimeserials) // RTLC6a
   }
 
