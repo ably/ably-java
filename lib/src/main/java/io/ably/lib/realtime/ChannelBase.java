@@ -1289,6 +1289,10 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         return modes.toArray(new ChannelMode[modes.size()]);
     }
 
+    public ChannelOptions getOptions() {
+        return options;
+    }
+
     /************************************
      * internal general
      * @throws AblyException
@@ -1329,6 +1333,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         state = ChannelState.initialized;
         this.decodingContext = new DecodingContext();
         this.liveObjectsPlugin = liveObjectsPlugin;
+        if (liveObjectsPlugin != null) {
+            liveObjectsPlugin.getInstance(name); // Make objects instance ready to process sync messages
+        }
         this.annotations = new RealtimeAnnotations(
             this,
             new RestAnnotations(name, ably.http, ably.options, options)
