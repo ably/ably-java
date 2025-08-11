@@ -33,7 +33,7 @@ class DefaultLiveObjectsTest : IntegrationTest() {
     // Initialize the root map on the channel with initial data
     restObjects.initializeRootMap(channelName)
 
-    val channel = getRealtimeChannel(channelName, autoAttach = false)
+    val channel = getRealtimeChannel(channelName)
     val objects = channel.objects
     assertNotNull(objects)
 

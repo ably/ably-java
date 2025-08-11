@@ -36,7 +36,7 @@ abstract class IntegrationTest {
    * @return The attached realtime channel.
    * @throws Exception If the channel fails to attach or the client fails to connect.
    */
-  internal suspend fun getRealtimeChannel(channelName: String, clientId: String = "client1", autoAttach: Boolean = true): Channel {
+  internal suspend fun getRealtimeChannel(channelName: String, clientId: String = "client1"): Channel {
     val client = realtimeClients.getOrPut(clientId) {
       sandbox.createRealtimeClient {
         this.clientId = clientId
@@ -46,12 +46,7 @@ abstract class IntegrationTest {
     val channelOpts = ChannelOptions().apply {
       modes = arrayOf(ChannelMode.object_publish, ChannelMode.object_subscribe)
     }
-    return client.channels.get(channelName, channelOpts).apply {
-      if (autoAttach) {
-        attach()
-        ensureAttached()
-      }
-    }
+    return client.channels.get(channelName, channelOpts)
   }
 
   /**
