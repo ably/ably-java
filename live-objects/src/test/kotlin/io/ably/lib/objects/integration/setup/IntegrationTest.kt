@@ -49,6 +49,10 @@ abstract class IntegrationTest {
     return client.channels.get(channelName, channelOpts)
   }
 
+  internal fun getRealtimeChannel(channelName: String): Channel {
+    return runBlocking { getRealtimeChannel(channelName, "client1") }
+  }
+
   /**
    * Generates a unique channel name for testing purposes.
    * This is mainly to avoid channel name/state/history collisions across tests in same file.
