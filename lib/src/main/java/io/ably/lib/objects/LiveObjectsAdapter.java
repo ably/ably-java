@@ -1,5 +1,6 @@
 package io.ably.lib.objects;
 
+import io.ably.lib.realtime.ChannelBase;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.transport.ConnectionManager;
@@ -81,5 +82,15 @@ public interface LiveObjectsAdapter {
      */
     @Blocking
     long getTime() throws AblyException;
+
+    /**
+     * Retrieves the channel instance for the specified channel name.
+     * If the channel does not exist, an AblyException is thrown.
+     *
+     * @param channelName the name of the channel to retrieve
+     * @return the ChannelBase instance for the specified channel
+     * @throws AblyException if the channel is not found or cannot be retrieved
+     */
+    ChannelBase getChannel(@NotNull String channelName) throws AblyException;
 }
 

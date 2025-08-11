@@ -5,6 +5,7 @@ import io.ably.lib.realtime.CompletionListener
 import io.ably.lib.types.ChannelMode
 import io.ably.lib.types.ErrorInfo
 import io.ably.lib.types.ProtocolMessage
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -15,6 +16,22 @@ import kotlin.coroutines.resumeWithException
 internal suspend fun LiveObjectsAdapter.sendAsync(message: ProtocolMessage) = suspendCancellableCoroutine { continuation ->
   try {
     this.send(message, object : CompletionListener {
+      override fun onSuccess() {
+        continuation.resume(Unit)
+      }
+
+      override fun onError(reason: ErrorInfo) {
+        continuation.resumeWithException(ablyException(reason))
+      }
+    })
+  } catch (e: Exception) {
+    continuation.resumeWithException(e)
+  }
+}
+
+internal suspend fun LiveObjectsAdapter.attachAsync(channelName: String) = suspendCancellableCoroutine { continuation ->
+  try {
+    this.getChannel(channelName).attach(object : CompletionListener {
       override fun onSuccess() {
         continuation.resume(Unit)
       }
@@ -47,16 +64,42 @@ internal fun LiveObjectsAdapter.setChannelSerial(channelName: String, protocolMe
   setChannelSerial(channelName, channelSerial)
 }
 
+internal suspend fun LiveObjectsAdapter.ensureAttached(channelName: String) {
+  when (val currentChannelStatus = this.getChannelState(channelName)) {
+    ChannelState.initialized -> attachAsync(channelName)
+    ChannelState.attached -> return
+    ChannelState.attaching -> {
+      val attachDeferred = CompletableDeferred<Unit>()
+      getChannel(channelName).once {
+        when(it.current) {
+          ChannelState.attached -> attachDeferred.complete(Unit)
+          else -> {
+            val exception = ablyException("Channel $channelName is in invalid state: ${it.current}, " +
+              "error: ${it.reason}", ErrorCode.ChannelStateError)
+            attachDeferred.completeExceptionally(exception)
+          }
+        }
+      }
+      if (this.getChannelState(channelName) == ChannelState.attached) {
+        attachDeferred.complete(Unit)
+      }
+      attachDeferred.await()
+    }
+    else ->
+      throw ablyException("Channel $channelName is in invalid state: $currentChannelStatus", ErrorCode.ChannelStateError)
+  }
+}
+
 // Spec: RTLO4b1, RTLO4b2
 internal fun LiveObjectsAdapter.throwIfInvalidAccessApiConfiguration(channelName: String) {
-  throwIfMissingChannelMode(channelName, ChannelMode.object_subscribe)
   throwIfInChannelState(channelName, arrayOf(ChannelState.detached, ChannelState.failed))
+  throwIfMissingChannelMode(channelName, ChannelMode.object_subscribe)
 }
 
 internal fun LiveObjectsAdapter.throwIfInvalidWriteApiConfiguration(channelName: String) {
   throwIfEchoMessagesDisabled()
-  throwIfMissingChannelMode(channelName, ChannelMode.object_publish)
   throwIfInChannelState(channelName, arrayOf(ChannelState.detached, ChannelState.failed, ChannelState.suspended))
+  throwIfMissingChannelMode(channelName, ChannelMode.object_publish)
 }
 
 internal fun LiveObjectsAdapter.throwIfUnpublishableState(channelName: String) {

@@ -1,6 +1,7 @@
 package io.ably.lib.objects;
 
 import io.ably.lib.realtime.AblyRealtime;
+import io.ably.lib.realtime.ChannelBase;
 import io.ably.lib.realtime.ChannelState;
 import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.transport.ConnectionManager;
@@ -8,6 +9,7 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelMode;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ClientOptions;
+import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.util.Log;
 import org.jetbrains.annotations.NotNull;
@@ -81,5 +83,16 @@ public class Adapter implements LiveObjectsAdapter {
     @Override
     public long getTime() throws AblyException {
         return ably.time();
+    }
+
+    @Override
+    public ChannelBase getChannel(@NotNull String channelName) throws AblyException {
+        if (ably.channels.containsKey(channelName)) {
+            return ably.channels.get(channelName);
+        } else {
+            Log.e(TAG, "attachChannel(): channel not found: " + channelName);
+            ErrorInfo errorInfo = new ErrorInfo("Channel not found: " + channelName, 404);
+            throw AblyException.fromErrorInfo(errorInfo);
+        }
     }
 }
