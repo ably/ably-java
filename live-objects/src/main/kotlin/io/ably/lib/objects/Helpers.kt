@@ -15,7 +15,7 @@ import kotlin.coroutines.resumeWithException
  */
 internal suspend fun LiveObjectsAdapter.sendAsync(message: ProtocolMessage) = suspendCancellableCoroutine { continuation ->
   try {
-    this.send(message, object : CompletionListener {
+    connectionManager.send(message, clientOptions.queueMessages, object : CompletionListener {
       override fun onSuccess() {
         continuation.resume(Unit)
       }
@@ -31,7 +31,7 @@ internal suspend fun LiveObjectsAdapter.sendAsync(message: ProtocolMessage) = su
 
 internal suspend fun LiveObjectsAdapter.attachAsync(channelName: String) = suspendCancellableCoroutine { continuation ->
   try {
-    this.getChannel(channelName).attach(object : CompletionListener {
+    getChannel(channelName).attach(object : CompletionListener {
       override fun onSuccess() {
         continuation.resume(Unit)
       }
@@ -46,10 +46,37 @@ internal suspend fun LiveObjectsAdapter.attachAsync(channelName: String) = suspe
 }
 
 /**
+ * Retrieves the channel modes for a specific channel.
+ * This method returns the modes that are set for the specified channel.
+ *
+ * @param channelName the name of the channel for which to retrieve the modes
+ * @return the array of channel modes for the specified channel, or null if the channel is not found
+ * Spec: RTO2a, RTO2b
+ */
+internal fun LiveObjectsAdapter.getChannelModes(channelName: String): Array<ChannelMode>? {
+  val channel = getChannel(channelName)
+
+  // RTO2a - channel.modes is only populated on channel attachment, so use it only if it is set
+  channel.modes?.let { modes ->
+    if (modes.isNotEmpty()) {
+      return modes
+    }
+  }
+
+  // RTO2b - otherwise as a best effort use user provided channel options
+  channel.options?.let { options ->
+    if (options.hasModes()) {
+      return options.modes
+    }
+  }
+  return null
+}
+
+/**
  * Spec: RTO15d
  */
 internal fun LiveObjectsAdapter.ensureMessageSizeWithinLimit(objectMessages: Array<ObjectMessage>) {
-  val maximumAllowedSize = maxMessageSizeLimit()
+  val maximumAllowedSize = connectionManager.maxMessageSize
   val objectsTotalMessageSize = objectMessages.sumOf { it.size() }
   if (objectsTotalMessageSize > maximumAllowedSize) {
     throw ablyException("ObjectMessages size $objectsTotalMessageSize exceeds maximum allowed size of $maximumAllowedSize bytes",
@@ -61,11 +88,12 @@ internal fun LiveObjectsAdapter.setChannelSerial(channelName: String, protocolMe
   if (protocolMessage.action != ProtocolMessage.Action.`object`) return
   val channelSerial = protocolMessage.channelSerial
   if (channelSerial.isNullOrEmpty()) return
-  setChannelSerial(channelName, channelSerial)
+  getChannel(channelName).properties.channelSerial = channelSerial
 }
 
 internal suspend fun LiveObjectsAdapter.ensureAttached(channelName: String) {
-  when (val currentChannelStatus = this.getChannelState(channelName)) {
+  val channel = getChannel(channelName)
+  when (val currentChannelStatus = channel.state) {
     ChannelState.initialized -> attachAsync(channelName)
     ChannelState.attached -> return
     ChannelState.attaching -> {
@@ -80,7 +108,7 @@ internal suspend fun LiveObjectsAdapter.ensureAttached(channelName: String) {
           }
         }
       }
-      if (this.getChannelState(channelName) == ChannelState.attached) {
+      if (channel.state == ChannelState.attached) {
         attachDeferred.complete(Unit)
       }
       attachDeferred.await()
@@ -119,7 +147,7 @@ internal fun LiveObjectsAdapter.throwIfMissingChannelMode(channelName: String, c
 }
 
 internal fun LiveObjectsAdapter.throwIfInChannelState(channelName: String, channelStates: Array<ChannelState>) {
-  val currentState = getChannelState(channelName)
+  val currentState = getChannel(channelName).state
   if (currentState == null || channelStates.contains(currentState)) {
     throw ablyException("Channel is in invalid state: $currentState", ErrorCode.ChannelStateError)
   }

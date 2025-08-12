@@ -45,7 +45,9 @@ internal fun getMockRealtimeChannel(
 }
 
 internal fun getMockLiveObjectsAdapter(): LiveObjectsAdapter {
-  return mockk<LiveObjectsAdapter>(relaxed = true)
+  val mockkAdapter = mockk<LiveObjectsAdapter>(relaxed = true)
+  every { mockkAdapter.getChannel(any()) } returns getMockRealtimeChannel("testChannelName")
+  return mockkAdapter
 }
 
 internal fun getMockObjectsPool(): ObjectsPool {
