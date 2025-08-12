@@ -138,7 +138,7 @@ internal fun LiveObjectsAdapter.throwIfUnpublishableState(channelName: String) {
 }
 
 // Spec: RTO2
-internal fun LiveObjectsAdapter.throwIfMissingChannelMode(channelName: String, channelMode: ChannelMode) {
+private fun LiveObjectsAdapter.throwIfMissingChannelMode(channelName: String, channelMode: ChannelMode) {
   val channelModes = getChannelModes(channelName)
   if (channelModes == null || !channelModes.contains(channelMode)) {
     // Spec: RTO2a2, RTO2b2
@@ -146,7 +146,7 @@ internal fun LiveObjectsAdapter.throwIfMissingChannelMode(channelName: String, c
   }
 }
 
-internal fun LiveObjectsAdapter.throwIfInChannelState(channelName: String, channelStates: Array<ChannelState>) {
+private fun LiveObjectsAdapter.throwIfInChannelState(channelName: String, channelStates: Array<ChannelState>) {
   val currentState = getChannel(channelName).state
   if (currentState == null || channelStates.contains(currentState)) {
     throw ablyException("Channel is in invalid state: $currentState", ErrorCode.ChannelStateError)
