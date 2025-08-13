@@ -1,6 +1,6 @@
 package io.ably.lib.objects
 
-import io.ably.lib.objects.type.BaseLiveObject
+import io.ably.lib.objects.type.BaseRealtimeObject
 import io.ably.lib.objects.type.ObjectType
 import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
 import io.ably.lib.objects.type.livemap.DefaultLiveMap
@@ -33,7 +33,7 @@ internal const val ROOT_OBJECT_ID = "root"
  * @spec RTO3 - Maintains an objects pool for all live objects on the channel
  */
 internal class ObjectsPool(
-  private val liveObjects: DefaultLiveObjects
+  private val realtimeObjects: DefaultRealtimeObjects
 ) {
   private val tag = "ObjectsPool"
 
@@ -41,7 +41,7 @@ internal class ObjectsPool(
    * ConcurrentHashMap for thread-safe access from public APIs in LiveMap and LiveCounter.
    * @spec RTO3a - Pool storing all live objects by object ID
    */
-  private val pool = ConcurrentHashMap<String, BaseLiveObject>()
+  private val pool = ConcurrentHashMap<String, BaseRealtimeObject>()
 
   /**
    * Coroutine scope for garbage collection
@@ -51,7 +51,7 @@ internal class ObjectsPool(
 
   init {
     // RTO3b - Initialize pool with root object
-    pool[ROOT_OBJECT_ID] = DefaultLiveMap.zeroValue(ROOT_OBJECT_ID, liveObjects)
+    pool[ROOT_OBJECT_ID] = DefaultLiveMap.zeroValue(ROOT_OBJECT_ID, realtimeObjects)
     // Start garbage collection coroutine
     gcJob = startGCJob()
   }
@@ -59,15 +59,15 @@ internal class ObjectsPool(
   /**
    * Gets a live object from the pool by object ID.
    */
-  internal fun get(objectId: String): BaseLiveObject? {
+  internal fun get(objectId: String): BaseRealtimeObject? {
     return pool[objectId]
   }
 
   /**
-   * Sets a live object in the pool.
+   * Sets a realtime object in the pool.
    */
-  internal fun set(objectId: String, liveObject: BaseLiveObject) {
-    pool[objectId] = liveObject
+  internal fun set(objectId: String, realtimeObject: BaseRealtimeObject) {
+    pool[objectId] = realtimeObject
   }
 
   /**
@@ -103,7 +103,7 @@ internal class ObjectsPool(
    *
    * @spec RTO6 - Creates zero-value objects when needed
    */
-  internal fun createZeroValueObjectIfNotExists(objectId: String): BaseLiveObject {
+  internal fun createZeroValueObjectIfNotExists(objectId: String): BaseRealtimeObject {
     val existingObject = get(objectId)
     if (existingObject != null) {
       return existingObject // RTO6a
@@ -111,8 +111,8 @@ internal class ObjectsPool(
 
     val parsedObjectId = ObjectId.fromString(objectId) // RTO6b
     return when (parsedObjectId.type) {
-      ObjectType.Map -> DefaultLiveMap.zeroValue(objectId, liveObjects) // RTO6b2
-      ObjectType.Counter -> DefaultLiveCounter.zeroValue(objectId, liveObjects) // RTO6b3
+      ObjectType.Map -> DefaultLiveMap.zeroValue(objectId, realtimeObjects) // RTO6b2
+      ObjectType.Counter -> DefaultLiveCounter.zeroValue(objectId, realtimeObjects) // RTO6b3
     }.apply {
       set(objectId, this) // RTO6b4 - Add the zero-value object to the pool
     }

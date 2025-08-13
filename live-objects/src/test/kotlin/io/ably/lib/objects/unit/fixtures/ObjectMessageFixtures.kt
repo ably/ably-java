@@ -23,37 +23,37 @@ internal val dummyJsonObjectValue = ObjectData(objectId = "object-id", ObjectVal
 val dummyJsonArray = JsonArray().apply { add(1); add(2); add(3) }
 internal val dummyJsonArrayValue = ObjectData(objectId = "object-id", ObjectValue.JsonArray(dummyJsonArray))
 
-internal val dummyObjectMapEntry = ObjectMapEntry(
+internal val dummyObjectsMapEntry = ObjectsMapEntry(
   tombstone = false,
   timeserial = "dummy-timeserial",
   data = dummyObjectDataStringValue
 )
 
-internal val dummyObjectMap = ObjectMap(
-  semantics = MapSemantics.LWW,
-  entries = mapOf("dummy-key" to dummyObjectMapEntry)
+internal val dummyObjectsMap = ObjectsMap(
+  semantics = ObjectsMapSemantics.LWW,
+  entries = mapOf("dummy-key" to dummyObjectsMapEntry)
 )
 
-internal val dummyObjectCounter = ObjectCounter(
+internal val dummyObjectsCounter = ObjectsCounter(
   count = 123.0
 )
 
-internal val dummyObjectMapOp = ObjectMapOp(
+internal val dummyObjectsMapOp = ObjectsMapOp(
   key = "dummy-key",
   data = dummyObjectDataStringValue
 )
 
-internal val dummyObjectCounterOp = ObjectCounterOp(
+internal val dummyObjectsCounterOp = ObjectsCounterOp(
   amount = 10.0
 )
 
 internal val dummyObjectOperation = ObjectOperation(
   action = ObjectOperationAction.MapCreate,
   objectId = "dummy-object-id",
-  mapOp = dummyObjectMapOp,
-  counterOp = dummyObjectCounterOp,
-  map = dummyObjectMap,
-  counter = dummyObjectCounter,
+  mapOp = dummyObjectsMapOp,
+  counterOp = dummyObjectsCounterOp,
+  map = dummyObjectsMap,
+  counter = dummyObjectsCounter,
   nonce = "dummy-nonce",
   initialValue = "{\"foo\":\"bar\"}"
 )
@@ -63,8 +63,8 @@ internal val dummyObjectState = ObjectState(
   siteTimeserials = mapOf("site1" to "serial1"),
   tombstone = false,
   createOp = dummyObjectOperation,
-  map = dummyObjectMap,
-  counter = dummyObjectCounter
+  map = dummyObjectsMap,
+  counter = dummyObjectsCounter
 )
 
 internal val dummyObjectMessage = ObjectMessage(
@@ -84,9 +84,9 @@ internal fun dummyObjectMessageWithStringData(): ObjectMessage {
 }
 
 internal fun dummyObjectMessageWithBinaryData(): ObjectMessage {
-  val binaryObjectMapEntry = dummyObjectMapEntry.copy(data = dummyBinaryObjectValue)
-  val binaryObjectMap = dummyObjectMap.copy(entries = mapOf("dummy-key" to binaryObjectMapEntry))
-  val binaryObjectMapOp = dummyObjectMapOp.copy(data = dummyBinaryObjectValue)
+  val binaryObjectMapEntry = dummyObjectsMapEntry.copy(data = dummyBinaryObjectValue)
+  val binaryObjectMap = dummyObjectsMap.copy(entries = mapOf("dummy-key" to binaryObjectMapEntry))
+  val binaryObjectMapOp = dummyObjectsMapOp.copy(data = dummyBinaryObjectValue)
   val binaryObjectOperation = dummyObjectOperation.copy(
     mapOp = binaryObjectMapOp,
     map = binaryObjectMap
@@ -102,9 +102,9 @@ internal fun dummyObjectMessageWithBinaryData(): ObjectMessage {
 }
 
 internal fun dummyObjectMessageWithNumberData(): ObjectMessage {
-  val numberObjectMapEntry = dummyObjectMapEntry.copy(data = dummyNumberObjectValue)
-  val numberObjectMap = dummyObjectMap.copy(entries = mapOf("dummy-key" to numberObjectMapEntry))
-  val numberObjectMapOp = dummyObjectMapOp.copy(data = dummyNumberObjectValue)
+  val numberObjectMapEntry = dummyObjectsMapEntry.copy(data = dummyNumberObjectValue)
+  val numberObjectMap = dummyObjectsMap.copy(entries = mapOf("dummy-key" to numberObjectMapEntry))
+  val numberObjectMapOp = dummyObjectsMapOp.copy(data = dummyNumberObjectValue)
   val numberObjectOperation = dummyObjectOperation.copy(
     mapOp = numberObjectMapOp,
     map = numberObjectMap
@@ -120,9 +120,9 @@ internal fun dummyObjectMessageWithNumberData(): ObjectMessage {
 }
 
 internal fun dummyObjectMessageWithBooleanData(): ObjectMessage {
-  val booleanObjectMapEntry = dummyObjectMapEntry.copy(data = dummyBooleanObjectValue)
-  val booleanObjectMap = dummyObjectMap.copy(entries = mapOf("dummy-key" to booleanObjectMapEntry))
-  val booleanObjectMapOp = dummyObjectMapOp.copy(data = dummyBooleanObjectValue)
+  val booleanObjectMapEntry = dummyObjectsMapEntry.copy(data = dummyBooleanObjectValue)
+  val booleanObjectMap = dummyObjectsMap.copy(entries = mapOf("dummy-key" to booleanObjectMapEntry))
+  val booleanObjectMapOp = dummyObjectsMapOp.copy(data = dummyBooleanObjectValue)
   val booleanObjectOperation = dummyObjectOperation.copy(
     mapOp = booleanObjectMapOp,
     map = booleanObjectMap
@@ -138,9 +138,9 @@ internal fun dummyObjectMessageWithBooleanData(): ObjectMessage {
 }
 
 internal fun dummyObjectMessageWithJsonObjectData(): ObjectMessage {
-  val jsonObjectMapEntry = dummyObjectMapEntry.copy(data = dummyJsonObjectValue)
-  val jsonObjectMap = dummyObjectMap.copy(entries = mapOf("dummy-key" to jsonObjectMapEntry))
-  val jsonObjectMapOp = dummyObjectMapOp.copy(data = dummyJsonObjectValue)
+  val jsonObjectMapEntry = dummyObjectsMapEntry.copy(data = dummyJsonObjectValue)
+  val jsonObjectMap = dummyObjectsMap.copy(entries = mapOf("dummy-key" to jsonObjectMapEntry))
+  val jsonObjectMapOp = dummyObjectsMapOp.copy(data = dummyJsonObjectValue)
   val jsonObjectOperation = dummyObjectOperation.copy(
     action = ObjectOperationAction.MapSet,
     mapOp = jsonObjectMapOp,
@@ -157,9 +157,9 @@ internal fun dummyObjectMessageWithJsonObjectData(): ObjectMessage {
 }
 
 internal fun dummyObjectMessageWithJsonArrayData(): ObjectMessage {
-  val jsonArrayMapEntry = dummyObjectMapEntry.copy(data = dummyJsonArrayValue)
-  val jsonArrayMap = dummyObjectMap.copy(entries = mapOf("dummy-key" to jsonArrayMapEntry))
-  val jsonArrayMapOp = dummyObjectMapOp.copy(data = dummyJsonArrayValue)
+  val jsonArrayMapEntry = dummyObjectsMapEntry.copy(data = dummyJsonArrayValue)
+  val jsonArrayMap = dummyObjectsMap.copy(entries = mapOf("dummy-key" to jsonArrayMapEntry))
+  val jsonArrayMapOp = dummyObjectsMapOp.copy(data = dummyJsonArrayValue)
   val jsonArrayOperation = dummyObjectOperation.copy(
     action = ObjectOperationAction.MapSet,
     mapOp = jsonArrayMapOp,

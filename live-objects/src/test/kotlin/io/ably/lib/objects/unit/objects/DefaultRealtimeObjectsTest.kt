@@ -1,7 +1,7 @@
 package io.ably.lib.objects.unit.objects
 
 import io.ably.lib.objects.*
-import io.ably.lib.objects.ObjectCounterOp
+import io.ably.lib.objects.ObjectsCounterOp
 import io.ably.lib.objects.ObjectData
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
@@ -15,7 +15,7 @@ import io.ably.lib.objects.type.livemap.LiveMapEntry
 import io.ably.lib.objects.unit.BufferedObjectOperations
 import io.ably.lib.objects.unit.ObjectsManager
 import io.ably.lib.objects.unit.SyncObjectsDataPool
-import io.ably.lib.objects.unit.getDefaultLiveObjectsWithMockedDeps
+import io.ably.lib.objects.unit.getDefaultRealtimeObjectsWithMockedDeps
 import io.ably.lib.objects.unit.size
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.types.ProtocolMessage
@@ -25,77 +25,77 @@ import org.junit.Test
 import kotlin.test.assertEquals
 import io.mockk.every
 
-class DefaultLiveObjectsTest {
+class DefaultRealtimeObjectsTest {
 
   @Test
   fun `(RTO4, RTO4a) When channel ATTACHED with HAS_OBJECTS flag true should start sync sequence`() = runTest {
-    val defaultLiveObjects = getDefaultLiveObjectsWithMockedDeps()
+    val defaultRealtimeObjects = getDefaultRealtimeObjectsWithMockedDeps()
 
     // RTO4a - If the HAS_OBJECTS flag is 1, the server will shortly perform an OBJECT_SYNC sequence
-    defaultLiveObjects.handleStateChange(ChannelState.attached, true)
+    defaultRealtimeObjects.handleStateChange(ChannelState.attached, true)
 
-    assertWaiter { defaultLiveObjects.state == ObjectsState.Syncing }
+    assertWaiter { defaultRealtimeObjects.state == ObjectsState.Syncing }
 
     // It is expected that the client will start a new sync sequence
     verify(exactly = 1) {
-      defaultLiveObjects.ObjectsManager.startNewSync(null)
+      defaultRealtimeObjects.ObjectsManager.startNewSync(null)
     }
     verify(exactly = 0) {
-      defaultLiveObjects.ObjectsManager.endSync(any<Boolean>())
+      defaultRealtimeObjects.ObjectsManager.endSync(any<Boolean>())
     }
   }
 
   @Test
   fun `(RTO4, RTO4b) When channel ATTACHED with HAS_OBJECTS flag false should complete sync immediately`() = runTest {
-    val defaultLiveObjects = getDefaultLiveObjectsWithMockedDeps()
+    val defaultRealtimeObjects = getDefaultRealtimeObjectsWithMockedDeps()
 
     // Set up some objects in objectPool that should be cleared
-    val rootObject = defaultLiveObjects.objectsPool.get(ROOT_OBJECT_ID) as DefaultLiveMap
+    val rootObject = defaultRealtimeObjects.objectsPool.get(ROOT_OBJECT_ID) as DefaultLiveMap
     rootObject.data["key1"] = LiveMapEntry(data = ObjectData("testValue1"))
-    defaultLiveObjects.objectsPool.set("counter:testObject@1", DefaultLiveCounter.zeroValue("counter:testObject@1", defaultLiveObjects))
-    assertEquals(2, defaultLiveObjects.objectsPool.size(), "RTO4b - Should have 2 objects before state change")
+    defaultRealtimeObjects.objectsPool.set("counter:testObject@1", DefaultLiveCounter.zeroValue("counter:testObject@1", defaultRealtimeObjects))
+    assertEquals(2, defaultRealtimeObjects.objectsPool.size(), "RTO4b - Should have 2 objects before state change")
 
     // RTO4b - If the HAS_OBJECTS flag is 0, the sync sequence must be considered complete immediately
-    defaultLiveObjects.handleStateChange(ChannelState.attached, false)
+    defaultRealtimeObjects.handleStateChange(ChannelState.attached, false)
 
     // Verify expected outcomes
-    assertWaiter { defaultLiveObjects.state == ObjectsState.Synced } // RTO4b4
+    assertWaiter { defaultRealtimeObjects.state == ObjectsState.Synced } // RTO4b4
 
     verify(exactly = 1) {
-      defaultLiveObjects.objectsPool.resetToInitialPool(true)
+      defaultRealtimeObjects.objectsPool.resetToInitialPool(true)
     }
     verify(exactly = 1) {
-      defaultLiveObjects.ObjectsManager.endSync(any<Boolean>())
+      defaultRealtimeObjects.ObjectsManager.endSync(any<Boolean>())
     }
 
-    assertEquals(0, defaultLiveObjects.ObjectsManager.SyncObjectsDataPool.size) // RTO4b3
-    assertEquals(0, defaultLiveObjects.ObjectsManager.BufferedObjectOperations.size) // RTO4b5
-    assertEquals(1, defaultLiveObjects.objectsPool.size()) // RTO4b1 - Only root remains
-    assertEquals(rootObject, defaultLiveObjects.objectsPool.get(ROOT_OBJECT_ID)) // points to previously created root object
+    assertEquals(0, defaultRealtimeObjects.ObjectsManager.SyncObjectsDataPool.size) // RTO4b3
+    assertEquals(0, defaultRealtimeObjects.ObjectsManager.BufferedObjectOperations.size) // RTO4b5
+    assertEquals(1, defaultRealtimeObjects.objectsPool.size()) // RTO4b1 - Only root remains
+    assertEquals(rootObject, defaultRealtimeObjects.objectsPool.get(ROOT_OBJECT_ID)) // points to previously created root object
     assertEquals(0, rootObject.data.size) // RTO4b2 - root object must be empty
   }
 
   @Test
   fun `(RTO4) When channel ATTACHED from INITIALIZED state should always start sync`() = runTest {
-    val defaultLiveObjects = getDefaultLiveObjectsWithMockedDeps()
+    val defaultRealtimeObjects = getDefaultRealtimeObjectsWithMockedDeps()
 
     // Ensure we're in INITIALIZED state
-    defaultLiveObjects.state = ObjectsState.Initialized
+    defaultRealtimeObjects.state = ObjectsState.Initialized
 
     // RTO4a - Should start sync even with HAS_OBJECTS flag false when in INITIALIZED state
-    defaultLiveObjects.handleStateChange(ChannelState.attached, false)
+    defaultRealtimeObjects.handleStateChange(ChannelState.attached, false)
 
     verify(exactly = 1) {
-      defaultLiveObjects.ObjectsManager.startNewSync(null)
+      defaultRealtimeObjects.ObjectsManager.startNewSync(null)
     }
     verify(exactly = 1) {
-      defaultLiveObjects.ObjectsManager.endSync(true) // deferStateEvent = true
+      defaultRealtimeObjects.ObjectsManager.endSync(true) // deferStateEvent = true
     }
   }
 
   @Test
   fun `(RTO5, RTO7) Should delegate OBJECT and OBJECT_SYNC protocolMessage to ObjectManager`() = runTest {
-    val defaultLiveObjects = getDefaultLiveObjectsWithMockedDeps(relaxed = true)
+    val defaultRealtimeObjects = getDefaultRealtimeObjectsWithMockedDeps(relaxed = true)
 
     // Create test ObjectMessage for OBJECT action
     val objectMessage = ObjectMessage(
@@ -105,7 +105,7 @@ class DefaultLiveObjectsTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = "counter:testObject@1",
-        counterOp = ObjectCounterOp(amount = 5.0)
+        counterOp = ObjectsCounterOp(amount = 5.0)
       ),
       serial = "serial1",
       siteCode = "site1"
@@ -119,11 +119,11 @@ class DefaultLiveObjectsTest {
       state = arrayOf(objectMessage)
     }
     // Test OBJECT action delegation
-    defaultLiveObjects.handle(objectProtocolMessage)
+    defaultRealtimeObjects.handle(objectProtocolMessage)
 
     // Verify that handleObjectMessages was called with the correct parameters
     verify(exactly = 1) {
-      defaultLiveObjects.ObjectsManager.handleObjectMessages(listOf(objectMessage))
+      defaultRealtimeObjects.ObjectsManager.handleObjectMessages(listOf(objectMessage))
     }
 
     // Create test ObjectMessage for OBJECT_SYNC action
@@ -148,23 +148,23 @@ class DefaultLiveObjectsTest {
       state = arrayOf(objectSyncMessage)
     }
     // Test OBJECT_SYNC action delegation
-    defaultLiveObjects.handle(objectSyncProtocolMessage)
+    defaultRealtimeObjects.handle(objectSyncProtocolMessage)
     // Verify that handleObjectSyncMessages was called with the correct parameters
     verify(exactly = 1) {
-      defaultLiveObjects.ObjectsManager.handleObjectSyncMessages(listOf(objectSyncMessage), "syncChannelSerial1")
+      defaultRealtimeObjects.ObjectsManager.handleObjectSyncMessages(listOf(objectSyncMessage), "syncChannelSerial1")
     }
   }
 
   @Test
   fun `(OM2) Populate objectMessage missing id, timestamp and connectionId from protocolMessage`() = runTest {
-    val defaultLiveObjects = getDefaultLiveObjectsWithMockedDeps()
+    val defaultRealtimeObjects = getDefaultRealtimeObjectsWithMockedDeps()
 
     // Capture the ObjectMessages that are passed to ObjectsManager methods
     var capturedObjectMessages: List<ObjectMessage>? = null
     var capturedObjectSyncMessages: List<ObjectMessage>? = null
 
     // Mock the ObjectsManager to capture the messages
-    defaultLiveObjects.ObjectsManager.apply {
+    defaultRealtimeObjects.ObjectsManager.apply {
       every { handleObjectMessages(any<List<ObjectMessage>>()) } answers {
         capturedObjectMessages = firstArg()
       }
@@ -191,7 +191,7 @@ class DefaultLiveObjectsTest {
     }
 
     // Test OBJECT action - should populate missing fields
-    defaultLiveObjects.handle(objectProtocolMessage)
+    defaultRealtimeObjects.handle(objectProtocolMessage)
 
     // Verify that the captured ObjectMessage has populated fields
     assertWaiter { capturedObjectMessages != null }
@@ -221,7 +221,7 @@ class DefaultLiveObjectsTest {
     }
 
     // Test OBJECT_SYNC action - should populate missing fields
-    defaultLiveObjects.handle(objectSyncProtocolMessage)
+    defaultRealtimeObjects.handle(objectSyncProtocolMessage)
 
     // Verify that the captured ObjectMessage has populated fields
     assertWaiter { capturedObjectSyncMessages != null }

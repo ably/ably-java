@@ -1,6 +1,6 @@
 package io.ably.lib.objects.type.counter;
 
-import io.ably.lib.objects.type.LiveObjectUpdate;
+import io.ably.lib.objects.type.ObjectUpdate;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * @spec RTLC11, RTLC11a - LiveCounter update structure and behavior
  */
-public class LiveCounterUpdate extends LiveObjectUpdate {
+public class LiveCounterUpdate extends ObjectUpdate {
 
     /**
      * Creates a no-op LiveCounterUpdate representing no actual change.

@@ -51,7 +51,7 @@ internal interface HandlesObjectsStateChange {
 
   /**
    * Disposes all registered state change listeners and cancels any pending operations.
-   * Should be called when the associated LiveObjects instance is no longer needed.
+   * Should be called when the associated RealtimeObjects instance is no longer needed.
    */
   fun disposeObjectsStateListeners()
 }

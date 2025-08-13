@@ -11,14 +11,14 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Map;
 
 /**
- * The LiveObjects interface provides methods to interact with live data objects,
+ * The RealtimeObjects interface provides methods to interact with live data objects,
  * such as maps and counters, in a real-time environment. It supports both synchronous
  * and asynchronous operations for retrieving and creating live objects.
  *
  * <p>Implementations of this interface must be thread-safe as they may be accessed
  * from multiple threads concurrently.
  */
-public interface LiveObjects extends ObjectsStateChange {
+public interface RealtimeObjects extends ObjectsStateChange {
 
     /**
      * Retrieves the root LiveMap object.
@@ -62,10 +62,10 @@ public interface LiveObjects extends ObjectsStateChange {
      *     "binary", LiveMapValue.of(new byte[]{1, 2, 3}),
      *     "array", LiveMapValue.of(new JsonArray()),
      *     "object", LiveMapValue.of(new JsonObject()),
-     *     "counter", LiveMapValue.of(liveObjects.createCounter()),
-     *     "nested", LiveMapValue.of(liveObjects.createMap())
+     *     "counter", LiveMapValue.of(realtimeObjects.createCounter()),
+     *     "nested", LiveMapValue.of(realtimeObjects.createMap())
      * );
-     * LiveMap map = liveObjects.createMap(entries);
+     * LiveMap map = realtimeObjects.createMap(entries);
      * }</pre>
      *
      * @param entries the type-safe map entries with values that can be Boolean, Binary, Number, String, JsonArray, JsonObject, LiveCounter, or LiveMap.

@@ -5,22 +5,22 @@ import io.ably.lib.types.ProtocolMessage;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * The LiveObjectsPlugin interface provides a mechanism for managing and interacting with
+ * The ObjectsPlugin interface provides a mechanism for managing and interacting with
  * live data objects in a real-time environment. It allows for the retrieval, disposal, and
- * management of LiveObjects instances associated with specific channel names.
+ * management of Objects instances associated with specific channel names.
  */
-public interface LiveObjectsPlugin {
+public interface ObjectsPlugin {
 
     /**
-     * Retrieves an instance of LiveObjects associated with the specified channel name.
-     * This method ensures that a LiveObjects instance is available for the given channel,
+     * Retrieves an instance of RealtimeObjects associated with the specified channel name.
+     * This method ensures that a RealtimeObjects instance is available for the given channel,
      * creating one if it does not already exist.
      *
-     * @param channelName the name of the channel for which the LiveObjects instance is to be retrieved.
-     * @return the LiveObjects instance associated with the specified channel name.
+     * @param channelName the name of the channel for which the RealtimeObjects instance is to be retrieved.
+     * @return the RealtimeObjects instance associated with the specified channel name.
      */
     @NotNull
-    LiveObjects getInstance(@NotNull String channelName);
+    RealtimeObjects getInstance(@NotNull String channelName);
 
     /**
      * Handles a protocol message.
@@ -34,7 +34,7 @@ public interface LiveObjectsPlugin {
     /**
      * Handles state changes for a specific channel.
      * This method is invoked whenever a channel's state changes, allowing the implementation
-     * to update the LiveObjects instances accordingly based on the new state and presence of objects.
+     * to update the RealtimeObjects instances accordingly based on the new state and presence of objects.
      *
      * @param channelName the name of the channel whose state has changed.
      * @param state the new state of the channel.
@@ -43,12 +43,12 @@ public interface LiveObjectsPlugin {
     void handleStateChange(@NotNull String channelName, @NotNull ChannelState state, boolean hasObjects);
 
     /**
-     * Disposes of the LiveObjects instance associated with the specified channel name.
-     * This method removes the LiveObjects instance for the given channel, releasing any
+     * Disposes of the RealtimeObjects instance associated with the specified channel name.
+     * This method removes the RealtimeObjects instance for the given channel, releasing any
      * resources associated with it.
      * This is invoked when ablyRealtimeClient.channels.release(channelName) is called
      *
-     * @param channelName the name of the channel whose LiveObjects instance is to be removed.
+     * @param channelName the name of the channel whose RealtimeObjects instance is to be removed.
      */
     void dispose(@NotNull String channelName);
 

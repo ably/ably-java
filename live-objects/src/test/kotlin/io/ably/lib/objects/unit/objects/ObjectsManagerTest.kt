@@ -7,7 +7,7 @@ import io.ably.lib.objects.ObjectsState
 import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
 import io.ably.lib.objects.type.livemap.DefaultLiveMap
 import io.ably.lib.objects.unit.*
-import io.ably.lib.objects.unit.getDefaultLiveObjectsWithMockedDeps
+import io.ably.lib.objects.unit.getDefaultRealtimeObjectsWithMockedDeps
 import io.mockk.*
 import org.junit.Test
 import kotlin.test.*
@@ -16,15 +16,15 @@ class ObjectsManagerTest {
 
   @Test
   fun `(RTO5) ObjectsManager should handle object sync messages`() {
-    val defaultLiveObjects = getDefaultLiveObjectsWithMockedDeps()
-    assertEquals(ObjectsState.Initialized, defaultLiveObjects.state, "Initial state should be INITIALIZED")
+    val defaultRealtimeObjects = getDefaultRealtimeObjectsWithMockedDeps()
+    assertEquals(ObjectsState.Initialized, defaultRealtimeObjects.state, "Initial state should be INITIALIZED")
 
-    val objectsManager = defaultLiveObjects.ObjectsManager
+    val objectsManager = defaultRealtimeObjects.ObjectsManager
 
     mockZeroValuedObjects()
 
     // Populate objectsPool with existing objects
-    val objectsPool = defaultLiveObjects.ObjectsPool
+    val objectsPool = defaultRealtimeObjects.ObjectsPool
     objectsPool.set("map:testObject@1", mockk<DefaultLiveMap>(relaxed = true))
     objectsPool.set("counter:testObject@4", mockk<DefaultLiveCounter>(relaxed = true))
 
@@ -35,7 +35,7 @@ class ObjectsManagerTest {
         objectId = "map:testObject@1", // already exists in pool
         tombstone = false,
         siteTimeserials = mapOf("site1" to "syncSerial1"),
-        map = ObjectMap(),
+        map = ObjectsMap(),
       )
     )
     val objectMessage2 = ObjectMessage(
@@ -44,7 +44,7 @@ class ObjectsManagerTest {
         objectId = "counter:testObject@2", // Does not exist in pool
         tombstone = false,
         siteTimeserials = mapOf("site1" to "syncSerial1"),
-        counter = ObjectCounter(count = 20.0)
+        counter = ObjectsCounter(count = 20.0)
       )
     )
     val objectMessage3 = ObjectMessage(
@@ -53,7 +53,7 @@ class ObjectsManagerTest {
         objectId = "map:testObject@3", // Does not exist in pool
         tombstone = false,
         siteTimeserials = mapOf("site1" to "syncSerial1"),
-        map = ObjectMap(),
+        map = ObjectsMap(),
       )
     )
     // Should start and end sync, apply object states, and create new objects for missing ones
@@ -72,7 +72,7 @@ class ObjectsManagerTest {
     assertEquals("counter:testObject@2", newlyCreatedObjects[0].objectId)
     assertEquals("map:testObject@3", newlyCreatedObjects[1].objectId)
 
-    assertEquals(ObjectsState.Synced, defaultLiveObjects.state, "State should be SYNCED after sync sequence")
+    assertEquals(ObjectsState.Synced, defaultRealtimeObjects.state, "State should be SYNCED after sync sequence")
     // After sync `counter:testObject@4` will be removed from pool
     assertNull(objectsPool.get("counter:testObject@4"))
     assertEquals(4, objectsPool.size(), "Objects pool should contain 4 objects after sync including root")
@@ -96,15 +96,15 @@ class ObjectsManagerTest {
 
   @Test
   fun `(RTO8) ObjectsManager should apply object operation when state is synced`() {
-    val defaultLiveObjects = getDefaultLiveObjectsWithMockedDeps()
-    defaultLiveObjects.state = ObjectsState.Synced // Ensure we're in SYNCED state
+    val defaultRealtimeObjects = getDefaultRealtimeObjectsWithMockedDeps()
+    defaultRealtimeObjects.state = ObjectsState.Synced // Ensure we're in SYNCED state
 
-    val objectsManager = defaultLiveObjects.ObjectsManager
+    val objectsManager = defaultRealtimeObjects.ObjectsManager
 
     mockZeroValuedObjects()
 
     // Populate objectsPool with existing objects
-    val objectsPool = defaultLiveObjects.ObjectsPool
+    val objectsPool = defaultRealtimeObjects.ObjectsPool
     objectsPool.set("map:testObject@1", mockk<DefaultLiveMap>(relaxed = true))
 
     // Incoming object messages with operation field instead of objectState
@@ -164,26 +164,26 @@ class ObjectsManagerTest {
 
   @Test
   fun `(RTO7) ObjectsManager should buffer operations when not in sync, apply them after synced`() {
-    val defaultLiveObjects = getDefaultLiveObjectsWithMockedDeps()
-    assertEquals(ObjectsState.Initialized, defaultLiveObjects.state, "Initial state should be INITIALIZED")
+    val defaultRealtimeObjects = getDefaultRealtimeObjectsWithMockedDeps()
+    assertEquals(ObjectsState.Initialized, defaultRealtimeObjects.state, "Initial state should be INITIALIZED")
 
-    val objectsManager = defaultLiveObjects.ObjectsManager
+    val objectsManager = defaultRealtimeObjects.ObjectsManager
     assertEquals(0, objectsManager.BufferedObjectOperations.size, "RTO7a1 - Initial buffer should be empty")
 
-    val objectsPool = defaultLiveObjects.ObjectsPool
+    val objectsPool = defaultRealtimeObjects.ObjectsPool
     assertEquals(1, objectsPool.size(), "RTO7a2 - Initial pool should contain only root object")
 
     mockZeroValuedObjects()
 
     // Set state to SYNCING
-    defaultLiveObjects.state = ObjectsState.Syncing
+    defaultRealtimeObjects.state = ObjectsState.Syncing
 
     val objectMessage = ObjectMessage(
       id = "testId",
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterCreate,
         objectId = "counter:testObject@1",
-        counterOp = ObjectCounterOp(amount = 5.0)
+        counterOp = ObjectsCounterOp(amount = 5.0)
       ),
       serial = "serial1",
       siteCode = "site1"
@@ -213,13 +213,13 @@ class ObjectsManagerTest {
   private fun mockZeroValuedObjects() {
     mockkObject(DefaultLiveMap.Companion)
     every {
-      DefaultLiveMap.zeroValue(any<String>(), any<DefaultLiveObjects>())
+      DefaultLiveMap.zeroValue(any<String>(), any<DefaultRealtimeObjects>())
     } answers {
       mockk<DefaultLiveMap>(relaxed = true)
     }
     mockkObject(DefaultLiveCounter.Companion)
     every {
-      DefaultLiveCounter.zeroValue(any<String>(), any<DefaultLiveObjects>())
+      DefaultLiveCounter.zeroValue(any<String>(), any<DefaultRealtimeObjects>())
     } answers {
       mockk<DefaultLiveCounter>(relaxed = true)
     }

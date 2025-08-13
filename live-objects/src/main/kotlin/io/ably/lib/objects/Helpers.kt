@@ -13,7 +13,7 @@ import kotlin.coroutines.resumeWithException
 /**
  * Spec: RTO15g
  */
-internal suspend fun LiveObjectsAdapter.sendAsync(message: ProtocolMessage) = suspendCancellableCoroutine { continuation ->
+internal suspend fun ObjectsAdapter.sendAsync(message: ProtocolMessage) = suspendCancellableCoroutine { continuation ->
   try {
     connectionManager.send(message, clientOptions.queueMessages, object : CompletionListener {
       override fun onSuccess() {
@@ -29,7 +29,7 @@ internal suspend fun LiveObjectsAdapter.sendAsync(message: ProtocolMessage) = su
   }
 }
 
-internal suspend fun LiveObjectsAdapter.attachAsync(channelName: String) = suspendCancellableCoroutine { continuation ->
+internal suspend fun ObjectsAdapter.attachAsync(channelName: String) = suspendCancellableCoroutine { continuation ->
   try {
     getChannel(channelName).attach(object : CompletionListener {
       override fun onSuccess() {
@@ -53,7 +53,7 @@ internal suspend fun LiveObjectsAdapter.attachAsync(channelName: String) = suspe
  * @return the array of channel modes for the specified channel, or null if the channel is not found
  * Spec: RTO2a, RTO2b
  */
-internal fun LiveObjectsAdapter.getChannelModes(channelName: String): Array<ChannelMode>? {
+internal fun ObjectsAdapter.getChannelModes(channelName: String): Array<ChannelMode>? {
   val channel = getChannel(channelName)
 
   // RTO2a - channel.modes is only populated on channel attachment, so use it only if it is set
@@ -75,7 +75,7 @@ internal fun LiveObjectsAdapter.getChannelModes(channelName: String): Array<Chan
 /**
  * Spec: RTO15d
  */
-internal fun LiveObjectsAdapter.ensureMessageSizeWithinLimit(objectMessages: Array<ObjectMessage>) {
+internal fun ObjectsAdapter.ensureMessageSizeWithinLimit(objectMessages: Array<ObjectMessage>) {
   val maximumAllowedSize = connectionManager.maxMessageSize
   val objectsTotalMessageSize = objectMessages.sumOf { it.size() }
   if (objectsTotalMessageSize > maximumAllowedSize) {
@@ -84,14 +84,14 @@ internal fun LiveObjectsAdapter.ensureMessageSizeWithinLimit(objectMessages: Arr
   }
 }
 
-internal fun LiveObjectsAdapter.setChannelSerial(channelName: String, protocolMessage: ProtocolMessage) {
+internal fun ObjectsAdapter.setChannelSerial(channelName: String, protocolMessage: ProtocolMessage) {
   if (protocolMessage.action != ProtocolMessage.Action.`object`) return
   val channelSerial = protocolMessage.channelSerial
   if (channelSerial.isNullOrEmpty()) return
   getChannel(channelName).properties.channelSerial = channelSerial
 }
 
-internal suspend fun LiveObjectsAdapter.ensureAttached(channelName: String) {
+internal suspend fun ObjectsAdapter.ensureAttached(channelName: String) {
   val channel = getChannel(channelName)
   when (val currentChannelStatus = channel.state) {
     ChannelState.initialized -> attachAsync(channelName)
@@ -119,18 +119,18 @@ internal suspend fun LiveObjectsAdapter.ensureAttached(channelName: String) {
 }
 
 // Spec: RTLO4b1, RTLO4b2
-internal fun LiveObjectsAdapter.throwIfInvalidAccessApiConfiguration(channelName: String) {
+internal fun ObjectsAdapter.throwIfInvalidAccessApiConfiguration(channelName: String) {
   throwIfInChannelState(channelName, arrayOf(ChannelState.detached, ChannelState.failed))
   throwIfMissingChannelMode(channelName, ChannelMode.object_subscribe)
 }
 
-internal fun LiveObjectsAdapter.throwIfInvalidWriteApiConfiguration(channelName: String) {
+internal fun ObjectsAdapter.throwIfInvalidWriteApiConfiguration(channelName: String) {
   throwIfEchoMessagesDisabled()
   throwIfInChannelState(channelName, arrayOf(ChannelState.detached, ChannelState.failed, ChannelState.suspended))
   throwIfMissingChannelMode(channelName, ChannelMode.object_publish)
 }
 
-internal fun LiveObjectsAdapter.throwIfUnpublishableState(channelName: String) {
+internal fun ObjectsAdapter.throwIfUnpublishableState(channelName: String) {
   if (!connectionManager.isActive) {
     throw ablyException(connectionManager.stateErrorInfo)
   }
@@ -138,7 +138,7 @@ internal fun LiveObjectsAdapter.throwIfUnpublishableState(channelName: String) {
 }
 
 // Spec: RTO2
-private fun LiveObjectsAdapter.throwIfMissingChannelMode(channelName: String, channelMode: ChannelMode) {
+private fun ObjectsAdapter.throwIfMissingChannelMode(channelName: String, channelMode: ChannelMode) {
   val channelModes = getChannelModes(channelName)
   if (channelModes == null || !channelModes.contains(channelMode)) {
     // Spec: RTO2a2, RTO2b2
@@ -146,14 +146,14 @@ private fun LiveObjectsAdapter.throwIfMissingChannelMode(channelName: String, ch
   }
 }
 
-private fun LiveObjectsAdapter.throwIfInChannelState(channelName: String, channelStates: Array<ChannelState>) {
+private fun ObjectsAdapter.throwIfInChannelState(channelName: String, channelStates: Array<ChannelState>) {
   val currentState = getChannel(channelName).state
   if (currentState == null || channelStates.contains(currentState)) {
     throw ablyException("Channel is in invalid state: $currentState", ErrorCode.ChannelStateError)
   }
 }
 
-internal fun LiveObjectsAdapter.throwIfEchoMessagesDisabled() {
+internal fun ObjectsAdapter.throwIfEchoMessagesDisabled() {
    if (!clientOptions.echoMessages) {
      throw clientError("\"echoMessages\" client option must be enabled for this operation")
    }
@@ -176,9 +176,9 @@ internal fun Binary.size(): Int {
 }
 
 internal data class CounterCreatePayload(
-  val counter: ObjectCounter
+  val counter: ObjectsCounter
 )
 
 internal data class MapCreatePayload(
-  val map: ObjectMap
+  val map: ObjectsMap
 )

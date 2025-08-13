@@ -1,9 +1,9 @@
 package io.ably.lib.objects.unit
 
 import io.ably.lib.objects.*
-import io.ably.lib.objects.DefaultLiveObjects
+import io.ably.lib.objects.DefaultRealtimeObjects
 import io.ably.lib.objects.ObjectsManager
-import io.ably.lib.objects.type.BaseLiveObject
+import io.ably.lib.objects.type.BaseRealtimeObject
 import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
 import io.ably.lib.objects.type.livecounter.LiveCounterManager
 import io.ably.lib.objects.type.livemap.DefaultLiveMap
@@ -44,8 +44,8 @@ internal fun getMockRealtimeChannel(
     }
 }
 
-internal fun getMockLiveObjectsAdapter(): LiveObjectsAdapter {
-  val mockkAdapter = mockk<LiveObjectsAdapter>(relaxed = true)
+internal fun getMockObjectsAdapter(): ObjectsAdapter {
+  val mockkAdapter = mockk<ObjectsAdapter>(relaxed = true)
   every { mockkAdapter.getChannel(any()) } returns getMockRealtimeChannel("testChannelName")
   return mockkAdapter
 }
@@ -55,16 +55,16 @@ internal fun getMockObjectsPool(): ObjectsPool {
 }
 
 internal fun ObjectsPool.size(): Int {
-  val pool = this.getPrivateField<Map<String, BaseLiveObject>>("pool")
+  val pool = this.getPrivateField<Map<String, BaseRealtimeObject>>("pool")
   return pool.size
 }
 
-internal val BaseLiveObject.TombstonedAt: Long?
+internal val BaseRealtimeObject.TombstonedAt: Long?
   get() = this.getPrivateField("tombstonedAt")
 
 /**
  * ======================================
- * START - DefaultLiveObjects dep mocks
+ * START - DefaultRealtimeObjects dep mocks
  * ======================================
  */
 internal val ObjectsManager.SyncObjectsDataPool: Map<String, ObjectState>
@@ -73,36 +73,36 @@ internal val ObjectsManager.SyncObjectsDataPool: Map<String, ObjectState>
 internal val ObjectsManager.BufferedObjectOperations: List<ObjectMessage>
   get() = this.getPrivateField("bufferedObjectOperations")
 
-internal var DefaultLiveObjects.ObjectsManager: ObjectsManager
+internal var DefaultRealtimeObjects.ObjectsManager: ObjectsManager
   get() = this.getPrivateField("objectsManager")
   set(value) = this.setPrivateField("objectsManager", value)
 
-internal var DefaultLiveObjects.ObjectsPool: ObjectsPool
+internal var DefaultRealtimeObjects.ObjectsPool: ObjectsPool
   get() = this.objectsPool
   set(value) = this.setPrivateField("objectsPool", value)
 
-internal fun getDefaultLiveObjectsWithMockedDeps(
+internal fun getDefaultRealtimeObjectsWithMockedDeps(
   channelName: String = "testChannelName",
   relaxed: Boolean = false
-): DefaultLiveObjects {
-  val defaultLiveObjects = DefaultLiveObjects(channelName, getMockLiveObjectsAdapter())
+): DefaultRealtimeObjects {
+  val defaultRealtimeObjects = DefaultRealtimeObjects(channelName, getMockObjectsAdapter())
   // mock objectsPool to allow verification of method calls
   if (relaxed) {
-    defaultLiveObjects.ObjectsPool = mockk(relaxed = true)
+    defaultRealtimeObjects.ObjectsPool = mockk(relaxed = true)
   } else {
-    defaultLiveObjects.ObjectsPool = spyk(defaultLiveObjects.objectsPool, recordPrivateCalls = true)
+    defaultRealtimeObjects.ObjectsPool = spyk(defaultRealtimeObjects.objectsPool, recordPrivateCalls = true)
   }
   // mock objectsManager to allow verification of method calls
   if (relaxed) {
-    defaultLiveObjects.ObjectsManager = mockk(relaxed = true)
+    defaultRealtimeObjects.ObjectsManager = mockk(relaxed = true)
   } else {
-    defaultLiveObjects.ObjectsManager = spyk(defaultLiveObjects.ObjectsManager, recordPrivateCalls = true)
+    defaultRealtimeObjects.ObjectsManager = spyk(defaultRealtimeObjects.ObjectsManager, recordPrivateCalls = true)
   }
-  return defaultLiveObjects
+  return defaultRealtimeObjects
 }
 /**
  * ======================================
- * END - DefaultLiveObjects dep mocks
+ * END - DefaultRealtimeObjects dep mocks
  * ======================================
  */
 
@@ -119,7 +119,7 @@ internal fun getDefaultLiveCounterWithMockedDeps(
   objectId: String = "counter:testCounter@1",
   relaxed: Boolean = false
 ): DefaultLiveCounter {
-  val defaultLiveCounter = DefaultLiveCounter.zeroValue(objectId, getDefaultLiveObjectsWithMockedDeps())
+  val defaultLiveCounter = DefaultLiveCounter.zeroValue(objectId, getDefaultRealtimeObjectsWithMockedDeps())
   if (relaxed) {
     defaultLiveCounter.LiveCounterManager = mockk(relaxed = true)
   } else {
@@ -146,7 +146,7 @@ internal fun getDefaultLiveMapWithMockedDeps(
   objectId: String = "map:testMap@1",
   relaxed: Boolean = false
 ): DefaultLiveMap {
-  val defaultLiveMap = DefaultLiveMap.zeroValue(objectId, getDefaultLiveObjectsWithMockedDeps())
+  val defaultLiveMap = DefaultLiveMap.zeroValue(objectId, getDefaultRealtimeObjectsWithMockedDeps())
   if (relaxed) {
     defaultLiveMap.LiveMapManager = mockk(relaxed = true)
   } else {

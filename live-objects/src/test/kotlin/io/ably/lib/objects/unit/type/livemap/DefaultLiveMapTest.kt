@@ -1,7 +1,7 @@
 package io.ably.lib.objects.unit.type.livemap
 
-import io.ably.lib.objects.MapSemantics
-import io.ably.lib.objects.ObjectMap
+import io.ably.lib.objects.ObjectsMapSemantics
+import io.ably.lib.objects.ObjectsMap
 import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
@@ -26,18 +26,18 @@ class DefaultLiveMapTest {
       objectId = "map:testMap@1",
       siteTimeserials = mapOf("site3" to "serial3", "site4" to "serial4"),
       tombstone = false,
-      map = ObjectMap(
-        semantics = MapSemantics.LWW,
+      map = ObjectsMap(
+        semantics = ObjectsMapSemantics.LWW,
       )
     )
-    
+
     val objectMessage = ObjectMessage(
       id = "testId",
       objectState = objectState,
       serial = "serial1",
       siteCode = "site1"
     )
-    
+
     liveMap.applyObjectSync(objectMessage)
     assertEquals(mapOf("site3" to "serial3", "site4" to "serial4"), liveMap.siteTimeserials) // RTLM6a
   }
@@ -49,8 +49,8 @@ class DefaultLiveMapTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapCreate,
       objectId = "map:testMap@2", // Different objectId
-      map = ObjectMap(
-        semantics = MapSemantics.LWW,
+      map = ObjectsMap(
+        semantics = ObjectsMapSemantics.LWW,
         entries = emptyMap()
       )
     )
@@ -84,8 +84,8 @@ class DefaultLiveMapTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapCreate,
       objectId = "map:testMap@1", // Matching objectId
-      map = ObjectMap(
-        semantics = MapSemantics.LWW,
+      map = ObjectsMap(
+        semantics = ObjectsMapSemantics.LWW,
         entries = emptyMap()
       )
     )
@@ -114,8 +114,8 @@ class DefaultLiveMapTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapCreate,
       objectId = "map:testMap@1", // Matching objectId
-      map = ObjectMap(
-        semantics = MapSemantics.LWW,
+      map = ObjectsMap(
+        semantics = ObjectsMapSemantics.LWW,
         entries = emptyMap()
       )
     )

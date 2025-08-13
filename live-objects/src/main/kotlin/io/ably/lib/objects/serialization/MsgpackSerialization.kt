@@ -5,13 +5,13 @@ import com.google.gson.JsonParser
 import io.ably.lib.objects.*
 import io.ably.lib.objects.Binary
 import io.ably.lib.objects.ErrorCode
-import io.ably.lib.objects.MapSemantics
-import io.ably.lib.objects.ObjectCounter
-import io.ably.lib.objects.ObjectCounterOp
+import io.ably.lib.objects.ObjectsMapSemantics
+import io.ably.lib.objects.ObjectsCounter
+import io.ably.lib.objects.ObjectsCounterOp
 import io.ably.lib.objects.ObjectData
-import io.ably.lib.objects.ObjectMap
-import io.ably.lib.objects.ObjectMapEntry
-import io.ably.lib.objects.ObjectMapOp
+import io.ably.lib.objects.ObjectsMap
+import io.ably.lib.objects.ObjectsMapEntry
+import io.ably.lib.objects.ObjectsMapOp
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectOperationAction
@@ -157,7 +157,7 @@ internal fun readObjectMessage(unpacker: MessageUnpacker): ObjectMessage {
  */
 private fun ObjectOperation.writeMsgpack(packer: MessagePacker) {
   var fieldCount = 1 // action is always required
-  require(objectId.isNotEmpty()) { "objectId must be non-empty per LiveObjects protocol" }
+  require(objectId.isNotEmpty()) { "objectId must be non-empty per Objects protocol" }
   fieldCount++
 
   if (mapOp != null) fieldCount++
@@ -172,7 +172,7 @@ private fun ObjectOperation.writeMsgpack(packer: MessagePacker) {
   packer.packString("action")
   packer.packInt(action.code)
 
-  // Always include objectId as per LiveObjects protocol
+  // Always include objectId as per Objects protocol
   packer.packString("objectId")
   packer.packString(objectId)
 
@@ -215,10 +215,10 @@ private fun readObjectOperation(unpacker: MessageUnpacker): ObjectOperation {
 
   var action: ObjectOperationAction? = null
   var objectId: String = ""
-  var mapOp: ObjectMapOp? = null
-  var counterOp: ObjectCounterOp? = null
-  var map: ObjectMap? = null
-  var counter: ObjectCounter? = null
+  var mapOp: ObjectsMapOp? = null
+  var counterOp: ObjectsCounterOp? = null
+  var map: ObjectsMap? = null
+  var counter: ObjectsCounter? = null
   var nonce: String? = null
   var initialValue: String? = null
 
@@ -316,8 +316,8 @@ private fun readObjectState(unpacker: MessageUnpacker): ObjectState {
   var siteTimeserials = mapOf<String, String>()
   var tombstone = false
   var createOp: ObjectOperation? = null
-  var map: ObjectMap? = null
-  var counter: ObjectCounter? = null
+  var map: ObjectsMap? = null
+  var counter: ObjectsCounter? = null
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
@@ -361,7 +361,7 @@ private fun readObjectState(unpacker: MessageUnpacker): ObjectState {
 /**
  * Write ObjectMapOp to MessagePacker
  */
-private fun ObjectMapOp.writeMsgpack(packer: MessagePacker) {
+private fun ObjectsMapOp.writeMsgpack(packer: MessagePacker) {
   var fieldCount = 1 // key is required
 
   if (data != null) fieldCount++
@@ -380,7 +380,7 @@ private fun ObjectMapOp.writeMsgpack(packer: MessagePacker) {
 /**
  * Read ObjectMapOp from MessageUnpacker
  */
-private fun readObjectMapOp(unpacker: MessageUnpacker): ObjectMapOp {
+private fun readObjectMapOp(unpacker: MessageUnpacker): ObjectsMapOp {
   val fieldCount = unpacker.unpackMapHeader()
 
   var key = ""
@@ -402,13 +402,13 @@ private fun readObjectMapOp(unpacker: MessageUnpacker): ObjectMapOp {
     }
   }
 
-  return ObjectMapOp(key = key, data = data)
+  return ObjectsMapOp(key = key, data = data)
 }
 
 /**
  * Write ObjectCounterOp to MessagePacker
  */
-private fun ObjectCounterOp.writeMsgpack(packer: MessagePacker) {
+private fun ObjectsCounterOp.writeMsgpack(packer: MessagePacker) {
   var fieldCount = 0
 
   if (amount != null) fieldCount++
@@ -424,7 +424,7 @@ private fun ObjectCounterOp.writeMsgpack(packer: MessagePacker) {
 /**
  * Read ObjectCounterOp from MessageUnpacker
  */
-private fun readObjectCounterOp(unpacker: MessageUnpacker): ObjectCounterOp {
+private fun readObjectCounterOp(unpacker: MessageUnpacker): ObjectsCounterOp {
   val fieldCount = unpacker.unpackMapHeader()
 
   var amount: Double? = null
@@ -444,13 +444,13 @@ private fun readObjectCounterOp(unpacker: MessageUnpacker): ObjectCounterOp {
     }
   }
 
-  return ObjectCounterOp(amount = amount)
+  return ObjectsCounterOp(amount = amount)
 }
 
 /**
  * Write ObjectMap to MessagePacker
  */
-private fun ObjectMap.writeMsgpack(packer: MessagePacker) {
+private fun ObjectsMap.writeMsgpack(packer: MessagePacker) {
   var fieldCount = 0
 
   if (semantics != null) fieldCount++
@@ -476,11 +476,11 @@ private fun ObjectMap.writeMsgpack(packer: MessagePacker) {
 /**
  * Read ObjectMap from MessageUnpacker
  */
-private fun readObjectMap(unpacker: MessageUnpacker): ObjectMap {
+private fun readObjectMap(unpacker: MessageUnpacker): ObjectsMap {
   val fieldCount = unpacker.unpackMapHeader()
 
-  var semantics: MapSemantics? = null
-  var entries: Map<String, ObjectMapEntry>? = null
+  var semantics: ObjectsMapSemantics? = null
+  var entries: Map<String, ObjectsMapEntry>? = null
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
@@ -494,13 +494,13 @@ private fun readObjectMap(unpacker: MessageUnpacker): ObjectMap {
     when (fieldName) {
       "semantics" -> {
         val semanticsCode = unpacker.unpackInt()
-        semantics = MapSemantics.entries.firstOrNull { it.code == semanticsCode }
-          ?: MapSemantics.entries.firstOrNull { it.code == -1 }
+        semantics = ObjectsMapSemantics.entries.firstOrNull { it.code == semanticsCode }
+          ?: ObjectsMapSemantics.entries.firstOrNull { it.code == -1 }
           ?: throw objectError("Unknown MapSemantics code: $semanticsCode and no UNKNOWN fallback found")
       }
       "entries" -> {
         val mapSize = unpacker.unpackMapHeader()
-        val tempMap = mutableMapOf<String, ObjectMapEntry>()
+        val tempMap = mutableMapOf<String, ObjectsMapEntry>()
         for (j in 0 until mapSize) {
           val key = unpacker.unpackString()
           val value = readObjectMapEntry(unpacker)
@@ -512,13 +512,13 @@ private fun readObjectMap(unpacker: MessageUnpacker): ObjectMap {
     }
   }
 
-  return ObjectMap(semantics = semantics, entries = entries)
+  return ObjectsMap(semantics = semantics, entries = entries)
 }
 
 /**
  * Write ObjectCounter to MessagePacker
  */
-private fun ObjectCounter.writeMsgpack(packer: MessagePacker) {
+private fun ObjectsCounter.writeMsgpack(packer: MessagePacker) {
   var fieldCount = 0
 
   if (count != null) fieldCount++
@@ -534,7 +534,7 @@ private fun ObjectCounter.writeMsgpack(packer: MessagePacker) {
 /**
  * Read ObjectCounter from MessageUnpacker
  */
-private fun readObjectCounter(unpacker: MessageUnpacker): ObjectCounter {
+private fun readObjectCounter(unpacker: MessageUnpacker): ObjectsCounter {
   val fieldCount = unpacker.unpackMapHeader()
 
   var count: Double? = null
@@ -554,13 +554,13 @@ private fun readObjectCounter(unpacker: MessageUnpacker): ObjectCounter {
     }
   }
 
-  return ObjectCounter(count = count)
+  return ObjectsCounter(count = count)
 }
 
 /**
  * Write ObjectMapEntry to MessagePacker
  */
-private fun ObjectMapEntry.writeMsgpack(packer: MessagePacker) {
+private fun ObjectsMapEntry.writeMsgpack(packer: MessagePacker) {
   var fieldCount = 0
 
   if (tombstone != null) fieldCount++
@@ -594,7 +594,7 @@ private fun ObjectMapEntry.writeMsgpack(packer: MessagePacker) {
 /**
  * Read ObjectMapEntry from MessageUnpacker
  */
-private fun readObjectMapEntry(unpacker: MessageUnpacker): ObjectMapEntry {
+private fun readObjectMapEntry(unpacker: MessageUnpacker): ObjectsMapEntry {
   val fieldCount = unpacker.unpackMapHeader()
 
   var tombstone: Boolean? = null
@@ -620,7 +620,7 @@ private fun readObjectMapEntry(unpacker: MessageUnpacker): ObjectMapEntry {
     }
   }
 
-  return ObjectMapEntry(tombstone = tombstone, timeserial = timeserial, serialTimestamp = serialTimestamp, data = data)
+  return ObjectsMapEntry(tombstone = tombstone, timeserial = timeserial, serialTimestamp = serialTimestamp, data = data)
 }
 
 /**

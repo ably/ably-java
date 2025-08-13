@@ -2,7 +2,7 @@ package io.ably.lib.objects.serialization
 
 import com.google.gson.*
 import io.ably.lib.objects.Binary
-import io.ably.lib.objects.MapSemantics
+import io.ably.lib.objects.ObjectsMapSemantics
 import io.ably.lib.objects.ObjectData
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperationAction
@@ -14,7 +14,7 @@ import kotlin.enums.EnumEntries
 // Gson instance for JSON serialization/deserialization
 internal val gson = GsonBuilder()
   .registerTypeAdapter(ObjectOperationAction::class.java, EnumCodeTypeAdapter({ it.code }, ObjectOperationAction.entries))
-  .registerTypeAdapter(MapSemantics::class.java, EnumCodeTypeAdapter({ it.code }, MapSemantics.entries))
+  .registerTypeAdapter(ObjectsMapSemantics::class.java, EnumCodeTypeAdapter({ it.code }, ObjectsMapSemantics.entries))
   .create()
 
 internal fun ObjectMessage.toJsonObject(): JsonObject {

@@ -21,7 +21,7 @@ class HelpersTest {
   // sendAsync
   @Test
   fun testSendAsyncShouldQueueAccordingToClientOptions() = runTest {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val connManager = mockk<ConnectionManager>(relaxed = true)
     val clientOptions = ClientOptions().apply { queueMessages = false }
 
@@ -44,7 +44,7 @@ class HelpersTest {
 
   @Test
   fun testSendAsyncErrorPropagatesAblyException() = runTest {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val connManager = mockk<ConnectionManager>(relaxed = true)
     val clientOptions = ClientOptions()
 
@@ -65,7 +65,7 @@ class HelpersTest {
 
   @Test
   fun testSendAsyncThrowsWhenConnectionManagerThrows() = runTest {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val connManager = mockk<ConnectionManager>(relaxed = true)
     val clientOptions = ClientOptions()
 
@@ -83,7 +83,7 @@ class HelpersTest {
   // attachAsync
   @Test
   fun testAttachAsyncSuccess() = runTest {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
     every { channel.attach(any()) } answers {
@@ -97,7 +97,7 @@ class HelpersTest {
 
   @Test
   fun testAttachAsyncError() = runTest {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
     every { channel.attach(any()) } answers {
@@ -113,7 +113,7 @@ class HelpersTest {
   // getChannelModes
   @Test
   fun testGetChannelModesPrefersChannelModes() {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
     every { channel.modes } returns arrayOf(ChannelMode.object_publish)
@@ -125,7 +125,7 @@ class HelpersTest {
 
   @Test
   fun testGetChannelModesFallsBackToOptions() {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
     every { channel.modes } returns emptyArray()
@@ -137,7 +137,7 @@ class HelpersTest {
 
   @Test
   fun testGetChannelModesReturnsNullWhenNoModes() {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
     every { channel.modes } returns null
@@ -149,7 +149,7 @@ class HelpersTest {
 
   @Test
   fun testGetChannelModesIgnoresEmptyModes() {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
     every { channel.modes } returns emptyArray()
@@ -162,7 +162,7 @@ class HelpersTest {
   // setChannelSerial
   @Test
   fun testSetChannelSerialSetsWhenObjectActionAndNonEmpty() {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val channel = mockk<Channel>(relaxed = true)
     val props = ChannelProperties()
     channel.properties = props
@@ -177,7 +177,7 @@ class HelpersTest {
 
   @Test
   fun testSetChannelSerialNoOpForNonObjectActionOrEmpty() {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val channel = mockk<Channel>(relaxed = true)
     val props = ChannelProperties()
     channel.properties = props
@@ -199,7 +199,7 @@ class HelpersTest {
   // ensureAttached
   @Test
   fun testEnsureAttachedFromInitializedAttaches() = runTest {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val channel = mockk<Channel>(relaxed = true)
 
     every { adapter.getChannel("ch") } returns channel
@@ -216,7 +216,7 @@ class HelpersTest {
 
   @Test
   fun testEnsureAttachedWhenAlreadyAttachedReturns() = runTest {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
     channel.state = ChannelState.attached
@@ -228,7 +228,7 @@ class HelpersTest {
 
   @Test
   fun testEnsureAttachedWaitsForAttachingThenAttached() = runTest {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
     channel.state = ChannelState.attaching
@@ -247,7 +247,7 @@ class HelpersTest {
 
    @Test
    fun testEnsureAttachedAttachingButReceivesNonAttachedEmitsError() = runTest {
-     val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+     val adapter = mockk<ObjectsAdapter>(relaxed = true)
      val channel = mockk<Channel>(relaxed = true)
      every { adapter.getChannel("ch") } returns channel
      channel.state = ChannelState.attaching
@@ -267,7 +267,7 @@ class HelpersTest {
 
   @Test
   fun testEnsureAttachedThrowsForInvalidState() = runTest {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
     channel.state = ChannelState.failed
@@ -279,7 +279,7 @@ class HelpersTest {
   // throwIfInvalidAccessApiConfiguration
   @Test
   fun testThrowIfInvalidAccessApiConfigurationStateDetached() {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
     channel.state = ChannelState.detached
@@ -290,7 +290,7 @@ class HelpersTest {
 
   @Test
   fun testThrowIfInvalidAccessApiConfigurationMissingMode() {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
     channel.state = ChannelState.attached
@@ -305,7 +305,7 @@ class HelpersTest {
   // throwIfInvalidWriteApiConfiguration
   @Test
   fun testThrowIfInvalidWriteApiConfigurationEchoDisabled() {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val clientOptions = ClientOptions().apply { echoMessages = false }
     every { adapter.clientOptions } returns clientOptions
 
@@ -316,7 +316,7 @@ class HelpersTest {
 
   @Test
   fun testThrowIfInvalidWriteApiConfigurationInvalidState() {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     every { adapter.clientOptions } returns ClientOptions()
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
@@ -328,7 +328,7 @@ class HelpersTest {
 
   @Test
   fun testThrowIfInvalidWriteApiConfigurationMissingMode() {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     every { adapter.clientOptions } returns ClientOptions()
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
@@ -344,7 +344,7 @@ class HelpersTest {
   // throwIfUnpublishableState
   @Test
   fun testThrowIfUnpublishableStateInactiveConnection() {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val connManager = mockk<ConnectionManager>(relaxed = true)
     every { adapter.connectionManager } returns connManager
     every { connManager.isActive } returns false
@@ -357,7 +357,7 @@ class HelpersTest {
 
   @Test
   fun testThrowIfUnpublishableStateChannelFailed() {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val connManager = mockk<ConnectionManager>(relaxed = true)
     every { adapter.connectionManager } returns connManager
     every { connManager.isActive } returns true
@@ -371,7 +371,7 @@ class HelpersTest {
 
   @Test
   fun testAccessConfigThrowsWhenRequiredModeMissing() {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
     channel.state = ChannelState.attached
@@ -386,7 +386,7 @@ class HelpersTest {
 
   @Test
   fun testWriteConfigThrowsWhenRequiredModeMissing() {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     every { adapter.clientOptions } returns ClientOptions() // echo enabled
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
@@ -401,7 +401,7 @@ class HelpersTest {
 
   @Test
   fun testAccessConfigThrowsOnInvalidChannelState() {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
     channel.state = ChannelState.detached
@@ -412,7 +412,7 @@ class HelpersTest {
 
   @Test
   fun testWriteConfigThrowsOnInvalidChannelStates() {
-    val adapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
     every { adapter.clientOptions } returns ClientOptions()
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel

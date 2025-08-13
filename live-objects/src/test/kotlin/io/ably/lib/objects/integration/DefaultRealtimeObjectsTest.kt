@@ -17,7 +17,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.text.toByteArray
 
-class DefaultLiveObjectsTest : IntegrationTest() {
+class DefaultRealtimeObjectsTest : IntegrationTest() {
 
   @Test
   fun testChannelObjects() = runTest {

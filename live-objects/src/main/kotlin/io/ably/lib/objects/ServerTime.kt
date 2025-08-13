@@ -20,7 +20,7 @@ internal object ServerTime {
    * Spec: RTO16a
    */
   @Throws(AblyException::class)
-  internal suspend fun getCurrentTime(adapter: LiveObjectsAdapter): Long {
+  internal suspend fun getCurrentTime(adapter: ObjectsAdapter): Long {
     if (serverTimeOffset == null) {
       mutex.withLock {
         if (serverTimeOffset == null) { // Double-checked locking to ensure thread safety

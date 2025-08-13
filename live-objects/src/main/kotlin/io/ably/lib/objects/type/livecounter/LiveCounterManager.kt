@@ -78,7 +78,7 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter): 
   /**
    * @spec RTLC9 - Applies counter increment operation
    */
-  private fun applyCounterInc(counterOp: ObjectCounterOp): LiveCounterUpdate {
+  private fun applyCounterInc(counterOp: ObjectsCounterOp): LiveCounterUpdate {
     val amount = counterOp.amount ?: 0.0
     val previousValue = liveCounter.data.get()
     liveCounter.data.set(previousValue + amount) // RTLC9b

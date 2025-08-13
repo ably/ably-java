@@ -3,8 +3,8 @@ package io.ably.lib.objects.type.livecounter
 import io.ably.lib.objects.*
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState
-import io.ably.lib.objects.type.BaseLiveObject
-import io.ably.lib.objects.type.LiveObjectUpdate
+import io.ably.lib.objects.type.BaseRealtimeObject
+import io.ably.lib.objects.type.ObjectUpdate
 import io.ably.lib.objects.type.ObjectType
 import io.ably.lib.objects.type.counter.LiveCounter
 import io.ably.lib.objects.type.counter.LiveCounterChange
@@ -15,14 +15,12 @@ import io.ably.lib.util.Log
 import kotlinx.coroutines.runBlocking
 
 /**
- * Implementation of LiveObject for LiveCounter.
- *
- * @spec RTLC1/RTLC2 - LiveCounter implementation extends LiveObject
+ * @spec RTLC1/RTLC2 - LiveCounter implementation extends BaseRealtimeObject
  */
 internal class DefaultLiveCounter private constructor(
   objectId: String,
-  private val liveObjects: DefaultLiveObjects,
-) : LiveCounter, BaseLiveObject(objectId, ObjectType.Counter) {
+  private val realtimeObjects: DefaultRealtimeObjects,
+) : LiveCounter, BaseRealtimeObject(objectId, ObjectType.Counter) {
 
   override val tag = "LiveCounter"
 
@@ -37,9 +35,9 @@ internal class DefaultLiveCounter private constructor(
    */
   private val liveCounterManager = LiveCounterManager(this)
 
-  private val channelName = liveObjects.channelName
-  private val adapter: LiveObjectsAdapter get() = liveObjects.adapter
-  private val asyncScope get() = liveObjects.asyncScope
+  private val channelName = realtimeObjects.channelName
+  private val adapter: ObjectsAdapter get() = realtimeObjects.adapter
+  private val asyncScope get() = realtimeObjects.asyncScope
 
   override fun increment(amount: Number) = runBlocking { incrementAsync(amount.toDouble()) }
 
@@ -83,12 +81,12 @@ internal class DefaultLiveCounter private constructor(
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = objectId,
-        counterOp = ObjectCounterOp(amount = amount)
+        counterOp = ObjectsCounterOp(amount = amount)
       )
     )
 
     // RTLC12f - Publish the message
-    liveObjects.publish(arrayOf(msg))
+    realtimeObjects.publish(arrayOf(msg))
   }
 
   override fun applyObjectState(objectState: ObjectState, message: ObjectMessage): LiveCounterUpdate {
@@ -103,7 +101,7 @@ internal class DefaultLiveCounter private constructor(
     return liveCounterManager.calculateUpdateFromDataDiff(data.get(), 0.0).apply { data.set(0.0) }
   }
 
-  override fun notifyUpdated(update: LiveObjectUpdate) {
+  override fun notifyUpdated(update: ObjectUpdate) {
     if (update.noOp) {
       return
     }
@@ -121,8 +119,8 @@ internal class DefaultLiveCounter private constructor(
      * Creates a zero-value counter object.
      * @spec RTLC4 - Returns LiveCounter with 0 value
      */
-    internal fun zeroValue(objectId: String, liveObjects: DefaultLiveObjects): DefaultLiveCounter {
-      return DefaultLiveCounter(objectId, liveObjects)
+    internal fun zeroValue(objectId: String, realtimeObjects: DefaultRealtimeObjects): DefaultLiveCounter {
+      return DefaultLiveCounter(objectId, realtimeObjects)
     }
 
     /**
@@ -131,7 +129,7 @@ internal class DefaultLiveCounter private constructor(
      */
     internal fun initialValue(count: Number): CounterCreatePayload {
       return CounterCreatePayload(
-        counter = ObjectCounter(count = count.toDouble())
+        counter = ObjectsCounter(count = count.toDouble())
       )
     }
   }

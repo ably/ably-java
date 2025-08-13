@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
 import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.debug.DebugOptions.RawProtocolListener;
 import io.ably.lib.http.HttpHelpers;
-import io.ably.lib.objects.LiveObjectsPlugin;
+import io.ably.lib.objects.ObjectsPlugin;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
@@ -99,7 +99,7 @@ public class ConnectionManager implements ConnectListener {
      * <p>
      * This field is initialized only if the LiveObjects plugin is present in the classpath.
      */
-    private final LiveObjectsPlugin liveObjectsPlugin;
+    private final ObjectsPlugin objectsPlugin;
 
     /**
      * Methods on the channels map owned by the {@link AblyRealtime} instance
@@ -773,12 +773,12 @@ public class ConnectionManager implements ConnectListener {
      * ConnectionManager
      ***********************/
 
-    public ConnectionManager(final AblyRealtime ably, final Connection connection, final Channels channels, final PlatformAgentProvider platformAgentProvider, LiveObjectsPlugin liveObjectsPlugin) throws AblyException {
+    public ConnectionManager(final AblyRealtime ably, final Connection connection, final Channels channels, final PlatformAgentProvider platformAgentProvider, ObjectsPlugin objectsPlugin) throws AblyException {
         this.ably = ably;
         this.connection = connection;
         this.channels = channels;
         this.platformAgentProvider = platformAgentProvider;
-        this.liveObjectsPlugin = liveObjectsPlugin;
+        this.objectsPlugin = objectsPlugin;
 
         ClientOptions options = ably.options;
         this.hosts = new Hosts(options.realtimeHost, Defaults.HOST_REALTIME, options);
@@ -1239,11 +1239,11 @@ public class ConnectionManager implements ConnectListener {
                     break;
                 case object:
                 case object_sync:
-                    if (liveObjectsPlugin != null) {
+                    if (objectsPlugin != null) {
                         try {
-                            liveObjectsPlugin.handle(message);
+                            objectsPlugin.handle(message);
                         } catch (Throwable t) {
-                            Log.e(TAG, "LiveObjectsPlugin threw while handling message", t);
+                            Log.e(TAG, "objectsPlugin threw while handling message", t);
                         }
                     }
                     break;

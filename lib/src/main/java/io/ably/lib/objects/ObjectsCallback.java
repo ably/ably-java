@@ -3,9 +3,9 @@ package io.ably.lib.objects;
 import io.ably.lib.types.AblyException;
 
 /**
- * Callback interface for handling results of asynchronous LiveObjects operations.
+ * Callback interface for handling results of asynchronous Objects operations.
  * Used for operations like creating LiveMaps/LiveCounters, modifying entries, and retrieving objects.
- * Callbacks are executed on background threads managed by the LiveObjects system.
+ * Callbacks are executed on background threads managed by the Objects system.
  *
  * @param <T> the type of the result returned by the asynchronous operation
  */

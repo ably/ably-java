@@ -21,8 +21,8 @@ public interface LiveMap extends LiveMapChange {
      * If this map object is tombstoned (deleted), null is returned.
      * If no entry is associated with the specified key, null is returned.
      * If map entry is tombstoned (deleted), null is returned.
-     * If the value associated with the provided key is an objectId string of another LiveObject, a reference to that LiveObject
-     * is returned, provided it exists in the local pool and is not tombstoned. Otherwise, null is returned.
+     * If the value associated with the provided key is an objectId string of another RealtimeObject, a reference to
+     * that RealtimeObject is returned, provided it exists in the local pool and is not tombstoned. Otherwise, null is returned.
      * If the value is not an objectId, then that value is returned.
      * Spec: RTLM5, RTLM5a
      *

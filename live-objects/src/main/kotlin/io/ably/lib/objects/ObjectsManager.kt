@@ -1,7 +1,7 @@
 package io.ably.lib.objects
 
-import io.ably.lib.objects.type.BaseLiveObject
-import io.ably.lib.objects.type.LiveObjectUpdate
+import io.ably.lib.objects.type.BaseRealtimeObject
+import io.ably.lib.objects.type.ObjectUpdate
 import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
 import io.ably.lib.objects.type.livemap.DefaultLiveMap
 import io.ably.lib.util.Log
@@ -10,7 +10,7 @@ import io.ably.lib.util.Log
  * @spec RTO5 - Processes OBJECT and OBJECT_SYNC messages during sync sequences
  * @spec RTO6 - Creates zero-value objects when needed
  */
-internal class ObjectsManager(private val liveObjects: DefaultLiveObjects): ObjectsStateCoordinator() {
+internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObjects): ObjectsStateCoordinator() {
   private val tag = "ObjectsManager"
   /**
    * @spec RTO5 - Sync objects data pool for collecting sync messages
@@ -28,12 +28,12 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects): Obje
    * @spec RTO8 - Buffers messages if not synced, applies immediately if synced
    */
   internal fun handleObjectMessages(objectMessages: List<ObjectMessage>) {
-    if (liveObjects.state != ObjectsState.Synced) {
+    if (realtimeObjects.state != ObjectsState.Synced) {
       // RTO7 - The client receives object messages in realtime over the channel concurrently with the sync sequence.
       // Some of the incoming object messages may have already been applied to the objects described in
       // the sync sequence, but others may not; therefore we must buffer these messages so that we can apply
       // them to the objects once the sync is complete.
-      Log.v(tag, "Buffering ${objectMessages.size} object messages, state: $liveObjects.state")
+      Log.v(tag, "Buffering ${objectMessages.size} object messages, state: $realtimeObjects.state")
       bufferedObjectOperations.addAll(objectMessages) // RTO8a
       return
     }
@@ -101,7 +101,7 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects): Obje
 
   /**
    * Clears the sync objects data pool.
-   * Used by DefaultLiveObjects.handleStateChange.
+   * Used by DefaultRealtimeObjects.handleStateChange.
    */
   internal fun clearSyncObjectsDataPool() {
     syncObjectsDataPool.clear()
@@ -109,7 +109,7 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects): Obje
 
   /**
    * Clears the buffered object operations.
-   * Used by DefaultLiveObjects.handleStateChange.
+   * Used by DefaultRealtimeObjects.handleStateChange.
    */
   internal fun clearBufferedObjectOperations() {
     bufferedObjectOperations.clear()
@@ -127,13 +127,13 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects): Obje
 
     val receivedObjectIds = mutableSetOf<String>()
     // RTO5c1a2 - List to collect updates for existing objects
-    val existingObjectUpdates = mutableListOf<Pair<BaseLiveObject, LiveObjectUpdate>>()
+    val existingObjectUpdates = mutableListOf<Pair<BaseRealtimeObject, ObjectUpdate>>()
 
     // RTO5c1
     for ((objectId, objectMessage) in syncObjectsDataPool) {
       val objectState = objectMessage.objectState as ObjectState // we have non-null objectState here due to RTO5b
       receivedObjectIds.add(objectId)
-      val existingObject = liveObjects.objectsPool.get(objectId)
+      val existingObject = realtimeObjects.objectsPool.get(objectId)
 
       // RTO5c1a
       if (existingObject != null) {
@@ -144,12 +144,12 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects): Obje
         // RTO5c1b1, RTO5c1b1a, RTO5c1b1b - Create new object and add it to the pool
         val newObject = createObjectFromState(objectState)
         newObject.applyObjectSync(objectMessage)
-        liveObjects.objectsPool.set(objectId, newObject)
+        realtimeObjects.objectsPool.set(objectId, newObject)
       }
     }
 
-    // RTO5c2 - need to remove LiveObject instances from the ObjectsPool for which objectIds were not received during the sync sequence
-    liveObjects.objectsPool.deleteExtraObjectIds(receivedObjectIds)
+    // RTO5c2 - need to remove realtimeObject instances from the ObjectsPool for which objectIds were not received during the sync sequence
+    realtimeObjects.objectsPool.deleteExtraObjectIds(receivedObjectIds)
 
     // RTO5c7 - call subscription callbacks for all updated existing objects
     existingObjectUpdates.forEach { (obj, update) ->
@@ -183,7 +183,7 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects): Obje
       // since they need to be able to eventually initialize themselves from that *_CREATE op.
       // so to simplify operations handling, we always try to create a zero-value object in the pool first,
       // and then we can always apply the operation on the existing object in the pool.
-      val obj = liveObjects.objectsPool.createZeroValueObjectIfNotExists(objectOperation.objectId) // RTO9a2a1
+      val obj = realtimeObjects.objectsPool.createZeroValueObjectIfNotExists(objectOperation.objectId) // RTO9a2a1
       obj.applyObject(objectMessage) // RTO9a2a2, RTO9a2a3
     }
   }
@@ -215,10 +215,10 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects): Obje
    *
    * @spec RTO5c1b - Creates objects from object state based on type
    */
-  private fun createObjectFromState(objectState: ObjectState): BaseLiveObject {
+  private fun createObjectFromState(objectState: ObjectState): BaseRealtimeObject {
     return when {
-      objectState.counter != null -> DefaultLiveCounter.zeroValue(objectState.objectId, liveObjects) // RTO5c1b1a
-      objectState.map != null -> DefaultLiveMap.zeroValue(objectState.objectId, liveObjects) // RTO5c1b1b
+      objectState.counter != null -> DefaultLiveCounter.zeroValue(objectState.objectId, realtimeObjects) // RTO5c1b1a
+      objectState.map != null -> DefaultLiveMap.zeroValue(objectState.objectId, realtimeObjects) // RTO5c1b1b
       else -> throw clientError("Object state must contain either counter or map data") // RTO5c1b1c
     }
   }
@@ -229,11 +229,11 @@ internal class ObjectsManager(private val liveObjects: DefaultLiveObjects): Obje
    * @spec RTO2 - Emits state change events for syncing and synced states
    */
   private fun stateChange(newState: ObjectsState, deferEvent: Boolean) {
-    if (liveObjects.state == newState) {
+    if (realtimeObjects.state == newState) {
       return
     }
-    Log.v(tag, "Objects state changed to: $newState from ${liveObjects.state}")
-    liveObjects.state = newState
+    Log.v(tag, "Objects state changed to: $newState from ${realtimeObjects.state}")
+    realtimeObjects.state = newState
 
     // deferEvent not needed since objectsStateChanged processes events in a sequential coroutine scope
     objectsStateChanged(newState)

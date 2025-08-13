@@ -4,7 +4,7 @@ import io.ably.lib.objects.*
 import io.ably.lib.objects.ObjectData
 import io.ably.lib.objects.ObjectsPool
 import io.ably.lib.objects.ObjectsPoolDefaults
-import io.ably.lib.objects.type.BaseLiveObject
+import io.ably.lib.objects.type.BaseRealtimeObject
 import io.ably.lib.objects.type.ObjectType
 import io.ably.lib.objects.type.counter.LiveCounter
 import io.ably.lib.objects.type.map.LiveMap
@@ -22,7 +22,7 @@ internal data class LiveMapEntry(
 
 /**
  * Checks if entry is directly tombstoned or references a tombstoned object. Spec: RTLM14
- * @param objectsPool The object pool containing referenced LiveObjects
+ * @param objectsPool The object pool containing referenced DefaultRealtimeObjects
  */
 internal fun LiveMapEntry.isEntryOrRefTombstoned(objectsPool: ObjectsPool): Boolean {
   if (isTombstoned) {
@@ -40,7 +40,7 @@ internal fun LiveMapEntry.isEntryOrRefTombstoned(objectsPool: ObjectsPool): Bool
 
 /**
  * Returns value as is if object data stores a primitive type or
- * a reference to another LiveObject from the pool if it stores an objectId.
+ * a reference to another RealtimeObject from the pool if it stores an objectId.
  */
 internal fun LiveMapEntry.getResolvedValue(objectsPool: ObjectsPool): LiveMapValue? {
   if (isTombstoned) { return null } // RTLM5d2a
@@ -52,7 +52,7 @@ internal fun LiveMapEntry.getResolvedValue(objectsPool: ObjectsPool): LiveMapVal
       if (refObject.isTombstoned) {
         return null // tombstoned objects must not be surfaced to the end users
       }
-      return fromLiveObject(refObject) // RTLM5d2f2
+      return fromRealtimeObject(refObject) // RTLM5d2f2
     }
   }
   return null // RTLM5d2g, RTLM5d2f1
@@ -77,9 +77,9 @@ private fun fromObjectValue(objValue: ObjectValue): LiveMapValue {
   }
 }
 
-private fun fromLiveObject(baseLiveObject: BaseLiveObject): LiveMapValue {
-  return when (baseLiveObject.objectType) {
-    ObjectType.Map -> LiveMapValue.of(baseLiveObject as LiveMap)
-    ObjectType.Counter -> LiveMapValue.of(baseLiveObject as LiveCounter)
+private fun fromRealtimeObject(realtimeObject: BaseRealtimeObject): LiveMapValue {
+  return when (realtimeObject.objectType) {
+    ObjectType.Map -> LiveMapValue.of(realtimeObject as LiveMap)
+    ObjectType.Counter -> LiveMapValue.of(realtimeObject as LiveCounter)
   }
 }
