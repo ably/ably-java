@@ -33,7 +33,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
       // Some of the incoming object messages may have already been applied to the objects described in
       // the sync sequence, but others may not; therefore we must buffer these messages so that we can apply
       // them to the objects once the sync is complete.
-      Log.v(tag, "Buffering ${objectMessages.size} object messages, state: $realtimeObjects.state")
+      Log.v(tag, "Buffering ${objectMessages.size} object messages, state: ${realtimeObjects.state}")
       bufferedObjectOperations.addAll(objectMessages) // RTO8a
       return
     }

@@ -43,6 +43,7 @@ import io.ably.lib.util.EventEmitter;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.ReconnectionStrategy;
 import io.ably.lib.util.StringUtils;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Enables messages to be published and subscribed to.
@@ -94,7 +95,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      */
     private boolean released = false;
 
-    private final ObjectsPlugin objectsPlugin;
+    @Nullable private final ObjectsPlugin objectsPlugin;
 
     public RealtimeObjects getObjects() throws AblyException {
         if (objectsPlugin == null) {
@@ -1325,7 +1326,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
     }
 
-    ChannelBase(AblyRealtime ably, String name, ChannelOptions options, ObjectsPlugin objectsPlugin) throws AblyException {
+    ChannelBase(AblyRealtime ably, String name, ChannelOptions options, @Nullable ObjectsPlugin objectsPlugin) throws AblyException {
         Log.v(TAG, "RealtimeChannel(); channel = " + name);
         this.ably = ably;
         this.name = name;

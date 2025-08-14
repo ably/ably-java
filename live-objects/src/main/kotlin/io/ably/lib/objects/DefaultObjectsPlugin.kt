@@ -22,8 +22,8 @@ public class DefaultObjectsPlugin(private val adapter: ObjectsAdapter) : Objects
   }
 
   override fun dispose(channelName: String) {
-    objects[channelName]?.dispose(clientError("Channel has been released using channels.release()"))
     objects.remove(channelName)
+      ?.dispose(clientError("Channel has been released using channels.release()"))
   }
 
   override fun dispose() {

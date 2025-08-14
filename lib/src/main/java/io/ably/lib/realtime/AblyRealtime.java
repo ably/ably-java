@@ -20,6 +20,7 @@ import io.ably.lib.types.RecoveryKeyContext;
 import io.ably.lib.util.InternalMap;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.StringUtils;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A client that extends the functionality of the {@link AblyRest} and provides additional realtime-specific features.
@@ -47,6 +48,7 @@ public class AblyRealtime extends AblyRest {
      * <p>
      * This field is initialized only if the LiveObjects plugin is present in the classpath.
      */
+    @Nullable
     private final ObjectsPlugin objectsPlugin;
 
     /**

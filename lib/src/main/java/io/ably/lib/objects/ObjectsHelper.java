@@ -2,6 +2,7 @@ package io.ably.lib.objects;
 
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.util.Log;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.InvocationTargetException;
 
@@ -10,6 +11,7 @@ public class ObjectsHelper {
     private static final String TAG = ObjectsHelper.class.getName();
     private static volatile ObjectsSerializer objectsSerializer;
 
+    @Nullable
     public static ObjectsPlugin tryInitializeObjectsPlugin(AblyRealtime ablyRealtime) {
         try {
             Class<?> objectsImplementation = Class.forName("io.ably.lib.objects.DefaultObjectsPlugin");
@@ -24,6 +26,7 @@ public class ObjectsHelper {
         }
     }
 
+    @Nullable
     public static ObjectsSerializer getSerializer() {
         if (objectsSerializer == null) {
             synchronized (ObjectsHelper.class) {
