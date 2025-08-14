@@ -93,6 +93,7 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
 
   private suspend fun getRootAsync(): LiveMap = withContext(sequentialScope.coroutineContext) {
     adapter.throwIfInvalidAccessApiConfiguration(channelName)
+    adapter.ensureAttached(channelName)
     objectsManager.ensureSynced(state)
     objectsPool.get(ROOT_OBJECT_ID) as LiveMap
   }

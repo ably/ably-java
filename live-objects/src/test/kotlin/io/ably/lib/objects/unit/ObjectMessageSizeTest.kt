@@ -12,7 +12,6 @@ import io.ably.lib.objects.ensureMessageSizeWithinLimit
 import io.ably.lib.objects.size
 import io.ably.lib.transport.Defaults
 import io.ably.lib.types.AblyException
-import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
@@ -23,9 +22,9 @@ class ObjectMessageSizeTest {
 
   @Test
   fun testObjectMessageSizeWithinLimit() = runTest {
-    val mockAdapter = mockk<LiveObjectsAdapter>()
-    every { mockAdapter.maxMessageSizeLimit() } returns Defaults.maxMessageSize // 64 kb
-    assertEquals(65536, mockAdapter.maxMessageSizeLimit())
+    val mockAdapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    mockAdapter.connectionManager.maxMessageSize = Defaults.maxMessageSize // 64 kb
+    assertEquals(65536, mockAdapter.connectionManager.maxMessageSize)
 
     // ObjectMessage with all size-contributing fields
     val objectMessage = ObjectMessage(
@@ -148,8 +147,9 @@ class ObjectMessageSizeTest {
 
   @Test
   fun testObjectMessageSizeAboveLimit() = runTest {
-    val mockAdapter = mockk<LiveObjectsAdapter>()
-    every { mockAdapter.maxMessageSizeLimit() } returns Defaults.maxMessageSize // 64 kb
+    val mockAdapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    mockAdapter.connectionManager.maxMessageSize = Defaults.maxMessageSize // 64 kb
+    assertEquals(65536, mockAdapter.connectionManager.maxMessageSize)
 
     // Create ObjectMessage with dummy data that results in size 60kb
     val objectMessage1 = ObjectMessage(

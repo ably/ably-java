@@ -92,20 +92,3 @@ internal suspend fun AblyRealtime.ensureConnected() {
   }
   connectedDeferred.await()
 }
-
-internal suspend fun Channel.ensureAttached() {
-  if (this.state == ChannelState.attached) {
-    return
-  }
-  val attachedDeferred = CompletableDeferred<Unit>()
-  this.on {
-    if (it.event == ChannelEvent.attached) {
-      attachedDeferred.complete(Unit)
-      this.off()
-    } else if (it.event != ChannelEvent.attaching) {
-      attachedDeferred.completeExceptionally(ablyException(it.reason))
-      this.off()
-    }
-  }
-  attachedDeferred.await()
-}

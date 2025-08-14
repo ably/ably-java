@@ -29,14 +29,13 @@ abstract class IntegrationTest {
   /**
    * Retrieves a realtime channel for the specified channel name and client ID
    * If a client with the given clientID does not exist, a new client is created using the provided options.
-   * The channel is attached and ensured to be in the attached state before returning.
    *
    * @param channelName Name of the channel
    * @param clientId The ID of the client to use or create. Defaults to "client1".
-   * @return The attached realtime channel.
-   * @throws Exception If the channel fails to attach or the client fails to connect.
+   * @return The realtime channel in the INITIALIZED state.
+   * @throws Exception If the client fails to connect.
    */
-  internal suspend fun getRealtimeChannel(channelName: String, clientId: String = "client1", autoAttach: Boolean = true): Channel {
+  internal suspend fun getRealtimeChannel(channelName: String, clientId: String = "client1"): Channel {
     val client = realtimeClients.getOrPut(clientId) {
       sandbox.createRealtimeClient {
         this.clientId = clientId
@@ -46,12 +45,7 @@ abstract class IntegrationTest {
     val channelOpts = ChannelOptions().apply {
       modes = arrayOf(ChannelMode.object_publish, ChannelMode.object_subscribe)
     }
-    return client.channels.get(channelName, channelOpts).apply {
-      if (autoAttach) {
-        attach()
-        ensureAttached()
-      }
-    }
+    return client.channels.get(channelName, channelOpts)
   }
 
   /**

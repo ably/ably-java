@@ -1,14 +1,11 @@
 package io.ably.lib.objects;
 
 import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.realtime.ChannelState;
-import io.ably.lib.realtime.CompletionListener;
+import io.ably.lib.realtime.ChannelBase;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ChannelMode;
-import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.util.Log;
 import org.jetbrains.annotations.NotNull;
 
@@ -18,54 +15,6 @@ public class Adapter implements LiveObjectsAdapter {
 
     public Adapter(@NotNull AblyRealtime ably) {
         this.ably = ably;
-    }
-
-    @Override
-    public void setChannelSerial(@NotNull String channelName, @NotNull String channelSerial) {
-        if (ably.channels.containsKey(channelName)) {
-            ably.channels.get(channelName).properties.channelSerial = channelSerial;
-        } else {
-            Log.e(TAG, "setChannelSerial(): channel not found: " + channelName);
-        }
-    }
-
-    @Override
-    public void send(@NotNull ProtocolMessage msg, @NotNull CompletionListener listener) throws AblyException {
-        // Always queue LiveObjects messages to ensure reliable state synchronization and proper acknowledgment
-        ably.connection.connectionManager.send(msg, true, listener);
-    }
-
-    @Override
-    public int maxMessageSizeLimit() {
-        return ably.connection.connectionManager.maxMessageSize;
-    }
-
-    @Override
-    public ChannelMode[] getChannelModes(@NotNull String channelName) {
-        if (ably.channels.containsKey(channelName)) {
-            // RTO2a - channel.modes is only populated on channel attachment, so use it only if it is set
-            ChannelMode[] modes = ably.channels.get(channelName).getModes();
-            if (modes != null) {
-                return modes;
-            }
-            // RTO2b - otherwise as a best effort use user provided channel options
-            ChannelOptions options = ably.channels.get(channelName).getOptions();
-            if (options != null && options.hasModes()) {
-                return options.modes;
-            }
-            return null;
-        }
-        Log.e(TAG, "getChannelMode(): channel not found: " + channelName);
-        return null;
-    }
-
-    @Override
-    public ChannelState getChannelState(@NotNull String channelName) {
-        if (ably.channels.containsKey(channelName)) {
-            return ably.channels.get(channelName).state;
-        }
-        Log.e(TAG, "getChannelState(): channel not found: " + channelName);
-        return null;
     }
 
     @Override
@@ -81,5 +30,16 @@ public class Adapter implements LiveObjectsAdapter {
     @Override
     public long getTime() throws AblyException {
         return ably.time();
+    }
+
+    @Override
+    public @NotNull ChannelBase getChannel(@NotNull String channelName) throws AblyException {
+        if (ably.channels.containsKey(channelName)) {
+            return ably.channels.get(channelName);
+        } else {
+            Log.e(TAG, "attachChannel(): channel not found: " + channelName);
+            ErrorInfo errorInfo = new ErrorInfo("Channel not found: " + channelName, 404);
+            throw AblyException.fromErrorInfo(errorInfo);
+        }
     }
 }

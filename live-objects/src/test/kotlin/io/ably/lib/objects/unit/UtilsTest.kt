@@ -253,7 +253,7 @@ class UtilsTest {
     }
 
     asyncScope.launchWithCallback(callback) {
-      delay(1000) // Long delay
+      delay(10000) // Long delay
       "test result"
     }
 

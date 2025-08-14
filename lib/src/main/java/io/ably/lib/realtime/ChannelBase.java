@@ -1286,6 +1286,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     }
 
     public ChannelMode[] getModes() {
+        if (modes == null) {
+            return new ChannelMode[0];
+        }
         return modes.toArray(new ChannelMode[modes.size()]);
     }
 
