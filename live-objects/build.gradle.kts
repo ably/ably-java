@@ -11,10 +11,11 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":java"))
+    compileOnly(project(":java"))
     implementation(libs.bundles.common)
     implementation(libs.coroutine.core)
 
+    testImplementation(project(":java"))
     testImplementation(kotlin("test"))
     testImplementation(libs.bundles.kotlin.tests)
 }
