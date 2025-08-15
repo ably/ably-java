@@ -15,22 +15,21 @@ internal enum class ObjectType(val value: String) {
 }
 
 // Spec: RTLO4b4b
-internal val LiveObjectUpdate.noOp get() = this.update == null
+internal val ObjectUpdate.noOp get() = this.update == null
 
 /**
- * Base implementation of LiveObject interface.
- * Provides common functionality for all live objects.
+ * Provides common functionality and base implementation for LiveMap and LiveCounter.
  *
  * @spec RTLO1/RTLO2 - Base class for LiveMap/LiveCounter object
  *
  * This should also be included in logging
  */
-internal abstract class BaseLiveObject(
+internal abstract class BaseRealtimeObject(
   internal val objectId: String, // // RTLO3a
   internal val objectType: ObjectType,
 ) {
 
-  protected open val tag = "BaseLiveObject"
+  protected open val tag = "BaseRealtimeObject"
 
   internal val siteTimeserials = mutableMapOf<String, String>() // RTLO3b
 
@@ -47,7 +46,7 @@ internal abstract class BaseLiveObject(
    *
    * @spec RTLM6/RTLC6 - Overrides ObjectMessage with object data state from sync to LiveMap/LiveCounter
    */
-  internal fun applyObjectSync(objectMessage: ObjectMessage): LiveObjectUpdate {
+  internal fun applyObjectSync(objectMessage: ObjectMessage): ObjectUpdate {
     val objectState = objectMessage.objectState as ObjectState // we have non-null objectState here due to RTO5b
     validate(objectState)
     // object's site serials are still updated even if it is tombstoned, so always use the site serials received from the operation.
@@ -123,14 +122,14 @@ internal abstract class BaseLiveObject(
   /**
    * Marks the object as tombstoned.
    */
-  internal fun tombstone(serialTimestamp: Long?): LiveObjectUpdate {
+  internal fun tombstone(serialTimestamp: Long?): ObjectUpdate {
     if (serialTimestamp == null) {
       Log.w(tag, "Tombstoning object $objectId without serial timestamp, using local timestamp instead")
     }
     isTombstoned = true
     tombstonedAt = serialTimestamp?: System.currentTimeMillis()
     val update = clearData()
-    // TODO: Emit BaseLiveObject lifecycle events
+    // TODO: Emit BaseRealtimeObject lifecycle events
     return update
   }
 
@@ -157,7 +156,7 @@ internal abstract class BaseLiveObject(
    * @return A map describing the changes made to the object's data
    *
    */
-  abstract fun applyObjectState(objectState: ObjectState, message: ObjectMessage): LiveObjectUpdate
+  abstract fun applyObjectState(objectState: ObjectState, message: ObjectMessage): ObjectUpdate
 
   /**
    * Applies an operation to this live object.
@@ -183,14 +182,14 @@ internal abstract class BaseLiveObject(
    *
    * @return A map representing the diff of changes made
    */
-  abstract fun clearData(): LiveObjectUpdate
+  abstract fun clearData(): ObjectUpdate
 
   /**
    * Notifies subscribers about changes made to this live object. Propagates updates through the
    * appropriate manager after converting the generic update map to type-specific update objects.
    * Spec: RTLO4b4c
    */
-  abstract fun notifyUpdated(update: LiveObjectUpdate)
+  abstract fun notifyUpdated(update: ObjectUpdate)
 
   /**
    * Called during garbage collection intervals to clean up expired entries.

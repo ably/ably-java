@@ -13,8 +13,8 @@ import io.ably.lib.http.BasePaginatedQuery;
 import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
-import io.ably.lib.objects.LiveObjects;
-import io.ably.lib.objects.LiveObjectsPlugin;
+import io.ably.lib.objects.RealtimeObjects;
+import io.ably.lib.objects.ObjectsPlugin;
 import io.ably.lib.rest.RestAnnotations;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ConnectionManager.QueuedMessage;
@@ -43,6 +43,7 @@ import io.ably.lib.util.EventEmitter;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.ReconnectionStrategy;
 import io.ably.lib.util.StringUtils;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Enables messages to be published and subscribed to.
@@ -94,16 +95,16 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      */
     private boolean released = false;
 
-    private final LiveObjectsPlugin liveObjectsPlugin;
+    @Nullable private final ObjectsPlugin objectsPlugin;
 
-    public LiveObjects getObjects() throws AblyException {
-        if (liveObjectsPlugin == null) {
+    public RealtimeObjects getObjects() throws AblyException {
+        if (objectsPlugin == null) {
             throw AblyException.fromErrorInfo(
                 new ErrorInfo("LiveObjects plugin hasn't been installed, " +
                     "add runtimeOnly('io.ably:live-objects:<ably-version>') to your dependency tree", 400, 40019)
             );
         }
-        return liveObjectsPlugin.getInstance(name);
+        return objectsPlugin.getInstance(name);
     }
 
     public final RealtimeAnnotations annotations;
@@ -146,11 +147,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
 
         // cover states other than attached, ChannelState.attached already covered in setAttached
-        if (liveObjectsPlugin != null && newState!= ChannelState.attached) {
+        if (objectsPlugin != null && newState!= ChannelState.attached) {
             try {
-                liveObjectsPlugin.handleStateChange(name, newState, false);
+                objectsPlugin.handleStateChange(name, newState, false);
             } catch (Throwable t) {
-                Log.e(TAG, "Unexpected exception in LiveObjectsPlugin.handle", t);
+                Log.e(TAG, "Unexpected exception in objectsPlugin.handle", t);
             }
         }
 
@@ -448,11 +449,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             }
             return;
         }
-        if (liveObjectsPlugin != null) {
+        if (objectsPlugin != null) {
             try {
-                liveObjectsPlugin.handleStateChange(name, ChannelState.attached, message.hasFlag(Flag.has_objects));
+                objectsPlugin.handleStateChange(name, ChannelState.attached, message.hasFlag(Flag.has_objects));
             } catch (Throwable t) {
-                Log.e(TAG, "Unexpected exception in LiveObjectsPlugin.handle", t);
+                Log.e(TAG, "Unexpected exception in objectsPlugin.handle", t);
             }
         }
         if(state == ChannelState.attached) {
@@ -1325,7 +1326,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
     }
 
-    ChannelBase(AblyRealtime ably, String name, ChannelOptions options, LiveObjectsPlugin liveObjectsPlugin) throws AblyException {
+    ChannelBase(AblyRealtime ably, String name, ChannelOptions options, @Nullable ObjectsPlugin objectsPlugin) throws AblyException {
         Log.v(TAG, "RealtimeChannel(); channel = " + name);
         this.ably = ably;
         this.name = name;
@@ -1335,9 +1336,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         this.attachResume = false;
         state = ChannelState.initialized;
         this.decodingContext = new DecodingContext();
-        this.liveObjectsPlugin = liveObjectsPlugin;
-        if (liveObjectsPlugin != null) {
-            liveObjectsPlugin.getInstance(name); // Make objects instance ready to process sync messages
+        this.objectsPlugin = objectsPlugin;
+        if (objectsPlugin != null) {
+            objectsPlugin.getInstance(name); // Make objects instance ready to process sync messages
         }
         this.annotations = new RealtimeAnnotations(
             this,

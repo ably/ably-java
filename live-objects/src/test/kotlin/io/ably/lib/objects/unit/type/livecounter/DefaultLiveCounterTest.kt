@@ -1,6 +1,6 @@
 package io.ably.lib.objects.unit.type.livecounter
 
-import io.ably.lib.objects.ObjectCounter
+import io.ably.lib.objects.ObjectsCounter
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectOperationAction
@@ -26,14 +26,14 @@ class DefaultLiveCounterTest {
       siteTimeserials = mapOf("site3" to "serial3", "site4" to "serial4"),
       tombstone = false,
     )
-    
+
     val objectMessage = ObjectMessage(
       id = "testId",
       objectState = objectState,
       serial = "serial1",
       siteCode = "site1"
     )
-    
+
     liveCounter.applyObjectSync(objectMessage)
     assertEquals(mapOf("site3" to "serial3", "site4" to "serial4"), liveCounter.siteTimeserials) // RTLC6a
   }
@@ -45,7 +45,7 @@ class DefaultLiveCounterTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.CounterCreate,
       objectId = "counter:testCounter@2", // Different objectId
-      counter = ObjectCounter(count = 20.0)
+      counter = ObjectsCounter(count = 20.0)
     )
 
     val message = ObjectMessage(
@@ -77,7 +77,7 @@ class DefaultLiveCounterTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.CounterCreate,
       objectId = "counter:testCounter@1", // Matching objectId
-      counter = ObjectCounter(count = 20.0)
+      counter = ObjectsCounter(count = 20.0)
     )
 
     val message = ObjectMessage(
@@ -104,7 +104,7 @@ class DefaultLiveCounterTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.CounterCreate,
       objectId = "counter:testCounter@1", // Matching objectId
-      counter = ObjectCounter(count = 20.0)
+      counter = ObjectsCounter(count = 20.0)
     )
 
     val message = ObjectMessage(

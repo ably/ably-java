@@ -8,10 +8,9 @@ import org.msgpack.core.MessageUnpacker;
 import java.io.IOException;
 
 /**
- * Serializer interface for converting between LiveObject arrays and their
- * MessagePack or JSON representations.
+ * Serializer interface for converting between objects and their MessagePack or JSON representations.
  */
-public interface LiveObjectSerializer {
+public interface ObjectsSerializer {
     /**
      * Reads a MessagePack array from the given unpacker and deserializes it into an Object array.
      *

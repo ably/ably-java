@@ -25,7 +25,7 @@ internal enum class ObjectOperationAction(val code: Int) {
  * An enum class representing the conflict-resolution semantics used by a Map object.
  * Spec: OMP2
  */
-internal enum class MapSemantics(val code: Int) {
+internal enum class ObjectsMapSemantics(val code: Int) {
   LWW(0),
   Unknown(-1); // code for unknown value during deserialization
 }
@@ -69,7 +69,7 @@ internal sealed class ObjectValue {
  * A MapOp describes an operation to be applied to a Map object.
  * Spec: OMO1
  */
-internal data class ObjectMapOp(
+internal data class ObjectsMapOp(
   /**
    * The key of the map entry to which the operation should be applied.
    * Spec: OMO2a
@@ -87,7 +87,7 @@ internal data class ObjectMapOp(
  * A CounterOp describes an operation to be applied to a Counter object.
  * Spec: OCO1
  */
-internal data class ObjectCounterOp(
+internal data class ObjectsCounterOp(
   /**
    * The data value that should be added to the counter
    * Spec: OCO2a
@@ -99,7 +99,7 @@ internal data class ObjectCounterOp(
  * A MapEntry represents the value at a given key in a Map object.
  * Spec: ME1
  */
-internal data class ObjectMapEntry(
+internal data class ObjectsMapEntry(
   /**
    * Indicates whether the map entry has been removed.
    * Spec: OME2a
@@ -131,25 +131,25 @@ internal data class ObjectMapEntry(
  * An ObjectMap object represents a map of key-value pairs.
  * Spec: OMP1
  */
-internal data class ObjectMap(
+internal data class ObjectsMap(
   /**
    * The conflict-resolution semantics used by the map object.
    * Spec: OMP3a
    */
-  val semantics: MapSemantics? = null,
+  val semantics: ObjectsMapSemantics? = null,
 
   /**
    * The map entries, indexed by key.
    * Spec: OMP3b
    */
-  val entries: Map<String, ObjectMapEntry>? = null
+  val entries: Map<String, ObjectsMapEntry>? = null
 )
 
 /**
  * An ObjectCounter object represents an incrementable and decrementable value
  * Spec: OCN1
  */
-internal data class ObjectCounter(
+internal data class ObjectsCounter(
   /**
    * The value of the counter
    * Spec: OCN2a
@@ -179,28 +179,28 @@ internal data class ObjectOperation(
    * i.e. MAP_SET, MAP_REMOVE.
    * Spec: OOP3c
    */
-  val mapOp: ObjectMapOp? = null,
+  val mapOp: ObjectsMapOp? = null,
 
   /**
    * The payload for the operation if it is an operation on a Counter object type.
    * i.e. COUNTER_INC.
    * Spec: OOP3d
    */
-  val counterOp: ObjectCounterOp? = null,
+  val counterOp: ObjectsCounterOp? = null,
 
   /**
    * The payload for the operation if the operation is MAP_CREATE.
    * Defines the initial value for the Map object.
    * Spec: OOP3e
    */
-  val map: ObjectMap? = null,
+  val map: ObjectsMap? = null,
 
   /**
    * The payload for the operation if the operation is COUNTER_CREATE.
    * Defines the initial value for the Counter object.
    * Spec: OOP3f
    */
-  val counter: ObjectCounter? = null,
+  val counter: ObjectsCounter? = null,
 
   /**
    * The nonce, must be present on create operations. This is the random part
@@ -255,14 +255,14 @@ internal data class ObjectState(
    * excluding the initial value from the create operation if it is a Map object type.
    * Spec: OST2e
    */
-  val map: ObjectMap? = null,
+  val map: ObjectsMap? = null,
 
   /**
    * The data that represents the result of applying all operations to a Counter object
    * excluding the initial value from the create operation if it is a Counter object type.
    * Spec: OST2f
    */
-  val counter: ObjectCounter? = null
+  val counter: ObjectsCounter? = null
 )
 
 /**
@@ -386,7 +386,7 @@ private fun ObjectState.size(): Int {
  * Calculates the size of an ObjectMapOp in bytes.
  * Spec: OMO3
  */
-private fun ObjectMapOp.size(): Int {
+private fun ObjectsMapOp.size(): Int {
   val keySize = key.length // Spec: OMO3d - Size of the key
   val dataSize = data?.size() ?: 0 // Spec: OMO3b - Size of the data, calculated per "OD3"
   return keySize + dataSize
@@ -396,7 +396,7 @@ private fun ObjectMapOp.size(): Int {
  * Calculates the size of a CounterOp in bytes.
  * Spec: OCO3
  */
-private fun ObjectCounterOp.size(): Int {
+private fun ObjectsCounterOp.size(): Int {
   // Size is 8 if amount is a number, 0 if amount is null or omitted
   return if (amount != null) 8 else 0 // Spec: OCO3a, OCO3b
 }
@@ -405,7 +405,7 @@ private fun ObjectCounterOp.size(): Int {
  * Calculates the size of an ObjectMap in bytes.
  * Spec: OMP4
  */
-private fun ObjectMap.size(): Int {
+private fun ObjectsMap.size(): Int {
   // Calculate the size of all map entries in the map property
   val entriesSize = entries?.entries?.sumOf {
     it.key.length + it.value.size() // // Spec: OMP4a1, OMP4a2
@@ -418,7 +418,7 @@ private fun ObjectMap.size(): Int {
  * Calculates the size of an ObjectCounter in bytes.
  * Spec: OCN3
  */
-private fun ObjectCounter.size(): Int {
+private fun ObjectsCounter.size(): Int {
   // Size is 8 if count is a number, 0 if count is null or omitted
   return if (count != null) 8 else 0
 }
@@ -427,7 +427,7 @@ private fun ObjectCounter.size(): Int {
  * Calculates the size of a MapEntry in bytes.
  * Spec: OME3
  */
-private fun ObjectMapEntry.size(): Int {
+private fun ObjectsMapEntry.size(): Int {
   // The size is equal to the size of the data property, calculated per "OD3"
   return data?.size() ?: 0
 }

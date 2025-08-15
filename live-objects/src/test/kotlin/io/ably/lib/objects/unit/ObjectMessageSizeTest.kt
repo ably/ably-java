@@ -3,7 +3,7 @@ package io.ably.lib.objects.unit
 import com.google.gson.JsonObject
 import io.ably.lib.objects.*
 import io.ably.lib.objects.ObjectData
-import io.ably.lib.objects.ObjectMapOp
+import io.ably.lib.objects.ObjectsMapOp
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectOperationAction
@@ -22,7 +22,7 @@ class ObjectMessageSizeTest {
 
   @Test
   fun testObjectMessageSizeWithinLimit() = runTest {
-    val mockAdapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val mockAdapter = mockk<ObjectsAdapter>(relaxed = true)
     mockAdapter.connectionManager.maxMessageSize = Defaults.maxMessageSize // 64 kb
     assertEquals(65536, mockAdapter.connectionManager.maxMessageSize)
 
@@ -41,7 +41,7 @@ class ObjectMessageSizeTest {
         objectId = "obj_54321", // Not counted in operation size
 
         // MapOp contributes to operation size
-        mapOp = ObjectMapOp(
+        mapOp = ObjectsMapOp(
           key = "mapKey", // Size: 6 bytes (UTF-8 byte length)
           data = ObjectData(
             objectId = "ref_obj", // Not counted in data size
@@ -50,22 +50,22 @@ class ObjectMessageSizeTest {
         ), // Total ObjectMapOp size: 6 + 6 = 12 bytes
 
         // CounterOp contributes to operation size
-        counterOp = ObjectCounterOp(
+        counterOp = ObjectsCounterOp(
           amount = 10.0 // Size: 8 bytes (number is always 8 bytes)
         ), // Total ObjectCounterOp size: 8 bytes
 
         // Map contributes to operation size (for MAP_CREATE operations)
-        map = ObjectMap(
-          semantics = MapSemantics.LWW, // Not counted in size
+        map = ObjectsMap(
+          semantics = ObjectsMapSemantics.LWW, // Not counted in size
           entries = mapOf(
-            "entry1" to ObjectMapEntry( // Key size: 6 bytes
+            "entry1" to ObjectsMapEntry( // Key size: 6 bytes
               tombstone = false, // Not counted in entry size
               timeserial = "ts_123", // Not counted in entry size
               data = ObjectData(
                 value = ObjectValue.String("value1") // Size: 6 bytes
               ) // ObjectMapEntry size: 6 bytes
             ), // Total for this entry: 6 (key) + 6 (entry) = 12 bytes
-            "entry2" to ObjectMapEntry( // Key size: 6 bytes
+            "entry2" to ObjectsMapEntry( // Key size: 6 bytes
               data = ObjectData(
                 value = ObjectValue.Number(42) // Size: 8 bytes (number)
               ) // ObjectMapEntry size: 8 bytes
@@ -74,7 +74,7 @@ class ObjectMessageSizeTest {
         ), // Total ObjectMap size: 26 bytes
 
         // Counter contributes to operation size (for COUNTER_CREATE operations)
-        counter = ObjectCounter(
+        counter = ObjectsCounter(
           count = 100.0 // Size: 8 bytes (number is always 8 bytes)
         ), // Total ObjectCounter size: 8 bytes
 
@@ -91,7 +91,7 @@ class ObjectMessageSizeTest {
         createOp = ObjectOperation(
           action = ObjectOperationAction.MapSet,
           objectId = "create_obj",
-          mapOp = ObjectMapOp(
+          mapOp = ObjectsMapOp(
             key = "createKey", // Size: 9 bytes
             data = ObjectData(
               value = ObjectValue.String("createValue") // Size: 11 bytes
@@ -100,9 +100,9 @@ class ObjectMessageSizeTest {
         ), // Total createOp size: 20 bytes
 
         // map contributes to state size
-        map = ObjectMap(
+        map = ObjectsMap(
           entries = mapOf(
-            "stateKey" to ObjectMapEntry( // Key size: 8 bytes
+            "stateKey" to ObjectsMapEntry( // Key size: 8 bytes
               data = ObjectData(
                 value = ObjectValue.String("stateValue") // Size: 10 bytes
               ) // ObjectMapEntry size: 10 bytes
@@ -111,7 +111,7 @@ class ObjectMessageSizeTest {
         ), // Total ObjectMap size: 18 bytes
 
         // counter contributes to state size
-        counter = ObjectCounter(
+        counter = ObjectsCounter(
           count = 50.0 // Size: 8 bytes
         ) // Total ObjectCounter size: 8 bytes
       ), // Total ObjectState size: 20 + 18 + 8 = 46 bytes
@@ -134,7 +134,7 @@ class ObjectMessageSizeTest {
       operation = ObjectOperation(
         objectId = "",
         action = ObjectOperationAction.MapCreate,
-        mapOp = ObjectMapOp(
+        mapOp = ObjectsMapOp(
           key = "",
           data = ObjectData(
             value = ObjectValue.String("你😊") // 你 -> 3 bytes, 😊 -> 4 bytes
@@ -147,7 +147,7 @@ class ObjectMessageSizeTest {
 
   @Test
   fun testObjectMessageSizeAboveLimit() = runTest {
-    val mockAdapter = mockk<LiveObjectsAdapter>(relaxed = true)
+    val mockAdapter = mockk<ObjectsAdapter>(relaxed = true)
     mockAdapter.connectionManager.maxMessageSize = Defaults.maxMessageSize // 64 kb
     assertEquals(65536, mockAdapter.connectionManager.maxMessageSize)
 

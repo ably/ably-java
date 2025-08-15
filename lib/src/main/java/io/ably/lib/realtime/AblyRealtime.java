@@ -5,8 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.ably.lib.objects.LiveObjectsHelper;
-import io.ably.lib.objects.LiveObjectsPlugin;
+import io.ably.lib.objects.ObjectsHelper;
+import io.ably.lib.objects.ObjectsPlugin;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Auth;
 import io.ably.lib.transport.ConnectionManager;
@@ -20,6 +20,7 @@ import io.ably.lib.types.RecoveryKeyContext;
 import io.ably.lib.util.InternalMap;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.StringUtils;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A client that extends the functionality of the {@link AblyRest} and provides additional realtime-specific features.
@@ -47,7 +48,8 @@ public class AblyRealtime extends AblyRest {
      * <p>
      * This field is initialized only if the LiveObjects plugin is present in the classpath.
      */
-    private final LiveObjectsPlugin liveObjectsPlugin;
+    @Nullable
+    private final ObjectsPlugin objectsPlugin;
 
     /**
      * Constructs a Realtime client object using an Ably API key or token string.
@@ -72,9 +74,9 @@ public class AblyRealtime extends AblyRest {
         final InternalChannels channels = new InternalChannels();
         this.channels = channels;
 
-        liveObjectsPlugin = LiveObjectsHelper.tryInitializeLiveObjectsPlugin(this);
+        objectsPlugin = ObjectsHelper.tryInitializeObjectsPlugin(this);
 
-        connection = new Connection(this, channels, platformAgentProvider, liveObjectsPlugin);
+        connection = new Connection(this, channels, platformAgentProvider, objectsPlugin);
 
         if (!StringUtils.isNullOrEmpty(options.recover)) {
             RecoveryKeyContext recoveryKeyContext = RecoveryKeyContext.decode(options.recover);
@@ -120,8 +122,8 @@ public class AblyRealtime extends AblyRest {
         }
 
         connection.close();
-        if (liveObjectsPlugin != null) {
-            liveObjectsPlugin.dispose();
+        if (objectsPlugin != null) {
+            objectsPlugin.dispose();
         }
     }
 
@@ -202,7 +204,7 @@ public class AblyRealtime extends AblyRest {
             // We're not using computeIfAbsent because that requires Java 1.8.
             // Hence there's the slight inefficiency of creating newChannel when it may not be
             // needed because there is an existingChannel.
-            final Channel newChannel = new Channel(AblyRealtime.this, channelName, channelOptions, liveObjectsPlugin);
+            final Channel newChannel = new Channel(AblyRealtime.this, channelName, channelOptions, objectsPlugin);
             final Channel existingChannel = map.putIfAbsent(channelName, newChannel);
 
             if (existingChannel != null) {
@@ -229,8 +231,8 @@ public class AblyRealtime extends AblyRest {
                     Log.e(TAG, "Unexpected exception detaching channel; channelName = " + channelName, e);
                 }
             }
-            if (liveObjectsPlugin != null) {
-                liveObjectsPlugin.dispose(channelName);
+            if (objectsPlugin != null) {
+                objectsPlugin.dispose(channelName);
             }
         }
 

@@ -10,12 +10,12 @@ import org.msgpack.core.MessagePacker
 import org.msgpack.core.MessageUnpacker
 
 /**
- * Default implementation of {@link LiveObjectSerializer} that handles serialization/deserialization
+ * Default implementation of {@link ObjectsSerializer} that handles serialization/deserialization
  * of ObjectMessage arrays for both JSON and MessagePack formats using Jackson and Gson.
- * Dynamically loaded by LiveObjectsHelper#getLiveObjectSerializer() to avoid hard dependencies.
+ * Dynamically loaded by ObjectsHelper#getSerializer() to avoid hard dependencies.
  */
-@Suppress("unused") // Used via reflection in LiveObjectsHelper
-internal class DefaultLiveObjectSerializer : LiveObjectSerializer {
+@Suppress("unused") // Used via reflection in ObjectsHelper
+internal class DefaultObjectsSerializer : ObjectsSerializer {
 
   override fun readMsgpackArray(unpacker: MessageUnpacker): Array<Any> {
     val objectMessagesCount = unpacker.unpackArrayHeader()

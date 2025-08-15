@@ -7,11 +7,11 @@ import io.ably.lib.types.ClientOptions;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NotNull;
 
-public interface LiveObjectsAdapter {
+public interface ObjectsAdapter {
     /**
      * Retrieves the client options configured for the Ably client.
      * Used to access client configuration parameters such as echoMessages setting
-     * that affect the behavior of LiveObjects operations.
+     * that affect the behavior of Objects operations.
      *
      * @return the client options containing configuration parameters
      */

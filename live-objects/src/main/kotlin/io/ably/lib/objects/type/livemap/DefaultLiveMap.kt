@@ -1,12 +1,12 @@
 package io.ably.lib.objects.type.livemap
 
 import io.ably.lib.objects.*
-import io.ably.lib.objects.MapSemantics
+import io.ably.lib.objects.ObjectsMapSemantics
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState
-import io.ably.lib.objects.type.BaseLiveObject
-import io.ably.lib.objects.type.LiveObjectUpdate
+import io.ably.lib.objects.type.BaseRealtimeObject
+import io.ably.lib.objects.type.ObjectUpdate
 import io.ably.lib.objects.type.ObjectType
 import io.ably.lib.objects.type.map.LiveMap
 import io.ably.lib.objects.type.map.LiveMapChange
@@ -19,15 +19,13 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.AbstractMap
 
 /**
- * Implementation of LiveObject for LiveMap.
- *
- * @spec RTLM1/RTLM2 - LiveMap implementation extends LiveObject
+ * @spec RTLM1/RTLM2 - LiveMap implementation extends BaseRealtimeObject
  */
 internal class DefaultLiveMap private constructor(
   objectId: String,
-  private val liveObjects: DefaultLiveObjects,
-  internal val semantics: MapSemantics = MapSemantics.LWW
-) : LiveMap, BaseLiveObject(objectId, ObjectType.Map) {
+  private val realtimeObjects: DefaultRealtimeObjects,
+  internal val semantics: ObjectsMapSemantics = ObjectsMapSemantics.LWW
+) : LiveMap, BaseRealtimeObject(objectId, ObjectType.Map) {
 
   override val tag = "LiveMap"
 
@@ -41,10 +39,10 @@ internal class DefaultLiveMap private constructor(
    */
   private val liveMapManager = LiveMapManager(this)
 
-  private val channelName = liveObjects.channelName
-  private val adapter: LiveObjectsAdapter get() = liveObjects.adapter
-  internal val objectsPool: ObjectsPool get() = liveObjects.objectsPool
-  private val asyncScope get() = liveObjects.asyncScope
+  private val channelName = realtimeObjects.channelName
+  private val adapter: ObjectsAdapter get() = realtimeObjects.adapter
+  internal val objectsPool: ObjectsPool get() = realtimeObjects.objectsPool
+  private val asyncScope get() = realtimeObjects.asyncScope
 
   override fun get(keyName: String): LiveMapValue? {
     adapter.throwIfInvalidAccessApiConfiguration(channelName) // RTLM5b, RTLM5c
@@ -130,7 +128,7 @@ internal class DefaultLiveMap private constructor(
       operation = ObjectOperation(
         action = ObjectOperationAction.MapSet,
         objectId = objectId,
-        mapOp = ObjectMapOp(
+        mapOp = ObjectsMapOp(
           key = keyName,
           data = fromLiveMapValue(value)
         )
@@ -138,7 +136,7 @@ internal class DefaultLiveMap private constructor(
     )
 
     // RTLM20f - Publish the message
-    liveObjects.publish(arrayOf(msg))
+    realtimeObjects.publish(arrayOf(msg))
   }
 
   private suspend fun removeAsync(keyName: String) {
@@ -155,12 +153,12 @@ internal class DefaultLiveMap private constructor(
       operation = ObjectOperation(
         action = ObjectOperationAction.MapRemove,
         objectId = objectId,
-        mapOp = ObjectMapOp(key = keyName)
+        mapOp = ObjectsMapOp(key = keyName)
       )
     )
 
     // RTLM21f - Publish the message
-    liveObjects.publish(arrayOf(msg))
+    realtimeObjects.publish(arrayOf(msg))
   }
 
   override fun applyObjectState(objectState: ObjectState, message: ObjectMessage): LiveMapUpdate {
@@ -176,7 +174,7 @@ internal class DefaultLiveMap private constructor(
       .apply { data.clear() }
   }
 
-  override fun notifyUpdated(update: LiveObjectUpdate) {
+  override fun notifyUpdated(update: ObjectUpdate) {
     if (update.noOp) {
       return
     }
@@ -193,7 +191,7 @@ internal class DefaultLiveMap private constructor(
      * Creates a zero-value map object.
      * @spec RTLM4 - Returns LiveMap with empty map data
      */
-    internal fun zeroValue(objectId: String, objects: DefaultLiveObjects): DefaultLiveMap {
+    internal fun zeroValue(objectId: String, objects: DefaultRealtimeObjects): DefaultLiveMap {
       return DefaultLiveMap(objectId, objects)
     }
 
@@ -203,10 +201,10 @@ internal class DefaultLiveMap private constructor(
      */
     internal fun initialValue(entries: MutableMap<String, LiveMapValue>): MapCreatePayload {
       return MapCreatePayload(
-        map = ObjectMap(
-          semantics = MapSemantics.LWW,
+        map = ObjectsMap(
+          semantics = ObjectsMapSemantics.LWW,
           entries = entries.mapValues { (_, value) ->
-            ObjectMapEntry(
+            ObjectsMapEntry(
               tombstone = false,
               data = fromLiveMapValue(value)
             )
@@ -221,7 +219,7 @@ internal class DefaultLiveMap private constructor(
     private fun fromLiveMapValue(value: LiveMapValue): ObjectData {
       return when {
         value.isLiveMap || value.isLiveCounter -> {
-          ObjectData(objectId = (value.value as BaseLiveObject).objectId)
+          ObjectData(objectId = (value.value as BaseRealtimeObject).objectId)
         }
         value.isBoolean -> {
           ObjectData(value = ObjectValue.Boolean(value.asBoolean))

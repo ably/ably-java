@@ -1,6 +1,6 @@
 package io.ably.lib.objects.type.map;
 
-import io.ably.lib.objects.type.LiveObjectUpdate;
+import io.ably.lib.objects.type.ObjectUpdate;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
@@ -11,7 +11,7 @@ import java.util.Map;
  *
  * @spec RTLM18, RTLM18a - LiveMap update structure and behavior
  */
-public class LiveMapUpdate extends LiveObjectUpdate {
+public class LiveMapUpdate extends ObjectUpdate {
 
     /**
      * Creates a no-op LiveMapUpdate representing no actual change.

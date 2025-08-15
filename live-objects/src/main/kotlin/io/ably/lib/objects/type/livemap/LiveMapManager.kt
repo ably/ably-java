@@ -1,7 +1,7 @@
 package io.ably.lib.objects.type.livemap
 
-import io.ably.lib.objects.MapSemantics
-import io.ably.lib.objects.ObjectMapOp
+import io.ably.lib.objects.ObjectsMapSemantics
+import io.ably.lib.objects.ObjectsMapOp
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectOperationAction
 import io.ably.lib.objects.ObjectState
@@ -100,8 +100,8 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
    * @spec RTLM7 - Applies MAP_SET operation to LiveMap
    */
   private fun applyMapSet(
-    mapOp: ObjectMapOp, // RTLM7d1
-    timeSerial: String?, // RTLM7d2
+      mapOp: ObjectsMapOp, // RTLM7d1
+      timeSerial: String?, // RTLM7d2
   ): LiveMapUpdate {
     val existingEntry = liveMap.data[mapOp.key]
 
@@ -151,9 +151,9 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
    * @spec RTLM8 - Applies MAP_REMOVE operation to LiveMap
    */
   private fun applyMapRemove(
-    mapOp: ObjectMapOp, // RTLM8c1
-    timeSerial: String?, // RTLM8c2
-    timeStamp: Long?, // RTLM8c3
+      mapOp: ObjectsMapOp, // RTLM8c1
+      timeSerial: String?, // RTLM8c2
+      timeStamp: Long?, // RTLM8c3
   ): LiveMapUpdate {
     val existingEntry = liveMap.data[mapOp.key]
 
@@ -233,10 +233,10 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
       val opTimeserial = entry.timeserial
       val update = if (entry.tombstone == true) {
         // RTLM17a2 - entry in MAP_CREATE op is removed, try to apply MAP_REMOVE op
-        applyMapRemove(ObjectMapOp(key), opTimeserial, entry.serialTimestamp)
+        applyMapRemove(ObjectsMapOp(key), opTimeserial, entry.serialTimestamp)
       } else {
         // RTLM17a1 - entry in MAP_CREATE op is not removed, try to set it via MAP_SET op
-        applyMapSet(ObjectMapOp(key, entry.data), opTimeserial)
+        applyMapSet(ObjectsMapOp(key, entry.data), opTimeserial)
       }
 
       // skip noop updates
@@ -324,10 +324,10 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
     }
   }
 
-  private fun validateMapSemantics(semantics: MapSemantics?) {
+  private fun validateMapSemantics(semantics: ObjectsMapSemantics?) {
     if (semantics != liveMap.semantics) {
       throw objectError(
-        "Invalid object: incoming object map semantics=$semantics; current map semantics=${MapSemantics.LWW}"
+        "Invalid object: incoming object map semantics=$semantics; current map semantics=${ObjectsMapSemantics.LWW}"
       )
     }
   }

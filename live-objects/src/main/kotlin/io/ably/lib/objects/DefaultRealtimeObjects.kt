@@ -19,11 +19,11 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import java.util.concurrent.CancellationException
 
 /**
- * Default implementation of LiveObjects interface.
+ * Default implementation of RealtimeObjects interface.
  * Provides the core functionality for managing live objects on a channel.
  */
-internal class DefaultLiveObjects(internal val channelName: String, internal val adapter: LiveObjectsAdapter): LiveObjects {
-  private val tag = "DefaultLiveObjects"
+internal class DefaultRealtimeObjects(internal val channelName: String, internal val adapter: ObjectsAdapter): RealtimeObjects {
+  private val tag = "DefaultRealtimeObjects"
   /**
    * @spec RTO3 - Objects pool storing all live objects by object ID
    */
@@ -252,7 +252,7 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
           Log.v(tag, "Objects.onAttached() channel=$channelName, hasObjects=$hasObjects")
 
           // RTO4a
-          val fromInitializedState = this@DefaultLiveObjects.state == ObjectsState.Initialized
+          val fromInitializedState = this@DefaultRealtimeObjects.state == ObjectsState.Initialized
           if (hasObjects || fromInitializedState) {
             // should always start a new sync sequence if we're in the initialized state, no matter the HAS_OBJECTS flag value.
             // this guarantees we emit both "syncing" -> "synced" events in that order.
@@ -285,7 +285,7 @@ internal class DefaultLiveObjects(internal val channelName: String, internal val
     }
   }
 
-  // Dispose of any resources associated with this LiveObjects instance
+  // Dispose of any resources associated with this RealtimeObjects instance
   fun dispose(cause: AblyException) {
     val disposeReason = CancellationException().apply { initCause(cause) }
     incomingObjectsHandler.cancel(disposeReason) // objectsEventBus automatically garbage collected when collector is cancelled

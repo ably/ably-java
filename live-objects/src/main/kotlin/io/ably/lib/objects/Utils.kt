@@ -55,9 +55,9 @@ internal val String.byteSize: Int
   get() = this.toByteArray(StandardCharsets.UTF_8).size
 
 /**
- * A channel-specific coroutine scope for executing callbacks asynchronously in the LiveObjects system.
+ * A channel-specific coroutine scope for executing callbacks asynchronously in the RealtimeObjects system.
  * Provides safe execution of suspend functions with results delivered via callbacks.
- * Supports proper error handling and cancellation during LiveObjects disposal.
+ * Supports proper error handling and cancellation during DefaultRealtimeObjects disposal.
  */
 internal class ObjectsAsyncScope(channelName: String) {
   private val tag = "ObjectsCallbackScope-$channelName"

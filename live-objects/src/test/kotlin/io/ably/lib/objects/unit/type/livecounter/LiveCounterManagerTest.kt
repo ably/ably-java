@@ -20,7 +20,7 @@ class DefaultLiveCounterManagerTest {
 
     val objectState = ObjectState(
       objectId = "testCounterId",
-      counter = ObjectCounter(count = 25.0),
+      counter = ObjectsCounter(count = 25.0),
       siteTimeserials = mapOf("site3" to "serial3", "site4" to "serial4"),
       tombstone = false,
     )
@@ -44,12 +44,12 @@ class DefaultLiveCounterManagerTest {
     val createOp = ObjectOperation(
       action = ObjectOperationAction.CounterCreate,
       objectId = "testCounterId",
-      counter = ObjectCounter(count = 10.0)
+      counter = ObjectsCounter(count = 10.0)
     )
 
     val objectState = ObjectState(
       objectId = "testCounterId",
-      counter = ObjectCounter(count = 15.0),
+      counter = ObjectsCounter(count = 15.0),
       createOp = createOp,
       siteTimeserials = mapOf("site1" to "serial1"),
       tombstone = false,
@@ -71,7 +71,7 @@ class DefaultLiveCounterManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapCreate, // Unsupported action for counter
       objectId = "testCounterId",
-      map = ObjectMap(semantics = MapSemantics.LWW, entries = emptyMap())
+      map = ObjectsMap(semantics = ObjectsMapSemantics.LWW, entries = emptyMap())
     )
 
     // RTLC7d3 - Should throw error for unsupported action
@@ -93,7 +93,7 @@ class DefaultLiveCounterManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.CounterCreate,
       objectId = "testCounterId",
-      counter = ObjectCounter(count = 20.0)
+      counter = ObjectsCounter(count = 20.0)
     )
 
     // RTLC7d1 - Apply counter create operation
@@ -116,7 +116,7 @@ class DefaultLiveCounterManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.CounterCreate,
       objectId = "testCounterId",
-      counter = ObjectCounter(count = 20.0)
+      counter = ObjectsCounter(count = 20.0)
     )
 
     // RTLC8b - Should skip if already merged
@@ -139,7 +139,7 @@ class DefaultLiveCounterManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.CounterCreate,
       objectId = "testCounterId",
-      counter = ObjectCounter(count = 20.0)
+      counter = ObjectsCounter(count = 20.0)
     )
 
     // RTLC8c - Should apply if not merged
@@ -183,7 +183,7 @@ class DefaultLiveCounterManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.CounterInc,
       objectId = "testCounterId",
-      counterOp = ObjectCounterOp(amount = 5.0)
+      counterOp = ObjectsCounterOp(amount = 5.0)
     )
 
     // RTLC7d2 - Apply counter increment operation
@@ -223,7 +223,7 @@ class DefaultLiveCounterManagerTest {
     // Set initial data
     liveCounter.data.set(10.0)
 
-    val counterOp = ObjectCounterOp(amount = 7.0)
+    val counterOp = ObjectsCounterOp(amount = 7.0)
 
     // RTLC9b - Apply counter increment
     liveCounterManager.applyOperation(ObjectOperation(
@@ -243,7 +243,7 @@ class DefaultLiveCounterManagerTest {
     // Set initial data
     liveCounter.data.set(10.0)
 
-    val counterOp = ObjectCounterOp(amount = null) // Null amount
+    val counterOp = ObjectsCounterOp(amount = null) // Null amount
 
     // RTLC9b - Apply counter increment with null amount
     liveCounterManager.applyOperation(ObjectOperation(

@@ -1,6 +1,6 @@
 package io.ably.lib.objects.unit.objects
 
-import io.ably.lib.objects.DefaultLiveObjects
+import io.ably.lib.objects.DefaultRealtimeObjects
 import io.ably.lib.objects.ObjectData
 import io.ably.lib.objects.ROOT_OBJECT_ID
 import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
@@ -19,8 +19,8 @@ class ObjectsPoolTest {
 
   @Test
   fun `(RTO3, RTO3a, RTO3b) An internal ObjectsPool should be used to maintain the list of objects present on a channel`() {
-    val defaultLiveObjects = DefaultLiveObjects("dummyChannel", mockk(relaxed = true))
-    val objectsPool = defaultLiveObjects.objectsPool
+    val defaultRealtimeObjects = DefaultRealtimeObjects("dummyChannel", mockk(relaxed = true))
+    val objectsPool = defaultRealtimeObjects.objectsPool
     assertNotNull(objectsPool)
 
     // RTO3b - It must always contain a LiveMap object with id root
@@ -31,7 +31,7 @@ class ObjectsPoolTest {
     assertEquals(ROOT_OBJECT_ID, rootLiveMap.objectId)
     assertEquals(1, objectsPool.size(), "RTO3 - Should only contain the root object initially")
 
-    // RTO3a - ObjectsPool is a Dict, a map of LiveObjects keyed by objectId string
+    // RTO3a - ObjectsPool is a Dict, a map of RealtimeObjects keyed by objectId string
     val testLiveMap = DefaultLiveMap.zeroValue("map:testObject@1", mockk(relaxed = true))
     objectsPool.set("map:testObject@1", testLiveMap)
     val testLiveCounter = DefaultLiveCounter.zeroValue("counter:testObject@1", mockk(relaxed = true))
@@ -44,8 +44,8 @@ class ObjectsPoolTest {
 
   @Test
   fun `(RTO6) ObjectsPool should create zero-value objects if not exists`() {
-    val defaultLiveObjects = DefaultLiveObjects("dummyChannel", mockk(relaxed = true))
-    val objectsPool = spyk(defaultLiveObjects.objectsPool)
+    val defaultRealtimeObjects = DefaultRealtimeObjects("dummyChannel", mockk(relaxed = true))
+    val objectsPool = spyk(defaultRealtimeObjects.objectsPool)
     assertEquals(1, objectsPool.size(), "RTO3 - Should only contain the root object initially")
 
     // Test creating zero-value map
@@ -78,8 +78,8 @@ class ObjectsPoolTest {
 
   @Test
   fun `(RTO4b1, RTO4b2) ObjectsPool should reset to initial pool retaining original root map`() {
-    val defaultLiveObjects = DefaultLiveObjects("dummyChannel", mockk(relaxed = true))
-    val objectsPool = defaultLiveObjects.objectsPool
+    val defaultRealtimeObjects = DefaultRealtimeObjects("dummyChannel", mockk(relaxed = true))
+    val objectsPool = defaultRealtimeObjects.objectsPool
     assertEquals(1, objectsPool.size())
     val rootMap = objectsPool.get(ROOT_OBJECT_ID) as DefaultLiveMap
     // add some data to the root map
@@ -107,8 +107,8 @@ class ObjectsPoolTest {
 
   @Test
   fun `(RTO5c2, RTO5c2a) ObjectsPool should delete extra object IDs`() {
-    val defaultLiveObjects = DefaultLiveObjects("dummyChannel", mockk(relaxed = true))
-    val objectsPool = defaultLiveObjects.objectsPool
+    val defaultRealtimeObjects = DefaultRealtimeObjects("dummyChannel", mockk(relaxed = true))
+    val objectsPool = defaultRealtimeObjects.objectsPool
 
     // Add some objects
     objectsPool.set("counter:testObject@1", DefaultLiveCounter.zeroValue("counter:testObject@1", mockk(relaxed = true)))

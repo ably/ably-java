@@ -9,9 +9,9 @@ import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.util.Log;
 import org.jetbrains.annotations.NotNull;
 
-public class Adapter implements LiveObjectsAdapter {
+public class Adapter implements ObjectsAdapter {
     private final AblyRealtime ably;
-    private static final String TAG = LiveObjectsAdapter.class.getName();
+    private static final String TAG = ObjectsAdapter.class.getName();
 
     public Adapter(@NotNull AblyRealtime ably) {
         this.ably = ably;
