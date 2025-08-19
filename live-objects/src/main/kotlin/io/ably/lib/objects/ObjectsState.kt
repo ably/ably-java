@@ -27,14 +27,14 @@ private val objectsStateToEventMap = mapOf(
 )
 
 /**
- * An interface for managing and communicating changes in the synchronization state of live objects.
+ * An interface for managing and communicating changes in the synchronization state of objects.
  *
  * Implementations should ensure thread-safe event emission and proper synchronization
  * between state change notifications.
  */
 internal interface HandlesObjectsStateChange {
   /**
-   * Handles changes in the state of live objects by notifying all registered listeners.
+   * Handles changes in the state of objects by notifying all registered listeners.
    * Implementations should ensure thread-safe event emission to both internal and public listeners.
    * Makes sure every event is processed in the order they were received.
    * @param newState The new state of the objects, SYNCING or SYNCED.

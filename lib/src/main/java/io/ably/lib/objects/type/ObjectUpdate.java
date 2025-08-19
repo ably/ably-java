@@ -5,7 +5,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Abstract base class for all LiveMap/LiveCounter update notifications.
  * Provides common structure for updates that occur on LiveMap and LiveCounter objects.
- * Contains the update data that describes what changed in the live object.
+ * Contains the update data that describes what changed in the object.
  * Spec: RTLO4b4
  */
 public abstract class ObjectUpdate {

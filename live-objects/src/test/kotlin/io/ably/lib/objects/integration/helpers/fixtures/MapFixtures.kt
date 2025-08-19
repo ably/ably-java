@@ -8,7 +8,7 @@ import io.ably.lib.objects.integration.helpers.RestObjects
  * Initializes a comprehensive test fixture object tree on the specified channel.
  *
  * This method creates a predetermined object hierarchy rooted at a "root" map object,
- * establishing references between different types of live objects to enable comprehensive testing.
+ * establishing references between different types of objects to enable comprehensive testing.
  *
  * **Object Tree Structure:**
  * ```
@@ -71,7 +71,7 @@ internal fun RestObjects.initializeRootMap(channelName: String) {
 /**
  * Creates a comprehensive test fixture object tree on the specified channel using
  *
- * This method establishes a hierarchical structure of live objects for testing map operations,
+ * This method establishes a hierarchical structure of objects for testing map operations,
  * creating various types of objects and establishing references between them.
  *
  * **Object Tree Structure:**

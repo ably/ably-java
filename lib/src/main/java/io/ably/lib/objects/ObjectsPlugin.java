@@ -38,7 +38,7 @@ public interface ObjectsPlugin {
      *
      * @param channelName the name of the channel whose state has changed.
      * @param state the new state of the channel.
-     * @param hasObjects flag indicates whether the channel has any associated live objects.
+     * @param hasObjects flag indicates whether the channel has any associated objects.
      */
     void handleStateChange(@NotNull String channelName, @NotNull ChannelState state, boolean hasObjects);
 
