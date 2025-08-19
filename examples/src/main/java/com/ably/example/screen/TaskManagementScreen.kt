@@ -23,8 +23,10 @@ import com.ably.example.setCoroutine
 import io.ably.lib.objects.type.map.LiveMapValue
 import io.ably.lib.realtime.AblyRealtime
 import kotlinx.coroutines.launch
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalUuidApi::class)
 @Composable
 fun TaskManagementScreen(realtimeClient: AblyRealtime) {
   var taskText by remember { mutableStateOf("") }
@@ -37,6 +39,10 @@ fun TaskManagementScreen(realtimeClient: AblyRealtime) {
   val root = observeRootObject(channel)
 
   val (taskIdToTask, liveTasks) = observeMap(channel, root, "tasks")
+
+  val taskEntries = remember(taskIdToTask) {
+    taskIdToTask.entries.sortedBy { it.key }
+  }
 
   Column(
     modifier = Modifier
@@ -77,7 +83,7 @@ fun TaskManagementScreen(realtimeClient: AblyRealtime) {
             onClick = {
               if (taskText.isNotBlank()) {
                 scope.launch {
-                  val taskId = "task_${System.currentTimeMillis()}"
+                  val taskId = "${System.currentTimeMillis()}_${Uuid.random().toHexString()}"
                   liveTasks?.setCoroutine(taskId, LiveMapValue.of(taskText.trim()))
                   taskText = ""
                 }
@@ -139,8 +145,8 @@ fun TaskManagementScreen(realtimeClient: AblyRealtime) {
           LazyColumn(
             verticalArrangement = Arrangement.spacedBy(8.dp)
           ) {
-            items(taskIdToTask.entries.size) { index ->
-              val task = taskIdToTask.entries.elementAt(index)
+            items(taskIdToTask.size) { index ->
+              val task = taskEntries.elementAt(index)
               TaskItemCard(
                 task = task,
                 isEditing = editingTaskId == task.key,
