@@ -99,7 +99,8 @@ private class ObjectsStateEmitter : EventEmitter<ObjectsStateEvent, ObjectsState
   private val tag = "ObjectsStateEmitter"
   override fun apply(listener: ObjectsStateChange.Listener?, event: ObjectsStateEvent?, vararg args: Any?) {
     try {
-      listener?.onStateChanged(event!!)
+      event?.let { listener?.onStateChanged(it) }
+        ?: Log.w(tag, "Null event passed to ObjectsStateChange Listener callback")
     } catch (t: Throwable) {
       Log.e(tag, "Error occurred while executing listener callback for event: $event", t)
     }

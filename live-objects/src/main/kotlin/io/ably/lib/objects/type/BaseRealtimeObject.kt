@@ -27,7 +27,7 @@ internal val ObjectUpdate.noOp get() = this.update == null
 internal abstract class BaseRealtimeObject(
   internal val objectId: String, // // RTLO3a
   internal val objectType: ObjectType,
-) {
+) : ObjectLifecycleCoordinator() {
 
   protected open val tag = "BaseRealtimeObject"
 
@@ -92,7 +92,7 @@ internal abstract class BaseRealtimeObject(
 
     if (isTombstoned) {
       // this object is tombstoned so the operation cannot be applied
-      return;
+      return
     }
     applyObjectOperation(objectOperation, objectMessage) // RTLC7d
   }
@@ -115,7 +115,7 @@ internal abstract class BaseRealtimeObject(
 
   internal fun validateObjectId(objectId: String?) {
     if (this.objectId != objectId) {
-      throw objectError("Invalid object: incoming objectId=${objectId}; $objectType objectId=$objectId")
+      throw objectError("Invalid object: incoming objectId=$objectId; $objectType objectId=${this.objectId}")
     }
   }
 
@@ -129,7 +129,8 @@ internal abstract class BaseRealtimeObject(
     isTombstoned = true
     tombstonedAt = serialTimestamp?: System.currentTimeMillis()
     val update = clearData()
-    // TODO: Emit BaseRealtimeObject lifecycle events
+    // Emit object lifecycle event for deletion
+    objectLifecycleChanged(ObjectLifecycle.Deleted)
     return update
   }
 
@@ -142,13 +143,13 @@ internal abstract class BaseRealtimeObject(
   }
 
   /**
-   * Validates that the provided object state is compatible with this live object.
+   * Validates that the provided object state is compatible with this object.
    * Checks object ID, type-specific validations, and any included create operations.
    */
   abstract fun validate(state: ObjectState)
 
   /**
-   * Applies an object state received during synchronization to this live object.
+   * Applies an object state received during synchronization to this object.
    * This method should update the internal data structure with the complete state
    * received from the server.
    *
@@ -159,7 +160,7 @@ internal abstract class BaseRealtimeObject(
   abstract fun applyObjectState(objectState: ObjectState, message: ObjectMessage): ObjectUpdate
 
   /**
-   * Applies an operation to this live object.
+   * Applies an operation to this object.
    * This method handles the specific operation actions (e.g., update, remove)
    * by modifying the underlying data structure accordingly.
    *
@@ -185,7 +186,7 @@ internal abstract class BaseRealtimeObject(
   abstract fun clearData(): ObjectUpdate
 
   /**
-   * Notifies subscribers about changes made to this live object. Propagates updates through the
+   * Notifies subscribers about changes made to this object. Propagates updates through the
    * appropriate manager after converting the generic update map to type-specific update objects.
    * Spec: RTLO4b4c
    */

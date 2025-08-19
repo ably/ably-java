@@ -4,7 +4,6 @@ import io.ably.lib.types.AblyException
 import io.ably.lib.types.ErrorInfo
 import io.ably.lib.util.Log
 import kotlinx.coroutines.*
-import org.jetbrains.annotations.NotNull
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.CancellationException
 
@@ -66,7 +65,6 @@ internal class ObjectsAsyncScope(channelName: String) {
   private val scope =
     CoroutineScope(Dispatchers.Default + CoroutineName(tag) + SupervisorJob())
 
-  @NotNull
   internal fun <T> launchWithCallback(callback: ObjectsCallback<T>, block: suspend () -> T) {
     scope.launch {
       try {
