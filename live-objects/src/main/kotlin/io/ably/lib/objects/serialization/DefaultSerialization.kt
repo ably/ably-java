@@ -1,5 +1,3 @@
-@file:Suppress("UNCHECKED_CAST")
-
 package io.ably.lib.objects.serialization
 
 import com.google.gson.*
@@ -23,7 +21,7 @@ internal class DefaultObjectsSerializer : ObjectsSerializer {
   }
 
   override fun writeMsgpackArray(objects: Array<out Any>, packer: MessagePacker) {
-    val objectMessages: Array<ObjectMessage> = objects as Array<ObjectMessage>
+    val objectMessages = objects.map { it as ObjectMessage }
     packer.packArrayHeader(objectMessages.size)
     objectMessages.forEach { it.writeMsgpack(packer) }
   }
@@ -36,7 +34,7 @@ internal class DefaultObjectsSerializer : ObjectsSerializer {
   }
 
   override fun asJsonArray(objects: Array<out Any>): JsonArray {
-    val objectMessages: Array<ObjectMessage> = objects as Array<ObjectMessage>
+    val objectMessages = objects.map { it as ObjectMessage }
     val jsonArray = JsonArray()
     for (objectMessage in objectMessages) {
       jsonArray.add(objectMessage.toJsonObject())
