@@ -1,5 +1,9 @@
 -keep public class io.ably.lib.transport.WebSocketTransport$Factory {*;}
 -keep class io.ably.lib.types.** {*;}
+-keep class io.ably.lib.objects.*ObjectsPlugin {*;}
+-keep class io.ably.lib.objects.serialization.*Serializer {*;}
+-keep class io.ably.lib.objects.ObjectsJsonSerializer {*;}
+
 -keep class org.msgpack.core.** {*;}
 -keepclasseswithmembers class io.ably.lib.rest.Auth** {*;}
 -keep class com.google.gson.** {*;}
