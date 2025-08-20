@@ -6,7 +6,7 @@ import org.jetbrains.annotations.NotNull;
 
 public interface ObjectsStateChange {
     /**
-     * Subscribes to a specific Live Objects synchronization state event.
+     * Subscribes to a specific Objects synchronization state event.
      *
      * <p>This method registers the provided listener to be notified when the specified
      * synchronization state event occurs. The returned subscription can be used to
@@ -40,7 +40,7 @@ public interface ObjectsStateChange {
     void offAll();
 
     /**
-     * Interface for receiving notifications about Live Objects synchronization state changes.
+     * Interface for receiving notifications about Objects synchronization state changes.
      * <p>
      * Implement this interface and register it with an ObjectsStateEmitter to be notified
      * when synchronization state transitions occur.

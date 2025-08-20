@@ -28,9 +28,9 @@ internal object ObjectsPoolDefaults {
 internal const val ROOT_OBJECT_ID = "root"
 
 /**
- * ObjectsPool manages a pool of live objects for a channel.
+ * ObjectsPool manages a pool of objects for a channel.
  *
- * @spec RTO3 - Maintains an objects pool for all live objects on the channel
+ * @spec RTO3 - Maintains an objects pool for all objects on the channel
  */
 internal class ObjectsPool(
   private val realtimeObjects: DefaultRealtimeObjects
@@ -39,7 +39,7 @@ internal class ObjectsPool(
 
   /**
    * ConcurrentHashMap for thread-safe access from public APIs in LiveMap and LiveCounter.
-   * @spec RTO3a - Pool storing all live objects by object ID
+   * @spec RTO3a - Pool storing all ably objects by object ID
    */
   private val pool = ConcurrentHashMap<String, BaseRealtimeObject>()
 
@@ -57,7 +57,7 @@ internal class ObjectsPool(
   }
 
   /**
-   * Gets a live object from the pool by object ID.
+   * Gets an object from the pool by object ID.
    */
   internal fun get(objectId: String): BaseRealtimeObject? {
     return pool[objectId]

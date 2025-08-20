@@ -27,14 +27,14 @@ private val objectsStateToEventMap = mapOf(
 )
 
 /**
- * An interface for managing and communicating changes in the synchronization state of live objects.
+ * An interface for managing and communicating changes in the synchronization state of objects.
  *
  * Implementations should ensure thread-safe event emission and proper synchronization
  * between state change notifications.
  */
 internal interface HandlesObjectsStateChange {
   /**
-   * Handles changes in the state of live objects by notifying all registered listeners.
+   * Handles changes in the state of objects by notifying all registered listeners.
    * Implementations should ensure thread-safe event emission to both internal and public listeners.
    * Makes sure every event is processed in the order they were received.
    * @param newState The new state of the objects, SYNCING or SYNCED.
@@ -99,7 +99,8 @@ private class ObjectsStateEmitter : EventEmitter<ObjectsStateEvent, ObjectsState
   private val tag = "ObjectsStateEmitter"
   override fun apply(listener: ObjectsStateChange.Listener?, event: ObjectsStateEvent?, vararg args: Any?) {
     try {
-      listener?.onStateChanged(event!!)
+      event?.let { listener?.onStateChanged(it) }
+        ?: Log.w(tag, "Null event passed to ObjectsStateChange Listener callback")
     } catch (t: Throwable) {
       Log.e(tag, "Error occurred while executing listener callback for event: $event", t)
     }

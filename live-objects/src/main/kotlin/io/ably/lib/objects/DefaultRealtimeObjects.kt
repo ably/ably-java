@@ -20,12 +20,12 @@ import java.util.concurrent.CancellationException
 
 /**
  * Default implementation of RealtimeObjects interface.
- * Provides the core functionality for managing live objects on a channel.
+ * Provides the core functionality for managing objects on a channel.
  */
 internal class DefaultRealtimeObjects(internal val channelName: String, internal val adapter: ObjectsAdapter): RealtimeObjects {
   private val tag = "DefaultRealtimeObjects"
   /**
-   * @spec RTO3 - Objects pool storing all live objects by object ID
+   * @spec RTO3 - Objects pool storing all objects by object ID
    */
   internal val objectsPool = ObjectsPool(this)
 

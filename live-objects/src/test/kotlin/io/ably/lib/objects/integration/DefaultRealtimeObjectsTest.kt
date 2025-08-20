@@ -6,6 +6,7 @@ import io.ably.lib.objects.integration.helpers.fixtures.initializeRootMap
 import io.ably.lib.objects.integration.helpers.simulateObjectDelete
 import io.ably.lib.objects.integration.setup.IntegrationTest
 import io.ably.lib.objects.state.ObjectsStateEvent
+import io.ably.lib.objects.type.ObjectLifecycleEvent
 import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
 import io.ably.lib.objects.type.livemap.DefaultLiveMap
 import io.ably.lib.objects.type.map.LiveMapUpdate
@@ -170,6 +171,9 @@ class DefaultRealtimeObjectsTest : IntegrationTest() {
     val rootMap = channel.objects.root
     assertEquals(6L, rootMap.size()) // Should have 6 entries initially
 
+    // Collection to track all lifecycle events
+    val lifecycleEvents = mutableListOf<ObjectLifecycleEvent>()
+
     // Remove the "referencedCounter" from the root map
     val refCounter = rootMap.get("referencedCounter")?.asLiveCounter
     assertNotNull(refCounter)
@@ -177,6 +181,10 @@ class DefaultRealtimeObjectsTest : IntegrationTest() {
     val counterUpdates = mutableListOf<Double>()
     refCounter.subscribe { event ->
       counterUpdates.add(event.update.amount)
+    }
+    // Subscribe to lifecycle events for this counter
+    refCounter.on(ObjectLifecycleEvent.DELETED) { event ->
+      lifecycleEvents.add(event)
     }
 
     // Simulate the deletion of the referencedCounter object
@@ -194,6 +202,10 @@ class DefaultRealtimeObjectsTest : IntegrationTest() {
     val mapUpdates = mutableListOf<Map<String, LiveMapUpdate.Change>>()
     referencedMap.subscribe { event ->
       mapUpdates.add(event.update)
+    }
+    // Subscribe to lifecycle events for this map
+    referencedMap.on(ObjectLifecycleEvent.DELETED) { event ->
+      lifecycleEvents.add(event)
     }
 
     // Simulate the deletion of the referencedMap object
@@ -216,6 +228,10 @@ class DefaultRealtimeObjectsTest : IntegrationTest() {
     valuesMap.subscribe { event ->
       valuesMapUpdates.add(event.update)
     }
+    // Subscribe to lifecycle events for this map
+    valuesMap.on(ObjectLifecycleEvent.DELETED) { event ->
+      lifecycleEvents.add(event)
+    }
 
     // Simulate the deletion of the valuesMap object
     channel.objects.simulateObjectDelete(valuesMap as DefaultLiveMap)
@@ -229,6 +245,12 @@ class DefaultRealtimeObjectsTest : IntegrationTest() {
     // Verify that all entries in valuesMap were marked as REMOVED
     updatedValuesMap.values.forEach { change ->
       assertEquals(LiveMapUpdate.Change.REMOVED, change)
+    }
+
+    // Assert lifecycle events
+    assertEquals(3, lifecycleEvents.size) // Should have received 3 DELETED lifecycle events
+    lifecycleEvents.forEach { event ->
+      assertEquals(ObjectLifecycleEvent.DELETED, event) // All events should be DELETED
     }
   }
 }

@@ -1,6 +1,7 @@
 package io.ably.lib.objects.type.map;
 
 import io.ably.lib.objects.ObjectsCallback;
+import io.ably.lib.objects.type.ObjectLifecycleChange;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.Contract;
@@ -14,7 +15,7 @@ import java.util.Map;
  * The LiveMap interface provides methods to interact with a live, real-time map structure.
  * It supports both synchronous and asynchronous operations for managing key-value pairs.
  */
-public interface LiveMap extends LiveMapChange {
+public interface LiveMap extends LiveMapChange, ObjectLifecycleChange {
 
     /**
      * Retrieves the value associated with the specified key.

@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * The RealtimeObjects interface provides methods to interact with live data objects,
  * such as maps and counters, in a real-time environment. It supports both synchronous
- * and asynchronous operations for retrieving and creating live objects.
+ * and asynchronous operations for retrieving and creating objects.
  *
  * <p>Implementations of this interface must be thread-safe as they may be accessed
  * from multiple threads concurrently.
