@@ -21,13 +21,25 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "ABLY_KEY", "\"${getLocalProperty("ABLY_KEY") ?: ""}\"")
+        buildConfigField("String", "ABLY_KEY", "\"${getLocalProperty("EXAMPLES_ABLY_KEY") ?: ""}\"")
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+
+            val keystorePath = getLocalProperty("EXAMPLES_STORE_FILE")
+            keystorePath?.let {
+                signingConfig = signingConfigs.create("release") {
+                    keyAlias = getLocalProperty("EXAMPLES_KEY_ALIAS")
+                    keyPassword = getLocalProperty("EXAMPLES_KEY_PASSWORD")
+                    storeFile = file(it)
+                    storePassword = getLocalProperty("EXAMPLES_STORE_PASSWORD")
+                }
+            }
         }
     }
     compileOptions {

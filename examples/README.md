@@ -19,7 +19,7 @@ Add your Ably key to the `local.properties` file:
 ```properties
 sdk.dir=/path/to/android/sdk
 
-ABLY_KEY=xxxx:yyyyyy
+EXAMPLES_ABLY_KEY=xxxx:yyyyyy
 ```
 
 ## Steps to Run the App
@@ -65,6 +65,41 @@ The app opens with two tabs:
    - See the total task count and real-time updates as tasks are modified
 
 To see the real-time synchronization in action, run the app on multiple devices or emulators with the same Ably key.
+
+## Building release APK
+
+This is useful to check ProGuard rules, app size, etc. 
+
+1. Create signing keys for the Android app
+
+```shell
+keytool -genkey -v -keystore release.keystore \
+-storepass <store-password> \
+-alias <key-alias> \
+-keypass <key-password> \
+-keyalg RSA -keysize 2048 -validity 25000 -dname "CN=Ably Example App,OU=Examples,O=Ably,L=London,ST=England,C=GB"
+```
+
+2. Update `local.properties` file:
+
+```properties
+EXAMPLES_STORE_FILE=/absolute/path/to/release.keystore
+EXAMPLES_STORE_PASSWORD=<store-password>
+EXAMPLES_KEY_ALIAS=<key-alias>
+EXAMPLES_KEY_PASSWORD=<key-password>
+```
+
+3. Build release APK
+
+```shell
+./gradlew :examples:assembleRelease 
+```
+
+4. Install to the device
+
+```shell
+adb install -r examples/build/outputs/apk/release/examples-release.apk 
+```
 
 ## Troubleshooting
 
