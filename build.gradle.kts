@@ -8,6 +8,9 @@ plugins {
     alias(libs.plugins.maven.publish) apply false
     alias(libs.plugins.lombok) apply false
     alias(libs.plugins.test.retry) apply false
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.kotlin.android) apply false
+    alias(libs.plugins.kotlin.compose) apply false
 }
 
 subprojects {
