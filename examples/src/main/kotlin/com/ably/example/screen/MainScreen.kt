@@ -14,6 +14,7 @@ import io.ably.lib.realtime.AblyRealtime
 @Composable
 fun MainScreen(realtimeClient: AblyRealtime) {
     var selectedTab by remember { mutableIntStateOf(0) }
+    val isSandbox = realtimeClient.options.environment == "sandbox"
 
     val tabs = listOf(
         TabItem("Color Voting", Icons.Default.Favorite),
@@ -23,7 +24,7 @@ fun MainScreen(realtimeClient: AblyRealtime) {
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = {
-                Text("Ably Live Objects Demo")
+                Text("Ably Live Objects Demo ${if (isSandbox) "(sandbox)" else ""}")
             },
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer,

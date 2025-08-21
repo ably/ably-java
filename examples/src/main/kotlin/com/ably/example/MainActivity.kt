@@ -7,14 +7,31 @@ import androidx.activity.enableEdgeToEdge
 import com.ably.example.screen.MainScreen
 import com.ably.example.ui.theme.AblyTheme
 import io.ably.lib.realtime.AblyRealtime
+import io.ably.lib.rest.AblyRest
+import io.ably.lib.rest.Auth
 import io.ably.lib.types.ClientOptions
 import io.ably.lib.util.Log
+import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
   private val realtimeClient: AblyRealtime by lazy {
     AblyRealtime(
       ClientOptions().apply {
-        key = BuildConfig.ABLY_KEY
+        if (BuildConfig.ABLY_KEY.isBlank()) {
+          authCallback = Auth.TokenCallback {
+            val apiKey = runBlocking {
+              val sandbox = Sandbox.getInstance()
+              sandbox.apiKey
+            }
+            AblyRest(ClientOptions().apply {
+              key = apiKey
+              environment = "sandbox"
+            }).auth.requestToken(null, null)
+          }
+          environment = "sandbox"
+        } else {
+          key = BuildConfig.ABLY_KEY
+        }
         logLevel = Log.VERBOSE
         autoConnect = false
       }

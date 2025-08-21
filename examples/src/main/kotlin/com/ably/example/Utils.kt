@@ -1,14 +1,8 @@
 package com.ably.example
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import io.ably.lib.objects.RealtimeObjects
+import androidx.compose.runtime.*
 import io.ably.lib.objects.ObjectsCallback
+import io.ably.lib.objects.RealtimeObjects
 import io.ably.lib.objects.type.counter.LiveCounter
 import io.ably.lib.objects.type.counter.LiveCounterUpdate
 import io.ably.lib.objects.type.map.LiveMap
@@ -28,7 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
-suspend fun RealtimeObjects.getRootCoroutines(): LiveMap = suspendCancellableCoroutine { continuation ->
+private suspend fun RealtimeObjects.getRootCoroutines(): LiveMap = suspendCancellableCoroutine { continuation ->
   getRootAsync(object : ObjectsCallback<LiveMap> {
     override fun onSuccess(result: LiveMap?) {
       continuation.resume(result!!)
@@ -40,19 +34,20 @@ suspend fun RealtimeObjects.getRootCoroutines(): LiveMap = suspendCancellableCor
   })
 }
 
-suspend fun RealtimeObjects.createCounterCoroutine(): LiveCounter = suspendCancellableCoroutine { continuation ->
-  createCounterAsync(object : ObjectsCallback<LiveCounter> {
-    override fun onSuccess(result: LiveCounter?) {
-      continuation.resume(result!!)
-    }
+private suspend fun RealtimeObjects.createCounterCoroutine(): LiveCounter =
+  suspendCancellableCoroutine { continuation ->
+    createCounterAsync(object : ObjectsCallback<LiveCounter> {
+      override fun onSuccess(result: LiveCounter?) {
+        continuation.resume(result!!)
+      }
 
-    override fun onError(exception: AblyException?) {
-      continuation.cancel(exception)
-    }
-  })
-}
+      override fun onError(exception: AblyException?) {
+        continuation.cancel(exception)
+      }
+    })
+  }
 
-suspend fun RealtimeObjects.createMapCoroutine(): LiveMap = suspendCancellableCoroutine { continuation ->
+private suspend fun RealtimeObjects.createMapCoroutine(): LiveMap = suspendCancellableCoroutine { continuation ->
   createMapAsync(object : ObjectsCallback<LiveMap> {
     override fun onSuccess(result: LiveMap?) {
       continuation.resume(result!!)
@@ -64,40 +59,46 @@ suspend fun RealtimeObjects.createMapCoroutine(): LiveMap = suspendCancellableCo
   })
 }
 
-suspend fun LiveCounter.incrementCoroutine(amount: Int): Unit = suspendCancellableCoroutine { continuation ->
-  incrementAsync(amount, object : ObjectsCallback<Void> {
-    override fun onSuccess(result: Void?) {
-      continuation.resume(Unit)
-    }
+suspend fun LiveCounter.incrementCoroutine(amount: Int): Unit = supressCoroutineExceptions {
+  suspendCancellableCoroutine { continuation ->
+    incrementAsync(amount, object : ObjectsCallback<Void> {
+      override fun onSuccess(result: Void?) {
+        continuation.resume(Unit)
+      }
 
-    override fun onError(exception: AblyException?) {
-      continuation.cancel(exception)
-    }
-  })
+      override fun onError(exception: AblyException?) {
+        continuation.cancel(exception)
+      }
+    })
+  }
 }
 
-suspend fun LiveCounter.decrementCoroutine(amount: Int): Unit = suspendCancellableCoroutine { continuation ->
-  decrementAsync(amount, object : ObjectsCallback<Void> {
-    override fun onSuccess(result: Void?) {
-      continuation.resume(Unit)
-    }
+suspend fun LiveCounter.decrementCoroutine(amount: Int): Unit = supressCoroutineExceptions {
+  suspendCancellableCoroutine { continuation ->
+    decrementAsync(amount, object : ObjectsCallback<Void> {
+      override fun onSuccess(result: Void?) {
+        continuation.resume(Unit)
+      }
 
-    override fun onError(exception: AblyException?) {
-      continuation.cancel(exception)
-    }
-  })
+      override fun onError(exception: AblyException?) {
+        continuation.cancel(exception)
+      }
+    })
+  }
 }
 
-suspend fun Channel.updateOptions(options: ChannelOptions): Unit = suspendCancellableCoroutine { continuation ->
-  setOptions(options, object : io.ably.lib.realtime.CompletionListener {
-    override fun onSuccess() {
-      continuation.resume(Unit)
-    }
+suspend fun Channel.updateOptions(options: ChannelOptions): Unit = supressCoroutineExceptions {
+  suspendCancellableCoroutine { continuation ->
+    setOptions(options, object : io.ably.lib.realtime.CompletionListener {
+      override fun onSuccess() {
+        continuation.resume(Unit)
+      }
 
-    override fun onError(reason: ErrorInfo?) {
-      continuation.cancel(AblyException.fromErrorInfo(reason))
-    }
-  })
+      override fun onError(reason: ErrorInfo?) {
+        continuation.cancel(AblyException.fromErrorInfo(reason))
+      }
+    })
+  }
 }
 
 suspend fun getOrCreateCounter(channel: Channel, root: LiveMap?, path: String): LiveCounter {
@@ -122,28 +123,32 @@ suspend fun getOrCreateMap(channel: Channel, root: LiveMap?, path: String): Live
   }
 }
 
-suspend fun LiveMap.setCoroutine(key: String, value: LiveMapValue) = suspendCancellableCoroutine<Unit> { continuation ->
-  setAsync(key, value, object : ObjectsCallback<Void> {
-    override fun onSuccess(result: Void?) {
-      continuation.resume(Unit)
-    }
+suspend fun LiveMap.setCoroutine(key: String, value: LiveMapValue) = supressCoroutineExceptions {
+  suspendCancellableCoroutine<Unit> { continuation ->
+    setAsync(key, value, object : ObjectsCallback<Void> {
+      override fun onSuccess(result: Void?) {
+        continuation.resume(Unit)
+      }
 
-    override fun onError(exception: AblyException?) {
-      continuation.cancel(exception)
-    }
-  })
+      override fun onError(exception: AblyException?) {
+        continuation.cancel(exception)
+      }
+    })
+  }
 }
 
-suspend fun LiveMap.removeCoroutine(key: String) = suspendCancellableCoroutine<Unit> { continuation ->
-  removeAsync(key, object : ObjectsCallback<Void> {
-    override fun onSuccess(result: Void?) {
-      continuation.resume(Unit)
-    }
+suspend fun LiveMap.removeCoroutine(key: String) = supressCoroutineExceptions {
+  suspendCancellableCoroutine<Unit> { continuation ->
+    removeAsync(key, object : ObjectsCallback<Void> {
+      override fun onSuccess(result: Void?) {
+        continuation.resume(Unit)
+      }
 
-    override fun onError(exception: AblyException?) {
-      continuation.cancel(exception)
-    }
-  })
+      override fun onError(exception: AblyException?) {
+        continuation.cancel(exception)
+      }
+    })
+  }
 }
 
 @Composable
@@ -152,7 +157,9 @@ fun observeCounter(channel: Channel, root: LiveMap?, path: String): CounterState
   var counterValue by remember { mutableStateOf<Int?>(null) }
 
   LaunchedEffect(root) {
-    counter = getOrCreateCounter(channel, root, path)
+    supressCoroutineExceptions {
+      counter = getOrCreateCounter(channel, root, path)
+    }
   }
 
   DisposableEffect(counter) {
@@ -225,7 +232,9 @@ fun observeMap(channel: Channel, root: LiveMap?, path: String): Pair<Map<String,
   var mapValue by remember { mutableStateOf<Map<String, String>>(mapOf()) }
 
   LaunchedEffect(root) {
-    map = getOrCreateMap(channel, root, path)
+    supressCoroutineExceptions {
+      map = getOrCreateMap(channel, root, path)
+    }
   }
 
   DisposableEffect(map) {
@@ -256,7 +265,9 @@ fun observeRootObject(channel: Channel): LiveMap? {
 
   LaunchedEffect(channelState) {
     if (channelState == ChannelState.attached) {
-      root = channel.objects.getRootCoroutines()
+      supressCoroutineExceptions {
+        root = channel.objects.getRootCoroutines()
+      }
     }
   }
 
@@ -281,4 +292,11 @@ fun getRealtimeChannel(realtimeClient: AblyRealtime, channelName: String): Chann
   }
 
   return channel
+}
+
+suspend fun supressCoroutineExceptions(block: suspend () -> Unit) {
+  try {
+    block()
+  } catch (_: Exception) {
+  }
 }

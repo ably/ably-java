@@ -50,6 +50,7 @@ fun ColorVotingScreen(realtimeClient: AblyRealtime) {
       color = Color.Red,
       colorName = "Red",
       count = redCount ?: 0,
+      enabled = greenCounter != null,
       onVote = {
         scope.launch {
           redCounter?.incrementCoroutine(1)
@@ -61,6 +62,7 @@ fun ColorVotingScreen(realtimeClient: AblyRealtime) {
       color = Color.Green,
       colorName = "Green",
       count = greenCount ?: 0,
+      enabled = greenCounter != null,
       onVote = {
         scope.launch {
           greenCounter?.incrementCoroutine(1)
@@ -72,6 +74,7 @@ fun ColorVotingScreen(realtimeClient: AblyRealtime) {
       color = Color.Blue,
       colorName = "Blue",
       count = blueCount ?: 0,
+      enabled = blueCounter != null,
       onVote = {
         scope.launch {
           blueCounter?.incrementCoroutine(1)
@@ -80,6 +83,7 @@ fun ColorVotingScreen(realtimeClient: AblyRealtime) {
     )
 
     Button(
+      enabled = redCounter != null && greenCounter != null && blueCounter != null,
       onClick = {
         scope.launch {
           resetRed()
@@ -102,6 +106,7 @@ fun ColorVoteCard(
   color: Color,
   colorName: String,
   count: Int,
+  enabled: Boolean,
   onVote: () -> Unit
 ) {
   Card(
@@ -145,6 +150,7 @@ fun ColorVoteCard(
         )
         OutlinedButton(
           onClick = onVote,
+          enabled = enabled,
         ) {
           Text(
             text = "Vote",
