@@ -10,6 +10,14 @@ repositories {
     mavenCentral()
 }
 
+sourceSets {
+    test {
+        java {
+            srcDirs("src/test/kotlin/")
+        }
+    }
+}
+
 dependencies {
     compileOnly(project(":java"))
     implementation(libs.bundles.common)
