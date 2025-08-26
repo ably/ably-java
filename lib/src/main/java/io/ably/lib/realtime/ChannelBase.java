@@ -14,7 +14,7 @@ import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.objects.RealtimeObjects;
-import io.ably.lib.objects.ObjectsPlugin;
+import io.ably.lib.objects.LiveObjectsPlugin;
 import io.ably.lib.rest.RestAnnotations;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ConnectionManager.QueuedMessage;
@@ -95,16 +95,16 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      */
     private boolean released = false;
 
-    @Nullable private final ObjectsPlugin objectsPlugin;
+    @Nullable private final LiveObjectsPlugin liveObjectsPlugin;
 
     public RealtimeObjects getObjects() throws AblyException {
-        if (objectsPlugin == null) {
+        if (liveObjectsPlugin == null) {
             throw AblyException.fromErrorInfo(
                 new ErrorInfo("LiveObjects plugin hasn't been installed, " +
                     "add runtimeOnly('io.ably:live-objects:<ably-version>') to your dependency tree", 400, 40019)
             );
         }
-        return objectsPlugin.getInstance(name);
+        return liveObjectsPlugin.getInstance(name);
     }
 
     public final RealtimeAnnotations annotations;
@@ -147,11 +147,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
 
         // cover states other than attached, ChannelState.attached already covered in setAttached
-        if (objectsPlugin != null && newState!= ChannelState.attached) {
+        if (liveObjectsPlugin != null && newState!= ChannelState.attached) {
             try {
-                objectsPlugin.handleStateChange(name, newState, false);
+                liveObjectsPlugin.handleStateChange(name, newState, false);
             } catch (Throwable t) {
-                Log.e(TAG, "Unexpected exception in objectsPlugin.handle", t);
+                Log.e(TAG, "Unexpected exception in liveObjectsPlugin.handle", t);
             }
         }
 
@@ -449,11 +449,11 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             }
             return;
         }
-        if (objectsPlugin != null) {
+        if (liveObjectsPlugin != null) {
             try {
-                objectsPlugin.handleStateChange(name, ChannelState.attached, message.hasFlag(Flag.has_objects));
+                liveObjectsPlugin.handleStateChange(name, ChannelState.attached, message.hasFlag(Flag.has_objects));
             } catch (Throwable t) {
-                Log.e(TAG, "Unexpected exception in objectsPlugin.handle", t);
+                Log.e(TAG, "Unexpected exception in liveObjectsPlugin.handle", t);
             }
         }
         if(state == ChannelState.attached) {
@@ -1326,7 +1326,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
     }
 
-    ChannelBase(AblyRealtime ably, String name, ChannelOptions options, @Nullable ObjectsPlugin objectsPlugin) throws AblyException {
+    ChannelBase(AblyRealtime ably, String name, ChannelOptions options, @Nullable LiveObjectsPlugin liveObjectsPlugin) throws AblyException {
         Log.v(TAG, "RealtimeChannel(); channel = " + name);
         this.ably = ably;
         this.name = name;
@@ -1336,9 +1336,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         this.attachResume = false;
         state = ChannelState.initialized;
         this.decodingContext = new DecodingContext();
-        this.objectsPlugin = objectsPlugin;
-        if (objectsPlugin != null) {
-            objectsPlugin.getInstance(name); // Make objects instance ready to process sync messages
+        this.liveObjectsPlugin = liveObjectsPlugin;
+        if (liveObjectsPlugin != null) {
+            liveObjectsPlugin.getInstance(name); // Make objects instance ready to process sync messages
         }
         this.annotations = new RealtimeAnnotations(
             this,

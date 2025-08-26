@@ -1,6 +1,6 @@
 package io.ably.lib.realtime;
 
-import io.ably.lib.objects.ObjectsPlugin;
+import io.ably.lib.objects.LiveObjectsPlugin;
 import io.ably.lib.realtime.ConnectionStateListener.ConnectionStateChange;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.types.AblyException;
@@ -123,10 +123,10 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
      * internal
      *****************/
 
-    Connection(AblyRealtime ably, ConnectionManager.Channels channels, PlatformAgentProvider platformAgentProvider, ObjectsPlugin objectsPlugin) throws AblyException {
+    Connection(AblyRealtime ably, ConnectionManager.Channels channels, PlatformAgentProvider platformAgentProvider, LiveObjectsPlugin liveObjectsPlugin) throws AblyException {
         this.ably = ably;
         this.state = ConnectionState.initialized;
-        this.connectionManager = new ConnectionManager(ably, this, channels, platformAgentProvider, objectsPlugin);
+        this.connectionManager = new ConnectionManager(ably, this, channels, platformAgentProvider, liveObjectsPlugin);
     }
 
     public void onConnectionStateChange(ConnectionStateChange stateChange) {
