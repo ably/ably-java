@@ -4,7 +4,7 @@ import io.ably.lib.realtime.ChannelState
 import io.ably.lib.types.ProtocolMessage
 import java.util.concurrent.ConcurrentHashMap
 
-public class DefaultObjectsPlugin(private val adapter: ObjectsAdapter) : ObjectsPlugin {
+public class DefaultLiveObjectsPlugin(private val adapter: ObjectsAdapter) : LiveObjectsPlugin {
 
   private val objects = ConcurrentHashMap<String, DefaultRealtimeObjects>()
 

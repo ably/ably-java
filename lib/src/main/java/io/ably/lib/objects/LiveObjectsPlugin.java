@@ -5,11 +5,11 @@ import io.ably.lib.types.ProtocolMessage;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * The ObjectsPlugin interface provides a mechanism for managing and interacting with
+ * The LiveObjectsPlugin interface provides a mechanism for managing and interacting with
  * live data objects in a real-time environment. It allows for the retrieval, disposal, and
  * management of Objects instances associated with specific channel names.
  */
-public interface ObjectsPlugin {
+public interface LiveObjectsPlugin {
 
     /**
      * Retrieves an instance of RealtimeObjects associated with the specified channel name.

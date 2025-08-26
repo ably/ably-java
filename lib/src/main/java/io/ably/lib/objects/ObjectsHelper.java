@@ -12,11 +12,11 @@ public class ObjectsHelper {
     private static volatile ObjectsSerializer objectsSerializer;
 
     @Nullable
-    public static ObjectsPlugin tryInitializeObjectsPlugin(AblyRealtime ablyRealtime) {
+    public static LiveObjectsPlugin tryInitializeObjectsPlugin(AblyRealtime ablyRealtime) {
         try {
-            Class<?> objectsImplementation = Class.forName("io.ably.lib.objects.DefaultObjectsPlugin");
+            Class<?> objectsImplementation = Class.forName("io.ably.lib.objects.DefaultLiveObjectsPlugin");
             ObjectsAdapter adapter = new Adapter(ablyRealtime);
-            return (ObjectsPlugin) objectsImplementation
+            return (LiveObjectsPlugin) objectsImplementation
                 .getDeclaredConstructor(ObjectsAdapter.class)
                 .newInstance(adapter);
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException |
