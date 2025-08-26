@@ -55,7 +55,7 @@ To publish the library to your local Maven repository, you can use the following
 
 Alternatively, to publish only the specific (LiveObjects) module:
 
-    ./gradlew :live-objects:publishToMavenLocal
+    ./gradlew :liveobjects:publishToMavenLocal
 
 
 - To use the locally published library in your project, you can add the following dependency in your `build.gradle` file:

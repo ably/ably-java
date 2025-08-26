@@ -113,7 +113,7 @@ Add the following dependency to your `build.gradle` file:
 
 ```groovy
 dependencies {
-    runtimeOnly("io.ably:live-objects:1.2.54")
+    runtimeOnly("io.ably:liveobjects:1.2.54")
 }
 ```
 
