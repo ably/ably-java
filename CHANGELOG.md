@@ -1,5 +1,17 @@
 # Change Log
 
+## [1.3.0](https://github.com/ably/ably-java/tree/v1.3.0)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.2.54...v1.3.0)
+
+### What's Changed
+
+* Introduces support for our new LiveObjects Swift Plugin. LiveObjects provides a simple way to build collaborative applications with synchronized state across multiple clients in real-time.
+
+Learn [about Ably LiveObjects.](https://ably.com/docs/liveobjects)
+
+[Getting started with LiveObjects in Java.](https://ably.com/docs/liveobjects/quickstart/java)
+
 ## [1.2.54](https://github.com/ably/ably-java/tree/v1.2.54)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.53...v1.2.54)
