@@ -103,6 +103,30 @@ realtimeClient.connection.on(ConnectionEvent.connected, connectionStateChange ->
 ```
 ---
 
+## Live Objects
+
+Ably Live Objects provide realtime, collaborative data structures that automatically synchronize state across all connected clients. Build interactive applications with shared data that updates instantly across devices.
+
+### Installation
+
+Add the following dependency to your `build.gradle` file:
+
+```groovy
+dependencies {
+    runtimeOnly("io.ably:live-objects:1.2.54")
+}
+```
+
+### Documentation and Examples
+
+- **[Live Objects Documentation](https://ably.com/docs/liveobjects)** - Complete guide to using Live Objects with code examples and API reference
+- **[Example App](./examples)** - Interactive demo showcasing Live Objects with realtime color voting and collaborative task management
+
+The example app demonstrates:
+- **Color Voting**: Realtime voting system with live vote counts synchronized across all devices
+- **Task Management**: Collaborative task management where users can add, edit, and delete tasks that sync in realtime
+
+To run the example app, follow the setup instructions in the [examples README](./examples/README.md).
 
 ## Proxy support
 
