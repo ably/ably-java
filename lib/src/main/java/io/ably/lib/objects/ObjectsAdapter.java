@@ -1,7 +1,7 @@
 package io.ably.lib.objects;
 
 import io.ably.lib.realtime.ChannelBase;
-import io.ably.lib.transport.ConnectionManager;
+import io.ably.lib.realtime.Connection;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import org.jetbrains.annotations.Blocking;
@@ -18,13 +18,13 @@ public interface ObjectsAdapter {
     @NotNull ClientOptions getClientOptions();
 
     /**
-     * Retrieves the connection manager for handling connection state and operations.
+     * Retrieves the connection instance for handling connection state and operations.
      * Used to check connection status, obtain error information, and manage
      * message transmission across the Ably connection.
      *
-     * @return the connection manager instance
+     * @return the connection instance
      */
-    @NotNull ConnectionManager getConnectionManager();
+    @NotNull Connection getConnection();
 
     /**
      * Retrieves the current time in milliseconds from the Ably server.
