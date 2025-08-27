@@ -2,6 +2,7 @@ package io.ably.lib.objects
 
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.realtime.CompletionListener
+import io.ably.lib.realtime.ConnectionEvent
 import io.ably.lib.types.ChannelMode
 import io.ably.lib.types.ErrorInfo
 import io.ably.lib.types.ProtocolMessage
@@ -15,7 +16,7 @@ import kotlin.coroutines.resumeWithException
  */
 internal suspend fun ObjectsAdapter.sendAsync(message: ProtocolMessage) = suspendCancellableCoroutine { continuation ->
   try {
-    connectionManager.send(message, clientOptions.queueMessages, object : CompletionListener {
+    connection.connectionManager.send(message, clientOptions.queueMessages, object : CompletionListener {
       override fun onSuccess() {
         continuation.resume(Unit)
       }
@@ -42,6 +43,17 @@ internal suspend fun ObjectsAdapter.attachAsync(channelName: String) = suspendCa
     })
   } catch (e: Exception) {
     continuation.resumeWithException(e)
+  }
+}
+
+internal fun ObjectsAdapter.retrieveObjectsGCGracePeriod(block : (Long?) -> Unit) {
+  val connectionManager = connection.connectionManager
+  if (connectionManager.objectsGCGracePeriod != null) {
+    block(connectionManager.objectsGCGracePeriod)
+    return
+  }
+  connection.once(ConnectionEvent.connected) {
+    block(connectionManager.objectsGCGracePeriod)
   }
 }
 
@@ -76,7 +88,7 @@ internal fun ObjectsAdapter.getChannelModes(channelName: String): Array<ChannelM
  * Spec: RTO15d
  */
 internal fun ObjectsAdapter.ensureMessageSizeWithinLimit(objectMessages: Array<ObjectMessage>) {
-  val maximumAllowedSize = connectionManager.maxMessageSize
+  val maximumAllowedSize = connection.connectionManager.maxMessageSize
   val objectsTotalMessageSize = objectMessages.sumOf { it.size() }
   if (objectsTotalMessageSize > maximumAllowedSize) {
     throw ablyException("ObjectMessages size $objectsTotalMessageSize exceeds maximum allowed size of $maximumAllowedSize bytes",
@@ -131,8 +143,8 @@ internal fun ObjectsAdapter.throwIfInvalidWriteApiConfiguration(channelName: Str
 }
 
 internal fun ObjectsAdapter.throwIfUnpublishableState(channelName: String) {
-  if (!connectionManager.isActive) {
-    throw ablyException(connectionManager.stateErrorInfo)
+  if (!connection.connectionManager.isActive) {
+    throw ablyException(connection.connectionManager.stateErrorInfo)
   }
   throwIfInChannelState(channelName, arrayOf(ChannelState.failed, ChannelState.suspended))
 }

@@ -25,7 +25,9 @@ class HelpersTest {
     val connManager = mockk<ConnectionManager>(relaxed = true)
     val clientOptions = ClientOptions().apply { queueMessages = false }
 
-    every { adapter.connectionManager } returns connManager
+    every { adapter.connection } returns mockk(relaxed = true) {
+      setPrivateField("connectionManager", connManager)
+    }
     every { adapter.clientOptions } returns clientOptions
 
     every { connManager.send(any(), any(), any()) } answers {
@@ -48,7 +50,9 @@ class HelpersTest {
     val connManager = mockk<ConnectionManager>(relaxed = true)
     val clientOptions = ClientOptions()
 
-    every { adapter.connectionManager } returns connManager
+    every { adapter.connection } returns mockk(relaxed = true) {
+      setPrivateField("connectionManager", connManager)
+    }
     every { adapter.clientOptions } returns clientOptions
 
     every { connManager.send(any(), any(), any()) } answers {
@@ -69,7 +73,9 @@ class HelpersTest {
     val connManager = mockk<ConnectionManager>(relaxed = true)
     val clientOptions = ClientOptions()
 
-    every { adapter.connectionManager } returns connManager
+    every { adapter.connection } returns mockk(relaxed = true) {
+      setPrivateField("connectionManager", connManager)
+    }
     every { adapter.clientOptions } returns clientOptions
 
     every { connManager.send(any(), any(), any()) } throws RuntimeException("send failed hard")
@@ -346,7 +352,9 @@ class HelpersTest {
   fun testThrowIfUnpublishableStateInactiveConnection() {
     val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val connManager = mockk<ConnectionManager>(relaxed = true)
-    every { adapter.connectionManager } returns connManager
+    every { adapter.connection } returns mockk(relaxed = true) {
+      setPrivateField("connectionManager", connManager)
+    }
     every { connManager.isActive } returns false
     every { connManager.stateErrorInfo } returns serverError("not active").errorInfo
 
@@ -359,7 +367,9 @@ class HelpersTest {
   fun testThrowIfUnpublishableStateChannelFailed() {
     val adapter = mockk<ObjectsAdapter>(relaxed = true)
     val connManager = mockk<ConnectionManager>(relaxed = true)
-    every { adapter.connectionManager } returns connManager
+    every { adapter.connection } returns mockk(relaxed = true) {
+      setPrivateField("connectionManager", connManager)
+    }
     every { connManager.isActive } returns true
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
