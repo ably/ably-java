@@ -19,7 +19,7 @@ class ObjectsPoolTest {
 
   @Test
   fun `(RTO3, RTO3a, RTO3b) An internal ObjectsPool should be used to maintain the list of objects present on a channel`() {
-    val defaultRealtimeObjects = DefaultRealtimeObjects("dummyChannel", mockk(relaxed = true))
+    val defaultRealtimeObjects = DefaultRealtimeObjects("dummyChannel", getMockObjectsAdapter())
     val objectsPool = defaultRealtimeObjects.objectsPool
     assertNotNull(objectsPool)
 
@@ -44,7 +44,7 @@ class ObjectsPoolTest {
 
   @Test
   fun `(RTO6) ObjectsPool should create zero-value objects if not exists`() {
-    val defaultRealtimeObjects = DefaultRealtimeObjects("dummyChannel", mockk(relaxed = true))
+    val defaultRealtimeObjects = DefaultRealtimeObjects("dummyChannel", getMockObjectsAdapter())
     val objectsPool = spyk(defaultRealtimeObjects.objectsPool)
     assertEquals(1, objectsPool.size(), "RTO3 - Should only contain the root object initially")
 
@@ -78,7 +78,7 @@ class ObjectsPoolTest {
 
   @Test
   fun `(RTO4b1, RTO4b2) ObjectsPool should reset to initial pool retaining original root map`() {
-    val defaultRealtimeObjects = DefaultRealtimeObjects("dummyChannel", mockk(relaxed = true))
+    val defaultRealtimeObjects = DefaultRealtimeObjects("dummyChannel", getMockObjectsAdapter())
     val objectsPool = defaultRealtimeObjects.objectsPool
     assertEquals(1, objectsPool.size())
     val rootMap = objectsPool.get(ROOT_OBJECT_ID) as DefaultLiveMap
@@ -107,7 +107,7 @@ class ObjectsPoolTest {
 
   @Test
   fun `(RTO5c2, RTO5c2a) ObjectsPool should delete extra object IDs`() {
-    val defaultRealtimeObjects = DefaultRealtimeObjects("dummyChannel", mockk(relaxed = true))
+    val defaultRealtimeObjects = DefaultRealtimeObjects("dummyChannel", getMockObjectsAdapter())
     val objectsPool = defaultRealtimeObjects.objectsPool
 
     // Add some objects
