@@ -4,6 +4,7 @@ import io.ably.lib.realtime.ChannelState
 import io.ably.lib.realtime.CompletionListener
 import io.ably.lib.types.Callback
 import io.ably.lib.realtime.ConnectionEvent
+import io.ably.lib.realtime.ConnectionState
 import io.ably.lib.types.ChannelMode
 import io.ably.lib.types.ErrorInfo
 import io.ably.lib.types.ProtocolMessage
@@ -13,12 +14,14 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
+internal val ObjectsAdapter.connectionManager get() = connection.connectionManager
+
 /**
  * Spec: RTO15g
  */
 internal suspend fun ObjectsAdapter.sendAsync(message: ProtocolMessage): PublishResult = suspendCancellableCoroutine { continuation ->
   try {
-    connection.connectionManager.send(message, clientOptions.queueMessages, object : Callback<PublishResult> {
+    connectionManager.send(message, clientOptions.queueMessages, object : Callback<PublishResult> {
       override fun onSuccess(result: PublishResult) {
         continuation.resume(result)
       }
@@ -49,8 +52,12 @@ internal suspend fun ObjectsAdapter.attachAsync(channelName: String) = suspendCa
 }
 
 internal fun ObjectsAdapter.retrieveObjectsGCGracePeriod(block : (Long?) -> Unit) {
-  val connectionManager = connection.connectionManager
-  if (connectionManager.objectsGCGracePeriod != null) {
+  connectionManager.objectsGCGracePeriod?.let {
+    block(it)
+    return
+  }
+  // If already connected, no further `connected` event is guaranteed; return immediately.
+  if (connection.state == ConnectionState.connected) {
     block(connectionManager.objectsGCGracePeriod)
     return
   }
@@ -90,7 +97,7 @@ internal fun ObjectsAdapter.getChannelModes(channelName: String): Array<ChannelM
  * Spec: RTO15d
  */
 internal fun ObjectsAdapter.ensureMessageSizeWithinLimit(objectMessages: Array<ObjectMessage>) {
-  val maximumAllowedSize = connection.connectionManager.maxMessageSize
+  val maximumAllowedSize = connectionManager.maxMessageSize
   val objectsTotalMessageSize = objectMessages.sumOf { it.size() }
   if (objectsTotalMessageSize > maximumAllowedSize) {
     throw ablyException("ObjectMessages size $objectsTotalMessageSize exceeds maximum allowed size of $maximumAllowedSize bytes",
@@ -145,8 +152,8 @@ internal fun ObjectsAdapter.throwIfInvalidWriteApiConfiguration(channelName: Str
 }
 
 internal fun ObjectsAdapter.throwIfUnpublishableState(channelName: String) {
-  if (!connection.connectionManager.isActive) {
-    throw ablyException(connection.connectionManager.stateErrorInfo)
+  if (!connectionManager.isActive) {
+    throw ablyException(connectionManager.stateErrorInfo)
   }
   throwIfInChannelState(channelName, arrayOf(ChannelState.failed, ChannelState.suspended))
 }

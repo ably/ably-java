@@ -11,11 +11,13 @@ import io.ably.lib.objects.type.livemap.LiveMapManager
 import io.ably.lib.realtime.AblyRealtime
 import io.ably.lib.realtime.Channel
 import io.ably.lib.realtime.ChannelState
+import io.ably.lib.transport.ConnectionManager
 import io.ably.lib.types.ChannelMode
 import io.ably.lib.types.ChannelOptions
 import io.ably.lib.types.ClientOptions
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.spyk
 import kotlinx.coroutines.CompletableDeferred
 
@@ -46,9 +48,11 @@ internal fun getMockRealtimeChannel(
 }
 
 internal fun getMockObjectsAdapter(): ObjectsAdapter {
-  val mockkAdapter = mockk<ObjectsAdapter>(relaxed = true)
-  every { mockkAdapter.getChannel(any()) } returns getMockRealtimeChannel("testChannelName")
-  return mockkAdapter
+  mockkStatic("io.ably.lib.objects.HelpersKt")
+  return mockk<ObjectsAdapter>(relaxed = true) {
+    every { getChannel(any()) } returns getMockRealtimeChannel("testChannelName")
+    every { connectionManager } returns mockk<ConnectionManager>(relaxed = true)
+  }
 }
 
 internal fun getMockObjectsPool(): ObjectsPool {

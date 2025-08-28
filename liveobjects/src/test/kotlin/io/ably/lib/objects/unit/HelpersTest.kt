@@ -5,12 +5,10 @@ import io.ably.lib.realtime.Channel
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.realtime.ChannelStateListener
 import io.ably.lib.realtime.CompletionListener
-import io.ably.lib.transport.ConnectionManager
+import io.ably.lib.realtime.ConnectionEvent
+import io.ably.lib.realtime.ConnectionStateListener
 import io.ably.lib.types.*
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.slot
-import io.mockk.verify
+import io.mockk.*
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test
@@ -21,13 +19,10 @@ class HelpersTest {
   // sendAsync
   @Test
   fun testSendAsyncShouldQueueAccordingToClientOptions() = runTest {
-    val adapter = mockk<ObjectsAdapter>(relaxed = true)
-    val connManager = mockk<ConnectionManager>(relaxed = true)
+    val adapter = getMockObjectsAdapter()
+    val connManager = adapter.connectionManager
     val clientOptions = ClientOptions().apply { queueMessages = false }
 
-    every { adapter.connection } returns mockk(relaxed = true) {
-      setPrivateField("connectionManager", connManager)
-    }
     every { adapter.clientOptions } returns clientOptions
 
     every { connManager.send(any(), any(), any()) } answers {
@@ -46,13 +41,10 @@ class HelpersTest {
 
   @Test
   fun testSendAsyncErrorPropagatesAblyException() = runTest {
-    val adapter = mockk<ObjectsAdapter>(relaxed = true)
-    val connManager = mockk<ConnectionManager>(relaxed = true)
+    val adapter = getMockObjectsAdapter()
+    val connManager = adapter.connectionManager
     val clientOptions = ClientOptions()
 
-    every { adapter.connection } returns mockk(relaxed = true) {
-      setPrivateField("connectionManager", connManager)
-    }
     every { adapter.clientOptions } returns clientOptions
 
     every { connManager.send(any(), any(), any()) } answers {
@@ -68,14 +60,58 @@ class HelpersTest {
   }
 
   @Test
+  fun testRetrieveObjectsGCGracePeriodImmediateInvokesBlock() {
+    val adapter = getMockObjectsAdapter()
+    val connManager = adapter.connectionManager
+    connManager.setPrivateField("objectsGCGracePeriod", 123L)
+
+    var value: Long? = null
+    adapter.retrieveObjectsGCGracePeriod { v -> value = v }
+
+    assertEquals(123L, value)
+    verify(exactly = 0) { adapter.connection.once(ConnectionEvent.connected, any()) }
+  }
+
+  @Test
+  fun testRetrieveObjectsGCGracePeriodDeferredInvokesOnConnectedWithValue() {
+    val adapter = getMockObjectsAdapter()
+    val connManager = adapter.connectionManager
+
+    var value: Long? = null
+    every { adapter.connection.once(ConnectionEvent.connected, any()) } answers {
+      val listener = secondArg<ConnectionStateListener>()
+      connManager.setPrivateField("objectsGCGracePeriod", 456L)
+      listener.onConnectionStateChanged(mockk(relaxed = true))
+    }
+
+    adapter.retrieveObjectsGCGracePeriod { v -> value = v }
+
+    assertEquals(456L, value)
+    verify(exactly = 1) { adapter.connection.once(ConnectionEvent.connected, any()) }
+  }
+
+  @Test
+  fun testRetrieveObjectsGCGracePeriodDeferredInvokesOnConnectedWithNull() {
+    val adapter = getMockObjectsAdapter()
+
+    var value: Long? = null
+    every { adapter.connection.once(ConnectionEvent.connected, any()) } answers {
+      val listener = secondArg<ConnectionStateListener>()
+      listener.onConnectionStateChanged(mockk(relaxed = true))
+    }
+
+    adapter.retrieveObjectsGCGracePeriod { v -> value = v }
+
+    assertNull(value)
+    verify(exactly = 1) { adapter.connection.once(ConnectionEvent.connected, any()) }
+  }
+
+  @Test
   fun testSendAsyncThrowsWhenConnectionManagerThrows() = runTest {
-    val adapter = mockk<ObjectsAdapter>(relaxed = true)
-    val connManager = mockk<ConnectionManager>(relaxed = true)
+    val adapter = getMockObjectsAdapter()
+    val connManager = adapter.connectionManager
     val clientOptions = ClientOptions()
 
-    every { adapter.connection } returns mockk(relaxed = true) {
-      setPrivateField("connectionManager", connManager)
-    }
     every { adapter.clientOptions } returns clientOptions
 
     every { connManager.send(any(), any(), any()) } throws RuntimeException("send failed hard")
@@ -251,25 +287,25 @@ class HelpersTest {
     verify(exactly = 1) { channel.once(any()) }
   }
 
-   @Test
-   fun testEnsureAttachedAttachingButReceivesNonAttachedEmitsError() = runTest {
-     val adapter = mockk<ObjectsAdapter>(relaxed = true)
-     val channel = mockk<Channel>(relaxed = true)
-     every { adapter.getChannel("ch") } returns channel
-     channel.state = ChannelState.attaching
-     every { channel.once(any()) } answers {
-       val listener = firstArg<ChannelStateListener>()
-       val stateChange = mockk<ChannelStateListener.ChannelStateChange>(relaxed = true) {
-         setPrivateField("current", ChannelState.suspended)
-         setPrivateField("reason", clientError("Not attached").errorInfo)
-       }
-       listener.onChannelStateChanged(stateChange)
-     }
-     val ex = assertFailsWith<AblyException> { adapter.ensureAttached("ch") }
-      assertEquals(ErrorCode.ChannelStateError.code, ex.errorInfo.code)
-      assertTrue(ex.errorInfo.message.contains("Not attached"))
-      verify(exactly = 1) { channel.once(any()) }
-   }
+  @Test
+  fun testEnsureAttachedAttachingButReceivesNonAttachedEmitsError() = runTest {
+    val adapter = mockk<ObjectsAdapter>(relaxed = true)
+    val channel = mockk<Channel>(relaxed = true)
+    every { adapter.getChannel("ch") } returns channel
+    channel.state = ChannelState.attaching
+    every { channel.once(any()) } answers {
+      val listener = firstArg<ChannelStateListener>()
+      val stateChange = mockk<ChannelStateListener.ChannelStateChange>(relaxed = true) {
+        setPrivateField("current", ChannelState.suspended)
+        setPrivateField("reason", clientError("Not attached").errorInfo)
+      }
+      listener.onChannelStateChanged(stateChange)
+    }
+    val ex = assertFailsWith<AblyException> { adapter.ensureAttached("ch") }
+    assertEquals(ErrorCode.ChannelStateError.code, ex.errorInfo.code)
+    assertTrue(ex.errorInfo.message.contains("Not attached"))
+    verify(exactly = 1) { channel.once(any()) }
+  }
 
   @Test
   fun testEnsureAttachedThrowsForInvalidState() = runTest {
@@ -350,11 +386,8 @@ class HelpersTest {
   // throwIfUnpublishableState
   @Test
   fun testThrowIfUnpublishableStateInactiveConnection() {
-    val adapter = mockk<ObjectsAdapter>(relaxed = true)
-    val connManager = mockk<ConnectionManager>(relaxed = true)
-    every { adapter.connection } returns mockk(relaxed = true) {
-      setPrivateField("connectionManager", connManager)
-    }
+    val adapter = getMockObjectsAdapter()
+    val connManager = adapter.connectionManager
     every { connManager.isActive } returns false
     every { connManager.stateErrorInfo } returns serverError("not active").errorInfo
 
@@ -365,11 +398,8 @@ class HelpersTest {
 
   @Test
   fun testThrowIfUnpublishableStateChannelFailed() {
-    val adapter = mockk<ObjectsAdapter>(relaxed = true)
-    val connManager = mockk<ConnectionManager>(relaxed = true)
-    every { adapter.connection } returns mockk(relaxed = true) {
-      setPrivateField("connectionManager", connManager)
-    }
+    val adapter = getMockObjectsAdapter()
+    val connManager = adapter.connectionManager
     every { connManager.isActive } returns true
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
