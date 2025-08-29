@@ -69,7 +69,7 @@ class HelpersTest {
     adapter.retrieveObjectsGCGracePeriod { v -> value = v }
 
     assertEquals(123L, value)
-    verify(exactly = 0) { adapter.connection.once(ConnectionEvent.connected, any()) }
+    verify(exactly = 0) { adapter.connection.once(ConnectionEvent.connected, any<ConnectionStateListener>()) }
   }
 
   @Test
@@ -79,7 +79,7 @@ class HelpersTest {
     val connection = adapter.connection
 
     var value: Long? = null
-    every { connection.once(ConnectionEvent.connected, any()) } answers {
+    every { connection.once(ConnectionEvent.connected, any<ConnectionStateListener>()) } answers {
       val listener = secondArg<ConnectionStateListener>()
       connManager.setPrivateField("objectsGCGracePeriod", 456L)
       listener.onConnectionStateChanged(mockk(relaxed = true))
@@ -88,7 +88,7 @@ class HelpersTest {
     adapter.retrieveObjectsGCGracePeriod { v -> value = v }
 
     assertEquals(456L, value)
-    verify(exactly = 1) { connection.once(ConnectionEvent.connected, any()) }
+    verify(exactly = 1) { connection.once(ConnectionEvent.connected, any<ConnectionStateListener>()) }
   }
 
   @Test
@@ -97,7 +97,7 @@ class HelpersTest {
     val connection = adapter.connection
 
     var value: Long? = null
-    every { connection.once(ConnectionEvent.connected, any()) } answers {
+    every { connection.once(ConnectionEvent.connected, any<ConnectionStateListener>()) } answers {
       val listener = secondArg<ConnectionStateListener>()
       listener.onConnectionStateChanged(mockk(relaxed = true))
     }
@@ -105,7 +105,7 @@ class HelpersTest {
     adapter.retrieveObjectsGCGracePeriod { v -> value = v }
 
     assertNull(value)
-    verify(exactly = 1) { connection.once(ConnectionEvent.connected, any()) }
+    verify(exactly = 1) { connection.once(ConnectionEvent.connected, any<ConnectionStateListener>()) }
   }
 
   @Test
@@ -277,7 +277,7 @@ class HelpersTest {
     every { adapter.getChannel("ch") } returns channel
     channel.state = ChannelState.attaching
 
-    every { channel.once(any()) } answers {
+    every { channel.once(any<ChannelStateListener>()) } answers {
       val listener = firstArg<ChannelStateListener>()
       val stateChange = mockk<ChannelStateListener.ChannelStateChange>(relaxed = true) {
         setPrivateField("current", ChannelState.attached)
@@ -286,7 +286,7 @@ class HelpersTest {
     }
 
     adapter.ensureAttached("ch")
-    verify(exactly = 1) { channel.once(any()) }
+    verify(exactly = 1) { channel.once(any<ChannelStateListener>()) }
   }
 
   @Test
@@ -295,7 +295,7 @@ class HelpersTest {
     val channel = mockk<Channel>(relaxed = true)
     every { adapter.getChannel("ch") } returns channel
     channel.state = ChannelState.attaching
-    every { channel.once(any()) } answers {
+    every { channel.once(any<ChannelStateListener>()) } answers {
       val listener = firstArg<ChannelStateListener>()
       val stateChange = mockk<ChannelStateListener.ChannelStateChange>(relaxed = true) {
         setPrivateField("current", ChannelState.suspended)
@@ -306,7 +306,7 @@ class HelpersTest {
     val ex = assertFailsWith<AblyException> { adapter.ensureAttached("ch") }
     assertEquals(ErrorCode.ChannelStateError.code, ex.errorInfo.code)
     assertTrue(ex.errorInfo.message.contains("Not attached"))
-    verify(exactly = 1) { channel.once(any()) }
+    verify(exactly = 1) { channel.once(any<ChannelStateListener>()) }
   }
 
   @Test
