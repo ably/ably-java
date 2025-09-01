@@ -19,7 +19,7 @@ Find out more:
 
 Everything you need to get started with Ably:
 
-- [Quickstart in Pub/Sub using Java](https://ably.com/docs/getting-started/quickstart?lang=java)
+* [Getting started with Pub/Sub using Java.](https://ably.com/docs/getting-started/java)
 * [SDK Setup for Java.](https://ably.com/docs/getting-started/setup?lang=java)
 
 ---
@@ -34,7 +34,7 @@ The following platforms are supported:
 |----------|---------|
 | Java     | >= 1.8 (JRE 8 or later) |
 | Kotlin   | All versions (>= 1.0 supported), but we recommend >= 1.8 for best compatibility. |
-| Android | >=4.4 (API level 19) |
+| Android  | >=4.4 (API level 19) |
 
 > [!IMPORTANT]
 > SDK versions < 1.2.35 will be [deprecated](https://ably.com/docs/platform/deprecate/protocol-v1) from November 1, 2025.
@@ -105,9 +105,9 @@ realtimeClient.connection.on(ConnectionEvent.connected, connectionStateChange ->
 
 ## Live Objects
 
-Ably Live Objects provide realtime, collaborative data structures that automatically synchronize state across all connected clients. Build interactive applications with shared data that updates instantly across devices.
+[Ably Live Objects](https://ably.com/docs/liveobjects) provide realtime, collaborative data structures that automatically synchronize state across all connected clients. Build interactive applications with shared data that updates instantly across devices.
 
-### Installation
+### Install Live Objects
 
 Add the following dependency to your `build.gradle` file:
 
@@ -117,10 +117,9 @@ dependencies {
 }
 ```
 
-### Documentation and Examples
+### Example app
 
-- **[Live Objects Documentation](https://ably.com/docs/liveobjects)** - Complete guide to using Live Objects with code examples and API reference
-- **[Example App](./examples)** - Interactive demo showcasing Live Objects with realtime color voting and collaborative task management
+The Ably Live Objects [Example app](./examples) is an interactive demo showcasing Live Objects with realtime color voting and collaborative task management.
 
 The example app demonstrates:
 - **Color Voting**: Realtime voting system with live vote counts synchronized across all devices
@@ -198,7 +197,7 @@ Read the [CONTRIBUTING.md](./CONTRIBUTING.md) guidelines to contribute to Ably.
 
 ## Releases
 
-The [CHANGELOG.md](/ably/ably-java/blob/main/CHANGELOG.md) contains details of the latest releases for this SDK. You can also view all Ably releases on [changelog.ably.com](https://changelog.ably.com).
+The [CHANGELOG.md](./CHANGELOG.md) contains details of the latest releases for this SDK. You can also view all Ably releases on [changelog.ably.com](https://changelog.ably.com).
 
 ---
 
