@@ -3,7 +3,6 @@ package io.ably.lib.objects.type
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState
-import io.ably.lib.objects.ObjectsPoolDefaults
 import io.ably.lib.objects.objectError
 import io.ably.lib.objects.type.livecounter.noOpCounterUpdate
 import io.ably.lib.objects.type.livemap.noOpMapUpdate
@@ -136,10 +135,20 @@ internal abstract class BaseRealtimeObject(
 
   /**
    * Checks if the object is eligible for garbage collection.
+   * 
+   * An object is eligible for garbage collection if it has been tombstoned and 
+   * the time since tombstoning exceeds the specified grace period.
+   * 
+   * @param gcGracePeriod The grace period in milliseconds that tombstoned objects
+   *                      should be kept before being eligible for collection.
+   *                      This value is retrieved from the server's connection details
+   *                      or defaults to 24 hours if not provided by the server.
+   * @return true if the object is tombstoned and the grace period has elapsed,
+   *         false otherwise
    */
-  internal fun isEligibleForGc(): Boolean {
+  internal fun isEligibleForGc(gcGracePeriod: Long): Boolean {
     val currentTime = System.currentTimeMillis()
-    return isTombstoned && tombstonedAt?.let { currentTime - it >= ObjectsPoolDefaults.GC_GRACE_PERIOD_MS } == true
+    return isTombstoned && tombstonedAt?.let { currentTime - it >= gcGracePeriod } == true
   }
 
   /**
@@ -195,12 +204,22 @@ internal abstract class BaseRealtimeObject(
   /**
    * Called during garbage collection intervals to clean up expired entries.
    *
+   * This method is invoked periodically (every 5 minutes) by the ObjectsPool
+   * to perform cleanup of tombstoned data that has exceeded the grace period.
+   *
    * This method should identify and remove entries that:
    * - Have been marked as tombstoned
-   * - Have a tombstone timestamp older than the configured grace period
+   * - Have a tombstone timestamp older than the specified grace period
+   *
+   * @param gcGracePeriod The grace period in milliseconds that tombstoned entries
+   *                      should be kept before being eligible for removal.
+   *                      This value is retrieved from the server's connection details
+   *                      or defaults to 24 hours if not provided by the server.
+   *                      Must be greater than 2 minutes to ensure proper operation
+   *                      ordering and avoid issues with delayed operations.
    *
    * Implementations typically use single-pass removal techniques to
    * efficiently clean up expired data without creating temporary collections.
    */
-  abstract fun onGCInterval()
+  abstract fun onGCInterval(gcGracePeriod: Long)
 }
