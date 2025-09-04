@@ -174,7 +174,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             channel.attach();
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
-            assertEquals("Verify channel params", channel.getParams(), options.params);
+            assertEquals("Verify channel params", options.params, channel.getParams());
             assertArrayEquals("Verify channel modes", new ChannelMode[] { ChannelMode.subscribe }, channel.getModes());
         } catch (AblyException e) {
             e.printStackTrace();
@@ -208,7 +208,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             channel.attach();
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
-            assertEquals("Verify channel params", channel.getParams(), options.params);
+            assertEquals("Verify channel params", options.params, channel.getParams());
             assertArrayEquals("Verify channel modes", new ChannelMode[] { ChannelMode.subscribe }, channel.getModes());
         } catch (AblyException e) {
             e.printStackTrace();
@@ -285,7 +285,10 @@ public class RealtimeChannelTest extends ParameterizedTest {
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", ChannelState.attached, channel.state);
             assertEquals("Verify channel params", channel.getParams(), options.params);
-            assertArrayEquals("Verify channel modes", new ChannelMode[] { ChannelMode.subscribe, ChannelMode.presence }, channel.getModes());
+            // modes in params overrides individual modes in options
+            assertThat("Verify channel modes", Arrays.asList(channel.getModes()),
+                Matchers.containsInAnyOrder(ChannelMode.presence, ChannelMode.subscribe));
+
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");
