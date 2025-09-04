@@ -11,6 +11,7 @@ import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ITransport;
 import io.ably.lib.transport.WebSocketTransport;
+import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.MessageExtras;
@@ -20,6 +21,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import java.util.Map;
 import java.util.Objects;
 
 import static org.junit.Assert.assertEquals;
@@ -51,6 +53,8 @@ public class RealtimeDeltaDecoderTest extends ParameterizedTest {
             MessageWaiter messageWaiter = new MessageWaiter(channel);
 
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
+
+            assertEquals("Verify channel params", Map.of("delta", "vcdiff"), channel.getParams());
 
             for (int i = 0; i < testData.length; i++) {
                 channel.publish(Integer.toString(i), testData[i]);
@@ -90,13 +94,17 @@ public class RealtimeDeltaDecoderTest extends ParameterizedTest {
             opts.transportFactory = websocketFactory;
             ably = new AblyRealtime(opts);
 
-            /* create a channel */
-            final Channel channel = ably.channels.get("[?delta=vcdiff]" + testName);
+            ChannelOptions options = new ChannelOptions();
+            options.params = Map.of("delta", "vcdiff");
+            /* create a channel with channelOptions set to vcdiff*/
+            final Channel channel = ably.channels.get(testName, options);
 
             /* attach */
             channel.attach();
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+            assertEquals("Verify channel params", Map.of("delta", "vcdiff"), channel.getParams());
 
             /* subscribe */
             MessageWaiter messageWaiter = new MessageWaiter(channel);
