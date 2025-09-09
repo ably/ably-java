@@ -2561,7 +2561,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             new ConnectionWaiter(ably.connection).waitFor(ConnectionState.closing);
             new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
 
-            assertEquals(List.of(ConnectionState.closing, ConnectionState.connecting, ConnectionState.connected), observedConnectionStates);
+            assertEquals(Arrays.asList(ConnectionState.closing, ConnectionState.connecting, ConnectionState.connected), observedConnectionStates);
             assertEquals(ChannelState.initialized, channel.state);
 
             channel.attach();
@@ -2569,7 +2569,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             assertNull(channel.reason);
             assertEquals(0, ably.connection.connectionManager.msgSerial);
-            assertEquals(List.of(ChannelState.detached, ChannelState.initialized, ChannelState.attaching, ChannelState.attached), observedChannelStates);
+            assertEquals(Arrays.asList(ChannelState.detached, ChannelState.initialized, ChannelState.attaching, ChannelState.attached), observedChannelStates);
         }
     }
 

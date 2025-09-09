@@ -21,7 +21,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import java.util.Map;
+import java.util.Collections;
 import java.util.Objects;
 
 import static org.junit.Assert.assertEquals;
@@ -54,7 +54,7 @@ public class RealtimeDeltaDecoderTest extends ParameterizedTest {
 
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
 
-            assertEquals("Verify channel params", Map.of("delta", "vcdiff"), channel.getParams());
+            assertEquals("Verify channel params", Collections.singletonMap("delta", "vcdiff"), channel.getParams());
 
             for (int i = 0; i < testData.length; i++) {
                 channel.publish(Integer.toString(i), testData[i]);
@@ -95,7 +95,7 @@ public class RealtimeDeltaDecoderTest extends ParameterizedTest {
             ably = new AblyRealtime(opts);
 
             ChannelOptions options = new ChannelOptions();
-            options.params = Map.of("delta", "vcdiff");
+            options.params = Collections.singletonMap("delta", "vcdiff");
             /* create a channel with channelOptions set to vcdiff*/
             final Channel channel = ably.channels.get(testName, options);
 
@@ -104,7 +104,7 @@ public class RealtimeDeltaDecoderTest extends ParameterizedTest {
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
             assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
 
-            assertEquals("Verify channel params", Map.of("delta", "vcdiff"), channel.getParams());
+            assertEquals("Verify channel params", Collections.singletonMap("delta", "vcdiff"), channel.getParams());
 
             /* subscribe */
             MessageWaiter messageWaiter = new MessageWaiter(channel);
