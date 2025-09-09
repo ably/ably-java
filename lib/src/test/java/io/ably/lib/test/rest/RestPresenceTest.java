@@ -87,7 +87,7 @@ public class RestPresenceTest extends ParameterizedTest {
      * Get presence history data in the forward direction and check order
      * DISABLED: See issue https://github.com/ably/ably-java/issues/159
      */
-    /*@Test*/
+    @Test
     public void rest_presencehistory_order_f() {
         String channelName = "persisted:restpresence_persisted";
         /* get channel */
@@ -114,7 +114,7 @@ public class RestPresenceTest extends ParameterizedTest {
      * Get presence history data in the backwards direction using text protocol and check order
      * DISABLED: See issue https://github.com/ably/ably-java/issues/159
      */
-    /*@Test*/
+    @Test
     public void rest_presencehistory_order_b() {
         String channelName = "persisted:restpresence_persisted";
         /* get channel */
@@ -141,7 +141,7 @@ public class RestPresenceTest extends ParameterizedTest {
      * Get limited presence history data in the forward direction using text protocol and check order
      * DISABLED: See issue https://github.com/ably/ably-java/issues/159
      */
-    /*@Test*/
+    @Test
     public void rest_presencehistory_limit_f() {
         String channelName = "persisted:restpresence_persisted";
         /* get channel */
@@ -168,7 +168,7 @@ public class RestPresenceTest extends ParameterizedTest {
      * Get limited presence history data in the backwards direction using text protocol and check order
      * DISABLED: See issue https://github.com/ably/ably-java/issues/159
      */
-    /*@Test*/
+    @Test
     public void rest_presencehistory_limit_b() {
         String channelName = "persisted:restpresence_persisted";
         /* get channel */
@@ -195,7 +195,7 @@ public class RestPresenceTest extends ParameterizedTest {
      * Get paginated presence history data in the forward direction using text protocol
      * DISABLED: See issue https://github.com/ably/ably-java/issues/159
      */
-    /*@Test*/
+    @Test
     public void rest_presencehistory_paginate_f() {
         /* get channel */
         String channelName = "persisted:restpresence_persisted";
@@ -263,7 +263,7 @@ public class RestPresenceTest extends ParameterizedTest {
      * Get paginated presence history data in the backwards direction using text protocol
      * DISABLED: See issue https://github.com/ably/ably-java/issues/159
      */
-    /*@Test*/
+    @Test
     public void rest_presencehistory_paginate_text_b() {
         /* get channel */
         String channelName = "persisted:restpresence_persisted";
