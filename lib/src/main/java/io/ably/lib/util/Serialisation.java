@@ -15,7 +15,9 @@ import io.ably.lib.types.Annotation;
 import io.ably.lib.types.AnnotationAction;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
+import io.ably.lib.types.MessageAnnotations;
 import io.ably.lib.types.MessageExtras;
+import io.ably.lib.types.MessageVersion;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.Summary;
@@ -51,8 +53,10 @@ public class Serialisation {
         gsonBuilder.registerTypeAdapter(PresenceMessage.class, new PresenceMessage.Serializer());
         gsonBuilder.registerTypeAdapter(PresenceMessage.Action.class, new PresenceMessage.ActionSerializer());
         gsonBuilder.registerTypeAdapter(ProtocolMessage.Action.class, new ProtocolMessage.ActionSerializer());
+        gsonBuilder.registerTypeAdapter(MessageVersion.class, new MessageVersion.Serializer());
         gsonBuilder.registerTypeAdapter(Annotation.class, new Annotation.Serializer());
         gsonBuilder.registerTypeAdapter(AnnotationAction.class, new Annotation.ActionSerializer());
+        gsonBuilder.registerTypeAdapter(MessageAnnotations.class, new MessageAnnotations.Serializer());
         gsonBuilder.registerTypeAdapter(Summary.class, new Summary.Serializer());
         gson = gsonBuilder.create();
 
