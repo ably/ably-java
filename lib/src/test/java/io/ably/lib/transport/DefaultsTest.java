@@ -9,7 +9,7 @@ public class DefaultsTest {
 
     @Test
     public void protocol_version_CSV2() {
-        assertThat(Defaults.ABLY_PROTOCOL_VERSION, is("2"));
+        assertThat(Defaults.ABLY_PROTOCOL_VERSION, is("4"));
     }
 
     @Test

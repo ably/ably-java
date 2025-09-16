@@ -14,6 +14,7 @@ import io.ably.lib.http.PaginatedQuery;
 import io.ably.lib.platform.Platform;
 import io.ably.lib.push.Push;
 import io.ably.lib.realtime.Connection;
+import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.AsyncHttpPaginatedResponse;
 import io.ably.lib.types.AsyncPaginatedResult;
@@ -249,7 +250,14 @@ public abstract class AblyBase implements AutoCloseable {
     }
 
     PaginatedResult<Stats> stats(Http http, Param[] params) throws AblyException {
-        return new PaginatedQuery<>(http, "/stats", HttpUtils.defaultAcceptHeaders(false), params, StatsReader.statsResponseHandler).get();
+        return new PaginatedQuery<>(
+            http,
+            "/stats",
+            // Stats api uses protocol v2 format for now
+            Param.set(HttpUtils.defaultAcceptHeaders(false), new Param(Defaults.ABLY_PROTOCOL_VERSION_HEADER, 2)),
+            params,
+            StatsReader.statsResponseHandler
+        ).get();
     }
 
     /**
@@ -276,8 +284,15 @@ public abstract class AblyBase implements AutoCloseable {
         statsAsync(http, params, callback);
     }
 
-    void statsAsync(Http http, Param[] params, Callback<AsyncPaginatedResult<Stats>> callback)  {
-        (new AsyncPaginatedQuery<Stats>(http, "/stats", HttpUtils.defaultAcceptHeaders(false), params, StatsReader.statsResponseHandler)).get(callback);
+    void statsAsync(Http http, Param[] params, Callback<AsyncPaginatedResult<Stats>> callback) {
+        (new AsyncPaginatedQuery<Stats>(
+            http,
+            "/stats",
+            // Stats api uses protocol v2 format for now
+            Param.set(HttpUtils.defaultAcceptHeaders(false), new Param(Defaults.ABLY_PROTOCOL_VERSION_HEADER, 2)),
+            params,
+            StatsReader.statsResponseHandler
+        )).get(callback);
     }
 
     /**
@@ -433,7 +448,12 @@ public abstract class AblyBase implements AutoCloseable {
             public void execute(HttpScheduler http, final Callback<PublishResponse[]> callback) throws AblyException {
                 HttpCore.RequestBody requestBody = options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(pubSpecs) : MessageSerializer.asJSONRequest(pubSpecs);
                 final Param[] params = options.addRequestIds ? Param.set(initialParams, Crypto.generateRandomRequestId()) : initialParams ; // RSC7c
-                http.post("/messages", HttpUtils.defaultAcceptHeaders(options.useBinaryProtocol), params, requestBody, new HttpCore.ResponseHandler<PublishResponse[]>() {
+                // This method uses an old batch format from protocol v2
+                Param[] headers = Param.set(
+                    HttpUtils.defaultAcceptHeaders(options.useBinaryProtocol),
+                    new Param(Defaults.ABLY_PROTOCOL_VERSION_HEADER, 2)
+                );
+                http.post("/messages", headers, params, requestBody, new HttpCore.ResponseHandler<PublishResponse[]>() {
                     @Override
                     public PublishResponse[] handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
                         if(error != null && error.code != 40020) {
@@ -445,11 +465,6 @@ public abstract class AblyBase implements AutoCloseable {
             }
         });
     }
-
-    /**
-     * Authentication token has changed. waitForResult is true if there is a need to
-     * wait for server response to auth request
-     */
 
     /**
      * Override this method in AblyRealtime and pass updated token to ConnectionManager

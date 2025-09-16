@@ -29,15 +29,17 @@ import io.ably.lib.types.DecodingContext;
 import io.ably.lib.types.DeltaExtras;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
-import io.ably.lib.types.MessageAction;
+import io.ably.lib.types.MessageAnnotations;
 import io.ably.lib.types.MessageDecodeException;
 import io.ably.lib.types.MessageSerializer;
+import io.ably.lib.types.MessageVersion;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.types.ProtocolMessage.Flag;
+import io.ably.lib.types.Summary;
 import io.ably.lib.util.CollectionUtils;
 import io.ably.lib.util.EventEmitter;
 import io.ably.lib.util.Log;
@@ -901,10 +903,16 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             if(msg.connectionId == null) msg.connectionId = protocolMessage.connectionId;
             if(msg.timestamp == 0) msg.timestamp = protocolMessage.timestamp;
             if(msg.id == null) msg.id = protocolMessage.id + ':' + i;
-            // (TM2k)
-            if(msg.serial == null && msg.version != null && msg.action == MessageAction.MESSAGE_CREATE) msg.serial = msg.version;
-            // (TM2o)
-            if(msg.createdAt == null && msg.action == MessageAction.MESSAGE_CREATE) msg.createdAt = msg.timestamp;
+            // (TM2s)
+            if(msg.version == null) msg.version = new MessageVersion(msg.serial, msg.timestamp);
+            // (TM2s1)
+            if(msg.version.serial == null) msg.version.serial = msg.serial;
+            // (TM2s2)
+            if(msg.version.timestamp == 0) msg.version.timestamp = msg.timestamp;
+            // (TM2u)
+            if(msg.annotations == null) msg.annotations = new MessageAnnotations();
+            // (TM8a)
+            if(msg.annotations.summary == null) msg.annotations.summary = new Summary(new HashMap<>());
 
             try {
                 if (msg.data != null) msg.decode(options, decodingContext);

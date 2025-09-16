@@ -3,8 +3,6 @@ package io.ably.lib.types;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializer;
@@ -50,17 +48,14 @@ public class Message extends BaseMessage {
     public String connectionKey;
 
     /**
-     * (TM2k) serial string – an opaque string that uniquely identifies the message. If a message received from Ably
-     * (whether over realtime or REST, eg history) with an action of MESSAGE_CREATE does not contain a serial,
-     * the SDK must set it equal to its version.
+     * (TM2r) serial string – an opaque string that uniquely identifies the message.
      */
     public String serial;
 
     /**
-     * (TM2p) version string – an opaque string that uniquely identifies the message, and is different for different versions.
-     * (May not be populated depending on app & channel namespace settings)
+     * (TM2s) The latest version of the message, containing version-specific metadata.
      */
-    public String version;
+    public MessageVersion version;
 
     /**
      * (TM2j) action enum
@@ -68,113 +63,11 @@ public class Message extends BaseMessage {
     public MessageAction action;
 
     /**
-     * (TM2o) createdAt time in milliseconds since epoch. If a message received from Ably
-     * (whether over realtime or REST, eg history) with an action of MESSAGE_CREATE does not contain a createdAt,
-     * the SDK must set it equal to the TM2f timestamp.
+     * (TM2q) Annotations associated with this message.
      */
-    public Long createdAt;
+    public MessageAnnotations annotations;
 
-    /**
-     * (TM2l) ref string – an opaque string that uniquely identifies some referenced message.
-     */
-    public String refSerial;
 
-    /**
-     * (TM2m) refType string – an opaque string that identifies the type of this reference.
-     */
-    public String refType;
-
-    /**
-     * (TM2n) operation object – data object that may contain the `optional` attributes.
-     */
-    public Operation operation;
-
-    /**
-     * (TM2q) A summary of all the annotations that have been made to the message, whose keys are the `type` fields
-     * from any annotations that it includes. Will always be populated for a message with action {@code MESSAGE_SUMMARY},
-     * and may be populated for any other type (in particular a message retrieved from
-     * REST history will have its latest summary included).
-     */
-    public Summary summary;
-
-    public static class Operation {
-        public String clientId;
-        public String description;
-        public Map<String, String> metadata;
-
-        void write(MessagePacker packer) throws IOException {
-            int fieldCount = 0;
-            if (clientId != null) fieldCount++;
-            if (description != null) fieldCount++;
-            if (metadata != null) fieldCount++;
-
-            packer.packMapHeader(fieldCount);
-
-            if (clientId != null) {
-                packer.packString("clientId");
-                packer.packString(clientId);
-            }
-            if (description != null) {
-                packer.packString("description");
-                packer.packString(description);
-            }
-            if (metadata != null) {
-                packer.packString("metadata");
-                packer.packMapHeader(metadata.size());
-                for (Map.Entry<String, String> entry : metadata.entrySet()) {
-                    packer.packString(entry.getKey());
-                    packer.packString(entry.getValue());
-                }
-            }
-        }
-
-        protected static Operation read(final MessageUnpacker unpacker) throws IOException {
-            Operation operation = new Operation();
-            int fieldCount = unpacker.unpackMapHeader();
-            for (int i = 0; i < fieldCount; i++) {
-                String fieldName = unpacker.unpackString().intern();
-                switch (fieldName) {
-                    case "clientId":
-                        operation.clientId = unpacker.unpackString();
-                        break;
-                    case "description":
-                        operation.description = unpacker.unpackString();
-                        break;
-                    case "metadata":
-                        int mapSize = unpacker.unpackMapHeader();
-                        operation.metadata = new HashMap<>(mapSize);
-                        for (int j = 0; j < mapSize; j++) {
-                            String key = unpacker.unpackString();
-                            String value = unpacker.unpackString();
-                            operation.metadata.put(key, value);
-                        }
-                        break;
-                    default:
-                        unpacker.skipValue();
-                        break;
-                }
-            }
-            return operation;
-        }
-
-        protected static Operation read(final JsonObject jsonObject) throws MessageDecodeException {
-            Operation operation = new Operation();
-            if (jsonObject.has("clientId")) {
-                operation.clientId = jsonObject.get("clientId").getAsString();
-            }
-            if (jsonObject.has("description")) {
-                operation.description = jsonObject.get("description").getAsString();
-            }
-            if (jsonObject.has("metadata")) {
-                JsonObject metadataObject = jsonObject.getAsJsonObject("metadata");
-                operation.metadata = new HashMap<>();
-                for (Map.Entry<String, JsonElement> entry : metadataObject.entrySet()) {
-                    operation.metadata.put(entry.getKey(), entry.getValue().getAsString());
-                }
-            }
-            return operation;
-        }
-    }
 
     private static final String NAME = "name";
     private static final String EXTRAS = "extras";
@@ -182,11 +75,7 @@ public class Message extends BaseMessage {
     private static final String SERIAL = "serial";
     private static final String VERSION = "version";
     private static final String ACTION = "action";
-    private static final String CREATED_AT = "createdAt";
-    private static final String REF_SERIAL = "refSerial";
-    private static final String REF_TYPE = "refType";
-    private static final String OPERATION = "operation";
-    private static final String SUMMARY = "summary";
+    private static final String ANNOTATIONS = "annotations";
 
     /**
      * Default constructor
@@ -270,11 +159,7 @@ public class Message extends BaseMessage {
         if(serial != null) ++fieldCount;
         if(version != null) ++fieldCount;
         if(action != null) ++fieldCount;
-        if(createdAt != null) ++fieldCount;
-        if(refSerial != null) ++fieldCount;
-        if(refType != null) ++fieldCount;
-        if(operation != null) ++fieldCount;
-        if(summary != null) ++fieldCount;
+        if(annotations != null) ++fieldCount;
 
         packer.packMapHeader(fieldCount);
         super.writeFields(packer);
@@ -296,31 +181,15 @@ public class Message extends BaseMessage {
         }
         if(version != null) {
             packer.packString(VERSION);
-            packer.packString(version);
+            version.writeMsgpack(packer);
         }
         if(action != null) {
             packer.packString(ACTION);
             packer.packInt(action.ordinal());
         }
-        if(createdAt != null) {
-            packer.packString(CREATED_AT);
-            packer.packLong(createdAt);
-        }
-        if(refSerial != null) {
-            packer.packString(REF_SERIAL);
-            packer.packString(refSerial);
-        }
-        if(refType != null) {
-            packer.packString(REF_TYPE);
-            packer.packString(refType);
-        }
-        if(operation != null) {
-            packer.packString(OPERATION);
-            operation.write(packer);
-        }
-        if(summary != null) {
-            packer.packString(SUMMARY);
-            summary.write(packer);
+        if(annotations != null) {
+            packer.packString(ANNOTATIONS);
+            annotations.writeMsgpack(packer);
         }
     }
 
@@ -346,19 +215,11 @@ public class Message extends BaseMessage {
             } else if (fieldName.equals(SERIAL)) {
                 serial = unpacker.unpackString();
             } else if (fieldName.equals(VERSION)) {
-                version = unpacker.unpackString();
+                version = MessageVersion.fromMsgpack(unpacker);
             } else if (fieldName.equals(ACTION)) {
                 action = MessageAction.tryFindByOrdinal(unpacker.unpackInt());
-            } else if (fieldName.equals(CREATED_AT)) {
-                createdAt = unpacker.unpackLong();
-            }  else if (fieldName.equals(REF_SERIAL)) {
-                refSerial = unpacker.unpackString();
-            } else if (fieldName.equals(REF_TYPE)) {
-                refType = unpacker.unpackString();
-            } else if (fieldName.equals(OPERATION)) {
-                operation = Operation.read(unpacker);
-            } else if (fieldName.equals(SUMMARY)) {
-                summary = Summary.read(unpacker);
+            } else if (fieldName.equals(ANNOTATIONS)) {
+                annotations = MessageAnnotations.fromMsgpack(unpacker);
             }
             else {
                 Log.v(TAG, "Unexpected field: " + fieldName);
@@ -519,27 +380,17 @@ public class Message extends BaseMessage {
         connectionKey = readString(map, CONNECTION_KEY);
 
         serial = readString(map, SERIAL);
-        version = readString(map, VERSION);
+
+        final JsonElement versionElement = map.get(VERSION);
+        if (versionElement != null) {
+            version = MessageVersion.read(versionElement);
+        }
         Integer actionOrdinal = readInt(map, ACTION);
         action = actionOrdinal == null ? null : MessageAction.tryFindByOrdinal(actionOrdinal);
-        createdAt = readLong(map, CREATED_AT);
-        refSerial = readString(map, REF_SERIAL);
-        refType = readString(map, REF_TYPE);
 
-        final JsonElement operationElement = map.get(OPERATION);
-        if (null != operationElement) {
-            if (!operationElement.isJsonObject()) {
-                throw MessageDecodeException.fromDescription("Message operation is of type \"" + operationElement.getClass() + "\" when expected a JSON object.");
-            }
-            operation = Operation.read(operationElement.getAsJsonObject());
-        }
-
-        final JsonElement summaryElement = map.get(SUMMARY);
-        if (summaryElement != null) {
-            if (!summaryElement.isJsonObject()) {
-                throw MessageDecodeException.fromDescription("Message summary is of type \"" + summaryElement.getClass() + "\" when expected a JSON object.");
-            }
-            summary = Summary.read(summaryElement.getAsJsonObject());
+        final JsonElement annotationsElement = map.get(ANNOTATIONS);
+        if (annotationsElement != null) {
+            annotations = MessageAnnotations.read(annotationsElement);
         }
     }
 
@@ -560,25 +411,13 @@ public class Message extends BaseMessage {
                 json.addProperty(SERIAL, message.serial);
             }
             if (message.version != null) {
-                json.addProperty(VERSION, message.version);
+                json.add(VERSION, message.version.toJsonTree());
             }
             if (message.action != null) {
                 json.addProperty(ACTION, message.action.ordinal());
             }
-            if (message.createdAt != null) {
-                json.addProperty(CREATED_AT, message.createdAt);
-            }
-            if (message.refSerial != null) {
-                json.addProperty(REF_SERIAL, message.refSerial);
-            }
-            if (message.refType != null) {
-                json.addProperty(REF_TYPE, message.refType);
-            }
-            if (message.operation != null) {
-                json.add(OPERATION, Serialisation.gson.toJsonTree(message.operation));
-            }
-            if (message.summary != null) {
-                json.add(SUMMARY, message.summary.toJsonTree());
+            if (message.annotations != null) {
+                json.add(ANNOTATIONS, message.annotations.toJsonTree());
             }
             return json;
         }

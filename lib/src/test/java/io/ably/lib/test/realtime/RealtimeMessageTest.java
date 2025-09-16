@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -22,8 +23,10 @@ import com.google.gson.JsonPrimitive;
 import io.ably.lib.test.util.AblyCommonsReader;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.MessageAction;
+import io.ably.lib.types.MessageAnnotations;
 import io.ably.lib.types.MessageExtras;
 import io.ably.lib.types.Param;
+import io.ably.lib.types.Summary;
 import io.ably.lib.util.Serialisation;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -961,22 +964,18 @@ public class RealtimeMessageTest extends ParameterizedTest {
     }
 
     /**
-     * Check that important chat SDK fields are populated (serial, action, createdAt)
+     * Check that important chat SDK fields are populated (serial, action, version)
      */
     @Test
-    public void should_have_serial_action_createdAt() throws AblyException {
+    public void should_have_serial_action_version() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[7].keyStr);
+        AtomicReference<Message> receivedMessage = new AtomicReference<>();
         opts.clientId = "chat";
         try (AblyRealtime realtime = new AblyRealtime(opts)) {
             final Channel channel = realtime.channels.get("foo::$chat::$chatMessages");
             CompletionWaiter msgComplete = new CompletionWaiter();
             channel.subscribe(message -> {
-                assertNotNull(message.serial);
-                assertNotNull(message.version);
-                assertNotNull(message.createdAt);
-                assertEquals(MessageAction.MESSAGE_CREATE, message.action);
-                assertEquals("chat.message", message.name);
-                assertEquals("hello world!", ((JsonObject)message.data).get("text").getAsString());
+                receivedMessage.set(message);
                 msgComplete.onSuccess();
             });
 
@@ -997,6 +996,13 @@ public class RealtimeMessageTest extends ParameterizedTest {
 
             // wait until we get message on the channel
             assertNull(msgComplete.waitFor(1, 10_000));
+            Message message = receivedMessage.get();
+            assertNotNull(message.serial);
+            assertNotNull(message.version);
+            assertEquals(message.timestamp, message.version.timestamp);
+            assertEquals(MessageAction.MESSAGE_CREATE, message.action);
+            assertEquals("chat.message", message.name);
+            assertEquals("hello world!", ((JsonObject)message.data).get("text").getAsString());
         }
     }
 
@@ -1036,6 +1042,50 @@ public class RealtimeMessageTest extends ParameterizedTest {
             Thread.sleep(1500);
 
             assertEquals("Should be exactly 3 messages even after 1.5 sec wait", 3, counter.get());
+        }
+    }
+
+    /**
+     * Check that important chat SDK fields are populated (serial, action, version)
+     */
+    @Test
+    public void should_have_annotations_and_versions() throws Exception {
+        ClientOptions opts = createOptions(testVars.keys[7].keyStr);
+        AtomicReference<Message> receivedMessage = new AtomicReference<>();
+        try (AblyRealtime realtime = new AblyRealtime(opts)) {
+            final Channel channel = realtime.channels.get("should_have_annotations_and_versions");
+            CompletionWaiter msgComplete = new CompletionWaiter();
+            channel.subscribe(message -> {
+                receivedMessage.set(message);
+                msgComplete.onSuccess();
+            });
+
+            CompletionWaiter attachListener = new CompletionWaiter();
+            channel.attach(attachListener);
+            assertNull(attachListener.waitFor(1, 10_000));
+
+            /* publish to the channel */
+            try (AblyRest rest = new AblyRest(opts)) {
+                Message[] messages = new Message[] {
+                    new Message("message", "hello world!"),
+                };
+
+                rest.channels.get("should_have_annotations_and_versions").publish(messages);
+            }
+
+            // wait until we get message on the channel
+            assertNull(msgComplete.waitFor(1, 10_000));
+            Message message = receivedMessage.get();
+            assertNotNull(message.version);
+            assertEquals(message.timestamp, message.version.timestamp);
+            assertNotNull(message.annotations);
+            assertNotNull(message.annotations.summary);
+            assertEquals(
+                Serialisation.gson.toJsonTree(message.annotations),
+                Serialisation.gson.toJsonTree(new MessageAnnotations(new Summary(new HashMap<>())))
+            );
+            assertEquals("message", message.name);
+            assertEquals("hello world!", message.data);
         }
     }
 
