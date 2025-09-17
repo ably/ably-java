@@ -14,6 +14,7 @@ import io.ably.lib.http.PaginatedQuery;
 import io.ably.lib.platform.Platform;
 import io.ably.lib.push.Push;
 import io.ably.lib.realtime.Connection;
+import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.AsyncHttpPaginatedResponse;
 import io.ably.lib.types.AsyncPaginatedResult;
@@ -38,7 +39,7 @@ import io.ably.lib.util.Serialisation;
 
 /**
  * A client that offers a simple stateless API to interact directly with Ably's REST API.
- *
+ * <p>
  * This class implements {@link AutoCloseable} so you can use it in
  * try-with-resources constructs and have the JDK close it for you.
  */
@@ -73,7 +74,8 @@ public abstract class AblyBase implements AutoCloseable {
      * Constructs a client object using an Ably API key or token string.
      * <p>
      * Spec: RSC1
-     * @param key The Ably API key or token string used to validate the client.
+     *
+     * @param key                   The Ably API key or token string used to validate the client.
      * @param platformAgentProvider provides platform agent for the agent header.
      * @throws AblyException
      */
@@ -85,13 +87,14 @@ public abstract class AblyBase implements AutoCloseable {
      * Construct a client object using an Ably {@link ClientOptions} object.
      * <p>
      * Spec: RSC1
-     * @param options A {@link ClientOptions} object to configure the client connection to Ably.
+     *
+     * @param options               A {@link ClientOptions} object to configure the client connection to Ably.
      * @param platformAgentProvider provides platform agent for the agent header.
      * @throws AblyException
      */
     public AblyBase(ClientOptions options, PlatformAgentProvider platformAgentProvider) throws AblyException {
         /* normalise options */
-        if(options == null) {
+        if (options == null) {
             String msg = "no options provided";
             Log.e(getClass().getName(), msg);
             throw AblyException.fromErrorInfo(new ErrorInfo(msg, 400, 40000));
@@ -120,50 +123,12 @@ public abstract class AblyBase implements AutoCloseable {
      * {@link Connection#connect()}.
      * <p>
      * Spec: RTN12
+     *
      * @throws Exception
      */
     @Override
     public void close() throws Exception {
         http.close();
-    }
-
-    /**
-     * A collection of Channels associated with an Ably instance.
-     */
-    public interface Channels extends ReadOnlyMap<String, Channel> {
-        Channel get(String channelName);
-        Channel get(String channelName, ChannelOptions channelOptions) throws AblyException;
-        void release(String channelName);
-        int size();
-        Iterable<Channel> values();
-    }
-
-    private class InternalChannels extends InternalMap<String, Channel> implements Channels {
-        @Override
-        public Channel get(String channelName) {
-            try {
-                return get(channelName, null);
-            } catch (AblyException e) { return null; }
-        }
-
-        @Override
-        public Channel get(String channelName, ChannelOptions channelOptions) throws AblyException {
-            Channel channel = map.get(channelName);
-            if (channel != null) {
-                if (channelOptions != null)
-                    channel.options = channelOptions;
-                return channel;
-            }
-
-            channel = new Channel(AblyBase.this, channelName, channelOptions);
-            map.put(channelName, channel);
-            return channel;
-        }
-
-        @Override
-        public void release(String channelName) {
-            map.remove(channelName);
-        }
     }
 
     /**
@@ -175,6 +140,7 @@ public abstract class AblyBase implements AutoCloseable {
      * {@link ClientOptions#queryTime} property instead of this method.
      * <p>
      * Spec: RSC16
+     *
      * @return The time as milliseconds since the Unix epoch.
      * @throws AblyException
      */
@@ -195,9 +161,10 @@ public abstract class AblyBase implements AutoCloseable {
      * {@link ClientOptions#queryTime} property instead of this method.
      * <p>
      * Spec: RSC16
+     *
      * @param callback Listener with the time as milliseconds since the Unix epoch.
-     * <p>
-     * This callback is invoked on a background thread
+     *                 <p>
+     *                 This callback is invoked on a background thread
      */
     public void timeAsync(Callback<Long> callback) {
         timeAsync(http, callback);
@@ -215,7 +182,7 @@ public abstract class AblyBase implements AutoCloseable {
                 http.get("/time", HttpUtils.defaultAcceptHeaders(false), params, new HttpCore.ResponseHandler<Long>() {
                     @Override
                     public Long handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
-                        if(error != null) {
+                        if (error != null) {
                             throw AblyException.fromErrorInfo(error);
                         }
                         return Serialisation.gson.fromJson(new String(response.body), Long[].class)[0];
@@ -227,20 +194,21 @@ public abstract class AblyBase implements AutoCloseable {
 
     /**
      * Queries the REST /stats API and retrieves your application's usage statistics.
+     *
      * @param params query options:
-     * <p>
-     * start (RSC6b1) - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
-     * <p>
-     * end (RSC6b1) - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
-     * <p>
-     * direction (RSC6b2) - The order for which stats are returned in. Valid values are backwards which orders stats from most recent to oldest,
-     * or forwards which orders stats from oldest to most recent. The default is backwards.
-     * <p>
-     * limit (RSC6b3) - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
-     * <p>
-     * unit (RSC6b4) - minute, hour, day or month. Based on the unit selected, the given start or end times are rounded down to the start of the relevant interval depending on the unit granularity of the query.)
-     * <p>
-     * Spec: RSC6a
+     *               <p>
+     *               start (RSC6b1) - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
+     *               <p>
+     *               end (RSC6b1) - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
+     *               <p>
+     *               direction (RSC6b2) - The order for which stats are returned in. Valid values are backwards which orders stats from most recent to oldest,
+     *               or forwards which orders stats from oldest to most recent. The default is backwards.
+     *               <p>
+     *               limit (RSC6b3) - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
+     *               <p>
+     *               unit (RSC6b4) - minute, hour, day or month. Based on the unit selected, the given start or end times are rounded down to the start of the relevant interval depending on the unit granularity of the query.)
+     *               <p>
+     *               Spec: RSC6a
      * @return A {@link PaginatedResult} object containing an array of {@link Stats} objects.
      * @throws AblyException
      */
@@ -249,35 +217,50 @@ public abstract class AblyBase implements AutoCloseable {
     }
 
     PaginatedResult<Stats> stats(Http http, Param[] params) throws AblyException {
-        return new PaginatedQuery<>(http, "/stats", HttpUtils.defaultAcceptHeaders(false), params, StatsReader.statsResponseHandler).get();
+        return new PaginatedQuery<>(
+            http,
+            "/stats",
+            // Stats api uses protocol v2 format for now
+            Param.set(HttpUtils.defaultAcceptHeaders(false), new Param(Defaults.ABLY_PROTOCOL_VERSION_HEADER, 2)),
+            params,
+            StatsReader.statsResponseHandler
+        ).get();
     }
 
     /**
      * Asynchronously queries the REST /stats API and retrieves your application's usage statistics.
-     * @param params query options:
-     * <p>
-     * start (RSC6b1) - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
-     * <p>
-     * end (RSC6b1) - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
-     * <p>
-     * direction (RSC6b2) - The order for which stats are returned in. Valid values are backwards which orders stats from most recent to oldest,
-     * or forwards which orders stats from oldest to most recent. The default is backwards.
-     * <p>
-     * limit (RSC6b3) - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
-     * <p>
-     * unit (RSC6b4) - minute, hour, day or month. Based on the unit selected, the given start or end times are rounded down to the start of the relevant interval depending on the unit granularity of the query.)
-     * <p>
-     * Spec: RSC6a
+     *
+     * @param params   query options:
+     *                 <p>
+     *                 start (RSC6b1) - The time from which stats are retrieved, specified as milliseconds since the Unix epoch.
+     *                 <p>
+     *                 end (RSC6b1) - The time until stats are retrieved, specified as milliseconds since the Unix epoch.
+     *                 <p>
+     *                 direction (RSC6b2) - The order for which stats are returned in. Valid values are backwards which orders stats from most recent to oldest,
+     *                 or forwards which orders stats from oldest to most recent. The default is backwards.
+     *                 <p>
+     *                 limit (RSC6b3) - An upper limit on the number of stats returned. The default is 100, and the maximum is 1000.
+     *                 <p>
+     *                 unit (RSC6b4) - minute, hour, day or month. Based on the unit selected, the given start or end times are rounded down to the start of the relevant interval depending on the unit granularity of the query.)
+     *                 <p>
+     *                 Spec: RSC6a
      * @param callback Listener which returns a {@link AsyncPaginatedResult} object containing an array of {@link Stats} objects.
-     * <p>
-     * This callback is invoked on a background thread
+     *                 <p>
+     *                 This callback is invoked on a background thread
      */
-    public void statsAsync(Param[] params, Callback<AsyncPaginatedResult<Stats>> callback)  {
+    public void statsAsync(Param[] params, Callback<AsyncPaginatedResult<Stats>> callback) {
         statsAsync(http, params, callback);
     }
 
-    void statsAsync(Http http, Param[] params, Callback<AsyncPaginatedResult<Stats>> callback)  {
-        (new AsyncPaginatedQuery<Stats>(http, "/stats", HttpUtils.defaultAcceptHeaders(false), params, StatsReader.statsResponseHandler)).get(callback);
+    void statsAsync(Http http, Param[] params, Callback<AsyncPaginatedResult<Stats>> callback) {
+        (new AsyncPaginatedQuery<Stats>(
+            http,
+            "/stats",
+            // Stats api uses protocol v2 format for now
+            Param.set(HttpUtils.defaultAcceptHeaders(false), new Param(Defaults.ABLY_PROTOCOL_VERSION_HEADER, 2)),
+            params,
+            StatsReader.statsResponseHandler
+        )).get(callback);
     }
 
     /**
@@ -288,13 +271,14 @@ public abstract class AblyBase implements AutoCloseable {
      * MsgPack and JSON support.
      * <p>
      * Spec: RSC19
-     * @param method The request method to use, such as GET, POST.
-     * @param path The request path.
-     * @param params The parameters to include in the URL query of the request.
-     *               The parameters depend on the endpoint being queried.
-     *               See the <a href="https://ably.com/docs/api/rest-api">REST API reference</a>
-     *               for the available parameters of each endpoint.
-     * @param body The RequestBody of the request.
+     *
+     * @param method  The request method to use, such as GET, POST.
+     * @param path    The request path.
+     * @param params  The parameters to include in the URL query of the request.
+     *                The parameters depend on the endpoint being queried.
+     *                See the <a href="https://ably.com/docs/api/rest-api">REST API reference</a>
+     *                for the available parameters of each endpoint.
+     * @param body    The RequestBody of the request.
      * @param headers Additional HTTP headers to include in the request.
      * @return An {@link HttpPaginatedResponse} object returned by the HTTP request, containing an empty or JSON-encodable object.
      * @throws AblyException if it was not possible to complete the request, or an error response was received
@@ -316,25 +300,26 @@ public abstract class AblyBase implements AutoCloseable {
      * MsgPack and JSON support.
      * <p>
      * Spec: RSC19
-     * @param method The request method to use, such as GET, POST.
-     * @param path The request path.
-     * @param params The parameters to include in the URL query of the request.
-     *               The parameters depend on the endpoint being queried.
-     *               See the <a href="https://ably.com/docs/api/rest-api">REST API reference</a>
-     *               for the available parameters of each endpoint.
-     * @param body The RequestBody of the request.
-     * @param headers Additional HTTP headers to include in the request.
+     *
+     * @param method   The request method to use, such as GET, POST.
+     * @param path     The request path.
+     * @param params   The parameters to include in the URL query of the request.
+     *                 The parameters depend on the endpoint being queried.
+     *                 See the <a href="https://ably.com/docs/api/rest-api">REST API reference</a>
+     *                 for the available parameters of each endpoint.
+     * @param body     The RequestBody of the request.
+     * @param headers  Additional HTTP headers to include in the request.
      * @param callback called with the asynchronous result,
      *                 returns an {@link AsyncHttpPaginatedResponse} object returned by the HTTP request,
      *                 containing an empty or JSON-encodable object.
-     * <p>
-     * This callback is invoked on a background thread
+     *                 <p>
+     *                 This callback is invoked on a background thread
      */
-    public void requestAsync(String method, String path, Param[] params, HttpCore.RequestBody body, Param[] headers, final AsyncHttpPaginatedResponse.Callback callback)  {
+    public void requestAsync(String method, String path, Param[] params, HttpCore.RequestBody body, Param[] headers, final AsyncHttpPaginatedResponse.Callback callback) {
         requestAsync(http, method, path, params, body, headers, callback);
     }
 
-    void requestAsync(Http http, String method, String path, Param[] params, HttpCore.RequestBody body, Param[] headers, final AsyncHttpPaginatedResponse.Callback callback)  {
+    void requestAsync(Http http, String method, String path, Param[] params, HttpCore.RequestBody body, Param[] headers, final AsyncHttpPaginatedResponse.Callback callback) {
         headers = HttpUtils.mergeHeaders(HttpUtils.defaultAcceptHeaders(false), headers);
         (new AsyncHttpPaginatedQuery(http, method, path, headers, params, body)).exec(callback);
     }
@@ -345,7 +330,8 @@ public abstract class AblyBase implements AutoCloseable {
      * Returns an array of {@link PublishResponse} object.
      * <p>
      * Spec: BO2a
-     * @param pubSpecs An array of {@link Message.Batch} objects.
+     *
+     * @param pubSpecs       An array of {@link Message.Batch} objects.
      * @param channelOptions A {@link ClientOptions} object to configure the client connection to Ably.
      * @return A {@link PublishResponse} object.
      * @throws AblyException
@@ -361,9 +347,10 @@ public abstract class AblyBase implements AutoCloseable {
      * Returns an array of {@link PublishResponse} object.
      * <p>
      * Spec: BO2a
-     * @param pubSpecs An array of {@link Message.Batch} objects.
+     *
+     * @param pubSpecs       An array of {@link Message.Batch} objects.
      * @param channelOptions A {@link ClientOptions} object to configure the client connection to Ably.
-     * @param params params to pass into the initial query
+     * @param params         params to pass into the initial query
      * @return A {@link PublishResponse} object.
      * @throws AblyException
      */
@@ -378,11 +365,12 @@ public abstract class AblyBase implements AutoCloseable {
      * Returns an array of {@link PublishResponse} object.
      * <p>
      * Spec: BO2a
-     * @param pubSpecs An array of {@link Message.Batch} objects.
+     *
+     * @param pubSpecs       An array of {@link Message.Batch} objects.
      * @param channelOptions A {@link ClientOptions} object to configure the client connection to Ably.
-     * @param callback callback A callback with {@link PublishResponse} object.
-     * <p>
-     * This callback is invoked on a background thread
+     * @param callback       callback A callback with {@link PublishResponse} object.
+     *                       <p>
+     *                       This callback is invoked on a background thread
      * @throws AblyException
      */
     @Experimental
@@ -396,12 +384,13 @@ public abstract class AblyBase implements AutoCloseable {
      * Returns an array of {@link PublishResponse} object.
      * <p>
      * Spec: BO2a
-     * @param pubSpecs An array of {@link Message.Batch} objects.
+     *
+     * @param pubSpecs       An array of {@link Message.Batch} objects.
      * @param channelOptions A {@link ClientOptions} object to configure the client connection to Ably.
-     * @param params params to pass into the initial query
-     * @param callback A callback with {@link PublishResponse} object.
-     * <p>
-     * This callback is invoked on a background thread
+     * @param params         params to pass into the initial query
+     * @param callback       A callback with {@link PublishResponse} object.
+     *                       <p>
+     *                       This callback is invoked on a background thread
      * @throws AblyException
      */
     @Experimental
@@ -411,8 +400,8 @@ public abstract class AblyBase implements AutoCloseable {
 
     private Http.Request<PublishResponse[]> publishBatchImpl(final Message.Batch[] pubSpecs, ChannelOptions channelOptions, final Param[] initialParams) throws AblyException {
         boolean hasClientSuppliedId = false;
-        for(Message.Batch spec : pubSpecs) {
-            for(Message message : spec.messages) {
+        for (Message.Batch spec : pubSpecs) {
+            for (Message message : spec.messages) {
                 /* handle message ids */
                 /* RSL1k2 */
                 hasClientSuppliedId |= (message.id != null);
@@ -420,7 +409,7 @@ public abstract class AblyBase implements AutoCloseable {
                 auth.checkClientId(message, true, false);
                 message.encode(channelOptions);
             }
-            if(!hasClientSuppliedId && options.idempotentRestPublishing) {
+            if (!hasClientSuppliedId && options.idempotentRestPublishing) {
                 /* RSL1k1: populate the message id with a library-generated id */
                 String messageId = Crypto.getRandomId();
                 for (int i = 0; i < spec.messages.length; i++) {
@@ -432,11 +421,16 @@ public abstract class AblyBase implements AutoCloseable {
             @Override
             public void execute(HttpScheduler http, final Callback<PublishResponse[]> callback) throws AblyException {
                 HttpCore.RequestBody requestBody = options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(pubSpecs) : MessageSerializer.asJSONRequest(pubSpecs);
-                final Param[] params = options.addRequestIds ? Param.set(initialParams, Crypto.generateRandomRequestId()) : initialParams ; // RSC7c
-                http.post("/messages", HttpUtils.defaultAcceptHeaders(options.useBinaryProtocol), params, requestBody, new HttpCore.ResponseHandler<PublishResponse[]>() {
+                final Param[] params = options.addRequestIds ? Param.set(initialParams, Crypto.generateRandomRequestId()) : initialParams; // RSC7c
+                // This method uses an old batch format from protocol v2
+                Param[] headers = Param.set(
+                    HttpUtils.defaultAcceptHeaders(options.useBinaryProtocol),
+                    new Param(Defaults.ABLY_PROTOCOL_VERSION_HEADER, 2)
+                );
+                http.post("/messages", headers, params, requestBody, new HttpCore.ResponseHandler<PublishResponse[]>() {
                     @Override
                     public PublishResponse[] handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
-                        if(error != null && error.code != 40020) {
+                        if (error != null && error.code != 40020) {
                             throw AblyException.fromErrorInfo(error);
                         }
                         return PublishResponse.getBulkPublishResponseHandler(response.statusCode).handleResponseBody(response.contentType, response.body);
@@ -447,13 +441,9 @@ public abstract class AblyBase implements AutoCloseable {
     }
 
     /**
-     * Authentication token has changed. waitForResult is true if there is a need to
-     * wait for server response to auth request
-     */
-
-    /**
      * Override this method in AblyRealtime and pass updated token to ConnectionManager
-     * @param token new token
+     *
+     * @param token           new token
      * @param waitForResponse wait for server response before returning from method
      * @throws AblyException
      */
@@ -463,12 +453,18 @@ public abstract class AblyBase implements AutoCloseable {
 
     /**
      * Override this method in AblyRealtime and pass updated token to ConnectionManager
-     * @param token new token
+     *
+     * @param token            new token
      * @param authUpdateResult Callback result
      */
-    protected void onAuthUpdatedAsync(String token, Auth.AuthUpdateResult authUpdateResult)  {
+    protected void onAuthUpdatedAsync(String token, Auth.AuthUpdateResult authUpdateResult) {
         //this must be overriden by subclass
     }
+
+    /**
+     * Authentication token has changed. waitForResult is true if there is a need to
+     * wait for server response to auth request
+     */
 
     /**
      * Authentication error occurred
@@ -482,6 +478,51 @@ public abstract class AblyBase implements AutoCloseable {
      */
     protected void onClientIdSet(String clientId) {
         /* Default is to do nothing. Overridden by subclass. */
+    }
+
+    /**
+     * A collection of Channels associated with an Ably instance.
+     */
+    public interface Channels extends ReadOnlyMap<String, Channel> {
+        Channel get(String channelName);
+
+        Channel get(String channelName, ChannelOptions channelOptions) throws AblyException;
+
+        void release(String channelName);
+
+        int size();
+
+        Iterable<Channel> values();
+    }
+
+    private class InternalChannels extends InternalMap<String, Channel> implements Channels {
+        @Override
+        public Channel get(String channelName) {
+            try {
+                return get(channelName, null);
+            } catch (AblyException e) {
+                return null;
+            }
+        }
+
+        @Override
+        public Channel get(String channelName, ChannelOptions channelOptions) throws AblyException {
+            Channel channel = map.get(channelName);
+            if (channel != null) {
+                if (channelOptions != null)
+                    channel.options = channelOptions;
+                return channel;
+            }
+
+            channel = new Channel(AblyBase.this, channelName, channelOptions);
+            map.put(channelName, channel);
+            return channel;
+        }
+
+        @Override
+        public void release(String channelName) {
+            map.remove(channelName);
+        }
     }
 
 }

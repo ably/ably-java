@@ -102,15 +102,13 @@ public class MessageTest {
         Message message = new Message("test-name", "test-data");
         message.clientId = "test-client-id";
         message.connectionKey = "test-key";
-        message.refSerial = "test-ref-serial";
-        message.refType = "test-ref-type";
-        Message.Operation operation = new Message.Operation();
-        operation.clientId = "operation-client-id";
-        operation.description = "operation-description";
-        operation.metadata = new HashMap<>();
-        operation.metadata.put("key1", "value1");
-        operation.metadata.put("key2", "value2");
-        message.operation = operation;
+        MessageVersion version = new MessageVersion();
+        version.clientId = "operation-client-id";
+        version.description = "operation-description";
+        version.metadata = new HashMap<>();
+        version.metadata.put("key1", "value1");
+        version.metadata.put("key2", "value2");
+        message.version = version;
 
         // When
         JsonElement serializedElement = serializer.serialize(message, null, null);
@@ -121,12 +119,10 @@ public class MessageTest {
         assertEquals("test-key", serializedObject.get("connectionKey").getAsString());
         assertEquals("test-data", serializedObject.get("data").getAsString());
         assertEquals("test-name", serializedObject.get("name").getAsString());
-        assertEquals("test-ref-serial", serializedObject.get("refSerial").getAsString());
-        assertEquals("test-ref-type", serializedObject.get("refType").getAsString());
-        JsonObject operationObject = serializedObject.getAsJsonObject("operation");
-        assertEquals("operation-client-id", operationObject.get("clientId").getAsString());
-        assertEquals("operation-description", operationObject.get("description").getAsString());
-        JsonObject metadataObject = operationObject.getAsJsonObject("metadata");
+        JsonObject versionObject = serializedObject.getAsJsonObject("version");
+        assertEquals("operation-client-id", versionObject.get("clientId").getAsString());
+        assertEquals("operation-description", versionObject.get("description").getAsString());
+        JsonObject metadataObject = versionObject.getAsJsonObject("metadata");
         assertEquals("value1", metadataObject.get("key1").getAsString());
         assertEquals("value2", metadataObject.get("key2").getAsString());
     }
@@ -138,17 +134,15 @@ public class MessageTest {
         jsonObject.addProperty("clientId", "test-client-id");
         jsonObject.addProperty("data", "test-data");
         jsonObject.addProperty("name", "test-name");
-        jsonObject.addProperty("refSerial", "test-ref-serial");
-        jsonObject.addProperty("refType", "test-ref-type");
         jsonObject.addProperty("connectionKey", "test-key");
-        JsonObject operationObject = new JsonObject();
-        operationObject.addProperty("clientId", "operation-client-id");
-        operationObject.addProperty("description", "operation-description");
+        JsonObject versionObject = new JsonObject();
+        versionObject.addProperty("clientId", "operation-client-id");
+        versionObject.addProperty("description", "operation-description");
         JsonObject metadataObject = new JsonObject();
         metadataObject.addProperty("key1", "value1");
         metadataObject.addProperty("key2", "value2");
-        operationObject.add("metadata", metadataObject);
-        jsonObject.add("operation", operationObject);
+        versionObject.add("metadata", metadataObject);
+        jsonObject.add("version", versionObject);
 
         // When
         Message message = Message.fromEncoded(jsonObject, new ChannelOptions());
@@ -157,13 +151,11 @@ public class MessageTest {
         assertEquals("test-client-id", message.clientId);
         assertEquals("test-data", message.data);
         assertEquals("test-name", message.name);
-        assertEquals("test-ref-serial", message.refSerial);
-        assertEquals("test-ref-type", message.refType);
         assertEquals("test-key", message.connectionKey);
-        assertEquals("operation-client-id", message.operation.clientId);
-        assertEquals("operation-description", message.operation.description);
-        assertEquals("value1", message.operation.metadata.get("key1"));
-        assertEquals("value2", message.operation.metadata.get("key2"));
+        assertEquals("operation-client-id", message.version.clientId);
+        assertEquals("operation-description", message.version.description);
+        assertEquals("value1", message.version.metadata.get("key1"));
+        assertEquals("value2", message.version.metadata.get("key2"));
     }
 
     @Test
@@ -193,17 +185,15 @@ public class MessageTest {
         Message message = new Message("test-name", "test-data");
         message.clientId = "test-client-id";
         message.connectionKey = "test-key";
-        message.refSerial = "test-ref-serial";
-        message.refType = "test-ref-type";
         message.action = MessageAction.MESSAGE_CREATE;
         message.serial = "01826232498871-001@abcdefghij:001";
-        Message.Operation operation = new Message.Operation();
-        operation.clientId = "operation-client-id";
-        operation.description = "operation-description";
-        operation.metadata = new HashMap<>();
-        operation.metadata.put("key1", "value1");
-        operation.metadata.put("key2", "value2");
-        message.operation = operation;
+        MessageVersion version = new MessageVersion();
+        version.clientId = "operation-client-id";
+        version.description = "operation-description";
+        version.metadata = new HashMap<>();
+        version.metadata.put("key1", "value1");
+        version.metadata.put("key2", "value2");
+        message.version = version;
 
         // When Encode to MessagePack
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -221,13 +211,11 @@ public class MessageTest {
         assertEquals("test-key", unpacked.connectionKey);
         assertEquals("test-data", unpacked.data);
         assertEquals("test-name", unpacked.name);
-        assertEquals("test-ref-serial", unpacked.refSerial);
-        assertEquals("test-ref-type", unpacked.refType);
         assertEquals(MessageAction.MESSAGE_CREATE, unpacked.action);
         assertEquals("01826232498871-001@abcdefghij:001", unpacked.serial);
-        assertEquals("operation-client-id", unpacked.operation.clientId);
-        assertEquals("operation-description", unpacked.operation.description);
-        assertEquals("value1", unpacked.operation.metadata.get("key1"));
-        assertEquals("value2", unpacked.operation.metadata.get("key2"));
+        assertEquals("operation-client-id", unpacked.version.clientId);
+        assertEquals("operation-description", unpacked.version.description);
+        assertEquals("value1", unpacked.version.metadata.get("key1"));
+        assertEquals("value2", unpacked.version.metadata.get("key2"));
     }
 }
