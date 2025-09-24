@@ -215,11 +215,11 @@ public class Message extends BaseMessage {
             } else if (fieldName.equals(SERIAL)) {
                 serial = unpacker.unpackString();
             } else if (fieldName.equals(VERSION)) {
-                version = MessageVersion.fromMsgpack(unpacker);
+                version = MessageVersion.read(unpacker);
             } else if (fieldName.equals(ACTION)) {
                 action = MessageAction.tryFindByOrdinal(unpacker.unpackInt());
             } else if (fieldName.equals(ANNOTATIONS)) {
-                annotations = MessageAnnotations.fromMsgpack(unpacker);
+                annotations = MessageAnnotations.read(unpacker);
             }
             else {
                 Log.v(TAG, "Unexpected field: " + fieldName);

@@ -57,7 +57,9 @@ public class MessageAnnotations {
         }
     }
 
-    MessageAnnotations readMsgpack(MessageUnpacker unpacker) throws IOException {
+    static MessageAnnotations read(MessageUnpacker unpacker) throws IOException {
+        MessageAnnotations annotations = new MessageAnnotations();
+
         int fieldCount = unpacker.unpackMapHeader();
         for (int i = 0; i < fieldCount; i++) {
             String fieldName = unpacker.unpackString().intern();
@@ -68,37 +70,31 @@ public class MessageAnnotations {
             }
 
             if (fieldName.equals(SUMMARY)) {
-                summary = Summary.read(unpacker);
+                annotations.summary = Summary.read(unpacker);
             } else {
                 Log.v(TAG, "Unexpected field: " + fieldName);
                 unpacker.skipValue();
             }
         }
 
-        return this;
-    }
-
-    static MessageAnnotations fromMsgpack(MessageUnpacker unpacker) throws IOException {
-        return (new MessageAnnotations()).readMsgpack(unpacker);
-    }
-
-    protected void read(final JsonObject map) throws MessageDecodeException {
-        final JsonElement summaryElement = map.get(SUMMARY);
-        if (summaryElement != null) {
-            if (!summaryElement.isJsonObject()) {
-                throw MessageDecodeException.fromDescription("MessageAnnotations summary is of type \"" + summaryElement.getClass() + "\" when expected a JSON object.");
-            }
-            summary = Summary.read(summaryElement.getAsJsonObject());
-        }
+        return annotations;
     }
 
     static MessageAnnotations read(JsonElement json) throws MessageDecodeException {
         if (!json.isJsonObject()) {
-            Log.w(TAG, "Message annotations is of type \"" + json.getClass() + "\" when expected a JSON object.");
+            throw MessageDecodeException.fromDescription("Message annotations is of type \"" + json.getClass() + "\" when expected a JSON object.");
         }
 
         MessageAnnotations annotations = new MessageAnnotations();
-        annotations.read(json.getAsJsonObject());
+
+        final JsonElement summaryElement = json.getAsJsonObject().get(SUMMARY);
+        if (summaryElement != null) {
+            if (!summaryElement.isJsonObject()) {
+                throw MessageDecodeException.fromDescription("MessageAnnotations summary is of type \"" + summaryElement.getClass() + "\" when expected a JSON object.");
+            }
+            annotations.summary = Summary.read(summaryElement.getAsJsonObject());
+        }
+
         return annotations;
     }
 

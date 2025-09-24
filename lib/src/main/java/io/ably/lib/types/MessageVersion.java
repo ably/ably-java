@@ -108,7 +108,8 @@ public class MessageVersion {
         }
     }
 
-    MessageVersion readMsgpack(MessageUnpacker unpacker) throws IOException {
+    static MessageVersion read(MessageUnpacker unpacker) throws IOException {
+        MessageVersion version = new MessageVersion();
         int fieldCount = unpacker.unpackMapHeader();
         for (int i = 0; i < fieldCount; i++) {
             String fieldName = unpacker.unpackString().intern();
@@ -120,24 +121,24 @@ public class MessageVersion {
 
             switch (fieldName) {
                 case SERIAL:
-                    serial = unpacker.unpackString();
+                    version.serial = unpacker.unpackString();
                     break;
                 case TIMESTAMP:
-                    timestamp = unpacker.unpackLong();
+                    version.timestamp = unpacker.unpackLong();
                     break;
                 case CLIENT_ID:
-                    clientId = unpacker.unpackString();
+                    version.clientId = unpacker.unpackString();
                     break;
                 case DESCRIPTION:
-                    description = unpacker.unpackString();
+                    version.description = unpacker.unpackString();
                     break;
                 case METADATA:
                     int mapSize = unpacker.unpackMapHeader();
-                    metadata = new HashMap<>(mapSize);
+                    version.metadata = new HashMap<>(mapSize);
                     for (int j = 0; j < mapSize; j++) {
                         String key = unpacker.unpackString();
                         String value = unpacker.unpackString();
-                        metadata.put(key, value);
+                        version.metadata.put(key, value);
                     }
                     break;
                 default:
@@ -146,26 +147,9 @@ public class MessageVersion {
                     break;
             }
         }
-        return this;
+        return version;
     }
 
-    static MessageVersion fromMsgpack(MessageUnpacker unpacker) throws IOException {
-        return (new MessageVersion()).readMsgpack(unpacker);
-    }
-
-    protected void read(final JsonObject map) throws MessageDecodeException {
-        serial = readString(map, SERIAL);
-        timestamp = readLong(map, TIMESTAMP);;
-        clientId = readString(map, CLIENT_ID);;
-        description = readString(map, DESCRIPTION);;
-        if (map.has(METADATA)) {
-            JsonObject metadataObject = map.getAsJsonObject(METADATA);
-            metadata = new HashMap<>();
-            for (Map.Entry<String, JsonElement> entry : metadataObject.entrySet()) {
-                metadata.put(entry.getKey(), entry.getValue().getAsString());
-            }
-        }
-    }
 
     static MessageVersion read(JsonElement json) throws MessageDecodeException {
         if (!json.isJsonObject()) {
@@ -173,16 +157,29 @@ public class MessageVersion {
         }
 
         MessageVersion version = new MessageVersion();
-        version.read(json.getAsJsonObject());
+        JsonObject map = json.getAsJsonObject();
+
+        version.serial = readString(map, SERIAL);
+        version.timestamp = readLong(map, TIMESTAMP);;
+        version.clientId = readString(map, CLIENT_ID);;
+        version.description = readString(map, DESCRIPTION);;
+        if (map.has(METADATA)) {
+            JsonObject metadataObject = map.getAsJsonObject(METADATA);
+            version.metadata = new HashMap<>();
+            for (Map.Entry<String, JsonElement> entry : metadataObject.entrySet()) {
+                version.metadata.put(entry.getKey(), entry.getValue().getAsString());
+            }
+        }
+
         return version;
     }
 
-    private String readString(JsonObject map, String key) {
+    private static String readString(JsonObject map, String key) {
         JsonElement element = map.get(key);
         return (element != null && !element.isJsonNull()) ? element.getAsString() : null;
     }
 
-    private long readLong(JsonObject map, String key) {
+    private static long readLong(JsonObject map, String key) {
         JsonElement element = map.get(key);
         return (element != null && !element.isJsonNull()) ? element.getAsLong() : 0;
     }

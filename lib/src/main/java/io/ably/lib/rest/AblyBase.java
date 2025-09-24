@@ -45,6 +45,16 @@ import io.ably.lib.util.Serialisation;
  */
 public abstract class AblyBase implements AutoCloseable {
 
+    /**
+     * Some REST endpoints (e.g., stats and batch) changed in protocol v3.
+     * To preserve backward compatibility for those specific endpoints, we
+     * explicitly request protocol v2 when calling them.
+     * <p>
+     * Use this only for legacy endpoints that must remain on v2; all other
+     * calls should use the default protocol version.
+     */
+    private static final int LEGACY_API_PROTOCOL_V2 = 2;
+
     public final ClientOptions options;
     public final Http http;
     public final HttpCore httpCore;
@@ -254,7 +264,10 @@ public abstract class AblyBase implements AutoCloseable {
             http,
             "/stats",
             // Stats api uses protocol v2 format for now
-            Param.set(HttpUtils.defaultAcceptHeaders(false), new Param(Defaults.ABLY_PROTOCOL_VERSION_HEADER, 2)),
+            Param.set(
+                HttpUtils.defaultAcceptHeaders(false),
+                new Param(Defaults.ABLY_PROTOCOL_VERSION_HEADER, LEGACY_API_PROTOCOL_V2)
+            ),
             params,
             StatsReader.statsResponseHandler
         ).get();
@@ -289,7 +302,10 @@ public abstract class AblyBase implements AutoCloseable {
             http,
             "/stats",
             // Stats api uses protocol v2 format for now
-            Param.set(HttpUtils.defaultAcceptHeaders(false), new Param(Defaults.ABLY_PROTOCOL_VERSION_HEADER, 2)),
+            Param.set(
+                HttpUtils.defaultAcceptHeaders(false),
+                new Param(Defaults.ABLY_PROTOCOL_VERSION_HEADER, LEGACY_API_PROTOCOL_V2)
+            ),
             params,
             StatsReader.statsResponseHandler
         )).get(callback);
@@ -451,7 +467,7 @@ public abstract class AblyBase implements AutoCloseable {
                 // This method uses an old batch format from protocol v2
                 Param[] headers = Param.set(
                     HttpUtils.defaultAcceptHeaders(options.useBinaryProtocol),
-                    new Param(Defaults.ABLY_PROTOCOL_VERSION_HEADER, 2)
+                    new Param(Defaults.ABLY_PROTOCOL_VERSION_HEADER, LEGACY_API_PROTOCOL_V2)
                 );
                 http.post("/messages", headers, params, requestBody, new HttpCore.ResponseHandler<PublishResponse[]>() {
                     @Override
