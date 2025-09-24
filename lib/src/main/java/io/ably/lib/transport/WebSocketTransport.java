@@ -52,7 +52,10 @@ public class WebSocketTransport implements ITransport {
     private ConnectListener connectListener;
     private WebSocketClient webSocketClient;
     private final WebSocketEngine webSocketEngine;
+    private WebSocketHandler webSocketHandler;
     private boolean activityCheckTurnedOff = false;
+
+    private boolean connectHasBeenCalled = false;
 
     /******************
      * protected constructor
@@ -94,8 +97,13 @@ public class WebSocketTransport implements ITransport {
      * ITransport methods
      ******************/
 
+    /**
+     * Connect is called once when we create transport;
+     * after transport is closed, we never call `connect` again
+     */
     @Override
     public void connect(ConnectListener connectListener) {
+        ensureConnectCalledOnce();
         this.connectListener = connectListener;
         try {
             boolean isTls = params.options.tls;
@@ -107,9 +115,8 @@ public class WebSocketTransport implements ITransport {
                 wsUri = HttpUtils.encodeParams(wsUri, connectParams);
 
             Log.d(TAG, "connect(); wsUri = " + wsUri);
-            synchronized (this) {
-                webSocketClient = this.webSocketEngine.create(wsUri, new WebSocketHandler(this::receive));
-            }
+            webSocketHandler = new WebSocketHandler(this::receive);
+            webSocketClient = this.webSocketEngine.create(wsUri, webSocketHandler);
             webSocketClient.connect();
         } catch (AblyException e) {
             Log.e(TAG, "Unexpected exception attempting connection; wsUri = " + wsUri, e);
@@ -120,14 +127,36 @@ public class WebSocketTransport implements ITransport {
         }
     }
 
+    /**
+     * `connect()` can't be called more than once
+     */
+    private synchronized void ensureConnectCalledOnce() {
+        if (connectHasBeenCalled) throw new IllegalStateException("WebSocketTransport is already initialized");
+        connectHasBeenCalled = true;
+    }
+
     @Override
     public void close() {
         Log.d(TAG, "close()");
-        synchronized (this) {
-            if (webSocketClient != null) {
-                webSocketClient.close();
-                webSocketClient = null;
-            }
+        // Take local snapshots of the shared references. Callback threads (e.g., onClose)
+        // may concurrently set these fields to null.
+        //
+        // Intentionally avoid synchronizing here:
+        // - The WebSocket library may invoke our WebSocketHandler while holding its own
+        //   internal locks.
+        // - If close() also acquired a lock on WebSocketTransport, we could invert the
+        //   lock order and create a circular wait (deadlock): close() waits for the WS
+        //   library to release its lock, while the WS library waits for a lock on
+        //   WebSocketTransport.
+        final WebSocketClient client = webSocketClient;
+        final WebSocketHandler handler = webSocketHandler;
+        if (client != null && handler != null) {
+            // Record activity so the activity timer remains armed. If a graceful close
+            // stalls, the timer can detect inactivity and force-cancel the socket.
+            handler.flagActivity();
+            client.close();
+        } else {
+            Log.w(TAG, "close() called on uninitialized or already closed transport");
         }
     }
 
@@ -191,6 +220,11 @@ public class WebSocketTransport implements ITransport {
     public String getURL() {
         return wsUri;
     }
+
+    private boolean isActiveTransport() {
+        return connectionManager.isActiveTransport(this);
+    }
+
     //interface to transfer Protocol message from websocket
     interface WebSocketReceiver {
         void onMessage(ProtocolMessage protocolMessage) throws AblyException;
@@ -217,9 +251,14 @@ public class WebSocketTransport implements ITransport {
          * WsClient private members
          ***************************/
 
-        private Timer timer = new Timer();
+        private final Timer timer = new Timer();
         private TimerTask activityTimerTask = null;
         private long lastActivityTime;
+
+        /**
+         * Monitor for activity timer events
+         */
+        private final Object activityTimerMonitor = new Object();
 
         WebSocketHandler(WebSocketReceiver receiver) {
             this.receiver = receiver;
@@ -318,66 +357,65 @@ public class WebSocketTransport implements ITransport {
             Log.w(TAG, "Error when trying to set SSL parameters, most likely due to an old Java API version", throwable);
         }
 
-        private synchronized void dispose() {
-            /* dispose timer */
-            try {
-                timer.cancel();
-                timer = null;
-            } catch (IllegalStateException e) {
-            }
+        private void dispose() {
+            timer.cancel();
         }
 
-        private synchronized void flagActivity() {
-            lastActivityTime = System.currentTimeMillis();
-            connectionManager.setLastActivity(lastActivityTime);
-            if (activityTimerTask == null && connectionManager.maxIdleInterval != 0 && !activityCheckTurnedOff) {
-                /* No timer currently running because previously there was no
-                 * maxIdleInterval configured, but now there is a
-                 * maxIdleInterval configured.  Call checkActivity so a timer
-                 * gets started.  This happens when flagActivity gets called
-                 * just after processing the connect message that configures
-                 * maxIdleInterval. */
-                checkActivity();
+        private void flagActivity() {
+            if (isActiveTransport()) {
+                lastActivityTime = System.currentTimeMillis();
+                connectionManager.setLastActivity(lastActivityTime);
             }
+
+            if (connectionManager.maxIdleInterval == 0) {
+                Log.v(TAG, "checkActivity: turned off because maxIdleInterval is 0");
+                return;
+            }
+
+            if (activityCheckTurnedOff) {
+                Log.v(TAG, "checkActivity: turned off for test purpose");
+                return;
+            }
+
+            checkActivity();
         }
 
-        private synchronized void checkActivity() {
+        private void checkActivity() {
             long timeout = getActivityTimeout();
+
             if (timeout == 0) {
                 Log.v(TAG, "checkActivity: infinite timeout");
                 return;
             }
 
-            // Check if timer already running
-            if (activityTimerTask != null) {
-                return;
-            }
-
-            // Start the activity timer task
-            startActivityTimer(timeout + 100);
-        }
-
-        private synchronized void startActivityTimer(long timeout) {
-            if (activityTimerTask == null) {
-                schedule((activityTimerTask = new TimerTask() {
-                    public void run() {
-                        try {
-                            onActivityTimerExpiry();
-                        } catch (Throwable t) {
-                            Log.e(TAG, "Unexpected exception in activity timer handler", t);
-                        }
-                    }
-                }), timeout);
-            }
-        }
-
-        private synchronized void schedule(TimerTask task, long delay) {
-            if (timer != null) {
-                try {
-                    timer.schedule(task, delay);
-                } catch (IllegalStateException ise) {
-                    Log.e(TAG, "Unexpected exception scheduling activity timer", ise);
+            synchronized (activityTimerMonitor) {
+                // Check if timer already running
+                if (activityTimerTask == null) {
+                    // Start the activity timer task
+                    startActivityTimer(timeout + 100);
                 }
+            }
+        }
+
+        private void startActivityTimer(long timeout) {
+            activityTimerTask = new TimerTask() {
+                public void run() {
+                    try {
+                        onActivityTimerExpiry();
+                    } catch (Exception exception) {
+                        Log.e(TAG, "Unexpected exception in activity timer handler", exception);
+                        webSocketClient.cancel(ABNORMAL_CLOSE, "Activity timer closed unexpectedly");
+                    }
+                }
+            };
+            schedule(activityTimerTask, timeout);
+        }
+
+        private void schedule(TimerTask task, long delay) {
+            try {
+                timer.schedule(task, delay);
+            } catch (IllegalStateException ise) {
+                Log.w(TAG, "Timer has already been canceled", ise);
             }
         }
 
@@ -392,7 +430,7 @@ public class WebSocketTransport implements ITransport {
                 return;
             }
 
-            synchronized (this) {
+            synchronized (activityTimerMonitor) {
                 activityTimerTask = null;
                 // Otherwise, we've had some activity, restart the timer for the next timeout
                 Log.v(TAG, "onActivityTimerExpiry: ok");

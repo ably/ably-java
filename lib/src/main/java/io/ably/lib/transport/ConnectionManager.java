@@ -857,6 +857,16 @@ public class ConnectionManager implements ConnectListener {
         requestState(null, state);
     }
 
+    /**
+     * Determines if the given WebSocketTransport instance is the currently active transport.
+     *
+     * @param transport the WebSocketTransport instance to check against the active transport
+     * @return true if the provided transport is the currently active transport, false otherwise
+     */
+    boolean isActiveTransport(WebSocketTransport transport) {
+        return transport == this.transport;
+    }
+
     private synchronized void requestState(ITransport transport, StateIndication stateIndication) {
         Log.v(TAG, "requestState(): requesting " + stateIndication.state + "; id = " + connection.id);
         addAction(new AsynchronousStateChangeAction(transport, stateIndication));
