@@ -3,7 +3,7 @@ package io.ably.lib.objects
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.realtime.CompletionListener
 import io.ably.lib.realtime.ConnectionEvent
-import io.ably.lib.realtime.ConnectionState
+import io.ably.lib.realtime.ConnectionStateListener
 import io.ably.lib.types.ChannelMode
 import io.ably.lib.types.ErrorInfo
 import io.ably.lib.types.ProtocolMessage
@@ -49,19 +49,14 @@ internal suspend fun ObjectsAdapter.attachAsync(channelName: String) = suspendCa
   }
 }
 
-internal fun ObjectsAdapter.retrieveObjectsGCGracePeriod(block : (Long?) -> Unit) {
-  connectionManager.objectsGCGracePeriod?.let {
-    block(it)
-    return
-  }
-  // If already connected, no further `connected` event is guaranteed; return immediately.
-  if (connection.state == ConnectionState.connected) {
-    block(connectionManager.objectsGCGracePeriod)
-    return
-  }
-  connection.once(ConnectionEvent.connected) {
+internal fun ObjectsAdapter.onGCGracePeriodUpdated(block : (Long?) -> Unit) : ObjectsSubscription {
+  connectionManager.objectsGCGracePeriod?.let { block(it) }
+  // Return new objectsGCGracePeriod whenever connection state changes to connected
+  val listener: (_: ConnectionStateListener.ConnectionStateChange) -> Unit = {
     block(connectionManager.objectsGCGracePeriod)
   }
+  connection.on(ConnectionEvent.connected, listener)
+  return ObjectsSubscription { connection.off(listener) }
 }
 
 /**

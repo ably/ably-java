@@ -52,14 +52,14 @@ internal class ObjectsPool(
   private val gcScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
   private var gcJob: Job // Job for the garbage collection coroutine
 
-  @Volatile
-  private var gcGracePeriod = ObjectsPoolDefaults.GC_GRACE_PERIOD_MS
+  @Volatile private var gcGracePeriod = ObjectsPoolDefaults.GC_GRACE_PERIOD_MS
+  private var gcPeriodSubscription: ObjectsSubscription
 
   init {
     // RTO3b - Initialize pool with root object
     pool[ROOT_OBJECT_ID] = DefaultLiveMap.zeroValue(ROOT_OBJECT_ID, realtimeObjects)
     // Start garbage collection coroutine with server-provided grace period if available
-    realtimeObjects.adapter.retrieveObjectsGCGracePeriod { period ->
+    gcPeriodSubscription = realtimeObjects.adapter.onGCGracePeriodUpdated { period ->
       period?.let {
         gcGracePeriod = it
         Log.i(tag, "Using objectsGCGracePeriod from server: $gcGracePeriod ms")
@@ -164,6 +164,7 @@ internal class ObjectsPool(
    * Should be called when the pool is no longer needed.
    */
   fun dispose() {
+    gcPeriodSubscription.unsubscribe()
     gcJob.cancel()
     gcScope.cancel()
     pool.clear()
