@@ -31,6 +31,7 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ConnectionDetails;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolSerializer;
 import io.ably.lib.util.Log;
@@ -855,6 +856,13 @@ public class ConnectionManager implements ConnectListener {
 
     public void requestState(StateIndication state) {
         requestState(null, state);
+    }
+
+    /**
+     * Get query params representing the current authentication method and credentials.
+     */
+    Param[] getAuthParams() throws AblyException {
+        return ably.auth.getAuthParams();
     }
 
     /**

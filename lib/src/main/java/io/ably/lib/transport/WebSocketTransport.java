@@ -109,7 +109,7 @@ public class WebSocketTransport implements ITransport {
             boolean isTls = params.options.tls;
             String wsScheme = isTls ? "wss://" : "ws://";
             wsUri = wsScheme + params.host + ':' + params.port + "/";
-            Param[] authParams = connectionManager.ably.auth.getAuthParams();
+            Param[] authParams = connectionManager.getAuthParams();
             Param[] connectParams = params.getConnectParams(authParams);
             if (connectParams.length > 0)
                 wsUri = HttpUtils.encodeParams(wsUri, connectParams);
@@ -415,7 +415,7 @@ public class WebSocketTransport implements ITransport {
             try {
                 timer.schedule(task, delay);
             } catch (IllegalStateException ise) {
-                Log.w(TAG, "Timer has already been canceled", ise);
+                Log.w(TAG, "Timer has already has been canceled", ise);
             }
         }
 
@@ -439,7 +439,7 @@ public class WebSocketTransport implements ITransport {
         }
 
         private long getActivityTimeout() {
-            return connectionManager.maxIdleInterval + connectionManager.ably.options.realtimeRequestTimeout;
+            return connectionManager.maxIdleInterval + params.options.realtimeRequestTimeout;
         }
     }
 
