@@ -60,52 +60,52 @@ class HelpersTest {
   }
 
   @Test
-  fun testRetrieveObjectsGCGracePeriodImmediateInvokesBlock() {
+  fun testOnGCGracePeriodImmediateInvokesBlock() {
     val adapter = getMockObjectsAdapter()
     val connManager = adapter.connectionManager
     connManager.setPrivateField("objectsGCGracePeriod", 123L)
 
     var value: Long? = null
-    adapter.retrieveObjectsGCGracePeriod { v -> value = v }
+    adapter.onGCGracePeriodUpdated { v -> value = v }
 
     assertEquals(123L, value)
-    verify(exactly = 0) { adapter.connection.once(ConnectionEvent.connected, any<ConnectionStateListener>()) }
+    verify(exactly = 1) { adapter.connection.on(ConnectionEvent.connected, any<ConnectionStateListener>()) }
   }
 
   @Test
-  fun testRetrieveObjectsGCGracePeriodDeferredInvokesOnConnectedWithValue() {
+  fun testOnGCGracePeriodDeferredInvokesOnConnectedWithValue() {
     val adapter = getMockObjectsAdapter()
     val connManager = adapter.connectionManager
     val connection = adapter.connection
 
     var value: Long? = null
-    every { connection.once(ConnectionEvent.connected, any<ConnectionStateListener>()) } answers {
+    every { connection.on(ConnectionEvent.connected, any<ConnectionStateListener>()) } answers {
       val listener = secondArg<ConnectionStateListener>()
       connManager.setPrivateField("objectsGCGracePeriod", 456L)
       listener.onConnectionStateChanged(mockk(relaxed = true))
     }
 
-    adapter.retrieveObjectsGCGracePeriod { v -> value = v }
+    adapter.onGCGracePeriodUpdated { v -> value = v }
 
     assertEquals(456L, value)
-    verify(exactly = 1) { connection.once(ConnectionEvent.connected, any<ConnectionStateListener>()) }
+    verify(exactly = 1) { connection.on(ConnectionEvent.connected, any<ConnectionStateListener>()) }
   }
 
   @Test
-  fun testRetrieveObjectsGCGracePeriodDeferredInvokesOnConnectedWithNull() {
+  fun testOnGCGracePeriodDeferredInvokesOnConnectedWithNull() {
     val adapter = getMockObjectsAdapter()
     val connection = adapter.connection
 
     var value: Long? = null
-    every { connection.once(ConnectionEvent.connected, any<ConnectionStateListener>()) } answers {
+    every { connection.on(ConnectionEvent.connected, any<ConnectionStateListener>()) } answers {
       val listener = secondArg<ConnectionStateListener>()
       listener.onConnectionStateChanged(mockk(relaxed = true))
     }
 
-    adapter.retrieveObjectsGCGracePeriod { v -> value = v }
+    adapter.onGCGracePeriodUpdated { v -> value = v }
 
     assertNull(value)
-    verify(exactly = 1) { connection.once(ConnectionEvent.connected, any<ConnectionStateListener>()) }
+    verify(exactly = 1) { connection.on(ConnectionEvent.connected, any<ConnectionStateListener>()) }
   }
 
   @Test
