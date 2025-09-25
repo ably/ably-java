@@ -3,7 +3,6 @@ package io.ably.lib.objects.type.livemap
 import io.ably.lib.objects.*
 import io.ably.lib.objects.ObjectData
 import io.ably.lib.objects.ObjectsPool
-import io.ably.lib.objects.ObjectsPoolDefaults
 import io.ably.lib.objects.type.BaseRealtimeObject
 import io.ably.lib.objects.type.ObjectType
 import io.ably.lib.objects.type.counter.LiveCounter
@@ -61,9 +60,9 @@ internal fun LiveMapEntry.getResolvedValue(objectsPool: ObjectsPool): LiveMapVal
 /**
  * Extension function to check if a LiveMapEntry is expired and ready for garbage collection
  */
-internal fun LiveMapEntry.isEligibleForGc(): Boolean {
+internal fun LiveMapEntry.isEligibleForGc(gcGracePeriod: Long): Boolean {
   val currentTime = System.currentTimeMillis()
-  return isTombstoned && tombstonedAt?.let { currentTime - it >= ObjectsPoolDefaults.GC_GRACE_PERIOD_MS } == true
+  return isTombstoned && tombstonedAt?.let { currentTime - it >= gcGracePeriod } == true
 }
 
 private fun fromObjectValue(objValue: ObjectValue): LiveMapValue {
