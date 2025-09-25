@@ -19,7 +19,7 @@ import java.util.Map;
 
 /**
  * A summary of all the annotations that have been made to the message. Will always be
- * populated for a message.summary, and may be populated for any other type (in
+ * populated for a message.annotations.summary, and may be populated for any other type (in
  * particular a message retrieved from REST history will have its latest summary
  * included).
  * The keys of the map are the annotation types. The exact structure of the value of

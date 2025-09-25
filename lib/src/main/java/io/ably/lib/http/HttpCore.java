@@ -333,8 +333,10 @@ public class HttpCore {
             requestHeaders.put(HttpConstants.Headers.ACCEPT, HttpConstants.ContentTypes.JSON);
         }
 
-        /* pass required headers */
-        requestHeaders.put(Defaults.ABLY_PROTOCOL_VERSION_HEADER, Defaults.ABLY_PROTOCOL_VERSION); // RSC7a
+        if (!requestHeaders.containsKey(Defaults.ABLY_PROTOCOL_VERSION_HEADER)) {
+            requestHeaders.put(Defaults.ABLY_PROTOCOL_VERSION_HEADER, Defaults.ABLY_PROTOCOL_VERSION); // RSC7e
+        }
+
         Map<String, String> additionalAgents = new HashMap<>();
         if (options.agents != null) additionalAgents.putAll(options.agents);
         if (dynamicAgents != null) additionalAgents.putAll(dynamicAgents);

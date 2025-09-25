@@ -9,6 +9,7 @@ import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.MessageAction;
+import io.ably.lib.types.MessageVersion;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -93,12 +94,11 @@ public class ChatMessagesTest extends ParameterizedTest {
 
             Assert.assertEquals(resultCreatedAt, String.valueOf(message.timestamp));
 
-            Assert.assertEquals(resultCreatedAt, message.createdAt.toString());
             Assert.assertEquals(resultSerial, message.serial);
-            Assert.assertEquals(resultSerial, message.version);
+            Assert.assertEquals(resultSerial, message.version.serial);
 
             Assert.assertEquals(MessageAction.MESSAGE_CREATE, message.action);
-            Assert.assertEquals(resultCreatedAt, message.createdAt.toString());
+            Assert.assertEquals(resultCreatedAt, String.valueOf(message.version.timestamp));
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -200,13 +200,13 @@ public class ChatMessagesTest extends ParameterizedTest {
             Assert.assertEquals(1, metadata.getAsJsonObject("foo").get("bar").getAsInt());
 
             Assert.assertEquals(originalSerial, updatedMessage.serial);
-            Assert.assertEquals(originalCreatedAt, updatedMessage.createdAt.toString());
+            Assert.assertEquals(originalCreatedAt, String.valueOf(updatedMessage.timestamp));
 
-            Assert.assertEquals(updateResultVersion, updatedMessage.version);
-            Assert.assertEquals(updateResultTimestamp, String.valueOf(updatedMessage.timestamp));
+            Assert.assertEquals(updateResultVersion, updatedMessage.version.serial);
+            Assert.assertEquals(updateResultTimestamp, String.valueOf(updatedMessage.version.timestamp));
 
             // updatedMessage contains `operation` with fields as clientId, description, metadata, assert for these fields
-            Message.Operation operation = updatedMessage.operation;
+            MessageVersion operation = updatedMessage.version;
             Assert.assertEquals("clientId1", operation.clientId);
             Assert.assertEquals("message updated by clientId1", operation.description);
             Assert.assertEquals(2, operation.metadata.size());
@@ -294,19 +294,19 @@ public class ChatMessagesTest extends ParameterizedTest {
             Assert.assertEquals("clientId1", deletedMessage.clientId);
 
             Assert.assertEquals(originalSerial, deletedMessage.serial);
-            Assert.assertEquals(originalCreatedAt, deletedMessage.createdAt.toString());
+            Assert.assertEquals(originalCreatedAt, String.valueOf(deletedMessage.timestamp));
 
-            Assert.assertEquals(deleteResultVersion, deletedMessage.version);
-            Assert.assertEquals(deleteResultTimestamp, String.valueOf(deletedMessage.timestamp));
+            Assert.assertEquals(deleteResultVersion, deletedMessage.version.serial);
+            Assert.assertEquals(deleteResultTimestamp, String.valueOf(deletedMessage.version.timestamp));
 
             // deletedMessage contains `operation` with fields as clientId, reason
-            Message.Operation operation = deletedMessage.operation;
-            Assert.assertEquals("clientId1", operation.clientId);
-            Assert.assertEquals("message deleted by clientId1", operation.description);
+            MessageVersion version = deletedMessage.version;
+            Assert.assertEquals("clientId1", version.clientId);
+            Assert.assertEquals("message deleted by clientId1", version.description);
             // assert on metadata
-            Assert.assertEquals(2, operation.metadata.size());
-            Assert.assertEquals("bar", operation.metadata.get("foo"));
-            Assert.assertEquals("hero", operation.metadata.get("naruto"));
+            Assert.assertEquals(2, version.metadata.size());
+            Assert.assertEquals("bar", version.metadata.get("foo"));
+            Assert.assertEquals("hero", version.metadata.get("naruto"));
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -405,8 +405,8 @@ public class ChatMessagesTest extends ParameterizedTest {
             JsonObject updatedData = (JsonObject) updatedMessage.data;
             Assert.assertEquals("updated text", updatedData.get("text").getAsString());
 
-            Assert.assertEquals(updateResultVersion, updatedMessage.version);
-            Assert.assertEquals(updateResultTimestamp, String.valueOf(updatedMessage.timestamp));
+            Assert.assertEquals(updateResultVersion, updatedMessage.version.serial);
+            Assert.assertEquals(updateResultTimestamp, String.valueOf(updatedMessage.version.timestamp));
 
             // Verify the deleted message
             Message deletedMessage = receivedMsg.get(2);
@@ -415,18 +415,18 @@ public class ChatMessagesTest extends ParameterizedTest {
             Assert.assertEquals("chat.message", deletedMessage.name);
             Assert.assertEquals("clientId1", deletedMessage.clientId);
 
-            Assert.assertEquals(deleteResultVersion, deletedMessage.version);
-            Assert.assertEquals(deleteResultTimestamp, String.valueOf(deletedMessage.timestamp));
+            Assert.assertEquals(deleteResultVersion, deletedMessage.version.serial);
+            Assert.assertEquals(deleteResultTimestamp, String.valueOf(deletedMessage.version.timestamp));
 
             // Check original serials
             Assert.assertEquals(originalSerial, createdMessage.serial);
             Assert.assertEquals(originalSerial, updatedMessage.serial);
             Assert.assertEquals(originalSerial, deletedMessage.serial);
 
-            // Check original message createdAt
-            Assert.assertEquals(originalCreatedAt, createdMessage.createdAt.toString());
-            Assert.assertEquals(originalCreatedAt, updatedMessage.createdAt.toString());
-            Assert.assertEquals(originalCreatedAt, deletedMessage.createdAt.toString());
+            // Check original message timestamp
+            Assert.assertEquals(originalCreatedAt, String.valueOf(createdMessage.timestamp));
+            Assert.assertEquals(originalCreatedAt, String.valueOf(updatedMessage.timestamp));
+            Assert.assertEquals(originalCreatedAt, String.valueOf(deletedMessage.timestamp));
 
         } catch (Exception e) {
             e.printStackTrace();
