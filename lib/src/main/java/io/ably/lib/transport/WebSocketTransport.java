@@ -252,8 +252,8 @@ public class WebSocketTransport implements ITransport {
          ***************************/
 
         private final Timer timer = new Timer();
-        private TimerTask activityTimerTask = null;
-        private long lastActivityTime;
+        private volatile TimerTask activityTimerTask = null;
+        private volatile long lastActivityTime;
 
         /**
          * Monitor for activity timer events
@@ -387,6 +387,9 @@ public class WebSocketTransport implements ITransport {
                 Log.v(TAG, "checkActivity: infinite timeout");
                 return;
             }
+
+            // prevent going to the synchronized block if the timer is active
+            if (activityTimerTask != null) return;
 
             synchronized (activityTimerMonitor) {
                 // Check if timer already running

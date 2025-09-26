@@ -2020,7 +2020,7 @@ public class ConnectionManager implements ConnectListener {
     private ErrorInfo stateError;
     private ConnectParams pendingConnect;
     private boolean suppressRetry; /* for tests only; modified via reflection */
-    private ITransport transport;
+    private volatile ITransport transport;
     private long suspendTime;
     public long msgSerial;
     private long lastActivity;
