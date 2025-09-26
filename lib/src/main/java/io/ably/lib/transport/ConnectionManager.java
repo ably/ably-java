@@ -31,6 +31,7 @@ import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ConnectionDetails;
 import io.ably.lib.types.ErrorInfo;
+import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolSerializer;
 import io.ably.lib.util.Log;
@@ -855,6 +856,23 @@ public class ConnectionManager implements ConnectListener {
 
     public void requestState(StateIndication state) {
         requestState(null, state);
+    }
+
+    /**
+     * Get query params representing the current authentication method and credentials.
+     */
+    Param[] getAuthParams() throws AblyException {
+        return ably.auth.getAuthParams();
+    }
+
+    /**
+     * Determines if the given WebSocketTransport instance is the currently active transport.
+     *
+     * @param transport the WebSocketTransport instance to check against the active transport
+     * @return true if the provided transport is the currently active transport, false otherwise
+     */
+    boolean isActiveTransport(WebSocketTransport transport) {
+        return transport == this.transport;
     }
 
     private synchronized void requestState(ITransport transport, StateIndication stateIndication) {
@@ -2002,7 +2020,7 @@ public class ConnectionManager implements ConnectListener {
     private ErrorInfo stateError;
     private ConnectParams pendingConnect;
     private boolean suppressRetry; /* for tests only; modified via reflection */
-    private ITransport transport;
+    private volatile ITransport transport;
     private long suspendTime;
     public long msgSerial;
     private long lastActivity;

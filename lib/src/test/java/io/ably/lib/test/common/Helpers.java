@@ -969,6 +969,16 @@ public class Helpers {
         return (one == null) ? (two == null) : one.equals(two);
     }
 
+    public static void setPrivateField(Object object, String fieldName, Object value) {
+        try {
+            Field connectionStateField = object.getClass().getDeclaredField(fieldName);
+            connectionStateField.setAccessible(true);
+            connectionStateField.set(object, value);
+        } catch (Exception e) {
+            fail("Failed accessing " + fieldName + " with error " + e);
+        }
+    }
+
     public static class RawHttpRequest {
         public String id;
         public URL url;
