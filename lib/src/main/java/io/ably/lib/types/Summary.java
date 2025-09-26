@@ -31,6 +31,12 @@ public class Summary {
 
     private static final String TAG = Summary.class.getName();
 
+    private static final String TOTAL = "total";
+    private static final String CLIENT_IDS = "clientIds";
+    private static final String CLIPPED = "clipped";
+    private static final String TOTAL_UNIDENTIFIED = "totalUnidentified";
+    private static final String TOTAL_CLIENT_IDS = "totalClientIds";
+
     /**
      * (TM2q1) The sdk MUST be able to cope with structures and aggregation types that have it does not yet know about
      * or have explicit support for, hence the loose (JsonObject) type.
@@ -59,25 +65,53 @@ public class Summary {
         for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
             String key = entry.getKey();
             JsonObject value = entry.getValue().getAsJsonObject();
-            int total = value.get("total").getAsInt();
+            int total = value.get(TOTAL).getAsInt();
             Map<String, Integer> clientIds = new HashMap<>();
-            for (Map.Entry<String, JsonElement> clientEntry: value.get("clientIds").getAsJsonObject().entrySet()) {
+            for (Map.Entry<String, JsonElement> clientEntry: value.get(CLIENT_IDS).getAsJsonObject().entrySet()) {
                 clientIds.put(clientEntry.getKey(), clientEntry.getValue().getAsInt());
             }
-            summary.put(key, new SummaryClientIdCounts(total, clientIds));
+            Integer totalUnidentified = tryReadIntField(value, TOTAL_UNIDENTIFIED);
+            Integer totalClientIds = tryReadIntField(value, TOTAL_CLIENT_IDS);
+            summary.put(key, new SummaryClientIdCounts(
+                total,
+                clientIds,
+                totalUnidentified == null ? 0 : totalUnidentified,
+                tryReadBooleanField(value, CLIPPED),
+                totalClientIds == null ? total : totalClientIds
+            ));
         }
         return summary;
     }
 
     public static SummaryClientIdList asSummaryFlagV1(JsonObject jsonObject) {
-        int total = jsonObject.get("total").getAsInt();
-        List<String> clientIds = Serialisation.gson.fromJson(jsonObject.get("clientIds"), List.class);
-        return new SummaryClientIdList(total, clientIds);
+        int total = jsonObject.get(TOTAL).getAsInt();
+        List<String> clientIds = Serialisation.gson.fromJson(jsonObject.get(CLIENT_IDS), List.class);
+        return new SummaryClientIdList(
+            total,
+            clientIds,
+            tryReadBooleanField(jsonObject, CLIPPED)
+        );
     }
 
     public static SummaryTotal asSummaryTotalV1(JsonObject jsonObject) {
-        int total = jsonObject.get("total").getAsInt();
+        int total = jsonObject.get(TOTAL).getAsInt();
         return new SummaryTotal(total);
+    }
+
+    private static boolean tryReadBooleanField(JsonObject jsonObject, String fieldName) {
+        JsonElement fieldElement = jsonObject.get(fieldName);
+        if (fieldElement != null && fieldElement.isJsonPrimitive() && fieldElement.getAsJsonPrimitive().isBoolean()) {
+            return fieldElement.getAsBoolean();
+        }
+        return false;
+    }
+
+    private static Integer tryReadIntField(JsonObject jsonObject, String fieldName) {
+        JsonElement fieldElement = jsonObject.get(fieldName);
+        if (fieldElement != null && fieldElement.isJsonPrimitive() && fieldElement.getAsJsonPrimitive().isNumber()) {
+            return fieldElement.getAsInt();
+        }
+        return null;
     }
 
     static Summary read(MessageUnpacker unpacker) {

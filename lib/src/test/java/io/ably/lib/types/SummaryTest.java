@@ -7,6 +7,7 @@ import org.junit.Test;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -126,6 +127,25 @@ public class SummaryTest {
         assertTrue(result.clientIds.contains("client1"));
         assertTrue(result.clientIds.contains("client2"));
         assertTrue(result.clientIds.contains("client3"));
+        assertFalse(result.clipped);
+    }
+
+    @Test
+    public void testAsSummaryFlagV1_clippedTrue() {
+        JsonObject entryValue = new JsonObject();
+        entryValue.addProperty("total", 100);
+        JsonArray clientIds = new JsonArray();
+        clientIds.add("client1");
+        entryValue.add("clientIds", clientIds);
+        entryValue.addProperty("clipped", true);
+
+        SummaryClientIdList result = Summary.asSummaryFlagV1(entryValue);
+
+        assertNotNull(result);
+        assertEquals(100, result.total);
+        assertEquals(1, result.clientIds.size());
+        assertTrue(result.clientIds.contains("client1"));
+        assertTrue(result.clipped);
     }
 
     @Test
@@ -196,6 +216,9 @@ public class SummaryTest {
         assertEquals(2, summaryA.clientIds.size());
         assertEquals(3, (int) summaryA.clientIds.get("clientA"));
         assertEquals(2, (int) summaryA.clientIds.get("clientB"));
+        assertEquals(0, summaryA.totalUnidentified);
+        assertEquals(5, summaryA.totalClientIds);
+        assertFalse(summaryA.clipped);
 
         SummaryClientIdCounts summaryB = result.get("👍️️️️️️");
         assertNotNull(summaryB);
@@ -203,6 +226,30 @@ public class SummaryTest {
         assertEquals(2, summaryB.clientIds.size());
         assertEquals(1, (int) summaryB.clientIds.get("clientX"));
         assertEquals(1, (int) summaryB.clientIds.get("clientY"));
+        assertEquals(0, summaryB.totalUnidentified);
+        assertEquals(2, summaryB.totalClientIds);
+        assertFalse(summaryA.clipped);
+    }
+
+    @Test
+    public void testAsSummaryMultipleV1_ClippedTrue() {
+        JsonObject jsonObject = new JsonObject();
+
+        JsonObject entryValue1 = new JsonObject();
+        entryValue1.addProperty("total", 5);
+        JsonObject clientIds1 = new JsonObject();
+        clientIds1.addProperty("clientA", 1);
+        entryValue1.add("clientIds", clientIds1);
+        entryValue1.addProperty("clipped", true);
+        entryValue1.addProperty("totalClientIds", 1);
+        jsonObject.add("😄️️️", entryValue1);
+
+        Map<String, SummaryClientIdCounts> result = Summary.asSummaryMultipleV1(jsonObject);
+        SummaryClientIdCounts summary = result.get("😄️️️");
+        assertEquals(5, summary.total);
+        assertEquals(1, summary.totalClientIds);
+        assertEquals(0, summary.totalUnidentified);
+        assertTrue(summary.clipped);
     }
 
     @Test
