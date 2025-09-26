@@ -1,5 +1,15 @@
 # Change Log
 
+## [1.4.0](https://github.com/ably/ably-java/tree/v1.4.0)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.3.0...v1.4.0)
+
+### What's Changed
+
+- Protocol v4 support for enhanced message annotations and versioning [\#1163](https://github.com/ably/ably-java/pull/1163)
+- Support for clipped client ID lists and enhanced aggregation handling [\#1164](https://github.com/ably/ably-java/pull/1164)
+- Improved WebSocket transport lifecycle and activity management [\#1165](https://github.com/ably/ably-java/pull/1165)
+
 ## [1.3.0](https://github.com/ably/ably-java/tree/v1.3.0)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.2.54...v1.3.0)
