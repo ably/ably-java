@@ -171,11 +171,11 @@ public class BaseMessage implements Cloneable {
         }
 
         //last message bookkeping
-        if(lastPayload instanceof String)
+        if (lastPayload instanceof String)
             context.setLastMessageData((String)lastPayload);
         else if (lastPayload instanceof byte[])
             context.setLastMessageData((byte[])lastPayload);
-        else
+        else if (lastPayload != null)
             throw MessageDecodeException.fromDescription("Message data neither String nor byte[]. Unsupported message data type.");
     }
 
