@@ -1,6 +1,7 @@
 package io.ably.lib.realtime;
 
 import io.ably.lib.types.ErrorInfo;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * An interface whereby a client may be notified of state changes for a channel.
@@ -68,6 +69,17 @@ public interface ChannelStateListener {
         /* construct UPDATE event */
         static ChannelStateChange createUpdateEvent(ErrorInfo reason, boolean resumed) {
             return new ChannelStateChange(reason, resumed);
+        }
+
+        @Override
+        public @NotNull String toString() {
+            return '{' +
+                "event=" + event +
+                ", current=" + current +
+                ", previous=" + previous +
+                ", reason=" + reason +
+                ", resumed=" + resumed +
+                '}';
         }
     }
 
