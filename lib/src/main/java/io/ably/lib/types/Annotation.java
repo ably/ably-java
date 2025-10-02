@@ -10,6 +10,7 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.Serialisation;
+import org.jetbrains.annotations.NotNull;
 import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
@@ -231,6 +232,22 @@ public class Annotation extends BaseMessage {
 
             return annotation;
         }
+    }
+
+    /**
+     * Generate a String summary of this Message
+     * @return string
+     */
+    @Override
+    public @NotNull String toString() {
+        StringBuilder result = new StringBuilder("{");
+        super.getDetails(result);
+        result.append(" name=").append(name);
+        result.append(" serial=").append(serial);
+        result.append(" messageSerial=").append(messageSerial);
+        result.append(" type=").append(type);
+        result.append('}');
+        return result.toString();
     }
 
     public static class ActionSerializer implements JsonSerializer<AnnotationAction>, JsonDeserializer<AnnotationAction> {
