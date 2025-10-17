@@ -28,6 +28,8 @@ import org.junit.rules.Timeout;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -988,15 +990,21 @@ public class RealtimeResumeTest extends ParameterizedTest {
                 System.out.println("presence_resume_test: sent message with client: "+presenceMessage.clientId +" " +
                     " action:"+presenceMessage.action);
             }
-            assertEquals("Second round of messages has incorrect size", 6, transport.getSentPresenceMessages().size());
+
+            Set<String> sentClientIds = transport.getSentPresenceMessages().stream()
+                .map(it -> it.clientId).collect(Collectors.toSet());
+
+            assertEquals("Second round of messages has incorrect size",
+                9,
+                sentClientIds.size()
+            );
             //make sure they were sent with correct client ids
             final Map<String,PresenceMessage> sentPresenceMap = new HashMap<>();
             for (PresenceMessage presenceMessage: transport.getSentPresenceMessages()){
                 sentPresenceMap.put(presenceMessage.clientId, presenceMessage);
             }
-
-            for (int i = 3; i < 9; i++) {
-                assertTrue("Client id isn't there:" + clients[i], sentPresenceMap.containsKey(clients[i]));
+            for (String client: clients) {
+                assertTrue("Client id isn't there:" + client, sentPresenceMap.containsKey(client));
             }
         }
     }

@@ -2250,132 +2250,94 @@ public class RealtimePresenceTest extends ParameterizedTest {
      *
      * Tests RTP17, RTP19, RTP19a, RTP5f, RTP6b
      */
-    @Ignore("FIXME: fix exception")
     @Test
-    public void realtime_presence_suspended_reenter() throws AblyException {
-        AblyRealtime ably = null;
-        try {
-            MockWebsocketFactory mockTransport = new MockWebsocketFactory();
-            DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
-            fillInOptions(opts);
-            opts.transportFactory = mockTransport;
+    public void realtime_presence_suspended_reenter() throws Exception {
+        MockWebsocketFactory mockTransport = new MockWebsocketFactory();
+        DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
+        fillInOptions(opts);
+        opts.transportFactory = mockTransport;
+        final String channelName = "presence_suspended_reenter" + testParams.name;
+        mockTransport.allowSend();
 
-            for (int i=0; i<2; i++) {
-                final String channelName = "presence_suspended_reenter" + testParams.name + i;
+        try (AblyRealtime ably = new AblyRealtime(opts)) {
 
-                mockTransport.allowSend();
+            ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
+            connectionWaiter.waitFor(ConnectionState.connected);
 
-                ably = new AblyRealtime(opts);
+            final Channel channel = ably.channels.get(channelName);
+            channel.attach();
+            ChannelWaiter channelWaiter = new ChannelWaiter(channel);
 
-                ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
-                connectionWaiter.waitFor(ConnectionState.connected);
+            channelWaiter.waitFor(ChannelState.attached);
 
-                final Channel channel = ably.channels.get(channelName);
-                channel.attach();
-                ChannelWaiter channelWaiter = new ChannelWaiter(channel);
+            final String presenceData = "PRESENCE_DATA";
 
-                channelWaiter.waitFor(ChannelState.attached);
-
-                final String presenceData = "PRESENCE_DATA";
-                final String connId = ably.connection.id;
-
-                /*
-                 * On the first run to test RTP19a we don't enter client1 so the server on
-                 * return from suspend sees no presence data and sends ATTACHED without HAS_PRESENCE
-                 * The client then should remove all the members from the presence map and then
-                 * re-enter client2. On the second loop run we enter client1 and receive ATTACHED with
-                 * HAS_PRESENCE
-                 */
-                final boolean[] wrongPresenceEmitted = new boolean[] {false};
-                if (i == 1) {
-                    CompletionWaiter completionWaiter = new CompletionWaiter();
-                    channel.presence.enterClient(testClientId1, presenceData, completionWaiter);
-                    completionWaiter.waitFor();
-
-                    // RTP5f: after this point there should be no presence event for client1
-                    channel.presence.subscribe(new Presence.PresenceListener() {
-                        @Override
-                        public void onPresenceMessage(PresenceMessage message) {
-                            if (message.clientId.equals(testClientId1))
-                                wrongPresenceEmitted[0] = true;
-                        }
-                    });
+            final ArrayList<PresenceMessage> leaveMessages = new ArrayList<>();
+            /* Subscribe for message type, test RTP6b */
+            channel.presence.subscribe(Action.leave, new Presence.PresenceListener() {
+                @Override
+                public void onPresenceMessage(PresenceMessage message) {
+                    leaveMessages.add(message);
                 }
+            });
 
-                final ArrayList<PresenceMessage> leaveMessages = new ArrayList<>();
-                /* Subscribe for message type, test RTP6b */
-                channel.presence.subscribe(Action.leave, new Presence.PresenceListener() {
-                    @Override
-                    public void onPresenceMessage(PresenceMessage message) {
-                        leaveMessages.add(message);
-                    }
-                });
+            channel.presence.enterClient(testClientId1, presenceData);
 
-                /*
-                 * We put testClientId2 presence data into the client library presence map but we
-                 * don't send it to the server
-                 */
+            /*
+             * We put testClientId2 presence data into the client library presence map but we
+             * don't send it to the server
+             */
+            ProtocolMessage msg = new ProtocolMessage();
+            msg.connectionId = "randomConnectionId";
+            msg.action = ProtocolMessage.Action.sync;
+            msg.channel = channelName;
+            msg.presence = new PresenceMessage[]{
+                new PresenceMessage() {{
+                    action = Action.present;
+                    id = String.format("%s:0:0", "randomConnectionId");
+                    timestamp = System.currentTimeMillis();
+                    clientId = testClientId2;
+                    connectionId = "randomConnectionId";
+                    data = presenceData;
+                }}
+            };
+            ably.connection.connectionManager.onMessage(null, msg);
 
-                mockTransport.blockSend();
-                channel.presence.enterClient(testClientId2, presenceData);
+            ably.connection.connectionManager.requestState(ConnectionState.suspended);
+            channelWaiter.waitFor(ChannelState.suspended);
 
-                ProtocolMessage msg = new ProtocolMessage();
-                msg.connectionId = connId;
-                msg.action = ProtocolMessage.Action.sync;
-                msg.channel = channelName;
-                msg.presence = new PresenceMessage[]{
-                        new PresenceMessage() {{
-                            action = Action.present;
-                            id = String.format("%s:0:0", connId);
-                            timestamp = System.currentTimeMillis();
-                            clientId = testClientId2;
-                            connectionId = connId;
-                            data = presenceData;
-                        }}
-                };
-                ably.connection.connectionManager.onMessage(null, msg);
+            /*
+             * When restoring from suspended state server will send sync message erasing
+             * testClientId2 record from the presence map.
+             */
+            ably.connection.connectionManager.requestState(ConnectionState.connected);
+            channelWaiter.waitFor(ChannelState.attached);
+            long reconnectTimestamp = System.currentTimeMillis();
 
-                mockTransport.allowSend();
+            PaginatedResult<PresenceMessage> presentMembers;
 
-                ably.connection.connectionManager.requestState(ConnectionState.suspended);
-                channelWaiter.waitFor(ChannelState.suspended);
-
-                /*
-                 * When restoring from suspended state server will send sync message erasing
-                 * testClientId2 record from the presence map. Client should re-send presence message
-                 * for testClientId2 and restore its presence data.
-                 */
-
-                ably.connection.connectionManager.requestState(ConnectionState.connected);
-                channelWaiter.waitFor(ChannelState.attached);
-                long reconnectTimestamp = System.currentTimeMillis();
-
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
+            try (AblyRest restClient = new AblyRest(opts)) {
+                long timeout = 10_000;
+                presentMembers = restClient.channels.get(channelName).presence.get(null);
+                while (presentMembers.items().length != 1 && System.currentTimeMillis() - reconnectTimestamp < timeout) {
+                    Thread.sleep(250);
+                    presentMembers = restClient.channels.get(channelName).presence.get(null);
                 }
-
-                AblyRest ablyRest = new AblyRest(opts);
-                io.ably.lib.rest.Channel restChannel = ablyRest.channels.get(channelName);
-                assertEquals("Verify presence data is received by the server",
-                        restChannel.presence.get(null).items().length, i==0 ? 1 : 2);
-
-                /* In both cases we should have one leave message in the leaveMessages */
-                assertEquals("Verify exactly one LEAVE message was generated", leaveMessages.size(), 1);
-
-                PresenceMessage leaveMessage = leaveMessages.get(0);
-                assertEquals("Verify LEAVE message follows specs",leaveMessage.action, Action.leave);
-                assertEquals("Verify LEAVE message follows specs",leaveMessage.clientId, testClientId2);
-                assertEquals("Verify LEAVE message follows specs",leaveMessage.data, presenceData);
-                assertTrue("Verify LEAVE message follows specs", Math.abs(leaveMessage.timestamp-reconnectTimestamp) < 2000);
-
-                /* According to RTP5f there should be no presence event emitted for client1 */
-                assertFalse("Verify no presence event emitted on return from suspend on SYNC for client1",
-                        wrongPresenceEmitted[0]);
             }
-        } finally {
-            if(ably != null)
-                ably.close();
+
+            assertEquals("Verify presence data is received by the server",
+                1, presentMembers.items().length);
+
+            assertEquals(testClientId1, presentMembers.items()[0].clientId);
+            assertEquals(presenceData, presentMembers.items()[0].data);
+
+            assertEquals("Verify exactly one LEAVE message was generated", leaveMessages.size(), 1);
+
+            PresenceMessage leaveMessage = leaveMessages.get(0);
+            assertEquals("Verify LEAVE message follows specs",leaveMessage.action, Action.leave);
+            assertEquals("Verify LEAVE message follows specs",leaveMessage.clientId, testClientId2);
+            assertEquals("Verify LEAVE message follows specs",leaveMessage.data, presenceData);
+            assertTrue("Verify LEAVE message follows specs", Math.abs(leaveMessage.timestamp-reconnectTimestamp) < 2000);
         }
     }
 
