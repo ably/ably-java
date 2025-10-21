@@ -755,9 +755,11 @@ public class Presence {
             case initialized:
                 channel.attach();
             case attaching:
+                Log.v(TAG, "updatePresence(); put message in pending presence queue");
                 pendingPresence.add(new QueuedPresence(msg, listener));
                 break;
             case attached:
+                Log.v(TAG, "updatePresence(); send message to connection manager");
                 ProtocolMessage message = new ProtocolMessage(ProtocolMessage.Action.presence, channel.name);
                 message.presence = new PresenceMessage[] { msg };
                 ConnectionManager connectionManager = ably.connection.connectionManager;
@@ -938,7 +940,7 @@ public class Presence {
                     @Override
                     public void onError(ErrorInfo reason) {
                         String errorString = String.format(Locale.ROOT, "Cannot automatically re-enter %s on channel %s (%s)",
-                            item.clientId, channel.name, reason.message);
+                            item.clientId, channel.name, reason == null ? "" : reason.message);
                         Log.e(TAG, errorString);
                         channel.emitUpdate(new ErrorInfo(errorString, 91004), true);
                     }
