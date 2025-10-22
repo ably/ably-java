@@ -101,6 +101,7 @@ public class ConnectionManager implements ConnectListener {
      * This field is initialized only if the LiveObjects plugin is present in the classpath.
      */
     private final LiveObjectsPlugin liveObjectsPlugin;
+    public Long objectsGCGracePeriod = null;
 
     /**
      * Methods on the channels map owned by the {@link AblyRealtime} instance
@@ -1315,6 +1316,7 @@ public class ConnectionManager implements ConnectListener {
         maxIdleInterval = connectionDetails.maxIdleInterval;
         connectionStateTtl = connectionDetails.connectionStateTtl;
         maxMessageSize = connectionDetails.maxMessageSize;
+        objectsGCGracePeriod = connectionDetails.objectsGCGracePeriod;
 
         /* set the clientId resolved from token, if any */
         String clientId = connectionDetails.clientId;
