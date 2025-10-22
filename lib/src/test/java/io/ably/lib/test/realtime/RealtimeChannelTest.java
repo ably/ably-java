@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -2571,6 +2572,29 @@ public class RealtimeChannelTest extends ParameterizedTest {
             assertEquals(0, ably.connection.connectionManager.msgSerial);
             assertEquals(Arrays.asList(ChannelState.detached, ChannelState.initialized, ChannelState.attaching, ChannelState.attached), observedChannelStates);
         }
+    }
+
+    @Test
+    public void release_should_not_prevent_graceful_test_end() throws Exception {
+        ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+        try (AblyRealtime ably = new AblyRealtime(opts)) {
+            ably.channels.get("channel_should_be_released");
+            ably.channels.release("channel_should_be_released");
+        }
+
+        Set<Thread> threads = Thread.getAllStackTraces().keySet();
+        List<Thread> timers = threads.stream()
+            .filter(t -> t.getName().startsWith("Timer-"))
+            .toList();
+
+        long timeout = 1_000;
+        long start = System.currentTimeMillis();
+
+        while(timers.stream().anyMatch(Thread::isAlive) && System.currentTimeMillis() - start < timeout) {
+            Thread.sleep(100);
+        }
+
+        assertFalse("Found orphan Timer threads", timers.stream().anyMatch(Thread::isAlive));
     }
 
     /**
