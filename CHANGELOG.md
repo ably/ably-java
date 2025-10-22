@@ -1,5 +1,16 @@
 # Change Log
 
+## [1.4.1](https://github.com/ably/ably-java/tree/v1.4.1)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.4.0...v1.4.1)
+
+### What's Changed
+
+* Fixed an error in the log when `data` field in `Message` is `null` in https://github.com/ably/ably-java/pull/1168
+* Fixed an issue where presence would not send enter messages when the channel re-attaches after a disconnection in https://github.com/ably/ably-java/pull/1171
+* Added`toString` method in `ChannelStateChange` class for improved debugging in https://github.com/ably/ably-java/pull/1169
+* Fixed orphan Timer instances on release in https://github.com/ably/ably-java/pull/1173
+
 ## [1.4.0](https://github.com/ably/ably-java/tree/v1.4.0)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.3.0...v1.4.0)
