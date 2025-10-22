@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.ably.lib.http.BasePaginatedQuery;
 import io.ably.lib.http.Http;
@@ -95,7 +96,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     /**
      * @see #markAsReleased()
      */
-    private boolean released = false;
+    private AtomicBoolean released = new AtomicBoolean(false);
 
     @Nullable private final LiveObjectsPlugin liveObjectsPlugin;
 
@@ -330,8 +331,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     /**
      * Mark channel as released that means we can't perform any operation on this channel anymore
      */
-    public synchronized void markAsReleased() {
-        released = true;
+    public void markAsReleased() {
+        released.set(true);
     }
 
     /**
@@ -395,7 +396,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             }
 
             this.attachResume = false;
-            if (released) {
+            if (released.get()) {
                 setDetached(null);
             } else {
                 setState(ChannelState.detaching, null);
@@ -572,7 +573,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     }
 
     private void checkChannelIsNotReleased() {
-        if (released) throw new IllegalStateException("Unable to perform any operation on released channel");
+        if (released.get()) throw new IllegalStateException("Unable to perform any operation on released channel");
     }
 
     /**
@@ -621,17 +622,17 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         final ChannelState originalState = state;
         Timer currentDetachTimer;
         try {
-            currentDetachTimer = new Timer();
+            currentDetachTimer = released.get() ? null : new Timer();
         } catch(Throwable t) {
             /* an exception instancing the timer can arise because the runtime is exiting */
             callCompletionListenerError(listener, ErrorInfo.fromThrowable(t));
             return;
         }
-        attachTimer = released ? null : currentDetachTimer;
+        attachTimer = currentDetachTimer;
 
         try {
             // If channel has been released, completionListener won't be invoked anyway
-            CompletionListener completionListener = released ? null : new CompletionListener() {
+            CompletionListener completionListener = released.get() ? null : new CompletionListener() {
                 @Override
                 public void onSuccess() {
                     clearAttachTimers();
