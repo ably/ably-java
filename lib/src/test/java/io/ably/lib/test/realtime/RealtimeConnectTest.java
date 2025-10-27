@@ -6,6 +6,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import io.ably.lib.test.common.Helpers;
+import io.ably.lib.types.AsyncHttpPaginatedResponse;
+import io.ably.lib.types.ErrorInfo;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -22,6 +25,8 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.ProtocolMessage;
 import org.junit.rules.Timeout;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 public class RealtimeConnectTest extends ParameterizedTest {
 
@@ -245,6 +250,37 @@ public class RealtimeConnectTest extends ParameterizedTest {
         } catch (AblyException e) {
             e.printStackTrace();
             fail("close_when_connecting: Unexpected exception instantiating library");
+        }
+    }
+
+    @Test
+    public void reopened_connection_rest_works() throws Exception {
+        try (AblyRealtime realtimeClient = new AblyRealtime(createOptions(testVars.keys[0].keyStr))) {
+            realtimeClient.close();
+            realtimeClient.connect();
+
+            long timestamp = System.currentTimeMillis();
+            AtomicLong ablyTime = new AtomicLong(0);
+            Helpers.CompletionWaiter waiter = new Helpers.CompletionWaiter();
+
+            realtimeClient.requestAsync("GET", "/time", null, null, null, new AsyncHttpPaginatedResponse.Callback() {
+                @Override
+                public void onResponse(AsyncHttpPaginatedResponse response) {
+                    ablyTime.set(response.items()[0].getAsLong());
+                    waiter.onSuccess();
+                }
+
+                @Override
+                public void onError(ErrorInfo reason) {
+                    waiter.onError(reason);
+                }
+            });
+
+            waiter.waitFor();
+
+            long thirtySeconds = 30_000L;
+
+            assertTrue(ablyTime.get() > timestamp - thirtySeconds && ablyTime.get() < timestamp + thirtySeconds);
         }
     }
 

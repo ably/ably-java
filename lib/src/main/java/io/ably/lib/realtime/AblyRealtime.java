@@ -96,7 +96,9 @@ public class AblyRealtime extends AblyRest {
      * <p>
      * Spec: RTN11
      */
+    @Override
     public void connect() {
+        super.connect(); // resets thread pool for async requests
         connection.connect();
     }
 

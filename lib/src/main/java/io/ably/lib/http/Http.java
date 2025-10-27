@@ -21,6 +21,10 @@ public class Http implements AutoCloseable {
         asyncHttp.close();
     }
 
+    public void connect() {
+        asyncHttp.connect();
+    }
+
     /**
      * [Internal Method]
      * <p>

@@ -139,6 +139,13 @@ public abstract class AblyBase implements AutoCloseable {
     }
 
     /**
+     * Internal method, used for `RealtimeClient` only
+     */
+    protected void connect() {
+        http.connect();
+    }
+
+    /**
      * A collection of Channels associated with an Ably instance.
      */
     public interface Channels extends ReadOnlyMap<String, Channel> {
