@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.4.2](https://github.com/ably/ably-java/tree/v1.4.2)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.4.1...v1.4.2)
+
+### What's Changed
+
+* Fixed an issue where async requests were not working after the realtime client reconnected following a manual close in https://github.com/ably/ably-java/pull/1176
+
 ## [1.4.1](https://github.com/ably/ably-java/tree/v1.4.1)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.4.0...v1.4.1)
