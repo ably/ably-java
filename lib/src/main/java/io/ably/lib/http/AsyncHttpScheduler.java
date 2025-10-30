@@ -33,16 +33,23 @@ public class AsyncHttpScheduler extends HttpScheduler {
         return new AsyncHttpScheduler(httpCore, this.executor);
     }
 
+    public void connect() {
+        ((CloseableThreadPoolExecutor) executor).connect();
+    }
+
     private static class CloseableThreadPoolExecutor implements CloseableExecutor {
-        private final ThreadPoolExecutor executor;
+        // can be accessed by multiple threads, so needs to be volatile
+        private volatile ThreadPoolExecutor executor;
+        private final ClientOptions options;
 
         CloseableThreadPoolExecutor(final ClientOptions options) {
+            this.options = options;
             executor = new ThreadPoolExecutor(
                 options.asyncHttpThreadpoolSize,
                 options.asyncHttpThreadpoolSize,
                 KEEP_ALIVE_TIME,
                 TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>()
+                new LinkedBlockingQueue<>()
             );
         }
 
@@ -59,9 +66,16 @@ public class AsyncHttpScheduler extends HttpScheduler {
             }
         }
 
-        @Override
-        protected void finalize() throws Throwable {
-            close();
+        public void connect() {
+            if (executor.isShutdown()) {
+                executor = new ThreadPoolExecutor(
+                    options.asyncHttpThreadpoolSize,
+                    options.asyncHttpThreadpoolSize,
+                    KEEP_ALIVE_TIME,
+                    TimeUnit.MILLISECONDS,
+                    new LinkedBlockingQueue<>()
+                );
+            }
         }
     }
 }
