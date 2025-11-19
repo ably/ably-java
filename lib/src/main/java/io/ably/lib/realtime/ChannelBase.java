@@ -16,6 +16,7 @@ import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
 import io.ably.lib.objects.RealtimeObjects;
 import io.ably.lib.objects.LiveObjectsPlugin;
+import io.ably.lib.rest.MessageEditsMixin;
 import io.ably.lib.rest.RestAnnotations;
 import io.ably.lib.transport.ConnectionManager;
 import io.ably.lib.transport.ConnectionManager.QueuedMessage;
@@ -99,6 +100,8 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     private AtomicBoolean released = new AtomicBoolean(false);
 
     @Nullable private final LiveObjectsPlugin liveObjectsPlugin;
+
+    private final MessageEditsMixin messageEditsMixin;
 
     public RealtimeObjects getObjects() throws AblyException {
         if (liveObjectsPlugin == null) {
@@ -1172,6 +1175,121 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     private static final String KEY_UNTIL_ATTACH = "untilAttach";
     private static final String KEY_FROM_SERIAL = "fromSerial";
 
+    //region Message Edits and Deletes
+
+    /**
+     * Retrieves the latest version of a specific message by its serial identifier.
+     * <p>
+     * This method allows you to fetch the current state of a message, including any updates
+     * or deletions that have been applied since its creation.
+     *
+     * @param serial The unique serial identifier of the message to retrieve.
+     * @return A {@link Message} object representing the latest version of the message.
+     * @throws AblyException If the message cannot be retrieved or does not exist.
+     */
+    public Message getMessage(String serial) throws AblyException {
+        return messageEditsMixin.getMessage(ably.http, serial);
+    }
+
+    /**
+     * Asynchronously retrieves the latest version of a specific message by its serial identifier.
+     *
+     * @param serial The unique serial identifier of the message to retrieve.
+     * @param callback A callback to handle the result asynchronously.
+     * <p>
+     * This callback is invoked on a background thread.
+     */
+    public void getMessageAsync(String serial, Callback<Message> callback) {
+        messageEditsMixin.getMessageAsync(ably.http, serial, callback);
+    }
+
+    /**
+     * Updates an existing message by its serial identifier using patch semantics.
+     * <p>
+     * Non-null fields in the provided message (name, data, extras) will replace the corresponding
+     * fields in the existing message, while null fields will be left unchanged.
+     *
+     * @param serial The unique serial identifier of the message to update.
+     * @param message A {@link Message} object containing the fields to update.
+     *                Only non-null fields will be applied to the existing message.
+     * @throws AblyException If the update operation fails.
+     */
+    public void updateMessage(String serial, Message message) throws AblyException {
+        messageEditsMixin.updateMessage(ably.http, serial, message);
+    }
+
+    /**
+     * Asynchronously updates an existing message by its serial identifier.
+     *
+     * @param serial The unique serial identifier of the message to update.
+     * @param message A {@link Message} object containing the fields to update.
+     * @param listener A listener to be notified of the outcome of this operation.
+     * <p>
+     * This listener is invoked on a background thread.
+     */
+    public void updateMessageAsync(String serial, Message message, CompletionListener listener) {
+        messageEditsMixin.updateMessageAsync(ably.http, serial, message, listener);
+    }
+
+    /**
+     * Marks a message as deleted by its serial identifier.
+     * <p>
+     * This operation does not remove the message from history; it marks it as deleted
+     * while preserving the full message history. The deleted message can still be
+     * retrieved and will have its action set to MESSAGE_DELETE.
+     *
+     * @param serial The unique serial identifier of the message to delete.
+     * @param message A {@link Message} object that may contain operation metadata such as
+     *                clientId, description, or metadata in the version field.
+     * @throws AblyException If the delete operation fails.
+     */
+    public void deleteMessage(String serial, Message message) throws AblyException {
+        messageEditsMixin.deleteMessage(ably.http, serial, message);
+    }
+
+    /**
+     * Asynchronously marks a message as deleted by its serial identifier.
+     *
+     * @param serial The unique serial identifier of the message to delete.
+     * @param message A {@link Message} object for operation metadata.
+     * @param listener A listener to be notified of the outcome of this operation.
+     * <p>
+     * This listener is invoked on a background thread.
+     */
+    public void deleteMessageAsync(String serial, Message message, CompletionListener listener) {
+        messageEditsMixin.deleteMessageAsync(ably.http, serial, message, listener);
+    }
+
+    /**
+     * Retrieves all historical versions of a specific message.
+     * <p>
+     * This method returns a paginated result containing all versions of the message,
+     * ordered chronologically. Each version includes metadata about when and by whom
+     * the message was modified.
+     *
+     * @param serial The unique serial identifier of the message.
+     * @param params Query parameters for filtering or pagination (e.g., limit, start, end).
+     * @return A {@link PaginatedResult} containing an array of {@link Message} objects
+     *         representing all versions of the message.
+     * @throws AblyException If the versions cannot be retrieved.
+     */
+    public PaginatedResult<Message> getMessageVersions(String serial, Param[] params) throws AblyException {
+        return messageEditsMixin.getMessageVersions(ably.http, serial, params);
+    }
+
+    /**
+     * Asynchronously retrieves all historical versions of a specific message.
+     *
+     * @param serial The unique serial identifier of the message.
+     * @param params Query parameters for filtering or pagination.
+     * @param callback A callback to handle the result asynchronously.
+     */
+    public void getMessageVersionsAsync(String serial, Param[] params, Callback<AsyncPaginatedResult<Message>> callback) throws AblyException {
+        messageEditsMixin.getMessageVersionsAsync(ably.http, serial, params, callback);
+    }
+
+    //endregion
+
     /************************************
      * Channel history
      ************************************/
@@ -1353,6 +1471,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             this,
             new RestAnnotations(name, ably.http, ably.options, options)
         );
+        this.messageEditsMixin = new MessageEditsMixin(basePath, ably.options, options, ably.auth);
     }
 
     void onChannelMessage(ProtocolMessage msg) {
