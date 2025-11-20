@@ -54,7 +54,7 @@ dependencies {
     compileOnly(libs.jetbrains)
     testImplementation(libs.bundles.tests)
     implementation(project(":network-client-core"))
-    runtimeOnly(project(":network-client-default"))
+    runtimeOnly(project(":network-client-okhttp"))
     implementation(libs.firebase.messaging)
     androidTestImplementation(libs.bundles.instrumental.android)
 }
