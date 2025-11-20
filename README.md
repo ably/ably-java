@@ -134,17 +134,7 @@ You can add proxy support to the Ably Java SDK by configuring `ProxyOptions` in 
 <details>
 <summary>Proxy support setup details.</summary>
 
-To enable proxy support for both REST and Realtime clients in the Ably SDK, use the OkHttp library to handle HTTP requests and WebSocket connections.
-
-Add the following dependency to your `build.gradle` file:
-
-```groovy
-dependencies {
-    runtimeOnly("io.ably:network-client-okhttp:1.4.2")
-}
-```
-
-After adding the OkHttp dependency, enable proxy support by specifying proxy settings in the ClientOptions when initializing your Ably client.
+Enable proxy support by specifying proxy settings in the ClientOptions when initializing your Ably client.
 
 The following example sets up a proxy using the Pub/Sub Java SDK:
 

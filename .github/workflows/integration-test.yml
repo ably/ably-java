@@ -8,7 +8,7 @@ on:
       - main
 
 jobs:
-  check-rest:
+  check-rest-httpurlconnection:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,7 +24,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - run: ./gradlew :java:testRestSuite
+      - run: ./gradlew :java:testRestSuite -PhttpURLConnection
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -32,7 +32,7 @@ jobs:
           name: java-build-reports-rest
           path: java/build/reports/
 
-  check-realtime:
+  check-realtime-httpurlconnection:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -48,7 +48,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - run: ./gradlew :java:testRealtimeSuite
+      - run: ./gradlew :java:testRealtimeSuite -PhttpURLConnection
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -71,7 +71,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - run: ./gradlew :java:testRestSuite -Pokhttp
+      - run: ./gradlew :java:testRestSuite
 
   check-realtime-okhttp:
     runs-on: ubuntu-latest
@@ -89,7 +89,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - run: ./gradlew :java:testRealtimeSuite -Pokhttp
+      - run: ./gradlew :java:testRealtimeSuite
 
   check-liveobjects:
     runs-on: ubuntu-latest

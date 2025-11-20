@@ -39,7 +39,7 @@ jobs:
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           # Print emulator logs if tests fail
-          script: ./gradlew :android:connectedAndroidTest || (adb logcat -d System.out:I && exit 1)
+          script: ./gradlew :android:connectedAndroidTest ${{ matrix.android-api-level == 19 && '-PhttpURLConnection' || '' }} || (adb logcat -d System.out:I && exit 1)
 
       - uses: actions/upload-artifact@v4
         if: always()

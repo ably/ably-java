@@ -1,7 +1,9 @@
 package io.ably.lib.network;
 
 import okhttp3.Call;
+import okhttp3.MediaType;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -23,11 +25,7 @@ public class OkHttpCall implements HttpCall {
                 .headers(response.headers().toMultimap())
                 .code(response.code())
                 .message(response.message())
-                .body(
-                    response.body() != null && response.body().contentType() != null
-                        ? new HttpBody(response.body().contentType().toString(), response.body().bytes())
-                        : null
-                )
+                .body(buildHttpBody(response))
                 .build();
 
         } catch (ConnectException | SocketTimeoutException | UnknownHostException | NoRouteToHostException fce) {
@@ -41,5 +39,14 @@ public class OkHttpCall implements HttpCall {
     @Override
     public void cancel() {
         call.cancel();
+    }
+
+    private HttpBody buildHttpBody(Response response) throws IOException {
+        try (ResponseBody body = response.body()) {
+            MediaType contentType = body != null ? body.contentType() : null;
+            return contentType != null
+                ? new HttpBody(contentType.toString(), body.bytes())
+                : null;
+        }
     }
 }
