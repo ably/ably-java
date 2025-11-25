@@ -22,10 +22,10 @@ dependencies {
     implementation(libs.bundles.common)
     compileOnly(libs.jetbrains)
     implementation(project(":network-client-core"))
-    if (findProperty("okhttp") == null) {
-        runtimeOnly(project(":network-client-default"))
-    } else {
+    if (findProperty("httpURLConnection") == null) {
         runtimeOnly(project(":network-client-okhttp"))
+    } else {
+        runtimeOnly(project(":network-client-default"))
     }
     testImplementation(libs.bundles.tests)
 }

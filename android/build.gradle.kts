@@ -54,7 +54,11 @@ dependencies {
     compileOnly(libs.jetbrains)
     testImplementation(libs.bundles.tests)
     implementation(project(":network-client-core"))
-    runtimeOnly(project(":network-client-default"))
+    if (findProperty("httpURLConnection") == null) {
+        runtimeOnly(project(":network-client-okhttp"))
+    } else {
+        runtimeOnly(project(":network-client-default"))
+    }
     implementation(libs.firebase.messaging)
     androidTestImplementation(libs.bundles.instrumental.android)
 }
@@ -62,6 +66,9 @@ dependencies {
 configurations {
     all {
         exclude(group = "org.hamcrest", module = "hamcrest-core")
+        resolutionStrategy {
+            force(libs.jetbrains)
+        }
     }
     getByName("androidTestImplementation") {
         extendsFrom(configurations.getByName("testImplementation"))
