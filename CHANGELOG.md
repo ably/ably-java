@@ -1,5 +1,14 @@
 # Change Log
 
+## [1.5.0](https://github.com/ably/ably-java/tree/v1.5.0)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.4.2...v1.5.0)
+
+### What's Changed
+
+* Message Updates and Deletes API have been added in https://github.com/ably/ably-java/pull/1179
+* The default http client has been changed to OkHttp in https://github.com/ably/ably-java/pull/1180
+
 ## [1.4.2](https://github.com/ably/ably-java/tree/v1.4.2)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.4.1...v1.4.2)
