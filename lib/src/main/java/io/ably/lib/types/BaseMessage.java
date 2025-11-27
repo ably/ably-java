@@ -180,26 +180,38 @@ public class BaseMessage implements Cloneable {
     }
 
     public void encode(ChannelOptions opts) throws AblyException {
-        if(data != null) {
-            if(data instanceof JsonElement) {
-                data = Serialisation.gson.toJson((JsonElement)data);
+        EncodedMessageData encodedData = encodeData(opts);
+        this.data = encodedData.data;
+        this.encoding = encodedData.encoding;
+    }
+
+    EncodedMessageData encodeData(ChannelOptions opts) throws AblyException {
+        Object decodedData = this.data;
+        String encoding = this.encoding;
+
+        if (decodedData != null) {
+            if (decodedData instanceof JsonElement) {
+                decodedData = Serialisation.gson.toJson((JsonElement) decodedData);
                 encoding = ((encoding == null) ? "" : encoding + "/") + "json";
             }
-            if(data instanceof String) {
+            if (decodedData instanceof String) {
                 if (opts != null && opts.encrypted) {
-                    try { data = ((String)data).getBytes("UTF-8"); } catch(UnsupportedEncodingException e) {}
+                    try { decodedData = ((String)decodedData).getBytes("UTF-8"); } catch(UnsupportedEncodingException e) {}
                     encoding = ((encoding == null) ? "" : encoding + "/") + "utf-8";
                 }
-            } else if(!(data instanceof byte[])) {
+            } else if (!(decodedData instanceof byte[])) {
                 Log.d(TAG, "Message data must be either `byte[]`, `String` or `JSONElement`; implicit coercion of other types to String is deprecated");
                 throw AblyException.fromErrorInfo(new ErrorInfo("Invalid message data or encoding", 400, 40013));
             }
         }
+
         if (opts != null && opts.encrypted) {
             EncryptingChannelCipher cipher = Crypto.createChannelEncipher(opts.getCipherParamsOrDefault());
-            data = cipher.encrypt((byte[]) data);
+            decodedData = cipher.encrypt((byte[]) decodedData);
             encoding = ((encoding == null) ? "" : encoding + "/") + "cipher+" + cipher.getAlgorithm();
         }
+
+        return new EncodedMessageData(decodedData, encoding);
     }
 
     /* trivial utilities for processing encoding string */
@@ -367,4 +379,14 @@ public class BaseMessage implements Cloneable {
     }
 
     private static final String TAG = BaseMessage.class.getName();
+
+    static class EncodedMessageData {
+        public final Object data;
+        public final String encoding;
+
+        EncodedMessageData(Object data, String encoding) {
+            this.data = data;
+            this.encoding = encoding;
+        }
+    }
 }
