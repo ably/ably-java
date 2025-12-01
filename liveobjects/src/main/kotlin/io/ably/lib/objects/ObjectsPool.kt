@@ -14,6 +14,9 @@ import java.util.concurrent.ConcurrentHashMap
 internal object ObjectsPoolDefaults {
   const val GC_INTERVAL_MS = 1000L * 60 * 5 // 5 minutes
   /**
+   * The SDK will attempt to use the `objectsGCGracePeriod` value provided by the server in the `connectionDetails`
+   * object of the `CONNECTED` event.
+   * If the server does not provide this value, the SDK will fall back to this default value.
    * Must be > 2 minutes to ensure we keep tombstones long enough to avoid the possibility of receiving an operation
    * with an earlier serial that would not have been applied if the tombstone still existed.
    *
@@ -49,10 +52,19 @@ internal class ObjectsPool(
   private val gcScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
   private var gcJob: Job // Job for the garbage collection coroutine
 
+  @Volatile private var gcGracePeriod = ObjectsPoolDefaults.GC_GRACE_PERIOD_MS
+  private var gcPeriodSubscription: ObjectsSubscription
+
   init {
     // RTO3b - Initialize pool with root object
     pool[ROOT_OBJECT_ID] = DefaultLiveMap.zeroValue(ROOT_OBJECT_ID, realtimeObjects)
-    // Start garbage collection coroutine
+    // Start garbage collection coroutine with server-provided grace period if available
+    gcPeriodSubscription = realtimeObjects.adapter.onGCGracePeriodUpdated { period ->
+      period?.let {
+        gcGracePeriod = it
+        Log.i(tag, "Using objectsGCGracePeriod from server: $gcGracePeriod ms")
+      } ?: Log.i(tag, "Server did not provide objectsGCGracePeriod, using default: $gcGracePeriod ms")
+    }
     gcJob = startGCJob()
   }
 
@@ -123,9 +135,9 @@ internal class ObjectsPool(
    */
   private fun onGCInterval() {
     pool.entries.removeIf { (_, obj) ->
-      if (obj.isEligibleForGc()) { true } // Remove from pool
+      if (obj.isEligibleForGc(gcGracePeriod)) { true } // Remove from pool
       else {
-        obj.onGCInterval()
+        obj.onGCInterval(gcGracePeriod)
         false  // Keep in pool
       }
     }
@@ -152,6 +164,7 @@ internal class ObjectsPool(
    * Should be called when the pool is no longer needed.
    */
   fun dispose() {
+    gcPeriodSubscription.unsubscribe()
     gcJob.cancel()
     gcScope.cancel()
     pool.clear()

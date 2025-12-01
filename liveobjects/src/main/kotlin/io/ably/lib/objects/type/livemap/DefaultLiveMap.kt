@@ -182,8 +182,8 @@ internal class DefaultLiveMap private constructor(
     liveMapManager.notify(update as LiveMapUpdate)
   }
 
-  override fun onGCInterval() {
-    data.entries.removeIf { (_, entry) -> entry.isEligibleForGc() }
+  override fun onGCInterval(gcGracePeriod: Long) {
+    data.entries.removeIf { (_, entry) -> entry.isEligibleForGc(gcGracePeriod) }
   }
 
   companion object {

@@ -2617,6 +2617,29 @@ public class RealtimeChannelTest extends ParameterizedTest {
         }
     }
 
+    @Test
+    public void channel_get_objects_throws_exception() throws AblyException {
+        ClientOptions opts = createOptions(testVars.keys[0].keyStr);
+        try (AblyRealtime ably = new AblyRealtime(opts)) {
+
+            /* wait until connected */
+            new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
+            assertEquals("Verify connected state reached", ably.connection.state, ConnectionState.connected);
+
+            /* create a channel and attach */
+            final Channel channel = ably.channels.get("channel");
+            channel.attach();
+            new ChannelWaiter(channel).waitFor(ChannelState.attached);
+            assertEquals("Verify attached state reached", channel.state, ChannelState.attached);
+
+            AblyException exception = assertThrows(AblyException.class, channel::getObjects);
+            assertNotNull(exception);
+            assertEquals(40019, exception.errorInfo.code);
+            assertEquals(400, exception.errorInfo.statusCode);
+            assertTrue(exception.errorInfo.message.contains("LiveObjects plugin hasn't been installed"));
+        }
+    }
+
     static class DetachingProtocolListener implements DebugOptions.RawProtocolListener {
 
         public Channel theChannel;

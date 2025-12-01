@@ -2,6 +2,8 @@ package io.ably.lib.objects
 
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.realtime.CompletionListener
+import io.ably.lib.realtime.ConnectionEvent
+import io.ably.lib.realtime.ConnectionStateListener
 import io.ably.lib.types.ChannelMode
 import io.ably.lib.types.ErrorInfo
 import io.ably.lib.types.ProtocolMessage
@@ -9,6 +11,8 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+
+internal val ObjectsAdapter.connectionManager get() = connection.connectionManager
 
 /**
  * Spec: RTO15g
@@ -43,6 +47,16 @@ internal suspend fun ObjectsAdapter.attachAsync(channelName: String) = suspendCa
   } catch (e: Exception) {
     continuation.resumeWithException(e)
   }
+}
+
+internal fun ObjectsAdapter.onGCGracePeriodUpdated(block : (Long?) -> Unit) : ObjectsSubscription {
+  connectionManager.objectsGCGracePeriod?.let { block(it) }
+  // Return new objectsGCGracePeriod whenever connection state changes to connected
+  val listener: (_: ConnectionStateListener.ConnectionStateChange) -> Unit = {
+    block(connectionManager.objectsGCGracePeriod)
+  }
+  connection.on(ConnectionEvent.connected, listener)
+  return ObjectsSubscription { connection.off(listener) }
 }
 
 /**

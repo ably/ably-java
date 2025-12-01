@@ -74,6 +74,11 @@ public class ConnectionDetails {
      */
     public Long connectionStateTtl;
 
+    /**
+     * The duration in milliseconds used to retain tombstoned objects at client side.
+     */
+    public Long objectsGCGracePeriod;
+
     ConnectionDetails() {
         maxIdleInterval = Defaults.maxIdleInterval;
         connectionStateTtl = Defaults.connectionStateTtl;
@@ -113,6 +118,9 @@ public class ConnectionDetails {
                     break;
                 case "connectionStateTtl":
                     connectionStateTtl = unpacker.unpackLong();
+                    break;
+                case "objectsGCGracePeriod":
+                    objectsGCGracePeriod = unpacker.unpackLong();
                     break;
                 default:
                     Log.v(TAG, "Unexpected field: " + fieldName);

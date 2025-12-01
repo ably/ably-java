@@ -2,7 +2,7 @@ package io.ably.lib.objects;
 
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.ChannelBase;
-import io.ably.lib.transport.ConnectionManager;
+import io.ably.lib.realtime.Connection;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
@@ -23,8 +23,8 @@ public class Adapter implements ObjectsAdapter {
     }
 
     @Override
-    public @NotNull ConnectionManager getConnectionManager() {
-        return ably.connection.connectionManager;
+    public @NotNull Connection getConnection() {
+        return ably.connection;
     }
 
     @Override
