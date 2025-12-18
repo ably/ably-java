@@ -4,7 +4,6 @@ import io.ably.lib.http.BasePaginatedQuery;
 import io.ably.lib.http.Http;
 import io.ably.lib.http.HttpCore;
 import io.ably.lib.http.HttpUtils;
-import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.AsyncPaginatedResult;
 import io.ably.lib.types.Callback;
@@ -12,11 +11,13 @@ import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
+import io.ably.lib.types.MessageAction;
 import io.ably.lib.types.MessageOperation;
-import io.ably.lib.types.MessageOperationSerializer;
 import io.ably.lib.types.MessageSerializer;
+import io.ably.lib.types.MessageVersion;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
+import io.ably.lib.types.UpdateDeleteResult;
 import io.ably.lib.util.Crypto;
 
 public class MessageEditsMixin {
@@ -92,44 +93,23 @@ public class MessageEditsMixin {
      * @param message A {@link Message} object containing the fields to update and the serial identifier.
      *                Only non-null fields will be applied to the existing message.
      * @throws AblyException If the update operation fails.
+     *
+     * @return A {@link UpdateDeleteResult} containing the updated message version serial.
      */
-    public void updateMessage(Http http, Message message, MessageOperation operation) throws AblyException {
-        updateMessageImpl(http, message, operation).sync();
+    public UpdateDeleteResult updateMessage(Http http, Message message, MessageOperation operation) throws AblyException {
+        return updateMessageImpl(http, message, operation, MessageAction.MESSAGE_UPDATE).sync();
     }
 
     /**
      * Asynchronously updates an existing message.
      *
      * @param message  A {@link Message} object containing the fields to update and the serial identifier.
-     * @param listener A listener to be notified of the outcome of this operation.
+     * @param callback A listener to be notified of the outcome of this operation.
      *                 <p>
      *                 This listener is invoked on a background thread.
      */
-    public void updateMessageAsync(Http http, Message message, MessageOperation operation, CompletionListener listener) {
-        updateMessageImpl(http, message, operation).async(new CompletionListener.ToCallback(listener));
-    }
-
-    private Http.Request<Void> updateMessageImpl(Http http, Message message, MessageOperation operation) {
-        return http.request((scheduler, callback) -> {
-            if (message.serial == null || message.serial.isEmpty()) {
-                throw AblyException.fromErrorInfo(new ErrorInfo("Message serial cannot be empty", 400, 40003));
-            }
-            /* RTL6g3 */
-            auth.checkClientId(message, true, false);
-
-            HttpCore.RequestBody requestBody = clientOptions.useBinaryProtocol
-                ? MessageOperationSerializer.asMsgPackRequest(message, operation, channelOptions)
-                : MessageOperationSerializer.asJsonRequest(message, operation, channelOptions);
-            final Param[] params = clientOptions.addRequestIds ? Param.array(Crypto.generateRandomRequestId()) : null;
-
-            scheduler.patch(basePath + "/messages/" + HttpUtils.encodeURIComponent(message.serial),
-                HttpUtils.defaultAcceptHeaders(clientOptions.useBinaryProtocol),
-                params,
-                requestBody,
-                null,
-                true,
-                callback);
-        });
+    public void updateMessageAsync(Http http, Message message, MessageOperation operation, Callback<UpdateDeleteResult> callback) {
+        updateMessageImpl(http, message, operation, MessageAction.MESSAGE_UPDATE).async(callback);
     }
 
     /**
@@ -141,24 +121,50 @@ public class MessageEditsMixin {
      *
      * @param message A {@link Message} message containing the serial identifier.
      * @throws AblyException If the delete operation fails.
+     *
+     * @return A {@link UpdateDeleteResult} containing the deleted message version serial.
      */
-    public void deleteMessage(Http http, Message message, MessageOperation operation) throws AblyException {
-        deleteMessageImpl(http, message, operation).sync();
+    public UpdateDeleteResult deleteMessage(Http http, Message message, MessageOperation operation) throws AblyException {
+        return updateMessageImpl(http, message, operation, MessageAction.MESSAGE_DELETE).sync();
     }
 
     /**
      * Asynchronously marks a message as deleted.
      *
      * @param message  A {@link Message} object containing the serial identifier and operation metadata.
-     * @param listener A listener to be notified of the outcome of this operation.
+     * @param callback A listener to be notified of the outcome of this operation.
      *                 <p>
      *                 This listener is invoked on a background thread.
      */
-    public void deleteMessageAsync(Http http, Message message, MessageOperation operation, CompletionListener listener) {
-        deleteMessageImpl(http, message, operation).async(new CompletionListener.ToCallback(listener));
+    public void deleteMessageAsync(Http http, Message message, MessageOperation operation, Callback<UpdateDeleteResult> callback) {
+        updateMessageImpl(http, message, operation, MessageAction.MESSAGE_DELETE).async(callback);
     }
 
-    private Http.Request<Void> deleteMessageImpl(Http http, Message message, MessageOperation operation) {
+    /**
+     * Appends message text to the end of the message.
+     *
+     * @param message  A {@link Message} object containing the serial identifier and data to append.
+     * @param operation operation details such as clientId, description, or metadata
+     * @return A {@link UpdateDeleteResult} containing the updated message version serial.
+     */
+    public UpdateDeleteResult appendMessage(Http http, Message message, MessageOperation operation) throws AblyException {
+        return updateMessageImpl(http, message, operation, MessageAction.MESSAGE_APPEND).sync();
+    }
+
+    /**
+     * Asynchronously appends message text to the end of the message.
+     *
+     * @param message  A {@link Message} object containing the serial identifier and data to append.
+     * @param operation operation details such as clientId, description, or metadata
+     * @param callback A listener to be notified of the outcome of this operation.
+     *                 <p>
+     *                 This listener is invoked on a background thread.
+     */
+    public void appendMessageAsync(Http http, Message message, MessageOperation operation, Callback<UpdateDeleteResult> callback) {
+        updateMessageImpl(http, message, operation, MessageAction.MESSAGE_APPEND).async(callback);
+    }
+
+    private Http.Request<UpdateDeleteResult> updateMessageImpl(Http http, Message message, MessageOperation operation, MessageAction action) {
         return http.request((scheduler, callback) -> {
             if (message.serial == null || message.serial.isEmpty()) {
                 throw AblyException.fromErrorInfo(new ErrorInfo("Message serial cannot be empty", 400, 40003));
@@ -166,16 +172,33 @@ public class MessageEditsMixin {
             /* RTL6g3 */
             auth.checkClientId(message, true, false);
 
+            Message updatedMessage = new Message(message.name, message.data, message.extras);
+            updatedMessage.action = action;
+            updatedMessage.version = new MessageVersion();
+            if (operation != null) {
+                updatedMessage.version.clientId = operation.clientId;
+                updatedMessage.version.description = operation.description;
+                updatedMessage.version.metadata = operation.metadata;
+            }
+            updatedMessage.encode(channelOptions);
+
             HttpCore.RequestBody requestBody = clientOptions.useBinaryProtocol
-                ? MessageOperationSerializer.asMsgPackRequest(message, operation, channelOptions)
-                : MessageOperationSerializer.asJsonRequest(message, operation, channelOptions);
+                ? MessageSerializer.asSingleMsgpackRequest(updatedMessage)
+                : MessageSerializer.asSingleJsonRequest(updatedMessage);
             final Param[] params = clientOptions.addRequestIds ? Param.array(Crypto.generateRandomRequestId()) : null;
 
-            scheduler.post(basePath + "/messages/" + HttpUtils.encodeURIComponent(message.serial) + "/delete",
+            HttpCore.BodyHandler<UpdateDeleteResult> bodyHandler = UpdateDeleteResult.getBodyHandler();
+
+            scheduler.patch(basePath + "/messages/" + HttpUtils.encodeURIComponent(message.serial),
                 HttpUtils.defaultAcceptHeaders(clientOptions.useBinaryProtocol),
                 params,
                 requestBody,
-                null,
+                (response, error) -> {
+                    if (error != null) throw AblyException.fromErrorInfo(error);
+                    UpdateDeleteResult[] results = bodyHandler.handleResponseBody(response.contentType, response.body);
+                    if (results != null && results.length > 0) return results[0];
+                    throw AblyException.fromErrorInfo(new ErrorInfo("No versionSerial in the update message response", 500, 50000));
+                },
                 true,
                 callback);
         });

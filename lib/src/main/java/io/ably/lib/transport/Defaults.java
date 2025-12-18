@@ -12,7 +12,7 @@ public class Defaults {
      * spec: G4
      * </p>
      */
-    public static final String ABLY_PROTOCOL_VERSION = "4";
+    public static final String ABLY_PROTOCOL_VERSION = "5";
 
     public static final String ABLY_AGENT_VERSION   = String.format("%s/%s", "ably-java", BuildConfig.VERSION);
 

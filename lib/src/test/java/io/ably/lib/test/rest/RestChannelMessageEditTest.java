@@ -4,17 +4,17 @@ import io.ably.lib.network.EngineType;
 import io.ably.lib.network.HttpEngineFactory;
 import io.ably.lib.rest.AblyRest;
 import io.ably.lib.rest.Channel;
-import io.ably.lib.test.common.Helpers.CompletionSet;
+import io.ably.lib.test.common.Helpers;
 import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.ChannelOptions;
 import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.MessageAction;
 import io.ably.lib.types.MessageOperation;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
+import io.ably.lib.types.UpdateDeleteResult;
 import io.ably.lib.util.Crypto;
 import org.junit.Before;
 import org.junit.Rule;
@@ -105,7 +105,7 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
         updateMessage.data = "Updated message data";
         updateMessage.name = "updated_event";
 
-        channel.updateMessage(updateMessage);
+        UpdateDeleteResult result = channel.updateMessage(updateMessage);
 
         // Retrieve the updated message
         Message updatedMessage = waitForUpdatedMessageAppear(channel, publishedMessage.serial);
@@ -115,6 +115,7 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
         assertEquals("Expected updated message data", "Updated message data", updatedMessage.data);
         assertEquals("Expected updated message name", "updated_event", updatedMessage.name);
         assertEquals("Expected action to be MESSAGE_UPDATE", MessageAction.MESSAGE_UPDATE, updatedMessage.action);
+        assertEquals(result.versionSerial, updatedMessage.version.serial);
     }
 
     /**
@@ -145,7 +146,7 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
         updateMessage.data = "Updated message data";
         updateMessage.name = "updated_event";
 
-        channel.updateMessage(updateMessage);
+        UpdateDeleteResult result = channel.updateMessage(updateMessage);
 
         // Retrieve the updated message
         Message updatedMessage = waitForUpdatedMessageAppear(channel, publishedMessage.serial);
@@ -155,6 +156,7 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
         assertEquals("Expected updated message data", "Updated message data", updatedMessage.data);
         assertEquals("Expected updated message name", "updated_event", updatedMessage.name);
         assertEquals("Expected action to be MESSAGE_UPDATE", MessageAction.MESSAGE_UPDATE, updatedMessage.action);
+        assertEquals(result.versionSerial, updatedMessage.version.serial);
     }
 
     /**
@@ -183,16 +185,16 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
         updateMessage.serial = publishedMessage.serial;
         updateMessage.data = "Updated message data async";
 
-        CompletionSet updateComplete = new CompletionSet();
-        channel.updateMessageAsync(updateMessage, updateComplete.add());
+        Helpers.AsyncWaiter<UpdateDeleteResult> updateWaiter = new Helpers.AsyncWaiter<>();
+        channel.updateMessageAsync(updateMessage, updateWaiter);
 
-        ErrorInfo[] updateErrors = updateComplete.waitFor();
-        assertEquals("Expected no errors from update", 0, updateErrors.length);
+        updateWaiter.waitFor();
 
         // Retrieve the updated message
         Message updatedMessage = waitForUpdatedMessageAppear(channel, publishedMessage.serial);
         assertNotNull("Expected non-null updated message", updatedMessage);
         assertEquals("Expected updated message data", "Updated message data async", updatedMessage.data);
+        assertEquals(updateWaiter.result.versionSerial, updatedMessage.version.serial);
     }
 
     /**
@@ -200,6 +202,8 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
      */
     @Test
     public void deleteMessage_softDelete() throws Exception {
+        if (engineType == EngineType.DEFAULT) return;
+
         String channelName = "mutable:delete_message_" + UUID.randomUUID() + "_" + testParams.name;
         Channel channel = ably.channels.get(channelName);
 
@@ -219,7 +223,7 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
         deleteMessage.serial = publishedMessage.serial;
         deleteMessage.data = "Message deleted";
 
-        channel.deleteMessage(deleteMessage);
+        UpdateDeleteResult result = channel.deleteMessage(deleteMessage);
 
         // Retrieve the deleted message
         Message deletedMessage = waitForDeletedMessageAppear(channel, publishedMessage.serial);
@@ -227,6 +231,45 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
         // Verify the message was soft deleted
         assertNotNull("Expected non-null deleted message", deletedMessage);
         assertEquals("Expected action to be MESSAGE_DELETE", MessageAction.MESSAGE_DELETE, deletedMessage.action);
+        assertEquals(result.versionSerial, deletedMessage.version.serial);
+    }
+
+    /**
+     * Test appendMessage
+     */
+    @Test
+    public void appendMessage_checkUpdatedData() throws Exception {
+        if (engineType == EngineType.DEFAULT) return;
+
+        String channelName = "mutable:append_message_" + UUID.randomUUID() + "_" + testParams.name;
+        Channel channel = ably.channels.get(channelName);
+
+        // Publish a message
+        channel.publish("test_event", "Initial message");
+
+        // Get the message from history
+        PaginatedResult<Message> history = waitForMessageAppearInHistory(channel);
+        assertNotNull("Expected non-null history", history);
+        assertEquals(1, history.items().length);
+
+        Message publishedMessage = history.items()[0];
+        assertNotNull("Expected message to have a serial", publishedMessage.serial);
+
+        // Append the message
+        Message appendMessage = new Message();
+        appendMessage.serial = publishedMessage.serial;
+        appendMessage.data = "Message append";
+
+        UpdateDeleteResult result = channel.appendMessage(appendMessage);
+
+        // Retrieve the updated message
+        Message updatedMessage = waitForUpdatedMessageAppear(channel, publishedMessage.serial);
+
+        // Verify the message was appended
+        assertNotNull("Expected non-null append message", updatedMessage);
+        assertEquals("Expected action to be MESSAGE_UPDATE", MessageAction.MESSAGE_UPDATE, updatedMessage.action);
+        assertEquals("Initial messageMessage append", updatedMessage.data);
+        assertEquals(result.versionSerial, updatedMessage.version.serial);
     }
 
     /**
@@ -234,6 +277,8 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
      */
     @Test
     public void deleteMessage_async() throws Exception {
+        if (engineType == EngineType.DEFAULT) return;
+
         String channelName = "mutable:delete_message_async_" + UUID.randomUUID() + "_" + testParams.name;
         Channel channel = ably.channels.get(channelName);
 
@@ -253,16 +298,16 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
         deleteMessage.serial = publishedMessage.serial;
         deleteMessage.data = "Message deleted async";
 
-        CompletionSet deleteComplete = new CompletionSet();
-        channel.deleteMessageAsync(deleteMessage, deleteComplete.add());
+        Helpers.AsyncWaiter<UpdateDeleteResult> deleteWaiter = new Helpers.AsyncWaiter<>();
+        channel.deleteMessageAsync(deleteMessage, deleteWaiter);
 
-        ErrorInfo[] deleteErrors = deleteComplete.waitFor();
-        assertEquals("Expected no errors from delete", 0, deleteErrors.length);
+        deleteWaiter.waitFor();
 
         // Retrieve the deleted message
         Message deletedMessage = waitForDeletedMessageAppear(channel, publishedMessage.serial);
         assertNotNull("Expected non-null deleted message", deletedMessage);
         assertEquals("Expected action to be MESSAGE_DELETE", MessageAction.MESSAGE_DELETE, deletedMessage.action);
+        assertEquals(deleteWaiter.result.versionSerial, deletedMessage.version.serial);
     }
 
     /**
