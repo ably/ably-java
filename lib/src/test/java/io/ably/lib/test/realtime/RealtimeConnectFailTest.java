@@ -4,7 +4,6 @@ import io.ably.lib.debug.DebugOptions;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.ChannelState;
-import io.ably.lib.realtime.CompletionListener;
 import io.ably.lib.realtime.ConnectionEvent;
 import io.ably.lib.realtime.ConnectionState;
 import io.ably.lib.realtime.ConnectionStateListener;
@@ -19,9 +18,11 @@ import io.ably.lib.test.common.ParameterizedTest;
 import io.ably.lib.test.util.MockWebsocketFactory;
 import io.ably.lib.transport.Defaults;
 import io.ably.lib.types.AblyException;
+import io.ably.lib.types.Callback;
 import io.ably.lib.types.ClientOptions;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.types.PublishResult;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -392,9 +393,9 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             final int[] numberOfErrors = new int[]{0};
 
             // assume we are in connecting state now
-            ably.connection.connectionManager.send(new ProtocolMessage(), true, new CompletionListener() {
+            ably.connection.connectionManager.send(new ProtocolMessage(), true, new Callback<PublishResult>() {
                 @Override
-                public void onSuccess() {
+                public void onSuccess(PublishResult result) {
                     fail("Unexpected success sending message");
                 }
 

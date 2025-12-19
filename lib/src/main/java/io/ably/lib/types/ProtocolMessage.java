@@ -137,6 +137,8 @@ public class ProtocolMessage {
     @JsonAdapter(ObjectsJsonSerializer.class)
     public Object[] state;
 
+    public @Nullable PublishResult[] res;
+
     public boolean hasFlag(final Flag flag) {
         return (flags & flag.getMask()) == flag.getMask();
     }
@@ -161,6 +163,7 @@ public class ProtocolMessage {
         if(channelSerial != null) ++fieldCount;
         if(annotations != null) ++fieldCount;
         if(state != null && ObjectsHelper.getSerializer() != null) ++fieldCount;
+        if(res != null) ++fieldCount;
         packer.packMapHeader(fieldCount);
         packer.packString("action");
         packer.packInt(action.getValue());
@@ -208,6 +211,10 @@ public class ProtocolMessage {
             } else {
                 Log.w(TAG, "Skipping 'state' field msgpack serialization because ObjectsSerializer not found");
             }
+        }
+        if (res != null) {
+            packer.packString("res");
+            PublishResult.writeMsgpackArray(res, packer);
         }
     }
 
@@ -279,6 +286,9 @@ public class ProtocolMessage {
                         Log.w(TAG, "Skipping 'state' field msgpack deserialization because ObjectsSerializer not found");
                         unpacker.skipValue();
                     }
+                    break;
+                case "res":
+                    res = PublishResult.readMsgpackArray(unpacker);
                     break;
                 default:
                     Log.v(TAG, "Unexpected field: " + fieldName);
