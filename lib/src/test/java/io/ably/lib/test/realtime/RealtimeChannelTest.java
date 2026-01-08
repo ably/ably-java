@@ -692,7 +692,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             channel2.subscribe(listener);
 
             /* Start emitting channel with ably client 1 (emitter) */
-            channel1.publish(messages, null);
+            channel1.publish(messages);
 
             /* Wait until receiver client (ably2) observes {@code }
              * is emitted from emitter client (ably1)
@@ -781,9 +781,9 @@ public class RealtimeChannelTest extends ParameterizedTest {
             channel2.subscribe(messageNames, listener);
 
             /* Start emitting channel with ably client 1 (emitter) */
-            channel1.publish("nonTrackedMessageName", "This message should be ignore by second client (ably2).", null);
-            channel1.publish(messages, null);
-            channel1.publish("nonTrackedMessageName", "This message should be ignore by second client (ably2).", null);
+            channel1.publish("nonTrackedMessageName", "This message should be ignore by second client (ably2).");
+            channel1.publish(messages);
+            channel1.publish("nonTrackedMessageName", "This message should be ignore by second client (ably2).");
 
             /* Wait until receiver client (ably2) observes {@code Message}
              * on subscribed channel (channel2) emitted by emitter client (ably1)
@@ -866,9 +866,9 @@ public class RealtimeChannelTest extends ParameterizedTest {
             channel2.subscribe(messageName, listener);
 
             /* Start emitting channel with ably client 1 (emitter) */
-            channel1.publish("nonTrackedMessageName", "This message should be ignore by second client (ably2).", null);
-            channel1.publish(messages, null);
-            channel1.publish("nonTrackedMessageName", "This message should be ignore by second client (ably2).", null);
+            channel1.publish("nonTrackedMessageName", "This message should be ignore by second client (ably2).");
+            channel1.publish(messages);
+            channel1.publish("nonTrackedMessageName", "This message should be ignore by second client (ably2).");
 
             /* Wait until receiver client (ably2) observes {@code Message}
              * on subscribed channel (channel2) emitted by emitter client (ably1)

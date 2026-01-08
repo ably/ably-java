@@ -12,6 +12,7 @@ import io.ably.lib.types.MessageAction;
 import io.ably.lib.types.MessageOperation;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
+import io.ably.lib.types.PublishResult;
 import io.ably.lib.types.UpdateDeleteResult;
 import io.ably.lib.util.Crypto;
 import org.junit.After;
@@ -58,25 +59,23 @@ public class RealtimeChannelMessageEditTest extends ParameterizedTest {
         String channelName = "mutable:get_message_" + UUID.randomUUID() + "_" + testParams.name;
         Channel channel = ably.channels.get(channelName);
 
+        Helpers.AsyncWaiter<PublishResult> publishResultAsyncWaiter = new Helpers.AsyncWaiter<>();
+
         // Publish a message
-        channel.publish("test_event", "Test message data");
+        channel.publish("test_event", "Test message data", publishResultAsyncWaiter);
 
-        // Get the message from history to obtain its serial
-        PaginatedResult<Message> history = waitForMessageAppearInHistory(channel);
-        assertNotNull("Expected non-null history", history);
-        assertEquals(1, history.items().length);
-
-        Message publishedMessage = history.items()[0];
-        assertNotNull("Expected message to have a serial", publishedMessage.serial);
+        publishResultAsyncWaiter.waitFor();
+        PublishResult publishResult = publishResultAsyncWaiter.result;
+        assertEquals("Expected to have one serial", 1, publishResult.serials.length);
 
         // Retrieve the message by serial
-        Message retrievedMessage = waitForUpdatedMessageAppear(channel, publishedMessage.serial);
+        Message retrievedMessage = waitForUpdatedMessageAppear(channel, publishResult.serials[0]);
 
         // Verify the retrieved message
         assertNotNull("Expected non-null retrieved message", retrievedMessage);
-        assertEquals("Expected same message name", publishedMessage.name, retrievedMessage.name);
-        assertEquals("Expected same message data", publishedMessage.data, retrievedMessage.data);
-        assertEquals("Expected same serial", publishedMessage.serial, retrievedMessage.serial);
+        assertEquals("Expected same message name", "test_event", retrievedMessage.name);
+        assertEquals("Expected same message data", "Test message data", retrievedMessage.data);
+        assertEquals("Expected same serial", publishResult.serials[0], retrievedMessage.serial);
     }
 
     /**
@@ -87,20 +86,19 @@ public class RealtimeChannelMessageEditTest extends ParameterizedTest {
         String channelName = "mutable:update_message_" + UUID.randomUUID() + "_" + testParams.name;
         Channel channel = ably.channels.get(channelName);
 
+        Helpers.AsyncWaiter<PublishResult> publishResultAsyncWaiter = new Helpers.AsyncWaiter<>();
+
         // Publish a message
-        channel.publish("test_event", "Original message data");
+        channel.publish("test_event", "Original message data", publishResultAsyncWaiter);
 
         // Get the message from history to obtain its serial
-        PaginatedResult<Message> history = waitForMessageAppearInHistory(channel);
-        assertNotNull("Expected non-null history", history);
-        assertEquals(1, history.items().length);
-
-        Message publishedMessage = history.items()[0];
-        assertNotNull("Expected message to have a serial", publishedMessage.serial);
+        publishResultAsyncWaiter.waitFor();
+        PublishResult publishResult = publishResultAsyncWaiter.result;
+        assertEquals("Expected to have one serial", 1, publishResult.serials.length);
 
         // Update the message
         Message updateMessage = new Message();
-        updateMessage.serial = publishedMessage.serial;
+        updateMessage.serial = publishResult.serials[0];
         updateMessage.data = "Updated message data";
         updateMessage.name = "updated_event";
 
@@ -111,7 +109,7 @@ public class RealtimeChannelMessageEditTest extends ParameterizedTest {
         waiter.waitFor();
 
         // Retrieve the updated message
-        Message updatedMessage = waitForUpdatedMessageAppear(channel, publishedMessage.serial);
+        Message updatedMessage = waitForUpdatedMessageAppear(channel, publishResult.serials[0]);
 
         // Verify the message was updated
         assertNotNull("Expected non-null updated message", updatedMessage);
@@ -130,27 +128,26 @@ public class RealtimeChannelMessageEditTest extends ParameterizedTest {
         ChannelOptions channelOptions = ChannelOptions.withCipherKey(Crypto.generateRandomKey());
         Channel channel = ably.channels.get(channelName, channelOptions);
 
+        Helpers.AsyncWaiter<PublishResult> publishResultAsyncWaiter = new Helpers.AsyncWaiter<>();
+
         // Publish a message
         channel.publish("test_event", "Original message data");
 
         // Get the message from history to obtain its serial
-        PaginatedResult<Message> history = waitForMessageAppearInHistory(channel);
-        assertNotNull("Expected non-null history", history);
-        assertEquals(1, history.items().length);
-
-        Message publishedMessage = history.items()[0];
-        assertNotNull("Expected message to have a serial", publishedMessage.serial);
+        publishResultAsyncWaiter.waitFor();
+        PublishResult publishResult = publishResultAsyncWaiter.result;
+        assertEquals("Expected to have one serial", 1, publishResult.serials.length);
 
         // Update the message
         Message updateMessage = new Message();
-        updateMessage.serial = publishedMessage.serial;
+        updateMessage.serial = publishResult.serials[0];
         updateMessage.data = "Updated message data";
         updateMessage.name = "updated_event";
 
         channel.updateMessage(updateMessage);
 
         // Retrieve the updated message
-        Message updatedMessage = waitForUpdatedMessageAppear(channel, publishedMessage.serial);
+        Message updatedMessage = waitForUpdatedMessageAppear(channel, publishResult.serials[0]);
 
         // Verify the message was updated
         assertNotNull("Expected non-null updated message", updatedMessage);
@@ -167,26 +164,25 @@ public class RealtimeChannelMessageEditTest extends ParameterizedTest {
         String channelName = "mutable:delete_message_" + UUID.randomUUID() + "_" + testParams.name;
         Channel channel = ably.channels.get(channelName);
 
+        Helpers.AsyncWaiter<PublishResult> publishResultAsyncWaiter = new Helpers.AsyncWaiter<>();
+
         // Publish a message
-        channel.publish("test_event", "Message to be deleted");
+        channel.publish("test_event", "Message to be deleted", publishResultAsyncWaiter);
 
         // Get the message from history
-        PaginatedResult<Message> history = waitForMessageAppearInHistory(channel);
-        assertNotNull("Expected non-null history", history);
-        assertEquals(1, history.items().length);
-
-        Message publishedMessage = history.items()[0];
-        assertNotNull("Expected message to have a serial", publishedMessage.serial);
+        publishResultAsyncWaiter.waitFor();
+        PublishResult publishResult = publishResultAsyncWaiter.result;
+        assertEquals("Expected to have one serial", 1, publishResult.serials.length);
 
         // Delete the message
         Message deleteMessage = new Message();
-        deleteMessage.serial = publishedMessage.serial;
+        deleteMessage.serial = publishResult.serials[0];
         deleteMessage.data = "Message deleted";
 
         channel.deleteMessage(deleteMessage);
 
         // Retrieve the deleted message
-        Message deletedMessage = waitForDeletedMessageAppear(channel, publishedMessage.serial);
+        Message deletedMessage = waitForDeletedMessageAppear(channel, publishResult.serials[0]);
 
         // Verify the message was soft deleted
         assertNotNull("Expected non-null deleted message", deletedMessage);
@@ -201,25 +197,24 @@ public class RealtimeChannelMessageEditTest extends ParameterizedTest {
         String channelName = "mutable:message_versions_" + UUID.randomUUID() + "_" + testParams.name;
         Channel channel = ably.channels.get(channelName);
 
+        Helpers.AsyncWaiter<PublishResult> publishResultAsyncWaiter = new Helpers.AsyncWaiter<>();
+
         // Publish a message
-        channel.publish("test_event", "Original data");
+        channel.publish("test_event", "Original data", publishResultAsyncWaiter);
 
         // Get the message from history
-        PaginatedResult<Message> history = waitForMessageAppearInHistory(channel);
-        assertNotNull("Expected non-null history", history);
-        assertEquals(1, history.items().length);
-
-        Message publishedMessage = history.items()[0];
-        assertNotNull("Expected message to have a serial", publishedMessage.serial);
+        publishResultAsyncWaiter.waitFor();
+        PublishResult publishResult = publishResultAsyncWaiter.result;
+        assertEquals("Expected to have one serial", 1, publishResult.serials.length);
 
         // Update the message to create version history
         Message updateMessage1 = new Message();
-        updateMessage1.serial = publishedMessage.serial;
+        updateMessage1.serial = publishResult.serials[0];
         updateMessage1.data = "First update";
         channel.updateMessage(updateMessage1);
 
         Message updateMessage2 = new Message();
-        updateMessage2.serial = publishedMessage.serial;
+        updateMessage2.serial = publishResult.serials[0];
         updateMessage2.data = "Second update";
         MessageOperation messageOperation = new MessageOperation();
         messageOperation.description = "description";
@@ -228,7 +223,7 @@ public class RealtimeChannelMessageEditTest extends ParameterizedTest {
         channel.updateMessage(updateMessage2, messageOperation);
 
         // Retrieve version history
-        PaginatedResult<Message> versions = waitForMessageAppearInVersionHistory(channel, publishedMessage.serial, null, msgs ->
+        PaginatedResult<Message> versions = waitForMessageAppearInVersionHistory(channel, publishResult.serials[0], null, msgs ->
             msgs.length >= 3
         );
 
@@ -307,13 +302,16 @@ public class RealtimeChannelMessageEditTest extends ParameterizedTest {
         String channelName = "mutable:complete_workflow_" + UUID.randomUUID() + "_" + testParams.name;
         Channel channel = ably.channels.get(channelName);
 
+        Helpers.AsyncWaiter<PublishResult> publishResultAsyncWaiter = new Helpers.AsyncWaiter<>();
+
         // 1. Publish a message
-        channel.publish("workflow_event", "Initial data");
+        channel.publish("workflow_event", "Initial data", publishResultAsyncWaiter);
 
         // Get the published message
-        PaginatedResult<Message> history = waitForMessageAppearInHistory(channel);
-        Message publishedMessage = history.items()[0];
-        String serial = publishedMessage.serial;
+        publishResultAsyncWaiter.waitFor();
+        PublishResult publishResult = publishResultAsyncWaiter.result;
+        assertEquals("Expected to have one serial", 1, publishResult.serials.length);
+        String serial = publishResult.serials[0];
 
         // 2. Update the message
         Message updateMessage = new Message();
@@ -359,13 +357,17 @@ public class RealtimeChannelMessageEditTest extends ParameterizedTest {
         String channelName = "mutable:message_append_" + UUID.randomUUID() + "_" + testParams.name;
         Channel channel = ably.channels.get(channelName);
 
+        Helpers.AsyncWaiter<PublishResult> publishResultAsyncWaiter = new Helpers.AsyncWaiter<>();
+
         // 1. Publish a message
-        channel.publish("append_event", "Initial data");
+        channel.publish("append_event", "Initial data", publishResultAsyncWaiter);
 
         // Get the published message
-        PaginatedResult<Message> history = waitForMessageAppearInHistory(channel);
-        Message publishedMessage = history.items()[0];
-        String serial = publishedMessage.serial;
+        publishResultAsyncWaiter.waitFor();
+        PublishResult publishResult = publishResultAsyncWaiter.result;
+        assertEquals("Expected to have one serial", 1, publishResult.serials.length);
+
+        String serial = publishResult.serials[0];
 
         Helpers.AsyncWaiter<Message> appendWaiter = new Helpers.AsyncWaiter<>();
 
@@ -398,15 +400,6 @@ public class RealtimeChannelMessageEditTest extends ParameterizedTest {
             PaginatedResult<Message> history = channel.getMessageVersions(serial, params);
             if ((history.items().length > 0 && predicate.test(history.items())) || System.currentTimeMillis() > timeout)
                 return history;
-            Thread.sleep(200);
-        }
-    }
-
-    private PaginatedResult<Message> waitForMessageAppearInHistory(Channel channel) throws Exception {
-        long timeout = System.currentTimeMillis() + 5_000;
-        while (true) {
-            PaginatedResult<Message> history = channel.history(null);
-            if (history.items().length > 0 || System.currentTimeMillis() > timeout) return history;
             Thread.sleep(200);
         }
     }

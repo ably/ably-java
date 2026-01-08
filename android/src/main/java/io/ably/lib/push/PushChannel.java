@@ -49,7 +49,7 @@ public class PushChannel {
      * @throws AblyException
      */
     public void subscribeClientAsync(CompletionListener listener) {
-        subscribeClientImpl().async(new CompletionListener.ToCallback(listener));
+        subscribeClientImpl().async(new CompletionListener.ToCallback<>(listener));
     }
 
     protected Http.Request<Void> subscribeClientImpl() {
@@ -83,7 +83,7 @@ public class PushChannel {
      * @throws AblyException
      */
     public void subscribeDeviceAsync(CompletionListener listener) {
-        subscribeDeviceImpl().async(new CompletionListener.ToCallback(listener));
+        subscribeDeviceImpl().async(new CompletionListener.ToCallback<>(listener));
     }
 
     protected Http.Request<Void> subscribeDeviceImpl() {
@@ -131,7 +131,7 @@ public class PushChannel {
      * @throws AblyException
      */
     public void unsubscribeClientAsync(CompletionListener listener) {
-        unsubscribeClientImpl().async(new CompletionListener.ToCallback(listener));
+        unsubscribeClientImpl().async(new CompletionListener.ToCallback<>(listener));
     }
 
     protected Http.Request<Void> unsubscribeClientImpl() {
@@ -163,7 +163,7 @@ public class PushChannel {
      * @throws AblyException
      */
     public void unsubscribeDeviceAsync(CompletionListener listener) {
-        unsubscribeDeviceImpl().async(new CompletionListener.ToCallback(listener));
+        unsubscribeDeviceImpl().async(new CompletionListener.ToCallback<>(listener));
     }
 
     protected Http.Request<Void> unsubscribeDeviceImpl() {

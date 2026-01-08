@@ -17,6 +17,7 @@ import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.PresenceSerializer;
+import io.ably.lib.types.PublishResult;
 import io.ably.lib.types.UpdateDeleteResult;
 import io.ably.lib.util.Crypto;
 import org.jetbrains.annotations.Blocking;
@@ -69,6 +70,23 @@ public class ChannelBase {
     }
 
     /**
+     * Publish a message on this channel using the REST API and return the result.
+     * Since the REST API is stateless, this request is made independently
+     * of any other request on this or any other channel.
+     * @param name the event name
+     * @param data the message payload;
+     * @return A {@link PublishResult} containing the message serial(s)
+     * @throws AblyException
+     */
+    public PublishResult publishWithResult(String name, Object data) throws AblyException {
+        return publishWithResult(ably.http, name, data);
+    }
+
+    PublishResult publishWithResult(Http http, String name, Object data) throws AblyException {
+        return publishImpl(http, name, data).sync();
+    }
+
+    /**
      * Publish a message on this channel using the REST API.
      * Since the REST API is stateless, this request is made independently
      * of any other request on this or any other channel.
@@ -78,16 +96,37 @@ public class ChannelBase {
      * @param listener a listener to be notified of the outcome of this message.
      * <p>
      * This listener is invoked on a background thread.
+     * @deprecated Use {@link #publishAsync(String, Object, Callback)} instead.
      */
+    @Deprecated
     public void publishAsync(String name, Object data, CompletionListener listener) {
         publishAsync(ably.http, name, data, listener);
     }
 
     void publishAsync(Http http, String name, Object data, CompletionListener listener) {
-        publishImpl(http, name, data).async(new CompletionListener.ToCallback(listener));
+        publishImpl(http, name, data).async(new CompletionListener.ToCallback<>(listener));
     }
 
-    private Http.Request<Void> publishImpl(Http http, String name, Object data) {
+    /**
+     * Asynchronously publish a message on this channel using the REST API.
+     * Since the REST API is stateless, this request is made independently
+     * of any other request on this or any other channel.
+     *
+     * @param name the event name
+     * @param data the message payload;
+     * @param callback a callback to be notified of the outcome of this message with the {@link PublishResult}.
+     * <p>
+     * This callback is invoked on a background thread.
+     */
+    public void publishAsync(String name, Object data, Callback<PublishResult> callback) {
+        publishAsync(ably.http, name, data, callback);
+    }
+
+    void publishAsync(Http http, String name, Object data, Callback<PublishResult> callback) {
+        publishImpl(http, name, data).async(callback);
+    }
+
+    private Http.Request<PublishResult> publishImpl(Http http, String name, Object data) {
         return publishImpl(http, new Message[] {new Message(name, data)});
     }
 
@@ -108,6 +147,36 @@ public class ChannelBase {
     }
 
     /**
+     * Publish an array of messages on this channel. When there are
+     * multiple messages to be sent, it is more efficient to use this
+     * method to publish them in a single request, as compared with
+     * publishing via multiple independent requests.
+     * @param messages array of messages to publish.
+     * @throws AblyException
+     */
+    public PublishResult publishWithResult(final Message[] messages) throws AblyException {
+        return publishImpl(ably.http, messages).sync();
+    }
+
+    /**
+     * Asynchronously publish an array of messages on this channel
+     *
+     * @param messages the message
+     * @param listener a listener to be notified of the outcome of this message.
+     * @deprecated Use {@link #publishAsync(Message[], Callback)} instead.
+     * <p>
+     * This listener is invoked on a background thread.
+     */
+    @Deprecated
+    public void publishAsync(final Message[] messages, final CompletionListener listener) {
+        publishAsync(ably.http, messages, listener);
+    }
+
+    void publishAsync(Http http, final Message[] messages, final CompletionListener listener) {
+        publishImpl(http, messages).async(new CompletionListener.ToCallback<>(listener));
+    }
+
+    /**
      * Asynchronously publish an array of messages on this channel
      *
      * @param messages the message
@@ -115,18 +184,14 @@ public class ChannelBase {
      * <p>
      * This listener is invoked on a background thread.
      */
-    public void publishAsync(final Message[] messages, final CompletionListener listener) {
-        publishAsync(ably.http, messages, listener);
+    public void publishAsync(final Message[] messages, final Callback<PublishResult> listener) {
+        publishImpl(ably.http, messages).async(listener);
     }
 
-    void publishAsync(Http http, final Message[] messages, final CompletionListener listener) {
-        publishImpl(http, messages).async(new CompletionListener.ToCallback(listener));
-    }
-
-    private Http.Request<Void> publishImpl(Http http, final Message[] messages) {
-        return http.request(new Http.Execute<Void>() {
+    private Http.Request<PublishResult> publishImpl(Http http, final Message[] messages) {
+        return http.request(new Http.Execute<PublishResult>() {
             @Override
-            public void execute(HttpScheduler http, final Callback<Void> callback) throws AblyException {
+            public void execute(HttpScheduler http, final Callback<PublishResult> callback) throws AblyException {
                 /* handle message ids */
                 boolean hasClientSuppliedId = false;
                 for(Message message : messages) {
@@ -147,7 +212,15 @@ public class ChannelBase {
                 HttpCore.RequestBody requestBody = ably.options.useBinaryProtocol ? MessageSerializer.asMsgpackRequest(messages) : MessageSerializer.asJsonRequest(messages);
                 final Param[] params = ably.options.addRequestIds ? Param.array(Crypto.generateRandomRequestId()) : null; // RSC7c
 
-                http.post(basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, requestBody, null, true, callback);
+                // Create ResponseHandler from BodyHandler
+                HttpCore.BodyHandler<String> bodyHandler = PublishResult.getBodyHandler();
+                HttpCore.ResponseHandler<PublishResult> responseHandler = (response, error) -> {
+                    if (error != null) throw AblyException.fromErrorInfo(error);
+                    String[] serials = bodyHandler.handleResponseBody(response.contentType, response.body);
+                    return new PublishResult(serials);
+                };
+
+                http.post(basePath + "/messages", HttpUtils.defaultAcceptHeaders(ably.options.useBinaryProtocol), params, requestBody, responseHandler, true, callback);
             }
         });
     }
