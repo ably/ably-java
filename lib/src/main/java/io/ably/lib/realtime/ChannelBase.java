@@ -49,6 +49,8 @@ import io.ably.lib.util.EventEmitter;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.ReconnectionStrategy;
 import io.ably.lib.util.StringUtils;
+import org.jetbrains.annotations.Blocking;
+import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -1318,7 +1320,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     }
 
     /**
-     * Appends message text to the end of the message.
+     * Appends message text to the end of the message data.
      *
      * @param message  A {@link Message} object containing the serial identifier and data to append.
      * @param operation operation details such as clientId, description, or metadata
@@ -1378,6 +1380,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      *         representing all versions of the message.
      * @throws AblyException If the versions cannot be retrieved.
      */
+    @Blocking
     public PaginatedResult<Message> getMessageVersions(String serial, Param[] params) throws AblyException {
         return messageEditsMixin.getMessageVersions(ably.http, serial, params);
     }
@@ -1389,6 +1392,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * @param params Query parameters for filtering or pagination.
      * @param callback A callback to handle the result asynchronously.
      */
+    @NonBlocking
     public void getMessageVersionsAsync(String serial, Param[] params, Callback<AsyncPaginatedResult<Message>> callback) throws AblyException {
         messageEditsMixin.getMessageVersionsAsync(ably.http, serial, params, callback);
     }

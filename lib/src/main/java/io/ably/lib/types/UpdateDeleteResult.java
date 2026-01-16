@@ -25,11 +25,11 @@ public class UpdateDeleteResult {
         this.versionSerial = versionSerial;
     }
 
-    public static UpdateDeleteResult readFromJson(byte[] packed) throws MessageDecodeException {
+    private static UpdateDeleteResult readFromJson(byte[] packed) throws MessageDecodeException {
         return Serialisation.gson.fromJson(new String(packed), UpdateDeleteResult.class);
     }
 
-    public static UpdateDeleteResult readMsgpack(byte[] packed) throws AblyException {
+    private static UpdateDeleteResult readMsgpack(byte[] packed) throws AblyException {
         try {
             MessageUnpacker unpacker = Serialisation.msgpackUnpackerConfig.newUnpacker(packed);
             return readMsgpack(unpacker);
@@ -38,7 +38,7 @@ public class UpdateDeleteResult {
         }
     }
 
-    public static UpdateDeleteResult readMsgpack(MessageUnpacker unpacker) throws IOException {
+    private static UpdateDeleteResult readMsgpack(MessageUnpacker unpacker) throws IOException {
         int fieldCount = unpacker.unpackMapHeader();
         String versionSerial = null;
         for (int i = 0; i < fieldCount; i++) {

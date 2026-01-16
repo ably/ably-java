@@ -19,6 +19,8 @@ import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.UpdateDeleteResult;
 import io.ably.lib.util.Crypto;
+import org.jetbrains.annotations.Blocking;
+import org.jetbrains.annotations.NonBlocking;
 
 public class MessageEditsMixin {
 
@@ -47,6 +49,7 @@ public class MessageEditsMixin {
      * @return A {@link Message} object representing the latest version of the message.
      * @throws AblyException If the message cannot be retrieved or does not exist.
      */
+    @Blocking
     public Message getMessage(Http http, String serial) throws AblyException {
         return getMessageImpl(http, serial).sync();
     }
@@ -59,6 +62,7 @@ public class MessageEditsMixin {
      *                 <p>
      *                 This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void getMessageAsync(Http http, String serial, Callback<Message> callback) {
         getMessageImpl(http, serial).async(callback);
     }
@@ -96,6 +100,7 @@ public class MessageEditsMixin {
      *
      * @return A {@link UpdateDeleteResult} containing the updated message version serial.
      */
+    @Blocking
     public UpdateDeleteResult updateMessage(Http http, Message message, MessageOperation operation) throws AblyException {
         return updateMessageImpl(http, message, operation, MessageAction.MESSAGE_UPDATE).sync();
     }
@@ -108,6 +113,7 @@ public class MessageEditsMixin {
      *                 <p>
      *                 This listener is invoked on a background thread.
      */
+    @NonBlocking
     public void updateMessageAsync(Http http, Message message, MessageOperation operation, Callback<UpdateDeleteResult> callback) {
         updateMessageImpl(http, message, operation, MessageAction.MESSAGE_UPDATE).async(callback);
     }
@@ -124,6 +130,7 @@ public class MessageEditsMixin {
      *
      * @return A {@link UpdateDeleteResult} containing the deleted message version serial.
      */
+    @Blocking
     public UpdateDeleteResult deleteMessage(Http http, Message message, MessageOperation operation) throws AblyException {
         return updateMessageImpl(http, message, operation, MessageAction.MESSAGE_DELETE).sync();
     }
@@ -136,6 +143,7 @@ public class MessageEditsMixin {
      *                 <p>
      *                 This listener is invoked on a background thread.
      */
+    @NonBlocking
     public void deleteMessageAsync(Http http, Message message, MessageOperation operation, Callback<UpdateDeleteResult> callback) {
         updateMessageImpl(http, message, operation, MessageAction.MESSAGE_DELETE).async(callback);
     }
@@ -147,6 +155,7 @@ public class MessageEditsMixin {
      * @param operation operation details such as clientId, description, or metadata
      * @return A {@link UpdateDeleteResult} containing the updated message version serial.
      */
+    @Blocking
     public UpdateDeleteResult appendMessage(Http http, Message message, MessageOperation operation) throws AblyException {
         return updateMessageImpl(http, message, operation, MessageAction.MESSAGE_APPEND).sync();
     }
@@ -160,6 +169,7 @@ public class MessageEditsMixin {
      *                 <p>
      *                 This listener is invoked on a background thread.
      */
+    @NonBlocking
     public void appendMessageAsync(Http http, Message message, MessageOperation operation, Callback<UpdateDeleteResult> callback) {
         updateMessageImpl(http, message, operation, MessageAction.MESSAGE_APPEND).async(callback);
     }
@@ -197,7 +207,7 @@ public class MessageEditsMixin {
                     if (error != null) throw AblyException.fromErrorInfo(error);
                     UpdateDeleteResult[] results = bodyHandler.handleResponseBody(response.contentType, response.body);
                     if (results != null && results.length > 0) return results[0];
-                    throw AblyException.fromErrorInfo(new ErrorInfo("No versionSerial in the update message response", 500, 50000));
+                    throw AblyException.fromErrorInfo(new ErrorInfo("No versionSerial in the response", 500, 50000));
                 },
                 true,
                 callback);
@@ -217,6 +227,7 @@ public class MessageEditsMixin {
      * representing all versions of the message.
      * @throws AblyException If the versions cannot be retrieved.
      */
+    @Blocking
     public PaginatedResult<Message> getMessageVersions(Http http, String serial, Param[] params) throws AblyException {
         return getMessageVersionsImpl(http, serial, params).sync();
     }
@@ -228,6 +239,7 @@ public class MessageEditsMixin {
      * @param params   Query parameters for filtering or pagination.
      * @param callback A callback to handle the result asynchronously.
      */
+    @NonBlocking
     public void getMessageVersionsAsync(Http http, String serial, Param[] params, Callback<AsyncPaginatedResult<Message>> callback) throws AblyException {
         getMessageVersionsImpl(http, serial, params).async(callback);
     }

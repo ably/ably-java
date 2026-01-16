@@ -19,6 +19,8 @@ import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.PresenceSerializer;
 import io.ably.lib.types.UpdateDeleteResult;
 import io.ably.lib.util.Crypto;
+import org.jetbrains.annotations.Blocking;
+import org.jetbrains.annotations.NonBlocking;
 
 /**
  * A class representing a Channel in the Ably REST API.
@@ -327,6 +329,7 @@ public class ChannelBase {
      * @return A {@link Message} object representing the latest version of the message.
      * @throws AblyException If the message cannot be retrieved or does not exist.
      */
+    @Blocking
     public Message getMessage(String serial) throws AblyException {
         return messageEditsMixin.getMessage(ably.http, serial);
     }
@@ -339,6 +342,7 @@ public class ChannelBase {
      * <p>
      * This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void getMessageAsync(String serial, Callback<Message> callback) {
         messageEditsMixin.getMessageAsync(ably.http, serial, callback);
     }
@@ -355,6 +359,7 @@ public class ChannelBase {
      * @throws AblyException If the update operation fails.
      * @return A {@link UpdateDeleteResult} containing the updated message version serial.
      */
+    @Blocking
     public UpdateDeleteResult updateMessage(Message message, MessageOperation operation) throws AblyException {
         return messageEditsMixin.updateMessage(ably.http, message, operation);
     }
@@ -370,6 +375,7 @@ public class ChannelBase {
      * @throws AblyException If the update operation fails.
      * @return A {@link UpdateDeleteResult} containing the updated message version serial.
      */
+    @Blocking
     public UpdateDeleteResult updateMessage(Message message) throws AblyException {
         return updateMessage(message, null);
     }
@@ -383,6 +389,7 @@ public class ChannelBase {
      * <p>
      * This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void updateMessageAsync(Message message, MessageOperation operation, Callback<UpdateDeleteResult> callback) {
         messageEditsMixin.updateMessageAsync(ably.http, message, operation, callback);
     }
@@ -395,6 +402,7 @@ public class ChannelBase {
      * <p>
      * This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void updateMessageAsync(Message message, Callback<UpdateDeleteResult> callback) {
         updateMessageAsync(message, null, callback);
     }
@@ -411,6 +419,7 @@ public class ChannelBase {
      * @throws AblyException If the delete operation fails.
      * @return A {@link UpdateDeleteResult} containing the deleted message version serial.
      */
+    @Blocking
     public UpdateDeleteResult deleteMessage(Message message, MessageOperation operation) throws AblyException {
         return messageEditsMixin.deleteMessage(ably.http, message, operation);
     }
@@ -426,6 +435,7 @@ public class ChannelBase {
      * @throws AblyException If the delete operation fails.
      * @return A {@link UpdateDeleteResult} containing the deleted message version serial.
      */
+    @Blocking
     public UpdateDeleteResult deleteMessage(Message message) throws AblyException {
         return deleteMessage(message, null);
     }
@@ -439,6 +449,7 @@ public class ChannelBase {
      * <p>
      * This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void deleteMessageAsync(Message message, MessageOperation operation, Callback<UpdateDeleteResult> callback) {
         messageEditsMixin.deleteMessageAsync(ably.http, message, operation, callback);
     }
@@ -451,6 +462,7 @@ public class ChannelBase {
      * <p>
      * This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void deleteMessageAsync(Message message, Callback<UpdateDeleteResult> callback) {
         deleteMessageAsync(message, null, callback);
     }
@@ -463,6 +475,7 @@ public class ChannelBase {
      * @return A {@link UpdateDeleteResult} containing the updated message version serial.
      * @throws AblyException If the append operation fails.
      */
+    @Blocking
     public UpdateDeleteResult appendMessage(Message message, MessageOperation operation) throws AblyException {
         return messageEditsMixin.appendMessage(ably.http, message, operation);
     }
@@ -474,6 +487,7 @@ public class ChannelBase {
      * @return A {@link UpdateDeleteResult} containing the updated message version serial.
      * @throws AblyException If the append operation fails.
      */
+    @Blocking
     public UpdateDeleteResult appendMessage(Message message) throws AblyException {
         return appendMessage(message, null);
     }
@@ -487,6 +501,7 @@ public class ChannelBase {
      * <p>
      * This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void appendMessageAsync(Message message, MessageOperation operation, Callback<UpdateDeleteResult> callback) {
         messageEditsMixin.appendMessageAsync(ably.http, message, operation, callback);
     }
@@ -499,6 +514,7 @@ public class ChannelBase {
      * <p>
      * This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void appendMessageAsync(Message message, Callback<UpdateDeleteResult> callback) {
         appendMessageAsync(message, null, callback);
     }
@@ -516,6 +532,7 @@ public class ChannelBase {
      *         representing all versions of the message.
      * @throws AblyException If the versions cannot be retrieved.
      */
+    @Blocking
     public PaginatedResult<Message> getMessageVersions(String serial, Param[] params) throws AblyException {
         return messageEditsMixin.getMessageVersions(ably.http, serial, params);
     }
@@ -527,6 +544,7 @@ public class ChannelBase {
      * @param params Query parameters for filtering or pagination.
      * @param callback A callback to handle the result asynchronously.
      */
+    @NonBlocking
     public void getMessageVersionsAsync(String serial, Param[] params, Callback<AsyncPaginatedResult<Message>> callback) throws AblyException {
         messageEditsMixin.getMessageVersionsAsync(ably.http, serial, params, callback);
     }
