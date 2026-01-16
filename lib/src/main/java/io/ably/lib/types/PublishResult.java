@@ -26,11 +26,11 @@ public class PublishResult {
         this.serials = serials;
     }
 
-    public static PublishResult readFromJson(byte[] packed) throws MessageDecodeException {
+    private static PublishResult readFromJson(byte[] packed) throws MessageDecodeException {
         return Serialisation.gson.fromJson(new String(packed), PublishResult.class);
     }
 
-    public static PublishResult readMsgpack(byte[] packed) throws AblyException {
+    private static PublishResult readMsgpack(byte[] packed) throws AblyException {
         try {
             MessageUnpacker unpacker = Serialisation.msgpackUnpackerConfig.newUnpacker(packed);
             return readMsgpack(unpacker);
@@ -39,7 +39,7 @@ public class PublishResult {
         }
     }
 
-    public static PublishResult readMsgpack(MessageUnpacker unpacker) throws IOException {
+    private static PublishResult readMsgpack(MessageUnpacker unpacker) throws IOException {
         int fieldCount = unpacker.unpackMapHeader();
         for (int i = 0; i < fieldCount; i++) {
             String fieldName = unpacker.unpackString();
@@ -68,7 +68,7 @@ public class PublishResult {
         return new PublishResult(new String[]{});
     }
 
-    public static void writeMsgpackArray(PublishResult[] results, MessagePacker packer) {
+    static void writeMsgpackArray(PublishResult[] results, MessagePacker packer) {
         try {
             int count = results.length;
             packer.packArrayHeader(count);
@@ -84,7 +84,7 @@ public class PublishResult {
         }
     }
 
-    public static PublishResult[] readMsgpackArray(MessageUnpacker unpacker) throws IOException {
+    static PublishResult[] readMsgpackArray(MessageUnpacker unpacker) throws IOException {
         int count = unpacker.unpackArrayHeader();
         PublishResult[] results = new PublishResult[count];
         for (int i = 0; i < count; i++) {

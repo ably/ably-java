@@ -31,7 +31,7 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Tests for REST channel message edit and delete operations
+ * Tests for realtime channel message edit and delete operations
  */
 public class RealtimeChannelMessageEditTest extends ParameterizedTest {
 
@@ -387,8 +387,8 @@ public class RealtimeChannelMessageEditTest extends ParameterizedTest {
         Message retrieved = waitForUpdatedMessageAppear(channel, serial);
         assertEquals("Expected updated data in history", "Initial dataAppend data", retrieved.data);
         assertEquals("Expected MESSAGE_UPDATE action in history", MessageAction.MESSAGE_UPDATE, retrieved.action);
-        assertEquals("Expected MESSAGE_APPEND action through realtime",MessageAction.MESSAGE_APPEND, appendWaiter.result.action);
-        assertEquals("Expected delta through realtime","Append data", appendWaiter.result.data);
+        assertEquals("Expected MESSAGE_APPEND action through realtime", MessageAction.MESSAGE_APPEND, appendWaiter.result.action);
+        assertEquals("Expected delta through realtime", "Append data", appendWaiter.result.data);
 
     }
 
@@ -396,7 +396,7 @@ public class RealtimeChannelMessageEditTest extends ParameterizedTest {
         long timeout = System.currentTimeMillis() + 5_000;
         while (true) {
             PaginatedResult<Message> history = channel.getMessageVersions(serial, params);
-            if (history.items().length > 0 && predicate.test(history.items()) || System.currentTimeMillis() > timeout)
+            if ((history.items().length > 0 && predicate.test(history.items())) || System.currentTimeMillis() > timeout)
                 return history;
             Thread.sleep(200);
         }
@@ -419,7 +419,10 @@ public class RealtimeChannelMessageEditTest extends ParameterizedTest {
                 if ((message != null && message.action == MessageAction.MESSAGE_UPDATE) || System.currentTimeMillis() > timeout)
                     return message;
                 Thread.sleep(200);
-            } catch (Exception e) {}
+            } catch (AblyException e) {
+                // skip not found errors
+                if (e.errorInfo.statusCode != 404) throw e;
+            }
         }
     }
 
@@ -431,7 +434,10 @@ public class RealtimeChannelMessageEditTest extends ParameterizedTest {
                 if ((message != null && message.action == MessageAction.MESSAGE_DELETE) || System.currentTimeMillis() > timeout)
                     return message;
                 Thread.sleep(200);
-            } catch (Exception e) {}
+            } catch (AblyException e) {
+                // skip not found errors
+                if (e.errorInfo.statusCode != 404) throw e;
+            }
         }
     }
 }

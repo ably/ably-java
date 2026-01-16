@@ -1193,6 +1193,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * @return A {@link Message} object representing the latest version of the message.
      * @throws AblyException If the message cannot be retrieved or does not exist.
      */
+    @Blocking
     public Message getMessage(String serial) throws AblyException {
         return messageEditsMixin.getMessage(ably.http, serial);
     }
@@ -1205,6 +1206,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void getMessageAsync(String serial, Callback<Message> callback) {
         messageEditsMixin.getMessageAsync(ably.http, serial, callback);
     }
@@ -1216,6 +1218,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void updateMessage(Message message) throws AblyException {
         updateMessage(message, null, null);
     }
@@ -1228,6 +1231,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void updateMessage(Message message, MessageOperation operation) throws AblyException {
         updateMessage(message, operation, null);
     }
@@ -1241,6 +1245,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void updateMessage(Message message, MessageOperation operation, Callback<UpdateDeleteResult> listener) throws AblyException {
         Log.v(TAG, "updateMessage(Message); channel = " + this.name + "; serial = " + message.serial);
         updateDeleteImpl(message, operation, MessageAction.MESSAGE_UPDATE, listener);
@@ -1254,6 +1259,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void updateMessage(Message message, Callback<UpdateDeleteResult> listener) throws AblyException {
         updateMessage(message, null, listener);
     }
@@ -1265,6 +1271,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void deleteMessage(Message message) throws AblyException {
         deleteMessage(message, null, null);
     }
@@ -1277,6 +1284,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void deleteMessage(Message message, MessageOperation operation) throws AblyException {
         deleteMessage(message, operation, null);
     }
@@ -1290,6 +1298,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void deleteMessage(Message message, MessageOperation operation, Callback<UpdateDeleteResult> listener) throws AblyException {
         Log.v(TAG, "deleteMessage(Message); channel = " + this.name + "; serial = " + message.serial);
         updateDeleteImpl(message, operation, MessageAction.MESSAGE_DELETE, listener);
@@ -1303,6 +1312,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void deleteMessage(Message message, Callback<UpdateDeleteResult> callback) throws AblyException {
         deleteMessage(message, null, callback);
     }
@@ -1314,6 +1324,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void appendMessage(Message message) throws AblyException {
         appendMessage(message, null, null);
     }
@@ -1326,6 +1337,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void appendMessage(Message message, MessageOperation operation) throws AblyException {
         appendMessage(message, operation, null);
     }
@@ -1339,6 +1351,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void appendMessage(Message message, MessageOperation operation, Callback<UpdateDeleteResult> listener) throws AblyException {
         Log.v(TAG, "appendMessage(Message); channel = " + this.name + "; serial = " + message.serial);
         updateDeleteImpl(message, operation, MessageAction.MESSAGE_APPEND, listener);
@@ -1352,6 +1365,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void appendMessage(Message message, Callback<UpdateDeleteResult> callback) throws AblyException {
         appendMessage(message, null, callback);
     }
@@ -1395,7 +1409,13 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
 
         ProtocolMessage msg = new ProtocolMessage(Action.message, this.name);
         msg.messages = new Message[] { updatedMessage };
-        connectionManager.send(msg, queueMessages, Listeners.toPublishResultListener(listener));
+        try {
+            connectionManager.send(msg, queueMessages, Listeners.toPublishResultListener(listener));
+        } catch (AblyException e) {
+            if (listener != null) {
+                listener.onError(e.errorInfo);
+            }
+        }
     }
 
     /**
