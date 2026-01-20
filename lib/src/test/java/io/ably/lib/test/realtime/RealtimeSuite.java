@@ -30,7 +30,8 @@ import io.ably.lib.test.common.Setup;
     RealtimeRecoverTest.class,
     RealtimeCryptoTest.class,
     RealtimeChannelHistoryTest.class,
-    RealtimePresenceHistoryTest.class
+    RealtimePresenceHistoryTest.class,
+    RealtimeChannelMessageEditTest.class
 })
 public class RealtimeSuite {
 

@@ -15,6 +15,8 @@ import io.ably.lib.types.Param;
 import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.PresenceSerializer;
 import io.ably.lib.types.ProtocolMessage;
+import io.ably.lib.types.PublishResult;
+import io.ably.lib.util.Listeners;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.StringUtils;
 
@@ -120,9 +122,9 @@ public class Presence {
         return get(new Param(GET_WAITFORSYNC, String.valueOf(wait)), new Param(GET_CLIENTID, clientId));
     }
 
-    void addPendingPresence(PresenceMessage presenceMessage, CompletionListener listener) {
+    void addPendingPresence(PresenceMessage presenceMessage, Callback<PublishResult> listener) {
         synchronized(channel) {
-            final QueuedPresence queuedPresence = new QueuedPresence(presenceMessage,listener);
+            final QueuedPresence queuedPresence = new QueuedPresence(presenceMessage, Listeners.unwrap(listener));
             pendingPresence.add(queuedPresence);
         }
     }
@@ -763,7 +765,7 @@ public class Presence {
                 ProtocolMessage message = new ProtocolMessage(ProtocolMessage.Action.presence, channel.name);
                 message.presence = new PresenceMessage[] { msg };
                 ConnectionManager connectionManager = ably.connection.connectionManager;
-                connectionManager.send(message, ably.options.queueMessages, listener);
+                connectionManager.send(message, ably.options.queueMessages, Listeners.fromCompletionListener(listener));
                 break;
             default:
                 throw AblyException.fromErrorInfo(new ErrorInfo("Unable to enter presence channel in detached or failed state", 400, 91001));
@@ -892,7 +894,7 @@ public class Presence {
         pendingPresence.clear();
 
         try {
-            connectionManager.send(message, queueMessages, listener);
+            connectionManager.send(message, queueMessages, Listeners.fromCompletionListener(listener));
         } catch(AblyException e) {
             Log.e(TAG, "sendQueuedMessages(): Unexpected exception sending message", e);
             if(listener != null)

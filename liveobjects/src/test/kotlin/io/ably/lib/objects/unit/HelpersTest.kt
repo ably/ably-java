@@ -29,8 +29,8 @@ class HelpersTest {
     every { adapter.clientOptions } returns clientOptions
 
     every { connManager.send(any(), any(), any()) } answers {
-      val listener = thirdArg<CompletionListener>()
-      listener.onSuccess()
+      val listener = thirdArg<Callback<PublishResult>>()
+      listener.onSuccess(PublishResult(null))
     }
 
     val pm = ProtocolMessage(ProtocolMessage.Action.message)
@@ -52,7 +52,7 @@ class HelpersTest {
     every { adapter.clientOptions } returns clientOptions
 
     every { connManager.send(any(), any(), any()) } answers {
-      val listener = thirdArg<CompletionListener>()
+      val listener = thirdArg<Callback<PublishResult>>()
       listener.onError(clientError("boom").errorInfo)
     }
 

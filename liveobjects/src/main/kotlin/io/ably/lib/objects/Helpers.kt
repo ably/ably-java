@@ -2,9 +2,11 @@ package io.ably.lib.objects
 
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.realtime.CompletionListener
+import io.ably.lib.types.Callback
 import io.ably.lib.types.ChannelMode
 import io.ably.lib.types.ErrorInfo
 import io.ably.lib.types.ProtocolMessage
+import io.ably.lib.types.PublishResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
@@ -13,11 +15,11 @@ import kotlin.coroutines.resumeWithException
 /**
  * Spec: RTO15g
  */
-internal suspend fun ObjectsAdapter.sendAsync(message: ProtocolMessage) = suspendCancellableCoroutine { continuation ->
+internal suspend fun ObjectsAdapter.sendAsync(message: ProtocolMessage): PublishResult = suspendCancellableCoroutine { continuation ->
   try {
-    connectionManager.send(message, clientOptions.queueMessages, object : CompletionListener {
-      override fun onSuccess() {
-        continuation.resume(Unit)
+    connectionManager.send(message, clientOptions.queueMessages, object : Callback<PublishResult> {
+      override fun onSuccess(result: PublishResult) {
+        continuation.resume(result)
       }
 
       override fun onError(reason: ErrorInfo) {
