@@ -80,7 +80,7 @@ public class PushBase {
          * @throws AblyException
          */
         public void publishAsync(Param[] recipient, JsonObject payload, final CompletionListener listener) {
-            publishImpl(recipient, payload).async(new CompletionListener.ToCallback(listener));
+            publishImpl(recipient, payload).async(new CompletionListener.ToCallback<>(listener));
         }
 
         private Http.Request<Void> publishImpl(final Param[] recipient, final JsonObject payload)  {
@@ -275,7 +275,7 @@ public class PushBase {
          * @param listener A listener to be notified of success or failure.
          */
         public void removeAsync(String deviceId, CompletionListener listener) {
-            removeImpl(deviceId).async(new CompletionListener.ToCallback(listener));
+            removeImpl(deviceId).async(new CompletionListener.ToCallback<>(listener));
         }
 
         protected Http.Request<Void> removeImpl(final String deviceId) {
@@ -310,7 +310,7 @@ public class PushBase {
          * @param listener A listener to be notified of success or failure.
          */
         public void removeWhereAsync(Param[] params, CompletionListener listener) {
-            removeWhereImpl(params).async(new CompletionListener.ToCallback(listener));
+            removeWhereImpl(params).async(new CompletionListener.ToCallback<>(listener));
         }
 
         protected Http.Request<Void> removeWhereImpl(Param[] params) {
@@ -435,7 +435,7 @@ public class PushBase {
          * @throws AblyException
          */
         public void removeAsync(ChannelSubscription subscription, CompletionListener listener) {
-            removeImpl(subscription).async(new CompletionListener.ToCallback(listener));
+            removeImpl(subscription).async(new CompletionListener.ToCallback<>(listener));
         }
 
         protected Http.Request<Void> removeImpl(ChannelSubscription subscription) {
@@ -476,7 +476,7 @@ public class PushBase {
          * @throws AblyException
          */
         public void removeWhereAsync(Param[] params, CompletionListener listener) {
-            removeWhereImpl(params).async(new CompletionListener.ToCallback(listener));
+            removeWhereImpl(params).async(new CompletionListener.ToCallback<>(listener));
         }
 
         protected Http.Request<Void> removeWhereImpl(Param[] params) {

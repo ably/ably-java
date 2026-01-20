@@ -19,7 +19,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'corretto'
+          distribution: 'temurin'
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3

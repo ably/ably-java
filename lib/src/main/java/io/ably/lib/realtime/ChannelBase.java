@@ -43,6 +43,7 @@ import io.ably.lib.types.PresenceMessage;
 import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.types.ProtocolMessage.Flag;
+import io.ably.lib.types.PublishResult;
 import io.ably.lib.types.Summary;
 import io.ably.lib.types.UpdateDeleteResult;
 import io.ably.lib.util.CollectionUtils;
@@ -436,6 +437,16 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     }
 
     private static void callCompletionListenerError(CompletionListener listener, ErrorInfo err) {
+        if(listener != null) {
+            try {
+                listener.onError(err);
+            } catch(Throwable t) {
+                Log.e(TAG, "Unexpected exception calling CompletionListener", t);
+            }
+        }
+    }
+
+    private static void callCompletionListenerError(Callback<PublishResult> listener, ErrorInfo err) {
         if(listener != null) {
             try {
                 listener.onError(err);
@@ -1026,8 +1037,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * @param data the message payload
      * @throws AblyException
      */
+    @NonBlocking
     public void publish(String name, Object data) throws AblyException {
-        publish(name, data, null);
+        publish(name, data, (Callback<PublishResult>) null);
     }
 
     /**
@@ -1038,8 +1050,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * @param message A {@link Message} object.
      * @throws AblyException
      */
+    @NonBlocking
     public void publish(Message message) throws AblyException {
-        publish(message, null);
+        publish(message, (Callback<PublishResult>) null);
     }
 
     /**
@@ -1050,8 +1063,9 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * @param messages An array of {@link Message} objects.
      * @throws AblyException
      */
+    @NonBlocking
     public void publish(Message[] messages) throws AblyException {
-        publish(messages, null);
+        publish(messages, (Callback<PublishResult>) null);
     }
 
     /**
@@ -1067,10 +1081,34 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * This listener is invoked on a background thread.
      * @throws AblyException
+     * @deprecated Use {@link #publish(String, Object, Callback)} instead.
      */
+    @Deprecated
+    @NonBlocking
     public void publish(String name, Object data, CompletionListener listener) throws AblyException {
         Log.v(TAG, "publish(String, Object); channel = " + this.name + "; event = " + name);
         publish(new Message[] {new Message(name, data)}, listener);
+    }
+
+    /**
+     * Publishes a single message to the channel with the given event name and payload.
+     * When publish is called with this client library, it won't attempt to implicitly attach to the channel,
+     * so long as <a href="https://ably.com/docs/realtime/channels#transient-publish">transient publishing</a> is available in the library.
+     * Otherwise, the client will implicitly attach.
+     * <p>
+     * Spec: RTL6i
+     * @param name the event name
+     * @param data the message payload
+     * @param callback A callback may optionally be passed in to this call to be notified of success or failure of the operation,
+     *                 receiving a {@link PublishResult} with message serial(s) on success.
+     * <p>
+     * This callback is invoked on a background thread.
+     * @throws AblyException
+     */
+    @NonBlocking
+    public void publish(String name, Object data, Callback<PublishResult> callback) throws AblyException {
+        Log.v(TAG, "publish(String, Object); channel = " + this.name + "; event = " + name);
+        publish(new Message[] {new Message(name, data)}, callback);
     }
 
     /**
@@ -1083,10 +1121,31 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * This listener is invoked on a background thread.
      * @throws AblyException
+     * @deprecated Use {@link #publish(Message, Callback)} instead.
      */
+    @Deprecated
+    @NonBlocking
     public void publish(Message message, CompletionListener listener) throws AblyException {
         Log.v(TAG, "publish(Message); channel = " + this.name + "; event = " + message.name);
         publish(new Message[] {message}, listener);
+    }
+
+    /**
+     * Publishes a message to the channel.
+     * When publish is called with this client library, it won't attempt to implicitly attach to the channel.
+     * <p>
+     * Spec: RTL6i
+     * @param message A {@link Message} object.
+     * @param callback A callback may optionally be passed in to this call to be notified of success or failure of the operation,
+     *                 receiving a {@link PublishResult} with message serial(s) on success.
+     * <p>
+     * This callback is invoked on a background thread.
+     * @throws AblyException
+     */
+    @NonBlocking
+    public void publish(Message message, Callback<PublishResult> callback) throws AblyException {
+        Log.v(TAG, "publish(Message); channel = " + this.name + "; event = " + message.name);
+        publish(new Message[] {message}, callback);
     }
 
     /**
@@ -1099,8 +1158,16 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * This listener is invoked on a background thread.
      * @throws AblyException
+     * @deprecated Use {@link #publish(Message[], Callback)} instead.
      */
+    @Deprecated
+    @NonBlocking
     public synchronized void publish(Message[] messages, CompletionListener listener) throws AblyException {
+        publish(messages, Listeners.fromCompletionListener(listener));
+    }
+
+    @NonBlocking
+    public synchronized void publish(Message[] messages, Callback<PublishResult> listener) throws AblyException {
         Log.v(TAG, "publish(Message[]); channel = " + this.name);
         ConnectionManager connectionManager = ably.connection.connectionManager;
         ConnectionManager.State connectionState = connectionManager.getConnectionState();
@@ -1127,7 +1194,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         case suspended:
             throw AblyException.fromErrorInfo(new ErrorInfo("Unable to publish in failed or suspended state", 400, 40000));
         default:
-            connectionManager.send(msg, queueMessages, Listeners.fromCompletionListener(listener));
+            connectionManager.send(msg, queueMessages, listener);
         }
     }
 

@@ -43,14 +43,14 @@ public interface CompletionListener {
         }
     }
 
-    class ToCallback implements Callback<Void> {
+    class ToCallback<T> implements Callback<T> {
         private CompletionListener listener;
         public ToCallback(CompletionListener listener) {
             this.listener = listener;
         }
 
         @Override
-        public void onSuccess(Void v) {
+        public void onSuccess(T v) {
             listener.onSuccess();
         }
 

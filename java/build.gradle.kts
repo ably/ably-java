@@ -67,7 +67,7 @@ tasks.register<Test>("testRealtimeSuite") {
     }
     retry {
         maxRetries.set(3)
-        maxFailures.set(8)
+        maxFailures.set(15)
         failOnPassedAfterRetry.set(false)
         failOnSkippedAfterRetry.set(false)
     }

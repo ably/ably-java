@@ -14,6 +14,7 @@ import io.ably.lib.types.MessageAction;
 import io.ably.lib.types.MessageOperation;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
+import io.ably.lib.types.PublishResult;
 import io.ably.lib.types.UpdateDeleteResult;
 import io.ably.lib.util.Crypto;
 import org.junit.Before;
@@ -58,24 +59,17 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
         Channel channel = ably.channels.get(channelName);
 
         // Publish a message
-        channel.publish("test_event", "Test message data");
-
-        // Get the message from history to obtain its serial
-        PaginatedResult<Message> history = waitForMessageAppearInHistory(channel);
-        assertNotNull("Expected non-null history", history);
-        assertEquals(1, history.items().length);
-
-        Message publishedMessage = history.items()[0];
-        assertNotNull("Expected message to have a serial", publishedMessage.serial);
+        PublishResult publishResult = channel.publishWithResult("test_event", "Test message data");
+        assertNotNull("Expected message to have a serial", publishResult.serials[0]);
 
         // Retrieve the message by serial
-        Message retrievedMessage = waitForUpdatedMessageAppear(channel, publishedMessage.serial);
+        Message retrievedMessage = waitForUpdatedMessageAppear(channel, publishResult.serials[0]);
 
         // Verify the retrieved message
         assertNotNull("Expected non-null retrieved message", retrievedMessage);
-        assertEquals("Expected same message name", publishedMessage.name, retrievedMessage.name);
-        assertEquals("Expected same message data", publishedMessage.data, retrievedMessage.data);
-        assertEquals("Expected same serial", publishedMessage.serial, retrievedMessage.serial);
+        assertEquals("Expected same message name", "test_event", retrievedMessage.name);
+        assertEquals("Expected same message data", "Test message data", retrievedMessage.data);
+        assertEquals("Expected same serial", publishResult.serials[0], retrievedMessage.serial);
     }
 
     /**
@@ -89,26 +83,19 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
         Channel channel = ably.channels.get(channelName);
 
         // Publish a message
-        channel.publish("test_event", "Original message data");
-
-        // Get the message from history to obtain its serial
-        PaginatedResult<Message> history = waitForMessageAppearInHistory(channel);
-        assertNotNull("Expected non-null history", history);
-        assertEquals(1, history.items().length);
-
-        Message publishedMessage = history.items()[0];
-        assertNotNull("Expected message to have a serial", publishedMessage.serial);
+        PublishResult publishResult = channel.publishWithResult("test_event", "Original message data");
+        assertNotNull("Expected message to have a serial", publishResult.serials[0]);
 
         // Update the message
         Message updateMessage = new Message();
-        updateMessage.serial = publishedMessage.serial;
+        updateMessage.serial = publishResult.serials[0];
         updateMessage.data = "Updated message data";
         updateMessage.name = "updated_event";
 
         UpdateDeleteResult result = channel.updateMessage(updateMessage);
 
         // Retrieve the updated message
-        Message updatedMessage = waitForUpdatedMessageAppear(channel, publishedMessage.serial);
+        Message updatedMessage = waitForUpdatedMessageAppear(channel, publishResult.serials[0]);
 
         // Verify the message was updated
         assertNotNull("Expected non-null updated message", updatedMessage);
@@ -130,26 +117,19 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
         Channel channel = ably.channels.get(channelName, channelOptions);
 
         // Publish a message
-        channel.publish("test_event", "Original message data");
-
-        // Get the message from history to obtain its serial
-        PaginatedResult<Message> history = waitForMessageAppearInHistory(channel);
-        assertNotNull("Expected non-null history", history);
-        assertEquals(1, history.items().length);
-
-        Message publishedMessage = history.items()[0];
-        assertNotNull("Expected message to have a serial", publishedMessage.serial);
+        PublishResult publishResult = channel.publishWithResult("test_event", "Original message data");
+        assertNotNull("Expected message to have a serial", publishResult.serials[0]);
 
         // Update the message
         Message updateMessage = new Message();
-        updateMessage.serial = publishedMessage.serial;
+        updateMessage.serial = publishResult.serials[0];
         updateMessage.data = "Updated message data";
         updateMessage.name = "updated_event";
 
         UpdateDeleteResult result = channel.updateMessage(updateMessage);
 
         // Retrieve the updated message
-        Message updatedMessage = waitForUpdatedMessageAppear(channel, publishedMessage.serial);
+        Message updatedMessage = waitForUpdatedMessageAppear(channel, publishResult.serials[0]);
 
         // Verify the message was updated
         assertNotNull("Expected non-null updated message", updatedMessage);
@@ -169,20 +149,17 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
         String channelName = "mutable:update_message_async_" + UUID.randomUUID() + "_" + testParams.name;
         Channel channel = ably.channels.get(channelName);
 
+        Helpers.AsyncWaiter<PublishResult> publishWaiter = new Helpers.AsyncWaiter<>();
+
         // Publish a message
-        channel.publish("test_event", "Original message data");
-
-        // Get the message from history
-        PaginatedResult<Message> history = waitForMessageAppearInHistory(channel);
-        assertNotNull("Expected non-null history", history);
-        assertEquals(1, history.items().length);
-
-        final Message publishedMessage = history.items()[0];
-        assertNotNull("Expected message to have a serial", publishedMessage.serial);
+        channel.publishAsync("test_event", "Original message data", publishWaiter);
+        publishWaiter.waitFor();
+        PublishResult publishResult = publishWaiter.result;
+        assertNotNull("Expected message to have a serial", publishResult.serials[0]);
 
         // Update the message using async API
         Message updateMessage = new Message();
-        updateMessage.serial = publishedMessage.serial;
+        updateMessage.serial = publishResult.serials[0];
         updateMessage.data = "Updated message data async";
 
         Helpers.AsyncWaiter<UpdateDeleteResult> updateWaiter = new Helpers.AsyncWaiter<>();
@@ -191,7 +168,7 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
         updateWaiter.waitFor();
 
         // Retrieve the updated message
-        Message updatedMessage = waitForUpdatedMessageAppear(channel, publishedMessage.serial);
+        Message updatedMessage = waitForUpdatedMessageAppear(channel, publishResult.serials[0]);
         assertNotNull("Expected non-null updated message", updatedMessage);
         assertEquals("Expected updated message data", "Updated message data async", updatedMessage.data);
         assertEquals(updateWaiter.result.versionSerial, updatedMessage.version.serial);
@@ -208,25 +185,18 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
         Channel channel = ably.channels.get(channelName);
 
         // Publish a message
-        channel.publish("test_event", "Message to be deleted");
-
-        // Get the message from history
-        PaginatedResult<Message> history = waitForMessageAppearInHistory(channel);
-        assertNotNull("Expected non-null history", history);
-        assertEquals(1, history.items().length);
-
-        Message publishedMessage = history.items()[0];
-        assertNotNull("Expected message to have a serial", publishedMessage.serial);
+        PublishResult publishResult = channel.publishWithResult("test_event", "Message to be deleted");
+        assertNotNull("Expected message to have a serial", publishResult.serials[0]);
 
         // Delete the message
         Message deleteMessage = new Message();
-        deleteMessage.serial = publishedMessage.serial;
+        deleteMessage.serial = publishResult.serials[0];
         deleteMessage.data = "Message deleted";
 
         UpdateDeleteResult result = channel.deleteMessage(deleteMessage);
 
         // Retrieve the deleted message
-        Message deletedMessage = waitForDeletedMessageAppear(channel, publishedMessage.serial);
+        Message deletedMessage = waitForDeletedMessageAppear(channel, publishResult.serials[0]);
 
         // Verify the message was soft deleted
         assertNotNull("Expected non-null deleted message", deletedMessage);
@@ -245,25 +215,18 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
         Channel channel = ably.channels.get(channelName);
 
         // Publish a message
-        channel.publish("test_event", "Initial message");
-
-        // Get the message from history
-        PaginatedResult<Message> history = waitForMessageAppearInHistory(channel);
-        assertNotNull("Expected non-null history", history);
-        assertEquals(1, history.items().length);
-
-        Message publishedMessage = history.items()[0];
-        assertNotNull("Expected message to have a serial", publishedMessage.serial);
+        PublishResult publishResult = channel.publishWithResult("test_event", "Initial message");
+        assertNotNull("Expected message to have a serial", publishResult.serials[0]);
 
         // Append the message
         Message appendMessage = new Message();
-        appendMessage.serial = publishedMessage.serial;
+        appendMessage.serial = publishResult.serials[0];
         appendMessage.data = "Message append";
 
         UpdateDeleteResult result = channel.appendMessage(appendMessage);
 
         // Retrieve the updated message
-        Message updatedMessage = waitForUpdatedMessageAppear(channel, publishedMessage.serial);
+        Message updatedMessage = waitForUpdatedMessageAppear(channel, publishResult.serials[0]);
 
         // Verify the message was appended
         assertNotNull("Expected non-null append message", updatedMessage);
@@ -283,19 +246,12 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
         Channel channel = ably.channels.get(channelName);
 
         // Publish a message
-        channel.publish("test_event", "Message to be deleted async");
-
-        // Get the message from history
-        PaginatedResult<Message> history = waitForMessageAppearInHistory(channel);
-        assertNotNull("Expected non-null history", history);
-        assertEquals(1, history.items().length);
-
-        final Message publishedMessage = history.items()[0];
-        assertNotNull("Expected message to have a serial", publishedMessage.serial);
+        PublishResult publishResult = channel.publishWithResult("test_event", "Message to be deleted async");
+        assertNotNull("Expected message to have a serial", publishResult.serials[0]);
 
         // Delete the message using async API
         Message deleteMessage = new Message();
-        deleteMessage.serial = publishedMessage.serial;
+        deleteMessage.serial = publishResult.serials[0];
         deleteMessage.data = "Message deleted async";
 
         Helpers.AsyncWaiter<UpdateDeleteResult> deleteWaiter = new Helpers.AsyncWaiter<>();
@@ -304,7 +260,7 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
         deleteWaiter.waitFor();
 
         // Retrieve the deleted message
-        Message deletedMessage = waitForDeletedMessageAppear(channel, publishedMessage.serial);
+        Message deletedMessage = waitForDeletedMessageAppear(channel, publishResult.serials[0]);
         assertNotNull("Expected non-null deleted message", deletedMessage);
         assertEquals("Expected action to be MESSAGE_DELETE", MessageAction.MESSAGE_DELETE, deletedMessage.action);
         assertEquals(deleteWaiter.result.versionSerial, deletedMessage.version.serial);
@@ -321,24 +277,17 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
         Channel channel = ably.channels.get(channelName);
 
         // Publish a message
-        channel.publish("test_event", "Original data");
+        PublishResult publishResult = channel.publishWithResult("test_event", "Original data");
 
-        // Get the message from history
-        PaginatedResult<Message> history = waitForMessageAppearInHistory(channel);
-        assertNotNull("Expected non-null history", history);
-        assertEquals(1, history.items().length);
-
-        Message publishedMessage = history.items()[0];
-        assertNotNull("Expected message to have a serial", publishedMessage.serial);
 
         // Update the message to create version history
         Message updateMessage1 = new Message();
-        updateMessage1.serial = publishedMessage.serial;
+        updateMessage1.serial = publishResult.serials[0];
         updateMessage1.data = "First update";
         channel.updateMessage(updateMessage1);
 
         Message updateMessage2 = new Message();
-        updateMessage2.serial = publishedMessage.serial;
+        updateMessage2.serial = publishResult.serials[0];
         updateMessage2.data = "Second update";
         MessageOperation messageOperation = new MessageOperation();
         messageOperation.description = "description";
@@ -347,7 +296,7 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
         channel.updateMessage(updateMessage2, messageOperation);
 
         // Retrieve version history
-        PaginatedResult<Message> versions = waitForMessageAppearInVersionHistory(channel, publishedMessage.serial, null, msgs ->
+        PaginatedResult<Message> versions = waitForMessageAppearInVersionHistory(channel, publishResult.serials[0], null, msgs ->
             msgs.length >= 3
         );
 
@@ -372,15 +321,28 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
         Channel channel = ably.channels.get(channelName);
 
         // Publish a message
-        channel.publish("test_event", "Original data");
+        PublishResult publishResult = channel.publishWithResult("test_event", "Original data");
 
-        // Get the message from history
-        PaginatedResult<Message> history = waitForMessageAppearInHistory(channel);
-        assertNotNull("Expected non-null history", history);
-        assertEquals(1, history.items().length);
+        // Update the message to create version history
+        Message updateMessage1 = new Message();
+        updateMessage1.serial = publishResult.serials[0];
+        updateMessage1.data = "Update";
+        MessageOperation messageOperation1 = new MessageOperation();
+        messageOperation1.description = "description";
+        channel.updateMessage(updateMessage1, messageOperation1);
 
-        final Message publishedMessage = history.items()[0];
-        assertNotNull("Expected message to have a serial", publishedMessage.serial);
+        // Retrieve version history
+        PaginatedResult<Message> versions = waitForMessageAppearInVersionHistory(channel, publishResult.serials[0], null, msgs ->
+            msgs.length >= 2
+        );
+
+        // Verify version history
+        assertNotNull("Expected non-null versions", versions);
+        assertTrue("Expected at least 2 versions (original + 1 update)", versions.items().length >= 2);
+
+        Message latestVersion = versions.items()[versions.items().length - 1];
+        assertEquals("Expected latest version to have second update data", "Update", latestVersion.data);
+        assertEquals("description", latestVersion.version.description);
     }
 
     /**
@@ -451,12 +413,10 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
         Channel channel = ably.channels.get(channelName);
 
         // 1. Publish a message
-        channel.publish("workflow_event", "Initial data");
+        PublishResult publishResult = channel.publishWithResult("workflow_event", "Initial data");
 
         // Get the published message
-        PaginatedResult<Message> history = waitForMessageAppearInHistory(channel);
-        Message publishedMessage = history.items()[0];
-        String serial = publishedMessage.serial;
+        String serial = publishResult.serials[0];
 
         // 2. Update the message
         Message updateMessage = new Message();
@@ -509,20 +469,30 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
     private Message waitForUpdatedMessageAppear(Channel channel, String serial) throws Exception {
         long timeout = System.currentTimeMillis() + 5_000;
         while (true) {
-            Message message = channel.getMessage(serial);
-            if ((message != null && message.action == MessageAction.MESSAGE_UPDATE) || System.currentTimeMillis() > timeout)
-                return message;
-            Thread.sleep(200);
+            try {
+                Message message = channel.getMessage(serial);
+                if ((message != null && message.action == MessageAction.MESSAGE_UPDATE) || System.currentTimeMillis() > timeout)
+                    return message;
+                Thread.sleep(200);
+            } catch (AblyException e) {
+                // skip not found errors
+                if (e.errorInfo.statusCode != 404) throw e;
+            }
         }
     }
 
     private Message waitForDeletedMessageAppear(Channel channel, String serial) throws Exception {
         long timeout = System.currentTimeMillis() + 5_000;
         while (true) {
-            Message message = channel.getMessage(serial);
-            if ((message != null && message.action == MessageAction.MESSAGE_DELETE) || System.currentTimeMillis() > timeout)
-                return message;
-            Thread.sleep(200);
+            try {
+                Message message = channel.getMessage(serial);
+                if ((message != null && message.action == MessageAction.MESSAGE_DELETE) || System.currentTimeMillis() > timeout)
+                    return message;
+                Thread.sleep(200);
+            } catch (AblyException e) {
+                // skip not found errors
+                if (e.errorInfo.statusCode != 404) throw e;
+            }
         }
     }
 }
