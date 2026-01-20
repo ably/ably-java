@@ -338,7 +338,7 @@ public class RestChannelMessageEditTest extends ParameterizedTest {
 
         // Verify version history
         assertNotNull("Expected non-null versions", versions);
-        assertTrue("Expected at least 2 versions (original + 2 updates)", versions.items().length >= 2);
+        assertTrue("Expected at least 2 versions (original + 1 update)", versions.items().length >= 2);
 
         Message latestVersion = versions.items()[versions.items().length - 1];
         assertEquals("Expected latest version to have second update data", "Update", latestVersion.data);

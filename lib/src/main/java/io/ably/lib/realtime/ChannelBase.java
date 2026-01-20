@@ -1037,6 +1037,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * @param data the message payload
      * @throws AblyException
      */
+    @NonBlocking
     public void publish(String name, Object data) throws AblyException {
         publish(name, data, (Callback<PublishResult>) null);
     }
@@ -1049,6 +1050,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * @param message A {@link Message} object.
      * @throws AblyException
      */
+    @NonBlocking
     public void publish(Message message) throws AblyException {
         publish(message, (Callback<PublishResult>) null);
     }
@@ -1061,6 +1063,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * @param messages An array of {@link Message} objects.
      * @throws AblyException
      */
+    @NonBlocking
     public void publish(Message[] messages) throws AblyException {
         publish(messages, (Callback<PublishResult>) null);
     }
@@ -1081,6 +1084,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * @deprecated Use {@link #publish(String, Object, Callback)} instead.
      */
     @Deprecated
+    @NonBlocking
     public void publish(String name, Object data, CompletionListener listener) throws AblyException {
         Log.v(TAG, "publish(String, Object); channel = " + this.name + "; event = " + name);
         publish(new Message[] {new Message(name, data)}, listener);
@@ -1101,6 +1105,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * This callback is invoked on a background thread.
      * @throws AblyException
      */
+    @NonBlocking
     public void publish(String name, Object data, Callback<PublishResult> callback) throws AblyException {
         Log.v(TAG, "publish(String, Object); channel = " + this.name + "; event = " + name);
         publish(new Message[] {new Message(name, data)}, callback);
@@ -1119,6 +1124,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * @deprecated Use {@link #publish(Message, Callback)} instead.
      */
     @Deprecated
+    @NonBlocking
     public void publish(Message message, CompletionListener listener) throws AblyException {
         Log.v(TAG, "publish(Message); channel = " + this.name + "; event = " + message.name);
         publish(new Message[] {message}, listener);
@@ -1136,6 +1142,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * This callback is invoked on a background thread.
      * @throws AblyException
      */
+    @NonBlocking
     public void publish(Message message, Callback<PublishResult> callback) throws AblyException {
         Log.v(TAG, "publish(Message); channel = " + this.name + "; event = " + message.name);
         publish(new Message[] {message}, callback);
@@ -1151,12 +1158,15 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * This listener is invoked on a background thread.
      * @throws AblyException
+     * @deprecated Use {@link #publish(Message[], Callback)} instead.
      */
     @Deprecated
+    @NonBlocking
     public synchronized void publish(Message[] messages, CompletionListener listener) throws AblyException {
         publish(messages, Listeners.fromCompletionListener(listener));
     }
 
+    @NonBlocking
     public synchronized void publish(Message[] messages, Callback<PublishResult> listener) throws AblyException {
         Log.v(TAG, "publish(Message[]); channel = " + this.name);
         ConnectionManager connectionManager = ably.connection.connectionManager;

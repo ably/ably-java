@@ -131,7 +131,7 @@ public class RealtimeChannelMessageEditTest extends ParameterizedTest {
         Helpers.AsyncWaiter<PublishResult> publishResultAsyncWaiter = new Helpers.AsyncWaiter<>();
 
         // Publish a message
-        channel.publish("test_event", "Original message data");
+        channel.publish("test_event", "Original message data", publishResultAsyncWaiter);
 
         // Get the message from history to obtain its serial
         publishResultAsyncWaiter.waitFor();

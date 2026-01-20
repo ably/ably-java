@@ -61,10 +61,12 @@ public class ChannelBase {
      * @param data the message payload;
      * @throws AblyException
      */
+    @Blocking
     public void publish(String name, Object data) throws AblyException {
         publish(ably.http, name, data);
     }
 
+    @Blocking
     void publish(Http http, String name, Object data) throws AblyException {
         publishImpl(http, name, data).sync();
     }
@@ -78,10 +80,12 @@ public class ChannelBase {
      * @return A {@link PublishResult} containing the message serial(s)
      * @throws AblyException
      */
+    @Blocking
     public PublishResult publishWithResult(String name, Object data) throws AblyException {
         return publishWithResult(ably.http, name, data);
     }
 
+    @Blocking
     PublishResult publishWithResult(Http http, String name, Object data) throws AblyException {
         return publishImpl(http, name, data).sync();
     }
@@ -103,6 +107,7 @@ public class ChannelBase {
         publishAsync(ably.http, name, data, listener);
     }
 
+    @NonBlocking
     void publishAsync(Http http, String name, Object data, CompletionListener listener) {
         publishImpl(http, name, data).async(new CompletionListener.ToCallback<>(listener));
     }
@@ -118,10 +123,12 @@ public class ChannelBase {
      * <p>
      * This callback is invoked on a background thread.
      */
+    @NonBlocking
     public void publishAsync(String name, Object data, Callback<PublishResult> callback) {
         publishAsync(ably.http, name, data, callback);
     }
 
+    @NonBlocking
     void publishAsync(Http http, String name, Object data, Callback<PublishResult> callback) {
         publishImpl(http, name, data).async(callback);
     }
@@ -138,10 +145,12 @@ public class ChannelBase {
      * @param messages array of messages to publish.
      * @throws AblyException
      */
+    @Blocking
     public void publish(final Message[] messages) throws AblyException {
         publish(ably.http, messages);
     }
 
+    @Blocking
     void publish(Http http, final Message[] messages) throws AblyException {
         publishImpl(http, messages).sync();
     }
@@ -154,6 +163,7 @@ public class ChannelBase {
      * @param messages array of messages to publish.
      * @throws AblyException
      */
+    @Blocking
     public PublishResult publishWithResult(final Message[] messages) throws AblyException {
         return publishImpl(ably.http, messages).sync();
     }
@@ -168,10 +178,12 @@ public class ChannelBase {
      * This listener is invoked on a background thread.
      */
     @Deprecated
+    @NonBlocking
     public void publishAsync(final Message[] messages, final CompletionListener listener) {
         publishAsync(ably.http, messages, listener);
     }
 
+    @Deprecated
     void publishAsync(Http http, final Message[] messages, final CompletionListener listener) {
         publishImpl(http, messages).async(new CompletionListener.ToCallback<>(listener));
     }
@@ -180,12 +192,13 @@ public class ChannelBase {
      * Asynchronously publish an array of messages on this channel
      *
      * @param messages the message
-     * @param listener a listener to be notified of the outcome of this message.
+     * @param callback a callback to be notified of the outcome of this message.
      * <p>
-     * This listener is invoked on a background thread.
+     * This callback is invoked on a background thread.
      */
-    public void publishAsync(final Message[] messages, final Callback<PublishResult> listener) {
-        publishImpl(ably.http, messages).async(listener);
+    @NonBlocking
+    public void publishAsync(final Message[] messages, final Callback<PublishResult> callback) {
+        publishImpl(ably.http, messages).async(callback);
     }
 
     private Http.Request<PublishResult> publishImpl(Http http, final Message[] messages) {
