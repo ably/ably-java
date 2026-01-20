@@ -47,8 +47,8 @@ public class MessageSerializer {
      *            Msgpack encode
      ****************************************/
 
-    public static HttpCore.RequestBody asMsgpackRequest(Message message) throws AblyException {
-        return asMsgpackRequest(new Message[] { message });
+    public static HttpCore.RequestBody asSingleMsgpackRequest(Message message) throws AblyException {
+        return new HttpUtils.ByteArrayRequestBody(write(message), "application/x-msgpack");
     }
 
     public static HttpCore.RequestBody asMsgpackRequest(Message[] messages) {
@@ -72,6 +72,16 @@ public class MessageSerializer {
             for(Message message : messages)
                 message.writeMsgpack(packer);
         } catch(IOException e) {}
+    }
+
+    public static byte[] write(Message message) {
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            MessagePacker packer = Serialisation.msgpackPackerConfig.newPacker(out);
+            message.writeMsgpack(packer);
+            packer.flush();
+            return out.toByteArray();
+        } catch(IOException e) { return null; }
     }
 
     public static void write(final Map<String, String> map, final MessagePacker packer) throws IOException {
@@ -136,6 +146,10 @@ public class MessageSerializer {
 
     public static HttpCore.RequestBody asJsonRequest(Message message) throws AblyException {
         return asJsonRequest(new Message[] { message });
+    }
+
+    public static HttpCore.RequestBody asSingleJsonRequest(Message message) {
+        return new HttpUtils.JsonRequestBody(Serialisation.gson.toJson(message));
     }
 
     public static HttpCore.RequestBody asJsonRequest(Message[] messages) {

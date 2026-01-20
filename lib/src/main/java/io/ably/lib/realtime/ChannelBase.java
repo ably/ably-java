@@ -43,11 +43,14 @@ import io.ably.lib.types.ProtocolMessage;
 import io.ably.lib.types.ProtocolMessage.Action;
 import io.ably.lib.types.ProtocolMessage.Flag;
 import io.ably.lib.types.Summary;
+import io.ably.lib.types.UpdateDeleteResult;
 import io.ably.lib.util.CollectionUtils;
 import io.ably.lib.util.EventEmitter;
 import io.ably.lib.util.Log;
 import io.ably.lib.util.ReconnectionStrategy;
 import io.ably.lib.util.StringUtils;
+import org.jetbrains.annotations.Blocking;
+import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -1214,9 +1217,10 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      *                Only non-null fields will be applied to the existing message.
      * @param operation operation metadata such as clientId, description, or metadata in the version field
      * @throws AblyException If the update operation fails.
+     * @return A {@link UpdateDeleteResult} containing the updated message version serial.
      */
-    public void updateMessage(Message message, MessageOperation operation) throws AblyException {
-        messageEditsMixin.updateMessage(ably.http, message, operation);
+    public UpdateDeleteResult updateMessage(Message message, MessageOperation operation) throws AblyException {
+        return messageEditsMixin.updateMessage(ably.http, message, operation);
     }
 
     /**
@@ -1228,9 +1232,10 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * @param message A {@link Message} object containing the fields to update and the serial identifier.
      *                Only non-null fields will be applied to the existing message.
      * @throws AblyException If the update operation fails.
+     * @return A {@link UpdateDeleteResult} containing the updated message version serial.
      */
-    public void updateMessage(Message message) throws AblyException {
-        updateMessage(message, null);
+    public UpdateDeleteResult updateMessage(Message message) throws AblyException {
+        return updateMessage(message, null);
     }
 
     /**
@@ -1238,24 +1243,24 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      *
      * @param message A {@link Message} object containing the fields to update and the serial identifier.
      * @param operation operation metadata such as clientId, description, or metadata in the version field
-     * @param listener A listener to be notified of the outcome of this operation.
+     * @param callback A callback to be notified of the outcome of this operation.
      * <p>
-     * This listener is invoked on a background thread.
+     * This callback is invoked on a background thread.
      */
-    public void updateMessageAsync(Message message, MessageOperation operation, CompletionListener listener) {
-        messageEditsMixin.updateMessageAsync(ably.http, message, operation, listener);
+    public void updateMessageAsync(Message message, MessageOperation operation, Callback<UpdateDeleteResult> callback) {
+        messageEditsMixin.updateMessageAsync(ably.http, message, operation, callback);
     }
 
     /**
      * Asynchronously updates an existing message.
      *
      * @param message A {@link Message} object containing the fields to update and the serial identifier.
-     * @param listener A listener to be notified of the outcome of this operation.
+     * @param callback A callback to be notified of the outcome of this operation.
      * <p>
-     * This listener is invoked on a background thread.
+     * This callback is invoked on a background thread.
      */
-    public void updateMessageAsync(Message message, CompletionListener listener) {
-        updateMessageAsync(message, null, listener);
+    public void updateMessageAsync(Message message, Callback<UpdateDeleteResult> callback) {
+        updateMessageAsync(message, null, callback);
     }
 
     /**
@@ -1268,9 +1273,10 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * @param message A {@link Message} message containing the serial identifier.
      * @param operation operation metadata such as clientId, description, or metadata in the version field
      * @throws AblyException If the delete operation fails.
+     * @return A {@link UpdateDeleteResult} containing the deleted message version serial.
      */
-    public void deleteMessage(Message message, MessageOperation operation) throws AblyException {
-        messageEditsMixin.deleteMessage(ably.http, message, operation);
+    public UpdateDeleteResult deleteMessage(Message message, MessageOperation operation) throws AblyException {
+        return messageEditsMixin.deleteMessage(ably.http, message, operation);
     }
 
     /**
@@ -1282,9 +1288,10 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      *
      * @param message A {@link Message} message containing the serial identifier.
      * @throws AblyException If the delete operation fails.
+     * @return A {@link UpdateDeleteResult} containing the deleted message version serial.
      */
-    public void deleteMessage(Message message) throws AblyException {
-        deleteMessage(message, null);
+    public UpdateDeleteResult deleteMessage(Message message) throws AblyException {
+        return deleteMessage(message, null);
     }
 
     /**
@@ -1292,24 +1299,72 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      *
      * @param message A {@link Message} object containing the serial identifier and operation metadata.
      * @param operation operation metadata such as clientId, description, or metadata in the version field
-     * @param listener A listener to be notified of the outcome of this operation.
+     * @param callback A callback to be notified of the outcome of this operation.
      * <p>
-     * This listener is invoked on a background thread.
+     * This callback is invoked on a background thread.
      */
-    public void deleteMessageAsync(Message message, MessageOperation operation, CompletionListener listener) {
-        messageEditsMixin.deleteMessageAsync(ably.http, message, operation, listener);
+    public void deleteMessageAsync(Message message, MessageOperation operation, Callback<UpdateDeleteResult> callback) {
+        messageEditsMixin.deleteMessageAsync(ably.http, message, operation, callback);
     }
 
     /**
      * Asynchronously marks a message as deleted.
      *
      * @param message A {@link Message} object containing the serial identifier and operation metadata.
-     * @param listener A listener to be notified of the outcome of this operation.
+     * @param callback A callback to be notified of the outcome of this operation.
      * <p>
-     * This listener is invoked on a background thread.
+     * This callback is invoked on a background thread.
      */
-    public void deleteMessageAsync(Message message, CompletionListener listener) {
-        deleteMessageAsync(message, null, listener);
+    public void deleteMessageAsync(Message message, Callback<UpdateDeleteResult> callback) {
+        deleteMessageAsync(message, null, callback);
+    }
+
+    /**
+     * Appends message text to the end of the message data.
+     *
+     * @param message  A {@link Message} object containing the serial identifier and data to append.
+     * @param operation operation details such as clientId, description, or metadata
+     * @return A {@link UpdateDeleteResult} containing the updated message version serial.
+     * @throws AblyException If the append operation fails.
+     */
+    public UpdateDeleteResult appendMessage(Message message, MessageOperation operation) throws AblyException {
+        return messageEditsMixin.appendMessage(ably.http, message, operation);
+    }
+
+    /**
+     * Appends message text to the end of the message.
+     *
+     * @param message  A {@link Message} object containing the serial identifier and data to append.
+     * @return A {@link UpdateDeleteResult} containing the updated message version serial.
+     * @throws AblyException If the append operation fails.
+     */
+    public UpdateDeleteResult appendMessage(Message message) throws AblyException {
+        return appendMessage(message, null);
+    }
+
+    /**
+     * Asynchronously appends message text to the end of the message.
+     *
+     * @param message  A {@link Message} object containing the serial identifier and data to append.
+     * @param operation operation details such as clientId, description, or metadata
+     * @param callback A callback to be notified of the outcome of this operation.
+     * <p>
+     * This callback is invoked on a background thread.
+     */
+    public void appendMessageAsync(Message message, MessageOperation operation, Callback<UpdateDeleteResult> callback) {
+        messageEditsMixin.appendMessageAsync(ably.http, message, operation, callback);
+    }
+
+    /**
+     * Asynchronously appends message text to the end of the message.
+     *
+     * @param message  A {@link Message} object containing the serial identifier and data to append.
+     * @param callback A callback to be notified of the outcome of this operation.
+     * <p>
+     * This callback is invoked on a background thread.
+     */
+    public void appendMessageAsync(Message message, Callback<UpdateDeleteResult> callback) {
+        appendMessageAsync(message, null, callback);
     }
 
     /**
@@ -1325,6 +1380,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      *         representing all versions of the message.
      * @throws AblyException If the versions cannot be retrieved.
      */
+    @Blocking
     public PaginatedResult<Message> getMessageVersions(String serial, Param[] params) throws AblyException {
         return messageEditsMixin.getMessageVersions(ably.http, serial, params);
     }
@@ -1336,6 +1392,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * @param params Query parameters for filtering or pagination.
      * @param callback A callback to handle the result asynchronously.
      */
+    @NonBlocking
     public void getMessageVersionsAsync(String serial, Param[] params, Callback<AsyncPaginatedResult<Message>> callback) throws AblyException {
         messageEditsMixin.getMessageVersionsAsync(ably.http, serial, params, callback);
     }

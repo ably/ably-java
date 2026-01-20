@@ -81,7 +81,7 @@ public class HttpHeaderTest extends ParameterizedTest {
              * from those values.
              */
             Assert.assertNotNull("Expected headers", headers);
-            Assert.assertEquals(headers.get("x-ably-version"), "4");
+            Assert.assertEquals(headers.get("x-ably-version"), "5");
             Assert.assertEquals(headers.get("ably-agent"), expectedAblyAgentHeader);
             // RSA7e2
             Assert.assertNull("Shouldn't include 'x-ably-clientid' if `clientId` is not specified", headers.get("x-ably-clientid"));
