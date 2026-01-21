@@ -1,5 +1,60 @@
 # Change Log
 
+## [1.6.0](https://github.com/ably/ably-java/tree/v1.6.0)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.5.0...v1.6.0)
+
+### What's Changed
+
+* Message Updates and Deletes updated, Appends API added in [#1182](https://github.com/ably/ably-java/pull/1182)
+* Mutable Message API over Realtime added in [#1183](https://github.com/ably/ably-java/pull/1183)
+* Updated publish API to include message serials in the response in [#1184](https://github.com/ably/ably-java/pull/1184)
+
+### Breaking changes
+
+This release includes several breaking changes to experimental Mutable Message features:
+
+#### REST API Changes
+
+* `updateMessage()` and `deleteMessage()` now return `UpdateDeleteResult` instead of `void`, containing the updated message version serial
+* `updateMessageAsync()` and `deleteMessageAsync()` callback parameter changed from `CompletionListener` to `Callback<UpdateDeleteResult>`
+* Added `appendMessage()` and `appendMessageAsync()` methods returning `UpdateDeleteResult`
+
+#### Realtime API Changes
+
+* `updateMessage()`, `deleteMessage()`, and `appendMessage()` are now asynchronous methods (void return) instead of synchronous (returning `UpdateDeleteResult`)
+* All message mutation methods now accept an optional `Callback<UpdateDeleteResult>` parameter for async result handling
+* Removed `*Async` suffix from method names - all Realtime methods are now async by default and throw `AblyException`
+* `updateMessage()`, `deleteMessage()`, and `appendMessage()` now use WebSocket transport to send data rather than REST requests
+
+#### Migration Guide
+
+**REST API:**
+```java
+// Before (v1.5.0)
+channel.updateMessageAsync(message, new Callback<UpdateDeleteResult>() {
+  public void onSuccess() { ... }
+}});
+
+// After (v1.6.0)
+channel.updateMessageAsync(message, new Callback<UpdateDeleteResult>() {
+    public void onSuccess(UpdateDeleteResult result) { ... }
+});
+```
+
+**Realtime API:**
+```java
+// Before (v1.5.0)
+channel.updateMessageAsync(message, new Callback<UpdateDeleteResult>() {
+  public void onSuccess() { ... }
+}});
+
+// After (v1.6.0)
+channel.updateMessage(message, new Callback<UpdateDeleteResult>() {
+    public void onSuccess(UpdateDeleteResult result) { ... }
+});
+```
+
 ## [1.5.0](https://github.com/ably/ably-java/tree/v1.5.0)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.4.2...v1.5.0)
