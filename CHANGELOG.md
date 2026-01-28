@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.6.1](https://github.com/ably/ably-java/tree/v1.6.1)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.6.0...v1.6.1)
+
+### What's Changed
+
+- Upgrade msgpack-core to 0.9.11 to address security vulnerability [#1188](https://github.com/ably/ably-java/pull/1188)
+
 ## [1.6.0](https://github.com/ably/ably-java/tree/v1.6.0)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.5.0...v1.6.0)
