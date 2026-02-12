@@ -4,6 +4,7 @@ import com.ably.Subscription
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.realtime.CompletionListener
 import io.ably.lib.realtime.Presence.PresenceListener
+import io.ably.lib.types.MessageExtras
 import io.ably.lib.types.PresenceMessage
 import java.util.*
 
@@ -71,45 +72,48 @@ public interface RealtimePresence : Presence {
   public fun subscribe(actions: EnumSet<PresenceMessage.Action>, listener: PresenceListener): Subscription
 
   /**
-   * Enters the presence set for the channel, optionally passing a data payload.
+   * Enters the presence set for the channel, optionally passing a data payload and extras.
    * A clientId is required to be present on a channel.
    * An optional callback may be provided to notify of the success or failure of the operation.
    *
    * Spec: RTP8
    *
    * @param data The payload associated with the presence member.
+   * @param extras The extras associated with the presence member.
    * @param listener A callback to notify of the success or failure of the operation.
    * This listener is invoked on a background thread.
    */
-  public fun enter(data: Any? = null, listener: CompletionListener? = null)
+  public fun enter(data: Any? = null, extras: MessageExtras? = null, listener: CompletionListener? = null)
 
   /**
-   * Updates the data payload for a presence member.
+   * Updates the data payload for a presence member, optionally passing extras.
    * If called before entering the presence set, this is treated as an [PresenceMessage.Action.enter] event.
    * An optional callback may be provided to notify of the success or failure of the operation.
    *
    * Spec: RTP9
    *
    * @param data The payload associated with the presence member.
+   * @param extras The extras associated with the presence member.
    * @param listener A callback to notify of the success or failure of the operation.
    * This listener is invoked on a background thread.
    */
-  public fun update(data: Any? = null, listener: CompletionListener? = null)
+  public fun update(data: Any? = null, extras: MessageExtras? = null, listener: CompletionListener? = null)
 
   /**
-   * Leaves the presence set for the channel.
+   * Leaves the presence set for the channel, optionally passing extras.
    * A client must have previously entered the presence set before they can leave it.
    *
    * Spec: RTP10
    *
    * @param data The payload associated with the presence member.
+   * @param extras The extras associated with the presence member.
    * @param listener a listener to notify of the success or failure of the operation.
    * This listener is invoked on a background thread.
    */
-  public fun leave(data: Any? = null, listener: CompletionListener? = null)
+  public fun leave(data: Any? = null, extras: MessageExtras? = null, listener: CompletionListener? = null)
 
   /**
-   * Enters the presence set of the channel for a given clientId.
+   * Enters the presence set of the channel for a given clientId, optionally passing extras.
    * Enables a single client to update presence on behalf of any number of clients using a single connection.
    * The library must have been instantiated with an API key or a token bound to a wildcard clientId.
    *
@@ -117,13 +121,14 @@ public interface RealtimePresence : Presence {
    *
    * @param clientId The ID of the client to enter into the presence set.
    * @param data The payload associated with the presence member.
+   * @param extras The extras associated with the presence member.
    * @param listener A callback to notify of the success or failure of the operation.
    * This listener is invoked on a background thread.
    */
-  public fun enterClient(clientId: String, data: Any? = null, listener: CompletionListener? = null)
+  public fun enterClient(clientId: String, data: Any? = null, extras: MessageExtras? = null, listener: CompletionListener? = null)
 
   /**
-   * Updates the data payload for a presence member using a given clientId.
+   * Updates the data payload for a presence member using a given clientId, optionally passing extras.
    * Enables a single client to update presence on behalf of any number of clients using a single connection.
    * The library must have been instantiated with an API key or a token bound to a wildcard clientId.
    * An optional callback may be provided to notify of the success or failure of the operation.
@@ -132,13 +137,14 @@ public interface RealtimePresence : Presence {
    *
    * @param clientId The ID of the client to update in the presence set.
    * @param data The payload to update for the presence member.
+   * @param extras The extras associated with the presence member.
    * @param listener A callback to notify of the success or failure of the operation.
    * This listener is invoked on a background thread.
    */
-  public fun updateClient(clientId: String, data: Any? = null, listener: CompletionListener? = null)
+  public fun updateClient(clientId: String, data: Any? = null, extras: MessageExtras? = null, listener: CompletionListener? = null)
 
   /**
-   * Leaves the presence set of the channel for a given clientId.
+   * Leaves the presence set of the channel for a given clientId, optionally passing extras.
    * Enables a single client to update presence on behalf of any number of clients using a single connection.
    * The library must have been instantiated with an API key or a token bound to a wildcard clientId.
    *
@@ -146,8 +152,9 @@ public interface RealtimePresence : Presence {
    *
    * @param clientId The ID of the client to leave the presence set for.
    * @param data The payload associated with the presence member.
+   * @param extras The extras associated with the presence member.
    * @param listener A callback to notify of the success or failure of the operation.
    * This listener is invoked on a background thread.
    */
-  public fun leaveClient(clientId: String?, data: Any? = null, listener: CompletionListener? = null)
+  public fun leaveClient(clientId: String?, data: Any? = null, extras: MessageExtras? = null, listener: CompletionListener? = null)
 }
