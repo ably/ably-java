@@ -106,9 +106,21 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
      * @param data
      */
     public PresenceMessage(Action action, String clientId, Object data) {
+        this(action, clientId, data, null);
+    }
+
+    /**
+     * Construct a PresenceMessage with extras
+     * @param action
+     * @param clientId
+     * @param data
+     * @param extras
+     */
+    public PresenceMessage(Action action, String clientId, Object data, MessageExtras extras) {
         this.action = action;
         this.clientId = clientId;
         this.data = data;
+        this.extras = extras;
     }
 
     /**

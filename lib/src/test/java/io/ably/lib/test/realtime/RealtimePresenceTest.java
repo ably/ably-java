@@ -3698,6 +3698,281 @@ public class RealtimePresenceTest extends ParameterizedTest {
         }
     }
 
+    /**
+     * Enter presence using the convenience enter(data, extras, listener) method
+     * and verify extras come back on the subscriber side.
+     */
+    @Test
+    public void presence_enter_with_extras_convenience() {
+        AblyRealtime clientAbly1 = null;
+        TestChannel testChannel = new TestChannel();
+        try {
+            /* subscribe for presence events in the anonymous connection */
+            PresenceWaiter presenceWaiter = new PresenceWaiter(testChannel.realtimeChannel);
+            /* set up a connection with specific clientId */
+            ClientOptions client1Opts = new ClientOptions() {{
+                tokenDetails = token1;
+                clientId = testClientId1;
+            }};
+            fillInOptions(client1Opts);
+            clientAbly1 = new AblyRealtime(client1Opts);
+
+            /* wait until connected */
+            (new ConnectionWaiter(clientAbly1.connection)).waitFor(ConnectionState.connected);
+            assertEquals("Verify connected state reached", clientAbly1.connection.state, ConnectionState.connected);
+
+            /* get channel and attach */
+            Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
+            client1Channel.attach();
+            (new ChannelWaiter(client1Channel)).waitFor(ChannelState.attached);
+            assertEquals("Verify attached state reached", client1Channel.state, ChannelState.attached);
+
+            /* create extras with headers */
+            JsonObject extrasJson = new JsonObject();
+            JsonObject headers = new JsonObject();
+            headers.addProperty("foo", "bar");
+            extrasJson.add("headers", headers);
+            io.ably.lib.types.MessageExtras extras = new io.ably.lib.types.MessageExtras(extrasJson);
+
+            /* enter using the convenience method with extras */
+            String enterString = "Test data (presence_enter_with_extras_convenience)";
+            CompletionWaiter enterComplete = new CompletionWaiter();
+            client1Channel.presence.enter(enterString, extras, enterComplete);
+            presenceWaiter.waitFor(testClientId1, Action.enter);
+            PresenceMessage receivedMessage = presenceWaiter.contains(testClientId1, Action.enter);
+            assertNotNull("Verify presence message received", receivedMessage);
+            assertEquals("Verify data matches", enterString, receivedMessage.data);
+
+            /* verify extras field is present and correct */
+            assertNotNull("Verify extras is not null", receivedMessage.extras);
+            JsonObject receivedExtrasJson = receivedMessage.extras.asJsonObject();
+            assertTrue("Verify headers exists in extras", receivedExtrasJson.has("headers"));
+            JsonObject receivedHeaders = receivedExtrasJson.getAsJsonObject("headers");
+            assertEquals("Verify foo value matches", "bar", receivedHeaders.get("foo").getAsString());
+
+            /* verify enter callback called on completion */
+            enterComplete.waitFor();
+            assertTrue("Verify enter callback called on completion", enterComplete.success);
+        } catch(AblyException e) {
+            e.printStackTrace();
+            fail("Unexpected exception running test: " + e.getMessage());
+        } finally {
+            if(clientAbly1 != null)
+                clientAbly1.close();
+            if(testChannel != null)
+                testChannel.dispose();
+        }
+    }
+
+    /**
+     * Update presence using the convenience update(data, extras, listener) method
+     * and verify extras come back on the subscriber side.
+     */
+    @Test
+    public void presence_update_with_extras() {
+        AblyRealtime clientAbly1 = null;
+        TestChannel testChannel = new TestChannel();
+        try {
+            /* subscribe for presence events in the anonymous connection */
+            PresenceWaiter presenceWaiter = new PresenceWaiter(testChannel.realtimeChannel);
+            /* set up a connection with specific clientId */
+            ClientOptions client1Opts = new ClientOptions() {{
+                tokenDetails = token1;
+                clientId = testClientId1;
+            }};
+            fillInOptions(client1Opts);
+            clientAbly1 = new AblyRealtime(client1Opts);
+
+            /* wait until connected */
+            (new ConnectionWaiter(clientAbly1.connection)).waitFor(ConnectionState.connected);
+            assertEquals("Verify connected state reached", clientAbly1.connection.state, ConnectionState.connected);
+
+            /* get channel and attach */
+            Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
+            client1Channel.attach();
+            (new ChannelWaiter(client1Channel)).waitFor(ChannelState.attached);
+            assertEquals("Verify attached state reached", client1Channel.state, ChannelState.attached);
+
+            /* enter first (no extras) */
+            CompletionWaiter enterComplete = new CompletionWaiter();
+            client1Channel.presence.enter("initial data", enterComplete);
+            enterComplete.waitFor();
+            presenceWaiter.waitFor(testClientId1, Action.enter);
+
+            /* create extras with headers */
+            JsonObject extrasJson = new JsonObject();
+            JsonObject headers = new JsonObject();
+            headers.addProperty("key", "value");
+            extrasJson.add("headers", headers);
+            io.ably.lib.types.MessageExtras extras = new io.ably.lib.types.MessageExtras(extrasJson);
+
+            /* update using the convenience method with extras */
+            String updateString = "Test data (presence_update_with_extras)";
+            CompletionWaiter updateComplete = new CompletionWaiter();
+            client1Channel.presence.update(updateString, extras, updateComplete);
+            presenceWaiter.waitFor(testClientId1, Action.update);
+            PresenceMessage receivedMessage = presenceWaiter.contains(testClientId1, Action.update);
+            assertNotNull("Verify presence message received", receivedMessage);
+            assertEquals("Verify data matches", updateString, receivedMessage.data);
+
+            /* verify extras field is present and correct */
+            assertNotNull("Verify extras is not null", receivedMessage.extras);
+            JsonObject receivedExtrasJson = receivedMessage.extras.asJsonObject();
+            assertTrue("Verify headers exists in extras", receivedExtrasJson.has("headers"));
+            JsonObject receivedHeaders = receivedExtrasJson.getAsJsonObject("headers");
+            assertEquals("Verify key value matches", "value", receivedHeaders.get("key").getAsString());
+
+            /* verify update callback called on completion */
+            updateComplete.waitFor();
+            assertTrue("Verify update callback called on completion", updateComplete.success);
+        } catch(AblyException e) {
+            e.printStackTrace();
+            fail("Unexpected exception running test: " + e.getMessage());
+        } finally {
+            if(clientAbly1 != null)
+                clientAbly1.close();
+            if(testChannel != null)
+                testChannel.dispose();
+        }
+    }
+
+    /**
+     * Leave presence using the convenience leave(data, extras, listener) method
+     * and verify extras come back on the subscriber side.
+     */
+    @Test
+    public void presence_leave_with_extras() {
+        AblyRealtime clientAbly1 = null;
+        TestChannel testChannel = new TestChannel();
+        try {
+            /* subscribe for presence events in the anonymous connection */
+            PresenceWaiter presenceWaiter = new PresenceWaiter(testChannel.realtimeChannel);
+            /* set up a connection with specific clientId */
+            ClientOptions client1Opts = new ClientOptions() {{
+                tokenDetails = token1;
+                clientId = testClientId1;
+            }};
+            fillInOptions(client1Opts);
+            clientAbly1 = new AblyRealtime(client1Opts);
+
+            /* wait until connected */
+            (new ConnectionWaiter(clientAbly1.connection)).waitFor(ConnectionState.connected);
+            assertEquals("Verify connected state reached", clientAbly1.connection.state, ConnectionState.connected);
+
+            /* get channel and attach */
+            Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
+            client1Channel.attach();
+            (new ChannelWaiter(client1Channel)).waitFor(ChannelState.attached);
+            assertEquals("Verify attached state reached", client1Channel.state, ChannelState.attached);
+
+            /* enter first (no extras) */
+            CompletionWaiter enterComplete = new CompletionWaiter();
+            client1Channel.presence.enter("initial data", enterComplete);
+            enterComplete.waitFor();
+            presenceWaiter.waitFor(testClientId1, Action.enter);
+
+            /* create extras with headers */
+            JsonObject extrasJson = new JsonObject();
+            JsonObject headers = new JsonObject();
+            headers.addProperty("reason", "goodbye");
+            extrasJson.add("headers", headers);
+            io.ably.lib.types.MessageExtras extras = new io.ably.lib.types.MessageExtras(extrasJson);
+
+            /* leave using the convenience method with extras */
+            String leaveString = "Test data (presence_leave_with_extras)";
+            CompletionWaiter leaveComplete = new CompletionWaiter();
+            client1Channel.presence.leave(leaveString, extras, leaveComplete);
+            presenceWaiter.waitFor(testClientId1, Action.leave);
+            PresenceMessage receivedMessage = presenceWaiter.contains(testClientId1, Action.leave);
+            assertNotNull("Verify presence message received", receivedMessage);
+            assertEquals("Verify data matches", leaveString, receivedMessage.data);
+
+            /* verify extras field is present and correct */
+            assertNotNull("Verify extras is not null", receivedMessage.extras);
+            JsonObject receivedExtrasJson = receivedMessage.extras.asJsonObject();
+            assertTrue("Verify headers exists in extras", receivedExtrasJson.has("headers"));
+            JsonObject receivedHeaders = receivedExtrasJson.getAsJsonObject("headers");
+            assertEquals("Verify reason value matches", "goodbye", receivedHeaders.get("reason").getAsString());
+
+            /* verify leave callback called on completion */
+            leaveComplete.waitFor();
+            assertTrue("Verify leave callback called on completion", leaveComplete.success);
+        } catch(AblyException e) {
+            e.printStackTrace();
+            fail("Unexpected exception running test: " + e.getMessage());
+        } finally {
+            if(clientAbly1 != null)
+                clientAbly1.close();
+            if(testChannel != null)
+                testChannel.dispose();
+        }
+    }
+
+    /**
+     * Enter presence for a specific clientId using enterClient(clientId, data, extras, listener)
+     * and verify extras come back on the subscriber side.
+     */
+    @Test
+    public void presence_enterClient_with_extras() {
+        AblyRealtime clientAbly1 = null;
+        TestChannel testChannel = new TestChannel();
+        try {
+            /* subscribe for presence events in the anonymous connection */
+            PresenceWaiter presenceWaiter = new PresenceWaiter(testChannel.realtimeChannel);
+            /* set up a connection with wildcard clientId capability */
+            ClientOptions client1Opts = new ClientOptions() {{
+                tokenDetails = wildcardToken;
+            }};
+            fillInOptions(client1Opts);
+            clientAbly1 = new AblyRealtime(client1Opts);
+
+            /* wait until connected */
+            (new ConnectionWaiter(clientAbly1.connection)).waitFor(ConnectionState.connected);
+            assertEquals("Verify connected state reached", clientAbly1.connection.state, ConnectionState.connected);
+
+            /* get channel and attach */
+            Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
+            client1Channel.attach();
+            (new ChannelWaiter(client1Channel)).waitFor(ChannelState.attached);
+            assertEquals("Verify attached state reached", client1Channel.state, ChannelState.attached);
+
+            /* create extras with headers */
+            JsonObject extrasJson = new JsonObject();
+            JsonObject headers = new JsonObject();
+            headers.addProperty("role", "admin");
+            extrasJson.add("headers", headers);
+            io.ably.lib.types.MessageExtras extras = new io.ably.lib.types.MessageExtras(extrasJson);
+
+            /* enter using enterClient with extras */
+            String enterString = "Test data (presence_enterClient_with_extras)";
+            CompletionWaiter enterComplete = new CompletionWaiter();
+            client1Channel.presence.enterClient(testClientId1, enterString, extras, enterComplete);
+            presenceWaiter.waitFor(testClientId1, Action.enter);
+            PresenceMessage receivedMessage = presenceWaiter.contains(testClientId1, Action.enter);
+            assertNotNull("Verify presence message received", receivedMessage);
+            assertEquals("Verify data matches", enterString, receivedMessage.data);
+
+            /* verify extras field is present and correct */
+            assertNotNull("Verify extras is not null", receivedMessage.extras);
+            JsonObject receivedExtrasJson = receivedMessage.extras.asJsonObject();
+            assertTrue("Verify headers exists in extras", receivedExtrasJson.has("headers"));
+            JsonObject receivedHeaders = receivedExtrasJson.getAsJsonObject("headers");
+            assertEquals("Verify role value matches", "admin", receivedHeaders.get("role").getAsString());
+
+            /* verify enter callback called on completion */
+            enterComplete.waitFor();
+            assertTrue("Verify enter callback called on completion", enterComplete.success);
+        } catch(AblyException e) {
+            e.printStackTrace();
+            fail("Unexpected exception running test: " + e.getMessage());
+        } finally {
+            if(clientAbly1 != null)
+                clientAbly1.close();
+            if(testChannel != null)
+                testChannel.dispose();
+        }
+    }
+
     static class MessagesData {
         public PresenceMessage[] messages;
     }
