@@ -295,11 +295,11 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
         super.read(map);
 
         final JsonElement extrasElement = map.get(EXTRAS);
-        if (null != extrasElement) {
-            if (!(extrasElement instanceof JsonObject)) {
+        if (extrasElement != null && !extrasElement.isJsonNull()) {
+            if (!extrasElement.isJsonObject()) {
                 throw MessageDecodeException.fromDescription("PresenceMessage extras is of type \"" + extrasElement.getClass() + "\" when expected a JSON object.");
             }
-            extras = MessageExtras.read((JsonObject) extrasElement);
+            extras = MessageExtras.read(extrasElement.getAsJsonObject());
         }
 
         Integer actionValue = readInt(map, "action");
