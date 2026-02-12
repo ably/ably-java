@@ -3625,6 +3625,79 @@ public class RealtimePresenceTest extends ParameterizedTest {
         }
     }
 
+    /**
+     * Enter presence with extras field and verify it comes back on the other side
+     * Test TP3i
+     */
+    @Test
+    public void presence_enter_with_extras() {
+        AblyRealtime clientAbly1 = null;
+        TestChannel testChannel = new TestChannel();
+        try {
+            /* subscribe for presence events in the anonymous connection */
+            PresenceWaiter presenceWaiter = new PresenceWaiter(testChannel.realtimeChannel);
+            /* set up a connection with specific clientId */
+            ClientOptions client1Opts = new ClientOptions() {{
+                tokenDetails = token1;
+                clientId = testClientId1;
+            }};
+            fillInOptions(client1Opts);
+            clientAbly1 = new AblyRealtime(client1Opts);
+
+            /* wait until connected */
+            (new ConnectionWaiter(clientAbly1.connection)).waitFor(ConnectionState.connected);
+            assertEquals("Verify connected state reached", clientAbly1.connection.state, ConnectionState.connected);
+
+            /* get channel and attach */
+            Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
+            client1Channel.attach();
+            (new ChannelWaiter(client1Channel)).waitFor(ChannelState.attached);
+            assertEquals("Verify attached state reached", client1Channel.state, ChannelState.attached);
+
+            /* create extras with headers.foo */
+            JsonObject extrasJson = new JsonObject();
+            JsonObject headers = new JsonObject();
+            headers.addProperty("foo", "bar");
+            extrasJson.add("headers", headers);
+            io.ably.lib.types.MessageExtras extras = new io.ably.lib.types.MessageExtras(extrasJson);
+
+            /* create presence message with extras */
+            String enterString = "Test data (presence_enter_with_extras)";
+            PresenceMessage presenceMsg = new PresenceMessage(PresenceMessage.Action.enter, null, enterString);
+            presenceMsg.extras = extras;
+
+            /* let client1 enter the channel with extras and wait for the entered event to be delivered */
+            CompletionWaiter enterComplete = new CompletionWaiter();
+            client1Channel.presence.updatePresence(presenceMsg, enterComplete);
+            presenceWaiter.waitFor(testClientId1, Action.enter);
+            PresenceMessage receivedMessage = presenceWaiter.contains(testClientId1, Action.enter);
+            assertNotNull("Verify presence message received", receivedMessage);
+            assertEquals("Verify data matches", enterString, receivedMessage.data);
+
+            /* verify extras field is present and correct */
+            assertNotNull("Verify extras is not null", receivedMessage.extras);
+            JsonObject receivedExtrasJson = receivedMessage.extras.asJsonObject();
+            assertNotNull("Verify extras JSON is not null", receivedExtrasJson);
+            assertTrue("Verify headers exists in extras", receivedExtrasJson.has("headers"));
+            JsonObject receivedHeaders = receivedExtrasJson.getAsJsonObject("headers");
+            assertNotNull("Verify headers object is not null", receivedHeaders);
+            assertTrue("Verify foo exists in headers", receivedHeaders.has("foo"));
+            assertEquals("Verify foo value matches", "bar", receivedHeaders.get("foo").getAsString());
+
+            /* verify enter callback called on completion */
+            enterComplete.waitFor();
+            assertTrue("Verify enter callback called on completion", enterComplete.success);
+        } catch(AblyException e) {
+            e.printStackTrace();
+            fail("Unexpected exception running test: " + e.getMessage());
+        } finally {
+            if(clientAbly1 != null)
+                clientAbly1.close();
+            if(testChannel != null)
+                testChannel.dispose();
+        }
+    }
+
     static class MessagesData {
         public PresenceMessage[] messages;
     }
