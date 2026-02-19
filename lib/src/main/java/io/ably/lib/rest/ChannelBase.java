@@ -103,6 +103,7 @@ public class ChannelBase {
      * @deprecated Use {@link #publishAsync(String, Object, Callback)} instead.
      */
     @Deprecated
+    @NonBlocking
     public void publishAsync(String name, Object data, CompletionListener listener) {
         publishAsync(ably.http, name, data, listener);
     }
@@ -247,6 +248,7 @@ public class ChannelBase {
      * @return an array of Messages for this Channel.
      * @throws AblyException
      */
+    @Blocking
     public PaginatedResult<Message> history(Param[] params) throws AblyException {
         return history(ably.http, params);
     }
@@ -261,6 +263,7 @@ public class ChannelBase {
      * @param callback
      * @return
      */
+    @NonBlocking
     public void historyAsync(Param[] params, Callback<AsyncPaginatedResult<Message>> callback) {
         historyAsync(ably.http, params, callback);
     }
@@ -296,6 +299,7 @@ public class ChannelBase {
          * @return A {@link PaginatedResult} object containing an array of {@link PresenceMessage} objects.
          * @throws AblyException
          */
+        @Blocking
         public PaginatedResult<PresenceMessage> get(Param[] params) throws AblyException {
             return get(ably.http, params);
         }
@@ -321,10 +325,12 @@ public class ChannelBase {
          * <p>
          * This callback is invoked on a background thread.
          */
+        @NonBlocking
         public void getAsync(Param[] params, Callback<AsyncPaginatedResult<PresenceMessage>> callback) {
             getAsync(ably.http, params, callback);
         }
 
+        @NonBlocking
         void getAsync(Http http, Param[] params, Callback<AsyncPaginatedResult<PresenceMessage>> callback) {
             getImpl(http, params).async(callback);
         }
@@ -356,6 +362,7 @@ public class ChannelBase {
          * @return A {@link PaginatedResult} object containing an array of {@link PresenceMessage} objects.
          * @throws AblyException
          */
+        @Blocking
         public PaginatedResult<PresenceMessage> history(Param[] params) throws AblyException {
             return history(ably.http, params);
         }
@@ -387,6 +394,7 @@ public class ChannelBase {
          * This callback is invoked on a background thread.
          * @throws AblyException
          */
+        @NonBlocking
         public void historyAsync(Param[] params, Callback<AsyncPaginatedResult<PresenceMessage>> callback) {
             historyAsync(ably.http, params, callback);
         }
