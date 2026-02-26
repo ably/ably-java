@@ -2,6 +2,7 @@ package io.ably.lib.objects.unit.type.livemap
 
 import io.ably.lib.objects.ObjectsMapSemantics
 import io.ably.lib.objects.ObjectsMap
+import io.ably.lib.objects.ObjectsOperationSource
 import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
@@ -64,7 +65,7 @@ class DefaultLiveMapTest {
 
     // RTLM15a - Should throw error when objectId doesn't match
     val exception = assertFailsWith<AblyException> {
-      liveMap.applyObject(message)
+      liveMap.applyObject(message, ObjectsOperationSource.CHANNEL)
     }
     val errorInfo = exception.errorInfo
     assertNotNull(errorInfo)
@@ -98,7 +99,7 @@ class DefaultLiveMapTest {
     )
 
     // RTLM15b - Should skip operation when serial is not newer
-    liveMap.applyObject(message)
+    liveMap.applyObject(message, ObjectsOperationSource.CHANNEL)
 
     // Verify that the site serial was not updated (operation was skipped)
     assertEquals("serial2", liveMap.siteTimeserials["site1"])
@@ -128,7 +129,7 @@ class DefaultLiveMapTest {
     )
 
     // RTLM15c - Should update site serial when operation is valid
-    liveMap.applyObject(message)
+    liveMap.applyObject(message, ObjectsOperationSource.CHANNEL)
 
     // Verify that the site serial was updated
     assertEquals("serial2", liveMap.siteTimeserials["site1"])

@@ -459,7 +459,7 @@ class LiveMapManagerTest {
   }
 
   @Test
-  fun `(RTLM15, RTLM15d4) LiveMapManager should throw error for unsupported action`() {
+  fun `(RTLM15, RTLM15d4) LiveMapManager should return false for unsupported action`() {
     val liveMap = getDefaultLiveMapWithMockedDeps()
     val liveMapManager = liveMap.LiveMapManager
 
@@ -469,15 +469,9 @@ class LiveMapManagerTest {
       counter = ObjectsCounter(count = 20.0)
     )
 
-    // RTLM15d4 - Should throw error for unsupported action
-    val exception = assertFailsWith<AblyException> {
-      liveMapManager.applyOperation(operation, "serial1", null)
-    }
-
-    val errorInfo = exception.errorInfo
-    assertNotNull(errorInfo, "Error info should not be null")
-    assertEquals(92000, errorInfo?.code) // InvalidObject error code
-    assertEquals(500, errorInfo?.statusCode) // InternalServerError status code
+    // RTLM15d4 - Should return false for unsupported action (no longer throws)
+    val result = liveMapManager.applyOperation(operation, "serial1", null)
+    assertFalse(result, "Should return false for unsupported action")
   }
 
   @Test

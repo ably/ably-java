@@ -51,28 +51,41 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
   /**
    * @spec RTLM15 - Applies operations to LiveMap
    */
-  internal fun applyOperation(operation: ObjectOperation, serial: String?, serialTimestamp: Long?) {
-    val update = when (operation.action) {
-      ObjectOperationAction.MapCreate -> applyMapCreate(operation) // RTLM15d1
+  internal fun applyOperation(operation: ObjectOperation, serial: String?, serialTimestamp: Long?): Boolean {
+    return when (operation.action) {
+      ObjectOperationAction.MapCreate -> {
+        val update = applyMapCreate(operation) // RTLM15d1
+        liveMap.notifyUpdated(update) // RTLM15d1a
+        true // RTLM15d1b
+      }
       ObjectOperationAction.MapSet -> {
         if (operation.mapOp != null) {
-          applyMapSet(operation.mapOp, serial) // RTLM15d2
+          val update = applyMapSet(operation.mapOp, serial) // RTLM15d2
+          liveMap.notifyUpdated(update) // RTLM15d2a
+          true // RTLM15d2b
         } else {
           throw objectError("No payload found for ${operation.action} op for LiveMap objectId=${objectId}")
         }
       }
       ObjectOperationAction.MapRemove -> {
         if (operation.mapOp != null) {
-          applyMapRemove(operation.mapOp, serial, serialTimestamp) // RTLM15d3
+          val update = applyMapRemove(operation.mapOp, serial, serialTimestamp) // RTLM15d3
+          liveMap.notifyUpdated(update) // RTLM15d3a
+          true // RTLM15d3b
         } else {
           throw objectError("No payload found for ${operation.action} op for LiveMap objectId=${objectId}")
         }
       }
-      ObjectOperationAction.ObjectDelete -> liveMap.tombstone(serialTimestamp)
-      else -> throw objectError("Invalid ${operation.action} op for LiveMap objectId=${objectId}") // RTLM15d4
+      ObjectOperationAction.ObjectDelete -> {
+        val update = liveMap.tombstone(serialTimestamp)
+        liveMap.notifyUpdated(update)
+        true // RTLM15d5b
+      }
+      else -> {
+        Log.w(tag, "Invalid ${operation.action} op for LiveMap objectId=${objectId}") // RTLM15d4
+        false
+      }
     }
-
-    liveMap.notifyUpdated(update) // RTLM15d1a, RTLM15d2a, RTLM15d3a
   }
 
   /**

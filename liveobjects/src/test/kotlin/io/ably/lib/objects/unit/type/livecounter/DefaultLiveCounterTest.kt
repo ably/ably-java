@@ -4,6 +4,7 @@ import io.ably.lib.objects.ObjectsCounter
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectOperationAction
+import io.ably.lib.objects.ObjectsOperationSource
 import io.ably.lib.objects.ObjectState
 import io.ably.lib.objects.unit.getDefaultLiveCounterWithMockedDeps
 import io.ably.lib.types.AblyException
@@ -57,7 +58,7 @@ class DefaultLiveCounterTest {
 
     // RTLC7a - Should throw error when objectId doesn't match
     val exception = assertFailsWith<AblyException> {
-      liveCounter.applyObject(message)
+      liveCounter.applyObject(message, ObjectsOperationSource.CHANNEL)
     }
     val errorInfo = exception.errorInfo
     assertNotNull(errorInfo)
@@ -88,7 +89,7 @@ class DefaultLiveCounterTest {
     )
 
     // RTLC7b - Should skip operation when serial is not newer
-    liveCounter.applyObject(message)
+    liveCounter.applyObject(message, ObjectsOperationSource.CHANNEL)
 
     // Verify that the site serial was not updated (operation was skipped)
     assertEquals("serial2", liveCounter.siteTimeserials["site1"])
@@ -115,7 +116,7 @@ class DefaultLiveCounterTest {
     )
 
     // RTLC7c - Should update site serial when operation is valid
-    liveCounter.applyObject(message)
+    liveCounter.applyObject(message, ObjectsOperationSource.CHANNEL)
 
     // Verify that the site serial was updated
     assertEquals("serial2", liveCounter.siteTimeserials["site1"])

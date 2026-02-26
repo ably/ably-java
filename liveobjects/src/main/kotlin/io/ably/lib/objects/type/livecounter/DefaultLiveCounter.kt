@@ -85,16 +85,16 @@ internal class DefaultLiveCounter private constructor(
       )
     )
 
-    // RTLC12f - Publish the message
-    realtimeObjects.publish(arrayOf(msg))
+    // RTLC12g - publish and apply locally on ACK
+    realtimeObjects.publishAndApply(arrayOf(msg))
   }
 
   override fun applyObjectState(objectState: ObjectState, message: ObjectMessage): LiveCounterUpdate {
     return liveCounterManager.applyState(objectState, message.serialTimestamp)
   }
 
-  override fun applyObjectOperation(operation: ObjectOperation, message: ObjectMessage) {
-    liveCounterManager.applyOperation(operation, message.serialTimestamp)
+  override fun applyObjectOperation(operation: ObjectOperation, message: ObjectMessage): Boolean {
+    return liveCounterManager.applyOperation(operation, message.serialTimestamp)
   }
 
   override fun clearData(): LiveCounterUpdate {

@@ -1318,6 +1318,7 @@ public class ConnectionManager implements ConnectListener {
         maxIdleInterval = connectionDetails.maxIdleInterval;
         connectionStateTtl = connectionDetails.connectionStateTtl;
         maxMessageSize = connectionDetails.maxMessageSize;
+        siteCode = connectionDetails.siteCode; // CD2j
 
         /* set the clientId resolved from token, if any */
         String clientId = connectionDetails.clientId;
@@ -2033,6 +2034,7 @@ public class ConnectionManager implements ConnectListener {
     private CMConnectivityListener connectivityListener;
     private long connectionStateTtl = Defaults.connectionStateTtl;
     public int maxMessageSize = Defaults.maxMessageSize;
+    public String siteCode; // CD2j
     long maxIdleInterval = Defaults.maxIdleInterval;
     private int disconnectedRetryAttempt = 0;
 

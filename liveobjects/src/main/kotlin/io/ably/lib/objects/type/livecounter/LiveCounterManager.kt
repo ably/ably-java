@@ -39,21 +39,32 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter): 
   /**
    * @spec RTLC7 - Applies operations to LiveCounter
    */
-  internal fun applyOperation(operation: ObjectOperation, serialTimestamp: Long?) {
-    val update = when (operation.action) {
-      ObjectOperationAction.CounterCreate -> applyCounterCreate(operation) // RTLC7d1
+  internal fun applyOperation(operation: ObjectOperation, serialTimestamp: Long?): Boolean {
+    return when (operation.action) {
+      ObjectOperationAction.CounterCreate -> {
+        val update = applyCounterCreate(operation) // RTLC7d1
+        liveCounter.notifyUpdated(update) // RTLC7d1a
+        true // RTLC7d1b
+      }
       ObjectOperationAction.CounterInc -> {
         if (operation.counterOp != null) {
-          applyCounterInc(operation.counterOp) // RTLC7d2
+          val update = applyCounterInc(operation.counterOp) // RTLC7d2
+          liveCounter.notifyUpdated(update) // RTLC7d2a
+          true // RTLC7d2b
         } else {
           throw objectError("No payload found for ${operation.action} op for LiveCounter objectId=${objectId}")
         }
       }
-      ObjectOperationAction.ObjectDelete -> liveCounter.tombstone(serialTimestamp)
-      else -> throw objectError("Invalid ${operation.action} op for LiveCounter objectId=${objectId}") // RTLC7d3
+      ObjectOperationAction.ObjectDelete -> {
+        val update = liveCounter.tombstone(serialTimestamp)
+        liveCounter.notifyUpdated(update)
+        true // RTLC7d4b
+      }
+      else -> {
+        Log.w(tag, "Invalid ${operation.action} op for LiveCounter objectId=${objectId}") // RTLC7d3
+        false
+      }
     }
-
-    liveCounter.notifyUpdated(update) // RTLC7d1a, RTLC7d2a
   }
 
   /**

@@ -3,6 +3,7 @@ package io.ably.lib.objects.unit.objects
 import io.ably.lib.objects.*
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectState
+import io.ably.lib.objects.ObjectsOperationSource
 import io.ably.lib.objects.ObjectsState
 import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
 import io.ably.lib.objects.type.livemap.DefaultLiveMap
@@ -148,17 +149,17 @@ class ObjectsManagerTest {
     val testObject1 = objectsPool.get("map:testObject@1")
     assertNotNull(testObject1, "map:testObject@1 should exist in pool after sync")
     verify(exactly = 1) {
-      testObject1.applyObject(objectMessage1)
+      testObject1.applyObject(objectMessage1, any())
     }
     val testObject2 = objectsPool.get("counter:testObject@2")
     assertNotNull(testObject2, "counter:testObject@2 should exist in pool after sync")
     verify(exactly = 1) {
-      testObject2.applyObject(objectMessage2)
+      testObject2.applyObject(objectMessage2, any())
     }
     val testObject3 = objectsPool.get("map:testObject@3")
     assertNotNull(testObject3, "map:testObject@3 should exist in pool after sync")
     verify(exactly = 1) {
-      testObject3.applyObject(objectMessage3)
+      testObject3.applyObject(objectMessage3, any())
     }
   }
 
@@ -193,7 +194,7 @@ class ObjectsManagerTest {
     objectsManager.handleObjectMessages(listOf(objectMessage))
 
     verify(exactly = 0) {
-      objectsManager["applyObjectMessages"](any<List<ObjectMessage>>())
+      objectsManager["applyObjectMessages"](any<List<ObjectMessage>>(), any<ObjectsOperationSource>())
     }
     assertEquals(1, objectsManager.BufferedObjectOperations.size)
     assertEquals(objectMessage, objectsManager.BufferedObjectOperations[0])
@@ -202,7 +203,7 @@ class ObjectsManagerTest {
     // RTO7 - Apply buffered operations after sync
     objectsManager.endSync(false) // End sync without new sync
     verify(exactly = 1) {
-      objectsManager["applyObjectMessages"](any<List<ObjectMessage>>())
+      objectsManager["applyObjectMessages"](any<List<ObjectMessage>>(), any<ObjectsOperationSource>())
     }
     assertEquals(0, objectsManager.BufferedObjectOperations.size)
     assertEquals(2, objectsPool.size(), "Pool should contain 2 objects after applying buffered operations")
