@@ -459,6 +459,70 @@ class LiveMapManagerTest {
   }
 
   @Test
+  fun `(RTLM15d1b) LiveMapManager applyOperation returns true for MAP_CREATE`() {
+    val liveMap = getDefaultLiveMapWithMockedDeps()
+    val liveMapManager = liveMap.LiveMapManager
+
+    val operation = ObjectOperation(
+      action = ObjectOperationAction.MapCreate,
+      objectId = "map:testMap@1",
+      map = ObjectsMap(semantics = ObjectsMapSemantics.LWW, entries = emptyMap())
+    )
+
+    // RTLM15d1b - Should return true for successful MAP_CREATE
+    val result = liveMapManager.applyOperation(operation, "serial1", null)
+    assertTrue(result, "applyOperation should return true for MAP_CREATE")
+  }
+
+  @Test
+  fun `(RTLM15d2b) LiveMapManager applyOperation returns true for MAP_SET`() {
+    val liveMap = getDefaultLiveMapWithMockedDeps()
+    val liveMapManager = liveMap.LiveMapManager
+
+    val operation = ObjectOperation(
+      action = ObjectOperationAction.MapSet,
+      objectId = "map:testMap@1",
+      mapOp = ObjectsMapOp(key = "key1", data = ObjectData(value = ObjectValue.String("value1")))
+    )
+
+    // RTLM15d2b - Should return true for successful MAP_SET
+    val result = liveMapManager.applyOperation(operation, "serial1", null)
+    assertTrue(result, "applyOperation should return true for MAP_SET")
+  }
+
+  @Test
+  fun `(RTLM15d3b) LiveMapManager applyOperation returns true for MAP_REMOVE`() {
+    val liveMap = getDefaultLiveMapWithMockedDeps()
+    val liveMapManager = liveMap.LiveMapManager
+
+    val operation = ObjectOperation(
+      action = ObjectOperationAction.MapRemove,
+      objectId = "map:testMap@1",
+      mapOp = ObjectsMapOp(key = "key1")
+    )
+
+    // RTLM15d3b - Should return true for successful MAP_REMOVE
+    val result = liveMapManager.applyOperation(operation, "serial1", null)
+    assertTrue(result, "applyOperation should return true for MAP_REMOVE")
+  }
+
+  @Test
+  fun `(RTLM15d5b) LiveMapManager applyOperation returns true for OBJECT_DELETE`() {
+    val liveMap = getDefaultLiveMapWithMockedDeps()
+    val liveMapManager = liveMap.LiveMapManager
+
+    val operation = ObjectOperation(
+      action = ObjectOperationAction.ObjectDelete,
+      objectId = "map:testMap@1",
+    )
+
+    // RTLM15d5b - Should return true for OBJECT_DELETE (tombstone)
+    val result = liveMapManager.applyOperation(operation, "serial1", null)
+    assertTrue(result, "applyOperation should return true for OBJECT_DELETE")
+    assertTrue(liveMap.isTombstoned, "map should be tombstoned after ObjectDelete")
+  }
+
+  @Test
   fun `(RTLM15, RTLM15d4) LiveMapManager should return false for unsupported action`() {
     val liveMap = getDefaultLiveMapWithMockedDeps()
     val liveMapManager = liveMap.LiveMapManager

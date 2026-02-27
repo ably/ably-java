@@ -223,10 +223,14 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
         continue
       }
 
-      // RTO9a3 - skip operations already applied on ACK
+      // RTO9a3 - skip operations already applied on ACK (discard without taking any further action).
+      // This check comes before zero-value object creation (RTO9a2a1) so that no zero-value object is
+      // created for an objectId not yet in the pool when the echo is being discarded.
+      // Note: siteTimeserials is NOT updated here intentionally — updating it to the echo's serial would
+      // incorrectly reject older-but-unprocessed operations from the same site that arrive after the echo.
       if (objectMessage.serial != null &&
         realtimeObjects.appliedOnAckSerials.contains(objectMessage.serial)) {
-        Log.d(tag, "RTO9a3: serial ${objectMessage.serial} already applied on ACK; discarding")
+        Log.d(tag, "RTO9a3: serial ${objectMessage.serial} already applied on ACK; discarding echo")
         realtimeObjects.appliedOnAckSerials.remove(objectMessage.serial)
         continue // discard without taking any further action
       }

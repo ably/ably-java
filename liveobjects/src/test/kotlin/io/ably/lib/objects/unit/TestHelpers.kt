@@ -73,6 +73,9 @@ internal val ObjectsManager.SyncObjectsDataPool: Map<String, ObjectState>
 internal val ObjectsManager.BufferedObjectOperations: List<ObjectMessage>
   get() = this.getPrivateField("bufferedObjectOperations")
 
+internal val ObjectsManager.BufferedAcks: List<Pair<List<ObjectMessage>, *>>
+  get() = this.getPrivateField("bufferedAcks")
+
 internal var DefaultRealtimeObjects.ObjectsManager: ObjectsManager
   get() = this.getPrivateField("objectsManager")
   set(value) = this.setPrivateField("objectsManager", value)

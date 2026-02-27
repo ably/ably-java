@@ -64,6 +64,54 @@ class DefaultLiveCounterManagerTest {
 
 
   @Test
+  fun `(RTLC7d1b) LiveCounterManager applyOperation returns true for COUNTER_CREATE`() {
+    val liveCounter = getDefaultLiveCounterWithMockedDeps()
+    val liveCounterManager = liveCounter.LiveCounterManager
+
+    val operation = ObjectOperation(
+      action = ObjectOperationAction.CounterCreate,
+      objectId = "testCounterId",
+      counter = ObjectsCounter(count = 10.0)
+    )
+
+    // RTLC7d1b - Should return true for successful COUNTER_CREATE
+    val result = liveCounterManager.applyOperation(operation, null)
+    assertTrue(result, "applyOperation should return true for COUNTER_CREATE")
+  }
+
+  @Test
+  fun `(RTLC7d2b) LiveCounterManager applyOperation returns true for COUNTER_INC`() {
+    val liveCounter = getDefaultLiveCounterWithMockedDeps()
+    val liveCounterManager = liveCounter.LiveCounterManager
+
+    val operation = ObjectOperation(
+      action = ObjectOperationAction.CounterInc,
+      objectId = "testCounterId",
+      counterOp = ObjectsCounterOp(amount = 5.0)
+    )
+
+    // RTLC7d2b - Should return true for successful COUNTER_INC
+    val result = liveCounterManager.applyOperation(operation, null)
+    assertTrue(result, "applyOperation should return true for COUNTER_INC")
+  }
+
+  @Test
+  fun `(RTLC7d4b) LiveCounterManager applyOperation returns true for OBJECT_DELETE`() {
+    val liveCounter = getDefaultLiveCounterWithMockedDeps()
+    val liveCounterManager = liveCounter.LiveCounterManager
+
+    val operation = ObjectOperation(
+      action = ObjectOperationAction.ObjectDelete,
+      objectId = "testCounterId",
+    )
+
+    // RTLC7d4b - Should return true for OBJECT_DELETE (tombstone)
+    val result = liveCounterManager.applyOperation(operation, null)
+    assertTrue(result, "applyOperation should return true for OBJECT_DELETE")
+    assertTrue(liveCounter.isTombstoned, "counter should be tombstoned after ObjectDelete")
+  }
+
+  @Test
   fun `(RTLC7, RTLC7d3) LiveCounterManager should return false for unsupported action`() {
     val liveCounter = getDefaultLiveCounterWithMockedDeps()
     val liveCounterManager = liveCounter.LiveCounterManager
