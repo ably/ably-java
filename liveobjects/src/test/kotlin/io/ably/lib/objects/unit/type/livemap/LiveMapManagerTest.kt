@@ -1,6 +1,9 @@
 package io.ably.lib.objects.unit.type.livemap
 
 import io.ably.lib.objects.*
+import io.ably.lib.objects.MapCreate
+import io.ably.lib.objects.MapRemove
+import io.ably.lib.objects.MapSet
 import io.ably.lib.objects.type.livemap.LiveMapEntry
 import io.ably.lib.objects.type.livemap.LiveMapManager
 import io.ably.lib.objects.type.map.LiveMapUpdate
@@ -139,7 +142,7 @@ class LiveMapManagerTest {
     val createOp = ObjectOperation(
       action = ObjectOperationAction.MapCreate,
       objectId = "map:testMap@1",
-      map = ObjectsMap(
+      mapCreate = MapCreate(
         semantics = ObjectsMapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectsMapEntry(
@@ -297,7 +300,7 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapCreate,
       objectId = "map:testMap@1",
-      map = ObjectsMap(
+      mapCreate = MapCreate(
         semantics = ObjectsMapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectsMapEntry(
@@ -337,7 +340,7 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapCreate,
       objectId = "map:testMap@1",
-      map = ObjectsMap(
+      mapCreate = MapCreate(
         semantics = ObjectsMapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectsMapEntry(
@@ -385,9 +388,9 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapSet,
       objectId = "map:testMap@1",
-      mapOp = ObjectsMapOp(
+      mapSet = MapSet(
         key = "key1",
-        data = ObjectData(value = ObjectValue.String("newValue"))
+        value = ObjectData(value = ObjectValue.String("newValue"))
       )
     )
 
@@ -414,7 +417,7 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapRemove,
       objectId = "map:testMap@1",
-      mapOp = ObjectsMapOp(key = "key1")
+      mapRemove = MapRemove(key = "key1")
     )
 
     val expectedTimestamp = 1234567890L
@@ -442,7 +445,7 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapRemove,
       objectId = "map:testMap@1",
-      mapOp = ObjectsMapOp(key = "key1")
+      mapRemove = MapRemove(key = "key1")
     )
 
     val beforeOperation = System.currentTimeMillis()
@@ -466,7 +469,7 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapCreate,
       objectId = "map:testMap@1",
-      map = ObjectsMap(semantics = ObjectsMapSemantics.LWW, entries = emptyMap())
+      mapCreate = MapCreate(semantics = ObjectsMapSemantics.LWW, entries = emptyMap())
     )
 
     // RTLM15d1b - Should return true for successful MAP_CREATE
@@ -482,7 +485,7 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapSet,
       objectId = "map:testMap@1",
-      mapOp = ObjectsMapOp(key = "key1", data = ObjectData(value = ObjectValue.String("value1")))
+      mapSet = MapSet(key = "key1", value = ObjectData(value = ObjectValue.String("value1")))
     )
 
     // RTLM15d2b - Should return true for successful MAP_SET
@@ -498,7 +501,7 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapRemove,
       objectId = "map:testMap@1",
-      mapOp = ObjectsMapOp(key = "key1")
+      mapRemove = MapRemove(key = "key1")
     )
 
     // RTLM15d3b - Should return true for successful MAP_REMOVE
@@ -530,7 +533,7 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.CounterCreate, // Unsupported action for map
       objectId = "map:testMap@1",
-      counter = ObjectsCounter(count = 20.0)
+      counterCreate = io.ably.lib.objects.CounterCreate(count = 20.0)
     )
 
     // RTLM15d4 - Should return false for unsupported action (no longer throws)
@@ -549,7 +552,7 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapCreate,
       objectId = "map:testMap@1",
-      map = ObjectsMap(
+      mapCreate = MapCreate(
         semantics = ObjectsMapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectsMapEntry(
@@ -584,7 +587,7 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapCreate,
       objectId = "map:testMap@1",
-      map = ObjectsMap(
+      mapCreate = MapCreate(
         semantics = ObjectsMapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectsMapEntry(
@@ -622,9 +625,9 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapSet,
       objectId = "map:testMap@1",
-      mapOp = ObjectsMapOp(
+      mapSet = MapSet(
         key = "newKey",
-        data = ObjectData(value = ObjectValue.String("newValue"))
+        value = ObjectData(value = ObjectValue.String("newValue"))
       )
     )
 
@@ -652,9 +655,9 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapSet,
       objectId = "map:testMap@1",
-      mapOp = ObjectsMapOp(
+      mapSet = MapSet(
         key = "key1",
-        data = ObjectData(value = ObjectValue.String("newValue"))
+        value = ObjectData(value = ObjectValue.String("newValue"))
       )
     )
 
@@ -673,7 +676,7 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapRemove,
       objectId = "map:testMap@1",
-      mapOp = ObjectsMapOp(key = "nonExistingKey")
+      mapRemove = MapRemove(key = "nonExistingKey")
     )
 
     // RTLM8b - Create tombstoned entry for non-existing key
@@ -700,7 +703,7 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapRemove,
       objectId = "map:testMap@1",
-      mapOp = ObjectsMapOp(key = "key1")
+      mapRemove = MapRemove(key = "key1")
     )
 
     // RTLM8a - Should skip operation with lower serial
@@ -726,9 +729,9 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapSet,
       objectId = "map:testMap@1",
-      mapOp = ObjectsMapOp(
+      mapSet = MapSet(
         key = "key1",
-        data = ObjectData(value = ObjectValue.String("newValue"))
+        value = ObjectData(value = ObjectValue.String("newValue"))
       )
     )
 
@@ -753,9 +756,9 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapSet,
       objectId = "map:testMap@1",
-      mapOp = ObjectsMapOp(
+      mapSet = MapSet(
         key = "key1",
-        data = ObjectData(value = ObjectValue.String("newValue"))
+        value = ObjectData(value = ObjectValue.String("newValue"))
       )
     )
 
@@ -781,9 +784,9 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapSet,
       objectId = "map:testMap@1",
-      mapOp = ObjectsMapOp(
+      mapSet = MapSet(
         key = "key1",
-        data = ObjectData(value = ObjectValue.String("newValue"))
+        value = ObjectData(value = ObjectValue.String("newValue"))
       )
     )
 
@@ -809,9 +812,9 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapSet,
       objectId = "map:testMap@1",
-      mapOp = ObjectsMapOp(
+      mapSet = MapSet(
         key = "key1",
-        data = ObjectData(value = ObjectValue.String("newValue"))
+        value = ObjectData(value = ObjectValue.String("newValue"))
       )
     )
 
@@ -837,9 +840,9 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapSet,
       objectId = "map:testMap@1",
-      mapOp = ObjectsMapOp(
+      mapSet = MapSet(
         key = "key1",
-        data = ObjectData(value = ObjectValue.String("newValue"))
+        value = ObjectData(value = ObjectValue.String("newValue"))
       )
     )
 
@@ -858,7 +861,7 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapCreate,
       objectId = "map:testMap@1",
-      map = ObjectsMap(
+      mapCreate = MapCreate(
         semantics = ObjectsMapSemantics.Unknown, // This should match, but we'll test error case
         entries = emptyMap()
       )

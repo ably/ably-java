@@ -126,9 +126,8 @@ internal class DefaultRealtimeObjects(internal val channelName: String, internal
       operation = ObjectOperation(
         action = ObjectOperationAction.MapCreate,
         objectId = objectId,
-        map = initialMapValue.map,
-        nonce = nonce,
-        initialValue = initialValueJSONString,
+        mapCreate = initialMapValue,
+        mapCreateWithObjectId = MapCreateWithObjectId(nonce = nonce, initialValue = initialValueJSONString),
       )
     )
 
@@ -161,9 +160,8 @@ internal class DefaultRealtimeObjects(internal val channelName: String, internal
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterCreate,
         objectId = objectId,
-        counter = initialCounterValue.counter,
-        nonce = nonce,
-        initialValue = initialValueJSONString
+        counterCreate = initialCounterValue,
+        counterCreateWithObjectId = CounterCreateWithObjectId(nonce = nonce, initialValue = initialValueJSONString),
       )
     )
 

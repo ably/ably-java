@@ -2,8 +2,11 @@ package io.ably.lib.objects.unit
 
 import com.google.gson.JsonObject
 import io.ably.lib.objects.*
+import io.ably.lib.objects.CounterCreate
+import io.ably.lib.objects.CounterInc
+import io.ably.lib.objects.MapCreate
+import io.ably.lib.objects.MapSet
 import io.ably.lib.objects.ObjectData
-import io.ably.lib.objects.ObjectsMapOp
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectOperationAction
@@ -40,22 +43,22 @@ class ObjectMessageSizeTest {
         action = ObjectOperationAction.MapCreate,
         objectId = "obj_54321", // Not counted in operation size
 
-        // MapOp contributes to operation size
-        mapOp = ObjectsMapOp(
+        // MapSet contributes to operation size
+        mapSet = MapSet(
           key = "mapKey", // Size: 6 bytes (UTF-8 byte length)
-          data = ObjectData(
+          value = ObjectData(
             objectId = "ref_obj", // Not counted in data size
             value = ObjectValue.String("sample") // Size: 6 bytes (UTF-8 byte length)
           ) // Total ObjectData size: 6 bytes
-        ), // Total ObjectMapOp size: 6 + 6 = 12 bytes
+        ), // Total MapSet size: 6 + 6 = 12 bytes
 
-        // CounterOp contributes to operation size
-        counterOp = ObjectsCounterOp(
-          amount = 10.0 // Size: 8 bytes (number is always 8 bytes)
-        ), // Total ObjectCounterOp size: 8 bytes
+        // CounterInc contributes to operation size
+        counterInc = CounterInc(
+          number = 10.0 // Size: 8 bytes (number is always 8 bytes)
+        ), // Total CounterInc size: 8 bytes
 
-        // Map contributes to operation size (for MAP_CREATE operations)
-        map = ObjectsMap(
+        // MapCreate contributes to operation size (for MAP_CREATE operations)
+        mapCreate = MapCreate(
           semantics = ObjectsMapSemantics.LWW, // Not counted in size
           entries = mapOf(
             "entry1" to ObjectsMapEntry( // Key size: 6 bytes
@@ -71,15 +74,13 @@ class ObjectMessageSizeTest {
               ) // ObjectMapEntry size: 8 bytes
             ) // Total for this entry: 6 (key) + 8 (entry) = 14 bytes
           ) // Total entries size: 12 + 14 = 26 bytes
-        ), // Total ObjectMap size: 26 bytes
+        ), // Total MapCreate size: 26 bytes
 
-        // Counter contributes to operation size (for COUNTER_CREATE operations)
-        counter = ObjectsCounter(
+        // CounterCreate contributes to operation size (for COUNTER_CREATE operations)
+        counterCreate = CounterCreate(
           count = 100.0 // Size: 8 bytes (number is always 8 bytes)
-        ), // Total ObjectCounter size: 8 bytes
+        ), // Total CounterCreate size: 8 bytes
 
-        nonce = "nonce123", // Not counted in operation size
-        initialValue = "some-value", // Not counted in operation size
       ), // Total ObjectOperation size: 12 + 8 + 26 + 8 = 54 bytes
 
       objectState = ObjectState(
@@ -91,12 +92,12 @@ class ObjectMessageSizeTest {
         createOp = ObjectOperation(
           action = ObjectOperationAction.MapSet,
           objectId = "create_obj",
-          mapOp = ObjectsMapOp(
+          mapSet = MapSet(
             key = "createKey", // Size: 9 bytes
-            data = ObjectData(
+            value = ObjectData(
               value = ObjectValue.String("createValue") // Size: 11 bytes
             ) // ObjectData size: 11 bytes
-          ) // ObjectMapOp size: 9 + 11 = 20 bytes
+          ) // MapSet size: 9 + 11 = 20 bytes
         ), // Total createOp size: 20 bytes
 
         // map contributes to state size
@@ -133,10 +134,10 @@ class ObjectMessageSizeTest {
     val objectMessage = ObjectMessage(
       operation = ObjectOperation(
         objectId = "",
-        action = ObjectOperationAction.MapCreate,
-        mapOp = ObjectsMapOp(
+        action = ObjectOperationAction.MapSet,
+        mapSet = MapSet(
           key = "",
-          data = ObjectData(
+          value = ObjectData(
             value = ObjectValue.String("你😊") // 你 -> 3 bytes, 😊 -> 4 bytes
           ),
         ),

@@ -1,6 +1,9 @@
 package io.ably.lib.objects.type.livemap
 
 import io.ably.lib.objects.*
+import io.ably.lib.objects.MapCreate
+import io.ably.lib.objects.MapRemove
+import io.ably.lib.objects.MapSet
 import io.ably.lib.objects.ObjectsMapSemantics
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
@@ -128,9 +131,9 @@ internal class DefaultLiveMap private constructor(
       operation = ObjectOperation(
         action = ObjectOperationAction.MapSet,
         objectId = objectId,
-        mapOp = ObjectsMapOp(
+        mapSet = MapSet(
           key = keyName,
-          data = fromLiveMapValue(value)
+          value = fromLiveMapValue(value)
         )
       )
     )
@@ -153,7 +156,7 @@ internal class DefaultLiveMap private constructor(
       operation = ObjectOperation(
         action = ObjectOperationAction.MapRemove,
         objectId = objectId,
-        mapOp = ObjectsMapOp(key = keyName)
+        mapRemove = MapRemove(key = keyName)
       )
     )
 
@@ -196,20 +199,18 @@ internal class DefaultLiveMap private constructor(
     }
 
     /**
-     * Creates an ObjectMap from map entries.
+     * Creates a MapCreate payload from map entries.
      * Spec: RTO11f4
      */
-    internal fun initialValue(entries: MutableMap<String, LiveMapValue>): MapCreatePayload {
-      return MapCreatePayload(
-        map = ObjectsMap(
-          semantics = ObjectsMapSemantics.LWW,
-          entries = entries.mapValues { (_, value) ->
-            ObjectsMapEntry(
-              tombstone = false,
-              data = fromLiveMapValue(value)
-            )
-          }
-        )
+    internal fun initialValue(entries: MutableMap<String, LiveMapValue>): MapCreate {
+      return MapCreate(
+        semantics = ObjectsMapSemantics.LWW,
+        entries = entries.mapValues { (_, value) ->
+          ObjectsMapEntry(
+            tombstone = false,
+            data = fromLiveMapValue(value)
+          )
+        }
       )
     }
 

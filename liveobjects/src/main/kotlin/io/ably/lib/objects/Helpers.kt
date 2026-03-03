@@ -177,10 +177,3 @@ internal fun Binary.size(): Int {
   return data.size
 }
 
-internal data class CounterCreatePayload(
-  val counter: ObjectsCounter
-)
-
-internal data class MapCreatePayload(
-  val map: ObjectsMap
-)

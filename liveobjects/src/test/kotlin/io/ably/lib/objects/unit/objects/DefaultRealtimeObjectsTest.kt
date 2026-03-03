@@ -1,7 +1,6 @@
 package io.ably.lib.objects.unit.objects
 
 import io.ably.lib.objects.*
-import io.ably.lib.objects.ObjectsCounterOp
 import io.ably.lib.objects.ObjectData
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
@@ -110,7 +109,7 @@ class DefaultRealtimeObjectsTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = "counter:testObject@1",
-        counterOp = ObjectsCounterOp(amount = 5.0)
+        counterInc = CounterInc(number = 5.0)
       ),
       serial = "serial1",
       siteCode = "site1"
