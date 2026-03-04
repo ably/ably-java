@@ -29,7 +29,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "1",
-      data = ObjectData(value = ObjectValue.String("oldValue"))
+      data = ObjectData(string = "oldValue")
     )
 
     val objectState = ObjectState(
@@ -38,11 +38,11 @@ class LiveMapManagerTest {
         semantics = ObjectsMapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectsMapEntry(
-            data = ObjectData(value = ObjectValue.String("newValue1")),
+            data = ObjectData(string = "newValue1"),
             timeserial = "serial1"
           ),
           "key2" to ObjectsMapEntry(
-            data = ObjectData(value = ObjectValue.String("value2")),
+            data = ObjectData(string = "value2"),
             timeserial = "serial2"
           )
         )
@@ -55,8 +55,8 @@ class LiveMapManagerTest {
 
     assertFalse(liveMap.createOperationIsMerged) // RTLM6b
     assertEquals(2, liveMap.data.size) // RTLM6c
-    assertEquals("newValue1", liveMap.data["key1"]?.data?.value?.value) // RTLM6c
-    assertEquals("value2", liveMap.data["key2"]?.data?.value?.value) // RTLM6c
+    assertEquals("newValue1", liveMap.data["key1"]?.data?.string) // RTLM6c
+    assertEquals("value2", liveMap.data["key2"]?.data?.string) // RTLM6c
 
     // Assert on update field - should show changes from old to new state
     val expectedUpdate = mapOf(
@@ -75,7 +75,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "1",
-      data = ObjectData(value = ObjectValue.String("oldValue"))
+      data = ObjectData(string = "oldValue")
     )
 
     val objectState = ObjectState(
@@ -107,7 +107,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "1",
-      data = ObjectData(value = ObjectValue.String("oldValue"))
+      data = ObjectData(string = "oldValue")
     )
 
     val objectState = ObjectState(
@@ -136,7 +136,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "1",
-      data = ObjectData(value = ObjectValue.String("existingValue"))
+      data = ObjectData(string = "existingValue")
     )
 
     val createOp = ObjectOperation(
@@ -146,11 +146,11 @@ class LiveMapManagerTest {
         semantics = ObjectsMapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectsMapEntry(
-            data = ObjectData(value = ObjectValue.String("createValue")),
+            data = ObjectData(string = "createValue"),
             timeserial = "serial1"
           ),
           "key2" to ObjectsMapEntry(
-            data = ObjectData(value = ObjectValue.String("newValue")),
+            data = ObjectData(string = "newValue"),
             timeserial = "serial2"
           )
         )
@@ -163,7 +163,7 @@ class LiveMapManagerTest {
         semantics = ObjectsMapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectsMapEntry(
-            data = ObjectData(value = ObjectValue.String("stateValue")),
+            data = ObjectData(string = "stateValue"),
             timeserial = "serial3"
           )
         )
@@ -177,8 +177,8 @@ class LiveMapManagerTest {
     val update = liveMapManager.applyState(objectState, null)
 
     assertEquals(2, liveMap.data.size) // Should have both state and create op entries
-    assertEquals("stateValue", liveMap.data["key1"]?.data?.value?.value) // State value takes precedence
-    assertEquals("newValue", liveMap.data["key2"]?.data?.value?.value) // Create op value
+    assertEquals("stateValue", liveMap.data["key1"]?.data?.string) // State value takes precedence
+    assertEquals("newValue", liveMap.data["key2"]?.data?.string) // Create op value
 
     // Assert on update field - should show changes from create operation
     val expectedUpdate = mapOf(
@@ -197,7 +197,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "1",
-      data = ObjectData(value = ObjectValue.String("oldValue"))
+      data = ObjectData(string = "oldValue")
     )
 
     val expectedTimestamp = 1234567890L
@@ -207,13 +207,13 @@ class LiveMapManagerTest {
         semantics = ObjectsMapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectsMapEntry(
-            data = ObjectData(value = ObjectValue.String("newValue")),
+            data = ObjectData(string = "newValue"),
             timeserial = "serial1",
             tombstone = true,
             serialTimestamp = expectedTimestamp
           ),
           "key2" to ObjectsMapEntry(
-            data = ObjectData(value = ObjectValue.String("value2")),
+            data = ObjectData(string = "value2"),
             timeserial = "serial2"
           )
         )
@@ -228,7 +228,7 @@ class LiveMapManagerTest {
     assertEquals(2, liveMap.data.size) // RTLM6c
     assertTrue(liveMap.data["key1"]?.isTombstoned == true) // Should be tombstoned
     assertEquals(expectedTimestamp, liveMap.data["key1"]?.tombstonedAt) // Should use provided serialTimestamp
-    assertEquals("value2", liveMap.data["key2"]?.data?.value?.value) // RTLM6c
+    assertEquals("value2", liveMap.data["key2"]?.data?.string) // RTLM6c
 
     // Assert on update field - should show that key1 was removed (tombstoned)
     val expectedUpdate = mapOf(
@@ -247,7 +247,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "1",
-      data = ObjectData(value = ObjectValue.String("oldValue"))
+      data = ObjectData(string = "oldValue")
     )
 
     val objectState = ObjectState(
@@ -256,13 +256,13 @@ class LiveMapManagerTest {
         semantics = ObjectsMapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectsMapEntry(
-            data = ObjectData(value = ObjectValue.String("newValue")),
+            data = ObjectData(string = "newValue"),
             timeserial = "serial1",
             tombstone = true,
             serialTimestamp = null // No timestamp provided
           ),
           "key2" to ObjectsMapEntry(
-            data = ObjectData(value = ObjectValue.String("value2")),
+            data = ObjectData(string = "value2"),
             timeserial = "serial2"
           )
         )
@@ -281,7 +281,7 @@ class LiveMapManagerTest {
     assertNotNull(liveMap.data["key1"]?.tombstonedAt) // Should have timestamp
     assertTrue(liveMap.data["key1"]?.tombstonedAt!! >= beforeOperation) // Should be after operation start
     assertTrue(liveMap.data["key1"]?.tombstonedAt!! <= afterOperation) // Should be before operation end
-    assertEquals("value2", liveMap.data["key2"]?.data?.value?.value) // RTLM6c
+    assertEquals("value2", liveMap.data["key2"]?.data?.string) // RTLM6c
 
     // Assert on update field - should show that key1 was removed (tombstoned)
     val expectedUpdate = mapOf(
@@ -304,11 +304,11 @@ class LiveMapManagerTest {
         semantics = ObjectsMapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectsMapEntry(
-            data = ObjectData(value = ObjectValue.String("value1")),
+            data = ObjectData(string = "value1"),
             timeserial = "serial1"
           ),
           "key2" to ObjectsMapEntry(
-            data = ObjectData(value = ObjectValue.String("value2")),
+            data = ObjectData(string = "value2"),
             timeserial = "serial2"
           )
         )
@@ -319,8 +319,8 @@ class LiveMapManagerTest {
     liveMapManager.applyOperation(operation, "serial1", null)
 
     assertEquals(2, liveMap.data.size) // Should have both entries
-    assertEquals("value1", liveMap.data["key1"]?.data?.value?.value) // Should have value1
-    assertEquals("value2", liveMap.data["key2"]?.data?.value?.value) // Should have value2
+    assertEquals("value1", liveMap.data["key1"]?.data?.string) // Should have value1
+    assertEquals("value2", liveMap.data["key2"]?.data?.string) // Should have value2
     assertTrue(liveMap.createOperationIsMerged) // Should be marked as merged
   }
 
@@ -333,7 +333,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "serial1",
-      data = ObjectData(value = ObjectValue.String("existingValue"))
+      data = ObjectData(string = "existingValue")
     )
 
     val expectedTimestamp = 1234567890L
@@ -344,13 +344,13 @@ class LiveMapManagerTest {
         semantics = ObjectsMapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectsMapEntry(
-            data = ObjectData(value = ObjectValue.String("createValue")),
+            data = ObjectData(string = "createValue"),
             timeserial = "serial2",
             tombstone = true,
             serialTimestamp = expectedTimestamp
           ),
           "key2" to ObjectsMapEntry(
-            data = ObjectData(value = ObjectValue.String("newValue")),
+            data = ObjectData(string = "newValue"),
             timeserial = "serial3"
           ),
           "key3" to ObjectsMapEntry(
@@ -368,7 +368,7 @@ class LiveMapManagerTest {
     assertEquals(3, liveMap.data.size) // Should have all entries
     assertTrue(liveMap.data["key1"]?.isTombstoned == true) // RTLM17a2 - Should be tombstoned
     assertEquals(expectedTimestamp, liveMap.data["key1"]?.tombstonedAt) // Should use provided serialTimestamp
-    assertEquals("newValue", liveMap.data["key2"]?.data?.value?.value) // RTLM17a1 - Should be added
+    assertEquals("newValue", liveMap.data["key2"]?.data?.string) // RTLM17a1 - Should be added
     assertTrue(liveMap.data["key3"]?.isTombstoned == true) // RTLM17a2 - Should be tombstoned
     assertTrue(liveMap.createOperationIsMerged) // RTLM17b - Should be marked as merged
   }
@@ -382,7 +382,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "serial1",
-      data = ObjectData(value = ObjectValue.String("oldValue"))
+      data = ObjectData(string = "oldValue")
     )
 
     val operation = ObjectOperation(
@@ -390,14 +390,14 @@ class LiveMapManagerTest {
       objectId = "map:testMap@1",
       mapSet = MapSet(
         key = "key1",
-        value = ObjectData(value = ObjectValue.String("newValue"))
+        value = ObjectData(string = "newValue")
       )
     )
 
     // RTLM15d2 - Apply map set operation
     liveMapManager.applyOperation(operation, "serial2", null)
 
-    assertEquals("newValue", liveMap.data["key1"]?.data?.value?.value) // RTLM7a2a
+    assertEquals("newValue", liveMap.data["key1"]?.data?.string) // RTLM7a2a
     assertEquals("serial2", liveMap.data["key1"]?.timeserial) // RTLM7a2b
     assertFalse(liveMap.data["key1"]?.isTombstoned == true) // RTLM7a2c
   }
@@ -411,7 +411,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "serial1",
-      data = ObjectData(value = ObjectValue.String("value1"))
+      data = ObjectData(string = "value1")
     )
 
     val operation = ObjectOperation(
@@ -439,7 +439,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "serial1",
-      data = ObjectData(value = ObjectValue.String("value1"))
+      data = ObjectData(string = "value1")
     )
 
     val operation = ObjectOperation(
@@ -485,7 +485,7 @@ class LiveMapManagerTest {
     val operation = ObjectOperation(
       action = ObjectOperationAction.MapSet,
       objectId = "map:testMap@1",
-      mapSet = MapSet(key = "key1", value = ObjectData(value = ObjectValue.String("value1")))
+      mapSet = MapSet(key = "key1", value = ObjectData(string = "value1"))
     )
 
     // RTLM15d2b - Should return true for successful MAP_SET
@@ -556,7 +556,7 @@ class LiveMapManagerTest {
         semantics = ObjectsMapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectsMapEntry(
-            data = ObjectData(value = ObjectValue.String("value1")),
+            data = ObjectData(string = "value1"),
             timeserial = "serial1"
           )
         )
@@ -581,7 +581,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "serial1",
-      data = ObjectData(value = ObjectValue.String("existingValue"))
+      data = ObjectData(string = "existingValue")
     )
 
     val operation = ObjectOperation(
@@ -591,11 +591,11 @@ class LiveMapManagerTest {
         semantics = ObjectsMapSemantics.LWW,
         entries = mapOf(
           "key1" to ObjectsMapEntry(
-            data = ObjectData(value = ObjectValue.String("createValue")),
+            data = ObjectData(string = "createValue"),
             timeserial = "serial2"
           ),
           "key2" to ObjectsMapEntry(
-            data = ObjectData(value = ObjectValue.String("newValue")),
+            data = ObjectData(string = "newValue"),
             timeserial = "serial3"
           ),
           "key3" to ObjectsMapEntry(
@@ -611,8 +611,8 @@ class LiveMapManagerTest {
     liveMapManager.applyOperation(operation, "serial1", null)
 
     assertEquals(3, liveMap.data.size) // Should have all entries
-    assertEquals("createValue", liveMap.data["key1"]?.data?.value?.value) // RTLM17a1 - Should be updated
-    assertEquals("newValue", liveMap.data["key2"]?.data?.value?.value) // RTLM17a1 - Should be added
+    assertEquals("createValue", liveMap.data["key1"]?.data?.string) // RTLM17a1 - Should be updated
+    assertEquals("newValue", liveMap.data["key2"]?.data?.string) // RTLM17a1 - Should be added
     assertTrue(liveMap.data["key3"]?.isTombstoned == true) // RTLM17a2 - Should be tombstoned
     assertTrue(liveMap.createOperationIsMerged) // RTLM17b - Should be marked as merged
   }
@@ -627,7 +627,7 @@ class LiveMapManagerTest {
       objectId = "map:testMap@1",
       mapSet = MapSet(
         key = "newKey",
-        value = ObjectData(value = ObjectValue.String("newValue"))
+        value = ObjectData(string = "newValue")
       )
     )
 
@@ -635,7 +635,7 @@ class LiveMapManagerTest {
     liveMapManager.applyOperation(operation, "serial1", null)
 
     assertEquals(1, liveMap.data.size) // Should have one entry
-    assertEquals("newValue", liveMap.data["newKey"]?.data?.value?.value) // RTLM7b1
+    assertEquals("newValue", liveMap.data["newKey"]?.data?.string) // RTLM7b1
     assertEquals("serial1", liveMap.data["newKey"]?.timeserial) // Should have serial
     assertFalse(liveMap.data["newKey"]?.isTombstoned == true) // RTLM7b2
   }
@@ -649,7 +649,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "serial2", // Higher than "serial1"
-      data = ObjectData(value = ObjectValue.String("existingValue"))
+      data = ObjectData(string = "existingValue")
     )
 
     val operation = ObjectOperation(
@@ -657,14 +657,14 @@ class LiveMapManagerTest {
       objectId = "map:testMap@1",
       mapSet = MapSet(
         key = "key1",
-        value = ObjectData(value = ObjectValue.String("newValue"))
+        value = ObjectData(string = "newValue")
       )
     )
 
     // RTLM7a - Should skip operation with lower serial
     liveMapManager.applyOperation(operation, "serial1", null)
 
-    assertEquals("existingValue", liveMap.data["key1"]?.data?.value?.value) // Should not change
+    assertEquals("existingValue", liveMap.data["key1"]?.data?.string) // Should not change
     assertEquals("serial2", liveMap.data["key1"]?.timeserial) // Should keep original serial
   }
 
@@ -697,7 +697,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "serial2", // Higher than "serial1"
-      data = ObjectData(value = ObjectValue.String("existingValue"))
+      data = ObjectData(string = "existingValue")
     )
 
     val operation = ObjectOperation(
@@ -709,7 +709,7 @@ class LiveMapManagerTest {
     // RTLM8a - Should skip operation with lower serial
     liveMapManager.applyOperation(operation, "serial1", null)
 
-    assertEquals("existingValue", liveMap.data["key1"]?.data?.value?.value) // Should not change
+    assertEquals("existingValue", liveMap.data["key1"]?.data?.string) // Should not change
     assertEquals("serial2", liveMap.data["key1"]?.timeserial) // Should keep original serial
     assertFalse(liveMap.data["key1"]?.isTombstoned == true) // Should not be tombstoned
   }
@@ -723,7 +723,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = null,
-      data = ObjectData(value = ObjectValue.String("existingValue"))
+      data = ObjectData(string = "existingValue")
     )
 
     val operation = ObjectOperation(
@@ -731,14 +731,14 @@ class LiveMapManagerTest {
       objectId = "map:testMap@1",
       mapSet = MapSet(
         key = "key1",
-        value = ObjectData(value = ObjectValue.String("newValue"))
+        value = ObjectData(string = "newValue")
       )
     )
 
     // RTLM9b - Both null serials should be treated as equal
     liveMapManager.applyOperation(operation, null, null)
 
-    assertEquals("existingValue", liveMap.data["key1"]?.data?.value?.value) // Should not change
+    assertEquals("existingValue", liveMap.data["key1"]?.data?.string) // Should not change
   }
 
   @Test
@@ -750,7 +750,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = null,
-      data = ObjectData(value = ObjectValue.String("existingValue"))
+      data = ObjectData(string = "existingValue")
     )
 
     val operation = ObjectOperation(
@@ -758,14 +758,14 @@ class LiveMapManagerTest {
       objectId = "map:testMap@1",
       mapSet = MapSet(
         key = "key1",
-        value = ObjectData(value = ObjectValue.String("newValue"))
+        value = ObjectData(string = "newValue")
       )
     )
 
     // RTLM9d - Operation serial is greater than missing entry serial
     liveMapManager.applyOperation(operation, "serial1", null)
 
-    assertEquals("newValue", liveMap.data["key1"]?.data?.value?.value) // Should be updated
+    assertEquals("newValue", liveMap.data["key1"]?.data?.string) // Should be updated
     assertEquals("serial1", liveMap.data["key1"]?.timeserial) // Should have new serial
   }
 
@@ -778,7 +778,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "serial1",
-      data = ObjectData(value = ObjectValue.String("existingValue"))
+      data = ObjectData(string = "existingValue")
     )
 
     val operation = ObjectOperation(
@@ -786,14 +786,14 @@ class LiveMapManagerTest {
       objectId = "map:testMap@1",
       mapSet = MapSet(
         key = "key1",
-        value = ObjectData(value = ObjectValue.String("newValue"))
+        value = ObjectData(string = "newValue")
       )
     )
 
     // RTLM9c - Missing operation serial is lower than existing entry serial
     liveMapManager.applyOperation(operation, null, null)
 
-    assertEquals("existingValue", liveMap.data["key1"]?.data?.value?.value) // Should not change
+    assertEquals("existingValue", liveMap.data["key1"]?.data?.string) // Should not change
     assertEquals("serial1", liveMap.data["key1"]?.timeserial) // Should keep original serial
   }
 
@@ -806,7 +806,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "serial1",
-      data = ObjectData(value = ObjectValue.String("existingValue"))
+      data = ObjectData(string = "existingValue")
     )
 
     val operation = ObjectOperation(
@@ -814,14 +814,14 @@ class LiveMapManagerTest {
       objectId = "map:testMap@1",
       mapSet = MapSet(
         key = "key1",
-        value = ObjectData(value = ObjectValue.String("newValue"))
+        value = ObjectData(string = "newValue")
       )
     )
 
     // RTLM9e - Higher serial should be applied
     liveMapManager.applyOperation(operation, "serial2", null)
 
-    assertEquals("newValue", liveMap.data["key1"]?.data?.value?.value) // Should be updated
+    assertEquals("newValue", liveMap.data["key1"]?.data?.string) // Should be updated
     assertEquals("serial2", liveMap.data["key1"]?.timeserial) // Should have new serial
   }
 
@@ -834,7 +834,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "serial2",
-      data = ObjectData(value = ObjectValue.String("existingValue"))
+      data = ObjectData(string = "existingValue")
     )
 
     val operation = ObjectOperation(
@@ -842,14 +842,14 @@ class LiveMapManagerTest {
       objectId = "map:testMap@1",
       mapSet = MapSet(
         key = "key1",
-        value = ObjectData(value = ObjectValue.String("newValue"))
+        value = ObjectData(string = "newValue")
       )
     )
 
     // RTLM9e - Lower serial should be skipped
     liveMapManager.applyOperation(operation, "serial1", null)
 
-    assertEquals("existingValue", liveMap.data["key1"]?.data?.value?.value) // Should not change
+    assertEquals("existingValue", liveMap.data["key1"]?.data?.string) // Should not change
     assertEquals("serial2", liveMap.data["key1"]?.timeserial) // Should keep original serial
   }
 
@@ -893,7 +893,7 @@ class LiveMapManagerTest {
       "key1" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "1",
-        data = ObjectData(value = ObjectValue.String("value1"))
+        data = ObjectData(string = "value1")
       )
     )
     val result2 = livemapManager.calculateUpdateFromDataDiff(prevData2, newData2)
@@ -904,7 +904,7 @@ class LiveMapManagerTest {
       "key1" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "1",
-        data = ObjectData(value = ObjectValue.String("value1"))
+        data = ObjectData(string = "value1")
       )
     )
     val newData3 = mapOf<String, LiveMapEntry>()
@@ -916,14 +916,14 @@ class LiveMapManagerTest {
       "key1" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "1",
-        data = ObjectData(value = ObjectValue.String("value1"))
+        data = ObjectData(string = "value1")
       )
     )
     val newData4 = mapOf(
       "key1" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "2",
-        data = ObjectData(value = ObjectValue.String("value2"))
+        data = ObjectData(string = "value2")
       )
     )
     val result4 = livemapManager.calculateUpdateFromDataDiff(prevData4, newData4)
@@ -934,7 +934,7 @@ class LiveMapManagerTest {
       "key1" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "1",
-        data = ObjectData(value = ObjectValue.String("value1"))
+        data = ObjectData(string = "value1")
       )
     )
     val newData5 = mapOf(
@@ -959,7 +959,7 @@ class LiveMapManagerTest {
       "key1" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "2",
-        data = ObjectData(value = ObjectValue.String("value1"))
+        data = ObjectData(string = "value1")
       )
     )
     val result6 = livemapManager.calculateUpdateFromDataDiff(prevData6, newData6)
@@ -977,7 +977,7 @@ class LiveMapManagerTest {
       "key1" to LiveMapEntry(
         isTombstoned = true,
         timeserial = "2",
-        data = ObjectData(value = ObjectValue.String("value1"))
+        data = ObjectData(string = "value1")
       )
     )
     val result7 = livemapManager.calculateUpdateFromDataDiff(prevData7, newData7)
@@ -1000,24 +1000,24 @@ class LiveMapManagerTest {
       "key1" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "1",
-        data = ObjectData(value = ObjectValue.String("value1"))
+        data = ObjectData(string = "value1")
       ),
       "key2" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "1",
-        data = ObjectData(value = ObjectValue.String("value2"))
+        data = ObjectData(string = "value2")
       )
     )
     val newData9 = mapOf(
       "key1" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "2",
-        data = ObjectData(value = ObjectValue.String("value1_updated"))
+        data = ObjectData(string = "value1_updated")
       ),
       "key3" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "1",
-        data = ObjectData(value = ObjectValue.String("value3"))
+        data = ObjectData(string = "value3")
       )
     )
     val result9 = livemapManager.calculateUpdateFromDataDiff(prevData9, newData9)
@@ -1051,14 +1051,14 @@ class LiveMapManagerTest {
       "key1" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "1",
-        data = ObjectData(value = ObjectValue.String("value1"))
+        data = ObjectData(string = "value1")
       )
     )
     val newData11 = mapOf(
       "key1" to LiveMapEntry(
         isTombstoned = false,
         timeserial = "2",
-        data = ObjectData(value = ObjectValue.String("value1"))
+        data = ObjectData(string = "value1")
       )
     )
     val result11 = livemapManager.calculateUpdateFromDataDiff(prevData11, newData11)
@@ -1074,7 +1074,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "1",
-      data = ObjectData(value = ObjectValue.String("oldValue"))
+      data = ObjectData(string = "oldValue")
     )
 
     val expectedTimestamp = 1234567890L
@@ -1105,7 +1105,7 @@ class LiveMapManagerTest {
     liveMap.data["key1"] = LiveMapEntry(
       isTombstoned = false,
       timeserial = "1",
-      data = ObjectData(value = ObjectValue.String("oldValue"))
+      data = ObjectData(string = "oldValue")
     )
 
     val objectState = ObjectState(

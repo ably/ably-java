@@ -428,21 +428,4 @@ class HelpersTest {
     assertEquals(ErrorCode.ChannelStateError.code, ex2.errorInfo.code)
   }
 
-  // Binary utilities
-  @Test
-  fun testBinaryEqualityHashCodeAndSize() {
-    val data1 = byteArrayOf(1, 2, 3, 4)
-    val data2 = byteArrayOf(1, 2, 3, 4)
-    val data3 = byteArrayOf(4, 3, 2, 1)
-
-    val b1 = Binary(data1)
-    val b2 = Binary(data2)
-    val b3 = Binary(data3)
-
-    assertEquals(b1, b2)
-    assertEquals(b1.hashCode(), b2.hashCode())
-    assertNotEquals(b1, b3)
-
-    assertEquals(4, b1.size())
-  }
 }

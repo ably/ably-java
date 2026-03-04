@@ -267,7 +267,7 @@ class ObjectsManagerTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.MapSet,
         objectId = "map:testMap@1",
-        mapSet = MapSet(key = "key1", value = ObjectData(value = ObjectValue.String("value1")))
+        mapSet = MapSet(key = "key1", value = ObjectData(string = "value1"))
       ),
       serial = "ser-map-01",
       siteCode = "site1"
@@ -277,7 +277,7 @@ class ObjectsManagerTest {
     objectsManager.applyAckResult(listOf(msg))
 
     // Verify entry was set (LOCAL source)
-    assertEquals("value1", liveMap.data["key1"]?.data?.value?.value,
+    assertEquals("value1", liveMap.data["key1"]?.data?.string,
       "MAP_SET should be applied locally on ACK")
     // Entry timeserial should be updated (within LiveMapManager, regardless of source)
     assertEquals("ser-map-01", liveMap.data["key1"]?.timeserial,

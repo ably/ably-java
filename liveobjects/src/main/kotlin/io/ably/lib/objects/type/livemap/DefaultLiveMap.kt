@@ -18,6 +18,7 @@ import io.ably.lib.objects.type.map.LiveMapValue
 import io.ably.lib.objects.type.noOp
 import io.ably.lib.util.Log
 import kotlinx.coroutines.runBlocking
+import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
 import java.util.AbstractMap
 
@@ -219,30 +220,22 @@ internal class DefaultLiveMap private constructor(
      */
     private fun fromLiveMapValue(value: LiveMapValue): ObjectData {
       return when {
-        value.isLiveMap || value.isLiveCounter -> {
+        value.isLiveMap || value.isLiveCounter ->
           ObjectData(objectId = (value.value as BaseRealtimeObject).objectId)
-        }
-        value.isBoolean -> {
-          ObjectData(value = ObjectValue.Boolean(value.asBoolean))
-        }
-        value.isBinary -> {
-          ObjectData(value = ObjectValue.Binary(Binary(value.asBinary)))
-        }
-        value.isNumber -> {
-          ObjectData(value = ObjectValue.Number(value.asNumber))
-        }
-        value.isString -> {
-          ObjectData(value = ObjectValue.String(value.asString))
-        }
-        value.isJsonObject -> {
-          ObjectData(value = ObjectValue.JsonObject(value.asJsonObject))
-        }
-        value.isJsonArray -> {
-          ObjectData(value = ObjectValue.JsonArray(value.asJsonArray))
-        }
-        else -> {
+        value.isBoolean ->
+          ObjectData(boolean = value.asBoolean)
+        value.isBinary ->
+          ObjectData(bytes = Base64.getEncoder().encodeToString(value.asBinary))
+        value.isNumber ->
+          ObjectData(number = value.asNumber.toDouble())
+        value.isString ->
+          ObjectData(string = value.asString)
+        value.isJsonObject ->
+          ObjectData(json = value.asJsonObject)
+        value.isJsonArray ->
+          ObjectData(json = value.asJsonArray)
+        else ->
           throw IllegalArgumentException("Unsupported value type")
-        }
       }
     }
   }

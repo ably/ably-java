@@ -1,7 +1,6 @@
 package io.ably.lib.objects.integration.helpers.fixtures
 
 import io.ably.lib.objects.ObjectData
-import io.ably.lib.objects.ObjectValue
 import io.ably.lib.objects.integration.helpers.RestObjects
 
 /**
@@ -115,10 +114,10 @@ internal fun RestObjects.createUserMapObject(channelName: String): String {
   val preferencesMapObjectId = createMap(
     channelName,
     data = mapOf(
-      "theme" to ObjectData(value = ObjectValue.String("dark")),
-      "notifications" to ObjectData(value = ObjectValue.Boolean(true)),
-      "language" to ObjectData(value = ObjectValue.String("en")),
-      "maxRetries" to ObjectData(value = ObjectValue.Number(3))
+      "theme" to ObjectData(string = "dark"),
+      "notifications" to ObjectData(boolean = true),
+      "language" to ObjectData(string = "en"),
+      "maxRetries" to ObjectData(number = 3.0)
     )
   )
 
@@ -128,8 +127,8 @@ internal fun RestObjects.createUserMapObject(channelName: String): String {
     data = mapOf(
       "totalLogins" to DataFixtures.mapRef(loginCounterObjectId),
       "activeSessions" to DataFixtures.mapRef(sessionCounterObjectId),
-      "lastLoginTime" to ObjectData(value = ObjectValue.String("2024-01-01T08:30:00Z")),
-      "profileViews" to ObjectData(value = ObjectValue.Number(42))
+      "lastLoginTime" to ObjectData(string = "2024-01-01T08:30:00Z"),
+      "profileViews" to ObjectData(number = 42.0)
     )
   )
 
@@ -175,10 +174,10 @@ internal fun RestObjects.createUserProfileMapObject(channelName: String): String
    return createMap(
     channelName,
     data = mapOf(
-      "userId" to ObjectData(value = ObjectValue.String("user123")),
-      "name" to ObjectData(value = ObjectValue.String("John Doe")),
-      "email" to ObjectData(value = ObjectValue.String("john@example.com")),
-      "isActive" to ObjectData(value = ObjectValue.Boolean(true)),
+      "userId" to ObjectData(string = "user123"),
+      "name" to ObjectData(string = "John Doe"),
+      "email" to ObjectData(string = "john@example.com"),
+      "isActive" to ObjectData(boolean = true),
     )
   )
 }

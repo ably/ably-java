@@ -10,7 +10,6 @@ import io.ably.lib.objects.ObjectData
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectOperationAction
-import io.ably.lib.objects.ObjectValue
 import io.ably.lib.objects.ensureMessageSizeWithinLimit
 import io.ably.lib.objects.size
 import io.ably.lib.transport.Defaults
@@ -48,7 +47,7 @@ class ObjectMessageSizeTest {
           key = "mapKey", // Size: 6 bytes (UTF-8 byte length)
           value = ObjectData(
             objectId = "ref_obj", // Not counted in data size
-            value = ObjectValue.String("sample") // Size: 6 bytes (UTF-8 byte length)
+            string = "sample" // Size: 6 bytes (UTF-8 byte length)
           ) // Total ObjectData size: 6 bytes
         ), // Total MapSet size: 6 + 6 = 12 bytes
 
@@ -65,12 +64,12 @@ class ObjectMessageSizeTest {
               tombstone = false, // Not counted in entry size
               timeserial = "ts_123", // Not counted in entry size
               data = ObjectData(
-                value = ObjectValue.String("value1") // Size: 6 bytes
+                string = "value1" // Size: 6 bytes
               ) // ObjectMapEntry size: 6 bytes
             ), // Total for this entry: 6 (key) + 6 (entry) = 12 bytes
             "entry2" to ObjectsMapEntry( // Key size: 6 bytes
               data = ObjectData(
-                value = ObjectValue.Number(42) // Size: 8 bytes (number)
+                number = 42.0 // Size: 8 bytes (number)
               ) // ObjectMapEntry size: 8 bytes
             ) // Total for this entry: 6 (key) + 8 (entry) = 14 bytes
           ) // Total entries size: 12 + 14 = 26 bytes
@@ -95,7 +94,7 @@ class ObjectMessageSizeTest {
           mapSet = MapSet(
             key = "createKey", // Size: 9 bytes
             value = ObjectData(
-              value = ObjectValue.String("createValue") // Size: 11 bytes
+              string = "createValue" // Size: 11 bytes
             ) // ObjectData size: 11 bytes
           ) // MapSet size: 9 + 11 = 20 bytes
         ), // Total createOp size: 20 bytes
@@ -105,7 +104,7 @@ class ObjectMessageSizeTest {
           entries = mapOf(
             "stateKey" to ObjectsMapEntry( // Key size: 8 bytes
               data = ObjectData(
-                value = ObjectValue.String("stateValue") // Size: 10 bytes
+                string = "stateValue" // Size: 10 bytes
               ) // ObjectMapEntry size: 10 bytes
             ) // Total: 8 + 10 = 18 bytes
           )
@@ -138,7 +137,7 @@ class ObjectMessageSizeTest {
         mapSet = MapSet(
           key = "",
           value = ObjectData(
-            value = ObjectValue.String("你😊") // 你 -> 3 bytes, 😊 -> 4 bytes
+            string = "你😊" // 你 -> 3 bytes, 😊 -> 4 bytes
           ),
         ),
       )

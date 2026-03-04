@@ -1,11 +1,13 @@
 package io.ably.lib.objects
 
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 
 import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
 import io.ably.lib.objects.serialization.ObjectDataJsonSerializer
 import io.ably.lib.objects.serialization.gson
+import java.util.Base64
 
 /**
  * An enum class representing the different actions that can be performed on an object.
@@ -42,28 +44,21 @@ internal data class ObjectData(
    */
   val objectId: String? = null,
 
-  /**
-   * String, number, boolean or binary - a concrete value of the object
-   * Spec: OD2c
-   */
-  val value: ObjectValue? = null,
+  /** String value. Spec: OD2c */
+  val string: String? = null,
+
+  /** Numeric value. Spec: OD2c */
+  val number: Double? = null,
+
+  /** Boolean value. Spec: OD2c */
+  val boolean: Boolean? = null,
+
+  /** Binary value encoded as a base64 string. Spec: OD2c */
+  val bytes: String? = null,
+
+  /** JSON object or array value. Spec: OD2c */
+  val json: JsonElement? = null,
 )
-
-/**
- * Represents a value that can be a String, Number, Boolean, Binary, JsonObject or JsonArray.
- * Provides compile-time type safety through sealed class pattern.
- * Spec: OD2c
- */
-internal sealed class ObjectValue {
-  abstract val value: Any
-
-  data class String(override val value: kotlin.String) : ObjectValue()
-  data class Number(override val value: kotlin.Number) : ObjectValue()
-  data class Boolean(override val value: kotlin.Boolean) : ObjectValue()
-  data class Binary(override val value: io.ably.lib.objects.Binary) : ObjectValue()
-  data class JsonObject(override val value: com.google.gson.JsonObject) : ObjectValue()
-  data class JsonArray(override val value: com.google.gson.JsonArray) : ObjectValue()
-}
 
 /**
  * Payload for MAP_CREATE operation.
@@ -390,7 +385,7 @@ internal data class ObjectMessage(
  * Spec: OM3
  */
 internal fun ObjectMessage.size(): Int {
-  val clientIdSize = clientId?.length ?: 0 // Spec: OM3f
+  val clientIdSize = clientId?.byteSize ?: 0 // Spec: OM3f
   val operationSize = operation?.size() ?: 0 // Spec: OM3b, OOP4
   val objectStateSize = objectState?.size() ?: 0 // Spec: OM3c, OST3
   val extrasSize = extras?.let { gson.toJson(it).length } ?: 0 // Spec: OM3d
@@ -432,21 +427,21 @@ private fun ObjectState.size(): Int {
  * Calculates the size of a MapCreate payload in bytes.
  */
 private fun MapCreate.size(): Int {
-  return entries.entries.sumOf { it.key.length + it.value.size() }
+  return entries.entries.sumOf { it.key.byteSize + it.value.size() }
 }
 
 /**
  * Calculates the size of a MapSet payload in bytes.
  */
 private fun MapSet.size(): Int {
-  return key.length + value.size()
+  return key.byteSize + value.size()
 }
 
 /**
  * Calculates the size of a MapRemove payload in bytes.
  */
 private fun MapRemove.size(): Int {
-  return key.length
+  return key.byteSize
 }
 
 /**
@@ -467,14 +462,14 @@ private fun CounterInc.size(): Int {
  * Calculates the size of a MapCreateWithObjectId payload in bytes.
  */
 private fun MapCreateWithObjectId.size(): Int {
-  return initialValue.length + nonce.length
+  return initialValue.byteSize + nonce.byteSize
 }
 
 /**
  * Calculates the size of a CounterCreateWithObjectId payload in bytes.
  */
 private fun CounterCreateWithObjectId.size(): Int {
-  return initialValue.length + nonce.length
+  return initialValue.byteSize + nonce.byteSize
 }
 
 /**
@@ -513,23 +508,19 @@ private fun ObjectsMapEntry.size(): Int {
  * Spec: OD3
  */
 private fun ObjectData.size(): Int {
-  return value?.size() ?: 0 // Spec: OD3f
-}
-
-/**
- * Calculates the size of an ObjectValue in bytes.
- * Spec: OD3*
- */
-private fun ObjectValue.size(): Int {
-  return when (this) {
-    is ObjectValue.Boolean -> 1 // Spec: OD3b
-    is ObjectValue.Binary -> value.size() // Spec: OD3c
-    is ObjectValue.Number -> 8 // Spec: OD3d
-    is ObjectValue.String -> value.byteSize // Spec: OD3e
-    is ObjectValue.JsonObject, is ObjectValue.JsonArray -> value.toString().byteSize // Spec: OD3e
-  }
+  string?.let { return it.byteSize } // Spec: OD3e
+  number?.let { return 8 } // Spec: OD3d
+  boolean?.let { return 1 } // Spec: OD3b
+  bytes?.let { return Base64.getDecoder().decode(it).size } // Spec: OD3c
+  json?.let { return it.toString().byteSize } // Spec: OD3e
+  return 0
 }
 
 internal fun ObjectData?.isInvalid(): Boolean {
-  return this?.objectId.isNullOrEmpty() && this?.value == null
+  return this?.objectId.isNullOrEmpty() &&
+    this?.string == null &&
+    this?.number == null &&
+    this?.boolean == null &&
+    this?.bytes == null &&
+    this?.json == null
 }

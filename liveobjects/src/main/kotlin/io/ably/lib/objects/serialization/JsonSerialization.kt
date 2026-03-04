@@ -1,14 +1,11 @@
 package io.ably.lib.objects.serialization
 
 import com.google.gson.*
-import io.ably.lib.objects.Binary
 import io.ably.lib.objects.ObjectsMapSemantics
 import io.ably.lib.objects.ObjectData
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperationAction
-import io.ably.lib.objects.ObjectValue
 import java.lang.reflect.Type
-import java.util.*
 import kotlin.enums.EnumEntries
 
 // Gson instance for JSON serialization/deserialization
@@ -45,42 +42,26 @@ internal class ObjectDataJsonSerializer : JsonSerializer<ObjectData>, JsonDeseri
   override fun serialize(src: ObjectData, typeOfSrc: Type?, context: JsonSerializationContext?): JsonElement {
     val obj = JsonObject()
     src.objectId?.let { obj.addProperty("objectId", it) }
-
-    src.value?.let { v ->
-      when (v) {
-        is ObjectValue.Boolean -> obj.addProperty("boolean", v.value)
-        is ObjectValue.String -> obj.addProperty("string", v.value)
-        is ObjectValue.Number -> obj.addProperty("number", v.value.toDouble())
-        is ObjectValue.Binary -> obj.addProperty("bytes", Base64.getEncoder().encodeToString(v.value.data))
-        is ObjectValue.JsonObject, is ObjectValue.JsonArray -> obj.addProperty("json", v.value.toString()) // Spec: OD4c5
-      }
-    }
+    src.string?.let { obj.addProperty("string", it) }
+    src.number?.let { obj.addProperty("number", it) }
+    src.boolean?.let { obj.addProperty("boolean", it) }
+    src.bytes?.let { obj.addProperty("bytes", it) }
+    src.json?.let { obj.addProperty("json", it.toString()) } // Spec: OD4c5
     return obj
   }
 
   override fun deserialize(json: JsonElement, typeOfT: Type?, context: JsonDeserializationContext?): ObjectData {
     val obj = if (json.isJsonObject) json.asJsonObject else throw JsonParseException("Expected JsonObject")
     val objectId = if (obj.has("objectId")) obj.get("objectId").asString else null
-    val value = when {
-      obj.has("boolean") -> ObjectValue.Boolean(obj.get("boolean").asBoolean)
-      obj.has("string") -> ObjectValue.String(obj.get("string").asString)
-      obj.has("number") -> ObjectValue.Number(obj.get("number").asDouble)
-      obj.has("bytes") -> ObjectValue.Binary(Binary(Base64.getDecoder().decode(obj.get("bytes").asString)))
-      obj.has("json") -> {
-        val jsonElement = JsonParser.parseString(obj.get("json").asString)
-        when {
-          jsonElement.isJsonObject -> ObjectValue.JsonObject(jsonElement.asJsonObject)
-          jsonElement.isJsonArray -> ObjectValue.JsonArray(jsonElement.asJsonArray)
-          else -> throw JsonParseException("Invalid JSON structure")
-        }
-      }
-      else -> {
-        if (objectId != null)
-          null
-        else
-          throw JsonParseException("Since objectId is not present, at least one of the value fields must be present")
-      }
+    val string = if (obj.has("string")) obj.get("string").asString else null
+    val number = if (obj.has("number")) obj.get("number").asDouble else null
+    val boolean = if (obj.has("boolean")) obj.get("boolean").asBoolean else null
+    val bytes = if (obj.has("bytes")) obj.get("bytes").asString else null
+    val json = if (obj.has("json")) JsonParser.parseString(obj.get("json").asString) else null
+
+    if (objectId == null && string == null && number == null && boolean == null && bytes == null && json == null) {
+      throw JsonParseException("Since objectId is not present, at least one of the value fields must be present")
     }
-    return ObjectData(objectId, value)
+    return ObjectData(objectId = objectId, string = string, number = number, boolean = boolean, bytes = bytes, json = json)
   }
 }

@@ -2,7 +2,6 @@ package io.ably.lib.objects.integration.helpers
 
 import com.google.gson.JsonObject
 import io.ably.lib.objects.ObjectData
-import io.ably.lib.objects.ObjectValue
 import io.ably.lib.rest.AblyRest
 import io.ably.lib.http.HttpUtils
 import io.ably.lib.objects.integration.helpers.fixtures.DataFixtures
@@ -28,8 +27,7 @@ internal class RestObjects(options: ClientOptions) {
   /**
    * Sets a value (primitives, JsonObject, JsonArray, etc.) at the specified key in an existing map.
    */
-  internal fun setMapValue(channelName: String, mapObjectId: String, key: String, value: ObjectValue) {
-    val data = ObjectData(value = value)
+  internal fun setMapValue(channelName: String, mapObjectId: String, key: String, data: ObjectData) {
     val mapCreateOp = PayloadBuilder.mapSetRestOp(mapObjectId, key, data)
     operationRequest(channelName, mapCreateOp)
   }

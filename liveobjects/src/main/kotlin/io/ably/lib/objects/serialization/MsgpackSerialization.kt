@@ -1,9 +1,9 @@
 package io.ably.lib.objects.serialization
 
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import io.ably.lib.objects.*
-import io.ably.lib.objects.Binary
 import io.ably.lib.objects.CounterCreate
 import io.ably.lib.objects.CounterCreateWithObjectId
 import io.ably.lib.objects.CounterInc
@@ -22,7 +22,7 @@ import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectOperationAction
 import io.ably.lib.objects.ObjectState
-import io.ably.lib.objects.ObjectValue
+import java.util.Base64
 import io.ably.lib.util.Serialisation
 import org.msgpack.core.MessageFormat
 import org.msgpack.core.MessagePacker
@@ -806,9 +806,11 @@ private fun ObjectData.writeMsgpack(packer: MessagePacker) {
   var fieldCount = 0
 
   if (objectId != null) fieldCount++
-  value?.let {
-    fieldCount++
-  }
+  if (string != null) fieldCount++
+  if (number != null) fieldCount++
+  if (boolean != null) fieldCount++
+  if (bytes != null) fieldCount++
+  if (json != null) fieldCount++
 
   packer.packMapHeader(fieldCount)
 
@@ -817,34 +819,31 @@ private fun ObjectData.writeMsgpack(packer: MessagePacker) {
     packer.packString(objectId)
   }
 
-  value?.let { v ->
-    when (v) {
-      is ObjectValue.Boolean -> {
-        packer.packString("boolean")
-        packer.packBoolean(v.value)
-      }
-      is ObjectValue.String -> {
-        packer.packString("string")
-        packer.packString(v.value)
-      }
-      is ObjectValue.Number -> {
-        packer.packString("number")
-        packer.packDouble(v.value.toDouble())
-      }
-      is ObjectValue.Binary -> {
-        packer.packString("bytes")
-        packer.packBinaryHeader(v.value.data.size)
-        packer.writePayload(v.value.data)
-      }
-      is ObjectValue.JsonObject -> {
-        packer.packString("json")
-        packer.packString(v.value.toString())
-      }
-      is ObjectValue.JsonArray -> {
-        packer.packString("json")
-        packer.packString(v.value.toString())
-      }
-    }
+  if (string != null) {
+    packer.packString("string")
+    packer.packString(string)
+  }
+
+  if (number != null) {
+    packer.packString("number")
+    packer.packDouble(number)
+  }
+
+  if (boolean != null) {
+    packer.packString("boolean")
+    packer.packBoolean(boolean)
+  }
+
+  if (bytes != null) {
+    val rawBytes = Base64.getDecoder().decode(bytes)
+    packer.packString("bytes")
+    packer.packBinaryHeader(rawBytes.size)
+    packer.writePayload(rawBytes)
+  }
+
+  if (json != null) {
+    packer.packString("json")
+    packer.packString(json.toString())
   }
 }
 
@@ -854,7 +853,11 @@ private fun ObjectData.writeMsgpack(packer: MessagePacker) {
 private fun readObjectData(unpacker: MessageUnpacker): ObjectData {
   val fieldCount = unpacker.unpackMapHeader()
   var objectId: String? = null
-  var value: ObjectValue? = null
+  var string: String? = null
+  var number: Double? = null
+  var boolean: Boolean? = null
+  var bytes: String? = null
+  var json: JsonElement? = null
 
   for (i in 0 until fieldCount) {
     val fieldName = unpacker.unpackString().intern()
@@ -867,28 +870,19 @@ private fun readObjectData(unpacker: MessageUnpacker): ObjectData {
 
     when (fieldName) {
       "objectId" -> objectId = unpacker.unpackString()
-      "boolean" -> value = ObjectValue.Boolean(unpacker.unpackBoolean())
-      "string" -> value = ObjectValue.String(unpacker.unpackString())
-      "number" -> value = ObjectValue.Number(unpacker.unpackDouble())
+      "string" -> string = unpacker.unpackString()
+      "number" -> number = unpacker.unpackDouble()
+      "boolean" -> boolean = unpacker.unpackBoolean()
       "bytes" -> {
         val size = unpacker.unpackBinaryHeader()
-        val bytes = ByteArray(size)
-        unpacker.readPayload(bytes)
-        value = ObjectValue.Binary(Binary(bytes))
+        val rawBytes = ByteArray(size)
+        unpacker.readPayload(rawBytes)
+        bytes = Base64.getEncoder().encodeToString(rawBytes)
       }
-      "json" -> {
-        val jsonString = unpacker.unpackString()
-        val parsed = JsonParser.parseString(jsonString)
-        value = when {
-          parsed.isJsonObject -> ObjectValue.JsonObject(parsed.asJsonObject)
-          parsed.isJsonArray -> ObjectValue.JsonArray(parsed.asJsonArray)
-          else ->
-            throw ablyException("Invalid JSON string for json field", ErrorCode.MapValueDataTypeUnsupported, HttpStatusCode.InternalServerError)
-        }
-      }
+      "json" -> json = JsonParser.parseString(unpacker.unpackString())
       else -> unpacker.skipValue()
     }
   }
 
-  return ObjectData(objectId = objectId, value = value)
+  return ObjectData(objectId = objectId, string = string, number = number, boolean = boolean, bytes = bytes, json = json)
 }
