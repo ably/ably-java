@@ -3,8 +3,10 @@ package io.ably.lib.objects.unit
 import com.google.gson.JsonObject
 import io.ably.lib.objects.*
 import io.ably.lib.objects.CounterCreate
+import io.ably.lib.objects.CounterCreateWithObjectId
 import io.ably.lib.objects.CounterInc
 import io.ably.lib.objects.MapCreate
+import io.ably.lib.objects.MapCreateWithObjectId
 import io.ably.lib.objects.MapSet
 import io.ably.lib.objects.ObjectData
 import io.ably.lib.objects.ObjectMessage
@@ -56,29 +58,37 @@ class ObjectMessageSizeTest {
           number = 10.0 // Size: 8 bytes (number is always 8 bytes)
         ), // Total CounterInc size: 8 bytes
 
-        // MapCreate contributes to operation size (for MAP_CREATE operations)
-        mapCreate = MapCreate(
-          semantics = ObjectsMapSemantics.LWW, // Not counted in size
-          entries = mapOf(
-            "entry1" to ObjectsMapEntry( // Key size: 6 bytes
-              tombstone = false, // Not counted in entry size
-              timeserial = "ts_123", // Not counted in entry size
-              data = ObjectData(
-                string = "value1" // Size: 6 bytes
-              ) // ObjectMapEntry size: 6 bytes
-            ), // Total for this entry: 6 (key) + 6 (entry) = 12 bytes
-            "entry2" to ObjectsMapEntry( // Key size: 6 bytes
-              data = ObjectData(
-                number = 42.0 // Size: 8 bytes (number)
-              ) // ObjectMapEntry size: 8 bytes
-            ) // Total for this entry: 6 (key) + 8 (entry) = 14 bytes
-          ) // Total entries size: 12 + 14 = 26 bytes
-        ), // Total MapCreate size: 26 bytes
+        // mapCreateWithObjectId.derivedFrom contributes to operation size (for client-initiated MAP_CREATE operations)
+        mapCreateWithObjectId = MapCreateWithObjectId(
+          nonce = "dummy-nonce", // Not counted in derivedFrom size
+          initialValue = "{}", // Not counted in derivedFrom size
+          derivedFrom = MapCreate(
+            semantics = ObjectsMapSemantics.LWW, // Not counted in size
+            entries = mapOf(
+              "entry1" to ObjectsMapEntry( // Key size: 6 bytes
+                tombstone = false, // Not counted in entry size
+                timeserial = "ts_123", // Not counted in entry size
+                data = ObjectData(
+                  string = "value1" // Size: 6 bytes
+                ) // ObjectMapEntry size: 6 bytes
+              ), // Total for this entry: 6 (key) + 6 (entry) = 12 bytes
+              "entry2" to ObjectsMapEntry( // Key size: 6 bytes
+                data = ObjectData(
+                  number = 42.0 // Size: 8 bytes (number)
+                ) // ObjectMapEntry size: 8 bytes
+              ) // Total for this entry: 6 (key) + 8 (entry) = 14 bytes
+            ) // Total entries size: 12 + 14 = 26 bytes
+          ), // Total derivedFrom (MapCreate) size: 26 bytes
+        ), // Total mapCreateWithObjectId size (via derivedFrom): 26 bytes
 
-        // CounterCreate contributes to operation size (for COUNTER_CREATE operations)
-        counterCreate = CounterCreate(
-          count = 100.0 // Size: 8 bytes (number is always 8 bytes)
-        ), // Total CounterCreate size: 8 bytes
+        // counterCreateWithObjectId.derivedFrom contributes to operation size (for client-initiated COUNTER_CREATE operations)
+        counterCreateWithObjectId = CounterCreateWithObjectId(
+          nonce = "dummy-nonce", // Not counted in derivedFrom size
+          initialValue = "{}", // Not counted in derivedFrom size
+          derivedFrom = CounterCreate(
+            count = 100.0 // Size: 8 bytes (number is always 8 bytes)
+          ), // Total derivedFrom (CounterCreate) size: 8 bytes
+        ), // Total counterCreateWithObjectId size (via derivedFrom): 8 bytes
 
       ), // Total ObjectOperation size: 12 + 8 + 26 + 8 = 54 bytes
 

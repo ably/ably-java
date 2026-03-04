@@ -3,7 +3,6 @@ package io.ably.lib.objects.unit.fixtures
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.ably.lib.objects.*
-import io.ably.lib.objects.Binary
 import io.ably.lib.objects.MapCreate
 import io.ably.lib.objects.MapCreateWithObjectId
 import io.ably.lib.objects.MapSet
@@ -50,7 +49,7 @@ internal val dummyObjectOperation = ObjectOperation(
   action = ObjectOperationAction.MapCreate,
   objectId = "dummy-object-id",
   mapCreate = dummyMapCreate,
-  mapCreateWithObjectId = MapCreateWithObjectId(nonce = "dummy-nonce", initialValue = "{\"foo\":\"bar\"}")
+  mapCreateWithObjectId = MapCreateWithObjectId(nonce = "dummy-nonce", initialValue = "{\"foo\":\"bar\"}"),
 )
 
 internal val dummyObjectState = ObjectState(

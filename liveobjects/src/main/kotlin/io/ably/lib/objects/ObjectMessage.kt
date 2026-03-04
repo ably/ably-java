@@ -115,7 +115,8 @@ internal object ObjectDelete
  */
 internal data class MapCreateWithObjectId(
   val initialValue: String, // MCRO2a
-  val nonce: String // MCRO2b
+  val nonce: String, // MCRO2b
+  @Transient val derivedFrom: MapCreate? = null,
 )
 
 /**
@@ -124,7 +125,8 @@ internal data class MapCreateWithObjectId(
  */
 internal data class CounterCreateWithObjectId(
   val initialValue: String, // CCRO2a
-  val nonce: String // CCRO2b
+  val nonce: String, // CCRO2b
+  @Transient val derivedFrom: CounterCreate? = null,
 )
 
 /**
@@ -398,17 +400,14 @@ internal fun ObjectMessage.size(): Int {
  * Spec: OOP4
  */
 private fun ObjectOperation.size(): Int {
-  val mapCreateSize = mapCreate?.size() ?: 0
+  val mapCreateSize = mapCreate?.size() ?: mapCreateWithObjectId?.derivedFrom?.size() ?: 0
   val mapSetSize = mapSet?.size() ?: 0
   val mapRemoveSize = mapRemove?.size() ?: 0
-  val counterCreateSize = counterCreate?.size() ?: 0
+  val counterCreateSize = counterCreate?.size() ?: counterCreateWithObjectId?.derivedFrom?.size() ?: 0
   val counterIncSize = counterInc?.size() ?: 0
-  val mapCreateWithObjectIdSize = mapCreateWithObjectId?.size() ?: 0
-  val counterCreateWithObjectIdSize = counterCreateWithObjectId?.size() ?: 0
 
   return mapCreateSize + mapSetSize + mapRemoveSize +
-    counterCreateSize + counterIncSize +
-    mapCreateWithObjectIdSize + counterCreateWithObjectIdSize
+    counterCreateSize + counterIncSize
 }
 
 /**

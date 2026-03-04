@@ -557,7 +557,7 @@ class ObjectsManagerTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = "counter:test@1",
-        counterOp = ObjectsCounterOp(amount = 5.0)
+        counterInc = CounterInc(number = 5.0)
       ),
       serial = "ser-01",
       siteCode = "site1"
@@ -606,7 +606,7 @@ class ObjectsManagerTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = "counter:test@1",
-        counterOp = ObjectsCounterOp(amount = 5.0)
+        counterInc = CounterInc(number = 5.0)
       )
     )
 
@@ -643,7 +643,7 @@ class ObjectsManagerTest {
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
         objectId = "counter:test@1",
-        counterOp = ObjectsCounterOp(amount = 5.0)
+        counterInc = CounterInc(number = 5.0)
       )
     )
 

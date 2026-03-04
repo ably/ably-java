@@ -106,7 +106,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
       return noOpMapUpdate
     }
 
-    validateMapSemantics(operation.mapCreate?.semantics) // RTLM16c
+    validateMapSemantics(getEffectiveMapCreate(operation)?.semantics) // RTLM16c
 
     return mergeInitialDataFromCreateOperation(operation) // RTLM16d
   }
@@ -233,8 +233,12 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
   /**
    * @spec RTLM17 - Merges initial data from create operation
    */
+  private fun getEffectiveMapCreate(operation: ObjectOperation): MapCreate? =
+    operation.mapCreateWithObjectId?.derivedFrom ?: operation.mapCreate
+
   private fun mergeInitialDataFromCreateOperation(operation: ObjectOperation): LiveMapUpdate {
-    if (operation.mapCreate?.entries.isNullOrEmpty()) { // no map entries in MAP_CREATE op
+    val effectiveMapCreate = getEffectiveMapCreate(operation)
+    if (effectiveMapCreate?.entries.isNullOrEmpty()) { // no map entries in MAP_CREATE op
       return noOpMapUpdate
     }
 
@@ -243,15 +247,15 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
     // RTLM17a
     // in order to apply MAP_CREATE op for an existing map, we should merge their underlying entries keys.
     // we can do this by iterating over entries from MAP_CREATE op and apply changes on per-key basis as if we had MAP_SET, MAP_REMOVE operations.
-    operation.mapCreate?.entries?.forEach { (key, entry) ->
+    effectiveMapCreate?.entries?.forEach { (key, entry) ->
       // for a MAP_CREATE operation we must use the serial value available on an entry, instead of a serial on a message
       val opTimeserial = entry.timeserial
       val update = if (entry.tombstone == true) {
-        // RTLM17a2 - entry in MAP_CREATE op is removed, try to apply MAP_REMOVE op
+        // RTLM23a2  - entry in MAP_CREATE op is removed, try to apply MAP_REMOVE op
         applyMapRemove(MapRemove(key), opTimeserial, entry.serialTimestamp)
       } else {
-        // RTLM17a1 - entry in MAP_CREATE op is not removed, try to set it via MAP_SET op
-        applyMapSet(MapSet(key, entry.data ?: return@forEach), opTimeserial)
+        // RTLM23a1 - entry in MAP_CREATE op is not removed, try to set it via MAP_SET op
+        applyMapSet(MapSet(key, entry.data ?: throw objectError("MAP_SET operation without data")), opTimeserial)
       }
 
       // skip noop updates
@@ -329,7 +333,7 @@ internal class LiveMapManager(private val liveMap: DefaultLiveMap): LiveMapChang
     state.createOp?.let { createOp ->
       liveMap.validateObjectId(createOp.objectId)
       validateMapCreateAction(createOp.action)
-      validateMapSemantics(createOp.mapCreate?.semantics)
+      validateMapSemantics(getEffectiveMapCreate(createOp)?.semantics)
     }
   }
 

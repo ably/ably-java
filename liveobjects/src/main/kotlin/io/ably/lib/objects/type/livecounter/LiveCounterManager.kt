@@ -109,7 +109,9 @@ internal class LiveCounterManager(private val liveCounter: DefaultLiveCounter): 
     // note that it is intentional to SUM the incoming count from the create op.
     // if we got here, it means that current counter instance is missing the initial value in its data reference,
     // which we're going to add now.
-    val count = operation.counterCreate?.count ?: 0.0
+    val count = operation.counterCreateWithObjectId?.derivedFrom?.count
+      ?: operation.counterCreate?.count
+      ?: 0.0
     val previousValue = liveCounter.data.get()
     liveCounter.data.set(previousValue + count) // RTLC10a
     liveCounter.createOperationIsMerged = true // RTLC10b
