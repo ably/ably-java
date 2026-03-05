@@ -296,6 +296,8 @@ internal class DefaultRealtimeObjects(internal val channelName: String, internal
         ChannelState.attached -> {
           Log.v(tag, "Objects.onAttached() channel=$channelName, hasObjects=$hasObjects")
 
+          objectsManager.clearBufferedObjectOperations() // RTO4d - clear unconditionally on ATTACHED
+
           // RTO4a
           val fromInitializedState = this@DefaultRealtimeObjects.state == ObjectsState.Initialized
           if (hasObjects || fromInitializedState) {
@@ -310,7 +312,7 @@ internal class DefaultRealtimeObjects(internal val channelName: String, internal
             // reset the objects pool to its initial state, and emit update events so subscribers to root object get notified about changes.
             objectsPool.resetToInitialPool(true) // RTO4b1, RTO4b2
             objectsManager.clearSyncObjectsDataPool() // RTO4b3
-            objectsManager.clearBufferedObjectOperations() // RTO4b5
+            // RTO4b5 removed — buffer already cleared by RTO4d above
             // defer the state change event until the next tick if we started a new sequence just now due to being in initialized state.
             // this allows any event listeners to process the start of the new sequence event that was emitted earlier during this event loop.
             objectsManager.endSync() // RTO4b4
