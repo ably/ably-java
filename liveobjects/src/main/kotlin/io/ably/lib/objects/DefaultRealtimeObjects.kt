@@ -313,13 +313,12 @@ internal class DefaultRealtimeObjects(internal val channelName: String, internal
             objectsManager.clearBufferedObjectOperations() // RTO4b5
             // defer the state change event until the next tick if we started a new sequence just now due to being in initialized state.
             // this allows any event listeners to process the start of the new sequence event that was emitted earlier during this event loop.
-            objectsManager.endSync(fromInitializedState) // RTO4b4
+            objectsManager.endSync() // RTO4b4
           }
         }
         ChannelState.detached,
         ChannelState.suspended,
         ChannelState.failed -> {
-          // RTO20e1 - fail any publishAndApply operations waiting for sync
           val errorReason = try { adapter.getChannel(channelName).reason } catch (e: Exception) { null }
           val error = ablyException(
             "publishAndApply could not be applied locally: channel entered $state whilst waiting for objects sync",
@@ -327,7 +326,7 @@ internal class DefaultRealtimeObjects(internal val channelName: String, internal
             HttpStatusCode.BadRequest,
             cause = errorReason?.let { AblyException.fromErrorInfo(it) }
           )
-          objectsManager.failBufferedAcks(error)
+          objectsManager.failBufferedAcks(error) // RTO20e1
           // do not emit data update events as the actual current state of Objects data is unknown when we're in these channel states
           objectsPool.clearObjectsData(false)
           objectsManager.clearSyncObjectsDataPool()

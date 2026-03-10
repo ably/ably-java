@@ -23,10 +23,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
    * @spec RTO7 - Buffered object operations during sync
    */
   private val bufferedObjectOperations = mutableListOf<ObjectMessage>() // RTO7a
-  /**
-   * @spec RTO22 - ACK results buffered during sync, with deferred for caller waiting
-   */
-  private val bufferedAcks = mutableListOf<Pair<List<ObjectMessage>, CompletableDeferred<Unit>>>()
+  private var syncCompletionWaiter: CompletableDeferred<Unit>? = null
 
   /**
    * Handles object messages (non-sync messages).
@@ -68,7 +65,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
     if (syncTracker.hasSyncEnded()) {
       // defer the state change event until the next tick if this was a new sync sequence
       // to allow any event listeners to process the start of the new sequence event that was emitted earlier during this event loop.
-      endSync(isNewSync)
+      endSync()
     }
   }
 
@@ -83,12 +80,9 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
     // need to discard all buffered object operation messages on new sync start
     bufferedObjectOperations.clear() // RTO5a2b
     syncObjectsDataPool.clear() // RTO5a2a
-    // RTO21b - clear ACK tracking state on new sync (safety guard; RTO20e1 should have already failed deferreds)
-    for ((_, deferred) in bufferedAcks) { deferred.cancel() }
-    bufferedAcks.clear()
-    realtimeObjects.appliedOnAckSerials.clear()
     currentSyncId = syncId
-    stateChange(ObjectsState.Syncing, false)
+    syncCompletionWaiter = CompletableDeferred()
+    stateChange(ObjectsState.Syncing)
   }
 
   /**
@@ -96,49 +90,38 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
    *
    * @spec RTO5c - Applies sync data and buffered operations
    */
-  internal fun endSync(deferStateEvent: Boolean) {
+  internal fun endSync() {
     Log.v(tag, "Ending sync sequence")
-    applySync()
-    realtimeObjects.appliedOnAckSerials.clear() // RTO5c9 - sync replaces state
-
-    // RTO5c6b: apply buffered ACKs before buffered OBJECT messages (proper dedup ordering)
-    for ((messages, deferred) in bufferedAcks) {
-      applyObjectMessages(messages, ObjectsOperationSource.LOCAL)
-      deferred.complete(Unit) // signal publishAndApply to resume
-    }
-    bufferedAcks.clear()
-
+    applySync()                                                                    // RTO5c1/2/7
     applyObjectMessages(bufferedObjectOperations, ObjectsOperationSource.CHANNEL) // RTO5c6
-    bufferedObjectOperations.clear() // RTO5c5
-    syncObjectsDataPool.clear() // RTO5c4
-    currentSyncId = null // RTO5c3
-    stateChange(ObjectsState.Synced, deferStateEvent) // RTO5c8
+    bufferedObjectOperations.clear()                                               // RTO5c5
+    syncObjectsDataPool.clear()                                                    // RTO5c4
+    currentSyncId = null                                                           // RTO5c3
+    realtimeObjects.appliedOnAckSerials.clear()                                    // RTO5c9
+    stateChange(ObjectsState.Synced)                              // RTO5c8
+    syncCompletionWaiter?.complete(Unit)
+    syncCompletionWaiter = null
   }
 
   /**
    * Called from publishAndApply (via withContext sequentialScope).
    * If SYNCED: apply immediately with LOCAL source.
-   * If SYNCING: buffer, suspend deferred until endSync processes it (RTO20e).
+   * If not SYNCED: suspend until endSync transitions to SYNCED (RTO20e), then apply.
    */
   internal suspend fun applyAckResult(messages: List<ObjectMessage>) {
-    if (realtimeObjects.state == ObjectsState.Synced) {
-      applyObjectMessages(messages, ObjectsOperationSource.LOCAL) // RTO20f
-    } else {
-      val deferred = CompletableDeferred<Unit>()
-      bufferedAcks.add(Pair(messages, deferred))
-      deferred.await() // RTO20e - suspends until endSync completes or channel fails (RTO20e1)
+    if (realtimeObjects.state != ObjectsState.Synced) {
+      if (syncCompletionWaiter == null) syncCompletionWaiter = CompletableDeferred()
+      syncCompletionWaiter?.await() // suspends; resumes after endSync transitions to SYNCED (RTO20e1)
     }
+    applyObjectMessages(messages, ObjectsOperationSource.LOCAL) // RTO20f
   }
 
   /**
-   * Fails all buffered ACK deferreds.
+   * Fails all pending apply waiters.
    * Called when the channel enters DETACHED/SUSPENDED/FAILED (RTO20e1).
    */
   internal fun failBufferedAcks(error: AblyException) {
-    for ((_, deferred) in bufferedAcks) {
-      deferred.completeExceptionally(error)
-    }
-    bufferedAcks.clear()
+    syncCompletionWaiter?.completeExceptionally(error)
   }
 
   /**
@@ -289,7 +272,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
    *
    * @spec RTO2 - Emits state change events for syncing and synced states
    */
-  private fun stateChange(newState: ObjectsState, deferEvent: Boolean) {
+  private fun stateChange(newState: ObjectsState) {
     if (realtimeObjects.state == newState) {
       return
     }
@@ -301,8 +284,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
   }
 
   internal fun dispose() {
-    for ((_, deferred) in bufferedAcks) { deferred.cancel() }
-    bufferedAcks.clear()
+    syncCompletionWaiter?.cancel()
     syncObjectsDataPool.clear()
     bufferedObjectOperations.clear()
     disposeObjectsStateListeners()

@@ -77,7 +77,7 @@ class ObjectsManagerTest {
       objectsManager.startNewSync("sync-123")
     }
     verify(exactly = 1) {
-      objectsManager.endSync(true) // deferStateEvent = true since new sync was started
+      objectsManager.endSync() //
     }
     val newlyCreatedObjects = mutableListOf<ObjectState>()
     verify(exactly = 2) {
@@ -214,7 +214,7 @@ class ObjectsManagerTest {
     assertEquals(1, objectsPool.size(), "Pool should still contain only root object during sync")
 
     // RTO7 - Apply buffered operations after sync
-    objectsManager.endSync(false) // End sync without new sync
+    objectsManager.endSync() // End sync without new sync
     verify(exactly = 1) {
       objectsManager["applyObjectMessages"](any<List<ObjectMessage>>(), any<ObjectsOperationSource>())
     }
@@ -358,7 +358,7 @@ class ObjectsManagerTest {
   }
 
   @Test
-  fun `(RTO22) applyAckResult buffers messages during SYNCING and appliedOnAckSerials stays empty`() = runTest {
+  fun `(RTO22) applyAckResult waits for SYNCED state and applies with LOCAL source after endSync`() = runTest {
     val defaultRealtimeObjects = makeRealtimeObjects()
     defaultRealtimeObjects.state = ObjectsState.Syncing
 
@@ -377,7 +377,7 @@ class ObjectsManagerTest {
 
     val objectsManager = defaultRealtimeObjects.ObjectsManager
 
-    // Launch applyAckResult in background — will suspend while SYNCING (RTO22)
+    // Launch applyAckResult in background — will suspend while SYNCING
     val ackJob = launch {
       objectsManager.applyAckResult(listOf(msg))
     }
@@ -385,18 +385,25 @@ class ObjectsManagerTest {
     // Allow the coroutine to start and reach deferred.await()
     yield()
 
-    // RTO22 — buffered, not yet applied
-    assertEquals(1, objectsManager.BufferedAcks.size, "message should be buffered in bufferedAcks during SYNCING")
+    // During SYNCING — waiter is pending, message NOT yet applied
+    assertNotNull(objectsManager.SyncCompletionWaiter, "sync completion should be pending during SYNCING")
     assertTrue(defaultRealtimeObjects.appliedOnAckSerials.isEmpty(),
-      "appliedOnAckSerials should be empty while message is buffered")
+      "appliedOnAckSerials should be empty while waiting")
     assertEquals(0.0, counter.data.get(), "data should not be applied while SYNCING")
 
-    // Cancel the job to clean up
-    ackJob.cancel()
+    // End sync — completes waiters (schedules resume), then transitions to SYNCED
+    objectsManager.endSync()
+    ackJob.join()
+
+    // After endSync — message applied with LOCAL source, serial tracked
+    assertEquals(5.0, counter.data.get(), "counter should be incremented after endSync")
+    assertTrue(defaultRealtimeObjects.appliedOnAckSerials.contains("ser-ack-01"),
+      "serial should be tracked in appliedOnAckSerials after LOCAL apply")
+    assertEquals(ObjectsState.Synced, defaultRealtimeObjects.state)
   }
 
   @Test
-  fun `(RTO5c6b) buffered ACKs are applied before buffered OBJECT messages after sync ends`() = runTest {
+  fun `(RTO5c6) endSync applies buffered CHANNEL messages then unblocks pending ACK waiters`() = runTest {
     val defaultRealtimeObjects = makeRealtimeObjects()
     defaultRealtimeObjects.state = ObjectsState.Synced
 
@@ -406,7 +413,6 @@ class ObjectsManagerTest {
 
     val objectsManager = defaultRealtimeObjects.ObjectsManager
 
-    // Use the same message for both the ACK and the echo to simulate the real scenario
     val incMsg = ObjectMessage(
       operation = ObjectOperation(
         action = ObjectOperationAction.CounterInc,
@@ -421,95 +427,70 @@ class ObjectsManagerTest {
     objectsManager.startNewSync(null)
     assertEquals(ObjectsState.Syncing, defaultRealtimeObjects.state)
 
-    // Buffer the ACK (suspends since SYNCING)
+    // Suspend the ACK waiter (SYNCING)
     val ackJob = launch {
       objectsManager.applyAckResult(listOf(incMsg))
     }
     yield()
-    assertEquals(1, objectsManager.BufferedAcks.size)
+    assertNotNull(objectsManager.SyncCompletionWaiter)
 
     // Buffer the echo OBJECT message (also buffered since SYNCING)
     objectsManager.handleObjectMessages(listOf(incMsg))
     assertEquals(1, objectsManager.BufferedObjectOperations.size)
 
-    // End sync — applies buffered ACKs first (LOCAL), then buffered OBJECTs (CHANNEL)
-    objectsManager.endSync(false)
+    // End sync — applies CHANNEL buffered messages first, clears appliedOnAckSerials, then unblocks waiters
+    objectsManager.endSync()
     ackJob.join()
 
     // After endSync:
-    // 1. ACK applied (LOCAL): counter = 10 + 5 = 15; "ser-01" added to appliedOnAckSerials
-    // 2. Echo CHANNEL message: "ser-01" found → RTO9a3 dedup (discard without further action, siteTimeserials NOT updated)
-    assertEquals(15.0, counter.data.get(), "counter should be incremented once (not twice)")
-    assertNull(counter.siteTimeserials["site1"],
-      "siteTimeserials should NOT be updated by echo dedup (RTO9a3: discard without further action)")
+    // 1. CHANNEL echo applied: counter = 10 + 5 = 15; siteTimeserials["site1"] = "ser-01"
+    // 2. appliedOnAckSerials cleared (was empty since no LOCAL applied during sync)
+    // 3. Waiter resumes → LOCAL apply → canApplyOperation rejects (serial not newer) → applied=false
+    assertEquals(15.0, counter.data.get(), "counter should be incremented exactly once")
+    assertEquals("ser-01", counter.siteTimeserials["site1"],
+      "siteTimeserials should be updated by CHANNEL echo")
     assertTrue(defaultRealtimeObjects.appliedOnAckSerials.isEmpty(),
-      "appliedOnAckSerials should be empty after dedup")
+      "appliedOnAckSerials should be empty (LOCAL apply was rejected by canApplyOperation)")
     assertEquals(ObjectsState.Synced, defaultRealtimeObjects.state)
   }
 
   @Test
-  fun `(RTO21b) startNewSync clears appliedOnAckSerials and cancels buffered ACKs`() = runTest {
+  fun `(RTO5c9) endSync applies buffered CHANNEL messages then clears appliedOnAckSerials`() {
     val defaultRealtimeObjects = makeRealtimeObjects()
-    defaultRealtimeObjects.state = ObjectsState.Synced
-
-    // Add a serial to appliedOnAckSerials
-    defaultRealtimeObjects.appliedOnAckSerials.add("ser-old-01")
 
     val counter = DefaultLiveCounter.zeroValue("counter:test@1", defaultRealtimeObjects)
+    counter.data.set(10.0)
     defaultRealtimeObjects.objectsPool.set("counter:test@1", counter)
-
-    val objectsManager = defaultRealtimeObjects.ObjectsManager
-
-    // Start first sync → SYNCING
-    objectsManager.startNewSync("seq-1")
-
-    // Simulate a buffered ACK during SYNCING
-    val msg = ObjectMessage(
-      operation = ObjectOperation(
-        action = ObjectOperationAction.CounterInc,
-        objectId = "counter:test@1",
-        counterOp = ObjectsCounterOp(amount = 5.0)
-      ),
-      serial = "ser-buffered",
-      siteCode = "site1"
-    )
-
-    val ackJob = launch {
-      objectsManager.applyAckResult(listOf(msg))
-    }
-    yield()
-    assertEquals(1, objectsManager.BufferedAcks.size, "should have 1 buffered ACK")
-
-    // Start a new sync — should clear both appliedOnAckSerials and bufferedAcks (RTO21b)
-    objectsManager.startNewSync("seq-2")
-
-    // RTO21b — both cleared
-    assertTrue(defaultRealtimeObjects.appliedOnAckSerials.isEmpty(),
-      "appliedOnAckSerials should be cleared on new sync")
-    assertEquals(0, objectsManager.BufferedAcks.size,
-      "bufferedAcks should be cleared on new sync")
-
-    // The buffered ACK coroutine should be cancelled
-    ackJob.join()
-    assertTrue(ackJob.isCancelled, "buffered ACK job should be cancelled when new sync starts")
-  }
-
-  @Test
-  fun `(RTO5c9) endSync clears appliedOnAckSerials`() {
-    val defaultRealtimeObjects = makeRealtimeObjects()
-    defaultRealtimeObjects.state = ObjectsState.Synced
 
     val objectsManager = defaultRealtimeObjects.ObjectsManager
 
     // Start a sync
     objectsManager.startNewSync(null)
+    assertEquals(ObjectsState.Syncing, defaultRealtimeObjects.state)
 
-    // Manually add a serial (simulating an ACK received during sync)
+    // Buffer a CHANNEL message during sync
+    val channelMsg = ObjectMessage(
+      operation = ObjectOperation(
+        action = ObjectOperationAction.CounterInc,
+        objectId = "counter:test@1",
+        counterOp = ObjectsCounterOp(amount = 3.0)
+      ),
+      serial = "ser-channel-01",
+      siteCode = "site1"
+    )
+    objectsManager.handleObjectMessages(listOf(channelMsg))
+    assertEquals(1, objectsManager.BufferedObjectOperations.size)
+
+    // Simulate a serial that was somehow added during sync
     defaultRealtimeObjects.appliedOnAckSerials.add("ser-during-sync")
 
-    // End sync — should clear appliedOnAckSerials (RTO5c9)
-    objectsManager.endSync(false)
+    // End sync — CHANNEL messages applied first, then appliedOnAckSerials cleared (RTO5c9)
+    objectsManager.endSync()
 
+    // CHANNEL message was applied (counter incremented)
+    assertEquals(13.0, counter.data.get(),
+      "buffered CHANNEL message should be applied by endSync")
+    // appliedOnAckSerials cleared at sync end (RTO5c9)
     assertTrue(defaultRealtimeObjects.appliedOnAckSerials.isEmpty(),
       "appliedOnAckSerials should be cleared at sync end (RTO5c9)")
     assertEquals(ObjectsState.Synced, defaultRealtimeObjects.state)
@@ -561,6 +542,117 @@ class ObjectsManagerTest {
     assertEquals(92008, ablyEx.errorInfo.code,
       "error code should be 92008 (PublishAndApplyFailedDueToChannelState)")
     assertEquals(400, ablyEx.errorInfo.statusCode, "status code should be 400")
+  }
+
+  @Test
+  fun `Echo arrives before ACK - operation applied exactly once via canApplyOperation`() = runTest {
+    val defaultRealtimeObjects = makeRealtimeObjects()
+    defaultRealtimeObjects.state = ObjectsState.Synced
+
+    val counter = DefaultLiveCounter.zeroValue("counter:test@1", defaultRealtimeObjects)
+    counter.data.set(10.0)
+    defaultRealtimeObjects.objectsPool.set("counter:test@1", counter)
+
+    val msg = ObjectMessage(
+      operation = ObjectOperation(
+        action = ObjectOperationAction.CounterInc,
+        objectId = "counter:test@1",
+        counterOp = ObjectsCounterOp(amount = 5.0)
+      ),
+      serial = "ser-01",
+      siteCode = "site1"
+    )
+
+    val objectsManager = defaultRealtimeObjects.ObjectsManager
+
+    // Step 1: echo arrives first as CHANNEL message — applied normally
+    objectsManager.handleObjectMessages(listOf(msg))
+    assertEquals(15.0, counter.data.get(), "echo should be applied as CHANNEL message")
+    assertEquals("ser-01", counter.siteTimeserials["site1"],
+      "siteTimeserials should be updated by CHANNEL echo")
+
+    // Step 2: ACK fires — applyAckResult with same serial (state is SYNCED, no suspend)
+    objectsManager.applyAckResult(listOf(msg))
+
+    // canApplyOperation rejects (serial "ser-01" is not newer than siteTimeserials["site1"] = "ser-01")
+    assertEquals(15.0, counter.data.get(), "counter should NOT be incremented again by late ACK apply")
+    // applied=false → serial NOT added to appliedOnAckSerials
+    assertFalse(defaultRealtimeObjects.appliedOnAckSerials.contains("ser-01"),
+      "serial should NOT be in appliedOnAckSerials when LOCAL apply was rejected")
+  }
+
+  @Test
+  fun `publishAndApply logs error and returns without apply when siteCode is null`() = runTest {
+    val adapter = getMockObjectsAdapter()
+    // Create a ConnectionManager mock with all fields needed for publish() to succeed
+    val cm = mockk<io.ably.lib.transport.ConnectionManager>(relaxed = true)
+    cm.maxMessageSize = 65536 // direct field assignment bypasses mock interception issues
+    every { cm.isActive } returns true
+    every { cm.send(any(), any(), any()) } answers {
+      @Suppress("UNCHECKED_CAST")
+      val callback = thirdArg<io.ably.lib.types.Callback<io.ably.lib.types.PublishResult>>()
+      callback.onSuccess(io.ably.lib.types.PublishResult(null)) // null serials → RTO20c2 path
+    }
+    every { adapter.connectionManager } returns cm
+    // siteCode is null (relaxed mock default) — triggers RTO20c1 graceful degradation path
+
+    val defaultRealtimeObjects = DefaultRealtimeObjects("testChannel", adapter).also { testInstances.add(it) }
+    defaultRealtimeObjects.state = ObjectsState.Synced
+
+    val counter = DefaultLiveCounter.zeroValue("counter:test@1", defaultRealtimeObjects)
+    defaultRealtimeObjects.objectsPool.set("counter:test@1", counter)
+
+    val msg = ObjectMessage(
+      operation = ObjectOperation(
+        action = ObjectOperationAction.CounterInc,
+        objectId = "counter:test@1",
+        counterOp = ObjectsCounterOp(amount = 5.0)
+      )
+    )
+
+    // Should not throw even when siteCode is null (RTO20c1 graceful degradation)
+    defaultRealtimeObjects.publishAndApply(arrayOf(msg))
+
+    assertEquals(0.0, counter.data.get(), "no local apply should happen when siteCode is null")
+    assertTrue(defaultRealtimeObjects.appliedOnAckSerials.isEmpty(),
+      "appliedOnAckSerials should be empty when siteCode is null")
+  }
+
+  @Test
+  fun `(issue 7b) publishAndApply logs error and returns without apply when serials length mismatches`() = runTest {
+    val adapter = getMockObjectsAdapter()
+    // Create a ConnectionManager mock that returns a PublishResult with wrong-length serials
+    val cm = mockk<io.ably.lib.transport.ConnectionManager>(relaxed = true)
+    cm.maxMessageSize = 65536 // direct field assignment bypasses mock interception issues
+    every { cm.isActive } returns true
+    cm.siteCode = "site1" // direct field assignment (siteCode is a Java public field)
+    every { cm.send(any(), any(), any()) } answers {
+      @Suppress("UNCHECKED_CAST")
+      val callback = thirdArg<io.ably.lib.types.Callback<io.ably.lib.types.PublishResult>>()
+      callback.onSuccess(io.ably.lib.types.PublishResult(arrayOfNulls(0))) // wrong length (0 instead of 1)
+    }
+    every { adapter.connectionManager } returns cm
+
+    val defaultRealtimeObjects = DefaultRealtimeObjects("testChannel", adapter).also { testInstances.add(it) }
+    defaultRealtimeObjects.state = ObjectsState.Synced
+
+    val counter = DefaultLiveCounter.zeroValue("counter:test@1", defaultRealtimeObjects)
+    defaultRealtimeObjects.objectsPool.set("counter:test@1", counter)
+
+    val msg = ObjectMessage(
+      operation = ObjectOperation(
+        action = ObjectOperationAction.CounterInc,
+        objectId = "counter:test@1",
+        counterOp = ObjectsCounterOp(amount = 5.0)
+      )
+    )
+
+    // Should not throw even when serials length mismatches (RTO20c2 graceful degradation)
+    defaultRealtimeObjects.publishAndApply(arrayOf(msg))
+
+    assertEquals(0.0, counter.data.get(), "no local apply should happen when serials length mismatches")
+    assertTrue(defaultRealtimeObjects.appliedOnAckSerials.isEmpty(),
+      "appliedOnAckSerials should be empty when serials length mismatches")
   }
 
   private fun mockZeroValuedObjects() {

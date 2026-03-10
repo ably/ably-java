@@ -41,7 +41,7 @@ class DefaultRealtimeObjectsTest {
       defaultRealtimeObjects.ObjectsManager.startNewSync(null)
     }
     verify(exactly = 0) {
-      defaultRealtimeObjects.ObjectsManager.endSync(any<Boolean>())
+      defaultRealtimeObjects.ObjectsManager.endSync()
     }
   }
 
@@ -65,7 +65,7 @@ class DefaultRealtimeObjectsTest {
       defaultRealtimeObjects.objectsPool.resetToInitialPool(true)
     }
     verify(exactly = 1) {
-      defaultRealtimeObjects.ObjectsManager.endSync(any<Boolean>())
+      defaultRealtimeObjects.ObjectsManager.endSync()
     }
 
     assertEquals(0, defaultRealtimeObjects.ObjectsManager.SyncObjectsDataPool.size) // RTO4b3
@@ -89,7 +89,7 @@ class DefaultRealtimeObjectsTest {
       defaultRealtimeObjects.ObjectsManager.startNewSync(null)
     }
     verify(exactly = 1) {
-      defaultRealtimeObjects.ObjectsManager.endSync(true) // deferStateEvent = true
+      defaultRealtimeObjects.ObjectsManager.endSync()
     }
   }
 
