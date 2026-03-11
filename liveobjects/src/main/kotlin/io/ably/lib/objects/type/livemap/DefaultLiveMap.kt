@@ -135,8 +135,8 @@ internal class DefaultLiveMap private constructor(
       )
     )
 
-    // RTLM20f - Publish the message
-    realtimeObjects.publish(arrayOf(msg))
+    // RTLM20g - publish and apply locally on ACK
+    realtimeObjects.publishAndApply(arrayOf(msg))
   }
 
   private suspend fun removeAsync(keyName: String) {
@@ -157,16 +157,16 @@ internal class DefaultLiveMap private constructor(
       )
     )
 
-    // RTLM21f - Publish the message
-    realtimeObjects.publish(arrayOf(msg))
+    // RTLM21g - publish and apply locally on ACK
+    realtimeObjects.publishAndApply(arrayOf(msg))
   }
 
   override fun applyObjectState(objectState: ObjectState, message: ObjectMessage): LiveMapUpdate {
     return liveMapManager.applyState(objectState, message.serialTimestamp)
   }
 
-  override fun applyObjectOperation(operation: ObjectOperation, message: ObjectMessage) {
-    liveMapManager.applyOperation(operation, message.serial, message.serialTimestamp)
+  override fun applyObjectOperation(operation: ObjectOperation, message: ObjectMessage): Boolean {
+    return liveMapManager.applyOperation(operation, message.serial, message.serialTimestamp)
   }
 
   override fun clearData(): LiveMapUpdate {

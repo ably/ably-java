@@ -12,6 +12,7 @@ import io.ably.lib.objects.type.map.LiveMapValue
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.types.AblyException
 import io.ably.lib.types.ProtocolMessage
+import io.ably.lib.types.PublishResult
 import io.ably.lib.util.Log
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
@@ -30,6 +31,12 @@ internal class DefaultRealtimeObjects(internal val channelName: String, internal
   internal val objectsPool = ObjectsPool(this)
 
   internal var state = ObjectsState.Initialized
+
+  /**
+   * Set of serials for operations applied locally upon ACK, awaiting deduplication of the server echo.
+   * @spec RTO7b, RTO7b1
+   */
+  internal val appliedOnAckSerials = mutableSetOf<String>()
 
   /**
    * @spec RTO4 - Used for handling object messages and object sync messages
@@ -125,13 +132,12 @@ internal class DefaultRealtimeObjects(internal val channelName: String, internal
       )
     )
 
-    // RTO11g - Publish the message
-    publish(arrayOf(msg))
+    // RTO11i - publish and apply locally on ACK
+    publishAndApply(arrayOf(msg))
 
-    // RTO11h - Check if object already exists in pool, otherwise create a zero-value object using the sequential scope
-    return objectsPool.get(objectId) as? LiveMap ?: withContext(sequentialScope.coroutineContext) {
-      objectsPool.createZeroValueObjectIfNotExists(objectId) as LiveMap
-    }
+    // RTO11h2 - Return existing object if found after apply
+    return objectsPool.get(objectId) as? LiveMap
+      ?: throw serverError("createMap: MAP_CREATE was not applied as expected; objectId=$objectId") // RTO11h3d
   }
 
   private suspend fun createCounterAsync(initialValue: Number): LiveCounter {
@@ -161,13 +167,12 @@ internal class DefaultRealtimeObjects(internal val channelName: String, internal
       )
     )
 
-    // RTO12g - Publish the message
-    publish(arrayOf(msg))
+    // RTO12i - publish and apply locally on ACK
+    publishAndApply(arrayOf(msg))
 
-    // RTO12h - Check if object already exists in pool, otherwise create a zero-value object using the sequential scope
-    return objectsPool.get(objectId) as? LiveCounter ?: withContext(sequentialScope.coroutineContext) {
-      objectsPool.createZeroValueObjectIfNotExists(objectId) as LiveCounter
-    }
+    // RTO12h2 - Return existing object if found after apply
+    return objectsPool.get(objectId) as? LiveCounter
+      ?: throw serverError("createCounter: COUNTER_CREATE was not applied as expected; objectId=$objectId") // RTO12h3d
   }
 
   /**
@@ -182,7 +187,7 @@ internal class DefaultRealtimeObjects(internal val channelName: String, internal
   /**
    * Spec: RTO15
    */
-  internal suspend fun publish(objectMessages: Array<ObjectMessage>) {
+  internal suspend fun publish(objectMessages: Array<ObjectMessage>): PublishResult {
     // RTO15b, RTL6c - Ensure that the channel is in a valid state for publishing
     adapter.throwIfUnpublishableState(channelName)
     adapter.ensureMessageSizeWithinLimit(objectMessages)
@@ -190,7 +195,47 @@ internal class DefaultRealtimeObjects(internal val channelName: String, internal
     val protocolMessage = ProtocolMessage(ProtocolMessage.Action.`object`, channelName)
     protocolMessage.state = objectMessages
     // RTO15f, RTO15g - Send the ProtocolMessage using the adapter and capture success/failure
-    adapter.sendAsync(protocolMessage)
+    return adapter.sendAsync(protocolMessage) // RTO15h
+  }
+
+  /**
+   * Publishes the given object messages and, upon receiving the ACK, immediately applies them
+   * locally as synthetic inbound messages using the assigned serial and connection's siteCode.
+   *
+   * Spec: RTO20
+   */
+  internal suspend fun publishAndApply(objectMessages: Array<ObjectMessage>) {
+    // RTO20b - publish, propagate failure
+    val publishResult = publish(objectMessages)
+
+    // RTO20c - validate required info
+    val siteCode = adapter.connectionManager.siteCode
+    if (siteCode == null) {
+      Log.e(tag, "RTO20c1: siteCode not available; operations will be applied when echoed")
+      return
+    }
+    val serials = publishResult.serials
+    if (serials == null || serials.size != objectMessages.size) {
+      Log.e(tag, "RTO20c2: PublishResult.serials unavailable or wrong length; operations will be applied when echoed")
+      return
+    }
+
+    // RTO20d - create synthetic inbound ObjectMessages
+    val syntheticMessages = mutableListOf<ObjectMessage>()
+    objectMessages.forEachIndexed { i, msg ->
+      val serial = serials[i]
+      if (serial == null) {
+        Log.d(tag, "RTO20d1: serial null at index $i (conflated), skipping")
+        return@forEachIndexed
+      }
+      syntheticMessages.add(msg.copy(serial = serial, siteCode = siteCode)) // RTO20d2a, RTO20d2b, RTO20d3
+    }
+    if (syntheticMessages.isEmpty()) return
+
+    // RTO20e, RTO20f - dispatch to sequential scope for ordering
+    withContext(sequentialScope.coroutineContext) {
+      objectsManager.applyAckResult(syntheticMessages) // suspends if SYNCING (RTO20e), applies on SYNCED (RTO20f)
+    }
   }
 
   /**
@@ -268,16 +313,30 @@ internal class DefaultRealtimeObjects(internal val channelName: String, internal
             objectsManager.clearBufferedObjectOperations() // RTO4b5
             // defer the state change event until the next tick if we started a new sequence just now due to being in initialized state.
             // this allows any event listeners to process the start of the new sequence event that was emitted earlier during this event loop.
-            objectsManager.endSync(fromInitializedState) // RTO4b4
+            objectsManager.endSync() // RTO4b4
           }
         }
         ChannelState.detached,
+        ChannelState.suspended,
         ChannelState.failed -> {
-          // do not emit data update events as the actual current state of Objects data is unknown when we're in these channel states
-          objectsPool.clearObjectsData(false)
-          objectsManager.clearSyncObjectsDataPool()
+          val errorReason = try {
+            adapter.getChannel(channelName).reason
+          } catch (e: Exception) {
+            null
+          }
+          val error = ablyException(
+            "publishAndApply could not be applied locally: channel entered $state whilst waiting for objects sync",
+            ErrorCode.PublishAndApplyFailedDueToChannelState,
+            HttpStatusCode.BadRequest,
+            cause = errorReason?.let { AblyException.fromErrorInfo(it) }
+          )
+          objectsManager.failBufferedAcks(error) // RTO20e1
+          if (state != ChannelState.suspended) {
+            // do not emit data update events as the actual current state of Objects data is unknown when we're in these channel states
+            objectsPool.clearObjectsData(false)
+            objectsManager.clearSyncObjectsDataPool()
+          }
         }
-
         else -> {
           // No action needed for other states
         }

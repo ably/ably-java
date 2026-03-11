@@ -17,6 +17,7 @@ import io.ably.lib.types.ClientOptions
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.spyk
+import kotlinx.coroutines.CompletableDeferred
 
 internal fun getMockRealtimeChannel(
   channelName: String,
@@ -72,6 +73,9 @@ internal val ObjectsManager.SyncObjectsDataPool: Map<String, ObjectState>
 
 internal val ObjectsManager.BufferedObjectOperations: List<ObjectMessage>
   get() = this.getPrivateField("bufferedObjectOperations")
+
+internal val ObjectsManager.SyncCompletionWaiter: CompletableDeferred<Unit>?
+  get() = this.getPrivateField("syncCompletionWaiter")
 
 internal var DefaultRealtimeObjects.ObjectsManager: ObjectsManager
   get() = this.getPrivateField("objectsManager")

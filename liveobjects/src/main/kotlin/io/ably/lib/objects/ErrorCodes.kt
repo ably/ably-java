@@ -11,6 +11,7 @@ internal enum class ErrorCode(public val code: Int) {
   // Channel mode and state validation error codes
   ChannelModeRequired(40_024),
   ChannelStateError(90_001),
+  PublishAndApplyFailedDueToChannelState(92_008),
 }
 
 internal enum class HttpStatusCode(public val code: Int) {

@@ -3,6 +3,7 @@ package io.ably.lib.objects.type
 import io.ably.lib.objects.ObjectMessage
 import io.ably.lib.objects.ObjectOperation
 import io.ably.lib.objects.ObjectState
+import io.ably.lib.objects.ObjectsOperationSource
 import io.ably.lib.objects.ObjectsPoolDefaults
 import io.ably.lib.objects.objectError
 import io.ably.lib.objects.type.livecounter.noOpCounterUpdate
@@ -66,11 +67,11 @@ internal abstract class BaseRealtimeObject(
 
   /**
    * This is invoked by ObjectMessage having updated data with parent `ProtocolMessageAction` as `object`
-   * @return an update describing the changes
+   * @return true if the operation was meaningfully applied, false otherwise
    *
    * @spec RTLM15/RTLC7 - Applies ObjectMessage with object data operations to LiveMap/LiveCounter
    */
-  internal fun applyObject(objectMessage: ObjectMessage) {
+  internal fun applyObject(objectMessage: ObjectMessage, source: ObjectsOperationSource): Boolean {
     validateObjectId(objectMessage.operation?.objectId)
 
     val msgTimeSerial = objectMessage.serial
@@ -84,17 +85,18 @@ internal abstract class BaseRealtimeObject(
         "Skipping ${objectOperation.action} op: op serial $msgTimeSerial <= site serial ${siteTimeserials[msgSiteCode]}; " +
           "objectId=$objectId"
       )
-      return
+      return false // RTLC7b / RTLM15b
     }
-    // should update stored site serial immediately. doesn't matter if we successfully apply the op,
-    // as it's important to mark that the op was processed by the object
-    siteTimeserials[msgSiteCode!!] = msgTimeSerial!! // RTLC7c, RTLM15c
+    // RTLC7c / RTLM15c - only update siteTimeserials for CHANNEL source
+    if (source == ObjectsOperationSource.CHANNEL) {
+      siteTimeserials[msgSiteCode!!] = msgTimeSerial!! // RTLC7c, RTLM15c
+    }
 
     if (isTombstoned) {
       // this object is tombstoned so the operation cannot be applied
-      return
+      return false // RTLC7e / RTLM15e
     }
-    applyObjectOperation(objectOperation, objectMessage) // RTLC7d
+    return applyObjectOperation(objectOperation, objectMessage) // RTLC7d
   }
 
   /**
@@ -166,9 +168,10 @@ internal abstract class BaseRealtimeObject(
    *
    * @param operation The operation containing the action and data to apply
    * @param message The complete object message containing the operation
+   * @return true if the operation was meaningfully applied, false otherwise
    *
    */
-  abstract fun applyObjectOperation(operation: ObjectOperation, message: ObjectMessage)
+  abstract fun applyObjectOperation(operation: ObjectOperation, message: ObjectMessage): Boolean
 
   /**
    * Clears the object's data and returns an update describing the changes.

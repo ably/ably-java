@@ -4,7 +4,9 @@ import io.ably.lib.objects.type.BaseRealtimeObject
 import io.ably.lib.objects.type.ObjectUpdate
 import io.ably.lib.objects.type.livecounter.DefaultLiveCounter
 import io.ably.lib.objects.type.livemap.DefaultLiveMap
+import io.ably.lib.types.AblyException
 import io.ably.lib.util.Log
+import kotlinx.coroutines.CompletableDeferred
 
 /**
  * @spec RTO5 - Processes OBJECT and OBJECT_SYNC messages during sync sequences
@@ -21,6 +23,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
    * @spec RTO7 - Buffered object operations during sync
    */
   private val bufferedObjectOperations = mutableListOf<ObjectMessage>() // RTO7a
+  private var syncCompletionWaiter: CompletableDeferred<Unit>? = null
 
   /**
    * Handles object messages (non-sync messages).
@@ -39,7 +42,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
     }
 
     // Apply messages immediately if synced
-    applyObjectMessages(objectMessages) // RTO8b
+    applyObjectMessages(objectMessages, ObjectsOperationSource.CHANNEL) // RTO8b
   }
 
   /**
@@ -62,7 +65,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
     if (syncTracker.hasSyncEnded()) {
       // defer the state change event until the next tick if this was a new sync sequence
       // to allow any event listeners to process the start of the new sequence event that was emitted earlier during this event loop.
-      endSync(isNewSync)
+      endSync()
     }
   }
 
@@ -78,7 +81,8 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
     bufferedObjectOperations.clear() // RTO5a2b
     syncObjectsDataPool.clear() // RTO5a2a
     currentSyncId = syncId
-    stateChange(ObjectsState.Syncing, false)
+    syncCompletionWaiter = CompletableDeferred()
+    stateChange(ObjectsState.Syncing)
   }
 
   /**
@@ -86,17 +90,39 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
    *
    * @spec RTO5c - Applies sync data and buffered operations
    */
-  internal fun endSync(deferStateEvent: Boolean) {
+  internal fun endSync() {
     Log.v(tag, "Ending sync sequence")
-    applySync()
-    // should apply buffered object operations after we applied the sync.
-    // can use regular non-sync object.operation logic
-    applyObjectMessages(bufferedObjectOperations) // RTO5c6
+    applySync()                                                                    // RTO5c1/2/7
+    applyObjectMessages(bufferedObjectOperations, ObjectsOperationSource.CHANNEL) // RTO5c6
+    bufferedObjectOperations.clear()                                               // RTO5c5
+    syncObjectsDataPool.clear()                                                    // RTO5c4
+    currentSyncId = null                                                           // RTO5c3
+    realtimeObjects.appliedOnAckSerials.clear()                                    // RTO5c9
+    stateChange(ObjectsState.Synced)                              // RTO5c8
+    syncCompletionWaiter?.complete(Unit)
+    syncCompletionWaiter = null
+  }
 
-    bufferedObjectOperations.clear() // RTO5c5
-    syncObjectsDataPool.clear() // RTO5c4
-    currentSyncId = null // RTO5c3
-    stateChange(ObjectsState.Synced, deferStateEvent)
+  /**
+   * Called from publishAndApply (via withContext sequentialScope).
+   * If SYNCED: apply immediately with LOCAL source.
+   * If not SYNCED: suspend until endSync transitions to SYNCED (RTO20e), then apply.
+   */
+  internal suspend fun applyAckResult(messages: List<ObjectMessage>) {
+    if (realtimeObjects.state != ObjectsState.Synced) {
+      if (syncCompletionWaiter == null) syncCompletionWaiter = CompletableDeferred()
+      syncCompletionWaiter?.await() // suspends; resumes after endSync transitions to SYNCED (RTO20e1)
+    }
+    applyObjectMessages(messages, ObjectsOperationSource.LOCAL) // RTO20f
+  }
+
+  /**
+   * Fails all pending apply waiters.
+   * Called when the channel enters DETACHED/SUSPENDED/FAILED (RTO20e1).
+   */
+  internal fun failBufferedAcks(error: AblyException) {
+    syncCompletionWaiter?.completeExceptionally(error)
+    syncCompletionWaiter = null
   }
 
   /**
@@ -162,7 +188,10 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
    *
    * @spec RTO9 - Creates zero-value objects if they don't exist
    */
-  private fun applyObjectMessages(objectMessages: List<ObjectMessage>) {
+  private fun applyObjectMessages(
+    objectMessages: List<ObjectMessage>,
+    source: ObjectsOperationSource = ObjectsOperationSource.CHANNEL,
+  ) {
     // RTO9a
     for (objectMessage in objectMessages) {
       if (objectMessage.operation == null) {
@@ -177,6 +206,19 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
         Log.w(tag, "Object operation action is unknown, skipping message: ${objectMessage.id}")
         continue
       }
+
+      // RTO9a3 - skip operations already applied on ACK (discard without taking any further action).
+      // This check comes before zero-value object creation (RTO9a2a1) so that no zero-value object is
+      // created for an objectId not yet in the pool when the echo is being discarded.
+      // Note: siteTimeserials is NOT updated here intentionally — updating it to the echo's serial would
+      // incorrectly reject older-but-unprocessed operations from the same site that arrive after the echo.
+      if (objectMessage.serial != null &&
+        realtimeObjects.appliedOnAckSerials.contains(objectMessage.serial)) {
+        Log.d(tag, "RTO9a3: serial ${objectMessage.serial} already applied on ACK; discarding echo")
+        realtimeObjects.appliedOnAckSerials.remove(objectMessage.serial)
+        continue // discard without taking any further action
+      }
+
       // RTO9a2a - we can receive an op for an object id we don't have yet in the pool. instead of buffering such operations,
       // we can create a zero-value object for the provided object id and apply the operation to that zero-value object.
       // this also means that all objects are capable of applying the corresponding *_CREATE ops on themselves,
@@ -184,7 +226,10 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
       // so to simplify operations handling, we always try to create a zero-value object in the pool first,
       // and then we can always apply the operation on the existing object in the pool.
       val obj = realtimeObjects.objectsPool.createZeroValueObjectIfNotExists(objectOperation.objectId) // RTO9a2a1
-      obj.applyObject(objectMessage) // RTO9a2a2, RTO9a2a3
+      val applied = obj.applyObject(objectMessage, source) // RTO9a2a2, RTO9a2a3
+      if (source == ObjectsOperationSource.LOCAL && applied && objectMessage.serial != null) {
+        realtimeObjects.appliedOnAckSerials.add(objectMessage.serial) // RTO9a2a4
+      }
     }
   }
 
@@ -228,7 +273,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
    *
    * @spec RTO2 - Emits state change events for syncing and synced states
    */
-  private fun stateChange(newState: ObjectsState, deferEvent: Boolean) {
+  private fun stateChange(newState: ObjectsState) {
     if (realtimeObjects.state == newState) {
       return
     }
@@ -240,6 +285,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
   }
 
   internal fun dispose() {
+    syncCompletionWaiter?.cancel()
     syncObjectsDataPool.clear()
     bufferedObjectOperations.clear()
     disposeObjectsStateListeners()
